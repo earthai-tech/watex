@@ -131,6 +131,6 @@ dmypy.json
 # skip test RES APIS watson_studio 
 
 watex/utils/test_res_api.py 
-watex/watson_api
+watex/utils/watson_api
 
 
