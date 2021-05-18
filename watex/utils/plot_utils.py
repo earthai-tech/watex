@@ -27,9 +27,11 @@ Created on Tue Dec 29 19:18:44 2020
 
 @author: @Daniel03
 """
+import sys
 import re , os, warnings
 import numpy as np
-from watex.infos import _sensitive as SB
+from watex.utils.infos import _sensitive as SB
+
 
 import matplotlib as mpl 
 import matplotlib.cm as cm 
@@ -1489,7 +1491,66 @@ def annotate_tip(layer_thickness , layer_names):
     return v, ni  
     
     
-   
+# Plotting functions
+
+def Plotvec1(u, z, v):
+    """
+    Plot tips function with  three vectors. 
+    
+    :param u: vector u - a vector 
+    :type u: array like  
+    
+    :param z: vector z 
+    :type z: array_like 
+    
+    :param v: vector v 
+    :type v: array_like 
+    
+    return: plot 
+    
+    """
+    
+    ax = plt.axes()
+    ax.arrow(0, 0, *u, head_width=0.05, color='r', head_length=0.1)
+    plt.text(*(u + 0.1), 'u')
+    
+    ax.arrow(0, 0, *v, head_width=0.05, color='b', head_length=0.1)
+    plt.text(*(v + 0.1), 'v')
+    ax.arrow(0, 0, *z, head_width=0.05, head_length=0.1)
+    plt.text(*(z + 0.1), 'z')
+    plt.ylim(-2, 2)
+    plt.xlim(-2, 2)
+
+def Plotvec2(a,b):
+    """
+    Plot tips function with two vectors
+    Just use to get the orthogonality of two vector for other purposes 
+
+    :param a: vector u 
+    :type a: array like  - a vector 
+    :param b: vector z 
+    :type b: array_like 
+    
+    *  Write your code below and press Shift+Enter to execute
+    
+    :Example: 
+        
+        >>> import numpy as np 
+        >>> from watex.utils.plot_utils import Potvec2
+        >>> a=np.array([1,0])
+        >>> b=np.array([0,1])
+        >>> Plotvec2(a,b)
+        >>> print('the product a to b is =', np.dot(a,b))
+
+    """
+    ax = plt.axes()
+    ax.arrow(0, 0, *a, head_width=0.05, color ='r', head_length=0.1)
+    plt.text(*(a + 0.1), 'a')
+    ax.arrow(0, 0, *b, head_width=0.05, color ='b', head_length=0.1)
+    plt.text(*(b + 0.1), 'b')
+    plt.ylim(-2, 2)
+    plt.xlim(-2, 2)  
+
 
 # if __name__=='__main__':
     
