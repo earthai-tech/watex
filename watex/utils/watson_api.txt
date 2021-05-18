@@ -1,0 +1,16 @@
+API key:
+curl -X POST -u "apikey:{apikey}" --header "Content-Type: application/json" --data "{\"text\": [\"Hello, world! \", \"How are you?\"], \"model_id\":\"en-es\"}" "{url}/v3/translate?version=2018-05-01"
+
+URL: 
+curl -X POST -u "apikey:{apikey}" --header "Content-Type: text/plain" --data "Language Translator translates text from one language to another" "{url}/v3/identify?version=2018-05-01"
+
+Auto-generated service credentials: key name 
+
+{
+  "apikey": "e_bOamPNKyyRtIbqcM-gmHiFmAb3WfdwzbKAZmB0suZE",
+  "iam_apikey_description": "Auto-generated for key 7fc5f171-c3c1-4464-b7f1-5162671db184",
+  "iam_apikey_name": "Auto-generated service credentials",
+  "iam_role_crn": "crn:v1:bluemix:public:iam::::serviceRole:Manager",
+  "iam_serviceid_crn": "crn:v1:bluemix:public:iam-identity::a/ac7611047016401a919c69b9bc725473::serviceid:ServiceId-76c18163-4329-4dd1-9fe8-455c51731a28",
+  "url": "https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/5bcaa802-5d60-4667-900e-d0c5e68a2314"
+}
