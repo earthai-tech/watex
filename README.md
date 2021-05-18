@@ -1,6 +1,6 @@
  # watex : WAter EXploration using AI Learning Methods
 
-![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square)
+![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
 
 **_Special toolbox for WAter EXploration  using Artificial Intelligence Learning methods_**
 
