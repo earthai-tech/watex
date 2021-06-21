@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# skip test RES APIS watson_studio 
+
+watex/utils/test_res_api.py 
+watex/utils/watson_api
+
+
