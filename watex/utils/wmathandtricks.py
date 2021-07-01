@@ -22,19 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ===============================================================================
 
-.. synopsis:: 'watex.utils.calculator'
+.. synopsis:: 'watex.utils.wmathandtricks'
             Module for computing
 
 Created on Mon Jun 21 14:43:25 2021
+
+.. _electrical-resistivity-profile::`erp`
+
+.. _vertical-electrical-sounding::`ves`
+
+.. _station-position::`pk`
+
+.._anomaly-boundaries:`anBounds`
 
 @author: @Daniel03
 
 """
 
 import os 
+import warnings
 import numpy as np 
 import pandas as pd
+
 import watex.utils.exceptions as Wex
+from watex.utils._watexlog import watexlog  
+
+_logger =watexlog.get_watex_logger(__name__)
 
 
 
@@ -46,7 +59,7 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None):
     :param erp_array: array of apparent resistivity profile 
     :type erp_array: array_like
     
-    :station position: array of station position (survey) , if not given 
+    :param station position: array of station position (survey) , if not given 
                     and `step` is known , set the step value and 
                     `station_position` will compute automatically 
     :type station_position: array_like 
@@ -54,10 +67,22 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None):
     :param step: The distance between measurement im meter. If given will 
         recompute the `station_position`
     
-    :returns: * anpks: Main positions of best select anomaly 
-              * collectanlyBounds: list of arrays of select anomaly values
-              * min_pks: list of tuples (pk, minVal of best anomalies points.)
+    :returns: * `bestSelectedDict`: dict containing best anomalies  
+                with the anomaly resistivities range.
+              * `anpks`: Main positions of best select anomaly 
+              * `collectanlyBounds`: list of arrays of select anomaly values
+              * `min_pks`: list of tuples (pk, minVal of best anomalies points.)
     :rtype: tuple 
+    
+    :Example: 
+        
+        >>> from watex.utils.wmathandtricks import compute_lower_anolamy 
+        >>> import pandas as pd 
+        >>> path_to_= 'data/l10_gbalo.xlsx'
+        >>> dataRes=pd.read_excel(erp_data).to_numpy()[:,-1]
+        >>> anomaly, *_ =  compute_lower_anomaly(erp_array=data, step =10)
+        >>> anomaly
+                
     """
 
     # got minumum of erp data 
@@ -77,19 +102,22 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None):
         pks =np.array(['?' for ii in range(len(erp_array))])
     else : pks =station_position
 
-    print('{0:-^77}'.format(' *Best Conductive points (BCPts)* '))
-    print('** -----|> {0:<17}  = {1} points.'.format('Number of BCPts found',
-                                                   len(min_pks)))
-    for ii, (skanRes, skanIndex) in enumerate(min_pks): 
-        print('* ({0}): pk{1} --> {1} m with rho value = {2} Ω.m'.format(ii+1,
-                                                    pks[skanIndex ],
-                                                      skanRes))
+    print('{0:+^100}'.format(' *Best Conductive anomaly points (BCPts)* '))
+
     if pks.dtype in ['int', 'float']: 
         anpks =np.array([pks[skanIndex ] for
                          (_, skanIndex) in min_pks ])
     else : anpks ='?'
     
-    return anpks, collectanlyBounds, min_pks
+    bestSelectedDICT={}
+    for ii, (pk, anb) in enumerate(zip(anpks, collectanlyBounds)): 
+        bestSelectedDICT['{0}_pk{1}'.format(ii+1, pk)] = anb
+    
+    
+    fmtAnText(anFeatures=bestSelectedDICT)
+    
+    
+    return bestSelectedDICT, anpks, collectanlyBounds, min_pks, 
         
 
 def get_minVal(array): 
@@ -126,8 +154,9 @@ def get_minVal(array):
             holdList.append((array[int(min_index)], 
                              int(min_index)))
             ss +=ii
-        elif len(min_index) > 1 : 
-            for jj, indx in enumerate(min_index):  # loop the index array and find the min 
+        elif len(min_index) > 1 :
+            # loop the index array and find the min 
+            for jj, indx in enumerate(min_index):  
                 holdList.append((array[int(indx)], 
                                  int(indx)))
         ss =len(holdList)
@@ -136,7 +165,7 @@ def get_minVal(array):
 
 def drawn_anomaly_boundaries(erp_data , appRes, index):
     """
-    function to drawn anomaly boundary 
+    Function to drawn anomaly boundary 
     and return the anomaly with its boundaries
     
     :param erp_data: erp profile 
@@ -160,8 +189,9 @@ def drawn_anomaly_boundaries(erp_data , appRes, index):
     
     def loop_sideBound(term):
         """
-        lopp side bar from anomaly and find the term side 
-        :param term: is array of left or right side of anomaly 
+        loop side bar from anomaly and find the term side 
+        
+        :param term: is array of left or right side of anomaly.
         :type trem: array 
         
         :return: side bar 
@@ -201,7 +231,8 @@ def drawn_anomaly_boundaries(erp_data , appRes, index):
         
     return appRes, index, anomalyBounds 
 
-def defineAnomaly(erp_data, station_position=None, pks=None, dipole_length=10.):
+def defineAnomaly(erp_data, station_position=None, pks=None, 
+                  dipole_length=10., **kwargs):
     """
     Function will select the different anomalies. If pk is not given, 
     the best three anomalies on the survey lines will be computed automatically
@@ -212,7 +243,7 @@ def defineAnomaly(erp_data, station_position=None, pks=None, dipole_length=10.):
     :param pks: station positions anomaly boundaries (pk_begin, pk_end)
                 If selected anomalies is more than one, set `pks` into dict
                 where number of anomaly =keys and pks = values 
-    :type pks: list of dict
+    :type pks: list or dict
     
     :param dipole_length: Distance between two measurements in meters
                         Change the `dipole lengh
@@ -221,9 +252,11 @@ def defineAnomaly(erp_data, station_position=None, pks=None, dipole_length=10.):
     :param station_position: station position array 
     :type statiion_position: array_like 
     
+    :return: list of anomalies bounds 
     
     """
-    collectanlyBounds=[]
+    selectedPk =kwargs.pop('selectedPk', None)
+    bestSelectedDICT={}
     if station_position is not None : 
         dipole_length = (station_position.max()-
                station_position.min())/(len(station_position -1))
@@ -235,39 +268,187 @@ def defineAnomaly(erp_data, station_position=None, pks=None, dipole_length=10.):
     def getBound(pksbounds): 
         """
         Get the bound from the given `pks`
-        erp
+        :param pksbounds: Anomaly boundaries
+        :type pksbounds: list of array_like 
         
+        :returns: * anomBounds- array of appRes values of anomaly
+        :rtype: array_like 
         """
         # check if bound is on station positions
         for spk in pksbounds : 
             if not pksbounds.min() <= spk <= pksbounds.max(): 
-                Wex.WATexError_AnomalyBounds(
+                raise Wex.WATexError_AnomalyBounds(
                     'Bound <{0}> provided is out of range !'
                    'Dipole length is set to = {1} m. Please set a new bounds.')
             
-        pkinf = np.where(station_position==pksbounds.min())
-        pksup = np.where(station_position==pksbounds.max())
-        anomBounds = erp_data[int(pkinf):int(pksup)]
+        pkinf = np.where(station_position==pksbounds.min())[0]
+        pksup = np.where(station_position==pksbounds.max())[0]
+        anomBounds = erp_data[int(pkinf):int(pksup)+1]
         return anomBounds
     
     if pks is None : 
-        anpks, collectanlyBounds, min_pks= compute_lower_anomaly(
+        bestSelectedDICT, *_= compute_lower_anomaly(
             erp_array=erp_data, step=dipole_length, 
             station_position =station_position)
         
     elif isinstance(pks, list):
         pks =np.array(sorted(pks))
         collectanlyBounds = getBound(pksbounds= pks)
+        # get the length of selected anomalies and computed the station 
+        # location wich composed the bounds (Xbegin and Xend)
+        pkb, *_= find_pk_from_selectedAn(
+            an_res_range=collectanlyBounds, pos=pks, 
+            selectedPk=selectedPk)
+        bestSelectedDICT={ '1_{}'.format(pkb):collectanlyBounds}
+
     elif isinstance(pks, dict):
-        for keys, values in pks.items():
+        for ii, (keys, values) in enumerate(pks.items()):
             if isinstance(values, list): 
                 values =np.array(values)
-            collectanlyBounds.append(getBound(pksbounds=values))
-
-    return collectanlyBounds 
+            collectanlyBounds=  getBound(pksbounds=values) 
+            pkb, *_= find_pk_from_selectedAn(
+            an_res_range=collectanlyBounds, pos=pks, 
+            selectedPk=selectedPk)
+            bestSelectedDICT['{0}_{1}'.format(ii+1, pkb)]=collectanlyBounds
+           
+    return bestSelectedDICT
        
-     
-     
+def find_pk_from_selectedAn(an_res_range,  pos=None, selectedPk=None): 
+    """
+    Function to select the main :ref:`pk` from both :ref:`anBounds`. 
+    
+    :paran an_res_range: anomaly resistivity range on ``erp`` line. 
+    :type an_res_range: array_like 
+    
+    :param pos: position of anomaly boundaries (inf and sup):
+                anBounds = [90, 130]
+                - 130 is max boundary and 90 the  min boundary 
+    :type pos: list 
+    
+    :param selectedPk: user can set its own position of the right anomaly 
+                        Be sure that the value provided is right position . 
+                        Could not compute again provided that `pos`
+                        is not `None`.
+                
+    :return: anomaly station position. 
+    :rtype: str 'pk{position}'
+    
+    :Example:
+        
+        >>> from watex.utils.wmathandtricks import find_pk_from_selectedAn
+        >>> resan = np.array([168,130, 93,146,145])
+        >>> pk= find_pk_from_selectedAn(
+        ...    resan, pos=[90, 13], selectedPk= 'str20')
+        >>> pk
+    
+    
+    """
+    #compute dipole length from pos
+    if pos is not None : 
+        if isinstance(pos, list): 
+            pos =np.array(pos)
+    if pos is None and selectedPk is None : 
+        raise Wex.WATexError_parameter_number(
+            'Give at least the anomaly boundaries'
+            ' before computing the selected anomaly position.')
+        
+    if selectedPk is not None :  # mean is given
+        if isinstance(selectedPk, str):
+            if selectedPk.isdigit() :
+                sPk= int(selectedPk)
+            elif selectedPk.isalnum(): 
+                oss = ''.join([s for s in selectedPk
+                    if s.isdigit()])
+                sPk =int(oss)
+                print(sPk)
+        elif isinstance(selectedPk, (float, int, np.ndarray)): 
+            sPk = int(selectedPk)
+        
+        if pos is not None : # then compare the sPk and ps value 
+            if not pos.min()<= sPk<=pos.max(): 
+                warnings.warn('Wrong position given <{}>.'
+                              ' Should compute new positions.'.format(selectedPk))
+                _logger.debug('Wrong position given <{}>.'
+                              'Should compute new positions.'.format(selectedPk))
+            
+        else : 
+            selectedPk='pk{}'.format(sPk )
+            return selectedPk , an_res_range
+    
+
+    if isinstance(pos, list):
+        pos =np.array(pos)  
+    if isinstance(an_res_range, list): 
+        an_res_range =np.array(an_res_range)
+    dipole_length = (pos.max()-pos.min())/(len(an_res_range)-1)
+
+    tem_loc = np.arange(pos.min(), pos.max()+dipole_length, dipole_length)
+    
+    # find min value of  collected anomalies values 
+    locmin = np.where (an_res_range==an_res_range.min())[0]
+    if len(locmin) >1 : locmin =locmin[0]
+    pk_= int(tem_loc[int(locmin)]) # find the min pk 
+
+    selectedPk='pk{}'.format(pk_)
+    
+    return selectedPk , an_res_range
+ 
+def fmtAnText(anFeatures=None, title=['Ranking', 'rho(Ω.m)', 
+                                    'position pk(m)',
+                                    'rho range(Ω.m)'],
+                                    **kwargs) :
+    """
+    Function format text from anomaly features 
+    
+    :param anFeatures: Anomaly features 
+    :type anFeatures: list or dict
+    
+    :param title: head lines 
+    :type title: list
+    
+    :Example: 
+        
+        >>> from watex.utils.wmathandtricks import fmtAnText
+        >>> fmtAnText(anFeatures =[1,130, 93,(146,145, 125)])
+    
+    """
+    inline =kwargs.pop('inline', '-')
+    mlabel =kwargs.pop('mlabels', 100)
+    line = inline * int(mlabel)
+    
+    #--------------------header ----------------------------------------
+    print(line)
+    tem_head ='|'.join(['{:^15}'.format(i) for i in title[:-1]])
+    tem_head +='|{:^45}'.format(title[-1])
+    print(tem_head)
+    print(line)
+    #-----------------------end header----------------------------------
+    newF =[]
+    if isinstance(anFeatures, dict):
+        for keys, items in anFeatures.items(): 
+            rrpos=keys.replace('_pk', '')
+            rank=rrpos[0]
+            pos =rrpos[1:]
+            newF.append([rank, min(items), pos, items])
+            
+    elif isinstance(anFeatures, list): 
+        newF =[anFeatures]
+    
+    
+    for anFeatures in newF: 
+        strfeatures ='|'.join(['{:^15}'.format(str(i)) for i in anFeatures[:-1]])
+        try : 
+            iter(anFeatures[-1])
+        except : 
+            strfeatures +='|{:^45}'.format(str(anFeatures[-1]))
+        else : 
+            strfeatures += '|{:^45}'.format(
+                ''.join(['{} '.format(str(i)) for i in anFeatures[-1]]))
+            
+        print(strfeatures)
+        print(line)
+    
+ 
 if __name__=='__main__': 
 
     erp_data='data/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
@@ -275,19 +456,20 @@ if __name__=='__main__':
     array= df.to_numpy()
     pk=array[:,0]
     data=array[:,-1]
-    #print(data)
+    # print(data)
     # anom =np.array([168,130, 93,146,145,95,50,130,
     #                 163,140,167,154,93,113,138
     #         ])
     # _, _, test_an= drawn_anomaly_boundaries(erp_data=anom, appRes=93, index=12)
     # print(test_an)
     
-    #anomaly =  compute_lower_anomaly(erp_array=data, step =10)
+    # anomaly, *_ =  compute_lower_anomaly(erp_array=data, step =10)
     anomaly = defineAnomaly(erp_data =data , station_position=None,
-                            pks=None, dipole_length=10)
+                            pks=[90, 130], dipole_length=10)
     print(anomaly)
-    
-    
+    # pk, res= find_pk_from_selectedAn(an_res_range=[175,132,137,139,170], pos=[90, 130])
+    # # fmtAnText(anFeatures =[1,130, 93,(146,145, 125)])
+    # print(pk, res)
     
     
     
