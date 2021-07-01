@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2021 Kouadio K. Laurent, zju-ufhb
+# This module is part of the WATex core package, which is released under a
+# MIT- licence.
+
 """
 ===============================================================================
 Copyright (c) 2021 Kouadio K. Laurent
@@ -36,6 +40,7 @@ import json
 import numpy as np 
 import pandas as pd 
 import  watex.utils.exceptions as Wex
+import watex.utils.wmathandtricks as wfunc
 
 import xml.etree.ElementTree as ET
 
@@ -45,12 +50,11 @@ _logger =watexlog.get_watex_logger(__name__)
 
 class Features: 
     """
-    Special module wich deal with Electrical Resistivity profile (VES) and
-    Vertical electrical Sounding (VES). fet all features values of sites area 
-    ERP data is given, Will set the minimum found on the
-    array as the best anomaly. For better accuracy. The class of features 
-    works after the features as been computed. 
-
+    Features class. Deals  with Electrical Resistivity profile (VES) and
+    Vertical electrical Sounding (VES). Set all features values of sites area 
+    Features class is  composed of `features_labels` for ``ML`` appliactions 
+    Once parameters are computed , the class uses each features for ML purposes 
+   
     """
     
     dataType ={
@@ -158,23 +162,104 @@ class Features:
             raise Wex.WATexError_file_handling('{} is not a file. '
                                                'Please provide a right file !'
                                                .format(self.erp_data))
-        ex_file = os.path.splitext(pathfile)[1] 
-        ex_file in not self.dataType.keys(): 
+        ex_file = os.path.splitext(self.erp_data)[1] 
+        if not ex_file in self.dataType.keys(): 
+            pass 
             
+class ERP : 
+    """
+    Electrical resistivity profiling class . computes and plot ERP 
+    define anomalies and compute its features. can select multiples anomalies 
+    on ERP and gve their features values 
+    
+    """ 
+    erpLabels =['pk', 
+                'east', 
+                'north', 
+                'res'
+                ]
+    
+    dataType ={
+                ".csv":pd.read_csv, 
+                 ".xlsx":pd.read_excel,
+                 ".json":pd.read_json,
+                 ".html":pd.read_json,
+                 ".sql" : pd.read_sql
+                 }
+    
+    def __init__(self, erp_fn =None , **kwargs)  : 
+        self._logging =watexlog.get_watex_logger(self.__class__.__name__)
+        self.erp_fn =erp_fn 
+        self._Pa =None 
+        self._Ma =None 
+        self._anPos =None 
+        self._lat =None
+        self._lon =None 
+        self._easting =None 
+        self._northing =None 
+        self._SFI = None 
+        self._type =None 
+        self._shape= None 
+        
+        self.pdData =None 
+        self.data=None
+        
+        self._fn =None 
+        
+        for key in list(kwargs.keys()):
+            setattr(self, key, kwargs[key])
+            
+    @property 
+    def fn(self): 
+        """
+        ``erp`` file type 
+        """
+        return self._fn 
+    
+    @fn.setter 
+    def fn(self, erp_f): 
+        """ Find the type of data and call pd.Dataframe for reading. 
+        numpy array data can get from Dataframe 
+        
+        :param erp_ex:  erp_extension file
+        :type erp_ex: 
+        
+        """
+        if not os.path.isfile(erp_f): 
+            raise Wex.WATexError_file_handling(
+                'No right file detected ! Please provide the right path.')
+        exT=os.path.splitext(erp_f)[1]
+        
+        if exT in self.dataType.keys(): 
+            self._fn =exT 
+        else: self._fn ='?'
+        
+        
+        self.pdData = self.dataType[exT](self.erp_fn)
+        self.data =self.pdData.to_numpy()
+            
+        # get the column of dataframe 
+            
+
             
         
-    
-            
+
 
     
     
     
        
 if __name__=='__main__'   : 
-    pathData =r'data/BagoueDataset.xlsx'
+    pathData ='data/BagoueDataset2.xlsx'
     ex_file =  os.path.splitext(pathData)[1]
     print(ex_file)
+    erp_data='data/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
+    df=pd.read_excel(pathData )
+    # array= df.to_numpy()
+    # pk=array[:,0]
+    # data=array[:,-1]
     
+            
         
         
         
