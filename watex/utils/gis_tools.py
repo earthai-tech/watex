@@ -28,7 +28,7 @@ try :
 except : pass 
 
 
-_logger = watexlog.get_watexlog_logger(__name__)
+_logger = watexlog.get_watex_logger(__name__)
 
 
 class GIS_ERROR(Exception):
