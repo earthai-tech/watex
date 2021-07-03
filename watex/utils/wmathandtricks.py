@@ -43,7 +43,7 @@ import os
 import warnings
 import numpy as np 
 import pandas as pd
-
+from scipy.interpolate import interp1d as sp1d
 import watex.utils.exceptions as Wex
 from watex.utils._watexlog import watexlog  
 
@@ -117,7 +117,7 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None):
     fmtAnText(anFeatures=bestSelectedDICT)
     
     
-    return bestSelectedDICT, anpks, collectanlyBounds, min_pks, 
+    return bestSelectedDICT, anpks, collectanlyBounds, min_pks
         
 
 def get_minVal(array): 
@@ -317,7 +317,7 @@ def find_pk_from_selectedAn(an_res_range,  pos=None, selectedPk=None):
     """
     Function to select the main :ref:`pk` from both :ref:`anBounds`. 
     
-    :paran an_res_range: anomaly resistivity range on ``erp`` line. 
+    :paran an_res_range: anomaly resistivity range on :ref:`erp` line. 
     :type an_res_range: array_like 
     
     :param pos: position of anomaly boundaries (inf and sup):
@@ -325,10 +325,12 @@ def find_pk_from_selectedAn(an_res_range,  pos=None, selectedPk=None):
                 - 130 is max boundary and 90 the  min boundary 
     :type pos: list 
     
-    :param selectedPk: user can set its own position of the right anomaly 
-                        Be sure that the value provided is right position . 
-                        Could not compute again provided that `pos`
-                        is not `None`.
+    :param selectedPk: 
+        
+        User can set its own position of the right anomaly. Be sure that 
+        the value provided is right position . 
+        Could not compute again provided that `pos`
+        is not `None`.
                 
     :return: anomaly station position. 
     :rtype: str 'pk{position}'
@@ -448,7 +450,301 @@ def fmtAnText(anFeatures=None, title=['Ranking', 'rho(Ω.m)',
         print(strfeatures)
         print(line)
     
+def compute_power (pk_min , pk_max):
+    """ 
+    Compute the power Pa of anomaly.
+    
+    :param pk_min: 
+        
+        Min boundary value of anomaly. `pk_min` is min value of measurement 
+        point. It's the position of the site in meter 
+        
+    :type pk_min: float 
+    
+    :param pk_max: 
+        
+        Max boundary of the select anomaly. `pk_max` is the maximum value 
+        the measurement point in meter. It's  the position of the site in m. 
+        
+    :type pk_max: float 
+    
+    :return: The absolute value between the `pk_min` and `pk_max`. 
+    :rtype: float 
+    
+    :Example: 
+        
+        >>> from wmathandtricks import compute_power 
+        >>> power= compute_power(80, 130)
+    
+    
+    """
+    return np.abs(pk_max - pk_min)
+    
+def compute_magnitude(rhoa_max , rhoa_min):
+    """
+    Compute the magnitude ``Pa`` of  selected anomaly expressed in Ω.m.
+    
+    :param rhoa_min: Min boundary resistivity value of anomaly. 
+    :type rhoa_min: float 
+    
+    :param rhoa_max: Max boundary of the resistivity value of select anomaly. 
+    :type rhoa_max: float 
+    
+    :return: The absolute value between the `rhoa_min` and `rhoa_max`. 
+    :rtype: float 
+    
+    :Example: 
+        
+        >>> from wmathandtricks import compute_power 
+        >>> power= compute_power(80, 130)
+    
+    """
+
+    return np.abs(rhoa_max -rhoa_min)
+
+    
+def select_anomaly ( rhoa_array, pos_array=None, auto=True, dipole_length =10., **kws ) :
+    """
+    Select the anomaly value from `rhoa_array` and find its boundaries if 
+    ``auto` is set to ``True``. If `auto` is ``False``, it's usefull to 
+    provide the anomaly boundaries from station position. Change  the argument 
+    `dipole_length`  i.e. the distance between measurement electrode is not
+     equal to ``10``m else give the `pos_array`. If the `pos_array` is given,
+     the `dipole_length` will be recomputed.
+     
+    :note:  If the `auto` param is ``True``, the automatic computation will
+             give at most three best animalies ranking according 
+             to the resitivity value. 
+     
+     :param rhoa_array: The apparent resistivity value of :ref:`erp` 
+     :type rho_array: array_like 
+     
+     :param pos_array: The array of station position in meters 
+     :type pos_array: array_like 
+     
+     :param auto: 
+         
+         Automaticaly of manual computation to select the best anomaly point. 
+         Be sure if `auto` is set to ``False`` to provide the anomaly boundary
+         by setting `pos_bounds` : 
+             
+             pos_bounds=(90, 130)
+             
+        where :math:`90` is the `pk_min` and :math:`130` is the `pk_max` 
+        If `pos_bounds` is not given an station error will probably occurs 
+        from :class:`~utils.exceptions.WATexError_station`. 
+    
+    :param dipole_length: 
+        
+        Is the distance between two closest measurement. If the value is known 
+        it's better to provide it and don't need to provied a `pos_array`
+        value. 
+    :type dipole_length: float 
+
+    :param pos_bounds: 
+        
+        Is the tuple value of anomaly boundaries  composed of `pk_min` and 
+        `pk_max`. Please refer to :doc:`compute_power`. When provided 
+        the `pos_bounds` value, please set `the dipole_length` to accurate 
+        the computation of :func:`compute_power`.
+        
+    :return: 
+        
+        - *rhoa*: The app. resistivity value of the selected anomaly 
+        - `pk_min` and the `pk_max`: refer to :doc:`compute_power`. 
+        - `rhoa_max` and `rhoa_min`: refer to :doc:`compute_magnitude`
+        - 
+          
+    """
+    
+    pos_bounds =kws.pop("pos_bounds", (None, None))
+    anom_pos = kws.pop('pos_anomaly', None)
+    
+    
+    if auto is False : 
+        if pos_bounds != (None, None): 
+            if None in pos_bounds : 
+                raise Wex.WATexError_site('One position is missed' 
+                                    'Plase provided it!')
+        
+        pos_bounds = np.array(pos_bounds)
+        pos_min, pos_max  = pos_bounds.min(), pos_bounds.max()
+        
+        # get the res from array 
+        dl_station_loc = np.arange(0, dipole_length * len(rhoa_array), dipole_length)
+        # then select rho range 
+        ind_pk_min = int(np.where(dl_station_loc==pos_min)[0])
+        ind_pk_max = int(np.where(dl_station_loc==pos_max)[0]) 
+        rhoa_range = rhoa_array [ind_pk_min:ind_pk_max +1]
+        pk, res= find_pk_from_selectedAn(an_res_range=rhoa_range, pos=pos_bounds,
+                                selectedPk= anom_pos) 
+        pk = int(pk.replace('pk', ''))
+        rhoa = rhoa_array[int(np.where(dl_station_loc == pk )[0])]
+        rhoa_min = rhoa_array[int(np.where(dl_station_loc == pos_min )[0])]
+        rhoa_max = rhoa_array[int(np.where(dl_station_loc == pos_max)[0])]
+        
+        rhoa_bounds = (rhoa_min, rhoa_max)
+        
+        return {'1_pk{}'.format(pk): 
+                (pk, rhoa, pos_bounds, rhoa_bounds, res)} 
+    
+    if auto: 
+        bestSelectedDICT, anpks, \
+            collectanlyBounds, min_pks = compute_lower_anomaly(
+                erp_array= rhoa_array, 
+                station_position= pos_array, step= dipole_length) 
+
+            
+        return {key: find_pkbounds (anom_infos= bestSelectedDICT, 
+                                      anom_rank= ii+1, pks_rhoa_index=min_pks, 
+                                      dl=dipole_length) 
+                for ii, (key , rho_r) in enumerate(bestSelectedDICT.items())
+                }
+
+     
+                
+                
+        
+def find_pkbounds (anom_infos, anom_rank, pks_rhoa_index, dl): 
+    """
+    Get the pk bound from ranking of computed best points
+    
+    :param anom_infos:
+        
+        Is anomaly a dictionnary of anomaly computed from 
+        :func:`compute_lower_anomaly` when `pk_bounds` is not given.  
+        see :doc:`compute_lower_anomaly`
+        
+    :param anom_rank: Automatic ranking after selecting best points 
+        
+    :param pk_rhoa_index: 
+        
+        Is tuple of selected anomaly resistivity value and index in the whole
+        :ref:`erp` line. for instance: 
+            
+            pks_rhoa_index= (80., 17) 
+            
+        where "80" is the value of selected anomaly in ohm.m and "17" is the 
+        index of selected points in the :ref:`erp` array. 
+        
+    :param dl: 
+        
+        Is the distance between two measurement as `dipole_length`. Provide 
+        the `dl` if the *default* value is not right. 
+        
+    :returns: 
+        
+        see :doc:`select_anomaly`
+    
+    """     
+    rank_code = '{}_pk'.format(anom_rank)
+    for key, values in anom_infos.items(): 
+        if rank_code in key: 
+            pk = float(key.replace(rank_code, ''))
+            rhoa = list(pks_rhoa_index[0])[0]
+            ind_rhoa =np.where(values ==rhoa)[0]
+            
+            if len(ind_rhoa) ==0 : ind_rhoa =0 
+            leninf = len(values[: int(ind_rhoa)])
+            
+            pk_min = pk - leninf * dl 
+            lensup =len(values[ int(ind_rhoa):])
+            pk_max =  pk - (lensup -1) * dl 
+            
+            pos_bounds = (pk_min, pk_max)
+            rhoa_bounds = (values[0], values[-1])
+    
+            return pk, rhoa, pos_bounds, rhoa_bounds, values 
+            
+            
+def compute_sfi (pk_min, pk_max, rhoa_min,
+                 rhoa_max,  rhoa, pk)  : 
+    """
+    SFI is introduced to evaluate the ratio of presumed existing fracture
+    from anomaly extent. We use a similar approach as IF computation
+    proposed by Dieng et al. (2004) to evaluate each selected anomaly 
+    extent and the normal distribution of resistivity values along the 
+    survey line. The SFI threshold is set at :math:`$\sqrt\2$`  for 
+    symmetrical anomaly characterized by a perfect distribution of 
+    resistivity in a homogenous medium. 
+    
+    :param pk_min: see :doc:`compute_power` 
+    :param pk_max: see :doc:`compute_power` 
+    
+    :param rhoa_max: see :doc:`compute_magnitude` 
+    :param rhoa_min: see :doc:`compute_manitude`
+    
+    :param pk: 
+        
+        Station position of the selected anomaly in ``float`` value. 
+        
+    :param rhoa: 
+        
+        Selected anomaly apparent resistivity value in ohm.m 
+        
+    :return: standard fracture index (SFI)
+    :rtype: float 
+    
+    :Example: 
+        
+        >>> from watex.utils.wmathandtricks import compute_sfi 
+        >>> sfi = compute_sfi(pk_min = 90,
+        ...                      pk_max=130,
+        ...                      rhoa_min=175,
+        ...                      rhoa_max=170,
+        ...                      rhoa=132,
+        ...                      pk=110)
+        >>> sfi
+    
+    """  
+    if  pk_min -pk  < pk_max - pk  : 
+        return  np.sqrt((((rhoa_max -rhoa) / 
+                          (rhoa_min- rhoa)) **2 + 
+                         ((pk_max - pk)/(pk_min -pk))**2 ))
+    elif pk_max -pk  < pk_min - pk  : 
+        return np.sqrt((((rhoa_max -rhoa) / 
+                          (rhoa_min- rhoa)) **2 + 
+                         ((pk_min - pk)/(pk_max -pk))**2 ))
+    
+def compute_anr (sfi , rhoa_array, pos_bound_indexes):
+    """
+    We can also compute the select anomaly ratio (ANR) along with the
+    whole profile from SFI. The standardized resistivity values
+    `rhoa`  of is averaged from   X_begin to  X_end .
+    The ANR is a positive value. 
+    
+    :param sfi: 
+        
+        Is standard fracturation index. please refer to :doc: `compute_sfi`
+        
+    :param rhoa_array: Resistivity values of :ref:`erp` line 
+    :type rhoa_array: array_like 
+    
+    :param pos_bound_indexes: 
+        
+        Select anomaly station location boundaries indexes. Refer to 
+        :doc:`compute_power` of ``pos_bounds` 
+        
+    :return: Anomaly ratio 
+    :rtype:float 
+    
+    :Example: 
+        
+        >>> from watex.utils.wmathandtricks import compute_anr 
+        >>> import pandas as pd
+        >>> anr = compute_anr(sfi=sfi, 
+        ...                  rhoa_array=data = pd.read_excel(
+        ...                  'data/l10_gbalo.xlsx').to_numpy()[:, -1],
+        ...              pk_bound_indexes  = [9, 13])
+        >>> anr
+    """
+    stand = (rhoa_array - rhoa_array.mean())/np.std(rhoa_array)
+    stand_rhoa =stand[int(min(pos_bound_indexes)): 
+                      int(max(pos_bound_indexes))+1]
  
+    return sfi * np.abs(stand_rhoa.mean())
+
+
 if __name__=='__main__': 
 
     erp_data='data/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
@@ -456,6 +752,7 @@ if __name__=='__main__':
     array= df.to_numpy()
     pk=array[:,0]
     data=array[:,-1]
+    data = pd.read_excel('data/l10_gbalo.xlsx').to_numpy()[:, -1]
     # print(data)
     # anom =np.array([168,130, 93,146,145,95,50,130,
     #                 163,140,167,154,93,113,138
@@ -463,15 +760,26 @@ if __name__=='__main__':
     # _, _, test_an= drawn_anomaly_boundaries(erp_data=anom, appRes=93, index=12)
     # print(test_an)
     
-    # anomaly, *_ =  compute_lower_anomaly(erp_array=data, step =10)
-    anomaly = defineAnomaly(erp_data =data , station_position=None,
-                            pks=[90, 130], dipole_length=10)
-    print(anomaly)
-    # pk, res= find_pk_from_selectedAn(an_res_range=[175,132,137,139,170], pos=[90, 130])
+    #anomaly =  compute_lower_anomaly(erp_array=data, step =10)
+    # anomaly = defineAnomaly(erp_data =data , station_position=None,
+    #                         pks=[90, 130], dipole_length=10)
+    # print(anomaly)
+    #pk, res= find_pk_from_selectedAn(an_res_range=[175,132,137,139,170], pos=[90, 130])
     # # fmtAnText(anFeatures =[1,130, 93,(146,145, 125)])
-    # print(pk, res)
+  
+    # test = select_anomaly ( rhoa_array = data, auto=True , 
+    #                         pos_bounds = [90, 130]) 
+    # print(test)
+    # gety = compute_sfi(rhoa_array =[175,132,137,139,170], pk_min=90, pk_max=130, 
+    #             rhoa_min=120)
+    # print(gety)
+    sfi = compute_sfi(pk_min = 90, pk_max=130, rhoa_min=175, rhoa_max=170, rhoa=132, pk=110)
+    print(sfi)
+    anr = compute_anr(sfi=sfi, rhoa_array=data,
+                      pk_bounds  = [9, 13])
     
-    
+    print(anr)
+    # print(compute_pa(np.array([15]), np.array([18])))
     
     
     

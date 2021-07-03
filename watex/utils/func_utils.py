@@ -62,11 +62,11 @@ import inspect
 import numpy as np 
 import matplotlib.pyplot as plt
 from copy import deepcopy
-import  pycsamt.utils.gis_tools as gis
+import  watex.utils.gis_tools as gis
 from watex.utils.decorator import deprecated 
 
 from watex.utils._watexlog import watexlog
-_logger = watexlog.get_csamtpy_logger(__name__)
+_logger = watexlog.get_watex_logger(__name__)
 
 # _logger.setLevel(logging.DEBUG)
 try:
