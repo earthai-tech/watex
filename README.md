@@ -27,12 +27,12 @@
 ## Units used 
 
 1. Apparent resistivity *_rhoaa_* in ohm.meter 
-2. Standard fracture index *sfi*  ; no unit 
-3. Anomaly ratio *ANR* : no unit 
+2. Standard fracture index *SFI*  , no unit(n.u) 
+3. Anomaly ratio *ANR* ,  in %
 4. Anomaly power *Pa* or *power*  in meter(m) 
 5. Anomaly magnitude *Ma* or *magnitude* in ohm.m 
-6. Anomaly shape - can be *_V, M, K, L, H, C, V_* and *_W_* (no unit). 
-7. Anomaly type - can be *_EC, NC, CB2P_* and *_PC_* (no unit)
+6. Anomaly shape - can be *_V, M, K, L, H, C, V_* and *_W_* (n.u). 
+7. Anomaly type - can be *_EC, NC, CB2P_* and *_PC_* (n.u)
 8. Layer thickness *_thick_* in m. 
 9. Ohmic surface *_OhmS_* in ohm.m2 
 10. Station( site) or position is given as *_pk_* in m.
