@@ -23,7 +23,8 @@ install:
     - pip install coveralls
     
 script:
-    - pytest -v --cov=watex --cov-report=tests --ignore=watex/utils | python -m pytest --cov-fail-under=20
+    #- pytest -v --cov=watex --cov-report=tests --ignore=watex/utils | python -m pytest --cov-fail-under=20
+    - pytest -v --cov=tests/
     
 after_failure:
     - cat config.log

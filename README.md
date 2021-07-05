@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex) ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4896758.svg)](https://doi.org/10.5281/zenodo.4896758)
 
+
 **_Special toolbox for WATer EXploration  using Artificial Intelligence Learning methods_**
 
 ## Overview
@@ -98,7 +99,6 @@ Out[6]: 40.0                    # Best anomaly power is 40.0 m.
 Out[7]: 1.9394488747363936      # best anomaly standard fracturation index.
 >>> erp_obj.abest_anr           # best anomaly ration the whole ERP line.
 Out[8]: 50.76113145430543 % 
-
 ```
 - If `auto` is enabled, the program could find additional maximum three best 
 conductive points from the whole  ERP line as : 
@@ -110,11 +110,10 @@ conductive points from the whole  ERP line as :
  02 : position = 80.0 m ----> rhoa = 95 Ω.m
  03 : position = 40.0 m ----> rhoa = 110 Ω.m               
 -----------------------------------------------------------------------------
-
 ```
 
 ## System requirements 
-* Python 3.6+ 
+* Python 3.7+ 
 
 ## Contributors
   
