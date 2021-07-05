@@ -3,7 +3,6 @@ matplotlib>=3.3.0
 numpy 
 scipy
 qtpy 
-tkinter
 numpydoc >=1.0.0
 pyyaml
 pandas
