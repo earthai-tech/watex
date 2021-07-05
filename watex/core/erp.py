@@ -73,7 +73,6 @@ class ERP :
                 of anomaly position. If provided , `auto` will be turn off at
                 ``False`` even ``True``. 
                     
-            
     :Note: Provide the `posMinMax` is strongly recommended for accurate 
             geo-electrical features computation. If not given, the best anomaly 
             will be selected automatically and probably could not match what you 
@@ -356,7 +355,8 @@ class ERP :
     def best_points (self) : 
         """ Get the best points from auto computation """
         
-        mess =['{0} best points was found :\n '.format(len(self._best_keys_points))] 
+        mess =['{0} best points was found :\n '.
+               format(len(self._best_keys_points))] 
         self._best_points ={}
         for ii,  bp in enumerate (self._best_keys_points): 
             cods = float(bp.replace('{0}_pk'.format(ii+1), ''))
