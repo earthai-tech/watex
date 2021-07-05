@@ -356,11 +356,11 @@ class ERP :
     def best_points (self) : 
         """ Get the best points from auto computation """
         
-        mess =['{0} best points was found :\n '] 
+        mess =['{0} best points was found :\n '.format(len(self._best_keys_points))] 
         self._best_points ={}
         for ii,  bp in enumerate (self._best_keys_points): 
             cods = float(bp.replace('{0}_pk'.format(ii+1), ''))
-            pmes='{0} : position = {1} m ----> rhoa = {2} Ω.m\n'.format(
+            pmes='{0:02} : position = {1} m ----> rhoa = {2} Ω.m\n '.format(
                 ii+1, cods, 
                 self.aBestInfos[bp][1]) 
             mess.append(pmes)
@@ -617,10 +617,11 @@ if __name__=='__main__'   :
     erp_data='data/erp/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
     
     anom_obj =ERP(erp_fn = erp_data, 
-                  auto=False, posMinMax=(90, 130),turn_off=True)
+                  auto=True, posMinMax=(90, 130),turn_on=True)
 
     print(anom_obj.abest_type) 
     print(anom_obj.abest_shape)
+    print(anom_obj.best_points)
     
 
         
