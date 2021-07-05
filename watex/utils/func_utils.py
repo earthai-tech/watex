@@ -68,7 +68,7 @@ from watex.utils.decorator import deprecated
 from watex.utils._watexlog import watexlog
 _logger = watexlog.get_watex_logger(__name__)
 
-# _logger.setLevel(logging.DEBUG)
+
 try:
     import scipy
 
