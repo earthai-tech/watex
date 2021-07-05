@@ -51,7 +51,7 @@ _logger =watexlog.get_watex_logger(__name__)
 
 
 
-def compute_lower_anomaly(erp_array, station_position=None,  step=None): 
+def compute_lower_anomaly(erp_array, station_position=None,  step=None, **kws): 
     """
     Function to get the minimum value on the ERP array. 
     If `pk` is provided wil give the index of pk
@@ -84,7 +84,7 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None):
         >>> anomaly
                 
     """
-
+    display_infos= kws.pop('diplay_infos', False)
     # got minumum of erp data 
     collectanlyBounds=[]
     if step is not None: 
@@ -102,8 +102,6 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None):
         pks =np.array(['?' for ii in range(len(erp_array))])
     else : pks =station_position
 
-    print('{0:+^100}'.format(' *Best Conductive anomaly points (BCPts)* '))
-
     if pks.dtype in ['int', 'float']: 
         anpks =np.array([pks[skanIndex ] for
                          (_, skanIndex) in min_pks ])
@@ -113,8 +111,9 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None):
     for ii, (pk, anb) in enumerate(zip(anpks, collectanlyBounds)): 
         bestSelectedDICT['{0}_pk{1}'.format(ii+1, pk)] = anb
     
-    
-    fmtAnText(anFeatures=bestSelectedDICT)
+    if display_infos:
+        print('{0:+^100}'.format(' *Best Conductive anomaly points (BCPts)* '))
+        fmtAnText(anFeatures=bestSelectedDICT)
     
     
     return bestSelectedDICT, anpks, collectanlyBounds, min_pks
@@ -450,7 +449,7 @@ def fmtAnText(anFeatures=None, title=['Ranking', 'rho(Ω.m)',
         print(strfeatures)
         print(line)
     
-def compute_power (pk_min , pk_max):
+def compute_power (posMinMax=None, pk_min=None , pk_max=None, ):
     """ 
     Compute the power Pa of anomaly.
     
@@ -478,9 +477,19 @@ def compute_power (pk_min , pk_max):
     
     
     """
+    if posMinMax is not None: 
+        pk_min = np.array(posMinMax).min()     
+        pk_max= np.array(posMinMax).max()
+    
+    if posMinMax is None and (pk_min is None or pk_max is None) : 
+        raise Wex.WATexError_parameter_number(
+            'Could not compute the anomaly power. Provide at least'
+             'the anomaly position boundaries or the left(`pk_min`) '
+             'and the right(`pk_max`) boundaries.')
+    
     return np.abs(pk_max - pk_min)
     
-def compute_magnitude(rhoa_max , rhoa_min):
+def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
     """
     Compute the magnitude ``Pa`` of  selected anomaly expressed in Ω.m.
     
@@ -499,6 +508,15 @@ def compute_magnitude(rhoa_max , rhoa_min):
         >>> power= compute_power(80, 130)
     
     """
+    if rhoaMinMax is not None : 
+        rhoa_min = np.array(rhoaMinMax).min()     
+        rhoa_max= np.array(rhoaMinMax).max()
+        
+    if rhoaMinMax is None and (rhoa_min  is None or rhoa_min is None) : 
+        raise Wex.WATexError_parameter_number(
+            'Could not compute the anomaly magnitude. Provide at least'
+            'the anomaly resistivy value boundaries or the buttom(`rhoa_min`)'
+             'and the top(`rhoa_max`) boundaries.')
 
     return np.abs(rhoa_max -rhoa_min)
 
@@ -559,13 +577,13 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True, dipole_length =10., 
     
     pos_bounds =kws.pop("pos_bounds", (None, None))
     anom_pos = kws.pop('pos_anomaly', None)
+    display_infos =kws.pop('display_infos', False)
     
     
     if auto is False : 
-        if pos_bounds != (None, None): 
-            if None in pos_bounds : 
-                raise Wex.WATexError_site('One position is missed' 
-                                    'Plase provided it!')
+        if None in pos_bounds  or pos_bounds is None : 
+            raise Wex.WATexError_site('One position is missed' 
+                                'Plase provided it!')
         
         pos_bounds = np.array(pos_bounds)
         pos_min, pos_max  = pos_bounds.min(), pos_bounds.max()
@@ -592,10 +610,11 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True, dipole_length =10., 
         bestSelectedDICT, anpks, \
             collectanlyBounds, min_pks = compute_lower_anomaly(
                 erp_array= rhoa_array, 
-                station_position= pos_array, step= dipole_length) 
+                station_position= pos_array, step= dipole_length,
+                display_infos=False) 
 
             
-        return {key: find_pkbounds (anom_infos= bestSelectedDICT, 
+        return {key: find_pkfeatures (anom_infos= bestSelectedDICT, 
                                       anom_rank= ii+1, pks_rhoa_index=min_pks, 
                                       dl=dipole_length) 
                 for ii, (key , rho_r) in enumerate(bestSelectedDICT.items())
@@ -605,7 +624,7 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True, dipole_length =10., 
                 
                 
         
-def find_pkbounds (anom_infos, anom_rank, pks_rhoa_index, dl): 
+def find_pkfeatures (anom_infos, anom_rank, pks_rhoa_index, dl): 
     """
     Get the pk bound from ranking of computed best points
     
@@ -638,23 +657,26 @@ def find_pkbounds (anom_infos, anom_rank, pks_rhoa_index, dl):
     
     """     
     rank_code = '{}_pk'.format(anom_rank)
-    for key, values in anom_infos.items(): 
+    for key in anom_infos.keys(): 
         if rank_code in key: 
             pk = float(key.replace(rank_code, ''))
-            rhoa = list(pks_rhoa_index[0])[0]
-            ind_rhoa =np.where(values ==rhoa)[0]
-            
-            if len(ind_rhoa) ==0 : ind_rhoa =0 
-            leninf = len(values[: int(ind_rhoa)])
-            
-            pk_min = pk - leninf * dl 
-            lensup =len(values[ int(ind_rhoa):])
-            pk_max =  pk - (lensup -1) * dl 
-            
-            pos_bounds = (pk_min, pk_max)
-            rhoa_bounds = (values[0], values[-1])
+
+            rhoa = list(pks_rhoa_index[anom_rank-1])[0]
+            codec = key
+            break 
+         
+    ind_rhoa =np.where(anom_infos[codec] ==rhoa)[0]
+    if len(ind_rhoa) ==0 : ind_rhoa =0 
+    leninf = len(anom_infos[codec][: int(ind_rhoa)])
     
-            return pk, rhoa, pos_bounds, rhoa_bounds, values 
+    pk_min = pk - leninf * dl 
+    lensup =len(anom_infos[codec][ int(ind_rhoa):])
+    pk_max =  pk + (lensup -1) * dl 
+    
+    pos_bounds = (pk_min, pk_max)
+    rhoa_bounds = (anom_infos[codec][0], anom_infos[codec][-1])
+    
+    return pk, rhoa, pos_bounds, rhoa_bounds, anom_infos[codec]
             
             
 def compute_sfi (pk_min, pk_max, rhoa_min,
@@ -708,7 +730,7 @@ def compute_sfi (pk_min, pk_max, rhoa_min,
     
 def compute_anr (sfi , rhoa_array, pos_bound_indexes):
     """
-    We can also compute the select anomaly ratio (ANR) along with the
+    Compute the select anomaly ratio (ANR) along with the
     whole profile from SFI. The standardized resistivity values
     `rhoa`  of is averaged from   X_begin to  X_end .
     The ANR is a positive value. 
@@ -723,7 +745,7 @@ def compute_anr (sfi , rhoa_array, pos_bound_indexes):
     :param pos_bound_indexes: 
         
         Select anomaly station location boundaries indexes. Refer to 
-        :doc:`compute_power` of ``pos_bounds` 
+        :doc:`compute_power` of ``pos_bounds``. 
         
     :return: Anomaly ratio 
     :rtype:float 
@@ -745,14 +767,72 @@ def compute_anr (sfi , rhoa_array, pos_bound_indexes):
     return sfi * np.abs(stand_rhoa.mean())
 
 
+def find_pkBounds( pk , rhoa, rhoa_range, dl=10.):
+    """
+    Find station position boundary indexed in :ref:`erp` line. Usefull 
+    to get the boundaries indexes `pk_boun_indexes` for :ref:`erp` 
+    normalisation  when computing `anr` or else. 
+    
+    :param pk: Selected anomaly station value 
+    :type pk: float 
+    
+    :param rhoa: Selected anomaly value in ohm.m 
+    :type rhoa: float 
+    
+    :rhoa_range: Selected anomaly values from `pk_min` to `pk_max` 
+    :rhoa_range: array_like 
+    
+    :parm dl: see :doc:`find_pkfeatures`
+    
+    :Example: 
+        
+        >>> from from watex.utils.wmathandtricks import find_pkBounds  
+        >>> find_pkBounds(pk=110, rhoa=137, 
+                          rhoa_range=np.array([175,132,137,139,170]))
+    """
+
+    if isinstance(pk, str): 
+        pk = float(pk.replace(pk[0], '').replace('_pk', ''))
+        
+    index_rhoa = np.where(rhoa_range ==rhoa)[0]
+    if len(index_rhoa) ==0 : index_rhoa =0 
+    
+    leftlen = len(rhoa_range[: int(index_rhoa)])
+    rightlen = len(rhoa_range[int(index_rhoa):])
+    
+    pk_min = pk - leftlen * dl 
+    pk_max =  pk + (rightlen  -1) * dl 
+    
+    return pk_min, pk_max 
+
+
+def wrap_infos (phrase , value ='', underline ='-', unit ='', site_number= '', **kws) : 
+    """Display info from anomaly details."""
+    
+    repeat =kws.pop('repeat', 77)
+    intermediate =kws.pop('inter+', '')
+    begin_phrase_mark= kws.pop('begin_phrase', '--|>')
+    on = kws.pop('on', False)
+    if not on: return ''
+    else : 
+        print(underline * repeat)
+        print('{0} {1:<50}'.format(begin_phrase_mark, phrase), '{0:<10} {1}'.format(value, unit), 
+              '{0}'.format(intermediate), "{}".format(site_number))
+        print(underline * repeat )
+    
+    
+    
+
 if __name__=='__main__': 
 
-    erp_data='data/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
+    erp_data='data/l10_gbalo.xlsx' # 'data/l11_gbalo.csv'
     df=pd.read_excel(erp_data)
     array= df.to_numpy()
     pk=array[:,0]
     data=array[:,-1]
-    data = pd.read_excel('data/l10_gbalo.xlsx').to_numpy()[:, -1]
+    # data = pd.read_excel('data/l10_gbalo.xlsx').to_numpy()[:, -1]
+    
+    
     # print(data)
     # anom =np.array([168,130, 93,146,145,95,50,130,
     #                 163,140,167,154,93,113,138
@@ -760,26 +840,32 @@ if __name__=='__main__':
     # _, _, test_an= drawn_anomaly_boundaries(erp_data=anom, appRes=93, index=12)
     # print(test_an)
     
-    #anomaly =  compute_lower_anomaly(erp_array=data, step =10)
-    # anomaly = defineAnomaly(erp_data =data , station_position=None,
-    #                         pks=[90, 130], dipole_length=10)
+    # anomaly =  compute_lower_anomaly(erp_array=data, step =10)
+    # # anomaly = defineAnomaly(erp_data =data , station_position=None,
+    # #                         pks=[90, 130], dipole_length=10)
     # print(anomaly)
-    #pk, res= find_pk_from_selectedAn(an_res_range=[175,132,137,139,170], pos=[90, 130])
+    # pk, res= find_pk_from_selectedAn(an_res_range=[175,132,137,139,170], pos=[90, 130])
     # # fmtAnText(anFeatures =[1,130, 93,(146,145, 125)])
   
     # test = select_anomaly ( rhoa_array = data, auto=True , 
     #                         pos_bounds = [90, 130]) 
-    # print(test)
+    #print(test)
     # gety = compute_sfi(rhoa_array =[175,132,137,139,170], pk_min=90, pk_max=130, 
     #             rhoa_min=120)
     # print(gety)
-    sfi = compute_sfi(pk_min = 90, pk_max=130, rhoa_min=175, rhoa_max=170, rhoa=132, pk=110)
-    print(sfi)
-    anr = compute_anr(sfi=sfi, rhoa_array=data,
-                      pk_bounds  = [9, 13])
+    # sfi = compute_sfi(pk_min = 90, pk_max=130, rhoa_min=175, 
+    #                   rhoa_max=170, rhoa=132, pk=110)
+    # # print(sfi)
+    # anr = compute_anr(sfi=sfi, rhoa_array=data,
+    #                   pk_bounds  = [9, 13])
+    # print(anr)
     
-    print(anr)
+    #wrap_infos(phrase = 'Best point is found at  pk = 20 --> site number 1.')
+    # anBound = find_pkBounds(pk=110, rhoa=137, rhoa_range=np.array([175,132,137,139,170]))
+    # print(anBound)
+    
     # print(compute_pa(np.array([15]), np.array([18])))
+    print(compute_power(posMinMax=(150, 190)))
     
     
     

@@ -77,7 +77,11 @@ class WATexError_SQL_geoDataBase(Exception):
 
 class WATexError_SQL_update_geoinformation(Exception): 
     pass
+class WATexError_ERP(Exception):
+    pass
 
-
-
+class WATexError_VES(Exception):
+    pass
+class WATexError_geoFeatures(Exception):
+    pass
 
