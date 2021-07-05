@@ -1,13 +1,14 @@
+#sphinx>=2.4.0
 sphinx >=3.5
 matplotlib>=3.3.0
-numpy 
+numpy
 scipy
-qtpy 
-tkinter
-numpydoc >=1.0.0
-pyyaml
-pandas
+qtpy
 netcdf4
+numpydoc>=1.0.0
+pytest
 flake8
-pyproj >=1.9.6
-
+pyyaml
+pyproj>=1.9.6
+pandas
+python-coveralls
