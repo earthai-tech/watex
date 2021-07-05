@@ -39,16 +39,16 @@ Other AI algorithms implemented will be add as things progress. To handle some f
  
 ## Units used 
 
-1. Apparent resistivity `_rhoa_` in ohm.meter 
+1. Apparent resistivity `rhoa` in ohm.meter 
 2. Standard fracture index `sfi`  , no unit(n.u) 
 3. Anomaly ratio `anr` ,  in %
 4. Anomaly power *Pa* or `power`  in meter(m) 
 5. Anomaly magnitude *Ma* or `magnitude` in ohm.m 
-6. Anomaly shape - can be `_V, M, K, L, H, C, V_` and `_W_` (n.u). 
-7. Anomaly type - can be `_EC, NC, CB2P_* and *_PC_` (n.u)
-8. Layer thickness `_thick_` in m. 
-9. Ohmic surface `_OhmS_` in ohm.m2 
-10. Station( site) or position is given as `_pk_` in m.
+6. Anomaly shape - can be `V, M, K, L, H, C, V` and `W` (n.u). 
+7. Anomaly type - can be `EC, NC, CB2P* and *PC` (n.u)
+8. Layer thickness `thick` in m. 
+9. Ohmic surface `OhmS` in ohm.m2 
+10. Station( site) or position is given as `pk` in m.
 
 ## How to get the geo-electrical features from selected anomaly point ?
 
