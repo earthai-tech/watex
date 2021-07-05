@@ -111,9 +111,9 @@ class ERP :
         
     The call the following `erp` properties attributes:
     
-    =================  ===================  ===================================
-    properties          Type                Description  
-    =================  ===================  ===================================
+    ====================  ================  ===================================
+    properties              Type                Description  
+    ====================  ================  ===================================
     select_best_point_      float           Best anomaly position points 
     select_best_value_      float           Best anomaly app.resistivity value.
     best_points             float           Best positions points selected 
@@ -131,7 +131,7 @@ class ERP :
                                             - ``CP`` for conductive PLANE 
                                             - ``CB2P`` for contact between two
                                             planes. 
-    =================  ===================  ===================================
+    ====================  ================  ===================================
     
     :Example: 
         
