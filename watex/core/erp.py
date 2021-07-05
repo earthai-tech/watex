@@ -168,7 +168,8 @@ class ERP :
                  ".sql" : pd.read_sql
                  }
     
-    def __init__(self, erp_fn =None , dipole_length =10., auto =False, posMinMax=None, **kwargs)  : 
+    def __init__(self, erp_fn =None , dipole_length =10., auto =False, 
+                 posMinMax=None, **kwargs)  : 
         """ Read :ref:`erp` file and  initilize  the following
         attributes attributes. Set `auto` to ``True`` to let the program 
         selecting the best anomaly points. """
@@ -334,8 +335,9 @@ class ERP :
         
         
         mes ='The best point is found  at position (pk) = {0} m. '\
-            '----> Station number {1}'.format(self._select_best_point_,
-                                              int(self._select_best_point_/self.dipoleLength)+1
+            '----> Station number {1}'.format(
+                self._select_best_point_,
+                int(self._select_best_point_/self.dipoleLength)+1
                                               )
         wfunc.wrap_infos(mes, on =self.turn_on) 
         
@@ -537,7 +539,8 @@ def get_shape (rhoa_range):
     if len (minlocals[0]) >1 : 
         shape ='W'
         average_curve = rhoa_range.mean()
-        minlocals_slices = rhoa_range[int(minlocals[0][0]):int(minlocals[0][-1])+1]
+        minlocals_slices = rhoa_range[
+            int(minlocals[0][0]):int(minlocals[0][-1])+1]
         average_minlocals_slices  = minlocals_slices .mean()
 
         if average_curve >= 1.2 * average_minlocals_slices: 

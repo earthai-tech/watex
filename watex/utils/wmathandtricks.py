@@ -51,7 +51,8 @@ _logger =watexlog.get_watex_logger(__name__)
 
 
 
-def compute_lower_anomaly(erp_array, station_position=None,  step=None, **kws): 
+def compute_lower_anomaly(erp_array, station_position=None, 
+                          step=None, **kws): 
     """
     Function to get the minimum value on the ERP array. 
     If `pk` is provided wil give the index of pk
@@ -71,7 +72,8 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None, **kws):
                 with the anomaly resistivities range.
               * `anpks`: Main positions of best select anomaly 
               * `collectanlyBounds`: list of arrays of select anomaly values
-              * `min_pks`: list of tuples (pk, minVal of best anomalies points.)
+              * `min_pks`: list of tuples (pk, 
+                                           minVal of best anomalies points.)
     :rtype: tuple 
     
     :Example: 
@@ -112,7 +114,8 @@ def compute_lower_anomaly(erp_array, station_position=None,  step=None, **kws):
         bestSelectedDICT['{0}_pk{1}'.format(ii+1, pk)] = anb
     
     if display_infos:
-        print('{0:+^100}'.format(' *Best Conductive anomaly points (BCPts)* '))
+        print('{0:+^100}'.format(
+            ' *Best Conductive anomaly points (BCPts)* '))
         fmtAnText(anFeatures=bestSelectedDICT)
     
     
@@ -212,8 +215,9 @@ def drawn_anomaly_boundaries(erp_data , appRes, index):
         return np.array(tem_drawn)
     # first broke erp profile from the anomalies 
     if f ==0 or f==2 : 
-        left_term = erp_data[:index][::-1] # flip left term  for looping 
-        left_limit = loop_sideBound(term=left_term)[::-1] # flip again to keep the order 
+        left_term = erp_data[:index][::-1] # flip left term  for looping
+        # flip again to keep the order 
+        left_limit = loop_sideBound(term=left_term)[::-1] 
 
     if f==0 or f ==1 : 
         right_term= erp_data[index :]
@@ -234,7 +238,8 @@ def defineAnomaly(erp_data, station_position=None, pks=None,
                   dipole_length=10., **kwargs):
     """
     Function will select the different anomalies. If pk is not given, 
-    the best three anomalies on the survey lines will be computed automatically
+    the best three anomalies on the survey lines will be
+    computed automatically
     
     :param erp_data: Electrical resistivity profiling 
     :type erp_data: array_like 
@@ -278,7 +283,8 @@ def defineAnomaly(erp_data, station_position=None, pks=None,
             if not pksbounds.min() <= spk <= pksbounds.max(): 
                 raise Wex.WATexError_AnomalyBounds(
                     'Bound <{0}> provided is out of range !'
-                   'Dipole length is set to = {1} m. Please set a new bounds.')
+                   'Dipole length is set to = {1} m.'
+                   ' Please set a new bounds.')
             
         pkinf = np.where(station_position==pksbounds.min())[0]
         pksup = np.where(station_position==pksbounds.max())[0]
@@ -368,9 +374,11 @@ def find_pk_from_selectedAn(an_res_range,  pos=None, selectedPk=None):
         if pos is not None : # then compare the sPk and ps value 
             if not pos.min()<= sPk<=pos.max(): 
                 warnings.warn('Wrong position given <{}>.'
-                              ' Should compute new positions.'.format(selectedPk))
+                              ' Should compute new positions.'.
+                              format(selectedPk))
                 _logger.debug('Wrong position given <{}>.'
-                              'Should compute new positions.'.format(selectedPk))
+                              'Should compute new positions.'.
+                              format(selectedPk))
             
         else : 
             selectedPk='pk{}'.format(sPk )
@@ -437,7 +445,8 @@ def fmtAnText(anFeatures=None, title=['Ranking', 'rho(Ω.m)',
     
     
     for anFeatures in newF: 
-        strfeatures ='|'.join(['{:^15}'.format(str(i)) for i in anFeatures[:-1]])
+        strfeatures ='|'.join(['{:^15}'.format(str(i)) \
+                               for i in anFeatures[:-1]])
         try : 
             iter(anFeatures[-1])
         except : 
@@ -521,7 +530,8 @@ def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
     return np.abs(rhoa_max -rhoa_min)
 
     
-def select_anomaly ( rhoa_array, pos_array=None, auto=True, dipole_length =10., **kws ) :
+def select_anomaly ( rhoa_array, pos_array=None, auto=True,
+                    dipole_length =10., **kws ) :
     """
     Select the anomaly value from `rhoa_array` and find its boundaries if 
     ``auto` is set to ``True``. If `auto` is ``False``, it's usefull to 
@@ -589,12 +599,14 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True, dipole_length =10., 
         pos_min, pos_max  = pos_bounds.min(), pos_bounds.max()
         
         # get the res from array 
-        dl_station_loc = np.arange(0, dipole_length * len(rhoa_array), dipole_length)
+        dl_station_loc = np.arange(0, dipole_length * len(rhoa_array), 
+                                   dipole_length)
         # then select rho range 
         ind_pk_min = int(np.where(dl_station_loc==pos_min)[0])
         ind_pk_max = int(np.where(dl_station_loc==pos_max)[0]) 
         rhoa_range = rhoa_array [ind_pk_min:ind_pk_max +1]
-        pk, res= find_pk_from_selectedAn(an_res_range=rhoa_range, pos=pos_bounds,
+        pk, res= find_pk_from_selectedAn(an_res_range=rhoa_range, 
+                                         pos=pos_bounds,
                                 selectedPk= anom_pos) 
         pk = int(pk.replace('pk', ''))
         rhoa = rhoa_array[int(np.where(dl_station_loc == pk )[0])]
