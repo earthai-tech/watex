@@ -1,0 +1,154 @@
+# -*- coding: utf-8 -*-
+
+
+"""
+Created on Mon Jul  5 13:27:27 2021
+
+    Description:
+        Test to core module . Containers of modules  :mod:`~.core.erp.ERP` and 
+        :mod:~.core.ves.VES`
+        Test ouputfiles from rewriting and generating files , which includes:
+        Reference input data are from ERP_DATA_DIR and VES_DATA_DIR
+
+    References:
+        .. _module-core::`watex.core`
+        
+@author: @Daniel03
+
+"""
+from tests.core.__init__ import reset_matplotlib, watexlog, diff_files
+
+import os
+# import datetime
+
+import  unittest 
+
+from watex.core.erp import ERP 
+
+from tests import ERP_DATA_DIR, TEST_TEMP_DIR,  make_temp_dir 
+
+from tests import erp_test_location_name 
+
+
+class TestERP(unittest.TestCase):
+    """
+    Test electrical resistivity profile  and compute geo-lectrical features 
+    as followings : 
+        - type 
+        - shape 
+        - sfi 
+        - power 
+        - magnitude
+        - anr
+        - select_best_point
+        - select_best_value
+    """
+    dipole_length = 10. 
+
+    @classmethod 
+    def setUpClass(cls):
+        """
+        Reset building matplotlib plot and generate tempdir inputfiles 
+        
+        """
+        reset_matplotlib()
+        cls._temp_dir = make_temp_dir(cls.__name__)
+
+    def setUp(self): 
+        
+        if not os.path.isdir(TEST_TEMP_DIR):
+            print('--> outdir not exist , set to None !')
+            watexlog.get_watex_logger().error('Outdir does not exist !')
+        
+    
+    def test_geo_params(self):
+        """
+        Test geo-electricals features computations 
+        
+        """
+        geoCounter=0
+        for option in [True, False]: 
+            if option is False : pos_boundaries = (90, 130)
+            else : pos_boundaries  =None
+            anomaly_obj =ERP(erp_fn = os.path.join(ERP_DATA_DIR,
+                                                   erp_test_location_name), 
+                         auto=option, dipole_length =self.dipole_length, 
+                         posMinMax= pos_boundaries, turn_on =True)
+            
+            for anObj  in [anomaly_obj.abest_type, anomaly_obj.abest_shape]:
+                self.assertEqual(type(anObj),
+                                str,'Type and Shape of selected anomaly'\
+                                'must be a str object not {0}'.
+                                format(type(anObj)))
+                geoCounter +=1
+            for anObj in [anomaly_obj.select_best_point_,
+                          anomaly_obj.select_best_value_, 
+                          anomaly_obj.abest_magnitude, 
+                          anomaly_obj.abest_power, 
+                          anomaly_obj.abest_sfi, 
+                          anomaly_obj.abest_anr]: 
+                try : 
+                    
+                    self.assertEqual(type(float(anObj)), 
+                                    float, 'ValueError, must be `float`'\
+                                        ' or integrer value.')
+                except : 
+                    watexlog().get_watex_logger().error(
+                        'Something wrong happen when computing '
+                        'geo-electrical features.')
+                else: 
+                    geoCounter +=1
+                    
+            self.assertEqual(geoCounter,8, 'Parameters count shoud be'
+                             '8 not {0}'.format(geoCounter)) 
+            geoCounter =0 
+
+        
+def compare_diff_files(refout, refexp):
+    """
+    Compare diff files like expected files and output files generated after 
+    runnning scripts.
+    
+    :param refout: 
+        
+        list of reference output files generated after runing scripts
+        
+    :type refout: list 
+    
+    :param refexp: recreated expected files for comparison 
+    :param refexp: list 
+
+    """
+    for outfile , expfile in zip(sorted(refout), 
+                                   sorted(refexp)):
+            unittest.TestCase.assertTrue(os.path.isfile(outfile),
+                                "Ref output data file does not exist,"
+                                "nothing to compare with"
+                                )
+            
+            print(("Comparing", outfile, "and", expfile))
+            
+            is_identical, msg = diff_files(outfile, expfile, ignores=['Date/Time:'])
+            print(msg)
+            unittest.TestCase.assertTrue(is_identical, 
+                            "The output file is not the same with the baseline file.")
+    
+
+
+if __name__=='__main__':
+
+    unittest.main()
+    
+    
+                
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
