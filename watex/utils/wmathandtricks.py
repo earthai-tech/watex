@@ -806,7 +806,8 @@ def find_pkBounds( pk , rhoa, rhoa_range, dl=10.):
     return pk_min, pk_max 
 
 
-def wrap_infos (phrase , value ='', underline ='-', unit ='', site_number= '', **kws) : 
+def wrap_infos (phrase , value ='', underline ='-', unit ='',
+                site_number= '', **kws) : 
     """Display info from anomaly details."""
     
     repeat =kws.pop('repeat', 77)
@@ -816,7 +817,8 @@ def wrap_infos (phrase , value ='', underline ='-', unit ='', site_number= '', *
     if not on: return ''
     else : 
         print(underline * repeat)
-        print('{0} {1:<50}'.format(begin_phrase_mark, phrase), '{0:<10} {1}'.format(value, unit), 
+        print('{0} {1:<50}'.format(begin_phrase_mark, phrase), 
+              '{0:<10} {1}'.format(value, unit), 
               '{0}'.format(intermediate), "{}".format(site_number))
         print(underline * repeat )
     
@@ -825,46 +827,7 @@ def wrap_infos (phrase , value ='', underline ='-', unit ='', site_number= '', *
 
 if __name__=='__main__': 
 
-    erp_data='data/l10_gbalo.xlsx' # 'data/l11_gbalo.csv'
-    df=pd.read_excel(erp_data)
-    array= df.to_numpy()
-    pk=array[:,0]
-    data=array[:,-1]
-    # data = pd.read_excel('data/l10_gbalo.xlsx').to_numpy()[:, -1]
-    
-    
-    # print(data)
-    # anom =np.array([168,130, 93,146,145,95,50,130,
-    #                 163,140,167,154,93,113,138
-    #         ])
-    # _, _, test_an= drawn_anomaly_boundaries(erp_data=anom, appRes=93, index=12)
-    # print(test_an)
-    
-    # anomaly =  compute_lower_anomaly(erp_array=data, step =10)
-    # # anomaly = defineAnomaly(erp_data =data , station_position=None,
-    # #                         pks=[90, 130], dipole_length=10)
-    # print(anomaly)
-    # pk, res= find_pk_from_selectedAn(an_res_range=[175,132,137,139,170], pos=[90, 130])
-    # # fmtAnText(anFeatures =[1,130, 93,(146,145, 125)])
-  
-    # test = select_anomaly ( rhoa_array = data, auto=True , 
-    #                         pos_bounds = [90, 130]) 
-    #print(test)
-    # gety = compute_sfi(rhoa_array =[175,132,137,139,170], pk_min=90, pk_max=130, 
-    #             rhoa_min=120)
-    # print(gety)
-    # sfi = compute_sfi(pk_min = 90, pk_max=130, rhoa_min=175, 
-    #                   rhoa_max=170, rhoa=132, pk=110)
-    # # print(sfi)
-    # anr = compute_anr(sfi=sfi, rhoa_array=data,
-    #                   pk_bounds  = [9, 13])
-    # print(anr)
-    
-    #wrap_infos(phrase = 'Best point is found at  pk = 20 --> site number 1.')
-    # anBound = find_pkBounds(pk=110, rhoa=137, rhoa_range=np.array([175,132,137,139,170]))
-    # print(anBound)
-    
-    # print(compute_pa(np.array([15]), np.array([18])))
+    data = pd.read_excel('data/erp/l10_gbalo.xlsx').to_numpy()[:, -1]
     print(compute_power(posMinMax=(150, 190)))
     
     
