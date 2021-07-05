@@ -13,7 +13,7 @@ Created on Fri Apr 14 14:47:48 2017
 # ==============================================================================
 
 
-from pycsamt.utils.decorator import  deprecated #gdal_data_check,
+from watex.utils.decorator import  deprecated #gdal_data_check,
 import numpy as np
 from watex.utils._watexlog import watexlog
 try : 
