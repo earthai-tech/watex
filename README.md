@@ -112,7 +112,7 @@ conductive points from the whole  ERP line as :
 ```
 
 ## System requirements 
-* Python 3.6+ 
+* Python 3.7+ 
 
 ## Contributors
   
