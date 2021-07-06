@@ -324,6 +324,7 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
             if ogrerr != OGRERR_NONE:
                 raise GIS_ERROR("GDAL/osgeo ogr error code: {}".format(ogrerr))
         else:
+            import pyproj 
             pp = pyproj.Proj('+init=EPSG:%d'%(epsg))
         # end if
     # otherwise project onto given datum
