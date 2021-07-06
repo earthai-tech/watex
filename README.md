@@ -10,13 +10,13 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 * **Goals** 
 
     **WATex** has five (04) main objectives:
-    1. Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
+    - Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
          to the type of hydraulic required for the targeted population.
-    2. Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
+    - Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
          to limit the failures drillings and dry boreholes.
-    3. Minimize the risk of dry boreholes and failure drillings which lead for  affordable  project budget elaboration during the water campaigns 
+    - Minimize the risk of dry boreholes and failure drillings which lead for  affordable  project budget elaboration during the water campaigns 
          in term of funding-raise from partners and organizations aids.  
-    4. Involve water sanitation for population welfare by bringing a piece of solution of their daily problems.
+    - Involve water sanitation for population welfare by bringing a piece of solution of their daily problems.
         The latter goal should not be developped for the first realease. 
    
 * **Learning methods implemented**
@@ -50,6 +50,7 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 5. Anomaly magnitude *Ma* or `magnitude` in ohm.m 
 6. Anomaly shape - can be `V, M, K, L, H, C, V` and `_W_` (n.u). 
 7. Anomaly type - can be `EC, NC, CB2P and PC` (n.u)
+
 8. Layer thickness `thick` in m. 
 9. Ohmic surface `OhmS` in ohm.m2 
 10. Station( site) or position is given as `pk` in m.
