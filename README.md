@@ -1,8 +1,7 @@
-# WATex : WATer exploration using AI Learning Methods
+# WATex : Special toolbox for WATer EXploration  using AI Learning methods
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex) ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
 
-**_Special toolbox for WATer EXploration  using Artificial Intelligence Learning methods_**
 
 ## Overview
 

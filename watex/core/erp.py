@@ -35,20 +35,370 @@ Created on Tue May 18 12:33:15 2021
 
 @author: @Daniel03
 """
-import os, re 
-import json 
+import os, re , sys
+import json , warnings
+import datetime, shutil
 import numpy as np 
-import pandas as pd 
+import pandas as pd
+from watex.core.__init__ import savepath as savePath  
 import  watex.utils.exceptions as Wex
 import watex.utils.wmathandtricks as wfunc
+import watex.utils.func_utils as func
 import watex.utils.gis_tools as gis
+
 
 from watex.utils._watexlog import watexlog 
 
 _logger =watexlog.get_watex_logger(__name__)
 
+sys.path.insert(0, os.path.abspath('.'))
 
+class ERP_collection: 
+    """
+    Collection objects. The calss collects all `erp` survey lines.
+    Each `erp` is an singleton class object with their corresponding 
+    attributes. The goal is to build a container  geao-elecricals to 
+    straigthforwardly given to :class:`~watex.core.geofeatures.Features`
+    class.
+    
+    Arguments:
+    ----------
+            *listOferpfn*: list, ndarray
+                        list of different `erp` files. 
+            *listOfposMinMax* : list 
+                        collection of different selected anomaly boundaries. 
+                        If not provided, the :attr:`~.core.erp.ERP.auto` 
+                        will triggered. It's recommanded to provided for all 
+                        `erp` your convenient anomaly boundaries like:: 
+                            
+                            listOfposMinMax=[(90, 130), (10, 70), ...]
+                        
+                        where ``(90,130)``is boundaries of selected anomaly on 
+                        the first `erp` line and ``(10,70)``is the boundaries
+                        of the second `erp` survey line and so on. 
+            *erpObjs*: list, ndarray 
+                Collection of objects from :class:~core.erp.ERP`. If objects 
+                are alread created. Gather them on a list and pass though the 
+                argument `erpObjs`
+    
+    Holds on others optionals infos in ``kws`` arguments: 
+       
+    ======================  ==============  ===================================
+    Attributes              Type                Description  
+    ======================  ==============  ===================================
+    list_of_dipole_lengths  list            Collection of `dipoleLength`. User 
+                                            can provide the distance between 
+                                            sites measurements as performed on 
+                                            investigations site. If given, the 
+                                            automaticall `dipoleLength` compu-
+                                            tation will be turned off. 
+    fnames                 array_like       Array of `erp`survey lines name. 
+                                            If each survey name is the location 
+                                            name then will keep it. 
+    id                      array_like      Each `erp`obj reference numbers
+    erps_data               nd.array        Array composed of geo-electrical
+                                            parameters. ndarray(nerp, 8) where 
+                                            num is the number of `erp`obj
+                                            collected. 
+    erpdf                   pd.DataFrame    A dataFrame of collected `erp` line 
+                                            and the number of lines correspond 
+                                            to the number of collected `erp`.
+    ======================  ==============  ===================================
+        
+    It's posible to get from each `erp` collection the singular array of 
+    different parameters condisered as properties params:: 
+        
+        >>> from watex.core.erp import ERP_collection as ERPC
+        >>> erpcol = ERPC(listOferpfn='list|path|filename')
+        >>> erpcol.survey_ids
+        >>> erpcol.selectedPoints
+        
+   The call the following :class:`~.erp.ERP_collection` properties attributes:
+    
+    ====================  ================  ===================================
+    properties              Type                Description  
+    ====================  ================  ===================================
+    selectedPoints          array_like      Collection of Best anomaly 
+                                            position points 
+    survey_ids              array_like      Collection of all `erp` survey 
+                                            survey ids. :Note:Each ids is fol-
+                                            lowing by the prefix **e**.
+
+    sfis                    array_like      Collection of best anomaly standard 
+                                            fracturation index value. 
+    powers                  array_like      Collection of best anomaly `power`
+    magnitudes              array_like      Colection of best anomaly
+                                            magnitude in *ohm.m*
+    shapes                  array_like      Collection of best anomaly shape. 
+                                            For more details please refer to
+                                            :doc:`~core.erp.ERP`.
+    types                   array_like      Collection of best anomaly type. 
+                                             Refer to :doc:`~core.erp.ERP` for
+                                             more details.
+    ====================  ================  ===================================
+        
+    :Example: 
+        
+        >>> from watex.core.erp import ERP_collection 
+        >>> erpObjs =ERP_collection(listOferpfn= 'data/erp')
+        >>> erpObjs.erpdf
+        >>> erpObjs.survey_ids
+        ... ['e2059734331848' 'e2059734099144' 'e2059734345608']
+
+    """
+    erpColums =['id', 
+                'east', 
+                'north', 
+                'power', 
+                'magnitude', 
+                'shape', 
+                'type', 
+                'sfi']
+    
+    def __init__(self, listOferpfn=None, listOfposMinMax=None, erpObjs=None,
+                  **kws): 
+        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
+        
+        self.erpObjs = erpObjs 
+        self.anomBoundariesObj= listOfposMinMax
+        self.dipoleLengthObjs= kws.pop('list_of_dipole_lengths', None)
+        self.export_data =kws.pop('export_erpFeatures', False)
+        self.export_fex= kws.pop('file_extension', 'csv')
+        
+        self.listOferpfn =listOferpfn 
+        self.id =None
+        
+        for key in list(kws.keys()): 
+            setattr(self, key, kws[key])
+        
+        self._readErpObjs()
+        
+    def _readErpObjs(self, listOferpfn=None,listOfposMinMax=None, 
+                 erpObjs=None, **kwargs): 
+        """
+        Read or cread `erp` objects and populate attributes.
+        """
+        
+        self._logging.info('Collecting `erp` files and populates '
+                           'main attributes')
+        
+        dipoleLengthObjs =kwargs.pop('list_of_dipole_lengths', None)
+        
+        if listOferpfn is not None :
+            self.listOferpfn =listOferpfn 
+        if listOfposMinMax is not None : 
+            self.anomBoundariesObj =listOfposMinMax 
+        if erpObjs is not None : 
+            self.erpObjs = erpObjs
+        
+        if dipoleLengthObjs is not None : 
+            self.dipoleLengthObjs = dipoleLengthObjs
             
+        
+        if self.listOferpfn is None and self.erpObjs is None : 
+            self._logging.error('No ERP file nor ERP object detected.'
+                                'Please provide at least `ERP` file or '
+                                ' `erp` object.')
+        if self.listOferpfn is not None: 
+            if isinstance(self.listOferpfn, str):
+                if os.path.isfile(self.listOferpfn): 
+                    self.listOferpfn=[self.listOferpfn]
+                elif os.path.isdir(self.listOferpfn): 
+                    self.listOferpfn=[os.path.join(self.listOferpfn,file) 
+                                      for file in os.listdir (
+                                              self.listOferpfn)]
+                else : 
+                    raise Wex.WATexError_ERP(
+                        'File or path provided is wrong! Please give a'
+                        ' a right path.')
+                        
+            if self.dipoleLengthObjs is not None : 
+                assert len(self.listOferpfn)== len(
+                    self.dipoleLengthObjs),'Length of dipoles lenghths is'\
+                    ' = {0}. It must be equal to number of `erp line'\
+                        ' provided (is ={1}).'.format(len(
+                            self.dipoleLengthObjs), len(self.listOferpfn))
+            else : 
+                self.dipoleLengthObjs = [
+                    None for ii in range(len(self.listOferpfn ))]
+                
+
+        if self.anomBoundariesObj is not None : 
+            assert len(self.anomBoundariesObj)== len(self.listOferpfn ), \
+                'Length of selected anomalies boundaries (is={0}) must be '\
+                    'equal to the length of number of `erp` line provided '\
+                        '(is={1}).'.format(len(self.anomBoundariesObj), 
+                                           len(len(self.listOferpfn )))
+        
+        else : 
+            self.anomBoundariesObj= [None for nn in range(
+            len(self.listOferpfn ))]
+   
+        self.erpObjs =[ERP(erp_fn= erp_filename,
+                               dipole_length=self.dipoleLengthObjs[ss], 
+                               posMinMax=self.anomBoundariesObj[ss]) 
+                               for ss, erp_filename in
+                               enumerate(self.listOferpfn)]
+
+        # collected the ERP filenames and generated the id from each object.
+        self.fnames = self.get_property_infos('_name')
+        self.id = np.array([id(obj) for obj in self.erpObjs ])
+        
+        # create a dataframe object
+        self._logging.info('Setting and `ERP` data array '
+                           'and create pd.Dataframe')
+        self.erps_data= func.concat_array_from_list([self.survey_ids, 
+                                        self.easts, 
+                                        self.norths, 
+                                        self.powers, 
+                                        self.magnitudes, 
+                                        self.shapes, 
+                                        self.types, 
+                                        self.sfis], concat_axis=1)
+        self.erpdf =pd.DataFrame(data = self.erps_data, 
+                                  columns=self.erpColums) 
+                                  
+        self.erpdf=self.erpdf.astype( {'east':np.float, 
+                                        'north': np.float, 
+                                        'power': np.float, 
+                                        'magnitude':np.float, 
+                                        'sfi':np.float})
+        
+        if self.export_data is True : 
+            self.exportErp()
+            
+    def get_property_infos(self, attr_name , objslist =None): 
+        """
+        From each obj `erp` ,get the attribute infos and set 
+        on data array 
+         
+        :param attr_name: 
+            Name of attribute to get the iformations of the properties 
+             
+        :type attra_name: str 
+        
+        :param objslist: list of collection objects 
+        :type objslist; list 
+        
+        :Example:
+            
+            >>> from watex.core.erp.ERP_collection as ERPcol
+            >>> erpObjs =ERPcol(listOferpfn= 'data/erp', 
+            ...                export_erpFeatures=True,
+            ...                    filename='ykroS')
+            
+        
+        """
+        if objslist is not None : 
+            self.erpObjs = objslist 
+        
+        return np.array([getattr(obj, attr_name) for obj in self.erpObjs ])
+        
+    def exportErp(self, extension_file=None, savepath =None, **kwargs ):
+        """
+        Export `erp` data after computing different geo_electrical features.
+        
+        :param extension_file: 
+            Extension type to export the files. Can be ``xlsx`` or ``csv``. 
+            The default   `extension_file` is ``csv``. 
+        :type extension_file: str 
+        
+        :param savepath: Path like string to save the output file.
+        :type savepath: str 
+    
+        """
+        filename = kwargs.pop('filename', None)
+        if filename is not None : 
+            self.filename =filename
+        if extension_file is not None : 
+            self.export_fex = extension_file 
+        if  savepath is not None :
+            self.savepath = savepath 
+            
+        if self.export_fex.find('csv') <0 and self.export_fex.find('xlsx') <0: 
+            self.export_fex ='.csv'
+        self.export_fex= self.export_fex.replace('.', '')
+        
+        erp_time = '{0}_{1}'.format(datetime.datetime.now().date(), 
+                                    datetime.datetime.now().time())
+        
+        # check whether `savepath` and `filename` attributes are set.
+        for addf in ['savepath', 'filename']: 
+            if not hasattr(self, addf): 
+                setattr(self, addf, None)
+                
+        if self.filename is None : 
+            self.filename = 'erpdf-{0}'.format(
+                erp_time + '.'+ self.export_fex).replace(':','-')
+            
+        if self.export_fex =='xlsx':
+            
+            self.erpdf.to_excel(self.filename , sheet_name='data',
+                                index=False) 
+        elif self.export_fex =='csv': 
+            
+            self.erpdf.to_csv(self.filename, header=True,
+                              index =False)
+
+        if self.savepath is None :
+            self.savepath = savePath('_erpData_')
+            
+        if self.savepath is not None :
+            if not os.path.isdir(self.savepath): 
+                self.savepath = savePath('_erpData_')
+            try : 
+                shutil.move(os.path.join(os.getcwd(),self.filename) ,
+                        os.path.join(self.savepath , self.filename))
+            except : 
+                self.logging.debug("We don't find any path to save ERP data.")
+            else: 
+                print('--> ERP features file <{0}> is well exported to {1}'.
+                      format(self.filename, self.savepath))
+        
+                
+    @property 
+    def survey_ids (self) : 
+        """Get the `erp` filenames """
+        return np.array(['e{}'.format(idd) for idd in self.id])
+    
+    @property 
+    def selectedPoints (self): 
+        """Keep on array the best selected anomaly points"""
+        return self.get_property_infos('selected_best_point_')
+    @property
+    def powers(self):
+        """ Get the `power` of select anomaly from `erp`"""
+        return self.get_property_infos('abest_power')
+    
+    @property
+    def magnitudes(self):
+        """ Get the `magnitudes` of select anomaly from `erp`"""
+        return self.get_property_infos('abest_magnitude')
+    
+    @property 
+    def shapes (self):
+        """ Get the `shape` of the selected anomaly. """
+        return self.get_property_infos('abest_shape')
+    @property 
+    def types(self): 
+        """ Collect selected anomalies types from `erp`."""
+        return self.get_property_infos('abest_type')
+    @property 
+    def sfis (self): 
+        """Collect `sfi` for selected anomaly points """
+        return self.get_property_infos('abest_sfi')
+    
+    @property 
+    def easts(self): 
+        """Collect the utm_easting value from `erp` survey line. """
+        return self.get_property_infos('abest_east')
+    
+    @property 
+    def norths(self): 
+        """Collect the utm_northing value from `erp` survey line. """
+        return self.get_property_infos('abest_north')  
+            
+
 class ERP : 
     """
     Electrical resistivity profiling class . computes and plot ERP 
@@ -104,7 +454,7 @@ class ERP :
                                             cally. 
     =================  ===================  ===================================
 
-    - To get the geo-electrical-features,  create an `erp` object by calling: 
+    - To get the geo-electrical-features,  create an `erp` object by calling:: 
         
         >>> from watex.core.erp import ERP 
         >>> anomaly_obj =ERP(erp_fn = '~/location_filename')
@@ -168,7 +518,7 @@ class ERP :
                  ".sql" : pd.read_sql
                  }
     
-    def __init__(self, erp_fn =None , dipole_length =10., auto =False, 
+    def __init__(self, erp_fn =None , dipole_length =None, auto =False, 
                  posMinMax=None, **kwargs)  : 
         """ Read :ref:`erp` file and  initilize  the following
         attributes attributes. Set `auto` to ``True`` to let the program 
@@ -200,7 +550,7 @@ class ERP :
         self._sfi = None 
         self._type =None 
         self._shape= None 
-        self.utm_zone =None
+        self.utm_zone =kwargs.pop('utm_zone', None)
         
         
         self.data=None
@@ -211,11 +561,7 @@ class ERP :
         for key in list(kwargs.keys()):
             setattr(self, key, kwargs[key])
             
-        if self.auto is False and posMinMax is None : 
-            raise Wex.WATexError_ERP('Automatic trigger is set to ``False``.'
-                                     'Please provide anomalylocation via'
-                                     'its positions boundaries. Can be a tuple'
-                                     'or a list of startpoint and endpoint.')
+
         if self.erp_fn is not None : 
             self._read_erp()
             
@@ -236,6 +582,7 @@ class ERP :
         
         """
         if erp_f is not None : self.erp_fn = erp_f 
+
         if not os.path.isfile(self.erp_fn): 
             raise Wex.WATexError_file_handling(
                 'No right file detected ! Please provide the right path.')
@@ -260,29 +607,83 @@ class ERP :
         """
         if erp_fn is not None : 
             self.erp_fn = erp_fn 
+
         self.fn = self.erp_fn 
         
         self.sanitize_columns()
         
         if self.coord_flag ==1 : 
-            lon_array = self.df['lon'].to_numpy()
-            lat_array = self.df['lat'].to_numpy()
-            easting= np.zeros_like(lon_array)
-            northing = np.zeros_like (lat_array)
+            self._longitude= self.df['lon'].to_numpy()
+            self._latitude = self.df['lat'].to_numpy()
+            easting= np.zeros_like(self._longitude)
+            northing = np.zeros_like (self._latitude)
 
-            for ii in range(len(lon_array)): 
-                self.utm_zone, utm_easting, utm_northing = gis.ll_to_utm(
-                                        reference_ellipsoid=23, 
-                                          lat=lon_array[ii],
-                                          lon = lat_array [ii])
+            for ii in range(len(self._longitude)):
+                try : 
+                    self.utm_zone, utm_easting, utm_northing = gis.ll_to_utm(
+                                            reference_ellipsoid=23, 
+                                              lat=self._longitude[ii],
+                                              lon = self._latitude[ii])
+                except : 
+                    utm_easting, utm_northing, \
+                        self.utm_zone= gis.project_point_ll2utm(
+                        lat=self._longitude[ii],
+                        lon = self._latitude[ii])
+                    
                 easting[ii] = utm_easting
                 northing [ii] = utm_northing
             
             self.df.insert(loc=1, column ='east', value = easting)
             self.df.insert(loc=2, column='north', value=northing)
             
-        # get informations form anomaly 
-        
+        # get informations from anomaly 
+        if self.coord_flag ==0 : 
+            # compute  latitude and longitude coordinates if not given 
+            self._latitude = np.zeros_like(self.df['east'].to_numpy())
+            self._longitude = np.zeros_like(self._latitude)
+            
+            if self.utm_zone is None :
+                self._logging.debug("UTM zone must be provide for accurate"
+                                    "location computation. We'll use `30N`"
+                                    "as default value")
+                warnings.warn("Please set the `UTM_zone` for accurating "
+                              "`longitude` and `latitude` computing. If not"
+                              " given, 30N `lon` and `lat` is used as"
+                              " default value.")
+                
+                self.utm_zone = '30N'
+            
+            for ii, (north, east) in enumerate(zip(self.df['north'].to_numpy(),
+                                                self.df['east'].to_numpy())): 
+                try : 
+                    self._latitude [ii],\
+                        self._longitude [ii] = gis.utm_to_ll(23,
+                            northing = north, 
+                            easting = east, 
+                            zone = self.utm_zone) 
+                except: 
+                    self._latitude[ii], \
+                        self._longitude [ii] = gis.project_point_utm2ll(
+                                        northing = north, 
+                                        easting = east, 
+                                        utm_zone = self.utm_zone) 
+                        
+        if self.anom_boundaries is None or \
+            None in np.array(self.anom_boundaries): 
+            # for consistency enable `automatic option`
+            if not self.auto : 
+                self._logging.info ('Automatic trigger is set to ``False``.'
+                                    " For accuracy it's better to provide "
+                                    'anomaly location via its positions '
+                                    'boundaries. Can be a tuple or a list of '
+                                    'startpoint and endpoint.')
+                self._logging.debug('Automatic option is triggered!')
+                
+            self.auto=True 
+        if self._dipoleLength is None : 
+            self._dipoleLength=(self.df['pk'].to_numpy().max()- \
+                self.df['pk'].to_numpy().min())/(len(
+                    self.df['pk'].to_numpy())-1)
         self.aBestInfos= wfunc.select_anomaly(
                             rhoa_array= self.df['rhoa'].to_numpy(), 
                              pos_array= self.df['pk'].to_numpy(), 
@@ -505,6 +906,38 @@ class ERP :
                        on =self.turn_on) 
         return self._shape 
     
+    
+    @property
+    def abest_east(self): 
+        """ Get the easting coordinates of selected anomaly"""
+        
+        self._east = self.df['east'].to_numpy()[self.abest_index]
+        return self._east
+    
+    @property
+    def abest_north(self): 
+        """ Get the northing coordinates of selected anomaly"""
+        self._north = self.df['north'].to_numpy()[self.abest_index]
+        return self._north
+        
+    @property 
+    def abest_index(self): 
+        """ Keeop the index of selected best anomaly """
+        return int(np.where( self.df['pk'].to_numpy(
+            )== self.select_best_point_)[0])
+            
+    @property
+    def abest_lat(self): 
+        """ Get the latitude coordinates of selected anomaly"""
+        self._lat = self._latitude[self.abest_index]
+        return self._lat
+    
+    @property
+    def abest_lon(self): 
+        """ Get the longitude coordinates of selected anomaly"""
+        self._lat = self._longitude[self.abest_index]
+        return self._lon
+    
 def get_shape (rhoa_range): 
     """
     Find anomaly `shape`  from apparent resistivity values framed to
@@ -616,15 +1049,18 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
             
          
 if __name__=='__main__'   : 
+    # import sys 
+    # sys.path.insert(0, os.path.abspath('.'))
 
     erp_data='data/erp/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
     
-    anom_obj =ERP(erp_fn = erp_data, 
-                  auto=True, posMinMax=(90, 130),turn_on=True)
+    erp_path ='data/erp'
 
-    print(anom_obj.abest_type) 
-    print(anom_obj.abest_shape)
-    print(anom_obj.best_points)
+    erpObjs =ERP_collection(listOferpfn= erp_path, 
+                            export_erpFeatures=True, filename='ykroS')
+    print(erpObjs.erpdf)
+    # print(erpObjs.survey_ids)
+
     
 
         
