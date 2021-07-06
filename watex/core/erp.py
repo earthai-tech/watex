@@ -1049,13 +1049,8 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
             
          
 if __name__=='__main__'   : 
-    # import sys 
-    # sys.path.insert(0, os.path.abspath('.'))
-
     erp_data='data/erp/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
-    
     erp_path ='data/erp'
-
     erpObjs =ERP_collection(listOferpfn= erp_path, 
                             )
     print(erpObjs.erpdf)
