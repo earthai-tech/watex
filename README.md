@@ -5,48 +5,54 @@
 
 ## Overview
 
-* **Definition** 
+The mission of toolbox is to bring a piece of solution in a wide program of   **_WATER4ALL_** especially in Africa and participate of [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) achievement. 
 
+* **Goals** 
 
- **WATex**has three main objectives. Firstly, it's an exploration open source software using AI learning methods like for water exploration like underground water research,
- and secondly intend to supply drinking water for regions faced to water scarcity  by predicting flow rate (FR) before  drilling to 
- to limit the failures drillings and dry boreholes. The third objective involves water sanitation for population welfare by bringing a piece of solution of their daily problems.
- The latter goal should not be developped for the first realease. 
- 
-* **Purpose** 
- 
- **WATex** is developed to  indirectly participate of [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) achievement which is  `Ensure access to water and sanitation for all`.
- Designing **WATex** using AI lerning methods such as **SVM, KNN, DTC** for supervided learning and **ANN** for unsupervided lerning (not work yet) has double goals. On the one hand,
- it’s used to predict the different FR classes from an upstream geoelectrical features analysis.
- On the other hand, it contributes to select the best anomaly presumed to give a  suitable FR according
- to the type of hydraulic required for the targeted population. 
- 
- * **Target** 
- 
- The development of **WATex** targets  [AMCOW](https://amcow-online.org/initiatives/amcow-pan-african-groundwater-program-apagrop), [UNICEF](https://www.unicef.org/), [WHO](https://www.who.int/) and 
- governments and geophysical local firms during the Drinking water supply campaigns. 
- Working  with **SVM** to create a _composite estimator (CE-SVC)_ could minimize the risk of dry boreholes and failure drillings 
- using *electrical resistivity profile ( ERP)*  and * vertical electrical sounding (VES)* considered as less expensive geophysical  methods. 
- Minimizing the risk of dry boreholes and failure drillings  lead for  affordable  project budget elaboration during the water campaigns 
- in term of funding-raise from partners and organizations aids. 
+    **WATex** has five (04) main objectives:
+    1. Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
+         to the type of hydraulic required for the targeted population.
+    2. Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
+         to limit the failures drillings and dry boreholes.
+    3. Minimize the risk of dry boreholes and failure drillings which lead for  affordable  project budget elaboration during the water campaigns 
+         in term of funding-raise from partners and organizations aids.  
+    4. Involve water sanitation for population welfare by bringing a piece of solution of their daily problems.
+        The latter goal should not be developped for the first realease. 
+   
+* **Learning methods implemented**
 
+    - Supervised learnings:  
+        -  Support vector machines: [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
+        -  Neighbors: **KNN** 
+        -  Trees: **DTC**
+    - Unsupervided learnings: 
+        -  Artificial neural networks **ANN** (not implemented yet)
+ 
 * **Note** 
 
-Actually **WATex** works with _Support Vector Machines([SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)) and the developement with pure Python is still ongoing. 
-Other AI algorithms implemented will be add as things progress. To handle some fonctionalities before the full development, please refer to `.checkpoints ` folder.
- 
+    Actually only [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)) works porperly and the developement with pure Python is still ongoing. 
+    Other AI algorithms implemented will be add as things progress. To handle some fonctionalities before the full development, please refer to `.checkpoints ` folder.
+     
+## Documentation 
+
+* Toolbox mission and objectives: https://github.com/WEgeophysics/watex/wiki
+
+## Licence 
+
+WATex is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
+
 ## Units used 
 
-1. Apparent resistivity `_rhoa_` in ohm.meter 
+1. Apparent resistivity `rhoa` in ohm.meter 
 2. Standard fracture index `sfi`  , no unit(n.u) 
 3. Anomaly ratio `anr` ,  in %
 4. Anomaly power *Pa* or `power`  in meter(m) 
 5. Anomaly magnitude *Ma* or `magnitude` in ohm.m 
-6. Anomaly shape - can be `_V, M, K, L, H, C, V_` and `_W_` (n.u). 
-7. Anomaly type - can be `_EC, NC, CB2P_* and *_PC_` (n.u)
-8. Layer thickness `_thick_` in m. 
-9. Ohmic surface `_OhmS_` in ohm.m2 
-10. Station( site) or position is given as `_pk_` in m.
+6. Anomaly shape - can be `V, M, K, L, H, C, V` and `_W_` (n.u). 
+7. Anomaly type - can be `EC, NC, CB2P and PC` (n.u)
+8. Layer thickness `thick` in m. 
+9. Ohmic surface `OhmS` in ohm.m2 
+10. Station( site) or position is given as `pk` in m.
 
 ## How to get the geo-electrical features from selected anomaly point ?
 
@@ -67,7 +73,7 @@ Other AI algorithms implemented will be add as things progress. To handle some f
 ...                 turn_on =True                      # display infos
                  )
 ```
- - To get the _best anomaly_ point from the 'erp_line' if `auto` option is enabled : 
+ - To get the _best anomaly_ point from the 'erp_line' if `auto` option is enabled, try: 
 ```
 >>> erp_obj.select_best_point_ 
 Out[1]: 170 
@@ -108,6 +114,19 @@ conductive points from the whole  ERP line as :
  02 : position = 80.0 m ----> rhoa = 95 Ω.m
  03 : position = 40.0 m ----> rhoa = 110 Ω.m               
 -----------------------------------------------------------------------------
+```
+for multiples `erp` file reading try, all `geo_elctrical_features` from all 
+ERP survey line are auto-computed. For example: 
+
+```
+>>> from watex.core.erp import ERP_collection
+>>> erpColObj= ERP_collection(listOferpfn= 'data/erp')
+>>> erpColObj.erpdf 
+Out[9]:
+               id      east      north  power  magnitude shape  type       sfi
+0  e2059747141000  790187.0  1093022.0   40.0       45.0     V  CB2P  1.939449
+1  e2059722582344  790232.0  1093057.0   50.0       17.0     V  CB2P  1.352764
+2  e2059733751112  790724.0  1092789.5   30.0      211.0     V  CB2P  4.787024
 ```
 
 ## System requirements 

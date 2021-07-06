@@ -1057,7 +1057,7 @@ if __name__=='__main__'   :
     erp_path ='data/erp'
 
     erpObjs =ERP_collection(listOferpfn= erp_path, 
-                            export_erpFeatures=True, filename='ykroS')
+                            )
     print(erpObjs.erpdf)
     # print(erpObjs.survey_ids)
 
