@@ -43,6 +43,7 @@ import os
 import warnings
 import numpy as np 
 import pandas as pd
+from scipy.signal import argrelextrema 
 from scipy.interpolate import interp1d as sp1d
 import watex.utils.exceptions as Wex
 from watex.utils._watexlog import watexlog  
@@ -134,6 +135,8 @@ def get_minVal(array):
     :rtype: tuple
     
     """
+
+    holdList =[]
     if not isinstance(array, (list, tuple, np.ndarray)):
         if isinstance(array, float): 
             array=np.array([array])
@@ -141,11 +144,19 @@ def get_minVal(array):
             try : 
                 array =np.array([float(array)])
             except: 
-                Wex.WATexError_float('Could not convert %s to float!')
-                
-    temp_array =np.sort(array)
-    holdList =[]
+                raise Wex.WATexError_float('Could not convert %s to float!')
+    try : 
+        # first option:find minimals locals values 
+        minlocals = argrelextrema(array, np.less)[0]
+        temp_array =np.array([array[int(index)] for index in minlocals])
+    except : 
+        # second option: use archaic computation.
+        temp_array =np.sort(array)
+    else : 
+        temp_array= np.sort(temp_array)
+        
     ss=0
+
     for ii, tem_ar in enumerate(temp_array) : 
         if ss >=3 : 
             holdList=holdList[:3]
@@ -157,15 +168,15 @@ def get_minVal(array):
                              int(min_index)))
             ss +=ii
         elif len(min_index) > 1 :
-            # loop the index array and find the min 
+            # loop the index array and find the min for consistency 
             for jj, indx in enumerate(min_index):  
                 holdList.append((array[int(indx)], 
                                  int(indx)))
         ss =len(holdList)
-   
+        
     return holdList 
 
-def drawn_anomaly_boundaries(erp_data , appRes, index):
+def drawn_anomaly_boundaries(erp_data, appRes, index):
     """
     Function to drawn anomaly boundary 
     and return the anomaly with its boundaries
@@ -231,7 +242,7 @@ def drawn_anomaly_boundaries(erp_data , appRes, index):
     else: 
         left_limit = np.append(left_limit, appRes)
         anomalyBounds = np.concatenate((left_limit, right_limit))
-        
+    
     return appRes, index, anomalyBounds 
 
 def defineAnomaly(erp_data, station_position=None, pks=None, 
@@ -731,14 +742,21 @@ def compute_sfi (pk_min, pk_max, rhoa_min,
         >>> sfi
     
     """  
-    if  pk_min -pk  < pk_max - pk  : 
-        return  np.sqrt((((rhoa_max -rhoa) / 
-                          (rhoa_min- rhoa)) **2 + 
-                         ((pk_max - pk)/(pk_min -pk))**2 ))
-    elif pk_max -pk  < pk_min - pk  : 
-        return np.sqrt((((rhoa_max -rhoa) / 
-                          (rhoa_min- rhoa)) **2 + 
-                         ((pk_min - pk)/(pk_max -pk))**2 ))
+    try : 
+        if  pk_min -pk  < pk_max - pk  : 
+            sfi= np.sqrt((((rhoa_max -rhoa) / 
+                              (rhoa_min- rhoa)) **2 + 
+                             ((pk_max - pk)/(pk_min -pk))**2 ))
+        elif pk_max -pk  < pk_min - pk  : 
+            sfi= np.sqrt((((rhoa_max -rhoa) / 
+                              (rhoa_min- rhoa)) **2 + 
+                             ((pk_min - pk)/(pk_max -pk))**2 ))
+    except : 
+        if sfi ==np.nan : 
+            sfi = - np.sqrt(2)
+        else : sfi = - np.sqrt(2)
+    
+    return sfi
     
 def compute_anr (sfi , rhoa_array, pos_bound_indexes):
     """
@@ -773,9 +791,12 @@ def compute_anr (sfi , rhoa_array, pos_bound_indexes):
         >>> anr
     """
     stand = (rhoa_array - rhoa_array.mean())/np.std(rhoa_array)
-    stand_rhoa =stand[int(min(pos_bound_indexes)): 
-                      int(max(pos_bound_indexes))+1]
- 
+    try: 
+        stand_rhoa =stand[int(min(pos_bound_indexes)): 
+                          int(max(pos_bound_indexes))+1]
+    except: 
+        stand_rhoa = np.array([0])
+        
     return sfi * np.abs(stand_rhoa.mean())
 
 
