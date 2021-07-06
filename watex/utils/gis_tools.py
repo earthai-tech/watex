@@ -25,7 +25,9 @@ try :
     else:
         import pyproj
 # end if
-except : pass 
+except :
+    HAS_GDAL =False
+    pass 
 
 
 _logger = watexlog.get_watex_logger(__name__)
@@ -322,6 +324,7 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
             if ogrerr != OGRERR_NONE:
                 raise GIS_ERROR("GDAL/osgeo ogr error code: {}".format(ogrerr))
         else:
+            import pyproj 
             pp = pyproj.Proj('+init=EPSG:%d'%(epsg))
         # end if
     # otherwise project onto given datum
@@ -426,6 +429,7 @@ def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=3149):
             if ogrerr != OGRERR_NONE:
                 raise Exception("GDAL/osgeo ogr error code: {}".format(ogrerr))
         else:
+            import pyproj
             pp = pyproj.Proj('+init=EPSG:%d'%(epsg))
         # end if
     elif isinstance(utm_zone, str) or isinstance(utm_zone, np.bytes_):
