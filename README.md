@@ -67,7 +67,7 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 ```
 >>> from watex.core.erp import ERP 
 >>> erp_obj =ERP (erp_fn = data/erp/l10_gbalo.csv',  # erp_data 
-...                auto=False,                          # automatic computation  option 
+...                auto=False,                        # automatic computation  option 
 ...                dipole_length =10.,                 # distance between measurements 
 ...                posMinMax= (90, 130),               # select anomaly boundaries 
 ...                 turn_on =True                      # display infos
@@ -80,7 +80,6 @@ Out[1]: 170
 -----------------------------------------------------------------------------
 --|> The best point is found  at position (pk) = 170.0 m. ----> Station 18              
 -----------------------------------------------------------------------------
-
 >>> erp_obj.select_best_value_ 
 Out[1]: 80.0
 -----------------------------------------------------------------------------
