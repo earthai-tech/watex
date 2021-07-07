@@ -1,4 +1,4 @@
-# WATex : Special toolbox for WATer EXploration  using AI Learning methods
+# WATex: A special toolbox for WATer EXploration  using AI Learning methods
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex) ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4896758.svg)](https://doi.org/10.5281/zenodo.4896758)
 
@@ -9,14 +9,14 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 
 * **Goals** 
 
-    **WATex** has five (04) main objectives:
-    1. Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
+    **WATex** has four (04) objectives:
+    -  Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
          to the type of hydraulic required for the targeted population.
-    2. Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
+    -  Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
          to limit the failures drillings and dry boreholes.
-    3. Minimize the risk of dry boreholes and failure drillings which lead for  affordable  project budget elaboration during the water campaigns 
-         in term of funding-raise from partners and organizations aids.  
-    4. Involve water sanitation for population welfare by bringing a piece of solution of their daily problems.
+    -  Minimize the risk of dry boreholes and failure drillings which lead for  affordable  project budget elaboration during the water campaigns. 
+         Less expensive pojects is economiccaly profitable in term of funding-raise from partners and organizations aids.  
+    -  Involve water sanitation for population welfare by bringing a piece of solution of their daily problems.
         The latter goal should not be developped for the first realease. 
    
 * **Learning methods implemented**
@@ -44,14 +44,14 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 ## Units used 
 
 1. Apparent resistivity `rhoa` in ohm.meter 
-2. Standard fracture index `sfi`  , no unit(n.u) 
+2. Standard fracture index `sfi`, no unit(n.u) 
 3. Anomaly ratio `anr` ,  in %
 4. Anomaly power *Pa* or `power`  in meter(m) 
 5. Anomaly magnitude *Ma* or `magnitude` in ohm.m 
-6. Anomaly shape - can be `V, M, K, L, H, C, V` and `_W_` (n.u). 
+6. Anomaly shape - can be `V, M, K, L, H, C, V` and `W` (n.u). 
 7. Anomaly type - can be `EC, NC, CB2P and PC` (n.u)
 8. Layer thickness `thick` in m. 
-9. Ohmic surface `OhmS` in ohm.m2 
+9. Ohmic surface `ohmS` in ohm.m2 
 10. Station( site) or position is given as `pk` in m.
 
 ## How to get the geo-electrical features from selected anomaly point ?
@@ -96,7 +96,7 @@ Out[3]:  CB2P                  # is  contact between two planes "CB2P".
 >>> erp_obj.abest_shape         
 Out[4]: V                       # Best selected anomaly shape is "V"
 >>> erp_obj.abest_magnitude    
-Out[5]: 45                     # Best anomaly magnitude IS 45 Ω.m. 
+Out[5]: 45                     # Best anomaly magnitude is 45 Ω.m. 
 >>> erp_obj.abest_power         
 Out[6]: 40.0                    # Best anomaly power is 40.0 m. 
 >>> erp_obj.abest_sfi          
@@ -109,13 +109,13 @@ conductive points from the whole  ERP line as :
 ```
 >>> erp_obj.best_points 
 -----------------------------------------------------------------------------
---|> 3 best points was found :
+--|> 3 best points were found :
  01 : position = 170.0 m ----> rhoa = 80 Ω.m
  02 : position = 80.0 m ----> rhoa = 95 Ω.m
  03 : position = 40.0 m ----> rhoa = 110 Ω.m               
 -----------------------------------------------------------------------------
 ```
-for multiples `erp` file reading try, all `geo_elctrical_features` from all 
+for multiples `erp` file reading try, all `geo_electrical_features` from all 
 ERP survey line are auto-computed. For example: 
 
 ```

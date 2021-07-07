@@ -15,8 +15,8 @@ Created on Mon Jul  5 16:51:14 2021
 """
 import os 
 import pandas as pd 
-# import json 
-# import numpy as np 
+import json 
+import numpy as np 
 import pandas as pd 
 import  watex.utils.exceptions as Wex
 import watex.utils.wmathandtricks as wfunc
@@ -63,27 +63,26 @@ class Features:
             ... 
             
             
-              
    
     """
     
-    dataType ={
+    readFeaturesfmt ={
                 ".csv":pd.read_csv, 
                  ".xlsx":pd.read_excel,
                  ".json":pd.read_json,
                  ".html":pd.read_json,
                  ".sql" : pd.read_sql
                  }  
-    feature_labels = [
+    featureLabels = [
                         'boreh', 
-                        'x_m',
-                        "y_m",
-                        'pa',
-                        "ma",
+                        'east',
+                        "north",
+                        'power',
+                        "magnitude",
                         "shape",
                         "type",
                         "sfi",
-                        'ohms',
+                        'ohmS',
                         'lwi', 
                         'geol',
                         'flow'
