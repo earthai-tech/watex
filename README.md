@@ -1,4 +1,4 @@
-# WATex : Special toolbox for WATer EXploration  using AI Learning methods
+# WATex: A special toolbox for WATer EXploration  using AI Learning methods
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex) ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4896758.svg)](https://doi.org/10.5281/zenodo.4896758)
 
@@ -9,14 +9,14 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 
 * **Goals** 
 
-    **WATex** has five (04) main objectives:
-    - Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
+    **WATex** has four (04) objectives:
+    -  Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
          to the type of hydraulic required for the targeted population.
-    - Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
+    -  Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
          to limit the failures drillings and dry boreholes.
-    - Minimize the risk of dry boreholes and failure drillings which lead for  affordable  project budget elaboration during the water campaigns 
-         in term of funding-raise from partners and organizations aids.  
-    - Involve water sanitation for population welfare by bringing a piece of solution of their daily problems.
+    -  Minimize the risk of dry boreholes and failure drillings which lead for  affordable  project budget elaboration during the water campaigns. 
+         Less expensive pojects is economiccaly profitable in term of funding-raise from partners and organizations aids.  
+    -  Involve water sanitation for population welfare by bringing a piece of solution of their daily problems.
         The latter goal should not be developped for the first realease. 
    
 * **Learning methods implemented**
@@ -43,19 +43,18 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 
 ## Units used 
 
-1. Apparent resistivity `rhoa` in ohm.meter 
-2. Standard fracture index `sfi`  , no unit(n.u) 
-3. Anomaly ratio `anr` ,  in %
-4. Anomaly power *Pa* or `power`  in meter(m) 
-5. Anomaly magnitude *Ma* or `magnitude` in ohm.m 
-6. Anomaly shape - can be `V, M, K, L, H, C, V` and `_W_` (n.u). 
-7. Anomaly type - can be `EC, NC, CB2P and PC` (n.u)
-
+1. Apparent resistivity `rhoa` in ohm.meter. 
+2. Standard fracture index `sfi`, no unit(n.u). 
+3. Anomaly ratio `anr` ,  in %.
+4. Anomaly power *Pa* or `power`  in meter(m). 
+5. Anomaly magnitude *Ma* or `magnitude` in ohm.m. 
+6. Anomaly shape - can be `V, M, K, L, H, C, V` and `W` (n.u). 
+7. Anomaly type - can be `EC, NC, CB2P`and `PC` (n.u).
 8. Layer thickness `thick` in m. 
-9. Ohmic surface `OhmS` in ohm.m2 
+9. Ohmic surface `ohmS` in ohm.m2. 
 10. Station( site) or position is given as `pk` in m.
 
-## How to get the geo-electrical features from selected anomaly point ?
+## How to get the geo-electrical features from selected anomaly?
 
 **Geo-electrical features** are mainly used FR prediction purposes. 
  Beforehand, we refer  to the  data directory `data\erp` accordingly for this demonstration. 
@@ -68,7 +67,7 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 ```
 >>> from watex.core.erp import ERP 
 >>> erp_obj =ERP (erp_fn = data/erp/l10_gbalo.csv',  # erp_data 
-...                auto=False,                          # automatic computation  option 
+...                auto=False,                        # automatic computation  option 
 ...                dipole_length =10.,                 # distance between measurements 
 ...                posMinMax= (90, 130),               # select anomaly boundaries 
 ...                 turn_on =True                      # display infos
@@ -81,7 +80,6 @@ Out[1]: 170
 -----------------------------------------------------------------------------
 --|> The best point is found  at position (pk) = 170.0 m. ----> Station 18              
 -----------------------------------------------------------------------------
-
 >>> erp_obj.select_best_value_ 
 Out[1]: 80.0
 -----------------------------------------------------------------------------
@@ -97,7 +95,7 @@ Out[3]:  CB2P                  # is  contact between two planes "CB2P".
 >>> erp_obj.abest_shape         
 Out[4]: V                       # Best selected anomaly shape is "V"
 >>> erp_obj.abest_magnitude    
-Out[5]: 45                     # Best anomaly magnitude IS 45 Ω.m. 
+Out[5]: 45                     # Best anomaly magnitude is 45 Ω.m. 
 >>> erp_obj.abest_power         
 Out[6]: 40.0                    # Best anomaly power is 40.0 m. 
 >>> erp_obj.abest_sfi          
@@ -110,13 +108,13 @@ conductive points from the whole  ERP line as :
 ```
 >>> erp_obj.best_points 
 -----------------------------------------------------------------------------
---|> 3 best points was found :
+--|> 3 best points were found :
  01 : position = 170.0 m ----> rhoa = 80 Ω.m
  02 : position = 80.0 m ----> rhoa = 95 Ω.m
  03 : position = 40.0 m ----> rhoa = 110 Ω.m               
 -----------------------------------------------------------------------------
 ```
-for multiples `erp` file reading try, all `geo_elctrical_features` from all 
+For multiples `erp` file reading try, all `geo_electrical_features` from all 
 ERP survey line are auto-computed. For example: 
 
 ```
@@ -130,17 +128,53 @@ Out[9]:
 2  e2059733751112  790724.0  1092789.5   30.0      211.0     V  CB2P  4.787024
 ```
 
+Get all features for data analysis and prediction purpose  by calling `Features`
+from `~.core.geofeatures` module as: 
+```
+>>> from watex.core.geofeatures import Features 
+>>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
+>>> featObj =Features(features_fn= featurefn)
+>>> featObj.site_ids
+>>> featObj.site_names
+>>> featObj.df
+
+``` 
+It's also possible to do the same task by calling different module collections`ves`, `geol`,
+considered as Python object: 
+```
+>>> from watex.core.geofeatures import Features 
+>>> from watex.core.erp import ERP_collection 
+>>> from watex.core.ves import VES_collection 
+>>> from watex.core.geology import Geology, Borehole 
+>>> featObj =Features(ErpColObjs=ERP_collection('data/erp')
+                       vesObjs=VES_collection('data/ves'),
+                    geoObjs=Geology('data/geol'),
+                     boreholeObjs=Borehole('data/boreh'))
+>>> featObj.site_ids
+>>> featObj.site_names
+>>> featObj.df
+Out[10]:
+              east      north  power  ...   lwi                      geol  flow
+id                                    ...                                      
+e0000001  766096.0  1134857.0   70.0  ...  14.7  VOLCANO- SEDIM.  SCHISTS   2.0
+e0000002  741220.0  1132591.0   70.0  ...  14.7  VOLCANO- SEDIM.  SCHISTS   2.0
+e0000003  770409.0  1158750.0   50.0  ...  12.4          GEOSYN. GRANITES   1.0
+e0000004  758899.0  1049812.0   90.0  ...  21.2          GEOSYN. GRANITES   1.0
+e0000005  742530.0  1116498.0   60.0  ...   0.0             SAFE GRANITES   0.0
+
+```
+
 ## System requirements 
 * Python 3.7+ 
 
 ## Contributors
   
 1. Key Laboratory of Geoscience Big Data and Deep Resource of Zhejiang Province , School of Earth Sciences, Zhejiang University, China
-2. Laboratoire de Géophysique Appliquée, UFR des Sciences de la Terre et des Ressources Minières, Université Félix Houphouët-Boigny, Cote d'Ivoire
+2. Equipe de Recherche Géophysique Appliquée, Laboratoire de Géologie Ressources Minérales et Energétiques, UFR des Sciences de la Terre et des Ressources Minières, Université Félix Houphouët-Boigny, Cote d'Ivoire. 
 
-* Developer's name:  [_Kouadio K. Laurent_](kkouao@zju.edu.cn), _etanoyau@gmail.com_: [1](http://www.zju.edu.cn/english/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/)
-* Contibutors' names:
-    *  [_Binbin MI_](mibinbin@zju.edu.cn) : [1](http://www.zju.edu.cn/english/)
+* Developer's name: [1](http://www.zju.edu.cn/english/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_Kouadio K. Laurent_](kkouao@zju.edu.cn), _etanoyau@gmail.com_
+* Contributors' names: [1](http://www.zju.edu.cn/english/) [_Binbin MI_](mibinbin@zju.edu.cn)
+    
 
 
 
