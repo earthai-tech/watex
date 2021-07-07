@@ -39,7 +39,7 @@ class Features:
         - `boreh ` get from :class:`watex.core.boreh.Borehole` 
         
     Arguments: 
-    ----------
+   -----------
             *features_fn* :str , Path_like 
                 File to geoelectical  features files 
             *ErpColObjs*: object 
@@ -54,7 +54,16 @@ class Features:
                     Collection of boreholes of all investigation sites.
                     Refer to :doc:`watex.core.boreh.Borehole`
     
-    :Note: Be sure to not miss any coordinates files. Indeed, each file
+    :Note: 
+        Be sure to not miss any coordinates files. Indeed, 
+        each selected anomaly should have a borehole performed at 
+        that place for supervising learing. That means, each selected 
+        anomaly referenced by location coordinates and `id` on `erp` must 
+        have it own `ves`, `geol` and `boreh` data. 
+            ... 
+            
+            
+              
    
     """
     
@@ -89,11 +98,28 @@ class Features:
         self.ErpColObjs=ErpColObjs
         self.vesObjs=vesObjs
         self.geoObjs=None
-        self.boreObjs=boreholeObjs
+        self.borehObjs=boreholeObjs
         
         for key in list(kwargs.keys()):
             setattr(self, key, kwargs[key])
             
+        
+            
+    def readFeatures_(self, features_fn =None, ErpColObjs=None , vesObjs=None,
+                 geoObjs=None, boreholeObjs=None, **kws): 
+        """
+        Reading class and attributes populating. Please refer to 
+        :doc:`~.core.geofeatures.Features` for arguments details.
+        
+        """
+        for nname, vval in zip(['features_fn' , 'ErpColObjs' , 'vesObjs',
+                 'geoObjs', 'borehObjs'],[features_fn , ErpColObjs , vesObjs,
+                 geoObjs, boreholeObjs]): 
+            if vval is not None: 
+                setattr(self,nname, vval )
+ 
+        
+    
 
     def from_csv(self, erp_fn):
         """
