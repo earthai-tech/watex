@@ -54,7 +54,7 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 9. Ohmic surface `ohmS` in ohm.m2 
 10. Station( site) or position is given as `pk` in m.
 
-## How to get the geo-electrical features from selected anomaly point ?
+## How to get the geo-electrical features from selected anomaly?
 
 **Geo-electrical features** are mainly used FR prediction purposes. 
  Beforehand, we refer  to the  data directory `data\erp` accordingly for this demonstration. 
