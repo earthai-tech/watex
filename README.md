@@ -43,15 +43,15 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 
 ## Units used 
 
-1. Apparent resistivity `rhoa` in ohm.meter 
-2. Standard fracture index `sfi`, no unit(n.u) 
-3. Anomaly ratio `anr` ,  in %
-4. Anomaly power *Pa* or `power`  in meter(m) 
-5. Anomaly magnitude *Ma* or `magnitude` in ohm.m 
+1. Apparent resistivity `rhoa` in ohm.meter. 
+2. Standard fracture index `sfi`, no unit(n.u). 
+3. Anomaly ratio `anr` ,  in %.
+4. Anomaly power *Pa* or `power`  in meter(m). 
+5. Anomaly magnitude *Ma* or `magnitude` in ohm.m. 
 6. Anomaly shape - can be `V, M, K, L, H, C, V` and `W` (n.u). 
-7. Anomaly type - can be `EC, NC, CB2P and PC` (n.u)
+7. Anomaly type - can be `EC, NC, CB2P`and `PC` (n.u).
 8. Layer thickness `thick` in m. 
-9. Ohmic surface `ohmS` in ohm.m2 
+9. Ohmic surface `ohmS` in ohm.m2. 
 10. Station( site) or position is given as `pk` in m.
 
 ## How to get the geo-electrical features from selected anomaly?
