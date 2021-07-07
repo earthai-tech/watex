@@ -28,10 +28,33 @@ from watex.utils._watexlog import watexlog
 
 class Features: 
     """
-    Features class. Deals  with Electrical Resistivity profile (VES) and
-    Vertical electrical Sounding (VES). Set all features values of sites area 
-    Features class is  composed of `features_labels` for ``ML`` appliactions 
-    Once parameters are computed , the class uses each features for ML purposes 
+    Features class. Deals  with Electrical Resistivity profile (VES), 
+    Vertical electrical Sounding (VES), Geological (Geol) data and 
+    Borehole data(Boreh). Set all features values of differents
+    investigation sites. Features class is  composed of :: 
+    
+        - `erp` class  get from :class:`watex.core.erp.ERP_colection`
+        - `ves` collected from :class:`watex.core.ves.VES_collection
+        - `geol`  obtained from :class:`watex.core.geol.Geology` 
+        - `boreh ` get from :class:`watex.core.boreh.Borehole` 
+        
+    Arguments: 
+    ----------
+            *features_fn* :str , Path_like 
+                File to geoelectical  features files 
+            *ErpColObjs*: object 
+                    Collection object from `erp` survey lines. 
+            *vesObjs*: object, 
+                    Collection object from vertical electrical sounding (VES)
+                    curves. 
+            *geoObjs*: object, 
+                    Collection object from `geol` class.
+                    see :doc:`watex.core.geol.Geology`
+            *boreholeObjs*: object
+                    Collection of boreholes of all investigation sites.
+                    Refer to :doc:`watex.core.boreh.Borehole`
+    
+    :Note: Be sure to not miss any coordinates files. Indeed, each file
    
     """
     
@@ -52,19 +75,21 @@ class Features:
                         "type",
                         "sfi",
                         'ohms',
-                        'wi', 
+                        'lwi', 
                         'geol',
                         'flow'
             ]
-    
 
-    def __init__(self, erpData=None, horizonDis=None , rhoApp=None,**kwargs):
+    def __init__(self, features_fn =None, ErpColObjs=None , vesObjs=None,
+                 geoObjs=None, boreholeObjs=None,  **kwargs):
+        
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         
-        self.erp_data=erpData
-        
-        self.utmX =kwargs.pop('utmX', None)
-        self.utmY =kwargs.pop('utmY', None)
+        self.features_fn =features_fn
+        self.ErpColObjs=ErpColObjs
+        self.vesObjs=vesObjs
+        self.geoObjs=None
+        self.boreObjs=boreholeObjs
         
         for key in list(kwargs.keys()):
             setattr(self, key, kwargs[key])

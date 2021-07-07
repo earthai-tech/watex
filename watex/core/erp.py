@@ -758,8 +758,10 @@ class ERP :
     def best_points (self) : 
         """ Get the best points from auto computation """
         
-        mess =['{0} best points was found :\n '.
-               format(len(self._best_keys_points))] 
+        if len(self._best_keys_points)>1 : verb, pl='were','s'
+        else: verb, pl='was',''
+        mess =['{0} best point{1} {2} found :\n '.
+               format(len(self._best_keys_points),pl,verb)] 
         self._best_points ={}
         for ii,  bp in enumerate (self._best_keys_points): 
             cods = float(bp.replace('{0}_pk'.format(ii+1), ''))
@@ -938,6 +940,14 @@ class ERP :
         self._lat = self._longitude[self.abest_index]
         return self._lon
     
+    @property 
+    def abest_rhoaRange(self):
+        """
+        Collect the resistivity values range from selected anomaly boundaries.
+        """
+        return self.aBestInfos[self._best_key_point][4]
+    
+    
 def get_shape (rhoa_range): 
     """
     Find anomaly `shape`  from apparent resistivity values framed to
@@ -1051,6 +1061,8 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
 if __name__=='__main__'   : 
     erp_data='data/erp/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
     erp_path ='data/erp'
+    # erpObj =ERP(erp_fn=erp_data)
+    # erpObj.abest_rhoaRange)
     erpObjs =ERP_collection(listOferpfn= erp_path, 
                             )
     print(erpObjs.erpdf)
