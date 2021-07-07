@@ -114,7 +114,7 @@ conductive points from the whole  ERP line as :
  03 : position = 40.0 m ----> rhoa = 110 Ω.m               
 -----------------------------------------------------------------------------
 ```
-for multiples `erp` file reading try, all `geo_electrical_features` from all 
+For multiples `erp` file reading try, all `geo_electrical_features` from all 
 ERP survey line are auto-computed. For example: 
 
 ```
@@ -128,6 +128,42 @@ Out[9]:
 2  e2059733751112  790724.0  1092789.5   30.0      211.0     V  CB2P  4.787024
 ```
 
+Get all features for data analysis and prediction purpose  by calling `Features`
+from `~.core.geofeatures` module as: 
+```
+>>> from watex.core.geofeatures import Features 
+>>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
+>>> featObj =Features(features_fn= featurefn)
+>>> featObj.site_ids
+>>> featObj.site_names
+>>> featObj.df
+
+``` 
+It's also possible to do the same task by calling different module collections`ves`, `geol`,
+considered as Python object: 
+```
+>>> from watex.core.geofeatures import Features 
+>>> from watex.core.erp import ERP_collection 
+>>> from watex.core.ves import VES_collection 
+>>> from watex.core.geology import Geology, Borehole 
+>>> featObj =Features(ErpColObjs=ERP_collection('data/erp')
+                       vesObjs=VES_collection('data/ves'),
+                    geoObjs=Geology('data/geol'),
+                     boreholeObjs=Borehole('data/boreh'))
+>>> featObj.site_ids
+>>> featObj.site_names
+>>> featObj.df
+Out[10]:
+              east      north  power  ...   lwi                      geol  flow
+id                                    ...                                      
+e0000001  766096.0  1134857.0   70.0  ...  14.7  VOLCANO- SEDIM.  SCHISTS   2.0
+e0000002  741220.0  1132591.0   70.0  ...  14.7  VOLCANO- SEDIM.  SCHISTS   2.0
+e0000003  770409.0  1158750.0   50.0  ...  12.4          GEOSYN. GRANITES   1.0
+e0000004  758899.0  1049812.0   90.0  ...  21.2          GEOSYN. GRANITES   1.0
+e0000005  742530.0  1116498.0   60.0  ...   0.0             SAFE GRANITES   0.0
+
+```
+
 ## System requirements 
 * Python 3.7+ 
 
@@ -137,7 +173,7 @@ Out[9]:
 2. Equipe de Recherche Géophysique Appliquée, Laboratoire de Géologie Ressources Minérales et Energétiques, UFR des Sciences de la Terre et des Ressources Minières, Université Félix Houphouët-Boigny, Cote d'Ivoire. 
 
 * Developer's name: [1](http://www.zju.edu.cn/english/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_Kouadio K. Laurent_](kkouao@zju.edu.cn), _etanoyau@gmail.com_
-* Contributors' names: [1](http://www.zju.edu.cn/english/)[_Binbin MI_](mibinbin@zju.edu.cn)
+* Contributors' names: [1](http://www.zju.edu.cn/english/) [_Binbin MI_](mibinbin@zju.edu.cn)
     
 
 

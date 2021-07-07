@@ -242,7 +242,7 @@ class ERP_collection:
 
         # collected the ERP filenames and generated the id from each object.
         self.fnames = self.get_property_infos('_name')
-        self.id = np.array([id(obj) for obj in self.erpObjs ])
+        self.id = np.array([id(obj) for obj in self.fnames])
         
         # create a dataframe object
         self._logging.info('Setting and `ERP` data array '
@@ -622,13 +622,13 @@ class ERP :
                 try : 
                     self.utm_zone, utm_easting, utm_northing = gis.ll_to_utm(
                                             reference_ellipsoid=23, 
-                                              lat=self._longitude[ii],
-                                              lon = self._latitude[ii])
+                                              lon=self._longitude[ii],
+                                              lat = self._latitude[ii])
                 except : 
                     utm_easting, utm_northing, \
                         self.utm_zone= gis.project_point_ll2utm(
-                        lat=self._longitude[ii],
-                        lon = self._latitude[ii])
+                        lon=self._longitude[ii],
+                        lat = self._latitude[ii])
                     
                 easting[ii] = utm_easting
                 northing [ii] = utm_northing
@@ -1061,12 +1061,16 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
 if __name__=='__main__'   : 
     erp_data='data/erp/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
     erp_path ='data/erp'
+    test_fn = 'l10_gbalo.xlsx'
     # erpObj =ERP(erp_fn=erp_data)
     # erpObj.abest_rhoaRange)
     erpObjs =ERP_collection(listOferpfn= erp_path, 
                             )
     print(erpObjs.erpdf)
     # print(erpObjs.survey_ids)
+    # gFname, exT=os.path.splitext(test_fn)
+    # gFame = os.path.basename(gFname)
+    # print(gFname, exT)
 
     
 
