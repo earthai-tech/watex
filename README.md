@@ -22,7 +22,7 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 * **Learning methods implemented**
 
     - Supervised learnings:  
-        -  Support vector machines: [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
+        -  Support vector machines: [**SVMs**](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
         -  Neighbors: **KNN** 
         -  Trees: **DTC**
     - Unsupervided learnings: 
@@ -126,7 +126,7 @@ considered as Python object **(2)**:
 							|>>> featObj.site_names
 							|>>> featObj.df
 ``` 
-
+![](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/features_computation.PNG)
 
 ## System requirements 
 * Python 3.7+ 
