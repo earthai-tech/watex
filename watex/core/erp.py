@@ -401,9 +401,9 @@ class ERP_collection:
 
 class ERP : 
     """
-    Electrical resistivity profiling class . computes and plot ERP 
-    define anomalies and compute its features. can select multiples anomalies 
-    on ERP and gve their features values. 
+    Electrical resistivity profiling class . Define anomalies and compute
+    its features. Can select multiples anomalies  on ERP and give their
+    features values. 
     
     Arguments: 
     ----------
@@ -459,7 +459,7 @@ class ERP :
         >>> from watex.core.erp import ERP 
         >>> anomaly_obj =ERP(erp_fn = '~/location_filename')
         
-    The call the following `erp` properties attributes:
+    The call of the following `erp` properties attributes:
     
     ====================  ================  ===================================
     properties              Type                Description  
@@ -478,7 +478,7 @@ class ERP :
     abest_type              str             Best anomaly type. Can be : 
                                             - ``EC`` for Extensive conductive. 
                                             - ``NC`` for narrow conductive. 
-                                            - ``CP`` for conductive PLANE 
+                                            - ``CP`` for conductive plane. 
                                             - ``CB2P`` for contact between two
                                             planes. 
     ====================  ================  ===================================
@@ -1043,7 +1043,7 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
 
     """
     # Get position index 
-    anom_type ='PC'
+    anom_type ='CP'
     index_pos = int(np.where(pos_array ==pk)[0])
     if erp_array [:index_pos +1].mean() < np.median(erp_array) or\
         erp_array[index_pos:].mean() < np.median(erp_array) : 

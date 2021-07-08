@@ -190,7 +190,7 @@ class Features:
                 
         if self.features_fn is None and fimp ==1:
             raise Wex.WATexError_geoFeatures(
-                'Features file is not given. Please provided specific'
+                'Features file is not given. Please provide specific'
                 ' objects from`erp`, `ves`, `geology` and `borehole` data'
                 'Call each specific collection class to build each'
                 ' collection features.')
@@ -214,8 +214,8 @@ class Features:
                     except : 
                         utm_easting, utm_northing, \
                             self.utm_zone= gisf.project_point_ll2utm(
-                            lat=self._longitude[ii],
-                            lon = self._latitude[ii])
+                            lat=self.df['lat'].to_numpy()[ii],
+                            lon = self.df['lon'].to_numpy()[ii])
                         
                     self._easting[ii] = utm_easting
                     self._northing [ii] = utm_northing
@@ -236,15 +236,17 @@ class Features:
                             self.df.pop('lon')
                         except: 
                            self._logging.debug(
-                               'No way to delete `lat` and `lon` in features '
-                               "dataframe. It seems there is no `lat` & `lon`"
-                               " series in your dataFrame.") 
+                               'No way to remove `lat` and `lon` in features '
+                               "dataFrame. It seems there is no `lat` & `lon`"
+                               " pd.series in your dataFrame.") 
             
             #Keep location names 
-            self.site_ids =np.array(['e{0}'.format(id(name.lower())) 
+            self.df['id']=np.array(['e{0}'.format(id(name.lower())) 
                                   for name in self.df['id']])
-            self.df['id'] = np.array(['e{0:07}'.format(ii+1) 
-                                     for ii in range(len(self.site_ids))])
+    
+            self.id =np.copy(self.df['id'].to_numpy())
+            self.id_ = np.array(['e{0:07}'.format(ii+1) 
+                                     for ii in range(len(self.df['id']))])
             # rebuild the dataframe from main features
             self.df = pd.concat({
                 featkey: self.df[featkey] 
@@ -271,20 +273,23 @@ class Features:
                                                    len(self.featureLabels))), 
                                   columns = self.featureLabels)
             
-            newID= self.controlObjId(erpObjID=self.ErpColObjs.erpdf['id'], 
+            self.id_= self.controlObjId(
+                              erpObjID=self.ErpColObjs.erpdf['id'], 
                               boreObjID=self.borehObjs.borehdf['id'], 
                               geolObjID=self.geoObjs.geoldf['id'], 
-                              vesObjsID= self.vesObjs.vesdf['id'])
+                              vesObjsID= self.vesObjs.vesdf['id']
+                              )
             
-            self.df =self.merge(self.ErpColObjs.erpdf.drop(['id'], axis=1),
+            self.df =self.merge(self.ErpColObjs.erpdf, #.drop(['id'], axis=1),
                                 self.vesObjs.vesdf['ohmS'],
                                 self.geoObjs.geoldf['geol'], 
                                 self.borehObjs.borehdf[['lwi', 'flow']], 
                                 right_index=True, 
                                 left_index=True)
             
-            self.df.insert(loc=0, column ='id', value = newID)
-
+            #self.df.insert(loc=0, column ='id', value = newID)
+            self.id =self.ErpColObjs.erpdf['id'].to_numpy()
+            
         self.df.set_index('id', inplace =True)
         self.df =self.df.astype({'east':np.float, 
                       'north':np.float, 
@@ -296,7 +301,15 @@ class Features:
                       'flow':np.float
                       })
             
-   
+        # populate site names attributes 
+        for attr_ in self.site_names: 
+            if not hasattr(self, attr_): 
+                setattr(self, attr_, ID()._findFeaturePerSite_(
+                                        _givenATTR=attr_, 
+                                        sns=self.site_names,
+                                        df_=self.df,
+                                        id_=self.id, 
+                                        id_cache= self.id_))
             
             
     def sanitize_fdataset(self): 
@@ -356,7 +369,6 @@ class Features:
             for ii, celemnt in enumerate(columns): 
                 for listOption, param in zip(optionsList, params): 
                      for option in listOption:
-    
                          if param =='lwi': 
                             if celemnt.find('eau')>=0 : 
                                 columns[ii]=param 
@@ -488,21 +500,104 @@ class Features:
                     "Survey location's name must be the same for `erp`, "
                     ' `ves` and `geol` but you are given '
                     '<{0}, {1}, {2}> respectively. Please rename'
-                    ' names to be the same everywhere'.format(erObj, bhObj,
+                    ' names to be the same everywhere.'.format(erObj, bhObj,
                                                            geolObj))
         return new_id 
+ 
+class ID: 
+    """
+    Special class to manage Feature's ID. Each `erp` or `ves` or `geol` and
+    `borehole` name can be an attribute of the each collection class. 
+    Eeach survey line is identified with its  common `ID` and point to 
+    the same name.
+    
+    :param givenATTR:  Station or location name considered a 
+                    new name for attribute creating
+    :type givenATTR: str 
+    
+    :param sns: Station names from `erp`, `ves` and `geol`. 
+    :type sns: array_like or sns
+    
+    :param id_: 
+        Indentification site number. See col ``id`` of :attr:`~geofeatures.id_`
+    :param id_cache: 
+        New id of station number kept on caches 
+    :param df_: Features dataFrame. Refer to :attr:~geofeatures.df 
+    
+    :Example: 
         
+        >>> from watex.core.geofeatures import Features, ID
+        >>> featObj =Features(features_fn= 
+        ...                      'data/geo_fdata/BagoueDataset2.xlsx' )
+        >>> featObj.b126
         
+    where ``b126`` is the surveyname and `featObj.b126` is data value 
+    extracted from features dataFrame :attr:`watex.core.geofeatures.Features.df`
+    
+    :Note: To extract data from station location name `sns`, be sure to write 
+    the right name. If not an `AttributeError` occurs. 
+    
+    """
+    
+    def __init__(self, **kwargs): 
+        self._logging = watexlog().get_watex_logger(self.__class__.__name__)
+
+        for key in list(kwargs.keys()): 
+            setattr(self, key, kwargs[key])
+        
+        if hasattr(self, '_givenATTR'): 
+            self._findFeaturePerSite_()
+            
+    def _findFeaturePerSite_(self, _givenATTR, sns=None, df_=None, id_=None, 
+                             id_cache=None ): 
+        """Check the report between `site_names ` and `ids`. If `givenATTR is 
+        among `sns` or reference object `id_` or `id_cache` then value of 
+        given station name will be selected as a dataframe.
+        
+        :param givenATTR: 
+            
+            Station or location name considered a new name for attribute 
+            creating:: 
+                
+                >>> from watex.core.geofeatures import Features
+                >>> location_name ='gbalo_l10'
+                >>> Features.gbalo
+                
+        :return: As select part of DataFrame
+        :rtype: pd.DataFrame 
+        
+        """
+        for attr, value in zip(['_givenATTR', 'df_', 'sns', 'id_cache', 'id_'], 
+                             [_givenATTR, df_, sns, id_cache, id_]): 
+            if not hasattr(self, attr): 
+                setattr(self, attr, value)
+
+        for ii, (name, id_, idp_) in enumerate(zip(self.sns,self.id_,
+                                                    self.id_cache)) : 
+             if self._givenATTR.lower() == name or \
+                 self._givenATTR.lower()==id_ \
+                 or self._givenATTR.lower() == idp_ : 
+                 self.select_ = self.df_.iloc[
+                     [int( idp_.replace('e', '')) - 1]]
+                 
+        return self.select_ 
+
+                    
+                
+            
         
 if __name__=='__main__': 
     featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
     
     featObj =Features(features_fn= featurefn)
     
-    print(featObj.site_ids)
-    print(featObj.site_names)
-    dff= featObj.df
-    print(dff)
+    print(featObj.df)
+    # print(featObj.site_names)
+    # print(featObj.id_)
+    # print(featObj.id)
+    print(featObj.b126)
+    # dff= featObj.df
+    # print(dff)
        
         
         
