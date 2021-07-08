@@ -153,15 +153,6 @@ considered as Python object:
 >>> featObj.site_ids
 >>> featObj.site_names
 >>> featObj.df
-Out[10]:
-              east      north  power  ...   lwi                      geol  flow
-id                                    ...                                      
-e0000001  766096.0  1134857.0   70.0  ...  14.7  VOLCANO- SEDIM.  SCHISTS   2.0
-e0000002  741220.0  1132591.0   70.0  ...  14.7  VOLCANO- SEDIM.  SCHISTS   2.0
-e0000003  770409.0  1158750.0   50.0  ...  12.4          GEOSYN. GRANITES   1.0
-e0000004  758899.0  1049812.0   90.0  ...  21.2          GEOSYN. GRANITES   1.0
-e0000005  742530.0  1116498.0   60.0  ...   0.0             SAFE GRANITES   0.0
-
 ```
 
 ## System requirements 
