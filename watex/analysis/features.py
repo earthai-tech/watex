@@ -16,6 +16,7 @@ Created on Mon Jul 12 14:24:18 2021
 from watex.analysis.__init__ import SUCCES_IMPORT_CHARTSTUDIO
 from watex.analysis.__init__ import PD_READ_FEATURES
 from watex.__init__ import sanitize_fdataset as STZ_DF
+from watex.__init__ import exportdf as EXP_DF
 
 
 from typing import Iterable,TypeVar 
@@ -37,27 +38,61 @@ _logger =watexlog().get_watex_logger(__name__)
 
 
 class sl_analysis : 
-    """ This class summarizeed supervised learning methods analysis. It  
-    deals with data features categorization, when numericall values is provided
-    standard anlysis either `qualitatif` or  `quantitatives analyis`. 
+    """ 
+    This class summarizeed supervised learning methods analysis. It  
+    deals with data features categorization, when numericall values is 
+    provided standard anlysis either `qualitatif` or `quantitatives analyis`. 
     
+    Arguments: 
+    ---------
+        *dataf_fn*: str 
+            Path to analysis data file. 
+        *df*: pd.Core.DataFrame 
+                Dataframe of features for analysis . Must be contains of 
+                main parameters incluing the `target` pd.Core.series 
+                as columns of `df`. 
+ 
     
     Holds on others optionals infos in ``kwargs`` arguments: 
        
     ============  ========================  ===================================
     Attributes              Type                Description  
     ============  ========================  ===================================
-    df              pd.core.DataFrame       Container of all features composed 
-                                            of :attr:`~Features.featureLabels`
-    site_ids        array_like              ID of each survey locations.
-    site_names      array_like              Survey locations names. 
-    gFname          str                     Filename of `features_fn`.                                      
-    ErpColObjs      obj                     ERP `erp` class object. 
-    vesObjs         obj                     VES `ves` class object.
-    geoObjs         obj                     Geology `geol` class object.
-    borehObjs       obj                     Borehole `boreh` class obj.
+    df              pd.core.DataFrame       raw container of all features for 
+                                            data analysis.
+    target          str                     Traget name for superving learnings
+                                            It's usefull to  for clearly  the 
+                                            name.
+    flow_classes    array_like              How to classify the flow?. Provided 
+                                            the main specific values to convert 
+                                            numerical value to categorial trends.
+    slmethod        str                     Supervised learning method name.The 
+                                            methods  can be:: 
+                                            - Support Vector Machines ``svm``                                      
+                                            - Kneighbors: ``knn` 
+                                            - Decision Tree: ``dtc``. 
+                                            The *default* `sl` is ``svm``. 
+    sanitize_df     bool                    Sanitize the columns name to match 
+                                            the correct featureslables names
+                                            especially in groundwater 
+                                            exploration.
+    drop_columns    list                    To analyse the data, you can drop 
+                                            some specific columns to not corrupt 
+                                            data analysis. In formal dataframe 
+                                            collected straighforwardly from 
+                                            :class:`~geofeatures.Features`,the
+                                            default `drop_columns` refer to 
+                                            coordinates positions as : 
+                                                ['east', 'north']
+    fn              str                     Data  extension file.                                        
     ============  ========================  ===================================   
     
+    :Example:
+        
+        >>> from watex.analysis.features import sl_analysis 
+        >>> slObj =sl_analysis(data_fn =' data/geo_fdata/BagoueDataset2.xlsx')
+        >>> sObj.df 
+        >>> sObj.
     """
     
     def __init__(self, df =None , data_fn =None , **kws): 
@@ -161,7 +196,7 @@ class sl_analysis :
         target inhabitants. Thus:: 
             - FR = 0 is for dry boreholes
             - 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
-            - 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000 -20 000inhbts) 
+            - 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
             - 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
             
         :Note: flow classes can be modified according 
@@ -186,6 +221,15 @@ class sl_analysis :
             When using straightforwardly `data_fn` in th case of groundwater  
             exploration :class:erp`
             
+        :Example:
+            
+            >>> from watex.analysis.features import sl_analysis 
+            >>> slObj = sl_analysis(
+            ...    data_fn='data/geo_fdata/BagoueDataset2.xlsx',
+            ...    set_index =True)
+            >>> slObj._df
+            >>> slObj.target
+
         """
         
         drop_columns = kwargs.pop('drop_columns', None)
@@ -204,7 +248,6 @@ class sl_analysis :
         if sanitize_df is not None : 
             self._sanitize_df = sanitize_df
         
-
         if drop_columns is not None : 
             # get the columns from dataFrame and compare to the given given 
             if isinstance(drop_columns, (list, np.ndarray)): 
@@ -215,7 +258,6 @@ class sl_analysis :
                         'Please provided the right names for droping.')
             self._drop_columns = list(drop_columns) 
             
-
         if self.fn is not None : 
              if self._sanitize_df is True : 
                  self._df , utm_flag = STZ_DF(self._df)
@@ -234,6 +276,36 @@ class sl_analysis :
                 flow_values =flow_cat_values)
         if self._set_index : 
             self.df.set_index(col_name, inplace =True)
+         
+            
+    def writedf(self, df=None , refout:str =None,  to:str =None, 
+              savepath:str =None, modname:str ='_anEX_',
+              reset_index:bool =False): 
+        """
+        Write analysis `df`. 
+        
+        Refer to :doc:`watex.__init__.exportdf` for more details about 
+        the reference arguments ``refout``, ``to``, ``savepath``, ``modename``
+        and ``rest_index``. 
+        
+        :Example: 
+            
+            >>> from watex.analysis.features import sl_analysis 
+            >>> slObj =sl_analysis(
+            ...   data_fn='data/geo_fdata/BagoueDataset2.xlsx', set_index =True)
+            >>> slObj.writedf()
+        
+        """
+        for nattr, vattr in zip(
+                ['df', 'refout', 'to', 'savepath', 'modname', 'reset_index'], 
+                [df, refout, to, savepath, modname, reset_index]): 
+            if not hasattr(self, nattr): 
+                setattr(self, nattr, vattr)
+                
+        EXP_DF(df= self.df , refout=self.refout,
+               to=self.to, savepath =self.savepath, 
+               reset_index =self.reset_index, modname =self.modname)
+        
             
 @deco.catmapflow(cat_classes=['FR0', 'FR1', 'FR2', 'FR3', 'FR4'] )
 def categorize_flow(target_array, flow_values: Iterable[float],
@@ -298,19 +370,15 @@ def categorize_flow(target_array, flow_values: Iterable[float],
                    
     return new_flow_values, target_array, flowClasses
         
-
-
-    
-
-        
+  
 if __name__=='__main__': 
-    # op = categorize_flow([0., 3., 6., 10.])
+
     featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
     
     slObj =sl_analysis(data_fn=featurefn, set_index =True)
-    df_2= slObj._df
-    df=slObj.df
-    print(df)
+    # df_2= slObj._df
+    # df=slObj.df
+    slObj.writedf()
         
         
         
