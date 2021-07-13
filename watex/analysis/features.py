@@ -49,7 +49,7 @@ class sl_analysis :
             Path to analysis data file. 
         *df*: pd.Core.DataFrame 
                 Dataframe of features for analysis . Must be contains of 
-                main parameters incluing the `target` pd.Core.series 
+                main parameters including the `target` pd.Core.series 
                 as columns of `df`. 
  
     
@@ -292,7 +292,8 @@ class sl_analysis :
             
             >>> from watex.analysis.features import sl_analysis 
             >>> slObj =sl_analysis(
-            ...   data_fn='data/geo_fdata/BagoueDataset2.xlsx', set_index =True)
+            ...   data_fn='data/geo_fdata/BagoueDataset2.xlsx',
+            ...   set_index =True)
             >>> slObj.writedf()
         
         """
@@ -311,9 +312,9 @@ class sl_analysis :
 def categorize_flow(target_array, flow_values: Iterable[float],
                     **kwargs) -> Iterable[T]: 
     """ 
-    Categorize flow into different categorized classes. If the 
-    `flow_classes` optional argument is given, it should erase the
-    `cat_classes` argument of decororator ``deco.mapflow
+    Categorize `flow` into different classes. If the optional
+    `flow_classes`  argument is given, it should be erased the
+    `cat_classes` argument of decororator `deco.catmapflow`.
     
     :param target_array: Flow array to be categorized 
     
