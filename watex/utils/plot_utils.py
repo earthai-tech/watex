@@ -840,7 +840,8 @@ def get_conductive_and_resistive_zone (
     # make a ratio minimum value and maxmim ration 
     temcon, temres=[[] for nn in range(2)] # build empty list for min sites names and 
     for jj, (index, iindex) in enumerate(zip ([imins, imaxs], [mins, maxs])):
-        if index > len(site_names): # if the value is greater than sites names length , we assume that is them occam 
+        if index > len(site_names): # if the value is greater than sites names 
+        #length , we assume that is them occam 
         # model objet then bring model file 
             if model_offsets is None  or site_offsets is None: 
                 mess =''.join([' !Could not find Occam 2D model '
@@ -856,7 +857,8 @@ def get_conductive_and_resistive_zone (
                 site_offsets =site_offsets)
             if jj ==0 : 
                 snn = site_names[int(icc)] # build conductive ssites names 
-                if snn not in temcon:   # sometime the names of station is close , keep one , if not keep all 
+                if snn not in temcon:   # sometime the names of station is close ,
+                                        #keep one , if not keep all 
                                         # else pass 
                     temcon.append((snn, iindex))  # keep station 
                     
@@ -875,7 +877,8 @@ def get_conductive_and_resistive_zone (
             print('---> Probably very conductive zone is = {0} with rho = {1} Ω.m.'.\
                   format(stn, np.power(10,rhoval)))
                 
-            imins =site_names.index(stn) # get the real minimum and the value of resistivities
+            imins =site_names.index(stn) 
+            # get the real minimum and the value of resistivities
             mins = rhoval
     if len(temres) > 0: 
         for stn, rhoval in temres : 
@@ -897,7 +900,8 @@ def get_conductive_and_resistive_zone (
         'Maximum ratio is',  '=', round(maxs/mean_set_, 7)))
     
     if purpose =='groundwater':
-        p_ratio = (purpose_value / mins)*100        # presumed a prefect zone (conductive)
+        p_ratio = (purpose_value / mins)*100        
+        # presumed a prefect zone (conductive)
         # p_ratio_max : maximal trend of condictive zone 
         #p_ratio _min : minimu trend of conductive zone : 
             
@@ -986,14 +990,16 @@ def fmt_text (data_text, fmt='~', leftspace = 3, return_to_line =77) :
     
     for  ii, num in enumerate(data_text) : # loop the text 
         if ii == len(data_text)-1 :          # if find the last character of text 
-            #text = text + data_text[ss:] + ' {0}\n'.format(fmt) # take the remain and add return chariot 
+            #text = text + data_text[ss:] + ' {0}\n'.format(fmt) # take the 
+            #remain and add return chariot 
             text = text+ ' {0}\n'.format(fmt) +\
-                begin_text +fmt*(return_to_line+7) +'\n'         # add a fmt strinmg to finish 
+                begin_text +fmt*(return_to_line+7) +'\n' 
+      
  
             break 
-        if ss == return_to_line :                        # if enconter 50character then return chariot 
+        if ss == return_to_line :                       
             if data_text[ii+1] !=' ' : 
-                text = '{0} {1}- \n {2} '.format( text,  fmt, begin_text + fmt ) #     if the word is brken then add "-" and return chariot 
+                text = '{0} {1}- \n {2} '.format( text,  fmt, begin_text + fmt ) 
             else : 
                 text ='{0} {1} \n {2} '.format(text, fmt, begin_text+fmt ) 
             ss=0
@@ -1023,22 +1029,28 @@ def find_closest_station( offset_indice ,  model_offsets , site_offsets )  :
         get_offs : float
                value of the offset at that index 
     """
-    offs_value= model_offsets[int(offset_indice)] #  keep the offset value form model 
+     #  keep the offset value form model 
+    offs_value= model_offsets[int(offset_indice)]
 
-    for  ii , iof in enumerate(site_offsets) :  # loop the data offset and find the offset in model more close to data offset
+    for  ii , iof in enumerate(site_offsets) :  # loop the data offset and 
+    #find the offset in model more close to data offset
         if iof > offs_value :  # compared both offsets values 
-            minabs = abs(iof - offs_value) # find the distance between offset from model and offset from ocam data 
-            try : 
-                maxabs = abs (site_offsets[ii-1]-offs_value) # if ii -1 not possible to find then take absolue distance from ... 
+            minabs = abs(iof - offs_value) # find the distance 
+            #between offset from model and offset from ocam data 
+            try : # if ii -1 not possible to find then take absolue distance from ... 
+                maxabs = abs (site_offsets[ii-1]-offs_value) 
             except : 
                 maxabs= abs(iof -offs_value)            # ... from data offsets 
-            if minabs <= maxabs :  # if minimum offset is found at index ii of offset iof than take the index and the iofs value 
+            if minabs <= maxabs :  # if minimum offset 
+            #is found at index ii of offset iof than take the index and the iofs value 
                 indexoff, get_offs  = ii, iof
                 break
             else :  
-                indexoff, get_offs = ii-1, site_offsets[ii-1] # if ii-1 exist then get the previous offset from data offset .
+                indexoff, get_offs = ii-1, site_offsets[ii-1] 
+                ## if ii-1 exist then get the previous offset from data offset .
                 break
-      # return indice of data offset so to find the sites names and the offset at that sites  index 
+      # return indice of data offset so to find the
+      #sites names and the offset at that sites  index 
     
     return indexoff, get_offs
     
@@ -1080,24 +1092,28 @@ def find_local_maxima_minima (array):
     if len(array) == 1 : 
         return (np.array([0]), array )
             
-    d0, f=array[0], 0               # get the initial value , use the initial at starting points 
-    localmm.append(d0)              #... can be either local maximum or local minimum 
+    d0, f=array[0], 0               # get the initial value , use the initial 
+    localmm.append(d0)              #at starting points can be either local 
+    #maximum or local minimum 
     indexlmm.append(0)              # append index of starting point d0
     for ii, value in enumerate(array):  # let go for maximum data 
-            if value >= d0 : #0.3       # try to find maximum |speudo maximum but get the minimum index when
+            if value >= d0 : #0.3       # try to find maximum |speudo maximum 
+                                        #but get the minimum index when
                 if f==2 :
                     localmm.append(array[ii-1])
                     indexlmm.append(ii-1)
                 f=1
                 d0=value                # reinitialize pseudo maximum value 
-            elif value < d0 :           # # try to find minimum|speudo minimum but get the maximum index when
+            elif value < d0 :           # # try to find minimum|speudo 
+                                        #minimum but get the maximum index when
                 if f== 1 : 
                     localmm.append(array[ii-1])
                     indexlmm.append(ii-1)
                     
                 f=2
                 d0=value                # # reinitialize pseudo minimum value 
-            if value ==array[-1]:       # at the end take the last value to close the loop whether is minimum or maximum 
+            if value ==array[-1]:       # at the end take the last value 
+                                        #to close the loop whether is minimum or maximum 
                 localmm.append(value)  
                 indexlmm.append(ii)
                 
@@ -1122,8 +1138,8 @@ def average_rho_with_locals_minmax(array):
         >>> print(mean1)
         >>> print(mean2)
     """
-    tem=[]
-    indexmm, _= find_local_maxima_minima(array) # find the local and maxium local index
+    tem=[] # find the local and maxium local index
+    indexmm, _= find_local_maxima_minima(array) 
     
     if len(indexmm) == 1 :              # once it as a singe value  
         return array[int(indexmm)]      # for consistency
@@ -1133,22 +1149,26 @@ def average_rho_with_locals_minmax(array):
     for ii, index in enumerate(indexmm): #[ 0,  4,  5,  8, 10] #s_index = 4
         if index == indexmm[-1]:
                                     
-            tem.append(np.array(array[index]))    # put single value on array for conacatenation 
+            tem.append(np.array(array[index])) # put single value on array for
+                                                #conacatenation 
             break
         
         if ii !=0 :                     # start a counter at index >0
             s_index = indexmm[ii+1]
         
-        ndiff = s_index - index         # take the next index and substract the present index s_index 
-                                        # ndiff = 4-0 (indexmm[1]-index (indexmm[0])) = 4 >1 
+        ndiff = s_index - index         # take the next index and 
+                                        #substract the present index s_index 
+                                        # ndiff = 4-0 (indexmm[1]-index (
+                                        #indexmm[0])) = 4 >1 
         if ndiff == 1 :
             tem.append(np.array(array[index]))   #add local minimum array[0]= 2
             
-        if ndiff >1 : 
-            mean_mm = array[index:s_index+1].mean() # [0:4+1]take the mean between [index0 : index 9 +1]--> [0:5]
-            #moy = array[ii :indexmm[ii+1]] = array[0]-array[5]= moy (array[2:5] 2:9 /mean
+        if ndiff >1 :  # [0:4+1]take the mean between [index0 : index 9 +1]--> [0:5]
+            mean_mm = array[index:s_index+1].mean()
+            #moy = array[ii :indexmm[ii+1]] = array[0]-array[5]= moy(array[2:5] 2:9 /mean
             tem.append(np.array(array[index]))
-            nn=np.repeat(mean_mm, ndiff-1) # 25/5 =5 ( 5, 3) 2 5 5 5 9 (ndiff =4-0-1)=3
+            nn=np.repeat(mean_mm, ndiff-1) # 25/5 =5 ( 5, 3) 2 5 5 5 9 (
+                                            # ndiff =4-0-1)=3
             tem.append(nn)
                
     return np.hstack(tuple(tem))
@@ -1200,22 +1220,24 @@ def average_rho_in_deeper (dep_array, rho_array, step_descent ) :
     
     for index , depth in enumerate(dep_array):
 
-        if depth <= step_descent :      # value less than step descent must be averaged 
-            v.append(depth)             # keep resistivities values onto list 
+        if depth <= step_descent :      # value less than step descent must be 
+            v.append(depth)             #averaged  keep resistivities values onto list 
             r.append(rho_array[index])
 
-        if depth > step_descent :       # if the next value is greater than the previous one 
-        
-            if v !=[]:                  # ccheck if kist is not enmpty 
+        if depth > step_descent :       # if the next value is greater than the  
+            if v !=[]:                  # previous oneccheck if kist is not empty 
             
-                dm.append(np.repeat(np.array(v).mean(), len(v)))  # rebuild resistivities values with rho averaged 
+                dm.append(np.repeat(np.array(v).mean(), len(v)))  
+                # rebuild resistivities values with rho averaged 
                 rm.append(np.repeat(np.array(r).mean(), len(r)))
-                step_descent += value               #increment the next descent to step of descent 
-                v=[depth]       # initialise new list by adding the index value greater one 
+                step_descent += value#increment the next descent to step of descent 
+                v=[depth]       # initialise new list 
+                # by adding the index value greater one 
                 r=[rho_array[index]]
               
         if depth ==dep_array[-1]:
-            if len(v)==1 :                  # it length last value ==1 , means is the last value of depth
+            if len(v)==1 :                  # it length last value ==1 ,
+            # means is the last value of depth
                 dm.append(dep_array[index])
                 rm.append(rho_array[index])
             elif len(v) !=1 :               # averaged the reamin rho values  
@@ -1288,7 +1310,8 @@ def average_rho_in_deep (dep_array, rho_array, step_descent)   :
   
     for index, depth in enumerate(dep_array):  # index = 0
 
-        if depth >= step_descent : # if value is greater than the maximum depth for the fist time 
+        if depth >= step_descent :
+            # if value is greater than the maximum depth for the fist time 
             dep_averaged = dep_array[mm:index].mean() #[0 :20] 20 is ouut : 0--19 
             rho_averaged=  rho_array[mm:index].mean()
             tem.append(np.repeat(dep_averaged, index - mm)) #3-0=3
@@ -1299,13 +1322,15 @@ def average_rho_in_deep (dep_array, rho_array, step_descent)   :
     
             
             
-        if depth == dep_array[-1]:               # last value then check if value is modulo the init depth 
+        if depth == dep_array[-1]:  # last value then check if value is
+                                    #modulo the init depth 
             
-            if depth % _init_depth == 0 or depth < step_descent : # assume the last depth is less than the next assigned depth 
-
+            if depth % _init_depth == 0 or depth < step_descent : 
+                ## assume the last depth is less than the next assigned depth 
                 dep_averaged = dep_array[mm:].mean()
                 rho_averaged=  rho_array[mm:].mean()
-                tem.append(np.repeat(dep_averaged, index -mm +1)) # add +1 because of python nanems start count from 0
+                tem.append(np.repeat(dep_averaged, index -mm +1)) 
+                # # add +1 because of python nanems start count from 0
                 rm.append(np.repeat(rho_averaged, index -mm +1))
         
 
@@ -1399,12 +1424,13 @@ def build_resistivity_barplot(depth_values , res_values):
     # mm = res_values [0]
     for ii , res in enumerate(res_values):
         if res == res_values [-1] : # if res egal the last value s, check the previous 
-            if res_values [ii] != res_values[-2] : # then append the last depth index to close the loop 
+            if res_values [ii] != res_values[-2] : 
+                # then append the last depth index to close the loop 
                 v.append(depth_values[-1])
                 r.append(res)
                 break
-            if res == res_values [-2] : # then clean the last index  of depth and replace it by the last one 
-                # v[-1]= depth_values [-1]
+            if res == res_values [-2] : # then clean the last index  of 
+                # depth and replace it by the last one v[-1]= depth_values [-1]
                 v.append(depth_values [-1])
                 r.append(res)
                 
@@ -1412,8 +1438,10 @@ def build_resistivity_barplot(depth_values , res_values):
             v.append(depth_values [ii])
             r.append(res)
             
-    # thens substract the difference between depth values so all the sum must be egal to the maximum depth 
-    d=[v[0]]        # because the minimum depth start by 0 , then append  first value depth 
+    # thens substract the difference between depth values so all 
+    #the sum must be egal to the maximum depth 
+    d=[v[0]]        # because the minimum depth start by 0 ,
+                    # then append  first value depth 
     
     for dd , depth in enumerate(v): 
         if dd >0 : 
@@ -1475,24 +1503,26 @@ def annotate_tip(layer_thickness , layer_names):
     ni=[layer_names[0]]
     v=[]
     for ii, thickvalues in enumerate(layer_thickness): 
-        if ii != 0 :
-            if ii == len(layer_thickness)-1 :  # controle whether the layer is the same name with previous ones 
+        if ii != 0 :# controle whether the layer is the same name with previous ones 
+            if ii == len(layer_thickness)-1 :  
                 if layer_names[ii].lower()== layer_names[ii-1].lower() : 
                     mean = top + (thickvalues - top )/2 # we reached the bottom (top +center)
                     v.append(mean)
-                    
-                if layer_names[ii].lower() != layer_names[ii-1].lower() :  # then do the mean with previous one 
+                    # then do the mean with previous one 
+                if layer_names[ii].lower() != layer_names[ii-1].lower() :  
                     mean =top + (layer_thickness[ii-1]-top)/2 # mean for the previous layers 
+                    v.append(mean) #top +center 
+                    mean = layer_thickness[ii-1] + (thickvalues- layer_thickness[ii-1])/2 
                     v.append(mean)
-                    mean = layer_thickness[ii-1] + (thickvalues- layer_thickness[ii-1])/2  #top +center 
-                    v.append(mean)
-                    ni.append(layer_names[ii])                # then append the last names 
-            
-            elif layer_names[ii].lower() != layer_names[ii-1].lower() : # if the name is the same that the previous values 
-                bottom = thickvalues # the bottom of previous layer  is the top of layer ii
-                mean = (bottom - top )/2 + top         # center the annotate text (top + center)
+                    ni.append(layer_names[ii])    # then append the last names 
+             # if the name is the same that the previous values 
+            elif layer_names[ii].lower() != layer_names[ii-1].lower() :
+                bottom = thickvalues # the bottom of previous layer  is 
+                                        # the top of layer ii
+                mean = (bottom - top )/2 + top   # center the annotate
+                                                    # text (top + center)
                 v.append(mean)                  # keep values and layer names 
-                ni.append(layer_names[ii])                # append the name of layer 
+                ni.append(layer_names[ii])      # append the name of layer 
                 top =bottom                     # top becomes the bottom 
 
 
