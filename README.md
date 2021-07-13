@@ -1,4 +1,4 @@
-# WATex: A special toolbox for WATer EXploration  using AI Learning methods
+# WATex-AI: A special toolbox for WATer EXploration  using AI Learning methods
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex) ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4896758.svg)](https://doi.org/10.5281/zenodo.4896758)
 
@@ -9,7 +9,7 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 
 * **Goals** 
 
-    **WATex** has four (04) objectives:
+    **WATex-AI** has four (04) objectives:
     -  Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
          to the type of hydraulic required for the targeted population.
     -  Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
@@ -39,7 +39,7 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 
 ## Licence 
 
-WATex is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
+WATex-AI is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
 
 ## Units used 
 

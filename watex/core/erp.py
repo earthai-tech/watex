@@ -40,7 +40,8 @@ import json , warnings
 import datetime, shutil
 import numpy as np 
 import pandas as pd
-from watex.core.__init__ import savepath as savePath  
+
+from watex.utils.__init__ import savepath as savePath  
 import  watex.utils.exceptions as Wex
 import watex.utils.wmathandtricks as wfunc
 import watex.utils.func_utils as func
