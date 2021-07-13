@@ -369,35 +369,35 @@ class ERP_collection:
     @property
     def powers(self):
         """ Get the `power` of select anomaly from `erp`"""
-        return self.get_property_infos('abest_power')
+        return self.get_property_infos('best_power')
     
     @property
     def magnitudes(self):
         """ Get the `magnitudes` of select anomaly from `erp`"""
-        return self.get_property_infos('abest_magnitude')
+        return self.get_property_infos('best_magnitude')
     
     @property 
     def shapes (self):
         """ Get the `shape` of the selected anomaly. """
-        return self.get_property_infos('abest_shape')
+        return self.get_property_infos('best_shape')
     @property 
     def types(self): 
         """ Collect selected anomalies types from `erp`."""
-        return self.get_property_infos('abest_type')
+        return self.get_property_infos('best_type')
     @property 
     def sfis (self): 
         """Collect `sfi` for selected anomaly points """
-        return self.get_property_infos('abest_sfi')
+        return self.get_property_infos('best_sfi')
     
     @property 
     def easts(self): 
         """Collect the utm_easting value from `erp` survey line. """
-        return self.get_property_infos('abest_east')
+        return self.get_property_infos('best_east')
     
     @property 
     def norths(self): 
         """Collect the utm_northing value from `erp` survey line. """
-        return self.get_property_infos('abest_north')  
+        return self.get_property_infos('best_north')  
             
 
 class ERP : 
@@ -469,14 +469,14 @@ class ERP :
     select_best_value_      float           Best anomaly app.resistivity value.
     best_points             float           Best positions points selected 
                                             automatically. 
-    abest_sfi               float           Best anomaly standart fracturation 
+    best_sfi                float           Best anomaly standart fracturation 
                                             index value. 
-    abest_anr               float           Best 
-    abest_power             float           Best anomaly power  in *meter(m)*.
-    abest_magnitude         float           Best anomlay magnitude in *ohm.m*
-    abest_shape             str             Best anomaly shape. can be ``V``, 
+    best_anr                float           Best 
+    best_power              float           Best anomaly power  in *meter(m)*.
+    best_magnitude          float           Best anomlay magnitude in *ohm.m*
+    best_shape              str             Best anomaly shape. can be ``V``, 
                                             ``W``,``K``, ``H``, ``C``, ``M``.
-    abest_type              str             Best anomaly type. Can be : 
+    best_type               str             Best anomaly type. Can be : 
                                             - ``EC`` for Extensive conductive. 
                                             - ``NC`` for narrow conductive. 
                                             - ``CP`` for conductive plane. 
@@ -495,13 +495,13 @@ class ERP :
         ...110 
         >>> anom_obj.select_best_value_
         ...132
-        >>> anom_obj.abest_magnitude
+        >>> anom_obj.best_magnitude
         ...5
-        >>> nom_obj.abest_power
+        >>> nom_obj.best_power
         ..40
-        >>> anom_obj.abest_sfi
+        >>> anom_obj.best_sfi
         ...1.9394488747363936
-        >>> anom_obj.abest_anr
+        >>> anom_obj.best_anr
         ...0.5076113145430543
         
     """ 
@@ -779,7 +779,7 @@ class ERP :
         return self._best_points  
     
     @property 
-    def abest_power (self):
+    def best_power (self):
         """Get the power from the select :attr:`select_best_point_`"""
         self._power =wfunc.compute_power(
             posMinMax=self.aBestInfos[self._best_key_point][2])
@@ -790,7 +790,7 @@ class ERP :
         
         return self._power 
     @property 
-    def abest_magnitude(self): 
+    def best_magnitude(self): 
         """ Get the magnitude of the select :attr:`select_best_point_"""
         
         self._magnitude =wfunc.compute_magnitude(
@@ -804,7 +804,7 @@ class ERP :
         return self._magnitude
     
     @property 
-    def abest_sfi(self) : 
+    def best_sfi(self) : 
         """Get the standard fraturation index from 
         :attr:`select_best_point_"""
         
@@ -864,7 +864,7 @@ class ERP :
         return self._select_best_value
         
     @property 
-    def abest_anr (self ): 
+    def best_anr (self ): 
         """Get the select best anomaly ratio `abest_anr` along the
         :class:`~watex.core.erp.ERP`"""
         
@@ -884,7 +884,7 @@ class ERP :
         return self._anr
     
     @property 
-    def abest_type (self): 
+    def best_type (self): 
         """ Get the select best anomaly type """
         self._type = get_type(erp_array= self.df['rhoa'].to_numpy() , 
                               posMinMax = self.anom_boundaries , 
@@ -898,7 +898,7 @@ class ERP :
         return self._type 
     
     @property 
-    def abest_shape (self) : 
+    def best_shape (self) : 
         """ Find the selected anomaly shape"""
         
         self._shape = get_shape(
@@ -911,38 +911,38 @@ class ERP :
     
     
     @property
-    def abest_east(self): 
+    def best_east(self): 
         """ Get the easting coordinates of selected anomaly"""
         
-        self._east = self.df['east'].to_numpy()[self.abest_index]
+        self._east = self.df['east'].to_numpy()[self.best_index]
         return self._east
     
     @property
-    def abest_north(self): 
+    def best_north(self): 
         """ Get the northing coordinates of selected anomaly"""
-        self._north = self.df['north'].to_numpy()[self.abest_index]
+        self._north = self.df['north'].to_numpy()[self.best_index]
         return self._north
         
     @property 
-    def abest_index(self): 
+    def best_index(self): 
         """ Keeop the index of selected best anomaly """
         return int(np.where( self.df['pk'].to_numpy(
             )== self.select_best_point_)[0])
             
     @property
-    def abest_lat(self): 
+    def best_lat(self): 
         """ Get the latitude coordinates of selected anomaly"""
-        self._lat = self._latitude[self.abest_index]
+        self._lat = self._latitude[self.best_index]
         return self._lat
     
     @property
-    def abest_lon(self): 
+    def best_lon(self): 
         """ Get the longitude coordinates of selected anomaly"""
-        self._lat = self._longitude[self.abest_index]
+        self._lat = self._longitude[self.best_index]
         return self._lon
     
     @property 
-    def abest_rhoaRange(self):
+    def best_rhoaRange(self):
         """
         Collect the resistivity values range from selected anomaly boundaries.
         """

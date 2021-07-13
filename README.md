@@ -80,15 +80,15 @@ Out[1]: 170 			# --|> The best point is found  at position (pk) = 170.0 m. ---->
 >>> erp_obj.select_best_value_ 
 Out[1]: 80.0			# --|> Best conductive value selected is = 80.0 Ω.m                    
 ```
-- To get the next geo-electrical features, considered the _prefix_`abest_+ {feature_name}`. 
+- To get the next geo-electrical features, considered the _prefix_`best_+ {feature_name}`. 
 For instance :
 ```
->>> erp_obj.abest_type         # Type of the best selected anomaly on erp line
->>> erp_obj.abest_shape        # Best selected anomaly shape is "V"
->>> erp_obj.abest_magnitude   # Best anomaly magnitude is 45 Ω.m. 
->>> erp_obj.abest_power         # Best anomaly power is 40.0 m. 
->>> erp_obj.abest_sfi     	# best anomaly standard fracturation index.
->>> erp_obj.abest_anr           # best anomaly ration the whole ERP line.
+>>> erp_obj.best_type         # Type of the best selected anomaly on erp line
+>>> erp_obj.best_shape        # Best selected anomaly shape is "V"
+>>> erp_obj.best_magnitude   # Best anomaly magnitude is 45 Ω.m. 
+>>> erp_obj.best_power         # Best anomaly power is 40.0 m. 
+>>> erp_obj.best_sfi     	# best anomaly standard fracturation index.
+>>> erp_obj.best_anr           # best anomaly ration the whole ERP line.
 ```
 - If `auto` is enabled, the program could find additional maximum three best 
 conductive points from the whole  ERP line as : 
@@ -127,6 +127,26 @@ considered as Python object **(2)**:
 							|>>> featObj.df
 ``` 
 ![](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/features_computation.PNG)
+
+## Data analysis and quick plot hints
+
+ To solve the classification problem in `supervised learning`, we need to categorize  the `targetted` numerical values 
+ into categorized values using the module `watex.analysis` . It's possible to export data using `~writedf` function: 
+```
+>>> from watex.analysis.features import sl_analysis 
+>>> slObj =sl_analysis(
+...   data_fn='data/geo_fdata/BagoueDataset2.xlsx',
+...   set_index =True)
+>>> slObj.writedf()
+``` 
+To quick see how data look like, call `~viewer`packages: 
+```
+>>> from watex.viewer.plot import QuickPlot 
+>>> qplotObj = QuickPlot( df = slObj.df , lc='b) 
+>>> qplotObj.hist_cat_distribution(target_name='flow')
+```
+If `df` is not given, It's easy to quick visualize the data setting the argument `data_fn` that match the 
+to datafile  like `data_fn ='data/geo_fdata/BagoueDataset2.xlsx'`. Both will give the same result.
 
 ## System requirements 
 * Python 3.7+ 
