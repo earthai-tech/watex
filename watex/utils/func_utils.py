@@ -1,69 +1,19 @@
 # -*- coding: utf-8 -*-
-"""
-===============================================================================
-    Copyright © 2021  Kouadio K.Laurent
-    
-    This file is part of pyCSAMT.
-    
-    pyCSAMT is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    
-    pyCSAMT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-    
-    You should have received a copy of the GNU Lesser General Public License
-    along with pyCSAMT.  If not, see <https://www.gnu.org/licenses/>.
-
-===============================================================================  
-.. _module-Func-utils::`pycsamt.utils.func_utils`  
-    :synopsis: helpers functions 
-     ...
-     
-Created on Sun Sep 13 09:24:00 2020
-@author:  @Daniel03
-
-    :utils: 
-        * averageData 
-        * concat_array_from_list 
-        * sort_array_data 
-        * transfer_array_ (deprecated)
-        * interpol_scipy 
-        * _set_depth_to_coeff 
-        * broke_array_to_ 
-        *  _OlDFUNCNOUSEsearch_fill_data (deprecated)
-        * _search_ToFill_Data 
-        * straighten_out_list  
-        * take_firstValue_offDepth 
-        * dump_comma 
-        * build_wellData 
-        * compute_azimuth 
-        * build_geochemistry_sample 
-        * _nonelist_checker 
-        * _order_well 
-        * intell_index 
-        * _nonevalue_checker 
-        * _clean_space 
-        *_cross_eraser 
-        * _remove_str_word 
-        * stn_check_split_type
-        * minimum_parser_to_write_edi        
-"""
+# Copyright © 2021  Kouadio K.Laurent, Wed Jul  7 22:23:02 2021 hz
+# This module is modified and is part of the pyCSAMT utils package,
+#  which is released under a LGPL- licence.
+# originallly created on Sun Sep 13 09:24:00 2020
+# @author: ~alias @Daniel03
 
 ####################### import modules #######################
-
 import os 
 import shutil 
 import warnings
 import inspect
 import numpy as np 
 import matplotlib.pyplot as plt
-from copy import deepcopy
+# from copy import deepcopy
 import  watex.utils.gis_tools as gis
-from watex.utils.decorator import deprecated 
 
 from watex.utils._watexlog import watexlog
 _logger = watexlog.get_watex_logger(__name__)
@@ -91,77 +41,6 @@ except ImportError:  # pragma: no cover
     interp_import = False
 
 ###################### end import module ################################### 
-
-
-def averageData(np_array, filter_order=0, 
-                axis_average=0, astype="float32"): #array_of_average_array=0
-    """
-    Parameters  
-    -----------
-        * np_array  : numpy array 
-                must be an array data 
-        * filter_order  : int 
-                must be the index of the column you want to sort 
-            
-        * axis average  : int  
-                axis you want to see data averaged, also , it is the concatenate axis  
-                default is axis=0 
-        
-        * astype*: str , 
-                is the ndarray dtype array .
-                change to have an outup arry dtype , you want .
-    
-    Returns  
-    --------
-        numpy array 
-            Data averaged array
-    
-    :Example : 
-        
-        >>> import numpy as np 
-        >>> list8=[[4,2,0.1],[8,2,0.7],[10,1,0.18],[4,3,0.1],
-        ...               [7,2,1.2],[10,3,0.5],[10,1,0.5],[8.2,0,1.9],
-        ...               [10,7,0.5],[10,1,0.5],
-        ...               [2,0,1.4],[5,4,0.5],[10,2,0.7],[7,2,1.078],
-        ...               [10,2,3.5],[10,8,1.9]]
-        >>> np_test=np.array(list8)
-        >>> ss=averageData(np_array=np_test,filter_order=1,
-        ...               axis_average=0, astype="int")
-        >>> ss
-    """
-    idx,sep_counts=0,0
-    global_list=[]
-    #Filter the array 
-    np_array=np_array[np_array[:,filter_order].argsort(kind="mergesort")]
-    #returns the differents value on the filtersort index of array :
-    values, counts =np.unique(np_array[:,filter_order], return_counts=True)
-    # append array with numpy :(values.shape)
-    #             # new_array=np.append(new_array,rowline,axis=0)
-    for rowline in np_array :
-        
-        if rowline[filter_order] ==values.max():
-            new_array=np_array[sep_counts:,:]
-            temp_array=new_array.mean(axis=axis_average)
-            temp_array=temp_array.reshape((1,temp_array.shape[0]))
-            global_list.append(temp_array)
-            break        
-        elif rowline[filter_order] !=np_array[idx+1,filter_order]:
-            new_array=np_array[sep_counts:idx+1,:]
-            
-            temp_array=new_array.mean(axis=axis_average)
-            temp_array=temp_array.reshape((1,temp_array.shape[0]))
-            global_list.append(temp_array)
-            sep_counts=idx+1
-
-            
-        idx=idx+1
-    
-    np_out_put=concat_array_from_list(list_of_array=global_list,
-                                      concat_axis=axis_average) 
-    np_out_put=np_out_put.astype(astype)       
-
-    return np_out_put
-
 
 def concat_array_from_list(list_of_array, concat_axis=0):
     """
@@ -294,122 +173,7 @@ def sort_array_data(data,  sort_order =0,
         data=data[data[:,sort_order].argsort(kind="mergesort")]
         
     return data 
-        
-@deprecated ("Function replaced to another {_search_ToFill_Data}")
-def transfer_array_(data, index_key,start_value_depth, end_value_depth, 
-                    column_order_selection=0, axis=0): 
-    """
-    Parameters
-    ----------
-        * data : dict
-                Dictionnary of numpy ndarray .
-            
-        * index_key : float 
-                key of the dictionnary . 
-                Must be a number of the first column of offset .
-            
-        * start_value_depth : float 
-                If the depth is not reach must add depth of the closest point.
-                give the start value which match to the maxi depth of the data :
-                The *default* is -214.
-                
-        * end_value_depth : float
-                Maximum depth of the survey. The default is -904.
-            
-        * column_order_selection : int,
-                the index of depth column. The default is 0.
-                
-        * axis : int , optional
-                numpy.ndarray axis . The default is 0.
-
-    Returns
-    -------
-        numpy.ndarray
-            return the array data we want to top to .
-    
-    :Example: 
-        
-        >>> import numpy as np 
-        >>> sos=abs(np.random.randn(4,3)*4)
-        >>> sos2=abs(np.random.randn(4,3)*10.8)
-        >>>  print(sos2)
-        >>> sis1=sort_array_data(data=sos,sort_order =1,
-        ...                    concatenate=False, concat_axis_order=0)
-        >>> sis2=sort_array_data(data=sos2,sort_order =1,
-        ...                    concatenate=False, concat_axis_order=0)
-        >>> dico={"18.4":sis1,
-        ...      "21.4":sis2}
-        >>> test=transfer_array_(data=dico, index_key=11.4, 
-        ...                      start_value_depth=-14, end_value_depth=23,
-        ...                      column_order_selection=1)
-        >>> print("sis1:",sis1)
-        >>> print("sis2:",sis2)
-        >>> print("Finaltest", test)
-    """
-
-    start_value_depth=abs(start_value_depth)
-    end_value_depth=abs(end_value_depth)
-    comp, flag,iter_,translist_=0,-1,0,[]
-    
-   # chef the depth colum if negative before enter in loop :  
-
-    if type (data)==dict :
-        for key, value in data.items(): # scroll the dictionary 
-            if float(key)> float(index_key):   # check the key of dictionnary
-                                        #before using its value 
-                maxi_depth=abs(value[:,column_order_selection]).max() # if yes
-                    # calculate the max depth of the value :
-                comp=0
-                for rowline in value : # scroll the row of the array dict value
-                
-                    if abs(rowline[column_order_selection])>start_value_depth : # check its
-                        # print(abs(rowline[column_order_selection]))
-
-                        # value and compare it to section we must start extract (start)
-                        if end_value_depth > maxi_depth:
-                            transData_=value[comp:,:] # if yes transfer data :
-                            # print(transData_)
-                            translist_.append(transData_)
-                            
-                            start_value_depth=abs(transData_[:,column_order_selection]).max()
-                            # start_value_depth=maxi_depth
-                            
-                            comp,iter_=0,iter_+1
-                            flag=1
-                            
-                        elif end_value_depth<=maxi_depth:
-                            indix =abs(value[:,column_order_selection]).tolist().index(end_value_depth)
-                            if iter_==0 : 
-                                transData_=value[comp:indix,::] 
-                                flag=0
-                                break 
-                            else :
-                                transData_=value[comp:indix,::]
-                                translist_.append(transData_)
-                                flag=1
-                                
-                        if start_value_depth >= end_value_depth:
-                            flag=1
-                            break
-                    else :
-                        comp +=1 
-                        
-    if flag ==0 : 
-        return transData_
-    if flag==1 : 
-        trans_array=concat_array_from_list(list_of_array=translist_, concat_axis=axis)
-        return trans_array 
-
-            
-    if type(data)==list: # create a dictionnary of array value 
-        dico={}
-        for ss, value  in enumerate( data) :
-            dico["{0}".format(value[0,0])]=value
-        # call recursive function 
-        transfer_array_(data=dico,index_key=index_key,start_value_depth=start_value_depth,
-                        end_value_depth=end_value_depth,column_order_selection=column_order_selection, axis=0)
-        
-            
+                   
 def interpol_scipy (x_value, y_value,x_new,
                     kind="linear",plot=False, fill="extrapolate"):
     
@@ -528,13 +292,8 @@ def broke_array_to_(arrayData, keyIndex=0, broken_type="dict"):
            dico_brok ,dictionnary of array.
     """
     
-    # find the max_counts
-    
     vcounts_temp,counts_temp=np.unique(arrayData[:,keyIndex], return_counts=True)
     vcounts_temp_max=vcounts_temp.max()
-    # print(vcounts_temp)
-    # print(vcounts_temp_max)
-    # print(vcounts_temp.min())
 
     dico_brok={}
     lis_brok=[]
@@ -562,480 +321,6 @@ def broke_array_to_(arrayData, keyIndex=0, broken_type="dict"):
     elif broken_type=="list":
         return lis_brok
     
-
-@deprecated('this function is replaced by [_search_ToFill_Data] ')
-def _OlDFUNCNOUSEsearch_fill_data(dicoReal, arrayTemp , 
-                      max_value, index_of_depth,axis=0):
-    """
-    Deprecated function , very expensive.
-    
-    Parameters
-    ----------
-        * data : dict
-                Dictionnary of numpy ndarray .
-            
-        * dataReal : dict
-                 dictionnary . must be a dictionnary of real of offset .
-            
-        * arrayTemp : np.ndarray 
-                 must be a numpy array of reserve data , the one , we want to 
-                 extract the depth data to fill array 
-    
-        * max_value : float
-                Maximum depth of the survey. 
-            
-        * index_of_depth : int,
-                the index of depth column. The *default* is 0.
-                
-        * axis : int , optional
-            numpy.ndarray axis . The default is 0.
-    
-    Returns
-    -------
-        array_like 
-            the array data we want to top to .
-    
-    :Example: 
-        
-         >>> import numpy as np 
-         >>>  np.random.seed(0)
-         >>>  sos=abs(np.random.randn(4,3)*4)
-         >>>  sos2=abs(np.random.randn(4,3)*10.8)
-         >>>  sos3=abs(np.randon.rand(8,3)*12.4)
-         >>>  # print(sos2)
-         >>>  sis1=sort_array_data(data=sos,sort_order =1,
-         ...                    concatenate=False, concat_axis_order=0)
-         >>>  sis2=sort_array_data(data=sos2,sort_order =1,
-         ...                    concatenate=False, concat_axis_order=0)
-         >>>  sis3=sort_array_data(data=sos3,sort_order =1,
-         ...                    concatenate=False, concat_axis_order=0)
-         >>>  dico={"18.4":sis1,
-         ...      "21.4":sis2}
-         >>>  test=_search_fill_data(dicoReal=dico, index_key=11.4, 
-         ...                      start_value=10, max_value=23,
-         ...                      index_of_depth=1)
-         >>> print("sis1\n:",sis1)
-         >>> print("sis2\n:",sis2)
-         >>> print("Finaltest\n", test)
-    """
-    
-    # arange a dictionany : 
-    #from keys : for k in sorted(dico.keys()):
-    #   print(%s: %s",%(k,names[k]))
-    # from values : for k , v  in sorted(dico.items(),key=lambda x:x[1]):
-    #   print(%s: %s",%(k,v))
-    
-    _all_checker,keyToSkip=[],[]
-    litemp= broke_array_to_(arrayData=arrayTemp,keyIndex=0,
-                            broken_type="list")
-    itemp,real,realTem=[],[],[]
-    for ii in litemp:
-        temp=sort_array_data(data=ii,sort_order=1,
-                             concatenate=False)
-        itemp.append(temp)
-    # print(itemp)
-        
-    for key , value in sorted(dicoReal.items()):
-        # print(sorted(dicoReal.items()))
-        # for ii, rowline in enumerate(value)  :
-        rowmax=value[:,index_of_depth].max()
-        real.append((float(key),rowmax))
-        _all_checker.append(rowmax)
-        
-    
-    #chek if all elements are reach the depth max  
-    # if all(_all_checker)==True : # if one of the depth is the same 
-    #     return dicoReal
-    realTem=real.copy()
-    for ii , value in enumerate(realTem):
-        if value[1] == max_value:
-            del realTem[ii]
-            #real.pop(ii)
-            
-    if realTem ==[]:
-        return dicoReal
-    
-    
-    print("Real : \n",real)
-    idx,flag=0,0
-    comp,sp=0,-1
-    fin_list,endList=[],[]
-    
-    while idx < len(realTem):
-        
-        indexKey=realTem[idx][0] #11,4
-        maxKey=realTem[idx][1] #214        
-        # if real[idx][1]==max_value : # case where thedepth  value of realdico is get  
-        #     flag=3
-        # # elif real[idx][1]==max_value : # case where thedepth  value of realdico is get  
-        # #     flag=3
-        # else :
-        if idx==len(realTem)-1:
-            indic=real.index(realTem[idx])
-            # check whether there is data after a delete the offset with depth value reach 
-            if realTem[idx][0]==real[-1][0]:
-                nexIndex=itemp[-1][0][0]
-            else :
-                nexIndex=real[indic+1][0]
-        else :
-            nexIndex=realTem[idx+1][0]#61.4
-        # loop the reserve list :
-        for ii, array in enumerate (itemp): #itemp is the  list of reserve broken list
-        
-            # if array[0][0]> indexKey and array[0][0]> nexIndex:
-            #     keyToSkip.append(realTem[idx])
-            #     continue 
-            if array[0][0]> indexKey and array[0][0]<nexIndex : #check offset and next offset , if True :
-                
-                for index, rowline in enumerate(array) : # loop the array now 
-                    # tem_depth=rowline[1] # take the value of depth of reserve array for the first row 
-                    if rowline[1] > maxKey :# maxKey=214, rowline[1]= :# (max_value=904) if True :
-                        sp=sp+1
-                        if sp==0 :
-                            add_array=array[index:,:]
-                            # num=index
-                            # print("True:\n",add_array)
-                            flag=4
-                        else :
-                            sp=-1
-                            pass
-                        # print(maxtem)
-            if flag==4:
-                # maxtem=array[-1][1]       # take the maximum depth of the reserve array , last row
-                if array[-1][1]  < max_value : # if the maximum depth not reach 
-                    comp=comp+1
-                    if array[0][0]<nexIndex :
-                        endList.append(add_array)
-                    else :
-                        fin_list.append(add_array) # keep the array in temporary list 
-                    # maxKey = maxtem   # set up new maximum depth 
-                    # flag=1
-                    maxKey = array[-1][1] 
-                    # print("flag4,comp>1")
-                    # if maxKey < 
-                elif array[-1][1]  ==max_value : # the maximum depth is reached
-                    flag=5
-    
-            if flag==5 :
-                
-                if comp==0 : # first check is ok 
-                    # add_array=array[num:,:] # cut the array 
-                    endList.append(add_array)
-                    flag=0
-                    # print("flag5,comp=0")
-                else :
-                  add_array=array[index:,:] #  
-                  fin_list.append(add_array) # list to create one ar
-
-                  flag=1
-                      
-        # if flag==3 : # in that case is true , save the value of the offset 
-        #     # for key , value in dicoReal.items() :
-        #     #     if float(key) == real[idx][0]:
-        #     #         endList.append(value)
-        #     keyToSkip.append(array[0][0])
-            
-                    
-        if flag==1 :
-            arT=concat_array_from_list(list_of_array=fin_list,concat_axis=axis)
-            endList.append(arT)
-        if flag==0 :
-            endList=endList
-        
-        idx=idx+1
-            
-    print("keyToSkip\n:",keyToSkip)       
-        
-    
-    #delete the the offset which are full depth on the list 
-    # print(keyToSkip)
-    # print(real,"\n")
-    for ii , value in enumerate(realTem):
-        if value[0] in keyToSkip:
-            del realTem[ii]
-            #real.pop(ii)
-    
-    # now we are the list of recoverd depth 
-    # build dictionnary
-    print("Realtem\n",realTem,)
-
-    print("endlist : \n",endList)
-    # print(keyToSkip)
-    
-    for ii , tuple_ in enumerate (realTem) : #take the realkey from dico
-        realKey, maxValue=tuple_
-        print(realKey,maxValue)
-        
-        add_array=endList[ii]       # take the add_value generated
-        # print(endList)
-        for key , value in dicoReal.items(): # search in dictionnary the key
-            if float(key)==realKey: # and compare it to the key from tuple ...
-                        #... just to have certitude then concatenate 
-                val=np.concatenate((value,add_array),axis=0)
-                dicoReal[key]=val
-        # print(ii)
-    return dicoReal 
-
-
-def _search_ToFill_Data (dicoReal, arrayTemp , 
-                      max_value, index_of_depth,axis=0): 
-    """
-    Parameters 
-    ------------
-        * data : dict
-                Dictionnary of numpy ndarray .
-                
-        * dicoReal : dict
-             dictionnary . must be a dictionnary of real of offset .
-            
-        * arrayTemp : np.ndarray 
-                 must be a numpy array of reserve data , the one , we want to 
-                 extract the depth data to fill array 
-    
-        * max_value : float
-                Maximum depth of the survey. 
-            
-        * index_of_depth : int,
-                the index of depth column. The default is 0.
-        * axis : int , optional
-            numpy.ndarray axis . The default is 0.
-        
-    Returns
-    -------
-        dict
-         dictionnary of offsets filled the array data we want to top to
-        
-    :Example: 
-    
-        >>>  import numpy as np 
-        >>>  np.random.seed(0)
-        >>>  sos=abs(np.random.randn(4,3)*4)
-        >>>  sos2=abs(np.random.randn(4,3)*10.8)
-        >>>  sos3=abs(np.random.randn(5,3)*10.8)
-        >>>  temp3=abs(np.random.rand(4,3)*12.4)
-        >>>  temp2=abs(np.random.rand(4,3)*15.4)
-        >>>  temp1=abs(np.random.rand(4,3)*9.4)
-        >>>  temp4=abs(np.random.rand(5,3)*9.9)
-        >>>  dico,temp={},[]
-        >>>  ff=[sos,sos2,sos3,temp1,temp2,temp3,temp4]
-        >>>  fin=[sort_array_data(data=ii,sort_order =1,
-        ...                concatenate=False, concat_axis_order=0) for ii in  ff ]
-        >>>  key=[11.9,61.4,102.7]
-        >>>  vat=[214,405,904]
-        >>>  for ii in range(3):
-        ...        fin[ii][:,0]=key[ii]
-        ...        fin[ii][-1][1]=vat[ii]
-        >>>  tempi=[(19.4,[11,18,50,120]),(28.4,[12,17,403,904]),
-        ...       (78.3,[11,8,202,804]),(124.4,[203,403,604,714,904])]
-        >>>  for ss, val in enumerate(tempi) :
-        ...        fin[ss+3][:,0]=val[0]
-        ...        fin[ss+3][:,1]=np.array(val[1])       
-        >>>  for ss, van in enumerate (fin):
-        ...        if ss<=3 :
-        ...            dico[van[0][0]]=van
-        ...        if ss>3 :
-        ...            temp.append(van)
-        >>>  arrayTemp=concat_array_from_list(list_of_array=temp,
-        ...                                 concat_axis=0)
-        >>>  sis02=_search_ToFill_Data(dicoReal=dico, arrayTemp=arrayTemp , 
-        ...              max_value=904, index_of_depth=1,axis=0)
-        >>>  print(sis02)
-    """ 
-    #Notes :
-    # arange a dictionany : 
-    #from keys : for k in sorted(dico.keys()):
-    #   print(%s: %s",%(k,names[k]))
-    # from values : for k , v  in sorted(dico.items(),key=lambda x:x[1]):
-    #   print(%s: %s",%(k,v)
-    # for ii , value in enumerate(realTem):
-    # if value[0] in keyToSkip:
-    #     del realTem[ii]
-    #     #real.pop(ii)
-    #------------------------------------
-    # _all_checker,keyToSkip=[],[]
-    litemp= broke_array_to_(arrayData=arrayTemp,keyIndex=0,
-                            broken_type="list")
-    itemp,real=[],[],
-    # flag=-1
-    for ii in litemp:
-        temp=sort_array_data(data=ii,sort_order=1,
-                             concatenate=False)
-        itemp.append(temp)
-    # print(itemp)
-    for key , value in sorted(dicoReal.items()):
-        # print(sorted(dicoReal.items()))
-        # for ii, rowline in enumerate(value)  :
-        rowmax=value[:,index_of_depth].max()
-        real.append((float(key),rowmax))
-        # _all_checker.append(rowmax)
-        
-    # print(itemp)
-    iter_=-1  
-    for ss,(offs, maxDepth) in enumerate( real):
-        # [(11.4,214),(19.4,120),(61.4,405),(102,904)]
-        # print(offs)
-        if maxDepth < max_value : # max_value=904 , maxDepth=214
-            if ss == len(real)-1:
-                for num, arTem in enumerate(itemp):
-                    kk=arTem[0][0]
-                    if kk > offs :
-                        nextIndex=kk
-                    else :
-                        break
-                # nextIndex=itemp[-1][0][0]
-            else :
-                nextIndex=real[ss+1][0]
-                
-            for ii, array in enumerate(itemp) : # [array(28),array(78), ....]
-            
-                if offs < array[0][0]  and array[0][0] < nextIndex: 
-
-                    for index, rowline in enumerate(array) : # scroll array(28)
-                        if rowline[1]> maxDepth :  # if rowline > the maxDepth=214
-                            iter_=iter_+1 # first iteration on array (28)
-                            if iter_==0 : # collect the remain info and add to dico
-                                add_array=array[index:,:]
-                                maxDepth=array[:,1].max() # caluclate nnex
-                                # print(add_array)
-                            else :
-                                pass
-                            if iter_==0 and maxDepth<=max_value :
-                                for key, value in dicoReal.items() :
-                                    if float(key) ==offs :
-                                        new_value=concat_array_from_list(list_of_array=[value,add_array],
-                                                                     concat_axis=axis)
-                                        dicoReal[key]=new_value
-                                        iter_=-1
-                                        # break
-                else :
-                    pass
-             
-    return dicoReal
-        
-
-def straighten_out_list (main_list , list_to_straigh):
-    """
-    Parameters
-    ----------
-        * main_list : list
-                list of which the data must absolutely appear into the straighen list.
-                in our case , it is the station list : a list of offset 
-                
-        * list_to_straigh : list
-                list contain the data (offset calculated , the depth and the resistivity (log10)), 
-
-    Returns
-    -------
-        * list
-            the straighen list.
-            some offset have been replaced by the offsets which are not in the 
-            main_list whithout change the lengh of the straighen list. 
-
-    :Example: 
-        
-        >>>  import numpy as np 
-        >>>  np.random.seed(14)
-        >>>  ss=np.random.randn(10)*12
-        >>>  ss=ss.tolist()
-        >>>  ss=[round(float(jj),4) for jj in ss]
-        >>>  ss.sort()
-        >>>  red=np.random.randn(7)*12
-        >>>  red=red.tolist()
-        >>>  test=[19, 15.012, 5.5821, 0.7234,3.1, 
-        ...      0.7919, 3.445, 4.7398, 5.1, 10.8, 15.51,21]
-        >>>  main=[20., 0.7234, 5, 3.445, 15.51,10.7, 3,5.1]
-        >>>  test.sort()
-        >>>  main.sort()
-        >>>  red=[round(float(ss),1) for ss in red]
-        >>>  print(test)
-        >>>  print(main)
-        >>>  sos=straighten_out_list (main_list=main , 
-        ...                         list_to_straigh=test)
-        >>>  print("sos:\n",sos)   
-    """
-    
-    
-    staIter=np.array(list_to_straigh)# ARRAY 
-    max_X=staIter.max()
-    valuesIter,counts=np.unique(staIter, return_counts=True)
-    valuesIter=valuesIter.tolist() # List sorted of straighten value
-    # print(valuesIter)
-    
-
-    misoffs,vamin,tempi=[],[],[]
-    # min_,flag=1,0
-    for sta in main_list: # keep the offset not in list to straight 
-        if sta not in valuesIter :
-            misoffs.append(sta)
-    if misoffs ==[]:
-        return list_to_straigh
-    
-    # inject miss offset value in the temporary list and sorted 
-    #this to choose the closet value we want to substitude the missoffset value 
-    tempi=[ii for ii in valuesIter]
-    for ii in misoffs :
-        tempi.append(ii)
-
-    tempi=deepcopy(tempi)
-
-    tempi.sort(reverse =False)
-    # print("mainlist:\n",main_list)
-    # print("tempiSorted:\n",tempi)
-    # print("missoff:\n",misoffs)
-    # print("lisofStraight_max:\n",max_X)
-    # # print(len(misoffs))
-
-    # sp=-1
-    for jj, off in enumerate(tempi): #scroll the create temporary list
-        for ss, ofi in enumerate(misoffs):  # scroll the miss offset list and compare it 
-                            # to the temportary list 
-            if off==ofi:
-                # print(off,ss)
-                indexof =main_list.index(off) # find the index of "off" value in the mainlist
-                        # in order to calculate the distance between the value to its next value 
-                        # or forward value ex :off=3 , backward =0.724 , forward =3.445
-                        
-                # if main_list[indexof]==main_list[-1]: # that's mean the "off" value reaches the end of mainlist
-                #     if tempi[-1]>main_list[indexof]: # 
-                #         deltaMain=main_list[indexof]-tempi[-1] # take the diff between
-                #         vamin.append(tempi[-1])
-                #     else :
-                #         deltaMain=main_list[indexof]-tempi[-2]
-                # else :
-                #     deltaMain=main_list[indexof]-main_list[indexof+1]
-                    
-                # if main_list[indexof+1] != tempi[jj+1] :
-                if off==tempi[-1]:
-                    # deltaOffneg=abs(off-tempi[jj-1])
-                    vamin.append(tempi[jj-1])
-                    # delta=deltaOffneg
-                    
-                elif off==tempi[0]:
-                    deltaOffpos=abs(off-tempi[jj+1])
-                    vamin.append(tempi[jj+1])
-                    # delta=deltaOffpos
-                else :
-                    deltaOffpos=abs(off-tempi[jj+1])
-                    deltaOffneg=abs(off-tempi[jj-1])
-                    if deltaOffpos >= deltaOffneg :
-                        # delta=deltaOffneg
-                        vamin.append(tempi[jj-1])
-                        # index=jj-1
-                    else :
-                        # delta=deltaOffpos
-                        # index=jj+1
-                            vamin.append(tempi[jj+1])
-
-    # print("vamin:\n",vamin)   
-    # print(len(vamin))
-    for ii, val in enumerate(list_to_straigh):
-        for ss, of in enumerate(vamin):
-            if val==of :
-                list_to_straigh[ii]=misoffs[ss]
-                
-    # if list_to_straigh[-1] !=max_X :
-        
-    return list_to_straigh
 
 def take_firstValue_offDepth(data_array,
                              filter_order=1):
@@ -1069,9 +354,6 @@ def take_firstValue_offDepth(data_array,
     
     listofArray=[]#data_array[0,:]]
     data_array=data_array[data_array[:,filter_order].argsort(kind="mergesort")]
-    # print(data_array,"\n:")
-    # np_array=np_array[np_array[:,filter_order].argsort(kind="mergesort")]
-     #returns the differents value on the filtersort index of array :
     values, counts =np.unique(data_array[:,filter_order], return_counts=True)
     
     for ii, rowline in enumerate(data_array ): 
@@ -1143,25 +425,16 @@ def dump_comma(input_car, max_value=2, carType='mixed'):
         input_car=input_car.strip(",").split(",")
         flag=1
         
-    # elif carType.lower() in ["mix", "mixed","merge","mer",
-    #                          "both","num&val","val&num&"]:
-    #     input_car=input_car.split(",")
-    
-        
+
     if np.iterable(input_car)==False :
         inputlist=[input_car,0]
-        # input_car=tuple(inputlist)
+
     elif np.iterable(input_car) is True :
-        # if flag==1 :
-        #     inputlist=input_car
-        #     # print(inputlist)
-        # else :
+
         inputlist=list(input_car)
-            
-        # print("false")
-    
+
     input_car=inputlist[:max_value]
-    # print(input_car)
+
     if flag==1 :
         if len(inputlist)==1 :
             return(inputlist[0])
@@ -1175,10 +448,12 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
     Parameters
     ----------
         * add_azimuth : Bool, optional
-                compute azimuth if add_azimut is set to True. The default is False.
+                compute azimuth if add_azimut is set to True. 
+                The default is False.
              
         *  utm_zone : Str, optional
-                 WGS84 utm_projection. set your zone if add_azimuth is turn to True. 
+                 WGS84 utm_projection. set your zone if add_azimuth is 
+                 turn to True. 
                  The default is "49N".
              
         * report_path : str, optional
@@ -1186,7 +461,8 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
                 its match the current work directory 
             
         * add_geochemistry_sample: bool
-                add_sample_data.Set to True if you want to add_mannually Geochimistry data.
+                add_sample_data.Set to True if you want to add_mannually 
+                Geochimistry data.
                 default is False.
 
     Raises
@@ -1282,7 +558,8 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
             dh_botdip[1]=(90.)
         elif float(dh_botdip[0])==0.:
             raise Exception(
-            "The curent bottom has a value 0.0 . Must put the bottom of the well as deep as possible !"
+            "The curent bottom has a value 0.0 . Must put the "
+            "bottom of the well as deep as possible !"
                             )
             
         hole_list.append(DH_Hole)
@@ -1293,9 +570,11 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
         #DH_Hole (ID)	DH_East	DH_North	DH_RH	DH_Dip	DH_Azimuth	DH_Top	DH_Bottom	DH_PlanDepth	DH_Decr	Mask 
         reg_lines.append("".join(text[1]+'{0:>7}'.format(DH_Hole))+"\n")
         reg_lines.append("".join(text[2])+"\n")
-        reg_lines.append(",".join(['{0:>14}'.format(str(ii)) for ii in list(DH_East_North)])+"\n")
+        reg_lines.append(",".join(['{0:>14}'.format(str(ii))
+                                   for ii in list(DH_East_North)])+"\n")
         reg_lines.append("".join(text[3])+"\n")
-        reg_lines.append(",".join(['{0:>7}'.format(str(ii)) for ii in list(dh_botdip)])+"\n")
+        reg_lines.append(",".join(['{0:>7}'.format(str(ii))
+                                   for ii in list(dh_botdip)])+"\n")
         
         comp+=-1
         while DH_Hole :
@@ -1320,9 +599,11 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
             dh_from_ar=dh_from_ar.reshape((dh_from_ar.shape[0],1)) 
             # check the last input bottom : 
             if dh_from_ar[-1] >= float(dh_botdip[0]):
-                _logger.info("The input bottom of well {{0}}, is {{1}}. It's less last layer thickess: {{2}}."\
-                             "we add maximum bottom at 1.023km depth.".format(DH_Hole,dh_botdip[0],
-                                                                          dh_from_ar[-1]))
+                _logger.info("The input bottom of well {{0}}, is {{1}}."
+                             "It's less last layer thickess: {{2}}."
+                             "we add maximum bottom at 1.023km depth.".
+                             format(DH_Hole,dh_botdip[0],
+                                    dh_from_ar[-1]))
                 dh_botdip[0]=(1023.)
                 wellSites[-1][3]=dh_botdip[0]  # last append of wellSites 
             #find Dh_to through give dh_from
@@ -1352,9 +633,11 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
             comp=-1
             
             reg_lines.append("".join(text[4])+"\n")
-            reg_lines.append(",".join(['{0:>7}'.format(str(jj))  for jj in list(dh_from)])+"\n")
+            reg_lines.append(",".join(['{0:>7}'.format(str(jj))
+                                       for jj in list(dh_from)])+"\n")
             reg_lines.append("".join(text[5])+"\n")
-            reg_lines.append(",".join(['{0:>12}'.format(jj) for jj in rock])+"\n") # rock already in list 
+            reg_lines.append(",".join(['{0:>12}'.format(jj) 
+                                       for jj in rock])+"\n") # rock already in list 
             # reg_lines.append("".join(rock+"\n"))
             
         reg_lines.append("\n")
@@ -1387,8 +670,10 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
     if add_azimuth==False:
         DH_Azimuth=np.full((wellSites.shape[0]),0)
     elif add_azimuth == True :
-        DH_Azimuth=compute_azimuth(easting = np.array([np.float(ii) for ii in wellSites[:,1]]),
-                                   northing =np.array([np.float(ii) for ii in wellSites[:,2]]),
+        DH_Azimuth=compute_azimuth(easting = np.array([np.float(ii) 
+                                                       for ii in wellSites[:,1]]),
+                                   northing =np.array([np.float(ii)
+                                                       for ii in wellSites[:,2]]),
                                    utm_zone=utm_zone)
 
         
@@ -1406,21 +691,27 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
     # reg_lines.append(text[7]+"\n")
     
     reg_lines.append(text[9]+'\n')
-    reg_lines.append("".join(['{0:>12}'.format(ss) for ss in text[7].split(",")]) +'\n')
+    reg_lines.append("".join(['{0:>12}'.format(ss) for 
+                              ss in text[7].split(",")]) +'\n')
     for rowline in WellData :
-        reg_lines.append(''.join(["{0:>12}".format(ss) for ss in rowline.tolist()])+"\n")
+        reg_lines.append(''.join(["{0:>12}".format(ss) for
+                                  ss in rowline.tolist()])+"\n")
         
     reg_lines.append(text[8]+"\n")
-    reg_lines.append("".join(['{0:>12}'.format(ss) for ss in text[10].split(",")]) +'\n')
+    reg_lines.append("".join(['{0:>12}'.format(ss) for ss 
+                              in text[10].split(",")]) +'\n')
     for ii , row in enumerate(GeolData):
-        reg_lines.append(''.join(["{0:>12}".format(ss) for ss in row.tolist()])+"\n")
+        reg_lines.append(''.join(["{0:>12}".format(ss) for
+                                  ss in row.tolist()])+"\n")
         
     if add_geochemistry_sample==True:
         SampleData=build_geochemistry_sample()
         reg_lines.append(text[11]+'\n')
-        reg_lines.append("".join(['{0:>12}'.format(ss) for ss in text[12].split(",")]) +'\n')
+        reg_lines.append("".join(['{0:>12}'.format(ss) for ss 
+                                  in text[12].split(",")]) +'\n')
         for ii , row in enumerate(SampleData):
-            reg_lines.append(''.join(["{0:>12}".format(ss) for ss in row.tolist()])+"\n")
+            reg_lines.append(''.join(["{0:>12}".format(ss) for
+                                      ss in row.tolist()])+"\n")
     else :
         SampleData=None        
         
@@ -1439,8 +730,10 @@ def build_wellData (add_azimuth=False, utm_zone="49N",
             shutil.move((os.path.join(os.getcwd(),"{0}_wellReport_".\
                                       format(name_of_location))),report_path)
         else :
-            raise OSError ("The path does not exit.Try to put the right path")
-            warnings.warn ("ignore","the report_path doesn't match properly.Try to fix it !")
+            raise OSError (
+                "The path does not exit.Try to put the right path")
+            warnings.warn (
+            "ignore","the report_path doesn't match properly.Try to fix it !")
         
     
     
@@ -1461,10 +754,13 @@ def compute_azimuth(easting, northing, utm_zone="49N", extrapolate=False):
         * utm_zone : str, optional
                 the utm_zone . if None try to get is through 
                 gis.get_utm_zone(latitude, longitude). 
-                latitude and longitude must be on degree decimals. The default is "49N".
+                latitude and longitude must be on degree decimals.
+                The default is "49N".
         * extrapolate : bool , 
-                for other purpose , user can extrapolate azimuth value , in order to get the sizesize as 
-                the easting and northing size. The the value will repositionate at each point data were collected. 
+                for other purpose , user can extrapolate azimuth value ,
+                in order to get the sizesize as 
+                the easting and northing size. The the value will 
+                repositionate at each point data were collected. 
                     Default is False as originally azimuth computation . 
 
     Returns
@@ -1588,7 +884,8 @@ def build_geochemistry_sample():
             sampName_ar=sampName_ar.reshape((sampName_ar.shape[0],1))
             try :
                 holes_names=np.full((sampName_ar.shape[0],1),holeName)
-                samfromto=np.concatenate((holes_names,samp_ar,dh_to,sampName_ar),axis=1)
+                samfromto=np.concatenate((
+                    holes_names,samp_ar,dh_to,sampName_ar),axis=1)
                 
             except Exception as e :
                 raise ("IndexError!, arrrays sample_DH_From:{0} &DH_To :{1}&"\
@@ -1770,8 +1067,10 @@ def parse_wellData(filename=None, include_azimuth=False,
     if include_azimuth==False:
         DH_Azimuth=np.full((collar_ar.shape[0]),0)
     elif include_azimuth== True:
-        DH_Azimuth=compute_azimuth(easting = np.array([np.float(ii) for ii in collar_ar[:,1]]),
-                                  northing = np.array([np.float(ii) for ii in collar_ar[:,2]]),
+        DH_Azimuth=compute_azimuth(easting = np.array([np.float(ii) 
+                                                       for ii in collar_ar[:,1]]),
+                                  northing = np.array([np.float(ii) 
+                                                       for ii in collar_ar[:,2]]),
                                   utm_zone=utm_zone, extrapolate=True)
     
     collar_ar[:,5]=DH_Azimuth
@@ -1901,7 +1200,8 @@ def _order_well (data,**kwargs):
     
     temp=[]
 
-    _logger.info ("You pass by {0} function! Thin now , everything is ok. ".format(this_function_name))
+    _logger.info ("You pass by {0} function! Thin now , everything is ok. ".
+                  format(this_function_name))
     
     for jj, value in enumerate (data):
         thickness_len,dial1,dial2=intell_index(datalist=value[1:]) #call intell_index
@@ -1918,14 +1218,17 @@ def _order_well (data,**kwargs):
         if bottomgeo[jj] =="" or bottomgeo[jj]==None :
             bottomgeoidx=1023.
             if max_given_bottom > bottomgeoidx:
-                _logger.warn("value {0} is greater than the Bottom depth {1}".format(max_given_bottom ,bottomgeoidx))
-                warnings.warn ("Given values have a value greater than the depth !")
+                _logger.warn("value {0} is greater than the Bottom depth {1}".
+                             format(max_given_bottom ,bottomgeoidx))
+                warnings.warn (
+                    "Given values have a value greater than the depth !")
                 
             dh_to=np.append(dh_to,bottomgeoidx)
         else: #elif :_flag==1 :         # check the bottom , any values given 
                                         # must be less or egual to depth not greater.
             if max_given_bottom> np.float(bottomgeo[jj]):
-                _logger.warn("value {0} is greater than the Bottom depth {1}".format(max_given_bottom ,bottomgeo[jj]))
+                _logger.warn("value {0} is greater than the Bottom depth {1}".
+                             format(max_given_bottom ,bottomgeo[jj]))
                 warnings.warn ("Given values have a value greater than the depth !")
             dh_to=np.append(dh_to,bottomgeo[jj])
             
@@ -1952,7 +1255,8 @@ def intell_index (datalist,assembly_dials =False):
         * datalist : list
                 list of element : may contain value and rocks or sample .
         * assembly_dials : list, optional
-                separate on two list : values and rocks or samples. The default is False.
+                separate on two list : values and rocks or samples. 
+                The default is False.
 
     Returns
     -------
@@ -1989,10 +1293,12 @@ def intell_index (datalist,assembly_dials =False):
             if thick >= max_:
                 max_=thick 
             else :
-                _logger.warning("the input value {0} is less than the previous one."\
-                              " Please enter value greater than {1}.".format(thick, max_) )
-                warnings.warn("Value {1} must be greater than the previous value {0}."\
-                              " Must change on your input data.".format(thick,max_))
+                _logger.warning(
+                    "the input value {0} is less than the previous one."
+                " Please enter value greater than {1}.".format(thick, max_) )
+                warnings.warn(
+                    "Value {1} must be greater than the previous value {0}."\
+                    " Must change on your input data.".format(thick,max_))
         except :
             # pass
             indexi=ii
@@ -2076,7 +1382,8 @@ def _strip_item(item_to_clean, item=None, multi_space=12):
     :Example: 
         
      >>> import numpy as np
-     >>> new_data=_strip_item (item_to_clean=np.array(['      ss_data','    pati   ']))
+     >>> new_data=_strip_item (item_to_clean=np.array(
+         ['      ss_data','    pati   ']))
      >>>  print(np.array(['      ss_data','    pati   ']))
      ... print(new_data)
 
@@ -2120,7 +1427,8 @@ def _cross_eraser (data , to_del, deep_cleaner =False):
         * deep_cleaner : bool, optional
                 Way to deeply check. Sometimes the values are uncleaned and 
             capitalizeed . this way must not find their safety correspondace 
-            then the algorth must clean item and to match all at the same time before eraisng.
+            then the algorth must clean item and to match all at
+            the same time before eraisng.
             The *default* is False.
 
     Returns
@@ -2138,9 +1446,11 @@ def _cross_eraser (data , to_del, deep_cleaner =False):
         >>> print(remain_data)
     """
     
-    data , to_del=_strip_item(item_to_clean=data), _strip_item(item_to_clean=to_del)
+    data , to_del=_strip_item(item_to_clean=data), _strip_item(
+        item_to_clean=to_del)
     if deep_cleaner : 
-        data, to_del =[ii.lower() for ii in data], [jj.lower() for jj in to_del]
+        data, to_del =[ii.lower() for ii in data], [jj.lower() 
+                                                    for jj in to_del]
         
     for index, item in enumerate(data): 
         while item in to_del :
@@ -2173,8 +1483,10 @@ def _remove_str_word (char, word_to_remove, deep_remove=False):
     :Example: 
         
         >>> from pycsamt.utils  import func_utils as func
-        >>> ch ='AMTAVG 7.76: "K1.fld", Dated 99-01-01,AMTAVG, Processed 11 Jul 17 AMTAVG'
-        >>> ss=func._remove_str_word(char=ch, word_to_remove='AMTAVG', deep_remove=False)
+        >>> ch ='AMTAVG 7.76: "K1.fld", Dated 99-01-01,AMTAVG, 
+        ...    Processed 11 Jul 17 AMTAVG'
+        >>> ss=func._remove_str_word(char=ch, word_to_remove='AMTAVG', 
+        ...                             deep_remove=False)
         >>> print(ss)
     """
     if type(char) is not str : char =str(char)
@@ -2221,7 +1533,8 @@ def stn_check_split_type(data_lines):
     split_type =[',', ':',' ',';' ]
     data_to_read =[]
     if isinstance(data_lines, np.ndarray): # change the data if data is not dtype string elements.
-        if data_lines.dtype in ['float', 'int', 'complex']: data_lines=data_lines.astype('<U12')
+        if data_lines.dtype in ['float', 'int', 'complex']: 
+            data_lines=data_lines.astype('<U12')
         data_lines= data_lines.tolist()
         
     if isinstance(data_lines, list):
@@ -2255,8 +1568,11 @@ def minimum_parser_to_write_edi (edilines, parser = '='):
         else :raise TypeError('<Edilines> Must be on list')
     for ii, lines in enumerate(edilines) :
         if isinstance(lines, dict):continue 
-        elif lines.find('=') <0 : raise 'None <"="> found on this item<{0}> of  the edilines list. list can not'\
-            ' be parsed.Please put egal between key and value '.format(edilines[ii])
+        elif lines.find('=') <0 : 
+            raise 'None <"="> found on this item<{0}> of '
+            ' the edilines list. list can not'\
+            ' be parsed.Please put egal between key and value '.format(
+                edilines[ii])
     
     return edilines 
             
@@ -2278,28 +1594,6 @@ def round_dipole_length(value, round_value =5.):
     else:return np.around(value - mm +10.)
     
 
-
-# if __name__=="__main__" :
-
-    # parse_=parse_wellData(filename='shimenDH.csv', include_azimuth=True,utm_zone='49N')
-    
-    # print("NameOflocation:\n",parse_[0])
-    # print("WellData:\n",parse_[1])
-    # print("GeoData:\n",parse_[2])
-    # print("Sample:\n",parse_[3])
-    # data =['Z.mwgt','Z.pwgt','Freq',' Tx.Amp','E.mag','   E.phz',
-    #         '   B.mag','   B.phz','   Z.mag', '   Zphz  ']
-    
-    # data2=[' B.phz',' Z.mag',]
-    # # cleaner =[(''+ ii*'*') for ii in range(7)]
-    # print(_cross_eraser(data=data2, to_del=data))
-    # print(_cross_eraser(data=data, to_del=data2))
-    # # print(_strip_item(item_to_clean=data, item=' '))
-    # # # print(cleaner)
-    # ts ='50.0'
-    # ch ='AMTAVG 7.76: "K1.fld", Dated 99-01-01,AMTAVG, Processed 11 Jul 17 AMTAVG'
-    # ss=_remove_str_word(char=ts, word_to_remove='m', deep_remove=False)
-            
 
 
     
