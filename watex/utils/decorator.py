@@ -451,9 +451,7 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
                             return fc[0]
                         elif crval>= nfval[-1] : 
                             return fc[-1]
-                 
-           
-            
+      
             cat_range_values, target_array, catfc = func(*args, **kwargs)
                 
             if len(cat_range_values) != len(cat_classes): 
