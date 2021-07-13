@@ -3,6 +3,15 @@
 # This module is part of the WATex viewer package, which is released under a
 # MIT- licence.
 
+"""
+ .. Synopsis:: Module ``plot`` collects essentailly deals with all plots into  
+     the whole packages. 
+
+Created on Tue Jul  13 15:48:14 2021
+
+@author: ~alias @Daniel03
+
+"""
 import os ,re, warnings
 import functools 
 import numpy as np 
