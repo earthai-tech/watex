@@ -1,7 +1,23 @@
+from __future__ import print_function 
+
+__docformat__='restructuredtext'
+
 import functools
 import inspect
 import os
+import shutil
+
+import datetime 
+# import pandas as pd 
+import numpy as np
+from typing import Iterable, Optional  
+
 from watex.utils._watexlog import watexlog
+from watex.utils.__init__ import savepath as savePath 
+
+__logger = watexlog().get_watex_logger(__name__)
+
+
 
 
 class deprecated(object):
@@ -61,11 +77,12 @@ class gdal_data_check(object):
 
     def __init__(self, func, raise_error=False):
         """
-        this decorator should only be used for the function that requres gdal and gdal-data
-        to function correctly.
+        this decorator should only be used for the function that requres 
+        gdal and gdal-data to function correctly.
 
-        the decorator will check if the GDAL_DATA is set and the path in GDAL_DATA is exist.
-        If GDAL_DATA is not set, then try to use external program "gdal-config --datadir" to
+        the decorator will check if the GDAL_DATA is set and the path
+         in GDAL_DATA is exist. If GDAL_DATA is not set, then try to
+         use external program "gdal-config --datadir" to
         findout where the data files are installed.
 
         If failed to find the data file, then ImportError will be raised.
@@ -104,7 +121,8 @@ class gdal_data_check(object):
                     return True
                 else:
                     self._logger.error(
-                        "\tCannot find gdal-data path. Please find the gdal-data path of your installation and set it to "
+                        "\tCannot find gdal-data path. Please find the"
+                        " gdal-data path of your installation and set it to"
                         "\"GDAL_DATA\" environment variable. Please see "
                         "https://trac.osgeo.org/gdal/wiki/FAQInstallationAndBuilding#HowtosetGDAL_DATAvariable for "
                         "more information.")
@@ -113,7 +131,8 @@ class gdal_data_check(object):
                 return False
         else:
             if os.path.exists(os.environ['GDAL_DATA']):
-                self._logger.info("GDAL_DATA is set to: {}".format(os.environ['GDAL_DATA']))
+                self._logger.info("GDAL_DATA is set to: {}".
+                                  format(os.environ['GDAL_DATA']))
 
                 try:
                     from osgeo import osr
@@ -129,18 +148,19 @@ class gdal_data_check(object):
                 return True
             else:
                 self._logger.error("GDAL_DATA is set to: {},"
-                                   " but the path does not exist.".format(os.environ['GDAL_DATA']))
+                                   " but the path does not exist.".
+                                   format(os.environ['GDAL_DATA']))
                 return False
 
 class redirect_cls_or_func(object) :
     """
         Description:
-            used to redirected functions or classes. Deprecated functions or class 
-            can call others use functions or classes.
+            used to redirected functions or classes. Deprecated functions 
+            or class can call others use functions or classes.
             
         Usage:
-            .. todo:: use new function or class to replace old function method or class
-                with multiple parameters.
+            .. todo:: use new function or class to replace old function 
+                method or class with multiple parameters.
 
         Author: @Daniel03
         Date: 18/10/2020
@@ -156,7 +176,8 @@ class redirect_cls_or_func(object) :
 
         """
         
-        self._reason=[func_or_reason for func_or_reason in args if type(func_or_reason)==str][0]
+        self._reason=[func_or_reason for func_or_reason in args \
+                      if type(func_or_reason)==str][0]
         if self._reason is None :
             
             raise TypeError(" Redirected reason must be supplied")
@@ -166,9 +187,11 @@ class redirect_cls_or_func(object) :
                                  args if type(func_or_reason)!=str][0]
 
         if self._new_func_or_cls is None:
-            raise Exception(" At least one argument must be a func_method_or class."
+            raise Exception(
+                " At least one argument must be a func_method_or class."
                             "\but it's %s."%type(self._new_func_or_cls))
-            self._logger.warn("\t first input argument argument must be a func_method_or class."
+            self._logger.warn("\t first input argument argument must"\
+                              " be a func_method_or class."
                             "\but it's %s."%type(self._new_func_or_cls))
             
 
@@ -214,6 +237,286 @@ class redirect_cls_or_func(object) :
             return cls_or_func(*args, **kwargs)
         return self._new_func_or_cls
         
+
+class writef(object): 
+    """
+    Description:
+            used to redirected functions or classes. Deprecated functions 
+            or class can call others use functions or classes.
+            
+        Usage:
+            .. todo:: Decorate function or class to replace old function 
+                method or class with multiple parameters and export files
+                into many other format. `.xlsx` , `.csv` or regular format.
+
+        Author: @Daniel03
+        Date: 09/07/2021
+        
+    Decorator mainly focus to export data to other files. Exported file 
+    can `regular` file or excel sheets. 
+    
+    
+    :param reason: 
+        Explain the "What to do?". Can be `write` or `convert`
+    :param from_: 
+        
+         Can be ``df`` or ``regular``. If ``df``, `func` is called and collect 
+         its input argguments and write to appropriate extension. If `from_`is 
+         ``regular``, Can be a simple data put on list of string ready 
+         to output file into other format. 
+         
+    :type from_: str ``df`` or ``regular`` 
+    
+    :param to_: 
+                Exported file extension. Can be excel sheeet (`.xlsx`, `csv`)
+                or other kind of format. 
+                
+    :param savepath: 
+        Give the path to save the new file written. 
+    
+    """
+    
+    def __init__(self, reason=None,  from_=None,
+                 to=None, savepath =None, **kws): 
+        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
+        
+        self.reason = reason 
+        self.from_=from_ 
+        self.to= to
+        
+        self.refout =kws.pop('refout', None)
+        self.writedfIndex =kws.pop('writeindex', False)
+        
+        self.savepath =savepath 
+        
+        
+        for key in list(kws.keys()): 
+            setattr(self, key, kws[key])
+
+    def __call__(self, func):
+        """ Call function and return new function decorated"""
+        
+        @functools.wraps(func)
+        def decorated_func(*args, **kwargs): 
+            """
+            New decorated function and holds `func` args and kwargs arguments.
+            :params args: arguments of `func`
+            :param kwargs: `keywords arguments of `func`. 
+            
+            """
+            self._logging.info('Func <{}> decorated !'.format(func.__name__))
+            
+            cfw = 0     # write file type 
+            
+            for addf in ['savepath', 'filename']: 
+                if not hasattr(self, addf): 
+                    setattr(self, addf, None)
+                    
+            erp_time = '{0}_{1}'.format(datetime.datetime.now().date(), 
+                            datetime.datetime.now().time())
+            
+            if self.refout is None : 
+               self.refout = 'w-{0}'.format(
+                   erp_time )
+               
+            if self.reason is None : 
+                print('--> No reason is set. What do you want to do?'
+                      ' `write` file or `convert` file into other format?.')
+                return func(*args, **kwargs)
+            
+            if self.reason is not None : 
+                if self.reason.lower().find('write')>=0 : 
+                    cfw = 1 
+                    if self.from_=='df': 
+                        self.df , to_, refout_, savepath_, windex = func(*args,
+                                                                 **kwargs)
+                        fromdf =True
+                        self.writedfIndex = windex
+                         
+            if fromdf is True and cfw ==1 : 
+                if to_ is not None : 
+                    self.to= '.'+ to_.replace('.','')
+     
+                else: 
+                    self.to = '.csv'
+                if refout_ is not None : 
+                    self.refout =refout_
+            
+                self.refout = self.refout.replace(':','-') + self.to
+                
+                if savepath_ is not None: 
+                    self.savepath =savepath_
+                if self.to =='.csv': 
+                    self.df.to_csv(self.refout, header=True,
+                          index =self.writedfIndex)
+                elif self.to =='.xlsx':
+    
+                    self.df.to_excel(self.refout , sheet_name='{0}'.format(
+                        self.refout[: int(len(self.refout)/2)]),
+                            index=self.writedfIndex) 
+                             
+                         
+            # savepath 
+            generatedfile = '_watex{}_'.format(
+                    datetime.datetime.now().time()).replace(':', '.')
+            if self.savepath is None :
+                self.savepath = savePath(generatedfile)
+            if self.savepath is not None :
+                if not os.path.isdir(self.savepath): 
+                    self.savepath = savePath(generatedfile)
+                try : 
+                    shutil.move(os.path.join(os.getcwd(),self.refout) ,
+                            os.path.join(self.savepath , self.refout))
+                except : 
+                    self.logging.debug("We don't find any path to save file.")
+                else: 
+                    print(
+                    '--> reference output  file <{0}> is well exported to {1}'.
+                          format(self.refout, self.savepath))
+                    
+            return func(*args, **kwargs)
+        return decorated_func 
+        
+    
+def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']): 
+    """
+    Decorator function  collected  from the `func`the `target_values` to be 
+    categorized and the `cat_range_values` to change 
+    into `cat_classes` like:: 
+          
+          cat_range_values= [0.0, [0.0, 3.0], [3.0, 6.0], [6.0, 10.0], 10.0]
+          target_values =[1, 2., 3., 6., 7., 9., 15., 25, ...]
+          
+    Decorated Fonction returns the  new function decorated holding  
+    values  categorized into categorial `cat_classes`.
+    For instance in groundwater exploration::
+        
+        - FR0 --> `flow` is equal to ``0.``m3/h
+        - FR1 --> `flow` is ``0 < FR ≤ 3`` m3/h
+        - FR2 --> `flow` is ``3 < FR ≤ 6`` m3/h 
+        - FR3 --> `flow` is ``6 < FR ≤ 10`` m3/h
+        - FR4 --> `flow` is ``10.+`` in m3/h
+
+    :return: Iterable object with new categorized values converted 
+    into `cat_classes`. 
+    
+    Author: @Daniel03
+    Date: 13/07/2021
+    """
+
+    def categorized_dec(func):
+        """
+        Decorator can be adapted  to other categorized problem by changing the 
+        `cat_classes` arguments to another categorized classes 
+        for other purposes like ::
+            
+         cat_classes=['dry', 'HV', 'IHV', 'IVH+', 'UH']   
+            
+        Where ``IVHU`` means I:mproved V:Village H:Hydraulic and U:Urban. 
+        
+        :Note: 
+            If `func` to be decorated contains ` cat_classes` arguments, 
+            the `cat_classes` argument should be erased by the given
+            from `func`. 
+        
+        """
+        @functools.wraps(func)
+        def  wrapper(*args, **kwargs): 
+            """
+            Function deals with the categorized flow values. 
+            
+            :param args: positional argumnent of `func`
+            :param kwargs: Optional argument of `func`
+    
+            :return `new_target_array`: Iterable object categorized.
+            """
+            def mapf(crval,  nfval, fc):
+                """
+                Categorizing loop to hold the convenient classes according 
+                to the `cat_range_value` provided. Come as supplement 
+                tools when ``maping`` object doesnt work properly.
+                
+                :param crval: value to be categorized 
+                :param nfval: array of `cat_range_values`
+                :param fc: Object to replace the`crval` belonging 
+                    to `cat_classes`
+                """
+                for ii, val in enumerate(nfval):
+                    try : 
+                        if len(val)>1: 
+                            if  val[0] < crval <= val[-1] : 
+                                return fc[ii]
+                    except : 
+                        if crval ==0.: 
+                            return fc[0]
+                        elif crval>= nfval[-1] : 
+                            return fc[-1]
+                 
+           
+            
+            cat_range_values, target_array, catfc = func(*args, **kwargs)
+                
+            if len(cat_range_values) != len(cat_classes): 
+                __logger.error(
+                    'Length of `cat_range_values` and `cat_classes` provided '
+                    'must be the same length not ``{0}`` and'
+                    ' ``{1}`` respectively.'.format(len(cat_range_values),
+                                                    len(cat_classes)))
+            try : 
+                
+                new_target_array = np.array(list(map( mapf, target_array)))
+            except : 
+                
+                new_target_array = np.zeros_like(target_array)
+                for ii, ff in enumerate(target_array) : 
+                    new_target_array[ii] = mapf(crval=ff, 
+                                            nfval=cat_range_values, 
+                                           fc=cat_classes)
+            return new_target_array
+        return wrapper  
+    return  categorized_dec
+    
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             
 

@@ -30,6 +30,9 @@ from watex.core.erp import ERP_collection
 from watex.core.ves import VES_collection 
 from watex.core.geology import Geology, Borehole 
 
+from watex.utils.__init__ import savepath as savePath 
+from watex.utils.decorator import writef 
+
 import watex.utils.wmathandtricks as wfunc
 import watex.utils.gis_tools as gis
 
@@ -139,7 +142,7 @@ class Features:
         self.borehObjs=boreholeObjs
         
         self.gFname= None 
-        
+
         for key in list(kwargs.keys()):
             setattr(self, key, kwargs[key])
             
@@ -503,6 +506,63 @@ class Features:
                     ' names to be the same everywhere.'.format(erObj, bhObj,
                                                            geolObj))
         return new_id 
+    
+    
+    @writef(reason='write', from_='df')
+    def exportdf (self, refout=None, to =None, savepath=None, **kwargs): 
+        """ Export dataframe from :attr:~core.geofeatures.df` to files 
+        can be Excell sheet file or '.json' file. To get more details about 
+        the `writef` decorator , see :doc:`watex.utils.decorator.writef`. 
+        
+        :param refout: 
+            Output filename. If not given will be created refering to  the 
+            exported date. 
+        :param to: 
+            Export type. Can be `.xlsx` , `.csv`, `.json` and else
+        :type to: str 
+        
+        :param savepath: 
+            Path to save the `refout` filename. If not given
+            will be created.
+        :returns: 
+            - `ndf`: new dataframe from `attr:`~.geofeatures.Features.df` 
+            - 
+        :Example: 
+            
+            >>> from watex.core.geofeatures import Features 
+            >>> featObj = Features(
+            ...    features_fn= 'data/geo_fdata/BagoueDataset2.xlsx' )
+            >>> featObj.exportdf(refout=ybro, to='csv')
+    
+        """
+        df =kwargs.pop('df', None)
+        modname =kwargs.pop('moduleName', '_geoFeatures_')
+        writeindex =kwargs.pop('writeindex', False)
+        
+        if df is not None : 
+            self.df =df 
+            
+        for attr in ['to', 'savepath', 'refout']:
+            if not hasattr(self, attr): 
+                setattr(self, attr,  None)
+
+        if savepath is not None : self.savepath = savepath  
+        if to is not None: self.to = to
+        if refout is not None: self.refout = refout
+        
+        # create new data and replace id by site name 
+        ndf =self.df.copy(deep=True)
+        ndf.reset_index(inplace =True)
+        ndf['id'] =self.site_names 
+        
+        if self.savepath is None :
+            self.savepath = savePath(modname)
+            
+        return ndf, self.to,  self.refout,\
+            self.savepath, writeindex
+        
+        
+        
  
 class ID: 
     """
@@ -583,7 +643,7 @@ class ID:
         return self.select_ 
 
                     
-                
+
             
         
 if __name__=='__main__': 
@@ -591,11 +651,14 @@ if __name__=='__main__':
     
     featObj =Features(features_fn= featurefn)
     
-    print(featObj.df)
+    df=featObj.df
+    #df2, *_ = 
+    featObj.exportdf()
+    
     # print(featObj.site_names)
     # print(featObj.id_)
     # print(featObj.id)
-    print(featObj.b126)
+    # print(featObj.b125)
     # dff= featObj.df
     # print(dff)
        
