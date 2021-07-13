@@ -22,7 +22,7 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 * **Learning methods implemented**
 
     - Supervised learnings:  
-        -  Support vector machines: [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
+        -  Support vector machines: [**SVMs**](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
         -  Neighbors: **KNN** 
         -  Trees: **DTC**
     - Unsupervided learnings: 
@@ -68,40 +68,27 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 >>> from watex.core.erp import ERP 
 >>> erp_obj =ERP (erp_fn = data/erp/l10_gbalo.csv',  # erp_data 
 ...                auto=False,                        # automatic computation  option 
-...                dipole_length =10.,                 # distance between measurements 
-...                posMinMax= (90, 130),               # select anomaly boundaries 
-...                 turn_on =True                      # display infos
+...                dipole_length =10.,                # distance between measurements 
+...                posMinMax= (90, 130),              # select anomaly boundaries 
+...                turn_on =True                      # display infos
                  )
 ```
  - To get the _best anomaly_ point from the 'erp_line' if `auto` option is enabled, try: 
 ```
 >>> erp_obj.select_best_point_ 
-Out[1]: 170 
------------------------------------------------------------------------------
---|> The best point is found  at position (pk) = 170.0 m. ----> Station 18              
------------------------------------------------------------------------------
+Out[1]: 170 			# --|> The best point is found  at position (pk) = 170.0 m. ----> Station 18              
 >>> erp_obj.select_best_value_ 
-Out[1]: 80.0
------------------------------------------------------------------------------
---|> Best conductive value selected is = 80.0 Ω.m                    
------------------------------------------------------------------------------
+Out[1]: 80.0			# --|> Best conductive value selected is = 80.0 Ω.m                    
 ```
 - To get the next geo-electrical features, considered the _prefix_`abest_+ {feature_name}`. 
 For instance :
-
 ```
 >>> erp_obj.abest_type         # Type of the best selected anomaly on erp line
-Out[3]:  CB2P                  # is  contact between two planes "CB2P". 
->>> erp_obj.abest_shape         
-Out[4]: V                       # Best selected anomaly shape is "V"
->>> erp_obj.abest_magnitude    
-Out[5]: 45                     # Best anomaly magnitude is 45 Ω.m. 
->>> erp_obj.abest_power         
-Out[6]: 40.0                    # Best anomaly power is 40.0 m. 
->>> erp_obj.abest_sfi          
-Out[7]: 1.9394488747363936      # best anomaly standard fracturation index.
+>>> erp_obj.abest_shape        # Best selected anomaly shape is "V"
+>>> erp_obj.abest_magnitude   # Best anomaly magnitude is 45 Ω.m. 
+>>> erp_obj.abest_power         # Best anomaly power is 40.0 m. 
+>>> erp_obj.abest_sfi     	# best anomaly standard fracturation index.
 >>> erp_obj.abest_anr           # best anomaly ration the whole ERP line.
-Out[8]: 50.76113145430543 % 
 ```
 - If `auto` is enabled, the program could find additional maximum three best 
 conductive points from the whole  ERP line as : 
@@ -121,39 +108,25 @@ ERP survey line are auto-computed. For example:
 >>> from watex.core.erp import ERP_collection
 >>> erpColObj= ERP_collection(listOferpfn= 'data/erp')
 >>> erpColObj.erpdf 
-Out[9]:
-               id      east      north  power  magnitude shape  type       sfi
-0  e2059747141000  790187.0  1093022.0   40.0       45.0     V  CB2P  1.939449
-1  e2059722582344  790232.0  1093057.0   50.0       17.0     V  CB2P  1.352764
-2  e2059733751112  790724.0  1092789.5   30.0      211.0     V  CB2P  4.787024
 ```
-
 Get all features for data analysis and prediction purpose  by calling `Features`
-from `~.core.geofeatures` module as: 
+from `~.core.geofeatures` module as **(1)** or do the same task by calling different module collections`ves`, `geol`,
+considered as Python object **(2)**: 
 ```
->>> from watex.core.geofeatures import Features 
->>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
->>> featObj =Features(features_fn= featurefn)
->>> featObj.site_ids
->>> featObj.site_names
->>> featObj.df
-
+(1) 							|(2)
+>>> from watex.core.geofeatures import Features       	|>>> from watex.core.geofeatures import Features
+>>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 	|>>> from watex.core.erp import ERP_collection 
+>>> featObj =Features(features_fn= featurefn) 		|>>> from watex.core.ves import VES_collection 
+>>> featObj.site_ids 					|>>> from watex.core.geology import Geology, Borehole 
+>>> featObj.site_names 					|>>> featObj =Features(ErpColObjs=ERP_collection('data/erp')
+>>> featObj.df 						|... 		vesObjs=VES_collection('data/ves'),
+                       					|...		geoObjs=Geology('data/geol'),
+                       					|...		boreholeObjs=Borehole('data/boreh'))
+							|>>> featObj.site_ids
+							|>>> featObj.site_names
+							|>>> featObj.df
 ``` 
-It's also possible to do the same task by calling different module collections`ves`, `geol`,
-considered as Python object: 
-```
->>> from watex.core.geofeatures import Features 
->>> from watex.core.erp import ERP_collection 
->>> from watex.core.ves import VES_collection 
->>> from watex.core.geology import Geology, Borehole 
->>> featObj =Features(ErpColObjs=ERP_collection('data/erp')
-                       vesObjs=VES_collection('data/ves'),
-                    geoObjs=Geology('data/geol'),
-                     boreholeObjs=Borehole('data/boreh'))
->>> featObj.site_ids
->>> featObj.site_names
->>> featObj.df
-```
+![](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/features_computation.PNG)
 
 ## System requirements 
 * Python 3.7+ 
