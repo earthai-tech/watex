@@ -176,21 +176,21 @@ class redirect_cls_or_func(object) :
 
         """
         
-        self._reason=[func_or_reason for func_or_reason in args \
+        self._reason=[func_or_reason for func_or_reason in args
                       if type(func_or_reason)==str][0]
         if self._reason is None :
             
             raise TypeError(" Redirected reason must be supplied")
         
 
-        self._new_func_or_cls = [func_or_reason for func_or_reason in \
+        self._new_func_or_cls = [func_or_reason for func_or_reason in 
                                  args if type(func_or_reason)!=str][0]
 
         if self._new_func_or_cls is None:
             raise Exception(
                 " At least one argument must be a func_method_or class."
                             "\but it's %s."%type(self._new_func_or_cls))
-            self._logger.warn("\t first input argument argument must"\
+            self._logger.warn("\t first input argument argument must"
                               " be a func_method_or class."
                             "\but it's %s."%type(self._new_func_or_cls))
             
@@ -300,8 +300,8 @@ class writef(object):
         def decorated_func(*args, **kwargs): 
             """
             New decorated function and holds `func` args and kwargs arguments.
-            :params args: arguments of `func`
-            :param kwargs: `keywords arguments of `func`. 
+            :params args: positional arguments of `func`
+            :param kwargs: keywords arguments of `func`. 
             
             """
             self._logging.info('Func <{}> decorated !'.format(func.__name__))
@@ -412,7 +412,7 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
             
          cat_classes=['dry', 'HV', 'IHV', 'IVH+', 'UH']   
             
-        Where ``IVHU`` means I:mproved V:Village H:Hydraulic and U:Urban. 
+        Where ``IVHU`` means I:improved V:village H:hydraulic and U:urban. 
         
         :Note: 
             If `func` to be decorated contains ` cat_classes` arguments, 

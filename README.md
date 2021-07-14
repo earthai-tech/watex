@@ -128,6 +128,7 @@ considered as Python object **(2)**:
 ``` 
 ![](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/features_computation.PNG)
 
+
 ## Data analysis and quick plot hints
 
  To solve the classification problem in `supervised learning`, we need to categorize  the `targetted` numerical values 
@@ -142,7 +143,7 @@ considered as Python object **(2)**:
 To quick see how data look like, call `~viewer`packages: 
 ```
 >>> from watex.viewer.plot import QuickPlot 
->>> qplotObj = QuickPlot( df = slObj.df , lc='b) 
+>>> qplotObj = QuickPlot( df = slObj.df , lc='b') 
 >>> qplotObj.hist_cat_distribution(target_name='flow')
 ```
 If `df` is not given, It's easy to quick visualize the data setting the argument `data_fn` that match the 
