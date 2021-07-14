@@ -321,7 +321,7 @@ def categorize_flow(target_array, flow_values: Iterable[float],
     :param flow_values: 
         
         The way to be categorized. Distribute the flow values 
-        of numerical values considered as pseudo_classes like: 
+        of numerical values considered as pseudo_classes like:: 
     
             flow_values= [0.0, [0.0, 3.0], [3.0, 6.0], [6.0, 10.0], 10.0] (1)
             

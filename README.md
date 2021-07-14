@@ -128,6 +128,7 @@ considered as Python object **(2)**:
 ``` 
 ![](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/features_computation.PNG)
 
+
 ## Data analysis and quick plot hints
 
  To solve the classification problem in `supervised learning`, we need to categorize  the `targetted` numerical values 
