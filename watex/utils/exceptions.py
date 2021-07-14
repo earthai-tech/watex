@@ -70,6 +70,8 @@ class WATexError_plot_geoinputargument(Exception):
 class WATexError_plot_featuresinputargument(Exception): 
     pass
 
+class WATexError_hints(Exception): 
+    pass
 
 class WATexError_SQL(Exception): 
     pass
