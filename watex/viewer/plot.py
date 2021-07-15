@@ -22,7 +22,7 @@ import  matplotlib.pyplot  as plt
 
 import watex.viewer.hints as hints
 
-from typing import Generic, TypeVar 
+from typing import Generic, TypeVar, Iterable 
 
 T=TypeVar('T', dict, list, tuple)
 
@@ -141,6 +141,8 @@ class QuickPlot :
         self.sns_height =kwargs.pop ('sns_height', 4.)
         self.sns_aspect =kwargs.pop ('sns_aspect', .7)
         
+        self.xlabel=kwargs.pop('xlabel', None)
+        self.ylabel=kwargs.pop('ylabel', None)
         
         for key in kwargs.keys(): 
             setattr(self, key, kwargs[key])
@@ -348,6 +350,11 @@ class QuickPlot :
         ax.set_ylabel (self.ylabel)
         ax.set_title(self.fig_title)
         ax.legend() 
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
         plt.show()
         
     def multi_cat_distribution(self, df =None, data_fn =None,  x_features=None ,
@@ -432,12 +439,13 @@ class QuickPlot :
                     hue=features_dict['targets'][ii], linewidth = self.lw, 
                     height = self.sns_height, aspect = self.sns_aspect
                     ).set_ylabels(self.ylabel)
-
+            
             plt.show()
             
     def plot_correlation_matrix(self, df=None, data_fn =None, 
                                 feature_names=None, plot_params:str ='qual',
-                                 target:str =None, **sns_kws): 
+                                 target:str =None, corr_method: str ='pearson',
+                                 min_periods=1, **sns_kws) -> None: 
         """
         Method to quick plot the qualitatif and quantitatives parameters. 
         
@@ -449,14 +457,30 @@ class QuickPlot :
         :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
         :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
         
+        :param target: 
+            
+                Assuming for prediction purposes , `target` is useful 
+                to comparae its correlation with others parameters. If ``None`` 
+                will assume the survey is intended for groundwater exploration
+                and will check whether `target` is among the dataFrame columns.
+                If exists will set or *default* is ``flow``. 
+                
         :param feature_names: List of features to plot correlations. 
         
-        :param plot_params: The typle of parameters plot when `feature_names`
+        :param plot_params: 
+            
+                The typle of parameters plot when `feature_names`
                 is set to ``None``. `plot_params` argument must be `quan` and
                 `qual` for quantitative and qualitative features respectively."
         
-        :Note: One than one features, see `qual_feature_names` and 
-                `quant_feature_names` on list. 
+        :param corr_method: correlation methods.*Default is ``pearson``
+        :param min_periods: 
+                Minimum number of observations required per pair of columns
+                to have a valid result. Currently only available for 
+                ``pearson`` and ``spearman`` correlation. For more details 
+                refer to https://www.geeksforgeeks.org/python-pandas-dataframe-corr/
+        
+        :Note: One than one features, see `feature_names` on list. 
                 
         :params sns_kws: Other seabon heatmap arguments. Refer to 
                 https://seaborn.pydata.org/generated/seaborn.heatmap.html
@@ -482,7 +506,7 @@ class QuickPlot :
             self.data_fn = data_fn
         
         df_= self.df.copy(deep=True)
-        df_.reset_index(inplace=True )
+        # df_.reset_index(inplace=True )
 
         if feature_names is None: 
             if plot_params.lower().find('qual')>=0 :
@@ -506,23 +530,30 @@ class QuickPlot :
                     "not {plot_params}."
                         )
                 
-        # Control the existenceof providing features into the pd.dataFramename:
+        # Control the existence of providing features into the pd.dataFramename:
         try : 
-            if  hints.cfexist(features_to= feature_names,
-                               features = df_.columns) is False: 
-                raise Wex.WATexError_parameter_number(
+            reH=  hints.cfexist(features_to= feature_names,
+                               features = df_.columns) 
+                
+        except: 
+            raise Wex.WATexError_parameter_number(
                 f'Parameters number of {feature_names} is  not found in the '
                 ' dataframe columns ={0}'.format(list(df_.columns)))
-        except: pass 
+        else : 
+            if reH is False: 
+                raise Wex.WATexError_parameter_number(
+                f'Parameters number `{feature_names}` is  not found in the '
+                ' dataframe columns ={0}'.format(list(df_.columns)))
 
         if plot_params =='qual': 
             for ftn in feature_names: 
+            
                 df_[ftn] = df_[ftn].astype('category').cat.codes 
-            ax= sns.heatmap(data = df_[list(feature_names)].corr(),
+        
+            ax= sns.heatmap(data = df_[list(feature_names)].corr(
+                method= corr_method,min_periods=min_periods),
                  **sns_kws)
-            ax.set_title(self.fig_title)
-            ax.set_title(self.fig_title)
-
+      
         elif plot_params =='quan': 
             if target is None: 
                 if 'flow' in df_.columns: target ='flow'
@@ -532,31 +563,378 @@ class QuickPlot :
                     self._logging.error(
                         f"A given target's name `{target}`is wrong")
                 else: 
-                     feature_names.extend(['flow'])   
-        
-            sns.heatmap(data = df_[list(feature_names)].corr(),
-                        **sns_kws)
- 
+                    pass
+                    feature_names.extend(['flow']) 
+                    df_['flow']= df_['flow'].astype('category').cat.codes
+            if 'id' in feature_names: 
+                feature_names.remove('id')
+                df_= df_.drop('id', axis=1)
+
+            ax= sns.heatmap(data =df_[list(feature_names)].corr(
+                method= corr_method, min_periods=min_periods), 
+                    **sns_kws
+                    )
+
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        ax.set_title(self.fig_title)
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
         plt.show()
                 
- 
+    def plot_quantitative_features(self, df=None, data_fn =None , target= None,
+                                  quan_features:Iterable[T]=None, 
+                                  trigger_map_lower_kws: bool =False, 
+                                  map_lower_kws: Generic[T]=None, **sns_kws): 
+        """
+        Plot qualitative features distribution using correlative aspect. Be 
+        sure to provided quantitative arguments. 
         
-if __name__=='__main__': 
-    qplotObj = QuickPlot(data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
-                         target_name = 'flow', set_theme ='darkgrid', 
-                         fig_title='Qualitative features correlation')
+        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
+        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        
+        :param quan_features: 
+            List of qualitative features to plot for  correlating analyses. 
+        
+        :param sns_kws: 
+            Keywords word arguments of seabon pairplots. Refer to 
+            http://seaborn.pydata.org/generated/seaborn.pairplot.html for 
+            further details.             
+        
+        :param trigger_map_lower_kws: 
+            trigger the `map_lower_kws` arguments to customize plot.
+                                
+        :param map_lower_kws: 
+            Dictionnary of sns.pairplot map_lower kwargs arguments.
+            If he diagram `kind` is ``kde`` and `trigger_map_lower_kws` is
+            ``True``, plot is customized with the provided kwargs 
+            `map_lower_kws` arguments. if ``None``, will check whether the 
+            `diag_kind` argument on `sns_kws` is ``kde`` before applicating on 
+            plot map. 
+            
+        :param target: Goal of prediction purposes match the `hue` argument of 
+            seaborn pairplot. Please refer to the `target`  argument of 
+            :func:~.viewer.plot.QuickPlot.plot_correlation_matrix` for more 
+            details. If ``None``, *default* is ``flow``.
+   
+        :Example: 
+            
+            >>> from watex.viewer.plot import QuickPlot 
+            >>> qkObj = QuickPlot(
+            ...         data_fn ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
+            ...             target_name = 'flow', set_theme ='darkgrid', 
+            ...             fig_title='Quantitative features correlation'
+            ...             )  
+            >>> sns_pkws={'aspect':2 , 
+            ...          "height": 2, 
+            ...          'markers':['o', 'x', 'D', 'H', 's'], 
+            ...          'diag_kind':'kde', 
+            ...          'corner':False,
+            ...          }
+            >>> maklow = {'level':4, 
+                      'color':".2"}
+            >>> qkObj.plot_quantitative_features(trigger_map_lower_kws=True, 
+                                                map_lower_kws=maklow, 
+                                                **sns_pkws
+                                                )
+        """
+        if data_fn is not None : 
+            self.data_fn = data_fn
+        
+        df_= self.df.copy(deep=True)
+        
+        tem=[]
+        
+        if target is None : 
+            if 'flow' in [it.lower() for it in df_.columns]:
+                target ='flow'
+                self._logging.info(
+                    ' Target is  ``None``, `flow` is set instead.')
+            else: 
+                warnings.warn(
+                    ' No target  is detected and your purpose'
+                    'is not for water exploration. Could not plot quantitive'
+                    " features' distribution.")
+                raise Wex.WATexError_geoFeatures(
+                    'Target feature is missing. Could not plot quantitative'
+                    '  features. Please provide the right target``hue`` name.'
+                    )
+        elif target is not None : 
+            if not target in df_.columns: 
+                raise Wex.WATexError_inputarguments(
+                    f"The given target {target} is wrong. Please provide the "
+                    " the right target (hue)instead.")
+        
+        
+        if target =='flow': 
+            if sorted(hints.findIntersectionGenObject(
+                    {'ohmS', 'power', 'sfi', 'magnitude'}, df_.columns
+                    ))== sorted({'ohmS', 'power', 'sfi', 'magnitude'}):
+                quan_features= sorted({'ohmS', 'power', 'sfi', 'magnitude'})
+                
+            if target =='flow': 
+                quan_features.append('flow')
+                # df_['flow']=df_['flow'].astype('category').cat.codes
+        try : 
+            resH= hints.cfexist(features_to= quan_features,
+                               features = df_.columns)
+        except:
+             raise Wex.WATexError_parameter_number(
+                f'Parameters number of {quan_features} is  not found in the '
+                ' dataframe columns ={0}'.format(list(df_.columns)))
+        
+        else: 
+            if not resH:  raise Wex.WATexError_parameter_number(
+                f'Parameters number is ``{quan_features}``. NoneType object is'
+                ' not allowed in  dataframe columns ={0}'.
+                format(list(df_.columns)))
 
-    sns_kwargs ={'annot': False, 
-                'linewidth': .5, 
-                'center':0 , 
-                # 'cmap':'jet_r', 
-                'cbar':True}
-    qplotObj.plot_correlation_matrix( plot_params='quan', **sns_kwargs,)   
+            for ff in quan_features:
+                if ff== target: continue 
+                try : 
+                    df_=df_.astype({
+                             ff:np.float})
+                except:
+                    rem=[]
+                    self._logging.error(
+                        f" Feature `{ff}` is not quantitive. It should be "
+                        " for quantitative analysis.")
+                    warnings.warn(f'The given feature `{ff}` will be remove for'
+                                  " quantitative analysis.")
+                    rem.append(ff)
+                    
+                else: 
+                    
+                    tem.append(ff)
+            if len(tem)==0 : 
+                raise Wex.WATexError_parameter_number(
+                    " No parameter number is found. Plot is cancelled."
+                    'Provide a right quantitatives features different'
+                    ' from `{}`'.format(rem))
+
+            quan_features= [cc for cc in tem ] + [target] 
+     
+        ax =sns.pairplot(data =df_[quan_features], hue=target,**sns_kws)
         
+        if trigger_map_lower_kws : 
+            try : 
+                sns_kws['diag_kind']
+         
+            except: 
+                self._logging.info('Impossible to set `map_lower_kws`.')
+                warnings.warn(
+                    '``kde|sns.kdeplot``is not found for seaborn pairplot.'
+                    "Impossible to lowering the distribution map.")
+            else: 
+                if sns_kws['diag_kind']=='kde': 
+                    ax.map_lower(sns.kdeplot, **map_lower_kws)
+                    
+        plt.show()
         
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+   
+    def joint2features(self,*, data_fn =None, df=None, 
+                      features: Iterable[T]=['ohmS', 'lwi'], 
+                      join_kws=None, marginals_kws=None, 
+                      **sns_kwargs)-> None:
+        """
+        Joint methods allow to visualize correlation of two features. 
         
+        Draw a plot of two features with bivariate and univariate graphs. 
         
+        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
+        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
         
+        :param features: 
+            List of quantitative features to plot for correlating analyses.
+            Can change the *default* value for your convenient data features.
+            
+        :param join_kws: 
+            Additional keyword arguments are passed to the function used 
+            to draw the plot on the joint Axes, superseding items in the 
+            `joint_kws` dictionary.
+            
+        :param marginals_kws: 
+            Additional keyword arguments are passed to the function used 
+            to draw the plot on the marginals Axes. 
+            
+        :param sns_kwargs: 
+            keywords arguments of seaborn joinplot methods. Refer to 
+            :ref:`<http://seaborn.pydata.org/generated/seaborn.jointplot.html>` 
+            for more details about usefull kwargs to customize plots. 
+            
+        :Example: 
+            
+            >>> from watex.viewer.plot.QuickPlot import joint2features
+            >>> qkObj = QuickPlot(
+            ...        data_fn ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
+            ...             target_name = 'flow', set_theme ='darkgrid', 
+            ...             fig_title='Quantitative features correlation'
+            ...             )  
+            >>> sns_pkws={
+            ...            'kind':'reg' , #'kde', 'hex'
+            ...            # "hue": 'flow', 
+            ...               }
+            >>> joinpl_kws={"color": "r", 
+                            'zorder':0, 'levels':6}
+            >>> plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}           
+            >>> qkObj.joint2features(features=['ohmS', 'lwi'], 
+            ...            join_kws=joinpl_kws, marginals_kws=plmarg_kws, 
+            ...            **sns_pkws, 
+            ...            ) 
+        """
+        if data_fn is not None : 
+            self.data_fn = data_fn
+        
+        df_= self.df.copy(deep=True)
+        
+        try : 
+            resH= hints.cfexist(features_to= features,
+                               features = df_.columns)
+        except TypeError: 
+            
+            print(' Features can not be a NoneType value.'
+                  'Please set a right features.')
+            self._logging.error('NoneType can not be a features!')
+        except :
+            raise Wex.WATexError_parameter_number(
+               f'Parameters number of {features} is  not found in the '
+               ' dataframe columns ={0}'.format(list(df_.columns)))
+        
+        else: 
+            if not resH:  raise Wex.WATexError_parameter_number(
+                f'Parameters number is ``{features}``. NoneType object is'
+                ' not allowed in  dataframe columns ={0}'.
+                format(list(df_.columns)))
+        
+        if isinstance(features, str): 
+            features=[features]
+        # checker whether features is quantitative features 
+        for ff in features: 
+            try: 
+                df_=df_.astype({ff:np.float})
+            except ValueError: 
+                raise  Wex.WATexError_geoFeatures(
+                    f" Feature `{ff}` is qualitative parameter."
+                    ' Could not convert string values to float')
+                
+        if len(features)>2: 
+            self._logging.debug(
+                'Features length provided is = {0}. The first two '
+                'features `{1}` is used for joinplot.'.format(
+                    len(features), features[:2]))
+            features=list(features)[:2]
+        elif len(features)<=1: 
+            self._logging.error(
+                'Could not jointplotted. Need two features. Only {0} '
+                'is given.'.format(len(features)))
+            
+        ax= sns.jointplot(features[0], features[1], data=df_,  **sns_kwargs)
+
+        if join_kws is not None:
+            ax.plot_joint(sns.kdeplot, **join_kws)
+        if marginals_kws is not None: 
+            ax.plot_marginals(sns.rugplot, **marginals_kws)
+            
+        plt.show()
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+            
+    def scatteringFeatures(self,data_fn=None, df=None, 
+                           features:Iterable[T] =['lwi', 'flow'],
+                           relplot_kws:Generic[T] = None, 
+                           **sns_kwargs )->None: 
+        """
+        Draw a scatter plot with possibility of several semantic features 
+        groupings
+        
+        """
+        if data_fn is not None : 
+            self.data_fn = data_fn
+        
+        df_= self.df.copy(deep=True)
+        
+        # controller function
+        try:
+            hints.featureExistError(superv_features=features, 
+                                    features=df_.columns)
+        except: 
+            warnings.warn(f'Feature {features} controlling failed!')
+        else: 
+            self._logging.info(
+                f'Feature{features} controlling passed !')
+            
+        if len(features)>2: 
+            self._logging.debug(
+                'Features length provided is = {0}. The first two '
+                'features `{1}` is used for joinplot.'.format(
+                    len(features), features[:2]))
+            features=list(features)[:2]
+        elif len(features)<=1: 
+            self._logging.error(
+                'Could not jointplotted. Need two features. Only {0} '
+                'is given.'.format(len(features)))
+            
+        ax= sns.scatterplot(features[0],features[1], data=df_, **sns_kwargs)
+        
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        ax.set_title(self.fig_title)
+        
+        if relplot_kws is not None: 
+            sns.relplot(data=df_, x= features[0], y=features[1],
+                        **relplot_kws)
+            
+        plt.show()
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+            
+if __name__=='__main__': 
+    qkObj = QuickPlot(data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
+                         target_name = 'flow', set_theme ='darkgrid', 
+                         fig_title='geol vs lewel of water inflow',
+                         xlabel='Level of water inflow (lwi)', 
+                         ylabel='Flow rate in m3/h'
+                        )  
+    marker_list= ['o','s','P', 'H']
+    markers_dict = {key:mv 
+                   for key, mv in zip( list (
+                           dict(qkObj.df ['geol'].value_counts(
+                               normalize=True)).keys()), marker_list)}
+    
+    # print(markers_dict)
+    sns_pkws={'markers':markers_dict, 
+              'sizes':(20, 200),
+              "hue":'geol', 
+              'style':'geol',
+              "palette":'deep',
+              'legend':'full',
+              # "hue_norm":(0,7)
+                }
+    regpl_kws = {'col':'flow', 
+                 'hue':'geol', 
+                 'style':'geol',
+                 'kind':'scatter'}
+    # joinpl_kws={"color": "r", 
+    #             'zorder':0, 'levels':6}
+    # plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}
+                                    
+    qkObj.scatteringFeatures(features=['lwi', 'flow'],
+                             relplot_kws=regpl_kws,
+                        **sns_pkws, 
+                        ) 
+
         
         
         

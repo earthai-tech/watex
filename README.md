@@ -54,7 +54,7 @@ WATex-AI is under Massachusetts Institute of Technology License [MIT](https://ww
 9. Ohmic surface `ohmS` in ohm.m2. 
 10. Station( site) or position is given as `pk` in m.
 
-## How to get the geo-electrical features from selected anomaly?
+## Get the geo-electrical features from selected anomaly
 
 **Geo-electrical features** are mainly used FR prediction purposes. 
  Beforehand, we refer  to the  data directory `data\erp` accordingly for this demonstration. 
@@ -148,6 +148,65 @@ To quick see how data look like, call `~viewer`packages:
 ```
 If `df` is not given, It's easy to quick visualize the data setting the argument `data_fn` that match the 
 to datafile  like `data_fn ='data/geo_fdata/BagoueDataset2.xlsx'`. Both will give the same result.
+
+To draw a plot of two features with bivariate and univariate graphs, use `~.QuickPlot.joint2features` methods as
+below:
+```
+>>> from watex.viewer.plot.QuickPlot import joint2features
+>>> qkObj = QuickPlot(
+...             data_fn ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
+...             target_name = 'flow', set_theme ='darkgrid', 
+...             fig_title='`ohmS` and `lwi` features linked'
+...             )  
+>>> sns_pkws={
+...            'kind':'reg' , #'kde', 'hex'
+...            # "hue": 'flow', 
+...               }
+>>> joinpl_kws={"color": "r", 
+                'zorder':0, 'levels':6}
+>>> plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}           
+>>> qkObj.joint2features(features=['ohmS', 'lwi'], 
+...            join_kws=joinpl_kws, marginals_kws=plmarg_kws, 
+...            **sns_pkws, 
+...            ) 
+``` 
+To draw a scatter plot with possibility of several semantic features groupings, use `scatteringFeatures`
+methods. Indeed this method analysis is a process of understanding  how features in a 
+dataset relate to each other and how those relationships depend on other features. It easy to customize
+plot if user has an experience of  `seaborn` plot styles. For instance we can visualize the relationship 
+between the features `lwi` , '`flow` and the `geology(geol)`' as: 
+```
+>>> from watex.viewer.plot.QuickPlot import  scatteringFeatures
+>>> qkObj = QuickPlot(
+...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , 
+...             fig_title='Relationship between geology and level of water inflow',
+...             xlabel='Level of water inflow (lwi)', 
+...             ylabel='Flow rate in m3/h'
+...            )  
+>>> marker_list= ['o','s','P', 'H']
+>>> markers_dict = {key:mv 
+...               for key, mv in zip( list (
+...                       dict(qkObj.df ['geol'].value_counts(
+...                           normalize=True)).keys()), 
+...                            marker_list)}
+>>> sns_pkws={'markers':markers_dict, 
+...          'sizes':(20, 200),
+...          "hue":'geol', 
+...          'style':'geol',
+...         "palette":'deep',
+...          'legend':'full',
+...          # "hue_norm":(0,7)
+...            }
+>>> regpl_kws = {'col':'flow', 
+...             'hue':'lwi', 
+...             'style':'geol',
+...             'kind':'scatter'
+...            }
+>>> qkObj.scatteringFeatures(features=['lwi', 'flow'],
+...                         relplot_kws=regpl_kws,
+...                         **sns_pkws, 
+...                    ) 
+```
 
 ## System requirements 
 * Python 3.7+ 
