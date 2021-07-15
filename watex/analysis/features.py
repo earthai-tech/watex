@@ -274,9 +274,18 @@ class sl_analysis :
             self.df[self.target]= categorize_flow(
                 target_array= self.df[self.target], 
                 flow_values =flow_cat_values)
+  
         if self._set_index : 
             self.df.set_index(col_name, inplace =True)
-         
+            
+        if self.target =='flow': 
+            self.df =self.df.astype({
+                             'power':np.float, 
+                             'magnitude':np.float, 
+                             'sfi':np.float, 
+                             'ohmS': np.float, 
+                              'lwi': np.float, 
+                              })  
             
     def writedf(self, df=None , refout:str =None,  to:str =None, 
               savepath:str =None, modname:str ='_anEX_',
