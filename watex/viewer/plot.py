@@ -854,8 +854,67 @@ class QuickPlot :
                            **sns_kwargs )->None: 
         """
         Draw a scatter plot with possibility of several semantic features 
-        groupings
+        groupings.
         
+        Indeed `scatteringFeatures` analysis is a process of understanding 
+        how features in a dataset relate to each other and how those
+        relationships depend on other features. Visualization can be a core 
+        component of this process because, when data are visualized properly,
+        the human visual system can see trends and patterns
+        that indicate a relationship. 
+        
+        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
+        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        
+        :param features: 
+            List of features to plot for scattering analyses.
+            Can change the *default* value for your convenient data features.
+        
+        :param relplot_kws: 
+            Extra keyword arguments to show the relationship between 
+            two features with semantic mappings of subsets.
+            refer to :ref:`<http://seaborn.pydata.org/generated/seaborn.relplot.html#seaborn.relplot>`
+            for more details. 
+            
+        :param sns_kwargs:
+            kwywords arguments to control what visual semantics are used 
+            to identify the different subsets. For more details, please consult
+            :ref:`<http://seaborn.pydata.org/generated/seaborn.scatterplot.html>`. 
+            
+        :Example: 
+            
+            >>> from watex.viewer.plot.QuickPlot import  scatteringFeatures
+            >>> qkObj = QuickPlot(
+            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
+            ...             target_name = 'flow', set_theme ='darkgrid', 
+            ...             fig_title='geol vs lewel of water inflow',
+            ...             xlabel='Level of water inflow (lwi)', 
+            ...             ylabel='Flow rate in m3/h'
+            ...            )  
+            >>> marker_list= ['o','s','P', 'H']
+            >>> markers_dict = {key:mv 
+            ...               for key, mv in zip( list (
+            ...                       dict(qkObj.df ['geol'].value_counts(
+            ...                           normalize=True)).keys()), 
+            ...                            marker_list)}
+            >>> sns_pkws={'markers':markers_dict, 
+            ...          'sizes':(20, 200),
+            ...          "hue":'geol', 
+            ...          'style':'geol',
+            ...         "palette":'deep',
+            ...          'legend':'full',
+            ...          # "hue_norm":(0,7)
+            ...            }
+            >>> regpl_kws = {'col':'flow', 
+            ...             'hue':'lwi', 
+            ...             'style':'geol',
+            ...             'kind':'scatter'
+            ...            }
+            >>> qkObj.scatteringFeatures(features=['lwi', 'flow'],
+            ...                         relplot_kws=regpl_kws,
+            ...                         **sns_pkws, 
+            ...                    ) 
+            
         """
         if data_fn is not None : 
             self.data_fn = data_fn
@@ -901,39 +960,13 @@ class QuickPlot :
                         orientation =self.fig_orientation)
             
 if __name__=='__main__': 
+    
     qkObj = QuickPlot(data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
                          target_name = 'flow', set_theme ='darkgrid', 
                          fig_title='geol vs lewel of water inflow',
                          xlabel='Level of water inflow (lwi)', 
                          ylabel='Flow rate in m3/h'
                         )  
-    marker_list= ['o','s','P', 'H']
-    markers_dict = {key:mv 
-                   for key, mv in zip( list (
-                           dict(qkObj.df ['geol'].value_counts(
-                               normalize=True)).keys()), marker_list)}
-    
-    # print(markers_dict)
-    sns_pkws={'markers':markers_dict, 
-              'sizes':(20, 200),
-              "hue":'geol', 
-              'style':'geol',
-              "palette":'deep',
-              'legend':'full',
-              # "hue_norm":(0,7)
-                }
-    regpl_kws = {'col':'flow', 
-                 'hue':'geol', 
-                 'style':'geol',
-                 'kind':'scatter'}
-    # joinpl_kws={"color": "r", 
-    #             'zorder':0, 'levels':6}
-    # plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}
-                                    
-    qkObj.scatteringFeatures(features=['lwi', 'flow'],
-                             relplot_kws=regpl_kws,
-                        **sns_pkws, 
-                        ) 
 
         
         
