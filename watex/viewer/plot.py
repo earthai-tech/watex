@@ -863,7 +863,7 @@ class QuickPlot :
         the human visual system can see trends and patterns
         that indicate a relationship. 
         
-        param df: refer to :doc:`watex.viewer.plot.QuickPlot`
+        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
         :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
         
         :param features: 
@@ -967,30 +967,6 @@ if __name__=='__main__':
                          xlabel='Level of water inflow (lwi)', 
                          ylabel='Flow rate in m3/h'
                         )  
-    marker_list= ['o','s','P', 'H']
-    markers_dict = {key:mv 
-                   for key, mv in zip( list (
-                           dict(qkObj.df ['geol'].value_counts(
-                               normalize=True)).keys()), marker_list)}
-    # print(markers_dict)
-    sns_pkws={'markers':markers_dict, 
-              'sizes':(20, 200),
-              "hue":'geol', 
-              'style':'geol',
-              "palette":'deep',
-              'legend':'full',
-              # "hue_norm":(0,7)
-                }
-    regpl_kws = {'col':'flow', 
-                 'hue':'lwi', 
-                 'style':'geol',
-                 'kind':'scatter'
-                 }
-
-    qkObj.scatteringFeatures(features=['lwi', 'flow'],
-                             relplot_kws=regpl_kws,
-                             **sns_pkws, 
-                        ) 
 
         
         
