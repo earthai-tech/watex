@@ -13,13 +13,18 @@ Created on Wed Jul 14 20:00:26 2021
 from typing import TypeVar, Generic, Iterable 
 
 T=TypeVar('T', list , tuple, dict, float, int)
+K= TypeVar('K', complex, float)
 
 import os 
 import numpy as np 
 import pandas as pd
 
-from watex.utils.exceptions import WATexError_hints as WexH
-        
+import watex.utils.exceptions as WexH
+ 
+from watex.utils._watexlog import watexlog 
+
+__logging =watexlog().get_watex_logger(__name__) 
+      
 def cfexist(features_to: Iterable[T], 
             features:Iterable[T] )-> bool:      
     """
@@ -106,7 +111,47 @@ def findIntersectionGenObject(gen_obj1: Generic[T], gen_obj2: Generic[T]
 
     return objType(set(gen_obj1).intersection(set(gen_obj2)))
     
+def featureExistError(superv_features: Iterable[T], 
+                      features:Iterable[T]) -> None:
+    """
+    Description:
+        Catching feature existence errors.
+        
+    Usage: 
+        
+        to check error. If nothing occurs  then pass 
     
+    :param superv_features: 
+        list of features presuming to be controlled or supervised
+        
+    :param features: 
+        List of all features composed of pd.core.DataFrame. 
+    
+    """
+    for ii, supff in enumerate([superv_features, features ]): 
+        if isinstance(supff, str): 
+            if ii==0 : superv_features=[superv_features]
+            if ii==1 :features =[superv_features]
+            
+    try : 
+        resH= cfexist(features_to= superv_features,
+                           features = features)
+    except TypeError: 
+        
+        print(' Features can not be a NoneType value.'
+              'Please set a right features.')
+        __logging.error('NoneType can not be a features!')
+    except :
+        raise WexH.WATexError_parameter_number(
+           f'Parameters number of {features} is  not found in the '
+           ' dataframe columns ={0}'.format(list(features)))
+    
+    else: 
+        if not resH:  raise WexH.WATexError_parameter_number(
+            f'Parameters number is ``{features}``. NoneType object is'
+            ' not allowed in  dataframe columns ={0}'.
+            format(list(features)))
+        
 
 if __name__=='__main__': 
     

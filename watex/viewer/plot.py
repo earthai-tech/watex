@@ -738,12 +738,55 @@ class QuickPlot :
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
    
-    def join2features(self, data_fn =None, df=None, 
-                      features: Iterable[T]=['ohmS', 'lwi'],
+    def joint2features(self,*, data_fn =None, df=None, 
+                      features: Iterable[T]=['ohmS', 'lwi'], 
+                      join_kws=None, marginals_kws=None, 
                       **sns_kwargs)-> None:
         """
         Joint methods allow to visualize correlation of two features. 
         
+        Draw a plot of two features with bivariate and univariate graphs. 
+        
+        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
+        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        
+        :param features: 
+            List of quantitative features to plot for correlating analyses.
+            Can change the *default* value for your convenient data features.
+            
+        :param join_kws: 
+            Additional keyword arguments are passed to the function used 
+            to draw the plot on the joint Axes, superseding items in the 
+            `joint_kws` dictionary.
+            
+        :param marginals_kws: 
+            Additional keyword arguments are passed to the function used 
+            to draw the plot on the marginals Axes. 
+            
+        :param sns_kwargs: 
+            keywords arguments of seaborn joinplot methods. Refer to 
+            :ref:`<http://seaborn.pydata.org/generated/seaborn.jointplot.html>` 
+            for more details about usefull kwargs to customize plots. 
+            
+        :Example: 
+            
+            >>> from watex.viewer.plot.QuickPlot import joint2features
+            >>> qkObj = QuickPlot(
+            ...        data_fn ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
+            ...             target_name = 'flow', set_theme ='darkgrid', 
+            ...             fig_title='Quantitative features correlation'
+            ...             )  
+            >>> sns_pkws={
+            ...            'kind':'reg' , #'kde', 'hex'
+            ...            # "hue": 'flow', 
+            ...               }
+            >>> joinpl_kws={"color": "r", 
+                            'zorder':0, 'levels':6}
+            >>> plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}           
+            >>> qkObj.joint2features(features=['ohmS', 'lwi'], 
+            ...            join_kws=joinpl_kws, marginals_kws=plmarg_kws, 
+            ...            **sns_pkws, 
+            ...            ) 
         """
         if data_fn is not None : 
             self.data_fn = data_fn
@@ -791,26 +834,106 @@ class QuickPlot :
                 'Could not jointplotted. Need two features. Only {0} '
                 'is given.'.format(len(features)))
             
-        sns.jointplot(features[0], features[1], data=df_,  **sns_kwargs)
-        
+        ax= sns.jointplot(features[0], features[1], data=df_,  **sns_kwargs)
+
+        if join_kws is not None:
+            ax.plot_joint(sns.kdeplot, **join_kws)
+        if marginals_kws is not None: 
+            ax.plot_marginals(sns.rugplot, **marginals_kws)
+            
         plt.show()
+        
         if self.savefig is not None :
             plt.savefig(self.savefig,
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
+            
+    def scatteringFeatures(self,data_fn=None, df=None, 
+                           features:Iterable[T] =['lwi', 'flow'],
+                           relplot_kws:Generic[T] = None, 
+                           **sns_kwargs )->None: 
+        """
+        Draw a scatter plot with possibility of several semantic features 
+        groupings
         
+        """
+        if data_fn is not None : 
+            self.data_fn = data_fn
+        
+        df_= self.df.copy(deep=True)
+        
+        # controller function
+        try:
+            hints.featureExistError(superv_features=features, 
+                                    features=df_.columns)
+        except: 
+            warnings.warn(f'Feature {features} controlling failed!')
+        else: 
+            self._logging.info(
+                f'Feature{features} controlling passed !')
+            
+        if len(features)>2: 
+            self._logging.debug(
+                'Features length provided is = {0}. The first two '
+                'features `{1}` is used for joinplot.'.format(
+                    len(features), features[:2]))
+            features=list(features)[:2]
+        elif len(features)<=1: 
+            self._logging.error(
+                'Could not jointplotted. Need two features. Only {0} '
+                'is given.'.format(len(features)))
+            
+        ax= sns.scatterplot(features[0],features[1], data=df_, **sns_kwargs)
+        
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        ax.set_title(self.fig_title)
+        
+        if relplot_kws is not None: 
+            sns.relplot(data=df_, x= features[0], y=features[1],
+                        **relplot_kws)
+            
+        plt.show()
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+            
 if __name__=='__main__': 
     qkObj = QuickPlot(data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
                          target_name = 'flow', set_theme ='darkgrid', 
-                         fig_title='Quantitative features correlation'
-                         )  
-    sns_pkws={'kind':'reg' , 
-              # "height": 2, 
-              # 'markers':['o', 'x', 'D', 'H', 's'], 
-              # 'diag_kind':'kde', 
-              }
+                         fig_title='geol vs lewel of water inflow',
+                         xlabel='Level of water inflow (lwi)', 
+                         ylabel='Flow rate in m3/h'
+                        )  
+    marker_list= ['o','s','P', 'H']
+    markers_dict = {key:mv 
+                   for key, mv in zip( list (
+                           dict(qkObj.df ['geol'].value_counts(
+                               normalize=True)).keys()), marker_list)}
+    
+    # print(markers_dict)
+    sns_pkws={'markers':markers_dict, 
+              'sizes':(20, 200),
+              "hue":'geol', 
+              'style':'geol',
+              "palette":'deep',
+              'legend':'full',
+              # "hue_norm":(0,7)
+                }
+    regpl_kws = {'col':'flow', 
+                 'hue':'geol', 
+                 'style':'geol',
+                 'kind':'scatter'}
+    # joinpl_kws={"color": "r", 
+    #             'zorder':0, 'levels':6}
+    # plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}
                                     
-    qkObj.join2features(**sns_pkws, features=['type', 'flow'])
+    qkObj.scatteringFeatures(features=['lwi', 'flow'],
+                             relplot_kws=regpl_kws,
+                        **sns_pkws, 
+                        ) 
 
         
         
