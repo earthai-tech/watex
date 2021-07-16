@@ -30,8 +30,8 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
  
 * **Note** 
 
-    Actually only [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)) works porperly and the developement with pure Python is still ongoing. 
-    Other AI algorithms implemented will be add as things progress. To handle some fonctionalities before the full development, please refer to `.checkpoints ` folder.
+    Actually only [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) works porperly and the developement with pure Python is still ongoing. 
+    Other AI algorithms implemented will be added as things progress. To handle some functionalities before the full development, please refer to `.checkpoints ` folder.
      
 ## Documentation 
 
