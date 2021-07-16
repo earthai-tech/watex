@@ -22,7 +22,7 @@ import  matplotlib.pyplot  as plt
 
 import watex.viewer.hints as hints
 
-from typing import Generic, TypeVar, Iterable 
+from typing import Generic, TypeVar, Iterable, Callable 
 
 T=TypeVar('T', dict, list, tuple)
 
@@ -108,6 +108,7 @@ class QuickPlot :
         self.fig_size = kwargs.pop('fig_size', [12,6])
         self.fig_dpi =kwargs.pop('fig_dpi', 300)
         self.savefig = kwargs.pop('savefig', None)
+        self.fig_legend= kwargs.pop('fig_legend_kws', None)
         
         self.fig_orientation =kwargs.pop('fig_orientation','landscape')
         self.fig_title =kwargs.pop('title', None)
@@ -140,6 +141,7 @@ class QuickPlot :
         self.sns_orient =kwargs.pop('orient', 'v')
         self.sns_height =kwargs.pop ('sns_height', 4.)
         self.sns_aspect =kwargs.pop ('sns_aspect', .7)
+        
         
         self.xlabel=kwargs.pop('xlabel', None)
         self.ylabel=kwargs.pop('ylabel', None)
@@ -449,11 +451,12 @@ class QuickPlot :
         """
         Method to quick plot the qualitatif and quantitatives parameters. 
         
-        Set `quant_feature_names` by providing the quantitative features' name
-        as well as the `qual_feature_names`. If none value is provided, It 
-        assumes to considers on groundwater exploration. If not a case , an 
-        errors will raise. 
-        
+        Set `feature_names` by providing the quantitative features as well
+         as the qualitative feature names. If ``None`` value is provided, It 
+        assumes to consider on groundwater exploration therefore the 
+        `target` is set to ``flow``. If not the case and ``feature_names`` are 
+        still ``None``, an errors raises. 
+
         :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
         :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
         
@@ -833,6 +836,9 @@ class QuickPlot :
             self._logging.error(
                 'Could not jointplotted. Need two features. Only {0} '
                 'is given.'.format(len(features)))
+            raise Wex.WATexError_parameter_number(
+                'Only {0} is feature number is given. Need two '
+                'features!'.format(len(features)))
             
         ax= sns.jointplot(features[0], features[1], data=df_,  **sns_kwargs)
 
@@ -934,14 +940,17 @@ class QuickPlot :
         if len(features)>2: 
             self._logging.debug(
                 'Features length provided is = {0}. The first two '
-                'features `{1}` is used for joinplot.'.format(
+                'features `{1}` are used for joinplot.'.format(
                     len(features), features[:2]))
             features=list(features)[:2]
         elif len(features)<=1: 
             self._logging.error(
-                'Could not jointplotted. Need two features. Only {0} '
+                'Could not scattering. Need two features. Only {0} '
                 'is given.'.format(len(features)))
-            
+            raise Wex.WATexError_parameter_number(
+                'Only {0} is feature is given. Need two '
+                'features!'.format(len(features)))
+
         ax= sns.scatterplot(features[0],features[1], data=df_, **sns_kwargs)
         
         ax.set_xlabel(self.xlabel)
@@ -958,17 +967,167 @@ class QuickPlot :
             plt.savefig(self.savefig,
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
+    
+    def discussingFeatures(self,df=None, data_fn=None,
+                           features:Iterable[T]=['ohmS','sfi', 'geol', 'flow'],
+                           map_kws:Generic[T]=None, 
+                           map_func: Callable[..., T]= None, 
+                           **sns_kws)-> None: 
+        """
+        Porvides the features names at least 04 and discuss with 
+        their distribution. 
+        
+        This method maps a dataset onto multiple axes arrayed in a grid of
+        rows and columns that correspond to levels of features in the dataset. 
+        The plots it produces are often called “lattice”, “trellis”, or
+        “small-multiple” graphics. 
+        
+        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
+        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        
+        :param features: 
             
+            List of features for discussion plot. Can change the *default*
+            value to the own features. The number of recommended 
+            features for better analysis is four (04) classified as below: 
+                
+                features_disposal = ['x', 'y', 'col', 'target|hue']
+                
+            where: 
+                - `x` is the features hold to the x-axis, *default* is``ohmS`` 
+                - `y` is the feature located on y_xis, *default* is ``sfi`` 
+                - `col` is the feature on column subset, *default` is ``col`` 
+                - `target` or `hue` for targetted examples, *default* is ``flow``
+            
+            If 03 `features` are given, the latter is considered as a `target`
+
+        :param map_kws: 
+            Extra keyword arguments for mapping plot.
+            
+        :param func_map: 
+            
+            Plot style `function`. Can be a .. _matplotlib-pyplot:`mpl.plt` like
+            ``plt.scatter`` or .._seaborn-scatterplot:`sns.plt` like 
+            ``sns.scatterplot``. The *default* is ``sns.scatterplot``.
+  
+        :param sns_kwargs:
+           kwywords arguments to control what visual semantics are used 
+           to identify the different subsets. For more details, please consult
+           :ref:`<http://seaborn.pydata.org/generated/seaborn.FacetGrid.html>`. 
+        
+        :Example: 
+            
+            >>> from viewer.plot.QuickPlot import discussingFeatures 
+            >>> qkObj = QuickPlot(  fig_legend_kws={'loc':'upper right'},
+            ...          fig_title = '`sfi` vs`ohmS|`geol`',
+            ...            )  
+            >>> sns_pkws={'aspect':2 , 
+            ...          "height": 2, 
+            ...                  }
+            >>> map_kws={'edgecolor':"w"}   
+            >>> qkObj.discussingFeatures(
+            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , 
+            ...                         features =['ohmS', 'sfi','geol', 'flow'],
+            ...                           map_kws=map_kws,  **sns_pkws
+            ...                         )   
+        
+        """
+        if data_fn is not None : 
+            self.data_fn = data_fn
+        
+        df_= self.df.copy(deep=True)
+        
+        try:
+            hints.featureExistError(superv_features=features, 
+                                    features=df_.columns)
+        except: 
+            warnings.warn(f'Feature {features} controlling failed!')
+        else: 
+            self._logging.info(
+                f'Feature{features} controlling passed !')
+        
+        if len(features)>4: 
+            self._logging.debug(
+                'Features length provided is = {0:02}. The first four '
+                'features `{1}` are used for joinplot.'.format(
+                    len(features), features[:4]))
+            features=list(features)[:4]
+            
+        elif len(features)<=2: 
+            if len(features)==2:verb, pl='are','s'
+            else:verb, pl='is',''
+            
+            self._logging.error(
+                'Could not plot features. Need three features. Only {0} '
+                '{1} given.'.format(len(features), verb))
+            
+            raise Wex.WATexError_parameter_number(
+                'Only {0:02} feature{1} {2} given. Need at least 03 '
+                'features!'.format(len(features),pl,  verb))
+            
+        elif len(features)==3:
+            
+            msg='03 Features are given. The last feature `{}` should be'\
+                ' considered as the`targetted`feature or `hue` value.'.format(
+                    features[-1])
+            self._logging.debug(msg)
+            
+            warnings.warn(
+                'The last feature `{}` is used as targetted feature!'.format(
+                    features[-1]))
+            
+            features.insert(2, None)
+    
+        ax= sns.FacetGrid(data=df_, col=features[-2], hue= features[-1], 
+                            **sns_kws)
+        
+        if map_func is None: 
+            map_func = sns.scatterplot #plt.scatter
+        if map_func is not None : 
+            if not hasattr(map_func, '__call__'): 
+                warnings.warn(f'Object {map_func} must be a callable, not {0}.'
+                    'Can be `plt.scatter` or <matplotlib.pyplot|'
+                    'seaborn.scatterplot>''function supported.'.format(
+                    type(map_func)))
+                        
+                self._logging.error('{map_func} is not callable !'
+                                    'Use `plt.scatter` as default function.')
+                raise Wex.WATexError_inputarguments(
+                    '`Argument `map_func` should be a callable not {0}'.
+                    format(type(map_func)))
+                
+        if map_kws is None : 
+            map_kws={'edgecolor':"w"}  
+        try : 
+            ax.map(map_func, features[0], features[1], #edgecolor=self.edgecolor,
+                   **map_kws).add_legend(**self.fig_legend)
+            
+        except AttributeError:
+            print('`{}` object has not attribute `get`'.format(
+                type(self.fig_legend)))
+            
+        plt.show()
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+        
+        
 if __name__=='__main__': 
     
-    qkObj = QuickPlot(data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
-                         target_name = 'flow', set_theme ='darkgrid', 
-                         fig_title='geol vs lewel of water inflow',
-                         xlabel='Level of water inflow (lwi)', 
-                         ylabel='Flow rate in m3/h'
+    qkObj = QuickPlot(  fig_legend_kws={'loc':'upper right'},
+                      fig_title = '`sfi` vs`ohmS|`geol`',
                         )  
+    sns_pkws={'aspect':2 , 
+              "height": 2, 
+                      }
 
-        
+    map_kws={'edgecolor':"w"}   
+    qkObj.discussingFeatures(data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , 
+                             features =['ohmS', 'sfi','geol', 'flow'],
+                               map_kws=map_kws,  **sns_pkws
+                             )   
         
         
         
