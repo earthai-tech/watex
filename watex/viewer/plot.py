@@ -1097,7 +1097,8 @@ class QuickPlot :
                     format(type(map_func)))
                 
         if map_kws is None : 
-            map_kws={'edgecolor':"w"}  
+            map_kws={'edgecolor':"w"}
+            
         try : 
             ax.map(map_func, features[0], features[1], #edgecolor=self.edgecolor,
                    **map_kws).add_legend(**self.fig_legend)
