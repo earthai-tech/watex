@@ -49,10 +49,14 @@ WATex-AI is under Massachusetts Institute of Technology License [MIT](https://ww
 4. Anomaly power *Pa* or `power`  in meter(m). 
 5. Anomaly magnitude *Ma* or `magnitude` in ohm.m. 
 6. Anomaly shape - can be `V, M, K, L, H, C, V` and `W` (n.u). 
-7. Anomaly type - can be `EC, NC, CB2P`and `PC` (n.u).
-8. Layer thickness `thick` in m. 
-9. Ohmic surface `ohmS` in ohm.m2. 
-10. Station( site) or position is given as `pk` in m.
+7. Anomaly type - can be `EC, NC, CB2P`and `CP` (n.u).
+	- `EC`: *Extensive conductive*
+	- `NC`: *Narrow conductive* 
+	- `CP`: *Conductive plane*
+	- `CB2P`: *Conductive between two planes* 
+9. Layer thickness `thick` in m. 
+10. Ohmic surface `ohmS` in ohm.m2. 
+11. Station( site) or position is given as `pk` in m.
 
 ## Get the geo-electrical features from selected anomaly
 
