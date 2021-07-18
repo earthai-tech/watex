@@ -7,10 +7,14 @@ import warnings
 import numpy as np 
 import pandas as pd 
 
-from typing import TypeVar, Generic, Iterable 
+from typing import TypeVar, Generic, Iterable , Callable
 
 
 T= TypeVar('T', float, int)
+
+from watex.processing.__init__ import (DecisionTreeClassifier, SGDClassifier,
+                                       KNeighborsClassifier, SVC  )
+from watex.processing.__init__ import _HAS_ENSEMBLE_ 
 
 from sklearn.pipeline import make_pipeline 
 from sklearn.preprocessing import RobustScaler 
@@ -39,11 +43,72 @@ from watex.utils._watexlog import watexlog
 _logger =watexlog().get_watex_logger(__name__)
 
 
+d_estimators__={'dtc':DecisionTreeClassifier, 
+                'svc':SVC, 
+                'sgd':SGDClassifier, 
+                'knn':KNeighborsClassifier 
+                 }
+
+if _HAS_ENSEMBLE_ :
+    from watex.processing.__init__ import skl_ensemble__
+    for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble__): 
+        d_estimators__[es_]=esf_ 
+
+
 class Preprocessing : 
     """
     Preprocessing class deal with supervised learning `sl` . 
+    
+    This class summarizeed supervised learning methods analysis. It  
+    deals with data features categorization, when numericall values is 
+    provided standard anlysis either `qualitatif` or `quantitatives analyis`. 
+    
+    Arguments: 
+    ---------
+        *dataf_fn*: str 
+            Path to analysis data file. 
+        *df*: pd.Core.DataFrame 
+                Dataframe of features for analysis . Must be contains of 
+                main parameters including the `target` pd.Core.series 
+                as columns of `df`. 
+ 
+    
+    Holds on others optionals infos in ``kwargs`` arguments: 
+       
+    ============  ========================  ===================================
+    Attributes              Type                Description  
+    ============  ========================  ===================================
+    df              pd.core.DataFrame       raw container of all features for 
+                                            data analysis.
+    target          str                     Traget name for superving learnings
+                                            It's usefull to  for clearly  the 
+                                            name.
+    flow_classes    array_like              How to classify the flow?. Provided 
+                                            the main specific values to convert 
+                                            numerical value to categorial trends.
+    slmethod        str                     Supervised learning method name.The 
+                                            methods  can be:: 
+                                            - Support Vector Machines ``svm``                                      
+                                            - Kneighbors: ``knn` 
+                                            - Decision Tree: ``dtc``. 
+                                            The *default* `sl` is ``svm``. 
+    sanitize_df     bool                    Sanitize the columns name to match 
+                                            the correct featureslables names
+                                            especially in groundwater 
+                                            exploration.
+    drop_columns    list                    To analyse the data, you can drop 
+                                            some specific columns to not corrupt 
+                                            data analysis. In formal dataframe 
+                                            collected straighforwardly from 
+                                            :class:`~geofeatures.Features`,the
+                                            default `drop_columns` refer to 
+                                            coordinates positions as : 
+                                                ['east', 'north']
+    fn              str                     Data  extension file.                                        
+    ============  ========================  ===================================   
 
     """
+
     def __init__(self, data_fn =None , df=None , **kwargs)->None : 
         self._logging = watexlog().get_watex_logger(self.__class__.__name__)
         
@@ -56,6 +121,7 @@ class Preprocessing :
         self.target =kwargs.pop('target', 'flow')
         self._drop_features = kwargs.pop('drop_features', ['lwi'])
         self.random_state = kwargs.pop('random_state', 0)
+        self.default_estimator = kwargs.pop('default_estimator', 'svc')
         
         self._df_cache =None 
         self._features = None 
@@ -66,6 +132,19 @@ class Preprocessing :
         self.X_test = None 
         self.y_train =None 
         self.y_test =None 
+        
+
+        self._num_column_selector = make_column_selector(
+            dtype_include=np.number)
+        self._cat_colum_selector =make_column_selector(
+            dtype_exclude=np.number)
+        self._features_engineering =PolynomialFeatures(
+            10, include_bias=False) 
+        self._selectors= SelectKBest(f_classif, k=4) 
+        self._scalers =RobustScaler()
+        self._encodages =OneHotEncoder()
+        
+        self._select_estimator_ =None 
         
         
         for key in kwargs.keys(): 
@@ -201,6 +280,7 @@ class Preprocessing :
             self.categorial_features = categorial_features 
         if numerical_features is not None:
             self.numerical_features =numerical_features 
+            
         if self.features is not None : 
             if self.categorial_features is not None : 
                 self.categorial_features,self.numerical_features =\
@@ -245,8 +325,242 @@ class Preprocessing :
         self.X_train , self.X_test, self.y_train, self.y_test =\
             train_test_split (self.X, self.y, 
                               random_state = self.random_state )
+     
+    def make_preprocessor(self, num_column_selector_:Callable[...,T] =None, 
+                               cat_column_selector_:Callable[...,T] =None, 
+                               features_engineering_:Callable[...,T] =None, 
+                               selectors_ :Callable[...,T]=None , 
+                               scalers_:Callable[...,T]=None, 
+                               encodages_ :Callable [..., T]=None, 
+                               **kwargs)-> Callable[..., T]:
+        """
+        Create a composite estimator based on multiple pipeline creation. 
         
+        `make_preprocessor` arguments are only callable function of method or 
+        preprocessor making.Different modules from the :mod:`sklearn` are 
+        used for the preprocessor building like:: 
+            
+            - :meth:`sklearn.pipeline.make_pipeline ` for pipeline creation. 
+            - :meth:`sklearn.preprocessing.OneHotEncoder` for categorial 
+                `features` encoding. 
+            - :meth:`sklearn.preprocessing.PolynomialFeatures` for features 
+               engineering. 
+            - :meth:`sklearn.preprocessing.RobustScaler` for data scaling 
+            - :meth:`sklearn.compose.make_column_transformer` for data 
+                transformation. 
+            - :meth:`sklearn.compose.make_column_selector` for features 
+                composing.
+                
+        :param num_column_selector_: Callable method from sckitlearn 
+            Numerical column maker. Refer to  sklearn site for more details. 
+            :ref:`<https://scikit-learn.org/stable/modules/classes.html>` 
+            The default is:: 
+                
+                `make_column_selector(dtype_include=np.number)`
+            
+        :param cat_column_selector_`: 
+            Callable method. Categorical column selector. The default is::
+            
+                `make_column_selector(dtype_exclude=np.number)`
+ 
+        :param features_engineering_: 
+            Callable argument using :mod:`sklearn.preprocessing` different 
+            method. the default is::
+                
+                `PolynomialFeatures(10, include_bias=False)`
+                
+        :param selectors_: Selector callable argument including many test 
+            methods like `f_classif` or Anova test.The default is: 
+                `SelectKBest(f_classif, k=4),` 
+           
+        :param scalers_: Scaling data using many normalization or standardization 
+            methodike. The default is  `RobustScaler()`. 
+            
+        :param kwargs: Other additionals keywords arguments in 
+        `make_column_transformer()` and `make_pipeline()` methods. 
+        
+        
+                      
+        """
+        preprocessor_kws = kwargs.pop('prepreocessor_kws', None)
+        make_pipeline_kws =kwargs.pop('make_pipeline_kws', None)
+
+        
+        if num_column_selector_ is not None :
+            self._num_column_selector = num_column_selector_
+        if cat_column_selector_ is not None : 
+            self._cat_colum_selector = cat_column_selector_ 
+            
+        if features_engineering_ is not None: 
+            self._features_engineering = features_engineering_
+        if selectors_ is not None : self._selectors_= selectors_ 
+        if scalers_ is not None : self._scalers = scalers_ 
+        if encodages_ is not None: self._encodages = encodages_ 
+        
+        
+        numerical_features = self._num_column_selector
+        categorical_features =self._cat_column_selector
+        
+        #create a pipeline 
+        numerical_pipeline = make_pipeline(self._features_engineering,
+                                           self._selectors , self._scalers,
+                                           **make_pipeline_kws )
+        categorical_pipeline= make_pipeline(self._encodages)
+        
+        self._preprocessor =make_column_transformer(
+            (numerical_pipeline, numerical_features), 
+            (categorical_pipeline, categorical_features), **preprocessor_kws)
+        
+        return self._preprocessor 
     
+    def make_preprocessing_model(self, preprocessor: Callable[..., T]= None, 
+                                 estimator_:Callable[..., T]=None,
+                                  **kws)->T: 
+        """
+        Test your preprocessing model by providing an `sl` estimator. 
+        
+        If `estimator` is None, set the default estimator by the predix of 
+        the estimator to test the fit of the preprocessing model. The prefix 
+        of some defaults estimator are enumerated below:: 
+            
+            - 'dtc': For DecisionTreeClassifier 
+            - 'svc': Support Vector Classifier 
+            - 'sdg': SGDClassifier
+            - 'knn': KNeighborsClassifier
+            - 'rdf`: RandmForestClassifier 
+            - 'ada': AdaBoostClassifier 
+            - 'vtc': VotingClassifier
+            - 'bag': BaggingClassifier 
+            - 'stc': StackingClassifier
+            
+        :param preprocessor: 
+            Callable preprocessor method. Can build a preprocessor by creating 
+           your own pipeline with different composite estimator.Refer to the  
+           :meth:`watex.preprocessing.sl.Preprocessing.make_preprocessor` for
+           details. 
+           
+        :param estimator_: 
+            Callable estimator method to fit the model :: 
+                
+                `estimator_`= SGDClassifier(random_state=13)
+            
+            It's possible to 
+            provide multiple estimator with configuration arguments into 
+            estimator dictionnary like: 
+                
+                `estimator_`={'knn': KNeighborsClassifier(n_neighbors=10, 
+                                                          metric='manhattan') , 
+                              'svc':SVC(C=100, gamma=1e-3, random_state=25)}
+            when multiple estimators is provided, the results of model fit and 
+            prediction score should be in dict with estimator name. 
+        
+        :param defaut_estimator: 
+            The default estimator for preprocessing model testing
+        
+        """
+        
+        def model_evaluation(model, X_train, y_train, X_test): 
+            """ Evaluating model prediction """
+            
+            return model.fit(X_train, y_train), model.predict (X_test)
+        
+        
+        self._logging.info('Preprocessing model creating using %s method.'% 
+                           self.make_preprocessing_model.__name__)
+        
+        default_estimator =kws.pop('default_estimator', None)
+        
+        if default_estimator is not None : 
+            default_estimator = hints.controlExistingEstimator(
+                default_estimator)
+            
+            if default_estimator is None :
+                self._logging.error(
+                    f'Estimator `{default_estimator}` not found! Please '
+                    ' provide the right `estimator` name! ')
+                warnings.warn(
+                    f'Estimator `{default_estimator}` not found! Please '
+                    ' provide the right `estimator` name! ')
+                return 
+                
+            else : self.default_estimator = default_estimator[0] 
+             
+        if preprocessor is None: 
+            self.preprocessor = self.make_preprocessing_model()
+        
+        if estimator_ is not  None : 
+            self._select_estimator_ = estimator_ 
+        
+        # set default configuration of estimators 
+        if estimator_ is None : 
+ 
+            for e_pref, e_v in d_estimators__.keys(): 
+                if e_pref =='knn': 
+                    d_estimators__[e_pref]=e_v(n_neighbors=10, 
+                                               metric='manhattan')
+                elif e_pref =='svc': 
+                     d_estimators__[e_pref]=e_v(C=100, gamma=1e-3, 
+                                                random_state=self.random_state)
+                elif e_pref =='rdf': 
+                    d_estimators__[e_pref]=e_v(n_estimators=200, 
+                                               random_state=self.random_state)
+                else: 
+                    d_estimators__[e_pref]=e_v(random_state=self.random_state)
+
+            self._select_estimator_= d_estimators__[self.defaut_estimator]        
+        
+        if hasattr(self._select_estimator_, '__call__'): 
+            
+            self._logging.info(
+                'Evaluation using single {0} '
+                'estimator.'.self._selecT_estimator.__name__)
+            
+            self.preprocessing_model = make_pipeline(self._preprocessor, 
+                                                     self._select_estimator_)
+            self.model_dict={'___':  self.preprocessing_model}
+            
+            for m_key, m_value in self.model_dict.items(): 
+                self.preprocess_model_fit, self.preprocess_model_pred =\
+                    model_evaluation(self.model_dict[m_key], self.X_train , 
+                                 self.y_train,  self.X_test)
+                
+            return self.preprocess_model_fit , self.preprocess_model_pred
+        
+        #keep all model on a dictionnary of model 
+        
+        elif isinstance(self._select_estimator_, dict): 
+            model_fits_preds={}
+            self._logging.info(
+                'Evaluate model using multiples estimators `{}`'.format(
+                    list(self._select_estimator_.keys())))
+            
+            for es_key, es_val in self._select_estimator_.items():
+                self.model_dict[es_key] =make_pipeline(self._preprocessor,
+                                                       es_val) 
+                
+            for m_key, m_value in self.model_dict.items(): 
+                    self.preprocess_model_fit, self.preprocess_model_pred =\
+                        model_evaluation(self.model_dict[m_key], self.X_train , 
+                                     self.y_train,  self.X_test)        
+                    model_fits_preds[m_key]= (self.preprocess_model_fit,
+                                              self.preproces_model_pred) 
+            return model_fits_preds 
+        
+class Processing (Preprocessing) : 
+    """
+    Processing class deal with preprocessing 
+    
+    """  
+    
+    def __init__(self, data_fn =None , df=None, **kwargs):
+        Preprocessing.__init__(data_fn=data_fn , df=df, **kwargs)
+        
+        
+        pass 
+    
+        
+        
+        
 def find_categorial_and_numerical_features(*, df= None, features= None,  
                                            categorial_features: Iterable[T]=None ,
                                            numerical_features:Iterable[T]=None 
@@ -357,7 +671,6 @@ def find_categorial_and_numerical_features(*, df= None, features= None,
                     
     return categorial_features , numerical_features 
             
-
 
 if __name__=='__main__': 
     
