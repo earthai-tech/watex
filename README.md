@@ -12,10 +12,10 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
     **WATex-AI** has four (04) objectives:
     -  Contribute to select the best anomaly presumed to give a  suitable flow rate(FR) according
          to the type of hydraulic required for the targeted population.
-    -  Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling to 
+    -  Intend to supply drinking water for regions faced to water scarcity  by predicting FR before  drilling  
          to limit the failures drillings and dry boreholes.
-    -  Minimize the risk of dry boreholes and failure drillings which lead for  affordable  project budget elaboration during the water campaigns. 
-         Less expensive pojects is economiccaly profitable in term of funding-raise from partners and organizations aids.  
+    -  Minimize the risk of dry boreholes and failure drillings which lead for affordable  project budget elaboration during the water campaigns. 
+         Less expensive pojects is economically profitable in term of funding-raise from partners and organizations aids.  
     -  Involve water sanitation for population welfare by bringing a piece of solution of their daily problems.
         The latter goal should not be developped for the first realease. 
    
@@ -30,7 +30,7 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
  
 * **Note** 
 
-    Actually only [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) works porperly and the developement with pure Python is still ongoing. 
+    Actually only [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) works properly and the developement with pure Python is still ongoing. 
     Other AI algorithms implemented will be added as things progress. To handle some functionalities before the full development, please refer to `.checkpoints ` folder.
      
 ## Documentation 
@@ -41,7 +41,7 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 
 WATex-AI is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
 
-## Units used 
+## Features and units used 
 
 1. Apparent resistivity `rhoa` in ohm.meter. 
 2. Standard fracture index `sfi`, no unit(n.u). 
@@ -55,18 +55,20 @@ WATex-AI is under Massachusetts Institute of Technology License [MIT](https://ww
 	- `CP`: *Conductive plane*
 	- `CB2P`: *Conductive between two planes* 
 9. Layer thickness `thick` in m. 
-10. Ohmic surface `ohmS` in ohm.m2. 
-11. Station( site) or position is given as `pk` in m.
+10. Station( site) or position is given as `pk` in m.
+11. Ohmic surface `ohmS` in ohm.m2 got from the vertical electrical sounding(VES)
+12. Level of water inflow `lwi` in m got from the existing boreholes.
+13. Geology `geol` of the survey area got during the drilling or from the previous geology works.
 
 ## Get the geo-electrical features from selected anomaly
 
-**Geo-electrical features** are mainly used FR prediction purposes. 
+**Geo-electrical features** are mainly used for FR prediction purposes. 
  Beforehand, we refer  to the  data directory `data\erp` accordingly for this demonstration. 
- The 'ERP' data of survey line  is found on `l10_gbalo.csv`. There are two ways to get **Geolectrical features**. 
+ The electrical resistivity profile (ERP) data of survey line  is found on `l10_gbalo.csv`. There are two ways to get **Geo-electrical features**. 
  The first option  is to provide the selected anomaly boundaries into the argument ` posMinMax` and 
   the seccond way is to let program  find automatically the *the best anomaly point*. The first option is strongly recommended. 
 
- Fist of all , try to import the module _ERP_ from ` watex.core.erp.ERP`  and build `erp_obj`
+ First of all, we import the module _ERP_ from ` watex.core.erp.ERP` to build the `erp_obj`
  as follow: 
 ```
 >>> from watex.core.erp import ERP 
@@ -77,14 +79,14 @@ WATex-AI is under Massachusetts Institute of Technology License [MIT](https://ww
 ...                turn_on =True                      # display infos
                  )
 ```
- - To get the _best anomaly_ point from the 'erp_line' if `auto` option is enabled, try: 
+ - To get automatically the _best anomaly_ point from the 'erp_line' of survey area, enable `auto` option and try: 
 ```
 >>> erp_obj.select_best_point_ 
 Out[1]: 170 			# --|> The best point is found  at position (pk) = 170.0 m. ----> Station 18              
 >>> erp_obj.select_best_value_ 
 Out[1]: 80.0			# --|> Best conductive value selected is = 80.0 Ω.m                    
 ```
-- To get the next geo-electrical features, considered the _prefix_`best_+ {feature_name}`. 
+- To get the other geo-electrical features, considered the _prefix_`best_+ {feature_name}`. 
 For instance :
 ```
 >>> erp_obj.best_type         # Type of the best selected anomaly on erp line
@@ -94,7 +96,7 @@ For instance :
 >>> erp_obj.best_sfi     	# best anomaly standard fracturation index.
 >>> erp_obj.best_anr           # best anomaly ration the whole ERP line.
 ```
-- If `auto` is enabled, the program could find additional maximum three best 
+- If `auto` is enabled, the program could find additionally three(03) maximum  best 
 conductive points from the whole  ERP line as : 
 ```
 >>> erp_obj.best_points 
@@ -105,16 +107,15 @@ conductive points from the whole  ERP line as :
  03 : position = 40.0 m ----> rhoa = 110 Ω.m               
 -----------------------------------------------------------------------------
 ```
-For multiples `erp` file reading try, all `geo_electrical_features` from all 
-ERP survey line are auto-computed. For example: 
-
+Generate multiple `Features` from different locations of `erp` survey line by computing all `geo_electrical_features` from all 
+ERP survey line using the `watex.core.erp.ERP_collection` module as below: 
 ```
 >>> from watex.core.erp import ERP_collection
 >>> erpColObj= ERP_collection(listOferpfn= 'data/erp')
 >>> erpColObj.erpdf 
 ```
 Get all features for data analysis and prediction purpose  by calling `Features`
-from `~.core.geofeatures` module as **(1)** or do the same task by calling different module collections`ves`, `geol`,
+from module `~.core.geofeatures` as **(1)** or do the same task by calling different module collections from `ves`, `geol`,
 considered as Python object **(2)**: 
 ```
 (1) 							|(2)
@@ -136,7 +137,7 @@ considered as Python object **(2)**:
 ## Data analysis and quick plot hints
 
  To solve the classification problem in `supervised learning`, we need to categorize  the `targetted` numerical values 
- into categorized values using the module `watex.analysis` . It's possible to export data using `~writedf` function: 
+ into categorized values using the module `watex.analysis` . It's possible to export data using the decorated `~writedf` function: 
 ```
 >>> from watex.analysis.features import sl_analysis 
 >>> slObj =sl_analysis(
@@ -150,9 +151,8 @@ To quick see how data look like, call `~viewer`packages:
 >>> qplotObj = QuickPlot( df = slObj.df , lc='b') 
 >>> qplotObj.hist_cat_distribution(target_name='flow')
 ```
-If `df` is not given, It's easy to quick visualize the data setting the argument `data_fn` that match the 
-to datafile  like `data_fn ='data/geo_fdata/BagoueDataset2.xlsx'`. Both will give the same result.
-
+It's easy to quick visualize the data setting the argument `data_fn`if `df` is not given like `data_fn ='data/geo_fdata/BagoueDataset2.xlsx'`.
+Both will give the same result.
 To draw a plot of two features with bivariate and univariate graphs, use `~.QuickPlot.joint2features` methods as
 below:
 ```
