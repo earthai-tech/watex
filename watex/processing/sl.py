@@ -393,9 +393,9 @@ class Preprocessing :
             - 'bag': BaggingClassifier 
             - 'stc': StackingClassifier
             
-        :param preprocessor: Callable preprocessor methods. Can build a 
-            preprocessor  by creating your own pipeline with different 
-            composite methods. Refer to the method  
+        :param preprocessor: 
+            Callable preprocessor methods. Can build a preprocessor  by creating 
+           your own pipeline with different composite methods.Refer to the method  
             :meth:`watex.preprocessing.sl.Preprocessing.make_preprocessor`. 
             
         """
