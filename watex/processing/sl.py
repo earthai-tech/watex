@@ -1059,33 +1059,7 @@ if __name__=='__main__':
     # processObj.get_validation_curve(switch_plot='on', preprocess_step=True)
     # print(processObj.train_score)
     # print(processObj.val_score)
-    # preObj.random_state = 7
-    # mfitspred= preObj.make_preprocessing_model()
-    #cat, num = find_categorial_and_numerical_features(df=preObj.df)
-    # df_pre = preObj.df 
-    # # df_X= preObj .X 
-    # df_y = preObj.y 
-    # from sklearn.preprocessing import StandardScaler 
-    # from sklearn.ensemble import RandomForestClassifier
-    # preObj.random_state = 7
-    # mfitspred= preObj.make_preprocessing_model(estimators_={
-    #     'RandomForestClassifier':RandomForestClassifier(n_estimators=200, random_state=0), 
-    #     'SDGC':SGDClassifier(random_state=0)})
-    # print(preObj.preprocessing_model_score)
-    # print(preObj.preprocessing_model_prediction)
-    # print(preObj.confusion_matrix)
-    # print(preObj.classification_report)
-    # make_pre =preObj.make_preprocessor(
-    #     num_column_selector_= make_column_selector(dtype_include=np.number),
-    #     cat_column_selector_= make_column_selector(dtype_exclude=np.number),
-    #     features_engineering_=PolynomialFeatures(7, include_bias=True),
-    #     selectors_=SelectKBest(f_classif, k=4), encodages_= StandardScaler())
-    # print(preObj.preprocessor )
-    # print(preObj.random_state)
-    
-    
-    # print(mfitspred)
-    # print(preObj.df_cache )
+
 
     
     
