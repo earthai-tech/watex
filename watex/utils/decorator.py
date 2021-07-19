@@ -475,9 +475,116 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
     return  categorized_dec
     
 
-
+class visualize_validation_curve : 
+    """
     
+    Description:
+             Decorator to visualize the validation curve. 
+             Once called, will  quick plot the `validation curve`
+            
+    Usage:
+        .. todo:: Quick plot the validation curve 
 
+    :param turn:  Continue the plotting or switch off the plot and return 
+                the function. default is `off` else `on`.
+    :param kwargs: 
+        Could be the keywords arguments for `matplotlib.pyplot`
+        library :: 
+            
+            train_kws={c:'r', s:10, marker:'s', alpha :0.5}
+            val_kws= {c:'blue', s:10, marker:'h', alpha :1}
+            
+    Author: @Daniel03
+    Date: 19/07/2021
+    """
+    
+    def __init__(self, turn ='off', **kwargs): 
+        self._logging=watexlog().get_watex_logger(self.__class__.__name__) 
+        
+        self.turn =turn 
+        self.plotStyle =kwargs.pop('plot_style', 'scatter')
+        self.train_kws=kwargs.pop('train_kws',{'c':'r',  'marker':'s', 
+                                               'alpha' :0.5,
+                                               'label':'validation curve'})
+        self.val_kws= kwargs.pop('val_kws', {'c':'blue', 'marker':'h','alpha' :1,
+                   'label':'Training curve' })
+        self.k = kwargs.pop('k', np.arange(1, 220, 20))
+        self.xlabel =kwargs.pop('xlabel', {'xlabel':'Params evolution'})
+        self.ylabel =kwargs.pop('ylabel', {'ylabel':'Performance in %'})
+        self.savefig =kwargs.pop('savefig', None)
+        
+        self.scatterplot = True 
+        self.lineplot =False
+
+        if self.plotStyle.lower()=='both': 
+            self.lineplot = True 
+        elif self.plotStyle.lower().find('line')>=0 : 
+            self.lineplot = True 
+            self.scatterplot =False
+        elif self.plotStyle =='scatter': 
+            self.scatterplot =True 
+        
+        for key in kwargs.keys(): 
+            setattr(self, key, kwargs[key])
+            
+    def __call__(self, func): 
+        """ Call function and decorate `validation curve`"""
+        
+        @functools.wraps(func) 
+        def viz_val_decorated(*args, **kwargs): 
+            """ Decorated function """
+
+            import  matplotlib.pyplot as plt 
+            
+            train_score , val_score, switch,\
+                param_range =func(*args, **kwargs)
+            
+            if switch  is not None : self.turn =switch 
+            if param_range is not None : self.k= param_range 
+            
+            if self.turn in ['on', 1, True]: 
+                if not isinstance(train_score, dict):
+                    train_score={'_':train_score}
+                    val_score = {'_': val_score}
+                    
+                for ii, (trainkey, trainval) in enumerate(
+                        train_score.items()): 
+    
+                    trainval*=100
+                    val_score[trainkey]  *=100 
+        
+                    if self.scatterplot: 
+                        plt.scatter(self.k, val_score[trainkey].mean(axis=1),
+                                    **self.val_kws )
+                        plt.scatter(self.k, trainval.mean(axis=1) ,
+                               **self.train_kws)
+                    if self.lineplot : 
+                        plt.plot(self.k, val_score[trainkey].mean(axis=1),
+                                 **self.val_kws)
+   
+                        plt.plot(self.k, trainval.mean(axis=1),
+                                 **self.train_kws)
+                    
+                    if isinstance(self.xlabel, dict):
+                        plt.xlabel(**self.xlabel)
+                    else :  plt.xlabel(self.xlabel)
+                    
+                    if isinstance(self.ylabel, dict):
+                        plt.ylabel(**self.ylabel)
+                    else :  plt.ylabel(self.ylabel)
+                    
+                    plt.legend()
+                    
+                    if self.savefig is not None: 
+                        if isinstance(self.savefig, dict):
+                            plt.savefig(**self.savefig)
+                        else : 
+                            plt.savefig(self.savefig)
+
+            return func(*args, **kwargs)
+        
+        return viz_val_decorated
+    
 
 
 

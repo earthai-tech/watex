@@ -652,8 +652,9 @@ if __name__=='__main__':
     featObj =Features(features_fn= featurefn)
     
     df=featObj.df
+    print(df)
     #df2, *_ = 
-    featObj.exportdf()
+    # featObj.exportdf()
     
     # print(featObj.site_names)
     # print(featObj.id_)
