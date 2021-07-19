@@ -485,8 +485,6 @@ class visualize_validation_curve :
     Usage:
         .. todo:: Quick plot the validation curve 
 
-        Author: @Daniel03
-        Date: 19/07/2021
     :param turn:  Continue the plotting or switch off the plot and return 
                 the function. default is `off` else `on`.
     :param kwargs: 
@@ -495,6 +493,9 @@ class visualize_validation_curve :
             
             train_kws={c:'r', s:10, marker:'s', alpha :0.5}
             val_kws= {c:'blue', s:10, marker:'h', alpha :1}
+            
+    Author: @Daniel03
+    Date: 19/07/2021
     """
     
     def __init__(self, turn ='off', **kwargs): 
