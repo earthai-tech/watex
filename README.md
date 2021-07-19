@@ -212,6 +212,59 @@ between the features `lwi` , '`flow` and the `geology(geol)`' as:
 ...                    ) 
 ```
 
+## Processing  
+
+Processing is usefull before modeling step. To process data, a default implementation is given for 
+data `preprocessing` after data sanitizing. It consists of creating a model pipeline using different `supervised learnings` methods. 
+A default pipeline is created though the `prepocessor` designing. Indeed  a `preprocessor` is a set 
+of `transformers + estimators` and multiple other functions to boost the prediction. WATex-AI includes
+nine(09) inner defaults estimators such as `neighbors`, `trees`, `svm` estimators and `~.ensemble` methods estimators category.
+An example of  `preprocessing`class implementation is given below: 
+```
+>>> from watex.processing.sl import Preprocessing
+>>> prepObj = Preprocessing(drop_features = ['lwi', 'x_m', 'y_m'],
+...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
+>>> prepObj.X_train, prepObj.X_test, prepObj.y_train, prepObj.y_test
+>>> prepObj.categorial_features, prepObj.numerical_features 
+>>> prepObj.random_state = 25 
+>>> preObj.test_size = 0.25
+>>> prepObj.make_preprocessor()         # use default preprocessing
+>>> preObj.preprocessor
+>>> prepObj.make_preprocessing_model( default_estimator='SVM')
+>>> prepObj.preprocessing_model_score
+>>> prepObj.preprocess_model_prediction
+>>> prepObj.confusion_matrix
+>>> prepObj.classification_report
+```
+It 's also interesting to evaluate a quick model score without any preprocessing by calling the 
+ `Processing` superclass as : 
+```
+>>> from watex.processing.sl import Processing 
+>>> processObj = Processing(
+ ...   data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
+>>> processObj.quick_estimation(estimators=DecisionTreeClassifier(
+...    max_depth=100, random_state=13))
+>>> processObj.model_score
+0.5769230769230769                  # model score ~ 57.692   %
+>>> processObj.model_prediction
+```
+Now let's evaluate onto the same dataset the `model_score` by reinjecting the default composite estimator 
+ using `preprocessor` pipelines. We trigger the composite estimator  by switching  the `auto` option to `True`.
+
+```
+>>> processObj = Processing(data_fn = 'data/geo_fdata/BagoueDataset2.xlsx', 
+...                        auto=True)
+>>> processObj.model_score
+0.72487896523648201                 # new composite estimator ~ 72,49   %
+>>> processObj.model_prediction
+``` 
+We clearly see the difference of  `14.798%` between the two options. Furthermor,  we can get the validation curve
+ by callig `get_validation_curve` function using the same default composite estimator like: 
+
+```
+>>> processObj.get_validation_curve(switch_plot='on', preprocess_step=True)
+```
+
 ## System requirements 
 * Python 3.7+ 
 

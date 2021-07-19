@@ -29,6 +29,8 @@ import pandas as pd
 import numpy as np 
 import seaborn as sns 
 
+from watex.core import geofeatures
+
 import watex.utils.exceptions as Wex
 from watex.utils import decorator as deco
 
@@ -110,6 +112,7 @@ class sl_analysis :
         self._drop_columns =kws.pop('drop_columns', ['east', 'north'])
         
         self._fn =None
+        self._df_cache =None 
         
         for key in list(kws.keys()): 
             setattr(self, key, kws[key])
@@ -177,7 +180,66 @@ class sl_analysis :
         self._df = PD_READ_FEATURES[exT](features_fn)
     
         self.gFname = os.path.basename(self.gFname)
+    
+    @property 
+    def df_cache(self): 
+        """ Generate cache `df_` for all eliminate features and keep on 
+        new pd.core.frame.DataFrame. """
+        return self._df_cache 
+        
+    @df_cache.setter 
+    def df_cache(self, cache: Iterable[T]): 
+        """ Holds the remove features and keeps on new dataframe """
+        
+        temDict={'id': self._df['id'].to_numpy()}
+        temc=[]
+        if isinstance(cache, str): 
+            cache = [cache] 
+        elif isinstance(cache, (set,dict, np.ndarray)): 
+            cache=list(cache)
+            
+        if self._drop_columns is not None: 
+            if isinstance(self._drop_columns, str) :
+                self._drop_columns =[self._drop_columns]
+            cache = cache + self._drop_columns 
+            if isinstance(self._target, str): 
+                cache.append(self._target)
+            else : cache + list(self._target)
+        for cc in cache: 
+            if cc not in self._df.columns: 
+                temDict[cc]= np.full((self._df.shape[0],), np.nan)
+                temc.append(cc)
+            else: 
+                if cc=='id': continue # id is already in dict
+                temDict [cc]= self._df[cc].to_numpy()
+        
+        # check into the dataset whether the not provided features exists.
+        if self.data_fn is not None : 
+            # try: 
+            featObj = geofeatures.Features(features_fn= self.data_fn)
+            # except: 
+            self._logging.error(
+                'Trouble occurs when calling `Features` class from '
+                '`~.core.geofeatures.Features` module !')
+            # else: 
+
+            df__= featObj.df.copy(deep=True)
+            df__.reset_index(inplace= True)
+            
+            if 'id' in df__.columns: 
+                temDict['id_']= df__['id'].to_numpy()
+
+            if len(temc) !=0 : 
+                for ad in temc: 
+                    if ad in df__.columns: 
+                        temDict[ad]= df__[ad]
          
+            
+        self._df_cache= pd.DataFrame(temDict)
+        
+        if 'id_' in self._df_cache.columns: 
+            self._df_cache.set_index('id_', inplace=True)
+       
         
     def _dropandFlow_classifier(self, data_fn =None, df =None ,
                                 target: str ='flow', 
@@ -261,7 +323,8 @@ class sl_analysis :
         if self.fn is not None : 
              if self._sanitize_df is True : 
                  self._df , utm_flag = STZ_DF(self._df)
-
+        # test_df = self._df.copy(deep=True)
+        # print(test_df)
         if self._drop_columns is not None :
             if isinstance(self._drop_columns, np.ndarray): 
                 self._drop_columns = [l.lower() for
@@ -386,10 +449,11 @@ if __name__=='__main__':
     featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
     
     slObj =sl_analysis(data_fn=featurefn, set_index =True)
-    # df_2= slObj._df
-    # df=slObj.df
-    slObj.writedf()
-        
+    slObj.df_cache=['op']
+    print(slObj.df_cache)
+    # slObj.writedf()
+   
+    # print(cache +['east', 'north'])
         
         
         
