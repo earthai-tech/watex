@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
-# This module is part of the WATex viewer package, which is released under a
-# MIT- licence.
+# This module is part of the WATex viewer package, which is released under 
+# the MIT- licence.
 
 """
 Created on Wed Jul 14 20:00:26 2021
@@ -15,7 +15,10 @@ from typing import TypeVar, Generic, Iterable
 T=TypeVar('T', list , tuple, dict, float, int)
 K= TypeVar('K', complex, float)
 
-import os 
+import os
+import re
+import warnings 
+
 import numpy as np 
 import pandas as pd
 
@@ -59,7 +62,7 @@ def format_generic_obj(generic_obj :Generic [T])-> T:
     """
     Desciption: 
         
-        Format a generic object using the number of items composed. 
+        Format a generic object using the number of composed items. 
     
     Usage:
         
@@ -110,6 +113,44 @@ def findIntersectionGenObject(gen_obj1: Generic[T], gen_obj2: Generic[T]
     else: objType = type(gen_obj2)
 
     return objType(set(gen_obj1).intersection(set(gen_obj2)))
+
+def findDifferenceGenObject(gen_obj1: Generic[T], gen_obj2: Generic[T]
+                              )-> Generic[T]: 
+    """
+     Desciption: 
+         
+        Find the difference of generic object and keep the shortest len 
+        object `type` at the be beginning: 
+     
+    Usage:
+
+        todo: write usage
+        
+    :param gen_obj1: Can be a ``list``, ``dict`` or other `TypeVar` 
+        classified objects.
+    :param gen_obj2: Idem for `gen_obj1`.
+    
+    :Example: 
+        
+        >>> from watex.viewer.hints import findDifferenceGenObject
+        >>> findDifferenceGenObject(
+        ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
+        ...    {'ohmS', 'lwi', 'power'})
+        [out]:
+        ...  {'ohmS', 'lwi', 'power'}
+    
+    """
+    if len(gen_obj1) < len(gen_obj2):
+        objType = type(gen_obj1)
+        return objType(set(gen_obj2).difference(set(gen_obj1)))
+    elif len(gen_obj1) > len(gen_obj2):
+        objType = type(gen_obj2)
+        return objType(set(gen_obj1).difference(set(gen_obj2)))
+    else: return 
+   
+        
+    
+    return set(gen_obj1).difference(set(gen_obj2))
     
 def featureExistError(superv_features: Iterable[T], 
                       features:Iterable[T]) -> None:
@@ -152,16 +193,73 @@ def featureExistError(superv_features: Iterable[T],
             ' not allowed in  dataframe columns ={0}'.
             format(list(features)))
         
-
+def controlExistingEstimator(estimator_name: T= str ) -> T: 
+    """ 
+    Description: 
+        When estimator name is provided by user , will chech the prefix 
+        corresponding
+        
+    Usage: 
+        
+        Catching estimator name and find the corresponding prefix 
+        
+    :param estimator_name: Name of given estimator 
+    
+    :Example: 
+        
+        >>> from watex.viewer.hints import controlExistingEstimator 
+        >>> test_est =controlExistingEstimator('svm')
+        ('svc', 'SupportVectorClassifier')
+        
+    """
+    estimator_name = estimator_name.lower()
+    _estimator ={
+            'dtc': ['DecisionTreeClassifier', 'dtc', 'dec'],
+            'svc': ['SupportVectorClassifier', 'svc', 'sup', 'svm'],
+            'sdg': ['SGDClassifier','sdg', 'sdg'],
+            'knn': ['KNeighborsClassifier','knn''kne'],
+            'rdf': ['RandomForestClassifier', 'rdf', 'ran', 'rfc'],
+            'ada': ['AdaBoostClassifier','ada', 'adc'],
+            'vtc': ['VotingClassifier','vtc', 'vot'],
+            'bag': ['BaggingClassifier', 'bag', 'bag'],
+            'stc': ['StackingClassifier','stc', 'sta'],
+            }
+    estfull = [ e_key[0] for e_key in _estimator.values()]
+    
+    full_estimator_name =None 
+    
+    for estim_key, estim_val in _estimator.items(): 
+        if estimator_name == estim_key : 
+            full_estimator_name = estim_val[0]
+            return estim_key , full_estimator_name 
+        
+        elif estimator_name != estim_key : 
+            for s_estim in estim_val : 
+                if re.match(r'^{}+'.format(estimator_name),
+                            s_estim.lower()): 
+                    full_estimator_name = estim_val[0]
+                    return estim_key , full_estimator_name 
+    
+    if full_estimator_name is None : 
+        __logging.error(
+            f'Estimator `{estimator_name}` not found in the default '
+            ' list {}'.format(format_generic_obj(estfull)).format(*estfull))
+        warnings.warn(
+            f'Estimator `{estimator_name}` not found in the default estimators'
+            ' list {}'.format(format_generic_obj(estfull)).format(*estfull))
+        return 
+    
+    
 if __name__=='__main__': 
     
     #ss= format_generic_obj({'ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'})
-    obj1 = ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude']
-    obj2= {'ohmS', 'lwi', 'power'}
+    # obj1 = ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude']
+    # obj2= ['ohmS', 'lwi', 'power']
+    # op= findDifferenceGenObject(gen_obj1=obj1, gen_obj2=obj2)
+    # print(op)
     
-    op= findIntersectionGenObject(gen_obj1=obj1, gen_obj2=obj2)
-    print(op)
-    
+    sop_est =controlExistingEstimator('svm')
+    print(sop_est[0])
     
     
     
