@@ -587,19 +587,19 @@ class QuickPlot :
                         orientation =self.fig_orientation)
         plt.show()
                 
-    def plot_quantitative_features(self, df=None, data_fn =None , target= None,
-                                  quan_features:Iterable[T]=None, 
+    def plot_numerical_features(self, df=None, data_fn =None , target= None,
+                                  numerical_features:Iterable[T]=None, 
                                   trigger_map_lower_kws: bool =False, 
                                   map_lower_kws: Generic[T]=None, **sns_kws): 
         """
         Plot qualitative features distribution using correlative aspect. Be 
-        sure to provided quantitative arguments. 
+        sure to provided numerical features arguments. 
         
         :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
         :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
         
-        :param quan_features: 
-            List of qualitative features to plot for  correlating analyses. 
+        :param numerical features: 
+            List of numerical features to plot for  correlating analyses. 
         
         :param sns_kws: 
             Keywords word arguments of seabon pairplots. Refer to 
@@ -636,12 +636,12 @@ class QuickPlot :
             ...          'diag_kind':'kde', 
             ...          'corner':False,
             ...          }
-            >>> maklow = {'level':4, 
-                      'color':".2"}
-            >>> qkObj.plot_quantitative_features(trigger_map_lower_kws=True, 
-                                                map_lower_kws=maklow, 
-                                                **sns_pkws
-                                                )
+            >>> marklow = {'level':4, 
+            ...          'color':".2"}
+            >>> qkObj.plot_numerical_features(trigger_map_lower_kws=True, 
+            ...                                    map_lower_kws=marklow, 
+            ...                                    **sns_pkws)
+                                                
         """
         if data_fn is not None : 
             self.data_fn = data_fn
@@ -658,10 +658,10 @@ class QuickPlot :
             else: 
                 warnings.warn(
                     ' No target  is detected and your purpose'
-                    'is not for water exploration. Could not plot quantitive'
+                    'is not for water exploration. Could not plot numerical'
                     " features' distribution.")
                 raise Wex.WATexError_geoFeatures(
-                    'Target feature is missing. Could not plot quantitative'
+                    'Target feature is missing. Could not plot numerical'
                     '  features. Please provide the right target``hue`` name.'
                     )
         elif target is not None : 
@@ -675,26 +675,26 @@ class QuickPlot :
             if sorted(hints.findIntersectionGenObject(
                     {'ohmS', 'power', 'sfi', 'magnitude'}, df_.columns
                     ))== sorted({'ohmS', 'power', 'sfi', 'magnitude'}):
-                quan_features= sorted({'ohmS', 'power', 'sfi', 'magnitude'})
+                numerical_features= sorted({'ohmS', 'power', 'sfi', 'magnitude'})
                 
             if target =='flow': 
-                quan_features.append('flow')
+                numerical_features.append('flow')
                 # df_['flow']=df_['flow'].astype('category').cat.codes
         try : 
-            resH= hints.cfexist(features_to= quan_features,
+            resH= hints.cfexist(features_to= numerical_features,
                                features = df_.columns)
         except:
              raise Wex.WATexError_parameter_number(
-                f'Parameters number of {quan_features} is  not found in the '
+                f'Parameters number of {numerical_features} is  not found in the '
                 ' dataframe columns ={0}'.format(list(df_.columns)))
         
         else: 
             if not resH:  raise Wex.WATexError_parameter_number(
-                f'Parameters number is ``{quan_features}``. NoneType object is'
-                ' not allowed in  dataframe columns ={0}'.
+                f'Parameters number is ``{numerical_features}``. NoneType'
+                '  object is not allowed in  dataframe columns ={0}'.
                 format(list(df_.columns)))
 
-            for ff in quan_features:
+            for ff in numerical_features:
                 if ff== target: continue 
                 try : 
                     df_=df_.astype({
@@ -703,9 +703,9 @@ class QuickPlot :
                     rem=[]
                     self._logging.error(
                         f" Feature `{ff}` is not quantitive. It should be "
-                        " for quantitative analysis.")
+                        " for numerical analysis.")
                     warnings.warn(f'The given feature `{ff}` will be remove for'
-                                  " quantitative analysis.")
+                                  " numerical analysis.")
                     rem.append(ff)
                     
                 else: 
@@ -714,12 +714,12 @@ class QuickPlot :
             if len(tem)==0 : 
                 raise Wex.WATexError_parameter_number(
                     " No parameter number is found. Plot is cancelled."
-                    'Provide a right quantitatives features different'
+                    'Provide a right numerical features different'
                     ' from `{}`'.format(rem))
 
-            quan_features= [cc for cc in tem ] + [target] 
+            numerical_features= [cc for cc in tem ] + [target] 
      
-        ax =sns.pairplot(data =df_[quan_features], hue=target,**sns_kws)
+        ax =sns.pairplot(data =df_[numerical_features], hue=target,**sns_kws)
         
         if trigger_map_lower_kws : 
             try : 
