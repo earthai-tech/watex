@@ -18,6 +18,7 @@ K= TypeVar('K', complex, float)
 import os
 import re
 import warnings 
+import inspect 
 
 import numpy as np 
 import pandas as pd
@@ -249,7 +250,48 @@ def controlExistingEstimator(estimator_name: T= str ) -> T:
             ' list {}'.format(format_generic_obj(estfull)).format(*estfull))
         return 
     
+def formatModelScore(model_score: T=None, select_estimator:str=None )   : 
+    """
+    Description : 
+        Format the result of `model_score`
+        
+    :param model_score: Can be float of dict of float where key is 
+                        the estimator name 
+    :param select_estimator: Estimator name 
     
+    :Example: 
+        
+        >>> from watex.viewer.hints import formatModelScore 
+        >>>  formatModelScore({'DecisionTreeClassifier':0.26, 
+                      'BaggingClassifier':0.13}
+        )
+    """ 
+    print('-'*77)
+    if isinstance(model_score, dict): 
+        for key, val in model_score.items(): 
+            print('> {0:<30}:{1:^10}= {2:^10} %'.format( key,' Score', round(
+                val *100,3 )))
+    else : 
+        if select_estimator is None : 
+            select_estimator ='___'
+        if inspect.isclass(select_estimator): 
+            select_estimator =select_estimator.__class__.__name__
+        
+        try : 
+            _, select_estimator = controlExistingEstimator(select_estimator)
+        
+        except : 
+            if select_estimator is None :
+                select_estimator =str(select_estimator)
+            else: select_estimator = '__'
+            
+        print('> {0:<30}:{1:^10}= {2:^10} %'.format(select_estimator,
+                     ' Score', round(
+            model_score *100,3 )))
+        
+    print('-'*77)
+    
+  
 if __name__=='__main__': 
     
     #ss= format_generic_obj({'ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'})
@@ -258,8 +300,15 @@ if __name__=='__main__':
     # op= findDifferenceGenObject(gen_obj1=obj1, gen_obj2=obj2)
     # print(op)
     
-    sop_est =controlExistingEstimator('svm')
-    print(sop_est[0])
+    # sop_est, otp =controlExistingEstimator('SVC')
+    # print(sop_est)
+
+    # print(len(char))
+    
+    # formatModelScore({'DecisionTreeClassifier':0.26, 
+    #                   'BaggingClassifier':0.13}
+    #     )
+    
     
     
     
