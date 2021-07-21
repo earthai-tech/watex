@@ -2,7 +2,9 @@
 # This module is part of the WATex processing package, which is released under a
 # MIT- licence.
 
-import os 
+from __future__ import print_function , division 
+
+# import os 
 import warnings 
 import inspect
 import numpy as np 
@@ -25,13 +27,10 @@ from sklearn.compose import make_column_transformer
 from sklearn.compose import make_column_selector 
 
 
-from sklearn.model_selection import validation_curve, cross_val_score
-from sklearn.model_selection import RandomizedSearchCV,  GridSearchCV
+from sklearn.model_selection import validation_curve
 from sklearn.model_selection import train_test_split 
-from sklearn.model_selection import GroupKFold 
-from sklearn.model_selection import learning_curve 
 
-from sklearn.metrics import confusion_matrix, f1_score, classification_report 
+from sklearn.metrics import confusion_matrix,  classification_report #, f1_score,
 
 from sklearn.feature_selection import SelectKBest, f_classif 
 
@@ -40,6 +39,7 @@ from watex.viewer.plot import hints
 
 import  watex.utils.exceptions as Wex 
 import  watex.utils.decorator as deco
+import  watex.utils.func_utils as func
 from watex.utils._watexlog import watexlog 
 
 _logger =watexlog().get_watex_logger(__name__)
@@ -179,7 +179,6 @@ class Preprocessing :
         self.y_train =None 
         self.y_test =None 
         
-
         self._num_column_selector = make_column_selector(
             dtype_include=np.number)
         self._cat_column_selector =make_column_selector(
@@ -191,14 +190,11 @@ class Preprocessing :
         self._encodages =OneHotEncoder()
         
         self._select_estimator_ =None 
-
-        
-        for key in kwargs.keys(): 
-            setattr(self, key, kwargs[key])
-
-        if self._data_fn is not None: 
+        self._preprocessor = None 
+  
+        if self._data_fn is not None:
             self.data_fn = self._data_fn 
-
+            
         if self.df is not None : 
             self._read_and_encode_catFeatures()
             
@@ -216,14 +212,16 @@ class Preprocessing :
         """ Read the given data and create a pd.core.frame.DataFrame . 
         Call :class:~analysis.features.sl_analysis` and retrieve the best 
          information. """
+
         if datafn is not None : 
            self._data_fn = datafn 
-
+    
         slObj= sl_analysis(data_fn=self._data_fn, set_index=True)
         self.df= slObj.df 
-        
+
         slObj.df_cache =[] # initialize the cache 
         self._df_cache =slObj.df_cache  
+        
         
     @df.setter 
     def df (self, dff): 
@@ -298,8 +296,7 @@ class Preprocessing :
         :Note: Once the `features` argument is set, provide at least 
             `categorial_features` or `numerical_features` to find the one of 
             the targetted features. 
-        
-        
+
         """
         drop_features = kws.pop('drop_features', None)
         target =kws.pop('target', None)
@@ -457,7 +454,7 @@ class Preprocessing :
             >>> preObj.preprocessor
              
         """
-        preprocessor_kws = kwargs.pop('prepreocessor_kws', {})
+        preprocessor_kws = kwargs.pop('preprocessor_kws', {})
         make_pipeline_kws =kwargs.pop('make_pipeline_kws', {})
 
         
@@ -482,11 +479,11 @@ class Preprocessing :
                                            **make_pipeline_kws )
         categorical_pipeline= make_pipeline(self._encodages)
         
-        self.preprocessor =make_column_transformer(
+        self._preprocessor =make_column_transformer(
             (numerical_pipeline, numerical_features), 
             (categorical_pipeline, categorical_features), **preprocessor_kws)
         
-        return self.preprocessor 
+        return self._preprocessor 
     
     def make_preprocessing_model(self, preprocessor: Callable[..., T]= None, 
                                  estimators_:Callable[..., T]=None,
@@ -560,8 +557,8 @@ class Preprocessing :
             ...    'RandomForestClassifier':RandomForestClassifier(
             ...        n_estimators=200, random_state=0), 
             ...    'SDGC':SGDClassifier(random_state=0)})
-            >>> preObj.preprocessing_model_score)
-            >>> preObj.preprocessing_model_prediction)
+            >>> preObj.preprocessing_model_score
+            >>> preObj.preprocessing_model_prediction
         """
         
         def model_evaluation(model, X_train, y_train, X_test, y_test): 
@@ -577,6 +574,9 @@ class Preprocessing :
         
         default_estimator =kws.pop('default_estimator', None)
         
+        if default_estimator is None :
+            estim_full_name =self.default_estimator 
+        
         if default_estimator is not None : 
             default_estimator = hints.controlExistingEstimator(
                 default_estimator)
@@ -590,20 +590,20 @@ class Preprocessing :
                     ' provide the right `estimator` name! ')
                 return 
                 
-       
+    
             self.default_estimator, estim_full_name = default_estimator
-                
-
+   
         if preprocessor is None: 
-            self.preprocessor = self.make_preprocessor()
+            self._preprocessor = self.make_preprocessor()
  
         if estimators_ is not  None : 
             self._select_estimator_ = estimators_ 
         
         # set default configuration of estimators 
-        if estimators_ is None : 
+        if estimators_ is None  or estimators_ == {}: 
             self._logging.info('Loading default parameters into estimators.')
             #load all default config parameters 
+
             for e_pref, e_v in d_estimators__.items(): 
                 if e_pref =='knn': 
                     d_estimators__[e_pref]=e_v(n_neighbors=10, 
@@ -634,32 +634,31 @@ class Preprocessing :
                             ('DTC', DecisionTreeClassifier(
                                 max_depth=100, random_state=self.random_state)), 
                             ('KNN', KNeighborsClassifier())])
+                    
+                elif e_pref =='dtc': 
+                     d_estimators__[e_pref]=e_v(max_depth=100,
+                                                random_state=self.random_state)
                 else:
                     try :
                         d_estimators__[e_pref]=e_v(random_state=self.random_state)
                     except : 
                         d_estimators__[e_pref]=e_v()
                         
-                        
             # once loaded, select the estimator 
             self._select_estimator_= d_estimators__[self.default_estimator]
-            try : 
-                self._logging.info(
-                    'End loading default parameters! The selected default estimator '
-                    f'is {estim_full_name}')
-            except : 
-                self._logging.info(
-                    'End loading default parameters! The selected default estimator '
-                    f'is {default_estimator}')
-            
+
+        self._logging.info(
+            'End loading default parameters! The selected default estimator '
+            f'is {estim_full_name}')
+     
         self.model_dict ={}
-       
+  
         if  not isinstance(self._select_estimator_, dict):
             self._logging.info(
                 'Evaluation using single {0} '
                 'estimator.'.format(self._select_estimator_))
             
-            self.preprocessing_model = make_pipeline(self.preprocessor, 
+            self.preprocessing_model = make_pipeline(self._preprocessor, 
                                                      self._select_estimator_)
       
             self.model_dict['___'] =  self.preprocessing_model
@@ -671,7 +670,8 @@ class Preprocessing :
                     
             return self.preprocessing_model_score,\
                 self.preprocessing_model_prediction
-        
+                
+       
         #keep all model on a dictionnary of model 
         elif isinstance(self._select_estimator_, dict): 
             self.preprocessing_model_score={}
@@ -682,7 +682,7 @@ class Preprocessing :
                     list(self._select_estimator_.keys())))
             
             for es_key, es_val in self._select_estimator_.items():
-                self.model_dict[es_key] =make_pipeline(self.preprocessor,
+                self.model_dict[es_key] =make_pipeline(self._preprocessor,
                                                        es_val) 
                 
             for m_key, m_value in self.model_dict.items(): 
@@ -718,6 +718,13 @@ class Processing (Preprocessing) :
     """
     Processing class deal with preprocessing. 
     
+    Processing is usefull before modeling step. To process data, a default 
+    implementation is given for  data `preprocessing` after data sanitizing.
+    It consists of creating a model pipeline using different `supervised 
+    learnings` methods. A default pipeline is created though the `prepocessor` 
+    designing. Indeed  a `preprocessor` is a set of `transformers + estimators`
+    and multiple other functions to boost the prediction. 
+    
      Arguments: 
     ---------
         *dataf_fn*: str 
@@ -729,44 +736,182 @@ class Processing (Preprocessing) :
  
     
     Holds on others optionals infos in ``kwargs`` arguments: 
+
+    ====================  ============  =======================================
+    Attributes              Type                Description  
+    ====================  ============  =======================================
+    auto                    bool        Trigger the composite estimator.
+                                        If ``True`` a SVC-composite estimator 
+                                        `preprocessor` is given. 
+                                        *default* is False.
+    pipelines               dict        Collect your own pipeline for model 
+                                        preprocessor trigging.
+                                        it should be find automatically.           
+    estimators              Callable    A given estimator. If ``None``, `SVM`
+                                        is auto-selected as default estimator.
+    model_score             float/dict  Model test score. Observe your test 
+                                        model score using your compose estimator 
+                                        for enhacement 
+    model_prediction        array_like  Observe your test model prediction for 
+                                        as well as the compose estimator 
+                                        enhancement.
+    preprocessor            Callable    Compose piplenes and estimators for 
+                                        default model scorage.
+    ====================  ============  =======================================  
     
+    :Example:: 
+        
+        >>> from watex.processing.sl import Processing
+        >>> from sklearn.preprocessing import StandardScaler
+        >>> from sklearn.ensemble import RandomForestClassifier 
+        >>> my_own_pipeline= {'num_column_selector_': 
+        ...                       make_column_selector(dtype_include=np.number),
+        ...                'cat_column_selector_': 
+        ...                    make_column_selector(dtype_exclude=np.number),
+        ...                'features_engineering_':
+        ...                    PolynomialFeatures(3,include_bias=True),
+        ...                'selectors_': SelectKBest(f_classif, k=4), 
+        ...               'encodages_': StandardScaler()
+        ...                 }
+        >>> my_estimator={
+        ...    'RandomForestClassifier':RandomForestClassifier(
+        ...    n_estimators=200, random_state=0)
+        ...    }
+        >>> processObj = Processing(
+        ...                    data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+        ...                    pipelines= my_own_pipeline,
+        ...                    estimators=my_estimator)
+        >>> print(processObj.preprocessor)
+        >>> print(processObj.estimator)
+        >>> print(processObj.model_score)
+        >>> print(processObj.model_prediction)
     """  
     
-    def __init__(self, data_fn =None , df=None, **kwargs):
-        Preprocessing.__init__(self, data_fn=data_fn , df=df, **kwargs)
+    def __init__(self, data_fn = None, df=None , **kws):
+        Preprocessing.__init__(self,  data_fn , df, **kws)
+             
+        self.pipelines =kws.pop('pipelines', None)
         
-        self._auto =kwargs.pop('auto', False)
-        self.preprocessor =kwargs.pop('preprocessor', None)
-        self._select_estimator_ = kwargs.pop('estimators', None)
+        self._auto =kws.pop('auto', False)
+        self._select_estimator_ = kws.pop('estimators', None)
+
+        if self._auto:
+            self.auto = True 
+             
+        self._model_score =None 
+        self._model_prediction =None 
+        self._estimator_name =None 
         
-        # print('processor oooo', self.preprocessor)
-        # if self._auto: 
-        #     self.auto =True
+    
+        if self.pipelines is not None:
+            self.preprocessor = self.pipelines 
             
-        for key in kwargs.keys(): 
-            setattr(self, key, kwargs[key])    
+        for key in list(kws.keys()): 
+            setattr(self, key, kws[key]) 
     @property 
     def auto (self): 
         """ Trigger the composite pipeline building and greate 
         a composite default model estimator `CE-SVC` """
         return self._auto 
+    
     @auto.setter 
     def auto (self, auto): 
-        """ Trigger the `CE-SVC` buiLding using default parameters"""
+        """ Trigger the `CE-SVC` buiLding using default parameters with 
+        default pipelines."""
         if auto: 
-            self.make_preprocessing_model(
-                preprocessor= self.preprocessor, 
-                estimators_= self._select_estimator_)
+            func.format_notes(text= ''.join(
+                [f'Automatic Option is set to ``{self._auto}``.Composite',
+                '  estimator building is auto-triggered with default ',
+                'pipelines construction.The default estimation score ',
+                '  should be displayed.']), 
+                cover_str='*',inline = 70, margin_space = 0.05)
+
+            self._logging.info(
+                ' Automatic Option to design a default composite estimator'
+                f' is triggered <`{self._auto}``> with default pipelines.')
+            warnings.warn(
+                ' Automatic Option   to design a composite estimator is '
+                f' triggered <`auto={self._auto}``> with default pipelines '
+                'construction. The default estimation score should be '
+                ' displayed.')
             
-            self.model_score = self.preprocessing_model_score
-            print('-'*77)
-            print('>{0:<15}: {1:^10} %'.format(' Score',round(
-                self.model_score *100,3 )))
-            print('-'*77)
-            self.model_prediction = self.preprocessing_model_prediction
+            self.make_preprocessing_model()
+            self._model_score = self.preprocessing_model_score
+        
+            hints.formatModelScore(self._model_score, self.default_estimator)
+            self._model_prediction = self.preprocessing_model_prediction
             self._auto =True 
         
+    @property 
+    def preprocessor (self): 
+        """ Preoprocessor for `composite_estimator` design """
+        return self._preprocessor 
     
+    @preprocessor.setter 
+    def preprocessor(self, preprocess_pipelines): 
+        """ Create your preprocessor. If `preprocess` is given, it must be
+        the collection of transformer and encoders whic composed of
+        the pipeline like:: 
+            
+            my_own_pipelines= {'num_column_selector_': make_column_selector(
+                                        dtype_include=np.number),
+            'cat_column_selector_': make_column_selector(
+                                        dtype_exclude=np.number),
+            'features_engineering_':PolynomialFeatures(3,
+                                        include_bias=True),
+            'selectors_': SelectKBest(f_classif, k=4), 
+             'encodages_': StandardScaler()
+                         }
+            """
+        if preprocess_pipelines is None: 
+            preprocess_pipelines == {}
+            self._preprocessor = self.make_preprocessor()
+            
+            
+        else: 
+            self._preprocesor = self.make_preprocessor(**preprocess_pipelines)
+        
+        self.make_preprocessing_model(preprocessor= self._preprocesor, 
+                                      estimators_=self._select_estimator_)
+
+        self._model_score = self.preprocessing_model_score
+        self._model_prediction = self.preprocessing_model_prediction
+        
+        self._estimator_name = self._select_estimator_.__class__.__name__
+        
+    @property 
+    def estimator (self): 
+        """ Get your estimator of  the existing default estimator """
+        return self._select_estimator_ 
+    
+    @property 
+    def model_score(self): 
+        """ Get the composite estimator score """
+        try : 
+            hints.formatModelScore(self._model_score, self._estimator_name)
+        except: 
+            self._logging.debug(f'Error finding the {self._estimator_name}')
+            warnings.warn(f'Error finding the {self._estimator_name}')
+            
+        return self._model_score 
+    
+    @model_score.setter 
+    def model_score (self, print_score): 
+        """ Display score value """
+        if isinstance(print_score, str): 
+            self._estimator_name = print_score 
+        try : 
+            self._estimator_name = self._select_estimator_.__class__.__name__
+        except : 
+            self._estimator_name = print_score
+        
+        hints.formatModelScore(self._model_score, self._estimator_name)
+        
+    @property 
+    def model_prediction(self):
+        """ Get the model prediction after composite estimator design"""
+        return self._model_prediction 
+        
     @deco.visualize_validation_curve(turn='off', k= np.arange(1,210,10), 
                plot_style='scatter',savefig=None)               
     def get_validation_curve(self, estimator=None, X_train=None, 
@@ -873,13 +1018,13 @@ class Processing (Preprocessing) :
         return self.train_score, self.val_score, switch , kk      
     
         
-    def quick_estimation(self, estimators: Callable[...,T] = None, 
+    def quick_estimation(self, estimator: Callable[...,T] = None, 
                          random_state:float = None, **kws): 
         """ Quick run the model without any processing.  If none estimator 
         is provided ``SVC``estimator is used.
         
-        :param estimators: Callable estimator. If none a ``svc`` is used to 
-                            quick estimate prediction. 
+        :param estimators: Callable estimator. If ``None`, a ``svc`` is 
+                            used to quick estimate prediction. 
         :param random_state: The state of data shuffling.The default is ``7``.
                                         
         :Example: 
@@ -887,10 +1032,10 @@ class Processing (Preprocessing) :
             >>> from watex.processing.sl import Processing 
             >>> processObj = Processing(
                 data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
-            >>> processObj.quick_estimation(estimators=DecisionTreeClassifier(
+            >>> processObj.quick_estimation(estimator=DecisionTreeClassifier(
                 max_depth=100, random_state=13)
-            >>> processObj.model_score)
-            >>> processObj.model_prediction)
+            >>> processObj.model_score
+            >>> processObj.model_prediction
         
         """
         
@@ -908,27 +1053,42 @@ class Processing (Preprocessing) :
         
         if random_state is not None: self.random_state = random_state 
         
-        if estimators is not None: 
-            quick_estimator= estimators
-        else : 
+        if estimator is not None: 
+            quick_estimator = estimator 
+        elif estimator is None : 
             quick_estimator = SVC(self.random_state)
-        self.model_dict= {'SVC':quick_estimator }
+            
+        try : 
+            self._estimator_name = quick_estimator.__class__.__name__
+        except : pass 
+        else : 
+            try : 
+                estim_names = hints.controlExistingEstimator(
+                    self._estimator_name)
+            except: 
+                self._estimator_name = '___'
+            else : 
+                if estim_names is not None :
+                    self._estimator_name = estim_names[1]
+
+        self._select_estimator_= quick_estimator
+     
+        self.model_dict= {f'{self._estimator_name}':self._select_estimator_ }
         
-        quick_estimator.fit(self.X_train, self.y_train)
+        self._select_estimator_.fit(self.X_train, self.y_train)
         
-        self.model_score = quick_estimator.score(self.X_test, self.y_test)
-        self.model_prediction = quick_estimator.predict(self.X_test)
+        self._model_score = self._select_estimator_.score(
+            self.X_test, self.y_test)
+        self._model_prediction = self._select_estimator_.predict(
+            self.X_test)
         
         self.confusion_matrix= confusion_matrix(self.y_test,
-                                   self.model_prediction)
+                                   self._model_prediction)
         self.classification_report= classification_report(self.y_test,
-                               self.model_prediction)
-        print('-'*77)
-        print('>{0:<15}: {1:^10} %'.format(' Score',round(
-            self.model_score *100,3 )))
-        print('-'*77)
+                               self._model_prediction)
         
-        return self.model_score , self.model_prediction
+        
+        return self._model_score , self._model_prediction
         
 
         
@@ -1047,19 +1207,33 @@ if __name__=='__main__':
     
     # preObj = Preprocessing(data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
     #                     )
-    processObj = Processing(data_fn = 'data/geo_fdata/BagoueDataset2.xlsx', 
-                            auto=False)
-    processObj.get_validation_curve(switch_plot='ff', preprocess_step=True)
-    print(processObj.model_score)
-    print(processObj.model_prediction)
-    # processObj.quick_estimation(estimators=DecisionTreeClassifier(
-    #             max_depth=100, random_state=13))
+    # from sklearn.preprocessing import StandardScaler
+    # from sklearn.ensemble import RandomForestClassifier 
+    # my_own_pipelines= {'num_column_selector_': make_column_selector(dtype_include=np.number),
+    #                     'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
+    #                     'features_engineering_':PolynomialFeatures(3,include_bias=True),
+    #                     'selectors_': SelectKBest(f_classif, k=4), 
+    #                     'encodages_': StandardScaler()
+    #                      }
+    # estimators={
+    #         'RandomForestClassifier':RandomForestClassifier(
+    #         n_estimators=200, random_state=0)
+    #         }
+    # processObj = Processing(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+                            # pipelines= my_own_pipelines,
+                            # estimators=estimators
+                            # )
+    # print(processObj.preprocessor)
+    # print(processObj.estimator)
     # print(processObj.model_score)
     # print(processObj.model_prediction)
-    # processObj.get_validation_curve(switch_plot='on', preprocess_step=True)
-    # print(processObj.train_score)
-    # print(processObj.val_score)
-
+    
+    processObj = Processing(
+        data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
+    processObj.quick_estimation(estimator=DecisionTreeClassifier(
+    max_depth=100, random_state=13))
+    # processObj.model_score
+    # processObj.model_prediction
 
     
     
