@@ -25,12 +25,16 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
         -  Support vector machines: [**SVMs**](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
         -  Neighbors: **KNN** 
         -  Trees: **DTC**
-    - Unsupervided learnings: 
-        -  Artificial neural networks **ANN** (not implemented yet)
- 
+        -  Ensemble methods 
+    - Unsupervided learnings(not implemented yet):
+        -  Kernel Principal Component Analysis **k-PCA** 
+        -  Artificial neural networks **ANN** 
+        -  t-distributed Stochastic Neighbor Embeedding **t-SNE**
+        -  Apriori
+        
 * **Note** 
 
-    Actually only [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) works properly and the developement with pure Python is still ongoing. 
+    Actually only the supervised part including [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) works properly and the developement with pure Python is still ongoing. 
     Other AI algorithms implemented will be added as things progress. To handle some functionalities before the full development, please refer to `.checkpoints ` folder.
      
 ## Documentation 
@@ -167,7 +171,7 @@ below:
 ...            # "hue": 'flow', 
 ...               }
 >>> joinpl_kws={"color": "r", 
-                'zorder':0, 'levels':6}
+...                'zorder':0, 'levels':6}
 >>> plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}           
 >>> qkObj.joint2features(features=['ohmS', 'lwi'], 
 ...            join_kws=joinpl_kws, marginals_kws=plmarg_kws, 
@@ -211,8 +215,26 @@ between the features `lwi` , '`flow` and the `geology(geol)`' as:
 ...                         **sns_pkws, 
 ...                    ) 
 ```
+WATex-AI gives a piece of  mileages  discussion. Indeed, discussing about mileages seems to be a good approach to 
+comprehend the features relationship, their correlation as well as their influence between each other. 
+For instance, to try to discuss  about the mileages `'ohmS', 'sfi','geol' and 'flow'` we merely 
+need to import `discussingFeatures` method from `QuickPlot` class as below: 
+```
+>>> from viewer.plot.QuickPlot import discussingFeatures 
+>>> qkObj = QuickPlot(  fig_legend_kws={'loc':'upper right'},
+...          fig_title = '`sfi` vs`ohmS|`geol`',
+...            )  
+>>> sns_pkws={'aspect':2 , 
+...          "height": 2, 
+...                  }
+>>> map_kws={'edgecolor':"w"}   
+>>> qkObj.discussingFeatures(
+...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , 
+...                         features =['ohmS', 'sfi','geol', 'flow'],
+...                           map_kws=map_kws,  **sns_pkws)                          
+```
 
-## Processing  
+## Data processing  
 
 Processing is usefull before modeling step. To process data, a default implementation is given for 
 data `preprocessing` after data sanitizing. It consists of creating a model pipeline using different `supervised learnings` methods. 
@@ -236,13 +258,13 @@ An example of  `preprocessing`class implementation is given below:
 >>> prepObj.confusion_matrix
 >>> prepObj.classification_report
 ```
-It 's also interesting to evaluate a quick model score without any preprocessing by calling the 
+It 's also interesting to evaluate a quick model score without any preprocessing beforehand by calling the 
  `Processing` superclass as : 
 ```
 >>> from watex.processing.sl import Processing 
 >>> processObj = Processing(
- ...   data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
->>> processObj.quick_estimation(estimators=DecisionTreeClassifier(
+...   data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
+>>> processObj.quick_estimation(estimator=DecisionTreeClassifier(
 ...    max_depth=100, random_state=13))
 >>> processObj.model_score
 0.5769230769230769                  # model score ~ 57.692   %
@@ -250,7 +272,6 @@ It 's also interesting to evaluate a quick model score without any preprocessing
 ```
 Now let's evaluate onto the same dataset the `model_score` by reinjecting the default composite estimator 
  using `preprocessor` pipelines. We trigger the composite estimator  by switching  the `auto` option to `True`.
-
 ```
 >>> processObj = Processing(data_fn = 'data/geo_fdata/BagoueDataset2.xlsx', 
 ...                        auto=True)
