@@ -42,6 +42,48 @@ except ImportError:  # pragma: no cover
 
 ###################### end import module ################################### 
 
+
+def format_notes(text:str , cover_str:str='~', inline=70, **kws): 
+    """ Format note 
+    :param text: Text to be formated 
+    :param cover_str: type of ``str`` to surround the text 
+    :param inline: Nomber of character before going in liine 
+    :param margin_space: Must be <1 and expressed in %. The empty distance 
+                        between the first index to the inline text 
+    :Example: 
+        
+        >>> from watex.utils import func_utils as func 
+        >>> text ='Automatic Option is set to ``True``.'\
+            ' Composite estimator building is triggered.' 
+        >>>  func.format_notes(text= text ,
+        ...                       inline = 70, margin_space = 0.05)
+    
+    """
+    
+    headnotes =kws.pop('headernotes', 'notes')
+    margin_ratio = kws.pop('margin_space', 0.2 )
+    margin = int(margin_ratio * inline)
+    init_=0 
+    new_textList= []
+    if len(text) <= (inline - margin): 
+        new_textList = text 
+    else : 
+        for kk, char in enumerate (text): 
+            if kk % (inline - margin)==0 and kk !=0: 
+                new_textList.append(text[init_:kk])
+                init_ =kk 
+            if kk ==  len(text)-1: 
+                new_textList.append(text[init_:])
+  
+    print('!', headnotes.upper(), ':')
+    print('{}'.format(cover_str * 70)) 
+    for k in new_textList:
+        fmtin_str ='{'+ '0:>{}'.format(margin) +'}'
+        print('{0}{1:>2}{2:<51}'.format(fmtin_str.format(cover_str), '', k))
+        
+    print('{0}{1:>51}'.format(' '* (margin -1), cover_str * (70 -margin+1 ))) 
+    
+    
 def concat_array_from_list(list_of_array, concat_axis=0):
     """
     Small function to concatenate a list with array contents 
