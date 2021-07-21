@@ -636,12 +636,12 @@ class QuickPlot :
             ...          'diag_kind':'kde', 
             ...          'corner':False,
             ...          }
-            >>> maklow = {'level':4, 
-                      'color':".2"}
-            >>> qkObj.plot_quantitative_features(trigger_map_lower_kws=True, 
-                                                map_lower_kws=maklow, 
-                                                **sns_pkws
-                                                )
+            >>> marklow = {'level':4, 
+            ...          'color':".2"}
+            >>> qkObj.plot_numerical_features(trigger_map_lower_kws=True, 
+            ...                                    map_lower_kws=marklow, 
+            ...                                    **sns_pkws)
+                                                
         """
         if data_fn is not None : 
             self.data_fn = data_fn
