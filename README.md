@@ -339,7 +339,7 @@ the new model_score and model prediction:
 >>> modelObj.model_score
 Out[9]:
 -----------------------------------------------------------------------------
-> SupportVectorClassifier       :   Score  =   75.092   %
+> SupportVectorClassifier       :   Score  =   75.132   %
 ----------------------------------------------------------------------------- 
 ``` 
 * **Note**: This is an illustration example, you can tuning your hyperparameters using an other 
