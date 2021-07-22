@@ -343,9 +343,11 @@ Out[9]:
 ----------------------------------------------------------------------------- 
 ``` 
 * **Note**: This is an illustration example, you can tuning your hyperparameters using an other 
-estimators either the *supervised learning* method by handling the method
-`watex.modeling.sl.modeling.Modeling.tuning_hyperparameters` parameters. You can quick have a look of your
-*learning curve* by calling decorated method `get_learning_curve` as below: 
+            estimators either the *supervised learning* method by handling the method
+            `watex.modeling.sl.modeling.Modeling.tuning_hyperparameters` parameters. 
+            
+We can quick visualize the *learning curve* by calling the decorated method 
+`get_learning_curve` as below: 
 ```
 >>> processObj.get_learning_curve (estimator= my_compose_estimator_,
         switch_plot='on')
