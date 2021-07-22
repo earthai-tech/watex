@@ -269,8 +269,13 @@ class Modeling:
                     validation curve.
             -`trigDec`: Trigger the decorator 
             - `N`: number of param range for plotting. 
-
-        
+        :Example:
+            
+            >>> from watex.modeling.sl.modeling import Modeling
+            >>> processObj = Modeling(
+                data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
+            >>> processObj.get_learning_curve (
+                switch_plot='on', preprocessor=True)
         """
         def compute_validation_curve(model, X_train, y_train, param_ks):
             """ Compute learning curve and plot 
