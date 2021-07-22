@@ -339,12 +339,19 @@ the new model_score and model prediction:
 >>> modelObj.model_score
 Out[9]:
 -----------------------------------------------------------------------------
-> SupportVectorClassifier       :   Score  =   75.092   %
+> SupportVectorClassifier       :   Score  =   75.132   %
 ----------------------------------------------------------------------------- 
 ``` 
 * **Note**: This is an illustration example, you can tuning your hyperparameters using an other 
-estimators either the *supervised learning* method by handling the method
-`watex.modeling.sl.modeling.Modeling.tuning_hyperparameters` parameters. 
+            estimators either the *supervised learning* method by handling the method
+            `watex.modeling.sl.modeling.Modeling.tuning_hyperparameters` parameters. 
+            
+We can quick visualize the *learning curve* by calling the decorated method 
+`get_learning_curve` as below: 
+```
+>>> processObj.get_learning_curve (estimator= my_compose_estimator_,
+        switch_plot='on')
+```
 
 ## System requirements 
 * Python 3.7+ 
