@@ -63,6 +63,8 @@ class WATexError_station(Exception):
 class WATexError_FeaturesAnalysis(Exception):
     pass
 
+class WATexError_Estimators(Exception):
+    pass
 
 class WATexError_plot_geoinputargument(Exception): 
     pass

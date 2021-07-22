@@ -155,9 +155,9 @@ To quick see how data look like, call `~viewer`packages:
 >>> qplotObj = QuickPlot( df = slObj.df , lc='b') 
 >>> qplotObj.hist_cat_distribution(target_name='flow')
 ```
-It's easy to quick visualize the data setting the argument `data_fn`if `df` is not given like `data_fn ='data/geo_fdata/BagoueDataset2.xlsx'`.
+It's easy to quick visualize the data by setting the argument `data_fn`, if `df` is not given, as `data_fn ='data/geo_fdata/BagoueDataset2.xlsx'`.
 Both will give the same result.
-To draw a plot of two features with bivariate and univariate graphs, use `~.QuickPlot.joint2features` methods as
+To draw a plot of two features with bivariate and univariate graphs, use `~.QuickPlot.joint2features` method as
 below:
 ```
 >>> from watex.viewer.plot.QuickPlot import joint2features
@@ -179,10 +179,10 @@ below:
 ...            ) 
 ``` 
 To draw a scatter plot with possibility of several semantic features groupings, use `scatteringFeatures`
-methods. Indeed this method analysis is a process of understanding  how features in a 
+method. Indeed this method analysis is a process of understanding  how features in a 
 dataset relate to each other and how those relationships depend on other features. It easy to customize
 plot if user has an experience of  `seaborn` plot styles. For instance we can visualize the relationship 
-between the features `lwi` , '`flow` and the `geology(geol)`' as: 
+between the mileages `lwi` , '`flow` and the `geology(geol)`' as: 
 ```
 >>> from watex.viewer.plot.QuickPlot import  scatteringFeatures
 >>> qkObj = QuickPlot(
@@ -217,7 +217,7 @@ between the features `lwi` , '`flow` and the `geology(geol)`' as:
 ```
 WATex-AI gives a piece of  mileages  discussion. Indeed, discussing about mileages seems to be a good approach to 
 comprehend the features relationship, their correlation as well as their influence between each other. 
-For instance, to try to discuss  about the mileages `'ohmS', 'sfi','geol' and 'flow'` we merely 
+For instance, to try to discuss  about the mileages `'ohmS', 'sfi','geol' and 'flow'`, we merely 
 need to import `discussingFeatures` method from `QuickPlot` class as below: 
 ```
 >>> from viewer.plot.QuickPlot import discussingFeatures 
@@ -240,7 +240,7 @@ Processing is usefull before modeling step. To process data, a default implement
 data `preprocessing` after data sanitizing. It consists of creating a model pipeline using different `supervised learnings` methods. 
 A default pipeline is created though the `prepocessor` designing. Indeed  a `preprocessor` is a set 
 of `transformers + estimators` and multiple other functions to boost the prediction. WATex-AI includes
-nine(09) inner defaults estimators such as `neighbors`, `trees`, `svm` estimators and `~.ensemble` methods estimators category.
+nine(09) inner defaults estimators such as `neighbors`, `trees`, `svm` and `~.ensemble` estimators category.
 An example of  `preprocessing`class implementation is given below: 
 ```
 >>> from watex.processing.sl import Preprocessing
@@ -251,7 +251,6 @@ An example of  `preprocessing`class implementation is given below:
 >>> prepObj.random_state = 25 
 >>> preObj.test_size = 0.25
 >>> prepObj.make_preprocessor()         # use default preprocessing
->>> preObj.preprocessor
 >>> prepObj.make_preprocessing_model( default_estimator='SVM')
 >>> prepObj.preprocessing_model_score
 >>> prepObj.preprocess_model_prediction
@@ -275,16 +274,77 @@ Now let's evaluate onto the same dataset the `model_score` by reinjecting the de
 ```
 >>> processObj = Processing(data_fn = 'data/geo_fdata/BagoueDataset2.xlsx', 
 ...                        auto=True)
+>>> processObj.preprocessor
 >>> processObj.model_score
 0.72487896523648201                 # new composite estimator ~ 72,49   %
 >>> processObj.model_prediction
 ``` 
-We clearly see the difference of  `14.798%` between the two options. Furthermor,  we can get the validation curve
+We clearly see the difference of  `14.798%` between the two options. Furthermore,  we can get the validation curve
  by callig `get_validation_curve` function using the same default composite estimator like: 
 
 ```
 >>> processObj.get_validation_curve(switch_plot='on', preprocess_step=True)
 ```
+
+## Modeling 
+
+The most interesting and challenging part of modeling is the `tuning hyperparameters` after designing a composite estimator. 
+Getting the best params is a better way to reorginize the created pipeline `{transformers +estimators}` so to 
+have a great capability of data generalization. In the following example, we try to create a simple pipeline 
+and we'll tuning its hyperparameters. Then the best parameters obtained will be reinjected into the design estimator for the next 
+prediction. This is an example and the user has the ability to create its own pipelines more powerfull. 
+We consider a **svc** estimator as default estimator. The process are described below: 
+```
+>>> from watex.modeling.sl.modeling import Modeling 
+>>> from sklearn.preprocessing import RobustScaler, PolynomialFeatures 
+>>> from sklearn.feature_selection import SelectKBest, f_classif 
+>>> from sklearn.svm import SVC 
+>>> from sklearn.compose import make_column_selector 
+>>> my_own_pipelines= {
+        'num_column_selector_': make_column_selector(
+            dtype_include=np.number),
+        'cat_column_selector_': make_column_selector(
+            dtype_exclude=np.number),
+        'features_engineering_':PolynomialFeatures(
+            3, include_bias=False),
+        'selectors_': SelectKBest(f_classif, k=3), 
+        'encodages_': RobustScaler()
+          }
+>>> my_estimator = SVC(C=1, gamma=1e-4, random_state=7)             # random estimator 
+>>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+               pipelines =my_own_pipelines , 
+               estimator = my_estimator)
+>>> hyperparams ={
+    'columntransformer__pipeline-1__polynomialfeatures__degree': np.arange(2,10), 
+    'columntransformer__pipeline-1__selectkbest__k': np.arange(2,7), 
+    'svc__C': [1, 10, 100],
+    'svc__gamma':[1e-1, 1e-2, 1e-3]}
+>>> my_compose_estimator_ = modelObj.model_ 
+>>> modelObj.tuning_hyperparameters(
+                            estimator= my_compose_estimator_ , 
+                            hyper_params= hyperparams, 
+                            search='rand') 
+>>> modelObj.best_params_
+Out[7]:
+{'columntransformer__pipeline-1__polynomialfeatures__degree': 2, 'columntransformer__pipeline-1__selectkbest__k': 2, 'svc__C': 1, 'svc__gamma': 0.1}
+>>> modelObj.best_score_
+Out[8]:
+-----------------------------------------------------------------------------
+> SupportVectorClassifier       :   Score  =   73.092   %
+-----------------------------------------------------------------------------
+```
+We can now rebuild and rearrange the pipeline by specifying the best parameters values and run again so to get the
+the new model_score and model prediction: 
+```
+>>> modelObj.model_score
+Out[9]:
+-----------------------------------------------------------------------------
+> SupportVectorClassifier       :   Score  =   75.092   %
+----------------------------------------------------------------------------- 
+``` 
+* **Note**: This is an illustration example, you can tuning your hyperparameters using an other 
+estimators either the *supervised learning* method by handling the method
+`watex.modeling.sl.modeling.Modeling.tuning_hyperparameters` parameters. 
 
 ## System requirements 
 * Python 3.7+ 
