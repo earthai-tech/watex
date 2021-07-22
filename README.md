@@ -344,7 +344,15 @@ Out[9]:
 ``` 
 * **Note**: This is an illustration example, you can tuning your hyperparameters using an other 
 estimators either the *supervised learning* method by handling the method
-`watex.modeling.sl.modeling.Modeling.tuning_hyperparameters` parameters. 
+`watex.modeling.sl.modeling.Modeling.tuning_hyperparameters` parameters. You can quick have a look of your
+*learning curve* by calling decorated method `get_learning_curve` as below: 
+```
+>>> from watex.modeling.sl.modeling import Modeling
+>>> processObj = Modeling(
+    data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
+>>> processObj.get_learning_curve (estimator= my_compose_estimator_,
+        switch_plot='on')
+```
 
 ## System requirements 
 * Python 3.7+ 
