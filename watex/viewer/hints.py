@@ -28,7 +28,19 @@ import watex.utils.exceptions as WexH
 from watex.utils._watexlog import watexlog 
 
 __logging =watexlog().get_watex_logger(__name__) 
-      
+  
+__estimator ={
+        'dtc': ['DecisionTreeClassifier', 'dtc', 'dec'],
+        'svc': ['SupportVectorClassifier', 'svc', 'sup', 'svm'],
+        'sdg': ['SGDClassifier','sdg', 'sdg'],
+        'knn': ['KNeighborsClassifier','knn''kne'],
+        'rdf': ['RandomForestClassifier', 'rdf', 'ran', 'rfc'],
+        'ada': ['AdaBoostClassifier','ada', 'adc'],
+        'vtc': ['VotingClassifier','vtc', 'vot'],
+        'bag': ['BaggingClassifier', 'bag', 'bag'],
+        'stc': ['StackingClassifier','stc', 'sta'],
+        }    
+
 def cfexist(features_to: Iterable[T], 
             features:Iterable[T] )-> bool:      
     """
@@ -214,22 +226,12 @@ def controlExistingEstimator(estimator_name: T= str ) -> T:
         
     """
     estimator_name = estimator_name.lower()
-    _estimator ={
-            'dtc': ['DecisionTreeClassifier', 'dtc', 'dec'],
-            'svc': ['SupportVectorClassifier', 'svc', 'sup', 'svm'],
-            'sdg': ['SGDClassifier','sdg', 'sdg'],
-            'knn': ['KNeighborsClassifier','knn''kne'],
-            'rdf': ['RandomForestClassifier', 'rdf', 'ran', 'rfc'],
-            'ada': ['AdaBoostClassifier','ada', 'adc'],
-            'vtc': ['VotingClassifier','vtc', 'vot'],
-            'bag': ['BaggingClassifier', 'bag', 'bag'],
-            'stc': ['StackingClassifier','stc', 'sta'],
-            }
-    estfull = [ e_key[0] for e_key in _estimator.values()]
+
+    estfull = [ e_key[0] for e_key in __estimator.values()]
     
     full_estimator_name =None 
     
-    for estim_key, estim_val in _estimator.items(): 
+    for estim_key, estim_val in __estimator.items(): 
         if estimator_name == estim_key : 
             full_estimator_name = estim_val[0]
             return estim_key , full_estimator_name 
@@ -300,8 +302,8 @@ if __name__=='__main__':
     # op= findDifferenceGenObject(gen_obj1=obj1, gen_obj2=obj2)
     # print(op)
     
-    # sop_est, otp =controlExistingEstimator('SVC')
-    # print(sop_est)
+    sop_est, otp =controlExistingEstimator('SVC')
+    print(otp)
 
     # print(len(char))
     
