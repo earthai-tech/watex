@@ -475,16 +475,19 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
     return  categorized_dec
     
 
-class visualize_validation_curve : 
+class visualize_valearn_curve : 
     """
     
     Description:
-             Decorator to visualize the validation curve. 
+             Decorator to visualize the validation curve and learning curve 
              Once called, will  quick plot the `validation curve`
             
     Usage:
         .. todo:: Quick plot the validation curve 
-
+        
+    :param reason: what_going_there? validation cure or learning curve.
+                    - ``val`` for validation curve 
+                    -``learn`` for learning curve 
     :param turn:  Continue the plotting or switch off the plot and return 
                 the function. default is `off` else `on`.
     :param kwargs: 
@@ -498,9 +501,10 @@ class visualize_validation_curve :
     Date: 19/07/2021
     """
     
-    def __init__(self, turn ='off', **kwargs): 
+    def __init__(self, reason ='valcurve', turn ='off', **kwargs): 
         self._logging=watexlog().get_watex_logger(self.__class__.__name__) 
         
+        self.reason =reason
         self.turn =turn 
         self.plotStyle =kwargs.pop('plot_style', 'scatter')
         self.train_kws=kwargs.pop('train_kws',{'c':'r',  'marker':'s', 
@@ -513,6 +517,7 @@ class visualize_validation_curve :
         self.ylabel =kwargs.pop('ylabel', {'ylabel':'Performance in %'})
         self.savefig =kwargs.pop('savefig', None)
         
+        self.error_plot =False 
         self.scatterplot = True 
         self.lineplot =False
 
@@ -535,23 +540,35 @@ class visualize_validation_curve :
             """ Decorated function """
 
             import  matplotlib.pyplot as plt 
-            
-            train_score , val_score, switch,\
-                param_range =func(*args, **kwargs)
-            
+          
+            if self.reason.lower() .find('val')>=0: 
+                self.reason ='val'
+                train_score , val_score, switch,\
+                    param_range =func(*args, **kwargs)
+                    
+            elif self.reason.lower().find('learn')>=0: 
+                self.reason ='learn'
+                param_range,  train_score , val_score, switch\
+                         =func(*args, **kwargs)
+                    
+
             if switch  is not None : self.turn =switch 
-            if param_range is not None : self.k= param_range 
+            if param_range is not None :
+  
+                self.k= param_range 
             
             if self.turn in ['on', 1, True]: 
+                # if not isinstance(param_range, bool): 
                 if not isinstance(train_score, dict):
                     train_score={'_':train_score}
                     val_score = {'_': val_score}
                     
                 for ii, (trainkey, trainval) in enumerate(
                         train_score.items()): 
-    
-                    trainval*=100
-                    val_score[trainkey]  *=100 
+                    
+                    if self.reason !='learn':
+                        trainval*=100
+                        val_score[trainkey]  *=100 
         
                     if self.scatterplot: 
                         plt.scatter(self.k, val_score[trainkey].mean(axis=1),
@@ -565,21 +582,21 @@ class visualize_validation_curve :
                         plt.plot(self.k, trainval.mean(axis=1),
                                  **self.train_kws)
                     
-                    if isinstance(self.xlabel, dict):
-                        plt.xlabel(**self.xlabel)
-                    else :  plt.xlabel(self.xlabel)
-                    
-                    if isinstance(self.ylabel, dict):
-                        plt.ylabel(**self.ylabel)
-                    else :  plt.ylabel(self.ylabel)
-                    
-                    plt.legend()
-                    
-                    if self.savefig is not None: 
-                        if isinstance(self.savefig, dict):
-                            plt.savefig(**self.savefig)
-                        else : 
-                            plt.savefig(self.savefig)
+                if isinstance(self.xlabel, dict):
+                    plt.xlabel(**self.xlabel)
+                else :  plt.xlabel(self.xlabel)
+                
+                if isinstance(self.ylabel, dict):
+                    plt.ylabel(**self.ylabel)
+                else :  plt.ylabel(self.ylabel)
+                
+                plt.legend()
+                
+                if self.savefig is not None: 
+                    if isinstance(self.savefig, dict):
+                        plt.savefig(**self.savefig)
+                    else : 
+                        plt.savefig(self.savefig)
 
             return func(*args, **kwargs)
         
