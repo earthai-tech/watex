@@ -15,8 +15,11 @@ from typing import TypeVar, Generic, Iterable , Callable
 
 T= TypeVar('T', float, int)
 
-from watex.processing.__init__ import (DecisionTreeClassifier, SGDClassifier,
-                                       KNeighborsClassifier, SVC  )
+from sklearn.tree import DecisionTreeClassifier 
+from sklearn.linear_model import SGDClassifier 
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.svm import SVC 
+
 from watex.processing.__init__ import _HAS_ENSEMBLE_ 
 
 from sklearn.pipeline import make_pipeline 
@@ -465,7 +468,7 @@ class Preprocessing :
             
         if features_engineering_ is not None: 
             self._features_engineering = features_engineering_
-        if selectors_ is not None : self._selectors_= selectors_ 
+        if selectors_ is not None : self._selectors= selectors_ 
         if scalers_ is not None : self._scalers = scalers_ 
         if encodages_ is not None: self._encodages = encodages_ 
         
@@ -477,7 +480,7 @@ class Preprocessing :
         numerical_pipeline = make_pipeline(self._features_engineering,
                                            self._selectors , self._scalers,
                                            **make_pipeline_kws )
-        categorical_pipeline= make_pipeline(self._encodages)
+        categorical_pipeline= make_pipeline(self._encodages, **make_pipeline_kws)
         
         self._preprocessor =make_column_transformer(
             (numerical_pipeline, numerical_features), 
@@ -605,44 +608,54 @@ class Preprocessing :
             #load all default config parameters 
 
             for e_pref, e_v in d_estimators__.items(): 
-                if e_pref =='knn': 
-                    d_estimators__[e_pref]=e_v(n_neighbors=10, 
-                                               metric='manhattan')
-                elif e_pref =='svc': 
-                     d_estimators__[e_pref]=e_v(C=100, gamma=1e-3, 
-                                                random_state=self.random_state)
-                elif e_pref =='rdf': 
-                    d_estimators__[e_pref]=e_v(n_estimators=200, 
-                                               random_state=self.random_state)
-                elif e_pref in[ 'vtc', 'stc']:
-                    compose_estimators = [('SGDC', SGDClassifier(
-                                random_state=self.random_state)),
-                            ('DTC', DecisionTreeClassifier(
-                                max_depth=100, random_state=self.random_state)), 
-                            ('KNN', KNeighborsClassifier())]
-                    
-                    d_estimators__[e_pref]=e_v(compose_estimators)
-                   
-                elif e_pref =='bag':
-                    
-                    d_estimators__[e_pref]=e_v(
-                        base_estimator=KNeighborsClassifier(), n_estimators=100)
-                elif e_pref =='stc': 
-                    d_estimators__[e_pref]=e_v(
-                            [('SGDC', SGDClassifier(
-                                random_state=self.random_state)),
-                            ('DTC', DecisionTreeClassifier(
-                                max_depth=100, random_state=self.random_state)), 
-                            ('KNN', KNeighborsClassifier())])
-                    
-                elif e_pref =='dtc': 
-                     d_estimators__[e_pref]=e_v(max_depth=100,
-                                                random_state=self.random_state)
-                else:
-                    try :
-                        d_estimators__[e_pref]=e_v(random_state=self.random_state)
-                    except : 
-                        d_estimators__[e_pref]=e_v()
+                try: 
+                    if e_pref =='knn': 
+                        d_estimators__[e_pref]=KNeighborsClassifier (
+                            n_neighbors=10,  metric='manhattan')
+                                                  
+                    elif e_pref =='svc': 
+                         d_estimators__[e_pref]=SVC(C=100, gamma=1e-3, 
+                                            random_state=self.random_state)
+                    elif e_pref =='dtc': 
+                        d_estimators__[e_pref]=DecisionTreeClassifier(
+                            max_depth=100,random_state=self.random_state)
+                    elif e_pref =='sgd': 
+                        d_estimators__[e_pref]=SGDClassifier(
+                            random_state=self.random_state) 
+                        
+                    elif e_pref =='rdf': 
+                        d_estimators__[e_pref]=e_v(n_estimators=200, 
+                                              random_state=self.random_state)
+                    elif e_pref in[ 'vtc', 'stc']:
+                        compose_estimators = [('SGDC', SGDClassifier(
+                                    random_state=self.random_state)),
+                                ('DTC', DecisionTreeClassifier(
+                                    max_depth=100, 
+                                    random_state=self.random_state)), 
+                                ('KNN', KNeighborsClassifier())]
+                        
+                        d_estimators__[e_pref]=e_v(compose_estimators)
+                       
+                    elif e_pref =='bag':
+                        d_estimators__[e_pref]=e_v(
+                            base_estimator=KNeighborsClassifier(), 
+                            n_estimators=100)
+                        
+                    elif e_pref =='stc': 
+                        d_estimators__[e_pref]=e_v(
+                                [('SGDC', SGDClassifier(
+                                    random_state=self.random_state)),
+                                ('DTC', DecisionTreeClassifier(
+                                    max_depth=100, 
+                                    random_state=self.random_state)), 
+                                ('KNN', KNeighborsClassifier())])
+                    else:
+                        try :
+                            d_estimators__[e_pref]=e_v(
+                                random_state=self.random_state)
+                        except : 
+                            d_estimators__[e_pref]=e_v()
+                except: pass 
                         
             # once loaded, select the estimator 
             self._select_estimator_= d_estimators__[self.default_estimator]
@@ -779,8 +792,8 @@ class Processing (Preprocessing) :
         ...    }
         >>> processObj = Processing(
         ...                    data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
-        ...                    pipelines= my_own_pipeline,
-        ...                    estimators=my_estimator)
+        ...                    pipeline= my_own_pipeline,
+        ...                    estimator=my_estimator)
         >>> print(processObj.preprocessor)
         >>> print(processObj.estimator)
         >>> print(processObj.model_score)
@@ -793,7 +806,7 @@ class Processing (Preprocessing) :
         self.pipelines =kws.pop('pipelines', None)
         
         self._auto =kws.pop('auto', False)
-        self._select_estimator_ = kws.pop('estimators', None)
+        self._select_estimator_ = kws.pop('estimator', None)
 
         if self._auto:
             self.auto = True 
@@ -801,13 +814,14 @@ class Processing (Preprocessing) :
         self._model_score =None 
         self._model_prediction =None 
         self._estimator_name =None 
-        
+        self._processing_model =None
     
         if self.pipelines is not None:
             self.preprocessor = self.pipelines 
             
         for key in list(kws.keys()): 
             setattr(self, key, kws[key]) 
+            
     @property 
     def auto (self): 
         """ Trigger the composite pipeline building and greate 
@@ -837,20 +851,24 @@ class Processing (Preprocessing) :
             
             self.make_preprocessing_model()
             self._model_score = self.preprocessing_model_score
-        
+            self._processing_model = self.preprocessing_model
             hints.formatModelScore(self._model_score, self.default_estimator)
             self._model_prediction = self.preprocessing_model_prediction
             self._auto =True 
-        
+    @property 
+    def processing_model(self): 
+        """ Get the default composite model """
+        return self._processing_model 
+    
     @property 
     def preprocessor (self): 
         """ Preoprocessor for `composite_estimator` design """
         return self._preprocessor 
     
     @preprocessor.setter 
-    def preprocessor(self, preprocess_pipelines): 
+    def preprocessor(self, pipelines): 
         """ Create your preprocessor. If `preprocess` is given, it must be
-        the collection of transformer and encoders whic composed of
+        the collection of transformer and encoders which composed of
         the pipeline like:: 
             
             my_own_pipelines= {'num_column_selector_': make_column_selector(
@@ -862,18 +880,19 @@ class Processing (Preprocessing) :
             'selectors_': SelectKBest(f_classif, k=4), 
              'encodages_': StandardScaler()
                          }
-            """
-        if preprocess_pipelines is None: 
-            preprocess_pipelines == {}
+        """
+        if pipelines is None: 
+            self.pipelines == {}
             self._preprocessor = self.make_preprocessor()
             
-            
-        else: 
-            self._preprocesor = self.make_preprocessor(**preprocess_pipelines)
+        elif  pipelines is not None:
+            self.pipelines = pipelines
+            self._preprocesor = self.make_preprocessor(**self.pipelines)
         
         self.make_preprocessing_model(preprocessor= self._preprocesor, 
                                       estimators_=self._select_estimator_)
-
+        
+        self._processing_model = self.preprocessing_model
         self._model_score = self.preprocessing_model_score
         self._model_prediction = self.preprocessing_model_prediction
         
@@ -884,6 +903,49 @@ class Processing (Preprocessing) :
         """ Get your estimator of  the existing default estimator """
         return self._select_estimator_ 
     
+    @estimator.setter 
+    def estimator (self, estim): 
+        """ Set estimator value"""
+        f_search =False 
+        try : 
+            self._estimator_name = estim.__class__.__name__
+        except : 
+            warnings.warn(
+                "It'seems the estimator ``{estim}`` is not a Callable ")
+            self._logging.error(
+                "The given estimator ``{estim}`` is not Callable object")
+            f_search =True 
+        else :
+            self._select_estimator_ = estim 
+            
+        if f_search is True : 
+            # get the list of default estimator full names.
+            estfullname = [ e_key[0] for e_key in hints.__estimator.values()]
+            
+            if isinstance(estim, str): 
+                self._logging.debug(
+                    f'Estimator name <``{estim}``> is string type. Will search '
+                    'in default estimator list  whether its exits !')
+                warnings.warn(f'A given estimator ``{estim}`` is string type.'
+                              'Will try to search its corresponding in default'
+                              'estimators wheter it exists' )
+                try : 
+                    estim_codecs = hints.controlExistingEstimator(estim)
+                except : 
+                    warnings(
+                        f'Given estimator``{estim}`` does not exist in the '
+                        '  list of default estimators {}.'.format(
+                            hints.format_generic_obj(
+                            estfullname)).format(*estfullname))
+                else: 
+                    if estim_codecs is None: 
+                        raise Wex.WATexError_Estimators(
+                            f' Estimator `{estim}` not found! Please provide'
+                            ' the estimator as Callable or class object.')
+                    if len(estim_codecs) ==2: 
+                        self._select_estimator_= d_estimators__[
+                            estim_codecs[0]]
+                        self._estimator_name = estim_codecs[0]
     @property 
     def model_score(self): 
         """ Get the composite estimator score """
@@ -912,8 +974,8 @@ class Processing (Preprocessing) :
         """ Get the model prediction after composite estimator design"""
         return self._model_prediction 
         
-    @deco.visualize_validation_curve(turn='off', k= np.arange(1,210,10), 
-               plot_style='scatter',savefig=None)               
+    @deco.visualize_valearn_curve(reason ='valcurve', turn='off', 
+               k= np.arange(1,210,10),plot_style='scatter',savefig=None)               
     def get_validation_curve(self, estimator=None, X_train=None, 
                          y_train=None, val_curve_kws:Generic[T]=None, 
                          **kws):
@@ -1204,38 +1266,50 @@ def find_categorial_and_numerical_features(*, df= None, features= None,
             
 
 if __name__=='__main__': 
-    
-    # preObj = Preprocessing(data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
-    #                     )
-    # from sklearn.preprocessing import StandardScaler
+
+    from sklearn.preprocessing import StandardScaler
     # from sklearn.ensemble import RandomForestClassifier 
-    # my_own_pipelines= {'num_column_selector_': make_column_selector(dtype_include=np.number),
-    #                     'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
-    #                     'features_engineering_':PolynomialFeatures(3,include_bias=True),
-    #                     'selectors_': SelectKBest(f_classif, k=4), 
-    #                     'encodages_': StandardScaler()
-    #                      }
+    my_own_pipelines= {'num_column_selector_': make_column_selector(dtype_include=np.number),
+                        'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
+                        'features_engineering_':PolynomialFeatures(3,include_bias=True),
+                        'selectors_': SelectKBest(f_classif, k=4), 
+                        'encodages_': StandardScaler()
+                          }
     # estimators={
     #         'RandomForestClassifier':RandomForestClassifier(
     #         n_estimators=200, random_state=0)
     #         }
     # processObj = Processing(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
                             # pipelines= my_own_pipelines,
-                            # estimators=estimators
+                            # estimator=estimators
                             # )
-    # print(processObj.preprocessor)
+    # processObj.get_validation_curve(switch_plot ='on', preprocess_step='True')
+    
     # print(processObj.estimator)
     # print(processObj.model_score)
     # print(processObj.model_prediction)
     
-    processObj = Processing(
-        data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
-    processObj.quick_estimation(estimator=DecisionTreeClassifier(
-    max_depth=100, random_state=13))
+
     # processObj.model_score
     # processObj.model_prediction
+    # from watex.processing.sl import Preprocessing
+    # from sklearn.preprocessing import StandardScaler 
+    preObj = Preprocessing(
+        data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
+            )
 
-    
+    preObj.random_state = 23
+    preObj.make_preprocessor(**my_own_pipelines)
+    # num_column_selector_= make_column_selector(
+    #                         dtype_include=np.number),
+    # cat_column_selector_= make_column_selector(
+    #                         dtype_exclude=np.number),
+    # features_engineering_=PolynomialFeatures(7,
+    #                         include_bias=True),
+    # selectors_=SelectKBest(f_classif, k=4), 
+    #     encodages_= StandardScaler())
+    print(preObj._preprocessor)
+
     
     
     
