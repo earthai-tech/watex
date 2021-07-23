@@ -6,11 +6,16 @@ import functools
 import inspect
 import os
 import shutil
+import warnings
 
 import datetime 
-# import pandas as pd 
 import numpy as np
-from typing import Iterable, Optional  
+import pandas as pd 
+import  matplotlib.pyplot as plt 
+
+from typing import Iterable, Optional, Callable , TypeVar
+
+T=TypeVar('T')  
 
 from watex.utils._watexlog import watexlog
 from watex.utils.__init__ import savepath as savePath 
@@ -276,8 +281,8 @@ class writef(object):
     
     """
     
-    def __init__(self, reason=None,  from_=None,
-                 to=None, savepath =None, **kws): 
+    def __init__(self, reason:Optional[str]=None,  from_:Optional[str]=None,
+                 to:Optional[str]=None, savepath:Optional[str] =None, **kws): 
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
         self.reason = reason 
@@ -477,10 +482,9 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
 
 class visualize_valearn_curve : 
     """
-    
     Description:
-             Decorator to visualize the validation curve and learning curve 
-             Once called, will  quick plot the `validation curve`
+        Decorator to visualize the validation curve and learning curve 
+        Once called, will  quick plot the `validation curve`
             
     Usage:
         .. todo:: Quick plot the validation curve 
@@ -506,6 +510,7 @@ class visualize_valearn_curve :
         
         self.reason =reason
         self.turn =turn 
+        self.fig_size =kwargs.pop('fig_size', (16,8))
         self.plotStyle =kwargs.pop('plot_style', 'scatter')
         self.train_kws=kwargs.pop('train_kws',{'c':'r',  'marker':'s', 
                                                'alpha' :0.5,
@@ -539,8 +544,6 @@ class visualize_valearn_curve :
         def viz_val_decorated(*args, **kwargs): 
             """ Decorated function """
 
-            import  matplotlib.pyplot as plt 
-          
             if self.reason.lower() .find('val')>=0: 
                 self.reason ='val'
                 train_score , val_score, switch,\
@@ -556,6 +559,8 @@ class visualize_valearn_curve :
             if param_range is not None :
   
                 self.k= param_range 
+            
+            plt.figure(figsize=self.fig_size)
             
             if self.turn in ['on', 1, True]: 
                 # if not isinstance(param_range, bool): 
@@ -602,21 +607,218 @@ class visualize_valearn_curve :
         
         return viz_val_decorated
     
+class predPlot: 
+    """ 
+    Description:
+             Decorator to plot the prediction  
+             Once called, will  quick plot the `prediction`
+    Usage:
+        .. todo:: Quick plot the prediction model. Can be customize using the 
+                    multiples keywargs arguments.
+        
+    :param turn:  Continue the plotting or switch off the plot and return 
+                the function. default is `off` else `on`.
+    :param kws: 
+        Could be the keywords arguments for `matplotlib.pyplot`
+        library 
+                
+    Author: @Daniel03
+    Date: 23/07/2021
+    """
+    def __init__(self, turn='off', **kws): 
+        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
+        self.turn =turn 
+        self.fig_size =kws.pop('fig_size', (16,8))
+        self.yPred_kws = kws.pop('ypred_kws',{'c':'r', 's':200, 'alpha' :1,
+                                        'label':'Predicted flow:y_pred'})
+        self.yObs_kws = kws.pop('ypred_kws',{'c':'blue', 's':100, 'alpha' :0.8,
+                                        'label':'Observed flow:y_true'})
+        self.tick_params =kws.pop('tick_params', {'axis':'x','labelsize':10, 
+                                                  'labelrotation':90})
+        self.xlab = kws.pop('xlabel', {'xlabel':'Boreholes tested'})
+        self.ylab= kws.pop('ylabel', {'ylabel':'Flow rates(FR) classes'})
+        
+        self.obs_line=kws.pop('ObsLine', None)
+        self.l_kws=kws.pop('l_', {'c':'blue', 'ls':'--', 'lw':1, 'alpha':0.5})
+        self.savefig =kws.pop('savefig', None)
+        if self.obs_line is None : 
+            self.obs_line = ('off', 'Obs')
+            
+    
+    def __call__(self, func:Callable[..., T]):
+        """ Call the function to be decorated """
+        
+        @functools.wraps(func)
+        def pred_decorated(*args, **kwargs): 
+            """Function to be decorated"""
+    
+            y_true,  y_pred, switch = func(*args, **kwargs)
+  
+            if switch is None : self.turn ='off'
+            if switch is not None : self.turn =switch
+            
+            if self.turn == ('on' or True or 1):
+                
+                plt.figure(figsize=self.fig_size)
+                
+                plt.scatter(y_pred.index, y_pred,**self.yPred_kws )
+                plt.scatter(y_true.index,y_true, **self.yObs_kws )
+                
+                if self.obs_line[0] == ('on' or True or 1): 
+                    if self.obs_line[1].lower().find('true') >=0 or\
+                        self.obs_line[1].lower()=='obs': 
+                        plt.plot(y_true, **self.l_kws)
+                    elif self.obs_line[1].lower().find('pred') >=0:
+                        plt.plot(y_pred, **self.l_kws)
+                        
+                # plt.xticks(rotation = 'vertical')
+                plt.tick_params(**self.tick_params)
+                plt.xlabel(**self.xlab)
+                plt.ylabel(**self.ylab)
+                plt.legend()
+                
+                if self.savefig is not None: 
+                        if isinstance(self.savefig, dict):
+                            plt.savefig(**self.savefig)
+                        else : 
+                            plt.savefig(self.savefig)
+                            
+            return func(*args, **kwargs)
+        return pred_decorated
 
 
+class PFI: 
+    """ 
+    Description:
+             Decorator to plot Permutation future importance.
+             Can also plot dendrogram figure by setting `reason` to 'dendro`. 
+    Usage:
+        .. todo:: Quick plot the permutation  importance diagram. 
+            Can be customize using the multiples keywargs arguments.
+                    
+    :param reason: what_going_there? validation cure or learning curve.
+                    - ``pfi`` for permutation feature importance before
+                        and after sguffling trees  
+                    -``dendro`` for dendrogram plot  
+    :param turn:  Continue the plotting or switch off the plot and return 
+                the function. default is `off` else `on`.
+    :param kws: 
+        Could be the keywords arguments for `matplotlib.pyplot`
+        library 
+    :param barh_kws: matplotlib.pyplot.barh keywords arguments. 
+        Refer to https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.barh.html
+    :param box_kws: matplotlib.pyplot.boxplot keyword arguments; 
+        Refer to :ref:`<https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.boxplot.html>`
+    :param dendro_kws: scipy.cluster.hierarchy.dendrogram diagram 
+    
+        see :ref:`<https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.dendrogram.html>`
+    
+    Author: @Daniel03
+    Date: 23/07/2021
+    
+    """
+    def __init__(self, reason ='pfi', turn ='off', **kwargs): 
+        self._logging=watexlog().get_watex_logger(self.__class__.__name__)
+        
+        self.reason = reason 
+        self.turn = turn 
+        
+        self.fig_size = kwargs.pop('fig_size',(9, 3) )
+        self.savefig = kwargs.pop('savefig', None)
+        
+        self.xlab = kwargs.pop('xlabel', {'xlabel':'Importance'})
+        self.ylab= kwargs.pop('ylabel', {'ylabel':'Features'})
+        self.barh_kws=kwargs.pop('barh_kws', {'color':'blue',
+                                              'edgecolor':'k', 'linewidth':2})
+        self.box_kws=kwargs.pop('box_kws', {'vert':False, 'patch_artist':False})
+        self.dendro_kws=kwargs.pop('dendro_kws',{'leaf_rotation':90,
+                                                 # 'orientation':'right'
+                                                 } )
+        self.fig_title =kwargs.pop('fig_title', 'matplotlib.axes.Axes.barh Example')
+        
+    def __call__(self, func:Callable[..., T]): 
+        
+        @functools.wraps(func)
+        def feat_importance_dec (*args, **kwargs): 
+            """ Decorated pfi diagram """
+            
+            X, result, tree_indices, clf, tree_importance_sorted_idx,\
+            data_columns, perm_sorted_idx, pfi_type, switch, savefig =func(
+                *args, **kwargs)
+            
+            if pfi_type is not None : self.reason = pfi_type
+            if switch is not None : self.turn = switch 
+            if savefig is not None: self.savefig = savefig 
+            
+            if self.turn ==('on' or True or 1): 
+                fig, (ax1, ax2) = plt.subplots(1, 2,figsize=self.fig_size)
+                                                   
+                if self.reason == 'pfi': 
+                    
+                    ax1.barh(tree_indices,
+                             clf.feature_importances_[tree_importance_sorted_idx] *100,
+                             height=0.7, **self.barh_kws)
+                    ax1.set_yticklabels(data_columns[tree_importance_sorted_idx])
+                    ax1.set_yticks(tree_indices)
+                    ax1.set_ylim((0, len(clf.feature_importances_)))
+                    ax2.boxplot(result.importances[perm_sorted_idx].T *100,
+                                labels=data_columns[perm_sorted_idx], **self.box_kws)
+                    
+                    ax1.set_xlabel(**{k:v +' before shuffling (%)' 
+                                      for k, v in self.xlab.items()} )
+                    ax1.set_ylabel(**self.ylab)
+                    ax2.set_xlabel(**{k:v +' after shuffling (%)' 
+                                      for k, v in self.xlab.items()} )
+                    try : 
+                        
+                        ax1.set_title(self.fig_title + ' using '+\
+                                      clf.__class__.__name__)
+                    except : 
+                        ax1.set_title(self.fig_title)
+  
+                    fig.tight_layout()
+                    
+                if self.reason == 'dendro': 
+                    from scipy.stats import spearmanr
+                    from scipy.cluster import hierarchy
+                    
+                    if X is None : 
+                        self._logging.debug('Please provide the train features !')
+                        warnings.warn(
+                            ' Parameter `X` is missing. '
+                            ' Could not plot the dendromarc diagram')
+                        return func(*args, **kwargs)
+                    
+                    elif X is not None: 
 
+                        corr = spearmanr(X).correlation *100
+                        corr_linkage = hierarchy.ward(corr)
+                        dendro = hierarchy.dendrogram(corr_linkage,
+                                                labels=data_columns, ax=ax1,
+                                                **self.dendro_kws)
+                        dendro_idx = np.arange(0, len(dendro['ivl']))
+                        
+                        ax2.imshow(corr[dendro['leaves'], :][:, dendro['leaves']])
+                        ax2.set_xticks(dendro_idx)
+                        ax2.set_yticks(dendro_idx)
+                        ax2.set_xticklabels(dendro['ivl'], rotation='vertical')
+                        ax2.set_yticklabels(dendro['ivl'])
+                        ax1.set_ylabel(**{k:v +' linkage matrix' 
+                                            for k, v in self.ylab.items()} )
+                        fig.tight_layout()
+            
+                
+                plt.show()   
+                    
+                if self.savefig is not None: 
+                    if isinstance(self.savefig, dict):
+                        plt.savefig(**self.savefig)
+                    else : 
+                        plt.savefig(self.savefig)
 
-
-
-
-
-
-
-
-
-
-
-
+            return func(*args, **kwargs)
+        
+        return  feat_importance_dec
 
 
 

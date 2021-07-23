@@ -174,7 +174,6 @@ class Preprocessing :
         self.test_size = kwargs.pop('test_size', 0.2)
         self._df_cache =None 
         self._features = None 
-        
         self.y = None 
         self.X = None 
         self.X_train =None 
@@ -611,8 +610,7 @@ class Preprocessing :
                 try: 
                     if e_pref =='knn': 
                         d_estimators__[e_pref]=KNeighborsClassifier (
-                            n_neighbors=10,  metric='manhattan')
-                                                  
+                            n_neighbors=10,  metric='manhattan')           
                     elif e_pref =='svc': 
                          d_estimators__[e_pref]=SVC(C=100, gamma=1e-3, 
                                             random_state=self.random_state)
@@ -844,7 +842,7 @@ class Processing (Preprocessing) :
                 ' Automatic Option to design a default composite estimator'
                 f' is triggered <`{self._auto}``> with default pipelines.')
             warnings.warn(
-                ' Automatic Option   to design a composite estimator is '
+                ' Automatic Option to design a composite estimator is '
                 f' triggered <`auto={self._auto}``> with default pipelines '
                 'construction. The default estimation score should be '
                 ' displayed.')
@@ -881,13 +879,20 @@ class Processing (Preprocessing) :
              'encodages_': StandardScaler()
                          }
         """
+        import sklearn 
+        
         if pipelines is None: 
             self.pipelines == {}
             self._preprocessor = self.make_preprocessor()
             
         elif  pipelines is not None:
             self.pipelines = pipelines
-            self._preprocesor = self.make_preprocessor(**self.pipelines)
+            if isinstance(self.pipelines,
+                        sklearn.compose._column_transformer.ColumnTransformer): 
+                self._preprocesor= pipelines  
+            else:
+                self._preprocesor = self.make_preprocessor(
+                    **self.pipelines)
         
         self.make_preprocessing_model(preprocessor= self._preprocesor, 
                                       estimators_=self._select_estimator_)
@@ -967,7 +972,7 @@ class Processing (Preprocessing) :
         except : 
             self._estimator_name = print_score
         
-        hints.formatModelScore(self._model_score, self._estimator_name)
+        # hints.formatModelScore(self._model_score, self._estimator_name)
         
     @property 
     def model_prediction(self):
