@@ -135,8 +135,8 @@ considered as Python object **(2)**:
 							|>>> featObj.site_names
 							|>>> featObj.df
 ``` 
-![](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/features_computation.PNG)
-
+Click [here](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/features_computation.PNG) to 
+ see the features' dataset. 
 
 ## Data analysis and quick plot hints
 
@@ -276,7 +276,7 @@ Now let's evaluate onto the same dataset the `model_score` by reinjecting the de
 ...                        auto=True)
 >>> processObj.preprocessor
 >>> processObj.model_score
-0.72487896523648201                 # new composite estimator ~ 72,49   %
+0.65385896523648201                 # new composite estimator ~ 65.385    %
 >>> processObj.model_prediction
 ``` 
 We clearly see the difference of  `14.798%` between the two options. Furthermore,  we can get the validation curve
@@ -295,7 +295,7 @@ and we'll tuning its hyperparameters. Then the best parameters obtained will be 
 prediction. This is an example and the user has the ability to create its own pipelines more powerfull. 
 We consider a **svc** estimator as default estimator. The process are described below: 
 ```
->>> from watex.modeling.sl.modeling import Modeling 
+>>> from watex.modeling.sl import Modeling 
 >>> from sklearn.preprocessing import RobustScaler, PolynomialFeatures 
 >>> from sklearn.feature_selection import SelectKBest, f_classif 
 >>> from sklearn.svm import SVC 
@@ -312,13 +312,13 @@ We consider a **svc** estimator as default estimator. The process are described 
           }
 >>> my_estimator = SVC(C=1, gamma=1e-4, random_state=7)             # random estimator 
 >>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
-               pipelines =my_own_pipelines , 
-               estimator = my_estimator)
+                       pipelines =my_own_pipelines , 
+                       estimator = my_estimator)
 >>> hyperparams ={
-    'columntransformer__pipeline-1__polynomialfeatures__degree': np.arange(2,10), 
-    'columntransformer__pipeline-1__selectkbest__k': np.arange(2,7), 
-    'svc__C': [1, 10, 100],
-    'svc__gamma':[1e-1, 1e-2, 1e-3]}
+                'columntransformer__pipeline-1__polynomialfeatures__degree': np.arange(2,10), 
+                'columntransformer__pipeline-1__selectkbest__k': np.arange(2,7), 
+                'svc__C': [1, 10, 100],
+                'svc__gamma':[1e-1, 1e-2, 1e-3]}
 >>> my_compose_estimator_ = modelObj.model_ 
 >>> modelObj.tuning_hyperparameters(
                             estimator= my_compose_estimator_ , 
@@ -339,7 +339,7 @@ the new model_score and model prediction:
 >>> modelObj.model_score
 Out[9]:
 -----------------------------------------------------------------------------
-> SupportVectorClassifier       :   Score  =   75.132   %
+> SupportVectorClassifier       :   Score  =   76.923   % ~ >3/4 
 ----------------------------------------------------------------------------- 
 ``` 
 * **Note**: This is an illustration example, you can tuning your hyperparameters using an other 
@@ -352,6 +352,41 @@ We can quick visualize the *learning curve* by calling the decorated method
 >>> processObj.get_learning_curve (estimator= my_compose_estimator_,
         switch_plot='on')
 ```
+
+In the test area `bagoue` , we can get a sample of model prediction  after tuning the model hyperparameters, 
+by calling the decorated method `get_model_prediction` refered as below:
+```
+>>> from watex.modeling.sl import Modeling 
+>>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+...                     pipelines ={
+...                             'num_column_selector_': make_column_selector(dtype_include=np.number),
+...                             'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
+...                             'features_engineering_':PolynomialFeatures(2, include_bias=False),
+...                             'selectors_': SelectKBest(f_classif, k=2), 
+...                             'encodages_': RobustScaler()},
+...                     estimator = SVC(C=1, gamma=0.1))
+>>> modelObj.get_model_prediction(switch ='on')
+```
+* **Implementation in test area**: 
+         See the model prediction of the test area performed in `Bagoue` region in north part of [Cote d'Ivoire](https://en.wikipedia.org/wiki/Ivory_Coast) (West-Africa) by 
+         clicking on the [reference output](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG) . 
+
+It's also possible to visualise the `permutation_importance` of mileages using a `tree` or `ensemble` methods before shuffling and after shuffing. 
+Indeed Permutation feature importance is a model inspection technique that can be used for any fitted estimator when the data is tabular.
+This is especially useful for non-linear or opaque estimators. More details can be found in [scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.inspection.permutation_importance.html) website. 
+Let's do a quick example using `RandomForestClassifier` ensemble estimator.
+We call decorated method `permutation_feature_importance` as :
+```
+>>> from watex.modeling.sl import Modeling 
+>>> from sklearn.ensemble import AdaBoostClassifier
+>>> modelObj.permutation_feature_importance(
+...    estimator = RandomForestClassifier(random_state=7),
+...    n_repeats=100, 
+...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx',  
+...    switch ='on', pfi_style='pfi')              # plot_style can be dendogram with argument `dendro`
+```
+Click [here](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pfi.PNG) to see the *pfi diagram* 
+reference output.
 
 ## System requirements 
 * Python 3.7+ 
