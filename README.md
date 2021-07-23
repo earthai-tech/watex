@@ -367,10 +367,9 @@ by calling the decorated method `get_model_prediction` refered as below:
           }, estimator = SVC(C=1, gamma=0.1))
 >>> modelObj.get_model_prediction(switch ='on')
 ```
-See the reference output below: 
-
-![](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG)
-
+ **Test**: 
+     See the model prediction of test area in `Bagoue` region in north part of Cote d'Ivoire (West-Africa) by 
+     clicking on the [reference output](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG) . 
 
 It's also possible to visualise the `permutation_importance` of mileages using a `tree` or `ensemble` methods before shuffling and after shuffing. 
 Indeed Permutation feature importance is a model inspection technique that can be used for any fitted estimator when the data is tabular.
