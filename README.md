@@ -312,13 +312,13 @@ We consider a **svc** estimator as default estimator. The process are described 
           }
 >>> my_estimator = SVC(C=1, gamma=1e-4, random_state=7)             # random estimator 
 >>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
-               pipelines =my_own_pipelines , 
-               estimator = my_estimator)
+                       pipelines =my_own_pipelines , 
+                       estimator = my_estimator)
 >>> hyperparams ={
-    'columntransformer__pipeline-1__polynomialfeatures__degree': np.arange(2,10), 
-    'columntransformer__pipeline-1__selectkbest__k': np.arange(2,7), 
-    'svc__C': [1, 10, 100],
-    'svc__gamma':[1e-1, 1e-2, 1e-3]}
+                'columntransformer__pipeline-1__polynomialfeatures__degree': np.arange(2,10), 
+                'columntransformer__pipeline-1__selectkbest__k': np.arange(2,7), 
+                'svc__C': [1, 10, 100],
+                'svc__gamma':[1e-1, 1e-2, 1e-3]}
 >>> my_compose_estimator_ = modelObj.model_ 
 >>> modelObj.tuning_hyperparameters(
                             estimator= my_compose_estimator_ , 
@@ -358,13 +358,13 @@ by calling the decorated method `get_model_prediction` refered as below:
 ```
 >>> from watex.modeling.sl import Modeling 
 >>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
-                        pipelines ={
-        'num_column_selector_': make_column_selector(dtype_include=np.number),
-        'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
-        'features_engineering_':PolynomialFeatures(2, include_bias=False),
-        'selectors_': SelectKBest(f_classif, k=2), 
-        'encodages_': RobustScaler()
-          }, estimator = SVC(C=1, gamma=0.1))
+...                     pipelines ={
+...                             'num_column_selector_': make_column_selector(dtype_include=np.number),
+...                             'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
+...                             'features_engineering_':PolynomialFeatures(2, include_bias=False),
+...                             'selectors_': SelectKBest(f_classif, k=2), 
+...                             'encodages_': RobustScaler()},
+...                     estimator = SVC(C=1, gamma=0.1))
 >>> modelObj.get_model_prediction(switch ='on')
 ```
 * **Implementation in test area**: 
@@ -381,9 +381,9 @@ We call decorated method `permutation_feature_importance` as :
 >>> from sklearn.ensemble import AdaBoostClassifier
 >>> modelObj.permutation_feature_importance(
 ...    estimator = RandomForestClassifier(random_state=7),
-...         n_repeats=100, 
+...    n_repeats=100, 
 ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx',  
-...     switch ='on', pfi_style='pfi')              # plot_style can be dendogram with argument `dendro`
+...    switch ='on', pfi_style='pfi')              # plot_style can be dendogram with argument `dendro`
 ```
 Click [here](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pfi.PNG) to see the *pfi diagram* 
 reference output.
