@@ -571,9 +571,9 @@ class ID:
     Eeach survey line is identified with its  common `ID` and point to 
     the same name.
     
-    :param givenATTR:  Station or location name considered a 
+    :param _givenATTR:  Station or location name considered a 
                     new name for attribute creating
-    :type givenATTR: str 
+    :type _givenATTR: str 
     
     :param sns: Station names from `erp`, `ves` and `geol`. 
     :type sns: array_like or sns

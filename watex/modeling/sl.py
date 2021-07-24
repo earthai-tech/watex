@@ -173,8 +173,10 @@ class Modeling:
         plus  estimator"""
         if len(pipeline_and_estimator) <=1 : 
             warnings.warn(
-                'A Composite model creation need at least the `pipeline` and `estimator`.')
-            self._logging.debug('Need at least a `pipeline` and `estimators`')
+                'A Composite model creation need '
+                'at least the `pipeline` and `estimator`.')
+            self._logging.debug(
+                'Need at least a `pipeline` and `estimators`')
         
         if self.processor is None : 
             self.processor, self.estimator = pipeline_and_estimator
@@ -402,7 +404,7 @@ class Modeling:
         :Example: 
             
             >>> from watex.modeling.sl.modeling import Modeling 
-            >>> from sklearn.preprocessing import RobustScaler, PolynomialFeatures 
+            >>> from sklearn.preprocessing import RobustScaler,PolynomialFeatures 
             >>> from sklearn.feature_selection import SelectKBest, f_classif 
             >>> from sklearn.svm import SVC 
             >>> from sklearn.compose import make_column_selector 
@@ -421,7 +423,8 @@ class Modeling:
                            pipelines =my_own_pipelines , 
                            estimator = my_estimator)
             >>> hyperparams ={
-                'columntransformer__pipeline-1__polynomialfeatures__degree': np.arange(2,10), 
+                'columntransformer__pipeline-1__polynomialfeatures__degree': 
+                    np.arange(2,10), 
                 'columntransformer__pipeline-1__selectkbest__k': np.arange(2,7), 
                 'svc__C': [1, 10, 100],
                 'svc__gamma':[1e-1, 1e-2, 1e-3]}
@@ -458,9 +461,11 @@ class Modeling:
              with_gridS = 'randomizedsearchcv'
         
         if  with_gridS == 'gridsearchcv': 
-            model_grid = GridSearchCV(estimator, hyper_params, cv =cv, **grid_kws )
+            model_grid = GridSearchCV(estimator, hyper_params, 
+                                      cv =cv, **grid_kws )
         elif  with_gridS == 'randomizedsearchcv': 
-            model_grid = RandomizedSearchCV(estimator, hyper_params, cv=cv, **grid_kws)
+            model_grid = RandomizedSearchCV(estimator, hyper_params,
+                                            cv=cv, **grid_kws)
             
 
         model_grid.fit(self.X_train, self.y_train)
@@ -492,11 +497,15 @@ class Modeling:
         :Example: 
             
             >>> from watex.modeling.sl import Modeling 
-            >>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
-                                    pipelines ={
-                    'num_column_selector_': make_column_selector(dtype_include=np.number),
-                    'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
-                    'features_engineering_':PolynomialFeatures(2, include_bias=False),
+            >>> modelObj = Modeling(
+                data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+                pipelines ={
+                    'num_column_selector_': make_column_selector(
+                        dtype_include=np.number),
+                    'cat_column_selector_': make_column_selector(
+                        dtype_exclude=np.number),
+                    'features_engineering_':PolynomialFeatures(2,
+                                                    include_bias=False),
                     'selectors_': SelectKBest(f_classif, k=2), 
                     'encodages_': RobustScaler()
                       }, estimator = SVC(C=1, gamma=0.1))
@@ -646,8 +655,9 @@ class Modeling:
         if random_state is not None : self.random_state = random_state 
         if estimator  is None : 
             from sklearn.ensemble import RandomForestClassifier
-            self.estimator = RandomForestClassifier(n_estimators=n_estimators,
-                                        random_state= self.random_state)
+            self.estimator = RandomForestClassifier(
+                n_estimators=n_estimators, random_state= self.random_state)
+                                        
             # self.estimator = clf
         if (self._data_fn and self._df) is None : 
             if data_fn is not None : 
@@ -673,13 +683,15 @@ class Modeling:
 
         try : 
             print("Accuracy on test data:")
-            hints.formatModelScore(self.estimator.score(self.X_test, self.y_test),
+            hints.formatModelScore(self.estimator.score(
+                                        self.X_test, self.y_test),
                                        self.estimator.__class__.__name__)
         except AttributeError as e: 
             print(e.args)
         except: pass 
 
-        result = permutation_importance(self.estimator, self.X_train, self.y_train, 
+        result = permutation_importance(self.estimator,
+                                        self.X_train, self.y_train, 
                                         n_repeats=n_repeats,
                                 random_state=self.random_state, n_jobs=n_jobs,
                                 **pfi_kws)
@@ -695,7 +707,8 @@ class Modeling:
             tree_indices = np.arange(
                 0, len(self.estimator.feature_importances_)) + 0.5
 
-        return self.X, result, tree_indices, self.estimator, tree_importance_sorted_idx,\
+        return self.X, result, tree_indices,\
+            self.estimator, tree_importance_sorted_idx,\
             self.X_train.columns, perm_sorted_idx, pfi_type, switch, savefig
         
         
