@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function 
 
 __docformat__='restructuredtext'
@@ -740,7 +741,7 @@ class PFI:
         
         @functools.wraps(func)
         def feat_importance_dec (*args, **kwargs): 
-            """ Decorated pfi diagram """
+            """ Decorated pfi and dendrogram diagram """
             
             X, result, tree_indices, clf, tree_importance_sorted_idx,\
             data_columns, perm_sorted_idx, pfi_type, switch, savefig =func(

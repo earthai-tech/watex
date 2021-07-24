@@ -56,7 +56,7 @@ sys.path.insert(0, os.path.abspath('.'))
 
 class ERP_collection: 
     """
-    Collection objects. The calss collects all `erp` survey lines.
+    Collection objects. The class collects all `erp` survey lines.
     Each `erp` is an singleton class object with their corresponding 
     attributes. The goal is to build a container  geao-elecricals to 
     straigthforwardly given to :class:`~watex.core.geofeatures.Features`
@@ -114,7 +114,7 @@ class ERP_collection:
         >>> erpcol.survey_ids
         >>> erpcol.selectedPoints
         
-   The call the following :class:`~.erp.ERP_collection` properties attributes:
+   Call the following :class:`~.erp.ERP_collection` properties attributes:
     
     ====================  ================  ===================================
     properties              Type                Description  
@@ -124,7 +124,6 @@ class ERP_collection:
     survey_ids              array_like      Collection of all `erp` survey 
                                             survey ids. :Note:Each ids is fol-
                                             lowing by the prefix **e**.
-
     sfis                    array_like      Collection of best anomaly standard 
                                             fracturation index value. 
     powers                  array_like      Collection of best anomaly `power`
