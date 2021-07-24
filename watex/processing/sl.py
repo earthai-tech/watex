@@ -1160,9 +1160,9 @@ class Processing (Preprocessing) :
 
         
 def find_categorial_and_numerical_features(*, df= None, features= None,  
-                                           categorial_features: Iterable[T]=None ,
-                                           numerical_features:Iterable[T]=None 
-                                           ) -> Generic[T]: 
+                                    categorial_features: Iterable[T]=None,
+                                    numerical_features:Iterable[T]=None 
+                                    ) -> Generic[T]: 
     """ 
     Retrieve the categorial or numerical features on whole features 
     of dataset. 
@@ -1274,9 +1274,12 @@ if __name__=='__main__':
 
     from sklearn.preprocessing import StandardScaler
     # from sklearn.ensemble import RandomForestClassifier 
-    my_own_pipelines= {'num_column_selector_': make_column_selector(dtype_include=np.number),
-                        'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
-                        'features_engineering_':PolynomialFeatures(3,include_bias=True),
+    my_own_pipelines= {'num_column_selector_': make_column_selector(
+                        dtype_include=np.number),
+                        'cat_column_selector_': make_column_selector(
+                            dtype_exclude=np.number),
+                        'features_engineering_':PolynomialFeatures(
+                            3,include_bias=True),
                         'selectors_': SelectKBest(f_classif, k=4), 
                         'encodages_': StandardScaler()
                           }

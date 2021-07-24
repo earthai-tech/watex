@@ -15,7 +15,7 @@ from typing import TypeVar, Generic, Iterable
 T=TypeVar('T', list , tuple, dict, float, int)
 K= TypeVar('K', complex, float)
 
-import os
+# import os
 import re
 import warnings 
 import inspect 
@@ -285,7 +285,7 @@ def formatModelScore(model_score: T=None, select_estimator:str=None )   :
         except : 
             if select_estimator is None :
                 select_estimator =str(select_estimator)
-            else: select_estimator = '__'
+            else: select_estimator = '___'
             
         print('> {0:<30}:{1:^10}= {2:^10} %'.format(select_estimator,
                      ' Score', round(
