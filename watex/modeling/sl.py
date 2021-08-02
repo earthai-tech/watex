@@ -702,7 +702,8 @@ class Modeling:
                 self.estimator.feature_importances_)
         except Exception: 
            raise AttributeError(
-               ' `{}` estimator nas no attribute `feature_importances_`')
+               f' `{self.estimator}` estimator nas no attribute'
+               ' `feature_importances_`')
         else:
             tree_indices = np.arange(
                 0, len(self.estimator.feature_importances_)) + 0.5
