@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright © 2021  Kouadio K.Laurent, Wed Jul  7 22:23:02 2021 hz
 # This module is modified and is part of the pyCSAMT utils package,
-#  which is released under a LGPL- licence.
-# originallly created on Tue Dec 29 19:18:44 2020
+# see https://github.com/WEgeophysics/pyCSAMT  which is released under 
+# a LGPL- licence originallly created on Tue Dec 29 19:18:44 2020
 # @author: ~alias @Daniel03
 """
 .. _module-Plot_Utils:: `pycsamt.utils.plot_utils` 
