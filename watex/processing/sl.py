@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
 # This module is part of the WATex processing package, which is released under a
 # MIT- licence.
