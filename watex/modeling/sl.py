@@ -291,11 +291,11 @@ class Modeling:
                   'linestyle':'-', 'label':'Validation set'}, 
         xlabel={'xlabel':'Training set '},
         ylabel={'ylabel':'performance on the validation set '})
-    def get_learning_curve (self, estimator=None, X_train=None, 
+    def get_learning_curve (self, estimator:Callable[..., T]=None, X_train=None, 
                          y_train=None, learning_curve_kws:Generic[T]=None,
                          validation_curve_kws:Generic[T]=None,
                          **kws)-> Iterable[T]: 
-        """ Compute the train sore and validation curve to visualize 
+        """ Compute the train score and validation curve to visualize 
         your learning curve. 
   
         :param estimator: The creating model. If ``None`` 
@@ -615,7 +615,7 @@ class Modeling:
             `permution_importance` callable additional keywords arguments. 
         :param pfi_stype: Type of plot. Can be : 
                     - ``pfi`` for permutation feature importance before
-                        and after sguffling trees  
+                        and after shuffling trees  
                     -``dendro`` for dendrogram plot . 
                     The *default* is `pfi`
         :param switch: Turn `on` or `off` the decorator.
@@ -702,7 +702,8 @@ class Modeling:
                 self.estimator.feature_importances_)
         except Exception: 
            raise AttributeError(
-               ' `{}` estimator nas no attribute `feature_importances_`')
+               f' `{self.estimator}` estimator nas no attribute'
+               ' `feature_importances_`')
         else:
             tree_indices = np.arange(
                 0, len(self.estimator.feature_importances_)) + 0.5
