@@ -56,7 +56,14 @@ class QuickPlot :
                 Raw data for plotting. `QuickPlot` doesnt straighforwadly  
                 read   the raw datafile. It calls  the module from 
                 :mod:`watex.analysis.features.sl_analysis` module 
-                for data reading and sanitizing data before plotting. 
+                for data reading and sanitizing data before plotting.
+                
+            *flow_classes*: list of classes values to convert the categorical 
+                    features. default is [0., 1., 3.] which means: 
+                        - 0 m3/h  --> FR0
+                        - > 0 to 1 m3/h --> FR1
+                        - > 1 to 3 m3/h --> FR2
+                        - > 3 m3/h  --> FR3
 
     Hold others optionnal informations: 
         
@@ -103,7 +110,9 @@ class QuickPlot :
         
         self._df =df 
         self._data_fn = data_fn 
-        
+        self._flow_classes = kwargs.pop('flow_classes',[0., 1., 3.])
+        self.target_name= kwargs.pop('target_name', 'flow')
+
         self.fig_num= kwargs.pop('fig_num', 1)
         self.fig_size = kwargs.pop('fig_size', [12,6])
         self.fig_dpi =kwargs.pop('fig_dpi', 300)
@@ -139,12 +148,19 @@ class QuickPlot :
         self.ylim=kwargs.pop('y_lim', None) 
         
         self.sns_orient =kwargs.pop('orient', 'v')
+        self.sns_style =kwargs.pop('sns_style', None)
+        self.sns_palette = kwargs.pop('sns_palette', None)
         self.sns_height =kwargs.pop ('sns_height', 4.)
         self.sns_aspect =kwargs.pop ('sns_aspect', .7)
-        
-        
+        self.sns_theme_kws = kwargs.pop('set_theme', 
+                                        {'style':self.sns_style, 
+                                         'palette':self.sns_palette, 
+                                                      }
+                                        )
+
         self.xlabel=kwargs.pop('xlabel', None)
         self.ylabel=kwargs.pop('ylabel', None)
+        
         
         for key in kwargs.keys(): 
             setattr(self, key, kwargs[key])
@@ -175,14 +191,16 @@ class QuickPlot :
         if datafn is not None : 
             self._data_fn = datafn 
 
-        slObj= sl_analysis(data_fn=self._data_fn, set_index=True)
+        slObj= sl_analysis(data_fn=self._data_fn, set_index=True, 
+                           flow_classes = self._flow_classes , 
+                           target = self.target_name)
         self.df= slObj.df 
 
 
     def hist_cat_distribution(self, df=None, data_fn =None, 
                               target_name : str =None,   **kws): 
         """
-        Quick plot a distributions of categorized classes accoring to the 
+        Quick plot a distributions of categorized classes according to the 
         percentage of occurence. 
         
         :param df: Dataframe to quickplotted
@@ -209,12 +227,13 @@ class QuickPlot :
                     fig_title ='Distribution of flow classes(FR)'
         :Example: 
             
-            >>> from watex.viewer.plot import Quick_plot 
+            >>> from watex.viewer.plot import QuickPlot 
             >>> qplotObj = QuickPlot(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b')
             >>> qplotObj.hist_cat_distribution(target_name='flow')
         
         """
+        
         savefig =kws.pop('savefig', None)
         xlabel =kws.pop('xlabel', None)
         ylabel =kws.pop('xlabel', None)
@@ -227,33 +246,39 @@ class QuickPlot :
 
         if self._data_fn is not None :
             self.data_fn = self._data_fn  
-            
+        if target_name is not None: 
+            self.target_name =target_name 
+        
         for attr, valattr, optval in zip(
                 ['target_name', 'xlabel', 'ylabel', 'fig_title'], 
                 [target_name, xlabel, ylabel, fig_title],
                 ['flow', 'Flow classes in m3/h','Number of  occurence (%)',
                 'Distribution of flow classes(FR)' ]
                 ): 
-            if not hasattr(self, attr): 
-                if attr =='target_name' and attr is None: 
+
+            if getattr(self, attr) is None: 
+                if attr =='target_name': 
                     self._logging.error(
                         'No `target_name` is known. Please specify the target'
                         " column's name for `cat_distribution` plot.")
                     raise Wex.WATexError_plot_featuresinputargument(
                         'No `target_name` is detected.Please specify the target'
                         " column's name for `cat_distribution` plot.") 
-                elif valattr is None : 
+                
+                if valattr is None : 
                    valattr = optval
                    
                 setattr(self, attr, valattr)
                 
+        self._logging('Quick plot a distributions of categorized classes.'
+                      f'Target name is ={self.target_name}')      
         # reset index 
 
         df_= self.df.copy(deep=True)  #make a copy for safety 
         df_.reset_index(inplace =True)
         
         plt.figure(figsize =self.fig_size)
-        plt.hist(df_[target_name], bins=self.bins ,
+        plt.hist(df_[self.target_name], bins=self.bins ,
                   stacked = self.stacked , color= self.lc)
 
         plt.xlabel(self.xlabel)
@@ -300,9 +325,10 @@ class QuickPlot :
             ...                          xlabel ='Anomaly type ',
             ...                          ylabel='Number of  occurence (%)' )
         """
-
+        
         if df is not None : self.df = df 
-        if target_name is not None : self.target_name =target_name
+        if target_name is not None : 
+            self.target_name =target_name
         if data_fn is not None : 
             self._data_fn = data_fn 
       
@@ -337,8 +363,8 @@ class QuickPlot :
                         label= self.fig_title, color = self.lc)  
     
         if self.groupby is not None : 
-            if hasattr(self, 'set_theme'): 
-                sns.set_style(self.set_theme)
+            if hasattr(self, 'sns_style'): 
+                sns.set_style(self.sns_style)
             if isinstance(self.groupby, str): 
                 self.groupby =[self.groupby]
             if isinstance(self.groupby , dict):
@@ -353,6 +379,10 @@ class QuickPlot :
         ax.set_title(self.fig_title)
         ax.legend() 
         
+        self._logging.info(
+            'Multiple bar plot distribution grouped by  `{0}`.'.format(
+                hints.format_generic_obj(self.groupby)).format(*self.groupby))
+        
         if self.savefig is not None :
             plt.savefig(self.savefig,
                         dpi=self.fig_dpi,
@@ -361,9 +391,9 @@ class QuickPlot :
         
     def multi_cat_distribution(self, df =None, data_fn =None,  x_features=None ,
                                targets=None, y_features=None, kind:str='count',
-                               **kws): 
+                               sns_style: str =None, **kws): 
         """
-        Multiple categorials plots  from tragetted pd.series. 
+        Multiple categorials plots  from targetted pd.series. 
         
         `x_features` , `y_features` as well as `targets` must be among the 
         dataframe. 
@@ -379,7 +409,7 @@ class QuickPlot :
             If number of feature is more than one, create a list to hold 
             all features. 
         :param targets: 
-            corresponds to `sns.catplot` argument ``hue``. If more than one 
+            corresponds to `sns.catplot` argument ``hue``. If more than one, 
             set the targets on a list. 
         
         :Example: 
@@ -387,7 +417,7 @@ class QuickPlot :
             >>> from watex.viewer.plot import QuickPlot 
             >>> qplotObj = QuickPlot(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
-            ...             target_name = 'flow', set_theme ='darkgrid')
+            ...             target_name = 'flow', set_style ='darkgrid')
             >>> fdict={
             ...            'x_features':['shape', 'type', 'type'], 
             ...            'y_features':['type', 'geol', 'shape'], 
@@ -396,8 +426,12 @@ class QuickPlot :
             >>>    qplotObj.multi_cat_distribution(**fdict)  
             
         """
+        
         features_dict=kws.pop('features_dict',None )
         
+        if sns_style is not None: 
+            self.sns_style = sns_style
+
         for key in kws.keys(): 
             setattr(self, key, kws[key])
         
@@ -434,16 +468,31 @@ class QuickPlot :
          
         if not hasattr(self, 'ylabel'): 
             self.ylabel= 'Number of  occurence (%)'
+            
+        self._logging.info(
+            'Multiple categorials plots  from targetted `{0}`.'.format(
+                hints.format_generic_obj(targets)).format(*targets))
+        
         for ii in range(minlen): 
+            
             sns.catplot( data = df_, kind= kind, 
                     x=features_dict ['x_features'][ii], 
                     col= features_dict['y_features'][ii], 
-                    hue=features_dict['targets'][ii], linewidth = self.lw, 
-                    height = self.sns_height, aspect = self.sns_aspect
+                    hue=features_dict['targets'][ii],
+                    linewidth = self.lw, 
+                    height = self.sns_height,
+                    aspect = self.sns_aspect, 
                     ).set_ylabels(self.ylabel)
             
+        
             plt.show()
+       
+        if self.sns_style is not None: 
+            sns.set_style(self.sns_style)
             
+        print('--> Multiple categorials plots sucessfully done!')    
+        
+        
     def plot_correlation_matrix(self, df=None, data_fn =None, 
                                 feature_names=None, plot_params:str ='qual',
                                  target:str =None, corr_method: str ='pearson',
@@ -512,10 +561,12 @@ class QuickPlot :
         # df_.reset_index(inplace=True )
 
         if feature_names is None: 
-            if plot_params.lower().find('qual')>=0 :
+            if plot_params.lower().find('qual')>=0  or \
+                plot_params.lower().find('cat')>=0 :
                 feature_names =['shape', 'type', 'geol', 'flow']
                 plot_params='qual'
-            elif plot_params.lower().find('quan')>=0 : 
+            elif plot_params.lower().find('quan')>=0 or\
+                plot_params.lower().find('num')>=0: 
                 feature_names= list(set.difference(
                     set(df_.columns), set(['shape', 'type', 'geol', 'flow'])))
                 tem=['{0}{1}{2}'.format('`{', ii, '}`') for ii in range(
@@ -556,7 +607,7 @@ class QuickPlot :
             ax= sns.heatmap(data = df_[list(feature_names)].corr(
                 method= corr_method,min_periods=min_periods),
                  **sns_kws)
-      
+            
         elif plot_params =='quan': 
             if target is None: 
                 if 'flow' in df_.columns: target ='flow'
@@ -585,6 +636,13 @@ class QuickPlot :
             plt.savefig(self.savefig,
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
+            
+        fmObj = hints.format_generic_obj(feature_names)
+        
+        print(" --> Successfully plot of matrix correlation between "
+              f"{'categorial' if plot_params =='qual' else 'numerical'}"
+              " features {0}.".format(fmObj).format(*feature_names))
+              
         plt.show()
                 
     def plot_numerical_features(self, df=None, data_fn =None , target= None,

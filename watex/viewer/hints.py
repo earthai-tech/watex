@@ -296,14 +296,15 @@ def formatModelScore(model_score: T=None, select_estimator:str=None )   :
   
 if __name__=='__main__': 
     
-    #ss= format_generic_obj({'ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'})
+    ss= format_generic_obj({'ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'})
+    # print(ss)
     # obj1 = ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude']
     # obj2= ['ohmS', 'lwi', 'power']
     # op= findDifferenceGenObject(gen_obj1=obj1, gen_obj2=obj2)
     # print(op)
     
-    sop_est, otp =controlExistingEstimator('SVC')
-    print(otp)
+    # sop_est, otp =controlExistingEstimator('SVC')
+    # print(otp)
 
     # print(len(char))
     
