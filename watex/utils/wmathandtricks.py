@@ -1046,7 +1046,7 @@ def get_shape (rhoa_range):
     return shape 
 
 
-def sanitizedf_and_findBoundaries(df): 
+def getdfAndFindAnomalyBoundaries(df): 
     """
     Define anomaly boundary `upper bound` and `lowerbound` from 
     :ref:`ves` location. 
@@ -1149,7 +1149,8 @@ def sanitizedf_and_findBoundaries(df):
             for low, up, vloc in zip(
                     ['lower', 'inf', 'min', 'min', '1', 'low'],
                     ['upper', 'sup', 'maj', 'max', '2', 'up'], 
-                    ['ves', 'se', 'sond','vs', 'loc', '0', 'dl']): 
+                    ['ves', 'se', 'sond','vs', 'loc', '0', 'dl']
+                    ): 
                 try : 
                     floatNaNor123= np.float(val)
                 except: 
@@ -1243,7 +1244,7 @@ if __name__=='__main__':
     data = pd.read_excel(path).to_numpy()[:, -1]
     df = pd.read_excel(path)
 
-    autotrig, shape ,type_,  indexanom , posMinMax, newdf = sanitizedf_and_findBoundaries(df)
+    autotrig, shape ,type_,  indexanom , posMinMax, newdf = getdfAndFindAnomalyBoundaries(df)
     print(autotrig, shape,type_,  indexanom , posMinMax, newdf)
     # data = {
     #     'Column_A': [1,2,3,4,5,np.nan,6,7,np.nan],
