@@ -133,4 +133,5 @@ dmypy.json
 watex/utils/test_res_api.py 
 watex/utils/watson_api
 
-
+# Data 
+data/Bag.main&rawds/

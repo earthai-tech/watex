@@ -46,7 +46,8 @@ import pandas as pd
 from scipy.signal import argrelextrema 
 from scipy.interpolate import interp1d as sp1d
 import watex.utils.exceptions as Wex
-from watex.utils._watexlog import watexlog  
+from watex.utils._watexlog import watexlog 
+from watex.utils.decorator import deprecated  
 
 _logger =watexlog.get_watex_logger(__name__)
 
@@ -149,6 +150,12 @@ def get_minVal(array):
         # first option:find minimals locals values 
         minlocals = argrelextrema(array, np.less)[0]
         temp_array =np.array([array[int(index)] for index in minlocals])
+        if len(minlocals) ==0: 
+            ix = np.where(array ==array.min())
+            if len(ix)>1: 
+                ix =ix[0]
+            temp_array = array[int(ix)]
+            
     except : 
         # second option: use archaic computation.
         temp_array =np.sort(array)
@@ -197,7 +204,7 @@ def drawn_anomaly_boundaries(erp_data, appRes, index):
     f = 0 # flag to mention which part must be calculated 
     if index ==0 : 
         f = 1 # compute only right part 
-    if appRes ==erp_data[-1]: 
+    elif appRes ==erp_data[-1]: 
         f=2 # compute left part 
     
     def loop_sideBound(term):
@@ -378,21 +385,32 @@ def find_pk_from_selectedAn(an_res_range,  pos=None, selectedPk=None):
                 oss = ''.join([s for s in selectedPk
                     if s.isdigit()])
                 sPk =int(oss)
-                print(sPk)
-        elif isinstance(selectedPk, (float, int, np.ndarray)): 
-            sPk = int(selectedPk)
-        
-        if pos is not None : # then compare the sPk and ps value 
-            if not pos.min()<= sPk<=pos.max(): 
-                warnings.warn('Wrong position given <{}>.'
-                              ' Should compute new positions.'.
-                              format(selectedPk))
-                _logger.debug('Wrong position given <{}>.'
-                              'Should compute new positions.'.
-                              format(selectedPk))
+        else : 
+            try : 
+                sPk = int(selectedPk)
+                
+            except : pass 
+
+        if pos is not None : # then compare the sPk and ps value
+            try :
+                if not pos.min()<= sPk<=pos.max(): 
+                    warnings.warn('Wrong position given <{}>.'
+                                  ' Should compute new positions.'.
+                                  format(selectedPk))
+                    _logger.debug('Wrong position given <{}>.'
+                                  'Should compute new positions.'.
+                                  format(selectedPk))
+                    
+            except UnboundLocalError:
+                print("local variable 'sPk' referenced before assignment")
+            else : 
+                
+                return 'pk{}'.format(sPk ), an_res_range
+                
             
         else : 
             selectedPk='pk{}'.format(sPk )
+            
             return selectedPk , an_res_range
     
 
@@ -475,15 +493,16 @@ def compute_power (posMinMax=None, pk_min=None , pk_max=None, ):
     
     :param pk_min: 
         
-        Min boundary value of anomaly. `pk_min` is min value of measurement 
-        point. It's the position of the site in meter 
+        Min boundary value of anomaly. `pk_min` is min value (lower) 
+        of measurement point. It's the position of the site in meter 
         
     :type pk_min: float 
     
     :param pk_max: 
         
         Max boundary of the select anomaly. `pk_max` is the maximum value 
-        the measurement point in meter. It's  the position of the site in m. 
+        the measurement point in meter. It's  the upper boundary position of 
+        the anomaly in the site in m. 
         
     :type pk_max: float 
     
@@ -511,9 +530,9 @@ def compute_power (posMinMax=None, pk_min=None , pk_max=None, ):
     
 def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
     """
-    Compute the magnitude ``Pa`` of  selected anomaly expressed in Ω.m.
-    
-    :param rhoa_min: Min boundary resistivity value of anomaly. 
+    Compute the magnitude ``Ma`` of  selected anomaly expressed in Ω.m.
+    ano
+    :param rhoa_min: resistivity value of selected anomaly 
     :type rhoa_min: float 
     
     :param rhoa_max: Max boundary of the resistivity value of select anomaly. 
@@ -598,8 +617,7 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True,
     
     pos_bounds =kws.pop("pos_bounds", (None, None))
     anom_pos = kws.pop('pos_anomaly', None)
-    display_infos =kws.pop('display_infos', False)
-    
+    display_infos =kws.pop('display', False)
     
     if auto is False : 
         if None in pos_bounds  or pos_bounds is None : 
@@ -634,7 +652,7 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True,
             collectanlyBounds, min_pks = compute_lower_anomaly(
                 erp_array= rhoa_array, 
                 station_position= pos_array, step= dipole_length,
-                display_infos=False) 
+                display_infos=display_infos ) 
 
             
         return {key: find_pkfeatures (anom_infos= bestSelectedDICT, 
@@ -700,8 +718,8 @@ def find_pkfeatures (anom_infos, anom_rank, pks_rhoa_index, dl):
     rhoa_bounds = (anom_infos[codec][0], anom_infos[codec][-1])
     
     return pk, rhoa, pos_bounds, rhoa_bounds, anom_infos[codec]
-            
-            
+
+                 
 def compute_sfi (pk_min, pk_max, rhoa_min,
                  rhoa_max,  rhoa, pk)  : 
     """
@@ -742,19 +760,56 @@ def compute_sfi (pk_min, pk_max, rhoa_min,
         >>> sfi
     
     """  
+    def deprecated_sfi_computation () : 
+        """ Decorated way for `sfi` computation"""
+        try : 
+            if  pk_min -pk  < pk_max - pk  : 
+                sfi= np.sqrt((((rhoa_max -rhoa) / 
+                                  (rhoa_min- rhoa)) **2 + 
+                                 ((pk_max - pk)/(pk_min -pk))**2 ))
+            elif pk_max -pk  < pk_min - pk : 
+                sfi= np.sqrt((((rhoa_max -rhoa) / 
+                                  (rhoa_min- rhoa)) **2 + 
+                                 ((pk_min - pk)/(pk_max -pk))**2 ))
+        except : 
+            if sfi ==np.nan : 
+                sfi = - np.sqrt(2)
+            else :
+                sfi = - np.sqrt(2)
+       
     try : 
-        if  pk_min -pk  < pk_max - pk  : 
-            sfi= np.sqrt((((rhoa_max -rhoa) / 
-                              (rhoa_min- rhoa)) **2 + 
-                             ((pk_max - pk)/(pk_min -pk))**2 ))
-        elif pk_max -pk  < pk_min - pk  : 
-            sfi= np.sqrt((((rhoa_max -rhoa) / 
-                              (rhoa_min- rhoa)) **2 + 
-                             ((pk_min - pk)/(pk_max -pk))**2 ))
-    except : 
+        
+        if (rhoa == rhoa_min and pk == pk_min) or\
+            (rhoa==rhoa_max and pk == pk_max): 
+            ma= max([rhoa_min, rhoa_max])
+            ma_star = min([rhoa_min, rhoa_max])
+            pa= max([pk_min, pk_max])
+            pa_star = min([pk_min, pk_max])
+    
+        else : 
+       
+            if  rhoa_min >= rhoa_max : 
+                max_rho = rhoa_min
+                min_rho = rhoa_max 
+            elif rhoa_min < rhoa_max: 
+                max_rho = rhoa_max 
+                min_rho = rhoa_min 
+            
+            ma_star = abs(min_rho - rhoa)
+            ma = abs(max_rho- rhoa )
+            
+            ratio = ma_star / ma 
+            pa = abs(pk_min - pk_max)
+            pa_star = ratio *pa
+            
+        sfi = np.sqrt((pa_star/ pa)**2 + (ma_star/ma)**2)
+        
         if sfi ==np.nan : 
-            sfi = - np.sqrt(2)
-        else : sfi = - np.sqrt(2)
+                sfi = - np.sqrt(2)
+    except : 
+
+        sfi = - np.sqrt(2)
+  
     
     return sfi
     
@@ -855,13 +910,390 @@ def wrap_infos (phrase , value ='', underline ='-', unit ='',
               '{0}'.format(intermediate), "{}".format(site_number))
         print(underline * repeat )
     
+def drawn_anomaly_boundaries2(erp_data, appRes, index):
+    """
+    Function to drawn anomaly boundary 
+    and return the anomaly with its boundaries
+    
+    :param erp_data: erp profile 
+    :type erp_data: array_like or list 
+    
+    :param appRes: resistivity value of minimum pk anomaly 
+    :type appRes: float 
+    
+    :param index: index of minimum pk anomaly 
+    :type index: int 
+    
+    :return: anomaly boundary 
+    :rtype: list of array_like 
+
+    """
+    f = 0 # flag to mention which part must be calculated 
+    if index ==0 : 
+        f = 1 # compute only right part 
+    elif appRes ==erp_data[-1]: 
+        f=2 # compute left part 
+    
+    def loop_sideBound(term):
+        """
+        loop side bar from anomaly and find the term side 
+        
+        :param term: is array of left or right side of anomaly.
+        :type trem: array 
+        
+        :return: side bar 
+        :type: array_like 
+        """
+        tem_drawn =[]
+        maxT=0 
+
+        for ii, tem_rho in enumerate(term) : 
+
+            diffRes_betw_2pts= tem_rho - appRes 
+            if diffRes_betw_2pts > maxT : 
+                maxT = diffRes_betw_2pts
+                tem_drawn.append(tem_rho)
+            elif diffRes_betw_2pts < maxT : 
+                # rho_limit = tem_rho 
+                break 
+        # print(tem_drawn)
+        return np.array(tem_drawn)
+    # first broke erp profile from the anomalies 
+    if f==2 : # compute the left part 
+        # flip array and start backward counting 
+        temp_erp_data = erp_data [::-1] 
+        sbeg = appRes   # initialize value 
+        for ii, valan in enumerate(temp_erp_data): 
+            if valan >= sbeg: 
+                sbeg = valan 
+            elif valan < sbeg: 
+                left_term = erp_data[ii:]
+                break 
+            
+        left_term = erp_data[:index][::-1] # flip left term  for looping
+        # flip again to keep the order 
+        left_limit = loop_sideBound(term=left_term)[::-1] 
+
+    if f==0 or f ==1 : 
+        right_term= erp_data[index :]
+        right_limit=loop_sideBound(right_term)
+    # concat right and left to get the complete anomaly 
+    if f==2: 
+        anomalyBounds = np.append(left_limit,appRes)
+                                   
+    elif f ==1 : 
+        anomalyBounds = np.array([[appRes]+ right_limit.tolist()])
+    else: 
+        left_limit = np.append(left_limit, appRes)
+        anomalyBounds = np.concatenate((left_limit, right_limit))
+    
+    return appRes, index, anomalyBounds  
+
+@deprecated('`Deprecated function. Replaced by :meth:~core.erp.get_shape` ' 
+            'more convenient to recognize anomaly shape using ``median line``'
+            'rather than ``mean line`` below.')   
+def get_shape (rhoa_range): 
+    """
+    Find anomaly `shape`  from apparent resistivity values framed to
+    the best points using the mean line. 
+ 
+    :param rhoa_range: The apparent resistivity from selected anomaly bounds
+                        :attr:`~core.erp.ERP.anom_boundaries`
+    :type rhoa_range: array_like or list 
+    
+    :returns: 
+        - V
+        - W
+        - K 
+        - C
+        - M
+        - U
+    
+    :Example: 
+        
+        >>> from watex.core.erp import get_shape 
+        >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
+        >>> shape = get_shape (rhoa_range= np.array(x))
+        ...U
+
+    """
+    minlocals = argrelextrema(rhoa_range, np.less)
+    shape ='V'
+    average_curve = rhoa_range.mean()
+    if len (minlocals[0]) >1 : 
+        shape ='W'
+        average_curve = rhoa_range.mean()
+        minlocals_slices = rhoa_range[
+            int(minlocals[0][0]):int(minlocals[0][-1])+1]
+        average_minlocals_slices  = minlocals_slices .mean()
+
+        if average_curve >= 1.2 * average_minlocals_slices: 
+            shape = 'U'
+            if rhoa_range [-1] < average_curve and\
+                rhoa_range [-1]> minlocals_slices[
+                    int(argrelextrema(minlocals_slices, np.greater)[0][0])]: 
+                shape ='K'
+        elif rhoa_range [0] < average_curve and \
+            rhoa_range [-1] < average_curve :
+            shape ='M'
+    elif len (minlocals[0]) ==1 : 
+        if rhoa_range [0] < average_curve and \
+            rhoa_range [-1] < average_curve :
+            shape ='M'
+        elif rhoa_range [-1] <= average_curve : 
+            shape = 'C'
+            
+    return shape 
+
+
+def sanitizedf_and_findBoundaries(df): 
+    """
+    Define anomaly boundary `upper bound` and `lowerbound` from 
+    :ref:`ves` location. 
+        
+    :param df: Dataframe pandas contained  the columns 
+                'pk', 'x', 'y', 'rho', 'dl'. 
+    returns: 
+        - `autoOption` triggered the automatic Option if nothing is specified 
+            into excelsheet.
+        - `ves_loc`: Sounding curve location at pk 
+        - `posMinMax`: Anomaly boundaries composed of ``lower`` and ``upper``
+            bounds.
+           Specific names can be used  to define lower and upper bounds:: 
+                
+               `lower`: 'lower', 'inf', 'min', 'min', '1' or  'low'
+               `upper`: 'upper', 'sup', 'maj', 'max', '2, or 'up'
+               
+        To define the sounding location, can use:: 
+            `ves`:'ves', 'se', 'sond','vs', 'loc', '0' or 'dl'
+            
+    """
+    shape_=[ 'V','W', 'U', 'H', 'M', 'C', 'K' ]
+    type__= ['EC', 'NC', 'CP', 'CB2P']
+        #    - ``EC`` for Extensive conductive. 
+        # - ``NC`` for narrow conductive. 
+        # - ``CP`` for conductive PLANE 
+        # - ``CB2P`` for contact between two planes. 
+    shape =None 
+    type_ =None 
+    
+    def recoverShapefromSheet(listOfAddedArray, param): 
+        """ Loop the array and get whether an anomaly shape name is provided
+        :param listOfAddedArray: all Added array values except 
+         'pk', 'x', 'y', 'rho' are composed of list of addedArray.
+        :returns: 
+            - `shape` : 'V','W', 'U', 'H', 'M', 'C' or  'K' from sheet or 
+             `type` : 'EC', 'NC', 'CP', 'CB2P'
+            - listOfAddedArray : list of added array 
+        """
+        param_ =None 
+        for jj, colarray in enumerate(listOfAddedArray[::-1]): 
+            tem_=[str(ss).upper().strip() for ss in list(colarray)] 
+            for ix , elem in enumerate(tem_):
+                for param_elm in param: 
+                    if elem ==param_elm : 
+                        # retrieves the shape and replace by np.nan value 
+                        listOfAddedArray[::-1][jj][ix]=np.nan  
+                        return param_elm , listOfAddedArray
+                    
+        return param_, listOfAddedArray
+    
+    def mergeToOne(listOfColumns, _df):
+        """ Get data from other columns annd merge into one array
+        
+        :param listOfColumns: Columns names 
+        :param _df: dataframe to retrieve data to one
+        """
+        new_array = np.full((_df.shape[0],), np.nan)
+        listOfColumnData = [ _df[name].to_numpy() for name in listOfColumns ]
+        # loop from backward so we keep the most important to the first row 
+        # close the main df that composed `pk`,`x`, `y`, and `rho`.
+        # find the shape 
+        shape, listOfColumnData = recoverShapefromSheet(listOfColumnData, 
+                                                        param =shape_)
+        type_, listOfColumnData = recoverShapefromSheet(listOfColumnData, 
+                                                        param =type__)
+  
+        for colarray in listOfColumnData[::-1]: 
+           for ix , val  in enumerate(colarray): 
+               try: 
+                   if not np.isnan(val) : 
+                       new_array[ix]=val
+               except :pass  
+        
+        return shape , type_,  new_array 
+    
+    
+    def retrieve_ix_val(array): 
+        """ Retrieve value and index  and build `posMinMax boundaries
+        
+        :param array: array of main colum contains the anomaly definitions or 
+                a souding curve location like :: 
+                
+                sloc = [NaN, 'low', NaN, NaN, NaN, 'ves', NaN,
+                        NaN, 'up', NaN, NaN, NaN]
+                `low`, `ves` and `up` are the lower boundary, the electric 
+                sounding  and the upper boundary of the selected anomaly 
+                respectively.
+        For instance, if dipole_length is =`10`m, t he location (`pk`)
+            of `low`, `ves` and `up` are 10, 50 and 80 m respectively.
+            `posMinMax` =(10, 80)
+        """
+        
+        lower_ix =None 
+        upper_ix =None
+        ves_ix = None 
+
+        array= array.reshape((array.shape[0],) )
+        for ix, val in enumerate(array):
+            for low, up, vloc in zip(
+                    ['lower', 'inf', 'min', 'min', '1', 'low'],
+                    ['upper', 'sup', 'maj', 'max', '2', 'up'], 
+                    ['ves', 'se', 'sond','vs', 'loc', '0', 'dl']): 
+                try : 
+                    floatNaNor123= np.float(val)
+                except: 
+                    if val.lower().find(low)>=0: 
+                        lower_ix = ix 
+                        break
+                    elif val.lower().find(up) >=0: 
+                        upper_ix = ix 
+                        break
+                    elif val.lower().find(vloc)>=0: 
+                        ves_ix = ix 
+                        break 
+                else : 
+                    if floatNaNor123 ==1: 
+                        lower_ix = ix 
+                        break
+                    elif floatNaNor123 ==2: 
+                        upper_ix = ix 
+                        break 
+                    elif floatNaNor123 ==0: 
+                        ves_ix = ix 
+                        break 
+                           
+        return lower_ix, ves_ix, upper_ix 
+    
+    
+    pd.options.mode.use_inf_as_na = True
+    
+    # unecesseray to specify the colum of sounding location.
+    # dl =['drill', 'dl', 'loc', 'dh', 'choi']
+    
+    _autoOption=False  # set automatic to False one posMinMax  
+    # not found as well asthe anomaly location `ves`.
+    posMinMax =None 
+    #get df columns from the 4-iem index 
+    for sl in ['pk', 'sta', 'loc']: 
+        for val in df.columns: 
+            if val.lower()==sl: 
+                pk_series = df[val].to_numpy()
+                break 
+
+    listOfAddedColumns= df.iloc[:, 4:].columns
+    
+    if len(listOfAddedColumns) ==0:
+        return True, None, posMinMax,  df   
+ 
+    df_= df.iloc[:, 4:]
+    # check whether all remains dataframe values are `NaN` values
+    if len(list(df_.columns[df_.isna().all()])) == len(listOfAddedColumns):
+         # If yes , trigger the auto option 
+        return True, None, posMinMax,  df.iloc[:, :4] 
+  
+    # get the colum name with any nan values 
+    sloc_column=list(df_.columns[df_.isna().any()])
+    # if colun is one man the sloc colum is found 
+    sloc_values = df_[sloc_column].to_numpy()
+    
+    if len(sloc_column)>1 : #
+    # get the value from single array
+        shape , type_,  sloc_values =  mergeToOne(sloc_column, df_)
+
+
+    lower_ix, ves_ix ,upper_ix   = retrieve_ix_val(sloc_values)
+    
+    # if `lower` and `upper` bounds are not found then start or end limits of
+    # selected anomaly  from the position(pk) of the sounding curve. 
+    if lower_ix is None : 
+        lower_ix =ves_ix 
+    if upper_ix is None: 
+        upper_ix = ves_ix 
+   
+    if (lower_ix  and upper_ix ) is None: 
+        posMinMax =None
+    if posMinMax is None and ves_ix is None: _autoOption =True 
+    else : 
+        posMinMax =(pk_series[lower_ix], pk_series[upper_ix] )
+        
+    if ves_ix is None: ves_loc=None
+    else : ves_loc = pk_series[ves_ix]
+    
+    return _autoOption, shape, type_, ves_loc , posMinMax,  df.iloc[:, :4]  
+    
+
     
     
 
 if __name__=='__main__': 
+    path = 'data/erp/l10_gbalo.xlsx' # ztepogovogo_0
+    path= r'F:\repositories\watex\data\Bag.main&rawds\ert_copy\nt\b1_5.xlsx'
+    path = 'data/erp/test_anomaly.xlsx'
+    data = pd.read_excel(path).to_numpy()[:, -1]
+    df = pd.read_excel(path)
 
-    data = pd.read_excel('data/erp/l10_gbalo.xlsx').to_numpy()[:, -1]
-    print(compute_power(posMinMax=(150, 190)))
+    autotrig, shape ,type_,  indexanom , posMinMax, newdf = sanitizedf_and_findBoundaries(df)
+    print(autotrig, shape,type_,  indexanom , posMinMax, newdf)
+    # data = {
+    #     'Column_A': [1,2,3,4,5,np.nan,6,7,np.nan],
+    #     'Column_B': [11,22,33,44,55,66,77,88,99],
+    #     'Column_C': ['a','b',np.nan,np.nan,'c','d','e',np.nan,'f'],
+    #     'Column_D': ['aa','bb','cc','dd','ee','ff','gg','hh','ii'], 
+    #     'Column_E': [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+    #     }
+    # data2 = {'Column_D': [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan], 
+    #     'Column_E': [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+    #     }
+    # df = pd.DataFrame(data)
+
+    # print(df[['Column_D','Column_E' ]])
+ 
+        
+    # if len(df.iloc[:, 5:].columns) ==0: 
+    #     print('yes')
+    
+    # print(list(df.columns[df.isna().any()]))
+    
+    # nan_values = df[df.columns[df.isna().all()]]
+    # if nan_values.isna() : 
+    #     print('yes')
+
+    # print (nan_values)
+    # print(nan_values.item())
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     

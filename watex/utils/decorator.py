@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2021 Kouadio K. Laurent, Wed Jul  7 22:23:02 2021 hz
+# This module is part of the WATex utils package, which is released 
+# under a MIT- licence.
+
 from __future__ import print_function 
 
 __docformat__='restructuredtext'
@@ -11,7 +15,7 @@ import warnings
 
 import datetime 
 import numpy as np
-import pandas as pd 
+# import pandas as pd 
 import  matplotlib.pyplot as plt 
 
 from typing import Iterable, Optional, Callable , TypeVar
@@ -623,7 +627,7 @@ class predPlot:
         Could be the keywords arguments for `matplotlib.pyplot`
         library 
                 
-    Author: @Daniel03
+    Author: K. Laurent alias @Daniel03
     Date: 23/07/2021
     """
     def __init__(self, turn='off', **kws): 
