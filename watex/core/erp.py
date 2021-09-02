@@ -40,13 +40,13 @@ import json , warnings
 import datetime, shutil
 import numpy as np 
 import pandas as pd
+from scipy.signal import argrelextrema 
 
 from watex.utils.__init__ import savepath as savePath  
 import  watex.utils.exceptions as Wex
 import watex.utils.wmathandtricks as wfunc
 import watex.utils.func_utils as func
 import watex.utils.gis_tools as gis
-
 
 from watex.utils._watexlog import watexlog 
 
@@ -107,7 +107,7 @@ class ERP_collection:
     ======================  ==============  ===================================
         
     It's posible to get from each `erp` collection the singular array of 
-    different parameters condisered as properties params:: 
+    different parameters considered as properties params:: 
         
         >>> from watex.core.erp import ERP_collection as ERPC
         >>> erpcol = ERPC(listOferpfn='list|path|filename')
@@ -162,7 +162,7 @@ class ERP_collection:
         self.erpObjs = erpObjs 
         self.anomBoundariesObj= listOfposMinMax
         self.dipoleLengthObjs= kws.pop('list_of_dipole_lengths', None)
-        self.export_data =kws.pop('export_erpFeatures', False)
+        self.export_data =kws.pop('export_data', False)
         self.export_fex= kws.pop('file_extension', 'csv')
         
         self.listOferpfn =listOferpfn 
@@ -233,13 +233,59 @@ class ERP_collection:
         else : 
             self.anomBoundariesObj= [None for nn in range(
             len(self.listOferpfn ))]
+        
+        unreadfiles =[]  # collected uncesse
+        fmterp_text = '|{0:<7}|{1:>45}|{2:>15}|'
+        if self.erpObjs is None: 
+            self.erpObjs=[]
+            
+            print('-'*70)
+            print(fmterp_text.format('Num', 'ERPlines', 'status'))
+            print('-'*70)
+            
+            for ii, erp_filename in enumerate(self.listOferpfn) : 
+                try : 
    
-        self.erpObjs =[ERP(erp_fn= erp_filename,
-                               dipole_length=self.dipoleLengthObjs[ss], 
-                               posMinMax=self.anomBoundariesObj[ss]) 
-                               for ss, erp_filename in
-                               enumerate(self.listOferpfn)]
-
+                    erpObj = ERP(erp_fn= erp_filename,
+                                dipole_length=self.dipoleLengthObjs[ii], 
+                                posMinMax=self.anomBoundariesObj[ii])
+                except : 
+                    
+                    unreadfiles.append(os.path.basename(erp_filename))
+                    print(fmterp_text.format(ii+1,
+                                             os.path.basename(erp_filename), 
+                                             'Failed'))
+                    
+                else: 
+                    print(fmterp_text.format(ii+1,
+                                             os.path.basename(erp_filename), 
+                                             'Passed'))
+                    self.erpObjs.append(erpObj)
+            print('-'*70)
+             
+        if len(unreadfiles)>=1 : 
+            self._logging.error (
+                f'Unable to read the files `{unreadfiles}`')
+            warnings.warn(f'Unable to read file `{unreadfiles}`.'
+                          ' Please check your files.')
+            
+            print(' --!> {0} ERP file not read. Please check your file'
+                  f' {"s" if len(unreadfiles)>1 else ""} ='
+                  '`{0}`'.format(len(unreadfiles), unreadfiles))
+            
+        if self.erpObjs is not None and self.listOferpfn is None : 
+            
+            lenOrpfn = len(self.erpObjs)
+            
+        elif self.erpObjs is not None and self.listOferpfn is  not None :
+            lenOrpfn= len(self.listOferpfn)
+            
+        print('-'*70)  
+        print(' {0}/{1} ERP files have been succesffuly read.'.format(
+            len(self.erpObjs),lenOrpfn ))
+        
+        print('-'*70)  
+        
         # collected the ERP filenames and generated the id from each object.
         self.fnames = self.get_property_infos('_name')
         self.id = np.array([id(obj) for obj in self.fnames])
@@ -247,7 +293,8 @@ class ERP_collection:
         # create a dataframe object
         self._logging.info('Setting and `ERP` data array '
                            'and create pd.Dataframe')
-        self.erps_data= func.concat_array_from_list([self.survey_ids, 
+        self.erps_data= func.concat_array_from_list([
+                                        self.survey_ids, 
                                         self.easts, 
                                         self.norths, 
                                         self.powers, 
@@ -273,7 +320,7 @@ class ERP_collection:
         on data array 
          
         :param attr_name: 
-            Name of attribute to get the iformations of the properties 
+            Name of attribute to get the informations of the properties 
              
         :type attra_name: str 
         
@@ -532,8 +579,8 @@ class ERP :
         
         self.anom_boundaries = posMinMax
         self._select_best_point =kwargs.pop('best_point', None)
-        self.turn_on =kwargs.pop('turn_on', False)
-        self.display_auto_infos= kwargs.pop ('display_autoinfos', False)
+        self.turn_on =kwargs.pop('display', 'off')
+        # self.display_auto_infos= kwargs.pop ('display', False)
         self._select_best_value =kwargs.pop('best_rhoa', None)
         
         self._power =None 
@@ -556,6 +603,7 @@ class ERP :
         self.data=None
         
         self._fn =None 
+        self._df =None 
         
         
         for key in list(kwargs.keys()):
@@ -592,7 +640,13 @@ class ERP :
             self._fn =exT 
         else: self._fn ='?'
         
-        self._df = self.dataType[exT](self.erp_fn)
+        df_ = self.dataType[exT](self.erp_fn)
+        # Check into the dataframe whether the souding location and anomaly 
+        #boundaries are given 
+        self.auto, self._shape, self._type, self._select_best_point,\
+            self.anom_boundaries, self._df =\
+                wfunc.sanitizedf_and_findBoundaries(df_)
+ 
         self.data =self._df.to_numpy()
         self._name = os.path.basename(name)
         
@@ -680,6 +734,12 @@ class ERP :
                 self._logging.debug('Automatic option is triggered!')
                 
             self.auto=True 
+            
+        if self.turn_on in ['off', False]: self.turn_on =False 
+        elif self.turn_on in ['on', True]: self.turn_on =True 
+        else : self.turn_on =False 
+        
+    
         if self._dipoleLength is None : 
             self._dipoleLength=(self.df['pk'].to_numpy().max()- \
                 self.df['pk'].to_numpy().min())/(len(
@@ -691,7 +751,7 @@ class ERP :
                              dipole_length=self._dipoleLength , 
                              pos_bounds=self.anom_boundaries, 
                              pos_anomaly = self._select_best_point, 
-                             display_infos=self.display_auto_infos
+                             display=self.turn_on
                              )
         
         self._best_keys_points = list(self.aBestInfos.keys())
@@ -710,22 +770,33 @@ class ERP :
         """ 
 
         self.coord_flag=0
-        columns =[ c.lower() for c in self._df.columns]
+        columns =[ c.lower().strip() for c in self._df.columns]
 
         for ii, sscol in enumerate(columns): 
-            if re.match(r'^sta+', sscol) or re.match(r'^site+', sscol) : 
-                columns[ii] = 'pk'
-            if re.match(r'>east+', sscol) or re.match(r'^x+', sscol): 
-                columns[ii] = 'east'
-            if re.match(r'>north+', sscol) or re.match(r'^y+', sscol): 
-                columns[ii] = 'north'
-            if re.match(r'>lon+', sscol): 
-                columns[ii] = 'lon'
-                self._coord_flag = 1
-            if re.match(r'>lat+', sscol):
-                columns[ii] = 'lat'
-            if re.match(r'^rho+', sscol) or re.match(r'^res+', sscol): 
-                columns[ii] = 'rhoa'
+            try : 
+            
+                if re.match(r'^sta+', sscol) or re.match(r'^site+', sscol) or \
+                    re.match(r'^pk+', sscol)  : 
+                    columns[ii] = 'pk'
+                if re.match(r'>east+', sscol) or re.match(r'^x|X+', sscol): 
+                    columns[ii] = 'east'
+                if re.match(r'^north+', sscol) or re.match(r'^y|Y+', sscol): 
+                    columns[ii] = 'north'
+                if re.match(r'^lon+', sscol): 
+                    columns[ii] = 'lon'
+                    self._coord_flag = 1
+                if re.match(r'^lat+', sscol):
+                    columns[ii] = 'lat'
+                if re.match(r'^rho+', sscol) or re.match(r'^res+', sscol): 
+                    columns[ii] = 'rhoa'
+                    
+            except KeyError: 
+                print(f'keys {self.erpLabels} are not found in {sscol}')
+            except: 
+                self._logging.error(
+                    f"Unrecognized header keys {sscol}. "
+                    f"Erp keys are ={self.erpLabels}"
+                      )
 
         self.df =pd.DataFrame(data =self.data, columns= columns)
         
@@ -793,8 +864,8 @@ class ERP :
         """ Get the magnitude of the select :attr:`select_best_point_"""
         
         self._magnitude =wfunc.compute_magnitude(
-            rhoaMinMax= self.aBestInfos[self._best_key_point][3])
-        
+            rhoa_max=self.rhoa_max,rhoa_min=self.select_best_value_)
+                                                 
         wfunc.wrap_infos(
            'The magnitude of selected best point is = {0}'.
            format(self._magnitude),
@@ -885,11 +956,13 @@ class ERP :
     @property 
     def best_type (self): 
         """ Get the select best anomaly type """
-        self._type = get_type(erp_array= self.df['rhoa'].to_numpy() , 
-                              posMinMax = self.anom_boundaries , 
-                              pk= self.select_best_point_ ,
-                              pos_array=self.df['pk'].to_numpy() , 
-                              dl= self.dipoleLength)
+        if self._type is None: 
+            self._type = get_type(erp_array= self.df['rhoa'].to_numpy() , 
+                                  posMinMax = np.array([float(self.posi_max),
+                                                        float(self.posi_min)]), 
+                                  pk= self.select_best_point_ ,
+                                  pos_array=self.df['pk'].to_numpy() , 
+                                  dl= self.dipoleLength)
         
         wfunc.wrap_infos('Select anomaly type is = {}'.
                        format(self._type), 
@@ -899,9 +972,9 @@ class ERP :
     @property 
     def best_shape (self) : 
         """ Find the selected anomaly shape"""
-        
-        self._shape = get_shape(
-            rhoa_range=self.aBestInfos[self._best_key_point][4])
+        if self._shape is None: 
+            self._shape = get_shape(
+                rhoa_range=self.aBestInfos[self._best_key_point][4])
         
         wfunc.wrap_infos('Select anomaly shape is = {}'.
                        format(self._shape), 
@@ -925,8 +998,11 @@ class ERP :
     @property 
     def best_index(self): 
         """ Keeop the index of selected best anomaly """
-        return int(np.where( self.df['pk'].to_numpy(
-            )== self.select_best_point_)[0])
+        v_= (np.where( self.df['pk'].to_numpy(
+            )== self.select_best_point_)[0]) 
+        if len(v_)>1: 
+            v_=v_[0]
+        return int(v_)
             
     @property
     def best_lat(self): 
@@ -948,62 +1024,6 @@ class ERP :
         return self.aBestInfos[self._best_key_point][4]
     
     
-def get_shape (rhoa_range): 
-    """
-    Find anomaly `shape`  from apparent resistivity values framed to
-    the best points. 
- 
-    :param rhoa_range: The apparent resistivity from selected anomaly bounds
-                        :attr:`~core.erp.ERP.anom_boundaries`
-    :type rhoa_range: array_like or list 
-    
-    :returns: 
-        - V
-        - W
-        - K 
-        - C
-        - M
-        - U
-    
-    :Example: 
-        
-        >>> from watex.core.erp import get_shape 
-        >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
-        >>> shape = get_shape (rhoa_range= np.array(x))
-        ...U
-
-    """
-    from scipy.signal import argrelextrema 
-    # find minimum locals.
-    minlocals = argrelextrema(rhoa_range, np.less)
-
-    shape ='V'
-    average_curve = rhoa_range.mean()
-    if len (minlocals[0]) >1 : 
-        shape ='W'
-        average_curve = rhoa_range.mean()
-        minlocals_slices = rhoa_range[
-            int(minlocals[0][0]):int(minlocals[0][-1])+1]
-        average_minlocals_slices  = minlocals_slices .mean()
-
-        if average_curve >= 1.2 * average_minlocals_slices: 
-            shape = 'U'
-            if rhoa_range [-1] < average_curve and\
-                rhoa_range [-1]> minlocals_slices[
-                    int(argrelextrema(minlocals_slices, np.greater)[0][0])]: 
-                shape ='K'
-        elif rhoa_range [0] < average_curve and \
-            rhoa_range [-1] < average_curve :
-            shape ='M'
-    elif len (minlocals[0]) ==1 : 
-        if rhoa_range [0] < average_curve and \
-            rhoa_range [-1] < average_curve :
-            shape ='M'
-        elif rhoa_range [-1] <= average_curve : 
-            shape = 'C'
-            
-    return shape 
-
 def get_type (erp_array, posMinMax, pk, pos_array, dl): 
     """
     Find anomaly type from app. resistivity values and positions locations 
@@ -1022,7 +1042,7 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
     
     :param dl: 
         
-        Distance between two receiver electrodes measurment. The same 
+        Distance between two receiver electrodes measurement. The same 
         as dipole length in meters. 
     
     :returns: 
@@ -1056,22 +1076,119 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
         anom_type = 'EC'
 
     return anom_type
+
+def get_shape(rhoa_range): 
+    
+    """ 
+    Find anomaly `shape`  from apparent resistivity values framed to
+    the best points. 
+ 
+    :param rhoa_range: The apparent resistivity from selected anomaly bounds
+                        :attr:`~core.erp.ERP.anom_boundaries`
+    :type rhoa_range: array_like or list 
+    
+    :returns: 
+        - V
+        - W
+        - K 
+        - C
+        - M
+        - U
+    
+    :Example: 
+        
+        >>> from watex.core.erp import get_shape 
+        >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
+        >>> shape = get_shape (rhoa_range= np.array(x))
+        ...U
+    
+    """
+    shape ='V'
+    
+    minlocals_ix, = argrelextrema(rhoa_range, np.less)
+    maxlocals_ix, = argrelextrema(rhoa_range, np.greater)
+    value_of_median = np.median(rhoa_range)
+    
+    coef_UH = 1.2 
+    c_=[rhoa_range[0] , rhoa_range[-1] ]
+
+    if len(minlocals_ix)==0 : 
+        if len(maxlocals_ix)==0 and\
+            (max(c_) and min(c_)) > value_of_median : 
+            return 'U'
+        
+        return 'C' 
+
+    if len(minlocals_ix) ==1 : 
+
+        if max(c_) > np.median(rhoa_range) and min(c_) <  value_of_median/2: 
+            return 'C'
+
+        elif rhoa_range[minlocals_ix] > value_of_median or \
+            rhoa_range[minlocals_ix] > max(c_): 
+            return 'M'
+        
+    if len(minlocals_ix)>1 : 
+        if (rhoa_range[0] or rhoa_range[-1]) > value_of_median:
+            shape ='W'
             
+            if max(c_) > value_of_median and\
+                min(c_) > value_of_median: 
+                if rhoa_range[maxlocals_ix].mean()> value_of_median : 
+                    if  coef_UH * rhoa_range[minlocals_ix].mean(): 
+                        shape ='H'
+                        
+                        coef_UH = 1.
+                        
+                        if rhoa_range[minlocals_ix].mean() <= coef_UH * \
+                            rhoa_range[maxlocals_ix].mean():
+                            shape = 'U'
+                        
+            else : shape ='K'
+            
+        elif (rhoa_range[0] and rhoa_range[-1]) < np.median(rhoa_range): 
+            shape =  'M'    
+
+        return shape 
+    
+                
+    
+        
+    return shape             
          
 if __name__=='__main__'   : 
     erp_data='data/erp/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
-    erp_path ='data/erp'
+    erp_path ='data/erp/test_anomaly.xlsx'
     test_fn = 'l10_gbalo.xlsx'
-    # erpObj =ERP(erp_fn=erp_data)
-    # erpObj.abest_rhoaRange)
-    erpObjs =ERP_collection(listOferpfn= erp_path, 
-                            )
-    print(erpObjs.erpdf)
+    # erpObj =ERP(erp_fn=erp_path, turn_on ='off')
+    # erpObj.best_rhoaRange
+    # pathBag = r'F:\repositories\watex\data\Bag.main&rawds\ert_copy\nt'
+    
+    # erpObjs =ERP_collection(listOferpfn= pathBag, 
+    #                         )
+    # alldfs= erpObjs.erpdf
+    # erpObjs.exportErp()
     # print(erpObjs.survey_ids)
     # gFname, exT=os.path.splitext(test_fn)
     # gFame = os.path.basename(gFname)
     # print(gFname, exT)
+    # erpObj = ERP(erp_path, posMinMax=(0, 80))
+    # print(erpObj.best_type)
+    # print(erpObj.best_power)
+    # print(erpObj.best_magnitude)
+    # print(erpObj.best_shape)
+    # print(erpObj.rhoa_max)
+    # print(erpObj.rhoa_min)
+    # print(erpObj.best_rhoaRange)
+    # print(erpObj.best_points)
+    # print(erpObj.best_sfi)
+    # print(erpObj.select_best_point_)
+    # print(erpObj.select_best_value_)
+    test=np.array([95,  130,  163,  140,  167,  154, 93])#, 140, 167])
+    print(get_shape(test))
+    
 
+    
     
 
         
