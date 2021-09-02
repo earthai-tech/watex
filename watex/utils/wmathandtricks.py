@@ -1077,7 +1077,7 @@ def getdfAndFindAnomalyBoundaries(df):
     shape =None 
     type_ =None 
     
-    def recoverShapefromSheet(listOfAddedArray, param): 
+    def recoverShapeOrTypefromSheet(listOfAddedArray, param): 
         """ Loop the array and get whether an anomaly shape name is provided
         :param listOfAddedArray: all Added array values except 
          'pk', 'x', 'y', 'rho' are composed of list of addedArray.
@@ -1109,9 +1109,9 @@ def getdfAndFindAnomalyBoundaries(df):
         # loop from backward so we keep the most important to the first row 
         # close the main df that composed `pk`,`x`, `y`, and `rho`.
         # find the shape 
-        shape, listOfColumnData = recoverShapefromSheet(listOfColumnData, 
+        shape, listOfColumnData = recoverShapeOrTypefromSheet(listOfColumnData, 
                                                         param =shape_)
-        type_, listOfColumnData = recoverShapefromSheet(listOfColumnData, 
+        type_, listOfColumnData = recoverShapeOrTypefromSheet(listOfColumnData, 
                                                         param =type__)
   
         for colarray in listOfColumnData[::-1]: 
@@ -1244,35 +1244,9 @@ if __name__=='__main__':
     data = pd.read_excel(path).to_numpy()[:, -1]
     df = pd.read_excel(path)
 
-    autotrig, shape ,type_,  indexanom , posMinMax, newdf = getdfAndFindAnomalyBoundaries(df)
-    print(autotrig, shape,type_,  indexanom , posMinMax, newdf)
-    # data = {
-    #     'Column_A': [1,2,3,4,5,np.nan,6,7,np.nan],
-    #     'Column_B': [11,22,33,44,55,66,77,88,99],
-    #     'Column_C': ['a','b',np.nan,np.nan,'c','d','e',np.nan,'f'],
-    #     'Column_D': ['aa','bb','cc','dd','ee','ff','gg','hh','ii'], 
-    #     'Column_E': [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
-    #     }
-    # data2 = {'Column_D': [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan], 
-    #     'Column_E': [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
-    #     }
-    # df = pd.DataFrame(data)
+    # autotrig, shape ,type_,  indexanom , posMinMax, newdf = getdfAndFindAnomalyBoundaries(df)
+    # print(autotrig, shape,type_,  indexanom , posMinMax, newdf)
 
-    # print(df[['Column_D','Column_E' ]])
- 
-        
-    # if len(df.iloc[:, 5:].columns) ==0: 
-    #     print('yes')
-    
-    # print(list(df.columns[df.isna().any()]))
-    
-    # nan_values = df[df.columns[df.isna().all()]]
-    # if nan_values.isna() : 
-    #     print('yes')
-
-    # print (nan_values)
-    # print(nan_values.item())
-    
     
     
     
