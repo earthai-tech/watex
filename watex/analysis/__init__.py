@@ -1,5 +1,5 @@
 # import chart_studio if not exist , install it 
-# process to install cahrt_studio using sub_process 
+# process to install chart_studio using sub_process 
 import sys
 import pandas as pd
 
