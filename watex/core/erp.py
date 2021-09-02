@@ -580,7 +580,6 @@ class ERP :
         self.anom_boundaries = posMinMax
         self._select_best_point =kwargs.pop('best_point', None)
         self.turn_on =kwargs.pop('display', 'off')
-        # self.display_auto_infos= kwargs.pop ('display', False)
         self._select_best_value =kwargs.pop('best_rhoa', None)
         
         self._power =None 
@@ -645,7 +644,7 @@ class ERP :
         #boundaries are given 
         self.auto, self._shape, self._type, self._select_best_point,\
             self.anom_boundaries, self._df =\
-                wfunc.sanitizedf_and_findBoundaries(df_)
+                wfunc.getdfAndFindAnomalyBoundaries(df_)
  
         self.data =self._df.to_numpy()
         self._name = os.path.basename(name)
@@ -1048,7 +1047,7 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
     :returns: 
         - ``EC`` for Extensive conductive. 
         - ``NC`` for narrow conductive. 
-        - ``CP`` for conductive PLANE 
+        - ``CP`` for conductive plane 
         - ``CB2P`` for contact between two planes. 
         
     :Example: 
@@ -1160,32 +1159,14 @@ if __name__=='__main__'   :
     erp_data='data/erp/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
     erp_path ='data/erp/test_anomaly.xlsx'
     test_fn = 'l10_gbalo.xlsx'
-    # erpObj =ERP(erp_fn=erp_path, turn_on ='off')
+    erpObj =ERP(erp_fn=erp_path, turn_on ='off', utm_zone ='29N')
+    
     # erpObj.best_rhoaRange
     # pathBag = r'F:\repositories\watex\data\Bag.main&rawds\ert_copy\nt'
-    
-    # erpObjs =ERP_collection(listOferpfn= pathBag, 
-    #                         )
+    # erpObjs =ERP_collection(listOferpfn= pathBag)
     # alldfs= erpObjs.erpdf
     # erpObjs.exportErp()
-    # print(erpObjs.survey_ids)
-    # gFname, exT=os.path.splitext(test_fn)
-    # gFame = os.path.basename(gFname)
-    # print(gFname, exT)
-    # erpObj = ERP(erp_path, posMinMax=(0, 80))
-    # print(erpObj.best_type)
-    # print(erpObj.best_power)
-    # print(erpObj.best_magnitude)
-    # print(erpObj.best_shape)
-    # print(erpObj.rhoa_max)
-    # print(erpObj.rhoa_min)
-    # print(erpObj.best_rhoaRange)
-    # print(erpObj.best_points)
-    # print(erpObj.best_sfi)
-    # print(erpObj.select_best_point_)
-    # print(erpObj.select_best_value_)
-    test=np.array([95,  130,  163,  140,  167,  154, 93])#, 140, 167])
-    print(get_shape(test))
+
     
 
     
