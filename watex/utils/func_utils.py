@@ -1574,7 +1574,8 @@ def stn_check_split_type(data_lines):
 
     split_type =[',', ':',' ',';' ]
     data_to_read =[]
-    if isinstance(data_lines, np.ndarray): # change the data if data is not dtype string elements.
+    # change the data if data is not dtype string elements.
+    if isinstance(data_lines, np.ndarray): 
         if data_lines.dtype in ['float', 'int', 'complex']: 
             data_lines=data_lines.astype('<U12')
         data_lines= data_lines.tolist()
@@ -1582,7 +1583,8 @@ def stn_check_split_type(data_lines):
     if isinstance(data_lines, list):
         for ii, item in enumerate(data_lines[:int(len(data_lines)/3)]):
              data_to_read.append(item)
-             data_to_read=[''.join([str(item) for item in data_to_read])] # be sure the list is str item . 
+             # be sure the list is str item . 
+             data_to_read=[''.join([str(item) for item in data_to_read])] 
 
     elif isinstance(data_lines, str): data_to_read=[str(data_lines)]
     
@@ -1594,8 +1596,9 @@ def stn_check_split_type(data_lines):
 
 def minimum_parser_to_write_edi (edilines, parser = '='):
     """
-    This fonction validates edifile for writing , string with egal.we assume that 
-    dictionnary in list will be for definemeasurment E and H fied. 
+    This fonction validates edifile for writing , string with egal.
+    we assume that dictionnary in list will be for definemeasurment
+    E and H fied. 
     
     :param edilines: list of item to parse 
     :type edilines: list 
@@ -1635,7 +1638,46 @@ def round_dipole_length(value, round_value =5.):
     elif mm >= 3 and mm < 7 :return np.around(value -mm +round_value) 
     else:return np.around(value - mm +10.)
     
+def display_infos(infos, **kws):
+    """ Display unique element on list of array infos
+    
+    :param infos: Iterable object to display. 
+    :param header: Change the `header` to other names. 
+    :Example: 
+        
+        >>> from watex.func_utils import display_infos
+        >>> ipts= ['river water', 'fracture zone', 'granite', 'gravel',
+             'sedimentary rocks', 'massive sulphide', 'igneous rocks', 
+             'gravel', 'sedimentary rocks']
+        >>> display_infos('infos= ipts,header='TestAutoRocks', 
+                          size =77, inline='~')
+    """
 
+    inline =kws.pop('inline', '-')
+    size =kws.pop('size', 70)
+    header =kws.pop('header', 'Automatic rocks')
+
+    if isinstance(infos, str ): 
+        infos =[infos]
+        
+    infos = list(set(infos))
+    print(inline * size )
+    mes= '{0}({1:02})'.format(header.capitalize(),
+                                  len(infos))
+    mes = '{0:^70}'.format(mes)
+    print(mes)
+    print(inline * size )
+    am=''
+    for ii in range(len(infos)): 
+        if (ii+1) %2 ==0: 
+            am = am + '{0:>4}.{1:<30}'.format(ii+1, infos[ii].capitalize())
+            print(am)
+            am=''
+        else: 
+            am ='{0:>4}.{1:<30}'.format(ii+1, infos[ii].capitalize())
+            if ii ==len(infos)-1: 
+                print(am)
+    print(inline * size )
 
 
     

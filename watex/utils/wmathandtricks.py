@@ -95,11 +95,13 @@ def compute_lower_anomaly(erp_array, station_position=None,
         station_position = np.arange(0, step * len(erp_array), step)
 
     min_pks= get_minVal(erp_array) # three min anomaly values 
+
     # compute new_pjk 
     # find differents anomlies boundaries 
     for ii, (rho, index) in enumerate(min_pks) :
         _, _, anlyBounds= drawn_anomaly_boundaries(erp_data = erp_array,
                                  appRes = rho, index=index)
+        
         collectanlyBounds.append(anlyBounds)
 
     if station_position is None :
@@ -119,7 +121,6 @@ def compute_lower_anomaly(erp_array, station_position=None,
         print('{0:+^100}'.format(
             ' *Best Conductive anomaly points (BCPts)* '))
         fmtAnText(anFeatures=bestSelectedDICT)
-    
     
     return bestSelectedDICT, anpks, collectanlyBounds, min_pks
         
@@ -181,6 +182,10 @@ def get_minVal(array):
                                  int(indx)))
         ss =len(holdList)
         
+    # for consistency keep the 3 best min values 
+    if len(holdList)>3 : 
+        holdList = holdList[:3]
+
     return holdList 
 
 def drawn_anomaly_boundaries(erp_data, appRes, index):
@@ -212,7 +217,7 @@ def drawn_anomaly_boundaries(erp_data, appRes, index):
         loop side bar from anomaly and find the term side 
         
         :param term: is array of left or right side of anomaly.
-        :type trem: array 
+        :type term: array 
         
         :return: side bar 
         :type: array_like 
@@ -229,7 +234,6 @@ def drawn_anomaly_boundaries(erp_data, appRes, index):
             elif diffRes_betw_2pts < maxT : 
                 # rho_limit = tem_rho 
                 break 
-        # print(tem_drawn)
         return np.array(tem_drawn)
     # first broke erp profile from the anomalies 
     if f ==0 or f==2 : 
@@ -245,7 +249,7 @@ def drawn_anomaly_boundaries(erp_data, appRes, index):
         anomalyBounds = np.append(left_limit,appRes)
                                    
     elif f ==1 : 
-        anomalyBounds = np.array([[appRes]+ right_limit.tolist()])
+        anomalyBounds = np.array([appRes]+ right_limit.tolist())
     else: 
         left_limit = np.append(left_limit, appRes)
         anomalyBounds = np.concatenate((left_limit, right_limit))
@@ -671,7 +675,7 @@ def find_pkfeatures (anom_infos, anom_rank, pks_rhoa_index, dl):
     
     :param anom_infos:
         
-        Is anomaly a dictionnary of anomaly computed from 
+        Is a dictionnary of best anomaly points computed from 
         :func:`compute_lower_anomaly` when `pk_bounds` is not given.  
         see :doc:`compute_lower_anomaly`
         
@@ -1070,7 +1074,7 @@ def getdfAndFindAnomalyBoundaries(df):
     """
     shape_=[ 'V','W', 'U', 'H', 'M', 'C', 'K' ]
     type__= ['EC', 'NC', 'CP', 'CB2P']
-        #    - ``EC`` for Extensive conductive. 
+        # - ``EC`` for Extensive conductive. 
         # - ``NC`` for narrow conductive. 
         # - ``CP`` for conductive PLANE 
         # - ``CB2P`` for contact between two planes. 
@@ -1081,6 +1085,8 @@ def getdfAndFindAnomalyBoundaries(df):
         """ Loop the array and get whether an anomaly shape name is provided
         :param listOfAddedArray: all Added array values except 
          'pk', 'x', 'y', 'rho' are composed of list of addedArray.
+        :param param: Can be main description of different `shape_` of `type__` 
+        
         :returns: 
             - `shape` : 'V','W', 'U', 'H', 'M', 'C' or  'K' from sheet or 
              `type` : 'EC', 'NC', 'CP', 'CB2P'
@@ -1176,6 +1182,7 @@ def getdfAndFindAnomalyBoundaries(df):
                            
         return lower_ix, ves_ix, upper_ix 
     
+    # set pandas so to consider np.inf as NaN number.
     
     pd.options.mode.use_inf_as_na = True
     
@@ -1195,13 +1202,13 @@ def getdfAndFindAnomalyBoundaries(df):
     listOfAddedColumns= df.iloc[:, 4:].columns
     
     if len(listOfAddedColumns) ==0:
-        return True, None, posMinMax,  df   
+        return True,  shape, type_, None, posMinMax,  df   
  
     df_= df.iloc[:, 4:]
     # check whether all remains dataframe values are `NaN` values
     if len(list(df_.columns[df_.isna().all()])) == len(listOfAddedColumns):
          # If yes , trigger the auto option 
-        return True, None, posMinMax,  df.iloc[:, :4] 
+        return True,  shape, type_, None, posMinMax,  df.iloc[:, :4] 
   
     # get the colum name with any nan values 
     sloc_column=list(df_.columns[df_.isna().any()])
