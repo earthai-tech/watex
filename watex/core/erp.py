@@ -162,9 +162,9 @@ class ERP_collection:
         self.erpObjs = erpObjs 
         self.anomBoundariesObj= listOfposMinMax
         self.dipoleLengthObjs= kws.pop('list_of_dipole_lengths', None)
-        self.export_data =kws.pop('export_data', False)
-        self.export_fex= kws.pop('file_extension', 'csv')
-        
+        self.export_data =kws.pop('export', False)
+        self.export_fex= kws.pop('extension', 'csv')
+
         self.listOferpfn =listOferpfn 
         self.id =None
         
@@ -243,7 +243,16 @@ class ERP_collection:
             print(fmterp_text.format('Num', 'ERPlines', 'status'))
             print('-'*70)
             
-            for ii, erp_filename in enumerate(self.listOferpfn) : 
+            for ii, erp_filename in enumerate(self.listOferpfn) :
+                
+                try : 
+                    name_file = os.path.basename(
+                        os.path.splitext(erp_filename)[0])
+                except : 
+                    # for consistency takes at least the basename
+                    # to display.
+                    name_file = os.path.basename(erp_filename)
+                    
                 try : 
    
                     erpObj = ERP(erp_fn= erp_filename,
@@ -251,27 +260,30 @@ class ERP_collection:
                                 posMinMax=self.anomBoundariesObj[ii])
                 except : 
                     
-                    unreadfiles.append(os.path.basename(erp_filename))
+                    unreadfiles.append(name_file)
                     print(fmterp_text.format(ii+1,
-                                             os.path.basename(erp_filename), 
-                                             'Failed'))
+                                              name_file, 
+                                              '*Failed'))
                     
                 else: 
                     print(fmterp_text.format(ii+1,
-                                             os.path.basename(erp_filename), 
-                                             'Passed'))
+                                              name_file, 
+                                              'Passed'))
                     self.erpObjs.append(erpObj)
             print('-'*70)
              
         if len(unreadfiles)>=1 : 
             self._logging.error (
                 f'Unable to read the files `{unreadfiles}`')
-            warnings.warn(f'Unable to read file `{unreadfiles}`.'
+            warnings.warn(f'Unable to read file `{len(unreadfiles)}`.'
                           ' Please check your files.')
             
             print(' --!> {0} ERP file not read. Please check your file'
-                  f' {"s" if len(unreadfiles)>1 else ""} ='
-                  '`{0}`'.format(len(unreadfiles), unreadfiles))
+                  f' {"s" if len(unreadfiles)>1 else ""} enumerate below:'
+                  .format(len(unreadfiles)))
+            
+            func.display_infos(infos=unreadfiles,
+                    header=f"Unread file{'s' if len(unreadfiles)>1 else ''}")
             
         if self.erpObjs is not None and self.listOferpfn is None : 
             
@@ -377,14 +389,28 @@ class ERP_collection:
         if self.filename is None : 
             self.filename = 'erpdf-{0}'.format(
                 erp_time + '.'+ self.export_fex).replace(':','-')
+        elif self.filename is not None :
+            self.filename += '.'+ self.export_fex
             
+        # add name into the workbooks
+        exportdf = self.erpdf.copy() 
+        
+        exportdf.insert(loc=1, column='name', value =self.fnames )
+        exportdf.reset_index(inplace =True)
+        exportdf.insert(loc=0, column='num', value =exportdf['index']+1  )
+        exportdf.drop(['id', 'index'], axis =1 , inplace=True)
+        
         if self.export_fex =='xlsx':
-            
-            self.erpdf.to_excel(self.filename , sheet_name='data',
-                                index=False) 
+
+           # with pd.ExcelWriter(self.filename ) as writer: 
+           #      exportdf.to_excel(writer, index=False, sheet_name='data')
+                
+           exportdf.to_excel(self.filename , sheet_name='data',
+                            index=False) 
+           
         elif self.export_fex =='csv': 
             
-            self.erpdf.to_csv(self.filename, header=True,
+            exportdf.to_csv(self.filename, header=True,
                               index =False)
 
         if self.savepath is None :
@@ -397,7 +423,7 @@ class ERP_collection:
                 shutil.move(os.path.join(os.getcwd(),self.filename) ,
                         os.path.join(self.savepath , self.filename))
             except : 
-                self.logging.debug("We don't find any path to save ERP data.")
+                self._logging.debug("We don't find any path to save ERP data.")
             else: 
                 print('--> ERP features file <{0}> is well exported to {1}'.
                       format(self.filename, self.savepath))
@@ -580,7 +606,6 @@ class ERP :
         self.anom_boundaries = posMinMax
         self._select_best_point =kwargs.pop('best_point', None)
         self.turn_on =kwargs.pop('display', 'off')
-        # self.display_auto_infos= kwargs.pop ('display', False)
         self._select_best_value =kwargs.pop('best_rhoa', None)
         
         self._power =None 
@@ -644,8 +669,8 @@ class ERP :
         # Check into the dataframe whether the souding location and anomaly 
         #boundaries are given 
         self.auto, self._shape, self._type, self._select_best_point,\
-            self.anom_boundaries, self._df =\
-                wfunc.sanitizedf_and_findBoundaries(df_)
+            self.anom_boundaries, self._df = \
+                wfunc.getdfAndFindAnomalyBoundaries(df_)
  
         self.data =self._df.to_numpy()
         self._name = os.path.basename(name)
@@ -744,8 +769,10 @@ class ERP :
             self._dipoleLength=(self.df['pk'].to_numpy().max()- \
                 self.df['pk'].to_numpy().min())/(len(
                     self.df['pk'].to_numpy())-1)
+                    
+   
         self.aBestInfos= wfunc.select_anomaly(
-                            rhoa_array= self.df['rhoa'].to_numpy(), 
+                             rhoa_array= self.df['rhoa'].to_numpy(), 
                              pos_array= self.df['pk'].to_numpy(), 
                              auto = self.auto, 
                              dipole_length=self._dipoleLength , 
@@ -973,6 +1000,7 @@ class ERP :
     def best_shape (self) : 
         """ Find the selected anomaly shape"""
         if self._shape is None: 
+
             self._shape = get_shape(
                 rhoa_range=self.aBestInfos[self._best_key_point][4])
         
@@ -1048,7 +1076,7 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
     :returns: 
         - ``EC`` for Extensive conductive. 
         - ``NC`` for narrow conductive. 
-        - ``CP`` for conductive PLANE 
+        - ``CP`` for conductive plane 
         - ``CB2P`` for contact between two planes. 
         
     :Example: 
@@ -1065,15 +1093,21 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
     # Get position index 
     anom_type ='CP'
     index_pos = int(np.where(pos_array ==pk)[0])
-    if erp_array [:index_pos +1].mean() < np.median(erp_array) or\
+    # if erp_array [:index_pos +1].mean() < np.median(erp_array) or\
+    #     erp_array[index_pos:].mean() < np.median(erp_array) : 
+    #         anom_type ='CB2P'
+    if erp_array [:index_pos+1].mean() < np.median(erp_array) and \
         erp_array[index_pos:].mean() < np.median(erp_array) : 
             anom_type ='CB2P'
-    elif dl <= (max(posMinMax)- min(posMinMax)) <= 4* dl : 
-        anom_type = 'NC'
-    elif (max(posMinMax)- min(posMinMax))> 4 *dl and (
-            erp_array [:index_pos +1].mean() >= np.median(erp_array) or 
-            erp_array[index_pos:].mean() >= np.median(erp_array) ): 
-        anom_type = 'EC'
+            
+    elif erp_array [:index_pos +1].mean() >= np.median(erp_array) and \
+        erp_array[index_pos:].mean() >= np.median(erp_array) : 
+                
+        if  dl <= (max(posMinMax)- min(posMinMax)) <= 5* dl: 
+            anom_type = 'NC'
+
+        elif (max(posMinMax)- min(posMinMax))> 5 *dl: 
+            anom_type = 'EC'
 
     return anom_type
 
@@ -1104,9 +1138,17 @@ def get_shape(rhoa_range):
     
     """
     shape ='V'
+    try: 
+
+        minlocals_ix, = argrelextrema(rhoa_range, np.less)
+    except : 
+ 
+        minlocals_ix = argrelextrema(rhoa_range, np.less)
+    try : 
+
+        maxlocals_ix, = argrelextrema(rhoa_range, np.greater)
+    except : maxlocals_ix = argrelextrema(rhoa_range, np.greater)
     
-    minlocals_ix, = argrelextrema(rhoa_range, np.less)
-    maxlocals_ix, = argrelextrema(rhoa_range, np.greater)
     value_of_median = np.median(rhoa_range)
     
     coef_UH = 1.2 
@@ -1127,11 +1169,9 @@ def get_shape(rhoa_range):
         elif rhoa_range[minlocals_ix] > value_of_median or \
             rhoa_range[minlocals_ix] > max(c_): 
             return 'M'
-        
     if len(minlocals_ix)>1 : 
-        if (rhoa_range[0] or rhoa_range[-1]) > value_of_median:
+        if (max(c_) or min(c_))> value_of_median : 
             shape ='W'
-            
             if max(c_) > value_of_median and\
                 min(c_) > value_of_median: 
                 if rhoa_range[maxlocals_ix].mean()> value_of_median : 
@@ -1150,42 +1190,83 @@ def get_shape(rhoa_range):
             shape =  'M'    
 
         return shape 
-    
-                
-    
         
-    return shape             
-         
+    return shape  
+           
+def get_type2 (erp_array, posMinMax, pk, pos_array, dl=None): 
+    """
+    Find anomaly type from app. resistivity values and positions locations 
+    
+    :param erp_array: App.resistivty values of all `erp` lines 
+    :type erp_array: array_like 
+    
+    :param posMinMax: Selected anomaly positions from startpoint and endpoint 
+    :type posMinMax: list or tuple or nd.array(1,2)
+    
+    :param pk: Position of selected anomaly in meters 
+    :type pk: float or int 
+    
+    :param pos_array: Stations locations or measurements positions 
+    :type pos_array: array_like 
+    
+    :param dl: 
+        
+        Distance between two receiver electrodes measurement. The same 
+        as dipole length in meters. 
+    
+    :returns: 
+        - ``EC`` for Extensive conductive. 
+        - ``NC`` for narrow conductive. 
+        - ``CP`` for conductive plane 
+        - ``CB2P`` for contact between two planes. 
+        
+    :Example: 
+        
+        >>> from watex.core.erp import get_type 
+        >>> x = [60, 61, 62, 63, 68, 65, 80,  90, 100, 80, 100, 80]
+        >>> pos= np.arange(0, len(x)*10, 10)
+        >>> ano_type= get_type(erp_array= np.array(x),
+        ...            posMinMax=(10,90), pk=50, pos_array=pos, dl=10)
+        >>> ano_type
+        ...CB2P
+
+    """
+    if dl is None: 
+        dl = max(pos_array) - min(pos_array) / (len(pos_array)-1)
+        
+    # Get position index 
+    pos_ix = np.array(pos_array)- min(pos_array) /dl 
+    pos_ix.astype(np.int32) # get index 
+
+    anom_type ='CP'
+    index_pos = int(np.where(pos_array ==pk)[0])
+    
+    left_bound= erp_array [:index_pos+1].mean() 
+    right_bound =  erp_array[index_pos:].mean()
+    med_= np.median(erp_array) 
+
+    if  (left_bound < med_  and  right_bound >= med_) or \
+        (left_bound >= med_ and right_bound < med_) : 
+            anom_type ='CB2P'
+            
+    if left_bound > med_  and  right_bound > med_ : 
+        if  dl <= (max(posMinMax)- min(posMinMax)) <= 5* dl: 
+            anom_type = 'NC'
+        elif (max(posMinMax)- min(posMinMax))> 5 *dl: 
+            anom_type = 'EC'
+
+    return anom_type   
+
 if __name__=='__main__'   : 
     erp_data='data/erp/l10_gbalo.xlsx'# 'data/l11_gbalo.csv'
     erp_path ='data/erp/test_anomaly.xlsx'
+    pathBag = r'F:\repositories\watex\data\Bag.main&rawds\ert_copy\an_dchar'#\zhouphouetkaha_1.xlsx'
     test_fn = 'l10_gbalo.xlsx'
-    # erpObj =ERP(erp_fn=erp_path, turn_on ='off')
-    # erpObj.best_rhoaRange
-    # pathBag = r'F:\repositories\watex\data\Bag.main&rawds\ert_copy\nt'
-    
-    # erpObjs =ERP_collection(listOferpfn= pathBag, 
-    #                         )
-    # alldfs= erpObjs.erpdf
-    # erpObjs.exportErp()
-    # print(erpObjs.survey_ids)
-    # gFname, exT=os.path.splitext(test_fn)
-    # gFame = os.path.basename(gFname)
-    # print(gFname, exT)
-    # erpObj = ERP(erp_path, posMinMax=(0, 80))
-    # print(erpObj.best_type)
-    # print(erpObj.best_power)
-    # print(erpObj.best_magnitude)
-    # print(erpObj.best_shape)
-    # print(erpObj.rhoa_max)
-    # print(erpObj.rhoa_min)
-    # print(erpObj.best_rhoaRange)
-    # print(erpObj.best_points)
-    # print(erpObj.best_sfi)
-    # print(erpObj.select_best_point_)
-    # print(erpObj.select_best_value_)
-    test=np.array([95,  130,  163,  140,  167,  154, 93])#, 140, 167])
-    print(get_shape(test))
+    # erpObj =ERP(erp_fn=pathBag, turn_on ='off', utm_zone ='29N')
+    erpObjs =ERP_collection(listOferpfn=pathBag, export =True , extension ='.xlsx', 
+                            filename = '_testfile', savepath = 'data/exFeatures')
+ 
+
     
 
     
