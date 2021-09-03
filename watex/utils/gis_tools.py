@@ -380,8 +380,8 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
                 projected_point['utm_zone'][0])
     else:
         return np.rec.array(projected_point)
-
-def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=3149):
+#espg = 3149
+def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=None):
     """
     Project a point that is in Lat, Lon (will be converted to decimal degrees)
     into UTM coordinates.
@@ -456,6 +456,7 @@ def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=3149):
         if HAS_GDAL:
             utm_cs.SetUTM(zone_number, is_northern)
         else:
+            import pyproj
             projstring = '+proj=utm +zone=%d +%s +datum=%s' % \
                          (zone_number, 'north' if is_northern else 'south', datum)
             pp = pyproj.Proj(projstring)
@@ -789,8 +790,6 @@ def _utm_letter_designator(lat):
         return 'Z'  # if the Latitude is outside the UTM limits
 
 
-# @deprecated("This function may be removed in later release. mtpy.utils.gis_tools.project_point_utm2ll() should be "
-#             "used instead.")
 def utm_to_ll(reference_ellipsoid, northing, easting, zone):
     """
     converts UTM coords to lat/long.  Equations from USGS Bulletin 1532
