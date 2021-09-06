@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
-# This module is a set of transformers for data preparing. It is  part of 
-# the WATex preprocessing module which is released under a MIT- licence.
+# This module is a set of utils for data prepprocessing
+# released under a MIT- licence.
 """
 Created on Sat Aug 28 16:26:04 2021
 
@@ -17,13 +17,14 @@ VT=TypeVar('VT')
 
 
 import os 
-
 import hashlib 
 import tarfile 
 from six.moves import urllib 
 
 import pandas as pd 
 import numpy as np 
+
+from sklearn.model_selection import StratifiedShuffleSplit 
 
 DOWNLOAD_ROOT = 'https://github.com/WEgeophysics/watex/master/'
 #'https://zenodo.org/record/4896758#.YTWgKY4zZhE'
@@ -170,14 +171,50 @@ def split_train_test_by_id(data, test_ratio:T, id_column:T=None,
     in_test_set =ids.apply(lambda id_:test_set_check_id(id_, test_ratio, hash))
     return data.loc[~in_test_set], data.loc[in_test_set]
 
+def DiscretizeCategoriesforStratification(data, in_cat:str =None,
+                               new_cat:str=None, **kws) -> Generic[VT]: 
+    """ Create a new category attribute to discretize instances. 
     
+    A new category in data is better use to stratified the trainset and 
+    the dataset to be consistent and rounding using ceil values.
+    
+    :param in_cat: column name used for stratified dataset 
+    :param new_cat: new category name created and inset into the 
+                dataframe.
+    :return: new dataframe with new column of created category.
+    """
+    divby = kws.pop('divby', 1.5) # normalize to hold raisonable number 
+    combined_cat_into = kws.pop('higherclass', 5) # upper class bound 
+    
+    data[new_cat]= np.ceil(data[in_cat]) /divby 
+    data[new_cat].where(data[in_cat] < combined_cat_into, 
+                             float(combined_cat_into), inplace =True )
+    
+    return data 
+def stratifiedUsingDiscretedCategories(data:VT , cat_name:str , n_splits:int =1, 
+                    test_size:float= 0.2, random_state:int = 42)-> Generic[VT]: 
+    """ Stratified sampling based on new generated category  from 
+    :func:`~DiscretizeCategoriesforStratification`.
+    
+    :param data: dataframe holding the new column of category 
+    :param cat_name: new category name inserted into `data` 
+    :param n_splits: number of splits 
+    """
+    
+    split = StratifiedShuffleSplit(n_splits, test_size, random_state)
+    for train_index, test_index in split.split(data, data[cat_name]): 
+        strat_train_set = data.loc[train_index]
+        strat_test_set = data.loc[test_index] 
+        
+    return strat_train_set , strat_test_set 
 
-
+    
 if __name__=="__main__": 
     
     df = load_data('data/geo_fdata')
     print(type(df))
     id_columns = df['num']
+    
   
     # f_, t_=[], []
     # for elm in id_columns : 
