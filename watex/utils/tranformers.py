@@ -7,8 +7,8 @@ Created on Mon Sep  6 17:53:06 2021
 
 @author: @Daniel03
 """
-import numpy as np 
-import pandas as pd 
+# import numpy as np 
+# import pandas as pd 
 
 from sklearn.model_selection import StratifiedShuffleSplit 
 from sklearn.model_selection import train_test_split 
@@ -23,6 +23,7 @@ class StratifiedSamplingAdderCategory( BaseEstimator, TransformerMixin ):
     
     def __init__(self, apply_to=None, added_category =True, operator = 1.5, 
                  max_category=5, n_splits=1, test_size=0.2, random_state=42):
+        
         self.apply_to = apply_to 
         self.added_category = added_category 
         self.operator = operator 
@@ -30,11 +31,15 @@ class StratifiedSamplingAdderCategory( BaseEstimator, TransformerMixin ):
         self.n_splits = n_splits 
         self.test_size = test_size 
         self.random_state = random_state 
-    
+        
+        #create inspection attributes
         self.inner_category_=None 
+        self.statistics_=None 
+        
         
     def fit(self, X, y=None): 
-        """ Fit method and populated classes attributes from hyperparameters."""
+        """ Fit method and populated isnpections attributes 
+        from hyperparameters."""
         if not self.added_category and self.apply_to is None: 
             return self 
         if self.added_category:
