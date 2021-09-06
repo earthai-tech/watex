@@ -596,7 +596,6 @@ class ID:
     
     :Note: To extract data from station location name `sns`, be sure to write 
     the right name. If not an `AttributeError` occurs. 
-    
     """
     
     def __init__(self, **kwargs): 
@@ -625,7 +624,6 @@ class ID:
                 
         :return: As select part of DataFrame
         :rtype: pd.DataFrame 
-        
         """
         for attr, value in zip(['_givenATTR', 'df_', 'sns', 'id_cache', 'id_'], 
                              [_givenATTR, df_, sns, id_cache, id_]): 
