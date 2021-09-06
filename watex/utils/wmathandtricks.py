@@ -1212,7 +1212,7 @@ def getdfAndFindAnomalyBoundaries(df):
   
     # get the colum name with any nan values 
     sloc_column=list(df_.columns[df_.isna().any()])
-    # if colun is one man the sloc colum is found 
+    # if column contains  one np.nan, the sloc colum is found 
     sloc_values = df_[sloc_column].to_numpy()
     
     if len(sloc_column)>1 : #
@@ -1240,8 +1240,67 @@ def getdfAndFindAnomalyBoundaries(df):
     
     return _autoOption, shape, type_, ves_loc , posMinMax,  df.iloc[:, :4]  
     
-
+@deprecated('Deprecated function to `:func:`watex.core.erp.get_type`'
+            ' more efficient using median and index computation. It will '
+            'probably deprecate soon for neural network pattern recognition.')
+def get_type (erp_array, posMinMax, pk, pos_array, dl): 
+    """
+    Find anomaly type from app. resistivity values and positions locations 
     
+    :param erp_array: App.resistivty values of all `erp` lines 
+    :type erp_array: array_like 
+    
+    :param posMinMax: Selected anomaly positions from startpoint and endpoint 
+    :type posMinMax: list or tuple or nd.array(1,2)
+    
+    :param pk: Position of selected anomaly in meters 
+    :type pk: float or int 
+    
+    :param pos_array: Stations locations or measurements positions 
+    :type pos_array: array_like 
+    
+    :param dl: 
+        
+        Distance between two receiver electrodes measurement. The same 
+        as dipole length in meters. 
+    
+    :returns: 
+        - ``EC`` for Extensive conductive. 
+        - ``NC`` for narrow conductive. 
+        - ``CP`` for conductive plane 
+        - ``CB2P`` for contact between two planes. 
+        
+    :Example: 
+        
+        >>> from watex.core.erp import get_type 
+        >>> x = [60, 61, 62, 63, 68, 65, 80,  90, 100, 80, 100, 80]
+        >>> pos= np.arange(0, len(x)*10, 10)
+        >>> ano_type= get_type(erp_array= np.array(x),
+        ...            posMinMax=(10,90), pk=50, pos_array=pos, dl=10)
+        >>> ano_type
+        ...CB2P
+
+    """
+    # Get position index 
+    anom_type ='CP'
+    index_pos = int(np.where(pos_array ==pk)[0])
+    # if erp_array [:index_pos +1].mean() < np.median(erp_array) or\
+    #     erp_array[index_pos:].mean() < np.median(erp_array) : 
+    #         anom_type ='CB2P'
+    if erp_array [:index_pos+1].mean() < np.median(erp_array) and \
+        erp_array[index_pos:].mean() < np.median(erp_array) : 
+            anom_type ='CB2P'
+            
+    elif erp_array [:index_pos +1].mean() >= np.median(erp_array) and \
+        erp_array[index_pos:].mean() >= np.median(erp_array) : 
+                
+        if  dl <= (max(posMinMax)- min(posMinMax)) <= 5* dl: 
+            anom_type = 'NC'
+
+        elif (max(posMinMax)- min(posMinMax))> 5 *dl: 
+            anom_type = 'EC'
+
+    return anom_type   
     
 
 if __name__=='__main__': 

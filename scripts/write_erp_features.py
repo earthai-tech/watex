@@ -3,24 +3,25 @@
 Created on Mon Aug 30 14:22:59 2021
 @author: @Daniel03
 
-.. synopsis: compute geelectrical features `sfi`, `magnitude`,
+.. synopsis:: compute geelectrical features `sfi`, `magnitude`,
              power` ``shape` and `type`  from ERP survey lines. 
-             if shape and type are notgiven on the excel worksheet , 
+             If shape and type are notgiven on the excel worksheet , 
              will compute automatically. 
-
+             ...
+             
 -----------------------------------------------------------------
 How to arrange your sheet before calling  erp collection module. 
-    refrered as :mod:`watex.core.erp.ERP_collection` ?
+    refered as :mod:`watex.core.erp.ERP_collection` ?
 -----------------------------------------------------------------
 
     Suppose an ERP survey performed in `zzegbao1_2`  location . 
     The excel whorkbook will probably called ` `zzegbao1_2.xlsx`
     or `zzegbao1_2.csv`. 
-    This is how must be arrange into the sheet:
+    This is how must be arrange data into the worksheet:
         
-        `*` means compulsory data and other a optional  data,  `x`  and `y` 
-       are  utm easting and northing coordinates respectively. while `rho` is 
-       the apparemt resistivity at each measurement point(`pk`).
+       Headers with `*` means compulsory data and others are optional  data. 
+       `x`  and `y` are  utm easting and northing coordinates respectively, 
+       while `rho` is the apparemt resistivity at each measurement point(`pk`).
        `sloc` is the colum of anomaly boundaries definition. The optionals 
        column's names such as `sloc`, `shape` and  `type` can be nothing.
         
@@ -34,7 +35,7 @@ How to arrange your sheet before calling  erp collection module.
     140 790255      1093116     138        
     === ======== =========== ========== ======== ======= ========
     
-    - `low` means the lower boundary of selectd anomaly,  can also be '1'
+    - `low` means the lower boundary of selected anomaly,  can also be '1'
     - `up` means the uper boundary of selected anomaly , can also be `2` 
     - `se` means the sounding location on the survey. can be `ves` or `0`. 
     - `V` anomaly-shape and can be 'W', 'K', 'U', 'H', 'C' and 'M' 
@@ -68,7 +69,7 @@ exportType ='.xlsx'
 exporfilename ='_textfile'
 
 erpObjs =ERP_collection(listOferpfn=pathtoErpfiles,
-                        export =exportFile ,
+                        export =exportFile,
                         extension =exportType, 
                         filename = exporfilename, 
                         savepath = savepath )
