@@ -30,7 +30,7 @@ DOWNLOAD_ROOT = 'https://github.com/WEgeophysics/watex/master/'
 #'https://zenodo.org/record/4896758#.YTWgKY4zZhE'
 DATA_PATH = 'data/tar.tgz_files'
 TGZ_FILENAME = '/bagoue.main&rawdata.tgz'
-CSV_FILENAME = '_bagoue_civ_loc_ves&erpdata.csv'
+CSV_FILENAME = '_bagoue_civ_loc_ves&erpdata3.csv'
 
 DATA_URL = DOWNLOAD_ROOT + DATA_PATH  + TGZ_FILENAME
 
@@ -100,7 +100,7 @@ def fetch_geo_data (data_url:str = DATA_URL, data_path:str =DATA_PATH,
     
     
 def load_data (data_path:str = DATA_PATH,
-               filename:str =CSV_FILENAME )-> Generic[VT]:
+               filename:str =CSV_FILENAME, sep =',' )-> Generic[VT]:
     """ Load CSV file to pd.dataframe. 
     
     :param data_path: path to data file 
@@ -109,7 +109,7 @@ def load_data (data_path:str = DATA_PATH,
     """ 
     csv_path = os.path.join(data_path , filename)
     
-    return pd.read_csv(csv_path)
+    return pd.read_csv(csv_path, sep)
 
 
 def split_train_test (data:Generic[VT], test_ratio:T)-> Generic[VT]: 
@@ -171,7 +171,7 @@ def split_train_test_by_id(data, test_ratio:T, id_column:T=None,
     in_test_set =ids.apply(lambda id_:test_set_check_id(id_, test_ratio, hash))
     return data.loc[~in_test_set], data.loc[in_test_set]
 
-def DiscretizeCategoriesforStratification(data, in_cat:str =None,
+def discretizeCategoriesforStratification(data, in_cat:str =None,
                                new_cat:str=None, **kws) -> Generic[VT]: 
     """ Create a new category attribute to discretize instances. 
     
@@ -189,8 +189,8 @@ def DiscretizeCategoriesforStratification(data, in_cat:str =None,
     data[new_cat]= np.ceil(data[in_cat]) /divby 
     data[new_cat].where(data[in_cat] < combined_cat_into, 
                              float(combined_cat_into), inplace =True )
-    
     return data 
+
 def stratifiedUsingDiscretedCategories(data:VT , cat_name:str , n_splits:int =1, 
                     test_size:float= 0.2, random_state:int = 42)-> Generic[VT]: 
     """ Stratified sampling based on new generated category  from 
@@ -212,10 +212,11 @@ def stratifiedUsingDiscretedCategories(data:VT , cat_name:str , n_splits:int =1,
 if __name__=="__main__": 
     
     df = load_data('data/geo_fdata')
-    print(type(df))
-    id_columns = df['num']
+    # df.hist(bins=50, figsize=(20, 15))
     
-  
+    data = discretizeCategoriesforStratification(df, in_cat='flow', new_cat='tempf_',
+                                          divby =1, higherclass=3)
+    
     # f_, t_=[], []
     # for elm in id_columns : 
 
