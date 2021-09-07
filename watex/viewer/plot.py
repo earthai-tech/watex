@@ -1088,7 +1088,6 @@ class QuickPlot :
             ...                         features =['ohmS', 'sfi','geol', 'flow'],
             ...                           map_kws=map_kws,  **sns_pkws
             ...                         )   
-        
         """
         if data_fn is not None : 
             self.data_fn = data_fn
