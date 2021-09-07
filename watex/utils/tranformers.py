@@ -76,18 +76,18 @@ class StratifiedWithCatogoryAdder( BaseEstimator, TransformerMixin ):
         self.statistics_=None 
         
     def fit(self, X, y=None): 
-        """ Fit method and populated inspections attributes 
-        from hyperparameters."""
+        """ Fit method """
         return self
     
     def transform(self, X, y=None):
-        
+        """Tranform data and populate inspections attributes 
+            from hyperparameters."""
         if self.base_num_feature is None: 
             return train_test_split( X, test_size = self.test_size ,
                                     random_state= self.random_state )
         if self.base_num_feature is not None:
             in_c= 'temf_'
-            # discretize new added category from threshold
+            # discretize the new added category from the threshold value
             X = mlfunc.discretizeCategoriesforStratification(
                                              X,
                                             in_cat=self.base_num_feature, 
