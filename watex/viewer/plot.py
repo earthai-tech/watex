@@ -44,7 +44,7 @@ _logger=watexlog.get_watex_logger(__name__)
 
 class QuickPlot : 
     """
-    Special class deals with analusis modules. To quick plot diagrams, 
+    Special class deals with analysis modules. To quick plot diagrams, 
     histograms and bar plots.
     
     Arguments: 
@@ -703,6 +703,8 @@ class QuickPlot :
         """
         if data_fn is not None : 
             self.data_fn = data_fn
+            
+        if df is not None : self.ddf = df 
         
         df_= self.df.copy(deep=True)
         
@@ -851,6 +853,7 @@ class QuickPlot :
         """
         if data_fn is not None : 
             self.data_fn = data_fn
+        if df is not None: self.df = df 
         
         df_= self.df.copy(deep=True)
         
@@ -982,6 +985,8 @@ class QuickPlot :
         """
         if data_fn is not None : 
             self.data_fn = data_fn
+            
+        if df is not None: self.df = df 
         
         df_= self.df.copy(deep=True)
         
@@ -1091,7 +1096,8 @@ class QuickPlot :
         """
         if data_fn is not None : 
             self.data_fn = data_fn
-        
+        if df is not None: 
+            self.df = df 
         df_= self.df.copy(deep=True)
         
         try:
@@ -1171,7 +1177,61 @@ class QuickPlot :
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
         
+    def discover_and_visualize_data(self, df = None, data_fn:str =None, 
+                                    x:str =None, y:str =None, kind:str ='scatter',
+                                    s_col:T ='lwi', leg_kws:dict ={}, **pd_kws):
+        """ Create a scatter plot to visualize the data using `x` and `y` 
+        considered as dataframe features. 
         
+        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
+        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        
+        :param x: Column name to hold the x-axis values 
+        :param y: column na me to hold the y-axis values 
+        :param s_col: Size for scatter points. 'Default is 
+            ``fs`` time the features colum `lwi`.
+            
+        :param pd_kws: 
+            Pandas plot keywords arguments 
+        :param leg_kws: Matplotlib legend keywords arguments 
+        
+        :Example: 
+            
+            >>> import watex.utils.ml_utils as mfunc
+            >>> from watex.utils.tranformers import StratifiedWithCategoryAdder
+            >>> df = mfunc.load_data('data/geo_fdata')
+            >>> stratifiedNumObj= StratifiedWithCategoryAdder('flow')
+            >>> strat_train_set , strat_test_set = \
+            ...    stratifiedNumObj.fit_transform(X=df)
+            >>> bag_train_set = strat_train_set.copy()   
+            >>> pd_kws ={'alpha': 0.4, 
+            ...         'label': 'flow m3/h', 
+            ...         'c':'flow', 
+            ...         'cmap':plt.get_cmap('jet'), 
+            ...         'colorbar':True}
+            >>> qkObj=QuickPlot(fs=25.)
+            >>> qkObj.discover_and_visualize_data(
+            ...    df = bag_train_set, x= 'east', y='north', **pd_kws)
+        """
+        if data_fn is not None : 
+            self.data_fn = data_fn
+        if df is not None: 
+            self.df = df 
+        df_= self.df.copy(deep=True)
+        
+         # visualize the data and get insights
+        if 's' not in pd_kws.keys(): 
+            pd_kws['s'] = df_[s_col]* self.fs 
+             
+        df_.plot(kind=kind, x=x, y=y, **pd_kws)
+        
+        plt.legend(**leg_kws)
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+    
 if __name__=='__main__': 
     
     qkObj = QuickPlot(  fig_legend_kws={'loc':'upper right'},
@@ -1183,11 +1243,10 @@ if __name__=='__main__':
 
     map_kws={'edgecolor':"w"}   
     qkObj.discussingFeatures(data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , 
-                             features =['ohmS', 'sfi','geol', 'flow'],
-                               map_kws=map_kws,  **sns_pkws
-                             )   
-        
-        
+                              features =['ohmS', 'sfi','geol', 'flow'],
+                                map_kws=map_kws,  **sns_pkws
+                              )   
+
         
         
         

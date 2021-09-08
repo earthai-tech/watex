@@ -387,7 +387,7 @@ class writef(object):
             return func(*args, **kwargs)
         return decorated_func 
         
-    
+@deprecated('Replaced by :class:`watex.utils.decorator.catmapflow2`')   
 def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']): 
     """
     Decorator function  collected  from the `func`the `target_values` to be 
@@ -440,7 +440,14 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
     
             :return `new_target_array`: Iterable object categorized.
             """
-            def mapf(crval,  nfval, fc):
+            cat_range_values, target_array, catfc = func(*args, **kwargs)
+            
+            if catfc is not None : 
+                cat_classes = catfc
+            # else:
+            #     cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']
+            
+            def mapf(crval,  nfval=cat_range_values , fc=cat_classes):
                 """
                 Categorizing loop to hold the convenient classes according 
                 to the `cat_range_value` provided. Come as supplement 
@@ -453,33 +460,40 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
                 """
                 for ii, val in enumerate(nfval):
                     try : 
-                        if len(val)>1: 
-                            if  val[0] < crval <= val[-1] : 
-                                return fc[ii]
+                        if isinstance(val, (float, int)): 
+                            if crval ==nfval[0]: 
+                                return fc[0]
+                            elif crval>= nfval[-1] : 
+                                return fc[-1]
+                        elif isinstance(val, (list, tuple)):
+                            if len(val)>1: 
+                                if  val[0] < crval <= val[-1] : 
+                                    return fc[ii]
                     except : 
+                        
                         if crval ==0.: 
                             return fc[0]
                         elif crval>= nfval[-1] : 
                             return fc[-1]
-      
-            cat_range_values, target_array, catfc = func(*args, **kwargs)
-                
+            print(cat_classes)          
             if len(cat_range_values) != len(cat_classes): 
+                
                 __logger.error(
                     'Length of `cat_range_values` and `cat_classes` provided '
                     'must be the same length not ``{0}`` and'
                     ' ``{1}`` respectively.'.format(len(cat_range_values),
                                                     len(cat_classes)))
             try : 
-                
+
                 new_target_array = np.array(list(map( mapf, target_array)))
+                # new_target_array = np.apply_along_axis(
+                #     lambda if_: mapf(crval= if_),0, target_array)
             except : 
-                
                 new_target_array = np.zeros_like(target_array)
                 for ii, ff in enumerate(target_array) : 
                     new_target_array[ii] = mapf(crval=ff, 
                                             nfval=cat_range_values, 
-                                           fc=cat_classes)
+                                            fc=cat_classes)
             return new_target_array
         return wrapper  
     return  categorized_dec
@@ -825,6 +839,122 @@ class PFI:
         
         return  feat_importance_dec
 
+
+class catmapflow2: 
+    """
+    Decorator function  collected  from the `func`the `target_values` to be 
+    categorized and the `cat_range_values` to change 
+    into `cat_classes` like:: 
+          
+          cat_range_values= [0.0, [0.0, 3.0], [3.0, 6.0], [6.0, 10.0], 10.0]
+          target_values =[1, 2., 3., 6., 7., 9., 15., 25, ...]
+          
+    Decorated Fonction returns the  new function decorated holding  
+    values  categorized into categorial `cat_classes`.
+    For instance in groundwater exploration::
+        
+        - FR0 --> `flow` is equal to ``0.``m3/h
+        - FR1 --> `flow` is ``0 < FR ≤ 3`` m3/h
+        - FR2 --> `flow` is ``3 < FR ≤ 6`` m3/h 
+        - FR3 --> `flow` is ``6 < FR ≤ 10`` m3/h
+        - FR4 --> `flow` is ``10.+`` in m3/h
+
+    :return: Iterable object with new categorized values converted 
+    into `cat_classes`. 
+    
+    Author: @Daniel03
+    Date: 13/07/2021
+    """
+    
+    def __init__(self, cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
+        self._logging= watexlog().get_watex_logger(self.__class__.__name__)
+        
+        self.cat_classes = cat_classes 
+
+    def __call__(self, func): 
+        self._func = func 
+        
+        return  self.categorized_dec(self._func)
+    
+    def categorized_dec(self, func):
+        """
+        Decorator can be adapted  to other categorized problem by changing the 
+        `cat_classes` arguments to another categorized classes 
+        for other purposes like ::
+            
+         cat_classes=['dry', 'HV', 'IHV', 'IVH+', 'UH']   
+            
+        Where ``IVHU`` means I:improved V:village H:hydraulic and U:urban. 
+        
+        :Note: 
+            If `func` to be decorated contains ` cat_classes` arguments, 
+            the `cat_classes` argument should be erased by the given
+            from `func`. 
+        
+        """
+        @functools.wraps(func)
+        def  wrapper(*args, **kwargs): 
+            """
+            Function deals with the categorized flow values. 
+            
+            :param args: positional argumnent of `func`
+            :param kwargs: Optional argument of `func`
+    
+            :return `new_target_array`: Iterable object categorized.
+            """
+            cat_range_values, target_array, catfc = func(*args, **kwargs)
+            
+            if catfc is not None : 
+                self.cat_classes = catfc
+
+            def mapf(crval,  nfval=cat_range_values , fc=self.cat_classes):
+                """
+                Categorizing loop to hold the convenient classes according 
+                to the `cat_range_value` provided. Come as supplement 
+                tools when ``maping`` object doesnt work properly.
+                
+                :param crval: value to be categorized 
+                :param nfval: array of `cat_range_values`
+                :param fc: Object to replace the`crval` belonging 
+                    to `cat_classes`
+                """
+                for ii, val in enumerate(nfval):
+                    try : 
+                        if isinstance(val, (float, int)): 
+                            if crval ==nfval[0]: 
+                                return fc[0]
+                            elif crval>= nfval[-1] : 
+                                return fc[-1]
+                        elif isinstance(val, (list, tuple)):
+                            if len(val)>1: 
+                                if  val[0] < crval <= val[-1] : 
+                                    return fc[ii]
+                    except : 
+                        
+                        if crval ==0.: 
+                            return fc[0]
+                        elif crval>= nfval[-1] : 
+                            return fc[-1]
+        
+            if len(cat_range_values) != len(self.cat_classes): 
+            
+                self._logging.error(
+                    'Length of `cat_range_values` and `cat_classes` provided '
+                    'must be the same length not ``{0}`` and'
+                    ' ``{1}`` respectively.'.format(len(cat_range_values),
+                                                    len(self.cat_classes)))
+            try : 
+
+                new_target_array = np.array(list(map( mapf, target_array)))
+   
+            except : 
+                new_target_array = np.zeros_like(target_array)
+                for ii, ff in enumerate(target_array) : 
+                    new_target_array[ii] = mapf(crval=ff, 
+                                            nfval=cat_range_values, 
+                                            fc=self.cat_classes)
+            return new_target_array
+        return wrapper  
 
 
 

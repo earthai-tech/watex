@@ -62,7 +62,7 @@ def write_excel(listOfDfs: Iterable[VT], csv:bool =False , sep:T =','):
     
     :param listOfDfs: list composed of `erp_file` name at index 0 and the
      remains dataframes. 
-    :param csv: output workbood in 'csv' format. If ``False`` will return un 
+    :param csv: output workbook in 'csv' format. If ``False`` will return un 
      `excel` format. 
     :param sep: type of data separation. 'default is ``,``.'
     
@@ -150,7 +150,7 @@ def test_set_check_id (identifier, test_ratio, hash:Callable[..., T]) -> bool:
 def split_train_test_by_id(data, test_ratio:T, id_column:T=None,
                            hash=hashlib.md5)-> Generic[VT]: 
     """Ensure that data will remain consistent accross multiple runs, even if 
-    dataset i refreshed. 
+    dataset is refreshed. 
     
     The new testset will contain 20%of the instance, but it will not contain 
     any instance that was previously in the training set.
@@ -217,34 +217,7 @@ if __name__=="__main__":
     data = discretizeCategoriesforStratification(df, in_cat='flow', new_cat='tempf_',
                                           divby =1, higherclass=3)
     
-    # f_, t_=[], []
-    # for elm in id_columns : 
-
-    #     op = test_set_check_id(elm, test_ratio=0.2, hash=hashlib.md5)
  
-    #     if op is False :
-    #         f_.append(op)
-    #     else :
-    #         t_.append(op)
-    #     # print(op)
-    # print(f_)
-    # print(t_)
-    # df.hist(bins=50, figsize=(20, 15))
-    # create index 
-    
-    
-    # train_set , test_set = split_train_test_by_id(df, test_ratio=0.2)
-    # print(train_set)
-    # erp_file ='kouto-gbalo.xlsx'
-    # # erpPath = os.abspath()
-    # # print(os.path.abspath('.'))
-    # list_erp = [os.path.join(os.path.abspath('.'), file) 
-    #             for file in os.listdir('.') 
-    #             if os.path.isfile(file) and file.endswith('.xlsx')]
-    # # print(list_erp)
-    # for ffile in list_erp : 
-    #     dictfiles = read_from_excelsheets(ffile)
-    #     write_excel(dictfiles)
         
         
         
