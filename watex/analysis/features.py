@@ -108,7 +108,7 @@ class sl_analysis :
         self._flow_classes=kws.pop('flow_classes',[0., 1., 3.])
         self._slmethod =kws.pop('slm', 'svm')
         self._sanitize_df = kws.pop('sanitize_df', True)
-        
+        self._index_col_id =kws.pop('col_id', 'id')
         self._drop_columns =kws.pop('drop_columns', ['east', 'north'])
         
         self._fn =None
@@ -177,6 +177,7 @@ class sl_analysis :
         self.gFname, exT=os.path.splitext(features_fn)
         if exT in PD_READ_FEATURES.keys(): self._fn =exT 
         else: self._fn ='?'
+        
         self._df = PD_READ_FEATURES[exT](features_fn)
     
         self.gFname = os.path.basename(self.gFname)
@@ -245,7 +246,7 @@ class sl_analysis :
                                 target: str ='flow', 
                                 flow_cat_values: Iterable[float] =None, 
                                 set_index: bool = False, sanitize_df: bool =True,
-                                col_name: str ='id', **kwargs): 
+                                col_name: str =None, **kwargs): 
         """
         Main goals of this method is to classify the different flow classes
          into four(04) considered as default values according to::
@@ -296,6 +297,8 @@ class sl_analysis :
         
         drop_columns = kwargs.pop('drop_columns', None)
         mapflow2c = kwargs.pop('map_flow2classes', True)
+        if col_name is not None: 
+            self._index_col_id= col_name 
         
         if flow_cat_values is not None: 
             self.flow_classes = flow_cat_values 
@@ -326,23 +329,28 @@ class sl_analysis :
              if self._sanitize_df is True : 
                  self._df , utm_flag = STZ_DF(self._df)
         # test_df = self._df.copy(deep=True)
-        # print(test_df)
         if self._drop_columns is not None :
             if isinstance(self._drop_columns, np.ndarray): 
                 self._drop_columns = [l.lower() for
                                       l in self._drop_columns.tolist()]
-            self.df = self._df.copy()
+        self.df = self._df.copy()
+        if self._drop_columns is not None: 
             self.df = self.df.drop(self._drop_columns, axis =1)
             
         if mapflow2c is True : 
   
             self.df[self.target]= categorize_flow(
                 target_array= self.df[self.target], 
-                flow_values =self.flow_classes )
+                flow_values =self.flow_classes)
   
-        if self._set_index : 
-            self.df.set_index(col_name, inplace =True)
-            
+        if self._set_index :
+            # id_= [name  for name in self.df.columns if name =='id']
+            if self._index_col_id !='id': 
+                self.df=self.df.rename(columns = {self._index_col_id:'id'})
+                self._index_col_id ='id'
+                
+            self.df.set_index(self._index_col_id, inplace =True)
+
         if self.target =='flow': 
             self.df =self.df.astype({
                              'power':np.float, 
@@ -382,7 +390,7 @@ class sl_analysis :
                reset_index =self.reset_index, modname =self.modname)
         
             
-@deco.catmapflow(cat_classes=['FR0', 'FR1', 'FR2', 'FR3'])#, 'FR4'] )
+@deco.catmapflow2(cat_classes=['FR0', 'FR1', 'FR2', 'FR3'])#, 'FR4'] )
 def categorize_flow(target_array, flow_values: Iterable[float],
                     **kwargs) -> Iterable[T]: 
     """ 
@@ -415,7 +423,7 @@ def categorize_flow(target_array, flow_values: Iterable[float],
         - ``flowClasses``: If given , see ``flow_classes`` param. 
             
     """
-    flowClasses =  kwargs.pop('flow_classes', None)
+    flowClasses =  kwargs.pop('classes', None)
 
     new_flow_values = []
     inside_inter_flag= False
@@ -432,36 +440,42 @@ def categorize_flow(target_array, flow_values: Iterable[float],
         new_flow_values =flow_values 
     
     if inside_inter_flag is False: 
-        if 0. in flow_values : 
-            new_flow_values.append(0.) 
-            
+        flow_values= sorted(flow_values)
+        # if 0. in flow_values : 
+        #     new_flow_values.append(0.) 
         for ss, val in enumerate(flow_values) : 
-            if val !=0. : 
+            if ss ==0 : 
+                #append always the first values. 
+                 new_flow_values.append(val) 
+            # if val !=0. : 
+            else:
                 if val ==flow_values[-1]: 
                     new_flow_values.append([flow_values[ss-1], val])
                     new_flow_values.append(val)
                 else: 
                    new_flow_values.append([flow_values[ss-1], val])
-
+ 
     return new_flow_values, target_array, flowClasses
         
   
 if __name__=='__main__': 
 
     featurefn ='data/geo_fdata/BagoueDataset3.xlsx' 
+    featurefn ='data/geo_fdata/_bagoue_civ_loc_ves&erpdata3.csv'
     
     slObj =sl_analysis(data_fn=featurefn, set_index =True,
+                       drop_columns='num', col_id ='name',
                        flow_classes =[0., 1., 3.])
-    slObj.df_cache=['op']
+    # slObj.df_cache=['op']
 
     df= slObj.df
     # print(set(df['flow'].to_numpy()))
     # slObj.writedf()
-    import matplotlib.pyplot as plt 
-    plt.figure(figsize=(10,5))
-    df['flow'].value_counts(normalize =True).plot.bar(label='flow_classes')
-    # print(cache +['east', 'north'])
-    print(df['flow'].value_counts(normalize = True))
+    # import matplotlib.pyplot as plt 
+    # plt.figure(figsize=(10,5))
+    # df['flow'].value_counts(normalize =True).plot.bar(label='flow_classes')
+    # # print(cache +['east', 'north'])
+    # print(df['flow'].value_counts(normalize = True))
         
         
         

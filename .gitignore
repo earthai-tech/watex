@@ -135,3 +135,6 @@ watex/utils/watson_api
 
 # Data 
 data/Bag.main&rawds/
+
+# ignore the projects 
+watex/utils/project_bagoue.py
