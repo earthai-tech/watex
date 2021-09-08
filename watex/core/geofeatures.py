@@ -116,18 +116,18 @@ class Features:
                  ".sql" : pd.read_sql
                  }  
     featureLabels = [
-                        'id', 
-                        'east',
-                        "north",
-                        'power',
-                        "magnitude",
-                        "shape",
-                        "type",
-                        "sfi",
-                        'ohmS',
-                        'lwi', 
-                        'geol',
-                        'flow'
+                    'id', 
+                    'east',
+                    "north",
+                    'power',
+                    "magnitude",
+                    "shape",
+                    "type",
+                    "sfi",
+                    'ohmS',
+                    'lwi', 
+                    'geol',
+                    'flow'
             ]
 
     def __init__(self, features_fn =None, ErpColObjs=None , vesObjs=None,
