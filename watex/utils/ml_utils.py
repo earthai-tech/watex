@@ -30,7 +30,7 @@ DOWNLOAD_ROOT = 'https://github.com/WEgeophysics/watex/master/'
 #'https://zenodo.org/record/4896758#.YTWgKY4zZhE'
 DATA_PATH = 'data/tar.tgz_files'
 TGZ_FILENAME = '/bagoue.main&rawdata.tgz'
-CSV_FILENAME = '_bagoue_civ_loc_ves&erpdata3.csv'
+CSV_FILENAME = '_bagoue_civ_loc_ves&erpdata4.csv'
 
 DATA_URL = DOWNLOAD_ROOT + DATA_PATH  + TGZ_FILENAME
 
@@ -216,6 +216,7 @@ if __name__=="__main__":
     
     data = discretizeCategoriesforStratification(df, in_cat='flow', new_cat='tempf_',
                                           divby =1, higherclass=3)
+    
     
  
         

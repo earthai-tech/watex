@@ -7,7 +7,10 @@ Created on Mon Sep  6 17:53:06 2021
 
 @author: @Daniel03
 """
-from __future__ import division 
+# from __future__ import division 
+
+import inspect
+# import collections
 
 import warnings 
 import numpy as np 
@@ -37,12 +40,17 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
     ---------- 
         *base_num_feature*:str, 
             Numerical features to categorize. 
+            
         *threshold_operator*: float, 
             The coefficient to divised the numerical features value to 
             normalize the data 
-        *max_category*: Maximum value fits a max category to gather all 
-            value greather than. 
             
+        *max_category*: Maximum value fits a max category to gather all 
+            value greather than.
+            
+        *return_train*: bool, 
+            return the whole stratified trainset if set to ``True``.
+        
     Another way to stratify dataset is to get insights from the dataset and 
     to add a new category as additional mileage. From this new attributes,
     data could be stratified after categorizing numerical features. 
@@ -69,11 +77,12 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
         purely random sampling.
     """
     
-    def __init__(self, base_num_feature=None, threshold_operator = 1., 
+    def __init__(self, base_num_feature=None, threshold_operator = 1., return_train=False,
                  max_category=3, n_splits=1, test_size=0.2, random_state=42):
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
         
         self.base_num_feature= base_num_feature
+        self.return_train= return_train
         self.threshold_operator=  threshold_operator
         self.max_category = max_category 
         self.n_splits = n_splits 
@@ -109,9 +118,10 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
                                            self.random_state)
             
             for train_index, test_index  in split.split(X, X[in_c]): 
- 
                 strat_train_set = X.loc[train_index]
                 strat_test_set = X.loc[test_index] 
+                #keep a copy of all stratified trainset.
+                strat_train_set_copy = X.loc[ np.delete(X.index, test_index)]
                 
         train_set, test_set = train_test_split( X, test_size = self.test_size,
                                    random_state= self.random_state)
@@ -154,9 +164,12 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
             self.statistics_.set_index(in_c, inplace=True)
             
             # remove the add category into the set 
-            for set in(strat_train_set, strat_test_set): 
+            for set in(strat_train_set_copy, strat_train_set, strat_test_set): 
                 set.drop([in_c], axis=1, inplace =True)
-            
+                
+            if self.return_train: 
+                strat_train_set = strat_train_set_copy 
+                
             return strat_train_set, strat_test_set 
 
     
@@ -297,12 +310,14 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
     """ Transform numerical features into categorial features and return 
     a new array transformed. 
     
-    Arguments: 
+    Arguments 
     ----------
         *num_columns_properties*: list 
             list composed ofnumerical `features name`, list of 
             `features boundaries` with their `categorized names`
-
+            
+    Notes::
+ 
     From the boundaries values including, features values can be transformed.
     `num_columns_properties` is composed of::
         
@@ -362,7 +377,7 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
         self.in_values_ = None
         self.out_values_ = None
         self.base_columns_ix_=None 
-        
+  
     def fit(self, X, y=None):
         
         self.base_columns_ = [n_[0] for  n_ in self.num_columns_properties]
@@ -376,6 +391,7 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
         call :meth:`~TransformerMixin.fit_transform` inherited from 
         scikit_learn."""
         
+        X_dtype =''
         if isinstance(self.base_columns_, (list, tuple)): 
             self.base_columns_ =np.array(self.base_columns_)
             
@@ -384,9 +400,34 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
             
             #in the case indexes are provided 
             self.base_columns_ix_ = self.base_columns_ 
- 
-        X= self.ascertain_mumerical_values(X)
-
+            
+        # check whether X is unique array or array_like.
+        try: 
+            X.shape[1]
+        except IndexError: 
+            if isinstance(X, pd.Series):
+            # if X.__class__.__name__ =='Series': 
+                X= X.values 
+            X_dtype = 'unik__'
+            
+        except RuntimeError : 
+            # handle other possible errors.
+            X_dtype = 'unik__'
+        else : 
+            if X.shape[1]==1: 
+                X=X.reshape((X.shape[0]),)
+                X_dtype ='unik__'
+                
+        if X_dtype =='unik__': 
+               X =  categorize_flow(X, self.in_values_[0],
+                                    classes=self.out_values_[0] )
+               self.base_columns_ix_ =(0,)
+               
+               return X
+        # now 
+        if isinstance(X, pd.DataFrame): 
+            X= self.ascertain_mumerical_values(X)    
+            
         if self.base_columns_ix_ is not None: 
             for ii, ix_ in enumerate(self.base_columns_ix_): 
                 X[:, ix_]=categorize_flow(X[:, ix_], 
@@ -404,6 +445,8 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
     def ascertain_mumerical_values(self, X, y=None): 
         """ Retreive indexes from mumerical attributes and return a dataframe
         values especially if `X` is dataframe else returns values of array."""
+        
+
         # ascertain dataframe whether there is an categorial values. 
         try:
             # if isinstance(X, pd.DataFrame)
@@ -418,6 +461,7 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
         # return X if no numeruical columns found
         if len(list_of_numerical_cols) ==0 : 
             self._logging.info('`None`numerical columns detected.')
+            warnings.warn('None numerical columns detected.It seems')
             
             return X.values 
         
@@ -525,6 +569,7 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                     # break str characters with
                     t_= attr_.replace('_', '').split('per')
                     self.attributes_names_.append(tuple(t_))
+        
             
         if isinstance(X, pd.DataFrame): 
             if len(self.attributes_names_) !=0: 
@@ -536,11 +581,12 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                  for col_n in self.attributes_names_]
                 
             X= X.values 
-            
+ 
         if self.add_attributes: 
-            for num_ix , deno_ix  in self.attributes_ix : 
+            for num_ix , deno_ix  in self.attributes_ix :
+        
                 try: 
-                    
+                   
                     num_per_deno = X[:, num_ix] /X[:, deno_ix ]
                     
                 except ZeroDivisionError:
@@ -552,30 +598,145 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                 X= np.c_[X, num_per_deno ]
                    
         return X 
+     
+class DataFrameSelector(BaseEstimator, TransformerMixin):
+    """ Select data from specific attributes for column transformer. 
+    
+    Select only numerical or categorial columns for operations. Work as the
+    same like sckit-learn `make_colum_tranformer` 
+    
+    Parameters 
+    ----------
+        *attribute_names*: list or array_like 
+            List of  the main columns to keep the data 
             
+        *select_type*: str 
+            Automatic numerical and categorial selector. If `select_type` is 
+            ``num``, only numerical values in dataframe are retrieved else 
+            ``cat`` for categorials attributes.
+            
+    Returns
+    -------
+        X: ndarray 
+            New array with composed of data of selected `attribute_names`.
+            
+    :Example:
+        
+        >>> from watex.utils.transformers import DataFrameSelector 
+        >>> from watex.utils.ml_utils import load_data   
+        >>> df = mlfunc.load_data('data/geo_fdata')
+        >>> XObj = DataFrameSelector(attribute_names=['power','magnitude','sfi'],
+        ...                          select_type=None)
+        >>> cdf = XObj.fit_transform(df)
+    """  
+    def __init__(self, attribute_names=None, select_type =None): 
+        self._logging= watexlog().get_watex_logger(self.__class__.__name__)
+        
+        self.attribute_names = attribute_names 
+        self.select_type = select_type 
+        
+    def fit(self, X, y=None): 
+        return self
+    
+    def transform(self, X, y=None): 
+        """ Transform data and return numerical or categorial values."""
+       
+        if isinstance(self.attribute_names, str): 
+            self.attribute_names =[self.attribute_names]
+            
+        if self.attribute_names is not None: 
+            t_= []
+            for in_attr in self.attribute_names: 
+                for attr_ in X.columns: 
+                    if in_attr.lower()== attr_.lower(): 
+                        t_.append(attr_)
+                        break 
+                    
+            if len(t_)==0: 
+                self._logging.warn(f' `{self.attribute_names}` not found in the'
+                                   f'`{X.columns}')
+                warnings.warn('None attribute in the dataframe match'
+                              f'`{self.attribute_names}.')
+                
+            if len(t_) != len(self.attribute_names): 
+                mm_= set(self.attribute_names).difference(set(t_))
+                warnings.warn(
+                    f'Value{"s" if len(mm_)>1 else""} {list(mm_)} not found.'
+                    f" Only `{t_}`match{'es' if len(t_) <1 else ''}"
+                    " the dataframe features.")
+                self._logging.warning(
+                    f'Only `{t_}` can be considered as dataframe attributes.')
+                                   
+            self.attribute_names =t_
+            
+            return X[self.attribute_names].values 
+        
+        try: 
+            if self.select_type.lower().find('num')>=0:
+                self.select_type =='num'
+            elif self.select_type.lower().find('cat')>=0: 
+                self.select_type =='cat'
+            else: self.select_type =None 
+            
+        except:
+            warnings.warn(f'`Select_type`` given argument ``{self.select_type}``'
+                         ' seems to be wrong. Should defaultly return the '
+                         'Dataframe value.', RuntimeWarning)
+            self._logging.warnings('A given argument `select_type`seems to be'
+                                   'wrong %s. Use ``cat`` or ``num`` for '
+                                   'categorical or numerical attributes '
+                                   'respectively.'% inspect.signature(self.__init__))
+            self.select_type =None 
+        
+        if self.select_type is None:
+            warnings.warn('Arguments of `%s` arguments %s are all None. Should'
+                          ' returns the dataframe values.'% (repr(self),
+                              inspect.signature (self.__init__)))
+            
+            self._logging.warning('Object arguments are None.'
+                               ' Should return the dataframe values.')
+            return X.values 
+        
+        if self.select_type =='num':
+            obj_columns= X.select_dtypes(include='number').columns.tolist()
+
+        elif self.select_type =='cat': 
+            obj_columns= X.select_dtypes(include=['object']).columns.tolist() 
+ 
+        self.attribute_names = obj_columns 
+        
+        return X[self.attribute_names].values 
+        
+    def __repr__(self):
+        return self.__class__.__name__
+        
+        
                   
 if __name__=='__main__': 
     # import matplotlib.pyplot as plt 
     # df =pd.read_csv('data/geo_fdata/_bagoue_civ_loc_ves&erpdata.csv')
     # print(df)
     df = mlfunc.load_data('data/geo_fdata')
-    stratifiedNumObj= StratifiedWithCategoryAdder('flow', n_splits=1)
+    stratifiedNumObj= StratifiedWithCategoryAdder('flow', n_splits=1,
+                                                  return_train=True)
     strat_train_set , strat_test_set = stratifiedNumObj.fit_transform(X=df)
     bag_train_set = strat_train_set.copy()
-    catObj = CategorizeFeatures(num_columns_properties=[
-        ('flow', ([0, 1, 3], ['FR0', 'FR1', 'FR2', 'FR3']))
-        # ('power', ([10, 30, 100], ['pw0', 'pw1', 'pw2', 'pw4']))
-        ])
-    # catObj.fit()
-    dfff= catObj.fit_transform(bag_train_set)
-    df_= pd.DataFrame(dfff, columns= bag_train_set.columns)
+    test_label = bag_train_set['flow'].copy()
+
+
+    # if test_label.__class__.__name__ =='Series': 
+        
+    #     print('yes')
+    # catObj =CategorizeFeatures(num_columns_properties=[
+    #                 ('flow', ([0., 1., 3.], ['FR0', 'FR1', 'FR2', 'FR3']))
+    #                 ])
+    # X= catObj.fit_transform(test_label)
     
-    # print(catObj.in_values_)
-    # print(catObj.out_values_)
-    [ 'power','magnitude', 'ohmS', 'lwi']
-    addObj = CombinedAttributesAdder(add_attributes=True, 
-                                     attributes_ix=['lwi_per_ohmS', 'power_per_magnitude'])
-    df2 = addObj.fit_transform(df_)
+    # dfObj = DataFrameSelector(attribute_names=None,
+    #                           select_type='num')
+    # cdf = dfObj.fit_transform(bag_train_set)
+    # comObj =CombinedAttributesAdder(add_attributes=True, attributes_ix=[(6,5)])
+    # xattr = comObj.fit_transform(cdf)
 
 
     
