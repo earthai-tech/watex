@@ -135,6 +135,7 @@ watex/utils/watson_api
 
 # Data 
 data/Bag.main&rawds/
+data/geo_fdata/_bagoue_civ_loc_ves&erpdata4.csv
 
 # ignore the projects 
 watex/utils/project_bagoue.py
