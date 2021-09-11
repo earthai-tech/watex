@@ -139,3 +139,5 @@ data/geo_fdata/_bagoue_civ_loc_ves&erpdata4.csv
 
 # ignore the projects 
 watex/utils/project_bagoue.py
+watex/utils/_data_preparing_.py 
+watex/utils/_data_training_.py 
