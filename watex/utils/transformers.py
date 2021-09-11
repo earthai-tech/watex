@@ -446,7 +446,6 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
         """ Retreive indexes from mumerical attributes and return a dataframe
         values especially if `X` is dataframe else returns values of array."""
         
-
         # ascertain dataframe whether there is an categorial values. 
         try:
             # if isinstance(X, pd.DataFrame)
@@ -654,7 +653,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
                     
             if len(t_)==0: 
                 self._logging.warn(f' `{self.attribute_names}` not found in the'
-                                   f'`{X.columns}')
+                                   f'`{X.columns}`.')
                 warnings.warn('None attribute in the dataframe match'
                               f'`{self.attribute_names}.')
                 
