@@ -715,7 +715,7 @@ class PFI:
         .. todo:: Quick plot the permutation  importance diagram. 
             Can be customize using the multiples keywargs arguments.
                     
-    :param reason: what_going_there? validation cure or learning curve.
+    :param reason: what_going_there? validation curve or learning curve.
                     - ``pfi`` for permutation feature importance before
                         and after sguffling trees  
                     -``dendro`` for dendrogram plot  
@@ -756,7 +756,7 @@ class PFI:
         self.fig_title =kwargs.pop('fig_title', 'matplotlib.axes.Axes.barh Example')
         
     def __call__(self, func:Callable[..., T]): 
-        
+ 
         @functools.wraps(func)
         def feat_importance_dec (*args, **kwargs): 
             """ Decorated pfi and dendrogram diagram """
