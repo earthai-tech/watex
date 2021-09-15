@@ -48,11 +48,12 @@ X, y = TRAINSET , LABELS
 # stratified trainset and testset 
 X_ , y_= dX , dy 
 # after stratificated , defaults data prepared 
-# cull pipeline to see all the transformation 
+
 
 X_prepared, y_prepared = TRAINSET_PREPARED, TRAINSET_LABEL_ENCODED
 # Test set put aside and applied the transformation as above. 
 
 X_test, y_test  = TESTSET,  TESTSET_LABEL_ENCODED
 # default pipeline 
+# call pipeline to see all the transformation 
 default_pipeline = full_pipeline 
