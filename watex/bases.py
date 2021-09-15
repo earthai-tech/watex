@@ -1,11 +1,25 @@
+# -*- coding: utf-8 -*-
+# Copyright © 2021  Kouadio K.Laurent,
+# bases.py modules under MIT-Licence
+"""
+Created on Tue Sep 14 14:47:18 2021
+
+@author: @Daniel03
+"""
+import os 
 import re
+import sys 
 import warnings 
 import pandas as pd
 
+if __name__ =='__main__' or __package__ is None: 
+    sys.path.append( os.path.dirname(os.path.dirname(__file__)))
+    sys.path.insert(0, os.path.dirname(__file__))
+    __package__ ='watex'
+   
 import watex.utils.decorator as dec 
 import watex.utils.exceptions as Wex
-from watex.utils.__init__ import savepath as savePath 
-
+from .utils.__init__ import savepath as savePath 
 
 OptsList, paramsList =[['bore', 'for'], 
                         ['x','east'], 
@@ -124,15 +138,4 @@ def exportdf (df =None, refout:str =None,  to:str =None, savepath:str =None,
        savepath = savePath(modname)
         
     return df_, to,  refout, savepath, reset_index 
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         

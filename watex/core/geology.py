@@ -9,17 +9,14 @@ Created on Wed Jul  7 22:23:02 2021
 """
 import os
 import warnings 
+from typing import TypeVar, Iterable, Tuple, Callable
 import numpy as np 
 import pandas as pd
 
-from typing import TypeVar, Iterable, Tuple, Callable
-
-from watex.utils._watexlog import watexlog  
+from ..utils._watexlog import watexlog  
 import watex.utils.exceptions as Wex
 
 _logger =watexlog().get_watex_logger(__name__)
-
-
 
 
 class Geology: 
@@ -28,7 +25,6 @@ class Geology:
     
     def __init__(self, geofn = None,  **kwargs)-> None:
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
-        
         pass
  
     
@@ -40,8 +36,12 @@ class Borehole(Geology):
      file. 
     
     """
-    def __init__(self, geofn =None, boreh_fn:str  =None, easting: float  = None,
-                 northing:float =None, flow:float =None,
+    def __init__(self,
+                 geofn =None,
+                 boreh_fn:str =None,
+                 easting: float = None,
+                 northing:float=None,
+                 flow:float =None,
                  **kwargs) : 
         Geology.__init__(self, geo_fn = geofn , **kwargs)
         
@@ -70,11 +70,7 @@ class Borehole(Geology):
         for key in list(kwargs.keys()): 
             setattr(self, key, kwargs[key])
             
-    
-
-
-
-
+ 
 class geo_pattern: 
     """
     Singleton class to deal with geopattern  with other modules.

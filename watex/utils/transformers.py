@@ -8,10 +8,8 @@ Created on Mon Sep  6 17:53:06 2021
 @author: @Daniel03
 """
 # from __future__ import division 
-
 import inspect
 # import collections
-
 import warnings 
 import numpy as np 
 import pandas as pd 
@@ -19,12 +17,14 @@ import pandas as pd
 
 from sklearn.model_selection import StratifiedShuffleSplit 
 from sklearn.model_selection import train_test_split 
-from sklearn.base import BaseEstimator, TransformerMixin 
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder 
 
 # import watex.utils.exceptions as Wex 
-from watex.utils._watexlog import watexlog 
-from watex.analysis.features import categorize_flow 
 
+from ._watexlog import watexlog 
+from ..analysis.features import categorize_flow 
 import  watex.utils.ml_utils as mlfunc
 
 __docformat__='restructuredtext'
@@ -77,8 +77,15 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
         purely random sampling.
     """
     
-    def __init__(self, base_num_feature=None, threshold_operator = 1., return_train=False,
-                 max_category=3, n_splits=1, test_size=0.2, random_state=42):
+    def __init__(self,
+                 base_num_feature=None,
+                 threshold_operator = 1.,
+                 return_train=False,
+                 max_category=3,
+                 n_splits=1, 
+                 test_size=0.2, 
+                 random_state=42):
+        
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
         
         self.base_num_feature= base_num_feature
@@ -316,7 +323,8 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
             list composed ofnumerical `features name`, list of 
             `features boundaries` with their `categorized names`
             
-    Notes::
+    Notes
+    ------
  
     From the boundaries values including, features values can be transformed.
     `num_columns_properties` is composed of::
@@ -343,9 +351,11 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
                 -FR1: flow between 0-1 
                 -FR2: flow between 1-3 
                 -FR3: flow greater than 3. 
-            As you can see the `features boundaries` [0., 1., 3]size is equal to 
-            `categorized name`['FR0', 'FR1', 'FR2', 'FR3'] size +1. 
-    Usage::
+            As you can see the `features boundaries` [0., 1., 3]size is equal 
+            to `categorized name`['FR0', 'FR1', 'FR2', 'FR3'] size +1. 
+            
+    Usage
+    ------
         
         Can categorize multiples features by setting each component explained 
         above as list of tuples. For instance we try to replace the both 
@@ -357,7 +367,9 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
                 ('flow', ([0, 1, 3], ['FR0', 'FR1', 'FR2', 'FR3'])),
                 ('power', ([10, 30, 100], ['pw0', 'pw1', 'pw2', 'pw4']))
                 ]
-    :Example:
+            
+    Example
+    --------
         
         >>> from watex.utils.transformers import  CategorizeFeatures
         >>> from watex.utils.ml_utils import load_data 
@@ -379,10 +391,6 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
         self.base_columns_ix_=None 
   
     def fit(self, X, y=None):
-        
-        self.base_columns_ = [n_[0] for  n_ in self.num_columns_properties]
-        self.in_values_ = [n_[1][0] for  n_ in self.num_columns_properties]
-        self.out_values_ = [n_[1][1] for  n_ in self.num_columns_properties]
 
         return self
     
@@ -391,6 +399,9 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
         call :meth:`~TransformerMixin.fit_transform` inherited from 
         scikit_learn."""
         
+        self.base_columns_ = [n_[0] for  n_ in self.num_columns_properties]
+        self.in_values_ = [n_[1][0] for  n_ in self.num_columns_properties]
+        self.out_values_ = [n_[1][1] for  n_ in self.num_columns_properties]
         X_dtype =''
         if isinstance(self.base_columns_, (list, tuple)): 
             self.base_columns_ =np.array(self.base_columns_)
@@ -505,8 +516,8 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
     --------   
     X : np.ndarray, 
         A  new array contained the new data from the `attributes_ix` operation. 
-        If `add_attributes` is set to ``False``, will return the same array like 
-        beginning. 
+        If `add_attributes` is set to ``False``, will return the same array 
+        like beginning. 
     
     Notes
     ------
@@ -594,6 +605,9 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                         list(map(weird_division, X[:, deno_ix ])))
                     num_per_deno = X[:, num_ix] /weird_divison_values
                     
+                except  RuntimeError| RuntimeWarning: 
+                    pass 
+                
                 X= np.c_[X, num_per_deno ]
                    
         return X 
@@ -653,7 +667,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
                     
             if len(t_)==0: 
                 self._logging.warn(f' `{self.attribute_names}` not found in the'
-                                   f'`{X.columns}`.')
+                                   '`{X.columns}`.')
                 warnings.warn('None attribute in the dataframe match'
                               f'`{self.attribute_names}.')
                 
@@ -661,7 +675,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
                 mm_= set(self.attribute_names).difference(set(t_))
                 warnings.warn(
                     f'Value{"s" if len(mm_)>1 else""} {list(mm_)} not found.'
-                    f" Only `{t_}`match{'es' if len(t_) <1 else ''}"
+                    " Only `{t_}`match{'es' if len(t_) <1 else ''}"
                     " the dataframe features.")
                 self._logging.warning(
                     f'Only `{t_}` can be considered as dataframe attributes.')
@@ -709,33 +723,173 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
     def __repr__(self):
         return self.__class__.__name__
         
+class FrameUnion (BaseEstimator, TransformerMixin) : 
+    """ Unified categorial and numerical features after scaling and 
+    and categorial features encoded.
+    
+    Use :class:`~watex.tranformers.DataframeSelector` class to define 
+    the categorial features and numerical features.
+    
+    Arguments
+    ---------
+        num_attributes: list 
+            List of numerical attributes 
+            
+        cat_attributes: list 
+            list of categorial attributes 
+            
+        scale: bool 
+            Features scaling. Default is ``True`` and use 
+            `:class:~sklearn.preprocessing.StandarScaler` 
+            
+        imput_data: bool , 
+            Replace the missing data. Default is ``True`` and use 
+            :attr:`~sklearn.impute.SimpleImputer.strategy`. 
+            
+        param_search: bool, 
+            If `num_attributes` and `cat_attributes`are None, the numerical 
+            features and categorial features` should be found automatically.
+            Default is ``True``
+            
+        scale_mode:bool, 
+            Mode of data scaling. Default is ``StandardScaler``but can be 
+            a ``MinMaxScaler`` 
+            
+        encode_mode: bool, 
+            Mode of data encoding. Default is ``OrdinalEncoder`` but can be 
+            ``OneHotEncoder`` but creating a sparse matrix. Once selected, 
+            the new shape of ``X`` should be different from the original 
+            shape. 
+    
+    Example
+    ------- 
+    
+        >>> from watex.datasets import X_
+        >>> from watex.utils.transformers import FrameUnion 
+        >>> frameObj = FrameUnion(X_, encoding =OneHotEncoder)
+        >>> X= frameObj.fit_transform(X_)
+        
+    """  
+    def __init__(self,
+                 num_attributes =None , 
+                 cat_attributes =None,
+                 scale =True,
+                 imput_data=True,
+                 encode =True, 
+                 param_search ='auto', 
+                 strategy ='median', 
+                 scale_mode ='StandardScaler', 
+                 encode_mode ='OrdinalEncoder' ): 
+        
+        self._logging = watexlog().get_watex_logger(self.__class__.__name__)
+        
+        self.num_attributes = num_attributes 
+        self.cat_attributes = cat_attributes 
+        self.param_search = param_search 
+        self.imput_data = imput_data 
+        self.strategy =strategy 
+        self.scale = scale
+        self.encode = encode 
+        self.scale_mode = scale_mode
+        self.encode_mode = encode_mode
+        
+        self.X_=None 
+        self.X_num_= None 
+        self.X_cat_ =None
+        self.num_attributes_=None
+        self.cat_attributes_=None 
+        self.attributes_=None 
+        
+    def fit(self, X): 
+        return self
+    
+    def transform(self, X, y=None): 
+        """ Transform data and return X numerical and categorial encoded 
+        values."""
+        
+        if self.scale_mode.lower().find('stand')>=0: 
+            self.scale_mode = 'StandardScaler'
+        elif self.scale_mode.lower().find('min')>=0: 
+            self.scale_mode = 'MinMaxScaler'
+        if self.encode_mode.lower().find('ordinal')>=0: 
+            self.encode_mode = 'OrdinalEncoder'
+            
+        elif self.encode_mode.lower().find('hot') >=0: 
+            self.encode_mode = 'OneHotEncoder'
+            
+        numObj = DataFrameSelector(attribute_names= self.num_attributes, 
+                                         select_type='num')
+        catObj =DataFrameSelector(attribute_names= self.cat_attributes, 
+                                         select_type='cat')
+        num_arrayObj = numObj.fit_transform(X)
+        cat_arrayObj = catObj.fit_transform(X)
+        self.num_attributes_ = numObj.attribute_names 
+        self.cat_attributes_ = catObj.attribute_names 
+        
+        self.attributes_ = self.num_attributes_ + self.cat_attributes_ 
+        
+        self.X_num_= num_arrayObj.copy()
+        self.X_cat_ =cat_arrayObj.copy()
+        self.X_ = np.c_[self.X_num_, self.X_cat_]
+        
+        if self.imput_data : 
+            from sklearn.impute import SimpleImputer
+            imputer_obj = SimpleImputer(missing_values=np.nan, 
+                                        strategy=self.strategy)
+            num_arrayObj =imputer_obj.fit_transform(num_arrayObj)
+            
+        if self.scale :
+            if self.scale_mode == 'StandardScaler': 
+                scaler = StandardScaler()
+            if self.scale_mode =='MinMaxScaler':
+                scaler = MinMaxScaler()
+        
+            num_arrayObj = scaler.fit_transform(num_arrayObj)
+            
+        if self.encode : 
+            if self.encode_mode =='OrdinalEncoder': 
+                encoder = OrdinalEncoder()
+            elif self.encode_mode =='OneHotEncoder':
+                encoder = OneHotEncoder()
+            cat_arrayObj= encoder.fit_transform(cat_arrayObj )
+            # sparse matrix of type class <'numpy.float64'>' stored 
+            # element in compressed sparses raw format . To convert the sense 
+            # matrix to numpy array , we need to just call 'to_array()'.
+            warnings.warn(f'Sparse matrix {cat_arrayObj.shape!r} is converted '
+                          'in dense Numpy array.', UserWarning)
+            cat_arrayObj= cat_arrayObj.toarray()
+
+        try: 
+            X= np.c_[num_arrayObj,cat_arrayObj]
+            
+        except ValueError: 
+            # For consistency use the np.concatenate rather than np.c_
+            X= np.concatenate((num_arrayObj,cat_arrayObj), axis =1)
+        
+        if self.encode_mode =='OneHotEncoder':
+            warnings.warn('Use `OneHotEncoder` to encode categorial features'
+                          ' generates a Sparse matrix. X is henceforth '
+                          ' composed of sparse matrix. The new dimension is'
+                          ' {0} rather than {1}.'.format(X.shape,
+                             self.X_.shape), UserWarning)
+            self._logging.info('X become a spared matrix. The new shape is'
+                               '{X.shape!r} against the orignal '
+                               '{self.X_shape!r}')
+            
+        return X
         
                   
 if __name__=='__main__': 
     # import matplotlib.pyplot as plt 
     # df =pd.read_csv('data/geo_fdata/_bagoue_civ_loc_ves&erpdata.csv')
-    # print(df)
+    # # print(df)
     df = mlfunc.load_data('data/geo_fdata')
     stratifiedNumObj= StratifiedWithCategoryAdder('flow', n_splits=1,
                                                   return_train=True)
-    strat_train_set , strat_test_set = stratifiedNumObj.fit_transform(X=df)
-    bag_train_set = strat_train_set.copy()
-    test_label = bag_train_set['flow'].copy()
+    # strat_train_set , strat_test_set = stratifiedNumObj.fit_transform(X=df)
+    # bag_train_set = strat_train_set.copy()
+    # test_label = bag_train_set['flow'].copy()
 
-
-    # if test_label.__class__.__name__ =='Series': 
-        
-    #     print('yes')
-    # catObj =CategorizeFeatures(num_columns_properties=[
-    #                 ('flow', ([0., 1., 3.], ['FR0', 'FR1', 'FR2', 'FR3']))
-    #                 ])
-    # X= catObj.fit_transform(test_label)
-    
-    # dfObj = DataFrameSelector(attribute_names=None,
-    #                           select_type='num')
-    # cdf = dfObj.fit_transform(bag_train_set)
-    # comObj =CombinedAttributesAdder(add_attributes=True, attributes_ix=[(6,5)])
-    # xattr = comObj.fit_transform(cdf)
 
 
     

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# This module is part of the pyCSAMT utils package,
+#  which is released under a LGPL- licence.
+# @author: KouaoLaurent alias @Daniel03
 """
 ===============================================================================
     Copyright © 2021  Kouadio K.Laurent
@@ -38,58 +41,82 @@ Created on Sat Dec 12 16:21:10 2020
 """
 import os, re ,warnings
 import numpy as np 
+
 from watex.utils._watexlog import watexlog 
 from watex.utils.exceptions import WATexError_file_handling
 
-
-
-
 class notion :
     """
-    Singular class to explain CSAMT technical word in details. Also usefull for user to have info 
-    about any scientific context is does Know. Just call the word directly in warnings to give an overview
-    of why error occurs. It like a short documentation  using pyCSAMT software. 
-    Used everywhere in the script . 
-    
+    Singular class to explain CSAMT technical word in details. Also usefull 
+    for user to have info  about any scientific context is does Know.
+    Just call the word directly in warnings to give an overview of why error
+    occurs. It like a short documentation  using pyCSAMT software. 
+    Used everywhere in the script. 
     """
     
-    reference_frequency ='"Reference number " is The highest frequency with clean data.'
+    reference_frequency =''.join(['"Reference number " is The highest ',
+                                  'frequency with clean data.'])
     
-    TMA='Trimmed-Moving-Average filter : design to remove single-station offsets'\
-        'while preserving broader scale changes.it is uded to estimate average apparent'\
-        'resistivities at a single static-correction-reference frequency.'
+    TMA=''.join(['Trimmed-Moving-Average filter : design to remove ',
+                 'single-station offsetswhile preserving broader scale ',
+                 'changes.It is uded to estimate average apparent resistivities',
+                 'at a single static-correction-reference frequency.'])
         
-    AVG='AVG is typical file from AMTAVG Zonge Engeneering software. It averages GDP CSAMT (CSAM) and Harmonic CSAMT (CSHA) raw data. Several files may be'\
-        'created, including a log file (.LOG-file), listing file (.AL-file), average data files (.AD- and .AVG-file),'\
-        ' plot file (.Z-file), and vector files (.Xnn-files).'
+    AVG=''.join(['AVG is typical file from AMTAVG Zonge Engeneering software.',
+                 ' It averages GDP CSAMT (CSAM) and Harmonic CSAMT (CSHA) raw',
+                 ' data. Several files may be created, including a log file ',
+                 '(.LOG-file)listing file (.AL-file), average data files ',
+                 '(.AD- and .AVG-file), plot file (.Z-file), and vector',
+                 ' files (.Xnn-files).'])
             
-    FMLA= 'The FLMA filter estimates static-corrected apparent resistivities at a single reference frequency by' \
-            'calculating a profile of average impedances along the length of the line. Use a fixed-length-moving-average'\
-            'filter to estimate average apparent resistivities at a single static-correction-reference frequency.'
+    FMLA=''.join([ 'The FLMA filter estimates static-corrected apparent',
+                  ' resistivities at a single reference frequency by' ,
+                  'calculating a profile of average impedances along the',
+                  ' length of the line. Use a fixed-length-moving-average',
+                  'filter to estimate average apparent resistivities at a',
+                  ' single static-correction-reference frequency.'])
             
-    Hanning_window = 'The Hanning window is a taper formed by using a weighted cosine.'\
-        ' The Hanning was named for Julius von Hann, an Austrian meteorologist.'\
-        ' It is also known as the Cosine Bell. Some authors prefer that it be called a'\
-        ' Hann window, to help avoid confusion with the very similar Hamming window.'   
+    Hanning_window =''.join([ 'The Hanning window is a taper formed by using', 
+                             ' a weighted cosine. The Hanning was named for ',
+                             ' Julius von Hann, an Austrian meteorologist.',
+                             ' It is also known as the Cosine Bell. Some ',
+                             'authors prefer that it be called a Hann window,',
+                             ' to help avoid confusion with the very similar ',
+                             'Hamming window.' ])  
     
-    weighted_Beta = 'The coefficient Betaj describe the way in which dipole responses adjacent to the sounding site x = Xk'\
-                    'are weighted to emulate the shape of a Hanning window. For a given window width Wand center point Xko these weights'\
-                    'can be adjusted so that the difference between the continuous Hanning window h( x - X k) and the synthesized version'\
-                    'of it h(x. xd is minimized in a least-squares sense.'
-    j= ''.join(['J-format is Magnetotelluric data file  written by A.G. Jones file format:',
-                    ' The convention used is for RXY to represent the E-polarization (TE) mode,',
-                    'and for RYX to represent the B-polarization mode. ', 'Consulting http://mtnet.info/docs/jformat.txt ',
-                    'for more documentation. Some example file can be find at : http://mtnet.info/docs/jformat_example.txt '])
+    weighted_Beta = ''.join(['The coefficient Betaj describe the way in which ',
+                             'dipole responses adjacent to the sounding site ',
+                             'x = Xk are weighted to emulate the shape of a ',
+                             'Hanning window. For a given window width Wand',
+                             ' center point Xko these weights can be adjusted ',
+                             ' so that the difference between the continuous ',
+                             'Hanning window h( x - X k) and the synthesized ',
+                             'version of it h(x. xd is minimized in a ',
+                             'least-squares sense.'])
     
-    occam_mesh_parameter_specs_info = ''.join(['Params specs is four lines for each layer.',
-                                          'The four lines contain symbols which represent the value of four triangles in each mesh block.', 
-                                          ' These four lines stand for the top, left, bottom, and right-hand triangles of each block in a layer.',
-                                          'The character <?,Z,A|Y,0> indicates what resistivity value is to be assigned to the triangle.'
-                                          ])                           
-    occam_mesh_parameter_specs_meaning = {'ZZZZZZZZZZZZ': 'means that the triangle contains seawater', 
-                                          '????????????': 'means that the triangle is a free parameter to be calculated',
-                                          '000000000000': 'means that it contains air',
-                                          'YYYAAAAAAAYYY' :'‘A’ through ‘Y’indicate fixed resistivity valuesas specified above.' }
+    j= ''.join(['J-format is Magnetotelluric data file  written by A.G. Jones ',
+                    ' file format:The convention used is for RXY to represent ',
+                    'the E-polarization (TE) mode,and for RYX to represent ',
+                    ' the B-polarization mode. Please refer to',
+                    ' http://mtnet.info/docs/jformat.txt  for more details.',
+                    'Some example file can also be find at:',
+                    ' http://mtnet.info/docs/jformat_example.txt'])
+    
+    occam_mesh_parameter_specs_info = ''.join([
+                        'Params specs is four lines for each layer.',
+                        'The four lines contain symbols which represent the',
+                        ' value of four triangles in each mesh block.', 
+                        ' These four lines stand for the top, left, bottom,',
+                        ' and right-hand triangles of each block in a layer.',
+                        'The character <?,Z,A|Y,0> indicates what resistivity ',
+                        'value is to be assigned to the triangle.']) 
+                                                                    
+    occam_mesh_parameter_specs_meaning = {
+        'ZZZZZZZZZZZZ': 'means that the triangle contains seawater', 
+        '????????????': 'means that the triangle is a free parameter to be calculated',
+        '000000000000': 'means that it contains air',
+        'YYYAAAAAAAYYY' :'‘A’ through ‘Y’indicate fixed resistivity valuesas specified above.'
+        }
     
     j_recordR ={'period': 'period in s, if negative then is frequency in Hz.',
                         'rho'   : 'apparent resistivity, if negative then rejected.',
@@ -111,26 +138,84 @@ class notion :
                 }
     
     utm_zone_dict_designator ={
-                  'X': [72,84], 'W': [64,72], 'V':[56,64], 'U':[48,56],
-                  'T': [40,48], 'S': [32,40], 'R':[24,32], 'Q':[16,24], 
-                                      'P': [8,16],  'N':[0,8], 'M':[-8,0], 'L':[-16, 8], 
-                                      'K':[-24,-16], 'J':[-32,-24], 'H':[-40,-32], 'G':[-48,-40], 
-                                      'F': [-56,-48], 'E': [-64, -56], 'D': [-72,-64], 'C':[-80,-72],
-                                      'Z':[-80,84]
-                      }
+                            'X':[72,84], 
+                            'W':[64,72], 
+                            'V':[56,64],
+                            'U':[48,56],
+                            'T':[40,48],
+                            'S':[32,40], 
+                            'R':[24,32], 
+                            'Q':[16,24], 
+                            'P':[8,16],
+                            'N':[0,8], 
+                            'M':[-8,0],
+                            'L':[-16, 8], 
+                            'K':[-24,-16],
+                            'J':[-32,-24],
+                            'H':[-40,-32],
+                            'G':[-48,-40], 
+                            'F':[-56,-48],
+                            'E':[-64, -56],
+                            'D':[-72,-64], 
+                            'C':[-80,-72],
+                            'Z':[-80,84]
+                            }
         
 class suit :
     """
-    Singular class to easy manipulate word. used everywhere in the script to avoid redondancy. 
-    
+    Singular class to easy manipulate word. used everywhere in the 
+    script to avoid redondancy. 
     """
-    idle=[' ', 'nan', np.nan, '*','NaN','none', None, '**' ]
-    longitude =['lon', 'Longitude', 'LONGITUDE', 'LON', 'LONG', 'longitude']
-    latitude =['lat', 'Latitude', 'LATITUDE', 'LAT', 'Lat', 'latitude']
-    easting =['e','east', 'EASTING', 'easting'] 
-    northing =['n','north', 'NORTHING', 'northing'] 
-    station =['dot', 'station', 'sta','st']
-    elevation=['h', 'elev', 'elevation', 'ELEV', 'ELEVATION']
+    idle=[' ',
+          'nan',
+          np.nan,
+          '*',
+          'NaN',
+          'none',
+          None, 
+          '**' ]
+    
+    longitude =['lon',
+                'Longitude',
+                'LONGITUDE',
+                'LON',
+                'LONG',
+                'longitude'
+                ]
+    
+    latitude =['lat',
+               'Latitude',
+               'LATITUDE',
+               'LAT',
+               'Lat',
+               'latitude'
+               ]
+    
+    easting =['e',
+              'east',
+              'EASTING',
+              'easting'
+              ] 
+    
+    northing =['n',
+               'north',
+               'NORTHING',
+               'northing'
+               ] 
+    
+    station =['dot',
+              'station',
+              'sta',
+              'st'
+              ]
+    
+    elevation=['h',
+               'elev',
+               'elevation',
+               'ELEV',
+               'ELEVATION'
+               ]
+    
     topography=['topography']
     stn_separation=['station separation stn']
     azimuth=['azimuth']
@@ -141,12 +226,13 @@ class _sensitive:
     """
     .. note :: `sensitive class` . Please keep carefully the indices like 
         it's ranged. Better Ways to avoid redundancy in code during the program 
-        design. Core of parser of each files except files from :ref:`module-geodrill`.
-        Aims are:
-        1. to check file . it is was the right file provided or not 
-        2. to write file . to Zonge Avg_format or J-Format or EDI -format and else.
-        3. to compute value . Indice are used for computation , set and get specific value.
-    
+        design. Core of parser of each files except files from 
+        :ref:`module-geodrill`. Aims are:
+            1. to check file . it is was the right file provided or not 
+            2. to write file. to Zonge Avg_format or J-Format or
+                EDI -format and else.
+            3. to compute value . Indice are used for computation, 
+                set and get specific value.
     """
     _logger =watexlog.get_watexlog_logger(__name__)
     

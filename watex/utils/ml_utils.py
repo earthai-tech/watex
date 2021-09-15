@@ -8,32 +8,28 @@ Created on Sat Aug 28 16:26:04 2021
 @author: @Daniel03
 
 """
-
+import os 
+import hashlib 
+import tarfile 
+import inspect
+import warnings  
+from six.moves import urllib 
 from typing import TypeVar, Generic, Iterable , Callable, Text
+from abc import ABC, abstractmethod, ABCMeta  
+import pandas as pd 
+import numpy as np 
+
+from sklearn.model_selection import StratifiedShuffleSplit 
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import cross_val_score 
+from sklearn.model_selection import GridSearchCV , RandomizedSearchCV
+
+from watex.utils._watexlog import watexlog
 
 T= TypeVar('T')
 KT=TypeVar('KT')
 VT=TypeVar('VT')
 
-import os 
-import hashlib 
-import tarfile 
-import inspect
-import warnings 
- 
-from six.moves import urllib 
-from abc import ABC, abstractmethod, ABCMeta  
-
-import pandas as pd 
-import numpy as np 
-
-from sklearn.model_selection import StratifiedShuffleSplit 
-from watex.utils._watexlog import watexlog
-
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import cross_val_score 
-from sklearn.model_selection import GridSearchCV , RandomizedSearchCV
- 
 _logger = watexlog().get_watex_logger(__name__)
 
 DOWNLOAD_ROOT = 'https://github.com/WEgeophysics/watex/master/'
@@ -493,7 +489,7 @@ class  checkClass (AttributeCkecker):
             raise TypeError('Estimator might be a class object '
                             f'not {type(value)!r}.')
         
-class BaseEvaluation: 
+class BaseEvaluation (object): 
     """ Evaluation of dataset using a base estimator.
     
     Quick evaluation after data preparing and pipeline constructions. 
@@ -517,40 +513,39 @@ class BaseEvaluation:
             
     """
    
-    # descriptors to control the attributes values 
-    # estimator = checkClass(object)
-    X= checkData('(pd.DataFrame, np.ndarray, pd.Series)')
-    y= checkData('(pd.DataFrame, np.ndarray, pd.Series)')
-    s_ix = checkValueType_((int, float))
-    cv = checkValueType_((int, float))
-    
     def __init__(self, 
                  base_estimator,
                  X, 
-                 y=None,
+                 y,
                  s_ix=None,
                  cv=7,  
-                 pipeline:Callable[..., T]= None, 
+                 pipeline= None, 
                  columns =None, 
+                 pprint=True, 
+                 cvs=True, 
+                 scoring ='neg_mean_squared_error',
                  **kwargs): 
         
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
-        self.estimator = base_estimator
+        self.base_estimator = base_estimator
         self.X= X 
         self.y =y 
         self.s_ix =s_ix 
         self.cv = cv 
         self.columns =columns 
         self.pipeline =pipeline
+        self.pprint =pprint 
+        self.cvs = cvs
+        self.scoring = scoring
         
         for key in list(kwargs.keys()): 
             setattr(self, key, kwargs[key])
-        
-        if (self.estimator and X) is not None : 
-            self.quickEvaluateEstimator()
+
+        if self.X is not None : 
+            self.quickEvaluation()
             
-    def quickEvaluateEstimator(self, fit='yes', **kws): 
+    def quickEvaluation(self, fit='yes', **kws): 
         
         """ Quick methods used to evaluate eastimator, display the 
         error results as well as the sample model_predictions.
@@ -562,56 +557,77 @@ class BaseEvaluation:
         :param fit: Fit the method for quick estimating 
             Default is ``yes`` 
             
-        """
+        """ 
         pprint =kws.pop('pprint', True) 
-        compute_cross = kws.pop('compute_cross', True)
+        if pprint is not None: 
+            self.pprint = pprint 
+        cvs = kws.pop('cvs', True)
+        if cvs is not None: 
+            self.cvs = cvs 
         scoring = kws.pop('scoring', 'neg_mean_squared_error' )
-        
-        for objattr, objvalue in zip(['pprint', 'compute_cross', 'scoring'],
-                               [pprint, compute_cross, scoring]) :
+        if scoring is not None: 
+            self.scoring  = scoring 
             
-             if not hasattr(self, objattr): 
-                 setattr(self, objattr, objvalue)
-                 
         self._logging.info ('Quick estimation using the %r estimator with'
                             'config %r arguments %s.'
-                            %(repr(self.estimator),self.__class__.__name__, 
+                            %(repr(self.base_estimator),self.__class__.__name__, 
                             inspect.getfullargspec(self.__init__)))
         
-        if hasattr(self, 'random_state'): 
-            kws.__setitem__('random_state', getattr(self, 'random_state'))
+        if not hasattr(self, 'random_state'):
+            self.random_state =42 
             
-        try: 
-            obj = self.estimator (**kws)
-        except TypeError: 
-            obj = self.estimator()
-        # if self.pipeline is None:
-        #     self.pipeline = full_pipeline 
-            
+            try:
+                if kws.__getitem__('random_state') is not None : 
+                    setattr(self, 'random_state', kws['random_state'])
+            except KeyError: 
+                self.random_state =42 
+  
+        if not inspect.isclass(self.base_estimator) or \
+              type(self.base_estimator) !=ABCMeta:
+                if type(self.base_estimator).__class__.__name__ !='type':
+                    raise TypeError('Estimator might be a class object '
+                                    f'not {type(self.base_estimator)!r}.')
+                
+        if type(self.base_estimator) ==ABCMeta:  
+            try: 
+                self.base_estimator  = self.base_estimator (**kws)
+            except TypeError: 
+                self.base_estimator  = self.base_estimator()
+
+        if  self.s_ix is None: 
+            self.s_ix = int(len(self.X)/2)
+
         if self.s_ix is not None: 
             if isinstance(self.X, pd.DataFrame): 
                 self.X= self.X.iloc[: int(self.s_ix)]
-    
             elif isinstance(self.X, np.ndarray): 
                 if self.columns is None:
                     warnings.warn(
-                        f'{self.X!r} must be a dataframe but nocolumns found!'
-                          ' Could not create a new dataframe.',UserWarning)
-                                 
-                if self.columns is not None: 
-                    if self.X.shape[2] !=len(self.columns): 
-                        warnings.warn(
-                            f'Expected {self.X.shape[2]!r} but {len(self.columns)} '
-                            f'{"is" if len(self.columns)< 2 else"are"}',
-                            RuntimeWarning)
-                        
-                        raise IndexError('Expectted %i not %i self.columns.'
-                                         %(self.X.shape[2], len(self.columns)))
+                        f'{self.columns!r} must be a dataframe columns!'
+                          ' not {type(self.columns)}.',UserWarning)
+                    
+                    if self.X.ndim ==1 :
+                        size =1 
+                    elif self.X.ndim >1: 
+                        size = self.X.shape[1]
+                    
+                    return TypeError(f'Expected {size!r} column name'
+                                      '{"s" if size >1 else 1} for array.')
+
+                elif self.columns is not None: 
+                    if self.X.shape[1] !=len(self.columns): 
+                        warnings.warn( f'Expected {self.X.shape[1]!r}' 
+                                      'but {len(self.columns)} '
+                                      '{"is" if len(self.columns) < 2 else"are"} '
+                                      '{len(self.columns)!r}.',RuntimeWarning)
+         
+                        raise IndexError('Expected %i not %i self.columns.'
+                                          %(self.X.shape[2], 
+                                            len(self.columns)))
                         
                     self.X= pd.DataFrame(self.X, self.columns)
                     
                 self.X= self.X.iloc[: int(self.s_ix)]
-    
     
             self.y= self.y[:int(self.s_ix )]  
     
@@ -619,8 +635,8 @@ class BaseEvaluation:
             self.y =self.y.values 
    
         if fit =='yes': 
-            self.fit_data(obj, pprint= self.pprint,
-                          compute_cross=self.compute_cross,
+            self.fit_data(self.base_estimator , pprint= self.pprint,
+                          compute_cross=self.cvs,
                           scoring = self.scoring)
             
             
@@ -639,11 +655,22 @@ class BaseEvaluation:
             """ Display scores..."""
             print('scores:', scores)
             print('Mean:', scores.mean())
+            print('rmse scores:', np.sqrt(scores))
             print('standard deviation:', scores.std())
             
         self._logging.info('Fit data X with shape {X.shape!r}.')
         
-        train_prepared_obj =self.pipeline.fit_transform(self.X)
+        if self.pipeline is not None: 
+            train_prepared_obj =self.pipeline.fit_transform(self.X)
+            
+        elif self.pipeline is None: 
+            warnings.warn('No Pipeline is applied. Could estimate with purely'
+                          '<%r> given estimator.'%(self.base_estimator.__name__))
+            self.logging.info('No Pipeline is given. Evaluation should be based'
+                              'using  purely  the given estimator <%r>'%(
+                                  self.base_estimator.__name__))
+            
+            train_prepared_obj =self.base_estimator.fit_transform(self.X)
         
         obj.fit(train_prepared_obj, self.y)
  
@@ -660,64 +687,56 @@ class BaseEvaluation:
         
         if compute_cross : 
             
-            scores = cross_val_score(obj, train_prepared_obj,
+            self.scores = cross_val_score(obj, train_prepared_obj,
                                      self.y, 
                                      cv=self.cv,
-                                     scoring='neg_mean_squared_error' 
+                                     scoring=self.scoring
                                      )
             
-            if scoring == 'neg_mean_squared_error': 
-                
-                self.rmse_scores = np.sqrt(-scores)
+            if self.scoring == 'neg_mean_squared_error': 
+                self.rmse_scores = np.sqrt(-self.scores)
             else: 
-                self.rmse_scores = np.sqrt(scores)
+                self.rmse_scores = np.sqrt(self.scores)
     
             if pprint:
-                display_scores(self.rmse_scores)   
+                if self.scoring =='neg_mean_squared_error': 
+                    self.scores = -self.scores 
+                display_scores(self.scores)   
                 
-    def __getattribute__(self, item):
-        """ Return attribute when trying to get `rmse_scores`. when is not 
-        computed(`compute_cross` is set to ``False``.) Otherwise raise 
-        errors for others attributes that are not sets.
-        """
-        try: 
-            if item.startwith('rme_s'): 
-                return super().__getattribute__(item)
-            
-        except AttributeError: 
-            warnings.warn(f'{type(self)!r} has no attribute {item!r}'
-                          '{item!r} is set to ``None``.', UserWarning)
-            self.__dict__[item] =None 
-            
-            return 
-        
+
+class PCAForCompression: 
+    pass        
 
 if __name__=="__main__": 
+    # if __package__ is None : 
+    #     __package__='watex'
     from sklearn.ensemble import RandomForestClassifier
-    from watex.utils._data_preparing_ import bagoue_train_set_prepared #as TRAINSET_PREPARED 
-    from watex.utils._data_preparing_ import bagoue_label_encoded #as TRAINSET_LABEL_ENCODED 
+    from sklearn.linear_model import SGDClassifier
+    from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
+    
+
+
     grid_params = [
             {'n_estimators':[3, 10, 30], 'max_features':[2, 4, 6, 8]}, 
             {'bootstrap':[False], 'n_estimators':[3, 10], 'max_features':[2, 3, 4]}
             ]
+
     
-    forest_clf = RandomForestClassifier()
+    forest_clf = RandomForestClassifier(random_state =42)
     grid_search = SearchedGrid(forest_clf, grid_params, kind='RandomizedSearchCV')
-    grid_search.fit(X= bagoue_train_set_prepared , y = bagoue_label_encoded)
+    grid_search.fit(X= X_prepared , y = y_prepared)
+    
     from pprint import pprint  
     pprint(grid_search.best_params_ )
     pprint(grid_search.cv_results_)
-    
-    # df = load_data('data/geo_fdata')
-    # # df.hist(bins=50, figsize=(20, 15))
-    
-    # data = discretizeCategoriesforStratification(df, in_cat='flow', new_cat='tempf_',
-    #                                       divby =1, higherclass=3)
 
-    # print(searchObj.X)
-    
- 
-        
+    # print(BaseEvaluation.__class__.__name__)
+    BaseEvaluation(SGDClassifier , cv=4,
+                    X= X_,
+                    y =y_prepared,
+                    pipeline=default_pipeline,
+                    s_ix =43, scoring ='accuracy' )
+
         
         
         

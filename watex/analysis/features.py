@@ -13,29 +13,24 @@ Created on Mon Jul 12 14:24:18 2021
 @author: @Daniel03
 
 """
-from watex.analysis.__init__ import SUCCES_IMPORT_CHARTSTUDIO
-from watex.analysis.__init__ import PD_READ_FEATURES
-from watex.__init__ import sanitize_fdataset as STZ_DF
-from watex.__init__ import exportdf as EXP_DF
 
-
+import os
+import  warnings  
 from typing import Iterable,TypeVar 
-
-
-T=TypeVar('T', list, tuple) 
-
-import os, warnings  
 import pandas as pd 
 import numpy as np 
 import seaborn as sns 
 
-from watex.core import geofeatures
-
+from ..bases import sanitize_fdataset as STZ_DF
+from ..bases import exportdf as EXP_DF
+from . import SUCCES_IMPORT_CHARTSTUDIO
+from . import PD_READ_FEATURES
+from ..core import geofeatures
+from ..utils import decorator as deco
+from ..utils._watexlog import watexlog 
 import watex.utils.exceptions as Wex
-from watex.utils import decorator as deco
 
-from watex.utils._watexlog import watexlog 
-
+T=TypeVar('T', list, tuple) 
 _logger =watexlog().get_watex_logger(__name__)
 
 
@@ -463,12 +458,11 @@ if __name__=='__main__':
     featurefn ='data/geo_fdata/BagoueDataset3.xlsx' 
     featurefn ='data/geo_fdata/_bagoue_civ_loc_ves&erpdata3.csv'
     
-    slObj =sl_analysis(data_fn=featurefn, set_index =True,
-                       drop_columns='num', col_id ='name',
-                       flow_classes =[0., 1., 3.])
+    # slObj =sl_analysis(data_fn=featurefn, set_index =True,
+    #                    drop_columns='num', col_id ='name',
+    #                    flow_classes =[0., 1., 3.])
     # slObj.df_cache=['op']
-
-    df= slObj.df
+    # df= slObj.df
     # print(set(df['flow'].to_numpy()))
     # slObj.writedf()
     # import matplotlib.pyplot as plt 

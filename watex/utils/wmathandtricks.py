@@ -45,10 +45,10 @@ import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema 
 from scipy.interpolate import interp1d as sp1d
-import watex.utils.exceptions as Wex
-from watex.utils._watexlog import watexlog 
-from watex.utils.decorator import deprecated  
 
+from ..utils._watexlog import watexlog 
+from ..utils.decorator import deprecated  
+import watex.utils.exceptions as Wex
 _logger =watexlog.get_watex_logger(__name__)
 
 

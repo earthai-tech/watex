@@ -16,20 +16,15 @@ Created on Mon Jul  5 13:27:27 2021
 @author: @Daniel03
 
 """
-from tests.core.__init__ import reset_matplotlib, watexlog, diff_files
-
 import os
 # import datetime
-
 import  unittest 
 import pytest
 
 from watex.core.erp import ERP 
-
 from tests import ERP_DATA_DIR, TEST_TEMP_DIR,  make_temp_dir 
-
 from tests import erp_test_location_name 
-
+from tests.core.__init__ import reset_matplotlib, watexlog, diff_files
 
 class TestERP(unittest.TestCase):
     """
