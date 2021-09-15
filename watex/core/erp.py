@@ -973,7 +973,7 @@ class ERP :
         pos_max_index = int(np.where(self.df['pk'].to_numpy(
             ) ==self.posi_max)[0])
 
-        self._anr = wfunc.compute_anr(sfi = self.abest_sfi,
+        self._anr = wfunc.compute_anr(sfi = self.best_sfi,
                                       rhoa_array = self.df['rhoa'].to_numpy(), 
                                       pos_bound_indexes= [pos_min_index ,
                                                           pos_max_index ])

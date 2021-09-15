@@ -73,7 +73,7 @@ class TestERP(unittest.TestCase):
                          auto=option, dipole_length =self.dipole_length, 
                          posMinMax= pos_boundaries, turn_on =True)
             
-            for anObj  in [anomaly_obj.abest_type, anomaly_obj.abest_shape]:
+            for anObj  in [anomaly_obj.best_type, anomaly_obj.best_shape]:
                 self.assertEqual(type(anObj),
                                 str,'Type and Shape of selected anomaly'\
                                 'must be a str object not {0}'.
@@ -81,10 +81,10 @@ class TestERP(unittest.TestCase):
                 geoCounter +=1
             for anObj in [anomaly_obj.select_best_point_,
                           anomaly_obj.select_best_value_, 
-                          anomaly_obj.abest_magnitude, 
-                          anomaly_obj.abest_power, 
-                          anomaly_obj.abest_sfi, 
-                          anomaly_obj.abest_anr]: 
+                          anomaly_obj.best_magnitude, 
+                          anomaly_obj.best_power, 
+                          anomaly_obj.best_sfi, 
+                          anomaly_obj.best_anr]: 
                 try : 
                     
                     self.assertEqual(type(float(anObj)), 

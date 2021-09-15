@@ -9,6 +9,7 @@ Description:
         .. _module-core::`watex.utils.transformers`
 @author: @Daniel03
 """
+import os
 # import datetime
 import  unittest 
 import pytest
@@ -19,12 +20,29 @@ import pandas as pd
 
 from watex.utils.transformers import FrameUnion
 from watex.datasets import X_
+from tests import  make_temp_dir , TEST_TEMP_DIR 
+from tests.core.__init__ import reset_matplotlib, watexlog
+
 
 class TestTransformers(unittest.TestCase):
     """
     Test differents transformers 
     """
+    @classmethod 
+    def setUpClass(cls):
+        """
+        Reset building matplotlib plot and generate tempdir inputfiles 
+        
+        """
+        reset_matplotlib()
+        cls._temp_dir = make_temp_dir(cls.__name__)
 
+    def setUp(self): 
+        
+        if not os.path.isdir(TEST_TEMP_DIR):
+            print('--> outdir not exist , set to None !')
+            watexlog.get_watex_logger().error('Outdir does not exist !')
+            
     @pytest.mark.skip(reason="skip  to avoid AttributeError occurs! Indeed"
                       "Unitest version doesn't Recognize the method"
                       " toarray()` use in :class:~transformers.FrameUnion"
