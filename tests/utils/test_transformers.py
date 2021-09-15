@@ -2,11 +2,11 @@
 """
 Created on Wed Sep 15 19:49:36 2021
 Description:
-        Test to transformers module . Containers of modules  
+        Test to transformers module. Containers of modules  
         Test the functionalities of custums transformers 
 
     References:
-        .. _module-core::`watex.utils.transformers`
+        .. _module-utils::`watex.utils.transformers`
 @author: @Daniel03
 """
 import os
