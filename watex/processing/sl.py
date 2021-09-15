@@ -4,50 +4,37 @@
 # MIT- licence.
 
 from __future__ import print_function , division 
-
 # import os 
 import warnings 
 import inspect
 import numpy as np 
 import pandas as pd 
-
 from typing import TypeVar, Generic, Iterable , Callable
-
-
-T= TypeVar('T', float, int)
 
 from sklearn.tree import DecisionTreeClassifier 
 from sklearn.linear_model import SGDClassifier 
 from sklearn.neighbors import KNeighborsClassifier 
 from sklearn.svm import SVC 
-
-from watex.processing.__init__ import _HAS_ENSEMBLE_ 
-
 from sklearn.pipeline import make_pipeline 
 from sklearn.preprocessing import RobustScaler 
 from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures 
-
 from sklearn.compose import make_column_transformer 
 from sklearn.compose import make_column_selector 
-
-
 from sklearn.model_selection import validation_curve
 from sklearn.model_selection import train_test_split 
-
 from sklearn.metrics import confusion_matrix,  classification_report #, f1_score,
-
-from sklearn.feature_selection import SelectKBest, f_classif 
-
-from watex.analysis.features import sl_analysis 
-from watex.viewer.plot import hints 
-
+from sklearn.feature_selection import SelectKBest, f_classif
+ 
+from .processing.__init__ import _HAS_ENSEMBLE_ 
+from .analysis.features import sl_analysis 
+from .utils._watexlog import watexlog 
+from .viewer.plot import hints 
 import  watex.utils.exceptions as Wex 
 import  watex.utils.decorator as deco
 import  watex.utils.func_utils as func
-from watex.utils._watexlog import watexlog 
 
+T= TypeVar('T', float, int)
 _logger =watexlog().get_watex_logger(__name__)
-
 
 d_estimators__={'dtc':DecisionTreeClassifier, 
                 'svc':SVC, 
@@ -56,7 +43,8 @@ d_estimators__={'dtc':DecisionTreeClassifier,
                  }
 
 if _HAS_ENSEMBLE_ :
-    from watex.processing.__init__ import skl_ensemble__
+    from .processing.__init__ import skl_ensemble__
+    
     for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble__): 
         d_estimators__[es_]=esf_ 
 

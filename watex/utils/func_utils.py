@@ -13,11 +13,11 @@ import inspect
 import numpy as np 
 import matplotlib.pyplot as plt
 # from copy import deepcopy
+
+from ._watexlog import watexlog
 import  watex.utils.gis_tools as gis
 
-from watex.utils._watexlog import watexlog
 _logger = watexlog.get_watex_logger(__name__)
-
 
 try:
     import scipy

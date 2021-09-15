@@ -1,8 +1,12 @@
 # import chart_studio if not exist , install it 
 # process to install chart_studio using sub_process 
 import sys
+import warnings
+import subprocess 
 import pandas as pd
 
+from watex.utils._watexlog import watexlog
+  
 PD_READ_FEATURES ={
                     ".csv":pd.read_csv, 
                      ".xlsx":pd.read_excel,
@@ -11,30 +15,27 @@ PD_READ_FEATURES ={
                      ".sql" : pd.read_sql
                      }  
 
-
-import warnings
-import subprocess 
-from watex.utils._watexlog import watexlog  
-
 SUCCES_IMPORT_CHARTSTUDIO=False 
-
 
 try:
     import chart_studio
     import chart_studio.plotly as py 
-    
 except: 
     #implement pip as subprocess
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install',
-    'chart_studio'])
-    #process output with an API in the subprocess module 
-    reqs = subprocess.check_output([sys.executable,'m', 'pip', 'freeze'])
-    installed_packages  =[r.decode().split('==')[0] for r in reqs.split()]
-    #get the list of installed dependancies 
-    watexlog.get_watex_logger().info(
-        'CHART_STUDIO was successfully installed with its dependancies')
-    
-    SUCCESS_IMPORT_CHART_STUDIO =True
+    try: 
+        
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install',
+        'chart_studio'])
+        #process output with an API in the subprocess module 
+        reqs = subprocess.check_output([sys.executable,'m', 'pip', 'freeze'])
+        installed_packages  =[r.decode().split('==')[0] for r in reqs.split()]
+        #get the list of installed dependancies 
+        watexlog.get_watex_logger().info(
+            'CHART_STUDIO was successfully installed with its dependancies')
+        
+        SUCCESS_IMPORT_CHART_STUDIO =True
+    except : 
+        SUCCESS_IMPORT_CHART_STUDIO =False
 
 else:
     # updating chart_studio 

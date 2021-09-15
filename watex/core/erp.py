@@ -35,20 +35,23 @@ Created on Tue May 18 12:33:15 2021
 
 @author: @Daniel03
 """
-import os, re , sys
-import json , warnings
-import datetime, shutil
+import os
+import re 
+import sys
+import warnings
+import json  
+import datetime
+import  shutil
 import numpy as np 
 import pandas as pd
 from scipy.signal import argrelextrema 
 
-from watex.utils.__init__ import savepath as savePath  
+from ..utils.__init__ import savepath as savePath  
+from ..utils._watexlog import watexlog 
 import  watex.utils.exceptions as Wex
 import watex.utils.wmathandtricks as wfunc
 import watex.utils.func_utils as func
 import watex.utils.gis_tools as gis
-
-from watex.utils._watexlog import watexlog 
 
 _logger =watexlog.get_watex_logger(__name__)
 
@@ -1263,8 +1266,8 @@ if __name__=='__main__'   :
     pathBag = r'F:\repositories\watex\data\Bag.main&rawds\ert_copy\an_dchar'#\zhouphouetkaha_1.xlsx'
     test_fn = 'l10_gbalo.xlsx'
     # erpObj =ERP(erp_fn=pathBag, turn_on ='off', utm_zone ='29N')
-    erpObjs =ERP_collection(listOferpfn=pathBag, export =True , extension ='.xlsx', 
-                            filename = '_testfile', savepath = 'data/exFeatures')
+    # erpObjs =ERP_collection(listOferpfn=pathBag, export =True , extension ='.xlsx', 
+    #                         filename = '_testfile', savepath = 'data/exFeatures')
  
 
     
