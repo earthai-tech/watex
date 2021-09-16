@@ -1,7 +1,9 @@
 import os 
 import warnings 
 
-
+# if __name__=='__main__' and __package__ is None: 
+#     __package__='watex.utils'
+    
 def savepath (nameOfPath): 
     """
     Shortcut to create a folder 

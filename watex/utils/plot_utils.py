@@ -13,15 +13,17 @@ Created on Tue Dec 29 19:18:44 2020
 @author: @Daniel03
 """
 import sys
-import re , os, warnings
+import re 
+import os
+import warnings
 import numpy as np
-from watex.utils.infos import _sensitive as SB
-
 import matplotlib as mpl 
 import matplotlib.cm as cm 
 import matplotlib.pyplot as plt
-from watex.utils import exceptions as Wex 
-from watex.utils.decorator import deprecated, redirect_cls_or_func
+
+from .utils.infos import _sensitive as SB
+from .utils import exceptions as Wex 
+from .utils.decorator import deprecated, redirect_cls_or_func
 
 
 def find_path (path =None, ptol =0.7):

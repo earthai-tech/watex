@@ -4,38 +4,29 @@
 # MIT- licence.
 
 from __future__ import print_function, division 
-
-
 import warnings 
 import numpy as np 
 import pandas as pd 
-
 from typing import TypeVar, Generic, Iterable , Dict 
 from typing import Sequence, Callable, Optional, Union
 
-
-T= TypeVar('T', float, int, str)
-
-
 from sklearn.pipeline import make_pipeline 
-
 from sklearn.model_selection import validation_curve#, cross_val_score
 from sklearn.model_selection import RandomizedSearchCV,  GridSearchCV
 # from sklearn.model_selection import train_test_split 
 # from sklearn.model_selection import GroupKFold 
 from sklearn.model_selection import learning_curve 
-
 from sklearn.metrics import confusion_matrix, classification_report 
 # from sklearn.metrics import mean_squared_error, f1_score 
 from sklearn.inspection import permutation_importance
 
 from watex.processing.sl import Processing , d_estimators__ 
-
-import  watex.utils.exceptions as Wex 
-import  watex.utils.decorator as deco
 from watex.viewer import hints 
 from watex.utils._watexlog import watexlog 
+import  watex.utils.exceptions as Wex 
+import  watex.utils.decorator as deco
 
+T= TypeVar('T', float, int, str)
 _logger =watexlog().get_watex_logger(__name__)
 
 

@@ -14,31 +14,26 @@ Created on Mon Jul  5 16:51:14 2021
 
 """
 from __future__ import print_function 
-
-__docformat__='restructuredtext'
-
 import os
 import re 
 import pandas as pd 
 import json 
 import numpy as np 
 import pandas as pd 
-import  watex.utils.exceptions as Wex
-import watex.utils.gis_tools as gisf 
-
-from watex.core.erp import ERP_collection 
-from watex.core.ves import VES_collection 
-from watex.core.geology import Geology, Borehole 
-
-from watex.utils.__init__ import savepath as savePath 
-from watex.utils.decorator import writef 
-
-import watex.utils.wmathandtricks as wfunc
-import watex.utils.gis_tools as gis
-
 import xml.etree.ElementTree as ET
 
+from .erp import ERP_collection 
+from .ves import VES_collection 
+from .geology import Geology, Borehole 
+from ..utils.__init__ import savepath as savePath 
+from ..utils.decorator import writef 
+import  watex.utils.exceptions as Wex
+import watex.utils.gis_tools as gisf 
+import watex.utils.wmathandtricks as wfunc
+import watex.utils.gis_tools as gis
 from watex.utils._watexlog import watexlog 
+
+__docformat__='restructuredtext'
 
 class Features: 
     """
@@ -647,10 +642,10 @@ class ID:
 if __name__=='__main__': 
     featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
     
-    featObj =Features(features_fn= featurefn)
+    # featObj =Features(features_fn= featurefn)
     
-    df=featObj.df
-    print(df)
+    # df=featObj.df
+    # print(df)
     #df2, *_ = 
     # featObj.exportdf()
     
