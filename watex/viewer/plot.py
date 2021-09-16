@@ -13,31 +13,29 @@ Created on Tue Jul  13 15:48:14 2021
 @author: ~alias @Daniel03
 
 """
-import os ,re, warnings
+import os 
+import re 
+import warnings
 import functools 
+from typing import Generic, TypeVar, Iterable, Callable 
+
 import numpy as np 
 import pandas as pd
 import matplotlib as mpl 
 import  matplotlib.pyplot  as plt
-
-import watex.viewer.hints as hints
-
-from typing import Generic, TypeVar, Iterable, Callable 
-
-T=TypeVar('T', dict, list, tuple)
-
 import matplotlib.cm as cm 
 import matplotlib.colorbar as mplcb
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import MultipleLocator, NullLocator
 import matplotlib.gridspec as gspec
-
 import seaborn as sns 
 
+import watex.viewer.hints as hints
 from  watex.analysis.features import sl_analysis 
-
 import watex.utils.exceptions as Wex
 from watex.utils._watexlog import watexlog
+
+T=TypeVar('T', dict, list, tuple)
 
 _logger=watexlog.get_watex_logger(__name__)
 
@@ -47,11 +45,12 @@ class QuickPlot :
     Special class deals with analysis modules. To quick plot diagrams, 
     histograms and bar plots.
     
-    Arguments: 
+    Arguments 
     ----------
             *df*: pd.core.DataFrame
                 Dataframe for quick plotting. Commonly `QuickPlot` deals 
                 with `:mod:`watex.analysis` package. 
+                
             *data_fn*: str 
                 Raw data for plotting. `QuickPlot` doesnt straighforwadly  
                 read   the raw datafile. It calls  the module from 

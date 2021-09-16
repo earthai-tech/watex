@@ -604,7 +604,7 @@ class BaseEvaluation (object):
                 if self.columns is None:
                     warnings.warn(
                         f'{self.columns!r} must be a dataframe columns!'
-                          ' not {type(self.columns)}.',UserWarning)
+                          f' not {type(self.columns)}.',UserWarning)
                     
                     if self.X.ndim ==1 :
                         size =1 
@@ -616,10 +616,10 @@ class BaseEvaluation (object):
 
                 elif self.columns is not None: 
                     if self.X.shape[1] !=len(self.columns): 
-                        warnings.warn( f'Expected {self.X.shape[1]!r}' 
-                                      'but {len(self.columns)} '
-                                      '{"is" if len(self.columns) < 2 else"are"} '
-                                      '{len(self.columns)!r}.',RuntimeWarning)
+                        warnings.warn(f'Expected {self.X.shape[1]!r}' 
+                                      f'but {len(self.columns)} '
+                                      f'{"is" if len(self.columns) < 2 else"are"} '
+                                      f'{len(self.columns)!r}.',RuntimeWarning)
          
                         raise IndexError('Expected %i not %i self.columns.'
                                           %(self.X.shape[2], 
@@ -683,8 +683,7 @@ class BaseEvaluation (object):
         obj_mse = mean_squared_error(self.y ,
                                      y_obj_predicted)
         self.rmse = np.sqrt(obj_mse )
-        
-        
+
         if compute_cross : 
             
             self.scores = cross_val_score(obj, train_prepared_obj,
@@ -704,8 +703,118 @@ class BaseEvaluation (object):
                 display_scores(self.scores)   
                 
 
-class PCAForCompression: 
-    pass        
+class DimensionReduction: 
+    """ Reduce dimension for data visualisation.
+    
+    Reduce number of dimension down to two (or to three) make  it possible 
+    to plot high-dimension trainsing set on the graph and often gain some 
+    important insights by visually detecting patterns, such as clusters. 
+    """
+    
+    def PCA(self,X, n_components=None, plot_projection=False, 
+            plot_kws=None, n_axes =None,  **pca_kws ): 
+        """Principal Components analysis (PCA) is by far themost popular
+        dimensional reduction algorithm. First it identifies the hyperplane 
+        that lies closest to the data and project it to the data onto it.
+        
+        :param X: Dataset compose of n_features items for dimension reducing
+        
+        :param n_components: Number of dimension to preserve. If`n_components` 
+                is ranged between float 0. to 1., it indicated the number of 
+                variance ratio to preserve. If ``None`` as default value 
+                the number of variance to preserve is ``95%``.
+        :param plot_projection: Plot the explained varaince as a function 
+        of number of dimension. Deafualt is``False``.
+        
+        :param n_axes: Number of importance components to retrieve the 
+            variance ratio. If ``None`` the features importance is computed 
+            usig the cumulative variance representative of 95% .
+        
+        :param plot_kws: Additional matplotlib.pyplot keywords arguments. 
+        
+        :Example: 
+            
+            >>> from watex.utils import DimensionReduction
+            >>> from .datasets.data_preparing import X_train_2
+            >>> DimensionReduction().PCA(X_train_2, 0.95, n_axes =3)
+            >>> pca.components_
+            >>> pca.features_importances_
+        """
+        def findFeaturesImportances(fnames, components, n_axes=2): 
+            """ Retrive the features importance with variance ratio.
+            
+            :param fnames: array_like of feature's names
+            :param components: pca components on different axes 
+            """
+            pc =list()
+            if components.shape[0] < n_axes : 
+                
+                warnings.warn(f'Retrieved axes {n_axes!r} no more than'
+                              f' {components.shape[0]!r}. Reset to'
+                              f'{components.shape[0]!r}', UserWarning)
+                n_axes = int(components.shape[0])
+            
+            for i in range(n_axes): 
+                # reverse from higher values to lower 
+                index = np.argsort(components[i, :])
+                comp_sorted = components[i, :][index][::-1]
+                numf = fnames [index][::-1]
+                pc.append((f'pc{i+1}', numf, comp_sorted))
+                
+            return pc 
+        
+        from sklearn.decomposition import PCA 
+        
+        if n_components is None: 
+            # choose the right number of dimension that add up to 
+            # sufficiently large proportion of the variance 0.95%
+            pca=PCA(**pca_kws)
+            pca.fit(X)
+            cumsum =np.cumsum( pca.explained_variance_ratio_ )
+            # d= np.argmax(cumsum >=0.95) +1 # for index 
+            
+            # we can set the n_components =d then run pca again or set the 
+            # value of n_components betwen 0. to 1. indicating the ratio of 
+            # the variance we wish to preserve.
+        pca = PCA(n_components=n_components, **pca_kws)
+        self.X_= pca.fit_transform(X) # X_reduced = pca.fit_transform(X)
+  
+        if n_components is not None: 
+            cumsum = np.cumsum(pca.explained_variance_ratio_ )
+        
+        if plot_projection: 
+            import matplotlib.pyplot as plt
+            
+            if plot_kws is None: 
+                plot_kws ={'label':'Explained variance as a function of the'
+                           ' number of dimension' }
+            plt.plot(cumsum, **plot_kws)
+            # plt.plot(np.full((cumsum.shape), 0.95),
+            #          # np.zeros_like(cumsum),
+            #          ls =':', c='r')
+            plt.xlabel('Dimensions')
+            plt.ylabel('Explained Variance')
+            plt.title('Explained variance as a function of the'
+                        ' number of dimension')
+            plt.show()
+            
+        # make introspection and set the all pca attributes to self.
+        for key, value in  pca.__dict__.items(): 
+            setattr(self, key, value)
+        
+        if n_axes is None : 
+            self.n_axes = pca.n_components_
+        else : 
+            setattr(self, 'n_axes', n_axes)
+            
+        # get the features importance and features names
+        self.feature_importances_= findFeaturesImportances(
+                                        np.array(list(X.columns)), 
+                                        pca.components_, 
+                                        self.n_axes)
+        
+        return self 
+    
 
 if __name__=="__main__": 
     # if __package__ is None : 
@@ -713,7 +822,7 @@ if __name__=="__main__":
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.linear_model import SGDClassifier
     from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
-    
+    from .datasets.data_preparing import X_train_2
 
 
     grid_params = [
@@ -721,21 +830,24 @@ if __name__=="__main__":
             {'bootstrap':[False], 'n_estimators':[3, 10], 'max_features':[2, 3, 4]}
             ]
 
+    pca= DimensionReduction().PCA(X_train_2, 0.95, plot_projection=True, n_axes =3)
+    print(pca.X_.shape)
     
-    forest_clf = RandomForestClassifier(random_state =42)
-    grid_search = SearchedGrid(forest_clf, grid_params, kind='RandomizedSearchCV')
-    grid_search.fit(X= X_prepared , y = y_prepared)
     
-    from pprint import pprint  
-    pprint(grid_search.best_params_ )
-    pprint(grid_search.cv_results_)
+    # forest_clf = RandomForestClassifier(random_state =42)
+    # grid_search = SearchedGrid(forest_clf, grid_params, kind='RandomizedSearchCV')
+    # grid_search.fit(X= X_prepared , y = y_prepared)
+    
+    # from pprint import pprint  
+    # pprint(grid_search.best_params_ )
+    # pprint(grid_search.cv_results_)
 
-    # print(BaseEvaluation.__class__.__name__)
-    BaseEvaluation(SGDClassifier , cv=4,
-                    X= X_,
-                    y =y_prepared,
-                    pipeline=default_pipeline,
-                    s_ix =43, scoring ='accuracy' )
+    # # print(BaseEvaluation.__class__.__name__)
+    # BaseEvaluation(SGDClassifier , cv=4,
+    #                 X= X_,
+    #                 y =y_prepared,
+    #                 pipeline=default_pipeline,
+    #                 s_ix =43, scoring ='accuracy' )
 
         
         

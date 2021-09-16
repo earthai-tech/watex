@@ -552,8 +552,7 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
         >>> addObj.attributes_names_
     """
     def __init__(self, add_attributes =False,attributes_ix = 'lwi_per_ohmS'):
-        self._logging= watexlog().get_watex_logger(self.__class__.__name__)
-        
+
         self.add_attributes = add_attributes  
         self.attributes_ix = attributes_ix
 

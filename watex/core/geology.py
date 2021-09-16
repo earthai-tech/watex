@@ -138,7 +138,7 @@ def get_color_palette (RGB_color_palette):
      
     :Example: 
         
-        >>> from pycsamt.geodrill.geoCore.structural import get_color_palette 
+        >>> from watex.core.geology import get_color_palette 
         >>> get_color_palette (RGB_color_palette ='R128B128')
     """   
     def ascertain_cp (cp): 
