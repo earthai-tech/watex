@@ -9,17 +9,14 @@ Created on Wed Jul  7 22:23:02 2021
 """
 import os
 import warnings 
+from typing import TypeVar, Iterable, Tuple, Callable
 import numpy as np 
 import pandas as pd
 
-from typing import TypeVar, Iterable, Tuple, Callable
-
-from watex.utils._watexlog import watexlog  
+from ..utils._watexlog import watexlog  
 import watex.utils.exceptions as Wex
 
 _logger =watexlog().get_watex_logger(__name__)
-
-
 
 
 class Geology: 
@@ -28,7 +25,6 @@ class Geology:
     
     def __init__(self, geofn = None,  **kwargs)-> None:
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
-        
         pass
  
     
@@ -40,8 +36,12 @@ class Borehole(Geology):
      file. 
     
     """
-    def __init__(self, geofn =None, boreh_fn:str  =None, easting: float  = None,
-                 northing:float =None, flow:float =None,
+    def __init__(self,
+                 geofn =None,
+                 boreh_fn:str =None,
+                 easting: float = None,
+                 northing:float=None,
+                 flow:float =None,
                  **kwargs) : 
         Geology.__init__(self, geo_fn = geofn , **kwargs)
         
@@ -70,11 +70,7 @@ class Borehole(Geology):
         for key in list(kwargs.keys()): 
             setattr(self, key, kwargs[key])
             
-    
-
-
-
-
+ 
 class geo_pattern: 
     """
     Singleton class to deal with geopattern  with other modules.
@@ -98,30 +94,30 @@ class geo_pattern:
             *   - stars
     """
     pattern={
-                        "basement rocks" :      ['.+++++.', (.25, .5, .5)],
-                        "igneous rocks":        ['.o.o.', (1., 1., 1.)], 
-                        "duricrust"   :         ['+.+',(1., .2, .36)],
-                        "gravel" :              ['oO',(.75,.86,.12)],
-                        "sand":                 ['....',(.23, .36, .45)],
-                        "conglomerate"    :     ['.O.', (.55, 0., .36)],
-                        "dolomite" :            ['.-.', (0., .75, .23)],
-                        "limestone" :           ['//.',(.52, .23, .125)],
-                       "permafrost"  :          ['o.', (.2, .26, .75)],
-                        "metamorphic rocks" :   ['*o.', (.2, .2, .3)],
-                        "tills"  :              ['-.', (.7, .6, .9)],
-                        "standstone ":          ['..', (.5, .6, .9)],
-                        "lignite coal":         ['+/.',(.5, .5, .4)],
-                        "coal":                 ['*.', (.8, .9, 0.)],
-                        "shale"   :             ['=', (0., 0., 0.7)],
-                        "clay"   :              ['=.',(.9, .8, 0.8)],
-                        "saprolite" :           ['*/',(.3, 1.2, .4)],
-                        "sedimentary rocks":    ['...',(.25, 0., .25)],
-                        "fresh water"  :        ['.-.',(0., 1.,.2)],
-                        "salt water"   :        ['o.-',(.2, 1., .2)],
-                        "massive sulphide" :     ['.+O',(1.,.5, .5 )],
-                        "sea water"     :       ['.--',(.0, 1., 0.)],
-                        "ore minerals"  :       ['--|',(.8, .2, .2)],
-                        "graphite"    :         ['.++.',(.2, .7, .7)],
+             "basement rocks" :      ['.+++++.', (.25, .5, .5)],
+             "igneous rocks":        ['.o.o.', (1., 1., 1.)], 
+             "duricrust"   :         ['+.+',(1., .2, .36)],
+             "gravel" :              ['oO',(.75,.86,.12)],
+             "sand":                 ['....',(.23, .36, .45)],
+             "conglomerate"    :     ['.O.', (.55, 0., .36)],
+             "dolomite" :            ['.-.', (0., .75, .23)],
+             "limestone" :           ['//.',(.52, .23, .125)],
+            "permafrost"  :          ['o.', (.2, .26, .75)],
+             "metamorphic rocks" :   ['*o.', (.2, .2, .3)],
+             "tills"  :              ['-.', (.7, .6, .9)],
+             "standstone ":          ['..', (.5, .6, .9)],
+             "lignite coal":         ['+/.',(.5, .5, .4)],
+             "coal":                 ['*.', (.8, .9, 0.)],
+             "shale"   :             ['=', (0., 0., 0.7)],
+             "clay"   :              ['=.',(.9, .8, 0.8)],
+             "saprolite" :           ['*/',(.3, 1.2, .4)],
+             "sedimentary rocks":    ['...',(.25, 0., .25)],
+             "fresh water"  :        ['.-.',(0., 1.,.2)],
+             "salt water"   :        ['o.-',(.2, 1., .2)],
+             "massive sulphide" :     ['.+O',(1.,.5, .5 )],
+             "sea water"     :       ['.--',(.0, 1., 0.)],
+             "ore minerals"  :       ['--|',(.8, .2, .2)],
+             "graphite"    :         ['.++.',(.2, .7, .7)],
                         }
  
 def get_color_palette (RGB_color_palette): 
@@ -142,7 +138,7 @@ def get_color_palette (RGB_color_palette):
      
     :Example: 
         
-        >>> from pycsamt.geodrill.geoCore.structural import get_color_palette 
+        >>> from watex.core.geology import get_color_palette 
         >>> get_color_palette (RGB_color_palette ='R128B128')
     """   
     def ascertain_cp (cp): 

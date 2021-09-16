@@ -1,7 +1,6 @@
 
 import warnings
 
-
 from watex.utils._watexlog import watexlog 
 
 _HAS_ENSEMBLE_=False 
