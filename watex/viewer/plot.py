@@ -145,7 +145,7 @@ class QuickPlot :
         
         self.xlim =kwargs.pop('xlim', None )
         self.ylim=kwargs.pop('y_lim', None) 
-        
+
         self.sns_orient =kwargs.pop('orient', 'v')
         self.sns_style =kwargs.pop('sns_style', None)
         self.sns_palette = kwargs.pop('sns_palette', None)

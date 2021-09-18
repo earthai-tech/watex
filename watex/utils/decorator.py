@@ -957,6 +957,156 @@ class catmapflow2:
         return wrapper  
 
 
+class docstring:
+    """ Generate new doctring of a function or class by appending the doctring 
+    of another function from the words considered as the startpoint `start` 
+    to endpoint `end`.
+    
+    Sometimes two function inherits the same parameters. Repeat the writing 
+    of the same parameters is redundancy. So the most easier part is to 
+    collect the doctring of the inherited function and paste to the new 
+    function from the `startpoint`. 
+    
+    Parameters
+    -----------
+    func0: callable, 
+        function to use its doctring 
+    
+    start: str 
+        Value from which the new docstring should be start. 
+    
+    end: str 
+        endpoint Value of the doctring. Stop considering point.
+    
+    In the followings examples let try to append the `writedf` function
+    from ``param reason`` (start) to `param to_` (end) to the 
+    dostring to `predPlot` class like::
+        
+        @doctring(writedf, start ='param reason', end='param to_')
+        predPlot()
+            ...
+            
+    `predPlot` class class will holds new doctring with writedf.__doc__ 
+    appended from ``param reason`` to `param to_` 
+            
+    Examples
+    --------
+        >>> from watex.utils.decorator import docstring 
+        >>> from watex.utils.decorator import writedf 
+        >>> from watex.utils.decorator import predPlot
+        >>> predPlot.__doc__
+    
+    Author: @Daniel03
+    Date: 18/09/2021
+    """
+    def __init__(self, func0, start='Parameters', end=None ):
+        
+        self.func0 = func0
+        self.start =start 
+        self.end =end 
+        
+    def __call__(self, func): 
+        self._func =func 
+        return self._decorator(self._func )
+    
+    def _decorator(self, func): 
+        """ Collect the doctring of `func0` from `start` to `end` and 
+        add to a new doctring of wrapper`.
+        """
+        func0_dstr = self.func0.__doc__ 
+        # keet the only part you need
+        if self.start is None: 
+            start_ix =0
+        else: 
+            start_ix = func0_dstr.find(self.start) # index of start point
+            
+        if self.end is not None: 
+            end_ix = func0_dstr.find(self.end)
+            # remain_end_substring = func0_dstr[end_ix:]
+            substring = func0_dstr[start_ix :end_ix]
+        else : 
+            substring = func0_dstr[start_ix :]
+            end_ix = -1 
+            
+        if start_ix <0 : 
+            warnings.warn(f'`{self.start} not find in the given '
+                          f'{self.func0.__name__!r} doctring` function will '
+                          f'append all the doctring of {self.func0.__name__!r}'
+                          ' by default.')
+            start_ix =0 
+
+        if end_ix <0 : 
+            warnings.warn(f'`{self.end} not found in the given'
+                      f' {self.func0.__name__!r} doctring` function will '
+                      f'append all the doctring of {self.func0.__name__!r}'
+                      ' thin the end by default.')
+        
+        if self.start is not None: 
+            param_ix = func.__doc__.find(self.start)
+            # find end _ix and remove 
+            if func.__doc__.find(self.end)>=0: 
+                example_ix = func.__doc__.find(self.end)
+   
+                str_betw_param_example = func.__doc__[
+                    param_ix:example_ix]
+            else : 
+                str_betw_param_example= func.__doc__[param_ix:]
+                example_ix =None
+             # remove --- `start`value and `\n` at the end of 
+             # in func substring      
+            str_betw_param_example = str_betw_param_example.replace(
+                self.start +'\n', '').replace('-\n', '').replace('-', '')
+            # now remove start point in 
+            for i, item in enumerate(str_betw_param_example): 
+                if item !=' ': 
+                    str_betw_param_example= str_betw_param_example[i:]
+                    break 
+            # in the concat string to new docstring of func.
+            func.__doc__ = func.__doc__[:param_ix] + f'{substring}'+\
+                str_betw_param_example 
+                
+            if example_ix is not None: 
+                func.__doc__+=  func.__doc__[example_ix:]
+            # set new_attributes 
+            setattr(func, '__doc__', func.__doc__)
+
+        return func
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

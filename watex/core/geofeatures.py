@@ -29,7 +29,7 @@ from ..utils.__init__ import savepath as savePath
 from ..utils.decorator import writef 
 import  watex.utils.exceptions as Wex
 import watex.utils.gis_tools as gisf 
-import watex.utils.wmathandtricks as wfunc
+# import watex.utils.tricks as wfunc
 import watex.utils.gis_tools as gis
 from watex.utils._watexlog import watexlog 
 
