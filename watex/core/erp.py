@@ -49,7 +49,8 @@ from scipy.signal import argrelextrema
 from ..utils.__init__ import savepath as savePath  
 from ..utils._watexlog import watexlog 
 import  watex.utils.exceptions as Wex
-import watex.utils.wmathandtricks as wfunc
+import watex.utils.tricks as wfunc
+import watex.utils.exmath as wMath 
 import watex.utils.func_utils as func
 import watex.utils.gis_tools as gis
 
@@ -881,7 +882,7 @@ class ERP :
     @property 
     def best_power (self):
         """Get the power from the select :attr:`select_best_point_`"""
-        self._power =wfunc.compute_power(
+        self._power =wMath.compute_power(
             posMinMax=self.aBestInfos[self._best_key_point][2])
         
         wfunc.wrap_infos(
@@ -893,7 +894,7 @@ class ERP :
     def best_magnitude(self): 
         """ Get the magnitude of the select :attr:`select_best_point_"""
         
-        self._magnitude =wfunc.compute_magnitude(
+        self._magnitude =wMath.compute_magnitude(
             rhoa_max=self.rhoa_max,rhoa_min=self.select_best_value_)
                                                  
         wfunc.wrap_infos(
@@ -908,7 +909,7 @@ class ERP :
         """Get the standard fraturation index from 
         :attr:`select_best_point_"""
         
-        self._sfi = wfunc.compute_sfi(pk_min=self.posi_min,
+        self._sfi = wMath.compute_sfi(pk_min=self.posi_min,
                                       pk_max=self.posi_max,
                                       rhoa_min=self.rhoa_min,
                                       rhoa_max=self.rhoa_max,
@@ -973,7 +974,7 @@ class ERP :
         pos_max_index = int(np.where(self.df['pk'].to_numpy(
             ) ==self.posi_max)[0])
 
-        self._anr = wfunc.compute_anr(sfi = self.best_sfi,
+        self._anr = wMath.compute_anr(sfi = self.best_sfi,
                                       rhoa_array = self.df['rhoa'].to_numpy(), 
                                       pos_bound_indexes= [pos_min_index ,
                                                           pos_max_index ])

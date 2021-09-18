@@ -23,8 +23,16 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import cross_val_score 
 from sklearn.model_selection import GridSearchCV , RandomizedSearchCV
+from sklearn.model_selection import cross_val_predict 
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import precision_score, recall_score 
+from sklearn.metrics import confusion_matrix , f1_score
+from sklearn.metrics import roc_curve, roc_auc_score
 
 from watex.utils._watexlog import watexlog
+import watex.utils.decorator as deco
+import watex.utils.exceptions as Wex
+import watex.viewer.hints as Hints
 
 T= TypeVar('T')
 KT=TypeVar('KT')
@@ -814,40 +822,293 @@ class DimensionReduction:
                                         self.n_axes)
         
         return self 
+
+class Metrics: 
+    """ Metric class.
     
-
-if __name__=="__main__": 
-    # if __package__ is None : 
-    #     __package__='watex'
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.linear_model import SGDClassifier
-    from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
-    from .datasets.data_preparing import X_train_2
-
-
-    grid_params = [
-            {'n_estimators':[3, 10, 30], 'max_features':[2, 4, 6, 8]}, 
-            {'bootstrap':[False], 'n_estimators':[3, 10], 'max_features':[2, 3, 4]}
-            ]
-
-    pca= DimensionReduction().PCA(X_train_2, 0.95, plot_projection=True, n_axes =3)
-    print(pca.X_.shape)
+    Metrics are measures of quantitative assessment commonly used for 
+    assessing, comparing, and tracking performance or production. Generally,
+    a group of metrics will typically be used to build a dashboard that
+    management or analysts review on a regular basis to maintain performance
+    assessments, opinions, and business strategies.
     
+    Here we implement some Scikit-learn metrics like `precision`, `recall`
+    `f1_score` , `confusion matrix`, and `receiving operating characteristic`
+    (R0C)
+    """ 
     
-    # forest_clf = RandomForestClassifier(random_state =42)
-    # grid_search = SearchedGrid(forest_clf, grid_params, kind='RandomizedSearchCV')
-    # grid_search.fit(X= X_prepared , y = y_prepared)
-    
-    # from pprint import pprint  
-    # pprint(grid_search.best_params_ )
-    # pprint(grid_search.cv_results_)
+    def precisionRecallTradeoff(self, 
+                                clf,
+                                X,
+                                y,
+                                cv =3,
+                                classe_ =None,
+                                method="decision_function",
+                                cross_val_pred_kws =None,
+                                y_tradeoff =None, 
+                                **prt_kws):
+        """ Precision/recall Tradeoff computes a score based on the decision 
+        function. 
+        
+        Is assign the instance to the positive class if that score on 
+        the left is greater than the `threshold` else it assigns to negative 
+        class. 
+        
+        Parameters
+        ----------
+        
+        clf: obj
+            classifier or estimator
+            
+        X: ndarray, 
+            Training data (trainset) composed of n-features.
+            
+        y: array_like 
+            labelf for prediction. `y` is binary label by defaut. 
+            If '`y` is composed of multilabel, specify  the `classe_` 
+            argumentto binarize the label(`True` ot `False`). ``True``  
+            for `classe_`and ``False`` otherwise.
+            
+        cv: int 
+            K-fold cross validation. Default is ``3``
+            
+        classe_: float, int 
+            Specific class to evaluate the tradeoff of precision 
+            and recall. If `y` is already a binary classifer, `classe_` 
+            does need to specify. 
+            
+        method: str
+            Method to get scores from each instance in the trainset. 
+            Ciuld be ``decison_funcion`` or ``predict_proba`` so 
+            Scikit-Learn classifuier generally have one of the method. 
+            Default is ``decision_function``.
+        
+        y_tradeoff: float
+            check your `precision score` and `recall score`  with a 
+            specific tradeoff. Suppose  to get a precision of 90%, you 
+            might specify a tradeoff and get the `precision score` and 
+            `recall score` by setting a `y-tradeoff` value.
 
-    # # print(BaseEvaluation.__class__.__name__)
-    # BaseEvaluation(SGDClassifier , cv=4,
-    #                 X= X_,
-    #                 y =y_prepared,
-    #                 pipeline=default_pipeline,
-    #                 s_ix =43, scoring ='accuracy' )
+        Notes
+        ------
+            
+        Contreverse to the `confusion matrix`, a precision-recall 
+        tradeoff is very interesting metric to get the accuracy of the 
+        positive prediction named ``precison`` of the classifier with 
+        equation is:: 
+            
+            precision = TP/(TP+FP)
+            
+        where ``TP`` is the True Positive and ``FP`` is the False Positive
+        A trival way to have perfect precision is to make one single 
+        positive precision (`precision` = 1/1 =100%). This would be usefull 
+        since the calssifier would ignore all but one positive instance. So 
+        `precision` is typically used along another metric named `recall`,
+         also `sensitivity` or `true positive rate(TPR)`:This is the ratio of 
+        positive instances that are corectly detected by the classifier.  
+        Equation of`recall` is given as:: 
+            
+            recall = TP/(TP+FN)
+            
+        where ``FN`` is of couse the number of False Negatives. 
+        It's often convenient to combine `preicion`and `recall` metrics into
+        a single metric call the `F1 score`, in particular if you need a 
+        simple way to compared two classifiers. The `F1 score` is the harmonic 
+        mean of the `precision` and `recall`. Whereas the regular mean treats 
+        all  values equaly, the harmony mean gives much more weight to low 
+        values. As a result, the classifier will only get the `F1 score` if 
+        both `recalll` and `preccion` are high. The equation is given below::
+            
+            F1= 2/((1/precision)+(1/recall))
+            F1= 2* precision*recall/(precision+recall)
+            F1 = TP/(TP+ (FN +FP)/2)
+        
+        The way to increase the precion and reduce the recall and vice versa
+        is called `preicionrecall tradeoff`
+        
+        Examples
+        --------
+        
+        >>> from sklearn.linear_model import SGDClassifier
+        >>> from watex.utils.ml_utils import Metrics 
+        >>> sgd_clf = SGDClassifier()
+        >>> mObj = Metrics(). precisionRecallTradeoff(clf = sgd_clf, 
+        ...                                           X= X_train_2, 
+        ...                                         y = y_prepared, 
+        ...                                         classe_=1, cv=3 )                                
+        >>> mObj.confusion_matrix 
+        >>> mObj.f1_score
+        >>> mObj.precision_score
+        >>> mObj.recall_score
+        """
+        
+        # check y if value to plot is binarized ie.True of false 
+        y_unik = np.unique(y)
+        if len(y_unik )!=2 and classe_ is None: 
+
+            warnings.warn('Classes value of `y` is %s, but need 2.' 
+                          '`PrecisionRecall Tradeoff` is used for training '
+                           'binarize classifier'%len(y_unik ), UserWarning)
+            self._logging.warning('Need a binary classifier(2). %s are given'
+                                  %len(y_unik ))
+            raise ValueError(f'Need binary classes but {len(y_unik )!r}'
+                             f' {"are" if len(y_unik )>1 else "is"} given')
+            
+        if classe_ is not None: 
+            try : 
+                classe_= int(classe_)
+            except ValueError: 
+                raise Wex.WATexError_inputarguments(
+                    'Need integer value. Could not convert to Float.')
+            except TypeError: 
+                raise Wex.WATexError_inputarguments(
+                    'Could not convert {type(classe_)!r}') 
+        
+            if classe_ not in y: 
+                raise Wex.WATexError_inputarguments(
+                    'Value must contain a least a value of label '
+                        '`y`={0}'.format(
+                            Hints.format_generic_obj(y).format(*list(y))))
+                                     
+            y=(y==classe_)
+            
+        if cross_val_pred_kws is None: 
+            cross_val_pred_kws = dict()
+            
+        self.y_scores = cross_val_predict(clf,
+                                          X, 
+                                          y, 
+                                          cv =cv,
+                                          method= method,
+                                          **cross_val_pred_kws )
+
+        y_scores = cross_val_predict(clf,
+                                     X,
+                                     y, 
+                                     cv =cv,
+                                     **cross_val_pred_kws )
+        self.confusion_matrix =confusion_matrix(y, y_scores )
+        
+        self.f1_score = f1_score(y,y_scores)
+        self.precision_score = precision_score(y, y_scores)
+        self.recall_score= recall_score(y, y_scores)
+            
+        if method =='predict_proba': 
+            # if classifier has a `predict_proba` method like `Random_forest`
+            # then use the positive class probablities as score 
+            # score = proba of positive class 
+            self.y_scores =self.y_scores [:, 1] 
+            
+        if y_tradeoff is not None:
+            try : 
+                float(y_tradeoff)
+            except ValueError: 
+                raise Wex.WATexError_float(
+                    f'Could not convert {y_tradeoff!r} to float.')
+            except TypeError: 
+                raise Wex.WATexError_inputarguments(
+                    f'Invalid type `{type(y_tradeoff)}`')
+                
+            y_score_pred = (self.y_scores > y_tradeoff) 
+            self.precision_score_tradeoff = precision_score(y,
+                                                            y_score_pred)
+            self.recall_score_tradeoff = recall_score(y, 
+                                                      y_score_pred)
+            
+        self.precisions, self.recalls, self.thresholds =\
+            precision_recall_curve(y,
+                                   self.y_scores,
+                                   **prt_kws)
+            
+        self.y =y
+        
+        return self 
+    
+    @deco.docstring(precisionRecallTradeoff, start ='Parameters', end ='Notes')
+    def ROC_curve(self, roc_kws=None, **tradeoff_kws): 
+        """The Receiving Operating Characteric (ROC) curve is another common
+        tool  used with binary classifiers. 
+        
+        It s very similar to preicision/recall , but instead of plotting 
+        precision versus recall, the ROC curve plots the `true positive rate`
+        (TNR)another name for recall) against the `false positive rate`(FPR). 
+        The FPR is the ratio of negative instances that are correctly classified 
+        as positive.It is equal to one minus the TNR, which is the ratio 
+        of  negative  isinstance that are correctly classified as negative.
+        The TNR is also called `specify`. Hence the ROC curve plot 
+        `sensitivity`(recall) versus 1-specifity.
+        
+        Parameters 
+        ----------
+        clf: callable
+            classifier or estimator
+                
+        X: ndarray, 
+            Training data (trainset) composed of n-features.
+            
+        y: array_like 
+            labelf for prediction. `y` is binary label by defaut. 
+            If '`y` is composed of multilabel, specify  the `classe_` 
+            argumentto binarize the label(`True` ot `False`). ``True``  
+            for `classe_`and ``False`` otherwise.
+            
+        roc_kws: dict 
+            roc_curve additional keywords arguments
+            
+        See also
+        --------
+        
+            `ROC_curve` deals wuth optional and positionals keywords arguments 
+            of :meth:`~watex.utlis.ml_utils.Metrics.precisionRecallTradeoff`
+            
+        Examples
+        ---------
+        
+            >>> from sklearn.linear_model import SGDClassifier
+            >>> from watex.utils.ml_utils import Metrics 
+            >>> sgd_clf = SGDClassifier()
+            >>> rocObj = Metrics().ROC_curve(clf = sgd_clf,  X= X_train_2, 
+            ...                                 y = y_prepared, classe_=1, cv=3 )
+            >>> rocObj.fpr
+        """
+        self.precisionRecallTradeoff(**tradeoff_kws)
+        if roc_kws is None: roc_kws =dict()
+        self.fpr , self.tpr , thresholds = roc_curve(self.y, 
+                                           self.y_scores,
+                                           **roc_kws )
+        self.roc_auc_score = roc_auc_score(self.y, self.y_scores)
+        
+        return self 
+    
+# if __name__=="__main__": 
+#     if __package__ is None : 
+#         __package__='watex'
+#     from sklearn.ensemble import RandomForestClassifier
+#     from sklearn.linear_model import SGDClassifier
+#     from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
+#     from .datasets.data_preparing import X_train_2
+
+
+#     grid_params = [
+#             {'n_estimators':[3, 10, 30], 'max_features':[2, 4, 6, 8]}, 
+#             {'bootstrap':[False], 'n_estimators':[3, 10], 'max_features':[2, 3, 4]}
+#             ]
+
+#     # pca= DimensionReduction().PCA(X_train_2, 0.95, plot_projection=True, n_axes =3)
+#     # print(pca.X_.shape)
+#     sgd_clf = SGDClassifier()
+#     from watex.utils.ml_utils import Metrics 
+#     # mObj = Metrics(). precisionRecallTradeoff(clf = sgd_clf,  X= X_train_2, 
+#     #                                           y = y_prepared, classe_=1, cv=3 )
+                                              
+#     # print('conf_mx:=', mObj.confusion_matrix )
+#     # print('f1_score=:', mObj.f1_score)
+#     # print('precision_score=:', mObj.precision_score)
+#     # print('recall_score=:', mObj.recall_score)
+#     rocObj = Metrics().ROC_curve(clf = sgd_clf,  X= X_train_2, 
+#                                               y = y_prepared, classe_=1, cv=3 )
+#     print(rocObj.fpr)
+#     # print('thresholds=:', mObj.thresholds)
 
         
         
