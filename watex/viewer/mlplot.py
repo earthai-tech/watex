@@ -22,13 +22,22 @@ import  matplotlib.pyplot  as plt
  
 
 from .utils._watexlog import watexlog
-from .utils.ml_utils import DimensionReduction
 from .analysis.features import categorize_flow 
-
+import watex.utils.ml_utils as MLU 
+import watex.utils.exceptions as Wex
+import watex.viewer.hints as Hints
+import watex.utils.decorator as deco
 T=TypeVar('T')
 V=TypeVar('V', list, tuple, dict)
 Array =  Iterable[float]
 _logger=watexlog.get_watex_logger(__name__)
+
+
+DEFAULTS_COLORS =[ 'g','r','y', 'blue','orange','purple', 'lime','k', 'cyan', 
+                  (.6, .6, .6), (0, .6, .3), (.9, 0, .8)
+                 ]
+
+DEFAULTS_MARKERS =['o','^','x', 'D', '8', '*', 'h', 'p', '>', 'o', 'd', 'H']
 
 def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
     """
@@ -59,10 +68,10 @@ def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
     if y_classes is None: 
         y_classes = np.unique(y)
     if colors is None:
-        colors = ['g','r','y', 'blue', 'orange', 'purple', 'lime', 'k', 'cyan']
+        colors = DEFAULTS_COLORS
         colors = [colors[c] for c in range(len(y_classes))]
     if markers is None:
-        markers=['o','^','x', 'D', '8', '*', 'h', 'p', '>'] 
+        markers=DEFAULTS_MARKERS 
         markers = [markers[m] for m in range(len(y_classes))]
     for s,l in enumerate(y_classes):
         plt.scatter(xs[y==l],ys[y==l], 
@@ -82,7 +91,8 @@ def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
                  color = 'k', 
                  ha = 'center',
                  va = 'center',
-                 fontsize=10)
+                 fontsize= self.ms * self.fs *.5 
+                 )
 
     plt.xlabel("PC{}".format(1),
                size=self.ms* self.fs)
@@ -165,7 +175,7 @@ class MLPlots:
         self.marker_edgecolor=kws.pop('markeredgecolor', 'cyan')
         self.marker_edgewidth = kws.pop('markeredgewidth', 3.)
         
-        self.lc = kws.pop('color', 'k')
+        self.lc = kws.pop('lc', 'k')
         self.font_weight =kws.pop('font_weight', 'bold')
         self.ls= kws.pop('ls', '-')
         self.lw =kws.pop('lw', 1)
@@ -175,7 +185,17 @@ class MLPlots:
         
         self.xlim =kws.pop('xlim', None )
         self.ylim=kws.pop('y_lim', None) 
+        self.xlabel = kws.pop('xlabel', None)
+        self.ylabel =kws.pop('ylabel', None)
         
+        self.leg_kws = kws.pop('leg_kws', dict())
+        self.plt_kws = kws.pop('plt_kws', dict())
+        
+        # precision(p) and recall(r) style(s) and color (c)
+        self.rs =kws.pop('rs', '--')
+        self.ps =kws.pop('ps', '-')
+        self.rc =kws.pop('rc', (.6, .6, .6))
+        self.pc =kws.pop('pc', 'k')
     
     def PCA_(self,
              X:[Array],
@@ -247,8 +267,8 @@ class MLPlots:
             >>> from watex.datasets.data_preparing import X_train_2
             >>> from watex.datasets import y_prepared   
             >>> pcaObj= MLPlots().PCA_(X= X_train_2, y=y_prepared, replace_y=True, 
-                                    y_classes =['FR0', 'FR1', 'FR2', 'FR3'],
-                                    biplot =False)
+            ...                        y_classes =['FR0', 'FR1', 'FR2', 'FR3'],
+            ...                        biplot =False)
         """
         if plot_dict is None: 
             plot_dict ={'y_colors':['navy',
@@ -263,11 +283,11 @@ class MLPlots:
                                     (.0, .9, .4)], 
                         's':100.}
             
-        def mere_replace(y_, y_val, y_clas): 
+        def mere_replace(_y, y_val, y_clas): 
             """ Replace the numerical values (generaly encoded values) to 
             desired categorial features names."""
-            ynew = np.zeros_like(y, dtype ='>U12')
-            for i, val in enumerate(y_):
+            ynew = np.zeros_like(_y, dtype ='>U12')
+            for i, val in enumerate(_y):
                 for name, r_val in zip(y_clas, y_val): 
                     if float(val) ==float(r_val): 
                         ynew[i] = name
@@ -314,7 +334,7 @@ class MLPlots:
                                 len(y_values), len(y_classes), 
                                 f'{"is" if len(y_classes)<2 else"are"}'))
                 
-            y = mere_replace(y_=y, y_val=y_values, y_clas=y_classes)                    
+            y = mere_replace(_y=y, y_val=y_values, y_clas=y_classes)                    
             
         if y_type =='num': 
             if y_values is None: 
@@ -332,7 +352,7 @@ class MLPlots:
                                  classes=y_classes)
             
         # go for PCA analysis 
-        pca= DimensionReduction().PCA(X,
+        pca= MLU.DimensionReduction().PCA(X,
                                       n_components, 
                                       n_axes =n_axes,
                                       **pca_kws)
@@ -482,22 +502,292 @@ class MLPlots:
         if self.savefig is not None :
             plt.savefig(self.savefig,
                         dpi=self.fig_dpi,
-                        orientation =self.fig_orientation)    
+                        orientation =self.fig_orientation)  
+            
+    @deco.docstring(MLU.Metrics.precisionRecallTradeoff, start=' Parameters', 
+                    end = 'Examples')        
+    def PrecisionRecall(self,
+                        clf,
+                        X,
+                        y,
+                        cv =3,
+                        kind='vsThreshod',
+                        classe_ =None,
+                        method="decision_function",
+                        cross_val_pred_kws =None,
+                        **prt_kws): 
+        """ Precision/recall Tradeoff computes a score based on the decision 
+        function. 
+        
+        ..see also::  For parameter definitions, please refer to
+            :doc:`~watex.utils.ml_utils.Metrics.PrecisionRecallTradeoff`
+            for further details.
+            
+        Parameters
+        ---------
+        kind: str 
+            kind of plot. Plot precision-recall vs thresholds (``vsThreshod``)
+            or precision vs recall (``vsThreshod``). Default is 
+            ``vsThreshod``
+            
+        Examples
+        ---------
 
-if __name__=='__main__': 
+            >>> from sklearn.linear_model import SGDClassifier
+            >>> from watex.datasets.data_preparing import X_train_2
+            >>> from watex.datasets import y_prepared
+            >>> sgd_clf = SGDClassifier(random_state= 42)
+            >>> mlObj= MLPlots(lw =3., pc = 'k', rc='b', ps='-', rs='--')
+            >>> mlObj.PrecisionRecall(clf = sgd_clf,  X= X_train_2, 
+            ...                y = y_prepared, classe_=1, cv=3,
+            ...                 kind='vsRecall')
+        """
+        # call precision 
+        prtObj = MLU.Metrics().precisionRecallTradeoff(
+                                clf,
+                                X, 
+                                y, 
+                                cv =cv, 
+                                classe_=classe_, 
+                                method =method, 
+                                cross_val_pred_kws=cross_val_pred_kws,
+                                **prt_kws)
+        
+        # create figure obj 
+        fig = plt.figure(figsize = self.fig_size)
+        ax = fig.add_subplot(1,1,1)
+        if kind.lower().find('thres')>=0: 
+            # plot precision -recall vs Threshold 
+            kind = '.vsThreshold' 
+        elif kind.lower().find('vsrec')>=0: 
+            # plot precision vs recall 
+            kind = '.vsRecall'
+        if kind=='.vsThreshold': 
+            
+            ax.plot(prtObj.thresholds,
+                    prtObj.precisions[:-1], 
+                    color = self.pc, 
+                    linewidth = self.lw,
+                    linestyle = self.ps, 
+                    label = 'Precision',
+                    **self.plt_kws )
+            ax.plot(prtObj.thresholds,
+                   prtObj.recalls[:-1], 
+                   color = self.rc, 
+                   linewidth = self.lw,
+                   linestyle = self.rs , 
+                   label = 'Recall',
+                   **self.plt_kws)
+            
+            if self.xlabel is None: self.xlabel ='Threshold'
+            if self.ylabel is None: self.ylabel ='Score'
+        
+        elif kind =='.vsRecall': 
+            
+            ax.plot(prtObj.recalls[:-1],
+                    prtObj.precisions[:-1], 
+                    color = self.lc, 
+                    linewidth = self.lw,
+                    linestyle = self.ls , 
+                    label = 'Precision vs Recall',
+                    **self.plt_kws )
+        
+            if self.xlabel is None: self.xlabel ='Recall'
+            if self.ylabel is None: self.ylabel ='Precision'
+            self.xlim =[0,1]
+            
+        ax.set_xlabel( self.xlabel,
+                      fontsize= .5 * self.font_size * self.fs )
+        ax.set_ylabel (self.ylabel,
+                       fontsize= .5 * self.font_size * self.fs)
+        ax.tick_params(axis='both', 
+                       labelsize=.5 * self.font_size * self.fs)
+        
+        if len(self.leg_kws) ==0 or 'loc' not in self.leg_kws.keys():
+             self.leg_kws['loc']='upper left'
+        
+        ax.legend(**self.leg_kws)
+        
+        if self.ylim is None: self.ylim = [0, 1]
+        ax.set_ylim (self.ylim)
+        if kind =='.vsRecall':
+            ax.set_xlim (self.xlim)
 
-    from .datasets.data_preparing import X_train_2
-    from .datasets import y_prepared   
+        plt.show()
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+            
+    def ROC_curve_(self, 
+                    clf,
+                    X,
+                    y,
+                    cv =3,
+                    classe_ =None,
+                    method="decision_function",
+                    cross_val_pred_kws =None,
+                    **roc_kws):
+        """ Plot receiving operating characteric(ROC) classifiers. 
+        
+        To plot multiples classifiers, provide a list of classifiers. 
+        
+        Parameters 
+        ----------
+        clf: callables
+            classifier or estimators. To use multiple classifier 
+            set a list of classifer with their specific mmethods. 
+            For instance::
+                
+                [('SDG', SGDClassifier,"decision_function" ), 
+                 ('FOREST',RandomForestClassifier,"predict_proba")]
+                
+        X: ndarray, 
+            Training data (trainset) composed of n-features.
+            
+        y: array_like 
+            labelf for prediction. `y` is binary label by defaut. 
+            If '`y` is composed of multilabel, specify  the `classe_` 
+            argumentto binarize the label(`True` ot `False`). ``True``  
+            for `classe_`and ``False`` otherwise.
+            
+        cv: int 
+            K-fold cross validation. Default is ``3``
+            
+        classe_: float, int 
+            Specific class to evaluate the tradeoff of precision 
+            and recall. If `y` is already a binary classifer, `classe_` 
+            does need to specify. 
+            
+        method: str
+            Method to get scores from each instance in the trainset. 
+            Ciuld be ``decison_funcion`` or ``predict_proba`` so 
+            Scikit-Learn classifuier generally have one of the method. 
+            Default is ``decision_function``.
+            
+        roc_kws: dict 
+            roc_curve additional keywords arguments
+            
+        See also
+        --------
+        
+            `ROC_curve` deals wuth optional and positionals keywords arguments 
+            of :meth:`~watex.utlis.ml_utils.Metrics.precisionRecallTradeoff`
+            
+        Examples 
+        --------
+        
+            >>> from sklearn.linear_model import SGDClassifier
+            >>> from sklearn.ensemble import RandomForestClassifier
+            >>> from watex.datasets.data_preparing import X_train_2
+            >>> from watex.datasets import  y_prepared
+            >>> sgd_clf = SGDClassifier(random_state= 42)
+            >>> forest_clf =RandomForestClassifier(random_state=42)
+            >>> mlObj= MLPlots(lw =3., lc=(.9, 0, .8), font_size=7
+            >>> clfs =[('sgd', sgd_clf, "decision_function" ), 
+             ...      ('forest', forest_clf, "predict_proba")]
+            >>> mlObj.ROC_curve_(clf = clfs,  X= X_train_2, 
+            ...                      y = y_prepared, classe_=1, cv=3,)
+        """
+        
+        # if method not given as tuple
+        if not isinstance(clf, (list, tuple)):
+            try : 
+                clf =[(clf.__name__, clf, method)]
+            except AttributeError: 
+                # type `clf` is ABCMeta 
+                 clf =[(clf.__class__.__name__, clf, method)]
+                 
+        # loop and set the tuple of  (clfname , clfvalue, clfmethod)
+        # anc convert to list to support item assignments
+        clf = [list(pnclf) for pnclf in clf]
+        for i, (clfn, _clf, _) in enumerate(clf) :
+        
+            if  clfn is None  or clfn =='': 
+                try: 
+                    clfn = _clf.__name__
+                except AttributeError: 
+                    # when type `clf` is ABCMeta 
+                    clfn= _clf.__class__.__name__
+                clf[i][0] = clfn 
+                
+        # reconvert to tuple values 
+        clf =[tuple(pnclf) for pnclf in clf]
+        # build multiples classifiers objects   
+        rocObjs =[ MLU.Metrics().ROC_curve( 
+                                clf=_clf,
+                                X=X, 
+                                y=y, 
+                                cv =cv, 
+                                classe_=classe_, 
+                                method =meth, 
+                                cross_val_pred_kws=cross_val_pred_kws,
+                                **roc_kws) for (name, _clf, meth) in clf]
+        # create figure obj 
+        fig = plt.figure(figsize = self.fig_size)
+        ax = fig.add_subplot(1,1,1)
+        DEFAULTS_COLORS[0] = self.lc 
+
+        for ii, (name, _clf, _)  in enumerate( clf): 
+            ax.plot(rocObjs[ii].fpr, 
+                    rocObjs[ii].tpr, 
+                    label =name, 
+                    color =DEFAULTS_COLORS[ii], 
+                    linewidth = self.lw)
+            
+            
+        if self.xlabel is None: self.xlabel ='False Positive Rate'
+        if self.ylabel is None: self.ylabel ='True Positive Rate'
+        self.xlim =[0,1]
+        self.ylim =[0,1]
+        ax.plot(self.xlim, self.ylim, ls= '--', color ='k')
+        ax.set_xlim (self.xlim)
+        ax.set_ylim (self.ylim)
+        ax.set_xlabel( self.xlabel,
+                      fontsize= .5 * self.font_size * self.fs )
+        ax.set_ylabel (self.ylabel,
+                       fontsize= .5 * self.font_size * self.fs)
+        ax.tick_params(axis='both', 
+                       labelsize=.5 * self.font_size * self.fs)
+        
+        if len(self.leg_kws) ==0 or 'loc' not in self.leg_kws.keys():
+             self.leg_kws['loc']='upper left'
+        ax.legend(**self.leg_kws)
+        
+        plt.show()
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+         
+
+# if __name__=='__main__': 
+
+    # from watex.datasets.data_preparing import X_train_2
+    # from sklearn.linear_model import SGDClassifier
+    # from sklearn.ensemble import RandomForestClassifier
+    # from watex.datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
+
+    # sgd_clf = SGDClassifier(random_state= 42)
+    # forest_clf =RandomForestClassifier(random_state=42)
+    # # print(SGDClassifier.__name__)
+    # # print(sgd_clf.__class__.__name__)
+    # mlObj= MLPlots(lw =3., lc=(.9, 0, .8), font_size=7, )
+    # # pcaObj.PCA_(X= X_train_2, y=y_prepared, replace_y=True, 
+    # #                         y_classes =['FR0', 'FR1', 'FR2', 'FR3'],
+    # #                         biplot =False)
     
-    pcaObj= MLPlots()
-    pcaObj.PCA_(X= X_train_2, y=y_prepared, replace_y=True, 
-                            y_classes =['FR0', 'FR1', 'FR2', 'FR3'],
-                            biplot =False)
-    
-
+    # mlObj.PrecisionRecall(clf = sgd_clf,  X= X_train_2, 
+    #                       y = y_prepared, classe_=0, cv=3, kind='thres')
+    # clfs =[(None, sgd_clf, "decision_function" ), 
+    #        (None, forest_clf, "predict_proba")]
+    # mlObj.ROC_curve_(clf = clfs,  X= X_train_2, 
+    #                       y = y_prepared, classe_=0, cv=3,)
         
-        
-        
+    # mObj = Metrics(). precisionRecallTradeoff(clf = sgd_clf,  X= X_train_2, 
+    #                                           y = y_prepared, classe_=1, cv=3 )    
         
         
         
