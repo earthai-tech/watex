@@ -491,78 +491,6 @@ def fmtAnText(anFeatures=None, title=['Ranking', 'rho(Ω.m)',
         print(strfeatures)
         print(line)
     
-def compute_power (posMinMax=None, pk_min=None , pk_max=None, ):
-    """ 
-    Compute the power Pa of anomaly.
-    
-    :param pk_min: 
-        
-        Min boundary value of anomaly. `pk_min` is min value (lower) 
-        of measurement point. It's the position of the site in meter 
-        
-    :type pk_min: float 
-    
-    :param pk_max: 
-        
-        Max boundary of the select anomaly. `pk_max` is the maximum value 
-        the measurement point in meter. It's  the upper boundary position of 
-        the anomaly in the site in m. 
-        
-    :type pk_max: float 
-    
-    :return: The absolute value between the `pk_min` and `pk_max`. 
-    :rtype: float 
-    
-    :Example: 
-        
-        >>> from wmathandtricks import compute_power 
-        >>> power= compute_power(80, 130)
-    
-    
-    """
-    if posMinMax is not None: 
-        pk_min = np.array(posMinMax).min()     
-        pk_max= np.array(posMinMax).max()
-    
-    if posMinMax is None and (pk_min is None or pk_max is None) : 
-        raise Wex.WATexError_parameter_number(
-            'Could not compute the anomaly power. Provide at least'
-             'the anomaly position boundaries or the left(`pk_min`) '
-             'and the right(`pk_max`) boundaries.')
-    
-    return np.abs(pk_max - pk_min)
-    
-def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
-    """
-    Compute the magnitude ``Ma`` of  selected anomaly expressed in Ω.m.
-    ano
-    :param rhoa_min: resistivity value of selected anomaly 
-    :type rhoa_min: float 
-    
-    :param rhoa_max: Max boundary of the resistivity value of select anomaly. 
-    :type rhoa_max: float 
-    
-    :return: The absolute value between the `rhoa_min` and `rhoa_max`. 
-    :rtype: float 
-    
-    :Example: 
-        
-        >>> from wmathandtricks import compute_power 
-        >>> power= compute_power(80, 130)
-    
-    """
-    if rhoaMinMax is not None : 
-        rhoa_min = np.array(rhoaMinMax).min()     
-        rhoa_max= np.array(rhoaMinMax).max()
-        
-    if rhoaMinMax is None and (rhoa_min  is None or rhoa_min is None) : 
-        raise Wex.WATexError_parameter_number(
-            'Could not compute the anomaly magnitude. Provide at least'
-            'the anomaly resistivy value boundaries or the buttom(`rhoa_min`)'
-             'and the top(`rhoa_max`) boundaries.')
-
-    return np.abs(rhoa_max -rhoa_min)
-
     
 def select_anomaly ( rhoa_array, pos_array=None, auto=True,
                     dipole_length =10., **kws ) :
@@ -578,23 +506,23 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True,
              give at most three best animalies ranking according 
              to the resitivity value. 
      
-     :param rhoa_array: The apparent resistivity value of :ref:`erp` 
-     :type rho_array: array_like 
+    :param rhoa_array: The apparent resistivity value of :ref:`erp` 
+    :type rho_array: array_like 
+    
+    :param pos_array: The array of station position in meters 
+    :type pos_array: array_like 
      
-     :param pos_array: The array of station position in meters 
-     :type pos_array: array_like 
-     
-     :param auto: 
-         
-         Automaticaly of manual computation to select the best anomaly point. 
-         Be sure if `auto` is set to ``False`` to provide the anomaly boundary
-         by setting `pos_bounds` : 
-             
-             pos_bounds=(90, 130)
-             
-        where :math:`90` is the `pk_min` and :math:`130` is the `pk_max` 
-        If `pos_bounds` is not given an station error will probably occurs 
-        from :class:`~utils.exceptions.WATexError_station`. 
+    :param auto: 
+        
+        Automaticaly of manual computation to select the best anomaly point. 
+        Be sure if `auto` is set to ``False`` to provide the anomaly boundary
+        by setting `pos_bounds` : 
+            
+            pos_bounds=(90, 130)
+            
+       where :math:`90` is the `pk_min` and :math:`130` is the `pk_max` 
+       If `pos_bounds` is not given an station error will probably occurs 
+       from :class:`~utils.exceptions.WATexError_station`. 
     
     :param dipole_length: 
         
@@ -665,10 +593,7 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True,
                 for ii, (key , rho_r) in enumerate(bestSelectedDICT.items())
                 }
 
-     
-                
-                
-        
+                       
 def find_pkfeatures (anom_infos, anom_rank, pks_rhoa_index, dl): 
     """
     Get the pk bound from ranking of computed best points
@@ -722,141 +647,6 @@ def find_pkfeatures (anom_infos, anom_rank, pks_rhoa_index, dl):
     rhoa_bounds = (anom_infos[codec][0], anom_infos[codec][-1])
     
     return pk, rhoa, pos_bounds, rhoa_bounds, anom_infos[codec]
-
-                 
-def compute_sfi (pk_min, pk_max, rhoa_min,
-                 rhoa_max,  rhoa, pk)  : 
-    """
-    SFI is introduced to evaluate the ratio of presumed existing fracture
-    from anomaly extent. We use a similar approach as IF computation
-    proposed by Dieng et al. (2004) to evaluate each selected anomaly 
-    extent and the normal distribution of resistivity values along the 
-    survey line. The SFI threshold is set at :math:`$\sqrt\2$`  for 
-    symmetrical anomaly characterized by a perfect distribution of 
-    resistivity in a homogenous medium. 
-    
-    :param pk_min: see :doc:`compute_power` 
-    :param pk_max: see :doc:`compute_power` 
-    
-    :param rhoa_max: see :doc:`compute_magnitude` 
-    :param rhoa_min: see :doc:`compute_manitude`
-    
-    :param pk: 
-        
-        Station position of the selected anomaly in ``float`` value. 
-        
-    :param rhoa: 
-        
-        Selected anomaly apparent resistivity value in ohm.m 
-        
-    :return: standard fracture index (SFI)
-    :rtype: float 
-    
-    :Example: 
-        
-        >>> from watex.utils.wmathandtricks import compute_sfi 
-        >>> sfi = compute_sfi(pk_min = 90,
-        ...                      pk_max=130,
-        ...                      rhoa_min=175,
-        ...                      rhoa_max=170,
-        ...                      rhoa=132,
-        ...                      pk=110)
-        >>> sfi
-    
-    """  
-    def deprecated_sfi_computation () : 
-        """ Decorated way for `sfi` computation"""
-        try : 
-            if  pk_min -pk  < pk_max - pk  : 
-                sfi= np.sqrt((((rhoa_max -rhoa) / 
-                                  (rhoa_min- rhoa)) **2 + 
-                                 ((pk_max - pk)/(pk_min -pk))**2 ))
-            elif pk_max -pk  < pk_min - pk : 
-                sfi= np.sqrt((((rhoa_max -rhoa) / 
-                                  (rhoa_min- rhoa)) **2 + 
-                                 ((pk_min - pk)/(pk_max -pk))**2 ))
-        except : 
-            if sfi ==np.nan : 
-                sfi = - np.sqrt(2)
-            else :
-                sfi = - np.sqrt(2)
-       
-    try : 
-        
-        if (rhoa == rhoa_min and pk == pk_min) or\
-            (rhoa==rhoa_max and pk == pk_max): 
-            ma= max([rhoa_min, rhoa_max])
-            ma_star = min([rhoa_min, rhoa_max])
-            pa= max([pk_min, pk_max])
-            pa_star = min([pk_min, pk_max])
-    
-        else : 
-       
-            if  rhoa_min >= rhoa_max : 
-                max_rho = rhoa_min
-                min_rho = rhoa_max 
-            elif rhoa_min < rhoa_max: 
-                max_rho = rhoa_max 
-                min_rho = rhoa_min 
-            
-            ma_star = abs(min_rho - rhoa)
-            ma = abs(max_rho- rhoa )
-            
-            ratio = ma_star / ma 
-            pa = abs(pk_min - pk_max)
-            pa_star = ratio *pa
-            
-        sfi = np.sqrt((pa_star/ pa)**2 + (ma_star/ma)**2)
-        
-        if sfi ==np.nan : 
-                sfi = - np.sqrt(2)
-    except : 
-
-        sfi = - np.sqrt(2)
-  
-    
-    return sfi
-    
-def compute_anr (sfi , rhoa_array, pos_bound_indexes):
-    """
-    Compute the select anomaly ratio (ANR) along with the
-    whole profile from SFI. The standardized resistivity values
-    `rhoa`  of is averaged from   X_begin to  X_end .
-    The ANR is a positive value. 
-    
-    :param sfi: 
-        
-        Is standard fracturation index. please refer to :doc: `compute_sfi`
-        
-    :param rhoa_array: Resistivity values of :ref:`erp` line 
-    :type rhoa_array: array_like 
-    
-    :param pos_bound_indexes: 
-        
-        Select anomaly station location boundaries indexes. Refer to 
-        :doc:`compute_power` of ``pos_bounds``. 
-        
-    :return: Anomaly ratio 
-    :rtype:float 
-    
-    :Example: 
-        
-        >>> from watex.utils.wmathandtricks import compute_anr 
-        >>> import pandas as pd
-        >>> anr = compute_anr(sfi=sfi, 
-        ...                  rhoa_array=data = pd.read_excel(
-        ...                  'data/l10_gbalo.xlsx').to_numpy()[:, -1],
-        ...              pk_bound_indexes  = [9, 13])
-        >>> anr
-    """
-    stand = (rhoa_array - rhoa_array.mean())/np.std(rhoa_array)
-    try: 
-        stand_rhoa =stand[int(min(pos_bound_indexes)): 
-                          int(max(pos_bound_indexes))+1]
-    except: 
-        stand_rhoa = np.array([0])
-        
-    return sfi * np.abs(stand_rhoa.mean())
 
 
 def find_pkBounds( pk , rhoa, rhoa_range, dl=10.):
@@ -992,63 +782,6 @@ def drawn_anomaly_boundaries2(erp_data, appRes, index):
         anomalyBounds = np.concatenate((left_limit, right_limit))
     
     return appRes, index, anomalyBounds  
-
-@deprecated('`Deprecated function. Replaced by :meth:~core.erp.get_shape` ' 
-            'more convenient to recognize anomaly shape using ``median line``'
-            'rather than ``mean line`` below.')   
-def get_shape (rhoa_range): 
-    """
-    Find anomaly `shape`  from apparent resistivity values framed to
-    the best points using the mean line. 
- 
-    :param rhoa_range: The apparent resistivity from selected anomaly bounds
-                        :attr:`~core.erp.ERP.anom_boundaries`
-    :type rhoa_range: array_like or list 
-    
-    :returns: 
-        - V
-        - W
-        - K 
-        - C
-        - M
-        - U
-    
-    :Example: 
-        
-        >>> from watex.core.erp import get_shape 
-        >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
-        >>> shape = get_shape (rhoa_range= np.array(x))
-        ...U
-
-    """
-    minlocals = argrelextrema(rhoa_range, np.less)
-    shape ='V'
-    average_curve = rhoa_range.mean()
-    if len (minlocals[0]) >1 : 
-        shape ='W'
-        average_curve = rhoa_range.mean()
-        minlocals_slices = rhoa_range[
-            int(minlocals[0][0]):int(minlocals[0][-1])+1]
-        average_minlocals_slices  = minlocals_slices .mean()
-
-        if average_curve >= 1.2 * average_minlocals_slices: 
-            shape = 'U'
-            if rhoa_range [-1] < average_curve and\
-                rhoa_range [-1]> minlocals_slices[
-                    int(argrelextrema(minlocals_slices, np.greater)[0][0])]: 
-                shape ='K'
-        elif rhoa_range [0] < average_curve and \
-            rhoa_range [-1] < average_curve :
-            shape ='M'
-    elif len (minlocals[0]) ==1 : 
-        if rhoa_range [0] < average_curve and \
-            rhoa_range [-1] < average_curve :
-            shape ='M'
-        elif rhoa_range [-1] <= average_curve : 
-            shape = 'C'
-            
-    return shape 
-
 
 def getdfAndFindAnomalyBoundaries(df): 
     """
