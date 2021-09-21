@@ -25,10 +25,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix,  classification_report #, f1_score,
 from sklearn.feature_selection import SelectKBest, f_classif
  
-from .processing.__init__ import _HAS_ENSEMBLE_ 
-from .analysis.features import sl_analysis 
-from .utils._watexlog import watexlog 
-from .viewer.plot import hints 
+from ..processing.__init__ import _HAS_ENSEMBLE_ 
+from ..analysis.features import sl_analysis 
+from ..utils._watexlog import watexlog 
+from ..viewer.plot import hints 
 import  watex.utils.exceptions as Wex 
 import  watex.utils.decorator as deco
 import  watex.utils.func_utils as func
@@ -43,7 +43,7 @@ d_estimators__={'dtc':DecisionTreeClassifier,
                  }
 
 if _HAS_ENSEMBLE_ :
-    from .processing.__init__ import skl_ensemble__
+    from ..processing.__init__ import skl_ensemble__
     
     for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble__): 
         d_estimators__[es_]=esf_ 
@@ -161,6 +161,8 @@ class Preprocessing :
         self.random_state = kwargs.pop('random_state', 7)
         self.default_estimator = kwargs.pop('default_estimator', 'svc')
         self.test_size = kwargs.pop('test_size', 0.2)
+        
+        self._index_col_id =kwargs.pop('col_id', 'id')
         self._df_cache =None 
         self._features = None 
         self.y = None 
@@ -207,7 +209,10 @@ class Preprocessing :
         if datafn is not None : 
            self._data_fn = datafn 
     
-        slObj= sl_analysis(data_fn=self._data_fn, set_index=True)
+        slObj= sl_analysis(data_fn=self._data_fn, set_index=True,
+                           col_id =self._index_col_id)
+        
+        self.index_col_id = slObj._index_col_id 
         self.df= slObj.df 
 
         slObj.df_cache =[] # initialize the cache 
@@ -554,9 +559,14 @@ class Preprocessing :
         
         def model_evaluation(model, X_train, y_train, X_test, y_test): 
             """ Evaluating model prediction """
+             # Expected 2D array, got scalar array instead
+            if X_train.ndim ==1: 
+                X_train = X_train.reshape(-1, 1)
+            if X_test.ndim ==1: 
+               X_test = X_train.reshape(-1, 1)
             
             model.fit(X_train, y_train)
-            
+
             return  model.score(X_test, y_test), model.predict(X_test)
         
         
@@ -969,7 +979,7 @@ class Processing (Preprocessing) :
         return self._model_prediction 
         
     @deco.visualize_valearn_curve(reason ='valcurve', turn='off', 
-               k= np.arange(1,210,10),plot_style='scatter',savefig=None)               
+               k= np.arange(1,210,10),plot_style='line',savefig=None)               
     def get_validation_curve(self, estimator=None, X_train=None, 
                          y_train=None, val_curve_kws:Generic[T]=None, 
                          **kws):
@@ -1009,9 +1019,15 @@ class Processing (Preprocessing) :
         """
         preprocess_step =kws.pop('preprocess_step', False)
         switch = kws.pop('switch_plot', 'off')
-
-        if val_curve_kws is None :
-    
+        val_kws = kws.pop('val_kws', None)
+        train_kws = kws.pop('train_kws', None)
+        
+        if X_train is not None:
+            self.X_train =X_train
+        if y_train is not None:
+            self.y_train =y_train 
+        
+        if val_curve_kws is None:
             val_curve_kws = {"param_name":'C', 
                              "param_range": np.arange(1,210,10), 
                              "cv":4}
@@ -1052,7 +1068,8 @@ class Processing (Preprocessing) :
 
         if estimator is not None :
             self._select_estimator_= estimator
-            if not isinstance(self._select_estimator, dict) : 
+
+            if not isinstance(self._select_estimator_, dict) : 
                 self.model_dict={'___':self._select_estimator_ }
             else : 
                 self.model_dict = self._select_estimator_
@@ -1070,8 +1087,15 @@ class Processing (Preprocessing) :
                                        **val_curve_kws)
                 self.train_score [mkey] = trainScore
                 self.val_score[mkey] = valScore 
-
-        return self.train_score, self.val_score, switch , kk      
+        try:
+            pname = val_curve_kws['param_name']
+        except KeyError: 
+            pname =''
+        except : 
+            pname =''
+        
+        return (self.train_score, self.val_score, switch ,
+                kk , pname,  val_kws, train_kws)     
     
         
     def quick_estimation(self, estimator: Callable[...,T] = None, 

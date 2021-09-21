@@ -44,7 +44,7 @@ DOWNLOAD_ROOT = 'https://github.com/WEgeophysics/watex/master/'
 #'https://zenodo.org/record/4896758#.YTWgKY4zZhE'
 DATA_PATH = 'data/tar.tgz_files'
 TGZ_FILENAME = '/bagoue.main&rawdata.tgz'
-CSV_FILENAME = '_bagoue_civ_loc_ves&erpdata4.csv'
+CSV_FILENAME = 'main.bagciv.data.csv'#'_bagoue_civ_loc_ves&erpdata4.csv'
 
 DATA_URL = DOWNLOAD_ROOT + DATA_PATH  + TGZ_FILENAME
 
@@ -231,7 +231,7 @@ class SearchedGrid:
     
     :param base_estimator: Estimator to be fined tuned hyperparameters
     
-    :grid_params: list of hyperparamters params  to be tuned 
+    :param grid_params: list of hyperparamters params  to be tuned 
     
     :param cv: Cross validation sampling. Default is `4` 
     
@@ -426,21 +426,29 @@ class SearchedGrid:
                                   'values.'%(repr(type(baseEstimatorObj)), 
                                              repr(parameters)))
             
-            return 
+            return self
         
         for param_ , param_value_ in zip(
-                ['best_params_','best_estimator_',
-                  'cv_results_','feature_importances_'],
-                            [gridObj.best_params_, gridObj.best_estimator_, 
-                             gridObj.cv_results_, 
-                             gridObj.best_estimator_.feature_importances_]):
+                ['best_params_','best_estimator_','cv_results_'],
+                [gridObj.best_params_, gridObj.best_estimator_, 
+                             gridObj.cv_results_ ]
+                             ):
             
             setattr(self, param_, param_value_)
+        try : 
+            attr_value = gridObj.best_estimator_.feature_importances_
+        except AttributeError: 
+            warnings.warn ('{0} object has no attribute `feature_importances_`'.
+                           format(gridObj.best_estimator_.__class__.__name__))
+            setattr(self,'feature_importances_', None )
+        else : 
+            setattr(self,'feature_importances_', attr_value)
             
         #resetting the grid-kws attributes 
         setattr(self, 'grid_kws', grid_kws)
         
-
+        return self
+    
 class AttributeCkecker(ABC): 
     """ Check attributes and inherits from module `abc` for Data validators. 
     
@@ -764,7 +772,7 @@ class DimensionReduction:
             
             for i in range(n_axes): 
                 # reverse from higher values to lower 
-                index = np.argsort(components[i, :])
+                index = np.argsort(abs(components[i, :]))
                 comp_sorted = components[i, :][index][::-1]
                 numf = fnames [index][::-1]
                 pc.append((f'pc{i+1}', numf, comp_sorted))
@@ -1080,13 +1088,13 @@ class Metrics:
         
         return self 
     
-# if __name__=="__main__": 
+if __name__=="__main__": 
 #     if __package__ is None : 
 #         __package__='watex'
 #     from sklearn.ensemble import RandomForestClassifier
 #     from sklearn.linear_model import SGDClassifier
-#     from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
-#     from .datasets.data_preparing import X_train_2
+    # from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
+    from watex.datasets.data_preparing import X_train_2
 
 
 #     grid_params = [
@@ -1094,8 +1102,11 @@ class Metrics:
 #             {'bootstrap':[False], 'n_estimators':[3, 10], 'max_features':[2, 3, 4]}
 #             ]
 
-#     # pca= DimensionReduction().PCA(X_train_2, 0.95, plot_projection=True, n_axes =3)
-#     # print(pca.X_.shape)
+    pca= DimensionReduction().PCA(X_train_2, 0.95, plot_projection=True, n_axes =3)
+    print('columnsX=', X_train_2.columns)
+    print('components=', pca.components_)
+    print('feature_importances_:', pca.feature_importances_)
+    # print(pca.X_.shape)
 #     sgd_clf = SGDClassifier()
 #     from watex.utils.ml_utils import Metrics 
 #     # mObj = Metrics(). precisionRecallTradeoff(clf = sgd_clf,  X= X_train_2, 

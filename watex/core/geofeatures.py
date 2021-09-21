@@ -195,8 +195,13 @@ class Features:
         elif self.features_fn is not None : 
             self.fn = self.features_fn 
             self.sanitize_fdataset()
-
-            self.site_names =np.copy(self.df['id'].to_numpy())
+            try : 
+                self.site_names =np.copy(self.df['id'].to_numpy())
+            except KeyError: 
+                 # force to set id 
+                self.df=self.df.rename(columns = {'name':'id'})
+                self.site_names =np.copy(self.df['id'].to_numpy())
+                # self._index_col_id ='id'
             
             if self.utm_flag ==0 :
                 # convert lat and lon to utm 
