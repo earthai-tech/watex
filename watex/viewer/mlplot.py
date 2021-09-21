@@ -19,14 +19,15 @@ import matplotlib as mpl
 import  matplotlib.pyplot  as plt
 # from matplotlib.lines import Line2D 
 # from sklearn.decomposition import PCA
- 
 
-from .utils._watexlog import watexlog
-from .analysis.features import categorize_flow 
+# from .utils._watexlog import watexlog
+from ..utils._watexlog import watexlog
+from ..analysis.features import categorize_flow 
 import watex.utils.ml_utils as MLU 
 import watex.utils.exceptions as Wex
 import watex.viewer.hints as Hints
 import watex.utils.decorator as deco
+
 T=TypeVar('T')
 V=TypeVar('V', list, tuple, dict)
 Array =  Iterable[float]
@@ -34,7 +35,11 @@ _logger=watexlog.get_watex_logger(__name__)
 
 
 DEFAULTS_COLORS =[ 'g','r','y', 'blue','orange','purple', 'lime','k', 'cyan', 
-                  (.6, .6, .6), (0, .6, .3), (.9, 0, .8)
+                  (.6, .6, .6),
+                  (0, .6, .3), 
+                  (.9, 0, .8),
+                  (.8, .2, .8),
+                  (.0, .9, .4)
                  ]
 
 DEFAULTS_MARKERS =['o','^','x', 'D', '8', '*', 'h', 'p', '>', 'o', 'd', 'H']
@@ -109,7 +114,8 @@ def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
     
     
 class MLPlots: 
-    """ Mainly deals with Machine learning plots. 
+    """ Mainly deals with Machine learning metrics, 
+    dimensional reduction plots and else. 
     
     Composed of decomposition tips, metrics and else.
  
@@ -170,8 +176,8 @@ class MLPlots:
         self.fs =kws.pop('fs', 5.)
         
         self.ms =kws.pop('ms', 3.)
-        self.marker_style =kws.pop('maker_style', 'D')
-        self.marker_facecolor=kws.pop('markefacecolor', 'yellow')
+        self.marker_style =kws.pop('marker_style', 'D')
+        self.marker_facecolor=kws.pop('markerfacecolor', 'yellow')
         self.marker_edgecolor=kws.pop('markeredgecolor', 'cyan')
         self.marker_edgewidth = kws.pop('markeredgewidth', 3.)
         
@@ -187,6 +193,8 @@ class MLPlots:
         self.ylim=kws.pop('y_lim', None) 
         self.xlabel = kws.pop('xlabel', None)
         self.ylabel =kws.pop('ylabel', None)
+        self.rotate_xlabel =kws.pop('rotate_xlabel', None)
+        self.rotate_ylabel=kws.pop('rotate_ylabel',None )
         
         self.leg_kws = kws.pop('leg_kws', dict())
         self.plt_kws = kws.pop('plt_kws', dict())
@@ -197,6 +205,17 @@ class MLPlots:
         self.rc =kws.pop('rc', (.6, .6, .6))
         self.pc =kws.pop('pc', 'k')
     
+        self.s = kws.pop('s', None)
+        #show grid 
+        self.show_grid = kws.pop('show_grid',False)
+        self.galpha =kws.pop('galpha', 0.5)
+        self.gaxis =kws.pop('gaxis', 'both')
+        self.gc =kws.pop('gc', 'k')
+        self.gls =kws.pop('gls', '--')
+        self.glw =kws.pop('glw', 2.)
+        self.gwhich = kws.pop('gwhich', 'major')
+        
+        
     def PCA_(self,
              X:[Array],
              y:Array,
@@ -215,7 +234,7 @@ class MLPlots:
             
         """ Plot PCA component analysis using :class:`~sklearn.decomposition`. 
         
-        PCA indetifies the axis that accounts for the largest amount of 
+        PCA indentifies the axis that accounts for the largest amount of 
         variance in the trainset `X`. It also finds a second axis orthogonal 
         to the first one, that accounts for the largest amount of remaining 
         variance.
@@ -234,14 +253,36 @@ class MLPlots:
             variance ratio. Default is ``2``. The first two importance 
             components with most variance ratio. 
             
-        :param y_type: type of features `y`. Could be ``cat`` for catgorial 
+        :param y_type: type of features `y`. Could be ``cat`` for categorial 
                 features or ``num`` for numerical features. If `y` is numerical 
-                features and need to be converted into a cetegorial features 
+                features and need to be converted into a categorial features 
                 set `y_type` to ``num`` to force the conversion of `y` into 
                 a categorial features.
         
         :param replace_y: customize the encoded values by providing a new list
-                of vategorized values.
+                of categorized values.
+                
+        :param y_values: Once `replace_y` is set to True, then `y_values` must 
+                be given to convert the numerical values into a categorial 
+                values contained in the list of `y_values`. Notes: values in 
+                `y_values` must be self containing in `y`(numerical data.) 
+                
+        :param y_classes: Can replace the numerical  values encoded thoughout 
+                `y_values` to text labels which match each encoded values 
+                in `y_values`. For instance::
+                    
+                    y_values =[0, 1, 3]
+                    y_classes = ['FR0', 'FR1', 'FR2', 'FR3']
+                
+                where :
+                    - ``FR0`` equal to values =0 
+                    - ``FR1`` equal values between  0-1(0< value<=1)
+                    - ``FR2`` equal values between  1-1 (1< value<=3)
+                    - ``FR3`` greather than 3 (>3)
+                    
+                Please refer to :doc:`watex.utils.decorator.catmapflow` and 
+                :doc:`watex.analysis.features.categorize_flow` for futher 
+                details.
                 
         :param plot_dict: size and colors properties of target.
         
@@ -271,16 +312,7 @@ class MLPlots:
             ...                        biplot =False)
         """
         if plot_dict is None: 
-            plot_dict ={'y_colors':['navy',
-                                    'g',
-                                    'r',
-                                    'orange',
-                                    'purple',
-                                    (.9, 0., .8), 
-                                    'bleue', 
-                                    'cyan', 
-                                    'lime', 
-                                    (.0, .9, .4)], 
+            plot_dict ={'y_colors':DEFAULTS_COLORS, 
                         's':100.}
             
         def mere_replace(_y, y_val, y_clas): 
@@ -426,13 +458,15 @@ class MLPlots:
                 axis =1)
              pca1_ix , pca2_ix =0,1
   
-        # Extract the name of the first components  and second components 
+        # Extract the name of the first components  and second components
+        # ranged like [('pc1',['shape', 'power',...], [-0.85927608, -0.35507183,...] ),
+                    # ('pc2', ['sfi', 'power', ...],#[ 0.50104756,  0.4565256 ,... ), ...]
         pca_axis_1 = feature_importances_[0][1][0] 
         pca_axis_2 = feature_importances_[1][1][0]
         # Extract the name of the  values of the first components 
         # and second components in percentage.
-        pca_axis_1_ratio = np.around( feature_importances_[0][2][0],2) *1e2
-        pca_axis_2_ratio = np.around(feature_importances_[1][2][0],2) *1e2
+        pca_axis_1_ratio = np.around( abs(feature_importances_[0][2][0]),2) *1e2
+        pca_axis_2_ratio = np.around(abs(feature_importances_[1][2][0]),2) *1e2
      
         # create figure obj 
         fig = plt.figure(figsize = self.fig_size)
@@ -466,7 +500,8 @@ class MLPlots:
                            markeredgecolor = self.marker_edgecolor,
                            markeredgewidth = self.marker_edgewidth,
                            markerfacecolor = self.marker_facecolor ,
-                           markersize = self.ms * self.fs)
+                           markersize = self.ms * self.fs
+                           )
         
         lineh =plt.Line2D ((-max_lim, max_lim), (0, 0),
                            color = self.lc, 
@@ -476,7 +511,8 @@ class MLPlots:
                            markeredgecolor = self.marker_edgecolor,
                            markeredgewidth = self.marker_edgewidth,
                            markerfacecolor = self.marker_facecolor,
-                           markersize = self.ms * self.fs)
+                           markersize = self.ms * self.fs
+                           )
         
         #Create string label from pca_axis_1
         x_axis_str = pc1_label +':'+ str(pca_axis_1) +' ({}%)'.format(
@@ -486,25 +522,31 @@ class MLPlots:
         
         ax.set_xlabel( x_axis_str,
                       color='k', 
-                      fontsize = self.font_size * self.fs)
+                      fontsize = self.font_size * self.fs
+                      )
         ax.set_ylabel(y_axis_str,
                       color='k',
-                      fontsize = self.font_size * self.fs)
-        ax.set_title('ACP', 
+                      fontsize = self.font_size * self.fs
+                      )
+        ax.set_title('PCA', 
                      fontsize = (self.font_size +1) * self.fs)
         ax.add_artist(linev)
         ax.add_artist(lineh)
         ax.legend(y_classes)
-        ax.grid(color=self.lc, linestyle=self.ls, linewidth=self.lw/10)
+        ax.grid(color=self.lc,
+                linestyle=self.ls,
+                linewidth=self.lw/10
+                )
         
         plt.show()
         
         if self.savefig is not None :
             plt.savefig(self.savefig,
                         dpi=self.fig_dpi,
-                        orientation =self.fig_orientation)  
+                        orientation =self.fig_orientation
+                        )  
             
-    @deco.docstring(MLU.Metrics.precisionRecallTradeoff, start=' Parameters', 
+    @deco.docstring(MLU.Metrics.precisionRecallTradeoff, start='Parameters', 
                     end = 'Examples')        
     def PrecisionRecall(self,
                         clf,
@@ -603,6 +645,18 @@ class MLPlots:
         ax.tick_params(axis='both', 
                        labelsize=.5 * self.font_size * self.fs)
         
+        if self.show_grid is True : 
+           if self.gwhich =='minor': 
+                 ax.minorticks_on() 
+           ax.grid(self.show_grid,
+                   axis=self.gaxis,
+                   which = self.gwhich, 
+                   color = self.gc,
+                   linestyle=self.gls,
+                   linewidth=self.glw, 
+                   alpha = self.galpha
+                   )
+           
         if len(self.leg_kws) ==0 or 'loc' not in self.leg_kws.keys():
              self.leg_kws['loc']='upper left'
         
@@ -751,6 +805,17 @@ class MLPlots:
         ax.tick_params(axis='both', 
                        labelsize=.5 * self.font_size * self.fs)
         
+        if self.show_grid is True : 
+           if self.gwhich =='minor': 
+                 ax.minorticks_on() 
+           ax.grid(self.show_grid,
+                   axis=self.gaxis,
+                   which = self.gwhich, 
+                   color = self.gc,
+                   linestyle=self.gls,
+                   linewidth=self.glw, 
+                   alpha = self.galpha
+                   )
         if len(self.leg_kws) ==0 or 'loc' not in self.leg_kws.keys():
              self.leg_kws['loc']='upper left'
         ax.legend(**self.leg_kws)
@@ -762,19 +827,224 @@ class MLPlots:
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
          
+    def visualizingGeographycalData(self, X=None,  X_ =None, **kws ): 
+        """ Visualize dataset. 
+        
+        Since there is geographical information(latitude/longitude or
+         eating/northing), itis a good idea to create a scatterplot of 
+        all instances to visaulize data.
+        
+        Parameters
+        ---------
+        X: ndarray(n, 2), pd.DataFrame
+            array composed of n-isnatnces of two features. First features is
+            use for x-axis and second feature for y-axis projection. 
+        X_: nadarray(n, 2), pd.DataFrame
+            array composed of n_instance in test_set.
+        x: array_like  
+            array of x-axis plot 
+        y: array_like 
+            array of y_axis 
+        
+        Examples
+        --------
+            
+        >>> from sklearn.linear_model import SGDClassifier
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from watex.datasets import X, X_test
+        >>> from watex.datasets.data_preparing import stratified_test_set
+        >>> mlObj= MLPlots(fig_size=(8, 12),
+        ...                 lc='k',
+        ...                 marker_style ='o',
+        ...                 lw =3.,
+        ...                 font_size=15.,
+        ...                 xlabel= 'east',
+        ...                 ylabel='north' , 
+        ...                 markerfacecolor ='k', 
+        ...                 markeredgecolor='r',
+        ...                 alpha =1., 
+        ...                 markeredgewidth=2., 
+        ...                 show_grid =True,
+        ...                 galpha =0.2, 
+        ...                 glw=.5, 
+        ...                 rotate_xlabel =90.,
+        ...                 fs =3.,
+        ...                 s =None, 
+        ...                 )
+        >>> mlObj.visualizingGeographycalData(X=X, X_=stratified_test_set) 
+        """
+        x=kws.pop('x', None)
+        y=kws.pop('y', None)
+        trainlabel=kws.pop('trainlabel', 'Train set')
+        testlabel=kws.pop('testlabel', 'Test set')
+        
+        xy_labels =[self.xlabel,self.ylabel]
+         
+        if X is not None: 
+            if isinstance(X, pd.DataFrame): 
+                if xy_labels is not None: 
+                    tem =list()
+                    for label in list(X.columns):
+                        for lab in xy_labels : 
+                            if lab ==label: 
+                                tem .append(label)
+                                break 
+                    if len(tem) ==0: 
+                        warnings.warn(' Could not find the `{0}` labels '
+                                      'in dataframe columns `{1}`'.format(
+                                          xy_labels,list(X.columns)))
+                        self._logging.warning(' Could not find the `{0}` labels '
+                                      'in dataframe columns `{1}`'.format(
+                                          xy_labels,list(X.columns)))
 
-# if __name__=='__main__': 
+                    xy_labels = tem
+                    
+                    if len( xy_labels)<2: 
+                        raise Wex.WATexError_plot_featuresinputargument(
+                            f'Need two labels for plot. {len(xy_labels)!r}'
+                            ' is given.')
+                    
+                    if xy_labels is [None, None]: 
+                        xy_labels = list(X.columns)
+                X= X[xy_labels].to_numpy()
 
-    # from watex.datasets.data_preparing import X_train_2
+        if X is not None: 
+            if X.shape[1] > 2:
+                X= X[:, 2]
+                
+            x= X[:, 0]
+            y= X[:, 1]
+   
+        if x is None:
+            raise Wex.WATexError_value('NoneType could not be plotted.'
+                                       ' need `x-axis` value for plot.')
+        if y is None: 
+            raise Wex.WATexError_value('NoneType could not be plotted.'
+                                       ' Need `y-axis` value for plot.')
+        if len(x) !=len(y): 
+            raise TypeError('`x`and `y` must have the same length. '
+                            f'{len(x)!r} and {len(y)!r} are given respectively.')
+            
+            
+        self.xlim =[np.ceil(min(x)), np.floor(max(x))]
+        self.ylim =[np.ceil(min(y)), np.floor(max(y))]   
+        
+        xpad = abs((x -x.mean()).min())/5.
+        ypad = abs((y -y.mean()).min())/5.
+ 
+        if  X_ is not None: 
+            if isinstance(X_, pd.DataFrame): 
+                X_= X_[xy_labels].to_numpy()
+            x_= X_[:, 0]
+            y_= X_[:, 1]
+            min_x, max_x = x_.min(), x_.max()
+            min_y, max_y = y_.min(), y_.max()
+            
+            
+            self.xlim = [min([self.xlim[0], np.floor(min_x)]),
+                         max([self.xlim[1], np.ceil(max_x)])]
+            self.ylim = [min([self.ylim[0], np.floor(min_y)]),
+                         max([self.ylim[1], np.ceil(max_y)])]
+          
+        self.xlim =[self.xlim[0] - xpad, self.xlim[1] +xpad]
+        self.ylim =[self.ylim[0] - ypad, self.ylim[1] +ypad]
+        
+         # create figure obj 
+        fig = plt.figure(figsize = self.fig_size)
+        ax = fig.add_subplot(1,1,1)
+        
+        if self.xlabel is None: 
+            self.xlabel =xy_labels[0]
+        if self.ylabel is None: 
+            self.ylabel =xy_labels[1]
+
+        if self.s is None: 
+            self.s = self.fs *40 
+        ax.scatter(x, y, 
+                   color = self.lc,
+                    s = self.s,
+                    alpha = self.alpha , 
+                    marker = self.marker_style,
+                    edgecolors = self.marker_edgecolor,
+                    linewidths = self.lw,
+                    linestyles = self.ls,
+                    facecolors = self.marker_facecolor,
+                    label = trainlabel 
+                )
+        
+        if  X_ is not None:
+            if self.s is not None: 
+                self.s /=2 
+            ax.scatter(x_, y_, 
+                       color = 'b',
+                        s = self.s,
+                        alpha = self.alpha , 
+                        marker = self.marker_style,
+                        edgecolors = 'b',
+                        linewidths = self.lw,
+                        linestyles = self.ls,
+                        facecolors = 'b',
+                        label = testlabel)
+        
+        
+        ax.set_xlim (self.xlim)
+        ax.set_ylim (self.ylim)
+        ax.set_xlabel( self.xlabel,
+                      fontsize= self.font_size )
+        ax.set_ylabel (self.ylabel,
+                       fontsize= self.font_size )
+        ax.tick_params(axis='both', 
+                       labelsize= self.font_size )
+        plt.xticks(rotation = self.rotate_xlabel)
+        plt.yticks(rotation = self.rotate_ylabel)
+        
+        if self.show_grid is True : 
+            ax.grid(self.show_grid,
+                    axis=self.gaxis,
+                    which = self.gwhich, 
+                    color = self.gc,
+                    linestyle=self.gls,
+                    linewidth=self.glw, 
+                    alpha = self.galpha
+                    )
+            if self.gwhich =='minor': 
+                ax.minorticks_on()
+                
+        if len(self.leg_kws) ==0 or 'loc' not in self.leg_kws.keys():
+             self.leg_kws['loc']='upper left'
+        ax.legend(**self.leg_kws)
+        
+        plt.show()
+        
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+                
+if __name__=='__main__': 
+
+ 
+    from watex.datasets.data_preparing import stratified_test_set#, X_train_2
     # from sklearn.linear_model import SGDClassifier
     # from sklearn.ensemble import RandomForestClassifier
-    # from watex.datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
-
+    from watex.datasets import X, X_test #,y_,  X_prepared, y_prepared, default_pipeline
+    import  watex.utils.ml_utils as mfunc
+    df = mfunc.load_data('data/geo_fdata')
+    
     # sgd_clf = SGDClassifier(random_state= 42)
     # forest_clf =RandomForestClassifier(random_state=42)
     # # print(SGDClassifier.__name__)
     # # print(sgd_clf.__class__.__name__)
-    # mlObj= MLPlots(lw =3., lc=(.9, 0, .8), font_size=7, )
+    mlObj= MLPlots(lw =3., lc='k', marker_style ='o', fig_size=(8, 12),
+                   font_size=15.,
+                   xlabel= 'east',
+                   ylabel='north' , 
+                   markerfacecolor ='k', 
+                   markeredgecolor='r', alpha =1., 
+                   markeredgewidth=2., show_grid =True,galpha =0.2, glw=.5, 
+                   rotate_xlabel =90.,fs =3.,s =None, 
+                   )
+    mlObj.visualizingGeographycalData(X=X, X_=stratified_test_set )
     # # pcaObj.PCA_(X= X_train_2, y=y_prepared, replace_y=True, 
     # #                         y_classes =['FR0', 'FR1', 'FR2', 'FR3'],
     # #                         biplot =False)

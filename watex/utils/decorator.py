@@ -529,18 +529,29 @@ class visualize_valearn_curve :
         
         self.reason =reason
         self.turn =turn 
-        self.fig_size =kwargs.pop('fig_size', (16,8))
+        self.fig_size =kwargs.pop('fig_size', (8,6))
+        self.font_size =kwargs.pop('font_size', 18.)
         self.plotStyle =kwargs.pop('plot_style', 'scatter')
         self.train_kws=kwargs.pop('train_kws',{'c':'r',  'marker':'s', 
                                                'alpha' :0.5,
-                                               'label':'validation curve'})
+                                               'label':'Training curve'})
         self.val_kws= kwargs.pop('val_kws', {'c':'blue', 'marker':'h','alpha' :1,
-                   'label':'Training curve' })
+                   'label':'Validation curve' })
         self.k = kwargs.pop('k', np.arange(1, 220, 20))
-        self.xlabel =kwargs.pop('xlabel', {'xlabel':'Params evolution'})
-        self.ylabel =kwargs.pop('ylabel', {'ylabel':'Performance in %'})
+        self.xlabel =kwargs.pop('xlabel', {'xlabel':'Evaluation of parameter', 
+                                           'fontsize': self.font_size}
+                                )
+        self.ylabel =kwargs.pop('ylabel', {'ylabel':'Performance in %', 
+                                           'fontsize': self.font_size}
+                                )
         self.savefig =kwargs.pop('savefig', None)
         
+        self.grid_kws = kwargs.pop('grid_kws', {
+                       'galpha' :0.2,              # grid alpha 
+                       'glw':.5,                   # grid line width 
+                       'gwhich' :'major',          # minor ticks
+                        })
+        self.show_grid = kwargs.pop('show_grid', False)
         self.error_plot =False 
         self.scatterplot = True 
         self.lineplot =False
@@ -563,33 +574,52 @@ class visualize_valearn_curve :
         def viz_val_decorated(*args, **kwargs): 
             """ Decorated function """
 
-            if self.reason.lower() .find('val')>=0: 
+            if self.reason.lower().find('val')>=0: 
                 self.reason ='val'
-                train_score , val_score, switch,\
-                    param_range =func(*args, **kwargs)
+                train_score , val_score, switch, param_range,\
+                     pname, val_kws, train_kws =func(*args, **kwargs)
                     
             elif self.reason.lower().find('learn')>=0: 
                 self.reason ='learn'
-                param_range,  train_score , val_score, switch\
-                         =func(*args, **kwargs)
+                param_range,  train_score , val_score, switch,\
+                         pname, val_kws, train_kws=func(*args, **kwargs)
                     
+            if val_kws is not None : 
+                self.val_kws =val_kws 
+            if train_kws is not None: 
+                self.train_kws = train_kws
+                
+            # add the name of parameters.
+            if pname  !='': 
+                self.xlabel = {'xlabel':'Evaluation of parameter %s'%pname , 
+                                'fontsize': self.font_size}
 
-            if switch  is not None : self.turn =switch 
+            if switch  is not None :
+                self.turn =switch 
             if param_range is not None :
-  
                 self.k= param_range 
-            
+                
             plt.figure(figsize=self.fig_size)
-            
+            # create figure obj 
+            # fig,ax = plt.subplots(figuresize = self.fig_size)
+            # ax = fig.add_subplot(len (train_score),1,1) 
+
             if self.turn in ['on', 1, True]: 
+                    
                 # if not isinstance(param_range, bool): 
                 if not isinstance(train_score, dict):
                     train_score={'_':train_score}
                     val_score = {'_': val_score}
-                    
+
+               # create figure obj 
+                # fig, ax = plt.subplots(len (train_score), sharex=True,
+                #                        figsize = self.fig_size,
+                #                       )
+                # ax = fig.add_subplot(len (train_score),1,1) 
+
                 for ii, (trainkey, trainval) in enumerate(
                         train_score.items()): 
-                    
+  
                     if self.reason !='learn':
                         trainval*=100
                         val_score[trainkey]  *=100 
@@ -614,14 +644,24 @@ class visualize_valearn_curve :
                     plt.ylabel(**self.ylabel)
                 else :  plt.ylabel(self.ylabel)
                 
-                plt.legend()
+                plt.tick_params(axis='both', 
+                      labelsize= self.font_size )
                 
+                if self.show_grid is True:
+                    plt.grid(self.show_grid, **self.grid_kws
+                            )
+                
+                plt.legend()
+                plt.show()
+                    
                 if self.savefig is not None: 
                     if isinstance(self.savefig, dict):
                         plt.savefig(**self.savefig)
                     else : 
                         plt.savefig(self.savefig)
-
+                        
+            # initialize the trainscore_dict  
+            train_score=dict()  
             return func(*args, **kwargs)
         
         return viz_val_decorated

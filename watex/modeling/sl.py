@@ -284,7 +284,6 @@ class Modeling:
         ylabel={'ylabel':'performance on the validation set '})
     def get_learning_curve (self, estimator:Callable[..., T]=None, X_train=None, 
                          y_train=None, learning_curve_kws:Generic[T]=None,
-                         validation_curve_kws:Generic[T]=None,
                          **kws)-> Iterable[T]: 
         """ Compute the train score and validation curve to visualize 
         your learning curve. 
@@ -295,7 +294,7 @@ class Modeling:
         :param y_train: array_like of selected data for evaluation set.        
         :param y_test: array_like of selected data for model test 
         
-        :param val_curve_kws:
+        :param val_kws:
             `validation_curve` keywords arguments.  if none the *default* 
             should be::
                 
@@ -319,23 +318,25 @@ class Modeling:
             >>> processObj.get_learning_curve (
                 switch_plot='on', preprocessor=True)
         """
-        def compute_validation_curve(model, X_train, y_train, param_ks):
+        def compute_validation_curve(model, X_train, y_train, **param_kws):
             """ Compute learning curve and plot 
             errors with training set size"""
             train_score , val_score = validation_curve(model,
                                                        X_train, y_train, 
-                                                       **param_ks )
+                                                       **param_kws )
             return train_score , train_score 
 
         valPlot =kws.pop('val_plot', False)
         learning_curve_kws = kws.pop('lc_kws', None)
-        trigDec = kws.pop('switch', 'off')
+        trigDec = kws.pop('switch_plot', 'off')
         trig_preprocessor = kws.pop('preprocessor', False)
+        val_kws = kws.pop('val_kws', None)
+        train_kws = kws.pop('train_kws', None)
         
         if learning_curve_kws is not None: 
             self.lc_kws =learning_curve_kws
-        if validation_curve_kws is not None : 
-            self.vc_kws = validation_curve_kws
+        if val_kws  is not None : 
+            self.vc_kws = val_kws 
             
         if estimator is not None : 
             self.estimator = estimator 
@@ -370,14 +371,20 @@ class Modeling:
 
             self.train_score, self.val_score = compute_validation_curve(
                         model= self.estimator, X_train=self.X_train,
-                           y_train= self.y_train, param_ks=self.vc_kws)
-     
+                           y_train= self.y_train,**self.vc_kws)
+            try : 
+                pname = self.vc_kws['param_name']
+            except : 
+                pname =''
+                
         else : 
             N, self.train_score, self.val_score = learning_curve(
                 self.estimator, X=self.X_train, y=self.y_train,
                 **self.lc_kws)
-
-        return N, self.train_score, self.val_score , trigDec
+            pname =''
+            
+        return (N, self.train_score, self.val_score ,
+                trigDec, pname, val_kws, train_kws)
     
     def tuning_hyperparameters (self, estimator: Callable[...,T]=None, 
                                  hyper_params:Generic[T]=None, cv:T=4, 
