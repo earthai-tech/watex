@@ -186,8 +186,14 @@ class sl_analysis :
     @df_cache.setter 
     def df_cache(self, cache: Iterable[T]): 
         """ Holds the remove features and keeps on new dataframe """
-        
-        temDict={'id': self._df['id'].to_numpy()}
+        try:
+            
+            temDict={'id': self._df['id'].to_numpy()}
+        except KeyError: 
+            # if `id` not in colums try 'name'
+            temDict={'id': self._df['name'].to_numpy()}
+            self._index_col_id ='name'
+            
         temc=[]
         if isinstance(cache, str): 
             cache = [cache] 
@@ -344,7 +350,13 @@ class sl_analysis :
                 self.df=self.df.rename(columns = {self._index_col_id:'id'})
                 self._index_col_id ='id'
                 
-            self.df.set_index(self._index_col_id, inplace =True)
+            try: 
+                self.df.set_index(self._index_col_id, inplace =True)
+            except KeyError : 
+                # force to set id 
+                self.df=self.df.rename(columns = {'name':'id'})
+                self._index_col_id ='id'
+                # self.df.set_index('name', inplace =True)
 
         if self.target =='flow': 
             self.df =self.df.astype({

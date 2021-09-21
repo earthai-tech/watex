@@ -17,14 +17,16 @@ import pandas as pd
 # import matplotlib.pyplot as plt 
 from pandas.plotting import scatter_matrix 
 
-import watex.utils.ml_utils as mfunc
-from watex.utils.transformers import StratifiedWithCategoryAdder, CategorizeFeatures 
-from watex.utils.transformers import CombinedAttributesAdder, DataFrameSelector 
-from watex.analysis.features import sl_analysis 
-
 from sklearn.pipeline import Pipeline, FeatureUnion  
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 from sklearn.impute import SimpleImputer
+
+import watex.utils.ml_utils as mfunc
+from watex.utils.transformers import StratifiedWithCategoryAdder, CategorizeFeatures 
+from watex.utils.transformers import CombinedAttributesAdder, DataFrameSelector 
+# from watex.analysis.features import sl_analysis 
+
+
 # imputer = SimpleImputer(missing_values=np.nan, strategy='mean')
 
 
@@ -48,6 +50,7 @@ stratifiedNumObj= StratifiedWithCategoryAdder(base_colum_for_stratification,
                                               return_train=True)
 strat_train_set , strat_test_set = stratifiedNumObj.fit_transform(X=df)
 # keep a copy of the data 
+stratified_test_set = strat_test_set.copy()
 bag_train_set = strat_train_set.copy()
 raw_X = strat_train_set.drop('flow', axis =1).copy()
 raw_y = strat_train_set['flow'].copy()
@@ -58,16 +61,14 @@ raw_y = strat_train_set['flow'].copy()
 #                    c= 'flow', cmap= plt.get_cmap('jet'), colorbar =True)
 # plt.legend()
 # Drop `numbering column ['num', 'east', 'north', 'name'] from data  
-bag_train_set.drop(['num', 'east', 'north', 'name'], inplace =True, axis =1)
-strat_test_set.drop(['num', 'east', 'north', 'name'], inplace=True, axis =1)
+bag_train_set.drop(['num', 'east', 'north', 'name', 'lwi' ], inplace =True, axis =1)
+strat_test_set.drop(['num', 'east', 'north', 'name', 'lwi'], inplace=True, axis =1)
 
 #visualize correlation data 
-
 corr_matrix = bag_train_set.corr()
 # print(corr_matrix['flow'].sort_values(ascending =False))
-
 # Plot numerical attributes using pandas.plotting.scatter_matrix 
-# attributes =['flow','sfi', 'ohmS', 'lwi', 'power', 'magnitude']
+# attributes =['flow','sfi', 'ohmS', 'power', 'magnitude']
 # scatter_matrix(bag_train_set[attributes], figsize=(12,8))
 
 # Categorize the target flow into FR0, FR1, FR2, FR3
@@ -77,7 +78,6 @@ we firstly categorize the flow (labels) into the corresponding classes.
 Categorizes attributes doesant nt only concerns the `flow`. It can be onother 
 features in the dataframe. Refer to 
 :class:`~utils.transformers.CategorizeFeatures """
-
 
 # slObj =sl_analysis(df =bag_train_set, set_index =False, 
 # drop_columns=None, col_id ='name',
@@ -128,7 +128,7 @@ bagoue_train_set= bagoue_train_set.astype(
                         {'power':np.int32, 
                         'magnitude': np.float64, 
                         'sfi':np.float64, 
-                        'lwi':np.float64, 
+                        # 'lwi':np.float64, 
                         # 'east':np.float64, 
                         # 'north':np.float64, 
                         'ohmS':np.float64,
@@ -150,10 +150,12 @@ Try to create a pipe"""
 # X = impObj.fit_transform(X)
 # stanObj = StandardScaler()
 # X= stanObj.fit_transform(X) 
+# (1, 0), (5,4) magnitude/power and ohms/sfi
+
 num_pipeline =Pipeline([
     ('selector', DataFrameSelector(select_type='num')),
     ('attribs_adder',CombinedAttributesAdder(add_attributes=False, 
-                                             attributes_ix=[(4, 3)])), 
+                                             attributes_ix=[(1, 0), (5,4)])), 
     ('imputer', SimpleImputer(missing_values=np.nan, strategy='median')), 
     ('std_scaler', StandardScaler())
     ])
@@ -193,7 +195,7 @@ bagoue_testset_stratified = bagoue_testset_stratified.astype({
                         'power':np.int32, 
                         'magnitude': np.float64, 
                         'sfi':np.float64, 
-                        'lwi':np.float64, 
+                        # 'lwi':np.float64, 
                         # 'east':np.float64, 
                         # 'north':np.float64, 
                         'ohmS':np.float64,
@@ -238,12 +240,12 @@ from sklearn.decomposition import PCA
 
 
 pca2 = PCA()
-pca2.fit(X_num_df)
+pca2.fit(X_train_2)
 cumsum = np.cumsum(pca2.explained_variance_ratio_)
 d= np.argmax(cumsum>=95)+1 
 
 pca =PCA(n_components=0.95)
-X_reduced = pca.fit_transform(X_num_df)
+X_reduced = pca.fit_transform(X_train_2)
 # print(pca.explained_variance_ratio_)
 
 
@@ -251,7 +253,7 @@ X_reduced = pca.fit_transform(X_num_df)
 # X_pca_reduced = pca3.fit_transform(X_train_2)
 # X_pca_inversed = pca3.inverse_transform(X_pca_reduced )
 
-# X_pca =  pd.DataFrame(data = X_pca_inversed, columns=X_train_2 .columns )
+# X_pca =  pd.DataFrame(data = X_pca_inversed, columns=X_train_2.columns )
 # plot the variances vs ndimensions 
 # import matplotlib.pyplot as plt 
 # plt.plot(cumsum, label ='pca explainedvariance vs dimensions')
@@ -259,9 +261,9 @@ X_reduced = pca.fit_transform(X_num_df)
 # plt.ylabel('ExplainedVariance')
 # # print(cumsum )
 # # print(X_reduced)
-# print(list(X_num_df.columns)) # get the features list 
+# print(list(X_train_2.columns)) # get the features list 
 # print(pca.components_) # get the components [n_components, n_features]
-# print(pca.n_components_) # number of components after set the variance ration to >=0.95
+# # print(pca.n_components_) # number of components after set the variance ration to >=0.95
 # # print(pca.explained_variance_)
 
 

@@ -22,7 +22,6 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder 
 
 # import watex.utils.exceptions as Wex 
-
 from ._watexlog import watexlog 
 from ..analysis.features import categorize_flow 
 import  watex.utils.ml_utils as mlfunc

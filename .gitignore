@@ -136,8 +136,12 @@ watex/utils/watson_api
 # Data 
 data/Bag.main&rawds/
 data/geo_fdata/_bagoue_civ_loc_ves&erpdata4.csv
+data/geo_fdata/_bagoue_civ_loc_ves&erpdata4 - Test.csv
+data/geo_fdata/main.bagciv.data.csv
 
 # ignore the projects 
 watex/utils/project_bagoue.py
 #watex/datasets/data_preparing.py 
 watex/datasets/data_training.py 
+
+
