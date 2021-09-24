@@ -24,7 +24,6 @@ from watex.processing.sl import Processing
 # from watex.datasets.data_preparing import X_train_2
 from watex.datasets import X_prepared,  y_prepared
 
-
 #dataset 
 datafn =None # r'F:/repositories/watex/data/Bag.main&rawds/drfats/BagoueDataset2.csv'
 # dataframe 
