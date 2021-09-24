@@ -881,14 +881,14 @@ class FrameUnion (BaseEstimator, TransformerMixin) :
             if self.encode_mode =='OrdinalEncoder': 
                 encoder = OrdinalEncoder()
             elif self.encode_mode =='OneHotEncoder':
-                encoder = OneHotEncoder()
+                encoder = OneHotEncoder(sparse_output=True)
             cat_arrayObj= encoder.fit_transform(cat_arrayObj )
             # sparse matrix of type class <'numpy.float64'>' stored 
             # element in compressed sparses raw format . To convert the sense 
             # matrix to numpy array , we need to just call 'to_array()'.
-            warnings.warn(f'Sparse matrix {cat_arrayObj.shape!r} is converted '
-                          'in dense Numpy array.', UserWarning)
-            cat_arrayObj= cat_arrayObj.toarray()
+            warnings.warn(f'Sparse matrix `{cat_arrayObj.shape!r}` is converted'
+                          ' in dense Numpy array.', UserWarning)
+            # cat_arrayObj= cat_arrayObj.toarray()
 
         try: 
             X= np.c_[num_arrayObj,cat_arrayObj]
