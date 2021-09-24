@@ -96,4 +96,6 @@ class WATexError_VES(Exception):
     pass
 class WATexError_geoFeatures(Exception):
     pass
+class WATexError_datasets(Exception):
+    pass 
 

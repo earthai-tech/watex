@@ -61,8 +61,8 @@ raw_y = strat_train_set['flow'].copy()
 #                    c= 'flow', cmap= plt.get_cmap('jet'), colorbar =True)
 # plt.legend()
 # Drop `numbering column ['num', 'east', 'north', 'name'] from data  
-bag_train_set.drop(['num', 'east', 'north', 'name', 'lwi' ], inplace =True, axis =1)
-strat_test_set.drop(['num', 'east', 'north', 'name', 'lwi'], inplace=True, axis =1)
+bag_train_set.drop(['num', 'east', 'north', 'name' ], inplace =True, axis =1)
+strat_test_set.drop(['num', 'east', 'north', 'name'], inplace=True, axis =1)
 
 #visualize correlation data 
 corr_matrix = bag_train_set.corr()
@@ -100,8 +100,6 @@ bag_train_set_cat = pd.DataFrame(data =bag_train_set_cat ,
 # separate the `the labels ``flow`` to the attributes 
 bagoue_train_set = bag_train_set_cat.drop('flow', axis =1)
 bagoue_labels = bag_train_set_cat['flow'].copy()
-default_X= bagoue_train_set.copy()
-default_y = bagoue_labels.copy() 
 
 """ Labels are categorial featuresm, so let try to encode values using 
 sklearn.LabelEncoder. """
@@ -128,11 +126,14 @@ bagoue_train_set= bagoue_train_set.astype(
                         {'power':np.int32, 
                         'magnitude': np.float64, 
                         'sfi':np.float64, 
-                        # 'lwi':np.float64, 
+                        'lwi':np.float64, 
                         # 'east':np.float64, 
                         # 'north':np.float64, 
                         'ohmS':np.float64,
                         })
+
+default_X= bagoue_train_set.copy()
+default_y = bagoue_labels.copy() 
 
 """ 
 -------------------------(2) PIPELINE CREATING --------------------------------
@@ -154,9 +155,10 @@ Try to create a pipe"""
 
 num_pipeline =Pipeline([
     ('selector', DataFrameSelector(select_type='num')),
-    ('attribs_adder',CombinedAttributesAdder(add_attributes=False, 
-                                             attributes_ix=[(1, 0), (5,4)])), 
-    ('imputer', SimpleImputer(missing_values=np.nan, strategy='median')), 
+    ('imputer', SimpleImputer(missing_values=np.nan, strategy='median')),
+    ('attribs_adder',CombinedAttributesAdder(add_attributes=True, 
+                                              attributes_ix=[(1, 0)])), 
+    # ('imputer', SimpleImputer(missing_values=np.nan, strategy='median')), 
     ('std_scaler', StandardScaler())
     ])
 # categorical pipelines 
@@ -173,7 +175,7 @@ full_pipeline =FeatureUnion(transformer_list=[
 # # now run to the whole pipeline: 
 bagoue_train_set_prepared =full_pipeline.fit_transform(bagoue_train_set)
 # print(bagoue_train_set_prepared )
-
+# print(print(bagoue_train_set_prepared.shape ))
 """
 ---------------------------------(3)TEST SET SAVING -------------------------
  Apply the same change  as sata transformation above to the test set separely 
@@ -195,7 +197,7 @@ bagoue_testset_stratified = bagoue_testset_stratified.astype({
                         'power':np.int32, 
                         'magnitude': np.float64, 
                         'sfi':np.float64, 
-                        # 'lwi':np.float64, 
+                        'lwi':np.float64, 
                         # 'east':np.float64, 
                         # 'north':np.float64, 
                         'ohmS':np.float64,
@@ -263,8 +265,8 @@ X_reduced = pca.fit_transform(X_train_2)
 # # print(X_reduced)
 # print(list(X_train_2.columns)) # get the features list 
 # print(pca.components_) # get the components [n_components, n_features]
-# # print(pca.n_components_) # number of components after set the variance ration to >=0.95
-# # print(pca.explained_variance_)
+# print(pca.n_components_) # number of components after set the variance ration to >=0.95
+# print(pca.explained_variance_)
 
 
 

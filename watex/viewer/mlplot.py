@@ -384,6 +384,12 @@ class MLPlots:
                                  classes=y_classes)
             
         # go for PCA analysis 
+        if n_axes is None:
+            n_axes = 2
+            warnings.warn('None number of axes is specified. The PCA first '
+                         'two components are retrieved by default;'
+                         ' n_axes is = {n_axes!r}.')
+            
         pca= MLU.DimensionReduction().PCA(X,
                                       n_components, 
                                       n_axes =n_axes,
@@ -403,6 +409,19 @@ class MLPlots:
             if pca1_ix <0 or pca2_ix<0: 
                 pca1_ix =0
                 pca2_ix = pca1_ix+1
+            if (pca2_ix or pca1_ix) >= n_axes : 
+                warnings.warn('Axis labels must be less than the number of axes.'
+                            f' Need `{n_axes!r}` but `{max(lbls)!r}` are given.'
+                            'The default first two components are used.')
+                pca1_ix =0
+                pca2_ix = pca1_ix+1
+                pc1_label , pc2_label = 'Axis 1', 'Axis 2'
+                
+                self._logging.debug(
+                   'Axis labels must be less than the number of axes.'
+                    f' Need `{n_axes!r}` but `{max(lbls)!r}` are given.'
+                    'The default first two components are used.'
+                    )
                 
             X_= np.c_[X_reduced[:, pca1_ix],
                       X_reduced[:, pca2_ix]]
@@ -461,12 +480,16 @@ class MLPlots:
         # Extract the name of the first components  and second components
         # ranged like [('pc1',['shape', 'power',...], [-0.85927608, -0.35507183,...] ),
                     # ('pc2', ['sfi', 'power', ...],#[ 0.50104756,  0.4565256 ,... ), ...]
-        pca_axis_1 = feature_importances_[0][1][0] 
-        pca_axis_2 = feature_importances_[1][1][0]
+        # print('pc1axes =', pca1_ix, 'pc1_label=', pc1_label)
+        # print('pc2axes =', pca2_ix, 'pc2_label=', pc2_label)
+        pca_axis_1 = feature_importances_[pca1_ix][1][0] 
+        pca_axis_2 = feature_importances_[pca2_ix][1][0]
         # Extract the name of the  values of the first components 
         # and second components in percentage.
-        pca_axis_1_ratio = np.around( abs(feature_importances_[0][2][0]),2) *1e2
-        pca_axis_2_ratio = np.around(abs(feature_importances_[1][2][0]),2) *1e2
+        pca_axis_1_ratio = np.around(
+            abs(feature_importances_[pca1_ix][2][0]),2) *1e2
+        pca_axis_2_ratio = np.around(
+            abs(feature_importances_[pca2_ix][2][0]),2) *1e2
      
         # create figure obj 
         fig = plt.figure(figsize = self.fig_size)
@@ -1020,7 +1043,7 @@ class MLPlots:
             plt.savefig(self.savefig,
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
-                
+              
 if __name__=='__main__': 
 
  

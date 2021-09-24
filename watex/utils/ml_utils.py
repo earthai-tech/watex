@@ -121,6 +121,9 @@ def load_data (data_path:str = DATA_PATH,
     :param filename: name of file. 
     
     """ 
+    if os.path.isfile(data_path): 
+        return pd.read_csv(data_path, sep)
+    
     csv_path = os.path.join(data_path , filename)
     
     return pd.read_csv(csv_path, sep)
@@ -1097,29 +1100,10 @@ if __name__=="__main__":
     from watex.datasets.data_preparing import X_train_2
 
 
-#     grid_params = [
-#             {'n_estimators':[3, 10, 30], 'max_features':[2, 4, 6, 8]}, 
-#             {'bootstrap':[False], 'n_estimators':[3, 10], 'max_features':[2, 3, 4]}
-#             ]
-
     pca= DimensionReduction().PCA(X_train_2, 0.95, plot_projection=True, n_axes =3)
     print('columnsX=', X_train_2.columns)
     print('components=', pca.components_)
     print('feature_importances_:', pca.feature_importances_)
-    # print(pca.X_.shape)
-#     sgd_clf = SGDClassifier()
-#     from watex.utils.ml_utils import Metrics 
-#     # mObj = Metrics(). precisionRecallTradeoff(clf = sgd_clf,  X= X_train_2, 
-#     #                                           y = y_prepared, classe_=1, cv=3 )
-                                              
-#     # print('conf_mx:=', mObj.confusion_matrix )
-#     # print('f1_score=:', mObj.f1_score)
-#     # print('precision_score=:', mObj.precision_score)
-#     # print('recall_score=:', mObj.recall_score)
-#     rocObj = Metrics().ROC_curve(clf = sgd_clf,  X= X_train_2, 
-#                                               y = y_prepared, classe_=1, cv=3 )
-#     print(rocObj.fpr)
-#     # print('thresholds=:', mObj.thresholds)
 
         
         
