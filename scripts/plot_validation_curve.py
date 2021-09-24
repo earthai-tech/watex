@@ -8,7 +8,7 @@
          decorator.
              ...
              
-:Notes: If run the scrips without setting your own processing and pipelines as
+:Notes: If run the scripts without setting your own processing and pipelines as
 keywards arguments in module `Processing`, will use the default processing
 step. 
 Created on Tue Sep 21 11:09:55 2021
