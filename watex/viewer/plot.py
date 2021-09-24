@@ -777,7 +777,7 @@ class QuickPlot :
                     ' from `{}`'.format(rem))
 
             numerical_features= [cc for cc in tem ] + [target] 
-     
+
         ax =sns.pairplot(data =df_[numerical_features], hue=target,**sns_kws)
         
         if trigger_map_lower_kws : 
@@ -790,7 +790,7 @@ class QuickPlot :
                     '``kde|sns.kdeplot``is not found for seaborn pairplot.'
                     "Impossible to lowering the distribution map.")
             else: 
-                if sns_kws['diag_kind']=='kde': 
+                if sns_kws['diag_kind']=='kde' : 
                     ax.map_lower(sns.kdeplot, **map_lower_kws)
                     
         plt.show()

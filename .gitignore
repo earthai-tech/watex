@@ -143,5 +143,6 @@ data/geo_fdata/main.bagciv.data.csv
 watex/utils/project_bagoue.py
 #watex/datasets/data_preparing.py 
 watex/datasets/data_training.py 
+SVC__LinearSVC__LogisticRegression
 
 

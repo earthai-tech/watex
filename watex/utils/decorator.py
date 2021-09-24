@@ -623,18 +623,36 @@ class visualize_valearn_curve :
                     if self.reason !='learn':
                         trainval*=100
                         val_score[trainkey]  *=100 
-        
-                    if self.scatterplot: 
+                    try: 
+                        
+                        if self.scatterplot: 
+                            plt.scatter(self.k, val_score[trainkey].mean(axis=1),
+                                        **self.val_kws )
+                            plt.scatter(self.k, trainval.mean(axis=1) ,
+                                   **self.train_kws)
+                    except : 
+                        # if exveption occurs maybe from matplotlib properties 
+                        # then run the line plot 
+                            plt.plot(self.k, val_score[trainkey].mean(axis=1),
+                                     **self.val_kws)
+       
+                            plt.plot(self.k, trainval.mean(axis=1),
+                                     **self.train_kws)
+                            
+                    try : 
+                        if self.lineplot : 
+                            plt.plot(self.k, val_score[trainkey].mean(axis=1),
+                                     **self.val_kws)
+       
+                            plt.plot(self.k, trainval.mean(axis=1),
+                                     **self.train_kws)
+                    except : 
+                    
                         plt.scatter(self.k, val_score[trainkey].mean(axis=1),
                                     **self.val_kws )
                         plt.scatter(self.k, trainval.mean(axis=1) ,
                                **self.train_kws)
-                    if self.lineplot : 
-                        plt.plot(self.k, val_score[trainkey].mean(axis=1),
-                                 **self.val_kws)
-   
-                        plt.plot(self.k, trainval.mean(axis=1),
-                                 **self.train_kws)
+                        
                     
                 if isinstance(self.xlabel, dict):
                     plt.xlabel(**self.xlabel)
@@ -1082,7 +1100,16 @@ class docstring:
                       ' thin the end by default.')
         
         if self.start is not None: 
-            param_ix = func.__doc__.find(self.start)
+            try:
+                param_ix = func.__doc__.find(self.start)
+            except AttributeError: 
+                if inspect.isclass(func): 
+                    fname = func.__class__.__name__
+                else: fname = func.__name__
+                # mean there is no doctrings.
+                warnings.warn(" Object `%s` has none doctrings!`NoneType` object"
+                              "  has no attribute `find`."%fname)
+                return func
             # find end _ix and remove 
             if func.__doc__.find(self.end)>=0: 
                 example_ix = func.__doc__.find(self.end)

@@ -17,7 +17,8 @@ calling the `quickPlot` from :mod:`watex.viewer.plot`.
 from watex.viewer.plot import QuickPlot 
 
 # path to dataset 
-data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
+# data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
+data_fn ='data/geo_fdata/main.bagciv.data2.csv'
 
 #-------------------------------------------------------------------------
 # uncomment and edit the sl_analysis arguments for your purpose 
@@ -48,14 +49,17 @@ qkObj = QuickPlot(
 #, 's']  markers must be a singleton or a list of 
 #markers for each level of the hue variable
 # for instance for hue =[FR0, FR1,  FR2, FR3]  , number of hue = 4 = marker level
-sns_pkws={'aspect':2 , 
-          "height": 2, 
-         'markers':['o', 'x', 'D', 'H'],  
-          'diag_kind':'kde', 
+sns_pkws={
+        'aspect':2 , 
+         "height": 2, 
+         # 'markers':['o', 'x', 'D', 'H'],  
+           # 'kind':'kde', 
           'corner':False,
         }
 marklow = {'level':4,  # number of hue variables
-          'color':".2"}
-qkObj.plot_numerical_features(trigger_map_lower_kws=True, 
+          'color':".2", 
+          'diag_kind':'kde'}
+
+qkObj.plot_numerical_features(trigger_map_lower_kws=False, 
                                     map_lower_kws=marklow, 
                                    **sns_pkws)
