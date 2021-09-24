@@ -42,6 +42,6 @@ erp_test_location_name ='l10_gbalo.xlsx'
 
 # set test logging configure
 watexlog.load_configure(
-    os.path.join(os.path.abspath('.'), 'watex', 
+    os.path.join(os.path.abspath('.'), 'watex','utils', 
                  "wlog.yml"))
 

@@ -19,10 +19,11 @@ import numpy as np
 import pandas as pd 
 
 from watex.utils.transformers import FrameUnion
-from watex.datasets import X_
+from watex.datasets import fetch_data 
 from tests import  make_temp_dir , TEST_TEMP_DIR 
 from tests.core.__init__ import reset_matplotlib, watexlog
 
+X, _=fetch_data('Bagoue preprocess')
 
 class TestTransformers(unittest.TestCase):
     """
@@ -49,7 +50,7 @@ class TestTransformers(unittest.TestCase):
                       " to concatenate aray when encoder is `OneHotEncoder`", 
                       raises =AttributeError) 
     def test_frameUnion(self, 
-                        X=X_, 
+                        X=X, 
                         num_attributes =None , 
                         cat_attributes =None,
                         scale =True,
@@ -93,7 +94,7 @@ class TestTransformers(unittest.TestCase):
       
         except AttributeError: 
             pytest.skip("Don't recognize the method `toarray()` of Numpy"
-                        "version. Unsuported numpy version used. ", 
+                        "version. Unsupported numpy version used. ", 
                         allow_module_level=True)
         except KeyError: 
             pytest.skip('Only a column name can be used for the key in a'
