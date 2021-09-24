@@ -36,7 +36,7 @@ trainset= X_train_2
 y_array = y_prepared
 
 # K-Fold cross validation
-cv =3 
+cv =7 
 
 # `classe_` argument is provied if y are not binarized. i.e 
 # created a binary attribute for each flow classes; one attribute 
@@ -45,18 +45,19 @@ classe_category = 1
 
 #plot_key words arguments 
 plot_kws = {'lw' :3.,           # line width 
-            'pc' : 'k',         # precision color 
-            'rc':'b',           # recall color 
+            'pc' : 'orange',         # precision color 
+            'rc':'g',           # recall color 
             'ps':'-',           # precision style 
-            'rs':'--',          # recall line style
+            'rs':':',          # recall line style
             'font_size':7.,
-            'show_grid' :False,        # visualize grid 
+            'show_grid' :True,        # visualize grid 
            'galpha' :0.2,              # grid alpha 
            'glw':.5,                   # grid line width 
            'gwhich' :'major',          # minor ticks
             # 'fs' :3.,                 # coeff to manage font_size 
             }
-mlObj= MLPlots(**plot_kws
+leg_kws ={'loc':'upper right'}
+mlObj= MLPlots(leg_kws=leg_kws, **plot_kws
                )
 # additional scikit_lean precision recall keywords arguments 
 prt_kws =dict()

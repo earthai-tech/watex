@@ -10,7 +10,8 @@ Created on Tue Aug 24 17:08:09 2021
 from watex.viewer.plot import QuickPlot
 
 # path to dataset 
-data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
+# data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
+data_fn ='data/geo_fdata/main.bagciv.data2.csv'
 
 #-------------------------------------------------------------------------
 # uncomment and edit the sl_analysis arguments for your purpose 
