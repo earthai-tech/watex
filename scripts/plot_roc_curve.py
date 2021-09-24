@@ -13,10 +13,9 @@ from sklearn.ensemble import RandomForestClassifier
 
 from watex.viewer.mlplot import MLPlots 
 # modules below are imported for testing scripts.
-# Not usefull to import since you privied your own dataset.
-from watex.datasets.data_preparing import X_train_2
-from watex.datasets import  y_prepared
-
+# Not usefull to import since you provided your own dataset.
+from watex.datasets import fetch_data 
+X_prepared, y_prepared = fetch_data('Bagoue dataset prepared')
 
 # test dirsty classifer "stochastic gradient descent" 
 # prediction method =`decision_function`.
@@ -25,11 +24,11 @@ sgd_clf = SGDClassifier(random_state= 42)
 forest_clf =RandomForestClassifier(random_state=42)
 
 # trainset 
-trainset= X_train_2
+trainset= X_prepared#X_train_2
 # y -labels 
 y_array = y_prepared
 # K-Fold cross validation
-cv =3 
+cv =7 
 
 # `classe_` argument is provied if y are not binarized. i.e 
 # created a binary attribute for each flow classes; one attribute 
@@ -62,7 +61,7 @@ roc_curves_kws =dict()
 
 mlObj.ROC_curve_(clf = clfs, 
                  X= trainset, 
-                     y = y_array ,
-                     classe_=classe_category, 
-                     cv=cv,
-                     **roc_curves_kws)
+                y = y_array ,
+                classe_=classe_category, 
+                cv=cv,
+                **roc_curves_kws)

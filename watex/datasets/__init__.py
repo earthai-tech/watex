@@ -1,59 +1,151 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
+# Copyright (c) 2021 Kouadio K. Laurent, Wed Sep 15 11:39:43 2021 
 # This module is a set of datasets packages
 # released under a MIT- licence.
-"""
-Created on Wed Sep 15 11:39:43 2021
 
-@author: @Daniel03
+from ..utils._watexlog import watexlog
+from ..datasets.config import (data,
+                                X, y,
+                                X0, y0, 
+                                X_prepared, y_prepared,
+                                XT, yT, 
+                                _X,_pipeline)
+                                 
+__logger = watexlog().get_watex_logger(__name__)
 
-"""
-from .data_preparing import bagdataset as data  
-from .data_preparing import bagoue_train_set_prepared as TRAINSET_PREPARED 
-from .data_preparing import bagoue_label_encoded as TRAINSET_LABEL_ENCODED 
-from .data_preparing import raw_X as TRAINSET
-from .data_preparing import raw_y  as LABELS 
-from .data_preparing import default_X as dX
-from .data_preparing import default_y  as dy 
-from .data_preparing import full_pipeline  
-from .data_preparing import bagoue_testset_stratified as TESTSET 
-from .data_preparing import bagoue_testset_label_encoded as TESTSET_LABEL_ENCODED
+BAGOUE_TAGS= (
+        'Bagoue original', 
+        'Bagoue stratified sets', 
+        'Bagoue data prepared', 
+        'Bagoue mid-evaluation', 
+        'semi-preparing`', 
+        'Bagoue data preprocessing', 
+        'Bagoue default pipeline', 
+        'Bagoue analysis`', 
+        'Bagoue pca',
+        'Bagoue dimension reduction', 
+                        )
 
-
-
-dataset_infos= """"
-    `Bagoue dataset` are are Bagoue region is located in WestAfrica and lies
-    between longitudes 6° and 7° W and latitudes 9° and 11° N in the north of 
-    Cote d’Ivoire. The average FR observed in this area fluctuates between 1
-    and 3 m3/h. Refer to the link of case story paper in the repository 
-    part https://github.com/WEgeophysics/watex#documentation to visualize the
-    location map of the study area with the geographical distribution of the
-    various boreholes in the region. The geophysical data and boreholes
-    data were collected from National  Office of Drinking Water (ONEP) and
-    West-Africa International Drilling  Company (FORACO-CI) during  the 
-    Presidential Emergency Program (PPU) in 2012-2013 and the National Drinking 
-     Water Supply Program (PNAEP) in 2014.
+def fetch_data(param): 
+    """ Fetch bagoue dataset values and details."""
+    from ..utils.infos  import BagoueNotes
     
-    The data are firstly composed of Electrical resistivity profile (ERP) data
-    collected from geophysical survey lines with various arrays such as
-    Schlumberger, gradient rectangle and Wenner (α or β) and the Vertical 
-    electricalsounding (VES) data carried out on the selected anomalies.
-    The configuration used during the ERP is Schlumberger with distance of
-    AB is 200m and MN =20m."""
+    if param.lower().find('original')>=0: 
+        __logger.info('Fetching the original data. Return a dict')
+        
+        return {'COL_NAMES': data.columns, 
+                'DESCR':'https://doi.org/10.5281/zenodo.4896758: bagoue-original',
+                'data': data.values, 
+                'data=df':data, 
+                'attrs-infos':BagoueNotes.bagattr_infos, 
+                'dataset-contest':{
+                    '__documentation:':'`~watex.utils.infos.BagoueNotes.__doc__`', 
+                    '__area':'https://en.wikipedia.org/wiki/Ivory_Coast', 
+                    '__casehistory':'https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG',
+                    '__wikipages':'https://github.com/WEgeophysics/watex/wiki',
+                    }
+                }
+    
+    elif param.lower().find('stratified')>=0: 
+        __logger.info('Fetching the stratifed data `X` and `y`')
+        
+        return  X, y
+    
+    elif param.lower().find('prepared')>=0:
+        __logger.info('Fetching the prepared data `X` and `y`')
+        
+        return X_prepared, y_prepared 
+    
+    elif param.lower().find('semi')>=0 or param.lower().find('fit')>=0 or \
+        param.lower().find('mid')>=0 or param.lower().find('preprocess')>=0: 
+        __logger.info('Fetching the mid-preparation data `X` and `y`')
 
-# raw dataset 
-bagoue_dataset = data 
-# raw trainset and test set 
-X, y = TRAINSET , LABELS
-# stratified trainset and testset 
-X_ , y_= dX , dy 
-# after stratificated , defaults data prepared 
+        return X0, y0 
+    
+    elif param.lower().find('test set')>=0  or param.lower().find('x test')>=0: 
+        __logger.info('Fetching the data transformed `X` and `y`')
+        
+        return XT, yT
+    
+    elif param.lower().find('pipeline')>=0:
+        __logger.info('Fetching the transformer pipeline `defaultPipeline`')
+
+        return _pipeline
+    
+    elif ('analysis' or 'pca' or 'dim' or 'reduc') in param.lower():
+
+        __logger.info('Fetching the data for analysis: Text attributes are'
+                      ' are ordinaly encoded using `defaultPipeline`')
+        return _X, y0
+    
+    else : 
+        from ..utils.exceptions import WATexError_datasets
+        from ..viewer.hints import format_generic_obj 
+        
+        raise WATexError_datasets('Arguments ~`{0}` not found in default tags:'
+                                  ' {1}. Unable to retrieve data.'.format(param, 
+                                format_generic_obj (BAGOUE_TAGS)).format(
+                                    *list(BAGOUE_TAGS)))
+    
 
 
-X_prepared, y_prepared = TRAINSET_PREPARED, TRAINSET_LABEL_ENCODED
-# Test set put aside and applied the transformation as above. 
+fetch_data.__doc__ +="""\
+Parameters
+----------
+param: str 
+    Differentt options to retrive data
+    Could be: 
+        - `Bagoue original`: for original data 
+        - `Bagoue stratified sets`: for stratification data
+        - `Bagoue data prepared`: Data prepared using the default pipelines
+        - `Bagoue mid-evaluation|semi-preparing|Bagoue data preprocessed|
+            or Bagoue data fit`: To retreved only the data cleaned and 
+            attributes experience combinaisons
+        - `Bagoue test set` : for stratified test set data
+        - `Bagoue default pipeline`: retrive the default pipeline for 
+            data preparing.
+        - `Bagoue analysis|pca|dimension reduction`: To retreive data with 
+            text attributes only encoded using the ordinal encoder additional 
+            to attributes  combinaisons. 
+        
+Returns
+-------
+    `data` : Original data 
+    `X`, `y` : Stratified train set and training label 
+    `X0`, `y0`: data cleaned after dropping useless features and combined 
+        numerical attributes combinaisions if ``True``
+    `X_prepared`, `y_prepared`: Data prepared after applying  all the 
+       transformation via the transformer (pipeline). 
+    `XT`, `yT` : stratified test set and test label  
+    `_X`: Stratified training set for data analysis. So None sparse
+        matrix is contained. The text attributes (categorical) are converted 
+        using Ordianal Encoder.  
+    `_pipeline`: the default pipeline. 
+"""
+# from .data_preparing import bagdataset as data  
+# from .data_preparing import bagoue_train_set_prepared as TRAINSET_PREPARED 
+# from .data_preparing import bagoue_label_encoded as TRAINSET_LABEL_ENCODED 
+# from .data_preparing import raw_X as TRAINSET
+# from .data_preparing import raw_y  as LABELS 
+# from .data_preparing import default_X as dX
+# from .data_preparing import default_y  as dy 
+# from .data_preparing import full_pipeline  
+# from .data_preparing import bagoue_testset_stratified as TESTSET 
+# from .data_preparing import bagoue_testset_label_encoded as TESTSET_LABEL_ENCODED
 
-X_test, y_test  = TESTSET,  TESTSET_LABEL_ENCODED
-# default pipeline 
-# call pipeline to see all the transformation 
-default_pipeline = full_pipeline 
+# # raw dataset 
+# bagoue_dataset = data 
+# # raw trainset and test set 
+# X, y = TRAINSET , LABELS
+# # stratified trainset and testset 
+# X_ , y_= dX , dy 
+# # after stratificated , defaults data prepared 
+
+
+# X_prepared, y_prepared = TRAINSET_PREPARED, TRAINSET_LABEL_ENCODED
+# # Test set put aside and applied the transformation as above. 
+
+# X_test, y_test  = TESTSET,  TESTSET_LABEL_ENCODED
+# # default pipeline 
+# # call pipeline to see all the transformation 
+# default_pipeline = full_pipeline 

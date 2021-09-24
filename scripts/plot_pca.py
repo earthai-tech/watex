@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 
 """
 ..synopsis::Plot PCA component analysis using :class:`~sklearn.decomposition`.
         PCA indentifies the axis that accounts for the largest amount of 
@@ -45,10 +46,11 @@ from watex.viewer.mlplot import MLPlots
 # modules below are imported for testing scripts.
 # Not usefull to import since you privied your own dataset.
 from watex.datasets.data_preparing import X_train_2
+from watex.datasets.config import _X
 from watex.datasets import  y_prepared
 
 # trainset 
-trainset= X_train_2
+trainset= _X #X_train_2
 # y -labels 
 y_array = y_prepared
 
@@ -74,7 +76,11 @@ biplot =False
 # pca additionals keywords 
 pca_kws =dict()
 
-# call objects 
+# call objects
+# number of components axes 
+nAxes = 7 
+pc1_axis = 'Axis 1'
+pc2_axis ='Axis 8'
 #plot_key words arguments 
 plot_kws = {
             # 'lw' :3.,           # line width 
@@ -85,12 +91,15 @@ plot_kws = {
            'gwhich' :'major',          # minor ticks
             # 'fs' :3.,                 # coeff to manage font_size 
             }
-pcaObj= MLPlots().PCA_(X= X_train_2, 
+pcaObj= MLPlots().PCA_(X= trainset, 
                        y=y_prepared,
                        replace_y=replace_y, 
                        y_values =yvalues, 
                        y_classes =yclasses,
                         biplot =biplot,
+                        pc1_label=pc1_axis ,
+                        pc2_label=pc2_axis,
+                        n_axes=nAxes,
                         **pca_kws)
 
 

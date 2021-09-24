@@ -49,6 +49,11 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
             
         *return_train*: bool, 
             return the whole stratified trainset if set to ``True``.
+            usefull when the dataset is not enough. It is convenient to 
+            train all the whole trainset rather than a small amount of 
+            stratified data. Sometimes all the stratified data are 
+            not the similar equal one to another especially when the dataset 
+            is not enough.
         
     Another way to stratify dataset is to get insights from the dataset and 
     to add a new category as additional mileage. From this new attributes,
@@ -175,7 +180,13 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
                 
             if self.return_train: 
                 strat_train_set = strat_train_set_copy 
-                
+               
+            # force to remove the temporary features for splitting in 
+            # the original dataset
+
+            if in_c in X.columns: 
+                X.drop([in_c], axis =1, inplace=True)
+               
             return strat_train_set, strat_test_set 
 
     
@@ -313,7 +324,7 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
             return train_set, test_set 
         
 class CategorizeFeatures(BaseEstimator, TransformerMixin ): 
-    """ Transform numerical features into categorial features and return 
+    """ Transform numerical features into categorical features and return 
     a new array transformed. 
     
     Arguments 
@@ -548,14 +559,14 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                                      attributes_ix='lwi_per_ohmS')
         >>> addObj.fit_transform(df)
         >>> addObj.attributes_ix
-        >>> addObj.attributes_names_
+        >>> addObj.attribute_names_
     """
-    def __init__(self, add_attributes =False,attributes_ix = 'lwi_per_ohmS'):
+    def __init__(self, add_attributes =False, attributes_ix = 'lwi_per_ohmS'):
 
         self.add_attributes = add_attributes  
         self.attributes_ix = attributes_ix
 
-        self.attributes_names_ =[] 
+        self.attribute_names_ =list()
         
     def fit(self, X, y=None ):
         return self 
@@ -567,7 +578,11 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
             """ Replace 0. value to 1 in denominator for division 
             calculus."""
             return ix_ if ix_!=0. else 1
+        def nan_division(ix_): 
+            """ If value is np.nan then return np.nan"""
+            return ix_ if ix_!=np.nan else -1 
         
+        ifdf_c, t__=list(), list() # keep the pd.Dataframe columns 
         if self.attributes_ix is not None: 
             if isinstance(self.attributes_ix , str): 
                 self.attributes_ix = [self.attributes_ix]
@@ -576,17 +591,18 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                 if isinstance(attr_, str):
                     # break str characters with
                     t_= attr_.replace('_', '').split('per')
-                    self.attributes_names_.append(tuple(t_))
+                    self.attribute_names_.append(tuple(t_))
         
-            
         if isinstance(X, pd.DataFrame): 
-            if len(self.attributes_names_) !=0: 
+            if len(self.attribute_names_) !=0: 
                 # get index from columns positions  and change the 
                 # the litteral string operator to index values from 
                 # columns names.
                 self.attributes_ix = [(int(X.columns.get_loc(col_n[0])), 
                       int(X.columns.get_loc(col_n[1]) ))
-                 for col_n in self.attributes_names_]
+                 for col_n in self.attribute_names_]
+                
+            ifdf_c= list(X.columns)
                 
             X= X.values 
  
@@ -594,20 +610,37 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
             for num_ix , deno_ix  in self.attributes_ix :
         
                 try: 
-                   
+
                     num_per_deno = X[:, num_ix] /X[:, deno_ix ]
                     
                 except ZeroDivisionError:
                     # replace the existing 0 to 1 to operate a new division.
                     weird_divison_values = np.array(
                         list(map(weird_division, X[:, deno_ix ])))
+  
                     num_per_deno = X[:, num_ix] /weird_divison_values
                     
-                except  RuntimeError| RuntimeWarning: 
-                    pass 
-                
+                except  TypeError: #RuntimeError| RuntimeWarning:
+                    warnings.warn(
+                        'Unsupported operand type(s)! Indexes provided'
+                        f" `({num_ix},{deno_ix})` don't match any numerical" 
+                        ' features. Experience combinaison attributes is'
+                        ' not possible! Please provide the right indexes!'
+                        )
+                except  ValueError: 
+
+                    num_per_deno = np.float(
+                        X[:, num_ix]) /np.float(X[:, deno_ix ])
+               
                 X= np.c_[X, num_per_deno ]
-                   
+                
+                if len(ifdf_c) !=0: 
+                    t__.append(
+                        str(ifdf_c[num_ix])+ '_per_'+str(ifdf_c[deno_ix]))
+                    
+        if len(self.attribute_names_) ==0: 
+            self.attribute_names_+= t__
+            
         return X 
      
 class DataFrameSelector(BaseEstimator, TransformerMixin):
@@ -876,7 +909,8 @@ class FrameUnion (BaseEstimator, TransformerMixin) :
             
         return X
         
-                  
+
+                      
 if __name__=='__main__': 
     # import matplotlib.pyplot as plt 
     # df =pd.read_csv('data/geo_fdata/_bagoue_civ_loc_ves&erpdata.csv')
