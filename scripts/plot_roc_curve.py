@@ -8,8 +8,9 @@ Created on Tue Sep 21 09:46:59 2021
 @author: @Daniel03
 """
 
-from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC #, LinearSVC 
 
 from watex.viewer.mlplot import MLPlots 
 # modules below are imported for testing scripts.
@@ -17,11 +18,15 @@ from watex.viewer.mlplot import MLPlots
 from watex.datasets import fetch_data 
 X_prepared, y_prepared = fetch_data('Bagoue dataset prepared')
 
+random_state =42 
 # test dirsty classifer "stochastic gradient descent" 
 # prediction method =`decision_function`.
-sgd_clf = SGDClassifier(random_state= 42)
+
 # Ccompared with dirty RANDOM FOREST with decision method 'predict_proba`
-forest_clf =RandomForestClassifier(random_state=42)
+forest_clf =RandomForestClassifier(random_state=random_state)
+
+logreg_clf = LogisticRegression(random_state =random_state)
+svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =random_state) 
 
 # trainset 
 trainset= X_prepared#X_train_2
@@ -33,7 +38,7 @@ cv =7
 # `classe_` argument is provied if y are not binarized. i.e 
 # created a binary attribute for each flow classes; one attribute 
 #equal to 1 when others categories equal to 0.
-classe_category = 1 
+classe_category = 3 
 
 # plot_keywords arguments 
 
@@ -48,8 +53,8 @@ plot_kws ={'lw':3,
             }
 # classifiers with their methods are put into tuples. 
 # IF classifier name is set to None. Will find name automatically.
-clfs =[('sgd', sgd_clf, "decision_function" ), 
-      ('forest', forest_clf, "predict_proba")]
+clfs =[(None, svc_clf, "decision_function" ), 
+      (None, logreg_clf, "predict_proba")]
     #  can be 
     #  clfs =[(None, sgd_clf, "decision_function" ), 
     #   (None, forest_clf, "predict_proba")]

@@ -8,7 +8,7 @@
          decorator.
              ...
              
-:Notes: If run the scrips without setting your own processing and pipelines as
+:Notes: If run the scripts without setting your own processing and pipelines as
 keywards arguments in module `Processing`, will use the default processing
 step. 
 Created on Tue Sep 21 11:09:55 2021
@@ -23,7 +23,6 @@ from watex.processing.sl import Processing
 # Not usefull to import since you privied your own dataset.
 # from watex.datasets.data_preparing import X_train_2
 from watex.datasets import X_prepared,  y_prepared
-
 
 #dataset 
 datafn =None # r'F:/repositories/watex/data/Bag.main&rawds/drfats/BagoueDataset2.csv'
