@@ -149,4 +149,6 @@ watex/datasets/data_training.py
 SVC__LinearSVC__LogisticRegression
 SVC__LogisticRegression.pkl
 
+# ignore the useless __init__.py 
+watex/__init__.py 
 
