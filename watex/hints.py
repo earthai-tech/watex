@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
-# This module is part of the WATex viewer package, which is released under 
+# This module is part of the WATex package, which is released under 
 # the MIT- licence.
 
 """
@@ -9,24 +9,17 @@ Created on Wed Jul 14 20:00:26 2021
 @author: @Daniel03
 
 """
-
-from typing import TypeVar, Generic, Iterable 
-
-T=TypeVar('T', list , tuple, dict, float, int)
-K= TypeVar('K', complex, float)
-
 # import os
 import re
 import warnings 
-import inspect 
-
-import numpy as np 
-import pandas as pd
+import inspect
+from typing import TypeVar, Generic, Iterable 
 
 import watex.utils.exceptions as WexH
- 
 from watex.utils._watexlog import watexlog 
 
+T=TypeVar('T', list , tuple, dict, float, int)
+K= TypeVar('K', complex, float)
 __logging =watexlog().get_watex_logger(__name__) 
   
 __estimator ={

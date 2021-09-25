@@ -9,9 +9,13 @@ Created on Tue Aug 24 19:52:53 2021
 
 
 from watex.viewer.plot import QuickPlot
+from watex.datasets import fetch_data 
 
+# fetch the bagoue test dataframe  dataframe df with text attributes label
+data = fetch_data('Bagoue original')['data=dfy2']
 # path to dataset 
-data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
+data_fn = None# 'data/geo_fdata/BagoueDataset2.xlsx'
+
 
 #-------------------------------------------------------------------------
 # uncomment and edit the sl_analysis arguments for your purpose 
@@ -42,6 +46,7 @@ sns_style= 'darkgrid'
 # --> call QuickPlot Object 
 qplotObj = QuickPlot(
             data_fn =data_fn,
+            df = data, 
             flow_classes = flow_classes, 
             target_name = target_name,
             xlabel =xlabel, 

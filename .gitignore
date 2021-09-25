@@ -70,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs
 
 # PyBuilder
 target/
@@ -143,6 +144,9 @@ data/geo_fdata/_bagoue_civ_loc_ves&erpdata4 - Test.csv
 watex/utils/project_bagoue.py
 #watex/datasets/data_preparing.py 
 watex/datasets/data_training.py 
+
+#ignore dumping files
 SVC__LinearSVC__LogisticRegression
+SVC__LogisticRegression.pkl
 
 

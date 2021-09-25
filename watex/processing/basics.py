@@ -26,7 +26,7 @@ from sklearn.metrics import confusion_matrix,  classification_report #, f1_score
 from sklearn.feature_selection import SelectKBest, f_classif
  
 from ..processing.__init__ import _HAS_ENSEMBLE_ 
-from ..analysis.features import sl_analysis 
+from ..analysis.basics import SLAnalyses
 from ..utils._watexlog import watexlog 
 from ..viewer.plot import hints 
 import  watex.utils.exceptions as Wex 
@@ -130,7 +130,7 @@ class Preprocessing :
     
     Example: 
         
-        >>> from watex.processing.sl import Preprocessing
+        >>> from watex.processing.basics import Preprocessing
         >>> prepObj = Preprocessing(drop_features = ['lwi', 'x_m', 'y_m'],
         ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
         >>> prepObj.X_train, prepObj.X_test, prepObj.y_train, prepObj.y_test
@@ -209,7 +209,7 @@ class Preprocessing :
         if datafn is not None : 
            self._data_fn = datafn 
     
-        slObj= sl_analysis(data_fn=self._data_fn, set_index=True,
+        slObj= SLAnalyses(data_fn=self._data_fn, set_index=True,
                            col_id =self._index_col_id)
         
         self.index_col_id = slObj._index_col_id 
@@ -432,7 +432,7 @@ class Preprocessing :
                 
         :Example: 
             
-            >>> from watex.processing.sl import Preprocessing
+            >>> from watex.processing.basics import Preprocessing
             >>> from sklearn.preprocessing import StandardScaler 
             >>> preObj = Preprocessing(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
@@ -544,7 +544,7 @@ class Preprocessing :
             
         :Example: 
             
-            >>> from watex.processing.sl import Preprocessing
+            >>> from watex.processing.basics import Preprocessing
             >>> preObj = Preprocessing(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
             >>>   from sklearn.ensemble import RandomForestClassifier
@@ -771,7 +771,7 @@ class Processing (Preprocessing) :
     
     :Example:: 
         
-        >>> from watex.processing.sl import Processing
+        >>> from watex.processing.basics import Processing
         >>> from sklearn.preprocessing import StandardScaler
         >>> from sklearn.ensemble import RandomForestClassifier 
         >>> my_own_pipeline= {'num_column_selector_': 
@@ -1011,7 +1011,7 @@ class Processing (Preprocessing) :
         
         :Example: 
             
-            >>> from watex.processing.sl import Processing 
+            >>> from watex.processing.basics import Processing 
             >>> processObj = Processing(
                 data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
             >>> processObj.get_validation_curve(
@@ -1201,7 +1201,7 @@ def find_categorial_and_numerical_features(*, df= None, features= None,
     
     :Example: 
         
-        >>> from watex.processing.sl import find_categorial_and_numerical_features
+        >>> from watex.processing.basics import find_categorial_and_numerical_features
         >>> preObj = Preprocessing(
         ...     data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
         ...                )
