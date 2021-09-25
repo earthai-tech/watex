@@ -13,25 +13,25 @@ Created on Tue Jul  13 15:48:14 2021
 @author: ~alias @Daniel03
 
 """
-import os 
-import re 
+# import os 
+# import re 
 import warnings
-import functools 
+# import functools 
 from typing import Generic, TypeVar, Iterable, Callable 
 
 import numpy as np 
-import pandas as pd
-import matplotlib as mpl 
+# import pandas as pd
+# import matplotlib as mpl 
 import  matplotlib.pyplot  as plt
-import matplotlib.cm as cm 
-import matplotlib.colorbar as mplcb
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.ticker import MultipleLocator, NullLocator
-import matplotlib.gridspec as gspec
+# import matplotlib.cm as cm 
+# import matplotlib.colorbar as mplcb
+# from mpl_toolkits.axes_grid1 import make_axes_locatable
+# from matplotlib.ticker import MultipleLocator, NullLocator
+# import matplotlib.gridspec as gspec
 import seaborn as sns 
 
 import watex.viewer.hints as hints
-from  watex.analysis.features import sl_analysis 
+from  watex.analysis.basics import SLAnalyses
 import watex.utils.exceptions as Wex
 from watex.utils._watexlog import watexlog
 
@@ -54,7 +54,7 @@ class QuickPlot :
             *data_fn*: str 
                 Raw data for plotting. `QuickPlot` doesnt straighforwadly  
                 read   the raw datafile. It calls  the module from 
-                :mod:`watex.analysis.features.sl_analysis` module 
+                :mod:`watex.analysis.basics.SupervisedLearning` module 
                 for data reading and sanitizing data before plotting.
                 
             *flow_classes*: list of classes values to convert the categorical 
@@ -185,12 +185,12 @@ class QuickPlot :
     @data_fn.setter 
     def data_fn (self, datafn):
         """ Can read the data file provided  and set the data into 
-        pd.DataFrame by calling :class:~analysis.features.sl_analysis` to 
-          populate convenient attributes. """
+        pd.DataFrame by calling :class:~analysis.basics.SLAnalyses`  
+          topopulate convenient attributes. """
         if datafn is not None : 
             self._data_fn = datafn 
 
-        slObj= sl_analysis(data_fn=self._data_fn, set_index=True, 
+        slObj= SLAnalyses(data_fn=self._data_fn, set_index=True, 
                            flow_classes = self._flow_classes , 
                            target = self.target_name)
         self.df= slObj.df 
@@ -204,7 +204,7 @@ class QuickPlot :
         
         :param df: Dataframe to quickplotted
         :param data_fn: 
-                Datafile to be read. `QuickPlot`  will call `sl_analysis`
+                Datafile to be read. `QuickPlot`  will call `SLAnalyses`
                 module to read file and sanitizing data before plotting. 
         :param target_name: 
                 Specify the `target_name` for histogram plot. If not given 
@@ -1197,7 +1197,7 @@ class QuickPlot :
         :Example: 
             
             >>> import watex.utils.ml_utils as mfunc
-            >>> from watex.utils.tranformers import StratifiedWithCategoryAdder
+            >>> from watex.processing.tranformers import StratifiedWithCategoryAdder
             >>> df = mfunc.load_data('data/geo_fdata')
             >>> stratifiedNumObj= StratifiedWithCategoryAdder('flow')
             >>> strat_train_set , strat_test_set = \

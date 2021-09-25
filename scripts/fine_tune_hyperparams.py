@@ -11,7 +11,7 @@ Created on Fri Sep 24 21:28:48 2021
 from sklearn.linear_model import LogisticRegression , SGDClassifier
 from sklearn.svm import SVC, LinearSVC 
 
-from watex.datasets.data_training import multipleGridSearches 
+from watex.modeling.validation import multipleGridSearches 
 #  Test data
 from watex.datasets import fetch_data 
 X_prepared, y_prepared = fetch_data('Bagoue dataset prepared')

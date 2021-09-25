@@ -7,7 +7,7 @@ Created on Mon Jul 12 14:24:18 2021
 
     :synopsis: 
         
-        Module :mod:`watex.analysis.features` is most focused on features 
+        Module :mod:`watex.analysis.basics` is actually focused on supervised 
         analyses.
 
 @author: @Daniel03
@@ -15,17 +15,14 @@ Created on Mon Jul 12 14:24:18 2021
 """
 
 import os
-import  warnings  
 from typing import Iterable,TypeVar 
 import pandas as pd 
 import numpy as np 
-import seaborn as sns 
 
 from ..bases import sanitize_fdataset as STZ_DF
 from ..bases import exportdf as EXP_DF
-from . import SUCCES_IMPORT_CHARTSTUDIO
 from . import PD_READ_FEATURES
-from ..core import geofeatures
+from ..core import features
 from ..utils import decorator as deco
 from ..utils._watexlog import watexlog 
 import watex.utils.exceptions as Wex
@@ -34,9 +31,9 @@ T=TypeVar('T', list, tuple)
 _logger =watexlog().get_watex_logger(__name__)
 
 
-class sl_analysis : 
+class SLAnalyses: 
     """ 
-    This class summarizeed supervised learning methods analysis. It  
+    This class summarizes supervised learning methods analysis. It  
     deals with data features categorization, when numericall values is 
     provided standard anlysis either `qualitatif` or `quantitatives analyis`. 
     
@@ -77,7 +74,7 @@ class sl_analysis :
                                             some specific columns to not corrupt 
                                             data analysis. In formal dataframe 
                                             collected straighforwardly from 
-                                            :class:`~geofeatures.Features`,the
+                                            :class:`~features.GeoFeatures`,the
                                             default `drop_columns` refer to 
                                             coordinates positions as : 
                                                 ['east', 'north']
@@ -86,8 +83,8 @@ class sl_analysis :
     
     :Example:
         
-        >>> from watex.analysis.features import sl_analysis 
-        >>> slObj =sl_analysis(data_fn =' data/geo_fdata/BagoueDataset2.xlsx')
+        >>> from watex.analysis.basics import SLAnalyses
+        >>> slObj =SLAnalyses(data_fn =' data/geo_fdata/BagoueDataset2.xlsx')
         >>> sObj.df 
         >>> sObj.
     """
@@ -218,11 +215,11 @@ class sl_analysis :
         # check into the dataset whether the not provided features exists.
         if self.data_fn is not None : 
             # try: 
-            featObj = geofeatures.Features(features_fn= self.data_fn)
+            featObj = features.GeoFeatures(features_fn= self.data_fn)
             # except: 
             self._logging.error(
                 'Trouble occurs when calling `Features` class from '
-                '`~.core.geofeatures.Features` module !')
+                '`~.core.features.GeoFeatures` module !')
             # else: 
 
             df__= featObj.df.copy(deep=True)
@@ -287,8 +284,8 @@ class sl_analysis :
             
         :Example:
             
-            >>> from watex.analysis.features import sl_analysis 
-            >>> slObj = sl_analysis(
+            >>> from watex.analysis.basics import SLAnalyses
+            >>> slObj = SLAnalyses(
             ...    data_fn='data/geo_fdata/BagoueDataset2.xlsx',
             ...    set_index =True)
             >>> slObj._df
@@ -379,8 +376,8 @@ class sl_analysis :
         
         :Example: 
             
-            >>> from watex.analysis.features import sl_analysis 
-            >>> slObj =sl_analysis(
+            >>> from watex.analysis.slfeatures import SLAnalyses 
+            >>> slObj =SLAnalyses(
             ...   data_fn='data/geo_fdata/BagoueDataset2.xlsx',
             ...   set_index =True)
             >>> slObj.writedf()

@@ -35,7 +35,7 @@ from watex.utils._watexlog import watexlog
 
 __docformat__='restructuredtext'
 
-class Features: 
+class GeoFeatures: 
     """
     Features class. Deals  with Electrical Resistivity profile (VES), 
     Vertical electrical Sounding (VES), Geological (Geol) data and 
@@ -94,7 +94,7 @@ class Features:
         
     :Example: 
         
-        >>> from watex.core.geofeatures import Features 
+        >>> from watex.core.features import GeoFeatures 
         >>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
         >>> featObj =Features(features_fn= featurefn)
         >>> featObj.site_ids
@@ -647,7 +647,7 @@ class ID:
 if __name__=='__main__': 
     featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
     
-    # featObj =Features(features_fn= featurefn)
+    # featObj =GeoFeatures(features_fn= featurefn)
     
     # df=featObj.df
     # print(df)
