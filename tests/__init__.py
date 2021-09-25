@@ -4,6 +4,7 @@ import shutil
 # import sys 
 
 from watex.utils._watexlog import watexlog
+from watex.datasets import fetch_data as BAGOUE_DATASET
 
 # sys.path.insert(0, os.path.abspath('..'))
 
@@ -38,10 +39,14 @@ ERP_DATA_DIR = os.path.normpath(
 VES_DATA_DIR = os.path.normpath(
     os.path.join(TEST_WATex_ROOT, 'data/ves'))
 
+DATA_ORIGINAL = BAGOUE_DATASET('Bagoue original')
+DATA_PREPARED = BAGOUE_DATASET('Bagoue data prepared')
+DATA_MID_PROCESSED= BAGOUE_DATASET('Bagoue data preprocessed')
+DATA_ANALYSES = BAGOUE_DATASET('Bagoue analysis')
+
 erp_test_location_name ='l10_gbalo.xlsx'
 
 # set test logging configure
 watexlog.load_configure(
-    os.path.join(os.path.abspath('.'), 'watex','utils', 
+    os.path.join(os.path.abspath('./watex'),'utils', 
                  "wlog.yml"))
-

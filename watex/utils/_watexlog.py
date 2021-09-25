@@ -64,10 +64,12 @@ class watexlog:
             
         elif configfile.endswith(".yaml") or configfile.endswith(".yml") :
             this_module_path=os.path.abspath(__file__)
-            
+    
             print('module path', this_module_path)
             
             logging.info ("this module is : %s", this_module_path)
+            print('os.path.dirname(this_module_path)=', os.path.dirname(this_module_path))
+
             yaml_path=os.path.join(os.path.dirname(this_module_path),
                                    configfile)
             print("yaml_path", yaml_path)
