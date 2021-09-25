@@ -8,10 +8,13 @@ Created on Tue Aug 24 17:08:09 2021
 """
 
 from watex.viewer.plot import QuickPlot
+from watex.datasets import fetch_data 
 
+# fetch the bagoue test dataframe  with textlabel
+data = fetch_data('Bagoue original')['data=dfy2']
 # path to dataset 
 # data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
-data_fn ='data/geo_fdata/main.bagciv.data2.csv'
+data_fn =None #'data/geo_fdata/main.bagciv.data2.csv'
 
 #-------------------------------------------------------------------------
 # uncomment and edit the sl_analysis arguments for your purpose 
@@ -32,7 +35,7 @@ lc ='b'
 set_theme = 'darkgrid'
 
 # --> Call object  
-qkObj = QuickPlot(
+qkObj = QuickPlot(df=data,
             data_fn =data_fn, 
             flow_classes = flow_classes, 
             target=target_name,

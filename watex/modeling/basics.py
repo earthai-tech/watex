@@ -8,21 +8,21 @@ import warnings
 import numpy as np 
 import pandas as pd 
 from typing import TypeVar, Generic, Iterable , Dict 
-from typing import Sequence, Callable, Optional, Union
+from typing import Callable, Optional, Union #,Sequence, 
 
 from sklearn.pipeline import make_pipeline 
 from sklearn.model_selection import validation_curve#, cross_val_score
 from sklearn.model_selection import RandomizedSearchCV,  GridSearchCV
+from sklearn.inspection import permutation_importance
+from sklearn.model_selection import learning_curve 
+from sklearn.metrics import confusion_matrix #, classification_report 
 # from sklearn.model_selection import train_test_split 
 # from sklearn.model_selection import GroupKFold 
-from sklearn.model_selection import learning_curve 
-from sklearn.metrics import confusion_matrix, classification_report 
 # from sklearn.metrics import mean_squared_error, f1_score 
-from sklearn.inspection import permutation_importance
 
-from watex.processing.sl import Processing , d_estimators__ 
-from watex.viewer import hints 
-from watex.utils._watexlog import watexlog 
+from .processing.basics import Processing #, d_estimators__ 
+from .. import hints 
+from ..utils._watexlog import watexlog 
 import  watex.utils.exceptions as Wex 
 import  watex.utils.decorator as deco
 
@@ -30,7 +30,7 @@ T= TypeVar('T', float, int, str)
 _logger =watexlog().get_watex_logger(__name__)
 
 
-class Modeling: 
+class SLModeling: 
     """
     Modeling class. The most interesting and challenging part of modeling 
     is the `tuning hyperparameters` after designing a composite estimator. 
@@ -77,14 +77,13 @@ class Modeling:
      
     :Example: 
         
-        >>> from watex.modeling.sl import Modeling 
-        >>> from watex.modeling.sl.modeling import Modeling
+        >>> from watex.modeling.basics import SLModeling
         >>> from sklearn.preprocessing import RobustScaler,  PolynomialFeatures 
         >>> from sklearn.feature_selection import SelectKBest, f_classif 
         >>> from sklearn.ensemble import RandomForestClassifier
         >>> from sklearn.compose import make_column_selector 
         >>> estimator2= RandomForestClassifier()
-        >>> modelObj = Modeling(
+        >>> modelObj = SLModeling(
         ...     data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
         ...     pipelines = {
         ...            'num_column_selector_': make_column_selector(
@@ -312,8 +311,8 @@ class Modeling:
             
         :Example:
             
-            >>> from watex.modeling.sl.modeling import Modeling
-            >>> processObj = Modeling(
+            >>> from watex.modeling.basics import SLModeling
+            >>> processObj = SLModeling(
                 data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
             >>> processObj.get_learning_curve (
                 switch_plot='on', preprocessor=True)
@@ -401,7 +400,7 @@ class Modeling:
         
         :Example: 
             
-            >>> from watex.modeling.sl.modeling import Modeling 
+            >>> from watex.modeling.basics import SLModeling 
             >>> from sklearn.preprocessing import RobustScaler,PolynomialFeatures 
             >>> from sklearn.feature_selection import SelectKBest, f_classif 
             >>> from sklearn.svm import SVC 
@@ -417,7 +416,7 @@ class Modeling:
                     'encodages_': RobustScaler()
                       }
             >>> my_estimator = SVC(C=1, gamma=1e-4, random_state=7)
-            >>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+            >>> modelObj = SLModeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
                            pipelines =my_own_pipelines , 
                            estimator = my_estimator)
             >>> hyperparams ={
@@ -620,9 +619,9 @@ class Modeling:
             
         :Example:
             
-            >>> from watex.modeling.sl import Modeling 
+            >>> from watex.modeling.basics import SLModeling
             >>> from sklearn.ensemble import AdaBoostClassifier
-            >>> modelObj = Modeling()
+            >>> modelObj = SLModeling()
             >>> modelObj.permutation_feature_importance(
             ...    estimator = AdaBoostClassifier(random_state=7),
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx',  
