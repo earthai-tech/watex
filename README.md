@@ -119,12 +119,12 @@ ERP survey line using the `watex.core.erp.ERP_collection` module as below:
 >>> erpColObj= ERP_collection(listOferpfn= 'data/erp')
 >>> erpColObj.erpdf 
 ```
-Get all features for data analysis and prediction purpose  by calling `Features`
-from module `~.core.geofeatures` as **(1)** or do the same task by calling different module collections from `ves`, `geol`,
+Get all features for data analysis and prediction purpose  by calling `GeoFeatures`
+from module `~.core.features` as **(1)** or do the same task by calling different module collections from `ves`, `geol`,
 considered as Python object **(2)**: 
 ```
 (1) 							|(2)
->>> from watex.core.geofeatures import Features       	|>>> from watex.core.geofeatures import Features
+>>> from watex.core.features import GeoFeatures       	|>>> from watex.core.features import GeoFeatures
 >>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 	|>>> from watex.core.erp import ERP_collection 
 >>> featObj =Features(features_fn= featurefn) 		|>>> from watex.core.ves import VES_collection 
 >>> featObj.site_ids 					|>>> from watex.core.geology import Geology, Borehole 
@@ -144,8 +144,8 @@ Click [here](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/c
  To solve the classification problem in `supervised learning`, we need to categorize  the `targetted` numerical values 
  into categorized values using the module `watex.analysis` . It's possible to export data using the decorated `~writedf` function: 
 ```
->>> from watex.analysis.features import sl_analysis 
->>> slObj =sl_analysis(
+>>> from watex.analysis.basics import SLAnalyses
+>>> slObj =SLAnalyses(
 ...   data_fn='data/geo_fdata/BagoueDataset2.xlsx',
 ...   set_index =True)
 >>> slObj.writedf()
@@ -244,7 +244,7 @@ of `transformers + estimators` and multiple other functions to boost the predict
 nine(09) inner defaults estimators such as `neighbors`, `trees`, `svm` and `~.ensemble` estimators category.
 An example of  `preprocessing`class implementation is given below: 
 ```
->>> from watex.processing.sl import Preprocessing
+>>> from watex.processing.basics import Preprocessing
 >>> prepObj = Preprocessing(drop_features = ['lwi', 'x_m', 'y_m'],
 ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
 >>> prepObj.X_train, prepObj.X_test, prepObj.y_train, prepObj.y_test
@@ -261,7 +261,7 @@ An example of  `preprocessing`class implementation is given below:
 It 's also interesting to evaluate a quick model score without any preprocessing beforehand by calling the 
  `Processing` superclass as : 
 ```
->>> from watex.processing.sl import Processing 
+>>> from watex.processing.basics import Processing 
 >>> processObj = Processing(
 ...   data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
 >>> processObj.quick_estimation(estimator=DecisionTreeClassifier(
@@ -296,7 +296,7 @@ and we'll tuning its hyperparameters. Then the best parameters obtained will be 
 prediction. This is an example and the user has the ability to create its own pipelines more powerfull. 
 We consider a **svc** estimator as default estimator. The process are described below: 
 ```
->>> from watex.modeling.sl import Modeling 
+>>> from watex.modeling.basics import SLModeling 
 >>> from sklearn.preprocessing import RobustScaler, PolynomialFeatures 
 >>> from sklearn.feature_selection import SelectKBest, f_classif 
 >>> from sklearn.svm import SVC 
@@ -312,7 +312,7 @@ We consider a **svc** estimator as default estimator. The process are described 
         'encodages_': RobustScaler()
           }
 >>> my_estimator = SVC(C=1, gamma=1e-4, random_state=7)             # random estimator 
->>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+>>> modelObj = SLModeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
                        pipelines =my_own_pipelines , 
                        estimator = my_estimator)
 >>> hyperparams ={
@@ -357,8 +357,8 @@ We can quick visualize the *learning curve* by calling the decorated method
 In the test area `bagoue` , we can get a sample of model prediction  after tuning the model hyperparameters, 
 by calling the decorated method `get_model_prediction` refered as below:
 ```
->>> from watex.modeling.sl import Modeling 
->>> modelObj = Modeling(data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+>>> from watex.modeling.basics import SLModeling 
+>>> modelObj = SLModeling (data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
 ...                     pipelines ={
 ...                             'num_column_selector_': make_column_selector(dtype_include=np.number),
 ...                             'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
@@ -378,7 +378,7 @@ This is especially useful for non-linear or opaque estimators. More details can 
 Let's do a quick example using `RandomForestClassifier` ensemble estimator.
 We call decorated method `permutation_feature_importance` as :
 ```
->>> from watex.modeling.sl import Modeling 
+>>> from watex.modeling.basics import SLModeling 
 >>> from sklearn.ensemble import AdaBoostClassifier
 >>> modelObj.permutation_feature_importance(
 ...    estimator = RandomForestClassifier(random_state=7),

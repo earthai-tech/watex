@@ -22,8 +22,8 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder 
 
 # import watex.utils.exceptions as Wex 
-from ._watexlog import watexlog 
-from ..analysis.features import categorize_flow 
+from ..utils._watexlog import watexlog 
+from ..analysis.basics import categorize_flow 
 import  watex.utils.ml_utils as mlfunc
 
 __docformat__='restructuredtext'
@@ -61,7 +61,7 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
     Once data is tratified, the new category will be drop and return the 
     train set and testset stratified. For instance::  
         
-        >>> from watex.utils.transformers import StratifiedWithCategoryAdder
+        >>> from watex.processing.transformers import StratifiedWithCategoryAdder
         >>> stratifiedNumObj= StratifiedWithCatogoryAdder('flow')
         >>> stratifiedNumObj.fit_transform(X=df)
         >>> stats2 = stratifiedNumObj.statistics_
@@ -213,6 +213,7 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
         biais.Therefore strafied sampling is a better way to avoid 
          a significant biais of sampling survey. For instance:: 
             
+            >>> from watex.processing.transformers import StratifiedUsingBaseCategory 
             >>> from watex.utils.ml_utils import load_data 
             >>> df = load_data('data/geo_fdata')
             >>>stratifiedObj = StratifiedUsingBaseCategory(base_column='geol')

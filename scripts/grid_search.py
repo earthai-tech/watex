@@ -13,11 +13,11 @@ from pprint import pprint
 
 from sklearn.svm import SVC
 
-# from watex.utils.ml_utils import BaseEvaluation
-from watex.utils.ml_utils import SearchedGrid 
+from watex.modeling.validation import SearchedGrid 
 # modules below are imported for testing scripts.
 # Not usefull to import at least you provided your own dataset.
-from watex.datasets import  X_prepared, y_prepared
+from watex.datasets import fetch_data
+X_prepared, y_prepared =fetch_data('Bagooue data prepared')
 
 # set the SVM grid parameters 
 grid_params = [
@@ -61,7 +61,8 @@ pprint(grid_searchObj.best_params_ )
 #a `feature_importances_` attributes. 
 
 #pprint(grid_searchObj.feature_importances_ )
-
+# best SVMmodels
+#{'C': 100, 'coef0': 1, 'degree': 1, 'gamma': 0.01, 'kernel': 'rbf'}
 
 # =============================================================================
 #Uncomment the section  below and evalaute your model with the 

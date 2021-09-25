@@ -3,13 +3,14 @@
 # This module is a set of datasets packages
 # released under a MIT- licence.
 
-from ..utils._watexlog import watexlog
-from ..datasets.config import (data,
+from watex.utils._watexlog import watexlog
+from watex.datasets.config import (data,
                                 X, y,
                                 X0, y0, 
                                 X_prepared, y_prepared,
                                 XT, yT, 
-                                _X,_pipeline)
+                                _X,_pipeline, 
+                                df0, df1)
                                  
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -37,6 +38,8 @@ def fetch_data(param):
                 'DESCR':'https://doi.org/10.5281/zenodo.4896758: bagoue-original',
                 'data': data.values, 
                 'data=df':data, 
+                'data=dfy1':df1, 
+                'data=dfy2':df0,
                 'attrs-infos':BagoueNotes.bagattr_infos, 
                 'dataset-contest':{
                     '__documentation:':'`~watex.utils.infos.BagoueNotes.__doc__`', 
@@ -47,7 +50,7 @@ def fetch_data(param):
                 }
     
     elif param.lower().find('stratified')>=0: 
-        __logger.info('Fetching the stratifed data `X` and `y`')
+        __logger.info('Fetching the stratified training data `X` and `y`')
         
         return  X, y
     
@@ -63,19 +66,19 @@ def fetch_data(param):
         return X0, y0 
     
     elif param.lower().find('test set')>=0  or param.lower().find('x test')>=0: 
-        __logger.info('Fetching the data transformed `X` and `y`')
+        __logger.info('Fetching the stratified test set `X` and `y`')
         
         return XT, yT
     
     elif param.lower().find('pipeline')>=0:
-        __logger.info('Fetching the transformer pipeline `defaultPipeline`')
+        __logger.info('Fetching the transformer pipeline =`defaultPipeline`')
 
         return _pipeline
     
     elif ('analysis' or 'pca' or 'dim' or 'reduc') in param.lower():
 
         __logger.info('Fetching the data for analyses. Text attributes'
-                      ' are ordinaly encoded using `defaultPipeline`')
+                      ' are ordinarily encoded using the`defaultPipeline`')
         return _X, y0
     
     else : 
@@ -93,14 +96,14 @@ fetch_data.__doc__ +="""\
 Parameters
 ----------
 param: str 
-    Differentt options to retrive data
+    Different options to retrieve data
     Could be: 
         - `Bagoue original`: for original data 
         - `Bagoue stratified sets`: for stratification data
         - `Bagoue data prepared`: Data prepared using the default pipelines
         - `Bagoue mid-evaluation|semi-preparing|Bagoue data preprocessed|
-            or Bagoue data fit`: To retreved only the data cleaned and 
-            attributes experience combinaisons
+            or Bagoue data fit`: To retrieve only the data cleaned and 
+            attributes experience combinaisons.
         - `Bagoue test set` : for stratified test set data
         - `Bagoue default pipeline`: retrive the default pipeline for 
             data preparing.
@@ -149,3 +152,30 @@ Returns
 # # default pipeline 
 # # call pipeline to see all the transformation 
 # default_pipeline = full_pipeline 
+if __name__=='__main__':
+    import numpy as np
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

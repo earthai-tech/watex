@@ -11,10 +11,11 @@ Created on Tue Sep 21 09:27:53 2021
 """
 from watex.viewer.mlplot import MLPlots 
 # modules below are imported for testing scripts.
-# Not usefull to import since you privied your own dataset.
-from watex.datasets.data_preparing import stratified_test_set
-from watex.datasets import X
+# Not usefull to import since you provided your own dataset.
+from watex.datasets import fetch_data 
 
+X,_ = fetch_data('Bagoue stratified sets')
+stratified_test_set ,_= fetch_data('test sets')
 
 # dataset X: X can be a dataframe or numpay ndarray. 
 test_dataset =X 

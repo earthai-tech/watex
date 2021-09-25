@@ -2,11 +2,10 @@
 # Copyright (c) 2021 Kouadio K. Laurent,Thu Sep 23 16:19:52 2021
 # automate datapreparation.
 
-from sklearn.model_selection import cross_val_score 
-from watex.processing.process import PrepareDATA 
+from watex.processing.prepare import BasicSteps 
 
 __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
-         'X_prepared', 'y_prepared',  '_pipeline', ] 
+         'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1' ] 
 
 
 # path to dataset 
@@ -38,7 +37,7 @@ feature_props_to_categorize =[
 ownPipeline =None 
 # createOnjects. 
 # readfile and set dataframe
-prepareObj =PrepareDATA(data = data_fn,
+prepareObj =BasicSteps(data = data_fn,
                         drop_features = drop_features,
                         categorizefeature_props = feature_props_to_categorize,
                         target=target, 
@@ -60,19 +59,8 @@ y_prepared= prepareObj.y_prepared   # label encoded (prepared)
 _X = prepareObj._Xpd                # training categorical ordinal encoded features.
 _pipeline = prepareObj.pipeline 
 
-def quickscoring_evaluation_using_cross_validation(
-        clf, X, y, cv=7, scoring ='accuracy', display='off'): 
-    scores = cross_val_score(clf , X, y, cv = cv, scoring=scoring)
-                         
-    if display or display =='on':
-        
-        print('clf=:', clf.__class__.__name__)
-        print('scores=:', scores )
-        print('scores.mean=:', scores.mean())
-    
-    return scores , scores.mean()
-
-
+df0 = prepareObj._df0
+df1 = prepareObj._df1
 #-------------------------------------------------------------------------    
 
 # test set stratified data. Untouchable unless the best model is found.

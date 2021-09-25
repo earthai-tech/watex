@@ -22,10 +22,10 @@ import  matplotlib.pyplot  as plt
 
 # from .utils._watexlog import watexlog
 from ..utils._watexlog import watexlog
-from ..analysis.features import categorize_flow 
+from ..analysis.basics import categorize_flow 
 import watex.utils.ml_utils as MLU 
 import watex.utils.exceptions as Wex
-import watex.viewer.hints as Hints
+import watex.hints as Hints
 import watex.utils.decorator as deco
 
 T=TypeVar('T')
@@ -1046,18 +1046,14 @@ class MLPlots:
               
 if __name__=='__main__': 
 
- 
-    from watex.datasets.data_preparing import stratified_test_set#, X_train_2
     # from sklearn.linear_model import SGDClassifier
     # from sklearn.ensemble import RandomForestClassifier
-    from watex.datasets import X, X_test #,y_,  X_prepared, y_prepared, default_pipeline
+    from watex.datasets import fetch_data 
     import  watex.utils.ml_utils as mfunc
     df = mfunc.load_data('data/geo_fdata')
-    
-    # sgd_clf = SGDClassifier(random_state= 42)
-    # forest_clf =RandomForestClassifier(random_state=42)
-    # # print(SGDClassifier.__name__)
-    # # print(sgd_clf.__class__.__name__)
+    X,_ = fetch_data('Bagoue stratified sets')
+    X_,_= fetch_data('test sets')
+
     mlObj= MLPlots(lw =3., lc='k', marker_style ='o', fig_size=(8, 12),
                    font_size=15.,
                    xlabel= 'east',
@@ -1067,21 +1063,8 @@ if __name__=='__main__':
                    markeredgewidth=2., show_grid =True,galpha =0.2, glw=.5, 
                    rotate_xlabel =90.,fs =3.,s =None, 
                    )
-    mlObj.visualizingGeographycalData(X=X, X_=stratified_test_set )
-    # # pcaObj.PCA_(X= X_train_2, y=y_prepared, replace_y=True, 
-    # #                         y_classes =['FR0', 'FR1', 'FR2', 'FR3'],
-    # #                         biplot =False)
-    
-    # mlObj.PrecisionRecall(clf = sgd_clf,  X= X_train_2, 
-    #                       y = y_prepared, classe_=0, cv=3, kind='thres')
-    # clfs =[(None, sgd_clf, "decision_function" ), 
-    #        (None, forest_clf, "predict_proba")]
-    # mlObj.ROC_curve_(clf = clfs,  X= X_train_2, 
-    #                       y = y_prepared, classe_=0, cv=3,)
-        
-    # mObj = Metrics(). precisionRecallTradeoff(clf = sgd_clf,  X= X_train_2, 
-    #                                           y = y_prepared, classe_=1, cv=3 )    
-        
+    mlObj.visualizingGeographycalData(X=X, X_=X_)
+
         
         
         
