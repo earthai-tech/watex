@@ -18,17 +18,17 @@ from pprint import pprint
 import numpy as np 
 import pandas as pd 
 
+from tests.__init__ import DATA_MID_PROCESSED
 from watex.utils.transformers import FrameUnion
-from watex.datasets import fetch_data 
 from tests import  make_temp_dir , TEST_TEMP_DIR 
 from tests.core.__init__ import reset_matplotlib, watexlog
 
-X, _=fetch_data('Bagoue preprocess')
-
+X, _=DATA_MID_PROCESSED
 class TestTransformers(unittest.TestCase):
     """
     Test differents transformers 
     """
+    
     @classmethod 
     def setUpClass(cls):
         """

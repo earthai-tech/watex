@@ -74,7 +74,7 @@ def fetch_data(param):
     
     elif ('analysis' or 'pca' or 'dim' or 'reduc') in param.lower():
 
-        __logger.info('Fetching the data for analysis: Text attributes are'
+        __logger.info('Fetching the data for analyses. Text attributes'
                       ' are ordinaly encoded using `defaultPipeline`')
         return _X, y0
     
