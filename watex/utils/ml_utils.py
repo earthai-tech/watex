@@ -27,7 +27,7 @@ from sklearn.metrics import roc_curve, roc_auc_score
 from watex.utils._watexlog import watexlog
 import watex.utils.decorator as deco
 import watex.utils.exceptions as Wex
-import watex.viewer.hints as Hints
+import watex.hints as Hints
 
 T= TypeVar('T')
 KT=TypeVar('KT')
