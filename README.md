@@ -26,13 +26,15 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
         -  Support vector machines: [**SVMs**](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
         -  Neighbors: **KNN** 
         -  Trees: **DTC**
-        -  Ensemble methods 
-    - Unsupervided learnings(not implemented yet):
-        -  Kernel Principal Component Analysis **k-PCA** 
+        -  Ensemble methods (RandomForests, Bagging and Pasting, Boosting)
+    - Unsupervided learnings(in progress):
         -  Artificial neural networks **ANN** 
-        -  t-distributed Stochastic Neighbor Embeedding **t-SNE**
         -  Apriori
-        
+     - Dimensionality Reduction 
+         -  Kernel Principal Component Analysis **k-PCA** 
+         -  t-distributed Stochastic Neighbor Embeedding **t-SNE**
+         -  Randomized PCA
+         -  Locally Linear Embedding (LLE)
 * **Note** 
 
     Actually only the supervised part including [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) works properly and the developement with pure Python is still ongoing. 
