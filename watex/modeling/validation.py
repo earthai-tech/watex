@@ -65,7 +65,7 @@ def multipleGridSearches(X,
              SVC(random_state =random_state) )
             
     grid_params: list 
-        list of parameters Grids. For instance:; 
+        list of parameters Grids. For instance:: 
             
             grid_params= ([
             {'C':[1e-2, 1e-1, 1, 10, 100], 'gamma':[5, 2, 1, 1e-1, 1e-2, 1e-3],
@@ -76,7 +76,7 @@ def multipleGridSearches(X,
             [dict()]
             )
     cv: int 
-        number of K-Fold to cross validate the training set.
+        Number of K-Fold to cross validate the training set.
     scoring: str 
         Type of scoring to evaluate your grid search. Use 
         `sklearn.metrics.metrics.SCORERS.keys()` to get all the metrics used 
@@ -129,7 +129,7 @@ def multipleGridSearches(X,
     for j , estm_ in enumerate(estimators):
         
         msg = f'{estm_.__class__.__name__} is evaluated.'
-        searchObj = SearchedGrid(base_estimator=estm_, 
+        searchObj = GridSearch(base_estimator=estm_, 
                                   grid_params= grid_params[j], 
                                   cv = cv, 
                                   kind=kindOfSearch, 
@@ -267,44 +267,8 @@ def prettyPrinter(clfs,  clf_score=None,
     for i in p: 
         print(i)
 
-def quickscoring_evaluation_using_cross_validation(
-        clf, X, y, cv=7, scoring ='accuracy', display='off'): 
-    scores = cross_val_score(clf , X, y, cv = cv, scoring=scoring)
-                         
-    if display is True or display =='on':
-        
-        print('clf=:', clf.__class__.__name__)
-        print('scores=:', scores )
-        print('scores.mean=:', scores.mean())
-    
-    return scores , scores.mean()
 
-quickscoring_evaluation_using_cross_validation.__doc__="""\
-Quick scores evaluation using cross validation. 
-
-Parameters
-----------
-clf: callable 
-    Classifer for testing default data 
-X: ndarray
-    trainset data 
-y: array_like 
-    label data 
-cv: int 
-    KFold for data validation. 
-scoring: str 
-    type of error visualization 
-display: str or bool, 
-    show the show on the stdout
-Returns 
--------
-scores, mean_core: array_like, float 
-    scaore after evaluation and mean of the score
-"""
-# deprecated in scikit-learn 0.21 to 0.23 
-# from sklearn.externals import joblib 
-# import sklearn.externals
-class SearchedGrid: 
+class GridSearch: 
     """ Fine tune hyperparameters. 
     
     `Search Grid will be able to  fiddle with the hyperparameters until to 
@@ -333,7 +297,7 @@ class SearchedGrid:
         ...        {'bootstrap':[False], 'n_estimators':[3, 10], 
         ...                             'max_features':[2, 3, 4]}]
         >>> forest_clf = RandomForestClassifier()
-        >>> grid_search = SearchedGrid(forest_clf, grid_params)
+        >>> grid_search = GridSearch(forest_clf, grid_params)
         >>> grid_search.fit(X= bagoue_train_set_prepared ,
         ...                    y = bagoue_label_encoded)
         >>> pprint(grid_search.best_params_ )
@@ -345,7 +309,6 @@ class SearchedGrid:
                 'scoring',
                 'cv', 
                 '_kind', 
-                '_logging',
                  'grid_kws',
                 'best_params_',
                 'best_estimator_',
@@ -360,8 +323,6 @@ class SearchedGrid:
                  kind:str ='GridSearchCV',
                  scoring:str = 'neg_mean_squared_error',
                  **grid_kws): 
-        
-        self._logging = watexlog().get_watex_logger(self.__class__.__name__)
         
         self._base_estimator = base_estimator 
         self.grid_params = grid_params 
@@ -386,7 +347,7 @@ class SearchedGrid:
     def base_estimator (self, baseEstim): 
         if not inspect.isclass(baseEstim) or\
             type(self.estimator) != ABCMeta: 
-            raise TypeError(f'Expected an Estimator not {type(baseEstim)!r}')
+            raise TypeError(f"Expected an Estimator not {type(baseEstim)!r}")
             
         self._base_estimator =baseEstim 
         
@@ -450,10 +411,9 @@ class SearchedGrid:
                             %(repr(baseEstimatorObj.__class__),
                             repr(type(baseEstimatorObj)), parameters), 
                             UserWarning)
-            
         else : 
             # suppose an instance is created before running the 
-            # `SearchedGrid` class. 
+            # `GridSearch` class. 
             baseEstimatorObj  = self.base_estimator 
         
         if self.kind =='GridSearchCV': 
@@ -467,11 +427,10 @@ class SearchedGrid:
                 warnings.warn('%s does not accept the param %r arguments.'
                               %(GridSearchCV.__class__, grid_kws),
                               RuntimeWarning)
-                __logger.warnings('Unacceptable params %r arguments'
+                __logger.error('Unacceptable params %r arguments'
                                       % grid_kws)
             
         elif self.kind =='RandomizedSearchCV':
-            
             try: 
                 gridObj = RandomizedSearchCV(baseEstimatorObj ,
                                             self.grid_params,
@@ -482,7 +441,7 @@ class SearchedGrid:
                 warnings.warn('%s does not accept the param %r arguments.'
                               %(RandomizedSearchCV.__class__, grid_kws),
                               RuntimeWarning)
-                self.logging.warnings('Unacceptable params %r arguments'
+                __logger.warnings('Unacceptable params %r arguments'
                                       %self.grid_kws)
         try : 
             # fit gridSearchObject.
@@ -500,12 +459,12 @@ class SearchedGrid:
                           %(repr(baseEstimatorObj ),type(baseEstimatorObj )),
                           FutureWarning)
             
-            self._logging.warning('Trouble of clone estimator. Create an instance '
-                                  ' of estimator and set as %r base_estimator'
-                                  ' arguments before runing the {type(self)!r}'
-                                  'class. Please create instance with %s params'
-                                  'values.'%(repr(type(baseEstimatorObj)), 
-                                             repr(parameters)))
+            __logger.warning("Trouble of clone estimator. Create an instance "
+                            " of estimator and set as %r base_estimator"
+                            " arguments before runing the {type(self)!r}"
+                            "class. Please create instance with %s params"
+                            "values."%(repr(type(baseEstimatorObj)), 
+                                       repr(parameters)))
             
             return self
         
@@ -514,7 +473,6 @@ class SearchedGrid:
                 [gridObj.best_params_, gridObj.best_estimator_, 
                              gridObj.cv_results_ ]
                              ):
-            
             setattr(self, param_, param_value_)
         try : 
             attr_value = gridObj.best_estimator_.feature_importances_
@@ -798,7 +756,44 @@ class BaseEvaluation (object):
                 if self.scoring =='neg_mean_squared_error': 
                     self.scores = -self.scores 
                 display_scores(self.scores)   
-                   
     
+                
+def quickscoring_evaluation_using_cross_validation(
+        clf, X, y, cv=7, scoring ='accuracy', display='off'): 
+    scores = cross_val_score(clf , X, y, cv = cv, scoring=scoring)
+                         
+    if display is True or display =='on':
+        
+        print('clf=:', clf.__class__.__name__)
+        print('scores=:', scores )
+        print('scores.mean=:', scores.mean())
+    
+    return scores , scores.mean()
+
+quickscoring_evaluation_using_cross_validation.__doc__="""\
+Quick scores evaluation using cross validation. 
+
+Parameters
+----------
+clf: callable 
+    Classifer for testing default data 
+X: ndarray
+    trainset data 
+y: array_like 
+    label data 
+cv: int 
+    KFold for data validation. 
+scoring: str 
+    type of error visualization 
+display: str or bool, 
+    show the show on the stdout
+Returns 
+-------
+scores, mean_core: array_like, float 
+    scaore after evaluation and mean of the score
+"""
+# deprecated in scikit-learn 0.21 to 0.23 
+# from sklearn.externals import joblib 
+# import sklearn.externals    
     
     

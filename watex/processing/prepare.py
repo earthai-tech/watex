@@ -428,9 +428,10 @@ class BasicSteps(object):
             }
         if self.verbose > 3 : 
             
-            smsg =''.join([f'Object {sObj.__class__.__name__} sucessffuly run',
-            f' to stratify data from base feature `{self.target}`. Default',
-            f' arguments are: `{STRAT_PARAMS_VALUES}`'])
+            smsg =''.join([
+                f"Object {sObj.__class__.__name__!r} sucessffuly run",
+                f" to stratify data from base feature `{self.target}`. ",
+                f' Default arguments are: `{STRAT_PARAMS_VALUES}`'])
             
         _X , __X = sObj.fit_transform(X=data)
         
@@ -443,49 +444,54 @@ class BasicSteps(object):
         self.attribute_names_= X.columns 
         if self.verbose >1 : 
             
-            pprint(f'Trainsing shapes (X ={X.shape}, y= {y.shape})'
-                   f'Test set shapes ((X ={self.__X.shape}, y= {self.__y.shape}')
+            pprint(f"Trainsing shapes (X ={X.shape!r}, y= {y.shape!r})"
+                   f"Test set shapes ((X ={self.__X.shape!r},"
+                   f" y= {self.__y.shape!r}")
             
         df0= self.data.copy()
         df1= df0.copy()
+        _check_existing_target =False 
         if self.categorizefeatures_props is not None: 
             cmsg=''
             ix_feat= [t[i] for  i, t in  enumerate(
                       self.categorizefeatures_props)]
-            if self.target in ix_feat:
-                target_ix= ix_feat.index(self.target) 
+            
+            _check_existing_target= self.target in ix_feat
+            
+        if _check_existing_target: 
+            target_ix= ix_feat.index(self.target) 
+    
+            try: 
+                ycat = self.categorizefeatures_props[
+                    target_ix][1][0]
+                ytext= self.categorizefeatures_props[
+                    target_ix][1][1]
+            except : 
+                ycat, ytext =None 
                 
-                try: 
-                    ycat = self.categorizefeatures_props[
-                        target_ix][1][0]
-                    ytext= self.categorizefeatures_props[
-                        target_ix][1][1]
-                except : 
-                    ycat, ytext =None 
-                    
-                    self._logging.error('Unable to find labelcategories values'
-                                        'Could not convert y to text attributes')
-                    warnings.warn('Unable to find labelcategories values'
-                                        'Could not convert y to text attributes')
-                    if self.verbose > 1:
-                        cmsg=''.join(['Unable to find label categories',
-                               'Could not convert to text attributes.'])
-                else: 
-                    
-                    cmsg ="".join([
-                        "\ It seems y label need to be categorized.",
-                        "The given y categories are `{np.unique(ycat)}`",
-                    " and should be converted to text values = {ytext}"])
-           
-                    df0[self.target]= categorize_flow(
-                    target_array= df0[self.target], 
-                    flow_values =ycat, classes=ytext)
-                    
-                    cmsg +='\ Conversion successfully done!'
-        
-                    df1= df0.copy()
-                    df1[self.target]= df1[self.target].astype(
-                        'category').cat.codes
+                self._logging.error('Unable to find labelcategories values'
+                                    'Could not convert y to text attributes')
+                warnings.warn('Unable to find labelcategories values'
+                                    'Could not convert y to text attributes')
+                if self.verbose > 1:
+                    cmsg=''.join(['Unable to find label categories',
+                           'Could not convert to text attributes.'])
+            else: 
+                
+                cmsg ="".join([
+                    "\ It seems y label need to be categorized.",
+                    f"The given y categories are `{np.unique(ycat)}`",
+                    f" and should be converted to text values = {ytext}"])
+       
+                df0[self.target]= categorize_flow(
+                target_array= df0[self.target], 
+                flow_values =ycat, classes=ytext)
+                
+                cmsg +='\ Conversion successfully done!'
+    
+                df1= df0.copy()
+                df1[self.target]= df1[self.target].astype(
+                    'category').cat.codes
                     
         self._df0= df0
         self._df1=df1            

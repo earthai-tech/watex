@@ -20,7 +20,6 @@ import  matplotlib.pyplot  as plt
 # from matplotlib.lines import Line2D 
 # from sklearn.decomposition import PCA
 
-# from .utils._watexlog import watexlog
 from ..utils._watexlog import watexlog
 from ..analysis.basics import categorize_flow 
 import watex.utils.ml_utils as MLU 
