@@ -65,7 +65,7 @@ yclasses = ['FR0', 'FR1', 'FR2', 'FR3']
 
 # biplot 
 # biplot pca features importance (pc1 and pc2) and visualize different 
-#  variables accordingto Serafeim Loukas, serafeim.loukas@epfl.ch 
+#  variables according to Serafeim Loukas, serafeim.loukas@epfl.ch 
 # 
 biplot =False 
 
