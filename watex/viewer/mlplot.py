@@ -20,13 +20,11 @@ import  matplotlib.pyplot  as plt
 # from matplotlib.lines import Line2D 
 # from sklearn.decomposition import PCA
 
-# from .utils._watexlog import watexlog
 from ..utils._watexlog import watexlog
 from ..analysis.basics import categorize_flow 
 from ..analysis.dimensionality import Reducers
 import watex.utils.ml_utils as MLU 
 import watex.utils.exceptions as Wex
-# import watex.hints as Hints
 import watex.utils.decorator as deco
 
 T=TypeVar('T')
