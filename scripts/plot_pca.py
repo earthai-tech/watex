@@ -50,14 +50,15 @@ from watex.datasets import fetch_data
 # trainset, y -labels
 X, y = fetch_data('Bagoue analyses data')
 
-# param replace_y: customize the encoded values by providing a new list
-# of categorized values
+# param replace_y: Change label from regression to classification problem.
+# customize the encoded values by providing a new list of categorized values
 replace_y =True 
    
 #param y_values: Once `replace_y` is set to True, then `y_values` must 
-        # be given to convert the numerical values into a Text values 
-        # values contained in the list of `y_values`. Notes: values in 
-        # `y_values` must be self containing in `y`(numerical data.) 
+        # be given so that the numerical values should be converted into a Text 
+        # values. Otherwise if `replace_y` is ``True`` and `y_values` is not given,
+        # be sure to provide the number of text categories equal to the 
+        # number of numerical categories self containing in `y`(numerical data) 
 yvalues =None              
         
 #param y_classes: Cn replace the numercal  values encodes thought 
