@@ -13,11 +13,11 @@ from pprint import pprint
 
 from sklearn.svm import SVC
 
-from watex.modeling.validation import SearchedGrid 
+from watex.modeling.validation import GridSearch
 # modules below are imported for testing scripts.
 # Not usefull to import at least you provided your own dataset.
 from watex.datasets import fetch_data
-X_prepared, y_prepared =fetch_data('Bagooue data prepared')
+X_prepared, y_prepared =fetch_data('Bagoue data prepared')
 
 # set the SVM grid parameters 
 grid_params = [
@@ -46,7 +46,7 @@ svc_clf = SVC(random_state=42,
               )
 # grid_ keywords arguments 
 grid_kws =dict()
-grid_searchObj= SearchedGrid(svc_clf,
+grid_searchObj= GridSearch(svc_clf,
                            grid_params,
                            cv =cv, 
                            kind=kindOfSearch, 
