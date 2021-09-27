@@ -17,14 +17,14 @@ __logger = watexlog().get_watex_logger(__name__)
 BAGOUE_TAGS= (
         'Bagoue original', 
         'Bagoue stratified sets', 
-        'Bagoue data prepared', 
+        'Bagoue prepared sets', 
         'Bagoue mid-evaluation', 
-        'semi-preparing`', 
-        'Bagoue data preprocessing', 
+        'Bagoue semi-preparing`', 
+        'Bagoue preprocessing sets', 
         'Bagoue default pipeline', 
-        'Bagoue analysis`', 
-        'Bagoue pca',
-        'Bagoue dimension reduction', 
+        'Bagoue analyses sets`', 
+        'Bagoue pca sets',
+        'Bagoue reduce dimension sets', 
                         )
 
 def fetch_data(param): 
@@ -32,7 +32,8 @@ def fetch_data(param):
     from ..utils.infos  import BagoueNotes
     
     if param.lower().find('original')>=0: 
-        __logger.info('Fetching the original data. Return a dict')
+        __logger.info('Fetching the Bagoue original data. Returns a dictionnary '
+                      ' of area description, attributes and contest details.')
         
         return {'COL_NAMES': data.columns, 
                 'DESCR':'https://doi.org/10.5281/zenodo.4896758: bagoue-original',
@@ -59,8 +60,8 @@ def fetch_data(param):
         
         return X_prepared, y_prepared 
     
-    elif param.lower().find('semi')>=0 or param.lower().find('fit')>=0 or \
-        param.lower().find('mid')>=0 or param.lower().find('preprocess')>=0: 
+    elif param.lower().find('semi-')>=0 or param.lower().find('fit')>=0 or \
+        param.lower().find('mid-')>=0 or param.lower().find('preprocess')>=0: 
         __logger.info('Fetching the mid-preparation data `X` and `y`')
 
         return X0, y0 
@@ -75,18 +76,18 @@ def fetch_data(param):
 
         return _pipeline
     
-    elif ('analysis' or 'pca' or 'dim' or 'reduc') in param.lower():
+    elif ('analys' or 'pca' or 'dim' or 'reduc') in param.lower():
 
         __logger.info('Fetching the data for analyses. Text attributes'
-                      ' are ordinarily encoded using the`defaultPipeline`')
-        return _X, y0
+                      ' are ordinarily encoded to numerical categories.')
+        return _X, y_prepared 
     
     else : 
         from ..utils.exceptions import WATexError_datasets
         from ..viewer.hints import format_generic_obj 
         
         raise WATexError_datasets('Arguments ~`{0}` not found in default tags:'
-                                  ' {1}. Unable to retrieve data.'.format(param, 
+                                  ' {1}. Unable to fetch data.'.format(param, 
                                 format_generic_obj (BAGOUE_TAGS)).format(
                                     *list(BAGOUE_TAGS)))
     
@@ -152,8 +153,7 @@ Returns
 # # default pipeline 
 # # call pipeline to see all the transformation 
 # default_pipeline = full_pipeline 
-if __name__=='__main__':
-    import numpy as np
+
 
     
     

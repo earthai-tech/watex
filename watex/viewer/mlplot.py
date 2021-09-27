@@ -23,9 +23,10 @@ import  matplotlib.pyplot  as plt
 # from .utils._watexlog import watexlog
 from ..utils._watexlog import watexlog
 from ..analysis.basics import categorize_flow 
+from ..analysis.dimensionality import Reducers
 import watex.utils.ml_utils as MLU 
 import watex.utils.exceptions as Wex
-import watex.hints as Hints
+# import watex.hints as Hints
 import watex.utils.decorator as deco
 
 T=TypeVar('T')
@@ -390,10 +391,10 @@ class MLPlots:
                          'two components are retrieved by default;'
                          ' n_axes is = {n_axes!r}.')
             
-        pca= MLU.DimensionReduction().PCA(X,
-                                      n_components, 
-                                      n_axes =n_axes,
-                                      **pca_kws)
+        pca= Reducers().PCA(X,
+                            n_components, 
+                            n_axes =n_axes,
+                            **pca_kws)
         feature_importances_ = pca.feature_importances_
         X_reduced = pca.X_ # the components
         # Get axis for plots from pca_labels
