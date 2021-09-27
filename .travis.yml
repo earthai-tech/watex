@@ -2,7 +2,6 @@ dist: xenial
 sudo: required
 language: generic
 env:
-    - TRAVIS_PYTHON_VERSION="3.7"
     - TRAVIS_PYTHON_VERSION="3.8"
     
 before_install:
