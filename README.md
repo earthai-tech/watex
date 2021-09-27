@@ -37,8 +37,8 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
          -  Locally Linear Embedding (LLE)
 * **Note** 
 
-    Actually only the supervised part including [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) works properly and the developement with pure Python is still ongoing. 
-    Other AI algorithms implemented will be added as things progress. To handle some functionalities before the full development, please refer to `.checkpoints ` folder.
+    Actually the supervised part works properly and the developement of unsupervised learning and deep 
+    learning part will be added as things progress. 
 
 ## Data preparation steps
 
@@ -60,7 +60,7 @@ $ watex compute-features <directory name>
 
 ```
 A new ExcelWorkbook `main.<name of survey area>.csv` shoud be created. Once the features' file 
-is generated, now enjoy your MachineLearning(ML) algorithms implemented.
+is generated, now enjoy your End-to-End Machine Learning(ML) project with implemented algorithms.
 
 * **Notes** 
     It's also possible to go step by step the aforementionned details by using the ML tools in package
@@ -72,6 +72,12 @@ is generated, now enjoy your MachineLearning(ML) algorithms implemented.
 * Codes implementations: https://github.com/WEgeophysics/watex/wiki/Some-functionalities
 * Case history: Implementation in `Bagoue` region in north part of [Cote d'Ivoire](https://en.wikipedia.org/wiki/Ivory_Coast)
          click on the [model prediction in Bagoue region](https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG) 
+    To fetch the original data of Bagoue area, do: 
+```
+>>> from watex.datasets import fetch_data 
+>>> data = fetch_data('Bagoue original')[data]
+>>> attributes_infos = fetch_data('Bagoue original')['attrs-infos']
+```
 
 ## Licence 
 
