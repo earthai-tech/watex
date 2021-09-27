@@ -3,7 +3,7 @@
 # This module is a set of processing tips 
 # released under a MIT- licence.
 #Created on Wed Sep 22 15:04:52 2021
-#@author: @Daniel03
+#@author: @Daniel03 <etanoyau@gmail.com>
 
 import warnings
 import numpy as np
@@ -23,17 +23,19 @@ from ..processing.transformers import (DataFrameSelector,
 T= TypeVar('T', list, tuple)
 _logger = watexlog().get_watex_logger(__name__)
 
+__all__ = ['Reducers', 'pcaVarianceRatio']
+
 class Reducers: 
     """ Reduce dimension for data visualisation.
     
     Reduce number of dimension down to two (or to three) make  it possible 
-    to plot high-dimension trainsing set on the graph and often gain some 
+    to plot high-dimension training set on the graph and often gain some 
     important insights by visually detecting patterns, such as clusters. 
     """
     
     def PCA(self,X, n_components=None, plot_projection=False, 
             plot_kws=None, n_axes =None,  **pca_kws ): 
-        """Principal Components analysis (PCA) is by far themost popular
+        """Principal Components analysis (PCA) is by far the most popular
         dimensional reduction algorithm. First it identifies the hyperplane 
         that lies closest to the data and project it to the data onto it.
         
@@ -112,7 +114,7 @@ class Reducers:
             # plt.plot(np.full((cumsum.shape), 0.95),
             #          # np.zeros_like(cumsum),
             #          ls =':', c='r')
-            plt.xlabel('Dimensions')
+            plt.xlabel('N-Dimensions')
             plt.ylabel('Explained Variance')
             plt.title('Explained variance as a function of the'
                         ' number of dimension')
