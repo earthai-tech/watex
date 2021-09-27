@@ -44,24 +44,21 @@ Created on Tue Sep 21 10:25:59 2021
 
 from watex.viewer.mlplot import MLPlots 
 # modules below are imported for testing scripts.
-# Not usefull to import since you privied your own dataset.
-from watex.datasets.data_preparing import X_train_2
-from watex.datasets.config import _X
-from watex.datasets import  y_prepared
+# Not usefull to import since you provided your own dataset.
+from watex.datasets import fetch_data 
 
-# trainset 
-trainset= _X #X_train_2
-# y -labels 
-y_array = y_prepared
+# trainset, y -labels
+X, y = fetch_data('Bagoue analyses data')
 
-# param replace_y: customize the encoded values by providing a new list
-# of categorized values
+# param replace_y: Change label from regression to classification problem.
+# customize the encoded values by providing a new list of categorized values
 replace_y =True 
    
 #param y_values: Once `replace_y` is set to True, then `y_values` must 
-        # be given to convert the numerical values into a categorial 
-        # values contained in the list of `y_values`. Notes: values in 
-        # `y_values` must be self containing in `y`(numerical data.) 
+        # be given so that the numerical values should be converted into a Text 
+        # values. Otherwise if `replace_y` is ``True`` and `y_values` is not given,
+        # be sure to provide the number of text categories equal to the 
+        # number of numerical categories self containing in `y`(numerical data) 
 yvalues =None              
         
 #param y_classes: Cn replace the numercal  values encodes thought 
@@ -69,7 +66,7 @@ yclasses = ['FR0', 'FR1', 'FR2', 'FR3']
 
 # biplot 
 # biplot pca features importance (pc1 and pc2) and visualize different 
-#  variables accordingto Serafeim Loukas, serafeim.loukas@epfl.ch 
+#  variables according to Serafeim Loukas, serafeim.loukas@epfl.ch 
 # 
 biplot =False 
 
@@ -91,8 +88,8 @@ plot_kws = {
            'gwhich' :'major',          # minor ticks
             # 'fs' :3.,                 # coeff to manage font_size 
             }
-pcaObj= MLPlots().PCA_(X= trainset, 
-                       y=y_prepared,
+pcaObj= MLPlots().PCA_(X= X, 
+                       y=y,
                        replace_y=replace_y, 
                        y_values =yvalues, 
                        y_classes =yclasses,
