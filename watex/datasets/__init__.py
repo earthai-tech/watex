@@ -84,7 +84,7 @@ def fetch_data(param):
     
     else : 
         from ..utils.exceptions import WATexError_datasets
-        from ..viewer.hints import format_generic_obj 
+        from ..hints import format_generic_obj 
         
         raise WATexError_datasets('Arguments ~`{0}` not found in default tags:'
                                   ' {1}. Unable to fetch data.'.format(param, 

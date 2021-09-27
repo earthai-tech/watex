@@ -13,24 +13,36 @@ from typing import TypeVar
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.decomposition import PCA 
+from sklearn.decomposition import (PCA , IncrementalPCA, KernelPCA)
 
 from ..utils.decorator import docstring
 from ..utils._watexlog import watexlog
+from ..modeling.validation import GridSearch
 from ..processing.transformers import (DataFrameSelector,
                                   CombinedAttributesAdder)
 
 T= TypeVar('T', list, tuple)
 _logger = watexlog().get_watex_logger(__name__)
 
-__all__ = ['Reducers', 'pcaVarianceRatio']
+__all__ = ['Reducers', 'pcaVarianceRatio' ]
+          
 
 class Reducers: 
     """ Reduce dimension for data visualisation.
     
     Reduce number of dimension down to two (or to three) make  it possible 
     to plot high-dimension training set on the graph and often gain some 
-    important insights by visually detecting patterns, such as clusters. 
+    important insights by visually detecting patterns, such as clusters.
+    
+    Parameters
+    ----------
+     X: ndarry, or pd.Datafame, 
+             Dataset compose of n_features items for dimension reducing
+
+     n_components: Number of dimension to preserve. If`n_components` 
+            is ranged between float 0. to 1., it indicated the number of 
+            variance ratio to preserve. If ``None`` as default value 
+            the number of variance to preserve is ``95%``.
     """
     
     def PCA(self,X, n_components=None, plot_projection=False, 
@@ -63,7 +75,7 @@ class Reducers:
             >>> pca.features_importances_
         """
         def findFeaturesImportances(fnames, components, n_axes=2): 
-            """ Retrive the features importance with variance ratio.
+            """ Retreive the features importance with variance ratio.
             
             :param fnames: array_like of feature's names
             :param components: pca components on different axes 
@@ -84,8 +96,6 @@ class Reducers:
                 pc.append((f'pc{i+1}', numf, comp_sorted))
                 
             return pc 
-        
-        from sklearn.decomposition import PCA 
         
         if n_components is None: 
             # choose the right number of dimension that add up to 
@@ -137,6 +147,448 @@ class Reducers:
         
         return self  
     
+    def incrementalPCA(self, X, n_components =None, *, n_batches=None,
+                       store_in_binary_file=False, filename=None, **inc_pca_kws): 
+        """ Incremental PCA allows to split the trainsing set into mini-batches
+         and feed algorithm one mini-batch at a time. 
+         
+         Once problem with the preceeding implementation of PCA is that 
+         requires the whole training set to fit in memory in order of the SVD
+         algorithm to run. This is usefull for large training sets, and also 
+         applying PCA online(i.e, on the fly as a new instance arrive)
+         
+        :param X: ndarry, or pd.Datafame, 
+            Dataset compose of n_features items for dimension reducing
+        
+        :param n_components: Number of dimension to preserve. If`n_components` 
+                is ranged between float 0. to 1., it indicated the number of 
+                variance ratio to preserve. If ``None`` as default value 
+                the number of variance to preserve is ``95%``.
+        :param n_batches: int
+            Number of batches to split your training sets.
+        
+        :param store_in_binary_file: bool, 
+            Alternatively, we used numpy` memmap` class to manipulate a large 
+            array stored in a binary file on disk as if it were entirely in 
+            memory. The class load only the data it need in memory when it need
+            its.
+        
+        :param filename: str, 
+            Default binary filename to store in a binary file in  a disk.
+        
+        :Example: 
+            
+            >>> from watex.analysis.dimensionality import Reducers
+            >>> from watex.datasets import fetch_data 
+            >>> X, _=fetch_data('Bagoue analyses data')
+            >>> RecObj =Reducers().incrementalPCA(X,n_components=None,
+            ...                                      n_batches=100)
+            >>> plot_projection(recObj,recObj.n_components )
+        """
+        if n_components is None: 
+            n_components= get_component_with_most_variance(X) 
+            if n_batches is None: 
+                raise ValueError('NoneType can not be a number of batches.')
+            if n_components > (len(X)//n_batches +1): 
+                warnings.warn(f'n_components=`{n_components}` must be less '
+                                 'or equal to the batch number of samples='
+                                 f'`{len(X)//n_batches +1}`. n_components is'
+                                 f' set to {len(X)//n_batches}')
+                
+                n_components = len(X)//n_batches
+                _logger.debug(
+                    f"n_components is reset to ={len(X)//n_batches!r}")
+                
+        inc_pcaObj = IncrementalPCA(n_components =n_components, 
+                                    **inc_pca_kws)
+        for X_batch in np.array_split(X, n_batches):
+            inc_pcaObj.partial_fit(X_batch)
+        
+        self.X_= inc_pcaObj.transform(X)
+        
+        if store_in_binary_file: 
+            if filename is None:
+                warnings.warn('Need a binary filename stored in disk of '
+                              'in memory. Should provide a binary file '
+                              'instead.')
+                _logger.error('Need a binary filename stored in disk of '
+                              'in memory. Should provide a binary file '
+                              'instead.')
+                raise FileNotFoundError('None binary filename found.')
+
+            X_mm = np.memmap(filename,
+                             dtype= 'float32',
+                             mode='readonly', 
+                             shape=X.shape)
+            batch_size = X.shape[0]//n_batches
+            inc_pcaObj = IncrementalPCA(
+                n_components =n_components,
+                batch_size= batch_size,
+                **inc_pca_kws)
+            
+            self.X_= inc_pcaObj.fit(X_mm)
+            
+        make_introspection(self, inc_pcaObj)
+        
+        setattr(self, 'n_axes', getattr(self, 'n_components_'))
+        # get the features importance and features names
+        if isinstance(X, pd.DataFrame):
+            pca_components_= getattr(self, 'components_')
+            self.feature_importances_= find_features_importances(
+                                            np.array(list(X.columns)), 
+                                            pca_components_, 
+                                            self.n_axes)
+
+        return self 
+
+    def kPCA(self, X, n_components=None, *, kernel='rbf',
+             reconstruct_pre_image=False, **kpca_kws): 
+        """KernelPCA performs complex nonlinear projections for dimentionality
+        reduction.
+        
+        Commonly the kernel tricks is a mathematically technique that implicitly
+        maps instances into a very high-dimensionality space(called the feature
+        space), enabling non linear classification or regression with SVMs. 
+        Recall that a linear decision boundary in the high dimensional 
+        feature space corresponds to a complex non-linear decison boundary
+        in the original space.
+        
+        :param X: ndarry, or pd.Datafame, 
+            Dataset compose of n_features items for dimension reducing
+        
+        :param n_components: Number of dimension to preserve. If`n_components` 
+                is ranged between float 0. to 1., it indicated the number of 
+                variance ratio to preserve. If ``None`` as default value 
+                the number of variance to preserve is ``95%``.
+        
+        :Example:
+            
+            >>> from watex.analysis.dimensionality import Reducers
+            >>> from watex.datasets import fetch_data 
+            >>> X, _=fetch_data('Bagoue analyses data')
+            >>> RecObj =Reducers().kPCA(X,n_components=None,
+            ...                         kernel='rbf', gamma=0.04)
+            >>> plot_projection(recObj,recObj.n_components )
+        """
+        if n_components is None: 
+           n_components= get_component_with_most_variance(X) 
+           
+        kpcaObj = KernelPCA(n_components=n_components, kernel=kernel, 
+                            fit_inverse_transform =reconstruct_pre_image,
+                            **kpca_kws)
+
+        self.X_= kpcaObj.fit_transform(X)
+        
+        if reconstruct_pre_image:
+            self.X_preimage= kpcaObj.inverse_transform(self.X_)
+            # then compute the reconstruction premimage error
+            from sklearn.metrics import mean_squared_error
+            self.X_preimage_error = mean_squared_error(X, self.X_preimage)
+            
+        # populate attributes inherits from kpca object
+        make_introspection(self, kpcaObj)
+        # set axes and features importances
+        set_axes_and_feature_importances(self, X)
+
+        return self
+    
+    def LLE(self, X, n_components=None, *, n_neighbors, **lle_kws): 
+        """ Locally Linear Embedding(LLE) is nonlinear dimensinality reduction 
+        based on closest neighbors (c.n).
+        
+        
+        LLE is another powerfull non linear dimensionality reduction(NLDR)
+        technique. It is Manifold Learning technique that does not rely
+        on projections like `PCA`. In a nutshell, works by first measurement
+        how each training instance library lineraly relates to its closest 
+        neighbors(c.n.), and then looking for a low-dimensional representation 
+        of the training set where these local relationships are best preserved
+        (more details shortly).Using LLE yields good resuls especially when 
+        makes it particularly good at unrolling twisted manifolds, especially
+        when there is too much noise.
+        
+        Parameters
+        ----------
+         X: ndarry, or pd.Datafame, 
+             Dataset compose of n_features items for dimension reducing
+
+         n_components: Number of dimension to preserve. If`n_components` 
+            is ranged between float 0. to 1., it indicated the number of 
+            variance ratio to preserve. If ``None`` as default value 
+            the number of variance to preserve is ``95%``.
+        
+        References
+        -----------
+        Gokhan H. Bakir, Jason Wetson and Bernhard Scholkoft, 2004;
+        "Learning to Find Pre-images";Tubingen, Germany:Max Planck Institute
+        for Biological Cybernetics.
+        
+        S. Roweis, L.Saul, 2000, Nonlinear Dimensionality Reduction by
+        Loccally Linear Embedding.
+        
+        
+        Notes
+        ------
+        Scikit-Learn used the algorith based on Kernel
+             Ridge Regression
+             
+        Example
+        -------
+        
+            >>> from watex.analysis.dimensionality import Reducers
+            >>> from watex.datasets import fetch_data 
+            >>> X, _=fetch_data('Bagoue analyses data')
+            >>> lle_kws ={
+            ...    'n_components': 4, 
+            ...    "n_neighbors": self.closest_neighbors}
+            >>> recObj= Reducers().LLE(self.X,
+            ...          **lle_kws)
+            >>> pprint(recObj.__dict__)
+        """
+        
+        from sklearn.manifold import LocallyLinearEmbedding
+        
+        if n_components is None: 
+           n_components= get_component_with_most_variance(X) 
+        lleObj =LocallyLinearEmbedding(n_components=n_components, 
+                                        n_neighbors=n_neighbors,**lle_kws)
+        self.X_= lleObj.fit_transform(X)
+         # populate attributes inherits from kpca object
+        make_introspection(self, lleObj)
+        # set axes and features importances
+        return self 
+    
+# @docstring(GridSearch, start='Parameters', end='Examples')
+def get_best_kPCA_params(X, n_components=2, *, y=None, param_grid=None, 
+                         clf=None, cv=7,  **grid_kws
+                         ): 
+    """ Select the Kernel and hyperparameters using GridSearchCV that lead 
+    to the best performance.
+    
+    As kPCA( unsupervised learning algorithm), there is obvious performance
+    measure to help selecting the best kernel and hyperparameters values. 
+    However dimensionality reduction is often a preparation step for a 
+    supervised task(e.g. classification). So we can use grid search to select
+    the kernel and hyperparameters that lead the best performance on that 
+    task. By default implementation we create two steps pipeline. First reducing 
+    dimensionality to two dimension using kPCA, then applying the 
+    `LogisticRegression` for classification. AFter use Grid searchCV to find 
+    the best ``kernel`` and ``gamma`` value for kPCA in oder to get the best 
+    clasification accuracy at the end of the pipeline.
+    
+    Parameters
+    ----------
+    X: ndarry, pd.DataFrame
+        Training set data.
+        
+    n_components: Number of dimension to preserve. If`n_components` 
+            is ranged between float 0. to 1., it indicated the number of 
+            variance ratio to preserve. 
+    y: array_like 
+        label validation for supervised learning 
+    param_grid: list 
+        list of parameters Grids. For instance::
+            
+            param_grid=[{
+                "kpca__gamma":np.linspace(0.03, 0.05, 10),
+                "kpca__kernel":["rbf", "sigmoid"]
+                }]
+            
+    clf: callable, 
+        Can be base estimator or a composite estimor with pipeline. For 
+        instance::
+            
+            clf =Pipeline([
+            ('kpca', KernelPCA(n_components=n_components))
+            ('log_reg', LogisticRegression())
+            ])
+    CV: int 
+        number of K-Fold to cross validate the training set.
+        
+    grid_kws:dict
+        Additional keywords arguments. Refer to 
+        :class:`~watex.modeling.validation.GridSearch`
+    
+    Example
+    -------
+    
+        >>> from watex.analysis.dimensionality import Reducers
+        >>> from watex.datasets import fetch_data 
+        >>> X, y=fetch_data('Bagoue analyses data')
+        >>> rObj = Reducers()
+        >>> kpca_best_params =get_best_kPCA_params(
+                        X,y=y,scoring = 'accuracy',
+                        n_components= 2, clf=clf, 
+                        param_grid=param_grid)
+        >>> kpca_best_params
+        ... {'kpca__gamma': 0.03, 'kpca__kernel': 'rbf'}
+    """
+
+    if n_components is None: 
+        n_components= get_component_with_most_variance(X)
+    if clf is None: 
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.pipeline import Pipeline 
+        
+        clf =Pipeline([
+            ('kpca', KernelPCA(n_components=n_components)),
+            ('log_reg', LogisticRegression())
+            ])
+    gridObj =GridSearch(base_estimator= clf,
+                        grid_params= param_grid, cv=cv,
+                        **grid_kws
+                        ) 
+    gridObj.fit(X, y)
+    
+    return gridObj.best_params_
+    
+    
+def make_introspection(Obj , subObj): 
+    """ Make introspection by using the attributes of instance created to 
+    populate the new classes created.
+    :param Obj: callable 
+        New object to fully inherits of `subObject` attributes 
+    :param subObj: Callable 
+        Instance created.
+    """
+    # make introspection and set the all pca attributes to self.
+    for key, value in  subObj.__dict__.items(): 
+        setattr(Obj, key, value)
+        
+def find_features_importances(fnames, components, n_axes=2): 
+    """ Retreive the features importance with variance ratio.
+    :param fnames: array_like of feature's names
+    :param components: pca components on different axes 
+    """
+    pc =list()
+    if components.shape[0] < n_axes : 
+        
+        warnings.warn(f'Retrieved axes {n_axes!r} no more than'
+                      f' {components.shape[0]!r}. Reset to'
+                      f'{components.shape[0]!r}', UserWarning)
+        n_axes = int(components.shape[0])
+    
+    for i in range(n_axes): 
+        # reverse from higher values to lower 
+        index = np.argsort(abs(components[i, :]))
+        comp_sorted = components[i, :][index][::-1]
+        numf = fnames [index][::-1]
+        pc.append((f'pc{i+1}', numf, comp_sorted))
+        
+    return pc 
+
+def plot_projection(self, n_components=None, **plot_kws): 
+    """Quick plot the N-Dimension VS explained variance Ratio.
+    :param n_components: pca components on different axes 
+    """
+    if n_components is None: 
+        warnings.warn('NoneType <n_components> could not plot projection.')
+        return 
+    
+    try: 
+        cumsum = np.cumsum(
+            getattr(self,'explained_variance_ratio_' ))
+    except AttributeError:
+        from pprint import pprint 
+        obj_name = None
+        if hasattr(self, 'kernel'): 
+            obj_name ='KernelPCA'
+        elif hasattr(self, 'n_neighbors') and hasattr(self, 'nbrs_'): 
+            obj_name ='LoccallyLinearEmbedding'
+            
+        if obj_name is not None:
+            warnings.warn(
+                f"{obj_name!r} has no attribute 'explained_variance_ratio_'"
+                  ". Could not plot projection according to a variance ratio.",
+                  UserWarning)
+            _logger.debug(f"{self.__class__.__name__!r} inherits from "
+                          f"{obj_name!r} attributes and has not attribute"
+                          "'components_")
+        setattr(self, 'explained_variance_ratio_', None)
+            
+        pprint("KernelPCA has no attribute  called 'explained_variance_ratio_'"
+               ". Could not plot <N-dimension vs explained variance ratio>"
+               )
+        return self
+
+    import matplotlib.pyplot as plt
+
+    plt.plot(cumsum, **plot_kws)
+    # plt.plot(np.full((cumsum.shape), 0.95),
+    #          # np.zeros_like(cumsum),
+    #          ls =':', c='r')
+    plt.xlabel('N-Dimensions')
+    plt.ylabel('Explained Variance')
+    plt.title('Explained variance as a function of the'
+                ' number of dimension')
+    plt.show()
+
+def get_component_with_most_variance(X, **pca_kws):
+    """ Get the number of component with 95% ratio
+    :param X: Training set.
+    :param pca_kws: additional pca  keywords arguments.
+    """
+    # choose the right number of dimension that add up to 
+    # sufficiently large proportion of the variance 0.95%
+    warnings.warn('Number of components is None. By default n_components'
+                  ' is reset to the most variance 95%.')
+    _logger.info('`n_components` is not given. By default the number of '
+                  'component is reset to 95% variance in the data.')
+    pca=PCA(**pca_kws)
+    pca.fit(X)
+    cumsum =np.cumsum( pca.explained_variance_ratio_ )
+    d= np.argmax(cumsum >=0.95) +1 # for index 
+    
+    print(f"--> Number of components reset to {d!r} as the most "
+          'representative variance (95%) in the dataset.')
+    
+    return d 
+       
+def set_axes_and_feature_importances(Obj, X): 
+    """ Set n_axes<n_components_> and features attributes if `X` is 
+    pd.DataFrame."""
+    message ='Object %r has not attribute %r'%(Obj.__class__.__name__,
+                                                   'n_components_')
+    try: 
+        #Try to find n_components_attributes. If not found 
+        # shoud reset to 'n_components'
+        setattr(Obj, 'n_axes', getattr(Obj, 'n_components_'))
+    except AttributeError: #as attribute_error: 
+        #raise AttributeError(message) from attribute_error
+        warnings.warn(message +". Should be 'n_components' instead.'")
+        _logger.debug('Attribute `n_components_` not found.'
+                      ' Should be `n_components` instead.')
+        setattr(Obj, 'n_axes', getattr(Obj, 'n_components'))
+    # get the features importance and features names
+    if isinstance(X, pd.DataFrame):
+        
+        try: 
+            
+            pca_components_= getattr(Obj, 'components_')
+        except AttributeError: 
+            obj_name=''
+            if hasattr(Obj, 'kernel'): 
+                obj_name ='KernelPCA'
+                
+            elif hasattr(Obj, 'n_neighbors') and hasattr(Obj, 'nbrs_'): 
+                obj_name ='LoccallyLinearEmbedding'
+                
+            if obj_name !='':
+                warnings.warn(f"{obj_name!r} has no attribute 'components_'"
+                              )
+                _logger.debug(f"{Obj.__class__.__name__!r} inherits from "
+                              f"{obj_name!r} attributes and has not attribute"
+                              "'components_")
+                
+            setattr(Obj, 'feature_importances_', None)
+            
+            return Obj
+        
+        Obj.feature_importances_= find_features_importances(
+                                        np.array(list(X.columns)), 
+                                        pca_components_, 
+                                        Obj.n_axes)
+        
 def prepareDataForPCA(X, 
                     imputer_strategy:str ='median',
                     missing_values :float=np.nan,
@@ -420,18 +872,6 @@ Examples
 # def pcaVarianceRatio():
 #     ...
     
-if __name__=="__main__": 
-#     if __package__ is None : 
-#         __package__='watex'
-#     from sklearn.ensemble import RandomForestClassifier
-#     from sklearn.linear_model import SGDClassifier
-    # from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
-    from watex.datasets.data_preparing import X_train_2
-
-    pca= Reducers().PCA(X_train_2, 0.95, plot_projection=True, n_axes =3)
-    print('columnsX=', X_train_2.columns)
-    print('components=', pca.components_)
-    print('feature_importances_:', pca.feature_importances_)
 
     
     
