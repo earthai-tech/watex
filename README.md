@@ -32,14 +32,40 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
         -  Apriori
      - Dimensionality Reduction 
          -  Kernel Principal Component Analysis **k-PCA** 
-         -  t-distributed Stochastic Neighbor Embeedding **t-SNE**
+         -  t-distributed Stochastic Neighbor Embedding **t-SNE**
          -  Randomized PCA
          -  Locally Linear Embedding (LLE)
 * **Note** 
 
     Actually only the supervised part including [SVMs](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) works properly and the developement with pure Python is still ongoing. 
     Other AI algorithms implemented will be added as things progress. To handle some functionalities before the full development, please refer to `.checkpoints ` folder.
-     
+
+## Data preparation steps
+
+Before taking advantage of WATex algorihms especially when dealing with Electrical Resistivity Profile(ERP)
+as well as the Vertical Electrical Sounding (VES) data, we need a few steps of data preparing. 
+ERP and VES data straighfordwarly collected from field MUST be referenced. An example to how to
+prepare ERP and VES data can be found in `data/geof_data` directory. If ERP and VES are in the same Excelworkbook in separed sheets,
+ the `build` will separate each ERP and VES and keep the same location coordinate where the VES is done. 
+```
+ $ watex build <raw data location directory>
+ 
+```
+ A new directory `_anEX_` shoud be created with new built data. Once the `build` is sucessfully done, the geoelectrical 
+ features shoud be computed automatically. To have full control of your selected anomaly, the
+ `lower`, `upper` (anomaly boundaries) and `se` or`ves|*|0` of selected anomaly should be specified on each 
+ ERP survey line in Excelsheet (see `data/geof_data/XXXXXXX.csv`) then: 
+```
+$ watex compute-features <directory name>
+
+```
+A new ExcelWorkbook `main.<name of survey area>.csv` shoud be created. Once the features' file 
+is generated, now enjoy your MachineLearning(ML) algorithms implemented.
+
+* **Notes** 
+    It's also possible to go step by step the aforementionned details by using the ML tools in package
+    `utils` especially the functions `read_from_excelsheets` and `write_excel`.
+
 ## Documentation 
 
 * Toolbox mission and objectives: https://github.com/WEgeophysics/watex/wiki
