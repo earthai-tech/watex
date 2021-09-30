@@ -84,7 +84,7 @@ is generated, now enjoy your End-to-End Machine Learning(ML) project with implem
 WATex-AI is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
 
 
-## System requirements :I
+## System requirements:
 * Python 3.7+ 
 
 ## Contributors
