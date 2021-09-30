@@ -9,6 +9,7 @@ Created on Sat Aug 28 16:26:04 2021
 
 """
 import os 
+import inspect
 import hashlib 
 import tarfile 
 import warnings  
@@ -239,7 +240,7 @@ class Metrics:
                                 clf,
                                 X,
                                 y,
-                                cv =3,
+                                cv =7,
                                 classe_ =None,
                                 method="decision_function",
                                 cross_val_pred_kws =None,
@@ -478,12 +479,119 @@ class Metrics:
         
         return self 
     
+    
+    def confusion_matrix(self, clf, X, y,*, cv =7, plot_conf_max=False, 
+                         crossvalp_kws=dict(), **conf_mx_kws ): 
+        """ Evaluate the preformance of the model or classifier by counting 
+        the number of ttimes instances of class A are classified in class B. 
+        
+        To compute a confusion matrix, you need first to have a set of 
+        prediction, so they can be compared to the actual targets. You could 
+        make a prediction using the test set, but it's better to keep it 
+        untouch since you are not ready to make your final prediction. Remember 
+        that we use the test set only at very end of the project, once you 
+        have a classifier that you are ready to lauchn instead. 
+        The confusion metric give a lot of information but sometimes we may 
+        prefer a more concise metric like `precision` and `recall` metrics. 
+        
+        Parameters 
+        ----------
+        clf: obj
+            classifier or estimator
+            
+        X: ndarray, 
+            Training data (trainset) composed of n-features.
+            
+        y: array_like 
+            labelf for prediction. `y` is binary label by defaut. 
+            If '`y` is composed of multilabel, specify  the `classe_` 
+            argumentto binarize the label(`True` ot `False`). ``True``  
+            for `classe_`and ``False`` otherwise.
+            
+        cv: int 
+            K-fold cross validation. Default is ``7``
+            
+        plot_conf_max: bool, str 
+            can be `map` or `error` to visualize the matshow of prediction 
+            and errors 
+
+        crossvalp_kws: dict 
+            crossvalpredict additional keywords arguments 
+            
+        conf_mx_kws: dict 
+            Additional confusion matrix keywords arguments.
+        
+        Example
+        --------
+            
+            >>> from sklearn.svm import SVC 
+            >>> from watex.utils.ml_utils import Metrics 
+            >>> from watex.datasets import fetch_data 
+            X,y = fetch_data('Bagoue dataset prepared') 
+            >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf',
+                          random_state =42) 
+            >>> mObj =Metrics().confusion_matrix(svc_clf,X=X,y=y,
+                                            plot_conf_max='map')
+        """
+        # Get all param values and set attributes 
+        func_sig = inspect.signature(Metrics.confusion_matrix)
+        PARAMS_VALUES = {k: v.default
+            for k, v in func_sig.parameters.items()
+            if v.default is not  inspect.Parameter.empty
+            }
+        # add positional params 
+        for pname, pval in zip( ['X', 'y', 'clf'], [X, y, clf]): 
+            PARAMS_VALUES[pname]=pval 
+            
+        # PARAMS_VALUES2 = {k: v
+        #     for k, v in func_sig.parameters.items()
+        #     if (v.default is inspect.Parameter.empty and k !='self')
+        #     }
+        # parameters = [p.name for p in func_sig.parameters.values()
+               # if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+        for key in PARAMS_VALUES.keys(): 
+            setattr(self, key, PARAMS_VALUES[key] )
+            
+        y_pred =cross_val_predict(clf, X, y, cv=cv, **crossvalp_kws )
+        
+        if y_pred.ndim ==1 : 
+            y_pred.reshape(-1, 1)
+        conf_mx = confusion_matrix(y, y_pred, **conf_mx_kws)
+        
+        for att, val in zip(['y_pred', 'conf_mx'],
+                            [y_pred, conf_mx]): 
+            setattr(self, att, val)
+        
+        # statement to plot confusion matrix errors rather than values 
+        row_sums = self.conf_mx.sum(axis=1, keepdims=True)
+        norm_conf_mx = self.conf_mx / row_sums 
+        # now let fill the diagonal with zeros to keep only the errors
+        # and let's plot the results 
+        np.fill_diagonal(norm_conf_mx, 0)
+        setattr(self, 'norm_conf_mx', norm_conf_mx)
+        
+          
+        fp =0
+        if plot_conf_max =='map': 
+            confmax = self.conf_mx
+            fp=1
+        if plot_conf_max =='error':
+            confmax= norm_conf_mx
+            fp =1
+        if fp: 
+            import matplotlib.pyplot as plt 
+            plt.matshow(confmax, cmap=plt.cm.gray)
+            plt.show ()
+            
+        return self 
+            
+        
 # if __name__=="__main__": 
 #     if __package__ is None : 
 #         __package__='watex'
 #     from sklearn.ensemble import RandomForestClassifier
 #     from sklearn.linear_model import SGDClassifier
-    # from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
+#     from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
 
         
         
