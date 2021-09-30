@@ -11,6 +11,8 @@ Created on Thu Sep 16 11:31:38 2021
 # import os
 import re
 import warnings
+import inspect 
+from abc import ABCMeta 
 from typing import Generic, TypeVar, Iterable
  
 import numpy as np 
@@ -156,7 +158,7 @@ class MLPlots:
     ylim                limit of y-axis in plot. *default* is None 
     ==================  =======================================================
     """
-    def __init__(self, savefig =None, figsize =None, **kws ): 
+    def __init__(self,  **kws ): 
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
         
         self.savefig = kws.pop('savefig', None)
@@ -181,7 +183,6 @@ class MLPlots:
         self.marker_edgewidth = kws.pop('markeredgewidth', 3.)
         
         self.lc = kws.pop('lc', 'k')
-        self.font_weight =kws.pop('font_weight', 'bold')
         self.ls= kws.pop('ls', '-')
         self.lw =kws.pop('lw', 1)
         self.alpha = kws.pop('alpha', 0.5)
@@ -213,6 +214,46 @@ class MLPlots:
         self.gls =kws.pop('gls', '--')
         self.glw =kws.pop('glw', 2.)
         self.gwhich = kws.pop('gwhich', 'major')
+        
+        #tick params properties 
+        self.tp_axis =kws.pop('tp_axis', 'both')
+        self.tp_labelsize = kws.pop('tp_labelsize', self.font_size)
+        self.tp_bottom =kws.pop('tp_bottom', True)
+        self.tp_top =kws.pop('tp_top', True)
+        self.tp_labelbottom=kws.pop('tp_labelbottom', False)
+        self.tp_labeltop = kws.pop('tp_labeltop', True)
+
+        # colorbar axes properties 
+        self.cb_orientation =kws.pop('cb_orientation', 'vertical')
+        self.cb_aspect =kws.pop('cb_aspect', 20.)
+        self.cb_shrink= kws.pop('cb_shrink', 1.0)
+        self.cb_pad =kws.pop('cb_pad', 0.05)
+        self.cb_anchor =kws.pop('cb_anchor', (0.0, 0.5))
+        self.cb_panchor = kws.pop('cb_panchor',  (1.0, 0.5))
+        #colors bar properties 
+        self.cb_label =kws.pop('cb_label', None)
+        self.cb_spacing =kws.pop('cb_spacing', 'uniform') # propotional 
+        self.cb_drawedges =kws.pop('cb_drawedges', False)
+        self.cb_format =kws.pop('cb_format', None)
+        
+        # predicted properties 
+        self.yp_lc =kws.pop('yp_lc', 'k') 
+        self.yp_marker_style= kws.pop('yp_marker_style', 'o')
+        self.yp_marker_edgecolor = kws.pop('yp_markeredgecolor', 'r')
+        self.yp_lw = kws.pop('yp_lw', 3.)
+        self.yp_ls=kws.pop('yp_ls', '-')
+        self.yp_marker_facecolor =kws.pop('yp_markerfacecolor', 'k')
+        self.yp_marker_edgewidth= kws.pop('yp_markeredgewidth', 2.)
+        
+        for key in kws.keys(): 
+            setattr(self, key, kws[key])
+            
+        # config all colorproperties into one.
+        self.cb_props = {
+            pname.replace('cb_', '') : pvalues
+                         for pname, pvalues in self.__dict__.items() 
+                         if pname.startswith('cb_')
+                         }
         
         
     def PCA_(self,
@@ -1042,7 +1083,372 @@ class MLPlots:
             plt.savefig(self.savefig,
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
-              
+    
+    @deco.docstring(MLU.Metrics.confusion_matrix, start='Parameters', 
+                    end='Example')
+    def confusion_matrix(self, clf, X, y, cv, *, plottype ='map', ylabel=None, 
+                         matshow_kws=dict(), **conf_mx_kws): 
+        """ Plot confusion matrix for error analysis
+        
+        Look a representation of the confusion matrix using Matplotlib matshow
+        
+        .. see also: :class:`~watex.utils.ml_utils.Metrics.confusion_matrix` 
+        for furthers details about arguments.
+        
+        Parameters 
+        ----------
+         plottype: str 
+            can be `map` or `error` to visualize the matshow of prediction 
+            and errors  respectively
+            
+        matshow_kws: dict 
+            matplotlib additional keywords arguments 
+            
+        conf_mx_kws: dict 
+            Additional confusion matrix keywords arguments.
+        ylabel: list 
+            list of labels names  to hold the name of each categories.
+        
+        Example
+        --------
+        
+            >>> from sklearn.svm import SVC 
+            >>> from watex.viewer.mlplot import MLPlots
+            >>> from watex.datasets import fetch_data 
+            >> X,y = fetch_data('Bagoue dataset prepared')
+            >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', 
+                              random_state =42) 
+            >>> matshow_kwargs ={
+                    'aspect': 'auto', # 'auto'equal
+                    'interpolation': None, 
+                   'cmap':'gray' }                   
+            >>> plot_kws ={'lw':3, 
+                   'lc':(.9, 0, .8), 
+                   'font_size':15., 
+                    'cb_format':None,
+                    'xlabel': 'Predicted classes',
+                    'ylabel': 'Actual classes',
+                    'font_weight':None,
+                    'tp_labelbottom':False,
+                    'tp_labeltop':True,
+                    'tp_bottom': False
+                    }
+            >>> mObj =MLPlots(**plot_kws)
+            >>> mObj.confusion_matrix(svc_clf, X=X,y=y,cv=7,                                   
+                                    ylabel=['FR0', 'FR1', 'FR2', 'FR3'], 
+                                    plottype='error'
+                                    matshow_kws = matshow_kwargs,
+                                    )
+        """
+        _check_cmap = 'cmap' in matshow_kws.keys()
+        if not _check_cmap or len(matshow_kws)==0: 
+            matshow_kws['cmap']= plt.cm.gray
+        
+        if ylabel is not None: 
+            #check the length of y and compare to y unique 
+            cat_y = np.unique(y)
+            if isinstance(ylabel, str) or len(ylabel)==1: 
+                warnings.warn(
+                   f"One label is given, need {len(cat_y)!r}. Can not be"
+                    f" used to format {cat_y!r}"
+                    )
+                self._logging.debug(
+                    f"Only one label is given. Need {len(cat_y)!r}"
+                    'instead as the number of categories.')
+                ylabel =None 
+                
+            type_y= isinstance(ylabel, (list, tuple, np.ndarray))
+            if type_y:
+                if len(cat_y) != len(ylabel): 
+                    warnings.warn(
+                        f" {'are' if len(ylabel)>1 else 'is'} given."
+                        f"Need {len(cat_y)!r} instead.")
+                    self._logging.debug(
+                        f" {'are' if len(ylabel)>1 else 'is'} given."
+                        f"Need {len(cat_y)!r} instead.")
+                    ylabel =None 
+                    
+        # get yticks one it is a classification prof
+        confObj =MLU.Metrics().confusion_matrix(clf=clf,
+                                X=X,
+                                y=y,
+                                cv=cv,
+                                **conf_mx_kws)
+        
+        # set all attributes in the case you want to get attributes 
+        # for other purposes.
+        for key in confObj.__dict__.keys():
+            self.__setattr__(key, confObj.__dict__[key])
+            
+         # create figure obj 
+        fig = plt.figure(figsize = self.fig_size)
+        ax = fig.add_subplot(1,1,1)
+        
+        if plottype in ('map', 'default') : 
+            cax = ax.matshow(confObj.conf_mx,  
+                        **matshow_kws)
+            if self.cb_label is None: 
+                self.cb_label='N-items misclassified'
+                    
+        if plottype in( 'error', 'fill diagonal') or\
+            plottype.find('error')>=0:
+            cax = ax.matshow(confObj.norm_conf_mx, 
+                         **matshow_kws) 
+            if self.cb_label is None: 
+                self.cb_label='Error'
+                
+        cbax= fig.colorbar(cax, **self.cb_props)
+        
+        ax.set_xlabel( self.xlabel,
+              fontsize= self.font_size )
+        
+        if ylabel is not None: 
+            ax.set_xticks(np.unique(y))
+            ax.set_xticklabels(ylabel)
+            ax.set_yticks(np.unique(y))
+            ax.set_yticklabels(ylabel)
+            
+        if self.ylabel is None:
+            self.ylabel ='Actual classes'
+        if self.xlabel is None:
+            self.xlabel = 'Predicted classes'
+        
+        ax.set_ylabel (self.ylabel,
+                       fontsize= self.font_size )
+        ax.tick_params(axis=self.tp_axis, 
+                        labelsize= self.font_size, 
+                        bottom=self.tp_bottom, 
+                        top=self.tp_top, 
+                        labelbottom=self.tp_labelbottom, 
+                        labeltop=self.tp_labeltop
+                        )
+        if self.tp_labeltop: 
+            ax.xaxis.set_label_position('top')
+        
+        cbax.ax.tick_params(labelsize=self.font_size ) 
+        cbax.set_label(label=self.cb_label,
+                       size=self.font_size,
+                       weight=self.font_weight)
+        
+        plt.xticks(rotation = self.rotate_xlabel)
+        plt.yticks(rotation = self.rotate_ylabel)
+  
+        plt.show ()
+        if self.savefig is not None :
+           plt.savefig(self.savefig,
+                       dpi=self.fig_dpi,
+                       orientation =self.fig_orientation)
+        return self
+
+
+    def model(self, y_, ypred=None,*, clf=None, X_=None, predict =False, 
+              prefix=None, index =None, fill_between=False, ylabel=None ): 
+        """ Plot model from test sets or using a sample of predicted test.
+        
+        Parameters
+        ----------
+        y_:array-like of test data 
+            test data or sample of label to predict 
+            
+        y_pred:array-like 
+            predicted label 
+            
+        clf: callable
+            Estimator of classifier 
+            
+        X_: ndarra of (n_samples, n_features)
+            Test set to predict data. If `X_` is given  turn `predict` 
+            to ``True`` to predict test data.
+            
+        predict:bool, 
+            Make a prediction if test set `X_` is given
+            
+        prefix: str 
+            prefix to add to your index values. For instance::
+            
+            index =[0, 2, 4, 7]
+            prefix ='b' --> index =['b0', 'b2', 'b4', 'b7'] 
+            
+        index: array_like 
+            list of array like of indexes. it will replace the indexes of 
+            pd.Series or dataframe index if `X_` is given. 
+            
+        fill_between: bool 
+            Fill a line between the actual classes `y_` (test label)
+            
+         ylabel: list 
+            list of labels names  to hold the name of each categories.
+        """
+        
+        if index is not None:
+            #control len of index and len of y
+            try : 
+                mess ='Object `index` has not length.'+\
+                    ' Could not be an index.'
+                len(index)
+            except TypeError as type_error : 
+                raise TypeError(mess) from type_error 
+             
+            len_index=  len(y_)==len(index)
+            
+            if not len_index:
+                warnings.warn(
+                    f"Index must have the same lenght as `y`={len(y_)!r}"
+                    f" but {len(index)!r} {'are' if len(index)>1 else 'is'}"
+                    " given.")
+                self._logging.debug(
+                    f"Index must get the same lenght as `y`={len(y_)!r}"
+                    f" but {len(index)!r} {'are' if len(index)>1 else 'is'}"
+                    " given.")
+                index =None
+                
+            if len_index : 
+                if not np.all(y_.index.isin(index)):
+                    warnings.warn('Indexes values provided are not in'
+                                  ' `y_`. Shrank index to `y`index.',
+                                  UserWarning)
+                    self._logging.debug('Index values are not in `y`. Index are'
+                                        ' shrank to hold indexes of `y`.')
+                    index =y_.index 
+        
+                if prefix is not None: 
+                    #add prefix to index
+                    index =np.array([f'{prefix}' +str(item) 
+                                     for item in index ])
+                
+                y_=pd.Series(y_, index = index )
+                
+        if predict: 
+  
+            if clf is None: 
+                warnings.warn('None estimator found! Could not predict `y` ')
+                self._logging.error('NoneType `clf` <estimator> could not'
+                                    ' predict `y`.')
+                raise ValueError('None estimator detected!'
+                                 ' could not predict `y`') 
+            if X_ is None: 
+                raise TypeError('NoneType can not used for prediction.'
+                                ' Need a test set `X`.')
+  
+            # check estimator as callable object or ABCMeta classes
+            if not hasattr(clf, '__call__') and  not inspect.isclass(clf)\
+                and  type(clf.__class__)!=ABCMeta: 
+  
+                raise TypeError(f"{clf.__class__.__name__!r} is not a classifier "
+                                 " or an estimator. Could not use for prediction.")
+            clf.fit(X_, y_)
+            ypred = clf.predict(X_)
+            
+            if isinstance(X_, (pd.DataFrame, pd.Series)):
+                if index is None:
+                    index = X_.index
+                
+        if isinstance(y_, pd.Series): 
+            index = y_.index 
+        
+        if index is None: 
+            # take default values if  indexes are not given 
+            index =np.array([i for i in range(len(y_))])
+            
+        if prefix is not None: 
+            index =np.array([f'{prefix}' +str(item) 
+                                 for item in index ])
+        if len(y_)!=len(ypred): 
+            raise TypeError(" `y` and predicted `ypred` must have"
+                            f" the same length. But {len(y_)!r} and "
+                            f"{len(ypred)!r} wre given respectively.")
+            
+         # create figure obj 
+        fig = plt.figure(figsize = self.fig_size)
+        ax = fig.add_subplot(1,1,1) # create figure obj 
+        
+        # plot the predicted target
+        if self.s is None: 
+            self.s = self.fs *40 
+        
+        # plot obverved data (test label =actual)
+        ax.scatter(x= index,
+                   y =y_ ,
+                    color = self.lc,
+                     s = self.s,
+                     alpha = self.alpha, 
+                     marker = self.marker_style,
+                     edgecolors = self.marker_edgecolor,
+                     linewidths = self.lw,
+                     linestyles = self.ls,
+                     facecolors = self.marker_facecolor,
+                     label = 'Observed'
+                       )    
+            
+        ax.scatter(x= index, y =ypred ,
+                   color = self.yp_lc,
+                    s = self.s/2,
+                    alpha = self.alpha, 
+                    marker = self.yp_marker_style,
+                    edgecolors = self.yp_marker_edgecolor,
+                    linewidths = self.yp_lw,
+                    linestyles = self.yp_ls,
+                    facecolors = self.yp_marker_facecolor,
+                    label = 'Predicted'
+                    )
+
+        if fill_between: 
+            ax.plot(y_, 
+                    c=self.lc,
+                    ls=self.ls, 
+                    lw=self.lw, 
+                    alpha=self.alpha
+                    )
+        if self.ylabel is None:
+            self.ylabel ='Categories '
+        if self.xlabel is None:
+            self.xlabel = 'Test data'
+            
+        if ylabel is not None: 
+            mess =''.join([ 
+                    'Label must have the same length with number of categories',
+                    f" ={len(np.unique(y_))!r}, but{len(ylabel)!r} ",
+                    f"{'are' if len(ylabel)>1 else 'is'} given."])
+            if len(ylabel) != len(np.unique(y_)): 
+                warnings.warn(mess
+                    )
+                self._logging.debug(mess)
+            else:
+                ax.set_yticks(np.unique(y_))
+                ax.set_yticklabels(ylabel)
+        ax.set_ylabel (self.ylabel,
+                       fontsize= self.font_size )
+   
+        ax.tick_params(axis=self.tp_axis, 
+                        labelsize= self.font_size, 
+                        )
+        
+        plt.xticks(rotation = self.rotate_xlabel)
+        plt.yticks(rotation = self.rotate_ylabel)
+        
+        if self.show_grid is True : 
+            ax.grid(self.show_grid,
+                    axis=self.gaxis,
+                    which = self.gwhich, 
+                    color = self.gc,
+                    linestyle=self.gls,
+                    linewidth=self.glw, 
+                    alpha = self.galpha
+                    )
+            if self.gwhich =='minor': 
+                ax.minorticks_on()
+                
+        if len(self.leg_kws) ==0 or 'loc' not in self.leg_kws.keys():
+             self.leg_kws['loc']='upper left'
+        ax.legend(**self.leg_kws)
+        
+        plt.show()
+        if self.savefig is not None :
+            plt.savefig(self.savefig,
+                        dpi=self.fig_dpi,
+                        orientation =self.fig_orientation)
+        
+        
 if __name__=='__main__': 
 
     # from sklearn.linear_model import SGDClassifier
