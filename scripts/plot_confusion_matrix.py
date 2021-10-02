@@ -59,5 +59,4 @@ mObj.confusion_matrix(svc_clf,
                         plottype=plottype,
                         matshow_kws = matshow_kwargs,
                         )
-
 # print(mObj.conf_mx)
