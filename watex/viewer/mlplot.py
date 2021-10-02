@@ -145,17 +145,70 @@ class MLPlots:
     marker              marker of stations 
                         *default* is r"$\blacktriangledown$"
     ms                  size of marker in points. *default* is 5
-    mstyle              style  of marker in points. *default* is ``o``.
+    marker_style        style  of marker in points. *default* is ``o``.
+    markerfacecolor     facecolor of the marker. *default* is ``yellow``
+    markeredgecolor     edgecolor of the marker. *default* is ``cyan``.
+    markeredgewidth     width of the marker. *default* is ``3``.
     x_minorticks        minortick according to x-axis size and *default* is 1.
     y_minorticks        minortick according to y-axis size and *default* is 1.
     font_size           size of font in inches (width, height)
                         *default* is 3.
     font_style          style of font. *default* is ``italic``
-                        
     bins                histograms element separation between two bar. 
                          *default* is ``10``. 
     xlim                limit of x-axis in plot. *default* is None 
     ylim                limit of y-axis in plot. *default* is None 
+    xlabel              label name of x-axis in plot. *default* is None 
+    ylabel              label name  of y-axis in plot. *default* is None 
+    rotate_xlabel       angle to rotate `xlabel` in plot. *default* is None 
+    rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
+    leg_kws             keyword arguments of legend. *default* is empty dict.
+    plt_kws             keyword arguments of plot. *default* is empty dict
+    rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
+                        *default* is '--'
+    ps                  [ '-' | '.' | ':' ] line style of `Precicison `metric
+                        *default* is '-'
+    rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
+    pc                  line color of `Precision` metric *default* is ``k``
+    s                   size of items in scattering plots. default is ``fs*40.``
+    gls                 [ '-' | '.' | ':' ] line style of grid  
+                        *default* is '--'
+    glc                 line color of the grid plot, *default* is ``k``
+    glw                 line weight of the grid plot, *default* is ``2``
+    galpha              transparency number of grid, *default* is ``0.5``  
+    gaxis               axis to plot grid.*default* is ``'both'``
+    gwhich              type of grid to plot. *default* is ``major``
+    tp_axis             axis  to apply ticks params. default is ``both``
+    tp_labelsize        labelsize of ticks params. *default* is ``italic``
+    tp_bottom           position at bottom of ticks params. *default*
+                        is ``True``.
+    tp_top              position at the top  of ticks params. *default*
+                        is ``True``.
+    tp_labelbottom      see label on the bottom of the ticks. *default* 
+                        is ``False``
+    tp_labeltop         see the label on the top of ticks. *default* is ``True``
+    cb_orientation      orientation of the colorbar. *default* is ``vertical``
+    cb_aspect           aspect of the colorbar. *default* is 20.
+    cb_shrink           shrink size of the colorbar. *default* is ``1.0``
+    cb_pad              pad of the colorbar of plot. *default* is ``.05``
+    cb_anchor           anchor of the colorbar. *default* is ``(0.0, 0.5)``
+    cb_panchor          proportionality anchor of the colorbar. *default* is 
+                        `` (1.0, 0.5)``.
+    cb_label            label of the colorbar. *default* is ``None``.      
+    cb_spacing          spacing of the colorbar. *default* is ``uniform``
+    cb_drawedges        draw edges inside of the colorbar. *default* is ``False``
+    cb_format           format of the colorbar values. *default* is ``None``.
+    yp_ls               [ '-' | '.' | ':' ] line style of `Predicted` label.  
+                        *default* is '-'
+    yp_lc               line color of the `Prediction` plot. *default* is ``k``
+    yp_lw               line weight of the `Predicted` plot. *default* is ``3``
+    yp_marker_style     style  of marker in  of `Prediction` points. 
+                            *default* is ``o``.
+    yp_markerfacecolor  facecolor of the `Predicted` label marker. 
+                        *default* is ``k``
+    yp_markeredgecolor  edgecolor of the `Predicted` label marker. 
+                        *default* is ``r``.
+    yp_markeredgewidth  width of the `Predicted`label marker. *default* is ``2``.  
     ==================  =======================================================
     """
     def __init__(self,  **kws ): 
@@ -205,7 +258,7 @@ class MLPlots:
         self.rc =kws.pop('rc', (.6, .6, .6))
         self.pc =kws.pop('pc', 'k')
     
-        self.s = kws.pop('s', None)
+        self.s = kws.pop('s', self.fs *40.)
         #show grid 
         self.show_grid = kws.pop('show_grid',False)
         self.galpha =kws.pop('galpha', 0.5)
@@ -1278,12 +1331,52 @@ class MLPlots:
             
          ylabel: list 
             list of labels names  to hold the name of each categories.
+            
+        Example
+        --------
+        
+            >>> from sklearn.svm import SVC 
+            >>> from watex.viewer.mlplot import MLPlots 
+            >>> from watex.datasets import fetch_data 
+            >>> X,y = fetch_data('Bagoue dataset prepared')
+            >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
+            >>> plot_kws ={'lw' :3.,                  # line width 
+                         'lc':(.9, 0, .8), 
+                         'ms':7.,                
+                         'yp_marker_style' :'o', 
+                         'fig_size':(12, 8),
+                        'font_size':15.,
+                        'xlabel': 'Test examples',
+                        'ylabel':'Flow categories' ,
+                        'marker_style':'o', 
+                        'markeredgecolor':'k', 
+                        'markerfacecolor':'b', 
+                        'markeredgewidth':3, 
+                        'yp_markerfacecolor' :'k', 
+                        'yp_markeredgecolor':'r', 
+                        'alpha' :1., 
+                        'yp_markeredgewidth':2.,
+                        'show_grid' :True,          
+                        'galpha' :0.2,              
+                        'glw':.5,                   
+                        'rotate_xlabel' :90.,
+                        'fs' :3.,                   
+                        's' :20 ,                  
+                        'rotate_xlabel':90
+                           }
+            >>> modObj = MLPlots(**plot_kws)
+            >>> modObj.model(y, X_=X, clf =svc_clf, 
+                          predict= True, 
+                          prefix ='b' ,
+                          fill_between =False, 
+                          ylabel=['FR0', 'FR1', 'FR2', 'FR3']
+                          )
         """
         
         if index is not None:
             #control len of index and len of y
             try : 
-                mess ='Object `index` has not length.'+\
+                mess ='Object `index` has no length.'+\
                     ' Could not be an index.'
                 len(index)
             except TypeError as type_error : 
