@@ -53,8 +53,7 @@ plot_kws ={'lw' :3.,                  # line width
             's' :20 ,                  # manage the size of scatter point.
             'rotate_xlabel':90
                }
-# import inspect 
-# print(inspect.isclass(svc_clf.__class__))
+
 modObj = MLPlots(**plot_kws)
 modObj.model(y, X_=X, clf =svc_clf, 
               predict= predict_ypred, 
