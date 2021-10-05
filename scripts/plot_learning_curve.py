@@ -10,14 +10,13 @@ Created on Tue Sep 21 15:29:13 2021
 """
 from sklearn.svm import SVC
 
-from watex.modeling.sl import Modeling
+from watex.modeling.basics import SLModeling
 # modules below are imported for testing scripts.
 # Not usefull to import at least  you provide your own dataset.
-# from watex.datasets.data_preparing import X_train_2
-from watex.datasets import X_prepared,  y_prepared
+from watex.datasets import fetch_data 
+
+X_prepared,  y_prepared = fetch_data('Bagoue data prepared')
  
-
-
 #dataset path to to csv file.
 datafn =None # r'F:/repositories/watex/data/Bag.main&rawds/drfats/BagoueDataset2.csv'
 # dataframe 
@@ -30,7 +29,7 @@ trainset= X_prepared
 # y -labels 
 y_array =y_prepared
 # base estimator. If baseeastimator is set, should replace the default estimator 
-baseEstimator =SVC(random_state=42, C=10, gamma=1e-2, kernel ='rbf')
+baseEstimator =SVC( random_state=42) #(random_state=42, C=10, gamma=1e-2, kernel ='rbf')
 
 # processing module kwargs
 modeling_kws={
@@ -60,7 +59,7 @@ switch_plot='on'
 autoPreprocessing =False 
 
 #call get_validation method drom processing Object 
-processObj = Modeling(
+processObj = SLModeling(
                     data_fn =datafn, 
                     df = df, 
                     **modeling_kws

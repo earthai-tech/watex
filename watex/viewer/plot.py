@@ -30,7 +30,7 @@ import  matplotlib.pyplot  as plt
 # import matplotlib.gridspec as gspec
 import seaborn as sns 
 
-import watex.viewer.hints as hints
+import watex.hints as hints
 from  watex.analysis.basics import SLAnalyses
 import watex.utils.exceptions as Wex
 from watex.utils._watexlog import watexlog

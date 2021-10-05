@@ -5,7 +5,7 @@
 from watex.processing.prepare import BasicSteps 
 
 __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
-         'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1' ] 
+         'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1', 'conf_kws'] 
 
 
 # path to dataset 
@@ -25,8 +25,10 @@ drop_features= ['num',
 add_attributes =False
 # add attributes indexes to create a new features. 
 attributesIndexes = [
-                    (1, 0),
-                    # (4,3)
+                    (0, 1),
+                    # (3,4), 
+                    # (1,4), 
+                    # (0, 4)
                     ] 
 # categorize a features on the trainset or label 
 feature_props_to_categorize =[
@@ -35,6 +37,12 @@ feature_props_to_categorize =[
                         
 # bring your own pipelines .if None, use default pipeline.
 ownPipeline =None 
+conf_kws = {'target':target, 
+            'drop_features':drop_features, 
+            'add_attributes':add_attributes, 
+            'attributesIndexes':attributesIndexes, 
+            'feature_props_to_categorize':feature_props_to_categorize,
+            }
 # createOnjects. 
 # readfile and set dataframe
 prepareObj =BasicSteps(data = data_fn,
