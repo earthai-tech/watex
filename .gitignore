@@ -148,6 +148,7 @@ watex/datasets/data_training.py
 #ignore dumping files
 SVC__LinearSVC__LogisticRegression
 SVC__LogisticRegression.pkl
+SVC__LinearSVC__LogisticRegression.pkl
 
 # ignore the useless __init__.py 
 watex/__init__.py 
