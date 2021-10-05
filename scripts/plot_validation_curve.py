@@ -18,11 +18,12 @@ Created on Tue Sep 21 11:09:55 2021
 import numpy as np 
 from sklearn.svm import SVC
 
-from watex.processing.sl import Processing 
+from watex.processing.basics import Processing 
 # modules below are imported for testing scripts.
 # Not usefull to import since you privied your own dataset.
-# from watex.datasets.data_preparing import X_train_2
-from watex.datasets import X_prepared,  y_prepared
+from watex.datasets import fetch_data 
+
+X_prepared,  y_prepared = fetch_data('Bagoue data prepared')
 
 #dataset 
 datafn =None # r'F:/repositories/watex/data/Bag.main&rawds/drfats/BagoueDataset2.csv'
@@ -56,7 +57,7 @@ processObj = Processing(
 # estimator hyperparameters configuration : for SVM, the default is `C`
 val_curve_kws = {"param_name":'C', 
                 "param_range": np.arange(1,100,10), 
-                "cv":4      # cross validarion k-Folds(CV=4) default values
+                "cv":7      # cross validarion k-Folds(CV=4) default values
                 }
 # plot properties 
 val_kws ={'c':'blue',

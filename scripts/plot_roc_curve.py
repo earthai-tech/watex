@@ -8,9 +8,9 @@ Created on Tue Sep 21 09:46:59 2021
 @author: @Daniel03
 """
 
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC #, LinearSVC 
+from sklearn.svm import SVC ,  LinearSVC 
 
 from watex.viewer.mlplot import MLPlots 
 # modules below are imported for testing scripts.
@@ -19,11 +19,11 @@ from watex.datasets import fetch_data
 X_prepared, y_prepared = fetch_data('Bagoue dataset prepared')
 
 random_state =42 
-# test dirsty classifer "stochastic gradient descent" 
+# test dirty classifer "stochastic gradient descent" 
 # prediction method =`decision_function`.
 
-# Ccompared with dirty RANDOM FOREST with decision method 'predict_proba`
-forest_clf =RandomForestClassifier(random_state=random_state)
+# Compared with dirty RANDOM FOREST with decision method 'predict_proba`
+# forest_clf =RandomForestClassifier(random_state=random_state)
 
 logreg_clf = LogisticRegression(random_state =random_state)
 svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =random_state) 
@@ -38,11 +38,12 @@ cv =7
 # `classe_` argument is provied if y are not binarized. i.e 
 # created a binary attribute for each flow classes; one attribute 
 #equal to 1 when others categories equal to 0.
-classe_category = 3 
+classe_category = 1 
 
 # plot_keywords arguments 
 
-plot_kws ={'lw':3, 
+plot_kws ={'fig_size':(8,8), 
+           'lw':3, 
            'lc':(.9, 0, .8), 
            'font_size':7., 
            'show_grid' :True,          # visualize grid 
@@ -53,8 +54,8 @@ plot_kws ={'lw':3,
             }
 # classifiers with their methods are put into tuples. 
 # IF classifier name is set to None. Will find name automatically.
-clfs =[(None, svc_clf, "decision_function" ), 
-      (None, logreg_clf, "predict_proba")]
+clfs =[('SVM', svc_clf, "decision_function" ), 
+      ('Logistic regression', logreg_clf, "predict_proba")]
     #  can be 
     #  clfs =[(None, sgd_clf, "decision_function" ), 
     #   (None, forest_clf, "predict_proba")]

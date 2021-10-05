@@ -149,7 +149,8 @@ def multipleGridSearches(X,
                                 'best_params_':searchObj.best_params_ , 
                                 'cv_results_': searchObj.cv_results_,
                                 'grid_kws':searchObj.grid_kws,
-                                'grid_param':grid_params[j]
+                                'grid_param':grid_params[j],
+                                'scoring':scoring
                                 }
         
         msg +=''.join([ f' Cross evaluate with KFold ={cv} the',
@@ -163,7 +164,10 @@ def multipleGridSearches(X,
             cv = cv, 
             scoring = scoring,
             display =display)
-    # for k, v in dclfs.items():     
+        # store the best scores 
+        _dclfs[f'{estm_.__class__.__name__}'][
+            'best_scores']= bestim_best_scores
+        # for k, v in dclfs.items():     
         _clfs.append((estm_,
                       searchObj.best_estimator_,
                       searchObj.best_params_, 
@@ -180,7 +184,6 @@ def multipleGridSearches(X,
         __logger.info(f'Dumping models `{pickfname}`!')
         
         try : 
- 
             joblib.dump(_dclfs, f'{pickfname}.pkl')
             # and later ....
             # f'{pickfname}._loaded' = joblib.load(f'{pickfname}.pkl')

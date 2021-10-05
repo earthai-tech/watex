@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2021  Kouadio K.Laurent,
-# bases.py modules under MIT-Licence
-"""
-Created on Tue Sep 14 14:47:18 2021
+#       Author: Kouadio K.Laurent<etanoyau@gmail.con>
+#       Create:on Fri Sep 10 15:37:59 2021
+#       Licence: MIT
 
-@author: @Daniel03
-"""
 import os 
 import re
 import sys 
 import warnings 
+import pickle 
+import joblib
+from pprint import pprint  
 import pandas as pd
 
 if __name__ =='__main__' or __package__ is None: 
@@ -20,6 +20,9 @@ if __name__ =='__main__' or __package__ is None:
 import watex.utils.decorator as dec 
 import watex.utils.exceptions as Wex
 from .utils.__init__ import savepath as savePath 
+from .utils._watexlog import watexlog
+
+__logger = watexlog().get_watex_logger(__name__)
 
 OptsList, paramsList =[['bore', 'for'], 
                         ['x','east'], 
@@ -50,6 +53,128 @@ OptsList, paramsList =[['bore', 'for'],
                            'geol', 
                            'flow'
                            ]
+                            
+def fetch_model(modelfile, modelpath =None, default=True,
+                modname =None, verbose =0): 
+    """ Fetch your model saved using Python pickle module or 
+    joblib module. 
+    
+    :param modelfile: str or Path-Like object 
+        dumped model file name saved using `joblib` or Python `pickle` module.
+    :param modelpath: path-Like object , 
+        Path to model dumped file =`modelfile`
+    :default: bool, 
+        Model parameters by default are saved into a dictionary. When default 
+        is ``True``, returns a tuple of pair (the model and its best parameters)
+        . If False return all values saved from `~.MultipleGridSearch`
+       
+    :modname: str 
+        Is the name of model to retrived from dumped file. If name is given 
+        get only the model and its best parameters. 
+    :verbose: int, level=0 
+        control the verbosity.More message if greater than 0.
+    
+    :returns:
+        - `model_class_params`: if default is ``True``
+        - `pickedfname`: model dumped and all parameters if default is `False`
+        
+    :Example: 
+        >>> from watex.bases import fetch_model 
+        >>> my_model = fetch_model ('SVC__LinearSVC__LogisticRegression.pkl',
+                                    default =False,  modname='SVC')
+        >>> my_model
+    """
+    
+    try:
+        isdir =os.path.isdir( modelpath)
+    except TypeError: 
+        #stat: path should be string, bytes, os.PathLike or integer, not NoneType
+        isdir =False
+        
+    if isdir and modelfile is not None: 
+        modelfile = os.join.path(modelpath, modelfile)
+
+    isfile = os.path.isfile(modelfile)
+    if not isfile: 
+        raise FileNotFoundError ("File {modelfile!r} not found!")
+        
+    from_joblib =False 
+    if modelfile.endswith('.pkl'): from_joblib  =True 
+    
+    if from_joblib:
+       __logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+       try : 
+           pickedfname = joblib.load(modelfile)
+           # and later ....
+           # f'{pickfname}._loaded' = joblib.load(f'{pickfname}.pkl')
+           dmsg=f"Model {modelfile !r} retreived from~.externals.joblib`!"
+       except : 
+           dmsg=''.join([f"Nothing to retrived. It's seems model {modelfile !r}", 
+                         " not really saved using ~external.joblib module! ", 
+                         "Please check your model filename."])
+    
+    if not from_joblib: 
+        __logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+        try: 
+           # DeSerializing pickled data 
+           with open(modelfile, 'rb') as modf: 
+               pickedfname= pickle.load (modf)
+           __logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
+                         "  using Python pickle module.`!")
+           
+           dmsg=f'Model `{modelfile!r} deserizaled from  {modelfile}`!'
+        except: 
+            dmsg =''.join([" Unable to deserialized the "
+                           f"{os.path.basename(modelfile)!r}"])
+           
+        else: 
+            __logger.info(dmsg)   
+           
+    if verbose > 0: 
+        pprint(
+            dmsg 
+            )
+           
+    if modname is not None: 
+        keymess = "{modname!r} not found."
+        try : 
+            if default:
+                model_class_params  =( pickedfname[modname]['best_model'], 
+                                   pickedfname[modname]['best_params_'], 
+                                   pickedfname[modname]['best_scores'],
+                                   )
+            if not default: 
+                model_class_params=pickedfname[modname]
+                
+        except KeyError as key_error: 
+            warnings.warn(
+                f"Model name {modname!r} not found in the list of dumped"
+                f" models = {list(pickedfname.keys()) !r}")
+            raise KeyError from key_error(keymess + "Shoud try the model's"
+                                          "names ={list(pickedfname.keys())!r}")
+        
+        if verbose > 0: 
+            pprint('Should return a tuple of `best model` and the'
+                   ' `model best parameters.')
+           
+        return model_class_params  
+            
+    if default:
+        model_class_params =list()    
+        
+        for mm in pickedfname.keys(): 
+            model_class_params.append((pickedfname[mm]['best_model'], 
+                                      pickedfname[mm]['best_params_'],
+                                      pickedfname[modname]['best_scores']))
+    
+        if verbose > 0: 
+               pprint('Should return a list of tuple pairs:`best model`and '
+                      ' `model best parameters.')
+               
+        return model_class_params
+
+    return pickedfname
+
 
 def sanitize_fdataset(_df): 
     """ Sanitize the feature dataset. Recognize the columns provided 

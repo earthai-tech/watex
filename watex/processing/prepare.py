@@ -199,7 +199,12 @@ class BasicSteps(object):
         if isinstance(y, pd.Series): 
             y =y.values 
         # convert to pandas X with features names 
-        X =pd.DataFrame (X, columns = self.attribute_names_)
+        try:
+            X =pd.DataFrame (X, columns = self.attribute_names_)
+        except AttributeError: 
+            
+            self.attribute_names_= X.columns
+            X =pd.DataFrame (X, columns = self.attribute_names_)
         # drop features if features are useles
         if self.drop_features is not None : 
             if isinstance(self.drop_features, str): 
@@ -359,7 +364,10 @@ class BasicSteps(object):
             self._logging.info(
                 '`You are running the Test Set, so pipeline `transform` method'
                 ' is applied not `fit_transform`.')
-            self.X_prepared = self.pipeline.transform(self.X0)
+            try :
+                self.X_prepared = self.pipeline.transform(self.X0)
+            except: 
+                self.X_prepared = self.pipeline.fit_transform(self.X0)
             
         if not on_testset: 
             self._logging.info('Train Set is running so `fit_transform` '
