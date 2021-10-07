@@ -5,7 +5,8 @@
 from watex.processing.prepare import BasicSteps 
 
 __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
-         'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1', 'conf_kws'] 
+          'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1',
+          'conf_kws'] 
 
 
 # path to dataset 
@@ -32,7 +33,7 @@ attributesIndexes = [
                     ] 
 # categorize a features on the trainset or label 
 feature_props_to_categorize =[
-    ('flow', ([0., 1., 3.], ['FR0', 'FR1', 'FR2', 'FR3']))
+    ('flow', ([0., 1., 3.], ['FR0', 'FR1', 'FR2', 'FR3'])),
     ]
                         
 # bring your own pipelines .if None, use default pipeline.
@@ -41,16 +42,18 @@ conf_kws = {'target':target,
             'drop_features':drop_features, 
             'add_attributes':add_attributes, 
             'attributesIndexes':attributesIndexes, 
-            'feature_props_to_categorize':feature_props_to_categorize,
             }
+conf_kws['feature_props_to_categorize']= feature_props_to_categorize
 # createOnjects. 
 # readfile and set dataframe
+# hash equal to ``True`` to unsure data remain consistent even mutilple runs.
 prepareObj =BasicSteps(data = data_fn,
                         drop_features = drop_features,
                         categorizefeature_props = feature_props_to_categorize,
                         target=target, 
                         add_attributes = add_attributes, 
-                        attributes_ix = attributesIndexes
+                        attributes_ix = attributesIndexes, 
+                        hash=True
                         )
 data= prepareObj.data 
 X =prepareObj.X             # strafified training set 
@@ -74,3 +77,10 @@ df1 = prepareObj._df1
 # test set stratified data. Untouchable unless the best model is found.
 XT = prepareObj.X_
 yT= prepareObj.y_
+# Another tricks to keep your test sets safe is to  use `dumpOrSerializeData` 
+# to keep your test site info a savefile for the first run like::
+#   >>> import numpy as np
+#   >>> from watex.utils.ml_utils import dumpOrSerializeData
+#   >>> data=(XT, yT)
+#   >>> dumpOrSerializeData(data, filename ='__XTyT.pkl', to='joblib', 
+#                          savepath='watex/datasets')

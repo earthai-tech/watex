@@ -7,12 +7,14 @@ import inspect
 import warnings  
 from typing import TypeVar
 import numpy as np 
+# from abc import ABC,abstractmethod
 
-from sklearn.model_selection import cross_val_predict 
+from sklearn import metrics 
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import precision_score, recall_score 
 from sklearn.metrics import confusion_matrix , f1_score
 from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.model_selection import cross_val_predict 
 
 from watex.utils._watexlog import watexlog
 import watex.utils.decorator as deco
@@ -20,26 +22,34 @@ import watex.utils.exceptions as Wex
 import watex.hints as Hints
 
 T= TypeVar('T')
-KT=TypeVar('KT')
-VT=TypeVar('VT')
 
 _logger = watexlog().get_watex_logger(__name__)
-# class Metrics: 
 
-""" Metric class.
+__all__=['precision_recall_tradeoff', 'ROC_curve', 'confusion_matrix_']
 
-Metrics are measures of quantitative assessment commonly used for 
-assessing, comparing, and tracking performance or production. Generally,
-a group of metrics will typically be used to build a dashboard that
-management or analysts review on a regular basis to maintain performance
-assessments, opinions, and business strategies.
-
-Here we implement some Scikit-learn metrics like `precision`, `recall`
-`f1_score` , `confusion matrix`, and `receiving operating characteristic`
-(R0C)
-""" 
+class Metric(object):
+    """ Metric pseudo class.
     
-def precision_recall_tradeoff(self, clf, X,y,*, cv =7,classe_ =None,
+    Metrics are measures of quantitative assessment commonly used for 
+    assessing, comparing, and tracking performance or production. Generally,
+    a group of metrics will typically be used to build a dashboard that
+    management or analysts review on a regular basis to maintain performance
+    assessments, opinions, and business strategies.
+    
+    Here we implement some Scikit-learn metrics like `precision`, `recall`
+    `f1_score` , `confusion matrix`, and `receiving operating characteristic`
+    (R0C)
+    """ 
+    # @abstractmethod 
+    def __init__(self): 
+        setattr(self, 'metrics', tuple(metrics.SCORERS.keys()))
+        
+    def get_metrics(self): 
+        """ Get the list of scikit_learn metrics"""
+        return getattr(self, 'metrics')
+
+    
+def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
                             method="decision_function",cross_val_pred_kws =None,
                             y_tradeoff =None, **prt_kws):
     """ Precision/recall Tradeoff computes a score based on the decision 
@@ -124,17 +134,14 @@ def precision_recall_tradeoff(self, clf, X,y,*, cv =7,classe_ =None,
     Examples
     --------
     
-    >>> from sklearn.linear_model import SGDClassifier
-    >>> from watex.utils.ml_utils import Metrics 
-    >>> sgd_clf = SGDClassifier()
-    >>> mObj = Metrics(). precisionRecallTradeoff(clf = sgd_clf, 
-    ...                                           X= X_train_2, 
-    ...                                         y = y_prepared, 
-    ...                                         classe_=1, cv=3 )                                
-    >>> mObj.confusion_matrix 
-    >>> mObj.f1_score
-    >>> mObj.precision_score
-    >>> mObj.recall_score
+        >>> from sklearn.linear_model import SGDClassifier
+        >>> from watex.metrics import precision_recall_tradeoff
+        >>> from watex.datasets import fetch_data 
+        >>> X, y= fetch_data('Bagoue prepared')
+        >>> sgd_clf = SGDClassifier()
+        >>> mObj = precision_recall_tradeoff (clf = sgd_clf, X= X, y = y,
+                                        classe_=1, cv=3 , y_tradeoff=0.90) 
+        >>> mObj.confusion_matrix
     """
     
     # check y if value to plot is binarized ie.True of false 
@@ -144,7 +151,7 @@ def precision_recall_tradeoff(self, clf, X,y,*, cv =7,classe_ =None,
         warnings.warn('Classes value of `y` is %s, but need 2.' 
                       '`PrecisionRecall Tradeoff` is used for training '
                        'binarize classifier'%len(y_unik ), UserWarning)
-        self._logging.warning('Need a binary classifier(2). %s are given'
+        _logger.warning('Need a binary classifier(2). %s are given'
                               %len(y_unik ))
         raise ValueError(f'Need binary classes but {len(y_unik )!r}'
                          f' {"are" if len(y_unik )>1 else "is"} given')
@@ -170,18 +177,14 @@ def precision_recall_tradeoff(self, clf, X,y,*, cv =7,classe_ =None,
     if cross_val_pred_kws is None: 
         cross_val_pred_kws = dict()
         
-    self.y_scores = cross_val_predict(clf,
-                                      X, 
-                                      y, 
-                                      cv =cv,
-                                      method= method,
-                                      **cross_val_pred_kws )
-
-    y_scores = cross_val_predict(clf,
-                                 X,
-                                 y, 
-                                 cv =cv,
+    self = Metric()#precision_recall_tradeoff
+    
+    self.y_scores = cross_val_predict(clf,X,y,cv =cv,
+                                          method= method,
+                                          **cross_val_pred_kws )
+    y_scores = cross_val_predict(clf,X,y, cv =cv,
                                  **cross_val_pred_kws )
+    
     self.confusion_matrix =confusion_matrix(y, y_scores )
     
     self.f1_score = f1_score(y,y_scores)
@@ -199,7 +202,7 @@ def precision_recall_tradeoff(self, clf, X,y,*, cv =7,classe_ =None,
             float(y_tradeoff)
         except ValueError: 
             raise Wex.WATexError_float(
-                f'Could not convert {y_tradeoff!r} to float.')
+                f"Could not convert {y_tradeoff!r} to float.")
         except TypeError: 
             raise Wex.WATexError_inputarguments(
                 f'Invalid type `{type(y_tradeoff)}`')
@@ -217,10 +220,10 @@ def precision_recall_tradeoff(self, clf, X,y,*, cv =7,classe_ =None,
         
     self.y =y
     
-    return self 
+    return self
     
 @deco.docstring(precision_recall_tradeoff, start ='Parameters', end ='Notes')
-def ROC_curve(self, roc_kws=None, **tradeoff_kws): 
+def ROC_curve( roc_kws=None, **tradeoff_kws): 
     """The Receiving Operating Characteric (ROC) curve is another common
     tool  used with binary classifiers. 
     
@@ -260,23 +263,30 @@ def ROC_curve(self, roc_kws=None, **tradeoff_kws):
     ---------
     
         >>> from sklearn.linear_model import SGDClassifier
-        >>> from watex.utils.ml_utils import Metrics 
-        >>> sgd_clf = SGDClassifier()
-        >>> rocObj = Metrics().ROC_curve(clf = sgd_clf,  X= X_train_2, 
-        ...                                 y = y_prepared, classe_=1, cv=3 )
+        >>> from watex.metrics import ROC_curve
+        >>> from watex.datasets import fetch_data 
+        >>> X, y= fetch_data('Bagoue prepared')
+        >>> rocObj =ROC_curve(clf = sgd_clf,  X= X, 
+                       y = y, classe_=1, cv=3 )                                
+        >>> rocObj.__dict__.keys()
+        >>> rocObj.roc_auc_score 
         >>> rocObj.fpr
     """
-    self.precisionRecallTradeoff(**tradeoff_kws)
+    self =Metric()
+    obj= precision_recall_tradeoff(**tradeoff_kws)
+    for key in obj.__dict__.keys():
+        setattr(self, key, obj.__dict__[key])
+        
     if roc_kws is None: roc_kws =dict()
     self.fpr , self.tpr , thresholds = roc_curve(self.y, 
                                        self.y_scores,
                                        **roc_kws )
     self.roc_auc_score = roc_auc_score(self.y, self.y_scores)
-    
+
     return self 
 
     
-def confusion_matrix_(self, clf, X, y,*, cv =7, plot_conf_max=False, 
+def confusion_matrix_(clf, X, y,*, cv =7, plot_conf_max=False, 
                      crossvalp_kws=dict(), **conf_mx_kws ): 
     """ Evaluate the preformance of the model or classifier by counting 
     the number of ttimes instances of class A are classified in class B. 
@@ -323,11 +333,14 @@ def confusion_matrix_(self, clf, X, y,*, cv =7, plot_conf_max=False,
         >>> from sklearn.svm import SVC 
         >>> from watex.utils.ml_utils import Metrics 
         >>> from watex.datasets import fetch_data 
-        X,y = fetch_data('Bagoue dataset prepared') 
+        >>> X,y = fetch_data('Bagoue dataset prepared') 
         >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf',
-                      random_state =42) 
-        >>> mObj =Metrics().confusion_matrix(svc_clf,X=X,y=y,
-                                        plot_conf_max='map')
+        ...              random_state =42) 
+        >>> confObj =confusion_matrix_(svc_clf,X=X,y=y,
+        ...                        plot_conf_max='error')
+        >>> confObj.norm_conf_mx
+        >>> confObj.conf_mx
+        >>> confObj.__dict__.keys()
     """
     # Get all param values and set attributes 
     func_sig = inspect.signature(confusion_matrix_)
@@ -345,6 +358,7 @@ def confusion_matrix_(self, clf, X, y,*, cv =7, plot_conf_max=False,
     #     }
     # parameters = [p.name for p in func_sig.parameters.values()
            # if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+    self = Metric() #confusion_matrix_ 
     for key in PARAMS_VALUES.keys(): 
         setattr(self, key, PARAMS_VALUES[key] )
         
@@ -380,24 +394,5 @@ def confusion_matrix_(self, clf, X, y,*, cv =7, plot_conf_max=False,
         plt.show ()
         
     return self 
-
-# from sklearn import metrics 
-# print(metrics.SCORERS.keys())
-# dict_keys(['explained_variance', 'r2', 'max_error', 'neg_median_absolute_error',
-#            'neg_mean_absolute_error', 'neg_mean_absolute_percentage_error', 
-#            'neg_mean_squared_error', 'neg_mean_squared_log_error', 
-#            'neg_root_mean_squared_error', 'neg_mean_poisson_deviance',
-#            'neg_mean_gamma_deviance', 'accuracy', 'top_k_accuracy', 
-#            'roc_auc', 'roc_auc_ovr', 'roc_auc_ovo', 'roc_auc_ovr_weighted',
-#            'roc_auc_ovo_weighted', 'balanced_accuracy', 'average_precision',
-#            'neg_log_loss', 'neg_brier_score', 'adjusted_rand_score', 'rand_score',
-#            'homogeneity_score', 'completeness_score', 'v_measure_score', 
-#            'mutual_info_score', 'adjusted_mutual_info_score', 
-#            'normalized_mutual_info_score', 'fowlkes_mallows_score',
-#            'precision', 'precision_macro', 'precision_micro',
-#            'precision_samples', 'precision_weighted', 'recall', 
-#            'recall_macro', 'recall_micro', 'recall_samples', 
-#            'recall_weighted', 'f1', 'f1_macro', 'f1_micro', 'f1_samples',
-#            'f1_weighted', 'jaccard', 'jaccard_macro', 'jaccard_micro', 
-#            'jaccard_samples', 'jaccard_weighted'])
+  
           
