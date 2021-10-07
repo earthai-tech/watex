@@ -1,20 +1,16 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
-# This module is a set of utils for data prepprocessing
-# released under a MIT- licence.
-"""
-Created on Sat Aug 28 16:26:04 2021
-
-@author: @Daniel03
-
-"""
+# Copyright (c) 2021 Kouadio K. Laurent, Sat Aug 28 16:26:04 2021
+#       This module is a set of utils for data prepprocessing
+#       released under a MIT- licence.
+#       @author: @Daniel03 <etanoyau@gmail.com>
 import os 
-import inspect
 import hashlib 
 import tarfile 
 import warnings 
 import pickle 
 import joblib
+import datetime 
+import shutil
 from pprint import pprint  
 from six.moves import urllib 
 from typing import TypeVar, Generic, Iterable , Callable, Text
@@ -22,23 +18,15 @@ import pandas as pd
 import numpy as np 
 
 from sklearn.model_selection import StratifiedShuffleSplit 
-from sklearn.model_selection import cross_val_predict 
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import precision_score, recall_score 
-from sklearn.metrics import confusion_matrix , f1_score
-from sklearn.metrics import roc_curve, roc_auc_score
 
+from watex.utils.__init__ import savepath as savePath 
 from watex.utils._watexlog import watexlog
-import watex.utils.decorator as deco
-import watex.utils.exceptions as Wex
-import watex.hints as Hints
 
 __logger = watexlog().get_watex_logger(__name__)
+
 T= TypeVar('T')
 KT=TypeVar('KT')
 VT=TypeVar('VT')
-
-_logger = watexlog().get_watex_logger(__name__)
 
 DOWNLOAD_ROOT = 'https://github.com/WEgeophysics/watex/master/'
 #'https://zenodo.org/record/4896758#.YTWgKY4zZhE'
@@ -300,8 +288,7 @@ def fetch_model(modelfile, modelpath =None, default=True,
            
         else: 
             __logger.info(dmsg)   
-           
-       
+
     if verbose > 0: 
         pprint(
             dmsg 
@@ -347,376 +334,132 @@ def fetch_model(modelfile, modelpath =None, default=True,
 
     return pickedfname 
 
-class Metrics: 
-    """ Metric class.
+def dumpOrSerializeData (data , filename=None, savepath =None, to=None): 
+    """ Dump and save binary file 
     
-    Metrics are measures of quantitative assessment commonly used for 
-    assessing, comparing, and tracking performance or production. Generally,
-    a group of metrics will typically be used to build a dashboard that
-    management or analysts review on a regular basis to maintain performance
-    assessments, opinions, and business strategies.
-    
-    Here we implement some Scikit-learn metrics like `precision`, `recall`
-    `f1_score` , `confusion matrix`, and `receiving operating characteristic`
-    (R0C)
-    """ 
-    
-    def precisionRecallTradeoff(self, 
-                                clf,
-                                X,
-                                y,
-                                cv =7,
-                                classe_ =None,
-                                method="decision_function",
-                                cross_val_pred_kws =None,
-                                y_tradeoff =None, 
-                                **prt_kws):
-        """ Precision/recall Tradeoff computes a score based on the decision 
-        function. 
+    :param data: Object
+        Object to dump into a binary file. 
+    :param filename: str
+        Name of file to serialize. If 'None', should create automatically. 
+    :param savepath: str, PathLike object
+         Directory to save file. If not exists should automaticallycreate.
+    :param to: str 
+        Force your data to be written with specific module like ``joblib`` or 
+        Python ``pickle` module. Should be ``joblib`` or ``pypickle``.
+    :return: str
+        dumped or serialized filename.
         
-        Is assign the instance to the positive class if that score on 
-        the left is greater than the `threshold` else it assigns to negative 
-        class. 
+    :Example:
         
-        Parameters
-        ----------
-        
-        clf: obj
-            classifier or estimator
-            
-        X: ndarray, 
-            Training data (trainset) composed of n-features.
-            
-        y: array_like 
-            labelf for prediction. `y` is binary label by defaut. 
-            If '`y` is composed of multilabel, specify  the `classe_` 
-            argumentto binarize the label(`True` ot `False`). ``True``  
-            for `classe_`and ``False`` otherwise.
-            
-        cv: int 
-            K-fold cross validation. Default is ``3``
-            
-        classe_: float, int 
-            Specific class to evaluate the tradeoff of precision 
-            and recall. If `y` is already a binary classifer, `classe_` 
-            does need to specify. 
-            
-        method: str
-            Method to get scores from each instance in the trainset. 
-            Ciuld be ``decison_funcion`` or ``predict_proba`` so 
-            Scikit-Learn classifuier generally have one of the method. 
-            Default is ``decision_function``.
-        
-        y_tradeoff: float
-            check your `precision score` and `recall score`  with a 
-            specific tradeoff. Suppose  to get a precision of 90%, you 
-            might specify a tradeoff and get the `precision score` and 
-            `recall score` by setting a `y-tradeoff` value.
+        >>> import numpy as np
+        >>> from watex.utils.ml_utils import dumpOrSerializeData
+        >>>  data=(np.array([0, 1, 3]),np.array([0.2, 4]))
+        >>> dumpOrSerializeData(data, filename ='__XTyT.pkl', to='pickle', 
+                                savepath='watex/datasets')
+    """
+    if filename is None: 
+        filename ='__mydumpedfile.{}__'.format(datetime.datetime.now())
+        filename =filename.replace(' ', '_').replace(':', '-')
 
-        Notes
-        ------
-            
-        Contreverse to the `confusion matrix`, a precision-recall 
-        tradeoff is very interesting metric to get the accuracy of the 
-        positive prediction named ``precison`` of the classifier with 
-        equation is:: 
-            
-            precision = TP/(TP+FP)
-            
-        where ``TP`` is the True Positive and ``FP`` is the False Positive
-        A trival way to have perfect precision is to make one single 
-        positive precision (`precision` = 1/1 =100%). This would be usefull 
-        since the calssifier would ignore all but one positive instance. So 
-        `precision` is typically used along another metric named `recall`,
-         also `sensitivity` or `true positive rate(TPR)`:This is the ratio of 
-        positive instances that are corectly detected by the classifier.  
-        Equation of`recall` is given as:: 
-            
-            recall = TP/(TP+FN)
-            
-        where ``FN`` is of couse the number of False Negatives. 
-        It's often convenient to combine `preicion`and `recall` metrics into
-        a single metric call the `F1 score`, in particular if you need a 
-        simple way to compared two classifiers. The `F1 score` is the harmonic 
-        mean of the `precision` and `recall`. Whereas the regular mean treats 
-        all  values equaly, the harmony mean gives much more weight to low 
-        values. As a result, the classifier will only get the `F1 score` if 
-        both `recalll` and `preccion` are high. The equation is given below::
-            
-            F1= 2/((1/precision)+(1/recall))
-            F1= 2* precision*recall/(precision+recall)
-            F1 = TP/(TP+ (FN +FP)/2)
+    if to is not None: 
+        if not isinstance(to, str): 
+            raise TypeError(f"Need to be string format not {type(to)}")
+        if to.lower().find('joblib')>=0: to ='joblib'
+        elif to.lower().find('pickle')>=0:to = 'pypickle'
         
-        The way to increase the precion and reduce the recall and vice versa
-        is called `preicionrecall tradeoff`
+        if to not in ('joblib', 'pypickle'): 
+            raise ValueError("Unknown argument `to={to}`."
+                             " Should be <joblib> or <pypickle>!")
+    # remove extension if exists
+    if filename.endswith('.pkl'): 
+        filename = filename.replace('.pkl', '')
         
-        Examples
-        --------
+    __logger.info(f'Dumping data to `{filename}`!')    
+    try : 
+        if to is None or to =='joblib':
+            joblib.dump(data, f'{filename}.pkl')
+            
+            filename +='.pkl'
+            __logger.info(f'Data dumped in `{filename} using '
+                          'to `~.externals.joblib`!')
+        elif to =='pypickle': 
+            # force to move pickling data  to exception and write using 
+            # Python pickle module
+            raise 
+    except : 
+        # Now try to pickle data Serializing data 
+        with open(filename, 'wb') as wfile: 
+            pickle.dump( data, wfile)
+        __logger.info( 'Data are well serialized  '
+                      'using Python pickle module.`')
         
-        >>> from sklearn.linear_model import SGDClassifier
-        >>> from watex.utils.ml_utils import Metrics 
-        >>> sgd_clf = SGDClassifier()
-        >>> mObj = Metrics(). precisionRecallTradeoff(clf = sgd_clf, 
-        ...                                           X= X_train_2, 
-        ...                                         y = y_prepared, 
-        ...                                         classe_=1, cv=3 )                                
-        >>> mObj.confusion_matrix 
-        >>> mObj.f1_score
-        >>> mObj.precision_score
-        >>> mObj.recall_score
-        """
-        
-        # check y if value to plot is binarized ie.True of false 
-        y_unik = np.unique(y)
-        if len(y_unik )!=2 and classe_ is None: 
+    if savepath is not None:
+        try : 
+            savepath = savePath (savepath)
+        except : 
+            savepath = savePath ('_dumpedData_')
+        try:
+            shutil.move(filename, savepath)
+        except :
+            print(f"--> It seems destination path {filename!r} already exists.")
 
-            warnings.warn('Classes value of `y` is %s, but need 2.' 
-                          '`PrecisionRecall Tradeoff` is used for training '
-                           'binarize classifier'%len(y_unik ), UserWarning)
-            self._logging.warning('Need a binary classifier(2). %s are given'
-                                  %len(y_unik ))
-            raise ValueError(f'Need binary classes but {len(y_unik )!r}'
-                             f' {"are" if len(y_unik )>1 else "is"} given')
-            
-        if classe_ is not None: 
-            try : 
-                classe_= int(classe_)
-            except ValueError: 
-                raise Wex.WATexError_inputarguments(
-                    'Need integer value. Could not convert to Float.')
-            except TypeError: 
-                raise Wex.WATexError_inputarguments(
-                    'Could not convert {type(classe_)!r}') 
+    if savepath is None: savepath =os.getcwd()
+    print(f"Data are well {'serialized' if to=='pypickle' else 'dumped'}"
+          f" to <{os.path.basename(filename)!r}> in {savepath!r} directory.")
+   
+def loadDumpedOrSerializedData (filename:str): 
+    """ Load dumped or serialized data from filename 
+    
+    :param filename: str or path-like object 
+        Name of dumped data file.
+    :return: 
+        Data loaded from dumped file.
         
-            if classe_ not in y: 
-                raise Wex.WATexError_inputarguments(
-                    'Value must contain a least a value of label '
-                        '`y`={0}'.format(
-                            Hints.format_generic_obj(y).format(*list(y))))
-                                     
-            y=(y==classe_)
-            
-        if cross_val_pred_kws is None: 
-            cross_val_pred_kws = dict()
-            
-        self.y_scores = cross_val_predict(clf,
-                                          X, 
-                                          y, 
-                                          cv =cv,
-                                          method= method,
-                                          **cross_val_pred_kws )
+    :Example:
+        
+        >>> from watex.utils.ml_utils import loadDumpedOrSerializedData
+        >>> loadDumpedOrSerializedData(filename ='Watex/datasets/__XTyT.pkl')
+    """
+    
+    if not isinstance(filename, str): 
+        raise TypeError(f'filename should be a <str> not <{type(filename)}>')
+        
+    if not os.path.isfile(filename): 
+        raise FileExistsError(f"File {filename!r} does not exist.")
+        
+    dumped_type =''
+    _filename = os.path.basename(filename)
+    __logger.info(f"Loading data from `{_filename}`!")
+   
+    data =None 
+    try : 
+        data= joblib.load(filename)
+        __logger.info(''.join([f"Data from {_filename !r} are sucessfully", 
+                      " loaded using ~.externals.joblib`!"]))
+        
+        dumped_type ='joblib'
+    except : 
+        __logger.info(
+            ''.join([f"Nothing to reload. It's seems data from {_filename!r}", 
+                      " are not really dumped using ~external.joblib module!"])
+            )
+        # Try DeSerializing using pickle module
+        with open(filename, 'rb') as tod: 
+            data= pickle.load (tod)
+        __logger.info(f"Data from `{_filename!r} are well"
+                      " deserialized using Python pickle module.`!")
+        dumped_type ='pickle'
+        
+    is_none = data is None
+    if is_none: 
+        print("Unable to deserialize data. Please check your file.")
+    
+    else : print(f"Data from {_filename} have been reloaded sucessfully  "
+          f"using <{dumped_type}> module.")
+    
+    return data 
 
-        y_scores = cross_val_predict(clf,
-                                     X,
-                                     y, 
-                                     cv =cv,
-                                     **cross_val_pred_kws )
-        self.confusion_matrix =confusion_matrix(y, y_scores )
-        
-        self.f1_score = f1_score(y,y_scores)
-        self.precision_score = precision_score(y, y_scores)
-        self.recall_score= recall_score(y, y_scores)
-            
-        if method =='predict_proba': 
-            # if classifier has a `predict_proba` method like `Random_forest`
-            # then use the positive class probablities as score 
-            # score = proba of positive class 
-            self.y_scores =self.y_scores [:, 1] 
-            
-        if y_tradeoff is not None:
-            try : 
-                float(y_tradeoff)
-            except ValueError: 
-                raise Wex.WATexError_float(
-                    f'Could not convert {y_tradeoff!r} to float.')
-            except TypeError: 
-                raise Wex.WATexError_inputarguments(
-                    f'Invalid type `{type(y_tradeoff)}`')
-                
-            y_score_pred = (self.y_scores > y_tradeoff) 
-            self.precision_score_tradeoff = precision_score(y,
-                                                            y_score_pred)
-            self.recall_score_tradeoff = recall_score(y, 
-                                                      y_score_pred)
-            
-        self.precisions, self.recalls, self.thresholds =\
-            precision_recall_curve(y,
-                                   self.y_scores,
-                                   **prt_kws)
-            
-        self.y =y
-        
-        return self 
-    
-    @deco.docstring(precisionRecallTradeoff, start ='Parameters', end ='Notes')
-    def ROC_curve(self, roc_kws=None, **tradeoff_kws): 
-        """The Receiving Operating Characteric (ROC) curve is another common
-        tool  used with binary classifiers. 
-        
-        It s very similar to preicision/recall , but instead of plotting 
-        precision versus recall, the ROC curve plots the `true positive rate`
-        (TNR)another name for recall) against the `false positive rate`(FPR). 
-        The FPR is the ratio of negative instances that are correctly classified 
-        as positive.It is equal to one minus the TNR, which is the ratio 
-        of  negative  isinstance that are correctly classified as negative.
-        The TNR is also called `specify`. Hence the ROC curve plot 
-        `sensitivity`(recall) versus 1-specifity.
-        
-        Parameters 
-        ----------
-        clf: callable
-            classifier or estimator
-                
-        X: ndarray, 
-            Training data (trainset) composed of n-features.
-            
-        y: array_like 
-            labelf for prediction. `y` is binary label by defaut. 
-            If '`y` is composed of multilabel, specify  the `classe_` 
-            argumentto binarize the label(`True` ot `False`). ``True``  
-            for `classe_`and ``False`` otherwise.
-            
-        roc_kws: dict 
-            roc_curve additional keywords arguments
-            
-        See also
-        --------
-        
-            `ROC_curve` deals wuth optional and positionals keywords arguments 
-            of :meth:`~watex.utlis.ml_utils.Metrics.precisionRecallTradeoff`
-            
-        Examples
-        ---------
-        
-            >>> from sklearn.linear_model import SGDClassifier
-            >>> from watex.utils.ml_utils import Metrics 
-            >>> sgd_clf = SGDClassifier()
-            >>> rocObj = Metrics().ROC_curve(clf = sgd_clf,  X= X_train_2, 
-            ...                                 y = y_prepared, classe_=1, cv=3 )
-            >>> rocObj.fpr
-        """
-        self.precisionRecallTradeoff(**tradeoff_kws)
-        if roc_kws is None: roc_kws =dict()
-        self.fpr , self.tpr , thresholds = roc_curve(self.y, 
-                                           self.y_scores,
-                                           **roc_kws )
-        self.roc_auc_score = roc_auc_score(self.y, self.y_scores)
-        
-        return self 
-    
-    
-    def confusion_matrix(self, clf, X, y,*, cv =7, plot_conf_max=False, 
-                         crossvalp_kws=dict(), **conf_mx_kws ): 
-        """ Evaluate the preformance of the model or classifier by counting 
-        the number of ttimes instances of class A are classified in class B. 
-        
-        To compute a confusion matrix, you need first to have a set of 
-        prediction, so they can be compared to the actual targets. You could 
-        make a prediction using the test set, but it's better to keep it 
-        untouch since you are not ready to make your final prediction. Remember 
-        that we use the test set only at very end of the project, once you 
-        have a classifier that you are ready to lauchn instead. 
-        The confusion metric give a lot of information but sometimes we may 
-        prefer a more concise metric like `precision` and `recall` metrics. 
-        
-        Parameters 
-        ----------
-        clf: obj
-            classifier or estimator
-            
-        X: ndarray, 
-            Training data (trainset) composed of n-features.
-            
-        y: array_like 
-            labelf for prediction. `y` is binary label by defaut. 
-            If '`y` is composed of multilabel, specify  the `classe_` 
-            argumentto binarize the label(`True` ot `False`). ``True``  
-            for `classe_`and ``False`` otherwise.
-            
-        cv: int 
-            K-fold cross validation. Default is ``7``
-            
-        plot_conf_max: bool, str 
-            can be `map` or `error` to visualize the matshow of prediction 
-            and errors 
 
-        crossvalp_kws: dict 
-            crossvalpredict additional keywords arguments 
-            
-        conf_mx_kws: dict 
-            Additional confusion matrix keywords arguments.
-        
-        Example
-        --------
-            
-            >>> from sklearn.svm import SVC 
-            >>> from watex.utils.ml_utils import Metrics 
-            >>> from watex.datasets import fetch_data 
-            X,y = fetch_data('Bagoue dataset prepared') 
-            >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf',
-                          random_state =42) 
-            >>> mObj =Metrics().confusion_matrix(svc_clf,X=X,y=y,
-                                            plot_conf_max='map')
-        """
-        # Get all param values and set attributes 
-        func_sig = inspect.signature(Metrics.confusion_matrix)
-        PARAMS_VALUES = {k: v.default
-            for k, v in func_sig.parameters.items()
-            if v.default is not  inspect.Parameter.empty
-            }
-        # add positional params 
-        for pname, pval in zip( ['X', 'y', 'clf'], [X, y, clf]): 
-            PARAMS_VALUES[pname]=pval 
-            
-        # PARAMS_VALUES2 = {k: v
-        #     for k, v in func_sig.parameters.items()
-        #     if (v.default is inspect.Parameter.empty and k !='self')
-        #     }
-        # parameters = [p.name for p in func_sig.parameters.values()
-               # if p.name != 'self' and p.kind != p.VAR_KEYWORD]
-        for key in PARAMS_VALUES.keys(): 
-            setattr(self, key, PARAMS_VALUES[key] )
-            
-        y_pred =cross_val_predict(clf, X, y, cv=cv, **crossvalp_kws )
-        
-        if y_pred.ndim ==1 : 
-            y_pred.reshape(-1, 1)
-        conf_mx = confusion_matrix(y, y_pred, **conf_mx_kws)
-        
-        for att, val in zip(['y_pred', 'conf_mx'],
-                            [y_pred, conf_mx]): 
-            setattr(self, att, val)
-        
-        # statement to plot confusion matrix errors rather than values 
-        row_sums = self.conf_mx.sum(axis=1, keepdims=True)
-        norm_conf_mx = self.conf_mx / row_sums 
-        # now let fill the diagonal with zeros to keep only the errors
-        # and let's plot the results 
-        np.fill_diagonal(norm_conf_mx, 0)
-        setattr(self, 'norm_conf_mx', norm_conf_mx)
-        
-          
-        fp =0
-        if plot_conf_max =='map': 
-            confmax = self.conf_mx
-            fp=1
-        if plot_conf_max =='error':
-            confmax= norm_conf_mx
-            fp =1
-        if fp: 
-            import matplotlib.pyplot as plt 
-            plt.matshow(confmax, cmap=plt.cm.gray)
-            plt.show ()
-            
-        return self 
-            
-        
-# if __name__=="__main__": 
-#     if __package__ is None : 
-#         __package__='watex'
-#     from sklearn.ensemble import RandomForestClassifier
-#     from sklearn.linear_model import SGDClassifier
-#     from .datasets import X_, y_,  X_prepared, y_prepared, default_pipeline
 
         
         

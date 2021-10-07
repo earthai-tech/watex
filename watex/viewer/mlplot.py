@@ -20,7 +20,8 @@ import  matplotlib.pyplot  as plt
 from ..utils._watexlog import watexlog
 from ..analysis.basics import categorize_flow 
 from ..analysis.dimensionality import Reducers
-import watex.utils.ml_utils as MLU 
+from ..metrics import (precision_recall_tradeoff, 
+                       ROC_curve, confusion_matrix_) 
 import watex.utils.exceptions as Wex
 import watex.utils.decorator as deco
 
@@ -304,8 +305,7 @@ class MLPlots:
                          for pname, pvalues in self.__dict__.items() 
                          if pname.startswith('cb_')
                          }
-        
-        
+
     def PCA_(self,
              X:[Array],
              y:Array,
@@ -659,7 +659,7 @@ class MLPlots:
                         orientation =self.fig_orientation
                         )  
             
-    @deco.docstring(MLU.Metrics.precisionRecallTradeoff, start='Parameters', 
+    @deco.docstring(precision_recall_tradeoff, start='Parameters', 
                     end = 'Examples')        
     def PrecisionRecall(self,
                         clf,
@@ -698,7 +698,7 @@ class MLPlots:
             ...                 kind='vsRecall')
         """
         # call precision 
-        prtObj = MLU.Metrics().precisionRecallTradeoff(
+        prtObj = precision_recall_tradeoff(
                                 clf,
                                 X, 
                                 y, 
@@ -840,7 +840,7 @@ class MLPlots:
         --------
         
             `ROC_curve` deals wuth optional and positionals keywords arguments 
-            of :meth:`~watex.utlis.ml_utils.Metrics.precisionRecallTradeoff`
+            of :meth:`~watex.metrics.precision_recall_tradeoff`
             
         Examples 
         --------
@@ -881,16 +881,13 @@ class MLPlots:
                 
         # reconvert to tuple values 
         clf =[tuple(pnclf) for pnclf in clf]
-        # build multiples classifiers objects   
-        rocObjs =[ MLU.Metrics().ROC_curve( 
-                                clf=_clf,
-                                X=X, 
-                                y=y, 
-                                cv =cv, 
-                                classe_=classe_, 
-                                method =meth, 
-                                cross_val_pred_kws=cross_val_pred_kws,
-                                **roc_kws) for (name, _clf, meth) in clf]
+        # build multiples classifiers objects 
+
+        rocObjs =[ROC_curve(clf=_clf,X=X,y=y, cv =cv, classe_=classe_, 
+                        method =meth, cross_val_pred_kws=cross_val_pred_kws,
+                        **roc_kws) 
+                  for (name, _clf, meth) in clf
+                  ]
         # create figure obj 
         fig = plt.figure(figsize = self.fig_size)
         ax = fig.add_subplot(1,1,1)
@@ -1139,7 +1136,7 @@ class MLPlots:
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
     
-    @deco.docstring(MLU.Metrics.confusion_matrix, start='Parameters', 
+    @deco.docstring(confusion_matrix_, start='Parameters', 
                     end='Example')
     def confusion_matrix(self, clf, X, y, cv, *, plottype ='map', ylabel=None, 
                          matshow_kws=dict(), **conf_mx_kws): 
@@ -1224,7 +1221,7 @@ class MLPlots:
                     ylabel =None 
                     
         # get yticks one it is a classification prof
-        confObj =MLU.Metrics().confusion_matrix(clf=clf,
+        confObj =confusion_matrix_(clf=clf,
                                 X=X,
                                 y=y,
                                 cv=cv,
@@ -1243,7 +1240,7 @@ class MLPlots:
             cax = ax.matshow(confObj.conf_mx,  
                         **matshow_kws)
             if self.cb_label is None: 
-                self.cb_label='N-items misclassified'
+                self.cb_label='Items confused'
                     
         if plottype in( 'error', 'fill diagonal') or\
             plottype.find('error')>=0:
@@ -1398,18 +1395,20 @@ class MLPlots:
                 index =None
                 
             if len_index : 
-                if not np.all(y_.index.isin(index)):
-                    warnings.warn('Indexes values provided are not in'
-                                  ' `y_`. Shrank index to `y`index.',
-                                  UserWarning)
-                    self._logging.debug('Index values are not in `y`. Index are'
-                                        ' shrank to hold indexes of `y`.')
-                    index =y_.index 
+                if isinstance(y_, (pd.Series, pd.DataFrame)):
+                    if not np.all(y_.index.isin(index)):
+                        warnings.warn('Indexes values provided are not in'
+                                      ' `y_`. Shrank index to `y`index.',
+                                      UserWarning)
+                        self._logging.debug('Index values are not in `y`. Index are'
+                                            ' shrank to hold indexes of `y`.')
+                        index =y_.index 
+                        y_=y_.values()
         
-                if prefix is not None: 
-                    #add prefix to index
-                    index =np.array([f'{prefix}' +str(item) 
-                                     for item in index ])
+                # if prefix is not None: 
+                #     #add prefix to index
+                #     index =np.array([f'{prefix}' +str(item) 
+                #                      for item in index ])
                 
                 y_=pd.Series(y_, index = index )
                 
@@ -1439,7 +1438,7 @@ class MLPlots:
                     index = X_.index
                 
         if isinstance(y_, pd.Series): 
-            index = y_.index 
+            index = y_.index.astype('>U12')
         
         if index is None: 
             # take default values if  indexes are not given 
@@ -1460,12 +1459,23 @@ class MLPlots:
         # plot the predicted target
         if self.s is None: 
             self.s = self.fs *40 
+        ax.scatter(x= index, y =ypred ,
+                  color = self.yp_lc,
+                   s = self.s,
+                   alpha = self.alpha, 
+                   marker = self.yp_marker_style,
+                   edgecolors = self.yp_marker_edgecolor,
+                   linewidths = self.yp_lw,
+                   linestyles = self.yp_ls,
+                   facecolors = self.yp_marker_facecolor,
+                   label = 'Predicted'
+                   )
         
         # plot obverved data (test label =actual)
         ax.scatter(x= index,
                    y =y_ ,
                     color = self.lc,
-                     s = self.s,
+                     s = self.s/2,
                      alpha = self.alpha, 
                      marker = self.marker_style,
                      edgecolors = self.marker_edgecolor,
@@ -1475,18 +1485,6 @@ class MLPlots:
                      label = 'Observed'
                        )    
             
-        ax.scatter(x= index, y =ypred ,
-                   color = self.yp_lc,
-                    s = self.s/2,
-                    alpha = self.alpha, 
-                    marker = self.yp_marker_style,
-                    edgecolors = self.yp_marker_edgecolor,
-                    linewidths = self.yp_lw,
-                    linestyles = self.yp_ls,
-                    facecolors = self.yp_marker_facecolor,
-                    label = 'Predicted'
-                    )
-
         if fill_between: 
             ax.plot(y_, 
                     c=self.lc,
@@ -1513,10 +1511,27 @@ class MLPlots:
                 ax.set_yticklabels(ylabel)
         ax.set_ylabel (self.ylabel,
                        fontsize= self.font_size )
+        ax.set_xlabel (self.xlabel,
+               fontsize= self.font_size )
    
-        ax.tick_params(axis=self.tp_axis, 
-                        labelsize= self.font_size, 
-                        )
+        if self.tp_axis is None or self.tp_axis =='both': 
+            ax.tick_params(axis=self.tp_axis, 
+                labelsize= self.tp_labelsize, 
+                )
+            
+        elif self.tp_axis =='x':
+            param_='y'
+        elif self.tp_axis =='y': 
+            param_='x'
+            
+        if self.tp_axis in ('x', 'y'):
+            ax.tick_params(axis=self.tp_axis, 
+                            labelsize= self.tp_labelsize, 
+                            )
+            
+            ax.tick_params(axis=param_, 
+                    labelsize= self.font_size, 
+                    )
         
         plt.xticks(rotation = self.rotate_xlabel)
         plt.yticks(rotation = self.rotate_ylabel)
@@ -1564,10 +1579,22 @@ class MLPlots:
         """ 
         from sklearn.model_selection import train_test_split 
         from sklearn.metrics import mean_squared_error 
-        if scoring =='mean_squared_error': scoring ='mse'
+        
+        if scoring is not None:
+            try :
+                scoring = scoring.lower()
+            except : 
+                raise TypeError(f"Scoring ={scoring!r} should be a string"
+                                " not a {type(scoring)!} type.")
+                
+        if scoring in ('mean_squared_error', 'mean squared error') :
+            scoring ='mse'
+        elif scoring in ('root_mean_squared_error', 'root mean squared error'):
+            scoring ='rmse'
         
         if not hasattr(clf, '__class__') and not inspect.isclass(clf.__class__): 
             raise TypeError("{clf!r} is not a model estimator.")
+            
         self._logging.info(
                    f"Plot learning curve with scoring ={scoring}")    
         X_train, X_val, y_train, y_val = train_test_split(X, y, 
@@ -1582,7 +1609,7 @@ class MLPlots:
                 continue
             y_train_pred = clf.predict(X_train[:m])
             y_val_pred = clf.predict(X_val)
-            if scoring =='mse':
+            if scoring in ('mse','rmse') :
                 train_errors.append(mean_squared_error(
                     y_train_pred, y_train[:m]))
                 val_errors.append(
@@ -1593,10 +1620,27 @@ class MLPlots:
                 val_errors.append(
                     sum(y_val_pred==y_val)/len(y_val_pred))
          # create figure obj 
-                     
+         
+        if scoring =='rmse': 
+            train_errors= np.sqrt(train_errors)
+            val_errors = np.sqrt(val_errors)
+            
+        if self.ylabel is None:
+            self.ylabel = scoring.upper()
+            if scoring =='accuracy': 
+                self.ylabel ='Score'
+                
+        if self.xlabel is None: 
+            self.xlabel = 'Training set size'
+            
         fig = plt.figure(figsize = self.fig_size)
         ax = fig.add_subplot(1,1,1) # create figure obj 
-    
+        
+        # set new attributes 
+        for nv, vv in zip(('vlc', 'vls'), ('b', ':')): 
+            if not hasattr(self, nv): 
+                setattr(self, nv, vv)
+            
         ax.plot(train_errors,
                 color = self.lc, 
                 linewidth = self.lw,
@@ -1604,9 +1648,9 @@ class MLPlots:
                 label = 'training set',
                 **self.plt_kws )
         ax.plot(val_errors,
-                color = 'b', 
+                color = self.vlc, 
                 linewidth = self.lw,
-                linestyle = '-' , 
+                linestyle = self.vls , 
                 label = 'validation set',
                 **self.plt_kws )
         

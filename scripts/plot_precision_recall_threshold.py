@@ -46,14 +46,15 @@ plot_kws = {'lw' :3.,           # line width
             'rc':'gray',           # recall color 
             'ps':'-',           # precision style 
             'rs':':',          # recall line style
-            'font_size':7.,
+            'font_size':8.,
             'show_grid' :True,        # visualize grid 
            'galpha' :0.2,              # grid alpha 
            'glw':.5,                   # grid line width 
            'gwhich' :'major',          # minor ticks
             # 'fs' :3.,                 # coeff to manage font_size 
             }
-leg_kws ={'loc':'upper right'}
+leg_kws ={'loc':'lower left',
+          'fontsize': 18.}
 mlObj= MLPlots(leg_kws=leg_kws, **plot_kws
                )
 # additional scikit_lean precision recall keywords arguments 

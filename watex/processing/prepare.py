@@ -72,6 +72,10 @@ class BasicSteps(object):
             
         Please refer to :doc:`watex.utils.transformers.CategorizeFeatures` 
         fot furthers details. 
+    hash: bool, 
+        If ``True``, it ensure that data will remain consistent accross 
+        multiple runs, even if dataset is refreshed. Use test by id to hash 
+        training and test sets when data is splitting. 
         
     add_attributes: bool, 
         Experience the combinaison <numerical> attributes. 
@@ -145,7 +149,8 @@ class BasicSteps(object):
                  imputer_strategy ='median', 
                  missing_values =np.nan, 
                  pipeline =None,
-                 test_size=0.2, 
+                 test_size=0.2,
+                 hash=False,
                  random_state=42,
                  verbose=0,
                  **kwargs):
@@ -161,7 +166,8 @@ class BasicSteps(object):
         self.imputer_strategy = imputer_strategy 
         self.missing_values = missing_values
         self.pipeline =pipeline 
-        self.test_size =test_size 
+        self.test_size =test_size
+        self.hash=hash
         self.random_state =random_state
         self.verbose =verbose
 
@@ -424,25 +430,31 @@ class BasicSteps(object):
         
         smsg =''
         
-        sObj= StratifiedWithCategoryAdder(base_num_feature=self.target, 
-                                          test_size= self.test_size, 
-                                          random_state = self.random_state,
-                                        return_train=self.return_train)
-        # return data with labels stratified
-        # func_signature = inspect.signature(sObj)
-        STRAT_PARAMS_VALUES = {k: v.default
-                for k, v in inspect.signature(sObj.__init__).parameters.items()
-                if v.default is not inspect.Parameter.empty
-            }
-        if self.verbose > 3 : 
-            
-            smsg =''.join([
-                f"Object {sObj.__class__.__name__!r} sucessffuly run",
-                f" to stratify data from base feature `{self.target}`. ",
-                f' Default arguments are: `{STRAT_PARAMS_VALUES}`'])
-            
-        _X , __X = sObj.fit_transform(X=data)
+        if not self.hash:
+            sObj= StratifiedWithCategoryAdder(base_num_feature=self.target, 
+                                              test_size= self.test_size, 
+                                              random_state = self.random_state,
+                                            return_train=self.return_train)
+            # return data with labels stratified
+            # func_signature = inspect.signature(sObj)
+            STRAT_PARAMS_VALUES = {k: v.default
+                    for k, v in inspect.signature(sObj.__init__).parameters.items()
+                    if v.default is not inspect.Parameter.empty
+                }
+            if self.verbose > 3 : 
+                
+                smsg =''.join([
+                    f"Object {sObj.__class__.__name__!r} sucessffuly run",
+                    f" to stratify data from base feature `{self.target}`. ",
+                    f' Default arguments are: `{STRAT_PARAMS_VALUES}`'])
+                
+            _X , __X = sObj.fit_transform(X=data)
         
+        if self.hash :
+            # ensure data to remain consistent even multiples runs.
+            # usefull pratice to always keep test set as unseen data.
+            _X , __X = MLU.split_train_test_by_id(data, 
+                                                  test_ratio=self.test_size)
         # make a copy to keep
         X, y = _X.drop(self.target, axis =1).copy(), _X[self.target].copy() 
         X_, y_ = __X.drop(self.target, axis =1).copy(), __X[self.target].copy()

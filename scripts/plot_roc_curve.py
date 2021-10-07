@@ -7,7 +7,6 @@ Created on Tue Sep 21 09:46:59 2021
 
 @author: @Daniel03
 """
-
 # from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC ,  LinearSVC 
@@ -51,6 +50,8 @@ plot_kws ={'fig_size':(8,8),
            'glw':.5,                   # grid line width 
            'gwhich' :'minor',           # minor ticks
             # 'fs' :3.,                   # coeff to manage font_size 
+            'leg_kws': {'loc':'lower right', 
+                        'fontsize':15.}
             }
 # classifiers with their methods are put into tuples. 
 # IF classifier name is set to None. Will find name automatically.
