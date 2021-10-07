@@ -44,9 +44,9 @@ The mission of toolbox is to bring a piece of solution in a wide program of   **
 
 Before taking advantage of WATex algorihms especially when dealing with Electrical Resistivity Profile(ERP)
 as well as the Vertical Electrical Sounding (VES) data, we need a few steps of data preparing. 
-ERP and VES data straighfordwarly collected from field MUST be referenced. An example to how to
-prepare ERP and VES data can be found in `data/geof_data` directory. If ERP and VES are in the same Excelworkbook in separed sheets,
- the `build` will separate each ERP and VES and keep the same location coordinate where the VES is done. 
+ERP and VES data straighforwardly collected from field MUST be referenced. An example to how to
+prepare ERP and VES data can be found in `data/geof_data` directory. If ERP and VES are in the same Excelworkbook with separed sheets,
+ the `build` will separate each ERP and VES and keep the same location coordinates where the VES is carried out. 
 ```
  $ watex build <raw data location directory>
  
