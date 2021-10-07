@@ -77,7 +77,7 @@ pca_kws =dict()
 # number of components axes 
 nAxes = 7 
 pc1_axis = 'Axis 1'
-pc2_axis ='Axis 8'
+pc2_axis ='Axis 2'
 #plot_key words arguments 
 plot_kws = {
             # 'lw' :3.,           # line width 

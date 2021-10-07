@@ -23,7 +23,7 @@ test_dataset =X
 # test set (Optional param). If given , will plot will plot test set data 
 test_testdata =stratified_test_set 
 
-# Cam regular plot by providing X for x-axis data and y for y-axis data 
+# Can regular plot by providing X for x-axis data and y for y-axis data 
 # x-axis 
 x=None 
 # y-axis data 
@@ -46,7 +46,9 @@ plot_props ={'lw' :3.,                  # line width
             'glw':.5,                   # grid line width 
             'rotate_xlabel' :90.,
             'fs' :3.,                   # coeff to manage font_size 
-            's' :None                   # manage the size of scatter point.
+            's' :None,                  # manage the size of scatter point.
+            'leg_kws': {'loc':'upper left', 
+                        'fontsize':15.}
                }
 
 # create MLPlots objects 
@@ -57,7 +59,7 @@ vis_kws = { 'trainlabel': 'Train set',
         'testlabel': 'Test set'}
 
 mlObj.visualizingGeographycalData(
-    X=test_dataset,
+    X=test_testdata,
     X_=test_testdata, 
     y=y, 
     x=x,

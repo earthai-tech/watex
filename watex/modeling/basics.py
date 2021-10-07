@@ -20,7 +20,7 @@ from sklearn.metrics import confusion_matrix #, classification_report
 # from sklearn.model_selection import GroupKFold 
 # from sklearn.metrics import mean_squared_error, f1_score 
 
-from .processing.basics import Processing #, d_estimators__ 
+from ..processing.basics import Processing #, d_estimators__ 
 from .. import hints 
 from ..utils._watexlog import watexlog 
 import  watex.utils.exceptions as Wex 

@@ -25,6 +25,7 @@ BAGOUE_TAGS= (
         'Bagoue analyses sets`', 
         'Bagoue pca sets',
         'Bagoue reduce dimension sets', 
+        'Bagoue untouched test sets'
                         )
 
 def fetch_data(param): 

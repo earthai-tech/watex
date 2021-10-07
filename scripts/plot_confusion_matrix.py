@@ -24,7 +24,7 @@ svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =random_state)
 cv =7 
 # plottype 
 
-plottype='error'      # can be 'map' or 'error'
+plottype='map'      # can be 'map' or 'error'
 # provide y label to force the mapshow to plot
 # the categoriss labels
 ylabel =['FR0', 'FR1', 'FR2', 'FR3'] # or None 

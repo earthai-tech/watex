@@ -463,9 +463,9 @@ def find_features_importances(fnames, components, n_axes=2):
     pc =list()
     if components.shape[0] < n_axes : 
         
-        warnings.warn(f'Retrieved axes {n_axes!r} no more than'
-                      f' {components.shape[0]!r}. Reset to'
-                      f'{components.shape[0]!r}', UserWarning)
+        warnings.warn(f"Retrieved axes {n_axes!r} no more than"
+                      f" {components.shape[0]!r}. Reset to"
+                      f"{components.shape[0]!r}", UserWarning)
         n_axes = int(components.shape[0])
     
     for i in range(n_axes): 
@@ -770,10 +770,10 @@ def pcaVarianceRatio(self,
                 color= self.lc, 
                 linewidth = self.lw,
                 linestyle = self.ls , 
-                label ='pca explained variance vs Ndimension')
+                label ='Explained variance vs Dimensions')
         
         if self.xlabel is None: 
-            self.xlabel ='Ndimensions'
+            self.xlabel ='Dimensions'
         if self.ylabel is None: 
             self.ylabel ='Explained Variance'
     
