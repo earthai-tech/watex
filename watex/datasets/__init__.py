@@ -14,6 +14,7 @@ from watex.datasets.config import (data,
                                  
 __logger = watexlog().get_watex_logger(__name__)
 
+
 BAGOUE_TAGS= (
         'Bagoue original', 
         'Bagoue stratified sets', 

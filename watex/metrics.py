@@ -27,8 +27,8 @@ _logger = watexlog().get_watex_logger(__name__)
 
 __all__=['precision_recall_tradeoff', 'ROC_curve', 'confusion_matrix_']
 
-class Metric(object):
-    """ Metric pseudo class.
+class Metrics(object):
+    """ Metrics pseudo class.
     
     Metrics are measures of quantitative assessment commonly used for 
     assessing, comparing, and tracking performance or production. Generally,
@@ -44,6 +44,7 @@ class Metric(object):
     def __init__(self): 
         setattr(self, 'metrics', tuple(metrics.SCORERS.keys()))
         
+    @property
     def get_metrics(self): 
         """ Get the list of scikit_learn metrics"""
         return getattr(self, 'metrics')
@@ -177,7 +178,7 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     if cross_val_pred_kws is None: 
         cross_val_pred_kws = dict()
         
-    self = Metric()#precision_recall_tradeoff
+    self = Metrics()#precision_recall_tradeoff
     
     self.y_scores = cross_val_predict(clf,X,y,cv =cv,
                                           method= method,
@@ -272,7 +273,7 @@ def ROC_curve( roc_kws=None, **tradeoff_kws):
         >>> rocObj.roc_auc_score 
         >>> rocObj.fpr
     """
-    self =Metric()
+    self =Metrics()
     obj= precision_recall_tradeoff(**tradeoff_kws)
     for key in obj.__dict__.keys():
         setattr(self, key, obj.__dict__[key])
@@ -358,7 +359,7 @@ def confusion_matrix_(clf, X, y,*, cv =7, plot_conf_max=False,
     #     }
     # parameters = [p.name for p in func_sig.parameters.values()
            # if p.name != 'self' and p.kind != p.VAR_KEYWORD]
-    self = Metric() #confusion_matrix_ 
+    self = Metrics() #confusion_matrix_ 
     for key in PARAMS_VALUES.keys(): 
         setattr(self, key, PARAMS_VALUES[key] )
         

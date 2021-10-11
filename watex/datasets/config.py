@@ -56,8 +56,8 @@ prepareObj =BasicSteps(data = data_fn,
                         hash=True
                         )
 data= prepareObj.data 
-X =prepareObj.X             # strafified training set 
-y =prepareObj.y             # stratified label 
+X =prepareObj.X.copy()             # strafified training set 
+y =prepareObj.y.copy()             # stratified label 
 
 prepareObj.fit_transform(X, y)
 # --> Data sanitize but keep categorical features not encoded.
@@ -68,6 +68,7 @@ y0= prepareObj.y0           # cleaning and attr combined label
 X_prepared = prepareObj.X_prepared  # Train Set prepared 
 y_prepared= prepareObj.y_prepared   # label encoded (prepared)
 _X = prepareObj._Xpd                # training categorical ordinal encoded features.
+
 _pipeline = prepareObj.pipeline 
 
 df0 = prepareObj._df0
@@ -79,7 +80,7 @@ XT = prepareObj.X_
 yT= prepareObj.y_
 # Another tricks to keep your test sets safe is to  use `dumpOrSerializeData` 
 # to keep your test site info a savefile for the first run like::
-#   >>> import numpy as np
+    
 #   >>> from watex.utils.ml_utils import dumpOrSerializeData
 #   >>> data=(XT, yT)
 #   >>> dumpOrSerializeData(data, filename ='__XTyT.pkl', to='joblib', 

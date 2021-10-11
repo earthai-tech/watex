@@ -1,7 +1,7 @@
 # WATex-AI: A special toolbox for WATer EXploration  using AI Learning methods
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
- ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4896758.svg)](https://doi.org/10.5281/zenodo.4896758) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/WEgeophysics/watex) ![GitHub repo size](https://img.shields.io/github/repo-size/WEgeophysics/watex?style=flat-square) ![GitHub issues](https://img.shields.io/github/issues/WEgeophysics/watex)
+ ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5560937.svg)](https://doi.org/10.5281/zenodo.5560937) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/WEgeophysics/watex) ![GitHub repo size](https://img.shields.io/github/repo-size/WEgeophysics/watex?style=flat-square) ![GitHub issues](https://img.shields.io/github/issues/WEgeophysics/watex)
 
 
 ## Overview
@@ -46,25 +46,14 @@ Before taking advantage of WATex algorihms especially when dealing with Electric
 as well as the Vertical Electrical Sounding (VES) data, we need a few steps of data preparing. 
 ERP and VES data straighfordwarly collected from field MUST be referenced. An example to how to
 prepare ERP and VES data can be found in `data/geof_data` directory. If ERP and VES are in the same Excelworkbook in separed sheets,
- the `build` will separate each ERP and VES and keep the same location coordinate where the VES is done. 
-```
- $ watex build <raw data location directory>
- 
-```
- A new directory `_anEX_` shoud be created with new built data. Once the `build` is sucessfully done, the geoelectrical 
+use the tool in  `read_from_excelsheets` and `write_excel` from `watex.utils.ml_utils` to separate each ERP and VES 
+by keeping the same location coordinate where the VES is done. 
+A new directory `_anEX_` shoud be created with new built data. Once the `build` is sucessfully done, the geoelectrical 
  features shoud be computed automatically. To have full control of your selected anomaly, the
  `lower`, `upper` (anomaly boundaries) and `se` or`ves|*|0` of selected anomaly should be specified on each 
- ERP survey line in Excelsheet (see `data/geof_data/XXXXXXX.csv`) then: 
-```
-$ watex compute-features <directory name>
+ ERP survey line in Excelsheet (see `data/geof_data/XXXXXXX.csv`) then  a new ExcelWorkbook `main.<name of survey area>.csv` shoud 
+ be created. Once the features' file is generated, now enjoy your End-to-End Machine Learning(ML) project with implemented algorithms.
 
-```
-A new ExcelWorkbook `main.<name of survey area>.csv` shoud be created. Once the features' file 
-is generated, now enjoy your End-to-End Machine Learning(ML) project with implemented algorithms.
-
-* **Notes** 
-    It's also possible to go step by step the aforementionned details by using the ML tools in package
-    `utils` especially the functions `read_from_excelsheets` and `write_excel`.
 
 ## Documentation 
 
