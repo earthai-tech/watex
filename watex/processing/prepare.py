@@ -383,7 +383,7 @@ class BasicSteps(object):
             # --> pipeline 
             self._X = self.pca_pipeline.fit_transform(self.X0)
             names = self.num_attributes_ + self.cat_attributes_
-            
+
             self._Xpd = pd.DataFrame(self._X, 
                                      columns =names )
         
@@ -455,12 +455,31 @@ class BasicSteps(object):
             # usefull pratice to always keep test set as unseen data.
             _X , __X = MLU.split_train_test_by_id(data, 
                                                   test_ratio=self.test_size)
+            if 'index' in list(_X.columns): 
+                self._logging.debug(
+                    '`index` used for hashing training and test sets  are '
+                    'still on the datasets. So should be droped to keep '
+                    'the dataset safe as original.')
+                
+                mes='`index` used for hashing training and test '+\
+                       ' sets should be droped.'
+                
+                _X = _X.drop('index', axis =1)
+                __X= __X.drop('index', axis=1)
+      
+                if self.verbose >1: 
+                    pprint(mes + '\nNew columns of mileages'
+                           f' are `{list(_X.columns)}`')
+
         # make a copy to keep
         X, y = _X.drop(self.target, axis =1).copy(), _X[self.target].copy() 
         X_, y_ = __X.drop(self.target, axis =1).copy(), __X[self.target].copy()
     
-        self.__X= __X.drop(self.target, axis =1).copy()
-        self.__y= __X[self.target].copy()
+        # self.__X= __X.drop(self.target, axis =1).copy()
+        # self.__y= __X[self.target].copy()
+        self.__X = X_.copy()
+        self.__y = y_.copy()
+        
         self.attribute_names_= X.columns 
         if self.verbose >1 : 
             

@@ -25,8 +25,8 @@ scoring ='rmse'
 # random_state 
 random_state =42 
 # base estimator. If baseeastimator is set, should replace the default estimator 
-baseEstimator = SVC(random_state=42)
-
+baseEstimator = my_model #SVC(random_state=42)
+#baseEstimator = SVC(C=100, coef0=1, degree=1, kernel='linear', random_state =random_state) 
 plot_kws = {'fig_size':(8, 12),
     'lc':(.9,0.,.8),
         'lw' :3.,           # line width 
@@ -38,7 +38,7 @@ plot_kws = {'fig_size':(8, 12),
         # 'fs' :3.,                 # coeff to manage font_size
         # 'xlabel':'Training set size', 
         # 'ylabel': 'RMSE'
-        # 'vls':'-',         # validation line style
+        'vls':'-',         # validation line style
         # 'vlc':'cyan'        # validation line color
         'leg_kws':{'loc':'upper right', 
                    'fontsize':18.}

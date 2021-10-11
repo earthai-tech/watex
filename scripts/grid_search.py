@@ -22,17 +22,18 @@ X_prepared, y_prepared =fetch_data('Bagoue data prepared')
 # set the SVM grid parameters 
 grid_params = [
         {'C':[1e-2, 1e-1, 1, 10, 100],
-         'gamma':[5, 2, 1, 1e-1, 1e-2, 1e-3],
-         'kernel':['rbf', 'poly'],
-         'degree':[1, 3,5, 7],
-         'coef0':[1, 2, 3]}, 
+          'gamma':[5, 2, 1, 1e-1, 1e-2, 1e-3],
+         'kernel':['linear', 'sigmoid', 'poly', 'rbf'],
+          'degree':[1, 3,5, 7],
+          'coef0':[1, 2, 3] 
+         }
         ]
-  
+#{'C': 100, 'coef0': 1, 'degree': 1, 'gamma': 0.01, 'kernel': 'rbf'}
 # forest_clf = RandomForestClassifier(random_state =42)
 # grid_search = SearchedGrid(forest_clf, grid_params, kind='RandomizedSearchCV')
 # grid_search.fit(X= X_prepared , y = y_prepared)
 
-cv =4
+cv =7
 
 # kind of search : can be `RandomizedSearch CV
 kindOfSearch = 'GridSearchCV'
@@ -45,7 +46,7 @@ svc_clf = SVC(random_state=42,
                 # C=10, gamma=1e-2, kernel ='poly', degree=7, coef0=2
               )
 # grid_ keywords arguments 
-grid_kws =dict()
+grid_kws ={'scoring':'accuracy'} #[-0.26763848]'neg_mean_squared_error'#
 grid_searchObj= GridSearch(svc_clf,
                            grid_params,
                            cv =cv, 
@@ -55,7 +56,10 @@ grid_searchObj= GridSearch(svc_clf,
 grid_searchObj.fit(X= X_prepared , y = y_prepared)
 
 pprint(grid_searchObj.best_params_ )
-# pprint(grid_search.cv_results_)
+# cvres = grid_searchObj.cv_results_ 
+# pprint(cvres)
+# pprint(cvres['mean_test_score'])
+
 # if your estimator has a `feature_importances_`attributes, call it by 
 # uncomment the section below. If return None, mean the estimator doesnt have 
 #a `feature_importances_` attributes. 
