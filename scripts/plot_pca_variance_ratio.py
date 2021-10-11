@@ -31,7 +31,7 @@ new_features =[
             # (0,3), 
             # (1,4), 
             # (0, 4),
-            (3,4),
+            # (3,4),
 
             ] #[(1, 0) , (3,2), (1,3),(0, 3), (0, 2), (2, 3)
                #] # divided values at index 1 to index0 and so on 
@@ -60,6 +60,8 @@ plot_kws = {'fig_size':(8, 12),
        'glw':.5,                   # grid line width 
        'gwhich' :'major',          # minor ticks
         # 'fs' :3.,                 # coeff to manage font_size 
+        'leg_kws': {'loc':'upper left', 
+                        'fontsize':15.}
         }
 mlObj =MLPlots(**plot_kws)
 

@@ -25,7 +25,8 @@ random_state =42
 # forest_clf =RandomForestClassifier(random_state=random_state)
 
 logreg_clf = LogisticRegression(random_state =random_state)
-svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =random_state) 
+svc_clf_lin = SVC(C=100, coef0=1, degree=1, kernel='linear', random_state =random_state) 
+svc_clf_rbf = SVC(C=100, gamma=1e-2, degree=1, kernel='rbf', random_state =random_state) 
 
 # trainset 
 trainset= X_prepared#X_train_2
@@ -55,8 +56,9 @@ plot_kws ={'fig_size':(8,8),
             }
 # classifiers with their methods are put into tuples. 
 # IF classifier name is set to None. Will find name automatically.
-clfs =[('SVM', svc_clf, "decision_function" ), 
-      ('Logistic regression', logreg_clf, "predict_proba")]
+clfs =[('SVM (kernel=RBF)', svc_clf_rbf, "decision_function" ), 
+      ('SVM (kernel=Linear)', svc_clf_lin, "decision_function"), 
+      ('Logistic regression', logreg_clf, 'predict_proba')]#"predict_proba"
     #  can be 
     #  clfs =[(None, sgd_clf, "decision_function" ), 
     #   (None, forest_clf, "predict_proba")]

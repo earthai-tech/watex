@@ -20,7 +20,7 @@ X_prepared, y_prepared = fetch_data('Bagoue dataset prepared')
 #cross validation Kfold 
 cv = 7
 # type of scores 
-scoring ='accuracy'#'neg_mean_squared_error'#'neg_mean_squared_error'#
+scoring ='neg_mean_squared_error'#accuracy'#'neg_mean_squared_error'#
 
 # random state for estimator s
 random_state =42 
@@ -43,7 +43,7 @@ plot_fineTune =False
 # once the best model found. save it to job lib
 gridParams =([
         {'C':[1e-2, 1e-1, 1, 10, 100], 'gamma':[5, 2, 1, 1e-1, 1e-2, 1e-3],'kernel':['rbf']}, 
-        {'kernel':['poly'],'degree':[1, 3,5, 7], 'coef0':[1, 2, 3], 'C': [1e-2, 1e-1, 1, 10, 100]}
+        {'kernel':['sigmoid'],'degree':[1, 3,5, 7], 'coef0':[1, 2, 3], 'C': [1e-2, 1e-1, 1, 10, 100]}
         ], 
         [{'C':[1e-2, 1e-1, 1, 10, 100], 'loss':['hinge']}], 
         [dict()],
