@@ -73,7 +73,7 @@ A new directory `_anEX_` shoud be created with new built data. Once the `build` 
 WATex-AI is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
 
 
-## System requirements :I
+## System requirements
 * Python 3.7+ 
 
 ## Contributors
