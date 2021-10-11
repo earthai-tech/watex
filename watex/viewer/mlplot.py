@@ -1791,7 +1791,109 @@ def appendLineParams(self, ax, xlim=None, ylim=None):
                     orientation =self.fig_orientation)  
         
     return self 
+
+def plot_matshow(self, matrix, x_label=None, y_label=None, **matshow_kws): 
+    """ Quick matrix visualization using matplotlib.pyplot.matshow.
     
+    Parameters
+    ----------
+    matrix: ndarray
+        matrix of n rowns and m-columns items 
+    matshow_kws: dict
+        Additional keywords arguments.
+        
+     ylabel: list 
+            list of labels names  to hold the name of each categories.
+    ylabel: list 
+       list of labels names  to hold the name of each categories.
+       
+    Example
+    -------
+    >>> import numpy as np
+    >>> import watex.viewer.plot.mlplot as WPL 
+    >>>     matshow_kwargs ={
+        'aspect': 'auto',
+        'interpolation': None 
+       'cmap':'copper_r', 
+            }
+    >>> plot_kws ={'lw':3, 
+               'lc':(.9, 0, .8), 
+               'font_size':15., 
+                'cb_format':None,
+                #'cb_label':'Rate of prediction',
+                'xlabel': 'Predicted flow classes',
+                'ylabel': 'Geological rocks',
+                'font_weight':None,
+                'tp_labelbottom':False,
+                'tp_labeltop':True,
+                'tp_bottom': False
+                }
+    >>> xlabel =['FR0', 'FR1', 'FR2', 'FR3', 'Rates'] 
+    >>> ylabel =['VOLCANO-SEDIM. SCHISTS', 'GEOSYN. GRANITES', 
+                 'GRANITES', '1.0', 'Rates']
+    >>> array = np.array([(1. , .5, 1. ,1., .9286), 
+                        (.5,  .8, 1., .667, .7692),
+                        (.7, .81, .7, .5, .7442),
+                        (.667, .75, 1., .75, .82),
+                        (.9091, 0.8064, .7, .8667, .7931)])
+    >>> mObj =WPL.MLPlots(**plot_kws)
+    >>> WPL.plot_matshow(mObj, array, x_label=xlabel, 
+                         y_label= ylabel, **matshow_kwargs)
+    """
+    # create figure obj 
+    fig = plt.figure(figsize = self.fig_size)
+    ax = fig.add_subplot(1,1,1)
+
+    cax = ax.matshow(matrix, 
+                     **matshow_kws) 
+
+    cbax= fig.colorbar(cax, **self.cb_props)
+    
+    if self.cb_label is None: 
+        self.cb_label=''
+    ax.set_xlabel( self.xlabel,
+          fontsize= self.font_size )
+    
+
+    if y_label is not None:
+        ax.set_yticks(np.arange(0, matrix.shape[1]))
+        ax.set_yticklabels(y_label)
+    if x_label is not None: 
+        ax.set_xticks(np.arange(0, matrix.shape[1]))
+        ax.set_xticklabels(x_label)
+        
+    if self.ylabel is None:
+        self.ylabel =''
+    if self.xlabel is None:
+        self.xlabel = ''
+    
+    ax.set_ylabel (self.ylabel,
+                   fontsize= self.font_size )
+    ax.tick_params(axis=self.tp_axis, 
+                    labelsize= self.font_size, 
+                    bottom=self.tp_bottom, 
+                    top=self.tp_top, 
+                    labelbottom=self.tp_labelbottom, 
+                    labeltop=self.tp_labeltop
+                    )
+    if self.tp_labeltop: 
+        ax.xaxis.set_label_position('top')
+    
+    cbax.ax.tick_params(labelsize=self.font_size ) 
+    cbax.set_label(label=self.cb_label,
+                   size=self.font_size,
+                   weight=self.font_weight)
+    
+    plt.xticks(rotation = self.rotate_xlabel)
+    plt.yticks(rotation = self.rotate_ylabel)
+  
+    plt.show ()
+    if self.savefig is not None :
+       plt.savefig(self.savefig,
+                   dpi=self.fig_dpi,
+                   orientation =self.fig_orientation)
+    return self  
+   
 if __name__=='__main__': 
 
     # from sklearn.linear_model import SGDClassifier

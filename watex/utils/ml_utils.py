@@ -30,9 +30,9 @@ VT=TypeVar('VT')
 
 DOWNLOAD_ROOT = 'https://github.com/WEgeophysics/watex/master/'
 #'https://zenodo.org/record/4896758#.YTWgKY4zZhE'
-DATA_PATH = 'data/tar.tgz_files'
-TGZ_FILENAME = '/bagoue.main&rawdata.tgz'
-CSV_FILENAME = 'main.bagciv.data.csv'#'_bagoue_civ_loc_ves&erpdata4.csv'
+DATA_PATH = 'BagoueCIV__dataset__main/__tar.tgz_files__'
+TGZ_FILENAME = '/___fmain.bagciv.data.tar.gz'
+CSV_FILENAME = '___fmain.bagciv.data.csv'#'_bagoue_civ_loc_ves&erpdata4.csv'
 
 DATA_URL = DOWNLOAD_ROOT + DATA_PATH  + TGZ_FILENAME
 

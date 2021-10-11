@@ -329,7 +329,7 @@ class Reducers:
         
         Notes
         ------
-        Scikit-Learn used the algorith based on Kernel
+        Scikit-Learn used the algorithm based on Kernel
              Ridge Regression
              
         Example
@@ -770,7 +770,7 @@ def pcaVarianceRatio(self,
                 color= self.lc, 
                 linewidth = self.lw,
                 linestyle = self.ls , 
-                label ='Explained variance vs Dimensions')
+                label ='Explained variance curve')
         
         if self.xlabel is None: 
             self.xlabel ='Dimensions'

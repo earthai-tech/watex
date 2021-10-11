@@ -30,7 +30,7 @@ svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =random_state)
 # kind of plots
 # precision vs recall  `'vsRecall'`
 # or  all (precision-recall VS thershold) --> kind ='vsthresholds'   
-kind ='vsRecall'
+kind ='vsthresholds'
 
 # K-Fold cross validation
 cv =7 
