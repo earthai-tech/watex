@@ -10,12 +10,13 @@ from sklearn.svm import SVC
 
 from watex.viewer.mlplot import MLPlots
 # modules below are imported for testing scripts.
-# Not usefull to import since you privied your own dataset.
+# Not usefull to import since you provided your own dataset.
 from watex.bases import fetch_model 
 from watex.datasets import fetch_data 
 #--------------Evaluate your model on the test data ------------------------------
 # from watex.datasets._m import XT_prepared, yT_prepared
-my_model, *_ = fetch_model('SVC__LinearSVC__LogisticRegression.pkl', modname ='SVC') 
+model_dumped_file = 'data/my_model/SVC__LinearSVC__LogisticRegression.pkl'
+my_model, *_ = fetch_model(model_dumped_file, modname ='SVC') 
 #---------------------------------------------------------------------------------
 X_prepared,  y_prepared = fetch_data('Bagoue prepared datasets')
 
