@@ -2,18 +2,29 @@
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Sep 15 11:39:43 2021 
 # This module is a set of datasets packages
 # released under a MIT- licence.
-
+import warnings
 from watex.utils._watexlog import watexlog
-from watex.datasets.config import (data,
-                                X, y,
-                                X0, y0, 
-                                X_prepared, y_prepared,
-                                XT, yT, 
-                                _X,_pipeline, 
-                                df0, df1)
-                                 
+from watex.utils.ml_utils import loadDumpedOrSerializedData
 __logger = watexlog().get_watex_logger(__name__)
 
+try:
+    from watex.datasets.config import (data,
+                                    X, y,
+                                    X0, y0,
+                                    XT, yT, 
+                                    X_prepared, y_prepared,
+                                    _X,_pipeline, 
+                                    df0, df1)
+except : 
+    
+    __logger.debug("None Config file detected. Be aware that you will not able "
+                   "implements the basics examples of the scripts or Basic "
+                    " steps of datapreparing!")
+    warnings.warn("None config file detected! Be aware you will not take into"
+                  " advantage of the basics steps thoughout the scripts. "
+                  " Future implementation will presume to fetch data "
+                  " automatically from repository or  from zenodo record.", 
+                  FutureWarning)
 
 BAGOUE_TAGS= (
         'Bagoue original', 
@@ -38,7 +49,7 @@ def fetch_data(param):
                       ' of area description, attributes and contest details.')
         
         return {'COL_NAMES': data.columns, 
-                'DESCR':'https://doi.org/10.5281/zenodo.4896758: bagoue-original',
+                'DESCR':'https://doi.org/10.5281/zenodo.5560937: bagoue-original',
                 'data': data.values, 
                 'data=df':data, 
                 'data=dfy1':df1, 
@@ -59,8 +70,10 @@ def fetch_data(param):
     
     elif param.lower().find('prepared')>=0:
         __logger.info('Fetching the prepared data `X` and `y`')
-        
-        return X_prepared, y_prepared 
+        Xp, yp= loadingdefaultSerializedData ('watex/datasets/__Xy.pkl',
+                                              (X_prepared, y_prepared),
+                                              dtype='prepared training' )
+        return Xp, yp
     
     elif param.lower().find('semi-')>=0 or param.lower().find('fit')>=0 or \
         param.lower().find('mid-')>=0 or param.lower().find('preprocess')>=0: 
@@ -71,7 +84,9 @@ def fetch_data(param):
     elif param.lower().find('test set')>=0  or param.lower().find('x test')>=0: 
         __logger.info('Fetching the stratified test set `X` and `y`')
         
-        return XT, yT
+        XT0, yT0= loadingdefaultSerializedData ('watex/datasets/__XTyT.pkl',
+                                              (XT, yT), dtype='test' )
+        return XT0, yT0
     
     elif param.lower().find('pipeline')>=0:
         __logger.info('Fetching the transformer pipeline =`defaultPipeline`')
@@ -93,6 +108,29 @@ def fetch_data(param):
                                 format_generic_obj (BAGOUE_TAGS)).format(
                                     *list(BAGOUE_TAGS)))
     
+def loadingdefaultSerializedData (f, d0, dtype ='test'): 
+    """ Retrive Bagoue data from dumped or Serialized file.
+    :param f: str or Path-Like obj 
+        Dumped or Serialized default data 
+    :param d0: tuple 
+        Return default returns wich is the data from config 
+        <./datasets/config.py > 
+    :param dtype:str 
+        Type of data to retreive.
+    """
+    load_source ='Serialized'
+    try : 
+        X, y= loadDumpedOrSerializedData(f)
+    except : 
+        __logger.info(f"Fetching data from {load_source!r} source failed. "
+                       " We try `Config` loading source...")
+        load_source='Config'
+        X, y =d0
+        
+    __logger.info(f"Loading the {dtype} data from <{load_source}>"
+                  "successfuly done!")
+    
+    return X, y
 
 
 fetch_data.__doc__ +="""\
