@@ -8,7 +8,7 @@
 from sklearn.preprocessing import LabelEncoder 
 # from watex.processing.prepare import BasicSteps  
 from watex.datasets import  fetch_data 
-from watex.utils.ml_utils import loadDumpedOrSerializedData
+# from watex.utils.ml_utils import loadDumpedOrSerializedData
 from watex.processing.transformers import CategorizeFeatures
 
 __all__=['XT_prepared', 'yT_prepared']
@@ -17,7 +17,6 @@ __all__=['XT_prepared', 'yT_prepared']
 # XT, yT = fetch_data ('Bagoue untouched test sets')
 _pipeline = fetch_data('Bagoue default pipeline') 
 
-XT, yT = loadDumpedOrSerializedData('watex/datasets/__XTyT.pkl')
 XT, yT =fetch_data("Bagoue untouched test sets")    
 
 feature_props_to_categorize =[
