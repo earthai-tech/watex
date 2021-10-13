@@ -267,13 +267,8 @@ def exportdf (df =None, refout:str =None,  to:str =None, savepath:str =None,
         
     return df_, to,  refout, savepath, reset_index 
 
-# #--------------Evaluate your model on the test data ------------------------------
-# my_model, *_ = fetch_model('SVC__LinearSVC__LogisticRegression.pkl', modname ='SVC') 
-# #---------------------------------------------------------------------------------
-
-def _pred_statistics(y_true,  y_pred=None, X_=None, X=None,
-                     clf:Callable[..., T]=None, from_c ='geol',
-                      drop_columns =None, columns=None, verbose:int=0): 
+def predict(y_true,  y_pred=None,*,  X_=None, clf:Callable[..., T]=None,
+            verbose:int=0): 
     """ Make a quick statistic after prediction. 
     
     :param y_true: array-like 
@@ -305,22 +300,18 @@ def _pred_statistics(y_true,  y_pred=None, X_=None, X=None,
         # check whether is 
         is_clf = hasattr(clf, '__call__')
         if is_clf : clf_name = clf.__name__
-
         if not is_clf :
             # try whether is ABCMeta class 
             try : 
                 is_clf = hasattr(clf.__class__, '__call__')
             except : 
-                raise TypeError(f"{clf!r} is not a model classifier or estimator. "
+                raise TypeError(f"{clf!r} is not a model estimator. "
                                  " Could not use for prediction.")
             clf_name = clf.__class__.__name__
-        
             # check estimator 
-            
         if X_ is None: 
             raise TypeError('NoneType can not used for prediction.'
                             ' Need a test set `X`.')
-  
         clf.fit(X_, y_true)
         y_pred = clf.predict(X_)
         
@@ -336,16 +327,17 @@ def _pred_statistics(y_true,  y_pred=None, X_=None, X=None,
     from sklearn.metrics import confusion_matrix , mean_squared_error
     
     conf_mx =confusion_matrix(y_true, y_pred)
-    dms +=f"\n Confusion matrix= \n {conf_mx}"
+    if verbose >1:
+        dms +=f"\n Confusion matrix= \n {conf_mx}"
     mse = mean_squared_error(y_true, y_pred )
-    dms += f"\n MSE error = {mse *100} %."
 
+    dms += f"\n MSE error = {mse }."
+    pprint(dms)
     # make a statistic with the selectect columns 
-    statistics = _stats(X, y_true,y_pred=y_pred, from_c =from_c,
-                        drop_columns =drop_columns, columns=columns)
-    
-    
-    return statistics
+    # statistics = _stats(X, y_true,y_pred=y_pred, from_c =from_c,
+    #                     drop_columns =drop_columns, columns=columns)
+
+    return clf_score, mse 
     
 def _stats (X_, y_true,*, y_pred, from_c ='geol', drop_columns =None, columns=None )  : 
     
@@ -353,7 +345,6 @@ def _stats (X_, y_true,*, y_pred, from_c ='geol', drop_columns =None, columns=No
         raise TypeError(f"{from_c!r} not found in columns "
                         "name ={list(X_.columns)}")
         
-    
     if columns is not None:
         if not isinstance(columns, (tuple, list, np.ndarray)): 
             raise TypeError(f'Columns should be a list not {type(columns)}')

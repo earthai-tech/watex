@@ -8,14 +8,16 @@
 from sklearn.preprocessing import LabelEncoder 
 # from watex.processing.prepare import BasicSteps  
 from watex.datasets import  fetch_data 
+# from watex.utils.ml_utils import loadDumpedOrSerializedData
 from watex.processing.transformers import CategorizeFeatures
 
 __all__=['XT_prepared', 'yT_prepared']
 
 # fetch test data and default pipeline used to prepared training set.
-XT, yT = fetch_data ('Bagoue untouched test sets')
+# XT, yT = fetch_data ('Bagoue untouched test sets')
 _pipeline = fetch_data('Bagoue default pipeline') 
 
+XT, yT =fetch_data("Bagoue untouched test sets")    
 
 feature_props_to_categorize =[
     ('flow', ([0., 1., 3.], ['FR0', 'FR1', 'FR2', 'FR3']))
@@ -27,6 +29,7 @@ cObj = CategorizeFeatures(
                    num_columns_properties=feature_props_to_categorize)
 y = cObj.fit_transform(X=yT__)
 yT_prepared =LabelEncoder ().fit_transform(y)  
+
 
 # if test data are serialized or dumped , you can loaed file using 
 # `loadDumpedOrSerializedData` like: 

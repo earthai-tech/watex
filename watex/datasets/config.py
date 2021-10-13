@@ -53,7 +53,7 @@ prepareObj =BasicSteps(data = data_fn,
                         target=target, 
                         add_attributes = add_attributes, 
                         attributes_ix = attributesIndexes, 
-                        hash=True
+                        hash=False
                         )
 data= prepareObj.data 
 X =prepareObj.X.copy()             # strafified training set 
@@ -80,8 +80,10 @@ XT = prepareObj.X_
 yT= prepareObj.y_
 # Another tricks to keep your test sets safe is to  use `dumpOrSerializeData` 
 # to keep your test site info a savefile for the first run like::
-    
-#   >>> from watex.utils.ml_utils import dumpOrSerializeData
-#   >>> data=(XT, yT)
-#   >>> dumpOrSerializeData(data, filename ='__XTyT.pkl', to='joblib', 
-#                          savepath='watex/datasets')
+# from watex.utils.ml_utils import dumpOrSerializeData
+# data=(XT, yT)
+# train_data =(X_prepared,y_prepared )
+# dumpOrSerializeData(data, filename ='__XTyT.pkl', to='joblib', 
+#                           savepath='watex/datasets')
+# dumpOrSerializeData(train_data, filename ='__Xy.pkl', to='joblib', 
+#                           savepath='watex/datasets')
