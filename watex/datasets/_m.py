@@ -18,6 +18,7 @@ __all__=['XT_prepared', 'yT_prepared']
 _pipeline = fetch_data('Bagoue default pipeline') 
 
 XT, yT = loadDumpedOrSerializedData('watex/datasets/__XTyT.pkl')
+XT, yT =fetch_data("Bagoue untouched test sets")    
 
 feature_props_to_categorize =[
     ('flow', ([0., 1., 3.], ['FR0', 'FR1', 'FR2', 'FR3']))
