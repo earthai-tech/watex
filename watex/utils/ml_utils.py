@@ -28,7 +28,7 @@ T= TypeVar('T')
 KT=TypeVar('KT')
 VT=TypeVar('VT')
 
-DOWNLOAD_ROOT = 'https://github.com/WEgeophysics/watex/master/'
+DOWNLOAD_ROOT = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/'
 # from Zenodo: 'https://zenodo.org/record/5560937#.YWQBOnzithE'
 DATA_PATH = 'data/__tar.tgz'  # 'BagoueCIV__dataset__main/__tar.tgz_files__'
 TGZ_FILENAME = '/fmain.bagciv.data.tar.gz'
@@ -80,8 +80,8 @@ def write_excel(listOfDfs: Iterable[VT], csv:bool =False , sep:T =','):
                 df.to_excel(writer, index=False)
     
    
-def fetch_geo_data (data_url:str = DATA_URL, data_path:str =DATA_PATH,
-                    tgz_filename =TGZ_FILENAME ) -> Text: 
+def fetchGeoDATA (data_url:str = DATA_URL, data_path:str =DATA_PATH,
+                    tgz_filename =TGZ_FILENAME) -> Text: 
     """ Fetch data from data repository in zip of 'targz_file. 
     
     I will create a `datasets/data` directory in your workspace, downloading
@@ -93,13 +93,96 @@ def fetch_geo_data (data_url:str = DATA_URL, data_path:str =DATA_PATH,
     """
     if not os.path.isdir(data_path): 
         os.makedirs(data_path)
+
     tgz_path = os.path.join(data_url, tgz_filename.replace('/', ''))
-    
     urllib.request.urlretrieve(data_url, tgz_path)
     data_tgz = tarfile.open(tgz_path)
     data_tgz.extractall(path = data_path )
     data_tgz.close()
     
+def fetchTGZDatafromURL (data_url:str =DATA_URL, data_path:str =DATA_PATH,
+                    tgz_file=TGZ_FILENAME, file_to_retreive=None, **kws): 
+    """ Fetch data from data repository in zip of 'targz_file. 
+    
+    I will create a `datasets/data` directory in your workspace, downloading
+     the `~.tgz_file and extract the `data.csv` from this directory.
+    
+    :param data_url: url to the datafilename where `tgz` filename is located  
+    :param data_path: absolute path to the `tgz` filename 
+    :param filename: `tgz` filename. 
+    """
+    if data_url is not None: 
+        
+        tgz_path = os.path.join(data_path, tgz_file.replace('/', ''))
+        try: 
+            urllib.request.urlretrieve(data_url, tgz_path)
+        except urllib.URLError: 
+            print("<urlopen error [WinError 10061] No connection could "
+                  "be made because the target machine actively refused it>")
+        except ConnectionError or ConnectionRefusedError: 
+            print("Connection failed!")
+        except: 
+            print("Unable to fetch {tgz_file} from <{git_url!r}>")
+            
+        return False 
+    
+    if file_to_retreive is not None: 
+        f= fetchSingleTGZData(filename=file_to_retreive, **kws)
+        
+    return f
+
+def fetchSingleTGZData(tgz_file, filename='___fmain.bagciv.data.csv',
+                         savefile='data/geo_fdata', rename_outfile=None ):
+    """ Fetch single file from archived tar file and rename a file if possible.
+    
+    :param tgz_file: str or Parh-Like obj 
+        Full path to tarfile. 
+    :param filename:str 
+        Tagert  file to fetch from the tarfile.
+    :savefile:str or Parh-like obj 
+        Destination path to save the retreived file. 
+    :param rename_outfile:str or Path-like obj
+        Name of of the new file to replace the fetched file.
+    :return: Location of the fetched file
+    :Example: 
+        >>> from watex.utils.ml_utils import fetchSingleTGZData
+        >>> fetchSingleTGZData('data/__tar.tgz/fmain.bagciv.data.tar.gz', 
+                               rename_outfile='main.bagciv.data.csv')
+    """
+     # get the extension of the fetched file 
+    fetch_ex = os.path.splitext(filename)[1]
+    def retreive_main_member (tarObj): 
+        """ Retreive only the main member that contain the target filename."""
+        for tarmem in tarObj.getmembers():
+            if os.path.splitext(tarmem.name)[1]== fetch_ex: #'.csv': 
+                return tarmem 
+            
+    if not os.path.isfile(tgz_file):
+        raise FileNotFoundError(f"Source {tgz_file!r} is a wrong file.")
+   
+    with tarfile.open(tgz_file) as tar_ref:
+        tar_ref.extractall(members=[retreive_main_member(tar_ref)])
+        tar_name = [ name for name in tar_ref.getnames()
+                    if name.find(filename)>=0 ][0]
+        shutil.move(tar_name, savefile)
+        # for consistency ,tree to check whether the tar info is 
+        # different with the collapse file 
+        if tar_name != savefile : 
+            # print(os.path.join(os.getcwd(),os.path.dirname(tar_name)))
+            _fol = tar_name.split('/')[0]
+            shutil.rmtree(os.path.join(os.getcwd(),_fol))
+        # now rename the file to the 
+        if rename_outfile is not None: 
+            os.rename(os.path.join(savefile, filename), 
+                      os.path.join(savefile, rename_outfile))
+        if rename_outfile is None: 
+            rename_outfile =os.path.join(savefile, filename)
+            
+        print(f"{os.path.join(savefile, rename_outfile)!r} was successfully"
+              f" decompressed  from {os.path.basename(tgz_file)!r}"
+              "and saved to {savefile!r}")
+        
+    return os.path.join(savefile, rename_outfile)
     
 def load_data (data_path:str = DATA_PATH,
                filename:str =CSV_FILENAME, sep =',' )-> Generic[VT]:

@@ -2,19 +2,29 @@
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Sep 15 11:39:43 2021 
 # This module is a set of datasets packages
 # released under a MIT- licence.
-
+import warnings
 from watex.utils._watexlog import watexlog
 from watex.utils.ml_utils import loadDumpedOrSerializedData
-from watex.datasets.config import (data,
-                                X, y,
-                                X0, y0,
-                                XT, yT, 
-                                X_prepared, y_prepared,
-                                _X,_pipeline, 
-                                df0, df1)
-
 __logger = watexlog().get_watex_logger(__name__)
 
+try:
+    from watex.datasets.config import (data,
+                                    X, y,
+                                    X0, y0,
+                                    XT, yT, 
+                                    X_prepared, y_prepared,
+                                    _X,_pipeline, 
+                                    df0, df1)
+except : 
+    
+    __logger.debug("None Config file detected. Be aware that you will not able "
+                   "implements the basics examples of the scripts or Basic "
+                    " steps of datapreparing!")
+    warnings.warn("None config file detected! Be aware you will not take into"
+                  " advantage of the basics steps thoughout the scripts. "
+                  " Future implementation will presume to fetch data "
+                  " automatically from repository or  from zenodo record.", 
+                  FutureWarning)
 
 BAGOUE_TAGS= (
         'Bagoue original', 
@@ -39,7 +49,7 @@ def fetch_data(param):
                       ' of area description, attributes and contest details.')
         
         return {'COL_NAMES': data.columns, 
-                'DESCR':'https://doi.org/10.5281/zenodo.4896758: bagoue-original',
+                'DESCR':'https://doi.org/10.5281/zenodo.5560937: bagoue-original',
                 'data': data.values, 
                 'data=df':data, 
                 'data=dfy1':df1, 
