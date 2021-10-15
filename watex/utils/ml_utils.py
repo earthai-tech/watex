@@ -122,7 +122,8 @@ def fetchTGZDatafromURL (data_url:str =DATA_URL, data_path:str =DATA_PATH,
         except ConnectionError or ConnectionRefusedError: 
             print("Connection failed!")
         except: 
-            print("Unable to fetch {tgz_file} from <{git_url!r}>")
+            print(f"Unable to fetch {os.path.basename(tgz_file)!r}"
+                  f" from <{data_url}>")
             
         return False 
     
@@ -135,7 +136,7 @@ def fetchSingleTGZData(tgz_file, filename='___fmain.bagciv.data.csv',
                          savefile='data/geo_fdata', rename_outfile=None ):
     """ Fetch single file from archived tar file and rename a file if possible.
     
-    :param tgz_file: str or Parh-Like obj 
+    :param tgz_file: str or Path-Like obj 
         Full path to tarfile. 
     :param filename:str 
         Tagert  file to fetch from the tarfile.
@@ -151,6 +152,9 @@ def fetchSingleTGZData(tgz_file, filename='___fmain.bagciv.data.csv',
     """
      # get the extension of the fetched file 
     fetch_ex = os.path.splitext(filename)[1]
+    if not os.path.isdir(savefile):
+        os.makedirs(savefile)
+    
     def retreive_main_member (tarObj): 
         """ Retreive only the main member that contain the target filename."""
         for tarmem in tarObj.getmembers():
@@ -178,9 +182,9 @@ def fetchSingleTGZData(tgz_file, filename='___fmain.bagciv.data.csv',
         if rename_outfile is None: 
             rename_outfile =os.path.join(savefile, filename)
             
-        print(f"{os.path.join(savefile, rename_outfile)!r} was successfully"
-              f" decompressed  from {os.path.basename(tgz_file)!r}"
-              "and saved to {savefile!r}")
+        print(f"---> {os.path.join(savefile, rename_outfile)!r} was "
+              f" successfully decompressed from {os.path.basename(tgz_file)!r}"
+              f"and saved to {savefile!r}")
         
     return os.path.join(savefile, rename_outfile)
     
@@ -509,8 +513,7 @@ def loadDumpedOrSerializedData (filename:str):
         
     if not os.path.isfile(filename): 
         raise FileExistsError(f"File {filename!r} does not exist.")
-        
-    dumped_type =''
+
     _filename = os.path.basename(filename)
     __logger.info(f"Loading data from `{_filename}`!")
    
@@ -519,8 +522,6 @@ def loadDumpedOrSerializedData (filename:str):
         data= joblib.load(filename)
         __logger.info(''.join([f"Data from {_filename !r} are sucessfully", 
                       " loaded using ~.externals.joblib`!"]))
-        
-        dumped_type ='joblib'
     except : 
         __logger.info(
             ''.join([f"Nothing to reload. It's seems data from {_filename!r}", 
@@ -529,16 +530,15 @@ def loadDumpedOrSerializedData (filename:str):
         # Try DeSerializing using pickle module
         with open(filename, 'rb') as tod: 
             data= pickle.load (tod)
+            
         __logger.info(f"Data from `{_filename!r} are well"
                       " deserialized using Python pickle module.`!")
-        dumped_type ='pickle'
         
     is_none = data is None
     if is_none: 
         print("Unable to deserialize data. Please check your file.")
     
-    else : print(f"Data from {_filename} have been reloaded sucessfully  "
-          f"using <{dumped_type}> module.")
+    else : print(f"Data from {_filename} have been sucessfully reloaded.")
     
     return data 
 

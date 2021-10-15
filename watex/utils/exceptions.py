@@ -99,3 +99,5 @@ class WATexError_geoFeatures(Exception):
 class WATexError_datasets(Exception):
     pass 
 
+class WATexExtractionError(Exception): 
+    pass 

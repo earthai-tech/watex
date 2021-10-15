@@ -1,7 +1,7 @@
 # WATex-AI: A special toolbox for WATer EXploration  using AI Learning methods
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
- ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5560937.svg)](https://doi.org/10.5281/zenodo.5560937) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/WEgeophysics/watex) ![GitHub repo size](https://img.shields.io/github/repo-size/WEgeophysics/watex?style=flat-square) ![GitHub issues](https://img.shields.io/github/issues/WEgeophysics/watex)
+ ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square) ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5571534.svg)](https://doi.org/10.5281/zenodo.5571534) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/WEgeophysics/watex) ![GitHub repo size](https://img.shields.io/github/repo-size/WEgeophysics/watex?style=flat-square) ![GitHub issues](https://img.shields.io/github/issues/WEgeophysics/watex)
 
 
 ## Overview
