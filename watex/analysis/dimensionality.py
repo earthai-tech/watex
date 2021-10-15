@@ -30,9 +30,10 @@ __all__ = ['Reducers', 'pcaVarianceRatio' ]
 class Reducers: 
     """ Reduce dimension for data visualisation.
     
-    Reduce number of dimension down to two (or to three) make  it possible 
-    to plot high-dimension training set on the graph and often gain some 
-    important insights by visually detecting patterns, such as clusters.
+    Reduce number of dimension down to two (or to three) for instance, make  
+    it possible to plot high-dimension training set on the graph and often
+    gain some important insights by visually detecting patterns, such as 
+    clusters.
     
     Parameters
     ----------
@@ -58,7 +59,7 @@ class Reducers:
                 variance ratio to preserve. If ``None`` as default value 
                 the number of variance to preserve is ``95%``.
         :param plot_projection: Plot the explained varaince as a function 
-        of number of dimension. Deafualt is``False``.
+        of number of dimension. Default is``False``.
         
         :param n_axes: Number of importance components to retrieve the 
             variance ratio. If ``None`` the features importance is computed 
@@ -69,8 +70,9 @@ class Reducers:
         :Example: 
             
             >>> from watex.analysis.dimensionality import Reducers
-            >>> from .datasets.data_preparing import X_train_2
-            >>> DimensionReduction().PCA(X_train_2, 0.95, n_axes =3)
+            >>> from watex.datasets import fetch_data
+            >>> X, _= fetch_data('Bagoue analysis dataset')
+            >>> Reducers().PCA(X, 0.95, n_axes =3)
             >>> pca.components_
             >>> pca.features_importances_
         """
