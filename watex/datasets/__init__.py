@@ -134,7 +134,6 @@ def loadingdefaultSerializedData (f, d0, dtype ='test'):
 def _pca_set_checker (param):
     for ix in ['analys', 'pca', 'dim','reduc']: 
         if ix in param.lower():return True 
-        
     return False 
         
 fetch_data.__doc__ +="""\
