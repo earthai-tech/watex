@@ -151,3 +151,7 @@ SVC__LinearSVC__LogisticRegression.pkl
 # ignore the useless __init__.py 
 watex/__init__.py 
 untitled2.py
+
+# ignore beka datafiles 
+data/beka/
+beka.py

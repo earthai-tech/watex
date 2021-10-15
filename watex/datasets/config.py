@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent,Thu Sep 23 16:19:52 2021
 # automate datapreparation.
+import os 
 
+from watex.datasets.property import fetchDataFromLocalandWeb
 from watex.processing.prepare import BasicSteps 
 
 __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
@@ -11,6 +13,8 @@ __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
 
 # path to dataset 
 data_fn ='data/geo_fdata/main.bagciv.data.csv'
+if not os.path.isfile(data_fn): 
+    data_fn= fetchDataFromLocalandWeb()
 #-------------------------------------------------------------------------
 # target or label name. 
 target ='flow'
@@ -78,12 +82,16 @@ df1 = prepareObj._df1
 # test set stratified data. Untouchable unless the best model is found.
 XT = prepareObj.X_
 yT= prepareObj.y_
+
 # Another tricks to keep your test sets safe is to  use `dumpOrSerializeData` 
 # to keep your test site info a savefile for the first run like::
-# from watex.utils.ml_utils import dumpOrSerializeData
-# data=(XT, yT)
-# train_data =(X_prepared,y_prepared )
-# dumpOrSerializeData(data, filename ='__XTyT.pkl', to='joblib', 
-#                           savepath='watex/datasets')
-# dumpOrSerializeData(train_data, filename ='__Xy.pkl', to='joblib', 
-#                           savepath='watex/datasets')
+from watex.utils.ml_utils import dumpOrSerializeData
+if not os.path.isfile ('watex/datasets/__Xy.pkl'): 
+    train_data =(X_prepared,y_prepared )
+    dumpOrSerializeData(data, filename ='__Xy.pkl', to='joblib', 
+                              savepath='watex/datasets')
+if not os.path.isfile('watex/datasets/__XTyT.pkl'): 
+    test_data=(XT, yT)
+    dumpOrSerializeData(test_data, filename ='__XTyT.pkl', to='joblib', 
+                          savepath='watex/datasets')
+    

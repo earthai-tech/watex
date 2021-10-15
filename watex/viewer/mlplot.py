@@ -518,13 +518,14 @@ class MLPlots:
             
         # prepared defaults colors and defaults markers 
         y_palettes = plot_dict ['y_colors']
-        if len(y_palettes) > len(y_classes): 
-            # reduce the last colors 
-            y_palettes =y_palettes[:len(y_classes)]
-        if len(y_palettes) < len(y_classes): 
-            # add black colors  by default
-            y_palettes += ['k' for k in range(
-                len(y_classes) - len(y_palettes))]
+        if y_classes  is not None:
+            if len(y_palettes) > len(y_classes): 
+                # reduce the last colors 
+                y_palettes =y_palettes[:len(y_classes)]
+            if len(y_palettes) < len(y_classes): 
+                # add black colors  by default
+                y_palettes += ['k' for k in range(
+                    len(y_classes) - len(y_palettes))]
             
 
         # --Plot Biplot
@@ -1811,7 +1812,7 @@ def plot_matshow(self, matrix, x_label=None, y_label=None, **matshow_kws):
     -------
     >>> import numpy as np
     >>> import watex.viewer.plot.mlplot as WPL 
-    >>>     matshow_kwargs ={
+    >>>  matshow_kwargs ={
         'aspect': 'auto',
         'interpolation': None 
        'cmap':'copper_r', 
