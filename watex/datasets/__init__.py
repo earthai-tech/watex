@@ -49,7 +49,7 @@ def fetch_data(param):
                       ' of area description, attributes and contest details.')
         
         return {'COL_NAMES': data.columns, 
-                'DESCR':'https://doi.org/10.5281/zenodo.5560937: bagoue-original',
+                'DESCR':'https://doi.org/10.5281/zenodo.5571534: bagoue-original',
                 'data': data.values, 
                 'data=df':data, 
                 'data=dfy1':df1, 
@@ -93,8 +93,7 @@ def fetch_data(param):
 
         return _pipeline
     
-    elif ('analys' or 'pca' or 'dim' or 'reduc') in param.lower():
-
+    elif _pca_set_checker(param.lower()):
         __logger.info('Fetching the data for analyses. Text attributes'
                       ' are ordinarily encoded to numerical categories.')
         return _X, y_prepared 
@@ -132,7 +131,11 @@ def loadingdefaultSerializedData (f, d0, dtype ='test'):
     
     return X, y
 
-
+def _pca_set_checker (param):
+    for ix in ['analys', 'pca', 'dim','reduc']: 
+        if ix in param.lower():return True 
+    return False 
+        
 fetch_data.__doc__ +="""\
 Parameters
 ----------
@@ -166,6 +169,8 @@ Returns
         using Ordianal Encoder.  
     `_pipeline`: the default pipeline. 
 """
+
+
 # from .data_preparing import bagdataset as data  
 # from .data_preparing import bagoue_train_set_prepared as TRAINSET_PREPARED 
 # from .data_preparing import bagoue_label_encoded as TRAINSET_LABEL_ENCODED 
