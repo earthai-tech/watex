@@ -1,6 +1,8 @@
 import os 
 import sys 
 
+__version__='0.1'
+
 if __name__ =='__main__' or __package__ is None: 
     sys.path.append( os.path.dirname(os.path.dirname(__file__)))
     sys.path.insert(0, os.path.dirname(__file__))

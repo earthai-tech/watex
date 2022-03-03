@@ -3,8 +3,9 @@
 # automate datapreparation.
 import os 
 
-from watex.datasets.property import fetchDataFromLocalandWeb
-from watex.processing.prepare import BasicSteps 
+from .property import fetchDataFromLocalandWeb
+from ..processing import BasicSteps 
+from ..utils.ml_utils import dumpOrSerializeData
 
 __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
           'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1',
@@ -85,7 +86,7 @@ yT= prepareObj.y_
 
 # Another tricks to keep your test sets safe is to  use `dumpOrSerializeData` 
 # to keep your test site info a savefile for the first run like::
-from watex.utils.ml_utils import dumpOrSerializeData
+
 if not os.path.isfile ('watex/datasets/__Xy.pkl'): 
     train_data =(X_prepared,y_prepared )
     dumpOrSerializeData(data, filename ='__Xy.pkl', to='joblib', 

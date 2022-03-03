@@ -99,7 +99,7 @@ def fetch_model(modelfile:str, modelpath:str =None, default:bool=True,
 
     isfile = os.path.isfile(modelfile)
     if not isfile: 
-        raise FileNotFoundError ("File {modelfile!r} not found!")
+        raise FileNotFoundError (f"File {modelfile!r} not found!")
         
     from_joblib =False 
     if modelfile.endswith('.pkl'): from_joblib  =True 
@@ -339,7 +339,10 @@ def predict(y_true,  y_pred=None,*,  X_=None, clf:Callable[..., T]=None,
 
     return clf_score, mse 
     
-def _stats (X_, y_true,*, y_pred, from_c ='geol', drop_columns =None, columns=None )  : 
+def _stats (X_, y_true,*, y_pred,
+            from_c ='geol', 
+            drop_columns =None, 
+            columns=None )  : 
     
     if from_c not in X_.columns: 
         raise TypeError(f"{from_c!r} not found in columns "
@@ -397,37 +400,4 @@ def _stats (X_, y_true,*, y_pred, from_c ='geol', drop_columns =None, columns=No
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # return clf_score, conf_mx  
         

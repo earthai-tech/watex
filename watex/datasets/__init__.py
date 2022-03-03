@@ -4,7 +4,7 @@
 # released under a MIT- licence.
 import warnings
 from watex.utils._watexlog import watexlog
-from watex.utils.ml_utils import loadDumpedOrSerializedData
+from ..utils.ml_utils import loadDumpedOrSerializedData
 __logger = watexlog().get_watex_logger(__name__)
 
 try:
@@ -18,7 +18,7 @@ try:
 except : 
     
     __logger.debug("None Config file detected. Be aware that you will not able "
-                   "implements the basics examples of the scripts or Basic "
+                    "implements the basics examples of the scripts or Basic "
                     " steps of datapreparing!")
     warnings.warn("None config file detected! Be aware you will not take into"
                   " advantage of the basics steps thoughout the scripts. "
@@ -60,7 +60,8 @@ def fetch_data(param):
                     '__area':'https://en.wikipedia.org/wiki/Ivory_Coast', 
                     '__casehistory':'https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG',
                     '__wikipages':'https://github.com/WEgeophysics/watex/wiki',
-                    }
+                    },
+                'tags':BAGOUE_TAGS
                 }
     
     elif param.lower().find('stratified')>=0: 
@@ -160,7 +161,7 @@ Returns
     `data` : Original data 
     `X`, `y` : Stratified train set and training label 
     `X0`, `y0`: data cleaned after dropping useless features and combined 
-        numerical attributes combinaisions if ``True``
+        numerical attributes combinaisons if ``True``
     `X_prepared`, `y_prepared`: Data prepared after applying  all the 
        transformation via the transformer (pipeline). 
     `XT`, `yT` : stratified test set and test label  
@@ -170,34 +171,6 @@ Returns
     `_pipeline`: the default pipeline. 
 """
 
-
-# from .data_preparing import bagdataset as data  
-# from .data_preparing import bagoue_train_set_prepared as TRAINSET_PREPARED 
-# from .data_preparing import bagoue_label_encoded as TRAINSET_LABEL_ENCODED 
-# from .data_preparing import raw_X as TRAINSET
-# from .data_preparing import raw_y  as LABELS 
-# from .data_preparing import default_X as dX
-# from .data_preparing import default_y  as dy 
-# from .data_preparing import full_pipeline  
-# from .data_preparing import bagoue_testset_stratified as TESTSET 
-# from .data_preparing import bagoue_testset_label_encoded as TESTSET_LABEL_ENCODED
-
-# # raw dataset 
-# bagoue_dataset = data 
-# # raw trainset and test set 
-# X, y = TRAINSET , LABELS
-# # stratified trainset and testset 
-# X_ , y_= dX , dy 
-# # after stratificated , defaults data prepared 
-
-
-# X_prepared, y_prepared = TRAINSET_PREPARED, TRAINSET_LABEL_ENCODED
-# # Test set put aside and applied the transformation as above. 
-
-# X_test, y_test  = TESTSET,  TESTSET_LABEL_ENCODED
-# # default pipeline 
-# # call pipeline to see all the transformation 
-# default_pipeline = full_pipeline 
 
 
     
