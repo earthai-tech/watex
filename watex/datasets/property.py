@@ -4,22 +4,25 @@
 #       Licence: MIT
 
 """
-..warnings:: This module is a core of the way to retreive data from local,  
+..warnings:: This module is a core use to retreive data from local,  
     git and zenodo record. Modified this module  presume to enhance the way  
     the codes are written and you know what you are doing. Making a copy 
     before modifying this script is recommended.
 
 """
 import os 
+import time
 import sys 
 import subprocess 
+import concurrent.futures
 import shutil  
 import zipfile
 from six.moves import urllib 
 
-from watex.utils.ml_utils import fetchSingleTGZData
-from watex.utils._watexlog import watexlog
-from watex.utils.exceptions import WATexExtractionError 
+from ..utils.ml_utils import (fetchSingleTGZData, 
+                                  subprocess_module_installation)
+from ..utils._watexlog import watexlog
+from ..utils.exceptions import WATexExtractionError 
 
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -50,8 +53,8 @@ def fetchDataFromLocalandWeb(f=f__):
         
     :Example:
         
-        >>> import watex.datasets.property as DBProps
-        >>> DBProps.fetchDataFromLocalandWeb()
+        >>> import watex.datasets.property as DSProps
+        >>> DSProps.fetchDataFromLocalandWeb()
             ---> Please wait while decompressing 'fmain.bagciv.data.tar.gz' file... 
             ---> Decompressing 'fmain.bagciv.data.tar.gz' file failed ! 
             ---> Please wait while fetching data from 'https://github.com/WEgeophysics/watex'...
@@ -64,28 +67,68 @@ def fetchDataFromLocalandWeb(f=f__):
             ---> Record <10.5281/zenodo.5571534> was sucessffuly downloaded...
             ---> Find the record <10.5281/zenodo.5571534=BagoueCIV__dataset__main.zip> in 'data/geo_fdata'.
             ---> Please wait while unziping the record...
-            --> 'main.bagciv.data.csv' was successfully decompressed  and saved to 'data/geo_fdata'
+            ---> 'main.bagciv.data.csv' was successfully decompressed  and saved to 'data/geo_fdata'
             ---> Dataset='main.bagciv.data.csv' was successfully retreived.
             ---> Extraction of `main.bagciv.data.csv` was successfully done!
     """
-    
     mess =f"Fetching {os.path.basename(f)!r} from "
-    if not os.path.isdir(LOCAL_DIR ):
-        os.makedirs(LOCAL_DIR )
-    is_f_file = _fromlocal(f) 
-    if not is_f_file: 
-        __logger.info(f" File {os.path.basename(f)!r} Does not exist "
-                      "in local directory.")
-        is_f_file =  _fromgithub()
-        if not is_f_file :
-            __logger.info(mess + 'Github failed! We try Zenodo record.')
-            is_f_file = _fromzenodo()
-    if not is_f_file : 
-        __logger.info(mess + 'Zenodo failed!')
-        __logger.info (f"Unable to fetch {os.path.basename(f)!r} from Web")
-        return 
-    __logger.info(f"{os.path.basename(f)!r} was successfully loaded.")
+    IMP_TQDM =False 
+    try : 
+        import tqdm
+        # from tqdm.notebook  import trange
+    except:# Install bar progression
+        try :
+            IMP_TQDM= subprocess_module_installation('tqdm')
+        except: 
+            with concurrent.futures.ThreadPoolExecutor() as executor: 
+                modules =[ 'notebook', 'ipywidgets', 'tqdm']
+                try : 
+                    _RES=list(executor.map(
+                        subprocess_module_installation, modules))
+                except : 
+                    results = [executor.submit(
+                        subprocess_module_installation, args =[mod, True])
+                                               for mod in modules]
+                    _RES =[f.result() for f in 
+                           concurrent.futures.as_completed(results)] 
+                    
+            if len(set(_RES)) ==1: 
+                # mean all modules were executed successffuly 
+                IMP_TQDM = _RES[0]
+            if IMP_TQDM: 
+                # from tqdm.notebook  import trange 
+                import tqdm 
+                
+    pbar =tqdm.tqdm(unit ='B', total= 1, ascii=False,
+                    desc ='WEgeophysics-WATex', ncols =77)
+    for _ in range(1):
+        total , start =0, time.perf_counter() 
+        if not os.path.isdir(LOCAL_DIR ):
+            os.makedirs(LOCAL_DIR )
+        is_f_file = _fromlocal(f)
+        if not is_f_file: 
+            __logger.info(f" File {os.path.basename(f)!r} Does not exist "
+                          "in local directory.")
+            is_f_file =  _fromgithub()
+            if not is_f_file :
+                __logger.info(mess + 'Github failed! We try Zenodo record.')
+                is_f_file = _fromzenodo()
     
+        if not is_f_file : 
+            __logger.info(mess + 'Zenodo failed!')
+            __logger.info (f"Unable to fetch {os.path.basename(f)!r} from Web")
+            end = time.perf_counter() 
+            time.sleep(abs(start -end))
+            pbar.update(total)
+            return 
+        __logger.info(f"{os.path.basename(f)!r} was successfully loaded.")
+        end = time.perf_counter() 
+        time.sleep(abs(start -end))
+        
+        if is_f_file: 
+            total =1
+            pbar.update(total)
+            
     return f
 
 def _fromlocal (f=f__): 
@@ -95,7 +138,7 @@ def _fromlocal (f=f__):
         try: 
             __logger.info("Fetching data from"
                           f" {TGZ_FILENAME.replace('/', '')}")
-            print("---> Please wait while decompressing"
+            print("\n---> Please wait while decompressing"
                   f" {TGZ_FILENAME.replace('/', '')!r} file... ")
             
             f0=fetchSingleTGZData(DATA_PATH +TGZ_FILENAME, 
@@ -135,7 +178,7 @@ def _fromgithub( f=f__, root = GIT_ROOT):
                       " host has failed to respond.")
             success =False 
         except:success =False 
-        else : succes=True 
+        else : success=True 
         if success:
             break 
     if not success:
@@ -192,8 +235,8 @@ def _fromzenodo( doi = ZENODO_RECORD_ID_OR_DOI, path = LOCAL_DIR):
         Here fetch the bagoue dataset.
         
     :Example:
-        >>> import watex.datasets.property as  DBProps
-        >>> DBProps._fromzenodo()
+        >>> import watex.datasets.property as  DSProps
+        >>> DSProps._fromzenodo()
     """
     if not os.path.isdir(path): 
         os.makedirs(path)
@@ -201,34 +244,24 @@ def _fromzenodo( doi = ZENODO_RECORD_ID_OR_DOI, path = LOCAL_DIR):
     try:
         import zenodo_get
     except: 
-        #implement pip as subprocess
-        # and download the record using zenodo get 
-        # this will take a while if the connection is low.
-        # Please be patient.
+        # this will take a while if the connection is low. Please be patient.
         try: 
             print("---> Zenodo_get is installing. Please wait ...")
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install',
-            'zenodo_get'])
-            reqs = subprocess.check_output([sys.executable,'-m', 'pip',
-                                            'freeze'])
-            #installed_packages  =...
-            [r.decode().split('==')[0] for r in reqs.split()]
-            #get the list of installed dependancies 
+            subprocess_module_installation('zenodo_get')
             watexlog.get_watex_logger().info(
                 "Intallation of `zenodo_get` was successfully done!") 
             success_import=True
             print("---> Intallation of `zenodo_get` was successfully done!")
         except : 
-            # Connection problem can occur and failed can happens. 
+            # Connection problem may happens. 
             print('---> Zenodo_get installation failed!')
-            __logger.info("Fail to force installation of `zenodo_get`")
+            __logger.info("Failed to force installation of `zenodo_get`")
             
     else: success_import=True 
 
     if not success_import: 
         raise ConnectionError("Unable to retrieve data from record= "
                               f"<{ZENODO_RECORD_ID_OR_DOI!r}.")
-    
     # if zenodo_get is already installed Then used to 
     # wownloaed the record by calling the subprocess methods
     __logger.info(" `zenodo_get` package already installed!") 
@@ -239,8 +272,8 @@ def _fromzenodo( doi = ZENODO_RECORD_ID_OR_DOI, path = LOCAL_DIR):
         subprocess.check_call([sys.executable, '-m', 'zenodo_get', doi])
     except: 
         raise ConnectionError (
-            f"CalledProcessError: <{ZENODO_RECORD_ID_OR_DOI}> returned non-zero "
-            "exit status 1. Please check your internet!")
+            f"CalledProcessError: <{ZENODO_RECORD_ID_OR_DOI}> returned "
+            "non-zero exit status 1. Please check your internet!")
         
     print(f"---> Record <{ZENODO_RECORD_ID_OR_DOI}>"
               " was sucessffuly downloaded...")
@@ -307,7 +340,8 @@ def unZipFileFetchedFromZenodo(zipdir =LOCAL_DIR,
     # Ascertain the file
     is_f_file = _fromlocal(zipdir + '/main.bagciv.data.csv')
     if is_f_file ==zipdir + '/main.bagciv.data.csv':
-        print("---> Extraction of `main.bagciv.data.csv` was successfully done!")
+        print("---> Extraction of `main.bagciv.data.csv` "
+              "was successfully done!")
         
     return is_f_file 
 
@@ -377,9 +411,12 @@ def fetchSingleRARData(zip_file, member_to_extract, zipdir ):
             continue 
         else : decompress_succeed=True 
         
+        if decompress_succeed:
+            break 
+        
     if not decompress_succeed:    
     
-        print(f"---> Please unrar <{zip_file}> with appropriate !"
+        print(f"---> Please unrar the <{zip_file!r}> with an appropriate !"
               " software. Failed to read enough data more than 50. ")      
         raise  WATexExtractionError (
             "Failed the read enough data: req=33345 got>=52 files.")
@@ -391,7 +428,8 @@ def fetchSingleRARData(zip_file, member_to_extract, zipdir ):
           "was successfully done.")
         
 def fetchSingleZIPData(zip_file, zipdir, **zip_kws ): 
-    """ Find only the archived zip file and save to the
+    """ Find only the archived zip file and save to the current directory.
+    
     Parameters 
     -----------
     zip_file: str or Path-like obj 
@@ -402,9 +440,9 @@ def fetchSingleZIPData(zip_file, zipdir, **zip_kws ):
     Examples
     --------
     >>> from watex.datasets.property import fetchSingleZIPData
-    >>> fetchSingleZIPData(zip_file= zip_file, zipdir = zipdir , 
-         file_to_extract='__tar.tgz_files__/___fmain.bagciv.data.csv'  ,
-        savepath=save_zip_file, rename_outfile='main.bagciv.data.csv' )
+    >>> fetchSingleZIPData(zip_file= zip_file, zipdir = zipdir, 
+         file_to_extract='__tar.tgz_files__/___fmain.bagciv.data.csv',
+        savepath=save_zip_file, rename_outfile='main.bagciv.data.csv')
     """
     
     is_zip_file = os.path.isfile(zip_file)
@@ -482,7 +520,7 @@ def retrieveZIPmember(zipObj, *,
         elif rename_outfile is None: 
             rename_outfile= os.path.basename(file_to_extract)
             
-    print(f"--> {rename_outfile!r} was successfully decompressed"
+    print(f"---> {rename_outfile!r} was successfully decompressed"
           f"  and saved to {savepath!r}"
           )
     

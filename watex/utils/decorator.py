@@ -28,8 +28,6 @@ from watex.utils.__init__ import savepath as savePath
 __logger = watexlog().get_watex_logger(__name__)
 
 
-
-
 class deprecated(object):
     """
         Description:
@@ -1087,7 +1085,7 @@ class docstring:
             end_ix = -1 
             
         if start_ix <0 : 
-            warnings.warn(f'`{self.start} not find in the given '
+            warnings.warn(f'`{self.start}` not find in the given '
                           f'{self.func0.__name__!r} doctring` function will '
                           f'append all the doctring of {self.func0.__name__!r}'
                           ' by default.')

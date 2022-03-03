@@ -9,14 +9,186 @@ Created on Fri Sep 17 11:25:15 2021
 
 import numpy as np 
 from scipy.signal import argrelextrema 
-
 from ..utils.decorator import deprecated 
-from ..utils._watexlog import watexlog 
-import watex.utils.exceptions as Wex
+from ..utils._watexlog import watexlog
+from ..utils import exceptions as Wex 
+from ..utils.wtyping import (
+    Array, 
+    T, 
+)
+
 _logger =watexlog.get_watex_logger(__name__)
 
 
 
+def convert_distance_to_m(value, converter =1e3, unit='km'): 
+    """ Convert distance from `km` to `m` or vice versa even a string 
+    value is given."""
+    if isinstance(value, str): 
+        try:
+            value = float(value.replace(unit, '')
+                              )*converter if value.find(
+                'km')>=0 else float(value.replace('m', ''))
+        except: 
+            raise TypeError(f"Expected float not {type(value)!r}."
+               )
+            
+    return value
+    
+    
+def get_station_number (dipole, distance, from0=False, **kws): 
+    """ Get the station number from dipole length and 
+    the distance to the station.
+    
+    :param distance: Is the distance from the first station to `s` in 
+        meter (m). If value is given, please specify the dipole length in 
+        the same unit as `distance`.
+    :param dipole: Is the distance of the dipole measurement. 
+        By default the dipole length is in meter.
+    
+    """
+    dipole=convert_distance_to_m(dipole, **kws)
+    distance =convert_distance_to_m(distance, **kws)
+
+    return  distance/dipole  if from0 else distance/dipole + 1 
+
+
+def define_conductive_zone (erp:Array,
+                            stn:int =None,
+                            sres:float=None,
+                            distance:float=None , 
+                            dipole_length:float=None,
+                            *, 
+                            extent:int=7): 
+    """ Detect the conductive zone from `s`ves point.
+    
+    :param erp: Resistivity values of electrical resistivity profiling(ERP)
+    :param stn: Station number expected for VES and/or drilling location.
+    :param sres: Resistivity value at station number `stn`. 
+                If `sres` is given, the auto-search will be triggered to 
+                find the station number that fits the resistivity value. 
+            
+            .. note:: 
+                If many station got the same `sres` value, the first station 
+                if flag. It may not correspond the station number that is 
+                searching. Use `sres` only if you are sure that the 
+                resistivity value is unique on the whole ERP. Othewise it's 
+                not recommended.
+    :param distance: Distance from the first station to `stn`. If given, 
+                    be sure to provide the `dipole_length`
+    :param dipole_length: Length of the dipole. Comonly the distante between 
+                two close stations. Since we use config AB/2 
+    :param extent: Is the width to depict the anomaly. If provide, need to be 
+                consistent along all ERP line. Should keep unchanged for other 
+                parameters definitions. Default is ``7``.
+    :returns: 
+        - CZ:Conductive zone including the station position 
+        - sres: Resistivity value of the station number
+        - ix_stn: Station position in the CZ
+            
+    :Example: 
+        
+        >>> import numpy as np
+        >>> from watex.utils.exmath import define_conductive_zone 
+        >>> sample = np.random.randn(9)
+        >>> cz, stn_res = define_conductive_zone(sample, 4, extent = 7)
+        ... (array([ 0.32208638,  1.48349508,  0.6871188 , -0.96007639,
+                    -1.08735204,0.79811492, -0.31216716]),
+             -0.9600763919368086, 
+             3)
+    """
+    try : 
+        iter(erp)
+    except : raise Wex.WATexError_inputarguments(
+            f'`erp` must be a sequence of values not {type(erp)!r}')
+    finally: erp = np.array(erp)
+  
+    # check the distance 
+    if stn is None: 
+        if (dipole_length and distance) is not None: 
+            stn = get_station_number(dipole_length, distance)
+        elif sres is not None: 
+            snix, = np.where(erp==sres)
+            if len(snix)==0: 
+                raise Wex.WATexError_parameter_number(
+                    "Could not  find the resistivity value of the VES "
+                    "station. Please provide the right value instead.") 
+                
+            elif len(snix)==2: 
+                stn = int(snix[0]) + 1
+        else :
+            raise Wex.WATexError_inputarguments(
+                '`stn` is needed or at least provide the survey '
+                'dipole length and the distance from the first '
+                'station to the VES station. ')
+            
+    if erp.size < stn : 
+        raise Wex.WATexError_parameter_number(
+            f"Wrong station number =`{stn}`. Is larger than the "
+            f" number of ERP stations = `{erp.size}` ")
+    
+    # now defined the anomaly boundaries from sn
+    stn =  1 if stn == 0 else stn  
+    stn -=1 # start counting from 0.
+    if extent %2 ==0: 
+        if len(erp[:stn]) > len(erp[stn:])-1:
+           ub = erp[stn:][:extent//2 +1]
+           lb = erp[:stn][len(ub)-int(extent):]
+        elif len(erp[:stn]) < len(erp[stn:])-1:
+            lb = erp[:stn][stn-extent//2 +1:stn]
+            ub= erp[stn:][:int(extent)- len(lb)]
+     
+    else : 
+        lb = erp[:stn][-extent//2:] 
+        ub = erp[stn:][:int(extent//2)+ 1]
+    
+    # read this part if extent anomaly is not reached
+    if len(ub) +len(lb) < extent: 
+        if len(erp[:stn]) > len(erp[stn:])-1:
+            add = abs(len(ub)-len(lb)) # remain value to add 
+            lb = erp[:stn][-add -len(lb) - 1:]
+        elif len(erp[:stn]) < len(erp[stn:])-1:
+            add = abs(len(ub)-len(lb)) # remain value to add 
+            ub = erp[stn:][:len(ub)+ add -1] 
+          
+    conductive_zone = np.concatenate((lb, ub))
+    # get the index of station number from the conductive zone.
+    ix_stn, = np.where (conductive_zone == conductive_zone[stn])
+    ix_stn = int(ix_stn[0]) if len(ix_stn)> 1 else  int(ix_stn)
+    
+    return  conductive_zone, conductive_zone[stn], ix_stn 
+    
+
+def W (cz, stn_pos=None ): 
+    """Validate the shape `w`"""
+    # get anomaly boundaries 
+    # anomaly M: 
+    # UB and LB  > than Lmin > 1 and exists  Lmax >1 at least 
+    
+    lb , ub = cz [0], cz[-1]
+    
+    lmin, = argrelextrema(cz, np.less)
+    lmax, = argrelextrema(cz, np.greater)
+               
+    return lmin, lmax 
+    # try: 
+
+    #     minlocals_ix, = argrelextrema(rhoa_range, np.less)
+    # except : 
+ 
+    #     minlocals_ix = argrelextrema(rhoa_range, np.less)
+    # try : 
+
+    #     maxlocals_ix, = argrelextrema(rhoa_range, np.greater)
+    # except : maxlocals_ix = argrelextrema(rhoa_range, np.greater)
+
+
+def shortPlot (sample): 
+    import matplotlib.pyplot as plt 
+    plt.scatter (np.arange(len(sample)), sample, marker ='.', c='b')
+    plt.plot(np.arange(len(sample)), sample, c='r')
+    plt.show()
+    
 
 def compute_sfi (pk_min, pk_max, rhoa_min,
                  rhoa_max,  rhoa, pk)  : 
@@ -344,3 +516,6 @@ def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
              'and the top(`rhoa_max`) boundaries.')
 
     return np.abs(rhoa_max -rhoa_min)
+
+
+

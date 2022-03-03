@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #       Author: Kouadio K.Laurent<etanoyau@gmail.con>
-#       Create:on Fri Sep 10 15:37:59 2021
+#       Create:on Sat Sep 25 10:10:31 2021
 #       Licence: MIT
 import os
 import inspect
@@ -13,13 +13,9 @@ from pprint import pprint
 import pandas as pd 
 import numpy as np 
 
-# from sklearn.model_selection import StratifiedShuffleSplit 
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import cross_val_score 
 from sklearn.model_selection import GridSearchCV , RandomizedSearchCV
-# from sklearn.model_selection import cross_val_predict 
-# from sklearn.metrics import precision_recall_curve
-# from sklearn.metrics import roc_curve, roc_auc_score
 
 from watex.utils._watexlog import watexlog
 
@@ -29,11 +25,6 @@ VT=TypeVar('VT')
 
 __logger = watexlog().get_watex_logger(__name__)
 
-"""
-Created on Sat Sep 25 10:10:31 2021
-
-@author: @Daniel03
-"""
 def multipleGridSearches(X, 
                         y,
                         estimators, 
@@ -221,10 +212,10 @@ def multipleGridSearches(X,
 def prettyPrinter(clfs,  clf_score=None, 
                    scoring =None,
                   **kws): 
-    """ Format and pretty print messages after gridSearch sing multiples
+    """ Format and pretty print messages after gridSearch using multiples
     estimators.
     
-    display for each estimator, its name, it best params with higher score 
+    Display for each estimator, its name, it best params with higher score 
     and the mean scores. 
     
     Parameters
