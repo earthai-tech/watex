@@ -24,9 +24,36 @@ from .._typing import (
 
 _logger =watexlog.get_watex_logger(__name__)
 
+def _sfi (erp , cz): 
+    """ Compute  the pseudo-fracturing Index knows as *sfi*. 
+    
+    The sfi parameter does not indicate the rock fracturing degree in 
+    the underground but it is used to speculate about the apparent resistivity 
+    dispersion ratio around the cumulated sum of the  resistivity values of 
+    the selected anomaly. It uses a similar approach of  IF parameter proposed 
+    by Dieng et al. (2004).  Furthermore, its threshold is set to
+    :math:`\sqrt(2)`  for symmetrical anomaly characterized by a perfect 
+    distribution of resistivity in a homogenous medium. The formula is
+    given by:: 
+        
+	sfi=\sqrt((P_a/(P_a^\ast\ ))^2+(M_a/(M_a^\ast\ ))^2\ \ )
+    
+    where P_a and M_a are the anomaly power and the magnitude respectively. 
+    $(P_a^\ast\ )$  is and (M_a^\ast\ ) are the projected power and 
+    magnitude of the lower point of the selected anomaly.
+
+    """
+    
 
 def _magnitude (cz:List[float] | Array) -> float: 
     """ Compute the magnitude of selected conductive zone. 
+    
+    The magnitude parameter is the absolute resistivity value between
+    the minimum :math:`(\rho_(a_min\ )\ )`  and maximum :math:`( \rho_(a_max\ ))` 
+    value of selected anomaly::
+    
+	magnitude=|\begin\rho_a〗_min-ρ_(a_max ) |
+
     
     :param cz: array-like. Array of apparent resistivity values composing 
         the conductive zone. 
@@ -36,9 +63,15 @@ def _magnitude (cz:List[float] | Array) -> float:
     return np.abs (cz.max()- cz.min()) 
 
 def _power (czp:List[int] | Array ) -> float : 
-    """ Compute the power of the selected conductive zone. 
+    """ Compute the power of the selected conductive zone. Anomaly `power` 
+    is closely referred to the width of the conductive zone.
     
-    Anomaly `power` is closely referred to the width of the conductive zone.
+    The power parameter implicitly defines the width of the conductive zone
+    and is evaluated from the difference between the abscissa 
+    :math:`\begin(X〗_LB)` and the end :math:`\left(X_{UB}\right)` points of 
+    the selected anomaly:: 
+        
+        power=|X_LB-X_UB\ |
     
     :param czp: array-like. Array  station position of conductive zones.
     
@@ -60,7 +93,7 @@ def _find_cz_bound_indexes (
     :param cz: array-like. Array of apparent resistivies composing the  
         conductive zone. 
     
-    :return: The index of boundaries  'LB' and 'UB' 
+    :return: The index of boundaries  'LB' and 'UB'. 
     
     .. note::`cz` must be self-containing of `erp`. If ``False`` should  
             raise and error. 
