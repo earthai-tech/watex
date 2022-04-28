@@ -72,6 +72,10 @@ A new directory `_anEX_` shoud be created with new built data. Once the `build` 
 
 WATex-AI is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
 
+## Citations
+
+If you use WATex in any published work, consider citing the [DOI](https://doi.org/10.5281/zenodo.5529368) below as a contribution:
+> *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: Machine Learning Research Toolbox in Hydrogeophysic. https://doi.org/10.5281/zenodo.5529368*
 
 ## System requirements
 * Python 3.7+ 
