@@ -48,6 +48,8 @@ def smart_format(iter_obj):
         >>> smart_format(['.csv', '.json', '.xlsx', '.html', '.sql'])
         ... '.csv', '.json', '.xlsx', '.html' and '.sql'
     """
+    str_litteral=''
+    
     try: 
         iter(iter_obj) 
     except:  return f"{iter_obj}"

@@ -15,19 +15,60 @@ import warnings
 
 import datetime 
 import numpy as np
-# import pandas as pd 
+import pandas as pd 
 import  matplotlib.pyplot as plt 
 
-from typing import Iterable, Optional, Callable , TypeVar
+from typing import ( Iterable,
+                    Optional,
+                    Callable ,
+                    TypeVar, 
+
+)
 
 T=TypeVar('T')  
 
 from watex.utils._watexlog import watexlog
 from watex.utils.__init__ import savepath as savePath 
+from .ml_utils import read_from_excelsheets
 
 __logger = watexlog().get_watex_logger(__name__)
 
 
+
+class _parseargs: 
+    """ Parse arguments and return array 
+    """
+    def __init__(self, func): 
+        self._func =func 
+        
+    def __call__(self, *args, **kwargs): 
+        
+        msg =''.join([' Unable toparse arguments. Can only read <arrays,',
+         ' pandas.Series, pandas.DataFrame, and Path-Like obj> but '
+         '`{}` is given.']
+                     )
+        # gets the current frame and examines args
+        # myframe = inspect.currentframe()
+        # args,_,_,values = inspect.getargvalues(myframe)
+        # sig = inspect.signature(self._func) 
+        # values = [ param.VAR_POSITIONAL
+        #           for param in sig.parameters.values()] 
+        # values = inspect.getfullargspec(self._func).varargs
+        for obj in args : 
+            if os.path.isfile(obj): 
+                _, df = read_from_excelsheets(obj)
+                arr, columns =df.values , list(df.columns)   
+            elif isinstance(obj, np.ndarray): 
+                arr , columns = obj, None 
+            elif isinstance(obj, pd.Series): 
+                arr, columns = obj.values, obj.name 
+            elif isinstance(obj,  pd.DataFrame): 
+                arr, columns = obj.values , list(obj.columns)  
+            else : 
+                raise ValueError (msg.format(type(obj)))
+        # return 
+        return arr, columns  #func (*[arr, columns], **kwargs)
+       
 class deprecated(object):
     """
         Description:
@@ -248,14 +289,13 @@ class redirect_cls_or_func(object) :
 
 class writef(object): 
     """
-    Description:
+    .. Description::
             used to redirected functions or classes. Deprecated functions 
             or class can call others use functions or classes.
             
-        Usage:
-            .. todo:: Decorate function or class to replace old function 
-                method or class with multiple parameters and export files
-                into many other format. `.xlsx` , `.csv` or regular format.
+    .. todo:: Decorate function or class to replace old function 
+        method or class with multiple parameters and export files
+        into many other format. `.xlsx` , `.csv` or regular format.
 
         Author: @Daniel03
         Date: 09/07/2021
@@ -265,7 +305,8 @@ class writef(object):
     
     
     :param reason: 
-        Explain the "What to do?". Can be `write` or `convert`
+        Explain the "What to do?". Can be `write` or `convert`.
+        
     :param from_: 
         
          Can be ``df`` or ``regular``. If ``df``, `func` is called and collect 
@@ -276,8 +317,8 @@ class writef(object):
     :type from_: str ``df`` or ``regular`` 
     
     :param to_: 
-                Exported file extension. Can be excel sheeet (`.xlsx`, `csv`)
-                or other kind of format. 
+            Exported file extension. Can be excel sheeet (`.xlsx`, `csv`)
+            or other kind of format. 
                 
     :param savepath: 
         Give the path to save the new file written. 
@@ -499,12 +540,10 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
 
 class visualize_valearn_curve : 
     """
-    Description:
-        Decorator to visualize the validation curve and learning curve 
-        Once called, will  quick plot the `validation curve`
+    Decorator to visualize the validation curve and learning curve 
+    Once called, will  quick plot the `validation curve`.
             
-    Usage:
-        .. todo:: Quick plot the validation curve 
+    .. todo:: Quick plot the validation curve 
         
     :param reason: what_going_there? validation cure or learning curve.
                     - ``val`` for validation curve 
@@ -513,7 +552,7 @@ class visualize_valearn_curve :
                 the function. default is `off` else `on`.
     :param kwargs: 
         Could be the keywords arguments for `matplotlib.pyplot`
-        library :: 
+        library:: 
             
             train_kws={c:'r', s:10, marker:'s', alpha :0.5}
             val_kws= {c:'blue', s:10, marker:'h', alpha :1}
@@ -1018,7 +1057,7 @@ class docstring:
     of another function from the words considered as the startpoint `start` 
     to endpoint `end`.
     
-    Sometimes two function inherits the same parameters. Repeat the writing 
+    Sometimes two functions inherit the same parameters. Repeat the writing 
     of the same parameters is redundancy. So the most easier part is to 
     collect the doctring of the inherited function and paste to the new 
     function from the `startpoint`. 
