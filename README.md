@@ -25,25 +25,13 @@ WATex, originally, means WATer 💧 Exploration toolbox using Machine Learning M
       
 ## Methods Implemented
 
-    **Learning**  
-        -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
-        -  Neighbors: **KNN** 
-        -  Trees: **DTC**
-        -  Ensemble methods (RandomForests, Bagging and Pasting, Boosting)
-        -  Artificial neural networks **ANN** 
-        -  Apriori
-        -  Kernel Principal Component Analysis **k-PCA** 
-        -  t-distributed Stochastic Neighbor Embedding **t-SNE**
-        -  Randomized PCA
-        -  Locally Linear Embedding (LLE)
+   **Learning**  
+    -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) -  Neighbors: **KNN**  -  Trees: **DTC** -  Ensemble methods (RandomForests, Bagging and Pasting, Boosting) -  Apriori -  Kernel Principal Component Analysis **k-PCA** -  t-distributed Stochastic Neighbor Embedding **t-SNE** -  Randomized PCA -  Locally Linear Embedding (LLE) -  Artificial neural networks **ANN**. 
          
-    **Geophysical** 
-    
-    - Electrical 
-        - Electrical Resistivity Profiling 
-        - Vertical Electrical Sounding 
-    - Electromagnetics 
-        - Countrolled Source Audio-frequency Magnetotelluric 
+   **Geophysical** 
+   - Electrical: 
+     - Electrical Resistivity Profiling  - Vertical Electrical Sounding 
+   - Electromagnetics: - Countrolled Source Audio-frequency Magnetotelluric 
 
 ## Documentation 
 
