@@ -25,6 +25,9 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+IPython 
+.checkpoints/
+
 MANIFEST
 
 # PyInstaller
@@ -150,6 +153,8 @@ SVC__LinearSVC__LogisticRegression.pkl
 
 # ignore the useless __init__.py 
 watex/__init__.py 
+untitled0.py
+untitled1.py
 untitled2.py
 
 # ignore beka datafiles 

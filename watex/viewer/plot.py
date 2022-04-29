@@ -17,7 +17,11 @@ Created on Tue Jul  13 15:48:14 2021
 # import re 
 import warnings
 # import functools 
-from typing import Generic, TypeVar, Iterable, Callable 
+from typing import (Generic, 
+                    TypeVar,
+                    Iterable,
+                    Callable
+)
 
 import numpy as np 
 # import pandas as pd
@@ -30,16 +34,18 @@ import  matplotlib.pyplot  as plt
 # import matplotlib.gridspec as gspec
 import seaborn as sns 
 
-import watex.hints as hints
-from  watex.analysis.basics import SLAnalyses
-import watex.utils.exceptions as Wex
-from watex.utils._watexlog import watexlog
+from  .analysis.basics import SLAnalyses
+from .utils._watexlog import watexlog
 
+import watex.utils.exceptions as Wex
+import watex.hints as hints
 T=TypeVar('T', dict, list, tuple)
 
 _logger=watexlog.get_watex_logger(__name__)
 
+     
 
+        
 class QuickPlot : 
     """
     Special class deals with analysis modules. To quick plot diagrams, 

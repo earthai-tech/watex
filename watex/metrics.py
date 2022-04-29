@@ -178,25 +178,25 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     if cross_val_pred_kws is None: 
         cross_val_pred_kws = dict()
         
-    self = Metrics()#precision_recall_tradeoff
+    mObj = Metrics()#precision_recall_tradeoff
     
-    self.y_scores = cross_val_predict(clf,X,y,cv =cv,
+    mObj.y_scores = cross_val_predict(clf,X,y,cv =cv,
                                           method= method,
                                           **cross_val_pred_kws )
     y_scores = cross_val_predict(clf,X,y, cv =cv,
                                  **cross_val_pred_kws )
     
-    self.confusion_matrix =confusion_matrix(y, y_scores )
+    mObj.confusion_matrix =confusion_matrix(y, y_scores )
     
-    self.f1_score = f1_score(y,y_scores)
-    self.precision_score = precision_score(y, y_scores)
-    self.recall_score= recall_score(y, y_scores)
+    mObj.f1_score = f1_score(y,y_scores)
+    mObj.precision_score = precision_score(y, y_scores)
+    mObj.recall_score= recall_score(y, y_scores)
         
     if method =='predict_proba': 
         # if classifier has a `predict_proba` method like `Random_forest`
         # then use the positive class probablities as score 
         # score = proba of positive class 
-        self.y_scores =self.y_scores [:, 1] 
+        mObj.y_scores =mObj.y_scores [:, 1] 
         
     if y_tradeoff is not None:
         try : 
@@ -208,20 +208,20 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
             raise Wex.WATexError_inputarguments(
                 f'Invalid type `{type(y_tradeoff)}`')
             
-        y_score_pred = (self.y_scores > y_tradeoff) 
-        self.precision_score_tradeoff = precision_score(y,
+        y_score_pred = (mObj.y_scores > y_tradeoff) 
+        mObj.precision_score_tradeoff = precision_score(y,
                                                         y_score_pred)
-        self.recall_score_tradeoff = recall_score(y, 
+        mObj.recall_score_tradeoff = recall_score(y, 
                                                   y_score_pred)
         
-    self.precisions, self.recalls, self.thresholds =\
+    mObj.precisions, mObj.recalls, mObj.thresholds =\
         precision_recall_curve(y,
-                               self.y_scores,
+                               mObj.y_scores,
                                **prt_kws)
         
-    self.y =y
+    mObj.y =y
     
-    return self
+    return mObj
     
 @deco.docstring(precision_recall_tradeoff, start ='Parameters', end ='Notes')
 def ROC_curve( roc_kws=None, **tradeoff_kws): 
@@ -273,24 +273,24 @@ def ROC_curve( roc_kws=None, **tradeoff_kws):
         >>> rocObj.roc_auc_score 
         >>> rocObj.fpr
     """
-    self =Metrics()
+    mObj =Metrics()
     obj= precision_recall_tradeoff(**tradeoff_kws)
     for key in obj.__dict__.keys():
-        setattr(self, key, obj.__dict__[key])
+        setattr(mObj, key, obj.__dict__[key])
         
     if roc_kws is None: roc_kws =dict()
-    self.fpr , self.tpr , thresholds = roc_curve(self.y, 
-                                       self.y_scores,
+    mObj.fpr , mObj.tpr , thresholds = roc_curve(mObj.y, 
+                                       mObj.y_scores,
                                        **roc_kws )
-    self.roc_auc_score = roc_auc_score(self.y, self.y_scores)
+    mObj.roc_auc_score = roc_auc_score(mObj.y, mObj.y_scores)
 
-    return self 
+    return mObj 
 
     
 def confusion_matrix_(clf, X, y,*, cv =7, plot_conf_max=False, 
                      crossvalp_kws=dict(), **conf_mx_kws ): 
     """ Evaluate the preformance of the model or classifier by counting 
-    the number of ttimes instances of class A are classified in class B. 
+    the number of the times instances of class A are classified in class B. 
     
     To compute a confusion matrix, you need first to have a set of 
     prediction, so they can be compared to the actual targets. You could 
@@ -359,9 +359,9 @@ def confusion_matrix_(clf, X, y,*, cv =7, plot_conf_max=False,
     #     }
     # parameters = [p.name for p in func_sig.parameters.values()
            # if p.name != 'self' and p.kind != p.VAR_KEYWORD]
-    self = Metrics() #confusion_matrix_ 
+    mObj = Metrics() #confusion_matrix_ 
     for key in PARAMS_VALUES.keys(): 
-        setattr(self, key, PARAMS_VALUES[key] )
+        setattr(mObj , key, PARAMS_VALUES[key] )
         
     y_pred =cross_val_predict(clf, X, y, cv=cv, **crossvalp_kws )
     
@@ -371,20 +371,19 @@ def confusion_matrix_(clf, X, y,*, cv =7, plot_conf_max=False,
     
     for att, val in zip(['y_pred', 'conf_mx'],
                         [y_pred, conf_mx]): 
-        setattr(self, att, val)
+        setattr(mObj , att, val)
     
     # statement to plot confusion matrix errors rather than values 
-    row_sums = self.conf_mx.sum(axis=1, keepdims=True)
-    norm_conf_mx = self.conf_mx / row_sums 
+    row_sums = mObj .conf_mx.sum(axis=1, keepdims=True)
+    norm_conf_mx = mObj.conf_mx / row_sums 
     # now let fill the diagonal with zeros to keep only the errors
     # and let's plot the results 
     np.fill_diagonal(norm_conf_mx, 0)
-    setattr(self, 'norm_conf_mx', norm_conf_mx)
+    setattr(mObj , 'norm_conf_mx', norm_conf_mx)
     
-      
     fp =0
     if plot_conf_max =='map': 
-        confmax = self.conf_mx
+        confmax = mObj.conf_mx
         fp=1
     if plot_conf_max =='error':
         confmax= norm_conf_mx
@@ -394,6 +393,6 @@ def confusion_matrix_(clf, X, y,*, cv =7, plot_conf_max=False,
         plt.matshow(confmax, cmap=plt.cm.gray)
         plt.show ()
         
-    return self 
+    return mObj  
   
           

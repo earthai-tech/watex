@@ -16,9 +16,10 @@ from six.moves import urllib
 from typing import TypeVar, Generic, Iterable , Callable, Text
 import pandas as pd 
 import numpy as np 
+  
+from sklearn.model_selection import (train_test_split, StratifiedShuffleSplit)
 
-from sklearn.model_selection import StratifiedShuffleSplit 
-
+import watex.utils.func_utils as FU
 from watex.utils.__init__ import savepath as savePath 
 from watex.utils._watexlog import watexlog
 
@@ -342,7 +343,7 @@ def fetch_model(modelfile, modelpath =None, default=True,
 
     isfile = os.path.isfile(modelfile)
     if not isfile: 
-        raise FileNotFoundError ("File {modelfile!r} not found!")
+        raise FileNotFoundError (f"File {modelfile!r} not found!")
         
     from_joblib =False 
     if modelfile.endswith('.pkl'): from_joblib  =True 
@@ -382,7 +383,7 @@ def fetch_model(modelfile, modelpath =None, default=True,
             )
            
     if modname is not None: 
-        keymess = "{modname!r} not found."
+        keymess = f"{modname!r} not found."
         try : 
             if default:
                 model_class_params  =( pickedfname[modname]['best_model'], 
@@ -397,7 +398,7 @@ def fetch_model(modelfile, modelpath =None, default=True,
                 f"Model name {modname!r} not found in the list of dumped"
                 f" models = {list(pickedfname.keys()) !r}")
             raise KeyError from key_error(keymess + "Shoud try the model's"
-                                          "names ={list(pickedfname.keys())!r}")
+                                          f"names ={list(pickedfname.keys())!r}")
         
         if verbose > 0: 
             pprint('Should return a tuple of `best model` and the'
@@ -530,34 +531,200 @@ def loadDumpedOrSerializedData (filename:str):
         # Try DeSerializing using pickle module
         with open(filename, 'rb') as tod: 
             data= pickle.load (tod)
-            
         __logger.info(f"Data from `{_filename!r} are well"
                       " deserialized using Python pickle module.`!")
         
     is_none = data is None
     if is_none: 
         print("Unable to deserialize data. Please check your file.")
-    
     else : print(f"Data from {_filename} have been sucessfully reloaded.")
     
     return data 
 
+def subprocess_module_installation (module, upgrade =True ): 
+    """ Install  module using subprocess.
+    :param module: str, module name 
+    :param upgrade:bool, install the lastest version.
+    """
+    import sys 
+    import subprocess 
+    #implement pip as subprocess 
+    # refer to https://pythongeeks.org/subprocess-in-python/
+    MOD_IMP=False 
+    print(f'---> Module {module!r} installation will take a while,'
+          ' please be patient...')
+    cmd = f'<pip install {module}> | <python -m pip install {module}>'
+    try: 
 
+        upgrade ='--upgrade' if upgrade else ''
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install',
+        f'{module}', f'{upgrade}'])
+        reqs = subprocess.check_output([sys.executable,'-m', 'pip',
+                                        'freeze'])
+        [r.decode().split('==')[0] for r in reqs.split()]
+        __logger.info(f"Intallation of `{module}` and dependancies"
+                     "was successfully done!") 
+        MOD_IMP=True
+     
+    except: 
+        __logger.error("Failed to install the module =`{module}`.")
+        print(f'---> Module {module!r} installation failed, Please use'
+           f'  the following command {cmd} to manually install it.')
+    return MOD_IMP 
+        
+                
+def _assert_sl_target (target,  df=None, obj=None): 
+    """ Check whether the target name into the dataframe for supervised 
+    learning.
+    
+    :param df: dataframe pandas
+    :param target: str or index of the supervised learning target name. 
+    
+    :Example: 
+        
+        >>> from watex.utils.ml_utils import _assert_sl_target
+        >>> from watex.datasets import fetch_data
+        >>> data = fetch_data('Bagoue original').get('data=df')  
+        >>> _assert_sl_target (target =12, obj=prepareObj, df=data)
+        ... 'flow'
+    """
+    is_dataframe = isinstance(df, pd.DataFrame)
+    is_ndarray = isinstance(df, np.ndarray)
+    if is_dataframe :
+        targets = FU.smart_format(
+            df.columns if df.columns is not None else [''])
+    else:targets =''
+    if target is None:
+        nameObj=f'{obj.__class__.__name__}'if obj is not None else 'Base class'
+        msg =''.join([
+            f"{nameObj!r} {'basically' if obj is not None else ''}"
+            " works with surpervised learning algorithms so the",
+            " input target is needed. Please specify the target", 
+            f" {'name' if is_dataframe else 'index' if is_ndarray else ''}", 
+            " to take advantage of the full functionalities."
+            ])
+        if is_dataframe:
+            msg += f" Select the target among {targets}."
+        elif is_ndarray : 
+            msg += f" Max columns size is {df.shape[1]}"
 
+        warnings.warn(msg, UserWarning)
+        __logger.warning(msg)
         
+    if target is not None: 
+        if is_dataframe: 
+            if isinstance(target, str):
+                if not target in df.columns: 
+                    msg =''.join([
+                        f"Wrong target value {target!r}. Please select "
+                        f"the right column name: {targets}"])
+                    warnings.warn(msg, category= UserWarning)
+                    __logger.warning(msg)
+                    target =None
+            elif isinstance(target, (float, int)): 
+                is_ndarray =True 
+  
+        if is_ndarray : 
+            _len = len(df.columns) if is_dataframe else df.shape[1] 
+            m_=f"{'less than' if target >= _len  else 'greater than'}" 
+            if not isinstance(target, (float,int)): 
+                msg =''.join([f"Wrong target value `{target}`!"
+                              f" Object type is {type(df)!r}. Target columns", 
+                              "  index should be given instead."])
+                warnings.warn(msg, category= UserWarning)
+                __logger.warning(msg)
+                target=None
+            elif isinstance(target, (float,int)): 
+                target = int(target)
+                if not 0 <= target < _len: 
+                    msg =f" Wrong target index. Should be {m_} {str(_len-1)!r}."
+                    warnings.warn(msg, category= UserWarning)
+                    __logger.warning(msg) 
+                    target =None
+                    
+            if df is None: 
+                wmsg = ''.join([
+                    f"No data found! `{target}` does not fit any data set.", 
+                      "Could not fetch the target name.`df` argument is None.", 
+                      " Need at least the data `numpy.ndarray|pandas.dataFrame`",
+                      ])
+                warnings.warn(wmsg, UserWarning)
+                __logger.warning(wmsg)
+                target =None
+                
+            target = list(df.columns)[target] if is_dataframe else target
+    return target
         
+def default_data_splitting(X, y=None, *,  test_size =0.2, target =None,
+                           random_state=42, fetch_target =False,
+                           **skws): 
+    """ Splitting data function. 
+    
+    Split data into the training set and test set. If target `y` is not
+    given and you want to consider a specific array as a target for 
+    supervised learning, just turn `fetch_target` argument to ``True`` and 
+    set the `target` argument as a numpy columns index or pandas dataframe
+     colums name. 
+    
+    :param X: np.ndarray or pd.DataFrame 
+    :param y: array_like 
+    :param test_size: If float, should be between 0.0 and 1.0 and represent
+        the proportion of the dataset to include in the test split. 
+    :param random_state: int, Controls the shuffling applied to the data
+        before applying the split. Pass an int for reproducible output across
+        multiple function calls
+    :param fetch_target: bool, use to retrieve the targetted value from 
+        the whole data `X`. 
+    :param target: int, str 
+        If int itshould be the index of the targetted value otherwise should 
+        be the columns name of pandas DataFrame.
+    :param skws: additional scikit-lean keywords arguments 
+        https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
+    
+    :returns: list, length
+        List containing train-test split of inputs.
         
+    :Example: 
         
+        >>> from watex.datasets import fetch_data 
+        >>> data = fetch_data ('Bagoue original').get('data=df')
+        >>> X, XT, y, yT= default_data_splitting(data.values,
+                                     fetch_target=True,
+                                     target =12 )
+        >>> X, XT, y, yT= default_data_splitting(data,
+                             fetch_target=True,
+                             target ='flow' )
+        >>> X0= data.copy()
+        >>> X0.drop('flow', axis =1, inplace=True)
+        >>> y0 = data ['flow']
+        >>> X, XT, y, yT= default_data_splitting(X0, y0)
+    """
+
+    if fetch_target: 
+        target = _assert_sl_target (target, df =X)
+        s='could not be ' if target is None else 'was succesffully '
+        wmsg = ''.join([
+            f"Target {'index' if isinstance(target, int) else 'value'} "
+            f"{str(target)!r} {s} used to fetch the `y` value from "
+            "the whole data set."])
+        if isinstance(target, str): 
+            y = X[target]
+            X= X.copy()
+            X.drop(target, axis =1, inplace=True)
+        if isinstance(target, (float, int)): 
+            y=X[:, target]
+            X = np.delete (X, target, axis =1)
+        warnings.warn(wmsg, category =UserWarning)
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
+    __V= train_test_split(X, y, random_state=random_state, **skws) \
+        if y is not None else train_test_split(
+                X,random_state=random_state, **skws)
+    if y is None: X, XT , yT = *__V,  None 
+    else: X, XT, y, yT= __V
+    
+    return  X, XT, y, yT
+
+    
         
         
         

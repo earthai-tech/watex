@@ -125,8 +125,9 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
             self.base_items_ = list(
             X[in_c].value_counts().index.values)
         
-            split = StratifiedShuffleSplit(self.n_splits, self.test_size, 
-                                           self.random_state)
+            split = StratifiedShuffleSplit(n_splits =self.n_splits,
+                                           test_size =self.test_size, 
+                                           random_state =self.random_state)
             
             for train_index, test_index  in split.split(X, X[in_c]): 
                 strat_train_set = X.loc[train_index]
@@ -216,13 +217,13 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
             >>> from watex.processing.transformers import StratifiedUsingBaseCategory 
             >>> from watex.utils.ml_utils import load_data 
             >>> df = load_data('data/geo_fdata')
-            >>>stratifiedObj = StratifiedUsingBaseCategory(base_column='geol')
+            >>> stratifiedObj = StratifiedUsingBaseCategory(base_column='geol')
             >>> stratifiedObj.fit_transform(X=df)
             >>> stats= stratifiedObj.statistics_
 
     Note::
         An :attr:`~statictics_` inspection attributes is good way to observe 
-        thetest set generated using purely random sampling and using the 
+        the test set generated using purely random sampling and using the 
         stratified sampling. The stratified sampling has category 
         ``base_column``proportions almost indentical to those in the full 
         dataset whereas the testset generated using purely random sampling 
@@ -602,11 +603,15 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                 self.attributes_ix = [(int(X.columns.get_loc(col_n[0])), 
                       int(X.columns.get_loc(col_n[1]) ))
                  for col_n in self.attribute_names_]
+                # pop attributes 
+                # get index of ('magnitude', 'power')
+                idx = self.attribute_names_.index(self.attribute_names_[0])
+                self.attribute_names_.pop(idx)
                 
             ifdf_c= list(X.columns)
                 
             X= X.values 
- 
+
         if self.add_attributes: 
             for num_ix , deno_ix  in self.attributes_ix :
         
@@ -628,7 +633,7 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                         ' features. Experience combinaison attributes is'
                         ' not possible! Please provide the right indexes!'
                         )
-                except  ValueError: 
+                except: 
 
                     num_per_deno = np.float(
                         X[:, num_ix]) /np.float(X[:, deno_ix ])
@@ -639,7 +644,7 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
                     t__.append(
                         str(ifdf_c[num_ix])+ '_per_'+str(ifdf_c[deno_ix]))
                     
-        if len(self.attribute_names_) ==0: 
+            # if len(self.attribute_names_) ==0: 
             self.attribute_names_+= t__
             
         return X 
@@ -707,7 +712,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
                 mm_= set(self.attribute_names).difference(set(t_))
                 warnings.warn(
                     f'Value{"s" if len(mm_)>1 else""} {list(mm_)} not found.'
-                    " Only `{t_}`match{'es' if len(t_) <1 else ''}"
+                    f" Only `{t_}`match{'es' if len(t_) <1 else ''}"
                     " the dataframe features.")
                 self._logging.warning(
                     f'Only `{t_}` can be considered as dataframe attributes.')

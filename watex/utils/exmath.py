@@ -1,22 +1,386 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Sep 17 11:25:15 2021
-# This module is a WATex-AI calculator released under MIT Licence 
-"""
-Created on Fri Sep 17 11:25:15 2021
+#   Copyright (c) 2021 Kouadio K. Laurent, 
+#   Created datae: on Fri Sep 17 11:25:15 2021
+#   Licence: MIT Licence 
 
-@author: @Daniel03
-"""
+from __future__ import annotations 
 
-import numpy as np 
+import numpy as np
+import pandas as pd 
+import  matplotlib.pyplot as plt 
 from scipy.signal import argrelextrema 
-
 from ..utils.decorator import deprecated 
-from ..utils._watexlog import watexlog 
-import watex.utils.exceptions as Wex
+from ..utils._watexlog import watexlog
+from ..utils import exceptions as Wex 
+from .._typing import (
+    T, 
+    List, 
+    Tuple,
+    Union,
+    Array,
+    DType,
+    Optional,
+    Sub, 
+    SP
+)
+
 _logger =watexlog.get_watex_logger(__name__)
 
+def _sfi (
+        cz: Sub[Array[T, DType[T]]] | List[float] ,
+        p: Sub[SP[Array, DType [int]]] | List [int]= None, 
+        dipolelength: float = 10.
+) -> float: 
+    """ Compute  the pseudo-fracturing Index knows as *sfi*. 
+    
+    The sfi parameter does not indicate the rock fracturing degree in 
+    the underground but it is used to speculate about the apparent resistivity 
+    dispersion ratio around the cumulated sum of the  resistivity values of 
+    the selected anomaly. It uses a similar approach of  IF parameter proposed 
+    by Dieng et al. (2004).  Furthermore, its threshold is set to
+    :math:`\sqrt(2)`  for symmetrical anomaly characterized by a perfect 
+    distribution of resistivity in a homogenous medium. The formula is
+    given by:
+    
+    .. _Dieng: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
+    
+    .. math::
+        
+        sfi=\sqrt((P_a/(P_a^\ast\ ))^2+(M_a/(M_a^\ast\ ))^2\ \ )
+    
+    where P_a and M_a are the anomaly power and the magnitude respectively. 
+    $(P_a^\ast\ )$  is and (M_a^\ast\ ) are the projected power and 
+    magnitude of the lower point of the selected anomaly.
+    
+    :param cz: array-like. Selected conductive zone 
+    :param p: array-like. Station positions of the conductive zone.
+    
+    """
+    # Determine the number of curve inflection 
+    # to find the number of degree to compose 
+    # cz fonction 
+    if p is None : 
+        p = np.arange (0, len(cz) * dipolelength, dipolelength)
+    ixf = len(argrelextrema(cz, np.less)) + len(argrelextrema(cz,np.greater))
+    
+    return p, ixf 
+
+    
+def quickplot (arr, dl =10): 
+    """Quick plot to see the anomaly"""
+    
+    plt.plot(np.arange(0, len(arr) * dl, dl), arr , ls ='-', c='k')
+    plt.show() 
+    
+    
+
+def _magnitude (cz:Sub[Array[float, DType[float]]] ) -> float: 
+    """ Compute the magnitude of selected conductive zone. 
+    
+    The magnitude parameter is the absolute resistivity value between
+    the minimum :math:`\rho_(a_min\ )\`  and maximum :math:`\rho_(a_max\ )` 
+    value of selected anomaly:
+    
+    .. math::
+    
+        magnitude=|\begin\rho_a〗_min-ρ_(a_max ) |
+
+    
+    :param cz: array-like. Array of apparent resistivity values composing 
+        the conductive zone. 
+    
+    :return: Absolute value of anomaly magnitude.
+    """
+    return np.abs (cz.max()- cz.min()) 
+
+def _power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float : 
+    """ Compute the power of the selected conductive zone. Anomaly `power` 
+    is closely referred to the width of the conductive zone.
+    
+    The power parameter implicitly defines the width of the conductive zone
+    and is evaluated from the difference between the abscissa 
+    :math:`\begin(X〗_LB)` and the end :math:`\left(X_{UB}\right)` points of 
+    the selected anomaly:
+    
+    .. math::
+        
+        power=|X_LB-X_UB\ |
+    
+    :param p: array-like. Station position of conductive zone.
+    
+    :return: Absolute value of the width of conductive zone. 
+    """
+    return np.abs(p.min()- p.max()) 
 
 
+def _find_cz_bound_indexes (
+    erp: Union[Array[float, DType[float]], List[float], pd.Series],
+    cz: Union [Sub[Array], List[float]] 
+)-> Tuple[int, int]: 
+    """ Fetch the limits 'LB' and 'UB' of the selected conductive zone.
+    
+    Indeed the 'LB' and 'UB' fit the lower and upper boundaries of the 
+    conductive zone respectively. 
+    
+    :param erp: array-like. Apparent resistivities collected during the survey. 
+    :param cz: array-like. Array of apparent resistivies composing the  
+        conductive zone. 
+    
+    :return: The index of boundaries  'LB' and 'UB'. 
+    
+    .. note::`cz` must be self-containing of `erp`. If ``False`` should  
+            raise and error. 
+    """
+    # assert whether cz is a subset of erp. 
+    if isinstance( erp, pd.Series): erp = erp.values 
+
+    if not np.isin(True,  (np.isin (erp, cz))):
+        raise ValueError ('Expected the conductive zone array being a '
+                          'subset of the resistivity array')
+    # find the indexes using np.argwhere  
+    cz_indexes = np.argwhere(np.isin(erp, cz)).ravel()
+    
+    return cz_indexes [0] , cz_indexes [-1] 
+
+
+def convert_distance_to_m(
+        value:T ,
+        converter:float =1e3,
+        unit:str ='km'
+)-> float: 
+    """ Convert distance from `km` to `m` or vice versa even a string 
+    value is given.
+    
+    :param value: value to convert. 
+    "paramm converter: Equivalent if given in 'km' rather than 'meters'.
+    :param unit: unit to convert to."""
+    if isinstance(value, str): 
+        try:
+            value = float(value.replace(unit, '')
+                              )*converter if value.find(
+                'km')>=0 else float(value.replace('m', ''))
+        except: 
+            raise TypeError(f"Expected float not {type(value)!r}."
+               )
+            
+    return value
+    
+    
+def get_station_number (
+        dipole:float,
+        distance:float , 
+        from0:bool = False,
+        **kws
+)-> float: 
+    """ Get the station number from dipole length and 
+    the distance to the station.
+    
+    :param distance: Is the distance from the first station to `s` in 
+        meter (m). If value is given, please specify the dipole length in 
+        the same unit as `distance`.
+    :param dipole: Is the distance of the dipole measurement. 
+        By default the dipole length is in meter.
+    :param kws: :func:`convert_distance_to_m` additional arguments
+    
+    """
+    dipole=convert_distance_to_m(dipole, **kws)
+    distance =convert_distance_to_m(distance, **kws)
+
+    return  distance/dipole  if from0 else distance/dipole + 1 
+
+@deprecated('Deprecated function. Replaced by '
+            '`:func: ~watex.utils.coreutils._define_conductive_zone`'
+            'more efficient.')
+def define_conductive_zone (
+        erp:Array | List[float],
+        stn: Optional [int] =None,
+        sres:Optional [float] =None,
+        distance:float | None =None , 
+        dipole_length:float | None =None,
+        *, 
+        extent:int =7): 
+    """ Detect the conductive zone from `s`ves point.
+    
+    :param erp: Resistivity values of electrical resistivity profiling(ERP)
+    :param stn: Station number expected for VES and/or drilling location.
+    :param sres: Resistivity value at station number `stn`. 
+                If `sres` is given, the auto-search will be triggered to 
+                find the station number that fits the resistivity value. 
+            
+    :param distance: Distance from the first station to `stn`. If given, 
+                    be sure to provide the `dipole_length`
+    :param dipole_length: Length of the dipole. Comonly the distante between 
+                two close stations. Since we use config AB/2 
+    :param extent: Is the width to depict the anomaly. If provide, need to be 
+                consistent along all ERP line. Should keep unchanged for other 
+                parameters definitions. Default is ``7``.
+    :returns: 
+        - CZ:Conductive zone including the station position 
+        - sres: Resistivity value of the station number
+        - ix_stn: Station position in the CZ
+            
+    .. note:: 
+        If many stations got the same `sres` value, the first station 
+        is flagged. This may not correspond to the station number that is 
+        searching. Use `sres` only if you are sure that the 
+        resistivity value is unique on the whole ERP. Otherwise it's 
+        not recommended.
+        
+    :Example: 
+        
+        >>> import numpy as np
+        >>> from watex.utils.exmath import define_conductive_zone 
+        >>> sample = np.random.randn(9)
+        >>> cz, stn_res = define_conductive_zone(sample, 4, extent = 7)
+        ... (array([ 0.32208638,  1.48349508,  0.6871188 , -0.96007639,
+                    -1.08735204,0.79811492, -0.31216716]),
+             -0.9600763919368086, 
+             3)
+    """
+    try : 
+        iter(erp)
+    except : raise Wex.WATexError_inputarguments(
+            f'`erp` must be a sequence of values not {type(erp)!r}')
+    finally: erp = np.array(erp)
+  
+    # check the distance 
+    if stn is None: 
+        if (dipole_length and distance) is not None: 
+            stn = get_station_number(dipole_length, distance)
+        elif sres is not None: 
+            snix, = np.where(erp==sres)
+            if len(snix)==0: 
+                raise Wex.WATexError_parameter_number(
+                    "Could not  find the resistivity value of the VES "
+                    "station. Please provide the right value instead.") 
+                
+            elif len(snix)==2: 
+                stn = int(snix[0]) + 1
+        else :
+            raise Wex.WATexError_inputarguments(
+                '`stn` is needed or at least provide the survey '
+                'dipole length and the distance from the first '
+                'station to the VES station. ')
+            
+    if erp.size < stn : 
+        raise Wex.WATexError_parameter_number(
+            f"Wrong station number =`{stn}`. Is larger than the "
+            f" number of ERP stations = `{erp.size}` ")
+    
+    # now defined the anomaly boundaries from sn
+    stn =  1 if stn == 0 else stn  
+    stn -=1 # start counting from 0.
+    if extent %2 ==0: 
+        if len(erp[:stn]) > len(erp[stn:])-1:
+           ub = erp[stn:][:extent//2 +1]
+           lb = erp[:stn][len(ub)-int(extent):]
+        elif len(erp[:stn]) < len(erp[stn:])-1:
+            lb = erp[:stn][stn-extent//2 +1:stn]
+            ub= erp[stn:][:int(extent)- len(lb)]
+     
+    else : 
+        lb = erp[:stn][-extent//2:] 
+        ub = erp[stn:][:int(extent//2)+ 1]
+    
+    # read this part if extent anomaly is not reached
+    if len(ub) +len(lb) < extent: 
+        if len(erp[:stn]) > len(erp[stn:])-1:
+            add = abs(len(ub)-len(lb)) # remain value to add 
+            lb = erp[:stn][-add -len(lb) - 1:]
+        elif len(erp[:stn]) < len(erp[stn:])-1:
+            add = abs(len(ub)-len(lb)) # remain value to add 
+            ub = erp[stn:][:len(ub)+ add -1] 
+          
+    conductive_zone = np.concatenate((lb, ub))
+    # get the index of station number from the conductive zone.
+    ix_stn, = np.where (conductive_zone == conductive_zone[stn])
+    ix_stn = int(ix_stn[0]) if len(ix_stn)> 1 else  int(ix_stn)
+    
+    return  conductive_zone, conductive_zone[stn], ix_stn 
+    
+
+def W (cz, stn_pos=None ): 
+    """Validate the shape `w`"""
+    # get anomaly boundaries 
+    # anomaly M: 
+    # UB and LB  > than Lmin > 1 and exists  Lmax >1 at least 
+    
+    lb , ub = cz [0], cz[-1]
+    
+    lmin, = argrelextrema(cz, np.less)
+    lmax, = argrelextrema(cz, np.greater)
+               
+    return lmin, lmax 
+    # try: 
+
+    #     minlocals_ix, = argrelextrema(rhoa_range, np.less)
+    # except : 
+ 
+    #     minlocals_ix = argrelextrema(rhoa_range, np.less)
+    # try : 
+
+    #     maxlocals_ix, = argrelextrema(rhoa_range, np.greater)
+    # except : maxlocals_ix = argrelextrema(rhoa_range, np.greater)
+
+#FR0: CED9EF
+#FR1: 9EB3DD
+#FR2: 9EB3DD
+#FR3: 0A4CEE
+def shortPlot (sample, cz=None): 
+    """ Quick plot to visualize the `sample` line as well as the  selected 
+    conductive zone if given.
+    
+    :param sample: array_like, the electrical profiling array 
+    :param cz: array_like, the selected conductive zone. If ``None``, `cz` 
+        should be plotted.
+    
+    :Example: 
+        >>> import numpy as np 
+        >>> from watex.utils.exmath import shortPlot, define_conductive_zone 
+        >>> test_array = np.random.randn (10)
+        >>> selected_cz ,*_ = define_conductive_zone(test_array, 7) 
+        >>> shortPlot(test_array, selected_cz )
+        
+    """
+    import matplotlib.pyplot as plt 
+    fig, ax = plt.subplots(1,1, figsize =(10, 4))
+    leg =[]
+    ax.scatter (np.arange(len(sample)), sample, marker ='.', c='b')
+    zl, = ax.plot(np.arange(len(sample)), sample, 
+                  c='r', 
+                  label ='Electrical resistivity profiling')
+    leg.append(zl)
+    if cz is not None: 
+        # construct a mask array with np.isin to check whether 
+        # `cz` is subset array
+        z = np.ma.masked_values (sample, np.isin(sample, cz ))
+        # a masked value is constructed so we need 
+        # to get the attribute fill_value as a mask 
+        # However, we need to use np.invert or tilde operator  
+        # to specify that other value except the `CZ` values mus be 
+        # masked. Note that the dtype must be changed to boolean
+        sample_masked = np.ma.array(
+            sample, mask = ~z.fill_value.astype('bool') )
+    
+        czl, = ax.plot(
+            np.arange(len(sample)), sample_masked, 
+            ls='-',
+            c='#0A4CEE',
+            lw =2, 
+            label ='Conductive zone')
+        leg.append(czl)
+
+    ax.set_xticks(range(len(sample)))
+    ax.set_xticklabels(
+        ['S{0:02}'.format(i+1) for i in range(len(sample))])
+    
+    ax.set_xlabel('Stations')
+    ax.set_ylabel('app.resistivity (ohm.m)')
+    ax.legend( handles = leg, 
+              loc ='best')
+        
+    plt.show()
+    
 
 def compute_sfi (pk_min, pk_max, rhoa_min,
                  rhoa_max,  rhoa, pk)  : 
@@ -240,7 +604,7 @@ def get_shape (rhoa_range):
         >>> from watex.utils.exmath import get_shape 
         >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
         >>> shape = get_shape (rhoa_range= np.array(x))
-        ...U
+        ... U
 
     """
     minlocals = argrelextrema(rhoa_range, np.less)
@@ -278,18 +642,14 @@ def compute_power (posMinMax=None, pk_min=None , pk_max=None, ):
     Compute the power Pa of anomaly.
     
     :param pk_min: 
-        
         Min boundary value of anomaly. `pk_min` is min value (lower) 
-        of measurement point. It's the position of the site in meter 
-        
+        of measurement point. It's the position of the site in meter. 
     :type pk_min: float 
     
     :param pk_max: 
-        
         Max boundary of the select anomaly. `pk_max` is the maximum value 
         the measurement point in meter. It's  the upper boundary position of 
         the anomaly in the site in m. 
-        
     :type pk_max: float 
     
     :return: The absolute value between the `pk_min` and `pk_max`. 
@@ -344,3 +704,6 @@ def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
              'and the top(`rhoa_max`) boundaries.')
 
     return np.abs(rhoa_max -rhoa_min)
+
+
+
