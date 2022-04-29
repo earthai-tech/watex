@@ -1,7 +1,7 @@
 # WATex-AI: A Machine Learning Research Toolbox in Hydrogeophysic
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
- ![Requires.io (branch)](https://img.shields.io/requires/github/WEgeophysics/watex/master?style=flat-square)
+ [![Requirements Status](https://requires.io/github/WEgeophysics/watex/requirements.svg?branch=master)](https://requires.io/github/WEgeophysics/watex/requirements/?branch=master)
   ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
   [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5529368.svg)](https://doi.org/10.5281/zenodo.5529368)
   ![GitHub release (latest by date)](https://img.shields.io/github/v/release/WEgeophysics/watex) 
