@@ -20,8 +20,8 @@ _logger =watexlog().get_watex_logger(__name__)
 
 
 class Geology: 
-    """ Geology class deals with all concer ns the structures during 
-    investigation sites about the boreholes or """
+    """ Geology class deals with all concerns the structures during 
+    investigation sites"""
     
     def __init__(self, geofn = None,  **kwargs)-> None:
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)

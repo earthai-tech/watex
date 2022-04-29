@@ -30,6 +30,7 @@ from .transformers import (DataFrameSelector,
                             StratifiedWithCategoryAdder)
 import watex.hints as HI 
 import watex.utils.ml_utils as MLU
+import watex.utils.func_utils as FCU
 import watex.utils.exceptions as Wex
 
 T= TypeVar('T', list, tuple)
@@ -176,8 +177,11 @@ class BasicSteps(object):
             
         if self._data is not None : 
             self.data = self._data 
-            
-            self.X, self.y,*__ = self.stratifyFolds(self.data )
+            self._target =MLU._assert_sl_target (self._target,
+                                                self.data, 
+                                                self)
+            if self._target is not None: 
+                self.X, self.y,*__ = self.stratifyFolds(self.data )
             
     @property 
     def data (self): 
@@ -420,16 +424,16 @@ class BasicSteps(object):
     def target(self, label): 
         """ Check whether the target is among the data frane columns."""
         if not label in self.data.columns: 
-            raise TypeError('No target {self._target !} found in dataframe'
-                            'columns `{self.data.columns}`')
+            raise TypeError(
+                f"{'None' if self._target is None else self._target!r} target"
+                f" is not found in {FCU.smart_format(self.data.columns)}.")
         self._target =label 
         
     def stratifyFolds(self, data): 
         """ Stratified the dataset and return the trainset. Get more details 
         in :doc:`watex.utils.transformers.StratifiedWithCategoryAdder`."""
-        
+
         smsg =''
-        
         if not self.hash:
             sObj= StratifiedWithCategoryAdder(base_num_feature=self.target, 
                                               test_size= self.test_size, 
@@ -458,11 +462,11 @@ class BasicSteps(object):
             if 'index' in list(_X.columns): 
                 self._logging.debug(
                     '`index` used for hashing training and test sets  are '
-                    'still on the datasets. So should be droped to keep '
+                    'still on the dataset. So should be dropped to keep '
                     'the dataset safe as original.')
                 
                 mes='`index` used for hashing training and test '+\
-                       ' sets should be droped.'
+                       ' sets should be dropped.'
                 
                 _X = _X.drop('index', axis =1)
                 __X= __X.drop('index', axis=1)
@@ -508,17 +512,17 @@ class BasicSteps(object):
             except : 
                 ycat, ytext =None 
                 
-                self._logging.error('Unable to find labelcategories values'
-                                    'Could not convert y to text attributes')
-                warnings.warn('Unable to find labelcategories values'
+                self._logging.error('Unable to find labelcategories values. '
+                                    'Could not convert y to text attributes.')
+                warnings.warn('Unable to find labelcategories values. '
                                     'Could not convert y to text attributes')
                 if self.verbose > 1:
-                    cmsg=''.join(['Unable to find label categories',
+                    cmsg=''.join(['Unable to find label categories. ',
                            'Could not convert to text attributes.'])
             else: 
                 
                 cmsg ="".join([
-                    "\ It seems y label need to be categorized.",
+                    "\ It seems y label need to be categorized. ",
                     f"The given y categories are `{np.unique(ycat)}`",
                     f" and should be converted to text values = {ytext}"])
        

@@ -21,27 +21,46 @@ _logger = watexlog.get_watex_logger(__name__)
 
 try:
     import scipy
-
     scipy_version = [int(ss) for ss in scipy.__version__.split('.')]
     if scipy_version[0] == 0:
         if scipy_version[1] < 14:
-            warnings.warn('Note: need scipy version 0.14.0 or higher or interpolation '
-                          'might not work.', ImportWarning)
-            _logger.warning('Note: need scipy version 0.14.0 or higher or interpolation '
-                            'might not work.')
+            msg = ''.join(['Note: need scipy version 0.14.0 or higher', 
+                           ' or interpolation might not work.'])
+            warnings.warn(msg, ImportWarning)
+            _logger.warning(msg)
     import scipy.interpolate as spi
-
     interp_import = True
-
 except ImportError:  # pragma: no cover
-    warnings.warn('Could not find scipy.interpolate, cannot use method interpolate'
-                  'check installation you can get scipy from scipy.org.')
-    _logger.warning('Could not find scipy.interpolate, cannot use method interpolate'
-                    'check installation you can get scipy from scipy.org.')
+    msg =''.join([
+        'Could not find scipy.interpolate, cannot use method interpolate'
+         'check installation you can get scipy from scipy.org.'])
+    warnings.warn(msg)
+    _logger.warning(msg)
     interp_import = False
 
 ###################### end import module ################################### 
-
+def smart_format(iter_obj): 
+    """ Smart format iterable obj 
+    :param iter_obj: iterable obj 
+    
+    :Example: 
+        >>> from watex.utils.func_utils import smart_format
+        >>> smart_format(['.csv', '.json', '.xlsx', '.html', '.sql'])
+        ... '.csv', '.json', '.xlsx', '.html' and '.sql'
+    """
+    str_litteral=''
+    
+    try: 
+        iter(iter_obj) 
+    except:  return f"{iter_obj}"
+    
+    iter_obj = [str(obj) for obj in iter_obj]
+    if len(iter_obj) ==1: 
+        str_litteral= ''.join([f"{i!r}" for i in iter_obj ])
+    elif len(iter_obj)>1: 
+        str_litteral = ','.join([f"{i!r}" for i in iter_obj[:-1]])
+        str_litteral += f" and {iter_obj[-1]!r}"
+    return str_litteral
 
 def format_notes(text:str , cover_str:str='~', inline=70, **kws): 
     """ Format note 
@@ -76,12 +95,12 @@ def format_notes(text:str , cover_str:str='~', inline=70, **kws):
                 new_textList.append(text[init_:])
   
     print('!', headnotes.upper(), ':')
-    print('{}'.format(cover_str * 70)) 
+    print('{}'.format(cover_str * inline)) 
     for k in new_textList:
         fmtin_str ='{'+ '0:>{}'.format(margin) +'}'
         print('{0}{1:>2}{2:<51}'.format(fmtin_str.format(cover_str), '', k))
         
-    print('{0}{1:>51}'.format(' '* (margin -1), cover_str * (70 -margin+1 ))) 
+    print('{0}{1:>51}'.format(' '* (margin -1), cover_str * (inline -margin+1 ))) 
     
     
 def concat_array_from_list(list_of_array, concat_axis=0):

@@ -6,7 +6,7 @@
 # transform test set using the default pipeline 
 # type of encoder use to encode label of training set
 from sklearn.preprocessing import LabelEncoder 
-# from watex.processing.prepare import BasicSteps  
+
 from watex.datasets import  fetch_data 
 # from watex.utils.ml_utils import loadDumpedOrSerializedData
 from watex.processing.transformers import CategorizeFeatures
