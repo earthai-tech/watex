@@ -42,7 +42,7 @@ WATex, originally, means WATer 💧 Exploration toolbox using Machine Learning M
 
 ## Licence 
 
-WATex-AI is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
+WATex-AI is under Massachusetts Institute of Technology ([MIT](https://www.mit.edu/~amini/LICENSE.md)) License.
 
 ## Citation
 
