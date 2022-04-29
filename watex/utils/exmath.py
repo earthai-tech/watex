@@ -1,30 +1,36 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Sep 17 11:25:15 2021
-# This module is a WATex-AI calculator released under MIT Licence 
-"""
-Created on Fri Sep 17 11:25:15 2021
+#   Copyright (c) 2021 Kouadio K. Laurent, 
+#   Created datae: on Fri Sep 17 11:25:15 2021
+#   Licence: MIT Licence 
 
-@author: @Daniel03
-"""
+from __future__ import annotations 
 
 import numpy as np
 import pandas as pd 
- 
+import  matplotlib.pyplot as plt 
 from scipy.signal import argrelextrema 
 from ..utils.decorator import deprecated 
 from ..utils._watexlog import watexlog
 from ..utils import exceptions as Wex 
 from .._typing import (
-    Array, 
     T, 
     List, 
-    Tuple, 
-    
+    Tuple,
+    Union,
+    Array,
+    DType,
+    Optional,
+    Sub, 
+    SP
 )
 
 _logger =watexlog.get_watex_logger(__name__)
 
-def _sfi (erp , cz): 
+def _sfi (
+        cz: Sub[Array[T, DType[T]]] | List[float] ,
+        p: Sub[SP[Array, DType [int]]] | List [int]= None, 
+        dipolelength: float = 10.
+) -> float: 
     """ Compute  the pseudo-fracturing Index knows as *sfi*. 
     
     The sfi parameter does not indicate the rock fracturing degree in 
@@ -34,25 +40,50 @@ def _sfi (erp , cz):
     by Dieng et al. (2004).  Furthermore, its threshold is set to
     :math:`\sqrt(2)`  for symmetrical anomaly characterized by a perfect 
     distribution of resistivity in a homogenous medium. The formula is
-    given by:: 
+    given by:
+    
+    .. _Dieng: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
+    
+    .. math::
         
-	sfi=\sqrt((P_a/(P_a^\ast\ ))^2+(M_a/(M_a^\ast\ ))^2\ \ )
+        sfi=\sqrt((P_a/(P_a^\ast\ ))^2+(M_a/(M_a^\ast\ ))^2\ \ )
     
     where P_a and M_a are the anomaly power and the magnitude respectively. 
     $(P_a^\ast\ )$  is and (M_a^\ast\ ) are the projected power and 
     magnitude of the lower point of the selected anomaly.
-
+    
+    :param cz: array-like. Selected conductive zone 
+    :param p: array-like. Station positions of the conductive zone.
+    
     """
+    # Determine the number of curve inflection 
+    # to find the number of degree to compose 
+    # cz fonction 
+    if p is None : 
+        p = np.arange (0, len(cz) * dipolelength, dipolelength)
+    ixf = len(argrelextrema(cz, np.less)) + len(argrelextrema(cz,np.greater))
+    
+    return p, ixf 
+
+    
+def quickplot (arr, dl =10): 
+    """Quick plot to see the anomaly"""
+    
+    plt.plot(np.arange(0, len(arr) * dl, dl), arr , ls ='-', c='k')
+    plt.show() 
+    
     
 
-def _magnitude (cz:List[float] | Array) -> float: 
+def _magnitude (cz:Sub[Array[float, DType[float]]] ) -> float: 
     """ Compute the magnitude of selected conductive zone. 
     
     The magnitude parameter is the absolute resistivity value between
-    the minimum :math:`(\rho_(a_min\ )\ )`  and maximum :math:`( \rho_(a_max\ ))` 
-    value of selected anomaly::
+    the minimum :math:`\rho_(a_min\ )\`  and maximum :math:`\rho_(a_max\ )` 
+    value of selected anomaly:
     
-	magnitude=|\begin\rho_a〗_min-ρ_(a_max ) |
+    .. math::
+    
+        magnitude=|\begin\rho_a〗_min-ρ_(a_max ) |
 
     
     :param cz: array-like. Array of apparent resistivity values composing 
@@ -62,27 +93,29 @@ def _magnitude (cz:List[float] | Array) -> float:
     """
     return np.abs (cz.max()- cz.min()) 
 
-def _power (czp:List[int] | Array ) -> float : 
+def _power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float : 
     """ Compute the power of the selected conductive zone. Anomaly `power` 
     is closely referred to the width of the conductive zone.
     
     The power parameter implicitly defines the width of the conductive zone
     and is evaluated from the difference between the abscissa 
     :math:`\begin(X〗_LB)` and the end :math:`\left(X_{UB}\right)` points of 
-    the selected anomaly:: 
+    the selected anomaly:
+    
+    .. math::
         
         power=|X_LB-X_UB\ |
     
-    :param czp: array-like. Array  station position of conductive zones.
+    :param p: array-like. Station position of conductive zone.
     
     :return: Absolute value of the width of conductive zone. 
     """
-    return np.abs(czp.min()- czp.max()) 
+    return np.abs(p.min()- p.max()) 
 
 
 def _find_cz_bound_indexes (
-        erp: List[float |int] | pd.Series |Array ,
-        cz: List[float|int] 
+    erp: Union[Array[float, DType[float]], List[float], pd.Series],
+    cz: Union [Sub[Array], List[float]] 
 )-> Tuple[int, int]: 
     """ Fetch the limits 'LB' and 'UB' of the selected conductive zone.
     
@@ -106,6 +139,7 @@ def _find_cz_bound_indexes (
                           'subset of the resistivity array')
     # find the indexes using np.argwhere  
     cz_indexes = np.argwhere(np.isin(erp, cz)).ravel()
+    
     return cz_indexes [0] , cz_indexes [-1] 
 
 
@@ -133,9 +167,9 @@ def convert_distance_to_m(
     
     
 def get_station_number (
-        dipole:float | int ,
-        distance:float | int, 
-        from0:bool =False,
+        dipole:float,
+        distance:float , 
+        from0:bool = False,
         **kws
 )-> float: 
     """ Get the station number from dipole length and 
@@ -159,8 +193,8 @@ def get_station_number (
             'more efficient.')
 def define_conductive_zone (
         erp:Array | List[float],
-        stn: int |None  =None,
-        sres:float | None =None,
+        stn: Optional [int] =None,
+        sres:Optional [float] =None,
         distance:float | None =None , 
         dipole_length:float | None =None,
         *, 
