@@ -1,22 +1,25 @@
 # -*- coding: utf-8 -*-
 
 """ 
-WATex Type variable definitions 
+`WATex`_ Type variable definitions 
 =============================== 
 
-.. |erp| replace:: Electrical resistivity profiling 
+.. |ERP| replace: Electrical resistivity profiling 
+
+.. _WATex: https://github.com/WEgeophysics/watex/
 
 Some type variables customized need to be explained for easy understanding 
 in the whole package. Indeed, customized type hints is used to define the 
 type of arguments. 
 
-**M**: Suppose to be the interger variable `IntVar` to denote the num ber of 
+**M**: Suppose to be the interger variable `IntVar` to denote the number of 
     rows in the ``Array``. 
     
 **N**: Like the ``M``, *N* means the number of column in the ``Array``. It 
     is bound with  integer variable. 
     
-**T**: Is known as used name generic standing for `Any` type of  variable. 
+**T**: Is known as generic type standing for `Any` type of variable. We keep 
+    it unchanged. 
 
 **U**: Unlike `T`, `U` stands for nothing. Use to sepcify the one dimentional 
     array. For instance:: 
@@ -63,9 +66,9 @@ type of arguments.
                 
 **Sub**: Stand for subset. Indeed, the class is created to define the 
     conductive zone. It is a subset ``Sub`` of ``Array``. For example, we first 
-    build an array secondly extract the conductive zone from `erp` line.
+    build an array secondly extract the conductive zone from |ERP| line.
     Finally, we checked the type hint to assert whether the extracted zone 
-    is a subset of the whole `erp` line. The demo is given below:: 
+    is a subset of the whole |ERP| line. The demo is given below:: 
         
         >>> import numpy as np 
         >>> from watex._typing import TypeVar, DType, Array , Sub
@@ -87,6 +90,7 @@ type of arguments.
     Here we go:: 
         
         * Import required modules and generate the whole survey line::
+            
             >>> import numpy as np 
             >>> from watex._typing import TypeVar, DType, SP, Sub 
             >>> T =TypeVar ('T', bound =int)
@@ -112,7 +116,38 @@ type of arguments.
                             shoud be asserted as a subestof the whole line.'''
                             ... 
                     ... (test verified. subpos is a subset of `SP`) 
-
+                    
+**Series**: Stands for `pandas Series`_ object rather than using the specific 
+    ``pandas.Series`` everywhere in the package. 
+    
+**DataFrame**: Likewise the ``Series`` generic type hint, it stands for 
+    ``pandas DataFrame`_ object. It used to replace ``pandas.DataFrame`` object
+    to identify the callable arguments in the whole packages. 
+    Both can be instanciated as below:: 
+        
+        >>> import numpy as np 
+        >>> import pandas pd 
+        >>> from watex._typing import TypeVar , Any, DType , Series, DataFrame
+        >>> T  =TypeVar('T')
+        >>> seriesStr = pd.Series ([f'obx{s}' for s in range(21)],
+                                 name ='stringobj')
+        >>> seriesFloat = pd.Series (np.arange(7).astype(np.float32),
+                                 name =floatobj)
+        >>> SERs = Series [DType[str]] # pass 
+        >>> SERf =Series [DType [float]] # pass 
+    
+        ..
+    
+        >>> dfStr= pd.DataFrame {'ser1':seriesStr , 
+                            'obj2': [f'none' for i in range (21)]}
+        >>> dfFloat= pd.DataFrame {'ser1':seriesFloat , 
+                            'obj2': np.linspace (3, 28 , 7)}
+        >>> dfAny= pd.DataFrame {'ser1':seriesStr, 
+                            'ser2':seriesFloat}
+        >>> DFs  = DataFrame [SERs] | DataFrame [DType[str]]
+        >>> DFf  = DataFrame [SERf] | DataFrame [DType[float]]
+        >>> DFa =  DataFrame [Series[Any]] | DataFrame [DType[T]]
+        
 ---
 
 Additional definition for common arguments 
@@ -122,7 +157,7 @@ To better construct a hugue API, an explanation of some argument is useful
 to let the user aware when meeting such argument in a callable function. 
 
 **erp** : Stand for Electrical Resistivity Profiling. Typically, the type hint 
-    for `erp` is ``Array[float, DType [float]]`` or ``List[float]``. Its
+    for |ERP| is ``Array[float, DType [float]]`` or ``List[float]``. Its
     array is supposed to hold the apparent resistivy values  collected 
     during the survey. 
     
@@ -132,9 +167,9 @@ to let the user aware when meeting such argument in a callable function.
      supposed to be on integer array and the given values enven in float 
      should be casted to integers. 
      
-**cz**: Stands for Conductive Zone. It is a subset of `erp` so they share the 
+**cz**: Stands for Conductive Zone. It is a subset of |ERP| so they share the 
     same type hint. However, for better demarcation, ``Sub`` is convenient to 
-    use to avoid any confusion about the full `erp` and the extracted  
+    use to avoid any confusion about the full |ERP| and the extracted  
     conductive as demontrated in the example above in ``Sub`` type hint
     definition.
         
@@ -211,7 +246,7 @@ class DType (Generic [T]):
 class Array(Generic[T, D]): 
     """ Arry Type here means the 1D array i.e singular column. """
     
-    def __getitem__ (self, T) -> T: 
+    def __getitem__ (self, T) -> Union ['Array', T]: 
         """ Return Type of the given Type variable. """ 
         ... 
     
@@ -250,15 +285,16 @@ class F (Generic [T]):
         >>> def check_F(anyway:F): 
                 pass 
     """
-    def __getitem__ (self, T) -> Callable [..., Union[T, Callable[..., T]] ]:
+    def __getitem__ (self, item: Callable [...,T]
+                     ) -> Union ['F', Callable[..., T], T, Any]:
         """ Accept any type of variable supposing to be a callable object 
-        functions, methods or even classes and returnthe given type 
-        object or another callable object with its own or different specific 
-        parameters."""
-        ... 
+        functions, methods or even classes and return the given type 
+        object or another callable object  with its own or different specific 
+        parameters or itself or Any."""
+        return self 
     
 class Sub (Generic [T]): 
-    """ Return subset of Array"""
+    """ Return subset of whatever Array"""
     ... 
      
 class SP(Generic [T, D]): 
@@ -268,18 +304,76 @@ class SP(Generic [T, D]):
     21 stations. The station position array  should be an array of interger 
     values from 0. to 200 meters. as like:: 
         
-        >>> from 
         >>> import numpy as np 
-        >>> positions: SP= np.arange(0, 21 * 10, 10.
+        >>> positions: SP = np.arange(0, 21 * 10, 10.
                                      ).astype (np.int32) # integer values 
-        >>> 
+     
     """
     ... 
     
-
+class Series (DType[T], Generic [T]): 
+    """ To reference the pandas Series_ object. 
+    
+    .. _Series: https://pandas.pydata.org/docs/reference/api/pandas.Series.html
+    
+    :Example:
+        >>> import numpy as np
+        >>> import pandas as pd 
+        >>> from watex._typing import DType, Series  
+        >>> ser = pd.Series (np.arange (21), name ='nothing')
+        
+    .. code: Python 
+        
+        def check_type (serObj:Series): 
+            ''' pass anyway'''
+            ... 
+        check_type (seObj: Series[DType[str]]=ser ) 
+    
+    """
+    def __getitem__ (self, item: T) -> 'Series': 
+        """ Get the type variable of item T and return `Series`_ object."""
+        return self 
+    
+    
+       
+class DataFrame (Series[T], Generic[T]): 
+    """ Type hint variable to illutsrate the `pandas DataFrame`_ object. 
+    
+    .._pandas DataFrame: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
+    
+    Indeed, `pandas DataFrame`_ can be considered as an aggregation of `Series`_, 
+    thus, the generic type hint variable is supposed to hold a `Series`_
+    object. 
+    
+    :Example:
+        >>> import numpy as np
+        >>> import pandas as pd 
+        >>> from watex._typing import DType, DataFrame 
+        
+    .. code: Python 
+         
+        df =pd.DataFrame ({serie1: np.arange(7), 
+                           serie2: np.linspace (0, 1000, 7), 
+                           serie3: [f'0b{i} for i in range(7)]
+                                    })
+        def check_type (dfObj:DataFrame): 
+            ... 
+        ckeck_type (dfObj: DataFrame [DType [object]] =df)
+    
+    """
+    
+    def __getitem__(self, item: T)->'DataFrame':
+        """ Get the type hint variable of `pandas DataFrame`_ and return the 
+        object type variable."""
+        
+        return self     
+    
 if __name__=='__main__': 
     def test (array:Sub[SP[Array[int, DType[int]], DType [int]]]):... 
     def test2 (array:Sub[SP[Array, DType [int]]]):... 
+    
+    DFSTR  = DataFrame [Series[DType[str]]]
+    DF = DataFrame [DType [object]]
     
 
 

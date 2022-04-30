@@ -5,10 +5,12 @@
 
 from __future__ import annotations 
 
+import copy 
 import numpy as np
 import pandas as pd 
 import  matplotlib.pyplot as plt 
 from scipy.signal import argrelextrema 
+from  .. properties import P
 from ..utils.decorator import deprecated 
 from ..utils._watexlog import watexlog
 from ..utils import exceptions as Wex 
@@ -16,6 +18,8 @@ from .._typing import (
     T, 
     List, 
     Tuple,
+    Dict,
+    Any,
     Union,
     Array,
     DType,
@@ -26,10 +30,155 @@ from .._typing import (
 
 _logger =watexlog.get_watex_logger(__name__)
 
+def __isin (arr: Array | List [float] ,
+              subarr: Sub [Array] |Sub[List[float]] | float ): 
+    """ Check whether the subset array `subcz` is in  `cz` array. 
+    
+    :param arr: Array-like - Array of item elements 
+    :param subarr: Array-like, float - Subset array containing a subset items.
+    :return: True if items in  test array `subarr` are in array `arr`. 
+    
+    """
+    arr , subarr  = np.array (arr ), np.array(subarr )
+    return True if True in np.isin (arr, subarr) else False 
+
+def __sves__ (
+        s_index: int  , 
+        cz: Array | List[float], 
+        rhoap : Optional[float] =None, 
+) -> Tuple[Array, Array]: 
+    """ Divided the conductive zone in lefzone and righzone from 
+    the drilling location index . 
+    
+    :param s_index - station location index expected for dilling location. 
+        It refers to the position of |VES|. 
+        
+    :param cz: array-like - Conductive zone . 
+    
+    :returns: 
+        - <--Sves: Left side of conductive zone from |VES| location. 
+        - --> Sves: Right side of conductive zone from |VES| location. 
+        
+    .. note:: Both sides included the `Sves` |VES| position.
+    
+    """
+    s_index = __assert_all_type( s_index , int)
+    cz = __assert_all_type(cz, np.ndarray, pd.Series, list, tuple )
+    ls , rs = max(cz[:s_index  + 1])  , max(cz[s_index  :])   
+    
+    if rhoap is not None : 
+        
+        if not __isin(rhoap, cz): 
+            raise ValueError (
+                f'A value `{rhoap}` should be an argument `cz` items. ')
+        # now find with positions 
+        for v, side  in zip((ls, rs ) , ('leftside', 'rightside')) : 
+            if __isin(rhoap, v): 
+                return v, side 
+        
+    return ls , rs 
+
+
+def __assert_all_type (
+        obj: object , 
+        *expected_objtype: type 
+ ) -> object: 
+    """ Quick assertion of object type. Raise an `TypeError` if 
+    wrong type is given."""
+
+    if not isinstance( obj, expected_objtype): 
+        return TypeError (
+            f'Expected `{expected_objtype}` type but `{type(obj)}` is given.')
+    return obj 
+
+def detect_station_position (
+        s : Union[str, int] ,
+        p: Array|List [float] , 
+) -> Tuple [int, float]: 
+    """ Detect station position and return the index in positions
+    
+    :param s: str, int - Station location  in the position array. It should 
+        be the positionning of the drilling location. If the value given
+         is type string. It should be match the exact position to 
+         locate the drilling. Otherwize, if the value given is in float or 
+         integer type, it should be match the index of the position array. 
+         
+    :param p: Array-like - Should be the  conductive zone as array of 
+        resistivity values. 
+            
+    :returns: 
+        - `s_index`- the position index location in the conductive zone.  
+        - `s`- the station position in distance. 
+        
+    :Example: 
+        
+        >>> import numpy as np 
+        >>> from watex.utils.exmath import detect_station_position 
+        >>> pos = np.arange(0 , 50 , 10 )
+        >>> detect_station_position (s ='S30', p = pos)
+        ... (3, 30.0)
+        >>> detect_station_position (s ='40', p = pos)
+        ... (4, 40.0)
+        >>> detect_station_position (s =2, p = pos)
+        ... (2, 20)
+        >>> detect_station_position (s ='sta200', p = pos)
+        ... WATexError_station: Station sta200 \
+            is out of the range; max position = 40
+    """
+    s = __assert_all_type( s, float, int, str)
+    p = __assert_all_type( p, tuple, list, np.ndarray, pd.Series) 
+    
+    S=copy.deepcopy(s)
+    if isinstance(s, str): 
+        s =s.lower().replace('s', '').replace('pk', '').replace('ta', '')
+        try : 
+            s=int(s)
+        except : 
+            raise ValueError (f'could not convert string to float: {S}')
+    p = np.array(p, dtype = np.int32)
+    dl = (p.max() - p.min() ) / (len(p) -1) 
+    if isinstance(s, (int, float)): 
+        if s > len(p): # consider this as the dipole length position: 
+            # now let check whether the given value is module of the station 
+            if s % dl !=0 : 
+                raise Wex.WATexError_station  (
+                    f'Unable to detect the station position {S}')
+            elif s % dl == 0 and s <= p.max(): 
+                # take the index 
+                s_index = s//dl
+                return int(s_index), s_index * dl 
+            else : 
+                raise Wex.WATexError_station (
+                    f'Station {S} is out of the range; max position = {max(p)}'
+                )
+        else : 
+            if s >= len(p): 
+                raise Wex.WATexError_station (
+                    'Location index must be less than the number of'
+                    f' stations = {len(p)}. {s} is gotten.')
+            # consider it as integer index 
+            # erase the last variable
+            # s_index = s 
+            # s = S * dl   # find 
+            return s , p[s ]
+       
+    # check whether the s value is in the p 
+    if True in np.isin (p, s): 
+        s_index ,  = np.where (p ==s ) 
+        s = p [s_index]
+        
+    return int(s_index) , s 
+    
 def _sfi (
         cz: Sub[Array[T, DType[T]]] | List[float] ,
         p: Sub[SP[Array, DType [int]]] | List [int]= None, 
-        dipolelength: float = 10.
+        s: Optional [str] =None, 
+        dipolelength: Optional [float] = None, 
+        plot: bool = False,
+        raw : bool = False, 
+        sckws: Dict [str, Any] = None, 
+        plotstyle : str ='seaborn', 
+        **plotkws
 ) -> float: 
     """ Compute  the pseudo-fracturing Index knows as *sfi*. 
     
@@ -37,31 +186,132 @@ def _sfi (
     the underground but it is used to speculate about the apparent resistivity 
     dispersion ratio around the cumulated sum of the  resistivity values of 
     the selected anomaly. It uses a similar approach of  IF parameter proposed 
-    by Dieng et al. (2004).  Furthermore, its threshold is set to
+    by `Dieng et al`_ (2004).  Furthermore, its threshold is set to
     :math:`\sqrt(2)`  for symmetrical anomaly characterized by a perfect 
     distribution of resistivity in a homogenous medium. The formula is
     given by:
-    
-    .. _Dieng: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
     
     .. math::
         
         sfi=\sqrt((P_a/(P_a^\ast\ ))^2+(M_a/(M_a^\ast\ ))^2\ \ )
     
     where P_a and M_a are the anomaly power and the magnitude respectively. 
-    $(P_a^\ast\ )$  is and (M_a^\ast\ ) are the projected power and 
+    :math:`\P_a^\ast\`  is and :math:`\M_a^\ast\` are the projected power and 
     magnitude of the lower point of the selected anomaly.
     
     :param cz: array-like. Selected conductive zone 
     :param p: array-like. Station positions of the conductive zone.
+    :param dipolelength: float. If `p` is not given, it will be set 
+        automatically using the default value to match the ``cz`` size. 
+        The **default** value is ``10.``.
+    :param plot: bool. Visualize the fitting curve.
+    :param raw: bool. Overlaining the fitting curve with the raw curve from `cz`. 
+    :param sckws: dict. `Matplotlib scatter`_ keyword additional arguments.
+    :param plotkws:dict. `Matplotlib plot`_ keyword arguments. 
     
+    
+    :Example:
+        
+        >>> from numpy as np 
+        >>> _sfi (condzone , plot =True , raw =True )
+        ... Out[598]: (array([ 0., 10., 20., 30.]), 1)
+        
     """
+ 
+    
+    
     # Determine the number of curve inflection 
     # to find the number of degree to compose 
     # cz fonction 
-    if p is None : 
+    if p is None :
+        dipolelength = 10. if dipolelength is  None else dipolelength  
         p = np.arange (0, len(cz) * dipolelength, dipolelength)
-    ixf = len(argrelextrema(cz, np.less)) + len(argrelextrema(cz,np.greater))
+    minl, = argrelextrema(cz, np.less)
+    maxl, = argrelextrema(cz,np.greater)
+    ixf = len(minl) + len(maxl)
+    
+    # create the polyfit function f from coefficents (coefs)
+    coefs  = np.polyfit(x=p, y=cz, deg =ixf + 1 ) 
+    f = np.poly1d(coefs )
+    # generate a sample of values to cover the fit function 
+    # for degree 2: eq => f(x) =ax2 +bx + c or c + bx + ax2 as 
+    # the coefs are aranged. See https://numpy.org/doc/stable/reference/generated/numpy.polyfit.html
+    # coefs are ranged for index0  =c, index1 =b and index 2=a 
+    # for instance for degree =2 
+    # model (f)= [coefs[2] + coefs[1] * x  +   coefs [0]* x**2  for x in xmod]
+    # where x_new(xn ) = 100 points generated 
+    # thus compute ynew (yn) from the poly function f
+    xn  = np.linspace (min(p), max(p), 1000) 
+    yn = f(xn)
+    # https://stackoverflow.com/questions/10457240/solving-polynomial-equations-in-python
+    # solve the system to find the different root 
+    # from the min resistivity value bound. 
+    # -> Get the bound with the min values 
+    
+    if s is not None : 
+        # explicity giving s 
+        s_ix , spos = detect_station_position(s , p)
+        # once index 
+        maxlh , maxrh = __sves__(s_ix , cz )
+        print(' maxlh , maxrh',  maxlh , maxrh)
+        rhoamin = maxlh if maxlh < maxrh else maxrh 
+    if s is None: 
+        # take the index of min value of p 
+        s_ix  = np.argmin(p)
+        maxlh , maxrh = __sves__(s_ix , cz )
+        rhoamin = maxlh if maxlh < maxrh else maxrh 
+    # find the roots from rhoa min 
+    # f (x) = rhoamin
+    fn = f  - rhoamin 
+    roots = fn.r 
+    
+    print('roots FN', roots)
+    print('absolute roots FN', np.abs(roots))
+    print('seek roots in f = ', f (roots))
+    print('seek from abs roots in f = ', f (np.abs(roots)))
+    print('--' *10)
+    print('rhoamin= ', rhoamin )
+    print('f(0) and f(18)=', f(0), f(18))
+    print('fn(0) and fn(18)=', fn(0), fn(18))
+
+
+    if plot: 
+        plt.style.use('seaborn')
+        fig = plt.figure(1, figsize =(7, 7))
+        plt.plot (p, cz,'o', xn, yn, label= 'fitting model',  **plotkws)
+        if raw: 
+            plt.plot (p, cz, 
+                      c = f'{P().FRctags.get("fr1")}',
+                      label ='Conductive zone (cz)'
+                      )
+        sckws = dict() if sckws is None else sckws 
+        plt.scatter (p, cz,
+                     marker ='o', 
+                     c=f'{P().FRctags.get("fr3")}',
+                     edgecolor ='r',
+                     **sckws 
+                     )
+        plt.xticks (p,
+                    labels = [f'S{int(i):02}' for i in p],
+                    rotation =45.
+                    )
+        plt.xlabel ('Stations')
+        plt.ylabel ('Resistivity (Ω.m)')
+        
+        fig_title_kws = dict (
+            t = 'Plot fit model', 
+            style ='italic', 
+            bbox =dict(boxstyle='round',facecolor ='lightgrey'))
+            
+        plt.tight_layout()
+        fig.suptitle(**fig_title_kws, 
+                      )
+        plt.legend ()
+        plt.show ()
+    # plt.figure (1) 
+    # plt.scatter (p, cz, marker ='o', c='blue', label ='Positions')
+    # plt.plot (xmod, model,  c='r',
+    #           label =f'Modelisation: y ={coefs[0]:.2f}x2 +{coefs[1]:.2f}x + {coefs[2]:.2f}')
     
     return p, ixf 
 
@@ -78,18 +328,17 @@ def _magnitude (cz:Sub[Array[float, DType[float]]] ) -> float:
     """ Compute the magnitude of selected conductive zone. 
     
     The magnitude parameter is the absolute resistivity value between
-    the minimum :math:`\rho_(a_min\ )\`  and maximum :math:`\rho_(a_max\ )` 
+    the minimum :math:`\rho_(a_min\ )\` and maximum :math:`\rho_(a_max\ )` 
     value of selected anomaly:
     
     .. math::
     
         magnitude=|\begin\rho_a〗_min-ρ_(a_max ) |
 
-    
     :param cz: array-like. Array of apparent resistivity values composing 
         the conductive zone. 
     
-    :return: Absolute value of anomaly magnitude.
+    :return: Absolute value of anomaly magnitude in ohm.meters.
     """
     return np.abs (cz.max()- cz.min()) 
 
@@ -108,7 +357,7 @@ def _power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float :
     
     :param p: array-like. Station position of conductive zone.
     
-    :return: Absolute value of the width of conductive zone. 
+    :return: Absolute value of the width of conductive zone in meters. 
     """
     return np.abs(p.min()- p.max()) 
 
@@ -126,7 +375,7 @@ def _find_cz_bound_indexes (
     :param cz: array-like. Array of apparent resistivies composing the  
         conductive zone. 
     
-    :return: The index of boundaries  'LB' and 'UB'. 
+    :return: The index of boundaries 'LB' and 'UB'. 
     
     .. note::`cz` must be self-containing of `erp`. If ``False`` should  
             raise and error. 
@@ -188,16 +437,16 @@ def get_station_number (
 
     return  distance/dipole  if from0 else distance/dipole + 1 
 
-@deprecated('Deprecated function. Replaced by '
-            '`:func: ~watex.utils.coreutils._define_conductive_zone`'
-            'more efficient.')
+# @deprecated('Deprecated function. Replaced by '
+#             '`:func: ~watex.utils.coreutils._define_conductive_zone`'
+#             'more efficient.')
 def define_conductive_zone (
-        erp:Array | List[float],
-        stn: Optional [int] =None,
-        sres:Optional [float] =None,
-        distance:float | None =None , 
-        dipole_length:float | None =None,
+        erp: Array | List[float],
+        stn: Optional [int] = None,
+        sres:Optional [float] = None,
         *, 
+        distance:float | None = None , 
+        dipole_length:float | None = None,
         extent:int =7): 
     """ Detect the conductive zone from `s`ves point.
     
@@ -705,5 +954,16 @@ def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
 
     return np.abs(rhoa_max -rhoa_min)
 
+"""
+.. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
 
+.. _Matplotlib scatter: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.scatter.html
+
+.. _Matplotlib plot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
+
+.. |VES| replace: Vertical Electrical Sounding 
+
+.. |ERP| replace: Electrical resistivity profiling 
+
+"""
 

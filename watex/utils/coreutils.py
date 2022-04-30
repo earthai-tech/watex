@@ -3,28 +3,34 @@
 #   Created date: Fri Apr 15 10:46:56 2022
 #   Licence: MIT Licence 
 # 
-
 from __future__ import  annotations 
 
 import os 
 import warnings 
-from typing import ( Any, 
-                    List ,  
-                    Union, 
-                    Tuple,
-                    Dict,  
-)
+
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt 
 
+from .._typing import (
+    Any, 
+    List ,  
+    Union, 
+    Tuple,
+    Dict,
+    NDArray,
+    Array, 
+    DType, 
+    Sub, 
+    SP
+)
 from .func_utils import smart_format 
 from .ml_utils import read_from_excelsheets
 from ..properties import P 
-from .._typing import NDArray
-from ..exceptions import ( WATexError_station, 
-                          WATexError_parameter_number
-                          )
+from ..exceptions import ( 
+    WATexError_station, 
+    WATexError_parameter_number
+)
 
 def _data_sanitizer (
         f: str | NDArray,
@@ -530,13 +536,13 @@ def _assert_stations(
             position.
             
     :Example: 
-        >>> from watex.utils.coreutils import _sanitize_stations
-        >>> _sanitize_stations('pk01')
-        >>> _sanitize_stations('S1')
-        >>> _sanitize_stations('S00')
-        >>> _sanitize_stations('S1000',dipole ='1km')
-        >>> _sanitize_stations('S10', dipole ='10m')
-        >>> _sanitize_stations(1000,dipole =1000)
+        >>> from watex.utils.coreutils import _assert_stations
+        >>> _assert_stations('pk01')
+        >>> _assert_stations('S1')
+        >>> _assert_stations('S00')
+        >>> _assert_stations('S1000',dipole ='1km')
+        >>> _assert_stations('S10', dipole ='10m')
+        >>> _assert_stations(1000,dipole =1000)
         ... ('S01', 0) 
     """
     # in the case s is string: eg. "00", "pk01", "S001"
