@@ -18,17 +18,15 @@ import numpy as np
 import pandas as pd 
 import  matplotlib.pyplot as plt 
 
-from typing import ( Iterable,
+from .._typing import ( Iterable,
                     Optional,
                     Callable ,
-                    TypeVar, 
+                    T
 
 )
 
-T=TypeVar('T')  
-
-from watex.utils._watexlog import watexlog
-from watex.utils.__init__ import savepath as savePath 
+from ._watexlog import watexlog
+from . import savepath as savePath 
 from .ml_utils import read_from_excelsheets
 
 __logger = watexlog().get_watex_logger(__name__)
