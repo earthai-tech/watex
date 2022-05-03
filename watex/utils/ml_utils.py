@@ -13,15 +13,22 @@ import datetime
 import shutil
 from pprint import pprint  
 from six.moves import urllib 
-from typing import TypeVar, Generic, Iterable , Callable, Text
-import pandas as pd 
+
 import numpy as np 
-  
+import pandas as pd 
+
 from sklearn.model_selection import (train_test_split, StratifiedShuffleSplit)
 
+from .._typing import (TypeVar,
+                       Generic,
+                       Iterable ,
+                       Callable,
+                       Text
+                       )
+
 import watex.utils.func_utils as FU
-from watex.utils.__init__ import savepath as savePath 
-from watex.utils._watexlog import watexlog
+from . import savepath as savePath 
+from ._watexlog import watexlog
 
 __logger = watexlog().get_watex_logger(__name__)
 

@@ -3,33 +3,46 @@
 #   Created date: Fri Apr 15 10:46:56 2022
 #   Licence: MIT Licence 
 # 
-
 from __future__ import  annotations 
 
 import os 
 import warnings 
-from typing import ( Any, 
-                    List ,  
-                    Union, 
-                    Tuple,
-                    Dict,  
-)
+import copy 
+
 import numpy as np 
 import pandas as pd 
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+ 
 
+from .._property import P 
+from .._typing import (
+    Any, 
+    List ,  
+    Union, 
+    Tuple,
+    Dict,
+    Optional,
+    NDArray,
+    DataFrame, 
+    Series,
+    Array, 
+    DType, 
+    Sub, 
+    SP
+)
+from .exmath import __isin , __assert_all_types 
 from .func_utils import smart_format 
 from .ml_utils import read_from_excelsheets
-from ..properties import P 
-from .._typing import NDArray
-from ..exceptions import ( WATexError_station, 
-                          WATexError_parameter_number
-                          )
 
-def _data_sanitizer (
-        f: str | NDArray,
+from ..exceptions import ( 
+    WATexError_station, 
+    WATexError_parameter_number
+)
+
+def data_sanitizer (
+        f: str | NDArray | Series | DataFrame ,
         **kws:Any 
-) -> pd.DataFrame : 
+) -> Union [Series, DataFrame]  : 
     """ Sanitize the raw data collected from the survey. 
     
     `data` should be arranged in ``.csv`` or ``.xlsx`` formats. Be sure to 
@@ -43,13 +56,13 @@ def _data_sanitizer (
     
     :param f: str. Path to the data location. Can parse `.csv` and `.xlsx` 
         file formats. Can also accept arrays and the output is one of the 
-        given result::
+        given results::
             
             - array-like shape (M,): --> pd.Series with name ='resistivity'
             - array with shape (M, 2) --> ['station', 'resistivity'] 
-            - array with shape (M, 3) --> Raise a ValueError 
+            - array with shape (M, 3) --> Raise an Error 
             - array with shape (M, 4) --> columns above 
-            - array with shape (M , N ) --> shrunked to fit the colum above. 
+            - array with shape (M , N ) --> shrunked to fit the column above. 
             
             
     :param kws: dict. Additional pandas `~.read_csv` and `~.read_excel` 
@@ -106,7 +119,7 @@ def _data_sanitizer (
         rawcol = f.columns 
         temp = list(map(lambda x: x.lower().strip(), f.columns))  
         for i, item  in enumerate (temp): 
-            for key, values in P().Dtags.items (): 
+            for key, values in P().idictags.items (): 
                 for v in values: 
                     if item.find(v)>=0: 
                         temp[i] = key 
@@ -123,7 +136,7 @@ def _data_sanitizer (
             # Find the corresponding prefix values in DTAGS 
             # then use the values for searching the raw 
             # columns name. 
-            tv = list(P().Dtags.get(key) for key in duplicate)
+            tv = list(P().idictags.get(key) for key in duplicate)
             for val in tv: 
                 ls = set([ it for it in rawcol for e in val if it.find(e)>=0])
                 if len(ls)!=0: 
@@ -157,15 +170,15 @@ def _data_sanitizer (
             f = pd.DataFrame( f, columns =['station', 'resistivity']) 
             
         elif f.shape [1] ==3: 
-            raise ValueError (msg.format(P().SENR) + appendmsg ) 
+            raise ValueError (msg.format(P().isenr) + appendmsg ) 
         elif f.shape[1]==4:
             f =pd.DataFrame (
-                f, columns = P().SENR 
+                f, columns = P().isenr 
                 )
         elif f.shape [1] > 4: 
             # add 'none' columns for the remaining columns.
                 f =pd.DataFrame (
-                    f, columns = P().SENR + [
+                    f, columns = P().isenr + [
                         'none' for i in range(f.shape[1]-4)]
                     )
     else : 
@@ -174,7 +187,7 @@ def _data_sanitizer (
                           '`.csv` file format.')        
     # shrunk the dataframe out of 4 columns . 
     if len(f.shape ) !=1 and f.shape[1]> 4 : 
-        warnings.warn(f'Expected four columns = `{P().SENR}`, '
+        warnings.warn(f'Expected four columns = `{P().isenr}`, '
                       f'but `{f.shape[1]}` are given. Data is shrunked'
                       ' to match the fitting columns.')
         f = f.iloc[::, :4]
@@ -182,7 +195,7 @@ def _data_sanitizer (
     return f 
 
 def _fetch_prefix_index (
-    arr:NDArray |None = None,
+    arr:NDArray [DType[float]] | None = None,
     col: List[str] | None = None,
     df :pd.DataFrame | None = None, 
     prefixs: List [str ] | None =None
@@ -223,7 +236,7 @@ def _fetch_prefix_index (
     if prefixs is None: 
         raise ValueError('Please specify the list of items to compose the '
                          'prefix to fetch the columns data. For instance'
-                         f' `station prefix` can  be `{P().STAp}`.')
+                         f' `station prefix` can  be `{P().istation}`.')
 
     if arr is None and df is None :
         raise TypeError ( 'Expected and array or a dataframe not'
@@ -263,7 +276,7 @@ def _fetch_prefix_index (
 
 def _assert_station_positions(
     arr: NDArray | None =None,
-    prefixs: List [str] |None =P().STAp,
+    prefixs: List [str] |None =P().istation,
     **kws
 ) -> Tuple [int, float]: 
     """ Assert positions and compute dipole length. 
@@ -271,7 +284,7 @@ def _assert_station_positions(
     Use the given station postions collected on the field to 
     detect the dipole length during the whole survey. 
     
-    :param arr: array. Ndarray of data where one colum must the 
+    :param arr: array. Ndarray of data where one column must the 
             positions values. 
     :param col: list. The list should be considered as the head of array. Each 
         position in the list sould fit the column data in the array. It raises 
@@ -315,32 +328,70 @@ def _assert_station_positions(
     return  positions, dipoleLength 
 
 def plot_anomaly(
-    sample:NDArray | List[float],
-    cz:NDArray | List[float], 
-    station: str =None, 
-    figsize:Tuple [int, int] =(10, 4), 
-    show_fig_title:bool =True,
-    fig_title_kws:str |None  = None,
-    show_grid: bool =True,
-    grid_which: str ='major',
-    erpkws :Dict [str , str | Any ] =None, 
-    mkws: Dict [str , str | Any ]=None,
-    czkws : Dict [str , str | Any ]=None , 
-    legkws: Dict [Any , str | Any ] =None, 
-    show_markers =True,
-    xlabel :str |None = None,
-    ylabel :str |None =None,
+    erp:Array | List[float],
+    cz:Optional [Sub[Array], List[float]] = None, 
+    s: Optional [str] = None, 
+    figsize:Tuple [int, int] =(10, 4),
     fig_dpi :int =300 ,
-    savefig :str |None =None
+    savefig :str | None =None, 
+    show_fig_title:bool =True,
+    style : str = 'seaborn', 
+    fig_title_kws:Dict[str, str | Any] = ...,
+    czkws : Dict [str , str | Any ] = ... , 
+    legkws: Dict [Any , str | Any ] = ... , 
+    **kws, 
 ) -> None: 
 
-    """ Quick plot to visualize the  selected conductive zone overlained  
-    to the whole electrical resistivity profiling.
+    """ Plot the whole |ERP| line and selected conductive zone. 
     
-    :param sample: array_like - the electrical profiling array. 
-    :param cz: array_like - the selected conductive zone. If ``None``, `cz` 
-        should be plotted only.
+    Conductive zone can be supplied nannualy as a subset of the `erp` or by 
+    specifyting the station expected for drilling location. For instance 
+    ``S07`` for the seventh station. Futhermore, for automatic detection, one 
+    should set the station argument `s`  to ``auto``. However, it 's recommended 
+    to provide the `cz` or the `s` to have full control. The conductive zone 
+    is juxtaposed to the whole |ERP| survey. One can customize the `cz` plot by 
+    filling with `Matplotlib pyplot`_ additional keywords araguments thought 
+    the kewords argument `czkws`. 
+
+    :param sample: array_like - the |ERP| survey line. The line is an array of
+        resistivity values.  
+        
+    :param cz: array_like - the selected conductive zone. If ``None``, only 
+        the `erp` should be displayed. Note that `cz` is an subset of `erp` 
+        array. 
+        
+    :param s: str - The station location given as string (e.g. ``s= "S10"``) 
+        or as a station number (indexing; e.g ``s =10``). If value is set to 
+        ``"auto"``, `s` should be find automatically and fetching `cz` as well. 
+        
+    :param figsize: tuple- Tuple value of figure size. Refer to the 
+        web resources `Matplotlib figure`_. 
+        
+    :param fig_dpi: int - figure resolution "dot per inch". Refer to 
+            `Matplotlib figure`_.
+        
+    :param savefig: str -  save figure. Refer  to `Matplotlib figure`_.
     
+    :param show_fig_tile: bool - display the title of the figure 
+    
+    :param fig_title_kws: dict - Keywords arguments of figure suptile. Refer to 
+        `Matplotlib figsuptitle`_
+        
+    :param style: str - the style for customizing visualization. For instance to 
+        get the first seven available styles in pyplot, one can run 
+        the script below:: 
+        
+            plt.style.available[:7]
+        Futher details can be foud in Webresources below or click on 
+        `GeekforGeeks`_. 
+    :param czkws: dict - keywords `Matplotlib pyplot`_ additional arguments to 
+        customize the `cz` plot. 
+    :param legkws: dict - keywords Matplotlib legend additional keywords
+        arguments. 
+    :param kws: dict - additional keywords argument for `Matplotlib pyplot`_ to 
+        customize the `erp` plot.
+        
+   
     :Example: 
         >>> import numpy as np 
         >>> from watex.utils.coreutils import ( 
@@ -348,95 +399,149 @@ def plot_anomaly(
         >>> test_array = np.random.randn (10)
         >>> selected_cz ,*_ = _define_conductive_zone(test_array, 7) 
         >>> plot_anomaly(test_array, selected_cz )
+        >>> plot_anomaly(tes_array, selected_cz , s= 5)
+        >>> plot_anomaly(tes_array, s= 's02')
+        >>> plot_anomaly(tes_array)
         
+    .. note::
+        
+        If `cz` is given, one does not need to worry about the station `s`. 
+        `s` can stay with it default value``None``. 
+        
+     
+    Web resources  
+    --------------
+    
+    See Matplotlib Axes: https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.tick_params.html
+    GeekforGeeks: https://www.geeksforgeeks.org/style-plots-using-matplotlib/#:~:text=Matplotlib%20is%20the%20most%20popular,without%20using%20any%20other%20GUIs.
     """
-    if mkws is None:
-        mkws = {'marker':'o', 'edgecolors' :'white', 'c':P().FRctags.get('fr3'), 
-                   'alpha' :.9, 's':60.}
+    
+    def format_thicks (value, tick_number):
+        """ Format thick parameter with 'FuncFormatter(func)'
+        rather than using:: 
+            
+        axi.xaxis.set_major_locator (plt.MaxNLocator(3))
         
-    if erpkws is None:
-        erpkws =dict (color=P.FRctags.get('fr1'), 
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
+        """
+        if value % 7 ==0: 
+            return 'S{:02}'.format(int(value)+ 1)
+        else: None 
+        
+    
+    erp = __assert_all_types( 
+        erp, tuple, list , np.ndarray , pd.Series)
+    if cz is not None: 
+        cz = __assert_all_types(
+            cz, tuple, list , np.ndarray , pd.Series)
+        cz = np.array (cz)
+        
+    erp =np.array (erp) 
+    
+    plt.style.use (style)
+
+    kws =dict (
+        color=P().frcolortags.get('fr1') if kws.get(
+            'color') is None else kws.get('color'), 
+        linestyle='-' if kws.get('ls') is None else kws.get('ls'),
+        linewidth=2. if kws.get('lw') is None else kws.get('lw'),
+        label = 'Electrical resistivity profiling' if kws.get(
+            'label') is None else kws.get('label')
+                  )
+
+    if czkws is ( None or ...) :
+        czkws =dict (color=P().frcolortags.get('fr3'), 
                       linestyle='-',
                       linewidth=3,
-                      label = 'Electrical resistivity profiling'
-                      )
-
-    if czkws is None:
-        czkws =dict (color='fr3', 
-                      linestyle='-',
-                      linewidth=2,
-                      # markersize=12,
                       label = 'Conductive zone'
                       )
     
-    if czkws.get('color') is not None: 
-        if str(czkws.get('color')).lower().find('fr')>=0: 
-            try : 
-                czkws['color']= P().FRctags.get(czkws['color'])
-            except: 
-                czkws['color']= P().FRctags.get('fr3')
-
-    fig, ax = plt.subplots(1,1, figsize =(10, 4))
+    if czkws.get('color') is None: 
+        czkws['color']= P().frcolortags.get(czkws['color'])
+      
+    if (xlabel := kws.get('xlabel')) is not None : 
+        del kws['xlabel']
+    if (ylabel := kws.get('ylabel')) is not None : 
+        del kws['ylabel']
+        
+    if (rotate:= kws.get ('rotate')) is not None: 
+        del kws ['rotate']
+        
+    fig, ax = plt.subplots(1,1, figsize =figsize)
+    
     leg =[]
 
-    zl, = ax.plot(np.arange(len(sample)), sample, 
-                  **erpkws 
+    zl, = ax.plot(np.arange(len(erp)), erp, 
+                  **kws 
                   )
     leg.append(zl)
+    
+    if s =='' : s= None  # for consistency 
+    if s is not None:
+        auto =False ; keepindex =True 
+        if isinstance (s , str): 
+            auto = True if s.lower()=='auto' else s 
+            if 's' or 'pk' in s.upper(): 
+                # if provide the station. 
+                keepindex =False 
+        cz , ix = _define_conductive_zone(
+            erp, s = s , auto = auto, keepindex=keepindex )
+        
+        s = "S{:02}".format(ix +1) if s is not None else s 
+
     if cz is not None: 
-        # construct a mask array with np.isin to check whether 
+        # construct a mask array with np.isin to check whether
+        if not __isin (erp, cz ): 
+            raise ValueError ('Expected a conductive zone to be a subset of '
+                              ' the resistivity profiling line.')
         # `cz` is subset array
-        z = np.ma.masked_values (sample, np.isin(sample, cz ))
+        z = np.ma.masked_values (erp, np.isin(erp, cz ))
         # a masked value is constructed so we need 
         # to get the attribute fill_value as a mask 
         # However, we need to use np.invert or the tilde operator  
         # to specify that other value except the `CZ` values mus be 
         # masked. Note that the dtype must be changed to boolean
         sample_masked = np.ma.array(
-            sample, mask = ~z.fill_value.astype('bool') )
+            erp, mask = ~z.fill_value.astype('bool') )
 
         czl, = ax.plot(
-            np.arange(len(sample)), sample_masked, 
+            np.arange(len(erp)), sample_masked, 'o',
             **czkws)
         leg.append(czl)
         
-    if show_markers: 
-        ax.scatter (np.arange(len(sample)), sample,
-                        **mkws if mkws is not None else mkws,  
-                        )
+        
+    ax.tick_params (labelrotation = 0. if rotate is None else rotate)
+    ax.set_xticks(range(len(erp)),
+                  )
     
-    ax.set_xticks(range(len(sample)))
-    ax.set_xticklabels(
-        ['S{0:02}'.format(i+1) for i in range(len(sample))])
-    
-    if xlabel is None:
-        xlabel ='Stations'
-    if ylabel is None: 
-        ylabel ='Resistivity (Ω.m)'
-    if legkws is None: 
+    if len(erp ) >= 14 : 
+        # for axi in ax.flat() : 
+            # axi.xaxis.set_major_locator (plt.MaxNLocator(3))
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
+    else : 
+        
+        ax.set_xticklabels(
+            ['S{:02}'.format(int(i)+1) for i in range(len(erp))],
+            rotation =0. if rotate is None else rotate ) 
+   
+
+    if legkws is( None or ...): 
         legkws =dict() 
     
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    ax.set_xlabel ('Stations') if xlabel is  None  else ax.set_xlabel (xlabel)
+    ax.set_ylabel ('Resistivity (Ω.m)'
+                ) if ylabel is None else ax.set_ylabel (ylabel)
+
     ax.legend( handles = leg, 
               **legkws )
     
-    if show_grid is True : 
-        if grid_which=='minor': 
-              ax.minorticks_on() 
-        ax.grid(show_grid,
-                axis='both',
-                which =  grid_which, 
-                color = 'k',
-                linestyle='--',
-                linewidth=1., 
-                alpha = .2 
-                )
-       
+
     if show_fig_title: 
-        if fig_title_kws is None: 
+        title = 'Plot ERP line with SVES = {0}'.format(s if s is not None else '')
+        if fig_title_kws is ( None or ...): 
             fig_title_kws = dict (
-                t = 'Plot ERP line with SVES= {0}'.format(station), 
+                t = title if s is not None else title.replace (
+                    'with SVES =', ''), 
                 style ='italic', 
                 bbox =dict(boxstyle='round',facecolor ='lightgrey'))
             
@@ -451,13 +556,12 @@ def plot_anomaly(
     plt.show()
         
 
-
 def _define_conductive_zone(
-    erp: List[float| int ] | pd.Series,
-    s: str | int = None, 
+    erp:Array| pd.Series | List[float] ,
+    s: Optional [str ,  int] = None, 
     auto: bool = False, 
     **kws,
-) -> Tuple [NDArray, int] :
+) -> Tuple [Array, int] :
     """ Define conductive zone as subset of the erp line.
     
     Indeed the conductive zone is a specific zone expected to hold the 
@@ -467,8 +571,8 @@ def _define_conductive_zone(
     
     :param erp: array_like, the array contains the apparent resistivity values 
     :param s: str or int, is the station position. 
-    :param auto: bool. The station position should be the position of 
-    the lower resistivity value in `erp`. 
+    :param auto: bool. If ``True``, the station position should be 
+            the position of the lower resistivity value in |ERP|. 
     
     :returns: 
         - conductive zone 
@@ -487,15 +591,15 @@ def _define_conductive_zone(
         raise TypeError ('Expected the station position. NoneType is given.')
     elif s is None and auto: 
         s = int(np.argwhere (erp == erp.min())) 
-    s , pos = _assert_stations(s, **kws )
+    s, pos = _assert_stations(s, **kws )
     # takes the last position if the position is outside 
     # the number of stations. 
-    pos = len(erp)-1 if pos >= len(erp) else pos 
+    pos = len(erp) -1  if pos >= len(erp) else pos 
     # frame the `sves` (drilling position) and define the conductive zone 
-    ir = erp[:pos][-3:]
-    il = erp[pos:pos +3 +1 ]
+    ir = erp[:pos][-3:] ;  il = erp[pos:pos +3 +1 ]
+
     cz = np.concatenate((ir, il))
-    
+
     return cz , pos 
 
 
@@ -503,7 +607,7 @@ def _define_conductive_zone(
 def _assert_stations(
     s:Any , 
     dipole:Any=None,
-    keepnums:bool=False
+    keepindex:bool=False
 ) -> Tuple[str, int]:
     """ Sanitize stations and returns station name and index.
     
@@ -516,48 +620,92 @@ def _assert_stations(
     :param dipole: dipole_length in meters.  
     :type dipole: float 
     
+    :param keepindex: bool - Stands for keeping the Python indexing. If set to 
+        ``True`` so the station should start by `S00` and so on. 
+    
     :returns: 
         - station name 
         - index of the station.
         
-    .. note:: The station should numbered from 1 not 0. SO if ``S00` is given
-            the station name should be set to ``S01``. Moreover, if `dipole`
-            value is set, i.e. the station is  named according to the 
-            value of the dipole. For instance for `dipole` equals to ``10m``, 
-            the first station should be ``S00``, the second ``S10`` , 
-            the third ``S30`` and so on. However, it is recommend to name the 
-            station using counting numbers rather than using the dipole 
-            position.
+    .. note:: 
+        
+        The defaut station numbering is from 1. SO if ``S00` is given, and 
+        the argument `keepindex` is still on its default value i.e ``False``,
+        the station name should be set to ``S01``. Moreover, if `dipole`
+        value is given, the station should  named according to the 
+        value of the dipole. For instance for `dipole` equals to ``10m``, 
+        the first station should be ``S00``, the second ``S10`` , 
+        the third ``S30`` and so on. However, it is recommend to name the 
+        station using counting numbers rather than using the dipole 
+        position.
             
     :Example: 
-        >>> from watex.utils.coreutils import _sanitize_stations
-        >>> _sanitize_stations('pk01')
-        >>> _sanitize_stations('S1')
-        >>> _sanitize_stations('S00')
-        >>> _sanitize_stations('S1000',dipole ='1km')
-        >>> _sanitize_stations('S10', dipole ='10m')
-        >>> _sanitize_stations(1000,dipole =1000)
-        ... ('S01', 0) 
+        >>> from watex.utils.coreutils import _assert_stations
+        >>> _assert_stations('pk01')
+        ... ('S01', 0)
+        >>> _assert_stations('S1')
+        ... ('S01', 0)
+        >>> _assert_stations('S1', keepindex =True)
+        ... ('S01', 1) # station here starts from 0 i.e `S00` 
+        >>> _assert_stations('S00')
+        ... ('S00', 0)
+        >>> _assert_stations('S1000',dipole ='1km')
+        ... ('S02', 1) # by default it does not keep the Python indexing 
+        >>> _assert_stations('S10', dipole ='10m')
+        ... ('S02', 1)
+        >>> _assert_stations(1000,dipole =1000)
+        ... ('S02', 1)
     """
     # in the case s is string: eg. "00", "pk01", "S001"
-    ix = 0.
+    ix = 0
+
+    s = __assert_all_types(s, str, int, float)
+    
     if isinstance(s, str): 
-        s =s.lower().replace('pk', '').replace('s', '')
+        s =s.lower().replace('pk', '').replace('s', '').replace('ta', '')
+        try : 
+            s = int(s )
+        except : 
+            raise TypeError ('Unable to convert str to float.')
+        else : 
+            # set index to 0 , is station `S00` is found for instance.
+            if s ==0 : 
+                keepindex =True 
+            
+    st = copy.deepcopy(s)
+    
+    if isinstance(s, int):  
+        msg = 'Station numbering must start'\
+            ' from {0!r} or set `keepindex` argument to {1!r}.'
+        msg = msg.format('0', 'False') if keepindex else msg.format(
+            '1', 'True')
+        if not keepindex: # station starts from 1
+            if s <=0: 
+                raise ValueError (msg )
+            s , ix  = "S{:02}".format(s), s - 1
+        
+        elif keepindex: 
+            if s < 0: raise ValueError (msg) # for consistency
+            s, ix =  "S{:02}".format(s ), s  
+            
     
     if dipole is not None: 
         if isinstance(dipole, str): #'10m'
             if dipole.find('km')>=0: 
-                dipole = dipole.lower().replace('km', '000')
-            dipole = float(dipole.lower().replace('m', ''))
+           
+                dipole = dipole.lower().replace('km', '000') 
+                
+            dipole = dipole.lower().replace('m', '')
+            try : 
+                dipole = float(dipole) 
+            except : 
+                raise WATexError_station( 'invalid literal value for'
+                                         f' dipole : {dipole!r}')
         # since the renamed from dipole starts at 0 
         # e.g. 0(S1)---10(S2)---20(S3) ---30(S4)etc ..
-        s= int(s)//dipole +1 
-    
-    ix = int(s) if int(s) ==0 else int(s) -1 
-    s = "S{:02}".format(ix +1) 
-
+        ix = int(st//dipole)  ; s= "S{:02}".format(ix +1)
+        
     return s, ix 
-
 
 def _parse_args (
     args:Union[List | str ]
@@ -681,8 +829,22 @@ def _assert_file (
         isfile =True 
         
     return args , isfile 
-    
+ 
+   
+"""
+.. |ERP| replace: Electrical resistivity profiling 
 
+.. |VES| replace: Vertical electrical sounding 
+
+.. _Matplotlib pyplot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
+
+.. _Matplotlib figure: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.figure.html
+
+.. _Matplotlib figsuptitle: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.suptitle.html
+
+.. _GeekforGeeks: https://www.geeksforgeeks.org/style-plots-using-matplotlib/#:~:text=Matplotlib%20is%20the%20most%20popular,without%20using%20any%20other%20GUIs.
+
+"""
 
 
 

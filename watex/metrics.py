@@ -5,10 +5,9 @@
 #       <etanoyau@gmail.com>
 import inspect
 import warnings  
-from typing import TypeVar
+
 import numpy as np 
 # from abc import ABC,abstractmethod
-
 from sklearn import metrics 
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import precision_score, recall_score 
@@ -16,9 +15,10 @@ from sklearn.metrics import confusion_matrix , f1_score
 from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.model_selection import cross_val_predict 
 
-from watex.utils._watexlog import watexlog
+from .._typing import TypeVar
+from .utils._watexlog import watexlog
 import watex.utils.decorator as deco
-import watex.utils.exceptions as Wex
+import watex.exceptions as Wex
 import watex.hints as Hints
 
 T= TypeVar('T')
@@ -130,7 +130,7 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
         F1 = TP/(TP+ (FN +FP)/2)
     
     The way to increase the precion and reduce the recall and vice versa
-    is called `preicionrecall tradeoff`
+    is called `preicionrecall tradeoff`.
     
     Examples
     --------

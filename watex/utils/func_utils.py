@@ -1,44 +1,262 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2021  Kouadio K.Laurent, Wed Jul  7 22:23:02 2021 hz
-# This module is modified and is part of the pyCSAMT utils package,
-#  which is released under a LGPL- licence.
-# originallly created on Sun Sep 13 09:24:00 2020
-# @author: ~alias @Daniel03
+#   Copyright © 2021  ~alias @Daniel03 <etanoyau@gmail.com> 
+#   created date :Sun Sep 13 09:24:00 2020
+#   edited date: Wed Jul  7 22:23:02 2021 
 
 ####################### import modules #######################
+
 import os 
-import shutil 
+import sys 
+import subprocess 
 import warnings
-import inspect
+import csv 
+import shutil 
+from copy import deepcopy 
+
 import numpy as np 
 import matplotlib.pyplot as plt
-# from copy import deepcopy
 
 from ._watexlog import watexlog
-import  watex.utils.gis_tools as gis
 
 _logger = watexlog.get_watex_logger(__name__)
+
+_msg= ''.join([
+    'Note: need scipy version 0.14.0 or higher or interpolation,',
+    ' might not work.']
+)
+_msg0 = ''.join([
+    'Could not find scipy.interpolate, cannot use method interpolate'
+     'check installation you can get scipy from scipy.org.']
+)
 
 try:
     import scipy
     scipy_version = [int(ss) for ss in scipy.__version__.split('.')]
     if scipy_version[0] == 0:
         if scipy_version[1] < 14:
-            msg = ''.join(['Note: need scipy version 0.14.0 or higher', 
-                           ' or interpolation might not work.'])
-            warnings.warn(msg, ImportWarning)
-            _logger.warning(msg)
+            warnings.warn(_msg, ImportWarning)
+            _logger.warning(_msg)
+            
     import scipy.interpolate as spi
+
     interp_import = True
-except ImportError:  # pragma: no cover
-    msg =''.join([
-        'Could not find scipy.interpolate, cannot use method interpolate'
-         'check installation you can get scipy from scipy.org.'])
-    warnings.warn(msg)
-    _logger.warning(msg)
+ # pragma: no cover
+except ImportError: 
+    
+    warnings.warn(_msg0)
+    _logger.warning(_msg0)
+    
     interp_import = False
 
-###################### end import module ################################### 
+###################### end import module ##################################
+
+  
+def check_dimensionality(obj, data, z, x):
+    """ Check dimensionality of data and fix it.
+    
+    :param obj: Object, can be a class logged or else.
+    :param data: 2D grid data of ndarray (z, x) dimensions
+    :param z: array-like should be reduced along the row axis
+    :param x: arraylike should be reduced along the columns axis.
+    """
+    def reduce_shape(Xshape, x, axis_name =None): 
+        """ Reduce shape to keep the same shape"""
+        mess ="`{0}` shape({1}) {2} than the data shape `{0}` = ({3})."
+        ox = len(x) 
+        dsh = Xshape 
+        if len(x) > Xshape : 
+            x = x[: int (Xshape)]
+            obj._logging.debug(''.join([
+                f"Resize {axis_name!r}={ox!r} to {Xshape!r}.", 
+                mess.format(axis_name, len(x),'more',Xshape)])) 
+                                    
+        elif len(x) < Xshape: 
+            Xshape = len(x)
+            obj._logging.debug(''.join([
+                f"Resize {axis_name!r}={dsh!r} to {Xshape!r}.",
+                mess.format(axis_name, len(x),'less', Xshape)]))
+        return int(Xshape), x 
+    
+    sz0, z = reduce_shape(data.shape[0], 
+                          x=z, axis_name ='Z')
+    sx0, x =reduce_shape (data.shape[1],
+                          x=x, axis_name ='X')
+    data = data [:sz0, :sx0]
+    
+    return data , z, x 
+
+def subprocess_module_installation (module, upgrade =True , DEVNULL=False,
+                                    action=True, verbose =0, **subpkws): 
+    """ Install or uninstall a module using the subprocess under the hood.
+    
+    :param module: str, module name 
+    :param upgrade:bool, install the lastest version.
+    :param verbose:output a message 
+    :param DEVNULL: decline the stdoutput the message in the console 
+    :param action: str, install or uninstall a module 
+    :param subpkws: additional subprocess keywords arguments.
+    
+    :Example: 
+        >>> from pycsamt.utils.func_utils import subprocess_module_installation
+        >>> subprocess_module_installation(
+            'tqdm', action ='install', DEVNULL=True, verbose =1)
+        >>> subprocess_module_installation(
+            'tqdm', action ='uninstall', verbose =1)
+    """
+    #implement pip as subprocess 
+    # refer to https://pythongeeks.org/subprocess-in-python/
+    if not action: 
+        if verbose > 0 :
+            print("---> No action `install`or `uninstall`"
+                  f" of the module {module!r} performed.")
+        return action  # DO NOTHING 
+    
+    MOD_IMP=False 
+
+    action_msg ='uninstallation' if action =='uninstall' else 'installation' 
+
+    if action in ('install', 'uninstall', True) and verbose > 0:
+        print(f'---> Module {module!r} {action_msg} will take a while,'
+              ' please be patient...')
+        
+    cmdg =f'<pip install {module}> | <python -m pip install {module}>'\
+        if action in (True, 'install') else ''.join([
+            f'<pip uninstall {module} -y> or <pip3 uninstall {module} -y ',
+            f'or <python -m pip uninstall {module} -y>.'])
+        
+    upgrade ='--upgrade' if upgrade else '' 
+    
+    if action == 'uninstall':
+        upgrade= '-y' # Don't ask for confirmation of uninstall deletions.
+    elif action in ('install', True):
+        action = 'install'
+
+    cmd = ['-m', 'pip', f'{action}', f'{module}', f'{upgrade}']
+
+    try: 
+        STDOUT = subprocess.DEVNULL if DEVNULL else None 
+        STDERR= subprocess.STDOUT if DEVNULL else None 
+    
+        subprocess.check_call(
+            [sys.executable] + cmd, stdout= STDOUT, stderr=STDERR,
+                              **subpkws)
+        if action in (True, 'install'):
+            # freeze the dependancies
+            reqs = subprocess.check_output(
+                [sys.executable,'-m', 'pip','freeze'])
+            [r.decode().split('==')[0] for r in reqs.split()]
+            _logger.info( f"{action_msg.capitalize()} of `{module}` "
+                         "and dependancies was successfully done!") 
+        MOD_IMP=True
+        
+    except: 
+        _logger.error(f"Failed to {action} the module =`{module}`.")
+        
+        if verbose > 0 : 
+            print(f'---> Module {module!r} {action_msg} failed. Please use'
+                f' the following command: {cmdg} to manually do it.')
+    else : 
+        if verbose > 0: 
+            print(f"{action_msg.capitalize()} of `{module}` "
+                      "and dependancies was successfully done!") 
+        
+    return MOD_IMP 
+        
+def smart_format(iter_obj): 
+    """ Smart format iterable obj 
+    :param iter_obj: iterable obj 
+    
+    :Example: 
+        >>> from pycsamt.utils.func_utils import smart_format
+        >>> smart_format(['model', 'iter', 'mesh', 'data'])
+        ... 'model','iter','mesh' and 'data'
+    """
+    try: 
+        iter(iter_obj) 
+    except:  return f"{iter_obj}"
+    
+    iter_obj = [str(obj) for obj in iter_obj]
+    if len(iter_obj) ==1: 
+        str_litteral= ','.join([f"{i!r}" for i in iter_obj ])
+    elif len(iter_obj)>1: 
+        str_litteral = ','.join([f"{i!r}" for i in iter_obj[:-1]])
+        str_litteral += f" and {iter_obj[-1]!r}"
+    return str_litteral
+
+def make_introspection(Obj , subObj): 
+    """ Make introspection by using the attributes of instance created to 
+    populate the new classes created.
+    :param Obj: callable 
+        New object to fully inherits of `subObject` attributes 
+    :param subObj: Callable 
+        Instance created.
+    """
+    # make introspection and set the all  attributes to self object.
+    # if Obj attribute has the same name with subObj attribute, then 
+    # Obj attributes get the priority.
+    for key, value in  subObj.__dict__.items(): 
+        if not hasattr(Obj, key) and key  != ''.join(['__', str(key), '__']):
+            setattr(Obj, key, value)
+            
+def cpath (savepath=None , dpath= None): 
+    """ Control the existing path and create one of it does not exist.
+    :param savepath: Pathlike obj, str 
+    :param dpath: str, default pathlike obj
+    """
+    if dpath is None:
+        file, _= os.path.splitext(os.path.basename(__file__))
+        dpath = ''.join(['_', file,
+                         '_']) #.replace('.py', '')
+    if savepath is None : 
+        savepath  = os.path.join(os.getcwd(), dpath)
+    if savepath is not None:
+        try :
+            if not os.path.isdir(savepath):
+                os.mkdir(savepath)#  mode =0o666)
+        except : pass 
+    return savepath   
+
+def show_quick_edi_stats(nedic , nedir, fmtl='~', lenl=77): 
+    """ Format the Edi files and ckeck the number of edifiles
+    successfully read. 
+    :param nedic: number of input or collected edifiles 
+    :param nedir: number of edifiles read sucessfully 
+    :param fmt: str to format the stats line 
+    :param lenl: length of line denileation."""
+    
+    def get_obj_len (value):
+        """ Control if obj is iterable then take its length """
+        try : 
+            iter(value)
+        except :pass 
+        else : value =len(value)
+        return value 
+    nedic = get_obj_len(nedic)
+    nedir = get_obj_len(nedir)
+    
+    print(fmtl * lenl )
+    mesg ='|'.join( ['|{0:<15}{1:^2} {2:<7}',
+                     '{3:<15}{4:^2} {5:<7}',
+                     '{6:<9}{7:^2} {8:<7}%|'])
+    print(mesg.format('EDI collected','=',  nedic, 'EDI success. read',
+                      '=', nedir, 'Rate','=', round ((nedir/nedic) *100, 2),
+                      2))
+    print(fmtl * lenl )
+
+def sPath (name_of_path:str):
+    """ Savepath func. Create a path  with `name_of_path` 
+    if path not exists.
+    :param name_of_path: str, Path-like object. If path does not exist,
+    `name_of_path` should be created.
+    """
+    try :
+        savepath = os.path.join(os.getcwd(), name_of_path)
+        if not os.path.isdir(savepath):
+            os.mkdir(name_of_path)#  mode =0o666)
+    except :
+        warnings.warn("The path seems to be existed!")
+        return
+    return savepath 
 def smart_format(iter_obj): 
     """ Smart format iterable obj 
     :param iter_obj: iterable obj 
@@ -103,138 +321,8 @@ def format_notes(text:str , cover_str:str='~', inline=70, **kws):
     print('{0}{1:>51}'.format(' '* (margin -1), cover_str * (inline -margin+1 ))) 
     
     
-def concat_array_from_list(list_of_array, concat_axis=0):
-    """
-    Small function to concatenate a list with array contents 
-    
-    Parameters 
-    -----------
-        * list_of_array : list 
-                contains a list for array data. the concatenation is possible 
-                if an index array have the same size 
-        
-    Returns 
-    -------
-        array_like 
-            numpy concatenated data 
-        
-    :Example: 
-        
-        >>> import numpy as np 
-        >>>  np.random.seed(0)
-        >>> ass=np.random.randn(10)
-        >>> ass2=np.linspace(0,15,12)
-        >>>  ass=ass.reshape((ass.shape[0],1))
-        >>>  ass2=ass2.reshape((ass2.shape[0],1))
-        >>> or_list=[ass,ass2]
-        >>> ss_check_error=concat_array_from_list(list_of_array=or_list,
-        ...                                          concat_axis=0)
-        >>>  secont test :
-        >>>  ass=np.linspace(0,15,14)
-        >>> ass2=np.random.randn(14)
-        >>> ass=ass.reshape((ass.shape[0],1))
-        >>> ass2=ass2.reshape((ass2.shape[0],1))
-        >>> or_list=[ass,ass2]
-        >>>  ss=concat_array_from_list(list_of_array=or_list, concat_axis=0)
-        >>> ss=concat_array_from_list(list_of_array=or_list, concat_axis=1)
-        >>> ss
-        >>> ss.shape 
-    """
-    #first attemp when the len of list is ==1 :
-    
-    if len(list_of_array)==1:
-        if type(list_of_array[0])==np.ndarray:
-            output_array=list_of_array[0]
-            if output_array.ndim==1:
-                if concat_axis==0 :
-                    output_array=output_array.reshape((1,output_array.shape[0]))
-                else :
-                    output_array=output_array.reshape((output_array.shape[0],1))
-            return output_array
-        
-        elif type(list_of_array[0])==list:
-            output_array=np.array(list_of_array[0])
-            if concat_axis==0 :
-                output_array=output_array.reshape((1,output_array.shape[0]))
-            else :
-                output_array=output_array.reshape((output_array.shape[0],1))
-            return output_array
-    
-    # check the size of array in the liste when the len of list is >=2
-    
-    for ii,elt in enumerate(list_of_array) :
-        if type(elt)==list:
-            elt=np.array(elt)
-        if elt is None :
-            pass
-        elif elt.ndim ==1 :
-            if concat_axis==0 :
-                elt=elt.reshape((1,elt.shape[0]))
-            else :
-                elt=elt.reshape((elt.shape[0],1))
-        list_of_array[ii]=elt
- 
 
-    output_array=list_of_array[0]
-    for ii in list_of_array[1:]:
-        output_array=np.concatenate((output_array,ii), axis=concat_axis)
-        
-    return output_array
-
-
-def sort_array_data(data,  sort_order =0,
-              concatenate=False, concat_axis_order=0 ):
-    """
-    Function to sort array data and concatenate 
-    numpy.ndarray 
-    
-    Parameters
-    ----------
-        * data : numpy.ndarray 
-                must be in simple array , list of array and 
-                dictionary whom the value is numpy.ndarray 
                 
-        * sort_order : int, optional 
-                index  of colum to sort data. The default is 0.
-                
-        * concatenate : Boolean , optional
-                concatenate all array in the object.
-                Must be the same dimentional if concatenate is set to True. 
-                The *default* is False.
-                
-        * concat_axis_order : int, optional
-                must the axis of concatenation  . The default is axis=0.
-
-    Returns
-    -------
-        numpy.ndarray
-           data , Either the simple sort data or 
-           array sorted and concatenated .
-    """
-    
-    if type(data)==list :
-        for ss, val in data :
-            val=val[val[:,sort_order].argsort(kind="mergesort")]
-            data[ss]=val
-            
-        if concatenate: 
-            data=concat_array_from_list(list_of_array=data,
-                        concat_axis=concat_axis_order)
-    elif type(data)==dict:
-        
-        for key, value in data.items(): 
-            value=value[value[:,sort_order].argsort(kind="mergesort")]
-            data[key]=value
-            
-        if concatenate==True :
-            temp_list=list(data.values())
-            data=concat_array_from_list(list_of_array=temp_list,
-                                    concat_axis=concat_axis_order)
-    else : 
-        data=data[data[:,sort_order].argsort(kind="mergesort")]
-        
-    return data 
-                   
 def interpol_scipy (x_value, y_value,x_new,
                     kind="linear",plot=False, fill="extrapolate"):
     
@@ -383,54 +471,7 @@ def broke_array_to_(arrayData, keyIndex=0, broken_type="dict"):
         return lis_brok
     
 
-def take_firstValue_offDepth(data_array,
-                             filter_order=1):
-    """
-    Parameters
-    ----------
-        * data_array : np.array 
-                array of the data .
-        * filter_order : int , optional
-                the column you want to filter. The default is 1.
 
-    Returns
-    -------
-        array_like
-            return array of the data filtered.
-   
-    :Example: 
-        
-        >>>  import numpy as np 
-        >>>  list8=[[4,2,0.1],[8,2,0.7],[10,1,0.18],[4,3,0.1],
-        ...        [7,2,1.2],[10,3,0.5],[10,1,0.5],[8.2,0,1.9],
-        ...        [10,7,0.5],[10,1,0.5],[2,0,1.4],[5,4,0.5],
-        ...        [10,2,0.7],[7,2,1.078],[10,2,3.5],[10,8,1.9]]
-        >>>  test=np.array(list8)
-        >>>   print(np_test)
-        >>>  ss=take_firstValue_offDepth(data_array =np_test, filter_order=1)
-        >>>   ss=averageData(np_array=np_test,filter_order=1,
-        >>>                 axis_average=0, astype="int")
-        >>> print(ss)
-    """
-    
-    listofArray=[]#data_array[0,:]]
-    data_array=data_array[data_array[:,filter_order].argsort(kind="mergesort")]
-    values, counts =np.unique(data_array[:,filter_order], return_counts=True)
-    
-    for ii, rowline in enumerate(data_array ): 
-    
-        if rowline[filter_order]==values[-1]:
-            listofArray.append(data_array[ii])
-            break 
-        elif rowline[filter_order] !=data_array[ii-1][filter_order]:
-            listofArray.append(data_array[ii])
-        
-        
-    array =concat_array_from_list(list_of_array=listofArray, concat_axis=0)
-    array=array[array[:,filter_order].argsort(kind="mergesort")]
-    listofArray=[]
-
-    return array 
 
 def dump_comma(input_car, max_value=2, carType='mixed'):
     """
@@ -502,648 +543,8 @@ def dump_comma(input_car, max_value=2, carType='mixed'):
     
     return tuple(input_car)
 
-                    
-def build_wellData (add_azimuth=False, utm_zone="49N",
-                    report_path=None,add_geochemistry_sample=False):
-    """
-    Parameters
-    ----------
-        * add_azimuth : Bool, optional
-                compute azimuth if add_azimut is set to True. 
-                The default is False.
-             
-        *  utm_zone : Str, optional
-                 WGS84 utm_projection. set your zone if add_azimuth is 
-                 turn to True. 
-                 The default is "49N".
-             
-        * report_path : str, optional
-                path to save your _well_report. The default is None.
-                its match the current work directory 
-            
-        * add_geochemistry_sample: bool
-                add_sample_data.Set to True if you want to add_mannually 
-                Geochimistry data.
-                default is False.
-
-    Raises
-    ------
-        Exception
-            manage the dimentionaly of ndarrays .
-        OSError
-            when report_path is not found in your O.S.
-
-    Returns
-    -------
-        str
-            name of location of well .
-        np.ndarray
-             WellData , data of build Wells .
-        np.ndarray
-           GeolData , data of build geology.
-
-    :Example: 
-        
-        >>>  import numpy as np 
-        >>>  import os, shutil
-        >>>  import warnings,
-        >>>  form _utils.avgpylog import AvgPyLog
-        >>>  well=build_wellData (add_azimuth=True, utm_zone="49N")
-        >>>  print("nameof locations\n:",well[0])
-        >>>  print("CollarData\n:",well[1])
-        >>>  print("GeolData\n:", well[2])
-        ...  nameof locations
-        ...  Shimen
-        ...  CollarData
-        ...  [['S01' '477205.6935' '2830978.218' '987.25' '-90' '0.0' 'Shi01'
-        ...   'Wdanxl0']
-        ...   ['S18' '477915.4355' '2830555.927' '974.4' '-90' '2.111' 'Shi18'
-        ...   'Wdanxl0']]
-        ...  GeolData
-        ...  [['S01' '0.0' '240.2' 'granite']
-        ...   ['S01' '240.2' '256.4' ' basalte']
-        ...   ['S01' '256.4' '580.0' ' granite']
-        ...   ['S01' '580.0' '987.25' 'rock']
-        ...   ['S18' '0.0' '110.3' 'sand']
-        ...   ['S18' '110.3' '520.2' 'agrilite']
-        ...    ['S18' '520.2' '631.3' ' granite']
-        ...   ['S18' '631.3' '974.4' ' rock']]
-        ...   Shimen_wellReports_
-    """
-    reg_lines=[]
-    wellSites,ftgeo,hole_list,Geolist=[],[],[],[]
-    
-    text=["Enter the name of Location:",
-                      "well_name :",
-                      "Coordinates (Easting, Northing)_UTM_{0} : ".format(utm_zone),
-                      "Hole Buttom  and dip values (Bottom, dip):" ,
-                      "Layers-thickness levels in (meters):",
-                      "Geology-layers or <stratigraphy> names (Top_To_Buttom):", 
-                      "{0:-^70}".format(' Report '),
-                      
-                      "DH_Hole,DH_Easting, DH_Northing, DH_Buttom,"\
-                      " DH_Dip,DH_Azimuth, DH_PlanDepth,DH_Descrip",
-                      
-                      "GeolData :",
-                      "WellData:",
-                      "DH_Hole, DH_From, DH_To, Rock",
-                      "SampleData",
-                      "DH_Hole, DH_From,DH_To, Sample",
-                      "{0:-^70}".format(' InputData '),
-                      ]
-    
-    
-    name_of_location =input("Enter the name of Location:")
-    reg_lines.append(''.join(text[0]+'{0:>18}'.format(name_of_location)+'\n'))
-    reg_lines.append('\n')
-    reg_lines.append(text[13]+'\n')
-    
-    comp=-1
-    while 1 :
-        DH_Hole=input("Enter the well_name :")
-        if DH_Hole=="" or DH_Hole=="end":
-            Geol=concat_array_from_list(list_of_array=Geolist,
-                                            concat_axis=0)
-            break
-         
-        print("Enter the coordinates (Easting, Northing) : ", end="")
-        DH_East_North=input()
-        DH_East_North=dump_comma(input_car=DH_East_North,
-                                 max_value=2, carType='value')
-        print("Enter the Hole Bottom value and dip (Bottom, dip):", end='')
-        dh_botdip=input()
-        dh_botdip=dump_comma(input_car=dh_botdip,
-                                 max_value=2, carType='value')
-        #check  the dip of the well 
-        if float(dh_botdip[1])==0.:
-            dh_botdip[1]=(90.)
-        elif float(dh_botdip[0])==0.:
-            raise Exception(
-            "The curent bottom has a value 0.0 . Must put the "
-            "bottom of the well as deep as possible !"
-                            )
-            
-        hole_list.append(DH_Hole)
-
-        wellSites.append((DH_Hole, DH_East_North[0],DH_East_North[1],
-                          dh_botdip[0],dh_botdip[1] ))
-
-        #DH_Hole (ID)	DH_East	DH_North	DH_RH	DH_Dip	DH_Azimuth	DH_Top	DH_Bottom	DH_PlanDepth	DH_Decr	Mask 
-        reg_lines.append("".join(text[1]+'{0:>7}'.format(DH_Hole))+"\n")
-        reg_lines.append("".join(text[2])+"\n")
-        reg_lines.append(",".join(['{0:>14}'.format(str(ii))
-                                   for ii in list(DH_East_North)])+"\n")
-        reg_lines.append("".join(text[3])+"\n")
-        reg_lines.append(",".join(['{0:>7}'.format(str(ii))
-                                   for ii in list(dh_botdip)])+"\n")
-        
-        comp+=-1
-        while DH_Hole :
-            # print("Enter the layer thickness (From_, _To, geology):",end='')
-            if comp==-1 :
-                Geol=concat_array_from_list(list_of_array=ftgeo,
-                                            concat_axis=0)
-                
-                ftgeo=[]        #  initialize temporary list 
-                
-                break
-            # comp=comp+1
-            print("Enter the layers-thickness levels in (meters):", end='')
-            dh_from_in=input()
-            
-            if dh_from_in=="" or dh_from_in=="end":
-                break
-
-            dh_from=eval(dh_from_in)
-            
-            dh_from_ar=np.array(dh_from)
-            dh_from_ar=dh_from_ar.reshape((dh_from_ar.shape[0],1)) 
-            # check the last input bottom : 
-            if dh_from_ar[-1] >= float(dh_botdip[0]):
-                _logger.info("The input bottom of well {{0}}, is {{1}}."
-                             "It's less last layer thickess: {{2}}."
-                             "we add maximum bottom at 1.023km depth.".
-                             format(DH_Hole,dh_botdip[0],
-                                    dh_from_ar[-1]))
-                dh_botdip[0]=(1023.)
-                wellSites[-1][3]=dh_botdip[0]  # last append of wellSites 
-            #find Dh_to through give dh_from
-            
-            dh_to=dh_from_ar[1:]
-            dh_to=np.append(dh_to,dh_botdip[0])
-            dh_to=dh_to.reshape((dh_to.shape[0],1))
-            
-            print("Enter the geology-layers names (From _To):",end="")
-            rock=input()
-            rock=rock.strip(",").split(",") # strip in the case where ","appear at the end 
-            rock_ar=np.array(rock)
-            rock_ar=rock_ar.reshape((rock_ar.shape[0],1))
-
-            try :
-                if rock_ar.shape[0]==dh_from_ar.shape[0]:
-                    drill_names=np.full((rock_ar.shape[0],1),DH_Hole)
-                fromtogeo=np.concatenate((drill_names,dh_from_ar,
-                                              dh_to, rock_ar),axis=1)
-            except IndexError:
-                _logger.warn("np.ndarry sizeError:Check 'geologie', 'Dh_From', and "\
-                             "'Dh_To' arrays size properly . It seems one size is "\
-                                 " too longeR than another. ")
-                warnings.warn(" All the arrays size must match propertly!")
-                
-            ftgeo.append(fromtogeo)
-            comp=-1
-            
-            reg_lines.append("".join(text[4])+"\n")
-            reg_lines.append(",".join(['{0:>7}'.format(str(jj))
-                                       for jj in list(dh_from)])+"\n")
-            reg_lines.append("".join(text[5])+"\n")
-            reg_lines.append(",".join(['{0:>12}'.format(jj) 
-                                       for jj in rock])+"\n") # rock already in list 
-            # reg_lines.append("".join(rock+"\n"))
-            
-        reg_lines.append("\n")
-        
-        Geolist.append(Geol)    
-
-
-    name_of_location=name_of_location.capitalize()
-    #set on numpy array
-    
-    for ii , value in enumerate(wellSites):
-        value=np.array(list(value))
-        wellSites[ii]=value
-    #create a wellsites array 
-    
-    wellSites=concat_array_from_list(wellSites,concat_axis=0)
-    DH_Hole=wellSites[:,0]
-    DH_PlanDepth=np.zeros((wellSites.shape[0],),dtype="<U8")
-    DH_Decr=np.full((wellSites.shape[0],),"Wdanxl0",dtype="<U9")
-    
-    
-    lenloc=len(name_of_location)
-    for ii , row in enumerate(DH_Hole):
-         # in order to keep all the well name location
-        DH_PlanDepth[ii]=np.array(name_of_location[:-int(lenloc/2)]+row[-2:])
-
-    Geol[:,1]=np.array([np.float(ii) for ii in Geol[:,1]])
-    Geol[:,2]=np.array([np.float(ii) for ii in Geol[:,2]])
-    
-    if add_azimuth==False:
-        DH_Azimuth=np.full((wellSites.shape[0]),0)
-    elif add_azimuth == True :
-        DH_Azimuth=compute_azimuth(easting = np.array([np.float(ii) 
-                                                       for ii in wellSites[:,1]]),
-                                   northing =np.array([np.float(ii)
-                                                       for ii in wellSites[:,2]]),
-                                   utm_zone=utm_zone)
-
-        
-    DH_Azimuth=DH_Azimuth.reshape((DH_Azimuth.shape[0],1))
-    
-    
-    WellData=np.concatenate((wellSites,DH_Azimuth,
-                             DH_PlanDepth.reshape((DH_PlanDepth.shape[0],1)),
-                             DH_Decr.reshape((DH_Decr.shape[0],1))), axis=1)
-    GeolData=Geol.copy()
-
-    #-----write Report---
-    
-    reg_lines.append(text[6]+'\n')
-    # reg_lines.append(text[7]+"\n")
-    
-    reg_lines.append(text[9]+'\n')
-    reg_lines.append("".join(['{0:>12}'.format(ss) for 
-                              ss in text[7].split(",")]) +'\n')
-    for rowline in WellData :
-        reg_lines.append(''.join(["{0:>12}".format(ss) for
-                                  ss in rowline.tolist()])+"\n")
-        
-    reg_lines.append(text[8]+"\n")
-    reg_lines.append("".join(['{0:>12}'.format(ss) for ss 
-                              in text[10].split(",")]) +'\n')
-    for ii , row in enumerate(GeolData):
-        reg_lines.append(''.join(["{0:>12}".format(ss) for
-                                  ss in row.tolist()])+"\n")
-        
-    if add_geochemistry_sample==True:
-        SampleData=build_geochemistry_sample()
-        reg_lines.append(text[11]+'\n')
-        reg_lines.append("".join(['{0:>12}'.format(ss) for ss 
-                                  in text[12].split(",")]) +'\n')
-        for ii , row in enumerate(SampleData):
-            reg_lines.append(''.join(["{0:>12}".format(ss) for
-                                      ss in row.tolist()])+"\n")
-    else :
-        SampleData=None        
-        
-
-    with open("{0}_wellReport_".format(name_of_location),"w") as fid:
-        # for ii in reg_lines :
-        fid.writelines(reg_lines)
-    fid.close()
-    
-    #---end write report---
-    
-    if report_path is None:
-        report_path=os.getcwd()
-    elif report_path is not None :
-        if os.path.exists(report_path):
-            shutil.move((os.path.join(os.getcwd(),"{0}_wellReport_".\
-                                      format(name_of_location))),report_path)
-        else :
-            raise OSError (
-                "The path does not exit.Try to put the right path")
-            warnings.warn (
-            "ignore","the report_path doesn't match properly.Try to fix it !")
-        
-    
-    
-    return (name_of_location, WellData , GeolData, SampleData)
-        
-        
-def compute_azimuth(easting, northing, utm_zone="49N", extrapolate=False):
-    
-    """
-    Parameters
-    ----------
-        * easting : np.ndarray
-                Easting value of coordinates _UTM_WGS84 
-             
-        * northing : np.ndarray
-                Northing value of coordinates._UTM_WGS84
-            
-        * utm_zone : str, optional
-                the utm_zone . if None try to get is through 
-                gis.get_utm_zone(latitude, longitude). 
-                latitude and longitude must be on degree decimals.
-                The default is "49N".
-        * extrapolate : bool , 
-                for other purpose , user can extrapolate azimuth value ,
-                in order to get the sizesize as 
-                the easting and northing size. The the value will 
-                repositionate at each point data were collected. 
-                    Default is False as originally azimuth computation . 
-
-    Returns
-    -------
-        np.ndarray
-            azimuth.
-        
-    :Example: 
-        
-        >>> import numpy as np
-        >>> import gis_tools as gis
-        >>>  easting=[477205.6935,477261.7258,477336.4355,477373.7903,477448.5,
-        ...  477532.5484,477588.5806,477616.5968]
-        >>>   northing=[2830978.218, 2830944.879,2830900.427, 2830878.202,2830833.75,
-        ...                  2830783.742,2830750.403,2830733.734]
-        >>>  test=compute_azimuth(easting=np.array(easting), 
-        ...                      northing=np.array(northing), utm_zone="49N")
-        >>>  print(test)
-    """
-    #---**** method to compute azimuth****----
-    
-    reference_ellipsoid=23
-    
-    lat,long=gis.utm_to_ll(reference_ellipsoid=reference_ellipsoid,
-                                northing=northing, easting=easting, zone=utm_zone)
-    
-    #i, idx, ic_=0,0,pi/180
-    azimuth=0
-    
-    i,ic_=0,np.pi /180
-    
-    while i < lat.shape[0]:
-        xl=np.cos(lat[i]*ic_)*np.sin(lat[i+1]*ic_) - np.sin(lat[i]*ic_)\
-            *np.cos(lat[i+1]*ic_)*np.cos((long[i+1]-long[i])*ic_)
-        yl=np.sin((long[i+1]-long[i])*ic_)*np.cos(lat[i+1])
-        azim=np.arctan2(yl,xl)
-        azimuth=np.append(azimuth, azim)
-        i=i+1
-        if i==lat.shape[0]-1 :
-            # azimuth.append(0)
-            break
-    
-    
-    if extrapolate is True : 
-        # interpolate azimuth to find the azimuth to first station considered to 0.
-    
-        ff=spi.interp1d(x=np.arange(1,azimuth.size),
-                                   y=azimuth[1:], fill_value='extrapolate')
-        y_new , azim = ff(0),np.ones_like(azimuth)
-        azim[0], azim[1:] = y_new , azimuth[1:]
-    else : 
-        azim=azimuth[1:] # substract the zero value added for computation as origin.
-    #convert to degree : modulo 45degree
-    azim = np.apply_along_axis(lambda zz : zz * 180/np.pi , 0, azim) 
-    
-    
-    return np.around(azim,3)
-        
-def build_geochemistry_sample():
-    """
-    Build geochemistry_sample_data
-    
-    Raises
-    ------
-        Process to build geochemistry sample data manually .
-
-    Returns
-    -------
-       np.ndarray
-          Sample ,Geochemistry sample Data.
-
-    :Example:
-        
-        >>> geoch=build_geochemistry_sample()
-        >>> print(geoch)
-        ... sampleData
-        ... [['S0X4' '0' '254.0' 'PUP']
-        ...     ['S0X4' '254' '521.0' 'mg']
-        ...     ['S0X4' '521' '625.0' 'tut']
-        ...     ['S0X4' '625' '984.0' 'suj']
-        ...     ['S0X2' '0' '19.0' 'pup']
-        ...     ['S0X2' '19' '425.0' 'hut']
-        ...     ['S0X2' '425' '510.0' 'mgt']
-        ...     ['S0X2' '510' '923.2' 'pyt']]
-    """
-
-    tempsamp,SampleList=[],[]
-    comp=-1
-    while 1:
-        print('Enter Hole Name or <Enter/end> to stop:',end='')
-        holeName=input()
-        if holeName=="" or holeName.lower() in ["stop","end","enter",
-                                                "finish","close"]:
-            Sample=concat_array_from_list(list_of_array=SampleList,
-                                          concat_axis=0)
-            break
-        comp=comp+1
-        samp_buttom=np.float(input("Enter the buttom of the sampling (m):"))
-        
-        while holeName:
-            if comp==-1:
-                samP=concat_array_from_list(list_of_array=tempsamp,concat_axis=0)
-                tempsamp=[]
-                break
-            print("Enter the sampling levels:",end='')
-            samplevel=input()    
-            samplevel=dump_comma(input_car=samplevel, max_value=12, 
-                            carType='value')
-            samp_ar=np.array(list(samplevel))
-            samp_ar=samp_ar.reshape((samp_ar.shape[0],1))
-            
-            dh_to=samp_ar[1:]
-            dh_to=np.append(dh_to,samp_buttom)
-            dh_to=dh_to.reshape((dh_to.shape[0],1))
-            
-            print("Enter the samples' names:",end='')
-            sampName=input()
-            sampName=dump_comma(input_car=sampName, max_value=samp_ar.shape[0], 
-                            carType='mixed')
-            sampName_ar=np.array(list(sampName))
-            sampName_ar=sampName_ar.reshape((sampName_ar.shape[0],1))
-            try :
-                holes_names=np.full((sampName_ar.shape[0],1),holeName)
-                samfromto=np.concatenate((
-                    holes_names,samp_ar,dh_to,sampName_ar),axis=1)
-                
-            except Exception as e :
-                raise ("IndexError!, arrrays sample_DH_From:{0} &DH_To :{1}&"\
-                       " 'Sample':{2} doesn't not match proprerrly.{3}".\
-                           format(samp_ar.shape,dh_to.shape,sampName_ar.shape, e))
-                warnings.warn("IndexError !, dimentional problem."\
-                              " please check np.ndarrays.shape.")
-                _logger.warn("IndexError !, dimentional problem."\
-                              " please check np.ndarrays.shape.")
-            tempsamp.append(samfromto)
-            comp=-1
-        SampleList.append(samP)
-        print("\n")
-        
-    return Sample
-
-
-
-def parse_wellData(filename=None, include_azimuth=False,
-                   utm_zone="49N"):
-    """
-    Function to parse well information in*csv file 
-
-    Parameters
-    ----------
-        * filename : str, optional
-                full path to parser file, The default is None.
-                
-        * include_azimuth: bool , 
-            Way to compute azimuth automatically 
-            
-        * utm_zone : str, 
-            set coordinate _utm_WGS84. Defaut is 49N
-
-    Raises
-    ------
-        FileNotFoundError
-            if typical file deoesnt match the *csv file.
-
-    Returns
-    -------
-       location:  str
-            Name of location .
-            
-       WellData : np.ndarray
-              Specificy the collar Data .
-              
-        GeoData : np.ndarray
-             specify the geology data .
-             
-        SampleData : TYPE
-            geochemistry sample Data.
-
-
-    :Example: 
-        
-        >>> import numpy as np
-        >>> dir_=r"F:\OneDrive\Python\CodesExercices\ex_avgfiles\modules"
-        >>> parse_=parse_wellData(filename='Drill&GeologydataT.csv')
-        >>> print("NameOflocation:\n",parse_[0])
-        >>> print("WellData:\n",parse_[1])
-        >>> print("GeoData:\n",parse_[2])
-        >>> print("Sample:\n",parse_[3])
-    """
-    
-    
-    
-    identity=["DH_Hole (ID)","DH_East","DH_North","DH_Dip",
-              "Elevation" ,'DH_Azimuth',"DH_Top","DH_Bottom",
-              "DH_PlanDepth","DH_Decr","Mask "]
-    
-    car=",".join([ss for ss in identity])
-    # print(car)
-    
-    #ckeck the if it is the correct file
-    _flag=0
-    if filename is None :
-        filename=[file for file in os.listdir(os.getcwd()) \
-                  if (os.path.isfile(file)and file.endswith(".csv"))]
-        # print(filename)
-        if np.iterable (filename):
-            for file in filename :
-                with open (file,"r", encoding="utf-8") as f :
-                    data=f.readlines()
-                    _flag=1
-        else :
-            _logger.error('The {0} doesnt not match the *csv file'\
-                          ' You must convert file on *.csv format'.format(filename))
-            warnings.error("The input file is wrong ! only *.csv file "\
-                          " can be parsed.")
-    elif filename is not None :
-        assert filename.endswith(".csv"), "The input file {0} is not in *.csv format"
-        with open (filename,'r', encoding='utf-8') as f:
-            data=f.readlines()   
-            _flag=1
-            
-    if _flag==1 :
-        try :
-            # print(data[0])
-            head=data[0].strip("'\ufeff").strip('\n').split(',')[:-1]
-            head=_nonevalue_checker(list_of_value=head,
-                                    value_to_delete='')
-            chk=[1 for ii ,value in enumerate( head) if value ==identity[ii]]
-            # data[0]=head
-            if not all(chk):
-                _logger.error('The {0} doesnt not match the correct file'\
-                              ' to parse drill data'.format(filename))
-                warnings.warn("The input file is wrong ! must "\
-                              "input the correct file to be parsed.")
-        except Exception as e :
-            raise FileNotFoundError("The *csv file does no match the well file",e)
-            
-        # process to parse all data 
-        # coll,geol,samp=[],[],[]
-
-    for ss, elm in enumerate (data):
-        elm=elm.split(',')
-        for ii, value in enumerate(elm):
-            if value=='' or value=='\n':
-                elm=elm[:ii]
-        data[ss]=elm
-        
-    data[0]=head
-
-    [data.pop(jj)for jj, val in enumerate(data) if val==[]]
-
-    if data[-1]==[]:
-        data=data[:-1]
-        
-    ## final check ###
-    safeData=_nonelist_checker(data=data, _checker=True ,
-                  list_to_delete=['\n'])
-    data=safeData[2]
-    # identify collar , geology dans sample data 
-    comp=0
-    for ss , elm in enumerate(data):
-        if elm[0].lower()=='geology':
-            coll=data[:ss]
-            comp=ss
-        if elm[0].lower() =="sample":
-            geol=data[comp+1:ss]
-            samp=data[ss+1:]
-            
-    # build numpy data array 
-    collar_list=coll[1:]
-    # print(collar_list)
-    collar_ar=np.zeros((len(collar_list), len(identity)),dtype='<U12')
-    for ii, row in enumerate(collar_ar):
-        collar_ar[ii:,:len(collar_list[ii])]= np.array(collar_list[ii])
-    
-    bottom_ar=collar_ar[:,7]
-    # print(bottom_ar)
-        
-    geol_list=geol[1:]
-    geol_ar=_order_well (data=geol_list,bottom_value=bottom_ar)
-    samp_list=samp[1:]
-    samp_ar=_order_well (data=samp_list,bottom_value=bottom_ar)
-    
-    name_of_location =filename[:-3]
-    # find Description 
-    DH_PlanDepth=collar_ar[:,8]
-    DH_Decr=collar_ar[:,9]
-    
-    lenloc=len(name_of_location)
-    
  
-    for ss , singleArray in enumerate (DH_PlanDepth):
-        # print(singleArray)
-        if singleArray == ''or singleArray is None :
-            singleArray=name_of_location[:-int(lenloc/2)]+collar_ar[ss,0][-2:]
-            DH_PlanDepth[ss]=singleArray
-            if DH_Decr[ss] ==''or DH_Decr[ss] is None :
-                DH_Decr[ss] = "wdanx"+collar_ar[ss,0][0]+\
-                    name_of_location.lower()[0]+collar_ar[ss,0][-1]
-    
-    collar_ar[:,8]=DH_PlanDepth
-    collar_ar[:,9]=DH_Decr
-    
-    if include_azimuth==False:
-        DH_Azimuth=np.full((collar_ar.shape[0]),0)
-    elif include_azimuth== True:
-        DH_Azimuth=compute_azimuth(easting = np.array([np.float(ii) 
-                                                       for ii in collar_ar[:,1]]),
-                                  northing = np.array([np.float(ii) 
-                                                       for ii in collar_ar[:,2]]),
-                                  utm_zone=utm_zone, extrapolate=True)
-    
-    collar_ar[:,5]=DH_Azimuth
-    
-
-    name_of_location=name_of_location.capitalize()
-    WellData,GeoData,SampleData=collar_ar,geol_ar, samp_ar 
-
-    return (name_of_location, WellData,GeoData,SampleData)
-                   
-
-            
+                              
 def _nonelist_checker(data, _checker=False ,
                       list_to_delete=['\n']):
     """
@@ -1214,97 +615,8 @@ def _nonelist_checker(data, _checker=False ,
         
     return _occ,num_turn,data
         
-def _order_well (data,**kwargs):
-    """
-    Function to reorganize value , depth rock and depth-sample 
-    the program controls  the input depth value and compare it . 
-    with the bottom. It will pay attention that bottom depth must
-    be greater or egual of any other value. In the same time ,
-    the program check if value entered are sorted on ascending order . 
-    well must go deep ( less value to great value). Negative values of
-    depths are not acceptable.
-    
-    Parameters
-    ----------
-        * data : list,
-                data contains list of well thickness and rock description .
-    
-        * bottom_value  : np.ndarray float
-                value of bottom . it may the basement extrapolation.
-                default is 1.023 km
 
-    Returns
-    -------
-         np.ndarray
-            data, data aranged to [DH_Hole, DH_From, DH_To, Rock.] arrays
-        
-    :Example:
-        
-        >>> import numpy as np
-        >>> listtest =[['DH_Hole', 'Thick01', 'Thick02', 'Thick03',
-        ...           'Thick04','Rock01', 'Rock02', 'Rock03', 'Rock04'],
-        >>> ['S01', '0.0', '98.62776918', '204.7500461','420.0266651',
-        ...     'GRT', 'ATRK', 'GRT', 'ROCK'],
-        >>> ['S02', '174.4293956', '313.9043882', '400.12', '974.8945704',
-        ...     'GRT', 'ATRK', 'GRT', 'ROCK']]
-        >>> print(listtest[1:])
-        >>> ss=_order_well(listtest[1:])
-        >>> print(ss)
-    """
-    
-    this_function_name=inspect.getframeinfo(inspect.currentframe())[2]
-
-    bottomgeo=kwargs.pop("bottom_value", None)
-    # bottomsamp=kwargs.pop("sample_bottom_value",None)
-    # if type(bottomgeo) is np.ndarray :_flag=1
-    # else : _flag=0
-    
-    temp=[]
-
-    _logger.info ("You pass by {0} function! Thin now , everything is ok. ".
-                  format(this_function_name))
-    
-    for jj, value in enumerate (data):
-        thickness_len,dial1,dial2=intell_index(datalist=value[1:]) #call intell_index
-        value=np.array(value)
-
-        dh_from=value[1:thickness_len+1]
-        dh_to =np.zeros((thickness_len,), dtype="<U12")
-                # ---- check the last value given        
-        max_given_bottom=np.max(np.array([np.float(ii) for ii in dh_from])) 
-                # ----it may be less than bottom value                                                                .
-        dh_geo=value[thickness_len+1:]
-        dh_to=dh_from[1:]
-        # if _flag==0 :
-        if bottomgeo[jj] =="" or bottomgeo[jj]==None :
-            bottomgeoidx=1023.
-            if max_given_bottom > bottomgeoidx:
-                _logger.warn("value {0} is greater than the Bottom depth {1}".
-                             format(max_given_bottom ,bottomgeoidx))
-                warnings.warn (
-                    "Given values have a value greater than the depth !")
-                
-            dh_to=np.append(dh_to,bottomgeoidx)
-        else: #elif :_flag==1 :         # check the bottom , any values given 
-                                        # must be less or egual to depth not greater.
-            if max_given_bottom> np.float(bottomgeo[jj]):
-                _logger.warn("value {0} is greater than the Bottom depth {1}".
-                             format(max_given_bottom ,bottomgeo[jj]))
-                warnings.warn ("Given values have a value greater than the depth !")
-            dh_to=np.append(dh_to,bottomgeo[jj])
-            
-        dh_hole=np.full((thickness_len),value[0])
-        
-        temp.append(np.concatenate((dh_hole.reshape((dh_hole.shape[0],1)),
-                                    dh_from.reshape((dh_from.shape[0],1)),
-                                    dh_to.reshape((dh_to.shape[0],1)),
-                                    dh_geo.reshape((dh_geo.shape[0],1))),axis=1 ))
-        
-    data=concat_array_from_list(list_of_array=temp, concat_axis=0)
-    
-    return data
-                                
-        
+                                       
 def intell_index (datalist,assembly_dials =False):
     """
     function to search index to differency value to string element like 
@@ -1698,7 +1010,102 @@ def display_infos(infos, **kws):
                 print(am)
     print(inline * size )
 
+def fr_en_parser (f, delimiter =':'): 
+    """ Parse the translated data file. 
+    
+    :param f: translation file to parse 
+    :param delimiter: str, delimiter
+    
+    :return: generator obj, composed of a list of 
+        french  and english Input translation. 
+    
+    :Example:
+        >>> file_to_parse = 'pme.parserf.md'
+        >>> path_pme_data = r'C:/Users\Administrator\Desktop\__elodata
+        >>> data =list(BS.fr_en_parser(
+            os.path.join(path_pme_data, file_to_parse)))
+    """
+    
+    is_file = os.path.isfile (f)
+    if not is_file: 
+        raise IOError(f'Input {f} is not a file. Please check your file.')
+    
+    with open(f, 'r', encoding ='utf8') as ft: 
+        data = ft.readlines()
+        for row in data :
+            if row in ( '\n', ' '):
+                continue 
+            fr, en = row.strip().split(delimiter)
+            yield([fr, en])
 
+def convert_csvdata_from_fr_to_en(csv_fn, pf, destfile = 'pme.en.csv',
+                                  savepath =None, delimiter =':'): 
+    """ Translate variable data from french csva data  to english with 
+    varibale parser file. 
+    
+    :param csv_fn: data collected in csv format 
+    :param pf: parser file 
+    :param destfile: str,  Destination file, outputfile 
+    :param savepath: [Path-Like object, save data to a path 
+                      
+    :Example: 
+        # to execute this script, we need to import the two modules below
+        >>> import os 
+        >>> import csv 
+        >>> path_pme_data = r'C:/Users\Administrator\Desktop\__elodata
+        >>> datalist=convert_csvdata_from_fr_to_en(
+            os.path.join( path_pme_data, _enuv2.csv') , 
+            os.path.join(path_pme_data, pme.parserf.md')
+                         savefile = 'pme.en.cv')
+    """
+    # read the parser file and separed english from french 
+    parser_data = list(fr_en_parser (pf,delimiter) )
+    
+    with open (csv_fn, 'r', encoding ='utf8') as csv_f : 
+        csv_reader = csv.reader(csv_f) 
+        csv_data =[ row for row in csv_reader]
+    # get the index of the last substring row 
+    ix = csv_data [0].index ('Industry_type') 
+    # separateblock from two 
+    csv_1b = [row [:ix +1] for row in csv_data] 
+    csv_2b =[row [ix+1:] for row in csv_data ]
+    # make a copy of csv_1b
+    csv_1bb= deepcopy(csv_1b)
+   
+    for ii, rowline in enumerate( csv_1bb[3:]) : # skip the first two rows 
+        for jj , row in enumerate(rowline): 
+            for (fr_v, en_v) in  parser_data: 
+                # remove the space from french parser part
+                # this could reduce the mistyping error 
+                fr_v= fr_v.replace(
+                    ' ', '').replace('(', '').replace(
+                        ')', '').replace('\\', '').lower()
+                 # go  for reading the half of the sentence
+                row = row.lower().replace(
+                    ' ', '').replace('(', '').replace(
+                        ')', '').replace('\\', '')
+                if row.find(fr_v[: int(len(fr_v)/2)]) >=0: 
+                    csv_1bb[3:][ii][jj] = en_v 
+    
+    # once translation is done, concatenate list 
+    new_csv_list = [r1 + r2 for r1, r2 in zip(csv_1bb,csv_2b )]
+    # now write the new scv file 
+    if destfile is None: 
+        destfile = f'{os.path.basename(csv_fn)}_to.en'
+        
+    destfile.replace('.csv', '')
+    
+    with open(f'{destfile}.csv', 'w', newline ='',encoding ='utf8') as csvf: 
+        csv_writer = csv.writer(csvf, delimiter=',')
+        csv_writer.writerows(new_csv_list)
+        # for row in  new_csv_list: 
+        #     csv_writer.writerow(row)
+    savepath = cpath(savepath , '__pme')
+    try :
+        shutil.move (f'{destfile}.csv', savepath)
+    except:pass 
+    
+    return new_csv_list
     
 
     
