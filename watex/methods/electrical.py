@@ -11,7 +11,7 @@ from ..utils.coreutils import (_parse_args,
                                _assert_station_positions 
 ) 
 
-from ..exceptions import WATexError_station
+from ..exceptions import StationError
 
 
 
@@ -85,7 +85,7 @@ class ElectricalResistivityProfiling:
         # assert station and use auto station detect 
         if self.station is None: 
            if not auto_station: 
-               raise WATexError_station(msg
+               raise StationError (msg
                    )
            self.station = np.argmin( self.resistivities_) + 1
            

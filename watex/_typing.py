@@ -22,7 +22,7 @@ from typing import (
 
 """ 
 `WATex`_ Type variable definitions 
-=============================== 
+================================== 
 
 .. |ERP| replace: Electrical resistivity profiling 
 
@@ -84,7 +84,7 @@ type of arguments.
             ''' asserted with MyPy and work-fine.'''
                 ...
                 
-**Sub**: Stand for subset. Indeed, the class is created to define the 
+**Sub**: Stands for subset. Indeed, the class is created to define the 
     conductive zone. It is a subset ``Sub`` of ``Array``. For example, we first 
     build an array secondly extract the conductive zone from |ERP| line.
     Finally, we checked the type hint to assert whether the extracted zone 
@@ -101,7 +101,7 @@ type of arguments.
                 ''' assert with MyPy and return ``True`` as it works fine. '''
                 ... 
                 
-**SP**: Stand for Station positions. The unit of position may vary, however, 
+**SP**: Stands for Station positions. The unit of position may vary, however, 
     we keep for :mod:`watex.method.electrical.ElectricalResistivityProfiling`
     the default unit in ``meters``by starting at position 0. Typically,
     positions are recording according to the dipole length. For the example, 
@@ -313,7 +313,7 @@ class SP(Generic [T, D]):
     ... 
     
 class Series (DType[T], Generic [T]): 
-    """ To reference the pandas Series_ object. 
+    """ To reference the pandas `Series`_ object. 
     
     .. _Series: https://pandas.pydata.org/docs/reference/api/pandas.Series.html
     

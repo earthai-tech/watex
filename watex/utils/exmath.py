@@ -30,7 +30,9 @@ from .._typing import (
 
 from .decorator import deprecated 
 from ._watexlog import watexlog
-from .func_utils import smart_format as smf 
+from .func_utils import (
+                         _assert_all_types, 
+                         )
 
 
 _logger =watexlog.get_watex_logger(__name__)
@@ -133,7 +135,7 @@ def type_ (erp: Array[DType[float]] ) -> str:
     # split array
     type_ ='PC' # initialize type 
     
-    erp = __assert_all_types(erp, tuple, list, np.ndarray, pd.Series)
+    erp = _assert_all_types(erp, tuple, list, np.ndarray, pd.Series)
     erp = np.array (erp)
     
     try : 
@@ -233,14 +235,14 @@ def shape_ (
     """
     shape = 'V' # initialize the shape with the most common 
     
-    cz = __assert_all_types( cz , tuple, list, np.ndarray) 
+    cz = _assert_all_types( cz , tuple, list, np.ndarray) 
     cz = np.array(cz)
     # detect the staion position index
     if s is (None or Ellipsis ): s_index = np.argmin(cz)
     elif s is not None: 
         if isinstance(str): 
             s_index, = detect_station_position(s,**kws)  
-        else : s_index= __assert_all_types(s, int)
+        else : s_index= _assert_all_types(s, int)
     lbound , rbound = cz[:s_index +1] , cz[s_index :]
     ls , rs = lbound[0] , rbound [-1] # left side and right side (s) 
     lminls, = argrelextrema(lbound, np.less)
@@ -283,23 +285,10 @@ def _correct_positions (p):
     
     """
     
-    p = __assert_all_types(p, list, tuple, np.ndarray, 
+    p = _assert_all_types(p, list, tuple, np.ndarray, 
                            pd.Series, pd.DataFrame  )
     
-def __isin (
-        arr: Array | List [float] ,
-        subarr: Sub [Array] |Sub[List[float]] | float 
-) -> bool : 
-    """ Check whether the subset array `subcz` is in  `cz` array. 
-    
-    :param arr: Array-like - Array of item elements 
-    :param subarr: Array-like, float - Subset array containing a subset items.
-    :return: True if items in  test array `subarr` are in array `arr`. 
-    
-    """
-    arr = np.array (arr );  subarr = np.array(subarr )
 
-    return True if True in np.isin (arr, subarr) else False 
 
 def __sves__ (
         s_index: int  , 
@@ -324,8 +313,8 @@ def __sves__ (
     except: return TypeError(
         f'Expected integer value not {type(s_index).__name__}')
     
-    s_index = __assert_all_types( s_index , int)
-    cz = __assert_all_types(cz, np.ndarray, pd.Series, list, tuple )
+    s_index = _assert_all_types( s_index , int)
+    cz = _assert_all_types(cz, np.ndarray, pd.Series, list, tuple )
 
     rmax_ls , rmax_rs = max(cz[:s_index  + 1]), max(cz[s_index  :]) 
     # detect the value of rho max  (rmax_...) 
@@ -340,20 +329,7 @@ def __sves__ (
     return (rho_ls, side), (rmax_ls , rmax_rs )
 
 
-def __assert_all_types (
-        obj: object , 
-        *expected_objtype: type 
- ) -> object: 
-    """ Quick assertion of object type. Raise an `TypeError` if 
-    wrong type is given."""
-    # if np.issubdtype(a1.dtype, np.integer): 
-    if not isinstance( obj, expected_objtype): 
-        raise TypeError (
-            f'Expected {smf(tuple (o.__name__ for o in expected_objtype))}'
-            f' type{"s" if len(expected_objtype)>1 else ""} '
-            f'but `{type(obj).__name__}` is given.')
-            
-    return obj 
+
 
 def detect_station_position (
         s : Union[str, int] ,
@@ -389,8 +365,8 @@ def detect_station_position (
         ... WATexError_station: Station sta200 \
             is out of the range; max position = 40
     """
-    s = __assert_all_types( s, float, int, str)
-    p = __assert_all_types( p, tuple, list, np.ndarray, pd.Series) 
+    s = _assert_all_types( s, float, int, str)
+    p = _assert_all_types( p, tuple, list, np.ndarray, pd.Series) 
     
     S=copy.deepcopy(s)
     if isinstance(s, str): 

@@ -3,9 +3,11 @@
 #   created date :Sun Sep 13 09:24:00 2020
 #   edited date: Wed Jul  7 22:23:02 2021 
 
-####################### import modules #######################
+####################### import required modules #######################
+from __future__ import annotations 
 
 import os 
+import re 
 import sys 
 import subprocess 
 import warnings
@@ -14,8 +16,18 @@ import shutil
 from copy import deepcopy 
 
 import numpy as np 
+import pandas as pd 
 import matplotlib.pyplot as plt
 
+from .._typing import ( 
+    Tuple, 
+    Array, 
+    Sub ,
+    List ,
+    DataFrame, 
+    )
+from .._property import P
+from ..exceptions import EDIError  
 from ._watexlog import watexlog
 
 _logger = watexlog.get_watex_logger(__name__)
@@ -50,7 +62,6 @@ except ImportError:
 
 ###################### end import module ##################################
 
-  
 def check_dimensionality(obj, data, z, x):
     """ Check dimensionality of data and fix it.
     
@@ -161,7 +172,8 @@ def subprocess_module_installation (module, upgrade =True , DEVNULL=False,
                       "and dependancies was successfully done!") 
         
     return MOD_IMP 
-        
+
+
 def smart_format(iter_obj): 
     """ Smart format iterable obj 
     :param iter_obj: iterable obj 
@@ -171,6 +183,7 @@ def smart_format(iter_obj):
         >>> smart_format(['model', 'iter', 'mesh', 'data'])
         ... 'model','iter','mesh' and 'data'
     """
+    str_litteral =''
     try: 
         iter(iter_obj) 
     except:  return f"{iter_obj}"
@@ -257,28 +270,7 @@ def sPath (name_of_path:str):
         warnings.warn("The path seems to be existed!")
         return
     return savepath 
-def smart_format(iter_obj): 
-    """ Smart format iterable obj 
-    :param iter_obj: iterable obj 
-    
-    :Example: 
-        >>> from watex.utils.func_utils import smart_format
-        >>> smart_format(['.csv', '.json', '.xlsx', '.html', '.sql'])
-        ... '.csv', '.json', '.xlsx', '.html' and '.sql'
-    """
-    str_litteral=''
-    
-    try: 
-        iter(iter_obj) 
-    except:  return f"{iter_obj}"
-    
-    iter_obj = [str(obj) for obj in iter_obj]
-    if len(iter_obj) ==1: 
-        str_litteral= ''.join([f"{i!r}" for i in iter_obj ])
-    elif len(iter_obj)>1: 
-        str_litteral = ','.join([f"{i!r}" for i in iter_obj[:-1]])
-        str_litteral += f" and {iter_obj[-1]!r}"
-    return str_litteral
+
 
 def format_notes(text:str , cover_str:str='~', inline=70, **kws): 
     """ Format note 
@@ -321,10 +313,70 @@ def format_notes(text:str , cover_str:str='~', inline=70, **kws):
     print('{0}{1:>51}'.format(' '* (margin -1), cover_str * (inline -margin+1 ))) 
     
     
+def sanitize_fdataset(
+    _df: DataFrame
+) ->Tuple[DataFrame, int]: 
+    """ Sanitize the feature dataset. 
+    
+    Recognize the columns provided  by the users and resset according 
+    to the features labels disposals :attr:`~Features.featureLabels`."""
+    
+    utm_flag =0 
+    
+    def getandReplace(
+            optionsList:List[str],
+            params:List[str], df:DataFrame
+            ) -> List[str]: 
+        """
+        Function to  get parames and replace to the main features params.
+        
+        :param optionsList: 
+            User options to qualified the features headlines. 
+        :type optionsList: list
+        
+        :param params: Exhaustive parameters names. 
+        :type params: list 
+        
+        :param df: pd.DataFrame collected from `features_fn`. 
+        
+        :return: sanitize columns
+        :rtype: list 
+        """
+        columns = [c.lower() for c in df.columns] 
+        
+        for ii, celemnt in enumerate(columns): 
+            for listOption, param in zip(optionsList, params): 
+                 for option in listOption:
+                     if param =='lwi': 
+                        if celemnt.find('eau')>=0 : 
+                            columns[ii]=param 
+                            break
+                     if re.match(r'^{0}+'.format(option), celemnt):
+                         columns[ii]=param
+                         if columns[ii] =='east': 
+                             utm_flag =1
+                         break
+
+        return columns
+
+    new_df_columns= getandReplace(
+        optionsList=P.param_options,
+            params=P.param_ids,
+            df= _df
+                                  )
+    df = pd.DataFrame(data=_df.to_numpy(), columns= new_df_columns)
+    return df , utm_flag
+     
 
                 
-def interpol_scipy (x_value, y_value,x_new,
-                    kind="linear",plot=False, fill="extrapolate"):
+def interpol_scipy (
+        x_value,
+        y_value,
+        x_new,
+        kind="linear",
+        plot=False,
+        fill="extrapolate"
+        ):
     
     """
     function to interpolate data 
@@ -377,7 +429,12 @@ def interpol_scipy (x_value, y_value,x_new,
     return y_new
 
 
-def _set_depth_to_coeff(data, depth_column_index,coeff=1, depth_axis=0):
+def _set_depth_to_coeff(
+        data,
+        depth_column_index,
+        coeff=1, 
+        depth_axis=0
+        ):
     
     """
     Parameters
@@ -420,130 +477,6 @@ def _set_depth_to_coeff(data, depth_column_index,coeff=1, depth_axis=0):
         data[depth_column_index,:]=data[depth_column_index,:]*coeff  
 
     return data
-            
-
-
-def broke_array_to_(arrayData, keyIndex=0, broken_type="dict"):
-    """
-    broke data array into different value with their same key 
-
-    Parameters
-    ----------
-        * arrayData :np.array
-            data array .
-            
-        * keyIndex : int 
-            index of column to create dict key 
-
-    Returns
-    -------
-        dict 
-           dico_brok ,dictionnary of array.
-    """
-    
-    vcounts_temp,counts_temp=np.unique(arrayData[:,keyIndex], return_counts=True)
-    vcounts_temp_max=vcounts_temp.max()
-
-    dico_brok={}
-    lis_brok=[]
-    index=0
-    deb=0
-    for rowlines in arrayData :
-        if rowlines[0] == vcounts_temp_max:
-            value=arrayData[index:,::]
-            if broken_type=="dict":
-                dico_brok["{0}".format(rowlines[0])]=value
-                break
-            elif broken_type=="list":
-                lis_brok.append(value)
-                break
-        elif rowlines[0] !=arrayData[index+1,keyIndex]:
-            value=arrayData[deb:index+1,::]
-            if broken_type=="dict":
-                dico_brok["{0}".format(rowlines[0])]=value
-            elif broken_type=="list":
-                lis_brok.append(value)
-            deb=index+1
-        index=index+1
-    if broken_type=="dict":
-        return dico_brok
-    elif broken_type=="list":
-        return lis_brok
-    
-
-
-
-def dump_comma(input_car, max_value=2, carType='mixed'):
-    """
-    Parameters
-    ----------
-        * input_car : str,
-            Input character.
-        * max_value : int, optional
-            The default is 2.
-            
-        * carType: str 
-            Type of character , you want to entry
-                 
-    Returns
-    -------
-        Tuple of input character
-            must be return tuple of float value, or string value
-      
-    .. note:: carType  may be as arguments parameters like ['value','val',"numeric",
-              "num", "num","float","int"] or  for pure character like 
-                ["car","character","ch","char","str", "mix", "mixed","merge","mer",
-                "both","num&val","val&num&"]
-                if not , can  not possible to convert to float or integer.
-                the *defaut* is mixed 
-                
-    :Example: 
-        
-        >>> import numpy as np
-        >>>  ss=dump_comma(input_car=",car,box", max_value=3, 
-        ...      carType="str")
-        >>>  print(ss)
-        ... ('0', 'car', 'box')
-    """
-    
-    
-    
-        # dump "," at the end of 
-    flag=0
-    
-    if input_car[-1]==",":
-        input_car=input_car[:-1]
-    if input_car[0]==",":
-        input_car="0,"+ input_car[1:]
-        
-    if carType.lower() in ['value','val',"numeric",
-                           "num", "num","float","int"]:
-        input_car=eval(input_car)
-        
-    elif carType.lower() in ["car","character","ch","char","str",
-                             "mix", "mixed","merge","mer",
-                             "both","num&val","val&num&"]:
-        
-        input_car=input_car.strip(",").split(",")
-        flag=1
-        
-
-    if np.iterable(input_car)==False :
-        inputlist=[input_car,0]
-
-    elif np.iterable(input_car) is True :
-
-        inputlist=list(input_car)
-
-    input_car=inputlist[:max_value]
-
-    if flag==1 :
-        if len(inputlist)==1 :
-            return(inputlist[0])
-    
-    return tuple(input_car)
-
- 
                               
 def _nonelist_checker(data, _checker=False ,
                       list_to_delete=['\n']):
@@ -809,7 +742,8 @@ def _cross_eraser (data , to_del, deep_cleaner =False):
         list
          data , list erased.
 
-    :Example: 
+    Examples
+    --------
         
         >>> data =['Z.mwgt','Z.pwgt','Freq',' Tx.Amp','E.mag','   E.phz',
         ...          '   B.mag','   B.phz','   Z.mag', '   Zphz  ']
@@ -945,10 +879,11 @@ def minimum_parser_to_write_edi (edilines, parser = '='):
     for ii, lines in enumerate(edilines) :
         if isinstance(lines, dict):continue 
         elif lines.find('=') <0 : 
-            raise 'None <"="> found on this item<{0}> of '
-            ' the edilines list. list can not'\
-            ' be parsed.Please put egal between key and value '.format(
-                edilines[ii])
+            raise EDIError (
+             f'None <"="> found on this item<{edilines[ii]}> of '
+            ' the edilines list. list can not be parsed. Please'
+            ' put egal sign "=" between key and value '
+            )
     
     return edilines 
             
@@ -1107,9 +1042,115 @@ def convert_csvdata_from_fr_to_en(csv_fn, pf, destfile = 'pme.en.csv',
     
     return new_csv_list
     
+#XXX TODO : move the stats func 
+def _stats (X_, y_true,*, y_pred,
+            from_c ='geol', 
+            drop_columns =None, 
+            columns=None )  : 
+    """ Present a short static"""
+    import pandas as pd 
+    
+    if from_c not in X_.columns: 
+        raise TypeError(f"{from_c!r} not found in columns "
+                        "name ={list(X_.columns)}")
+        
+    if columns is not None:
+        if not isinstance(columns, (tuple, list, np.ndarray)): 
+            raise TypeError(f'Columns should be a list not {type(columns)}')
+        
+    is_dataframe = isinstance(X_, pd.DataFrame)
+    if is_dataframe: 
+        if drop_columns is not None: 
+            X_.drop(drop_columns, axis =1)
+            
+    if not is_dataframe : 
+        len_X = X_.shape[1]
+        if columns is not None: 
+            if len_X != len(columns):
+                raise TypeError(
+                    "Columns and test set must have the same length"
+                    f" But `{len(columns)}` and `{len_X}` were given "
+                    "respectively.")
+                
+            X_= pd.DataFrame (data = X_, columns =columns)
+            
+    # get the values counts on the array and convert into a columns 
+    if isinstance(y_pred, pd.Series): 
+        y_pred = y_pred.values 
+        # initialize array with full of zeros
+    # get the values counts of the columns to analyse 'geol' for instance
+    s=  X_[from_c].value_counts() # getarray of values 
+    s_values = s.values 
+    # create a pseudo serie and get the values counts of each elements
+    # and get the values counts
 
+    y_actual=pd.Series(y_true, index = X_.index, name ='y_true')
+    y_predicted =pd.Series(y_pred, index =X_.index, name ='y_pred')
+    pdf = pd.concat([X_[from_c],y_actual,y_predicted ], axis=1)
+ 
+    analysis_array = np.zeros((len(s.index), len(np.unique(y_true))))
+    for ii, index in enumerate(s.index): 
+        for kk, val in enumerate( np.unique(y_true)): 
+            geol = pdf.loc[(pdf[from_c]==index)]
+            geols=geol.loc[(geol['y_true']==geol['y_pred'])]
+            geolss=geols.loc[(geols['y_pred']==val)]             
+            analysis_array [ii, kk]=len(geolss)/s.loc[index]
+
+    return analysis_array
+     
     
+def _isin (
+        arr: Array | List [float] ,
+        subarr: Sub [Array] |Sub[List[float]] | float 
+) -> bool : 
+    """ Check whether the subset array `subcz` is in  `cz` array. 
     
+    :param arr: Array-like - Array of item elements 
+    :param subarr: Array-like, float - Subset array containing a subset items.
+    :return: True if items in  test array `subarr` are in array `arr`. 
+    
+    """
+    arr = np.array (arr );  subarr = np.array(subarr )
+
+    return True if True in np.isin (arr, subarr) else False 
+
+def _assert_all_types (
+        obj: object , 
+        *expected_objtype: type 
+ ) -> object: 
+    """ Quick assertion of object type. Raise an `TypeError` if 
+    wrong type is given."""
+    # if np.issubdtype(a1.dtype, np.integer): 
+    if not isinstance( obj, expected_objtype): 
+        raise TypeError (
+            f'Expected {smart_format(tuple (o.__name__ for o in expected_objtype))}'
+            f' type{"s" if len(expected_objtype)>1 else ""} '
+            f'but `{type(obj).__name__}` is given.')
+            
+    return obj 
+
+  
+def savepath_ (nameOfPath): 
+    """
+    Shortcut to create a folder 
+    :param nameOfPath: Path name to save file
+    :type nameOfPath: str 
+    
+    :return: 
+        New folder created. If the `nameOfPath` exists, will return ``None``
+    :rtype:str 
+        
+    """
+ 
+    try :
+        savepath = os.path.join(os.getcwd(), nameOfPath)
+        if not os.path.isdir(savepath):
+            os.mkdir(nameOfPath)#  mode =0o666)
+    except :
+        warnings.warn("The path seems to be existed !")
+        return
+    return savepath 
+     
     
     
     

@@ -17,17 +17,28 @@ from six.moves import urllib
 import numpy as np 
 import pandas as pd 
 
-from sklearn.model_selection import (train_test_split, StratifiedShuffleSplit)
-
-from .._typing import (TypeVar,
-                       Generic,
-                       Iterable ,
-                       Callable,
-                       Text
-                       )
+from sklearn.model_selection import (
+    train_test_split,
+    StratifiedShuffleSplit
+    )
+from sklearn.metrics import (
+    confusion_matrix ,
+    mean_squared_error 
+    ) 
+from .._typing import (
+    Tuple, 
+    Optional,
+    TypeVar,
+    Generic,
+    Iterable ,
+    Callable,
+    Text, 
+    Array, 
+    NDArray,                  
+)
 
 import watex.utils.func_utils as FU
-from . import savepath as savePath 
+from .func_utils import savepath_
 from ._watexlog import watexlog
 
 __logger = watexlog().get_watex_logger(__name__)
@@ -44,6 +55,79 @@ CSV_FILENAME = '/__tar.tgz_files__/___fmain.bagciv.data.csv'
 
 DATA_URL = DOWNLOAD_ROOT + DATA_PATH  + TGZ_FILENAME
 
+
+def predict(
+        y_true: Array,
+        y_pred: Array =None,
+        *, 
+        X_: Optional [NDArray]=None, 
+        clf:Callable[..., T]=None,
+        verbose:int =0
+) -> Tuple[float, float]: 
+    """ Make a quick statistic after prediction. 
+    
+    :param y_true: array-like 
+        y value (label) to predict
+    :param y_pred: array_like
+        y value predicted
+    :pram X: ndarray(nexamples, nfeatures)
+        Training data sets 
+    :param X_: ndarray(nexamples, nfeatures)
+        test sets 
+    :param clf: callable
+        Estimator or classifier object. 
+    :param XT_: ndarray
+    :param verbose:int, level=0 
+        Control the verbosity. More than 1 more message
+    :param from_c: str 
+        Column to visualize statistic. Be sure the colum exist into the
+        test sets. If not raise errors.
+    """
+    
+    clf_name =''
+    if y_pred is None: 
+        if clf is None: 
+            warnings.warn('None estimator found! Could not predict `y` ')
+            __logger.error('NoneType `clf` <estimator> could not'
+                                ' predict `y`.')
+            raise ValueError('None estimator detected!'
+                             ' could not predict `y`.') 
+        # check whether is 
+        is_clf = hasattr(clf, '__call__')
+        if is_clf : clf_name = clf.__name__
+        if not is_clf :
+            # try whether is ABCMeta class 
+            try : 
+                is_clf = hasattr(clf.__class__, '__call__')
+            except : 
+                raise TypeError(f"{clf!r} is not a model estimator. "
+                                 " Could not use for prediction.")
+            clf_name = clf.__class__.__name__
+            # check estimator 
+        if X_ is None: 
+            raise TypeError('NoneType can not used for prediction.'
+                            ' Need a test set `X`.')
+        clf.fit(X_, y_true)
+        y_pred = clf.predict(X_)
+        
+    if len(y_true) !=len(y_pred): 
+        raise TypeError("`y_true` and `y_pred` must have the same length." 
+                        f" {len(y_true)!r} and {len(y_pred)!r} were given"
+                        " respectively.")
+        
+    # get the model score apres prediction 
+    clf_score = round(sum(y_true ==y_pred)/len(y_true), 4)
+    dms = f"Overall model {clf_name!r} score ={clf_score *100 } % "
+
+    conf_mx =confusion_matrix(y_true, y_pred)
+    if verbose >1:
+        dms +=f"\n Confusion matrix= \n {conf_mx}"
+    mse = mean_squared_error(y_true, y_pred )
+
+    dms += f"\n MSE error = {mse }."
+    pprint(dms)
+
+    return clf_score, mse 
 
 def read_from_excelsheets(erp_file: T = None ) -> Iterable[VT]: 
     
@@ -490,9 +574,9 @@ def dumpOrSerializeData (data , filename=None, savepath =None, to=None):
         
     if savepath is not None:
         try : 
-            savepath = savePath (savepath)
+            savepath = savepath_ (savepath)
         except : 
-            savepath = savePath ('_dumpedData_')
+            savepath = savepath_ ('_dumpedData_')
         try:
             shutil.move(filename, savepath)
         except :
