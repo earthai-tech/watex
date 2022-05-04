@@ -30,13 +30,17 @@ from .._typing import (
     Sub, 
     SP
 )
-from .exmath import __isin , __assert_all_types 
-from .func_utils import smart_format 
+from .func_utils import (
+    smart_format as smft,
+    _isin , 
+    _assert_all_types
+    ) 
 from .ml_utils import read_from_excelsheets
 
 from ..exceptions import ( 
-    WATexError_station, 
-    WATexError_parameter_number
+    StationError, 
+    ParameterNumberError, 
+    HeaderError
 )
 
 def data_sanitizer (
@@ -84,7 +88,7 @@ def data_sanitizer (
     .. Example:: 
         >>> import numpy as np 
         >>> from watex.utils.coreutils import _data_sanitizer 
-        >>> df = _data_sanitizer ('data/erp/testsafedata.csv')
+        >>> df = data_sanitizer ('data/erp/testsafedata.csv')
         >>> df.shape 
         ... (45, 4)
         >>> list(df.columns) 
@@ -92,16 +96,16 @@ def data_sanitizer (
         >>> df = _data_sanitizer ('data/erp/testunsafedata.xlsx') 
         >>> list(df.columns)
         ... ['easting', 'station', 'resistivity', 'northing']
-        >>> df = _data_sanitizer(np.random.randn(7)) 
+        >>> df = data_sanitizer(np.random.randn(7)) 
         >>> df.name 
         ... 'resistivity'
-        >>> df = _data_sanitizer(np.random.randn(7, 7)) 
+        >>> df = data_sanitizer(np.random.randn(7, 7)) 
         >>> df.shape 
         ... (7, 4)
         >>> list(df.columns) 
         ... ['station', 'easting', 'northing', 'resistivity']
     
-        >>> df = _data_sanitizer(np.random.randn(7, 3)) 
+        >>> df = data_sanitizer(np.random.randn(7, 3)) 
         ... ValueError: ...
 
     """
@@ -119,13 +123,12 @@ def data_sanitizer (
         rawcol = f.columns 
         temp = list(map(lambda x: x.lower().strip(), f.columns))  
         for i, item  in enumerate (temp): 
-            for key, values in P().idictags.items (): 
+            for key, values in P().idicttags.items (): 
                 for v in values: 
                     if item.find(v)>=0: 
                         temp[i] = key 
                         break 
         # check the existence of  duplicate element 
-        # into the dataframe column
         if len(set (temp)) != len(temp): 
             # search for duplicated items by making  
             # a copy of original list. Thus by using 
@@ -141,13 +144,11 @@ def data_sanitizer (
                 ls = set([ it for it in rawcol for e in val if it.find(e)>=0])
                 if len(ls)!=0: 
                     break 
-            raise WATexError_parameter_number(
+            raise HeaderError (
                 f'Duplicate column{"s" if len(ls)>1 else ""}'
-                f' {smart_format(ls)} found. It seems to be'
-                f' {smart_format(duplicate)} '
-                f'column{"s" if len(duplicate)>1 else ""}.'
-                ' Please provide the right column name in'
-                ' the dataset.'
+                f' {smft(ls)} found. It seems to be'
+                f' {smft(duplicate)} column{"s" if len(duplicate)>1 else ""}.'
+                ' Please provide the right column names.'
                               )
         # rename dataframe columns 
         f.columns= temp 
@@ -182,7 +183,7 @@ def data_sanitizer (
                         'none' for i in range(f.shape[1]-4)]
                     )
     else : 
-        raise ValueError ('Unaccepatable data. Can only parse'
+        raise ValueError ('Unacceptable data. Can only parse'
                           ' `pandas.DataFrame`, `.xlsx` and '
                           '`.csv` file format.')        
     # shrunk the dataframe out of 4 columns . 
@@ -195,10 +196,10 @@ def data_sanitizer (
     return f 
 
 def _fetch_prefix_index (
-    arr:NDArray [DType[float]] | None = None,
-    col: List[str] | None = None,
-    df :pd.DataFrame | None = None, 
-    prefixs: List [str ] | None =None
+    arr:NDArray [DType[float]] = None,
+    col: List[str]  = None,
+    df : DataFrame = None, 
+    prefixs: List [str ]  =None
 ) -> Tuple [int | int]: 
     """ Retrieve index at specific column. 
     
@@ -243,7 +244,7 @@ def _fetch_prefix_index (
                          ' a Nonetype object.'
                         )
     elif df is None and col is None: 
-        raise WATexError_station( 'Column list is missing.'
+        raise StationError( 'Column list is missing.'
                          ' Could not detect the position index') 
         
     if isinstance( df, pd.DataFrame): 
@@ -268,15 +269,15 @@ def _fetch_prefix_index (
 
     if len(colIndex) is None: 
         raise ValueError ( 'Unable to detect the position'
-                          f' in `{smart_format(comsg)}` columns'
+                          f' in `{smft(comsg)}` columns'
                           '. Columns must contain at least'
-                          f' `{smart_format(prefixs)}`.')
+                          f' `{smft(prefixs)}`.')
     return colIndex 
 
 
 def _assert_station_positions(
-    arr: NDArray | None =None,
-    prefixs: List [str] |None =P().istation,
+    arr: SP = None,
+    prefixs: List [str] =...,
     **kws
 ) -> Tuple [int, float]: 
     """ Assert positions and compute dipole length. 
@@ -307,7 +308,8 @@ def _assert_station_positions(
         ... (array([  0,  30,  60,  90, 120, 150, 180]), 30)
     
     """
-
+    if prefixs is (None or ...): prefixs = P().istation 
+    
     colIndex =_fetch_prefix_index(arr=arr, prefixs = prefixs, **kws )
     positions= arr[:, colIndex[0]]
     # assert the position is aranged from lower to higher 
@@ -315,7 +317,7 @@ def _assert_station_positions(
     fsta = np.argmin(positions) 
     lsta = np.argmax (positions)
     if int(fsta) !=0 or int(lsta) != len(positions)-1: 
-        raise WATexError_station(
+        raise StationError(
             'Wrong numbering! Please number the position from first station '
             'to the last station. Check your array positionning numbers.')
     
@@ -429,10 +431,10 @@ def plot_anomaly(
         else: None 
         
     
-    erp = __assert_all_types( 
+    erp = _assert_all_types( 
         erp, tuple, list , np.ndarray , pd.Series)
     if cz is not None: 
-        cz = __assert_all_types(
+        cz = _assert_all_types(
             cz, tuple, list , np.ndarray , pd.Series)
         cz = np.array (cz)
         
@@ -491,7 +493,7 @@ def plot_anomaly(
 
     if cz is not None: 
         # construct a mask array with np.isin to check whether
-        if not __isin (erp, cz ): 
+        if not _isin (erp, cz ): 
             raise ValueError ('Expected a conductive zone to be a subset of '
                               ' the resistivity profiling line.')
         # `cz` is subset array
@@ -515,8 +517,6 @@ def plot_anomaly(
                   )
     
     if len(erp ) >= 14 : 
-        # for axi in ax.flat() : 
-            # axi.xaxis.set_major_locator (plt.MaxNLocator(3))
         ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
     else : 
         
@@ -602,8 +602,6 @@ def _define_conductive_zone(
 
     return cz , pos 
 
-
-
 def _assert_stations(
     s:Any , 
     dipole:Any=None,
@@ -659,7 +657,7 @@ def _assert_stations(
     # in the case s is string: eg. "00", "pk01", "S001"
     ix = 0
 
-    s = __assert_all_types(s, str, int, float)
+    s = _assert_all_types(s, str, int, float)
     
     if isinstance(s, str): 
         s =s.lower().replace('pk', '').replace('s', '').replace('ta', '')
@@ -699,7 +697,7 @@ def _assert_stations(
             try : 
                 dipole = float(dipole) 
             except : 
-                raise WATexError_station( 'invalid literal value for'
+                raise StationError( 'invalid literal value for'
                                          f' dipole : {dipole!r}')
         # since the renamed from dipole starts at 0 
         # e.g. 0(S1)---10(S2)---20(S3) ---30(S4)etc ..
@@ -718,7 +716,7 @@ def _parse_args (
     
     :param args: arguments 
     
-    :return: ndarrayor array-like  arranged with apparent 
+    :return: ndarray or array-like  arranged with apparent 
         resistivity at the first index 
         
     .. note:: If a list of arrays is given or numpy.ndarray is given, 
@@ -830,7 +828,8 @@ def _assert_file (
         
     return args , isfile 
  
-   
+
+  
 """
 .. |ERP| replace: Electrical resistivity profiling 
 

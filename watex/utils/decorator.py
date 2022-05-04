@@ -26,7 +26,7 @@ from .._typing import ( Iterable,
 )
 
 from ._watexlog import watexlog
-from . import savepath as savePath 
+from .func_utils import savepath_ 
 from .ml_utils import read_from_excelsheets
 
 __logger = watexlog().get_watex_logger(__name__)
@@ -407,10 +407,10 @@ class writef(object):
             generatedfile = '_watex{}_'.format(
                     datetime.datetime.now().time()).replace(':', '.')
             if self.savepath is None :
-                self.savepath = savePath(generatedfile)
+                self.savepath = savepath_(generatedfile)
             if self.savepath is not None :
                 if not os.path.isdir(self.savepath): 
-                    self.savepath = savePath(generatedfile)
+                    self.savepath = savepath_(generatedfile)
                 try : 
                     shutil.move(os.path.join(os.getcwd(),self.refout) ,
                             os.path.join(self.savepath , self.refout))
