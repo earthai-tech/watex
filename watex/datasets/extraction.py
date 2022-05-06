@@ -4,10 +4,11 @@
 #       Licence: MIT
 
 """
-..warnings:: This module is a core use to retreive data from local,  
-    git and zenodo record. Modified this module  presume to enhance the way  
-    the codes are written and you know what you are doing. Making a copy 
-    before modifying this script is recommended.
+Extraction module 
+==================
+
+This module is a core use to retreive data from local,  
+git and zenodo record. 
 
 """
 import os 
@@ -19,10 +20,12 @@ import shutil
 import zipfile
 from six.moves import urllib 
 
-from ..utils.ml_utils import (fetchSingleTGZData, 
-                                  subprocess_module_installation)
+from ..utils.mlutils import (
+    fetchSingleTGZData, 
+    subprocess_module_installation
+    )
 from ..utils._watexlog import watexlog
-from ..utils.exceptions import WATexExtractionError 
+from ..utils.exceptions import ExtractionError 
 
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -152,7 +155,8 @@ def _fromlocal (f=f__):
         else : 
             print(f"---> Decompressed  {TGZ_FILENAME.replace('/', '')!r}"
                   " was sucessfully done!")
-            if os.path.isfile (f0): return f0
+            if os.path.isfile (f0):
+                return f0
     return f 
 
 def _fromgithub( f=f__, root = GIT_ROOT):
@@ -349,7 +353,7 @@ def unZipFileFetchedFromZenodo(zipdir =LOCAL_DIR,
 def fetchSingleRARData(zip_file, member_to_extract, zipdir ):
     """ RAR archived file domwloading process."""
     
-    from watex.utils.exceptions import WATexExtractionError 
+ 
     rarmsg = ["--> Please wait while using `rarfile` module to "
               f"<{zip_file}> decompressing...", 
               "--> Please wait while using `unrar` module to "
@@ -358,8 +362,10 @@ def fetchSingleRARData(zip_file, member_to_extract, zipdir ):
     for i, name in enumerate('rarfile', 'unrar'):
         installation_succeeded =False 
         try :
-            if i==0: import rarfile
-            elif i==1:  from unrar import rarfile
+            if i==0: 
+                import rarfile
+            elif i==1: 
+                from unrar import rarfile
         except : 
             try:
                 print(f"---> {name} is installing. Please wait ...")
@@ -378,7 +384,7 @@ def fetchSingleRARData(zip_file, member_to_extract, zipdir ):
                           "UnRAR library. src: http://www.rarlab.com/rar/unrarsrc-5.2.6.tar.gz "
                           "or  src(Window): (http://www.rarlab.com/rar/UnRARDLL.exe)."
                           )
-                    raise  WATexExtractionError (
+                    raise  ExtractionError (
                        "Failed to install UnrarLibrary!") 
                 continue 
             else :
@@ -418,7 +424,7 @@ def fetchSingleRARData(zip_file, member_to_extract, zipdir ):
     
         print(f"---> Please unrar the <{zip_file!r}> with an appropriate !"
               " software. Failed to read enough data more than 50. ")      
-        raise  WATexExtractionError (
+        raise  ExtractionError (
             "Failed the read enough data: req=33345 got>=52 files.")
      
     # rarfile.RarFile().extract(member=raw_location, path = zipdir)
@@ -466,7 +472,7 @@ def fetchSingleZIPData(zip_file, zipdir, **zip_kws ):
             # extract in the current directory 
             fetchedfile = retrieveZIPmember(zip_ref, **zip_kws ) 
         except : 
-            raise  WATexExtractionError (
+            raise  ExtractionError (
             f"Unable to retreive file from zip {zip_file!r}")
         print(f"---> Dataset={os.path.basename(fetchedfile)!r} "
               "was successfully retreived.")

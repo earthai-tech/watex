@@ -4,6 +4,8 @@
 #       released under a MIT- licence.
 #       @author: @Daniel03 <etanoyau@gmail.com>
 import os 
+import re
+import inspect 
 import hashlib 
 import tarfile 
 import warnings 
@@ -26,26 +28,28 @@ from sklearn.metrics import (
     mean_squared_error 
     ) 
 from .._typing import (
+    List,
     Tuple, 
+    Any,
+    Dict, 
     Optional,
-    TypeVar,
-    Generic,
+    Union, 
     Iterable ,
-    Callable,
-    Text, 
+    T,
+    F, 
     Array, 
-    NDArray,                  
+    NDArray,
+    DType, 
+    DataFrame, 
+    Sub                 
 )
 
-import watex.utils.func_utils as FU
-from .func_utils import savepath_
+import watex.utils.funcutils as FU
 from ._watexlog import watexlog
+from ..exceptions import ParameterNumberError  
 
 __logger = watexlog().get_watex_logger(__name__)
 
-T= TypeVar('T')
-KT=TypeVar('KT')
-VT=TypeVar('VT')
 
 DOWNLOAD_ROOT = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/'
 # from Zenodo: 'https://zenodo.org/record/5560937#.YWQBOnzithE'
@@ -55,13 +59,282 @@ CSV_FILENAME = '/__tar.tgz_files__/___fmain.bagciv.data.csv'
 
 DATA_URL = DOWNLOAD_ROOT + DATA_PATH  + TGZ_FILENAME
 
+__estimator ={
+        'dtc': ['DecisionTreeClassifier', 'dtc', 'dec'],
+        'svc': ['SupportVectorClassifier', 'svc', 'sup', 'svm'],
+        'sdg': ['SGDClassifier','sdg', 'sdg'],
+        'knn': ['KNeighborsClassifier','knn''kne'],
+        'rdf': ['RandomForestClassifier', 'rdf', 'ran', 'rfc'],
+        'ada': ['AdaBoostClassifier','ada', 'adc'],
+        'vtc': ['VotingClassifier','vtc', 'vot'],
+        'bag': ['BaggingClassifier', 'bag', 'bag'],
+        'stc': ['StackingClassifier','stc', 'sta'],
+        }    
 
+def cfexist(features_to: List[Array], 
+            features: List[str] )-> bool:      
+    """
+    Desciption: 
+        
+        Control features existence into another list . List or array 
+        can be a dataframe columns for pratical examples.  
+        
+    Usage:
+        
+        todo: test usage
+            
+    :param features_to :list of array to be controlled .
+    :param features: list of whole features located on array of 
+                `pd.DataFrame.columns` 
+    
+    :returns: 
+        -``True``:If the provided list exist in the features colnames 
+        - ``False``: if not 
+
+    """
+    if isinstance(features_to, str): 
+        features_to =[features_to]
+    if isinstance(features, str): features =[features]
+    
+    if sorted(list(features_to))== sorted(list(
+            set(features_to).intersection(set(features)))): 
+        return True
+    else: return False 
+
+def format_generic_obj(generic_obj :Iterable[T])-> T: 
+    """
+    Desciption: 
+        
+        Format a generic object using the number of composed items. 
+    
+    Usage:
+        
+        todo: write usage
+    :param generic_obj: Can be a ``list``, ``dict`` or other `TypeVar` 
+    classified objects.
+    
+    :Example: 
+        
+        >>> from watex.hints import format_generic_obj 
+        >>> format_generic_obj ({'ohmS', 'lwi', 'power', 'id', 
+        ...                         'sfi', 'magnitude'})
+        
+    """
+    
+    return ['{0}{1}{2}'.format('`{', ii, '}`') for ii in range(
+                    len(generic_obj))]
+
+
+def findIntersectionGenObject(
+        gen_obj1: Iterable[Any], 
+        gen_obj2: Iterable[Any]
+                              )-> set: 
+    """
+     Desciption: 
+         
+        Find the intersection of generic object and keep the shortest len 
+        object `type` at the be beginning: 
+     
+    Usage:
+
+        todo: write usage
+        
+    :param gen_obj1: Can be a ``list``, ``dict`` or other `TypeVar` 
+        classified objects.
+    :param gen_obj2: Idem for `gen_obj1`.
+    
+    :Example: 
+        
+        >>> from watex.hints import findIntersectionGenObject
+        >>> findIntersectionGenObject(
+        ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
+        ...    {'ohmS', 'lwi', 'power'})
+        [out]:
+        ...  {'ohmS', 'lwi', 'power'}
+    
+    """
+    if len(gen_obj1) <= len(gen_obj2):
+        objType = type(gen_obj1)
+    else: objType = type(gen_obj2)
+
+    return objType(set(gen_obj1).intersection(set(gen_obj2)))
+
+def findDifferenceGenObject(gen_obj1: Iterable[Any],
+                            gen_obj2: Iterable[Any]
+                              )-> set: 
+    """
+     Desciption: 
+         
+        Find the difference of generic object and keep the shortest len 
+        object `type` at the be beginning: 
+     
+    Usage:
+
+        todo: write usage
+        
+    :param gen_obj1: Can be a ``list``, ``dict`` or other `TypeVar` 
+        classified objects.
+    :param gen_obj2: Idem for `gen_obj1`.
+    
+    :Example: 
+        
+        >>> from watex.viewer.hints import findDifferenceGenObject
+        >>> findDifferenceGenObject(
+        ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
+        ...    {'ohmS', 'lwi', 'power'})
+        [out]:
+        ...  {'ohmS', 'lwi', 'power'}
+    
+    """
+    if len(gen_obj1) < len(gen_obj2):
+        objType = type(gen_obj1)
+        return objType(set(gen_obj2).difference(set(gen_obj1)))
+    elif len(gen_obj1) > len(gen_obj2):
+        objType = type(gen_obj2)
+        return objType(set(gen_obj1).difference(set(gen_obj2)))
+    else: return 
+   
+        
+    
+    return set(gen_obj1).difference(set(gen_obj2))
+    
+def featureExistError(superv_features: Iterable[T], 
+                      features:Iterable[T]) -> None:
+    """
+    Description:
+        Catching feature existence errors.
+        
+    Usage: 
+        
+        to check error. If nothing occurs  then pass 
+    
+    :param superv_features: 
+        list of features presuming to be controlled or supervised
+        
+    :param features: 
+        List of all features composed of pd.core.DataFrame. 
+    
+    """
+    for ii, supff in enumerate([superv_features, features ]): 
+        if isinstance(supff, str): 
+            if ii==0 : superv_features=[superv_features]
+            if ii==1 :features =[superv_features]
+            
+    try : 
+        resH= cfexist(features_to= superv_features,
+                           features = features)
+    except TypeError: 
+        
+        print(' Features can not be a NoneType value.'
+              'Please set a right features.')
+        __logger.error('NoneType can not be a features!')
+    except :
+        raise ParameterNumberError  (
+           f'Parameters number of {features} is  not found in the '
+           ' dataframe columns ={0}'.format(list(features)))
+    
+    else: 
+        if not resH:  raise ParameterNumberError  (
+            f'Parameters number is ``{features}``. NoneType object is'
+            ' not allowed in  dataframe columns ={0}'.
+            format(list(features)))
+        
+def controlExistingEstimator(
+        estimator_name: str  ) -> Union [Dict[str, T], None]: 
+    """ 
+    Description: 
+        When estimator name is provided by user , will chech the prefix 
+        corresponding
+        
+    Usage: 
+        
+        Catching estimator name and find the corresponding prefix 
+        
+    :param estimator_name: Name of given estimator 
+    
+    :Example: 
+        
+        >>> from watex.viewer.hints import controlExistingEstimator 
+        >>> test_est =controlExistingEstimator('svm')
+        ('svc', 'SupportVectorClassifier')
+        
+    """
+    estimator_name = estimator_name.lower()
+
+    estfull = [ e_key[0] for e_key in __estimator.values()]
+    
+    full_estimator_name =None 
+    
+    for estim_key, estim_val in __estimator.items(): 
+        if estimator_name == estim_key : 
+            full_estimator_name = estim_val[0]
+            return estim_key , full_estimator_name 
+        
+        elif estimator_name != estim_key : 
+            for s_estim in estim_val : 
+                if re.match(r'^{}+'.format(estimator_name),
+                            s_estim.lower()): 
+                    full_estimator_name = estim_val[0]
+                    return estim_key , full_estimator_name 
+    
+    if full_estimator_name is None : 
+        __logger.error(
+            f'Estimator `{estimator_name}` not found in the default '
+            ' list {}'.format(format_generic_obj(estfull)).format(*estfull))
+        warnings.warn(
+            f'Estimator `{estimator_name}` not found in the default estimators'
+            ' list {}'.format(format_generic_obj(estfull)).format(*estfull))
+        return 
+    
+def formatModelScore(
+        model_score: Union [float, Dict[str, float]] = None,
+        select_estimator: str = None ) -> None   : 
+    """
+    Description : 
+        Format the result of `model_score`
+        
+    :param model_score: Can be float or dict of float where key is 
+                        the estimator name 
+    :param select_estimator: Estimator name 
+    
+    :Example: 
+        
+        >>> from watex.viewer.hints import formatModelScore 
+        >>>  formatModelScore({'DecisionTreeClassifier':0.26, 
+                      'BaggingClassifier':0.13}
+        )
+    """ 
+    print('-'*77)
+    if isinstance(model_score, dict): 
+        for key, val in model_score.items(): 
+            print('> {0:<30}:{1:^10}= {2:^10} %'.format( key,' Score', round(
+                val *100,3 )))
+    else : 
+        if select_estimator is None : 
+            select_estimator ='___'
+        if inspect.isclass(select_estimator): 
+            select_estimator =select_estimator.__class__.__name__
+        
+        try : 
+            _, select_estimator = controlExistingEstimator(select_estimator)
+        
+        except : 
+            if select_estimator is None :
+                select_estimator =str(select_estimator)
+            else: select_estimator = '___'
+            
+        print('> {0:<30}:{1:^10}= {2:^10} %'.format(select_estimator,
+                     ' Score', round(
+            model_score *100,3 )))
+        
+    print('-'*77)
+    
 def predict(
         y_true: Array,
         y_pred: Array =None,
         *, 
         X_: Optional [NDArray]=None, 
-        clf:Callable[..., T]=None,
+        clf:Optional [F[T]]=None,
         verbose:int =0
 ) -> Tuple[float, float]: 
     """ Make a quick statistic after prediction. 
@@ -129,7 +402,7 @@ def predict(
 
     return clf_score, mse 
 
-def read_from_excelsheets(erp_file: T = None ) -> Iterable[VT]: 
+def read_from_excelsheets(erp_file: str = None ) -> List[DataFrame]: 
     
     """ Read all Excelsheets and build a list of dataframe of all sheets.
    
@@ -139,7 +412,8 @@ def read_from_excelsheets(erp_file: T = None ) -> Iterable[VT]:
             datataframes.
     """
     
-    allfls:Generic[KT, VT] = pd.read_excel(erp_file, sheet_name=None)
+    allfls:Dict [str, Dict [T, List[T]] ] = pd.read_excel(
+        erp_file, sheet_name=None)
     
     list_of_df =[os.path.basename(os.path.splitext(erp_file)[0])]
     for sheets , values in allfls.items(): 
@@ -147,7 +421,10 @@ def read_from_excelsheets(erp_file: T = None ) -> Iterable[VT]:
 
     return list_of_df 
 
-def write_excel(listOfDfs: Iterable[VT], csv:bool =False , sep:T =','): 
+def write_excel(
+        listOfDfs: List[DataFrame],
+        csv: bool =False , 
+        sep:str =',') -> None: 
     """ 
     Rewrite excell workbook with dataframe for :ref:`read_from_excelsheets`. 
     
@@ -172,8 +449,11 @@ def write_excel(listOfDfs: Iterable[VT], csv:bool =False , sep:T =','):
                 df.to_excel(writer, index=False)
     
    
-def fetchGeoDATA (data_url:str = DATA_URL, data_path:str =DATA_PATH,
-                    tgz_filename =TGZ_FILENAME) -> Text: 
+def fetchGeoDATA (
+    data_url:str = DATA_URL,
+    data_path:str =DATA_PATH,
+    tgz_filename:str  =TGZ_FILENAME
+   ) -> None: 
     """ Fetch data from data repository in zip of 'targz_file. 
     
     I will create a `datasets/data` directory in your workspace, downloading
@@ -192,8 +472,13 @@ def fetchGeoDATA (data_url:str = DATA_URL, data_path:str =DATA_PATH,
     data_tgz.extractall(path = data_path )
     data_tgz.close()
     
-def fetchTGZDatafromURL (data_url:str =DATA_URL, data_path:str =DATA_PATH,
-                    tgz_file=TGZ_FILENAME, file_to_retreive=None, **kws): 
+def fetchTGZDatafromURL (
+    data_url:str =DATA_URL, 
+    data_path:str =DATA_PATH,
+    tgz_file=TGZ_FILENAME, 
+    file_to_retreive=None,
+    **kws
+    ) -> Union [str, None]: 
     """ Fetch data from data repository in zip of 'targz_file. 
     
     I will create a `datasets/data` directory in your workspace, downloading
@@ -203,6 +488,7 @@ def fetchTGZDatafromURL (data_url:str =DATA_URL, data_path:str =DATA_PATH,
     :param data_path: absolute path to the `tgz` filename 
     :param filename: `tgz` filename. 
     """
+    f= None
     if data_url is not None: 
         
         tgz_path = os.path.join(data_path, tgz_file.replace('/', ''))
@@ -224,8 +510,12 @@ def fetchTGZDatafromURL (data_url:str =DATA_URL, data_path:str =DATA_PATH,
         
     return f
 
-def fetchSingleTGZData(tgz_file, filename='___fmain.bagciv.data.csv',
-                         savefile='data/geo_fdata', rename_outfile=None ):
+def fetchSingleTGZData(
+        tgz_file: str , 
+        filename: str ='___fmain.bagciv.data.csv',
+        savefile: str ='data/geo_fdata',
+        rename_outfile: Optional [str]=None 
+        ) -> str :
     """ Fetch single file from archived tar file and rename a file if possible.
     
     :param tgz_file: str or Path-Like obj 
@@ -280,8 +570,10 @@ def fetchSingleTGZData(tgz_file, filename='___fmain.bagciv.data.csv',
         
     return os.path.join(savefile, rename_outfile)
     
-def load_data (data_path:str = DATA_PATH,
-               filename:str =CSV_FILENAME, sep =',' )-> Generic[VT]:
+def load_data (
+        data_path: str = DATA_PATH,
+        filename: str =CSV_FILENAME,
+        sep: str  =',' )-> DataFrame:
     """ Load CSV file to pd.dataframe. 
     
     :param data_path: path to data file 
@@ -296,7 +588,10 @@ def load_data (data_path:str = DATA_PATH,
     return pd.read_csv(csv_path, sep)
 
 
-def split_train_test (data:Generic[VT], test_ratio:T)-> Generic[VT]: 
+def split_train_test (
+        data:DataFrame[DType[T]],
+        test_ratio:float 
+        )-> DataFrame[DType[T]]: 
     """ Split dataset into trainset and testset from `test_ratio` 
     and return train set and test set.
         
@@ -309,7 +604,11 @@ def split_train_test (data:Generic[VT], test_ratio:T)-> Generic[VT]:
     
     return data.iloc[train_indices], data.iloc[test_indices]
     
-def test_set_check_id (identifier, test_ratio, hash:Callable[..., T]) -> bool: 
+def test_set_check_id (
+        identifier:int, 
+        test_ratio: float , 
+        hash:F[T]
+        ) -> bool: 
     """ 
     Get the testset id and set the corresponding unique identifier. 
     
@@ -331,9 +630,14 @@ def test_set_check_id (identifier, test_ratio, hash:Callable[..., T]) -> bool:
     """
     return hash(np.int64(identifier)).digest()[-1]< 256 * test_ratio
 
-def split_train_test_by_id(data, test_ratio:T, id_column:T=None,
-                           hash=hashlib.md5)-> Generic[VT]: 
-    """Ensure that data will remain consistent accross multiple runs, even if 
+def split_train_test_by_id(
+        data:DataFrame,
+        test_ratio:float,
+        id_column:Optional[List[int]]=None,
+         hash : F =hashlib.md5
+         )-> Tuple[ Sub[DataFrame[DType[T]]], Sub[DataFrame[DType[T]]]] : 
+    """
+    Ensure that data will remain consistent accross multiple runs, even if 
     dataset is refreshed. 
     
     The new testset will contain 20%of the instance, but it will not contain 
@@ -341,7 +645,7 @@ def split_train_test_by_id(data, test_ratio:T, id_column:T=None,
 
     :param data: Pandas.core.DataFrame 
     :param test_ratio: ratio of data to put in testset 
-    :id_colum: identifier index columns. If `id_column` is None,  reset  
+    :param id_colum: identifier index columns. If `id_column` is None,  reset  
                 dataframe `data` index and set `id_column` equal to ``index``
     :param hash: secures hashes algorithms. Refer to 
                 :func:`~test_set_check_id`
@@ -355,8 +659,12 @@ def split_train_test_by_id(data, test_ratio:T, id_column:T=None,
     in_test_set =ids.apply(lambda id_:test_set_check_id(id_, test_ratio, hash))
     return data.loc[~in_test_set], data.loc[in_test_set]
 
-def discretizeCategoriesforStratification(data, in_cat:str =None,
-                               new_cat:str=None, **kws) -> Generic[VT]: 
+def discretizeCategoriesforStratification(
+        data: Union [Array, DataFrame],
+        in_cat:str =None,
+        new_cat:Optional [str] = None, 
+        **kws
+        ) -> DataFrame: 
     """ Create a new category attribute to discretize instances. 
     
     A new category in data is better use to stratified the trainset and 
@@ -375,8 +683,13 @@ def discretizeCategoriesforStratification(data, in_cat:str =None,
                              float(combined_cat_into), inplace =True )
     return data 
 
-def stratifiedUsingDiscretedCategories(data:VT , cat_name:str , n_splits:int =1, 
-                    test_size:float= 0.2, random_state:int = 42)-> Generic[VT]: 
+def stratifiedUsingDiscretedCategories(
+        data: Union [Array, DataFrame],
+        cat_name:str , 
+        n_splits:int =1, 
+        test_size:float= 0.2, 
+        random_state:int = 42
+        )-> Tuple[ Sub[DataFrame[DType[T]]], Sub[DataFrame[DType[T]]]]: 
     """ Stratified sampling based on new generated category  from 
     :func:`~DiscretizeCategoriesforStratification`.
     
@@ -392,8 +705,12 @@ def stratifiedUsingDiscretedCategories(data:VT , cat_name:str , n_splits:int =1,
         
     return strat_train_set , strat_test_set 
 
-def fetch_model(modelfile, modelpath =None, default=True,
-                modname =None, verbose =0): 
+def fetch_model(
+        modelfile: str ,
+        modelpath:Optional[str] = None,
+        default:bool =True,
+        modname: Optional[str] =None,
+        verbose:int =0): 
     """ Fetch your model saved using Python pickle module or 
     joblib module. 
     
@@ -574,9 +891,9 @@ def dumpOrSerializeData (data , filename=None, savepath =None, to=None):
         
     if savepath is not None:
         try : 
-            savepath = savepath_ (savepath)
+            savepath = FU.savepath_ (savepath)
         except : 
-            savepath = savepath_ ('_dumpedData_')
+            savepath = FU.savepath_ ('_dumpedData_')
         try:
             shutil.move(filename, savepath)
         except :

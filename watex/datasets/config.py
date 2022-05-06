@@ -3,9 +3,9 @@
 # automate datapreparation.
 import os 
 
-from .property import fetchDataFromLocalandWeb
+from .extraction import fetchDataFromLocalandWeb
 from ..processing import BasicSteps 
-from ..utils.ml_utils import dumpOrSerializeData
+from ..utils.mlutils import dumpOrSerializeData
 
 __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
           'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1',

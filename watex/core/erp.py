@@ -4,9 +4,10 @@
 # MIT- licence.
 
 """
-.. synopsis:: 'watex.core.erp'
-            Module to deal with Electrical resistivity profile (ERP)
-            exploration tools 
+.. synopsis:: 
+    watex.core.erp
+    Module to deal with Electrical resistivity profile (ERP)
+    exploration tools 
 
 
 Created on Tue May 18 12:33:15 2021
@@ -17,7 +18,7 @@ import os
 import re 
 import sys
 import warnings
-import json  
+# import json  
 import datetime
 import  shutil
 import numpy as np 
@@ -27,7 +28,6 @@ from scipy.signal import argrelextrema
 from ..utils.__init__ import savepath as savePath  
 from ..utils._watexlog import watexlog 
 import  watex.utils.exceptions as Wex
-import watex.utils.tricks as wfunc
 import watex.utils.exmath as wMath 
 import watex.utils.func_utils as func
 import watex.utils.gis_tools as gis
@@ -653,7 +653,7 @@ class ERP :
         #boundaries are given 
         self.auto, self._shape, self._type, self._select_best_point,\
             self.anom_boundaries, self._df = \
-                wfunc.getdfAndFindAnomalyBoundaries(df_)
+                func.get_boundaries(df_)
  
         self.data =self._df.to_numpy()
         self._name = os.path.basename(name)
@@ -754,7 +754,7 @@ class ERP :
                     self.df['pk'].to_numpy())-1)
                     
    
-        self.aBestInfos= wfunc.select_anomaly(
+        self.aBestInfos= wMath.select_anomaly(
                              rhoa_array= self.df['rhoa'].to_numpy(), 
                              pos_array= self.df['pk'].to_numpy(), 
                              auto = self.auto, 
@@ -821,7 +821,7 @@ class ERP :
                 self._select_best_point_,
                 int(self._select_best_point_/self.dipoleLength)+1
                                               )
-        wfunc.wrap_infos(mes, on =self.turn_on) 
+        func.wrap_infos(mes, on =self.turn_on) 
         
         return self._select_best_point_
     
@@ -829,7 +829,7 @@ class ERP :
     def dipoleLength(self): 
         """Get the dipole length  i.e the distance between two measurement."""
         
-        wfunc.wrap_infos(
+        func.wrap_infos(
             'Distance bewteen measurement is = {0} m.'.
             format(self._dipoleLength), off = self.turn_on)
         
@@ -854,7 +854,7 @@ class ERP :
             
         mess[-1]=mess[-1].replace('\n', '')
         
-        wfunc.wrap_infos(''.join([ss for ss in mess]),
+        func.wrap_infos(''.join([ss for ss in mess]),
                          on = self.turn_on)
         return self._best_points  
     
@@ -864,7 +864,7 @@ class ERP :
         self._power =wMath.compute_power(
             posMinMax=self.aBestInfos[self._best_key_point][2])
         
-        wfunc.wrap_infos(
+        func.wrap_infos(
             'The power of selected best point is = {0}'.format(self._power),
                         on = self.turn_on)
         
@@ -876,7 +876,7 @@ class ERP :
         self._magnitude =wMath.compute_magnitude(
             rhoa_max=self.rhoa_max,rhoa_min=self.select_best_value_)
                                                  
-        wfunc.wrap_infos(
+        func.wrap_infos(
            'The magnitude of selected best point is = {0}'.
            format(self._magnitude),
           on = self.turn_on)
@@ -895,7 +895,7 @@ class ERP :
                                       rhoa=self.select_best_value_, 
                                       pk=self.select_best_point_)
         
-        wfunc.wrap_infos('SFI computed at the selected best point is = {0}'.
+        func.wrap_infos('SFI computed at the selected best point is = {0}'.
                         format(self._sfi), 
                         on =self.turn_on)
         return self._sfi
@@ -937,7 +937,7 @@ class ERP :
             self.aBestInfos[self._best_key_point][1]
             )
         
-        wfunc.wrap_infos('Best conductive value selected is = {0} Ω.m'.
+        func.wrap_infos('Best conductive value selected is = {0} Ω.m'.
                         format(self._select_best_value), 
                         on =self.turn_on) 
         
@@ -957,7 +957,7 @@ class ERP :
                                       rhoa_array = self.df['rhoa'].to_numpy(), 
                                       pos_bound_indexes= [pos_min_index ,
                                                           pos_max_index ])
-        wfunc.wrap_infos('Best cover   = {0} % of the whole ERP line'.
+        func.wrap_infos('Best cover   = {0} % of the whole ERP line'.
                         format(self._anr*100), 
                         on =self.turn_on) 
         
@@ -974,7 +974,7 @@ class ERP :
                                   pos_array=self.df['pk'].to_numpy() , 
                                   dl= self.dipoleLength)
         
-        wfunc.wrap_infos('Select anomaly type is = {}'.
+        func.wrap_infos('Select anomaly type is = {}'.
                        format(self._type), 
                        on =self.turn_on) 
         return self._type 
@@ -987,7 +987,7 @@ class ERP :
             self._shape = get_shape(
                 rhoa_range=self.aBestInfos[self._best_key_point][4])
         
-        wfunc.wrap_infos('Select anomaly shape is = {}'.
+        func.wrap_infos('Select anomaly shape is = {}'.
                        format(self._shape), 
                        on =self.turn_on) 
         return self._shape 

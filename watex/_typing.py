@@ -16,7 +16,6 @@ from typing import (
     Type , 
     Mapping,
     Text,
-    # ParamSpec
 
 )
 
@@ -201,7 +200,6 @@ N= TypeVar('N',  bound =int )
 U= TypeVar('U')
 D =TypeVar ('D', bound ='DType')
 S = TypeVar('S', bound='Shape')
-
 
 class AddShape (Generic [S]): 
     """ Suppose to be an extra bound to top the `Shape` for dimensional 
