@@ -15,7 +15,7 @@ import warnings
 
 import datetime 
 import numpy as np
-import pandas as pd 
+# import pandas as pd 
 import  matplotlib.pyplot as plt 
 
 from .._typing import ( Iterable,
@@ -24,49 +24,10 @@ from .._typing import ( Iterable,
                     T
 
 )
-
 from ._watexlog import watexlog
-from .func_utils import savepath_ 
-from .ml_utils import read_from_excelsheets
-
-__logger = watexlog().get_watex_logger(__name__)
+_logger = watexlog.get_watex_logger(__name__)
 
 
-
-class _parseargs: 
-    """ Parse arguments and return array 
-    """
-    def __init__(self, func): 
-        self._func =func 
-        
-    def __call__(self, *args, **kwargs): 
-        
-        msg =''.join([' Unable toparse arguments. Can only read <arrays,',
-         ' pandas.Series, pandas.DataFrame, and Path-Like obj> but '
-         '`{}` is given.']
-                     )
-        # gets the current frame and examines args
-        # myframe = inspect.currentframe()
-        # args,_,_,values = inspect.getargvalues(myframe)
-        # sig = inspect.signature(self._func) 
-        # values = [ param.VAR_POSITIONAL
-        #           for param in sig.parameters.values()] 
-        # values = inspect.getfullargspec(self._func).varargs
-        for obj in args : 
-            if os.path.isfile(obj): 
-                _, df = read_from_excelsheets(obj)
-                arr, columns =df.values , list(df.columns)   
-            elif isinstance(obj, np.ndarray): 
-                arr , columns = obj, None 
-            elif isinstance(obj, pd.Series): 
-                arr, columns = obj.values, obj.name 
-            elif isinstance(obj,  pd.DataFrame): 
-                arr, columns = obj.values , list(obj.columns)  
-            else : 
-                raise ValueError (msg.format(type(obj)))
-        # return 
-        return arr, columns  #func (*[arr, columns], **kwargs)
-       
 class deprecated(object):
     """
         Description:
@@ -118,8 +79,10 @@ class deprecated(object):
 
 
 class gdal_data_check(object):
+  
     _has_checked = False
     _gdal_data_found = False
+   
     _logger = watexlog.get_watex_logger(__name__)
 
     def __init__(self, func, raise_error=False):
@@ -153,21 +116,21 @@ class gdal_data_check(object):
         if 'GDAL_DATA' not in os.environ:
             # gdal data not defined, try to define
             from subprocess import Popen, PIPE
-            self._logger.warning("GDAL_DATA environment variable is not set "
+            _logger.warning("GDAL_DATA environment variable is not set "
                                  " Please see https://trac.osgeo.org/gdal/wiki/FAQInstallationAndBuilding#HowtosetGDAL_DATAvariable ")
             try:
                 # try to find out gdal_data path using gdal-config
-                self._logger.info("Trying to find gdal-data path ...")
+                _logger.info("Trying to find gdal-data path ...")
                 process = Popen(['gdal-config', '--datadir'], stdout=PIPE)
                 (output, err) = process.communicate()
                 exit_code = process.wait()
                 output = output.strip()
                 if exit_code == 0 and os.path.exists(output):
                     os.environ['GDAL_DATA'] = output
-                    self._logger.info("Found gdal-data path: {}".format(output))
+                    _logger.info("Found gdal-data path: {}".format(output))
                     return True
                 else:
-                    self._logger.error(
+                    _logger.error(
                         "\tCannot find gdal-data path. Please find the"
                         " gdal-data path of your installation and set it to"
                         "\"GDAL_DATA\" environment variable. Please see "
@@ -178,15 +141,15 @@ class gdal_data_check(object):
                 return False
         else:
             if os.path.exists(os.environ['GDAL_DATA']):
-                self._logger.info("GDAL_DATA is set to: {}".
+                _logger.info("GDAL_DATA is set to: {}".
                                   format(os.environ['GDAL_DATA']))
 
                 try:
                     from osgeo import osr
                     from osgeo.ogr import OGRERR_NONE
                 except:
-                    self._logger.error("Failed to load module osgeo; "
-                                       "looks like GDAL is NOT working")
+                    _logger.error("Failed to load module osgeo; "
+                                     "looks like GDAL is NOT working")
                     # print ("Failed to load module osgeo !!! ")
 
                     return False
@@ -194,7 +157,7 @@ class gdal_data_check(object):
 
                 return True
             else:
-                self._logger.error("GDAL_DATA is set to: {},"
+                _logger.error("GDAL_DATA is set to: {},"
                                    " but the path does not exist.".
                                    format(os.environ['GDAL_DATA']))
                 return False
@@ -213,7 +176,7 @@ class redirect_cls_or_func(object) :
         Date: 18/10/2020
     """
     
-    _logger = watexlog.get_watex_logger(__name__)
+    
     
     def __init__(self, *args, **kwargs) :
         """
@@ -237,7 +200,7 @@ class redirect_cls_or_func(object) :
             raise Exception(
                 " At least one argument must be a func_method_or class."
                             "\but it's %s."%type(self._new_func_or_cls))
-            self._logger.warn("\t first input argument argument must"
+            _logger.warn("\t first input argument argument must"
                               " be a func_method_or class."
                             "\but it's %s."%type(self._new_func_or_cls))
             
@@ -275,7 +238,7 @@ class redirect_cls_or_func(object) :
         
         msg=fmt.format(reason = self._reason, lineno=lineno)
         # print(msg)
-        self._logger.info(msg)
+        _logger.info(msg)
             #count variables : func.__code__.co_argscounts
             #find variables in function : func.__code__.co_varnames
         @functools.wraps(cls_or_func)
@@ -512,10 +475,10 @@ def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
                             return fc[0]
                         elif crval>= nfval[-1] : 
                             return fc[-1]
-            print(cat_classes)          
+       
             if len(cat_range_values) != len(cat_classes): 
                 
-                __logger.error(
+                _logger.error(
                     'Length of `cat_range_values` and `cat_classes` provided '
                     'must be the same length not ``{0}`` and'
                     ' ``{1}`` respectively.'.format(len(cat_range_values),

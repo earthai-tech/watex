@@ -3,7 +3,9 @@
 # This module is a set of datasets packages
 # released under a MIT- licence.
 import warnings
-from watex.utils._watexlog import watexlog
+
+from .property  import BagoueNotes
+from .utils._watexlog import watexlog
 from ..utils.ml_utils import loadDumpedOrSerializedData
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -42,7 +44,7 @@ BAGOUE_TAGS= (
 
 def fetch_data(param): 
     """ Fetch bagoue dataset values and details."""
-    from ..utils.infos  import BagoueNotes
+    
     
     if param.lower().find('original')>=0: 
         __logger.info('Fetching the Bagoue original data. Returns a dictionnary '

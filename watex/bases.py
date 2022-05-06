@@ -4,7 +4,6 @@
 #       Licence: MIT
 
 import os 
-import re
 import warnings
 from abc import (
     ABCMeta, 
@@ -48,8 +47,8 @@ from .utils._watexlog import watexlog
 
 __logger = watexlog().get_watex_logger(__name__)
 
-
-class Water (ABCMeta): 
+# TODO: 
+class WATer (ABCMeta): 
     """ Should be a SuperClass for methods classes. 
     
     Instanciate the class shoud raise an error. It should initialize arguments 
@@ -128,7 +127,7 @@ def _is_erp_series (
         filled using the default value of the dipole. The *default* 
          value is set to ``10 meters``. 
         
-    Returns 
+    Return 
     --------
     
     A dataframe of the property indexes such as

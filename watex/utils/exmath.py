@@ -32,6 +32,11 @@ from .decorator import deprecated
 from ._watexlog import watexlog
 from .func_utils import (
                          _assert_all_types, 
+                         drawn_boundaries, 
+                         fmt_text, 
+                         find_position_from_sa , 
+                         find_feature_positions
+                         
                          )
 
 
@@ -729,9 +734,7 @@ def get_station_number (
 
     return  distance/dipole  if from0 else distance/dipole + 1 
 
-# @deprecated('Deprecated function. Replaced by '
-#             '`:func: ~watex.utils.coreutils._define_conductive_zone`'
-#             'more efficient.')
+@deprecated('Function is going to be removed for the next release ...')
 def define_conductive_zone (
         erp: Array | List[float],
         stn: Optional [int] = None,
@@ -899,7 +902,7 @@ def shortPlot (sample, cz=None):
         
     plt.show()
     
-
+@deprecated ('Expensive function; should be removed for the next realease.')
 def compute_sfi (pk_min, pk_max, rhoa_min,
                  rhoa_max,  rhoa, pk)  : 
     """
@@ -1223,6 +1226,326 @@ def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
 
     return np.abs(rhoa_max -rhoa_min)
 
+def get_minVal(array): 
+    """
+    Function to find the three minimum values on array and their 
+    corresponding indexes. 
+    
+    :param array: array  of values 
+    :type array: array_like 
+    
+    :returns: Three minimum values of rho, index in rho_array
+    :rtype: tuple
+    
+    """
+
+    holdList =[]
+    if not isinstance(array, (list, tuple, np.ndarray)):
+        if isinstance(array, float): 
+            array=np.array([array])
+        else : 
+            try : 
+                array =np.array([float(array)])
+            except: 
+                raise Wex.WATexError_float('Could not convert %s to float!')
+    try : 
+        # first option:find minimals locals values 
+        minlocals = argrelextrema(array, np.less)[0]
+        temp_array =np.array([array[int(index)] for index in minlocals])
+        if len(minlocals) ==0: 
+            ix = np.where(array ==array.min())
+            if len(ix)>1: 
+                ix =ix[0]
+            temp_array = array[int(ix)]
+            
+    except : 
+        # second option: use archaic computation.
+        temp_array =np.sort(array)
+    else : 
+        temp_array= np.sort(temp_array)
+        
+    ss=0
+
+    for ii, tem_ar in enumerate(temp_array) : 
+        if ss >=3 : 
+            holdList=holdList[:3]
+            break 
+        min_index = np.where(array==tem_ar)[0]
+  
+        if len(min_index)==1 : 
+            holdList.append((array[int(min_index)], 
+                             int(min_index)))
+            ss +=ii
+        elif len(min_index) > 1 :
+            # loop the index array and find the min for consistency 
+            for jj, indx in enumerate(min_index):  
+                holdList.append((array[int(indx)], 
+                                 int(indx)))
+        ss =len(holdList)
+        
+    # for consistency keep the 3 best min values 
+    if len(holdList)>3 : 
+        holdList = holdList[:3]
+
+    return holdList 
+    
+def compute_lower_anomaly(erp_array, station_position=None, 
+                          step=None, **kws): 
+    """
+    Function to get the minimum value on the ERP array. 
+    If `pk` is provided wil give the index of pk
+    
+    :param erp_array: array of apparent resistivity profile 
+    :type erp_array: array_like
+    
+    :param station position: array of station position (survey) , if not given 
+                    and `step` is known , set the step value and 
+                    `station_position` will compute automatically 
+    :type station_position: array_like 
+    
+    :param step: The distance between measurement im meter. If given will 
+        recompute the `station_position`
+    
+    :returns: * `bestSelectedDict`: dict containing best anomalies  
+                with the anomaly resistivities range.
+              * `anpks`: Main positions of best select anomaly 
+              * `collectanlyBounds`: list of arrays of select anomaly values
+              * `min_pks`: list of tuples (pk, 
+                                           minVal of best anomalies points.)
+    :rtype: tuple 
+    
+    :Example: 
+        
+        >>> from watex.utils.wmathandtricks import compute_lower_anolamy 
+        >>> import pandas as pd 
+        >>> path_to_= 'data/l10_gbalo.xlsx'
+        >>> dataRes=pd.read_excel(erp_data).to_numpy()[:,-1]
+        >>> anomaly, *_ =  compute_lower_anomaly(erp_array=data, step =10)
+        >>> anomaly
+                
+    """
+    display_infos= kws.pop('diplay_infos', False)
+    # got minumum of erp data 
+    collectanlyBounds=[]
+    if step is not None: 
+        station_position = np.arange(0, step * len(erp_array), step)
+
+    min_pks= get_minVal(erp_array) # three min anomaly values 
+
+    # compute new_pjk 
+    # find differents anomlies boundaries 
+    for ii, (rho, index) in enumerate(min_pks) :
+        _, _, anlyBounds= drawn_boundaries(erp_data = erp_array,
+                                 appRes = rho, index=index)
+        
+        collectanlyBounds.append(anlyBounds)
+
+    if station_position is None :
+        pks =np.array(['?' for ii in range(len(erp_array))])
+    else : pks =station_position
+
+    if pks.dtype in ['int', 'float']: 
+        anpks =np.array([pks[skanIndex ] for
+                         (_, skanIndex) in min_pks ])
+    else : anpks ='?'
+    
+    bestSelectedDICT={}
+    for ii, (pk, anb) in enumerate(zip(anpks, collectanlyBounds)): 
+        bestSelectedDICT['{0}_pk{1}'.format(ii+1, pk)] = anb
+    
+    if display_infos:
+        print('{0:+^100}'.format(
+            ' *Best Conductive anomaly points (BCPts)* '))
+        fmt_text(anFeatures=bestSelectedDICT)
+    
+    return bestSelectedDICT, anpks, collectanlyBounds, min_pks
+
+@deprecated ('Autodetection is instable, it should be modified for '
+             'the future realease.')
+def select_anomaly ( rhoa_array, pos_array=None, auto=True,
+                    dipole_length =10., **kws ) :
+    """
+    Select the anomaly value from `rhoa_array` and find its boundaries if 
+    ``auto` is set to ``True``. If `auto` is ``False``, it's usefull to 
+    provide the anomaly boundaries from station position. Change  the argument 
+    `dipole_length`  i.e. the distance between measurement electrode is not
+     equal to ``10``m else give the `pos_array`. If the `pos_array` is given,
+     the `dipole_length` will be recomputed.
+     
+    :note:  If the `auto` param is ``True``, the automatic computation will
+             give at most three best animalies ranking according 
+             to the resitivity value. 
+     
+    :param rhoa_array: The apparent resistivity value of :ref:`erp` 
+    :type rho_array: array_like 
+    
+    :param pos_array: The array of station position in meters 
+    :type pos_array: array_like 
+     
+    :param auto: 
+        
+        Automaticaly of manual computation to select the best anomaly point. 
+        Be sure if `auto` is set to ``False`` to provide the anomaly boundary
+        by setting `pos_bounds` : 
+            
+            pos_bounds=(90, 130)
+            
+       where :math:`90` is the `pk_min` and :math:`130` is the `pk_max` 
+       If `pos_bounds` is not given an station error will probably occurs 
+       from :class:`~utils.exceptions.WATexError_station`. 
+    
+    :param dipole_length: 
+        
+        Is the distance between two closest measurement. If the value is known 
+        it's better to provide it and don't need to provied a `pos_array`
+        value. 
+    :type dipole_length: float 
+
+    :param pos_bounds: 
+        
+        Is the tuple value of anomaly boundaries  composed of `pk_min` and 
+        `pk_max`. Please refer to :doc:`compute_power`. When provided 
+        the `pos_bounds` value, please set `the dipole_length` to accurate 
+        the computation of :func:`compute_power`.
+        
+    :return: 
+        
+        - *rhoa*: The app. resistivity value of the selected anomaly 
+        - `pk_min` and the `pk_max`: refer to :doc:`compute_power`. 
+        - `rhoa_max` and `rhoa_min`: refer to :doc:`compute_magnitude`
+        - 
+          
+    """
+    
+    pos_bounds =kws.pop("pos_bounds", (None, None))
+    anom_pos = kws.pop('pos_anomaly', None)
+    display_infos =kws.pop('display', False)
+    
+    if auto is False : 
+        if None in pos_bounds  or pos_bounds is None : 
+            raise Wex.ErrorSite('One position is missed' 
+                                'Plase provided it!')
+        
+        pos_bounds = np.array(pos_bounds)
+        pos_min, pos_max  = pos_bounds.min(), pos_bounds.max()
+        
+        # get the res from array 
+        dl_station_loc = np.arange(0, dipole_length * len(rhoa_array), 
+                                   dipole_length)
+        # then select rho range 
+        ind_pk_min = int(np.where(dl_station_loc==pos_min)[0])
+        ind_pk_max = int(np.where(dl_station_loc==pos_max)[0]) 
+        rhoa_range = rhoa_array [ind_pk_min:ind_pk_max +1]
+        pk, res= find_position_from_sa (an_res_range=rhoa_range, 
+                                         pos=pos_bounds,
+                                selectedPk= anom_pos) 
+        pk = int(pk.replace('pk', ''))
+        rhoa = rhoa_array[int(np.where(dl_station_loc == pk )[0])]
+        rhoa_min = rhoa_array[int(np.where(dl_station_loc == pos_min )[0])]
+        rhoa_max = rhoa_array[int(np.where(dl_station_loc == pos_max)[0])]
+        
+        rhoa_bounds = (rhoa_min, rhoa_max)
+        
+        return {'1_pk{}'.format(pk): 
+                (pk, rhoa, pos_bounds, rhoa_bounds, res)} 
+    
+    if auto: 
+        bestSelectedDICT, anpks, \
+            collectanlyBounds, min_pks = compute_lower_anomaly(
+                erp_array= rhoa_array, 
+                station_position= pos_array, step= dipole_length,
+                display_infos=display_infos ) 
+
+            
+        return {key: find_feature_positions (anom_infos= bestSelectedDICT, 
+                                      anom_rank= ii+1, pks_rhoa_index=min_pks, 
+                                      dl=dipole_length) 
+                for ii, (key , rho_r) in enumerate(bestSelectedDICT.items())
+                }
+    
+def define_anomaly(erp_data, station_position=None, pks=None, 
+                  dipole_length=10., **kwargs):
+    """
+    Function will select the different anomalies. If pk is not given, 
+    the best three anomalies on the survey lines will be
+    computed automatically
+    
+    :param erp_data: Electrical resistivity profiling 
+    :type erp_data: array_like 
+    
+    :param pks: station positions anomaly boundaries (pk_begin, pk_end)
+                If selected anomalies is more than one, set `pks` into dict
+                where number of anomaly =keys and pks = values 
+    :type pks: list or dict
+    
+    :param dipole_length: Distance between two measurements in meters
+                        Change the `dipole lengh
+    :type dipole_length: float
+    
+    :param station_position: station position array 
+    :type statiion_position: array_like 
+    
+    :return: list of anomalies bounds 
+    
+    """
+    selectedPk =kwargs.pop('selectedPk', None)
+    bestSelectedDICT={}
+    if station_position is not None : 
+        dipole_length = (station_position.max()-
+               station_position.min())/(len(station_position -1))
+    if station_position is None : 
+        station_position =np.arange(0, dipole_length * len(erp_data), 
+                                    dipole_length)
+                                        
+  
+    def get_bound(pksbounds): 
+        """
+        Get the bound from the given `pks`
+        :param pksbounds: Anomaly boundaries
+        :type pksbounds: list of array_like 
+        
+        :returns: * anomBounds- array of appRes values of anomaly
+        :rtype: array_like 
+        """
+        # check if bound is on station positions
+        for spk in pksbounds : 
+            if not pksbounds.min() <= spk <= pksbounds.max(): 
+                raise  Wex.ExtractionError(
+                    'Bound <{0}> provided is out of range !'
+                   'Dipole length is set to = {1} m.'
+                   ' Please set a new bounds.')
+            
+        pkinf = np.where(station_position==pksbounds.min())[0]
+        pksup = np.where(station_position==pksbounds.max())[0]
+        anomBounds = erp_data[int(pkinf):int(pksup)+1]
+        return anomBounds
+    
+    if pks is None : 
+        bestSelectedDICT, *_= compute_lower_anomaly(
+            erp_array=erp_data, step=dipole_length, 
+            station_position =station_position)
+        
+    elif isinstance(pks, list):
+        pks =np.array(sorted(pks))
+        collectanlyBounds = get_bound(pksbounds= pks)
+        # get the length of selected anomalies and computed the station 
+        # location wich composed the bounds (Xbegin and Xend)
+        pkb, *_= find_position_from_sa(
+            an_res_range=collectanlyBounds, pos=pks, 
+            selectedPk=selectedPk)
+        bestSelectedDICT={ '1_{}'.format(pkb):collectanlyBounds}
+
+    elif isinstance(pks, dict):
+        for ii, (keys, values) in enumerate(pks.items()):
+            if isinstance(values, list): 
+                values =np.array(values)
+            collectanlyBounds=  get_bound(pksbounds=values) 
+            pkb, *_= find_position_from_sa(
+            an_res_range=collectanlyBounds, pos=pks, 
+            selectedPk=selectedPk)
+            bestSelectedDICT['{0}_{1}'.format(ii+1, pkb)]=collectanlyBounds
+           
+    return bestSelectedDICT
 """
 .. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
 
