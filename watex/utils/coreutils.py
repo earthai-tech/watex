@@ -4,7 +4,6 @@
 #   Licence: MIT Licence 
 # 
 from __future__ import  annotations 
-
 import os 
 import warnings 
 import copy 
@@ -13,7 +12,6 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
  
-
 from .._property import P 
 from .._typing import (
     Any, 
@@ -30,85 +28,477 @@ from .._typing import (
     Sub, 
     SP
 )
-from .func_utils import (
+from .funcutils import (
     smart_format as smft,
     _isin , 
-    _assert_all_types
+    _assert_all_types,
+    accept_types,
+    read_from_excelsheets
     ) 
-from .ml_utils import read_from_excelsheets
-
+from .gistools import (
+    project_point_ll2utm, 
+    project_point_utm2ll 
+    )
 from ..exceptions import ( 
     StationError, 
-    ParameterNumberError, 
-    HeaderError
+    # ParameterNumberError, 
+    HeaderError, 
+    ResistivityError,  
 )
 
-def data_sanitizer (
+def fill_coordinates(
+    data: DataFrame =None, 
+    lon: Array = None,
+    lat: Array = None,
+    east: Array = None,
+    north: Array = None, 
+    epsg: Optional[int] = None , 
+    utm_zone: Optional [str]  = None,
+    datum: str  = 'WGS84'
+) -> Tuple [DataFrame, str] : 
+    """ Recompute coordinates values  
+    
+    Compute the couples (easting, northing) or (longitude, latitude ) 
+    and set the new calculated values into a dataframe.
+    
+    Parameters 
+    -----------
+    
+    data : dataframe, 
+                    Dataframe contains the `lat`, `lon` or `east` and `north`. 
+                    All data dont need to  be provided. If ('lat', 'lon') and 
+                    (`east`, `north`) are given, ('`easting`, `northing`')
+                    should be overwritten.
+        
+    lat: array-like float or string (DD:MM:SS.ms)
+                  Values composing the `longitude`  of point
+
+    lon: array-like float or string (DD:MM:SS.ms)
+                  Values composing the `longitude`  of point
+              
+    east : array-le float
+                 Values composing the northing coordinate in meters
+                 
+    north : array-like float
+                Values composing the northing coordinate in meters
+
+    datum: string
+                well known datum ex. WGS84, NAD27, etc.
+                
+    projection: string
+                projected point in lat and lon in Datum `latlon`, as decimal
+                degrees or 'UTM'.
+                
+    epsg: int
+               epsg number defining projection (see 
+               http://spatialreference.org/ref/ for moreinfo)
+               Overrides utm_zone if both are provided
+                  
+                      
+    datum: string
+        well known datum ex. WGS84, NAD27, etc.
+        
+    utm_zone : string
+            zone number and 'S' or 'N' e.g. '55S'. Defaults to the
+            centre point of the provided points
+                    
+    Returns 
+    ------- 
+        - `data`: Dataframe with new coodinates values computed 
+        - `utm_zone`: zone number and 'S' or 'N'  
+        
+        
+    """
+    def _get_coordcomps (str_, df):
+        """ Retrieve coordinate values and assert whether values are given. 
+        If ``True``, retunrs `array` of `given item` and valid type of the 
+        data. Note that if data equals to ``0``, we assume values are not 
+        provided. 
+        
+        :param str_: str - item in the `df` columns 
+        :param df: DataFrame - dataframe expected containing the `str_` item. 
+        """
+        
+        if str_ in df.columns: 
+            return df[str_] , np.all(df[str_])!=0 
+        return None, None 
+    
+    def _set_coordinate_values (x, y, *, func ): 
+        """ Iterate `x` and `y` and output new coordinates values computed 
+        from `func` . 
+        param x: iterable values 
+        :param y: iterabel values 
+        :param func: function F 
+            can be: 
+                - ``project_point_utm2ll`` for `UTM` to `latlon`` or 
+                - `` project_point_ll2utm`` for `latlon`` to `UTM` 
+        :retuns: 
+            - xx new calculated 
+            - yy new calculated 
+            - utm zone 
+        """
+        xx = np.zeros_like(x); 
+        yy = np.zeros_like(xx)
+        for ii, (la, lo) in enumerate (zip(x, y)):
+            e , n, uz  = func (
+                la, lo, utm_zone = utm_zone, datum = datum, epsg =epsg 
+                ) 
+            xx [ii] = e ; yy[ii] = n  
+                
+        return xx, yy , uz  
+    
+    if data is None:  
+        data = pd.DataFrame (
+            dict ( 
+                longitude = lon ,
+                latitude = lat ,
+                easting = east,
+                northing=north
+                ), 
+            #pass index If using all scalar values 
+            index = range(4)  
+            )
+
+    if data is not None : 
+        data = _assert_all_types(data, pd.DataFrame)
+
+    lon , lon_isvalid  = _get_coordcomps(
+        'longitude', data )
+    lat , lat_isvalid = _get_coordcomps(
+        'latitude', data )
+    east , e_isvalid = _get_coordcomps(
+        'easting', data )
+    north, n_isvalid  = _get_coordcomps(
+        'northing', data )
+
+    if lon_isvalid and lat_isvalid: 
+        try : 
+            east , north , uz = _set_coordinate_values(
+                lat.values, lon.values,
+                project_point_ll2utm,
+                )
+        except :# pass if an error occurs 
+            pass 
+        else : data['easting'] = east ; data['northing'] = north 
+            
+    elif e_isvalid and n_isvalid: 
+        if utm_zone is None: 
+            warnings.warn(
+                'Should provide the `UTM` for `latitute` and `longitude`'
+                ' calculus. `NoneType` can not be used as UTM zone number.'
+                ' Refer to the documentation.')
+        try : 
+            lat , lon, utm_zone = _set_coordinate_values(
+                east.values, north.values,
+                func = project_point_utm2ll,
+                )
+        except : pass 
+        else : data['longitude'] = lon ;  data['latitude'] = lat 
+        
+    
+    return data, utm_zone 
+
+    
+def _assert_data (data :DataFrame  ): 
+    """ Assert  the data and return the property dataframe """
+    data = _assert_all_types(
+        data, list, tuple, np.ndarray, pd.Series, pd.DataFrame) 
+    
+    if isinstance(data, pd.DataFrame): 
+        cold , ixc =list(), list()
+        for i , ckey in enumerate(data.columns): 
+            for kp in P().isrll : 
+                if ckey.lower() .find(kp) >=0 : 
+                    cold.append (kp); ixc.append(i)
+                    break 
+                    
+        if len (cold) ==0: 
+            raise ValueError (f'Expected {smft(P().isrll)} '
+                ' columns, but not found in the given dataframe.'
+                )
+                
+        dup = cold.copy() 
+        # filter and remove one by one duplicate columns.
+        list(filter (lambda x: dup.remove(x), set(cold)))
+        dup = set(dup)
+        if len(dup) !=0 :
+            raise HeaderError(
+                f'Duplicate column{"s" if len(dup)>1 else ""}'
+                f' {smft(dup)} found. It seems to be {smft(dup)}'
+                f'column{"s" if len(dup)>1 else ""}. Please provide'
+                '  the right column name in the dataset.'
+                )
+        data_ = data [cold] 
+  
+        col = list(data_.columns)
+        for i, vc in enumerate (col): 
+            for k in P().isrll : 
+                if vc.lower().find(k) >=0 : 
+                    col[i] = k ; break 
+                
+    return data_
+ 
+def is_erp_series (
+        data : Series ,
+        dipolelength : Optional [float] = None 
+        ) -> DataFrame : 
+    """ Validate the series.  
+    
+    `data` should be the resistivity values with the one of the following 
+    property index names ``resistivity`` or ``rho``. Will raises error 
+    if not detected. If a`dipolelength` is given, a data should include 
+    each station positions values. 
+    
+    Parameters 
+    -----------
+    
+    data : pandas Series object 
+        Object of resistivity values 
+    
+    dipolelength: float
+        Distance of dipole during the whole survey line. If it is
+        is not given , the station location should be computed and
+        filled using the default value of the dipole. The *default* 
+         value is set to ``10 meters``. 
+        
+    Return 
+    --------
+    
+    A dataframe of the property indexes such as
+    ['station', 'easting','northing', 'resistivity'] 
+    
+    Raises 
+    ------ 
+    Error if name does not match the `resistivity` column name. 
+    
+    Examples 
+    --------
+    >>> import numpy as np 
+    >>> import pandas as pd 
+    >>> data = pd.Series (np.abs (np.random.rand (42)), name ='res') 
+    >>> data = _is_erp_series (data)
+    >>> data.columns 
+    ... Index(['station', 'easting', 'northing', 'resistivity'], dtype='object')
+    >>> data = pd.Series (np.abs (np.random.rand (42)), name ='NAN') 
+    >>> data = _is_erp_series (data)
+    ... ResistivityError: Unable to detect the resistivity column: 'NAN'.
+    
+    """
+    
+    data = _assert_all_types(data, pd.Series) 
+    is_valid = False 
+    for p in P().iresistivity : 
+        if data.name.lower().find(p) >=0 :
+            data.name = p ; is_valid = True ; break 
+    
+    if not is_valid : 
+        raise ResistivityError(
+            f"Unable to detect the resistivity column: {data.name!r}."
+            )
+    
+    if is_valid: 
+        df = is_erp_dataframe  (pd.DataFrame (
+            {
+                data.name : data , 
+                'NAN' : np.zeros_like(data ) 
+                }
+            ),
+                dipolelength = dipolelength,
+            )
+    return df 
+
+def is_erp_dataframe (
+        data :DataFrame ,
+        dipolelength : Optional[float] = None 
+        ) -> DataFrame:
+    """ Ckeck whether the dataframe contains the electrical resistivity 
+    profiling (ERP) index properties. 
+    
+    DataFrame should be reordered to fit the order of index properties. 
+    Anyway it should he dataframe filled by ``0.`` where the property is
+    missing. However if `station` property is not given. station` property 
+    should be set by using the dipolelength default value equals to ``10.``.
+    
+    Parameters 
+    ----------
+    
+    data : Dataframe object 
+        Dataframe object. The columns dataframe should match the property 
+        ERP property object such as: 
+            ['station','resistivity', 'longitude','latitude'] 
+            or 
+            ['station','resistivity', 'easting','northing']
+            
+    dipolelength: float
+        Distance of dipole during the whole survey line. If the station 
+        is not given as  `data` columns, the station location should be 
+        computed and filled the station columns using the default value 
+        of the dipole. The *default* value is set to ``10 meters``. 
+        
+    Returns
+    --------
+    A new data with index properties.
+        
+    Raises 
+    ------
+    
+    - None of the column matches the property indexes.  
+    - Find duplicated values in the given data header.
+    
+    Examples
+    --------
+    >>> import numpy as np 
+    >>> from watex.utils.coreutils import _is_erp_dataframe 
+    >>> df = pd.read_csv ('data/erp/testunsafedata.csv')
+    >>> df.columns 
+    ... Index(['x', 'stations', 'resapprho', 'NORTH'], dtype='object')
+    >>> df = _is_erp_dataframe (df) 
+    >>> df.columns 
+    ... Index(['station', 'easting', 'northing', 'resistivity'], dtype='object')
+    
+    """
+    data = _assert_all_types(data, pd.DataFrame)
+    datac= data.copy() 
+    
+    def _is_in_properties (h ):
+        """ check whether the item header `h` is in the property values. 
+        Return `h` and it correspondence `key` in the property values. """
+        for key, values in P().idicttags.items() : 
+            for v in values : 
+                if h.lower().find (v)>=0 :
+                    return h, key 
+        return None, None 
+    
+    def _check_correspondence (pl, dl): 
+        """ collect the duplicated name in the data columns """
+        return [ l for l in pl for d  in dl if d.lower().find(l)>=0 ]
+        
+    cold , c = list(), list()
+    # create property object
+    pObj = P(data.columns)
+    for i , ckey in enumerate(list(datac.columns)): 
+        h , k = _is_in_properties(ckey)
+        cold.append (h) if h is not None  else h 
+        c.append(k) if k is not None else k
+        
+    if len (cold) ==0: 
+        raise HeaderError (
+            f'Wrong column headers {list(data.columns)}.'
+            f' Unable to find the expected {smft(pObj.isrll)}'
+            ' column properties.'
+                           )
+
+    dup = cold.copy() 
+    # filter and remove one by one duplicate columns.
+    list(filter (lambda x: dup.remove(x), set(cold)))
+
+    dup = set(dup) ; ress = _check_correspondence(
+        pObj() or pObj.idicttags.keys(), dup)
+    
+    if len(dup) !=0 :
+        raise HeaderError(
+            f'Duplicate column{"s" if len(dup)>1 else ""}' 
+            f' {smft(dup)} {"are" if len(dup)>1 else "is"} '
+            f'found. It seems correspond to {smft(ress)}. '
+            'Please ckeck your data column names. '
+            )
+            
+    # fetch the property column names and 
+    # replace by 0. the non existence column
+    # reorder the column to match 
+    # ['station','resistivity', 'easting','northing', ]
+    data_ = data[cold] 
+    data_.columns = c  
+    data_= data_.reindex (columns =pObj.idicttags.keys(), fill_value =0.) 
+    dipolelength = _assert_all_types(
+        dipolelength , float, int) if dipolelength is not None else None 
+    
+    if (np.all (data_.station) ==0. 
+        and dipolelength is None 
+        ): 
+        dipolelength = 10.
+        data_.station = np.arange (
+            0 , data_.shape[0] * dipolelength  , dipolelength ) 
+        
+    return data_
+
+
+def erp_selector (
         f: str | NDArray | Series | DataFrame ,
+        columns: str | List[str] = ..., 
         **kws:Any 
-) -> Union [Series, DataFrame]  : 
-    """ Sanitize the raw data collected from the survey. 
+) -> DataFrame  : 
+    """ Read and sanitize the data collected from the survey. 
     
-    `data` should be arranged in ``.csv`` or ``.xlsx`` formats. Be sure to 
-    provide the header of each columns in the worksheet. In the given file
-    data should be aranged as:: 
+    `data` should be an array, a dataframe, series, or  arranged in ``.csv`` 
+    or ``.xlsx`` formats. Be sure to provide the header of each columns in'
+    the worksheet. In a file is given, header columns should be aranged as:: 
         
-        ['station','easting', 'northing', 'resistivity' ]
+        ['station','resistivity' ,'longitude', 'latitude']
         
-    If it is not the case, user may provide at least the prefix composed of 
-    the first four letters of each column. 
+    Note that coordinates columns (`longitude` and `latitude`) are not 
+    compulsory. 
     
-    :param f: str. Path to the data location. Can parse `.csv` and `.xlsx` 
-        file formats. Can also accept arrays and the output is one of the 
-        given results::
-            
-            - array-like shape (M,): --> pd.Series with name ='resistivity'
-            - array with shape (M, 2) --> ['station', 'resistivity'] 
-            - array with shape (M, 3) --> Raise an Error 
-            - array with shape (M, 4) --> columns above 
-            - array with shape (M , N ) --> shrunked to fit the column above. 
-            
-            
-    :param kws: dict. Additional pandas `~.read_csv` and `~.read_excel` 
-        methods keyword arguments. Be sure to provide the right argument . 
+    Parameters 
+    ----------
+    
+    f: Path-like object, ndarray, Series or Dataframe, 
+        If a path-like object is given, can only parse `.csv` and `.xlsx` 
+        file formats. However, if ndarray is given and shape along axis 1 
+        is greater than 4, the ndarray should be shrunked. 
+        
+    columns: list 
+        list of the valuable columns. It can be used to fix along the axis 1 
+        of the array the specific values. It should contain the prefix or 
+        the whole name of each item in  ['station','resistivity' ,
+                                         'longitude', 'latitude']
+    kws: dict
+        Additional pandas `~.read_csv` and `~.read_excel` 
+        methods keyword arguments. Be sure to provide the right argument. 
         when reading `f`. For instance, provide `sep=','` argument when 
         the file to read is ``xlsx`` format will raise an error. Indeed, 
         `sep` parameter is acceptable for parsing the `.csv` file format
         only.
         
         
-    :return: DataFrame or Series with valuable column(s). 
+   Return 
+   ------
+     DataFrame with valuable column(s). 
     
-    .. note:: The length of acceptable columns is ``4``. If the size of the 
-            columns is higher than `4`, the data should be shrunked to match
-            the expected columns. Futhermore, if the header is not specified in 
-            `f`, the defaut column arrangement should be used. Therefore, the 
-            last column should be considered as the ``resistivity` column. 
+    Notes
+    ------
+        The length of acceptable columns is ``4``. If the size of the 
+        columns is higher than `4`, the data should be shrunked to match
+        the expected columns. Futhermore, if the header is not specified in 
+        `f`, the defaut column arrangement should be used. Therefore, the 
+        second column should be considered as the ``resistivity` column. 
      
-    .. Example:: 
-        >>> import numpy as np 
-        >>> from watex.utils.coreutils import _data_sanitizer 
-        >>> df = data_sanitizer ('data/erp/testsafedata.csv')
-        >>> df.shape 
-        ... (45, 4)
-        >>> list(df.columns) 
-        ... ['station', 'easting', 'northing', 'resistivity']
-        >>> df = _data_sanitizer ('data/erp/testunsafedata.xlsx') 
-        >>> list(df.columns)
-        ... ['easting', 'station', 'resistivity', 'northing']
-        >>> df = data_sanitizer(np.random.randn(7)) 
-        >>> df.name 
-        ... 'resistivity'
-        >>> df = data_sanitizer(np.random.randn(7, 7)) 
-        >>> df.shape 
-        ... (7, 4)
-        >>> list(df.columns) 
-        ... ['station', 'easting', 'northing', 'resistivity']
-    
-        >>> df = data_sanitizer(np.random.randn(7, 3)) 
-        ... ValueError: ...
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.coreutils import erp_selector
+    >>> df = erp_selector ('data/erp/testsafedata.csv')
+    >>> df.shape 
+    ... (45, 4)
+    >>> list(df.columns) 
+    ... ['station','resistivity', 'longitude', 'latitude']
+    >>> df = erp_selector('data/erp/testunsafedata.xlsx') 
+    >>> list(df.columns)
+    ... ['easting', 'station', 'resistivity', 'northing']
+    >>> df = erp_selector(np.random.randn(7, 7)) 
+    >>> df.shape 
+    ... (7, 4)
+    >>> list(df.columns) 
+    ... ['station', 'resistivity', 'longitude', 'latitude']
 
     """
+    
+    if columns is ...: columns=None 
+    if columns is not None: 
+        if isinstance(columns, str):
+            columns =columns.replace(':', ',').replace(';', ',')
+            if ',' in columns: columns =columns.split(',')
+            
     if os.path.isfile(f): 
         if os.path.splitext(f)[1].lower() not in ('.csv', '.xlsx'):
             raise ValueError('Can only read the file `.csv and `.xlsx`'
@@ -118,80 +508,56 @@ def data_sanitizer (
             f = pd.read_csv (f,**kws) 
         elif f.endswith ('.xlsx'): 
             f = pd.read_excel(f, **kws )
-
-    if isinstance(f, pd.DataFrame): 
-        rawcol = f.columns 
-        temp = list(map(lambda x: x.lower().strip(), f.columns))  
-        for i, item  in enumerate (temp): 
-            for key, values in P().idicttags.items (): 
-                for v in values: 
-                    if item.find(v)>=0: 
-                        temp[i] = key 
-                        break 
-        # check the existence of  duplicate element 
-        if len(set (temp)) != len(temp): 
-            # search for duplicated items by making  
-            # a copy of original list. Thus by using 
-            # filter, we remove all item found in 
-            # the iterated set
-            duplicate =temp.copy() 
-            list(filter (lambda x: duplicate.remove(x), set(temp)))
-            # Find the corresponding prefix values in DTAGS 
-            # then use the values for searching the raw 
-            # columns name. 
-            tv = list(P().idictags.get(key) for key in duplicate)
-            for val in tv: 
-                ls = set([ it for it in rawcol for e in val if it.find(e)>=0])
-                if len(ls)!=0: 
-                    break 
-            raise HeaderError (
-                f'Duplicate column{"s" if len(ls)>1 else ""}'
-                f' {smft(ls)} found. It seems to be'
-                f' {smft(duplicate)} column{"s" if len(duplicate)>1 else ""}.'
-                ' Please provide the right column names.'
-                              )
-        # rename dataframe columns 
-        f.columns= temp 
-    # If an array is given instead of dataframe.
-    # will check whether the shape of array match
-    elif isinstance( f, np.ndarray): 
-        msg ='Please create a dataframe to exactly fit {} columns.'
-        appendmsg =''.join([
-            ' If `easting` and `northing` data are not available, ', 
-            "use ['station', 'resistivity'] columns instead."])
-        
-        if len(f.shape) ==1 : # for array-like 
-            warnings.warn('1D array is found. Values should be considered'
-                          ' as the resistivity values')
-            f= pd.Series (f, name ='resistivity')
-        elif f.shape[1] ==2: 
-            warnings.warn('2D dimensional array is found. Head columns should'
-                          " match `{}` by default.".format(
-                              ['station','resistivity']))
-            f = pd.DataFrame( f, columns =['station', 'resistivity']) 
             
-        elif f.shape [1] ==3: 
-            raise ValueError (msg.format(P().isenr) + appendmsg ) 
+    if isinstance( f, np.ndarray): 
+        name = copy.deepcopy(columns)
+        columns = P().isrll if columns is None else columns 
+        colnum = 1 if f.ndim ==1 else f.shape[1]
+     
+        if colnum==1: 
+            if isinstance (name, list) : 
+                if len(name) ==1: name = name[0]
+            f = is_erp_series (
+                pd.Series (f, name = name or columns[1] 
+                           )
+                ) 
+    
+        elif colnum==2 : 
+            f= pd.DataFrame (f, columns = columns
+                             if columns is None  
+                             else columns[:2]
+                             ) 
+      
+        elif colnum==3: 
+            warnings.warn("One missing column `longitude|latitude` value."
+                          "If the `longitude` and `latitude` data are"
+                          f" not available. Use {smft(P().isrll[:2])} "
+                          "columns instead.", UserWarning)
+            columns = name or columns [:colnum]
+            f= pd.DataFrame (f[:, :len(columns)],
+                              columns =columns )
+
         elif f.shape[1]==4:
-            f =pd.DataFrame (
-                f, columns = P().isenr 
+            f =pd.DataFrame (f, columns =columns 
                 )
-        elif f.shape [1] > 4: 
+        elif colnum > 4: 
             # add 'none' columns for the remaining columns.
                 f =pd.DataFrame (
-                    f, columns = P().isenr + [
-                        'none' for i in range(f.shape[1]-4)]
+                    f, columns = columns  + [
+                        'none' for i in range(colnum-4)]
                     )
+                
+    if isinstance(f, pd.DataFrame): 
+        f = is_erp_dataframe( f)
+    elif isinstance(f , pd.Series ): 
+        f = is_erp_series(f)
     else : 
-        raise ValueError ('Unacceptable data. Can only parse'
-                          ' `pandas.DataFrame`, `.xlsx` and '
-                          '`.csv` file format.')        
-    # shrunk the dataframe out of 4 columns . 
-    if len(f.shape ) !=1 and f.shape[1]> 4 : 
-        warnings.warn(f'Expected four columns = `{P().isenr}`, '
-                      f'but `{f.shape[1]}` are given. Data is shrunked'
-                      ' to match the fitting columns.')
-        f = f.iloc[::, :4]
+        amsg = smft(accept_types (
+            pd.Series, pd.DataFrame, np.ndarray) + ['*.xls', '*.csv'])
+        raise ValueError (f" Unacceptable data. Accept only {amsg}."
+                          )  
+    if np.all(f.resistivity)==0: 
+        raise ResistivityError('Resistivity values need to be supply.')
 
     return f 
 
@@ -221,18 +587,21 @@ def _fetch_prefix_index (
             - Station prefix : ['pk','sta','pos']
             - Easting prefix : ['east', 'x', 'long'] 
             - Northing prefix: ['north', 'y', 'lat']
-   
+   :returns: 
+       - index of the position columns in the data 
+       - station position array-like. 
+       
     :Example: 
         >>> from numpy as np 
         >>> from watex.utils.coreutils import _assert_positions
         >>> array1 = np.c_[np.arange(0, 70, 10), np.random.randn (7,3)]
         >>> col = ['pk', 'x', 'y', 'rho']
-        >>> _fetch_prefix_index (array1 , col = ['pk', 'x', 'y', 'rho'], 
+        >>> index, = _fetch_prefix_index (array1 , col = ['pk', 'x', 'y', 'rho'], 
         ...                         prefixs = EASTPREFIX)
-        ... [1]
-        >>> _fetch_prefix_index (array1 , col = ['pk', 'x', 'y', 'rho'], 
+        ... 1
+        >>> index, _fetch_prefix_index (array1 , col = ['pk', 'x', 'y', 'rho'], 
         ...                         prefixs = NOTHPREFIX )
-        ... [2]
+        ... 2
     """
     if prefixs is None: 
         raise ValueError('Please specify the list of items to compose the '
@@ -245,7 +614,7 @@ def _fetch_prefix_index (
                         )
     elif df is None and col is None: 
         raise StationError( 'Column list is missing.'
-                         ' Could not detect the position index') 
+                         ' Could not detect the position index.') 
         
     if isinstance( df, pd.DataFrame): 
         # collect the resistivity from the index 
@@ -254,11 +623,11 @@ def _fetch_prefix_index (
 
     if arr.ndim ==1 : 
         # Here return 0 as colIndex
-        return arr , 0
+        return  0, arr 
     if isinstance(col, str): col =[col] 
     if len(col) != arr.shape[1]: 
         raise ValueError (
-            'Column should match the array shape in axis =1 <{arr.shape[1]}>.'
+            f'Column should match the array shape in axis =1 <{arr.shape[1]}>.'
             f' But {"was" if len(col)==1 else "were"} given')
         
     # convert item in column in lowercase 
@@ -267,12 +636,12 @@ def _fetch_prefix_index (
     colIndex = [col.index (item) for item in col 
              for pp in prefixs if item.find(pp) >=0]   
 
-    if len(colIndex) is None: 
-        raise ValueError ( 'Unable to detect the position'
-                          f' in `{smft(comsg)}` columns'
-                          '. Columns must contain at least'
+    if len(colIndex) is None or len(colIndex) ==0: 
+        raise ValueError (f'Unable to detect the position in `{smft(comsg)}`'
+                          ' columns. Columns must contain at least'
                           f' `{smft(prefixs)}`.')
-    return colIndex 
+ 
+    return colIndex[0], arr 
 
 
 def _assert_station_positions(
@@ -282,7 +651,7 @@ def _assert_station_positions(
 ) -> Tuple [int, float]: 
     """ Assert positions and compute dipole length. 
     
-    Use the given station postions collected on the field to 
+    Use the given station positions collected on the field to 
     detect the dipole length during the whole survey. 
     
     :param arr: array. Ndarray of data where one column must the 
@@ -291,15 +660,17 @@ def _assert_station_positions(
         position in the list sould fit the column data in the array. It raises 
         an error if the number of item in the list is different to the size 
         of array in axis=1. 
-    :param df: dataframe. When supply, the `arr` and `col` is not needed.
+    :param df: dataframe. When supply, the `arr` and `col` are not needed.
 
     :param prefixs: list. Contains all the station column names prefixs to 
         fetch the corresponding data.
-   
+    :returns: 
+        - positions: new positions numbering from station `S00` to ...    
+        - dipolelength:  recomputed dipole value
     :Example: 
         
         >>> from numpy as np 
-        >>> from watex.utils.coreutils import _assert_positions
+        >>> from watex.utils.coreutils import _assert_station_positions
         >>> array1 = np.c_[np.arange(0, 70, 10), np.random.randn (7,3)]
         >>> col = ['pk', 'x', 'y', 'rho']
         >>> _assert_positions(array1, col)
@@ -310,8 +681,8 @@ def _assert_station_positions(
     """
     if prefixs is (None or ...): prefixs = P().istation 
     
-    colIndex =_fetch_prefix_index(arr=arr, prefixs = prefixs, **kws )
-    positions= arr[:, colIndex[0]]
+    colIndex, arr =_fetch_prefix_index( arr=arr, prefixs = prefixs, **kws )
+    positions = arr[:, colIndex]
     # assert the position is aranged from lower to higher 
     # if there is not wrong numbering. 
     fsta = np.argmin(positions) 
@@ -330,17 +701,17 @@ def _assert_station_positions(
     return  positions, dipoleLength 
 
 def plot_anomaly(
-    erp:Array | List[float],
-    cz:Optional [Sub[Array], List[float]] = None, 
+    erp: Array | List[float],
+    cz: Optional [Sub[Array], List[float]] = None, 
     s: Optional [str] = None, 
-    figsize:Tuple [int, int] =(10, 4),
-    fig_dpi :int =300 ,
-    savefig :str | None =None, 
-    show_fig_title:bool =True,
-    style : str = 'seaborn', 
-    fig_title_kws:Dict[str, str | Any] = ...,
-    czkws : Dict [str , str | Any ] = ... , 
-    legkws: Dict [Any , str | Any ] = ... , 
+    figsize: Tuple [int, int] = (10, 4),
+    fig_dpi: int = 300 ,
+    savefig: str | None = None, 
+    show_fig_title: bool = True,
+    style: str = 'seaborn', 
+    fig_title_kws: Dict[str, str|Any] = ...,
+    czkws: Dict [str , str|Any] = ... , 
+    legkws: Dict [Any , str|Any] = ... , 
     **kws, 
 ) -> None: 
 
@@ -559,6 +930,7 @@ def plot_anomaly(
 def _define_conductive_zone(
     erp:Array| pd.Series | List[float] ,
     s: Optional [str ,  int] = None, 
+    p: SP = None,  
     auto: bool = False, 
     **kws,
 ) -> Tuple [Array, int] :
@@ -575,8 +947,9 @@ def _define_conductive_zone(
             the position of the lower resistivity value in |ERP|. 
     
     :returns: 
-        - conductive zone 
-        - station position 
+        - station position index in the conductive zone
+        - conductive zone of resistivity values 
+        - conductive zone positionning 
     
     :Example: 
         >>> import numpy as np 
@@ -586,6 +959,9 @@ def _define_conductive_zone(
         >>> shortPlot(test_array, selected_cz )
     """
     if isinstance(erp, pd.Series): erp = erp.values 
+    
+    # conductive zone positioning
+    pcz : Optional [Array]  = None  
     
     if s is None and auto is False: 
         raise TypeError ('Expected the station position. NoneType is given.')
@@ -597,15 +973,22 @@ def _define_conductive_zone(
     pos = len(erp) -1  if pos >= len(erp) else pos 
     # frame the `sves` (drilling position) and define the conductive zone 
     ir = erp[:pos][-3:] ;  il = erp[pos:pos +3 +1 ]
-
     cz = np.concatenate((ir, il))
-
-    return cz , pos 
+    if p is not None: 
+        if len(p) != len(erp): 
+            raise StationError (
+                'Array of position and conductive zone must have the same '
+                f'length: `{len(p)}` and `{len(cz)}` were given.')
+            
+        sr = p[:pos][-3:] ;  sl = p[pos:pos +3 +1 ]
+        pcz = np.concatenate((sr, sl))
+        
+    return pos , cz , pcz
 
 def _assert_stations(
     s:Any , 
-    dipole:Any=None,
-    keepindex:bool=False
+    dipole:Any = None,
+    keepindex:bool = False
 ) -> Tuple[str, int]:
     """ Sanitize stations and returns station name and index.
     

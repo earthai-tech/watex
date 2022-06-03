@@ -31,7 +31,7 @@ from ._typing import (
     Series, 
     DataFrame, 
     )
-from .utils.func_utils import (
+from .utils.funcutils import (
     savepath_,
     smart_format, 
     _assert_all_types,
@@ -47,7 +47,7 @@ from .utils._watexlog import watexlog
 
 __logger = watexlog().get_watex_logger(__name__)
 
-# TODO: 
+#XXX TODO: 
 class WATer (ABCMeta): 
     """ Should be a SuperClass for methods classes. 
     
@@ -61,232 +61,10 @@ class WATer (ABCMeta):
         pass 
 
 
-
-def _assert_data (data :DataFrame  ): 
-    """ Assert  the data and return the property dataframe """
-    
-    data = _assert_all_types(
-        data, list, tuple, np.ndarray, pd.Series, pd.DataFrame) 
-    
-    if isinstance(data, pd.DataFrame): 
-        
-        cold , ixc =list(), list()
-        for i , ckey in enumerate(data.columns): 
-            for kp in P().isenr : 
-                if ckey.lower() .find(kp) >=0 : 
-                    cold.append (kp); ixc.append(i)
-                    break 
-                    
-        if len (cold) ==0: 
-            raise ValueError ('Expected smart_format(P().isenr) '
-                ' columns, but not found in the given dataframe.'
-                )
-                
-        dup = cold.copy() 
-        # filter and remove one by one duplicate columns.
-        list(filter (lambda x: dup.remove(x), set(cold)))
-        dup = set(dup)
-        if len(dup) !=0 :
-            raise HeaderError(
-                f'Duplicate column{"s" if len(dup)>1 else ""}'
-                f' {smart_format(dup)} found. It seems to be {smart_format(dup)}'
-                f'column{"s" if len(dup)>1 else ""}. Please provide'
-                '  the right column name in the dataset.'
-                )
-        data_ = data [cold] 
-  
-        col = list(data_.columns)
-        for i, vc in enumerate (col): 
-            for k in P().isenr : 
-                if vc.lower().find(k) >=0 : 
-                    col[i] = k ; break 
-                
-    return data_
- 
-
-def _is_erp_series (
-        data : Series ,
-        dipolelength : Optional [float] = None 
-        ) -> DataFrame : 
-    """ Validate the series.  
-    
-    `data` should be the resistivity values with the one of the following 
-    property index names ``resistivity`` or ``rho``. Will raises error 
-    if not detected. If a`dipolelength` is given, a data should include 
-    each station positions values. 
-    
-    Parameters 
-    -----------
-    
-    data : pandas Series object 
-        Object of resistivity values 
-    
-    dipolelength: float
-        Distance of dipole during the whole survey line. If it is
-        is not given , the station location should be computed and
-        filled using the default value of the dipole. The *default* 
-         value is set to ``10 meters``. 
-        
-    Return 
-    --------
-    
-    A dataframe of the property indexes such as
-    ['station', 'easting','northing', 'resistivity'] 
-    
-    Raises 
-    ------ 
-    Error if name does not match the `resistivity` column name. 
-    
-    Examples 
-    --------
-    >>> import numpy as np 
-    >>> import pandas as pd 
-    >>> data = pd.Series (np.abs (np.random.rand (42)), name ='res') 
-    >>> data = _is_erp_series (data)
-    >>> data.columns 
-    ... Index(['station', 'easting', 'northing', 'resistivity'], dtype='object')
-    >>> data = pd.Series (np.abs (np.random.rand (42)), name ='NAN') 
-    >>> data = _is_erp_series (data)
-    ... ResistivityError: Unable to detect the resistivity column: 'NAN'.
-    
-    """
-    
-    data = _assert_all_types(data, pd.Series) 
-    is_valid = False 
-    for p in P().iresistivity : 
-        if data.name.lower().find(p) >=0 :
-            data.name = p ; is_valid = True ; break 
-    
-    if not is_valid : 
-        raise ResistivityError(
-            f"Unable to detect the resistivity column: {data.name!r}."
-            )
-    
-    if is_valid: 
-        df = _is_erp_dataframe  (pd.DataFrame (
-            {
-                data.name : data , 
-                'NAN' : np.zeros_like(data ) 
-                }
-            ),
-                dipolelength = dipolelength,
-            )
-    return df 
-
-    
-    
-def _is_erp_dataframe (
-        data :DataFrame ,
-        dipolelength : Optional[float] = None 
-        ) -> DataFrame:
-    """ Ckeck whether the dataframe contains the electrical resistivity 
-    profiling (ERP) index properties. 
-    
-    DataFrame should be reordered to fit the order of index properties. 
-    Anyway it should he dataframe filled by ``0.`` where the property is
-    missing. However if `station` property is not given. station` property 
-    should be set by using the dipolelength default value equals to ``10.``.
-    
-    Parameters 
-    ----------
-    
-    data : Dataframe object 
-        Dataframe object. The columns dataframe should match the property 
-        ERP property object such as: 
-            ['station','easting','northing','resistivity' ]
-            
-    dipolelength: float
-        Distance of dipole during the whole survey line. If the station 
-        is not given as  `data` columns, the station location should be 
-        computed and filled the station columns using the default value 
-        of the dipole. The *default* value is set to ``10 meters``. 
-        
-    Returns
-    --------
-    A new data with index properties.
-        
-    Raises 
-    ------
-    
-    - None of the columns does not match the property indexes.  
-    - Find duplicated values in the given data header.
-    
-    Examples
-    --------
-    >>> import numpy as np 
-    >>> from watex.bases import _is_erp_dataframe 
-    >>> df = pd.read_csv ('data/erp/testunsafedata.csv')
-    >>> df.columns 
-    ... Index(['x', 'stations', 'resapprho', 'NORTH'], dtype='object')
-    >>> df = _is_erp_dataframe (df) 
-    >>> df.columns 
-    ... Index(['station', 'easting', 'northing', 'resistivity'], dtype='object')
-    
-    """
-    data = _assert_all_types(data, pd.DataFrame)
-    datac= data.copy() 
-    
-    def _is_in_properties (h ):
-        """ check whether the item header `h` is in the property values. 
-        Return `h` and it correspondence `key` in the property values. """
-        for key, values in P().idicttags.items() : 
-            for v in values : 
-                if h.lower().find (v)>=0 :
-                    return h, key 
-        return None, None 
-    
-    def _check_correspondence (pl, dl): 
-        """ collect the duplicated name in the data columns """
-        return [ l for l in pl for d  in dl if d.lower().find(l)>=0 ]
-        
-    cold , c = list(), list()
-    for i , ckey in enumerate(list(datac.columns)): 
-        h , k = _is_in_properties(ckey)
-        cold.append (h) if h is not None  else h 
-        c.append(k) if k is not None else k
-        
-    if len (cold) ==0: 
-        raise HeaderError (
-            'Unable to find the expected smart_format(P().isenr) '
-            ' properties in the data columns `{list(data.columns)}`'
-            )
-
-    dup = cold.copy() 
-    # filter and remove one by one duplicate columns.
-    list(filter (lambda x: dup.remove(x), set(cold)))
-    dup = set(dup) ; ress = _check_correspondence(P().isenr, dup)
-    if len(dup) !=0 :
-        raise HeaderError(
-            f'Duplicate column{"s" if len(dup)>1 else ""}' 
-            f' {smart_format(dup)} {"are" if len(dup)>1 else "is"} '
-            f'found. It seems correspond to {smart_format(ress)}. '
-            'Please ckeck your data column names. '
-            )
-            
-    # fetch the property column names and 
-    # replace by 0. the non existence column
-    # reorder the column to match 
-    # ['station','easting','northing','resistivity' ]
-    data_ = data[cold] 
-    data_.columns = c  
-    data_= data_.reindex (columns =P().isenr, fill_value =0.) 
-    dipolelength = _assert_all_types(
-        dipolelength , float, int) if dipolelength is not None else None 
-    
-    if (np.all (data_.station) ==0. 
-        and dipolelength is None 
-        ): 
-        dipolelength = 10.
-        data_.station = np.arange (
-            0 , data_.shape[0] * dipolelength  , dipolelength ) 
-        
-    return data_
-
-
 def fetch_model(
         modelfile: str,
         modelpath: str = None,
-        default: bool= True,
+        default: bool = True,
         modname: Optional[str] = None,
         verbose: int = 0
                 ): 

@@ -13,18 +13,17 @@ Created on Fri Apr 14 14:47:48 2017
 # ==============================================================================
 import numpy as np
 
-from watex.utils.decorator import  deprecated #gdal_data_check,
-
-from watex.utils._watexlog import watexlog
+from .decorators import  deprecated , gdal_data_check
+from ._watexlog import watexlog
 try : 
     
     import HAS_GDAL, EPSG_DICT
+    
     if HAS_GDAL:
         from osgeo import osr
         from osgeo.ogr import OGRERR_NONE
     else:
         import pyproj
-# end if
 except :
     HAS_GDAL =False
     pass 
@@ -76,7 +75,8 @@ def convert_position_str2float(position_str):
     
     p_list = position_str.split(':')
     if len(p_list) != 3:
-        raise ValueError('{0} not correct format, should be DD:MM:SS'.format(position_str))
+        raise ValueError(
+            '{0} not correct format, should be DD:MM:SS'.format(position_str))
 
     deg = float(p_list[0])
     minutes = _assert_minutes(float(p_list[1]))
@@ -201,7 +201,8 @@ def convert_position_float2str(position):
 # ==============================================================================
 # Project a point
 # ==============================================================================
-@deprecated("NATO UTM zone is used in other part of mtpy, this function is for Standard UTM")
+@deprecated("NATO UTM zone is used in other part of mtpy,"
+            " this function is for Standard UTM")
 def get_utm_string_from_sr(spatialreference):
     """
     return utm zone string from spatial reference instance
@@ -380,6 +381,7 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
                 projected_point['utm_zone'][0])
     else:
         return np.rec.array(projected_point)
+    
 #espg = 3149
 def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=None):
     """
@@ -450,7 +452,8 @@ def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=None):
     else:
         print("epsg and utm_zone", str(epsg), str(utm_zone))
 
-        raise NotImplementedError("utm_zone type (%s, %s) not supported"%(type(utm_zone), str(utm_zone)))
+        raise NotImplementedError(
+            "utm_zone type (%s, %s) not supported"%(type(utm_zone), str(utm_zone)))
     
     if epsg is None:
         if HAS_GDAL:
@@ -472,7 +475,7 @@ def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=None):
     # end if
 
     # be sure to round out the numbers to remove computing with floats
-    return round(ll_point[1], 6), round(ll_point[0], 6)
+    return round(ll_point[1], 6), round(ll_point[0], 6), utm_zone 
 
 
 def project_points_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
@@ -734,7 +737,8 @@ def ll_to_utm(reference_ellipsoid, lat, lon):
                                                       - 58 * T
                                                       + T ** 2
                                                       + 600 * C
-                                                      - 330 * ecc_prime_squared) * A ** 6 / 720)))
+                                                      - 330 * ecc_prime_squared
+                                                      ) * A ** 6 / 720)))
 
     if lat < 0:
         utm_northing = utm_northing + 10000000.0  # 10000000 meter offset for southern hemisphere
@@ -923,9 +927,10 @@ def utm_wgs84_conv(lat, lon):
     return tup
 
 
-#@gdal_data_check
-#@deprecated("This function may be removed in later release. mtpy.utils.gis_tools.project_point_utm2ll() should be "
-#            "used instead.")
+@gdal_data_check
+@deprecated("This function may be removed in later release."
+            " watex.utils.gistools.project_point_utm2ll() should be "
+            "used instead.")
 def transform_utm_to_ll(easting, northing, zone,
                         reference_ellipsoid='WGS84'):
     utm_coordinate_system = osr.SpatialReference()
@@ -951,8 +956,9 @@ def transform_utm_to_ll(easting, northing, zone,
     return utm_to_ll_geo_transform.TransformPoint(easting, northing, 0)
 
 
-#@gdal_data_check
-@deprecated("This function may be removed in later release. mtpy.utils.gis_tools.project_point_ll2utm() should be "
+@gdal_data_check
+@deprecated("This function may be removed in later release. "
+            "watex.utils.gistools.project_point_ll2utm() should be "
             "used instead.")
 def transform_ll_to_utm(lon, lat, reference_ellipsoid='WGS84'):
     """
@@ -992,8 +998,6 @@ def transform_ll_to_utm(lon, lat, reference_ellipsoid='WGS84'):
 
     # returns easting, northing, altitude
     return utm_coordinate_system, utm_point
-
-
 
 #################################################################
 # Example usages of this script/module

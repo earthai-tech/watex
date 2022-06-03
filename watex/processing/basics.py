@@ -1,39 +1,56 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
-# This module is part of the WATex processing package, which is released under a
 # MIT- licence.
 
-from __future__ import print_function , division 
-# import os 
+from __future__ import (
+    print_function ,
+    division, 
+    annotations
+)
+
 import warnings 
 import inspect
 import numpy as np 
 import pandas as pd 
-from typing import TypeVar, Generic, Iterable , Callable
 
-from sklearn.tree import DecisionTreeClassifier 
-from sklearn.linear_model import SGDClassifier 
-from sklearn.neighbors import KNeighborsClassifier 
-from sklearn.svm import SVC 
-from sklearn.pipeline import make_pipeline 
-from sklearn.preprocessing import RobustScaler 
-from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures 
-from sklearn.compose import make_column_transformer 
-from sklearn.compose import make_column_selector 
-from sklearn.model_selection import validation_curve
-from sklearn.model_selection import train_test_split 
-from sklearn.metrics import confusion_matrix,  classification_report #, f1_score,
-from sklearn.feature_selection import SelectKBest, f_classif
+
+from .._sklearn import ( 
+     DecisionTreeClassifier, 
+     KNeighborsClassifier, 
+     OneHotEncoder, 
+     SelectKBest,  
+     SGDClassifier,
+     SVC, 
+     PolynomialFeatures, 
+     RobustScaler, 
+     make_column_selector, 
+     make_pipeline, 
+     confusion_matrix , 
+     classification_report, 
+     f_classif, 
+     make_column_transformer , 
+     train_test_split, 
+     validation_curve ,
+     
+     _HAS_ENSEMBLE_, 
+     
+) 
  
-from ..processing.__init__ import _HAS_ENSEMBLE_ 
 from ..analysis.basics import SLAnalyses
 from ..utils._watexlog import watexlog 
-from ..viewer.plot import hints 
-import  watex.utils.exceptions as Wex 
-import  watex.utils.decorator as deco
-import  watex.utils.func_utils as func
+from ..utils.mlutils import hints 
+from .._typing import ( 
+    T, 
+    Generic,
+    Iterable ,
+    Callable
+) 
 
-T= TypeVar('T', float, int)
+import  watex.exceptions as Wex 
+import  watex.utils.decorator as deco
+import  watex.utils.funcutils as func
+
+
 _logger =watexlog().get_watex_logger(__name__)
 
 d_estimators__={'dtc':DecisionTreeClassifier, 
@@ -41,9 +58,8 @@ d_estimators__={'dtc':DecisionTreeClassifier,
                 'sgd':SGDClassifier, 
                 'knn':KNeighborsClassifier 
                  }
-
 if _HAS_ENSEMBLE_ :
-    from ..processing.__init__ import skl_ensemble__
+    from .._sklearn import skl_ensemble__
     
     for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble__): 
         d_estimators__[es_]=esf_ 
@@ -943,7 +959,7 @@ class Processing (Preprocessing) :
                             estfullname)).format(*estfullname))
                 else: 
                     if estim_codecs is None: 
-                        raise Wex.WATexError_Estimators(
+                        raise Wex.EstimatorError (
                             f' Estimator `{estim}` not found! Please provide'
                             ' the estimator as Callable or class object.')
                     if len(estim_codecs) ==2: 
@@ -1062,7 +1078,7 @@ class Processing (Preprocessing) :
                 warnings.warn('At least one `estimator` must be supplied!')
                 self._logging.error(
                     'Need a least a one `estimator` but NoneType is found.')
-                raise Wex.WATexError_processing(
+                raise Wex.ProcessingError(
                     'None `estimator` detected. Please provide at least'
                     ' One `estimator`.')
 

@@ -75,3 +75,9 @@ class FrequencyError (Exception):
 
 class CoordinateError (Exception): 
     pass 
+
+class TopModuleError (Exception): 
+    pass 
+
+class ScikitLearnImportError(Exception ): 
+    pass 

@@ -6,7 +6,7 @@
 # from abc import ABCMeta 
 # import warnings 
 
-
+from __future__ import annotations 
 """
 `WATex <https://github.com/WEgeophysics/watex/>`_ properties objects 
 ====================================================================
@@ -17,6 +17,26 @@
 
 __all__ = [ 'P', 'BagoueNotes' ]
 
+array_configuration ={
+    1 : (
+        ['Schlumberger','AB>> MN','slbg'], 
+        'S'
+        ), 
+    2 : (
+        ['Wenner','AB=MN'], 
+         'W'
+         ), 
+    3: (
+        ['Dipole-dipole','dd','AB<BM>MN','MN<NA>AB'],
+        'DD'
+        ), 
+    4: (
+        ['Gradient-rectangular','[AB]MN', 'MN[AB]','[AB]'],
+        'GR'
+        )
+    }
+
+    
 utm_zone_designator ={
     'X':[72,84], 
     'W':[64,72], 
@@ -73,7 +93,7 @@ _j=[
     'TTE','TTM','TAV',
     'TDE','TZX','TZY',
     'ZXX','ZXY','ZYX'
-    ]
+]
     
 # Zonge Engineering file indexes 
 _avg=[
@@ -95,11 +115,11 @@ _avg=[
     'B.%err','B.perr',
     'Z.%err','Z.perr',
     'ARes.%err'
-     ]
+]
     
     
 _edi =[
-    #Head=Infos-Freuency-Rhorot
+    #Head=Infos-Frequency-Rhorot
     # Zrot and end blocks
     '>HEAD','>INFO',
     
@@ -217,13 +237,21 @@ class P:
     **iresistivity** List of prefix used for indexing the apparent resistivity 
                 values in the |ERP| data collected during the survey. 
 
-    **isenr**: Is the list of heads columns during the data collections. Any data 
+    **isren**: Is the list of heads columns during the data collections. Any data 
                 head |ERP| data provided should be converted into 
                 the following arangement::
                     
-            +----------+-----------+-----------+-------------+
-            |station   | easting   | northing  | resistivity | 
-            +----------+-----------+-----------+-------------+
+            +----------+-------------+-----------+-----------+
+            |station   | resistivity | easting   | northing  | 
+            +----------+-------------+-----------+-----------+
+            
+   **isrll**: Is the list of heads columns during the data collections. Any data 
+               head |ERP| data provided should be converted into 
+               the following arangement::
+                   
+            +----------+-------------+-------------+----------+
+            |station   | resistivity | longitude   | latitude | 
+            +----------+-------------+-------------+----------+
             
     **P**: Typing class for fectching the properties. For instance:: 
         
@@ -232,8 +260,8 @@ class P:
         ... <property at 0x1ec1f2c3ae0>
         >>> P().idictags 
         ... 
-        {'station': ['pk', 'sta', 'pos'], 'easting': ['east', 'x', 'long'],
-         'northing': ['north', 'y', 'lat'], 'resistivity': ['rho', 'app', 'res']}
+        {'station': ['pk', 'sta', 'pos'], 'longitude': ['east', 'x', 'long', 'lon'],
+         'latitude': ['north', 'y', 'lat'], 'resistivity': ['rho', 'app', 'res']}
         >>> {k:v for k, v in  P.__dict__.items() if '__' not in k}
         ... {'_station': ['pk', 'sta', 'pos'],
              '_easting': ['east', 'x', 'long'],
@@ -246,24 +274,35 @@ class P:
              'inorthing': <property at 0x1ec1f2c3c70>,
              'iresistivity': <property at 0x1ec1f2c3e00>,
              'isenr': <property at 0x1ec1f2c3db0>}
-        >>> P().isenr 
-        ... ['station','easting','northing', 'resistivity' ]
+        >>> P().isrll 
+        ... ['station','resistivity','longitude','latitude']
     
     """
     station_prefix   = [
         'pk','sta','pos'
     ]
     easting_prefix   =[
-        'east','x','long'
+        'east','x',
                 ]
     northing_prefix = [
-        'north','y','lat'
+        'north','y',
     ]
+    lon_prefix   =[
+        'long', 'lon'
+                ]
+    
+    lat_prefix = [
+        'lat'
+    ]
+    
     resistivity_prefix = [
         'rho','app','res'
     ]
-    erp_head= [
-        'station','easting','northing', 'resistivity' 
+    erp_headll= [
+        'station', 'resistivity',  'longitude','latitude',
+    ]
+    erp_headen= [
+        'station', 'resistivity',  'easting','northing',
     ]
     param_options = [
         ['bore', 'for'], 
@@ -298,17 +337,70 @@ class P:
         'flow'
     ]
    
-    all_prefixes = { f'_{k}':v for k, v in zip (erp_head , [
-        station_prefix, easting_prefix, northing_prefix,
-        resistivity_prefix])}
+    all_prefixes = { f'_{k}':v for k, v in zip (
+        erp_headll +erp_headen[2:] , [
+            station_prefix,
+            resistivity_prefix,
+            lon_prefix,
+            lat_prefix, 
+            easting_prefix, 
+            northing_prefix,
+            northing_prefix
+        ]
+        )}
 
-    def __init__( self) :
+    def __init__( self, hl =None ) :
+        self.hl = hl
         for key , value in self.all_prefixes.items() : 
             self.__setattr__( key , value)
             
+    
+    def _check_header_item (self, it ): 
+        """ Check whether the item exists in the property dictionnary."""
+        for k, val in self.idicttags.items(): 
+            for s in val : 
+                if str(it).lower().find(s)>=0: 
+                    return k 
+        return  
+                
+    def __call__(self, hl: list = None):
+        """ Rename the given header to hold the  properties 
+        header values. 
+        
+        Call function could  return ``None`` whether the 
+        given header item in `hl` does not match any item in property 
+        headers. 
+        
+        :param hl: list or array, 
+            list of the given headers 
+            
+        :Example: 
+    
+            >>> from watex._property import P 
+            >>> test_v= ['pos', 'easting', 'north', 'rhoa', 'lat', 'longitud']
+            >>> pobj = P(test_v)
+            >>> pobj ()
+            ... ['station', 'easting', 'northing', 'resistivity',
+                 'latitude', 'longitude']
+            >>> test_v2 = test_v + ['straa', 'nourmai', 'opirn'] 
+            >>> pobj (test_v2)
+            ... ['station', 'easting', 'northing', 'resistivity', 
+                 'latitude', 'longitude']
+        """
+        v_ =list()
+        
+        self.hl = hl or self.hl 
+        if self.hl is not None: 
+            self.hl = [self.hl] if isinstance(self.hl, str ) else self.hl
+            if hasattr(self.hl, '__iter__'):
+                for item in self.hl : 
+                    v_.append( self._check_header_item(item)) 
+                v_=list(filter((None).__ne__, v_))
+                return None if len (v_) ==0 else v_
+            
     @property 
     def frcolortags (self): 
-        """ set the dictionnar"""
+        """ set the dictionnary"""
         return  dict ((f'fr{k}', f'#{v}') for k, v in zip(
                         range(4), ('CED9EF','9EB3DD', '3B70F2', '0A4CEF' )
                         )
@@ -316,16 +408,28 @@ class P:
     @property 
     def idicttags (self): 
         """ Is the collection of data properties """ 
-        return  dict ( (k, v) for k, v in zip(self.isenr,
-              [self.istation, self.ieasting, self.inorthing ,
-                self.iresistivity]))
+        return  dict ( (k, v) for k, v in zip(self.isrll + self.isren[2:],
+              [self.istation, self.iresistivity, self.ilon, 
+                self.ilat, self.ieasting, self.inorthing ])
+                      )
     @property 
     def istation(self) : 
         """ Use prefix to identify station location positions """
         return self._station 
     
     @property 
-    def ieasting (self): 
+    def ilon (self): 
+        """ Use prefix to identify longitude coordinates if given in the
+        dataset. """
+        return self._longitude 
+    
+    @property 
+    def ilat(self): 
+        """ Use prefix to identify latitude coordinates if given in the
+        dataset. """
+        return self._latitude
+    @property 
+    def ieasting  (self): 
         """ Use prefix to identify easting coordinates if given in the
         dataset. """
         return self._easting 
@@ -342,13 +446,22 @@ class P:
         return self._resistivity 
     
     @property 
-    def isenr(self): 
-        """ `SENR` is the abbreviation of `S`for ``Stations``, `E` for ``Easting`, 
-        `N` for ``Northing`` and `R``for resistivity. `SENR` is the expected 
-        columns in Electrical resistivity profiling. Indeed, it keeps the 
-        traditional collections sheets during the survey. """
-        return self.erp_head
-
+    def isrll(self): 
+        """ `SRLL` is the abbreviation of `S`for ``Stations``,`R``for 
+        resistivity, `L` for ``Longitude` and `L` for ``Latitude``. 
+        `SRLL` is the expected columns in Electrical resistivity profiling.
+        Indeed, it keeps the traditional collections sheets
+        during the survey. """
+        return self.erp_headll
+    
+    @property 
+    def isren(self): 
+        """ `SREN` is the abbreviation of `S`for ``Stations``,`R``for 
+        resistivity, `E` for ``easting` and `N` for ``northing``. 
+        `SREN` is the expected columns in Electrical resistivity profiling.
+        Indeed, it keeps the traditional collections sheets
+        during the survey. """
+        return self.erp_headen
 
 class BagoueNotes: 
     """"
@@ -357,8 +470,8 @@ class BagoueNotes:
     Cote d’Ivoire.
     
     The average FR observed in this area fluctuates between 1
-    and 3 m3/h. Refer to the link of case story paper in the repository 
-    part https://github.com/WEgeophysics/watex#documentation to visualize the
+    and 3 m3/h. Refer to the link of case story paper in the `repository 
+    part <https://github.com/WEgeophysics/watex#documentation>`_ to visualize the
     location map of the study area with the geographical distribution of the
     various boreholes in the region. The geophysical data and boreholes
     data were collected from National  Office of Drinking Water (ONEP) and
@@ -414,9 +527,21 @@ class BagoueNotes:
                     }
 
 
+## XXXX properties functions 
+def assert_arrangement(a: int | str ): 
+    """ Assert whether the given arrangement is correct. 
+    :param a: int, float, str - Type of given electrical arrangement. 
+    :returns:
+        - The correct arrangement name 
+        - ``0`` which means ``False`` or a wrong given arrangements.   
+    """
     
-
-
+    for k, v in array_configuration.items(): 
+        if a == k  or str(a).lower().strip() in ','.join (
+                v[0]).lower() or a ==v[1]: 
+            return  v[0][0].lower()
+        
+    return 0
 
     
     

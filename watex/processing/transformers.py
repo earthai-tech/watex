@@ -17,14 +17,23 @@ import pandas as pd
 
 from sklearn.model_selection import StratifiedShuffleSplit 
 from sklearn.model_selection import train_test_split 
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder 
+from sklearn.base import(
+    BaseEstimator,
+    TransformerMixin
+)
+from sklearn.preprocessing import  (
+    StandardScaler,
+    MinMaxScaler
+)
+from sklearn.preprocessing import( 
+    OrdinalEncoder,
+    OneHotEncoder 
+)
 
 # import watex.utils.exceptions as Wex 
 from ..utils._watexlog import watexlog 
 from ..analysis.basics import categorize_flow 
-import  watex.utils.ml_utils as mlfunc
+import  watex.utils.mlutils as mlfunc
 
 __docformat__='restructuredtext'
 
