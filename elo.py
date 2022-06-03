@@ -9,7 +9,7 @@ from watex.utils.func_utils import convert_csvdata_from_fr_to_en
 import pandas as pd 
 
 
-df = pd.read_csv(r'C:/Users\Administrator\Desktop\__elodata/pme.final.csv')
+df = pd.read_csv(r'C:/Users\Administrator\Desktop\__elodata/datafinal.csv')
 
 df = df.iloc [2: , ::]
 df.reset_index(inplace = True , drop =True )
@@ -24,5 +24,5 @@ df33 = pd.concat ([df_safe , s33])
 df25 = pd.concat ([df_safe , s25] )
 
 for name , ff in zip(['sf50' , 'sf33', 'sf25'], [df50 , df33, df25]) : 
-    ff.to_csv (r'C:\Users\Administrator\Desktop\__elodata\pme.data.{0}.csv'.format(name),
+    ff.to_csv (r'C:\Users\Administrator\Desktop\__elodata\pme.datafinal.{0}.csv'.format(name),
                index =False)

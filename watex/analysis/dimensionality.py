@@ -10,16 +10,24 @@ import numpy as np
 import pandas as pd 
 from typing import TypeVar 
 
-from sklearn.preprocessing import OrdinalEncoder
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.decomposition import (PCA , IncrementalPCA, KernelPCA)
+from .._sklearn import (
+    OrdinalEncoder ,
+    SimpleImputer ,
+    StandardScaler, 
+    MinMaxScaler,
+    PCA, 
+    IncrementalPCA, 
+    KernelPCA, 
+
+    )
 
 from ..utils.decorator import docstring
 from ..utils._watexlog import watexlog
 from ..modeling.validation import GridSearch
-from ..processing.transformers import (DataFrameSelector,
-                                  CombinedAttributesAdder)
+from ..processing.transformers import (
+    DataFrameSelector,
+    CombinedAttributesAdder
+   )
 
 T= TypeVar('T', list, tuple)
 _logger = watexlog().get_watex_logger(__name__)

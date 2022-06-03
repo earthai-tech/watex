@@ -9,7 +9,12 @@ Created on Wed Jul  7 22:23:02 2021
 """
 import os
 import warnings 
-from typing import TypeVar, Iterable, Tuple, Callable
+from .._typing import (
+    TypeVar,
+    Iterable, 
+    Tuple,
+    Callable 
+)
 import numpy as np 
 import pandas as pd
 

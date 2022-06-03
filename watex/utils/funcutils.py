@@ -2,6 +2,7 @@
 #   Copyright © 2021  ~alias @Daniel03 <etanoyau@gmail.com> 
 #   created date :Sun Sep 13 09:24:00 2020
 #   edited date: Wed Jul  7 22:23:02 2021 
+#   Licence: MIT 
 
 ####################### import required modules #######################
 from __future__ import annotations 
@@ -9,20 +10,24 @@ from __future__ import annotations
 import os 
 import re 
 import sys 
+import inspect 
 import subprocess 
 import warnings
 import csv 
 import shutil 
 from copy import deepcopy 
 
-
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt
 
 from .._typing import ( 
-    Tuple, 
-    Array, 
+    Tuple,
+    Dict,
+    Any,
+    Array,
+    F,
+    T,
     Sub ,
     List ,
     DataFrame, 
@@ -30,7 +35,8 @@ from .._typing import (
 from .._property import P
 from ..exceptions import ( 
     EDIError,
-    ParameterNumberError
+    ParameterNumberError, 
+    # ArgumentError
     )
 from ._watexlog import watexlog
 from .decorators import deprecated 
@@ -66,6 +72,184 @@ except ImportError:
     interp_import = False
 
 ###################### end import module ##################################
+def smart_strobj_recognition(
+        name: str  ,
+        container: List | Tuple | Dict[Any, Any ],
+        stripitems: str | List | Tuple = '_', 
+        deep: bool = False,  
+) -> str : 
+    """ Find the likelihood word in the whole containers and 
+    returns the value.
+    
+    :param name: str - Value of to search. I can not match the exact word in 
+    the `container`
+    :param container: list, tuple, dict- container of the many string words. 
+    :param stripitems: str - 'str' items values to sanitize the  content 
+        element of the dummy containers. if different items are provided, they 
+        can be separated by ``:``, ``,`` and ``;``. The items separators 
+        aforementioned can not  be used as a component in the `name`. For 
+        isntance:: 
+            
+            name= 'dipole_'; stripitems='_' -> means remove the '_'
+            under the ``dipole_``
+            name= '+dipole__'; stripitems ='+;__'-> means remove the '+' and
+            '__' under the value `name`. 
+        
+    :param deep: Kind of research. Go deeper by looping each items for find 
+         the initials that can fit the name. Note that, if given, the first 
+         occurence should be consider as the best name... 
+         
+    :Example:
+        >>> from watex.utils.funcutils import smart_strobj_recognition
+        >>> from watex.methods import ResistivityProfiling 
+        >>> rObj = ResistivityProfiling(AB= 200, MN= 20,)
+        >>> smart_strobj_recognition ('dip', robj.__dict__))
+        ... None 
+        >>> smart_strobj_recognition ('dipole_', robj.__dict__))
+        ... dipole 
+        >>> smart_strobj_recognition ('dip', robj.__dict__,deep=True )
+        ... dipole 
+        >>> smart_strobj_recognition (
+            '+_dipole___', robj.__dict__,deep=True , stripitems ='+;_')
+        ... 'dipole'
+        
+    """
+
+    stripitems =_assert_all_types(stripitems , str, list, tuple) 
+    container = _assert_all_types(container, list, tuple, dict)
+    
+    ix , rv = None , None 
+    
+    if isinstance (stripitems , str): 
+        for sep in (':', ",", ";"): # when strip ='a,b, c' seperated object
+            if sep in stripitems:
+                stripitems = stripitems.strip().split(sep) ; break
+        if isinstance(stripitems, str): 
+            stripitems =[stripitems]
+            
+    # sanitize the name. 
+    for s in stripitems :
+        name = name.strip(s)     
+        
+    if isinstance(container, dict) : 
+        #get only the key values and lower them 
+        container_ = list(map (lambda x :x.lower(), container.keys())) 
+    else :
+        # for consistency put on list if values are in tuple. 
+        container_ = list(container)
+        
+    # sanitize our dummny container item ... 
+    #container_ = [it.strip(s) for it in container_ for s in stripitems ]
+    if name.lower() in container_: 
+        ix = container_.index (name)
+        
+    if deep and ix is None:
+        # go deeper in the search... 
+        for ii, n in enumerate (container_) : 
+            if n.find(name.lower())>=0 : 
+                ix =ii ; break 
+    
+    if ix is not None: 
+        if isinstance(container, dict): 
+            rv= list(container.keys())[ix] 
+        else : rv= container[ix] 
+
+    return  rv 
+
+    
+
+def repr_callable_obj(obj: F  ): 
+    """ Represent callable objects. 
+    
+    Format class, function and instances objects. 
+    
+    :param obj: class, func or instances
+        object to format. 
+    :Raises: TypeError - If object is not a callable or instanciated. 
+    
+    :Examples: 
+        
+    >>> from watex.utils.funcutils import repr_callable_obj
+    >>> from watex.methods.electrical import (
+        ElectricalMethods, ResistivityProfiling)
+    >>> callable_format(ElectricalMethods)
+    ... 'ElectricalMethods(AB= None, arrangement= schlumberger,
+            area= None, MN= None, projection= UTM, datum= WGS84,
+            epsg= None, utm_zone= None, fromlog10= False)'
+    >>> callable_format(ResistivityProfiling)
+    ... 'ResistivityProfiling(station= None, dipole= 10.0, 
+            auto_station= False, kws= None)'
+    >>> robj= ResistivityProfiling (AB=200, MN=20, station ='S07')
+    >>> repr_callable_obj(robj)
+    ... 'ResistivityProfiling(AB= 200, MN= 20, arrangememt= schlumberger,
+            utm_zone= None, projection= UTM, datum= WGS84, epsg= None, 
+            area= None, fromlog10= False, dipole= 10.0, station= S07)'
+    >>> repr_callable_obj(robj.fit)
+    ... 'fit(data= None, kws= None)'
+"""
+    
+    # inspect.formatargspec(*inspect.getfullargspec(cls_or_func))
+    if not hasattr (obj, '__call__') and not hasattr(obj, '__dict__'): 
+        raise TypeError (
+            f'Format only callabe objects: {type (obj).__name__!r}')
+        
+    if hasattr (obj, '__call__'): 
+        cls_or_func_signature = inspect.signature(obj)
+        objname = obj.__name__
+        PARAMS_VALUES = {k: None if v.default is (inspect.Parameter.empty 
+                         or ...) else v.default 
+                    for k, v in cls_or_func_signature.parameters.items()
+                    # if v.default is not inspect.Parameter.empty
+                    }
+    elif hasattr(obj, '__dict__'): 
+        objname=obj.__class__.__name__
+        PARAMS_VALUES = {k:v  for k, v in obj.__dict__.items() 
+                         if not (k.endswith('_') or k.startswith('_'))}
+        
+    return   str (objname) + '(' + str (PARAMS_VALUES).replace (
+            '{', '').replace('}', '').replace(
+                ':', '=').replace("'", '') + ')'
+
+def accept_types (*objtypes: list , 
+                  format: bool = False
+                  ) -> List[str] | str : 
+    """ List the type format that can be accepted by a function. 
+    :param objtypes: List of object types 
+    :param format: bool - format the list of the name of objects.
+    
+    :return: list of object type names or str of object names. 
+    
+    :Example: 
+        >>> import numpy as np; import pandas as pd 
+        >>> from watex.utils.funcutils import accept_types
+        >>> accept_types (pd.Series, pd.DataFrame, tuple, list, str)
+        ... "'Series','DataFrame','tuple','list' and 'str'"
+        >>> atypes= accept_types (
+            pd.Series, pd.DataFrame,np.ndarray, format=True )
+        ..."'Series','DataFrame' and 'ndarray'"
+    """
+    return smart_format(
+        [f'{o.__name__}' for o in objtypes]
+        ) if format else [f'{o.__name__}' for o in objtypes] 
+
+def read_from_excelsheets(erp_file: str = None ) -> List[DataFrame]: 
+    
+    """ Read all Excelsheets and build a list of dataframe of all sheets.
+   
+    :param erp_file:
+        Excell workbooks containing `erp` profile data.
+    :return: A list composed of the name of `erp_file` at index =0 and the 
+            datataframes.
+    """
+    
+    allfls:Dict [str, Dict [T, List[T]] ] = pd.read_excel(
+        erp_file, sheet_name=None)
+    
+    list_of_df =[os.path.basename(os.path.splitext(erp_file)[0])]
+    for sheets , values in allfls.items(): 
+        list_of_df.append(pd.DataFrame(values))
+
+    return list_of_df 
 
 def check_dimensionality(obj, data, z, x):
     """ Check dimensionality of data and fix it.
@@ -75,7 +259,7 @@ def check_dimensionality(obj, data, z, x):
     :param z: array-like should be reduced along the row axis
     :param x: arraylike should be reduced along the columns axis.
     """
-    def reduce_shape(Xshape, x, axis_name =None): 
+    def reduce_shape(Xshape, x, axis_name=None): 
         """ Reduce shape to keep the same shape"""
         mess ="`{0}` shape({1}) {2} than the data shape `{0}` = ({3})."
         ox = len(x) 
@@ -101,8 +285,8 @@ def check_dimensionality(obj, data, z, x):
     
     return data , z, x 
 
-def subprocess_module_installation (module, upgrade =True , DEVNULL=False,
-                                    action=True, verbose =0, **subpkws): 
+def is_installing (module, upgrade=True , DEVNULL=False,
+                  action=True, verbose =0, **subpkws): 
     """ Install or uninstall a module using the subprocess under the hood.
     
     :param module: str, module name 
@@ -113,10 +297,10 @@ def subprocess_module_installation (module, upgrade =True , DEVNULL=False,
     :param subpkws: additional subprocess keywords arguments.
     
     :Example: 
-        >>> from pycsamt.utils.func_utils import subprocess_module_installation
-        >>> subprocess_module_installation(
+        >>> from pycsamt.utils.func_utils import is_installing
+        >>> is_installing(
             'tqdm', action ='install', DEVNULL=True, verbose =1)
-        >>> subprocess_module_installation(
+        >>> is_installing(
             'tqdm', action ='uninstall', verbose =1)
     """
     #implement pip as subprocess 
@@ -216,7 +400,7 @@ def make_introspection(Obj , subObj):
         if not hasattr(Obj, key) and key  != ''.join(['__', str(key), '__']):
             setattr(Obj, key, value)
             
-def cpath (savepath=None , dpath= None): 
+def cpath (savepath=None , dpath=None): 
     """ Control the existing path and create one of it does not exist.
     :param savepath: Pathlike obj, str 
     :param dpath: str, default pathlike obj
@@ -277,7 +461,7 @@ def sPath (name_of_path:str):
     return savepath 
 
 
-def format_notes(text:str , cover_str:str='~', inline=70, **kws): 
+def format_notes(text:str , cover_str: str ='~', inline=70, **kws): 
     """ Format note 
     :param text: Text to be formated 
     :param cover_str: type of ``str`` to surround the text 

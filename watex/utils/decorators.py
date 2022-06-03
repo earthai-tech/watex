@@ -82,16 +82,21 @@ class gdal_data_check(object):
   
     _has_checked = False
     _gdal_data_found = False
-   
-    _logger = watexlog.get_watex_logger(__name__)
+    _gdal_data_variable_resources = 'https://trac.osgeo.org/gdal/wiki/FAQInstallationAndBuilding#HowtosetGDAL_DATAvariable '
+    _gdal_wheel_resources ='https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal'
+    _gdal_installation_guide = 'https://opensourceoptions.com/blog/how-to-install-gdal-for-python-with-pip-on-windows/'
+
 
     def __init__(self, func, raise_error=False):
         """
-        this decorator should only be used for the function that requres 
-        gdal and gdal-data to function correctly.
+        The decorator should only be used for the function that requires 
+        gdal and gdal-data correctly.
 
-        the decorator will check if the GDAL_DATA is set and the path
-         in GDAL_DATA is exist. If GDAL_DATA is not set, then try to
+        GDAL standas for Geospatial Data Abstraction Library. 
+        It is a translator library for raster geospatial data formats.
+        Its distribution includes a complete GDAL installation
+        It will check whether the GDAL_DATA is set and the path
+         in GDAL_DATA exists. If GDAL_DATA is not set, then try to
          use external program "gdal-config --datadir" to
         findout where the data files are installed.
 
@@ -99,15 +104,28 @@ class gdal_data_check(object):
 
         :param func: function to be decorated
         """
+  
         self._func = func
         if not self._has_checked:
             self._gdal_data_found = self._check_gdal_data()
             self._has_checked = True
         if not self._gdal_data_found:
             if(raise_error):
-                raise ImportError("GDAL  is NOT installed correctly")
+                raise ImportError(
+                    "GDAL  is NOT installed correctly. "
+                    f"GDAL wheel can be downloaded from {self._gdal_wheel_resources}"
+                    " and use `pip install <path-to-wheel-file.whl>`"
+                    "for installing. Get more details here: "
+                    f" {self._gdal_installation_guide}."
+                                  )
             else:
-                print ("Ignore GDAL as it is not working. Will use pyproj")
+                warnings.warn(
+                    "Ignore GDAL as it is not working. Will use pyproj"
+                    f"OR download the GDAL wheel from {self._gdal_wheel_resources}"
+                    " and use `pip install <path-to-wheel-file.whl>` "
+                    "for GDAL installation. Get furher details via "
+                    f"{self._gdal_installation_guide}"
+                              )
 
     def __call__(self, *args, **kwargs):  # pragma: no cover
         return self._func(*args, **kwargs)
@@ -117,7 +135,7 @@ class gdal_data_check(object):
             # gdal data not defined, try to define
             from subprocess import Popen, PIPE
             _logger.warning("GDAL_DATA environment variable is not set "
-                                 " Please see https://trac.osgeo.org/gdal/wiki/FAQInstallationAndBuilding#HowtosetGDAL_DATAvariable ")
+                            f" Please see {self._gdal_data_variable_resources}")
             try:
                 # try to find out gdal_data path using gdal-config
                 _logger.info("Trying to find gdal-data path ...")
@@ -134,7 +152,7 @@ class gdal_data_check(object):
                         "\tCannot find gdal-data path. Please find the"
                         " gdal-data path of your installation and set it to"
                         "\"GDAL_DATA\" environment variable. Please see "
-                        "https://trac.osgeo.org/gdal/wiki/FAQInstallationAndBuilding#HowtosetGDAL_DATAvariable for "
+                        f"{self._gdal_data_variable_resources} for "
                         "more information.")
                     return False
             except Exception:

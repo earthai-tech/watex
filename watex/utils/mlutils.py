@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Sat Aug 28 16:26:04 2021
-#       This module is a set of utils for data prepprocessing
-#       released under a MIT- licence.
-#       @author: @Daniel03 <etanoyau@gmail.com>
+#      Copyright (c) 2021 Kouadio K. Laurent, Sat Aug 28 16:26:04 2021
+#      released under a MIT- licence.
+#      @author: @Daniel03 <etanoyau@gmail.com>
+from __future__ import annotations 
 import os 
 import re
 import inspect 
@@ -19,14 +19,13 @@ from six.moves import urllib
 import numpy as np 
 import pandas as pd 
 
-from sklearn.model_selection import (
-    train_test_split,
-    StratifiedShuffleSplit
-    )
-from sklearn.metrics import (
-    confusion_matrix ,
+from .._sklearn import ( 
+    train_test_split , 
+    StratifiedShuffleSplit, 
+    confusion_matrix, 
     mean_squared_error 
-    ) 
+    
+)
 from .._typing import (
     List,
     Tuple, 
@@ -43,10 +42,14 @@ from .._typing import (
     DataFrame, 
     Sub                 
 )
-
-import watex.utils.funcutils as FU
+from .funcutils import ( 
+    savepath_, 
+    smart_format
+)
 from ._watexlog import watexlog
-from ..exceptions import ParameterNumberError  
+from ..exceptions import ( 
+    ParameterNumberError  
+)
 
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -161,7 +164,7 @@ def findIntersectionGenObject(
 
 def findDifferenceGenObject(gen_obj1: Iterable[Any],
                             gen_obj2: Iterable[Any]
-                              )-> set: 
+                              )-> None | set: 
     """
      Desciption: 
          
@@ -402,24 +405,7 @@ def predict(
 
     return clf_score, mse 
 
-def read_from_excelsheets(erp_file: str = None ) -> List[DataFrame]: 
-    
-    """ Read all Excelsheets and build a list of dataframe of all sheets.
-   
-    :param erp_file:
-        Excell workbooks containing `erp` profile data.
-    :return: A list composed of the name of `erp_file` at index =0 and the 
-            datataframes.
-    """
-    
-    allfls:Dict [str, Dict [T, List[T]] ] = pd.read_excel(
-        erp_file, sheet_name=None)
-    
-    list_of_df =[os.path.basename(os.path.splitext(erp_file)[0])]
-    for sheets , values in allfls.items(): 
-        list_of_df.append(pd.DataFrame(values))
 
-    return list_of_df 
 
 def write_excel(
         listOfDfs: List[DataFrame],
@@ -891,9 +877,9 @@ def dumpOrSerializeData (data , filename=None, savepath =None, to=None):
         
     if savepath is not None:
         try : 
-            savepath = FU.savepath_ (savepath)
+            savepath = savepath_ (savepath)
         except : 
-            savepath = FU.savepath_ ('_dumpedData_')
+            savepath = savepath_ ('_dumpedData_')
         try:
             shutil.move(filename, savepath)
         except :
@@ -999,7 +985,7 @@ def _assert_sl_target (target,  df=None, obj=None):
     is_dataframe = isinstance(df, pd.DataFrame)
     is_ndarray = isinstance(df, np.ndarray)
     if is_dataframe :
-        targets = FU.smart_format(
+        targets = smart_format(
             df.columns if df.columns is not None else [''])
     else:targets =''
     if target is None:

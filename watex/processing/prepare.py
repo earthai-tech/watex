@@ -4,36 +4,54 @@
 # released under a MIT- licence.
 #Created on Wed Sep 22 15:04:52 2021
 #@author: @Daniel03
-
+from __future__ import annotations 
 import os
 import inspect
 import warnings
-from typing import TypeVar
 from pprint import pprint
 
 import numpy as np
 import pandas as pd 
 from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline, FeatureUnion 
+from sklearn.pipeline import (
+    Pipeline,
+    FeatureUnion 
+ )
 from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import (OrdinalEncoder, 
-                                   OneHotEncoder,
-                                   LabelBinarizer,
-                                   LabelEncoder) 
-
+from sklearn.preprocessing import (
+    OrdinalEncoder, 
+    OneHotEncoder,
+    LabelBinarizer,
+    LabelEncoder
+) 
+from .._typing import (
+    Tuple, 
+    List, 
+    Optional, 
+    T, 
+    F, 
+    Array, 
+    NDArray, 
+    DataFrame, 
+    Series, 
+    Array, 
+    )
 from ..analysis.__init__ import PD_READ_FEATURES
 from ..analysis.basics import categorize_flow
 from ..utils._watexlog import watexlog
-from .transformers import (DataFrameSelector,
-                            CombinedAttributesAdder, 
-                            CategorizeFeatures,
-                            StratifiedWithCategoryAdder)
+from .transformers import (
+    DataFrameSelector,
+    CombinedAttributesAdder, 
+    CategorizeFeatures,
+    StratifiedWithCategoryAdder
+)
+
 import watex.hints as HI 
-import watex.utils.ml_utils as MLU
-import watex.utils.func_utils as FCU
+import watex.utils.mlutils as MLU
+import watex.utils.funcutils as FCU
 import watex.utils.exceptions as Wex
 
-T= TypeVar('T', list, tuple)
+
 _logger = watexlog().get_watex_logger(__name__)
 
 DEFAULT_PATH = 'data/geo_fdata'
@@ -41,7 +59,7 @@ DEFAULT_FILENAME = 'main.bagciv.data.csv'
 
 
 class BasicSteps(object): 
-    """ Prepare the Data for preparation steps.
+    """ Default Data  preparation steps.
     
     Apply method `fit` and `transform` or `fit_transform`.
     
@@ -140,20 +158,20 @@ class BasicSteps(object):
     """
     
     def __init__(self,
-                 data=None, 
-                 target =None, 
+                 data: NDArray | DataFrame = None, 
+                 target: Optional [str] = None, 
                  return_all=True,
-                 drop_features=None, 
-                 categorizefeature_props =None,
-                 add_attributes =True, 
-                 attributes_ix =None, 
-                 imputer_strategy ='median', 
-                 missing_values =np.nan, 
-                 pipeline =None,
-                 test_size=0.2,
-                 hash=False,
-                 random_state=42,
-                 verbose=0,
+                 drop_features: Optional[List [str]] = None, 
+                 categorizefeature_props: Tuple [str, List[int, str]] = None,
+                 add_attributes: bool = True, 
+                 attributes_ix: List[Tuple[int]]= None, 
+                 imputer_strategy: str ='median', 
+                 missing_values: float | int  = np.nan, 
+                 pipeline: Optional[F] = None,
+                 test_size: float = 0.2,
+                 hash: bool = False,
+                 random_state: int = 42,
+                 verbose: int =0,
                  **kwargs):
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         

@@ -4,10 +4,9 @@
 #   Licence: MIT Licence 
 
 from __future__ import annotations 
-
 import copy 
-from scipy.signal import argrelextrema 
 
+from scipy.signal import argrelextrema 
 import numpy as np
 import pandas as pd 
 import  matplotlib.pyplot as plt 
@@ -28,17 +27,16 @@ from .._typing import (
     SP
 )
 
-from .decorator import deprecated 
 from ._watexlog import watexlog
-from .func_utils import (
-                         _assert_all_types, 
-                         drawn_boundaries, 
-                         fmt_text, 
-                         find_position_from_sa , 
-                         find_feature_positions
+from .funcutils import (
+    _assert_all_types, 
+    drawn_boundaries, 
+    fmt_text, 
+    find_position_from_sa , 
+    find_feature_positions
                          
-                         )
-
+)
+from .decorators import deprecated 
 
 _logger =watexlog.get_watex_logger(__name__)
 
@@ -199,7 +197,7 @@ def shape_ (
         
         "V", "U", "W", "M", "K", "C", and "H"
     
-    the `shape` consists to feed the algorithm with the |ERP| resistivity 
+    The `shape` consists to feed the algorithm with the |ERP| resistivity 
     values by specifying the station :math:`$(S_{VES})$`. Indeed, 
     mostly, :math:`$S_{VES}$` is the station with a very low resistivity value
     expected to be the drilling location. 
@@ -211,9 +209,9 @@ def shape_ (
     :Example: 
         >>> import numpy as np 
         >>> rang = random.RandomState(42)
-        >>> from watex.utils.exmath import _shape 
+        >>> from watex.utils.exmath import shape_ 
         >>> test_array1 = np.arange(10)
-        >>> _shape (test_array1)
+        >>> shape_ (test_array1)
         ...  'C'
         >>> test_array2 = rang.randn (7)
         >>> _shape(test_array2)
@@ -243,11 +241,12 @@ def shape_ (
     cz = _assert_all_types( cz , tuple, list, np.ndarray) 
     cz = np.array(cz)
     # detect the staion position index
-    if s is (None or Ellipsis ): s_index = np.argmin(cz)
+    if s is (None or ... ): s_index = np.argmin(cz)
     elif s is not None: 
-        if isinstance(str): 
-            s_index, = detect_station_position(s,**kws)  
+        if isinstance(s, str): 
+            s_index,*_ = detect_station_position(s,**kws)  
         else : s_index= _assert_all_types(s, int)
+        
     lbound , rbound = cz[:s_index +1] , cz[s_index :]
     ls , rs = lbound[0] , rbound [-1] # left side and right side (s) 
     lminls, = argrelextrema(lbound, np.less)
@@ -281,7 +280,6 @@ def shape_ (
     return shape 
     
 
-
 def _correct_positions (p): 
     """ Correct stations locations and return dipole-length and new positions 
     corrected. 
@@ -299,7 +297,7 @@ def __sves__ (
         s_index: int  , 
         cz: Array | List[float], 
 ) -> Tuple[Array, Array]: 
-    """ Divided the conductive zone in lefzone and righzone from 
+    """ Divided the conductive zone in leftzone and rightzone from 
     the drilling location index . 
     
     :param s_index - station location index expected for dilling location. 
@@ -334,8 +332,6 @@ def __sves__ (
     return (rho_ls, side), (rmax_ls , rmax_rs )
 
 
-
-
 def detect_station_position (
         s : Union[str, int] ,
         p: Array|List [float] , 
@@ -345,7 +341,7 @@ def detect_station_position (
     :param s: str, int - Station location  in the position array. It should 
         be the positionning of the drilling location. If the value given
          is type string. It should be match the exact position to 
-         locate the drilling. Otherwize, if the value given is in float or 
+         locate the drilling. Otherwise, if the value given is in float or 
          integer type, it should be match the index of the position array. 
          
     :param p: Array-like - Should be the  conductive zone as array of 
@@ -380,6 +376,7 @@ def detect_station_position (
             s=int(s)
         except : 
             raise ValueError (f'could not convert string to float: {S}')
+            
     p = np.array(p, dtype = np.int32)
     dl = (p.max() - p.min() ) / (len(p) -1) 
     if isinstance(s, (int, float)): 
@@ -416,7 +413,7 @@ def detect_station_position (
     
 def sfi_ (
         cz: Sub[Array[T, DType[T]]] | List[float] ,
-        p: Sub[SP[Array, DType [int]]] | List [int]= None, 
+        p: Sub[SP[Array, DType [int]]] | List [int] = None, 
         s: Optional [str] =None, 
         dipolelength: Optional [float] = None, 
         plot: bool = False,
@@ -487,6 +484,12 @@ def sfi_ (
     if p is None :
         dipolelength = 10. if dipolelength is  None else dipolelength  
         p = np.arange (0, len(cz) * dipolelength, dipolelength)
+   
+    if len(p) != len(cz): 
+        raise Wex.StationError (
+            'Array of position and conductive zone must have the same length:'
+            f' `{len(p)}` and `{len(cz)}` were given.')
+        
     minl, = argrelextrema(cz, np.less)
     maxl, = argrelextrema(cz,np.greater)
     ixf = len(minl) + len(maxl)
@@ -538,9 +541,9 @@ def sfi_ (
     
     with np.errstate(all='ignore'):
         # $\sqrt2# is the threshold 
-        sfi = np.sqrt ( (pw/pw_star)**2 + (ma / ma_star )**2 ) % np.sqrt(2)
+        sfi = np.sqrt ( (pw_star/pw)**2 + (ma_star / ma )**2 ) % np.sqrt(2)
         if sfi == np.inf : 
-            sfi = np.sqrt ( (pw_star/pw)**2 + (ma_star / ma )**2 ) % np.sqrt(2)
+            sfi = np.sqrt ( (pw/pw_star)**2 + (ma / ma_star )**2 ) % np.sqrt(2)
  
     if plot: 
         plot_(p,cz,'-ok', xn, yn, raw = raw , **plotkws)
@@ -794,20 +797,20 @@ def define_conductive_zone (
         elif sres is not None: 
             snix, = np.where(erp==sres)
             if len(snix)==0: 
-                raise Wex.WATexError_parameter_number(
+                raise Wex.ParameterNumberError(
                     "Could not  find the resistivity value of the VES "
                     "station. Please provide the right value instead.") 
                 
             elif len(snix)==2: 
                 stn = int(snix[0]) + 1
         else :
-            raise Wex.WATexError_inputarguments(
+            raise Wex.ArgumentError (
                 '`stn` is needed or at least provide the survey '
                 'dipole length and the distance from the first '
                 'station to the VES station. ')
             
     if erp.size < stn : 
-        raise Wex.WATexError_parameter_number(
+        raise Wex.StationError(
             f"Wrong station number =`{stn}`. Is larger than the "
             f" number of ERP stations = `{erp.size}` ")
     
@@ -1219,7 +1222,7 @@ def compute_magnitude(rhoa_max=None , rhoa_min=None, rhoaMinMax=None):
         rhoa_max= np.array(rhoaMinMax).max()
         
     if rhoaMinMax is None and (rhoa_min  is None or rhoa_min is None) : 
-        raise Wex.WATexError_parameter_number(
+        raise Wex.ParameterNumberError(
             'Could not compute the anomaly magnitude. Provide at least'
             'the anomaly resistivy value boundaries or the buttom(`rhoa_min`)'
              'and the top(`rhoa_max`) boundaries.')
