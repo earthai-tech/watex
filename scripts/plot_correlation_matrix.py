@@ -7,7 +7,7 @@ Created on Tue Aug 24 17:08:09 2021
 .. synopsis:: Method to quick plot the qualitatif and quantitatives parameters. 
 """
 
-from watex.viewer.plot import QuickPlot
+from watex.view.plot import QuickPlot
 from watex.datasets import fetch_data 
 
 # fetch the bagoue test dataframe  with textlabel

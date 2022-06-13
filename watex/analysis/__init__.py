@@ -5,15 +5,8 @@ import warnings
 import subprocess 
 import pandas as pd
 
-from watex.utils._watexlog import watexlog
+from watex.tools._watexlog import watexlog
   
-PD_READ_FEATURES ={
-                    ".csv":pd.read_csv, 
-                     ".xlsx":pd.read_excel,
-                     ".json":pd.read_json,
-                     ".html":pd.read_json,
-                     ".sql" : pd.read_sql
-                     }  
 
 SUCCES_IMPORT_CHARTSTUDIO=False 
 

@@ -2,11 +2,7 @@
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Jul  7 22:23:02 2021 hz
 # This module is part of the WATex core package, which is released under a
 # MIT- licence.
-"""
-Created on Wed Jul  7 22:23:02 2021
 
-@author: @Daniel03
-"""
 import os
 import warnings 
 from .._typing import (
@@ -18,8 +14,8 @@ from .._typing import (
 import numpy as np 
 import pandas as pd
 
-from ..utils._watexlog import watexlog  
-import watex.utils.exceptions as Wex
+from ..tools._watexlog import watexlog  
+import watex.tools.exceptions as Wex
 
 _logger =watexlog().get_watex_logger(__name__)
 

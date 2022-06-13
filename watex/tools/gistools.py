@@ -656,7 +656,8 @@ _ellipsoid = [
 # Defense Mapping Agency. 1987b. DMA Technical Report: Supplement to Department of Defense World Geodetic System
 # 1984 Technical Report. Part I and II. Washington, DC: Defense Mapping Agency
 
-# @deprecated("This function may be removed in later release. mtpy.utils.gis_tools.project_point_ll2utm() should be "
+# @deprecated("This function may be removed in later release."
+#             " watex.utils.gistools.project_point_ll2utm() should be "
 #             "used instead.")
 def ll_to_utm(reference_ellipsoid, lat, lon):
     """

@@ -4,19 +4,26 @@
 # released under a MIT- licence.
 import warnings
 
-from .property  import BagoueNotes
-from .utils._watexlog import watexlog
-from ..utils.ml_utils import loadDumpedOrSerializedData
+from ..property  import BagoueNotes
+from ..tools._watexlog import watexlog
+from ..tools.mlutils import  ( 
+    loadDumpedOrSerializedData, 
+    format_generic_obj, 
+    )
+from ..exceptions import DatasetError
+
 __logger = watexlog().get_watex_logger(__name__)
 
 try:
-    from watex.datasets.config import (data,
-                                    X, y,
-                                    X0, y0,
-                                    XT, yT, 
-                                    X_prepared, y_prepared,
-                                    _X,_pipeline, 
-                                    df0, df1)
+    from .config import (
+        data,
+        X, y,
+        X0, y0,
+        XT, yT, 
+        X_prepared, y_prepared,
+        _X,_pipeline, 
+        df0, df1
+        )
 except : 
     
     __logger.debug("None Config file detected. Be aware that you will not able "
@@ -50,20 +57,21 @@ def fetch_data(param):
         __logger.info('Fetching the Bagoue original data. Returns a dictionnary '
                       ' of area description, attributes and contest details.')
         
-        return {'COL_NAMES': data.columns, 
-                'DESCR':'https://doi.org/10.5281/zenodo.5571534: bagoue-original',
-                'data': data.values, 
-                'data=df':data, 
-                'data=dfy1':df1, 
-                'data=dfy2':df0,
-                'attrs-infos':BagoueNotes.bagattr_infos, 
-                'dataset-contest':{
-                    '__documentation:':'`~watex.utils.infos.BagoueNotes.__doc__`', 
-                    '__area':'https://en.wikipedia.org/wiki/Ivory_Coast', 
-                    '__casehistory':'https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG',
-                    '__wikipages':'https://github.com/WEgeophysics/watex/wiki',
-                    },
-                'tags':BAGOUE_TAGS
+        return {
+            'COL_NAMES': data.columns, 
+            'DESCR':'https://doi.org/10.5281/zenodo.5571534: bagoue-original',
+            'data': data.values, 
+            'data=df':data, 
+            'data=dfy1':df1, 
+            'data=dfy2':df0,
+            'attrs-infos':BagoueNotes.bagattr_infos, 
+            'dataset-contest':{
+                '__documentation:':'`~watex.utils.infos.BagoueNotes.__doc__`', 
+                '__area':'https://en.wikipedia.org/wiki/Ivory_Coast', 
+                '__casehistory':'https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG',
+                '__wikipages':'https://github.com/WEgeophysics/watex/wiki',
+                },
+            'tags':BAGOUE_TAGS
                 }
     
     elif param.lower().find('stratified')>=0: 
@@ -102,13 +110,11 @@ def fetch_data(param):
         return _X, y_prepared 
     
     else : 
-        from ..utils.exceptions import WATexError_datasets
-        from ..hints import format_generic_obj 
-        
-        raise WATexError_datasets('Arguments ~`{0}` not found in default tags:'
-                                  ' {1}. Unable to fetch data.'.format(param, 
-                                format_generic_obj (BAGOUE_TAGS)).format(
-                                    *list(BAGOUE_TAGS)))
+        raise DatasetError(
+            'Arguments ~`{0}` not found in default tags:'
+             ' {1}. Unable to fetch data.'.format(param, 
+              format_generic_obj (BAGOUE_TAGS)).format(
+                *list(BAGOUE_TAGS)))
     
 def loadingdefaultSerializedData (f, d0, dtype ='test'): 
     """ Retrive Bagoue data from dumped or Serialized file.

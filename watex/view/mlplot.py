@@ -9,22 +9,29 @@ import re
 import warnings
 import inspect 
 from abc import ABCMeta 
-from typing import Generic, TypeVar, Iterable
- 
+
 import numpy as np 
 import pandas as pd
 import matplotlib as mpl 
 import  matplotlib.pyplot  as plt
 # from matplotlib.lines import Line2D 
 
-from ..utils._watexlog import watexlog
-from ..analysis.basics import categorize_flow 
+from ..typing import ( 
+    Generic,
+    TypeVar, 
+    Iterable
+    )
+from ..tools._watexlog import watexlog
+from ..tools.funcutils import categorize_flow 
 from ..analysis.dimensionality import Reducers
-from ..metrics import (precision_recall_tradeoff, 
-                       ROC_curve, confusion_matrix_) 
-import watex.utils.exceptions as Wex
-import watex.utils.decorator as deco
+from ..metrics import (
+    precision_recall_tradeoff, 
+    ROC_curve,
+    confusion_matrix_
+    ) 
 
+import watex.exceptions as Wex
+import watex.tools.decorators as deco
 T=TypeVar('T')
 V=TypeVar('V', list, tuple, dict)
 Array =  Iterable[float]
@@ -948,7 +955,7 @@ class MLPlots:
         
         Since there is geographical information(latitude/longitude or
          eating/northing), itis a good idea to create a scatterplot of 
-        all instances to visaulize data.
+        all instances to visualize data.
         
         Parameters
         ---------
@@ -1166,7 +1173,7 @@ class MLPlots:
         --------
         
             >>> from sklearn.svm import SVC 
-            >>> from watex.viewer.mlplot import MLPlots
+            >>> from watex.view.mlplot import MLPlots
             >>> from watex.datasets import fetch_data 
             >> X,y = fetch_data('Bagoue dataset prepared')
             >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', 
@@ -1336,7 +1343,7 @@ class MLPlots:
         --------
         
             >>> from sklearn.svm import SVC 
-            >>> from watex.viewer.mlplot import MLPlots 
+            >>> from watex.view.mlplot import MLPlots 
             >>> from watex.datasets import fetch_data 
             >>> X,y = fetch_data('Bagoue dataset prepared')
             >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
@@ -1811,7 +1818,7 @@ def plot_matshow(self, matrix, x_label=None, y_label=None, **matshow_kws):
     Example
     -------
     >>> import numpy as np
-    >>> import watex.viewer.plot.mlplot as WPL 
+    >>> import watex.view.mlplot as WPL 
     >>>  matshow_kwargs ={
         'aspect': 'auto',
         'interpolation': None 
@@ -1900,7 +1907,7 @@ if __name__=='__main__':
     # from sklearn.linear_model import SGDClassifier
     # from sklearn.ensemble import RandomForestClassifier
     from watex.datasets import fetch_data 
-    import  watex.utils.ml_utils as mfunc
+    import  watex.tools.mlutils as mfunc
     df = mfunc.load_data('data/geo_fdata')
     X,_ = fetch_data('Bagoue stratified sets')
     X_,_= fetch_data('test sets')

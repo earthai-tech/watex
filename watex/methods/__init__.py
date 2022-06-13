@@ -1,3 +1,6 @@
 
-from .electrical import ResistivityProfiling 
+from .electrical import (
+    ResistivityProfiling ,
+    VerticalSounding
+)
 from .csamt import CSAMT 

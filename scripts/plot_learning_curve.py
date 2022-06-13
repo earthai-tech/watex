@@ -10,7 +10,7 @@ Created on Tue Sep 21 15:29:13 2021
 """
 from sklearn.svm import SVC
 
-from watex.modeling.basics import SLModeling
+from watex.bases.modeling import BaseModel
 # modules below are imported for testing scripts.
 # Not usefull to import at least  you provide your own dataset.
 from watex.datasets import fetch_data 
@@ -59,7 +59,7 @@ switch_plot='on'
 autoPreprocessing =False 
 
 #call get_validation method drom processing Object 
-processObj = SLModeling(
+processObj = BaseModel(
                     data_fn =datafn, 
                     df = df, 
                     **modeling_kws

@@ -12,33 +12,28 @@ from pprint import pprint
 
 import numpy as np
 import pandas as pd 
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import (
+
+from ..sklearn import  (
     Pipeline,
-    FeatureUnion 
- )
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import (
+    FeatureUnion, 
+    SimpleImputer, 
+    StandardScaler,
     OrdinalEncoder, 
     OneHotEncoder,
     LabelBinarizer,
     LabelEncoder
 ) 
-from .._typing import (
+from ..typing import (
     Tuple, 
     List, 
     Optional, 
-    T, 
     F, 
-    Array, 
     NDArray, 
     DataFrame, 
-    Series, 
-    Array, 
     )
-from ..analysis.__init__ import PD_READ_FEATURES
-from ..analysis.basics import categorize_flow
-from ..utils._watexlog import watexlog
+
+# from ..analysis import categorize_flow
+from ..tools._watexlog import watexlog
 from .transformers import (
     DataFrameSelector,
     CombinedAttributesAdder, 
@@ -46,19 +41,17 @@ from .transformers import (
     StratifiedWithCategoryAdder
 )
 
-import watex.hints as HI 
-import watex.utils.mlutils as MLU
-import watex.utils.funcutils as FCU
-import watex.utils.exceptions as Wex
-
-
+from ..tools import ( 
+    mlutils as MLU, 
+    funcutils as FCU, 
+   )
+import watex.exceptions as Wex
 _logger = watexlog().get_watex_logger(__name__)
 
 DEFAULT_PATH = 'data/geo_fdata'
 DEFAULT_FILENAME = 'main.bagciv.data.csv'
-
-
-class BasicSteps(object): 
+ 
+class BaseSteps(object): 
     """ Default Data  preparation steps.
     
     Apply method `fit` and `transform` or `fit_transform`.
@@ -239,7 +232,7 @@ class BasicSteps(object):
                 self.drop_features=[ self.drop_features]
                 
             self._logging.info('Dropping useless features {0}'.format(
-                HI.format_generic_obj(self.drop_features)).format(
+                MLU.format_generic_obj(self.drop_features)).format(
                     *self.drop_features))
             
             X.drop(self.drop_features, inplace =True, axis =1)
@@ -296,7 +289,7 @@ class BasicSteps(object):
             elif self.attributes_ix is  not None:
                 try:
                     self._logging.info('Experiencing combinaisons attributes'
-                                      ' {0}.'.format(HI.format_generic_obj(
+                                      ' {0}.'.format(MLU.format_generic_obj(
                                           self.attributes_ix)).format(
                                               *self.attributes_ix))
                 except : 
@@ -544,7 +537,7 @@ class BasicSteps(object):
                     f"The given y categories are `{np.unique(ycat)}`",
                     f" and should be converted to text values = {ytext}"])
        
-                df0[self.target]= categorize_flow(
+                df0[self.target]= FCU.categorize_flow(
                 target_array= df0[self.target], 
                 flow_values =ycat, classes=ytext)
                 
@@ -576,6 +569,14 @@ class BasicSteps(object):
         :return: 
             object data.
         """
+        PD_READ_FEATURES ={
+            ".csv":pd.read_csv, 
+              ".xlsx":pd.read_excel,
+              ".json":pd.read_json,
+              ".html":pd.read_json,
+              ".sql" : pd.read_sql
+        }
+        
         key_read = list(PD_READ_FEATURES.keys())
         
         if read_default_file: 
@@ -586,7 +587,7 @@ class BasicSteps(object):
             raise Wex.WATexError_file_handling(
                 'None file detected. NoneType can not be read.'
                 ' Could only read {0}'.format(
-                    HI.format_generic_obj(key_read)).format(
+                    MLU.format_generic_obj(key_read)).format(
                         *key_read)
                 )
         
@@ -595,7 +596,7 @@ class BasicSteps(object):
             raise Wex.WATexError_file_handling(
                 'Unrecognized file Type. Unable to read the file {0}.'
                 ' Only types {1} could be read. Please Check your right file.'
-                .format(data_fn,HI.format_generic_obj(key_read).format(
+                .format(data_fn,MLU.format_generic_obj(key_read).format(
                     *key_read) ))
 
         return PD_READ_FEATURES[_fex](data_fn)

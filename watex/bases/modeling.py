@@ -3,36 +3,46 @@
 # This module is part of the WATex modeling package, which is released under a
 # MIT- licence.
 
-from __future__ import print_function, division 
+from __future__ import ( 
+    print_function,
+    division 
+)
+
 import warnings 
 import numpy as np 
 import pandas as pd 
-from typing import TypeVar, Generic, Iterable , Dict 
-from typing import Callable, Optional, Union #,Sequence, 
 
-from sklearn.pipeline import make_pipeline 
-from sklearn.model_selection import validation_curve#, cross_val_score
-from sklearn.model_selection import RandomizedSearchCV,  GridSearchCV
-from sklearn.inspection import permutation_importance
-from sklearn.model_selection import learning_curve 
-from sklearn.metrics import confusion_matrix #, classification_report 
-# from sklearn.model_selection import train_test_split 
-# from sklearn.model_selection import GroupKFold 
-# from sklearn.metrics import mean_squared_error, f1_score 
+from ..typing import ( 
+    T, 
+    Generic,
+    Iterable , 
+    Dict ,
+    Callable,
+    Optional,
+    Union 
+  )
+from ..sklearn import ( 
+    make_pipeline, 
+    validation_curve, 
+    RandomizedSearchCV, 
+    GridSearchCV, 
+    learning_curve, 
+    permutation_importance, 
+    confusion_matrix
+    )
+from .processing import Processing 
+from ..tools.mlutils import formatModelScore 
+from ..tools._watexlog import watexlog 
+import  watex.exceptions as Wex 
+import  watex.tools.decorators as deco
 
-from ..processing.basics import Processing #, d_estimators__ 
-from .. import hints 
-from ..utils._watexlog import watexlog 
-import  watex.utils.exceptions as Wex 
-import  watex.utils.decorator as deco
 
-T= TypeVar('T', float, int, str)
 _logger =watexlog().get_watex_logger(__name__)
 
 
-class SLModeling: 
+class BaseModel: 
     """
-    Modeling class. The most interesting and challenging part of modeling 
+    Base model class. The most interesting and challenging part of modeling 
     is the `tuning hyperparameters` after designing a composite estimator. 
     Getting the best params is a better way to reorginize the created pipeline 
     `{transformers +estimators}` so to have a great capability 
@@ -77,13 +87,13 @@ class SLModeling:
      
     :Example: 
         
-        >>> from watex.modeling.basics import SLModeling
+        >>> from watex.bases.modeling import BaseModel
         >>> from sklearn.preprocessing import RobustScaler,  PolynomialFeatures 
         >>> from sklearn.feature_selection import SelectKBest, f_classif 
         >>> from sklearn.ensemble import RandomForestClassifier
         >>> from sklearn.compose import make_column_selector 
         >>> estimator2= RandomForestClassifier()
-        >>> modelObj = SLModeling(
+        >>> modelObj = BaseModel(
         ...     data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
         ...     pipelines = {
         ...            'num_column_selector_': make_column_selector(
@@ -211,7 +221,7 @@ class SLModeling:
             self._model_score = self.model_.score(self.X_test, self.y_test) 
 
             try : 
-                hints.formatModelScore(self._model_score,
+                formatModelScore(self._model_score,
                                        self.Processing._estimator_name)
             except: 
                 self._logging.debug(
@@ -680,7 +690,7 @@ class SLModeling:
 
         try : 
             print("Accuracy on test data:")
-            hints.formatModelScore(self.estimator.score(
+            formatModelScore(self.estimator.score(
                                         self.X_test, self.y_test),
                                        self.estimator.__class__.__name__)
         except AttributeError as e: 

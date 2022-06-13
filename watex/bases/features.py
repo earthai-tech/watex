@@ -3,35 +3,43 @@
 # This module is part of the WATex core package, which is released under a
 # MIT- licence.
 
-"""
- .. Synopsis: Module features collects geo-electricals features computed from 
-     :class:`watex.core.erp.ERP` and :class:`watex.core.ves.VES` and keeps 
-     on a new dataFrame for analysis and modeling. 
-     
-Created on Mon Jul  5 16:51:14 2021
-
-@author: @Daniel03
-
-"""
 from __future__ import print_function 
+
 import os
 import re 
 import pandas as pd 
-import json 
 import numpy as np 
-import pandas as pd 
 import xml.etree.ElementTree as ET
 
-from .erp import ERP_collection 
-from .ves import VES_collection 
-from .geology import Geology, Borehole 
-from ..utils.__init__ import savepath as savePath 
-from ..utils.decorator import writef 
-import  watex.utils.exceptions as Wex
-import watex.utils.gis_tools as gisf 
-# import watex.utils.tricks as wfunc
-import watex.utils.gis_tools as gis
-from watex.utils._watexlog import watexlog 
+from ..tools.funcutils import  ( 
+    savepath_ , 
+    sanitize_fdataset, 
+    categorize_flow, 
+    )
+    
+from ..typing import ( 
+    Iterable,
+    T
+    )
+
+from .basis import  ( 
+    exportdf, 
+    ) 
+
+from ..tools.decorators import writef 
+import  watex.exceptions as Wex
+import watex.tools.gistools as gisf 
+from watex.tools._watexlog import watexlog 
+
+_logger =watexlog().get_watex_logger(__name__)
+
+PD_READ_FEATURES={
+    ".csv":pd.read_csv, 
+     ".xlsx":pd.read_excel,
+     ".json":pd.read_json,
+     ".html":pd.read_json,
+     ".sql" : pd.read_sql
+} 
 
 __docformat__='restructuredtext'
 
@@ -155,7 +163,7 @@ class GeoFeatures:
         construction."""
         
         if not os.path.isfile(features_fn): 
-            raise Wex.WATexError_file_handling(
+            raise Wex.FileHandlingError (
                 'No file detected. Could read `{0}`,`{1}`,`{2}`,'
                 '`{3}` and `{4}`files.'.format(*list(self.readFeafmt.keys())))
         
@@ -556,7 +564,7 @@ class GeoFeatures:
         ndf['id'] =self.site_names 
         
         if self.savepath is None :
-            self.savepath = savePath(modname)
+            self.savepath = savepath_(modname)
             
         return ndf, self.to,  self.refout,\
             self.savepath, writeindex
@@ -641,7 +649,367 @@ class ID:
         return self.select_ 
 
                     
+class FeatureInspection: 
+    """ 
+    This class summarizes supervised learning methods inspection. It  
+    deals with data features categorization, when numericall values is 
+    provided standard anlysis either `qualitatif` or `quantitatives analyis`. 
+    
+    Arguments: 
+    ---------
+        *dataf_fn*: str 
+            Path to analysis data file. 
+        *df*: pd.Core.DataFrame 
+                Dataframe of features for analysis . Must be contains of 
+                main parameters including the `target` pd.Core.series 
+                as columns of `df`. 
+ 
+    
+    Holds on others optionals infos in ``kwargs`` arguments: 
+       
+    ============  ========================  ===================================
+    Attributes              Type                Description  
+    ============  ========================  ===================================
+    df              pd.core.DataFrame       raw container of all features for 
+                                            data analysis.
+    target          str                     Traget name for superving learnings
+                                            It's usefull to  for clearly  the 
+                                            name.
+    flow_classes    array_like              How to classify the flow?. Provided 
+                                            the main specific values to convert 
+                                            numerical value to categorial trends.
+    slmethod        str                     Supervised learning method name.The 
+                                            methods  can be:: 
+                                            - Support Vector Machines ``svm``                                      
+                                            - Kneighbors: ``knn` 
+                                            - Decision Tree: ``dtc``. 
+                                            The *default* `sl` is ``svm``. 
+    sanitize_df     bool                    Sanitize the columns name to match 
+                                            the correct featureslables names
+                                            especially in groundwater 
+                                            exploration.
+    drop_columns    list                    To analyse the data, you can drop 
+                                            some specific columns to not corrupt 
+                                            data analysis. In formal dataframe 
+                                            collected straighforwardly from 
+                                            :class:`~features.GeoFeatures`,the
+                                            default `drop_columns` refer to 
+                                            coordinates positions as : 
+                                                ['east', 'north']
+    fn              str                     Data  extension file.                                        
+    ============  ========================  ===================================   
+    
+    :Example:
+        
+        >>> from watex.analysis.basics import SLAnalyses
+        >>> slObj =SLAnalyses(data_fn =' data/geo_fdata/BagoueDataset2.xlsx')
+        >>> sObj.df 
+        >>> sObj.
+    """
+    
+    def __init__(self, df =None , data_fn =None , **kws): 
+        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
+        
+      
+        self.data_fn = data_fn 
+        self._df =df 
+        self._target =kws.pop('target', 'flow')
+        self._set_index =kws.pop('set_index', False)
+        self._flow_classes=kws.pop('flow_classes',[0., 1., 3.])
+        self._slmethod =kws.pop('slm', 'svm')
+        self._sanitize_df = kws.pop('sanitize_df', True)
+        self._index_col_id =kws.pop('col_id', 'id')
+        self._drop_columns =kws.pop('drop_columns', ['east', 'north'])
+        
+        self._fn =None
+        self._df_cache =None 
+        
+        for key in list(kws.keys()): 
+            setattr(self, key, kws[key])
+            
+        if self.data_fn is not None or self._df is not None: 
+            self._dropandFlow_classifier()
+            
+    @property 
+    def target (self): 
+        """ Reterun the prediction learning target. Default is ``flow``. """
+        return self._target 
+    @target.setter 
+    def target(self, targ): 
+        """ Chech the target and must be in ``str``."""
+        if not isinstance(targ, str): 
+            raise Wex.WATexError_geoFeatures(
+                'Features `target` must be a str'
+                ' value not `{}`.'.format(type(targ)))
+        self._target =str(targ)
+    
+    @property 
+    def flow_classes(self): 
+        return self._flow_classes 
+    @flow_classes.setter 
+    def flow_classes(self, flowClasses:Iterable[float]): 
+        """ When targeting features is numerically considered, The `setter` 
+        try to classified into different classes provided. """
+        try: 
+            self._flow_classes = np.array([ float(ss) for ss in flowClasses])
+        except: 
+            mess ='`flow_classes` argument must be an `iterable` of '+\
+                '``float``values.'
+            if flowClasses is None : 
+                self._flow_classes =np.array([0.,  3.,  6., 10.])
+                self.logging.info (
+                    '`flowClasses` argument is set to default'
+                    ' values<{0},{1},{2} and {3} m3/h>.'.format(
+                        *list(self._flow_classes)))
+                
+            else: 
+                raise Wex.WATexError_inputarguments(mess)
+   
+        else: 
+            self._logging.info('Flow classes is successfully set.')
+            
+    @property 
+    def fn (self): 
+        """ Control the Feature-file extension provide. Usefull to select 
+        pd.DataFrame construction."""
+        return self._fn
+    
+    @fn.setter 
+    def fn(self, features_fn) :
+        """ Get the Features file and  seek for pd.Core methods 
+        construction."""
+        
+        if not os.path.isfile(features_fn): 
+            raise Wex.FileHandlingError(
+                'No file detected. Could read `{0}`,`{1}`,`{2}`,'
+                '`{3}` and `{4}`files.'.format(*list(PD_READ_FEATURES.keys())))
+        
+        self.gFname, exT=os.path.splitext(features_fn)
+        if exT in PD_READ_FEATURES.keys(): self._fn =exT 
+        else: self._fn ='?'
+        
+        self._df = PD_READ_FEATURES[exT](features_fn)
+    
+        self.gFname = os.path.basename(self.gFname)
+    
+    @property 
+    def df_cache(self): 
+        """ Generate cache `df_` for all eliminate features and keep on 
+        new pd.core.frame.DataFrame. """
+        return self._df_cache 
+        
+    @df_cache.setter 
+    def df_cache(self, cache: Iterable[T]): 
+        """ Holds the remove features and keeps on new dataframe """
+        try:
+            
+            temDict={'id': self._df['id'].to_numpy()}
+        except KeyError: 
+            # if `id` not in colums try 'name'
+            temDict={'id': self._df['name'].to_numpy()}
+            self._index_col_id ='name'
+            
+        temc=[]
+        if isinstance(cache, str): 
+            cache = [cache] 
+        elif isinstance(cache, (set,dict, np.ndarray)): 
+            cache=list(cache)
+            
+        if self._drop_columns is not None: 
+            if isinstance(self._drop_columns, str) :
+                self._drop_columns =[self._drop_columns]
+            cache = cache + self._drop_columns 
+            if isinstance(self._target, str): 
+                cache.append(self._target)
+            else : cache + list(self._target)
+        for cc in cache: 
+            if cc not in self._df.columns: 
+                temDict[cc]= np.full((self._df.shape[0],), np.nan)
+                temc.append(cc)
+            else: 
+                if cc=='id': continue # id is already in dict
+                temDict [cc]= self._df[cc].to_numpy()
+        
+        # check into the dataset whether the not provided features exists.
+        if self.data_fn is not None : 
+            # try: 
+            featObj = GeoFeatures(features_fn= self.data_fn)
+            # except: 
+            self._logging.error(
+                'Trouble occurs when calling `Features` class from '
+                '`~.core.features.GeoFeatures` module !')
+            # else: 
 
+            df__= featObj.df.copy(deep=True)
+            df__.reset_index(inplace= True)
+            
+            if 'id' in df__.columns: 
+                temDict['id_']= df__['id'].to_numpy()
+
+            if len(temc) !=0 : 
+                for ad in temc: 
+                    if ad in df__.columns: 
+                        temDict[ad]= df__[ad]
+         
+            
+        self._df_cache= pd.DataFrame(temDict)
+        
+        if 'id_' in self._df_cache.columns: 
+            self._df_cache.set_index('id_', inplace=True)
+       
+        
+    def _dropandFlow_classifier(self, data_fn =None, df =None ,
+                                target: str ='flow', 
+                                flow_cat_values: Iterable[float] =None, 
+                                set_index: bool = False, sanitize_df: bool =True,
+                                col_name: str =None, **kwargs): 
+        """
+        Main goals of this method is to classify the different flow classes
+         into four(04) considered as default values according to::
+            
+            CIEH. (2001). L’utilisation des méthodes géophysiques pour
+            la recherche d’eaux dans les aquifères discontinus. 
+            Série Hydrogéologie, 169.
+            
+        which mention 04 types of hydraulic according to the population 
+        target inhabitants. Thus:: 
+            - FR = 0 is for dry boreholes
+            - 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
+            - 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
+            - 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
+            
+        :Note: flow classes can be modified according 
+        to the type of hydraulic porposed for your poject. 
+        
+        :param df: Dataframe of features for analysis 
+        
+        :param set_index: Considered one column as dataframe index
+                        It set to ``True``, please provided the `col_name`, 
+                        if not will set the d efault value as ``id``
+        :param target:
+            
+            The target for predicting purposes. Here for groundwater 
+            exploration, we specify the target as ``flow``. Hower can be  
+            change for another purposes. 
+            
+        :param flow_cat_values: 
+            Different project targetted flow either for village hydraulic, 
+            or imporved village hydraulic  or urban hydraulics. 
+        
+        :param sanitize_df: 
+            When using straightforwardly `data_fn` in th case of groundwater  
+            exploration :class:erp`
+            
+        :Example:
+            
+            >>> from watex.analysis.basics import SLAnalyses
+            >>> slObj = SLAnalyses(
+            ...    data_fn='data/geo_fdata/BagoueDataset2.xlsx',
+            ...    set_index =True)
+            >>> slObj._df
+            >>> slObj.target
+
+        """
+        
+        drop_columns = kwargs.pop('drop_columns', None)
+        mapflow2c = kwargs.pop('map_flow2classes', True)
+        if col_name is not None: 
+            self._index_col_id= col_name 
+        
+        if flow_cat_values is not None: 
+            self.flow_classes = flow_cat_values 
+  
+        if data_fn is not None : 
+            self.data_fn  = data_fn 
+        if self.data_fn is not None : 
+            self.fn = self.data_fn 
+            
+        if df is not None: 
+            self._df =df 
+        if target is not None : self.target =target 
+        
+        if sanitize_df is not None : 
+            self._sanitize_df = sanitize_df
+        
+        if drop_columns is not None : 
+            # get the columns from dataFrame and compare to the given given 
+            if isinstance(drop_columns, (list, np.ndarray)): 
+                if  len(set(list(self._df.columns)).intersection(
+                        set(drop_columns))) !=len(drop_columns):
+                    raise Wex.WATexError_parameter_number(
+                        'Drop values are not found on dataFrame columns. '
+                        'Please provided the right names for droping.')
+            self._drop_columns = list(drop_columns) 
+            
+        if self.fn is not None : 
+             if self._sanitize_df is True : 
+                 self._df , utm_flag = sanitize_fdataset(self._df)
+        # test_df = self._df.copy(deep=True)
+        if self._drop_columns is not None :
+            if isinstance(self._drop_columns, np.ndarray): 
+                self._drop_columns = [l.lower() for
+                                      l in self._drop_columns.tolist()]
+        self.df = self._df.copy()
+        if self._drop_columns is not None: 
+            self.df = self.df.drop(self._drop_columns, axis =1)
+            
+        if mapflow2c is True : 
+  
+            self.df[self.target]= categorize_flow(
+                target_array= self.df[self.target], 
+                flow_values =self.flow_classes)
+  
+        if self._set_index :
+            # id_= [name  for name in self.df.columns if name =='id']
+            if self._index_col_id !='id': 
+                self.df=self.df.rename(columns = {self._index_col_id:'id'})
+                self._index_col_id ='id'
+                
+            try: 
+                self.df.set_index(self._index_col_id, inplace =True)
+            except KeyError : 
+                # force to set id 
+                self.df=self.df.rename(columns = {'name':'id'})
+                self._index_col_id ='id'
+                # self.df.set_index('name', inplace =True)
+
+        if self.target =='flow': 
+            self.df =self.df.astype({
+                             'power':np.float, 
+                             'magnitude':np.float, 
+                             'sfi':np.float, 
+                             'ohmS': np.float, 
+                              'lwi': np.float, 
+                              })  
+            
+    def writedf(self, df=None , refout:str =None,  to:str =None, 
+              savepath:str =None, modname:str ='_anEX_',
+              reset_index:bool =False): 
+        """
+        Write analysis `df`. 
+        
+        Refer to :doc:`watex.__init__.exportdf` for more details about 
+        the reference arguments ``refout``, ``to``, ``savepath``, ``modename``
+        and ``rest_index``. 
+        
+        :Example: 
+            
+            >>> from watex.analysis.slfeatures import SLAnalyses 
+            >>> slObj =SLAnalyses(
+            ...   data_fn='data/geo_fdata/BagoueDataset2.xlsx',
+            ...   set_index =True)
+            >>> slObj.writedf()
+        
+        """
+        for nattr, vattr in zip(
+                ['df', 'refout', 'to', 'savepath', 'modname', 'reset_index'], 
+                [df, refout, to, savepath, modname, reset_index]): 
+            if not hasattr(self, nattr): 
+                setattr(self, nattr, vattr)
+                
+        exportdf(df= self.df , refout=self.refout,
+               to=self.to, savepath =self.savepath, 
+               reset_index =self.reset_index, modname =self.modname)
             
         
 if __name__=='__main__': 

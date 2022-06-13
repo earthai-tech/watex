@@ -3,6 +3,11 @@
 # Created on Thu May 19 13:40:53 2022 
 import warnings 
 
+
+from sklearn.base import(
+    BaseEstimator,
+    TransformerMixin
+)
 from sklearn.compose import ( 
     make_column_transformer, 
     make_column_selector 
@@ -19,28 +24,44 @@ from sklearn.feature_selection import (
 ) 
 
 from sklearn.impute import SimpleImputer
+from sklearn.inspection import permutation_importance
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import ( 
     confusion_matrix,
     classification_report ,
-    mean_squared_error 
-    #, f1_score,
+    mean_squared_error, 
+    f1_score,
+    precision_recall_curve, 
+    precision_score,
+    recall_score, 
+    roc_auc_score, 
+    roc_curve
 )  
 from sklearn.model_selection import ( 
     train_test_split , 
     validation_curve, 
-    StratifiedShuffleSplit 
+    StratifiedShuffleSplit , 
+    RandomizedSearchCV,
+    GridSearchCV, 
+    learning_curve , 
+    cross_val_score,
+    cross_val_predict 
 )
-
 from sklearn.neighbors import KNeighborsClassifier 
-from sklearn.pipeline import make_pipeline 
+from sklearn.pipeline import (
+    Pipeline, 
+    make_pipeline ,
+    FeatureUnion
+)
 from sklearn.preprocessing import (
     OneHotEncoder,
     PolynomialFeatures, 
     RobustScaler ,
     OrdinalEncoder, 
     StandardScaler,
-    MinMaxScaler
+    MinMaxScaler, 
+    LabelBinarizer,
+    LabelEncoder,
 ) 
 
 from sklearn.svm import SVC 

@@ -36,7 +36,7 @@ array_configuration ={
         )
     }
 
-    
+  
 utm_zone_designator ={
     'X':[72,84], 
     'W':[64,72], 
@@ -296,7 +296,7 @@ class P:
     ]
     
     resistivity_prefix = [
-        'rho','app','res'
+        'rho','app','res', 'se', 'sounding.values'
     ]
     erp_headll= [
         'station', 'resistivity',  'longitude','latitude',
@@ -304,6 +304,8 @@ class P:
     erp_headen= [
         'station', 'resistivity',  'easting','northing',
     ]
+    ves_head =['AB', 'MN', 'rhoa']
+    
     param_options = [
         ['bore', 'for'], 
         ['x','east'], 
@@ -336,34 +338,48 @@ class P:
         'geol', 
         'flow'
     ]
-   
+    
+    ves_props = dict (_AB= ['ab', 'ab/2', 'current.electrodes',
+                            'depth', 'thickness'],
+                      _MN=['mn', 'mn/2', 'potential.electrodes', 'mnspacing'],
+                      )
+    
     all_prefixes = { f'_{k}':v for k, v in zip (
-        erp_headll +erp_headen[2:] , [
+        erp_headll + erp_headen[2:] , [
             station_prefix,
             resistivity_prefix,
             lon_prefix,
             lat_prefix, 
             easting_prefix, 
             northing_prefix,
-            northing_prefix
+            northing_prefix, 
         ]
         )}
-
+    all_prefixes = {**all_prefixes , **ves_props} 
+    
     def __init__( self, hl =None ) :
         self.hl = hl
         for key , value in self.all_prefixes.items() : 
             self.__setattr__( key , value)
             
     
-    def _check_header_item (self, it ): 
-        """ Check whether the item exists in the property dictionnary."""
-        for k, val in self.idicttags.items(): 
+    def _check_header_item (self, it , kind ='erp'): 
+        """ Check whether the item exists in the property dictionnary.
+        Use param `kind` to select the type of header that the data must 
+        collected:: 
+            
+            kind ='erp' -> for Electrical Resistivity Profiling  
+            kind= 'ves'- > for Vertical Electrical Sounding 
+        """
+            
+        dict_ = self.idictcpr if kind =='ves' else self.idicttags
+        for k, val in dict_.items(): 
             for s in val : 
                 if str(it).lower().find(s)>=0: 
                     return k 
         return  
                 
-    def __call__(self, hl: list = None):
+    def __call__(self, hl: list = None , kind :str  ='erp'):
         """ Rename the given header to hold the  properties 
         header values. 
         
@@ -394,7 +410,7 @@ class P:
             self.hl = [self.hl] if isinstance(self.hl, str ) else self.hl
             if hasattr(self.hl, '__iter__'):
                 for item in self.hl : 
-                    v_.append( self._check_header_item(item)) 
+                    v_.append( self._check_header_item(item, kind)) 
                 v_=list(filter((None).__ne__, v_))
                 return None if len (v_) ==0 else v_
             
@@ -408,7 +424,8 @@ class P:
     @property 
     def idicttags (self): 
         """ Is the collection of data properties """ 
-        return  dict ( (k, v) for k, v in zip(self.isrll + self.isren[2:],
+        return  dict ( (k, v) for k, v in zip(
+            self.isrll + self.isren[2:],
               [self.istation, self.iresistivity, self.ilon, 
                 self.ilat, self.ieasting, self.inorthing ])
                       )
@@ -462,6 +479,20 @@ class P:
         Indeed, it keeps the traditional collections sheets
         during the survey. """
         return self.erp_headen
+    @property 
+    def icpr (self): 
+        """ Keep only the |VES| header data..."""
+        return [k.replace('_', '') 
+                for k in self.ves_props.keys() ] +['resistivity']
+    
+    @property 
+    def idictcpr (self): 
+        """ cpr stands for current-potentials and resistivity. They compose the
+        main property values when collected the vertical electrical sounding 
+        data."""
+        return {f'{k.replace("_", "")}': v  for k , v in {
+            **self.ves_props, **{'resistivity': self.iresistivity}}.items()}
+                
 
 class BagoueNotes: 
     """"

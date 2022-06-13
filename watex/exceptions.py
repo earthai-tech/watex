@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-
+class ArgumentError(Exception): 
+    pass 
 class SiteError(Exception): 
     pass 
 
-class ArgumentError(Exception): 
+class DatasetError(Exception): 
     pass 
 
 class EDIError(Exception):
@@ -78,6 +79,9 @@ class CoordinateError (Exception):
 
 class TopModuleError (Exception): 
     pass 
+class FitError (Exception): 
+    pass 
 
 class ScikitLearnImportError(Exception ): 
     pass 
+

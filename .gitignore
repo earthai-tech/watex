@@ -160,3 +160,5 @@ untitled2.py
 # ignore beka datafiles 
 data/beka/
 beka.py
+elo.py
+test_1.csv 

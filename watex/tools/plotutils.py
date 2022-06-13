@@ -4,14 +4,7 @@
 # see https://github.com/WEgeophysics/pyCSAMT  which is released under 
 # a LGPL- licence originally created on Tue Dec 29 19:18:44 2020
 # @author: ~alias @Daniel03
-"""
-.. _module-Plot_Utils:: `pycsamt.utils.plot_utils` 
-    :synopsis: helpers functions for visualization 
-    
-Created on Tue Dec 29 19:18:44 2020
 
-@author: @Daniel03
-"""
 import sys
 import re 
 import os
@@ -21,48 +14,14 @@ import matplotlib as mpl
 import matplotlib.cm as cm 
 import matplotlib.pyplot as plt
 
-from .utils.infos import _sensitive as SB
-from .utils import exceptions as Wex 
-from .utils.decorator import deprecated, redirect_cls_or_func
+from .tools import exceptions as Wex 
+from .tools.decorators import  ( 
+    deprecated, 
+    redirect_cls_or_func
+    )
 
 
-def find_path (path =None, ptol =0.7):
-    """
-    check path and return filepath , edipath or jpath .
-    
-    :param path: full  path  to `edi`, `avag` or `j` file or directory 
-    :type path: str 
-    
-    :param ptol:  tolerance that given by the program to judge if the number 
-                    of typical file [EDI|J] 
-                    to declare as path found is either "edipath" or "jpath" 
-                    if none ,return None . less or equal to 1.
-                    
-    :type ptol: float 
-    
-    :returns: specific path 
-    :rtype: str 
-    """
-    if path is None : raise Wex.WATexError_plot_tip(
-            'Can not find path to read.please provided a datapath . ')
-    if path is not None : 
-        if os.path.isfile (path) is True : return 'isfile'
-        elif os.path.isdir(path) is True :
-            if os.listdir(path) is not None : 
-                ex = [file for file in os.listdir(path) 
-                      if os.path.splitext(file)[1] =='.edi']
-                if len(ex)/len(os.listdir(path))>= ptol :return 'edipath'
-                elif len(ex)/len(os.listdir(path)) < ptol : 
-                    m=[]
-                    try : m= [file for file in os.listdir(path)
-                              if SB.which_file(
-                                      filename = os.path.join(path,
-                                                              file)) =='j' ]
-                    except : pass 
-                    if len(m)/len(os.listdir(path)) >= ptol :return 'jpath'
-                        
-        return 
-                
+            
 def get_stationid (stations ,  station_id) :  
     """
     Tip to get station id from user by input either integer of station name .
