@@ -55,7 +55,7 @@ Methods implemented are adressed to a particular problem in water exploration fi
 
 ## Licence 
 
-WATex-AI is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
+WATex is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
 
 ## Citation
 
