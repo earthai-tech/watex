@@ -11,20 +11,17 @@
 
 ##  Goals and Missions 
 
-WATex, originally, means WATer 💧 Exploration toolbox using Machine Learning Methods. So for short, concise
- and more objective, it become a `Machine Learning Research Toolbox in Hydrogeophysic`. 
+WATex💧, for short, is a `Machine Learning Research Toolbox in Hydrogeophysic`. 
  It is entirely written in Python with supplemental materials implemented in Jupyter notebook.
   The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** 
-   in Africa and secondly to participate in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) achievement.
+   and secondly to participate in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) achievement.
    It encompasses different geophysical methods from Electrical to Electromagnetic  
-    methods by mainly targeting the field of water explorations. Later, it expects to implement the near surface 
+    methods targeting the field of water explorations. Later, it expects to implement the near surface 
     seismic (e.g., for cavities groundwater detection) and the induced polarisation methods that is somewhat 
-    used in the hot water exploration. Furthermore, it is also intend to include pure Hydrogeology methods 
-    with the aid of other collaborators in that field. We expect to make WATex a useful tool entirely
-     focused to the groundwater exploration research domain.
-      
+    used in the hot water exploration. Furthermore, it is also intend to include pure Hydrogeology methods. 
+ 
 ## Methods Implemented
-Methods implemented are adressed to a particular problem in water exploration field. 
+Until now, the methods implemented are adressed to a particular problem in water exploration field. 
 
 **Learning**  
     -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
