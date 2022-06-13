@@ -205,8 +205,8 @@ def vesDataOperator(
     
     :Example: 
         
-        >>> from watex.utils.exmath import vesDataOperator
-        >>> from watex.utils.coreutils import vesSelector 
+        >>> from watex.tools.exmath import vesDataOperator
+        >>> from watex.tools.coreutils import vesSelector 
         >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx')
         >>> len(data)
         ... (32, 3) # include the potentiel electrode values `MN`
@@ -248,10 +248,12 @@ def vesDataOperator(
     # make copies 
     AB_ = AB.copy() ; rhoa_= rhoa.copy() 
     # find the duplicated values 
+    # with np.errstate(all='ignore'):
     mask = np.zeros_like (AB_, dtype =bool) 
     mask[np.unique(AB_, return_index =True)[1]]=True 
     dup_values = AB_[~mask]
-    indexes, = np.where (AB_==dup_values)
+    
+    indexes, = np.where(AB_==dup_values)
     #make a copy of unique values and filled the duplicated
     # values by their corresponding mean resistivity values 
     X, rindex  = np.unique (AB_, return_index=True); Y = rhoa_[rindex]
@@ -310,7 +312,8 @@ def ohmicArea(data: DataFrame[DType[float|int]] = None,
                 objective: str = 'ohmS',
                 **kws
                 ) -> float: 
-    """ Compute the ohmic-area from the |VES|data collected in exploration area. 
+    """ 
+    Compute the ohmic-area from the |VES|data collected in exploration area. 
     
     :param data: Dataframe pandas - contains the depth measurement AB from 
     current electrodes, the potentials electrodes MN and the collected 
@@ -324,7 +327,7 @@ def ohmicArea(data: DataFrame[DType[float|int]] = None,
     So the `ohmSkey` can be specified via the water inrush average value. 
         
     :param objective: str - Type operation to outputs. By default, the function 
-    outputs the value of pseudo-area in :math:`$\ohm.m^2$`. However, for 
+    outputs the value of pseudo-area in :math:`$ohm.m^2$`. However, for 
     plotting purpose by setting the argument to ``view``, its gives an 
     alternatively outputs of X and Y, recomputed and projected as weel as 
     the X and Y values of the expected fractured zone. Where X is the AB dipole 
@@ -363,10 +366,10 @@ def ohmicArea(data: DataFrame[DType[float|int]] = None,
     :math:`ρ_T (l)`, a set of reducing resistivity transform function to lower
     the boundary plane at half the current electrode spacing :math:`$(l)$`. 
     From the sounding curve :math:`$ρ_T (l)$`,  an imaginary basement rock curve
-    :math:`$b_r (l)$` of slope equal to ``45°`` with the horizontal :math:`$ h(l)$`
+    :math:`$b_r (l)$` of slope equal to ``45°`` with the horizontal :math:`$h(l)$`
     was created. A pseudo-area :math:`$S(l)$` should be defined by extending 
     from :math:`$h(l)$` the :math:`$b_r (l)$` curve when the sounding curve
-    :math:`$ρ_T (l)$`  is below :math:`$b_r (l)$`, otherwise :math:`$S(l)$` is 
+    :math:`$ρ_T (l)$`  is below :math:`$b_r(l)$`, otherwise :math:`$S(l)$` is 
     equal to null. The computed area is called the ohmic-area :math:`$(ohmS)$` 
     expressed in :math:`$Ω.m^2$` and constitutes the expected “fracture zone”. 
     Thus, :math:`$ohmS≠0$` confirms the existence of the fracture zone while 
@@ -375,15 +378,15 @@ def ohmicArea(data: DataFrame[DType[float|int]] = None,
         
     .. math:: 
         
-        ohmS=\integral_(l_i)^(l_(i+1))▒S(l)dl  s.t 
+        ohmS=$integral_(l_i)^(l_(i+1))▒S(l)dl  s.t 
         S(l)={(b_r (l)  -ρ_T (l); b_r (l)  >ρ_T (l) 
-               0. ;b_r (l)  |less ρ_T (l)}  
+               0. ;b_r (l)  |less ρ_T (l)} $ 
     
      where :math:`$l$~ is half the current electrode spacing :math:`$AB⁄2$`,
      :math:`$h_1$` denotes the first-order of the Bessel function of the first 
-     kind, :math:`\beta\` is the coordinate value on y-axis direction of the
+     kind, :math:`beta` is the coordinate value on y-axis direction of the
      intercept term of the :math:`$b_r (l)$` and :math:`$h(l)$`,:math:`$T_i (λ)$`
-     resistivity transform function,  :math:`$\lamda$` denotes the integral variable,
+     resistivity transform function,  :math:`$lamda$` denotes the integral variable,
      where n denotes the number of layers, :math:`$ρ_i$` and :math:`$h_i$` are 
      the resistivity and thickness of the :math:`$i-$`th layer, respectively.
      Get more explanations and cleareance of formula  in the paper of 
@@ -397,7 +400,7 @@ def ohmicArea(data: DataFrame[DType[float|int]] = None,
      Examples 
      ---------
          
-    >>> from watex.utils.exmath import ohmicArea 
+    >>> from watex.tools.exmath import ohmicArea 
     >>> from watex.utils.coreutils import vesSelector 
     >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx') 
     >>> (ohmS, err, roots), *_ = ohmicArea(data = data, ohmSkey =45, sum =True ) 
@@ -542,7 +545,7 @@ def _type_mechanism (
         resistivity value.
     :Example:
         >>> import numpy as np 
-        >>> from watex.utils.exmath import _type_mechanism
+        >>> from watex.tools.exmath import _type_mechanism
         >>> rang = random.RandomState(42)
         >>> test_array2 = rang.randn (7)
         >>> _type_mechanism(np.abs(test_array2))
@@ -588,12 +591,13 @@ def type_ (erp: Array[DType[float]] ) -> str:
     :Example: 
         
         >>> import numpy as np 
+        >>> from watex.tools.exmath import type_
         >>> rang = random.RandomState(42)
         >>> test_array2 = rang.randn (7)
         >>> type_(np.abs(test_array2))
         ... 'EC'
         >>> long_array = np.abs (rang.randn(71))
-        >>> type_(long_array)
+        >>> type(long_array)
         ... 'PC'
         
         
@@ -671,10 +675,10 @@ def type_ (erp: Array[DType[float]] ) -> str:
     return type_ 
         
    
-def shape_ (
+def shape (
     cz : Array | List [float], 
     s : Optional [str, int] = ..., 
-    **kws        
+    p:  SP =  ...,     
 ) -> str: 
     """ Compute the shape of anomaly. 
     
@@ -690,13 +694,16 @@ def shape_ (
     expected to be the drilling location. 
     
     :param cz: array-like -  Conductive zone resistivity values 
+    :param s: int, str - Station position index or name.
+    :param p: Array-like - Should be the position of the conductive zone. Note 
+    that if `s` is given, `p` should be provided. If missing an error will raises.
     
     :return: str - the shape of anomaly. 
     
     :Example: 
         >>> import numpy as np 
         >>> rang = random.RandomState(42)
-        >>> from watex.utils.exmath import shape_ 
+        >>> from watex.tools.exmath import shape_ 
         >>> test_array1 = np.arange(10)
         >>> shape_ (test_array1)
         ...  'C'
@@ -725,14 +732,29 @@ def shape_ (
     """
     shape = 'V' # initialize the shape with the most common 
     
-    cz = _assert_all_types( cz , tuple, list, np.ndarray) 
+    cz = _assert_all_types( cz , tuple, list, np.ndarray, pd.Series) 
     cz = np.array(cz)
     # detect the staion position index
-    if s is (None or ... ): s_index = np.argmin(cz)
+    if s is (None or ... ):
+        s_index = np.argmin(cz)
     elif s is not None: 
         if isinstance(s, str): 
-            s_index,*_ = detect_station_position(s,**kws)  
-        else : s_index= _assert_all_types(s, int)
+            try: 
+                s= int(s.lower().replace('s', '')) 
+            except: 
+                if p is ( None or ...): 
+                    raise Wex.StationError(
+                        "Need the positions `p` of the conductive zone "
+                        "to be supplied.'NoneType' is given.")
+                    
+                s_index,*_ = detect_station_position(s,p)  
+            else : s_index = s 
+        else : 
+            s_index= _assert_all_types(s, int)
+            
+    if s_index >= len(cz): 
+        raise Wex.StationError(
+            f"Position should be less than '7': got '{s_index}'")
     lbound , rbound = cz[:s_index +1] , cz[s_index :]
     ls , rs = lbound[0] , rbound [-1] # left side and right side (s) 
     lminls, = argrelextrema(lbound, np.less)
@@ -820,7 +842,7 @@ def __sves__ (
 
 def detect_station_position (
         s : Union[str, int] ,
-        p: Array|List [float] , 
+        p: SP, 
 ) -> Tuple [int, float]: 
     """ Detect station position and return the index in positions
     
@@ -876,7 +898,7 @@ def detect_station_position (
                 s_index = s//dl
                 return int(s_index), s_index * dl 
             else : 
-                raise Wex.WATexError_station (
+                raise Wex.StationError (
                     f'Station {S} is out of the range; max position = {max(p)}'
                 )
         else : 
@@ -897,7 +919,7 @@ def detect_station_position (
         
     return int(s_index) , s 
     
-def sfi_ (
+def sfi (
         cz: Sub[Array[T, DType[T]]] | List[float] ,
         p: Sub[SP[Array, DType [int]]] | List [int] = None, 
         s: Optional [str] =None, 
@@ -906,23 +928,24 @@ def sfi_ (
         raw : bool = False,
         **plotkws
 ) -> float: 
-    """ Compute  the pseudo-fracturing index known as *sfi*. 
+    """ 
+    Compute  the pseudo-fracturing index known as *sfi*. 
     
     The sfi parameter does not indicate the rock fracturing degree in 
     the underground but it is used to speculate about the apparent resistivity 
     dispersion ratio around the cumulated sum of the  resistivity values of 
     the selected anomaly. It uses a similar approach of  IF parameter proposed 
     by `Dieng et al`_ (2004).  Furthermore, its threshold is set to
-    :math:`\sqrt(2)`  for symmetrical anomaly characterized by a perfect 
+    :math:`$sqrt(2)$`  for symmetrical anomaly characterized by a perfect 
     distribution of resistivity in a homogenous medium. The formula is
     given by:
     
     .. math::
         
-        sfi=\sqrt((P_a/(P_a^\ast\ ))^2+(M_a/(M_a^\ast\ ))^2\ \ )
+        sfi=$sqrt((P_a^*/P_a ))^2+((M_a^*/M_a ))^2 )$
     
     where P_a and M_a are the anomaly power and the magnitude respectively. 
-    :math:`\P_a^\ast\`  is and :math:`\M_a^\ast\` are the projected power and 
+    :math:$`P_a^*$`  is and :math:$`M_a^*$` are the projected power and 
     magnitude of the lower point of the selected anomaly.
     
     :param cz: array-like. Selected conductive zone 
@@ -1020,8 +1043,8 @@ def sfi_ (
     ppow = ppow [0] if len (ppow) > 1 else ppow 
     
     # compute sfi 
-    pw = power_(p) 
-    ma= magnitude_(cz)
+    pw = power(p) 
+    ma= magnitude(cz)
     pw_star = np.abs (p.min() - ppow)
     ma_star = np.abs(cz.min() - rho_side)
     
@@ -1166,16 +1189,17 @@ def quickplot (arr, dl =10):
     
     
 
-def magnitude_ (cz:Sub[Array[float, DType[float]]] ) -> float: 
-    """ Compute the magnitude of selected conductive zone. 
+def magnitude (cz:Sub[Array[float, DType[float]]] ) -> float: 
+    """ 
+    Compute the magnitude of selected conductive zone. 
     
     The magnitude parameter is the absolute resistivity value between
-    the minimum :math:`\rho_(a_min\ )\` and maximum :math:`\rho_(a_max\ )` 
+    the minimum :math:`$rho_(a_min )$` and maximum :math:`$rho_(a_max)$` 
     value of selected anomaly:
     
     .. math::
     
-        magnitude=|\begin\rho_a〗_min-ρ_(a_max ) |
+        magnitude=|rho_a〗_min-ρ_(a_max )|
 
     :param cz: array-like. Array of apparent resistivity values composing 
         the conductive zone. 
@@ -1184,18 +1208,19 @@ def magnitude_ (cz:Sub[Array[float, DType[float]]] ) -> float:
     """
     return np.abs (cz.max()- cz.min()) 
 
-def power_ (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float : 
-    """ Compute the power of the selected conductive zone. Anomaly `power` 
+def power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float : 
+    """ 
+    Compute the power of the selected conductive zone. Anomaly `power` 
     is closely referred to the width of the conductive zone.
     
     The power parameter implicitly defines the width of the conductive zone
     and is evaluated from the difference between the abscissa 
-    :math:`\begin(X〗_LB)` and the end :math:`\left(X_{UB}\right)` points of 
+    :math:`(X〗_LB)` and the end :math:`X_{UB}` points of 
     the selected anomaly:
     
     .. math::
         
-        power=|X_LB-X_UB\ |
+        power=|X_LB-X_UB |
     
     :param p: array-like. Station position of conductive zone.
     
@@ -1208,7 +1233,8 @@ def _find_cz_bound_indexes (
     erp: Union[Array[float, DType[float]], List[float], pd.Series],
     cz: Union [Sub[Array], List[float]] 
 )-> Tuple[int, int]: 
-    """ Fetch the limits 'LB' and 'UB' of the selected conductive zone.
+    """ 
+    Fetch the limits 'LB' and 'UB' of the selected conductive zone.
     
     Indeed the 'LB' and 'UB' fit the lower and upper boundaries of the 
     conductive zone respectively. 
@@ -1393,7 +1419,8 @@ def define_conductive_zone (
 #FR2: 9EB3DD
 #FR3: 0A4CEE
 def shortPlot (sample, cz=None): 
-    """ Quick plot to visualize the `sample` line as well as the  selected 
+    """ 
+    Quick plot to visualize the `sample` line as well as the  selected 
     conductive zone if given.
     
     :param sample: array_like, the electrical profiling array 
@@ -1455,7 +1482,7 @@ def compute_sfi (pk_min, pk_max, rhoa_min,
     from anomaly extent. We use a similar approach as IF computation
     proposed by Dieng et al. (2004) to evaluate each selected anomaly 
     extent and the normal distribution of resistivity values along the 
-    survey line. The SFI threshold is set at :math:`$\sqrt\2$`  for 
+    survey line. The SFI threshold is set at :math:`sqrt(2)`  for 
     symmetrical anomaly characterized by a perfect distribution of 
     resistivity in a homogenous medium. 
     
@@ -1861,7 +1888,7 @@ def compute_lower_anomaly(erp_array, station_position=None,
     
     :Example: 
         
-        >>> from watex.utils.wmathandtricks import compute_lower_anolamy 
+        >>> from watex.tools.exmath import compute_lower_anolamy 
         >>> import pandas as pd 
         >>> path_to_= 'data/l10_gbalo.xlsx'
         >>> dataRes=pd.read_excel(erp_data).to_numpy()[:,-1]
@@ -1969,7 +1996,7 @@ def select_anomaly ( rhoa_array, pos_array=None, auto=True,
     if auto is False : 
         if None in pos_bounds  or pos_bounds is None : 
             raise Wex.ErrorSite('One position is missed' 
-                                'Plase provided it!')
+                                'Please provided it!')
         
         pos_bounds = np.array(pos_bounds)
         pos_min, pos_max  = pos_bounds.min(), pos_bounds.max()
