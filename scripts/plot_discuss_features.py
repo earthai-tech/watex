@@ -5,11 +5,11 @@ Created on Fri Oct  8 09:04:27 2021
 @author: @Daniel03
 """
 
-from watex.viewer.plot import QuickPlot 
+from watex.view.plot import QuickPlot 
 
 # path to dataset 
 # data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
-data_fn ='data/geo_fdata/main.bagciv.data2.csv'
+data_fn ='data/geo_fdata/main.bagciv.data.csv'
 
 # set figure title 
 fig_title= '`sfi` vs`ohmS|`geol`'

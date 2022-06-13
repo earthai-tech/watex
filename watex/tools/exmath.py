@@ -4,9 +4,12 @@
 #   Licence: MIT Licence 
 
 from __future__ import annotations 
+
 import copy 
 
 from scipy.signal import argrelextrema 
+import scipy.integrate as integrate
+from scipy.optimize import curve_fit
 import numpy as np
 import pandas as pd 
 import  matplotlib.pyplot as plt 
@@ -21,10 +24,13 @@ from .._typing import (
     Any,
     Union,
     Array,
+    NDArray,
     DType,
     Optional,
     Sub, 
-    SP
+    SP, 
+    Series, 
+    DataFrame,
 )
 
 from ._watexlog import watexlog
@@ -33,12 +39,493 @@ from .funcutils import (
     drawn_boundaries, 
     fmt_text, 
     find_position_from_sa , 
-    find_feature_positions
+    find_feature_positions,
+    smart_format,
                          
 )
 from .decorators import deprecated 
 
 _logger =watexlog.get_watex_logger(__name__)
+
+def dummy_basement_curve(func,  ks, slope= 45 ): 
+    """ Compute the pseudodepth from the search zone. 
+    
+    :param f: callable - Polyfit1D function 
+    :param mz: array-zone - Expected Zone for groundwater search 
+    :param kst: float - The depth from which the expected fracture 
+        zone must starting looking for groundwater. 
+    :param slope: float - Degree angle for slope in linear function 
+        of the dummy curve
+    :returns: 
+        - lambda function of basement curve `func45` 
+        - beta is intercept value compute for keysearch `ks`
+    """
+    # Use kesearch (ks) to compute the beta value from the function f
+    beta = func(ks)
+    # note that 45 degree is used as the slope of the 
+    # imaginary basement curve
+    # fdummy (x) = slope (45degree) * x + intercept (beta)
+    slope = np.sin(np.deg2rad(slope))
+    func45 = lambda x: slope * x + beta 
+    
+    return func45, beta 
+
+
+def find_limit_for_integration(ix_arr, b0=[]): 
+    """ Use the roots between f curve and basement curves to 
+    detect the limit of integration... 
+    :param arri: array-like - Indexes array from masked array where 
+        the value are true i.e. where b-f >0 => f> b. 
+    :param b0: list - Empy list to hold the limit during entire loop 
+    b > f ==> Curve b (basement) is above the fitting curve f. 
+    b< f otherwise. 
+    The pseudoarea is the area where b > f
+    
+    :return: list - integration bounds 
+    
+    """
+    s = ix_arr.min() - 1 # 0 -1 =-1
+    oc = ix_arr.min() 
+    for jj,  v in enumerate(ix_arr): 
+        s = v - s
+        if s !=1: 
+            b0.append(oc); b0.append(ix_arr[jj-1])
+            oc= v
+        s= v 
+    if v ==ix_arr[-1]: 
+        b0.append(oc); b0.append(v)
+        
+    return b0 
+
+
+def find_bound_for_integration(ix_arr, b0=[]): 
+    """ Recursive function. Use the roots between f curve and basement 
+    curves to detect the  integration bounds. The function use entirely 
+    numpy for seaching integration bound. Since it is much faster than 
+    `find_limit_for_integration` although both did the same tasks. 
+    
+    :param arri: array-like - Indexes array from masked array where 
+        the value are true i.e. where b-f >0 => f> b. 
+    :param b0: list - Empy list to hold the limit during entire loop 
+    
+    b > f ==> Curve b (basement) is above the fitting curve f. 
+    b< f otherwise. 
+    The pseudoarea is the area where b > f 
+    
+    :return: list - integration bounds 
+    """
+    # get the first index and arange this thin the end 
+    psdiff = np.arange(ix_arr.min(), len(ix_arr) + ix_arr.min(), 1) 
+    # make the difference to find the zeros values 
+    diff = ix_arr - psdiff 
+    index, = np.where(diff ==0) ; 
+    # take the min index and max index 
+    b0.append(min(ix_arr[index]))
+    b0.append(max(ix_arr[index]))
+    #now take the max index and add +1 and start by this part 
+    # retreived the values 
+    array_init = ix_arr[int(max(index)) +1:]
+    return b0 if len(
+        array_init)==0 else find_bound_for_integration(array_init, b0)
+ 
+    
+def fitfunc(x, y , deg =None, sample =1000): 
+    """ Create polyfit function from a specifc sample data points. 
+    
+    :param x: array-like of x-axis 
+    :param y: array-like of y-axis 
+    :param deg: polynomial degree. If ``None`` should compute using the 
+        length of  extrema (local + global) 
+    :param sample: int - Number of data points should use for fitting 
+    function. Default is ``1000``. 
+    
+    :returns: 
+        - Polynomial function `f` 
+        - new axis  `x_new` generated from the samples
+        - projected sample values got from `f`
+    """
+    # generate a sample of values to cover the fit function 
+    # thus compute ynew (yn) from the poly function f
+    minl, = argrelextrema(y, np.less) 
+    maxl, = argrelextrema(y,np.greater)
+    # get the number of degrees
+    degree = len(minl) + len(maxl)
+
+    coeff = np.polyfit(x, y, deg if deg is not None else degree + 1 )
+    f = np.poly1d(coeff)
+    xn = np.linspace(min(x), max(x), sample)
+    yp = f(xn)
+    
+    return f, xn, yp  
+    
+def vesDataOperator(
+        AB : Array = None, 
+        rhoa: Array= None ,
+        data: DataFrame  =None,
+        typeofop: str = None, 
+        outdf: bool = False, 
+)-> Tuple[Array] | DataFrame : 
+    """ Check the data in the given deep measurement and set the suitable
+    operations for duplicated spacing distance of current electrodes `AB`. 
+    
+    Sometimes at the potential electrodes (`MN`), the measurement of `AB` are 
+    collected twice after modifying the distance of `MN` a bit. At this point, 
+    two or many resistivity values are targetted to the same distance `AB`  
+    (`AB` still remains unchangeable while while `MN` is changed). So the 
+    operation consists whether to average (``mean``) the resistiviy values or 
+    to take the ``median`` values or to ``leaveOneOut`` (i.e. keep one value
+    of resistivity among the different values collected at the same point`AB`)
+    at the same spacing `AB`. Note that for the `LeaveOneOut``, the selected 
+    resistivity value is randomly chosen. 
+    
+    :param AB: array-like - Spacing of the current electrodes when exploring
+    in deeper. Units are in meters. 
+    
+    :param rhoa: array-like - Apparent resistivity values collected in imaging 
+    in depth. Units are in Ω.m not log10(Ω.m)
+    
+    :param data: DataFrame - It is composed of spacing values `AB` and  the 
+    apparent resistivity values `rhoa`. If `data` is given, params `AB` and 
+    `rhoa` should be kept to ``None``.   
+    
+    :param typeofop: str - Type of operation to apply  to the resistivity 
+    values `rhoa` of the duplicated spacing points `AB`. The default 
+    operation is ``mean``. 
+    
+    :param outdf: bool - Outpout a new dataframe composed of `AB` and `rhoa` 
+    data renewed. 
+    
+    :returns: 
+        - Tuple of (AB, rhoa): New values computed from `typeofop` 
+        - DataFrame: New dataframe outputed only if ``outdf`` is ``True``.
+        
+    :note: 
+        By convention `AB` and `MN` are half-space dipole length which 
+        correspond to ``AB/2`` and `MN/2``respectively. 
+    
+    :Example: 
+        
+        >>> from watex.utils.exmath import vesDataOperator
+        >>> from watex.utils.coreutils import vesSelector 
+        >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx')
+        >>> len(data)
+        ... (32, 3) # include the potentiel electrode values `MN`
+        >>> df= vesDataOperator(data.AB, data.resistivity,
+                                typeofop='leaveOneOut', outdf =True)
+        >>> df.shape 
+        ... (26, 2) # exclude `MN` values and reduce(-6) the duplicated values. 
+    """
+    op = copy.deepcopy(typeofop) 
+    typeofop= str(typeofop).lower()
+    if typeofop not in ('none', 'mean', 'median', 'leaveoneout'):
+        raise ValueError(
+            f'Unacceptable argument {op!r}. Use one of the following '
+            f'argument {smart_format([None,"mean", "median", "leaveOneOut"])}'
+            ' instead.')
+
+    typeofop ='mean' if typeofop =='none' else typeofop 
+    
+    if data is not None: 
+        data = _assert_all_types(data, pd.DataFrame)
+        rhoa = np.array(data.resistivity )
+        AB= np.array(data.AB) 
+    
+    AB= np.array( _assert_all_types(
+        AB, np.ndarray, list, tuple, pd.Series)) 
+    rhoa = np.array( _assert_all_types(
+        rhoa, np.ndarray, list, tuple, pd.Series))
+ 
+    if len(AB)!= len(rhoa): 
+        raise Wex.VESError(
+            'Deep measurement `AB` must have the same size with '
+            ' the collected apparent resistivity `rhoa`.'
+            f' {len(AB)} and {len(rhoa)} were given.')
+    
+    #----> When exploring in deeper, after changing the distance 
+    # of MN , measure are repeated at the same points. So, we will 
+    # selected these points and take the mean values of tyhe resistivity 
+    
+    # make copies 
+    AB_ = AB.copy() ; rhoa_= rhoa.copy() 
+    # find the duplicated values 
+    mask = np.zeros_like (AB_, dtype =bool) 
+    mask[np.unique(AB_, return_index =True)[1]]=True 
+    dup_values = AB_[~mask]
+    indexes, = np.where (AB_==dup_values)
+    #make a copy of unique values and filled the duplicated
+    # values by their corresponding mean resistivity values 
+    X, rindex  = np.unique (AB_, return_index=True); Y = rhoa_[rindex]
+    d0= np.zeros_like(dup_values)
+    for ii, d in enumerate(dup_values): 
+       index, =  np.where (AB_==d)
+       if typeofop =='mean': 
+           d0[ii] = rhoa_[index].mean() 
+       elif typeofop =='median': 
+           d0[ii] = np.median(rhoa_[index])
+       elif typeofop =='leaveoneout': 
+           d0[ii] = np.random.permutation(rhoa_[index])[0]
+      
+    maskr = np.isin(X, dup_values, assume_unique=True)
+    Y[maskr] = d0
+    
+    return (X, Y) if not outdf else pd.DataFrame (
+        {'AB': X,'resistivity':Y}, index =range(len(X)))
+
+# XXXTODO 
+def invertVES (data: DataFrame[DType[float|int]] = None, 
+               rho0: float = None , 
+               h0 : float = None, 
+               typeof : str = 'HMCMC', 
+               
+               **kwd)->Tuple [Array]: 
+    """ Invert the |VES| data collected in the exporation area.
+    
+    :param data: Dataframe pandas - contains the depth measurement AB from 
+    current electrodes, the potentials electrodes MN and the collected 
+    apparents resistivities. 
+    
+    :param rho0: float - Value of the starting resistivity model. If ``None``, 
+        `rho0` should be the half minumm value of the apparent resistivity  
+        collected. Units is in Ω.m not log10(Ω.m)
+    :param h0: float -  Thickness  in meter of the first layers in meters.
+     If ``None``, it should be the minimum thickess as possible ``1.``m. 
+    
+    :param typeof: str - Type of inversion scheme. The defaut is Hybrid Monte 
+    Carlo (HMC) known as ``HMCMC``. Another scheme is Bayesian neural network
+    approach (``BNN``). 
+    
+    :param kws: dict - Additionnal keywords arguments from |VES| data operations. 
+    See :doc:`watex.utils.exmath.vesDataOperator` for futher details. 
+    
+    """
+    
+    X, Y = vesDataOperator(data =data, **kwd)
+    
+    pass 
+
+    
+def ohmicArea(data: DataFrame[DType[float|int]] = None, 
+                ohmSkey: float = 45., 
+                sum : bool = False, 
+                objective: str = 'ohmS',
+                **kws
+                ) -> float: 
+    """ Compute the ohmic-area from the |VES|data collected in exploration area. 
+    
+    :param data: Dataframe pandas - contains the depth measurement AB from 
+    current electrodes, the potentials electrodes MN and the collected 
+    apparents resistivities. 
+    
+    :param ohmSkey: float - The depth in meters from which one expects to find 
+    a fracture zone outside of pollutions. Indeed, the `ohmSkey` parameter is 
+    used to  speculate about the expected groundwater in the fractured rocks 
+    under the average level of water inrush in a specific area. For instance 
+    in :ref:`Bagoue region`, the average depth of water inrush is around ``45m``.
+    So the `ohmSkey` can be specified via the water inrush average value. 
+        
+    :param objective: str - Type operation to outputs. By default, the function 
+    outputs the value of pseudo-area in :math:`$\ohm.m^2$`. However, for 
+    plotting purpose by setting the argument to ``view``, its gives an 
+    alternatively outputs of X and Y, recomputed and projected as weel as 
+    the X and Y values of the expected fractured zone. Where X is the AB dipole 
+    spacing when imaging to the depth and Y is the apparent resistivity computed 
+    
+    :param kws: dict - Additionnal keywords arguments from |VES| data operations. 
+    See :doc:`watex.utils.exmath.vesDataOperator` for futher details. 
+    
+    :returns:  List of twice tuples 
+        - Tuple(ohmS, error, roots): 
+            - `ohmS`is the pseudo-area computed expected to be a fractured zone 
+            - `error` is the integration error 
+            - `roots` is the integration  boundaries of the expected fractured 
+            zone where the basement rocks is located above the resistivity  
+            transform function. At these points both curves values equal to null.
+        - Tuple (XY, fit XY,XYohmSarea): 
+            - XY is the ndarray(nvalues, 2) of the operated  of `AB` dipole 
+            spacing and resistivity `rhoa` values. 
+            - fit XY is the fitting ndarray(nvalues, 2) uses to redraw the 
+            dummy resistivity transform function 
+            - XYohmSarea is ndarray(nvalues, 2) of the dipole spacing and  
+            resistiviy values of the expected fracture zone.  
+    
+    See also
+    ---------
+    
+    The `ohmS` value calculated from `ohmic_area_` is a fully data-driven 
+    parameter and is used to evaluate a pseudo-area of the fracture zone from 
+    the depth where the basement rock is supposed to start. Usually, when 
+    exploring deeper using the |VES|, we are looking for groundwater in the
+    fractured rock that is outside the anthropic pollution (Biemi, 1992). Since 
+    the VES is an indirect method, we cannot ascertain whether the presumed 
+    fractured rock contains water inside. However, we assume that the fracture
+    zone could exist and should contain groundwater. Mathematically, based on the
+    VES1D model proposed by :ref:`Koefoed O. (1976)`, we consider a function
+    :math:`ρ_T (l)`, a set of reducing resistivity transform function to lower
+    the boundary plane at half the current electrode spacing :math:`$(l)$`. 
+    From the sounding curve :math:`$ρ_T (l)$`,  an imaginary basement rock curve
+    :math:`$b_r (l)$` of slope equal to ``45°`` with the horizontal :math:`$ h(l)$`
+    was created. A pseudo-area :math:`$S(l)$` should be defined by extending 
+    from :math:`$h(l)$` the :math:`$b_r (l)$` curve when the sounding curve
+    :math:`$ρ_T (l)$`  is below :math:`$b_r (l)$`, otherwise :math:`$S(l)$` is 
+    equal to null. The computed area is called the ohmic-area :math:`$(ohmS)$` 
+    expressed in :math:`$Ω.m^2$` and constitutes the expected “fracture zone”. 
+    Thus, :math:`$ohmS≠0$` confirms the existence of the fracture zone while 
+    :math:`$ohms=0$` raises doubts. The equation to determine the parameter 
+    is given as::
+        
+    .. math:: 
+        
+        ohmS=\integral_(l_i)^(l_(i+1))▒S(l)dl  s.t 
+        S(l)={(b_r (l)  -ρ_T (l); b_r (l)  >ρ_T (l) 
+               0. ;b_r (l)  |less ρ_T (l)}  
+    
+     where :math:`$l$~ is half the current electrode spacing :math:`$AB⁄2$`,
+     :math:`$h_1$` denotes the first-order of the Bessel function of the first 
+     kind, :math:`\beta\` is the coordinate value on y-axis direction of the
+     intercept term of the :math:`$b_r (l)$` and :math:`$h(l)$`,:math:`$T_i (λ)$`
+     resistivity transform function,  :math:`$\lamda$` denotes the integral variable,
+     where n denotes the number of layers, :math:`$ρ_i$` and :math:`$h_i$` are 
+     the resistivity and thickness of the :math:`$i-$`th layer, respectively.
+     Get more explanations and cleareance of formula  in the paper of 
+     `Kouadio et al 2022`_. 
+     
+     Raises
+     -------
+     VESError if the `ohmSkey` is greater or equal to the maximum investigation 
+     depth in meters.  
+     
+     Examples 
+     ---------
+         
+    >>> from watex.utils.exmath import ohmicArea 
+    >>> from watex.utils.coreutils import vesSelector 
+    >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx') 
+    >>> (ohmS, err, roots), *_ = ohmicArea(data = data, ohmSkey =45, sum =True ) 
+    ... (13.46012197818152, array([5.8131967e-12]), array([45.        , 98.07307307]))
+    # pseudo-area is computed between the spacing point AB =[45, 98] depth. 
+    >> _, (XY.shape, XYfit.shape, XYohms_area.shape) = ohmicArea(
+        AB= data.AB, rhoa =data.resistivity, ohmSkey =45, 
+        objective ='plot') 
+    ... ((26, 2), (1000, 2), (8, 2))
+   
+     
+     References
+     ----------
+     Kouadio, K.L., Nicolas, K.L., Binbin, M., Déguine, G.S.P. & Serge, 
+         K.K. (2021, October) Bagoue dataset-Cote d’Ivoire: Electrical profiling,
+         electrical sounding and boreholes data, Zenodo. doi:10.5281/zenodo.5560937
+     
+     Koefoed, O. (1970). A fast method for determining the layer distribution 
+         from the raised kernel function in geoelectrical sounding. Geophysical
+         Prospecting, 18(4), 564–570. https://doi.org/10.1111/j.1365-2478.1970.tb02129.x
+         
+    Koefoed, O. (1976). Progress in the Direct Interpretation of Resistivity 
+        Soundings: an Algorithm. Geophysical Prospecting, 24(2), 233–240.
+        https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
+        
+    
+    .. _Kouadio et al 2022: https://doi.org/10.1029/2021WR031623
+    
+    """
+    objkeys = ( 'ohms','none','eval', 'area', 'ohmic','true',
+               'plot', 'mpl', 'false', 'graph','visual', 'view')
+    
+    objr = copy.deepcopy(objective)
+    objective = str(objective).lower()
+    compout, viewout = np.split(np.array(objkeys), 2)
+    for oo, pp in zip(compout, viewout): 
+        if objective.find(oo)>=0 :
+            objective ='ohms'; break 
+        elif objective.find(pp)>=0: 
+            objective ='graph'; break 
+    
+    if objective not in list(objkeys)+ ['full', 'coverall']: 
+        raise ValueError(f"Unacceptable argument {str(objr)!r}. Objective"
+                         " argument can only be 'ohmS' for pseudo-area"
+                        " evaluation or 'graph' for visualization outputs."
+                        )
+
+    bound0=[]
+    X, Y = vesDataOperator(data =data, **kws)
+    
+    try : 
+       ohmSkey = str(ohmSkey).lower().replace('m', '')
+       if ohmSkey.find('none')>=0 : 
+           ohmSkey = X.max()/2 
+       ohmSkey = float(ohmSkey)
+    except: 
+        raise ValueError (f'Could not convert value {ohmSkey!r} to float')
+        
+    if ohmSkey >= X.max(): 
+        raise Wex.VESError(f"The startpoint 'ohmSkey={ohmSkey}m'is expected "
+                           f"to be less than the 'maxdepth={X.max()}m'.")
+
+    #-------> construct the fitting curves for 1000 points 
+    # create the polyfit function fitting raw(f) from coefficents 
+    # (coefs) of the initial function 
+    f_rhotl, x_new, y_projected = fitfunc (X, Y)
+    
+    # Finding the intercepts between the fitting curve and the dummy 
+    # basement curves 
+    #--> e. g. start from 20m (oix) --> ... searching  and find the index 
+    oIx = np.argmin (np.abs(X - ohmSkey)) 
+    # from this index (oIx) , read the remain depth. 
+    oB = X[int(oIx):] # from O-> end [OB]
+    #--< construct the basement curve from the index of ohmSkey
+    f_brl, beta = dummy_basement_curve( f_rhotl,  ohmSkey)
+    # 1000 points from OB (xx)
+    xx = np.linspace(oB.min(), oB.max(), 1000)
+    b45_projected= f_brl(xx)
+    
+    # create a fit function for b45 and find the limits 
+    # find the intersection between the b45_projected values and 
+    # fpartial projected values are the solution of equations f45 -fpartials 
+    diff_arr = b45_projected - f_rhotl(xx) #ypartial_projected 
+
+    # # if f-y < 0 => f< y so fitting curve is under the basement curve 
+    # # we keep the limit indexes for integral computation 
+    # # we want to keep the 
+    array_masked = np.ma.masked_where (diff_arr < 0 , diff_arr , copy =True)
+    # get indexes of valid values 
+    indexes, = array_masked.nonzero() 
+ 
+    try : 
+        ib_indexes = find_bound_for_integration(indexes, b0=bound0)
+    except : 
+        bound0=[] #initialize the bounds lists 
+        ib_indexes =find_limit_for_integration(indexes, b0= bound0) 
+    
+    roots = xx[ib_indexes] 
+    f45, *_ = fitfunc(oB, Y[oIx:])
+    ff = f45 - f_rhotl 
+    pairwise_r = np.split(roots, len(roots)//2 ) if len(
+        roots) > 2 else [np.array(roots)]
+    ohmS = np.zeros((len(pairwise_r,)))
+    err_ohmS = np.zeros((len(pairwise_r,)))
+    for ii, (inf, sup) in enumerate(pairwise_r): 
+        values, err = integrate.quad(ff, a = inf, b = sup)
+        ohmS[ii] = np.zeros((1,)) if values < 0 else values 
+        err_ohmS[ii] = err
+        
+
+    if sum: 
+        ohmS = ohmS.sum()  
+    
+    rv =[
+        (ohmS, err_ohmS, roots),
+         ( np.hstack((X[:, np.newaxis], Y[:, np.newaxis]) ), 
+             np.hstack((x_new[:, np.newaxis], y_projected[:, np.newaxis])), 
+             np.hstack((oB[:, np.newaxis], f_brl(oB)[:, np.newaxis]) )
+         ) 
+        ]    
+        
+    for ii, ( obj , ix) in enumerate( zip(('ohms', 'graph'), [1, -1])): 
+        if objective ==obj : 
+            rv[ii + ix ]= (None, None, None)
+            break 
+
+    return rv
+ 
 
 def _type_mechanism (
         cz: Array |List[float],
@@ -246,7 +733,6 @@ def shape_ (
         if isinstance(s, str): 
             s_index,*_ = detect_station_position(s,**kws)  
         else : s_index= _assert_all_types(s, int)
-        
     lbound , rbound = cz[:s_index +1] , cz[s_index :]
     ls , rs = lbound[0] , rbound [-1] # left side and right side (s) 
     lminls, = argrelextrema(lbound, np.less)
@@ -297,7 +783,7 @@ def __sves__ (
         s_index: int  , 
         cz: Array | List[float], 
 ) -> Tuple[Array, Array]: 
-    """ Divided the conductive zone in leftzone and rightzone from 
+    """ Divide the conductive zone in leftzone and rightzone from 
     the drilling location index . 
     
     :param s_index - station location index expected for dilling location. 
@@ -313,7 +799,7 @@ def __sves__ (
     
     """
     try:  s_index = int(s_index)
-    except: return TypeError(
+    except: raise TypeError(
         f'Expected integer value not {type(s_index).__name__}')
     
     s_index = _assert_all_types( s_index , int)
@@ -326,7 +812,7 @@ def __sves__ (
     
     side =... 
     # find with positions 
-    for v, sid  in zip((rmax_ls , rmax_rs ) , ('leftside', 'rightside')) : 
+    for _, sid  in zip((rmax_ls , rmax_rs ) , ('leftside', 'rightside')) : 
             side = sid ; break 
         
     return (rho_ls, side), (rmax_ls , rmax_rs )
@@ -553,25 +1039,47 @@ def sfi_ (
 
 def plot_ (
     *args : List [Union [str, Array, ...]],
-    figsize = None,
+    figsize: Tuple[int] = None,
     raw : bool = False, 
     style : str = 'seaborn',   
+    dtype: str  ='erp',
+    kind: Optional[str] = None , 
     **kws
     ) -> None : 
-    """ Plot fitting model. 
+    """ Quick visualization for fitting model, |ERP| and |VES| curves. 
     
-    :param x: array-like - array for plot x-axis 
-    :param y: array-like - array for plot y-axis 
-    :param figsize: tuple - Maptolilib figure size 
-    :param raw: bool. Overlaining the fitting curve with the raw curve from `cz`. 
+    :param x: array-like - array of data for x-axis representation 
+    :param y: array-like - array of data for plot y-axis  representation
+    :param figsize: tuple - Mtplotlib (MPL) figure size; should be a tuple 
+         value of integers e.g. `figsize =(10, 5)`.
+    :param raw: bool- Originally the `plot_` function is intended for the 
+        fitting |ERP| model i.e. the correct value of |ERP| data. However, 
+        when the `raw` is set to ``True``, it plots the both curves: The 
+        fitting model as well as the uncorrected model. So both curves are 
+        overlaining or supperposed.
     :param style: str - Pyplot style. Default is ``seaborn``
-    :param kws: dict - Additional `Matplotlib plot`_ keyword arguments
+    :param dtype: str - Kind of data provided. Can be |ERP| data or |VES| data. 
+        When the |ERP| data are provided, the common plot is sufficient to 
+        visualize all the data insignt i.e. the default value of `kind` is kept 
+        to ``None``. However, when the data collected is |VES| data, the 
+        convenient plot for visualization is the ``loglog`` for parameter
+        `kind``  while the `dtype` can be set to `VES` to specify the labels 
+        into the x-axis. The default value of `dtype` is ``erp`` for common 
+        visualization. 
+    :param kind:  str - Use to specify the kind of data provided. See the 
+        explanation of `dtype` parameters. By default `kind` is set to ``None``
+        i.e. its keep the normal plots. It can be ``loglog``, ``semilogx`` and 
+        ``semilogy``.
+        
+    :param kws: dict - Additional `Matplotlib plot`_ keyword arguments. To cus-
+        tomize the plot, one can provide a dictionnary of MPL keyword 
+        additional arguments like the example below.
     
     :Example: 
         >>> import numpy as np 
         >>> from watex.utils.exmath import plot_ 
         >>> x, y = np.arange(0 , 60, 10) ,np.abs( np.random.randn (6)) 
-        >>> KWS = dict (xlabel ='Stations positions', ylabel = 'resistivity(ohm.m)', 
+        >>> KWS = dict (xlabel ='Stations positions', ylabel= 'resistivity(ohm.m)', 
                     rlabel = 'raw cuve', rotate = 45 ) 
         >>> plot_(x, y, '-ok', raw = True , style = 'seaborn-whitegrid', 
                   figsize = (7, 7) ,**KWS )
@@ -588,25 +1096,59 @@ def plot_ (
     if (rotate:= kws.get ('rotate')) is not None: 
         del kws ['rotate']
         
+    if (title:= kws.get ('title')) is not None: 
+        del kws ['title']
     x , y, *args = args 
     fig = plt.figure(1, figsize =figsize)
     plt.plot (x, y,*args, 
               **kws)
     if raw: 
-        plt.plot (x, y, 
-                  color = '{}'.format(P().frcolortags.get("fr1")),
-                  label =rlabel, 
-                  )
-    plt.xticks (x,
-                labels = ['S{:02}'.format(int(i)) for i in x ],
-                rotation = 0. if rotate is None else rotate 
-                )
+        kind = kind.lower(
+            ) if isinstance(kind, str) else kind 
+        if kind =='semilogx': 
+            plt.semilogx (x, y, 
+                      color = '{}'.format(P().frcolortags.get("fr1")),
+                      label =rlabel, 
+                      )
+        elif kind =='semilogy': 
+            plt.semilogy (x, y, 
+                      color = '{}'.format(P().frcolortags.get("fr1")),
+                      label =rlabel, 
+                      )
+        elif kind =='loglog': 
+            print('yes')
+            plt.loglog (x, y, 
+                      color = '{}'.format(P().frcolortags.get("fr1")),
+                      label =rlabel, 
+                      )
+        else: 
+            plt.plot (x, y, 
+                      color = '{}'.format(P().frcolortags.get("fr1")),
+                      label =rlabel, 
+                      )
+            
+    dtype = dtype.lower() if isinstance(dtype, str) else dtype
+    
+    if dtype is None:
+        dtype ='erp'  
+    if dtype not in ('erp', 'ves'): kind ='erp' 
+    
+    if dtype =='erp':
+        plt.xticks (x,
+                    labels = ['S{:02}'.format(int(i)) for i in x ],
+                    rotation = 0. if rotate is None else rotate 
+                    )
+    elif dtype =='ves': 
+        plt.xticks (x,
+                    rotation = 0. if rotate is None else rotate 
+                    )
+        
     plt.xlabel ('Stations') if xlabel is  None  else plt.xlabel (xlabel)
     plt.ylabel ('Resistivity (Ω.m)'
                 ) if ylabel is None else plt.ylabel (ylabel)
     
     fig_title_kws = dict (
-        t = 'Plot fit model', 
+        t = 'Plot fit model' if dtype =='erp' else title, 
         style ='italic', 
         bbox =dict(boxstyle='round',facecolor ='lightgrey'))
         
@@ -1561,4 +2103,12 @@ def define_anomaly(erp_data, station_position=None, pks=None,
 .. |ERP| replace: Electrical resistivity profiling 
 
 """
-
+   
+    # if plot:
+        
+    #     (X, Y, x_new, y_projected, oB, f_brl(oB))
+    #     plt.loglog(X, Y , label ='Raw Rhoa curve')
+    #     plt.loglog(x_new, y_projected , label = 'Fitting Rhoa curve')
+    #     plt.xlabel('AB/2'); plt.ylabel('Resistivity(ohm.m)')
+    #     plt.loglog (oB, f_brl(oB), label= 'Dummy basement curve') 
+    #     plt.legend()

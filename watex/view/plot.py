@@ -2,50 +2,37 @@
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Jul  7 22:23:02 2021 hz
 # This module is part of the WATex viewer package, which is released under a
 # MIT- licence.
-
-"""
- .. Synopsis:: Module ``plot`` collects essentially data to other sources  
-          and deals with all plots into the whole packages. 
-          ... 
-
-Created on Tue Jul  13 15:48:14 2021
-
-@author: ~alias @Daniel03
-
-"""
-# import os 
-# import re 
+ 
+import os
 import warnings
-# import functools 
-from typing import (Generic, 
-                    TypeVar,
-                    Iterable,
-                    Callable
-)
-
 import numpy as np 
-# import pandas as pd
-# import matplotlib as mpl 
 import  matplotlib.pyplot  as plt
 # import matplotlib.cm as cm 
 # import matplotlib.colorbar as mplcb
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 # from matplotlib.ticker import MultipleLocator, NullLocator
 # import matplotlib.gridspec as gspec
+import pandas as pd 
 import seaborn as sns 
 
-from  .analysis.basics import SLAnalyses
-from .utils._watexlog import watexlog
-
-import watex.utils.exceptions as Wex
-import watex.hints as hints
-T=TypeVar('T', dict, list, tuple)
+from ..bases import FeatureInspection
+from ..tools._watexlog import watexlog
+import watex.exceptions as Wex
+from ..tools. mlutils import (
+    cfexist , 
+    findIntersectionGenObject,
+    featureExistError,
+    format_generic_obj
+    )
+from .._typing import (Generic, 
+                    T,
+                    Iterable,
+                    Callable
+)
 
 _logger=watexlog.get_watex_logger(__name__)
 
-     
 
-        
 class QuickPlot : 
     """
     Special class deals with analysis modules. To quick plot diagrams, 
@@ -109,13 +96,18 @@ class QuickPlot :
     ==================  =======================================================
     
     """
+    readFeafmt ={".csv":pd.read_csv, ".xlsx":pd.read_excel,
+                 ".json":pd.read_json,".html":pd.read_json,
+                 ".sql" : pd.read_sql
+                 } 
+    
     def __init__(self, df=None, data_fn = None , **kwargs): 
         
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
         self._df =df 
         self._data_fn = data_fn 
-        self._flow_classes = kwargs.pop('flow_classes',[0., 1., 3.])
+        self._target_classes = kwargs.pop('target_labels',[0., 1., 3.])
         self.target_name= kwargs.pop('target_name', 'flow')
 
         self.fig_num= kwargs.pop('fig_num', 1)
@@ -195,11 +187,22 @@ class QuickPlot :
           topopulate convenient attributes. """
         if datafn is not None : 
             self._data_fn = datafn 
-
-        slObj= SLAnalyses(data_fn=self._data_fn, set_index=True, 
-                           flow_classes = self._flow_classes , 
-                           target = self.target_name)
-        self.df= slObj.df 
+        if self.target_name =='flow':
+           slObj= FeatureInspection(
+                data_fn=self._data_fn, set_index=True, 
+                flow_classes = self._target_classes , 
+                target = self.target_name
+                           )
+           self.df= slObj.df 
+        elif isinstance(self._data_fn, str) : 
+            if os.path.isfile (self.data_fn):
+                self.gFname, exT=os.path.splitext(self.data_fn)
+                if exT in self.readFeafmt.keys(): self._fn =exT 
+                else: self._fn ='?'
+                self.df = self.readFeafmt[exT](self._data_fn)
+                self.gFname = os.path.basename(self.gFname)
+        elif isinstance(self._data_fn, pd.DataFrame): 
+            self.df = self._data_fn
 
 
     def hist_cat_distribution(self, df=None, data_fn =None, 
@@ -246,8 +249,10 @@ class QuickPlot :
         
         if savefig is not None : self.savefig = savefig
         
-        if df is not None : self.df = df 
-        if data_fn is not None : self._data_fn = data_fn 
+        if df is not None : 
+            self.df = df 
+        if data_fn is not None : 
+            self._data_fn = data_fn 
 
         if self._data_fn is not None :
             self.data_fn = self._data_fn  
@@ -386,7 +391,7 @@ class QuickPlot :
         
         self._logging.info(
             'Multiple bar plot distribution grouped by  `{0}`.'.format(
-                hints.format_generic_obj(self.groupby)).format(*self.groupby))
+                format_generic_obj(self.groupby)).format(*self.groupby))
         
         if self.savefig is not None :
             plt.savefig(self.savefig,
@@ -455,7 +460,7 @@ class QuickPlot :
 
                 if ffval is None: 
                     warnings.warn(f'Need `{ffn}` value for multiple '
-                                  'categorial plotting.')
+                                  'categorical plotting.')
                     raise Wex.WATexError_plot_featuresinputargument(
                         f'Need `{ffn}` value for multiple categorial plots.')
                 if isinstance(ffval, str): 
@@ -475,8 +480,8 @@ class QuickPlot :
             self.ylabel= 'Number of  occurence (%)'
             
         self._logging.info(
-            'Multiple categorials plots  from targetted `{0}`.'.format(
-                hints.format_generic_obj(targets)).format(*targets))
+            'Multiple categorical plots  from targetted `{0}`.'.format(
+                format_generic_obj(targets)).format(*targets))
         
         for ii in range(minlen): 
             
@@ -495,7 +500,7 @@ class QuickPlot :
         if self.sns_style is not None: 
             sns.set_style(self.sns_style)
             
-        print('--> Multiple categorials plots sucessfully done!')    
+        print('--> Multiple plots sucessfully done!')    
         
         
     def plot_correlation_matrix(self, df=None, data_fn =None, 
@@ -591,7 +596,7 @@ class QuickPlot :
                 
         # Control the existence of providing features into the pd.dataFramename:
         try : 
-            reH=  hints.cfexist(features_to= feature_names,
+            reH=  cfexist(features_to= feature_names,
                                features = df_.columns) 
                 
         except: 
@@ -642,7 +647,7 @@ class QuickPlot :
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
             
-        fmObj = hints.format_generic_obj(feature_names)
+        fmObj = format_generic_obj(feature_names)
         
         print(" --> Successfully plot of matrix correlation between "
               f"{'categorial' if plot_params =='qual' else 'numerical'}"
@@ -737,7 +742,7 @@ class QuickPlot :
         
         
         if target =='flow': 
-            if sorted(hints.findIntersectionGenObject(
+            if sorted(findIntersectionGenObject(
                     {'ohmS', 'power', 'sfi', 'magnitude'}, df_.columns
                     ))== sorted({'ohmS', 'power', 'sfi', 'magnitude'}):
                 numerical_features= sorted({'ohmS', 'power', 'sfi', 'magnitude'})
@@ -746,7 +751,7 @@ class QuickPlot :
                 numerical_features.append('flow')
                 # df_['flow']=df_['flow'].astype('category').cat.codes
         try : 
-            resH= hints.cfexist(features_to= numerical_features,
+            resH= cfexist(features_to= numerical_features,
                                features = df_.columns)
         except:
              raise Wex.WATexError_parameter_number(
@@ -863,8 +868,7 @@ class QuickPlot :
         df_= self.df.copy(deep=True)
         
         try : 
-            resH= hints.cfexist(features_to= features,
-                               features = df_.columns)
+            resH= cfexist(features_to= features,features = df_.columns)
         except TypeError: 
             
             print(' Features can not be a NoneType value.'
@@ -997,7 +1001,7 @@ class QuickPlot :
         
         # controller function
         try:
-            hints.featureExistError(superv_features=features, 
+            featureExistError(superv_features=features, 
                                     features=df_.columns)
         except: 
             warnings.warn(f'Feature {features} controlling failed!')
@@ -1106,7 +1110,7 @@ class QuickPlot :
         df_= self.df.copy(deep=True)
         
         try:
-            hints.featureExistError(superv_features=features, 
+            featureExistError(superv_features=features, 
                                     features=df_.columns)
         except: 
             warnings.warn(f'Feature {features} controlling failed!')

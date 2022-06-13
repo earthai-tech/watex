@@ -52,7 +52,7 @@ How to arrange your sheet before calling  erp collection module.
         anomaly on ERP line. 
  
 """
-from watex.core.erp import ERP_collection 
+from watex.methods.erp import ERP_collection 
 
 # path to your erp lines 
 pathtoErpfiles =  'data/Bag.main&rawds/ert_copy/an_dchar'

@@ -13,8 +13,7 @@ import inspect
 import numpy as np 
 import pandas as pd 
 
-
-from .._sklearn import ( 
+from ..sklearn import ( 
      DecisionTreeClassifier, 
      KNeighborsClassifier, 
      OneHotEncoder, 
@@ -36,10 +35,17 @@ from .._sklearn import (
      
 ) 
  
-from ..analysis.basics import SLAnalyses
-from ..utils._watexlog import watexlog 
-from ..utils.mlutils import hints 
-from .._typing import ( 
+from .features import FeatureInspection
+from ..tools._watexlog import watexlog 
+from ..tools.mlutils import (
+    cfexist, 
+    findDifferenceGenObject, 
+    formatModelScore, 
+    controlExistingEstimator,
+    format_generic_obj,
+    __estimator
+    )
+from ..typing import ( 
     T, 
     Generic,
     Iterable ,
@@ -47,8 +53,8 @@ from .._typing import (
 ) 
 
 import  watex.exceptions as Wex 
-import  watex.utils.decorator as deco
-import  watex.utils.funcutils as func
+import  watex.tools.decorators as deco
+import  watex.tools.funcutils as func
 
 
 _logger =watexlog().get_watex_logger(__name__)
@@ -59,7 +65,7 @@ d_estimators__={'dtc':DecisionTreeClassifier,
                 'knn':KNeighborsClassifier 
                  }
 if _HAS_ENSEMBLE_ :
-    from .._sklearn import skl_ensemble__
+    from ..sklearn import skl_ensemble__
     
     for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble__): 
         d_estimators__[es_]=esf_ 
@@ -225,7 +231,8 @@ class Preprocessing :
         if datafn is not None : 
            self._data_fn = datafn 
     
-        slObj= SLAnalyses(data_fn=self._data_fn, set_index=True,
+        slObj= FeatureInspection(
+            data_fn=self._data_fn, set_index=True,
                            col_id =self._index_col_id)
         
         self.index_col_id = slObj._index_col_id 
@@ -595,7 +602,7 @@ class Preprocessing :
             estim_full_name =self.default_estimator 
         
         if default_estimator is not None : 
-            default_estimator = hints.controlExistingEstimator(
+            default_estimator = controlExistingEstimator(
                 default_estimator)
    
             if default_estimator is None :
@@ -865,7 +872,7 @@ class Processing (Preprocessing) :
             self.make_preprocessing_model()
             self._model_score = self.preprocessing_model_score
             self._processing_model = self.preprocessing_model
-            hints.formatModelScore(self._model_score, self.default_estimator)
+            formatModelScore(self._model_score, self.default_estimator)
             self._model_prediction = self.preprocessing_model_prediction
             self._auto =True 
     @property 
@@ -940,7 +947,7 @@ class Processing (Preprocessing) :
             
         if f_search is True : 
             # get the list of default estimator full names.
-            estfullname = [ e_key[0] for e_key in hints.__estimator.values()]
+            estfullname = [ e_key[0] for e_key in __estimator.values()]
             
             if isinstance(estim, str): 
                 self._logging.debug(
@@ -950,12 +957,12 @@ class Processing (Preprocessing) :
                               'Will try to search its corresponding in default'
                               'estimators wheter it exists' )
                 try : 
-                    estim_codecs = hints.controlExistingEstimator(estim)
+                    estim_codecs = controlExistingEstimator(estim)
                 except : 
                     warnings(
                         f'Given estimator``{estim}`` does not exist in the '
                         '  list of default estimators {}.'.format(
-                            hints.format_generic_obj(
+                            format_generic_obj(
                             estfullname)).format(*estfullname))
                 else: 
                     if estim_codecs is None: 
@@ -970,7 +977,7 @@ class Processing (Preprocessing) :
     def model_score(self): 
         """ Get the composite estimator score """
         try : 
-            hints.formatModelScore(self._model_score, self._estimator_name)
+            formatModelScore(self._model_score, self._estimator_name)
         except: 
             self._logging.debug(f'Error finding the {self._estimator_name}')
             warnings.warn(f'Error finding the {self._estimator_name}')
@@ -1159,7 +1166,7 @@ class Processing (Preprocessing) :
         except : pass 
         else : 
             try : 
-                estim_names = hints.controlExistingEstimator(
+                estim_names = controlExistingEstimator(
                     self._estimator_name)
             except: 
                 self._estimator_name = '___'
@@ -1275,15 +1282,15 @@ def find_categorial_and_numerical_features(*, df= None, features= None,
             
             if ftype is  None : continue 
             else: 
-                res=  hints.cfexist(features_to =ftype,
+                res=  cfexist(features_to =ftype,
                                 features=features)
                 if res is True :
                     if fname =='cat': 
-                        numerical_features= list(hints.findDifferenceGenObject(
+                        numerical_features= list(findDifferenceGenObject(
                         ftype, features))
 
                     elif fname =='num': 
-                        categorial_features= list(hints.findDifferenceGenObject(
+                        categorial_features= list(findDifferenceGenObject(
                         ftype, features))
                         
                     break 

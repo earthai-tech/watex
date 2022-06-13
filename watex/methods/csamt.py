@@ -3,11 +3,11 @@
 
 import warnings 
 
-from ..utils._watexlog import watexlog
+from ..tools._watexlog import watexlog
 from ..exceptions import ( 
     TopModuleError 
 ) 
-from ..utils.funcutils import ( 
+from ..tools.funcutils import ( 
     is_installing  
     ) 
 

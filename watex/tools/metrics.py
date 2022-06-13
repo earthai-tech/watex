@@ -9,17 +9,22 @@ import warnings
 import numpy as np 
 # from abc import ABC,abstractmethod
 from sklearn import metrics 
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import precision_score, recall_score 
-from sklearn.metrics import confusion_matrix , f1_score
-from sklearn.metrics import roc_curve, roc_auc_score
-from sklearn.model_selection import cross_val_predict 
+from ..sklearn import ( 
+    precision_recall_curve,
+    precision_score,
+    recall_score,
+    confusion_matrix ,
+    f1_score,
+    roc_curve, 
+    roc_auc_score,
+    cross_val_predict, 
+    )
 
-from .._typing import TypeVar
-from .utils._watexlog import watexlog
-import watex.utils.decorator as deco
+from ..typing import TypeVar
+from ._watexlog import watexlog
+from .mlutils import format_generic_obj 
+import watex.tools.decorators as deco
 import watex.exceptions as Wex
-import watex.hints as Hints
 
 T= TypeVar('T')
 
@@ -168,10 +173,10 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
                 'Could not convert {type(classe_)!r}') 
     
         if classe_ not in y: 
-            raise Wex.WATexError_inputarguments(
+            raise Wex.ArgumentError(
                 'Value must contain a least a value of label '
                     '`y`={0}'.format(
-                        Hints.format_generic_obj(y).format(*list(y))))
+                        format_generic_obj(y).format(*list(y))))
                                  
         y=(y==classe_)
         

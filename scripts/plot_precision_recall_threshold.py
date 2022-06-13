@@ -17,7 +17,7 @@ Created on Tue Sep 21 10:09:22 2021
 
 from sklearn.svm import SVC #, LinearSVC 
 
-from watex.viewer.mlplot import MLPlots 
+from watex.view.mlplot import MLPlots 
 # modules below are imported for testing scripts.
 # Not usefull to import since you provided your own dataset.
 from watex.datasets import fetch_data 

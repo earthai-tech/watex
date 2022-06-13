@@ -41,11 +41,174 @@ from .gistools import (
     )
 from ..exceptions import ( 
     StationError, 
-    # ParameterNumberError, 
     HeaderError, 
-    ResistivityError,  
+    ResistivityError,
+    ERPError,
+    VESError
 )
 
+def _is_readable (
+        f:str, 
+        readableformats : Tuple[str] = ('.csv', '.xlsx'),
+        **kws
+ ) -> DataFrame: 
+    """ Specific files that can be read file throughout the packages 
+    :param f: Path-like object -Should be a readable files. 
+    :param readableformats: tuple -Specific readable files 
+    
+    :return: dataframe - A dataframe with head contents... 
+    
+    """
+    if not os.path.isfile: 
+        raise TypeError (
+            f'Expected a Path-like object, got : {type(f).__name__!r}')
+
+    if os.path.splitext(f)[1].lower() not in readableformats:
+        raise TypeError(f'Can only parse the {smft(readableformats)} files'
+                        )
+    
+    if f.endswith ('.csv'): 
+        f = pd.read_csv (f,**kws) 
+    elif f.endswith ('.xlsx'): 
+        f = pd.read_excel(f, **kws )
+        
+    return f 
+    
+def vesSelector( 
+    data:str | DataFrame[DType[float|int]] = None, 
+    *, 
+    rhoa: Array |Series | List [float] = None, 
+    AB :Array |Series = None, 
+    MN: Array|Series | List[float] =None, 
+    rhoaIndex: Optional[int]  = None, 
+    **kws
+) -> DataFrame : 
+    """ Assert the validity of |VES| data and return a sanitize dataframe. 
+    
+    :param rhoa: array-like - Apparent resistivities collected during the 
+        sounding. 
+    :param AB: array-like - Investigation distance between the current 
+        electrodes. Note that the `AB` is by convention equals to `AB/2`. 
+        It's taken as half-space of the investigation depth... 
+    :param MN: array-like - Potential electrodes distances at each investigation 
+        depth. Note by convention the values are half-space and equals to 
+        `MN/2`. 
+    :param f: Path-like object or sounding dataframe. If given, the 
+        others parameters could keep the ``None` values. 
+    :param rhoaIndex: int - The index to retrieve the resistivity data of a 
+        specific sounding point. Sometimes the sounding data are composed of
+        the different sounding values collected in the same survey area into 
+        different |ERP| line. For instance::
+            
+            +------+------+----+----+----+----+----+
+            | AB/2 | MN/2 |SE1 | SE2| SE3| ...|SEn |
+            +------+------+----+----+----+----+----+
+            
+        Where `SE` are the electrical sounding data values  and `n` is the 
+        number of the sounding points selected. `SE1`, `SE2` and `SE3` are 
+        three  points selected for |VES| i.e. 3 sounding points carried out 
+        either in the same |ERP| or somewhere else. These sounding data are 
+        the resistivity data with a  specific numbers. Commonly the number 
+        are randomly chosen. It does not refer to the expected best fracture
+        zone selected after the prior-interpretation. After transformation 
+        via the function `ves_selector`, the header of the data should hold 
+        the `resistivity`. For instance, refering to the table above, the 
+        data should be::
+            
+            +----+----+-------------+-------------+-------------+----
+            | AB | MN |resistivity  | resistivity | resistivity | ...
+            +----+----+-------------+-------------+-------------+----
+        
+        Therefore, the `rhoaIndex` is used to select the specific resistivity
+        values i.e. select the corresponding sounding number  of the |VES| 
+        expecting to locate the drilling operations or for computation. For 
+        esample, `rhaoIndex`=1 should figure out:: 
+            
+            +------+------+----+        +-----+----+------------+
+            | AB/2 | MN/2 |SE2 |  -->   | AB | MN |resistivity |
+            +------+------+----+        +----+----+------------+
+        
+        If `rhoaIndex` is ``None`` and the number of sounding curves are more 
+        than one, by default the first sounding curve is selected ie 
+        `rhoaIndex` equals to ``0``
+    :param kws: dict - Pandas dataframe reading additionals
+        keywords arguments.
+        
+    :return: -dataframe -Sanitize |VES| dataframe with ` AB`, `MN` and
+        `resistivity` as the column headers. 
+    
+    """
+    
+    for arr in (AB , MN, rhoa): 
+        if arr is not None: 
+            _assert_all_types(arr, list, tuple, np.ndarray, pd.Series) 
+            
+    try: 
+        rhoaIndex =  rhoaIndex if rhoaIndex is None else int(rhoaIndex) 
+    except: 
+        raise TypeError (
+            f'Index is an integer, not {type(rhoaIndex).__name__!r}')
+        
+    if data is not None: 
+        if isinstance(data, str): 
+            try : 
+                data = _is_readable(data, **kws)
+            except TypeError as typError: 
+                raise VESError (str(typError))
+ 
+        data = _assert_all_types(data, pd.DataFrame )
+  
+        # sanitize the dataframe 
+        pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
+        data.columns = ncols 
+        try : 
+            rhoa= data.resistivity 
+        except : 
+            raise ResistivityError(
+                "Data validation aborted! Missing resistivity values.")
+        else : 
+            # In the case, we got a multiple resistivity values 
+            # corresponding to the different sounding values 
+            if rhoa.ndim > 1 :
+                if rhoaIndex is None: 
+                    rhoaIndex = 0 
+                elif rhoaIndex  >= len(rhoa.columns): 
+                    warnings.warn(f'The index `{rhoaIndex}` is out of the range' 
+                                  f' `{len(rhoa.columns)-1}` for selecting the'
+                                  ' specific resistivity data. By default, we '
+                                  'only keep the data at the index 0.'
+                        )
+                    rhoaIndex = 0 
+                    
+            rhoa = rhoa.iloc[:, rhoaIndex] if rhoa.ndim > 1 else rhoa 
+            
+        if 'MN' in data.columns: 
+            MN = data.MN 
+        try: 
+            AB= data.AB 
+        except: 
+            raise VESError("Data validation aborted! Current electrodes values"
+                " are missing. Specify the deep measurement!")
+            
+    if rhoa is None: 
+        raise ResistivityError(
+            "Data validation aborted! Missing resistivity values.")
+    if AB is None: 
+        raise VESError("Data validation aborted! Current electrodes values"
+            " are missing. Specify the deep measurement!")
+
+    AB = np.array(AB) ; MN = np.array(MN) ; rhoa = np.array(rhoa) 
+    
+    if len(AB) !=len(rhoa): 
+        raise VESError(" Deep measurement from the current electrodes `AB` and"
+                       " the resistiviy values `rhoa` must have the same length"
+                       f'. But `{len(AB)}` and `{len(rhoa)}` were given.')
+        
+    sdata =pd.DataFrame(
+        {'AB': AB, 'MN': MN, 'resistivity':rhoa},index =range(len(AB)))
+    
+    return sdata
+ 
 def fill_coordinates(
     data: DataFrame =None, 
     lon: Array = None,
@@ -423,7 +586,7 @@ def is_erp_dataframe (
     return data_
 
 
-def erp_selector (
+def erpSelector (
         f: str | NDArray | Series | DataFrame ,
         columns: str | List[str] = ..., 
         **kws:Any 
@@ -500,14 +663,10 @@ def erp_selector (
             if ',' in columns: columns =columns.split(',')
             
     if os.path.isfile(f): 
-        if os.path.splitext(f)[1].lower() not in ('.csv', '.xlsx'):
-            raise ValueError('Can only read the file `.csv and `.xlsx`'
-                            ' file. Please provide the right file.')
-    
-        if f.endswith ('.csv'): 
-            f = pd.read_csv (f,**kws) 
-        elif f.endswith ('.xlsx'): 
-            f = pd.read_excel(f, **kws )
+        try : 
+            f = _is_readable(f, **kws)
+        except TypeError as typError: 
+            raise ERPError (str(typError))
             
     if isinstance( f, np.ndarray): 
         name = copy.deepcopy(columns)
@@ -948,6 +1107,7 @@ def _define_conductive_zone(
     
     :returns: 
         - station position index in the conductive zone
+        - station position index in the whole |ERP| line 
         - conductive zone of resistivity values 
         - conductive zone positionning 
     
@@ -966,8 +1126,10 @@ def _define_conductive_zone(
     if s is None and auto is False: 
         raise TypeError ('Expected the station position. NoneType is given.')
     elif s is None and auto: 
-        s = int(np.argwhere (erp == erp.min())) 
+        s, = np.where (erp == erp.min()) 
+        s=int(s)
     s, pos = _assert_stations(s, **kws )
+ 
     # takes the last position if the position is outside 
     # the number of stations. 
     pos = len(erp) -1  if pos >= len(erp) else pos 
@@ -983,7 +1145,11 @@ def _define_conductive_zone(
         sr = p[:pos][-3:] ;  sl = p[pos:pos +3 +1 ]
         pcz = np.concatenate((sr, sl))
         
-    return pos , cz , pcz
+    # Get the new position in the selected conductive zone 
+    # from the of the whole erp 
+    pix, = np.where (cz == erp[pos])
+
+    return int(pix), pos, cz , pcz
 
 def _assert_stations(
     s:Any , 
@@ -1066,10 +1232,10 @@ def _assert_stations(
             s , ix  = "S{:02}".format(s), s - 1
         
         elif keepindex: 
+            
             if s < 0: raise ValueError (msg) # for consistency
             s, ix =  "S{:02}".format(s ), s  
-            
-    
+    # Recompute the station position if the dipole value are given
     if dipole is not None: 
         if isinstance(dipole, str): #'10m'
             if dipole.find('km')>=0: 
@@ -1080,12 +1246,12 @@ def _assert_stations(
             try : 
                 dipole = float(dipole) 
             except : 
-                raise StationError( 'invalid literal value for'
+                raise StationError( 'Invalid literal value for'
                                          f' dipole : {dipole!r}')
         # since the renamed from dipole starts at 0 
         # e.g. 0(S1)---10(S2)---20(S3) ---30(S4)etc ..
         ix = int(st//dipole)  ; s= "S{:02}".format(ix +1)
-        
+    
     return s, ix 
 
 def _parse_args (

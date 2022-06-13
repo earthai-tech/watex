@@ -1,39 +1,31 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
+# Edited on Mon Sep  6 17:53:06 2021
 # This module is a set of transformers for data preparing. It is  part of 
 # the WATex preprocessing module which is released under a MIT- licence.
-"""
-Created on Mon Sep  6 17:53:06 2021
 
-@author: @Daniel03
-"""
 # from __future__ import division 
 import inspect
-# import collections
 import warnings 
 import numpy as np 
 import pandas as pd 
 # from pandas.api.types import is_integer_dtype
 
-from sklearn.model_selection import StratifiedShuffleSplit 
-from sklearn.model_selection import train_test_split 
-from sklearn.base import(
+from ..sklearn import ( 
+    StratifiedShuffleSplit, 
+    train_test_split,
     BaseEstimator,
-    TransformerMixin
-)
-from sklearn.preprocessing import  (
+    TransformerMixin,
     StandardScaler,
-    MinMaxScaler
-)
-from sklearn.preprocessing import( 
+    MinMaxScaler,
     OrdinalEncoder,
     OneHotEncoder 
 )
 
 # import watex.utils.exceptions as Wex 
-from ..utils._watexlog import watexlog 
-from ..analysis.basics import categorize_flow 
-import  watex.utils.mlutils as mlfunc
+from ..tools._watexlog import watexlog 
+from ..tools.funcutils import categorize_flow 
+import  watex.tools.mlutils as mlfunc
 
 __docformat__='restructuredtext'
 

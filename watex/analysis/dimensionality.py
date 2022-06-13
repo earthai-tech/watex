@@ -21,10 +21,10 @@ from .._sklearn import (
 
     )
 
-from ..utils.decorator import docstring
-from ..utils._watexlog import watexlog
+from ..tools.decorators import docstring
+from ..tools._watexlog import watexlog
 from ..modeling.validation import GridSearch
-from ..processing.transformers import (
+from ..bases.transformers import (
     DataFrameSelector,
     CombinedAttributesAdder
    )

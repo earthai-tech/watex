@@ -1,16 +1,9 @@
 # -*- coding: utf-8 -*-
-#       Author: Kouadio K.Laurent<etanoyau@gmail.con>
-#       Create:on Tue Oct 12 15:37:59 2021
+#       Author: Kouadio K.Laurent<etanoyau@gmail.com>
+#       Created:on Tue Oct 12 15:37:59 2021
+#       Edited:on Fri Sep 10 15:37:59 2021
 #       Licence: MIT
 
-"""
-Extraction module 
-==================
-
-This module is a core use to retreive data from local,  
-git and zenodo record. 
-
-"""
 import os 
 import time
 import sys 
@@ -18,14 +11,37 @@ import subprocess
 import concurrent.futures
 import shutil  
 import zipfile
+import warnings
+from abc import (
+    ABCMeta, 
+    abstractmethod
+    )   
+import pickle 
+import joblib
 from six.moves import urllib 
+from pprint import pprint  
 
-from ..utils.mlutils import (
+from ..typing import (
+    Tuple, 
+    Optional, 
+    Union, 
+    DataFrame, 
+    )
+from ..tools.funcutils import (
+    savepath_,
+)
+from ..tools.decorators import  (
+    writef ,
+    ) 
+from ..exceptions import (
+    FileHandlingError, 
+    ExtractionError 
+)
+from ..tools.mlutils import (
     fetchSingleTGZData, 
     subprocess_module_installation
     )
-from ..utils._watexlog import watexlog
-from ..utils.exceptions import ExtractionError 
+from ..tools._watexlog import watexlog
 
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -40,9 +56,200 @@ TGZ_FILENAME = '/fmain.bagciv.data.tar.gz'
 CSV_FILENAME = '/__tar.tgz_files__/___fmain.bagciv.data.csv'
 DATA_URL = GIT_ROOT  + DATA_PATH  + TGZ_FILENAME
 
-__all__=['fetchDataFromLocalandWeb']
+# __all__=['fetchDataFromLocalandWeb']
 
-def fetchDataFromLocalandWeb(f=f__): 
+#XXX TODO: 
+class WATer (ABCMeta): 
+    """ Should be a SuperClass for methods classes. 
+    
+    Instanciate the class shoud raise an error. It should initialize arguments 
+    as well for |ERP| and for |VES|. The `Water` should set the 
+    attributes and check whether attributes  are suitable for  what the 
+    specific class expects to. """
+    
+    @abstractmethod 
+    def __init__(self, *args, **kwargs): 
+        pass 
+
+
+def fetch_model(
+        modelfile: str,
+        modelpath: str = None,
+        default: bool = True,
+        modname: Optional[str] = None,
+        verbose: int = 0
+                ): 
+    """ Fetch your model saved using Python pickle module or 
+    joblib module. 
+    
+    :param modelfile: str or Path-Like object 
+        dumped model file name saved using `joblib` or Python `pickle` module.
+    :param modelpath: path-Like object , 
+        Path to model dumped file =`modelfile`
+    :default: bool, 
+        Model parameters by default are saved into a dictionary. When default 
+        is ``True``, returns a tuple of pair (the model and its best parameters)
+        . If False return all values saved from `~.MultipleGridSearch`
+       
+    :modname: str 
+        Is the name of model to retrived from dumped file. If name is given 
+        get only the model and its best parameters. 
+    :verbose: int, level=0 
+        control the verbosity.More message if greater than 0.
+    
+    :returns:
+        - `model_class_params`: if default is ``True``
+        - `pickledmodel`: model dumped and all parameters if default is `False`
+        
+    :Example: 
+        >>> from watex.bases import fetch_model 
+        >>> my_model = fetch_model ('SVC__LinearSVC__LogisticRegression.pkl',
+                                    default =False,  modname='SVC')
+        >>> my_model
+    """
+    
+    try:
+        isdir =os.path.isdir( modelpath)
+    except TypeError: 
+        #stat: path should be string, bytes, os.PathLike or integer, not NoneType
+        isdir =False
+        
+    if isdir and modelfile is not None: 
+        modelfile = os.join.path(modelpath, modelfile)
+
+    isfile = os.path.isfile(modelfile)
+    if not isfile: 
+        raise FileNotFoundError (f"File {modelfile!r} not found!")
+        
+    from_joblib =False 
+    if modelfile.endswith('.pkl'): from_joblib  =True 
+    
+    if from_joblib:
+       __logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+       try : 
+           pickledmodel = joblib.load(modelfile)
+           # and later ....
+           # f'{pickfname}._loaded' = joblib.load(f'{pickfname}.pkl')
+           dmsg=f"Model {modelfile !r} retreived from~.externals.joblib`!"
+       except : 
+           dmsg=''.join([f"Nothing to retrived. It's seems model {modelfile !r}", 
+                         " not really saved using ~external.joblib module! ", 
+                         "Please check your model filename."])
+    
+    if not from_joblib: 
+        __logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+        try: 
+           # DeSerializing pickled data 
+           with open(modelfile, 'rb') as modf: 
+               pickledmodel= pickle.load (modf)
+           __logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
+                         "  using Python pickle module.`!")
+           
+           dmsg=f"Model {modelfile!r} deserizaled from  {modelfile!r}!"
+        except: 
+            dmsg =''.join([" Unable to deserialized the "
+                           f"{os.path.basename(modelfile)!r}"])
+           
+        else: 
+            __logger.info(dmsg)   
+           
+    if verbose > 0: 
+        pprint(
+            dmsg 
+            )
+           
+    if modname is not None: 
+        keymess = "{modname!r} not found."
+        try : 
+            if default:
+                model_class_params  =( pickledmodel[modname]['best_model'], 
+                                   pickledmodel[modname]['best_params_'], 
+                                   pickledmodel[modname]['best_scores'],
+                                   )
+            if not default: 
+                model_class_params=pickledmodel[modname]
+                
+        except KeyError as key_error: 
+            warnings.warn(
+                f"Model name {modname!r} not found in the list of dumped"
+                f" models = {list(pickledmodel.keys()) !r}")
+            raise KeyError from key_error(keymess + "Shoud try the model's"
+                                          f"names ={list(pickledmodel.keys())!r}")
+        
+        if verbose > 0: 
+            pprint('Should return a tuple of `best model` and the'
+                   ' `model best parameters.')
+           
+        return model_class_params  
+            
+    if default:
+        model_class_params =list()    
+        
+        for mm in pickledmodel.keys(): 
+            model_class_params.append((pickledmodel[mm]['best_model'], 
+                                      pickledmodel[mm]['best_params_'],
+                                      pickledmodel[modname]['best_scores']))
+    
+        if verbose > 0: 
+               pprint('Should return a list of tuple pairs:`best model`and '
+                      ' `model best parameters.')
+               
+        return model_class_params
+
+    return pickledmodel
+
+
+@writef(reason='write', from_='df')
+def exportdf (
+    df : DataFrame =None,
+    refout: Optional [str] =None, 
+    to: Optional [str] =None, 
+    savepath:Optional [str] =None,
+    modname: str  ='_wexported_', 
+    reset_index: bool =True
+) -> Tuple [DataFrame, Union[str], bool ]: 
+    """ 
+    Export dataframe ``df``  to `refout` files. 
+    
+    `refout` file can be Excell sheet file or '.json' file. To get more details 
+    about the `writef` decorator , see :doc:`watex.utils.decorator.writef`. 
+    
+    :param refout: 
+        Output filename. If not given will be created refering to the 
+        exported date. 
+        
+    :param to: Export type; Can be `.xlsx` , `.csv`, `.json` and else.
+       
+    :param savepath: 
+        Path to save the `refout` filename. If not given
+        will be created.
+    :param modname: Folder to hold the `refout` file. Change it accordingly.
+        
+    :returns: 
+        - `df_`: new dataframe to be exported. 
+        
+    """
+    if df is None :
+        warnings.warn(
+            'Once ``df`` arguments in decorator :`class:~decorator.writef`'
+            ' is selected. The main type of file ready to be written MUST be '
+            'a pd.DataFrame format. If not an error raises. Please refer to '
+            ':doc:`~.utils.decorator.writef` for more details.')
+        
+        raise FileHandlingError(
+            'No dataframe detected. Please provided your dataFrame.')
+
+    df_ =df.copy(deep=True)
+    if reset_index is True : 
+        df_.reset_index(inplace =True)
+    if savepath is None :
+       savepath = savepath_(modname)
+        
+    return df_, to,  refout, savepath, reset_index 
+
+    
+
+def fetchDataFromLocalandWeb(f :str = f__): 
     """Retreive Bagoue dataset from Github repository or zenodo record. 
     
     It will take a while when fetching data for the first time outsite of 
@@ -134,7 +341,7 @@ def fetchDataFromLocalandWeb(f=f__):
             
     return f
 
-def _fromlocal (f=f__): 
+def _fromlocal (f: str =f__) -> str : 
     """ check whether the local file exists and return file name."""
     is_file =os.path.isfile(f)
     if not is_file :
@@ -159,7 +366,7 @@ def _fromlocal (f=f__):
                 return f0
     return f 
 
-def _fromgithub( f=f__, root = GIT_ROOT):
+def _fromgithub( f: str =f__, root:str  = GIT_ROOT) -> str:
     """ Get file from github and if file exists create your local directory  
         and save file."""
     # make a request
@@ -229,7 +436,10 @@ def _fromgithub( f=f__, root = GIT_ROOT):
     return f 
 
 
-def _fromzenodo( doi = ZENODO_RECORD_ID_OR_DOI, path = LOCAL_DIR): 
+def _fromzenodo( 
+        doi: str = ZENODO_RECORD_ID_OR_DOI,
+        path: str = LOCAL_DIR
+        ) -> str: 
     """Fetch data from zenodo records with ``doi`` and ``path``
     :param doi: Zenodo get obj 
         Record of zenodo database. see https://zenodo.org/
@@ -350,7 +560,11 @@ def unZipFileFetchedFromZenodo(zipdir =LOCAL_DIR,
     return is_f_file 
 
 
-def fetchSingleRARData(zip_file, member_to_extract, zipdir ):
+def fetchSingleRARData(
+        zip_file :str ,
+        member_to_extract:str,
+        zipdir: str 
+        )-> None:
     """ RAR archived file domwloading process."""
     
  
@@ -433,7 +647,11 @@ def fetchSingleRARData(zip_file, member_to_extract, zipdir ):
         print(f"---> Unraring the `{zip_file}=main.bagciv.data.csv`"
           "was successfully done.")
         
-def fetchSingleZIPData(zip_file, zipdir, **zip_kws ): 
+def fetchSingleZIPData(
+        zip_file:str,
+        zipdir:str, 
+        **zip_kws 
+        )-> None: 
     """ Find only the archived zip file and save to the current directory.
     
     Parameters 
@@ -478,9 +696,12 @@ def fetchSingleZIPData(zip_file, zipdir, **zip_kws ):
               "was successfully retreived.")
             
     
-def retrieveZIPmember(zipObj, *, 
-                      file_to_extract='__tar.tgz_files__/___fmain.bagciv.data.csv',
-                      savepath=None, rename_outfile='main.bagciv.data.csv' ) : 
+def retrieveZIPmember(
+        zipObj, *, 
+        file_to_extract:str ='__tar.tgz_files__/___fmain.bagciv.data.csv',
+        savepath: Optional[str] =None, 
+        rename_outfile: str ='main.bagciv.data.csv' 
+        ) -> str: 
     """ Retreive  member from zip and collapse the extracted directory by "
     "saving into a  new  directory
     
@@ -532,9 +753,16 @@ def retrieveZIPmember(zipObj, *,
     
     return rename_outfile 
  
-def move_file(filename, directory): 
+def move_file(filename:str , directory:str )-> str: 
     if os.path.isfile(filename):
         shutil.move(filename, directory)
 
 
 
+
+        
+
+
+
+
+        

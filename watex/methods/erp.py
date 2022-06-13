@@ -2,18 +2,8 @@
 # Copyright (c) 2021 Kouadio K. Laurent, zju-ufhb
 # This module is part of the WATex core package, which is released under a
 # MIT- licence.
+# Created on Tue May 18 12:33:15 2021
 
-"""
-.. synopsis:: 
-    watex.core.erp
-    Module to deal with Electrical resistivity profile (ERP)
-    exploration tools 
-
-
-Created on Tue May 18 12:33:15 2021
-
-@author: @Daniel03
-"""
 import os
 import re 
 import sys
@@ -25,12 +15,11 @@ import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema 
 
-from ..utils.__init__ import savepath as savePath  
-from ..utils._watexlog import watexlog 
-import  watex.utils.exceptions as Wex
-import watex.utils.exmath as wMath 
-import watex.utils.func_utils as func
-import watex.utils.gis_tools as gis
+from ..tools._watexlog import watexlog 
+import  watex.exceptions as Wex
+import  watex.tools.exmath as wMath 
+import watex.tools.funcutils as func
+import watex.tools.gistools as gis
 
 _logger =watexlog.get_watex_logger(__name__)
 
@@ -288,15 +277,16 @@ class ERP_collection:
         # create a dataframe object
         self._logging.info('Setting and `ERP` data array '
                            'and create pd.Dataframe')
-        self.erps_data= func.concat_array_from_list([
-                                        self.survey_ids, 
-                                        self.easts, 
-                                        self.norths, 
-                                        self.powers, 
-                                        self.magnitudes, 
-                                        self.shapes, 
-                                        self.types, 
-                                        self.sfis], concat_axis=1)
+
+        self.erps_data= np.c_[
+                            self.survey_ids, 
+                            self.easts, 
+                            self.norths, 
+                            self.powers, 
+                            self.magnitudes, 
+                            self.shapes, 
+                            self.types, 
+                            self.sfis]
         self.erpdf =pd.DataFrame(data = self.erps_data, 
                                   columns=self.erpColums) 
                                   
@@ -397,11 +387,11 @@ class ERP_collection:
                               index =False)
 
         if self.savepath is None :
-            self.savepath = savePath('_erpData_')
+            self.savepath = func.savepath_('_erpData_')
             
         if self.savepath is not None :
             if not os.path.isdir(self.savepath): 
-                self.savepath = savePath('_erpData_')
+                self.savepath = func.savepath_('_erpData_')
             try : 
                 shutil.move(os.path.join(os.getcwd(),self.filename) ,
                         os.path.join(self.savepath , self.filename))

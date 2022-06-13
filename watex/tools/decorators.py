@@ -405,7 +405,7 @@ class writef(object):
             return func(*args, **kwargs)
         return decorated_func 
         
-@deprecated('Replaced by :class:`watex.utils.decorator.catmapflow2`')   
+@deprecated('Replaced by :class:`watex.utils.decorators.catmapflow2`')   
 def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']): 
     """
     Decorator function  collected  from the `func`the `target_values` to be 

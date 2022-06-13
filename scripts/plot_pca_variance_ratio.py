@@ -10,7 +10,7 @@ Created on Wed Sep 22 22:14:10 2021
 @author: @Daniel03
 """
 
-from watex.viewer.mlplot import MLPlots
+from watex.view.mlplot import MLPlots
 from watex.analysis.dimensionality import pcaVarianceRatio 
 # module below are imported for testing scripts.
 # Not usefull to import since you have your own dataset.
