@@ -17,7 +17,7 @@ from ..tools.funcutils import (
     smart_strobj_recognition 
     )
 from ..tools.coreutils import (
-    _define_conductive_zone, 
+    defineConductiveZone, 
     _assert_station_positions,  
     fill_coordinates, 
     erpSelector, 
@@ -25,18 +25,17 @@ from ..tools.coreutils import (
     
 ) 
 from ..tools.exmath import (
-    shape_, 
+    shape, 
     type_, 
-    power_, 
-    magnitude_, 
-    sfi_,
+    power, 
+    magnitude, 
+    sfi,
     ohmicArea, 
     invertVES,
     )
 from ..typing import  ( 
     List, 
     Optional, 
-    Array, 
     NDArray, 
     Series , 
     DataFrame, 
@@ -340,8 +339,8 @@ class ResistivityProfiling(ElectricalMethods):
         # conductive zone while 
         # pos: is the index of drilling point in the whole 
         # survey position  
-        ix, pos, self.conductive_zone_, self.position_zone_ =\
-            _define_conductive_zone(
+        self.conductive_zone_, self.position_zone_, ix, pos,  =\
+            defineConductiveZone(
                         self.resistivity_,
                         s= self.station, 
                         auto = self.auto,
@@ -376,13 +375,13 @@ class ResistivityProfiling(ElectricalMethods):
         self.sves_resistivity_= self.resistivity_[pos]
         
         # Compute the predictor parameters 
-        self.power_ = power_(self.position_zone_)
-        self.shape_ = shape_(self.conductive_zone_ ,
+        self.power_ = power(self.position_zone_)
+        self.shape_ = shape(self.conductive_zone_ ,
                              s= ix , 
                              p= self.position_)
-        self.magnitude_ = magnitude_(self.conductive_zone_)
+        self.magnitude_ = magnitude(self.conductive_zone_)
         self.type_ = type_ (self.resistivity_)
-        self.sfi_ = sfi_(cz = self.conductive_zone_, 
+        self.sfi_ = sfi(cz = self.conductive_zone_, 
                          p = self.position_zone_, 
                          s = ix, 
                          dipolelength= self.dipole
@@ -548,7 +547,7 @@ class VerticalSounding (ElectricalMethods):
         
     **objective**: str 
         Type operation to outputs. By default, the function outputs the value
-        of pseudo-area in :math:`$\ohm.m^2$`. However, for plotting purpose by
+        of pseudo-area in :math:`$ohm.m^2$`. However, for plotting purpose by
         setting the argument to ``view``, its gives an alternatively outputs of
         X and Y, recomputed and projected as weel as the X and Y values of the
         expected fractured zone. Where X is the AB dipole spacing when imaging 
@@ -585,7 +584,7 @@ class VerticalSounding (ElectricalMethods):
     >>> vobj.area1_, vobj.area2_ # value of each area in ohm.m^2 
     ... (254.28891096053943, 95.35434409123027) 
     >>> vobj.roots_ # different boundaries in pairs 
-    >>> array([ 45.        ,  57.55255255,  96.91691692, 100.        ])
+    >>> [array([45.        , 57.55255255]), array([ 96.91691692, 100.        ])]
     """
     def __init__(self,
                  fromS: float = 45.,
@@ -714,18 +713,20 @@ class VerticalSounding (ElectricalMethods):
                 f" {self.__class__.__name__!r} object first.")
         
         usefulparams = (
-            'area', 'AB','MN',  'arrangement','utm_zone', 'objective', 'rho0',
+            'area', 'AB','MN', 'arrangememt','utm_zone', 'objective', 'rho0',
              'h0', 'fromS', 'max_depth_', 'ohmic_area_', 'nareas_')
         
         table_= pd.DataFrame (
-            {f"{k }": getattr(self, k , np.nan )
+            {f"{k}": getattr(self, k , np.nan )
              for k in usefulparams}, index=range(1)
             )
         table_.area = self.area
         table_.set_index ('area', inplace =True)
-        table_.rename (columns= {'max_depth_':'max_depth',
-                                 'ohmic_area_':'ohmic_area',
-                            'nareas_':'nareas'},
+        table_.rename (columns= {
+            'max_depth_':'max_depth',
+            'ohmic_area_':'ohmic_area',
+            'nareas_':'nareas'
+                            },
                            inplace =True)
         if keeponlyparams: 
             table_.reset_index(inplace =True )

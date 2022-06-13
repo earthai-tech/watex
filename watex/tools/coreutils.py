@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
  
-from .._property import P 
-from .._typing import (
+from ..property import P 
+from ..typing import (
     Any, 
     List ,  
     Union, 
@@ -28,6 +28,13 @@ from .._typing import (
     Sub, 
     SP
 )
+from ..exceptions import ( 
+    StationError, 
+    HeaderError, 
+    ResistivityError,
+    ERPError,
+    VESError
+)
 from .funcutils import (
     smart_format as smft,
     _isin , 
@@ -39,13 +46,7 @@ from .gistools import (
     project_point_ll2utm, 
     project_point_utm2ll 
     )
-from ..exceptions import ( 
-    StationError, 
-    HeaderError, 
-    ResistivityError,
-    ERPError,
-    VESError
-)
+
 
 def _is_readable (
         f:str, 
@@ -159,7 +160,11 @@ def vesSelector(
         data = _assert_all_types(data, pd.DataFrame )
   
         # sanitize the dataframe 
+
         pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
+        if ncols is None:
+            raise HeaderError (f"Columns {smft(pObj.icpr)} are missing in "
+                               "the given dataset.")
         data.columns = ncols 
         try : 
             rhoa= data.resistivity 
@@ -438,8 +443,9 @@ def is_erp_series (
     --------
     >>> import numpy as np 
     >>> import pandas as pd 
+    >>> from watex.tools.coreutils imprt is_erp_series 
     >>> data = pd.Series (np.abs (np.random.rand (42)), name ='res') 
-    >>> data = _is_erp_series (data)
+    >>> data = is_erp_series (data)
     >>> data.columns 
     ... Index(['station', 'easting', 'northing', 'resistivity'], dtype='object')
     >>> data = pd.Series (np.abs (np.random.rand (42)), name ='NAN') 
@@ -511,7 +517,7 @@ def is_erp_dataframe (
     Examples
     --------
     >>> import numpy as np 
-    >>> from watex.utils.coreutils import _is_erp_dataframe 
+    >>> from watex.tools.coreutils import _is_erp_dataframe 
     >>> df = pd.read_csv ('data/erp/testunsafedata.csv')
     >>> df.columns 
     ... Index(['x', 'stations', 'resapprho', 'NORTH'], dtype='object')
@@ -639,7 +645,7 @@ def erpSelector (
     Examples
     ---------
     >>> import numpy as np 
-    >>> from watex.utils.coreutils import erp_selector
+    >>> from watex.tools.coreutils import erp_selector
     >>> df = erp_selector ('data/erp/testsafedata.csv')
     >>> df.shape 
     ... (45, 4)
@@ -662,11 +668,12 @@ def erpSelector (
             columns =columns.replace(':', ',').replace(';', ',')
             if ',' in columns: columns =columns.split(',')
             
-    if os.path.isfile(f): 
-        try : 
-            f = _is_readable(f, **kws)
-        except TypeError as typError: 
-            raise ERPError (str(typError))
+    if isinstance(f, str):
+        if os.path.isfile(f): 
+            try : 
+                f = _is_readable(f, **kws)
+            except TypeError as typError: 
+                raise ERPError (str(typError))
             
     if isinstance( f, np.ndarray): 
         name = copy.deepcopy(columns)
@@ -752,7 +759,7 @@ def _fetch_prefix_index (
        
     :Example: 
         >>> from numpy as np 
-        >>> from watex.utils.coreutils import _assert_positions
+        >>> from watex.tools.coreutils import _assert_positions
         >>> array1 = np.c_[np.arange(0, 70, 10), np.random.randn (7,3)]
         >>> col = ['pk', 'x', 'y', 'rho']
         >>> index, = _fetch_prefix_index (array1 , col = ['pk', 'x', 'y', 'rho'], 
@@ -829,7 +836,7 @@ def _assert_station_positions(
     :Example: 
         
         >>> from numpy as np 
-        >>> from watex.utils.coreutils import _assert_station_positions
+        >>> from watex.tools.coreutils import _assert_station_positions
         >>> array1 = np.c_[np.arange(0, 70, 10), np.random.randn (7,3)]
         >>> col = ['pk', 'x', 'y', 'rho']
         >>> _assert_positions(array1, col)
@@ -859,7 +866,7 @@ def _assert_station_positions(
     
     return  positions, dipoleLength 
 
-def plot_anomaly(
+def plotAnomaly(
     erp: Array | List[float],
     cz: Optional [Sub[Array], List[float]] = None, 
     s: Optional [str] = None, 
@@ -926,7 +933,7 @@ def plot_anomaly(
    
     :Example: 
         >>> import numpy as np 
-        >>> from watex.utils.coreutils import ( 
+        >>> from watex.tools.coreutils import ( 
         ...    plot_anomaly, _define_conductive_zone)
         >>> test_array = np.random.randn (10)
         >>> selected_cz ,*_ = _define_conductive_zone(test_array, 7) 
@@ -1016,8 +1023,9 @@ def plot_anomaly(
             if 's' or 'pk' in s.upper(): 
                 # if provide the station. 
                 keepindex =False 
-        cz , ix = _define_conductive_zone(
-            erp, s = s , auto = auto, keepindex=keepindex )
+        cz , _ , _, ix = defineConductiveZone(
+           erp, s = s , auto = auto, keepindex=keepindex 
+           )
         
         s = "S{:02}".format(ix +1) if s is not None else s 
 
@@ -1086,7 +1094,7 @@ def plot_anomaly(
     plt.show()
         
 
-def _define_conductive_zone(
+def defineConductiveZone(
     erp:Array| pd.Series | List[float] ,
     s: Optional [str ,  int] = None, 
     p: SP = None,  
@@ -1106,14 +1114,14 @@ def _define_conductive_zone(
             the position of the lower resistivity value in |ERP|. 
     
     :returns: 
-        - station position index in the conductive zone
-        - station position index in the whole |ERP| line 
         - conductive zone of resistivity values 
         - conductive zone positionning 
+        - station position index in the conductive zone
+        - station position index in the whole |ERP| line 
     
     :Example: 
         >>> import numpy as np 
-        >>> from watex.utils.coreutils import  _define_conductive_zone
+        >>> from watex.tools.coreutils import  _define_conductive_zone
         >>> test_array = np.random.randn (10)
         >>> selected_cz ,*_ = _define_conductive_zone(test_array, 's20') 
         >>> shortPlot(test_array, selected_cz )
@@ -1129,7 +1137,6 @@ def _define_conductive_zone(
         s, = np.where (erp == erp.min()) 
         s=int(s)
     s, pos = _assert_stations(s, **kws )
- 
     # takes the last position if the position is outside 
     # the number of stations. 
     pos = len(erp) -1  if pos >= len(erp) else pos 
@@ -1149,7 +1156,7 @@ def _define_conductive_zone(
     # from the of the whole erp 
     pix, = np.where (cz == erp[pos])
 
-    return int(pix), pos, cz , pcz
+    return cz , pcz, int(pix), pos
 
 def _assert_stations(
     s:Any , 
@@ -1187,7 +1194,7 @@ def _assert_stations(
         position.
             
     :Example: 
-        >>> from watex.utils.coreutils import _assert_stations
+        >>> from watex.tools.coreutils import _assert_stations
         >>> _assert_stations('pk01')
         ... ('S01', 0)
         >>> _assert_stations('S1')
@@ -1274,7 +1281,7 @@ def _parse_args (
             
     :Example: 
         >>> import numpy as np 
-        >>> from watex.utils.coreutils import _parse_args
+        >>> from watex.tools.coreutils import _parse_args
         >>> a, b = np.arange (1, 10 , 0.5), np.random.randn(9).reshape(3, 3)
         >>> _parse_args ([a, 'data/erp/l2_gbalo.xlsx', b])
         ... array([[1.1010000e+03, 0.0000000e+00, 7.9075200e+05, 1.0927500e+06],
@@ -1343,7 +1350,7 @@ def _assert_file (
         
     :Example: 
         >>> import numpy as np 
-        >>> from watex.utils.coreutils import  _assert_file
+        >>> from watex.tools.coreutils import  _assert_file
         >>> a, b = np.arange (1, 10 , 0.5), np.random.randn(9).reshape(3, 3)
         >>> data = [a, 'data/erp/l2_gbalo', b] # collection of 03 objects 
         >>>  # but read only the Path-Like object 

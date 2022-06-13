@@ -3,6 +3,22 @@ import os
 import  re
 import numpy as np
 
+from .coreutils import ( 
+    plotAnomaly, 
+    vesSelector, 
+    erpSelector, 
+    defineConductiveZone, 
+    )
+from .exmath import ( 
+    type_,
+    shape, 
+    power, 
+    magnitude, 
+    sfi, 
+    ohmicArea, 
+    invertVES, 
+    vesDataOperator, 
+    )
 from .decorators import gdal_data_check
 
 HAS_GDAL = gdal_data_check(None)._gdal_data_found
@@ -23,19 +39,13 @@ else:
 EPSG_DICT = {}
 try:
     import pyproj
-
     epsgfn = os.path.join(pyproj.pyproj_datadir, 'epsg')
-
     f = open(epsgfn, 'r')
     lines = f.readlines()
 
     for line in lines:
         if ('#' in line): continue
-
         epsg_code_val = re.compile('<(\d+)>').findall(line)
-
-        # print( "epsg_code_val", epsg_code_val)
-
         if epsg_code_val is not None and len(epsg_code_val) > 0 and \
             epsg_code_val[0].isdigit():
             epsg_code = int(epsg_code_val[0])
@@ -43,8 +53,9 @@ try:
 
             EPSG_DICT[epsg_code] = epsg_string
         else:
-            pass  #print("epsg_code_val NOT found for this line ", line, epsg_code_val)
-    #end for
+            #print("epsg_code_val NOT found for this line ", line, epsg_code_val)
+            pass  
+   
 except Exception:
     # Failed to load EPSG codes and corresponding proj4 projections strings
     # from pyproj.
