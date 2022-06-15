@@ -1,103 +1,87 @@
 # -*- coding: utf-8 -*-
-"""
-      Exceptions classes created to handle and catch differents errors 
-      into the whole packages 
-    .Created on Wed Nov 18 17:17:13 2020
 
-@author: @Daniel03
-
-"""
-
-#=================================================================
-
-
-
-class WATexError_site(Exception): 
+class ArgumentError(Exception): 
+    pass 
+class SiteError(Exception): 
     pass 
 
-class WATexError_inputarguments(Exception): 
+class DatasetError(Exception): 
     pass 
 
-class WATexError_EDI(Exception):
+class EDIError(Exception):
     pass 
 
-class WATexError_float(Exception):
-    pass
-
-class WATexError_Header(Exception):
+class HeaderError(Exception):
     pass 
 
-class WATexError_value(Exception):
+class ConfigurationError(Exception):
     pass
 
-
-class WATexError_config_file(Exception):
+class FileHandlingError(Exception):
     pass
 
-
-class WATexError_file_handling(Exception):
-    pass
-
-
-class WATexError_plot_tip(Exception):
+class TipError(Exception):
     pass 
 
-class WATexError_plot(Exception): 
+class PlotError(Exception): 
     pass 
 
-class WATexError_parameter_number(Exception):
+class ParameterNumberError(Exception):
     pass
 
-class WATexError_processing(Exception):
+class ProcessingError(Exception):
     pass
 
-class WATexError_module_import(Exception):
+class ResistivityError(Exception):
     pass
 
-class WATexError_rho(Exception):
+class StationError(Exception):
     pass
 
-class WATexError_station(Exception):
+class FeatureError(Exception):
     pass
 
-class WATexError_FeaturesAnalysis(Exception):
+class EstimatorError(Exception):
     pass
 
-class WATexError_Estimators(Exception):
+class GeoArgumentError(Exception): 
     pass
 
-class WATexError_plot_geoinputargument(Exception): 
+class HintError(Exception): 
     pass
 
-class WATexError_plot_featuresinputargument(Exception): 
+class SQLError(Exception): 
     pass
 
-class WATexError_hints(Exception): 
+class SQLManagerError(Exception): 
     pass
 
-class WATexError_SQL(Exception): 
+class GeoDatabaseError(Exception): 
     pass
 
-class WATexError_SQL_manager(Exception): 
+class ERPError(Exception):
     pass
 
-class WATexError_SQL_interface(Exception): 
+class VESError(Exception):
     pass
 
-class WATexError_SQL_geoDataBase(Exception): 
-    pass
-
-class WATexError_SQL_update_geoinformation(Exception): 
-    pass
-class WATexError_ERP(Exception):
-    pass
-
-class WATexError_VES(Exception):
-    pass
-class WATexError_geoFeatures(Exception):
-    pass
-class WATexError_datasets(Exception):
+class ExtractionError(Exception): 
     pass 
 
-class WATexExtractionError(Exception): 
+class CSAMTError (Exception): 
     pass 
+
+class FrequencyError (Exception): 
+    pass 
+
+class CoordinateError (Exception): 
+    pass 
+
+class TopModuleError (Exception): 
+    pass 
+class FitError (Exception): 
+    pass 
+
+class ScikitLearnImportError(Exception ): 
+    pass 
+

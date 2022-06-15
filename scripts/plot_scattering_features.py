@@ -19,12 +19,11 @@ calling the `quickPlot` from :mod:`watex.viewer.plot`.
         that indicate a relationship. 
 """
 
-from watex.viewer.plot import QuickPlot
+from watex.view.plot import QuickPlot
 # from watex.analysis.features import sl_analysis
  
 # path to dataset 
-data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
-# data_fn =r'F:\repositories\watex\data\geo_fdata'
+data_fn = 'data/geo_fdata/main.bagciv.data.csv'
 #-------------------------------------------------------------------------
 # uncomment and edit the sl_analysis arguments for your purpose 
 # flow_classes =  [0., 1., 3.] # mean 0 , 0-1 m3/h , 1-3 m3/h and >3 m3/h

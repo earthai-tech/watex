@@ -18,7 +18,7 @@ Created on Tue Sep 21 11:09:55 2021
 import numpy as np 
 from sklearn.svm import SVC
 
-from watex.processing.basics import Processing 
+from watex.bases import Processing 
 # modules below are imported for testing scripts.
 # Not usefull to import since you privied your own dataset.
 from watex.datasets import fetch_data 

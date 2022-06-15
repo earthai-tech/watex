@@ -3,9 +3,11 @@
 # automate datapreparation.
 import os 
 
-from .property import fetchDataFromLocalandWeb
-from ..processing import BasicSteps 
-from ..utils.ml_utils import dumpOrSerializeData
+from ..bases import  (
+    BaseSteps, 
+   fetchDataFromLocalandWeb 
+   ) 
+from ..tools.mlutils import dumpOrSerializeData
 
 __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
           'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1',
@@ -52,7 +54,7 @@ conf_kws['feature_props_to_categorize']= feature_props_to_categorize
 # createOnjects. 
 # readfile and set dataframe
 # hash equal to ``True`` to unsure data remain consistent even mutilple runs.
-prepareObj =BasicSteps(data = data_fn,
+prepareObj =BaseSteps(data = data_fn,
                         drop_features = drop_features,
                         categorizefeature_props = feature_props_to_categorize,
                         target=target, 

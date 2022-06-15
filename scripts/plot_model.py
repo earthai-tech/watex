@@ -7,7 +7,7 @@ Created on Thu Sep 30 20:37:10 2021
 
 from sklearn.svm import SVC #, LinearSVC 
 
-from watex.viewer.mlplot import MLPlots 
+from watex.view.mlplot import MLPlots 
 # modules below are imported for testing scripts.
 # Not usefull to import since you provided your own dataset.
 from watex.datasets import fetch_data 
@@ -19,11 +19,13 @@ index = XT.index
 #-----------------------------------------------------------------------------------
 from watex.datasets._m import XT_prepared, yT_prepared
 from watex.bases import fetch_model
-my_model, *_ = fetch_model('SVC__LinearSVC__LogisticRegression.pkl', modname ='SVC') 
+# my_model, *_ = fetch_model('SVC__LinearSVC__LogisticRegression.pkl',
+#                            modname ='SVC'
+#                            ) 
 X, y = XT_prepared, yT_prepared
 #-----------------------------------------------------------------------------------
 # classifier 
-svc_clf = my_model #SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
+svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
 # predict y_true since we send test set 
 predict_ypred =True 
 
