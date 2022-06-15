@@ -23,6 +23,7 @@ WATex💧, for short, is  *A Machine Learning Research Toolbox in Hydrogeophysic
  
 ## Methods Implemented
 Until now, the methods implemented are adressed to a particular problem in water exploration field. 
+
 **Learning**  
     -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
     -  Neighbors: **KNN** 
@@ -72,7 +73,7 @@ If you use WATex in any published work, consider citing the [DOI](https://doi.or
 2. Equipe de Recherche Géophysique Appliquée, Laboratoire de Géologie Ressources Minérales et Energétiques, UFR des Sciences de la Terre et des Ressources Minières, Université Félix Houphouët-Boigny, Cote d'Ivoire. 
 
 * Developer: [1](http://www.zju.edu.cn/english/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_Kouadio K. Laurent_](kkouao@zju.edu.cn), _etanoyau@gmail.com_
-* Contributor: 
+* Contributors: 
     - [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [Loukou Kouame N.](moayek@gmail.com)
     - [1](http://www.zju.edu.cn/english/) [_Binbin MI_](mibinbin@zju.edu.cn)
     
