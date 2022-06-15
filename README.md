@@ -22,7 +22,6 @@ WATex💧, for short, is a `Machine Learning Research Toolbox in Hydrogeophysic`
  
 ## Methods Implemented
 Until now, the methods implemented are adressed to a particular problem in water exploration field. 
-
 **Learning**  
     -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/)
     -  Neighbors: **KNN** 
@@ -43,6 +42,7 @@ Until now, the methods implemented are adressed to a particular problem in water
 - Electromagnetics 
     - Countrolled Source Audio-frequency Magnetotelluric 
 
+
 ## Documentation 
 
 * API Documentation  : https://watex.readthedocs.io/en/latest/
@@ -54,6 +54,7 @@ Until now, the methods implemented are adressed to a particular problem in water
 ## Licence 
 
 WATex is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
+
 
 ## Citation
 
