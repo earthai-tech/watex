@@ -7,17 +7,34 @@ import inspect
 import warnings  
 import pickle 
 import joblib
-from typing import TypeVar, Iterable , Callable
-from abc import ABC, abstractmethod, ABCMeta  
+from ..typing import (
+    Tuple,
+    List,
+    Optional,
+    TypeVar,
+    Iterable ,
+    F, 
+    Array, 
+    NDArray, 
+    Dict,
+    Any
+    )
+from abc import (
+    ABC,
+    abstractmethod, 
+    ABCMeta  
+    )
 from pprint import pprint 
 import pandas as pd 
 import numpy as np 
 
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import cross_val_score 
-from sklearn.model_selection import GridSearchCV , RandomizedSearchCV
-
-from watex.utils._watexlog import watexlog
+from ..sklearn import (
+     mean_squared_error,
+     cross_val_score, 
+     GridSearchCV , 
+     RandomizedSearchCV
+)
+from watex.tools._watexlog import watexlog
 
 T= TypeVar('T')
 KT=TypeVar('KT')
@@ -25,18 +42,20 @@ VT=TypeVar('VT')
 
 __logger = watexlog().get_watex_logger(__name__)
 
-def multipleGridSearches(X, 
-                        y,
-                        estimators, 
-                        grid_params,
-                        scoring ='neg_mean_squared_error', 
-                        cv=7, 
-                        kindOfSearch ='GridSearchCV',
-                        random_state =42,
-                        save_to_joblib=False,
-                        get_metrics_SCORERS=False, 
-                        verbose=0,
-                        **pkws):
+def multipleGridSearches(
+        X: NDArray, 
+        y:Array,
+        estimators: F, 
+        grid_params: Dict[str, Any],
+        scoring:str  ='neg_mean_squared_error', 
+        cv: int =7, 
+        kindOfSearch:str ='GridSearchCV',
+        random_state:int =42,
+        save_to_joblib:bool =False,
+        get_metrics_SCORERS:bool =False, 
+        verbose:int =0,
+        **pkws
+        )-> Tuple[F, F, Any]:
     """ Search and find multiples best parameters from differents
     estimators.
     
@@ -209,9 +228,12 @@ def multipleGridSearches(X,
     return _clfs, _dclfs, joblib
 
 
-def prettyPrinter(clfs,  clf_score=None, 
-                   scoring =None,
-                  **kws): 
+def prettyPrinter(
+        clfs: List[F],  
+        clf_score:List[float]=None, 
+        scoring: Optional[str] =None,
+        **kws
+ )->None: 
     """ Format and pretty print messages after gridSearch using multiples
     estimators.
     
@@ -311,7 +333,7 @@ class GridSearch:
                 )
                
     def __init__(self,
-                 base_estimator:Callable[..., T],
+                 base_estimator:F,
                  grid_params:Iterable[T],
                  cv:int =4,
                  kind:str ='GridSearchCV',
@@ -563,17 +585,18 @@ class BaseEvaluation (object):
     """
    
     def __init__(self, 
-                 base_estimator,
-                 X, 
-                 y,
-                 s_ix=None,
-                 cv=7,  
-                 pipeline= None, 
-                 columns =None, 
-                 pprint=True, 
-                 cvs=True, 
-                 scoring ='neg_mean_squared_error',
-                 **kwargs): 
+                 base_estimator: F,
+                 X: NDArray, 
+                 y:Array,
+                 s_ix:int =None,
+                 cv: int =7,  
+                 pipeline: List[F]= None, 
+                 columns: List[str] =None, 
+                 pprint: bool =True, 
+                 cvs: bool =True, 
+                 scoring: str ='neg_mean_squared_error',
+                 **kwargs
+                 )-> None: 
         
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
@@ -594,7 +617,7 @@ class BaseEvaluation (object):
         if self.X is not None : 
             self.quickEvaluation()
             
-    def quickEvaluation(self, fit='yes', **kws): 
+    def quickEvaluation(self, fit: str ='yes', **kws): 
         
         """ Quick methods used to evaluate eastimator, display the 
         error results as well as the sample model_predictions.
@@ -753,7 +776,13 @@ class BaseEvaluation (object):
     
                 
 def quickscoring_evaluation_using_cross_validation(
-        clf, X, y, cv=7, scoring ='accuracy', display='off'): 
+        clf: F,
+        X:NDArray,
+        y:Array,
+        cv:int =7,
+        scoring:str  ='accuracy', 
+        display: str ='off'
+        ): 
     scores = cross_val_score(clf , X, y, cv = cv, scoring=scoring)
                          
     if display is True or display =='on':

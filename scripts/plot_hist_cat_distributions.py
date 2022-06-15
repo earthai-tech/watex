@@ -8,7 +8,7 @@ Created on Tue Aug 24 20:12:26 2021
 
 """
 
-from watex.viewer.plot import QuickPlot 
+from watex.view.plot import QuickPlot 
 
 # path to dataset 
 data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'

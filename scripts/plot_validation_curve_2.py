@@ -8,7 +8,7 @@ Created on Mon Oct  4 16:08:07 2021
 import numpy as np 
 from sklearn.svm import SVC
 
-from watex.viewer.mlplot import MLPlots
+from watex.view.mlplot import MLPlots
 # modules below are imported for testing scripts.
 # Not usefull to import since you provided your own dataset.
 from watex.bases import fetch_model 

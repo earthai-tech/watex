@@ -8,7 +8,7 @@ Created on Tue Aug 24 19:52:53 2021
 """
 
 
-from watex.viewer.plot import QuickPlot
+from watex.view.plot import QuickPlot
 from watex.datasets import fetch_data 
 
 # fetch the bagoue test dataframe  dataframe df with text attributes label

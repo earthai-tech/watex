@@ -11,12 +11,12 @@ Created on Tue Aug 24 16:43:25 2021
 
 """
 
-from watex.viewer.plot import QuickPlot 
+from watex.view.plot import QuickPlot 
 # from watex.analysis.features import sl_analysis
  
 # path to dataset 
 # data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
-data_fn ='data/geo_fdata/main.bagciv.data2.csv'
+data_fn ='data/geo_fdata/main.bagciv.data.csv'
 
 flow_classes =  [0., 1., 3.] # mean 0 , 0-1 m3/h , 1-3 m3/h and >3 m3/h
 

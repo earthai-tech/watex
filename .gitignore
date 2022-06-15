@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+docs2/
 develop-eggs/
 dist/
 downloads/
@@ -160,3 +161,5 @@ untitled2.py
 # ignore beka datafiles 
 data/beka/
 beka.py
+elo.py
+test_1.csv 

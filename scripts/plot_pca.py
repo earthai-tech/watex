@@ -42,7 +42,7 @@ Created on Tue Sep 21 10:25:59 2021
 """
 
 
-from watex.viewer.mlplot import MLPlots 
+from watex.view.mlplot import MLPlots 
 # modules below are imported for testing scripts.
 # Not usefull to import since you provided your own dataset.
 from watex.datasets import fetch_data 

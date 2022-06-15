@@ -14,11 +14,11 @@ calling the `quickPlot` from :mod:`watex.viewer.plot`.
         sure to provided numerical features arguments. 
 """
 
-from watex.viewer.plot import QuickPlot 
+from watex.view.plot import QuickPlot 
 
 # path to dataset 
 # data_fn = 'data/geo_fdata/BagoueDataset2.xlsx'
-data_fn ='data/geo_fdata/main.bagciv.data2.csv'
+data_fn ='data/geo_fdata/main.bagciv.data.csv'
 
 #-------------------------------------------------------------------------
 # uncomment and edit the sl_analysis arguments for your purpose 

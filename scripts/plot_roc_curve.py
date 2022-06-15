@@ -11,7 +11,7 @@ Created on Tue Sep 21 09:46:59 2021
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC ,  LinearSVC 
 
-from watex.viewer.mlplot import MLPlots 
+from watex.view.mlplot import MLPlots 
 # modules below are imported for testing scripts.
 # Not usefull to import since you provided your own dataset.
 from watex.datasets import fetch_data 

@@ -4,11 +4,12 @@ Created on Tue Sep  7 16:47:58 2021
 
 @author: @Daniel03
 
- Usage 
- -----
-     This module is a part of case history proccessing in Bagoue Area. It is 
-     not a perfect processing by give some steps of data preparing and 
-     pipeline creation.
+Data default preparation 
+=========================
+
+This module is a part of case history proccessing in Bagoue Area. It is 
+not a perfect processing by give some steps of data preparing and 
+pipeline creation.
     
 """
 # import modules 
@@ -17,16 +18,23 @@ import pandas as pd
 # import matplotlib.pyplot as plt 
 from pandas.plotting import scatter_matrix 
 
-from sklearn.pipeline import Pipeline, FeatureUnion  
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
-from sklearn.impute import SimpleImputer
+from .._sklearn import ( 
+    Pipeline,
+    FeatureUnion,  
+    StandardScaler, 
+    OneHotEncoder,
+    LabelEncoder,
+    SimpleImputer
+)
 
-import watex.utils.ml_utils as mfunc
-from watex.processing.transformers import (StratifiedWithCategoryAdder, CategorizeFeatures, 
-                                             CombinedAttributesAdder, DataFrameSelector) 
+from ..tools import mlutils as mfunc
+from ..bases.transformers import (
+    StratifiedWithCategoryAdder,
+    CategorizeFeatures, 
+    CombinedAttributesAdder,
+    DataFrameSelector
+    ) 
 # from watex.analysis.features import sl_analysis 
-
-
 # imputer = SimpleImputer(missing_values=np.nan, strategy='mean')
 
 class _StepByStep:
