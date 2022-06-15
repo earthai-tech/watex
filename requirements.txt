@@ -15,3 +15,7 @@ python-coveralls
 sklearn
 joblib
 seaborn
+mtpy 
+tqdm
+pycsamt 
+
