@@ -5,12 +5,13 @@
 #Created on Wed Sep 22 15:04:52 2021
 #@author: @Daniel03 <etanoyau@gmail.com>
 
+from __future__ import annotations 
+
 import warnings
 import numpy as np
 import pandas as pd 
-from typing import TypeVar 
 
-from .._sklearn import (
+from ..sklearn import (
     OrdinalEncoder ,
     SimpleImputer ,
     StandardScaler, 
@@ -20,7 +21,19 @@ from .._sklearn import (
     KernelPCA, 
 
     )
-
+from ..typing import (
+    List,
+    Any,
+    Dict, 
+    Optional, 
+    F, 
+    T,
+    Array, 
+    NDArray, 
+    DataFrame,
+    Series, 
+    Sub
+    )
 from ..tools.decorators import docstring
 from ..tools._watexlog import watexlog
 from ..modeling.validation import GridSearch
@@ -29,10 +42,19 @@ from ..bases.transformers import (
     CombinedAttributesAdder
    )
 
-T= TypeVar('T', list, tuple)
 _logger = watexlog().get_watex_logger(__name__)
 
-__all__ = ['Reducers', 'pcaVarianceRatio' ]
+__all__ = [
+    'Reducers',
+    'pcaVarianceRatio', 
+    'get_best_kPCA_params', 
+    'get_component_with_most_variance',
+    'plot_projection', 
+    'find_features_importances', 
+    'prepareDataForPCA', 
+    'find_features_importances', 
+    'pcaVarianceRatio' 
+]
           
 
 class Reducers: 
@@ -54,8 +76,14 @@ class Reducers:
             the number of variance to preserve is ``95%``.
     """
     
-    def PCA(self,X, n_components=None, plot_projection=False, 
-            plot_kws=None, n_axes =None,  **pca_kws ): 
+    def PCA(self,
+            X: NDArray | DataFrame,
+            n_components: float | int =None, 
+            plot_projection: bool =False, 
+            plot_kws: Dict[str, Any] =None,
+            n_axes: int =None, 
+            **pca_kws
+            )-> object: 
         """Principal Components analysis (PCA) is by far the most popular
         dimensional reduction algorithm. First it identifies the hyperplane 
         that lies closest to the data and project it to the data onto it.
@@ -84,7 +112,11 @@ class Reducers:
             >>> pca.components_
             >>> pca.features_importances_
         """
-        def findFeaturesImportances(fnames, components, n_axes=2): 
+        def findFeaturesImportances(
+                fnames: Array,
+                components: float |int ,
+                n_axes: int =2
+                )-> Array: 
             """ Retreive the features importance with variance ratio.
             
             :param fnames: array_like of feature's names
@@ -157,8 +189,15 @@ class Reducers:
         
         return self  
     
-    def incrementalPCA(self, X, n_components =None, *, n_batches=None,
-                       store_in_binary_file=False, filename=None, **inc_pca_kws): 
+    def incrementalPCA(self,
+                       X: NDArray | DataFrame,
+                       n_components: float | int =None,
+                       *, 
+                       n_batches: int =None,
+                       store_in_binary_file: bool =False,
+                       filename: Optional[str]=None,
+                       **inc_pca_kws
+                       )-> object: 
         """ Incremental PCA allows to split the trainsing set into mini-batches
          and feed algorithm one mini-batch at a time. 
          
@@ -167,7 +206,7 @@ class Reducers:
          algorithm to run. This is usefull for large training sets, and also 
          applying PCA online(i.e, on the fly as a new instance arrive)
          
-        :param X: ndarry, or pd.Datafame, 
+        :param X: ndarray, or pd.Datafame, 
             Dataset compose of n_features items for dimension reducing
         
         :param n_components: Number of dimension to preserve. If`n_components` 
@@ -191,7 +230,7 @@ class Reducers:
             >>> from watex.analysis.dimensionality import Reducers
             >>> from watex.datasets import fetch_data 
             >>> X, _=fetch_data('Bagoue analyses data')
-            >>> RecObj =Reducers().incrementalPCA(X,n_components=None,
+            >>> recObj =Reducers().incrementalPCA(X,n_components=None,
             ...                                      n_batches=100)
             >>> plot_projection(recObj,recObj.n_components )
         """
@@ -251,8 +290,14 @@ class Reducers:
 
         return self 
 
-    def kPCA(self, X, n_components=None, *, kernel='rbf',
-             reconstruct_pre_image=False, **kpca_kws): 
+    def kPCA(self,
+             X: NDArray | DataFrame,
+             n_components: float |int =None,
+             *, 
+             kernel: str ='rbf',
+             reconstruct_pre_image: bool =False,
+             **kpca_kws
+             )-> object: 
         """KernelPCA performs complex nonlinear projections for dimentionality
         reduction.
         
@@ -302,7 +347,13 @@ class Reducers:
 
         return self
     
-    def LLE(self, X, n_components=None, *, n_neighbors, **lle_kws): 
+    def LLE(self,
+            X: NDArray | DataFrame,
+            n_components: float |int =None,
+            *,
+            n_neighbors: int, 
+            **lle_kws
+            )->object: 
         """ Locally Linear Embedding(LLE) is nonlinear dimensinality reduction 
         based on closest neighbors (c.n).
         
@@ -369,9 +420,16 @@ class Reducers:
         return self 
     
 # @docstring(GridSearch, start='Parameters', end='Examples')
-def get_best_kPCA_params(X, n_components=2, *, y=None, param_grid=None, 
-                         clf=None, cv=7,  **grid_kws
-                         ): 
+def get_best_kPCA_params(
+        X:NDArray | DataFrame,
+        n_components: float | int =2,
+        *,
+        y: Array | Series=None,
+        param_grid: Dict[str, Any] =None, 
+        clf: F =None,
+        cv: int =7,
+        **grid_kws
+        )-> Dict[str, Any]: 
     """ Select the Kernel and hyperparameters using GridSearchCV that lead 
     to the best performance.
     
@@ -453,7 +511,10 @@ def get_best_kPCA_params(X, n_components=2, *, y=None, param_grid=None,
     return gridObj.best_params_
     
     
-def make_introspection(Obj , subObj): 
+def make_introspection(
+        Obj: object ,
+        subObj: Sub[object]
+        )-> None: 
     """ Make introspection by using the attributes of instance created to 
     populate the new classes created.
     :param Obj: callable 
@@ -465,7 +526,11 @@ def make_introspection(Obj , subObj):
     for key, value in  subObj.__dict__.items(): 
         setattr(Obj, key, value)
         
-def find_features_importances(fnames, components, n_axes=2): 
+def find_features_importances(
+        fnames: Array,
+        components: float | int,
+        n_axes: int =2
+        )-> Array: 
     """ Retreive the features importance with variance ratio.
     :param fnames: array_like of feature's names
     :param components: pca components on different axes 
@@ -487,7 +552,11 @@ def find_features_importances(fnames, components, n_axes=2):
         
     return pc 
 
-def plot_projection(self, n_components=None, **plot_kws): 
+def plot_projection(
+        self,
+        n_components: float| int =None,
+        **plot_kws
+        )-> object | None: 
     """Quick plot the N-Dimension VS explained variance Ratio.
     :param n_components: pca components on different axes 
     """
@@ -533,7 +602,10 @@ def plot_projection(self, n_components=None, **plot_kws):
                 ' number of dimension')
     plt.show()
 
-def get_component_with_most_variance(X, **pca_kws):
+def get_component_with_most_variance(
+        X: NDArray | DataFrame,
+        **pca_kws
+        )->Array:
     """ Get the number of component with 95% ratio
     :param X: Training set.
     :param pca_kws: additional pca  keywords arguments.
@@ -554,7 +626,10 @@ def get_component_with_most_variance(X, **pca_kws):
     
     return d 
        
-def set_axes_and_feature_importances(Obj, X): 
+def set_axes_and_feature_importances(
+        Obj: object,
+        X: NDArray| DataFrame
+        )-> NDArray | object: 
     """ Set n_axes<n_components_> and features attributes if `X` is 
     pd.DataFrame."""
     message ='Object %r has not attribute %r'%(Obj.__class__.__name__,
@@ -599,15 +674,17 @@ def set_axes_and_feature_importances(Obj, X):
                                         pca_components_, 
                                         Obj.n_axes)
         
-def prepareDataForPCA(X, 
-                    imputer_strategy:str ='median',
-                    missing_values :float=np.nan,
-                    num_indexes:T =None, 
-                    cat_indexes:T=None, 
-                    selector__:bool=True, 
-                    scaler__:str='StandardScaler',
-                    encode_categorical_features__:bool=True, 
-                    pd_column_list:T =None): 
+def prepareDataForPCA(
+        X: NDArray[T] | DataFrame, 
+        imputer_strategy: str ='median',
+        missing_values : float =np.nan,
+        num_indexes: List[int] =None, 
+        cat_indexes: List[int] =None, 
+        selector__: bool =True, 
+        scaler__: str ='StandardScaler',
+        encode_categorical_features__: bool = True, 
+        pd_column_list:List[str] =None
+        )-> NDArray[T]: 
     
     """ Preparing the data and handle.
 
@@ -642,7 +719,7 @@ def prepareDataForPCA(X,
         
      Notes
      -----
-     `num_indexes` and cat_indexes` is mainly used when type of data `x` is 
+     `num_indexes` and `cat_indexes` are mainly used when type of data `x` is 
      np.ndarray(m, nf) where `m` is number of instances or examples and 
      `nf` if number of attributes or features. `selector__` is used  for 
      dataframe preprocessing.
@@ -739,13 +816,14 @@ def prepareDataForPCA(X,
 
 @docstring(prepareDataForPCA, start ='Parameters', end='Notes')
 def pcaVarianceRatio(self,
-                        X, 
-                        n_components:float=0.95,
-                        add_attributes:bool=False,
-                        attributes_ix:T= None, 
-                        plot_var_ratio:bool =False,
-                        **ppca_kws ): 
-    
+                    X: NDArray | DataFrame, 
+                    n_components: float|int=0.95,
+                    add_attributes: bool =False,
+                    attributes_ix:List[int]= None, 
+                    plot_var_ratio: bool =False,
+                    **ppca_kws 
+                    )-> NDArray: 
+
     if add_attributes and attributes_ix is None: 
         warnings.warn( 'Attributes indexes|names are None. Set attributes '
                       'indexes or names to experience the attributes combinaisons'
@@ -855,7 +933,7 @@ Returns
 Examples
 --------
 
-    >>> from from watex.viewer.mlplot import MLPlots
+    >>> from from watex.view.mlplot import MLPlots
     >>> from watex.datasets.data_preparing import bagoue_train_set
     >>> plot_kws = {'lc':(.9,0.,.8),
             'lw' :3.,           # line width 

@@ -18,6 +18,7 @@ from .exmath import (
     ohmicArea, 
     invertVES, 
     vesDataOperator, 
+    scalePosition,
     )
 from .decorators import gdal_data_check
 

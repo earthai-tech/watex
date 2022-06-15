@@ -4,7 +4,8 @@
 # This module is a set of transformers for data preparing. It is  part of 
 # the WATex preprocessing module which is released under a MIT- licence.
 
-# from __future__ import division 
+from __future__ import division 
+
 import inspect
 import warnings 
 import numpy as np 

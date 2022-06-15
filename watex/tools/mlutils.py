@@ -19,14 +19,14 @@ from six.moves import urllib
 import numpy as np 
 import pandas as pd 
 
-from .._sklearn import ( 
+from ..sklearn import ( 
     train_test_split , 
     StratifiedShuffleSplit, 
     confusion_matrix, 
     mean_squared_error 
     
 )
-from .._typing import (
+from ..typing import (
     List,
     Tuple, 
     Any,

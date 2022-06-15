@@ -5,13 +5,13 @@
 # a LGPL- licence originally created on Tue Dec 29 19:18:44 2020
 # @author: ~alias @Daniel03
 
-import sys
-import re 
-import os
+# import sys
+# import re 
+# import os
 import warnings
 import numpy as np
-import matplotlib as mpl 
-import matplotlib.cm as cm 
+# import matplotlib as mpl 
+# import matplotlib.cm as cm 
 import matplotlib.pyplot as plt
 
 from .tools import exceptions as Wex 
@@ -21,7 +21,6 @@ from .tools.decorators import  (
     )
 
 
-            
 def get_stationid (stations ,  station_id) :  
     """
     Tip to get station id from user by input either integer of station name .
@@ -37,7 +36,7 @@ def get_stationid (stations ,  station_id) :
     
     :Example:
         
-        >>> from pycsamt.utils import plot_utils as punc
+        >>> from watex.tools import plotutils as punc
         >>> teslist = ['S{0:02}'.format(ii) for ii in range(23)]
         >>> ss = punc.get_stationid (stations=teslist ,  station_id=('S04',13))
         >>> print(ss)
@@ -162,7 +161,7 @@ def delineate_curve ( dict_loc , value , atol=0.2, replace_value = np.nan):
 
     :Example:
         
-        >>> from pycsamt.utils import plot_utils as punc
+        >>> from watex.tools import plotutils as punc
         >>> ts = np.array([0.1, 0.7, 2, 3, 8, 1000, 58,55, 85, 18])
         >>> to =np.array([51, 78, 0.25, 188, 256, 7])
         >>> tt ={'S00': ts, 'S01':to, 'S02': np.array([0, 5, 125, 789])}
@@ -384,27 +383,27 @@ def slice_csamt_matrix ( block_matrix , station_offsets,
     
     Parameters
     -----------
-        * block_matrix : ndarray(station_offsets.shape[0], 
-                    matrix of station depth Resistivity model
-                    depth_offsets.shape[0])
-        
-        * depth_offset : array_like  
-                   depth of investigation after generating by mesh file :>z_nodes . 
-                   
-        * station_offsets : array_like 
-                  station _offsets : offset generate by mesh_file :>x_nodes .
-                  
-        * offset_MinMax : tuple  
-              the interval of data to keep . eg if station location start by 0 : 
-                  off[0] = min and off[-1]=max (min, max):--> index 0 :
-                  minimum value of station location -->index 1 : 
-                      maximum value of station location
-                  *default* is (0,1000)
-                        
-        * doi : str , float 
-                investigation depth ,  migth be [m|km]. 
-                If value is provided is float number , it might take value 
-                as a default unit 'meter'. i.e : 1000="1000m"
+    * block_matrix : ndarray(station_offsets.shape[0], 
+                matrix of station depth Resistivity model
+                depth_offsets.shape[0])
+    
+    * depth_offset : array_like  
+               depth of investigation after generating by mesh file :>z_nodes . 
+               
+    * station_offsets : array_like 
+              station _offsets : offset generate by mesh_file :>x_nodes .
+              
+    * offset_MinMax : tuple  
+          the interval of data to keep . eg if station location start by 0 : 
+              off[0] = min and off[-1]=max (min, max):--> index 0 :
+              minimum value of station location -->index 1 : 
+                  maximum value of station location
+              *default* is (0,1000)
+                    
+    * doi : str , float 
+            investigation depth ,  migth be [m|km]. 
+            If value is provided is float number , it might take value 
+            as a default unit 'meter'. i.e : 1000="1000m"
                 
     Returns
     ---------
@@ -656,7 +655,7 @@ def build_new_station_id (station_id , new_station_name ):
              
     :Example:
         
-        >>> from pycsamt.utils import plot_utils as punc
+        >>> from watex.tools import plotutils as punc
         >>> ts =[   28.,  200.,  400.,  600.,  800., 1000., 
         ...         1200., 1400., 1600., 1800., 1807.]
         >>> sto = ['S{0}'.format(i) for i in range(7)]
@@ -1028,8 +1027,8 @@ def find_local_maxima_minima (array):
     
     :Example: 
         
-        >>> from pycsamt.utils import func_utils as func
-        >>> from pycsamt.utils import plot_utils as punc
+        >>> from watex.tools import funcutils as func
+        >>> from watex.tools import plotutils as punc
         >>> ts =np.array([2, 3, 4, 7, 9, 0.25, 18, 28, 86, 10, 5])
         >>> te=np.array([0.2, .3, 18, 1.6, 0.2, 0.6, 0.7, 0.8, 0.9, 1., 23.])
         >>> th =func.concat_array_from_list([ts, te], concat_axis=1)
@@ -1093,7 +1092,7 @@ def average_rho_with_locals_minmax(array):
     
     :Example: 
         
-        >>> from pycsamt.utils import plot_utils as punc
+        >>> from watex.tools import plotutils as punc
         >>> mean1= punc.average_rho_with_locals_minmax(tth[0])
         >>> mean2= punc.average_rho_with_locals_minmax(tth[1])
         >>> print(mean1)
@@ -1144,14 +1143,14 @@ def average_rho_in_deeper (dep_array, rho_array, step_descent ) :
     
     Parameters
     ------------
-        * dep_array : array_like 
-                the imaged depth (doi)
-            
-        * rho_array: array_like
-                resistivity array  
-            
-        * step_descent : float 
-                value to step descent 
+    * dep_array : array_like 
+            the imaged depth (doi)
+        
+    * rho_array: array_like
+            resistivity array  
+        
+    * step_descent : float 
+            value to step descent 
     
     Returns
     ---------
@@ -1161,7 +1160,7 @@ def average_rho_in_deeper (dep_array, rho_array, step_descent ) :
     :Example:
         
         >>> import numpy as np
-        >>> from pycsamt.utils import plot_utils as punc
+        >>> from watex.tools import plotutils as punc
         >>> pseudo_depth=np.array([  0. ,  6. , 13. , 20.  ,29. , 39.,  49. ,
         ...                       59. , 69. , 89., 109. ,129., 149. ,179.,
         ...                  209. ,249. ,289., 339., 399., 459. ,529. ,609., 
@@ -1236,7 +1235,7 @@ def average_rho_in_deep (dep_array, rho_array, step_descent)   :
   
     :Example: 
         
-        >>> from pycsamt.utils import plot_utils as punc
+        >>> from watex.tools import plotutils as punc
         >>> pseudo_depth = np.arange(0, 1201.,100)
         >>> print(pseudo_depth)
         >>> dep_aver= dep(dep_array=pseudo_depth, value=100)
@@ -1436,7 +1435,7 @@ def annotate_tip(layer_thickness , layer_names):
   
     :Example: 
         
-        >>> from pycsamt.utils import plot_utils as punc
+        >>> from watex.tools import plotutils as punc
         >>> rocks = ['Massive sulfide', 'Igneous rocks', 'Igneous rocks', 
                      'Igneous rocks',
              'Igneous rocks', 'Igneous rocks', 'Igneous rocks', 'Igneous rocks', 
@@ -1535,7 +1534,7 @@ def Plotvec2(a,b):
     :Example: 
         
         >>> import numpy as np 
-        >>> from watex.utils.plot_utils import Potvec2
+        >>> from watex.tools.plotutils import Potvec2
         >>> a=np.array([1,0])
         >>> b=np.array([0,1])
         >>> Plotvec2(a,b)

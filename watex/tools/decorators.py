@@ -18,10 +18,11 @@ import numpy as np
 # import pandas as pd 
 import  matplotlib.pyplot as plt 
 
-from .._typing import ( Iterable,
-                    Optional,
-                    Callable ,
-                    T
+from ..typing import (
+    Iterable,
+    Optional,
+    Callable ,
+    T
 
 )
 from ._watexlog import watexlog
@@ -120,7 +121,7 @@ class gdal_data_check(object):
                                   )
             else:
                 warnings.warn(
-                    "Ignore GDAL as it is not working. Will use pyproj"
+                    "Ignore GDAL as it is not working. Will use `pyproj` "
                     f"OR download the GDAL wheel from {self._gdal_wheel_resources}"
                     " and use `pip install <path-to-wheel-file.whl>` "
                     "for GDAL installation. Get furher details via "
@@ -405,7 +406,7 @@ class writef(object):
             return func(*args, **kwargs)
         return decorated_func 
         
-@deprecated('Replaced by :class:`watex.utils.decorators.catmapflow2`')   
+@deprecated('Replaced by :class:`watex.tools.decorators.catmapflow2`')   
 def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']): 
     """
     Decorator function  collected  from the `func`the `target_values` to be 
@@ -1065,9 +1066,9 @@ class docstring:
             
     Examples
     --------
-        >>> from watex.utils.decorator import docstring 
-        >>> from watex.utils.decorator import writedf 
-        >>> from watex.utils.decorator import predPlot
+        >>> from watex.tools.decorators import docstring 
+        >>> from watex.tools.decorators import writedf 
+        >>> from watex.tools.decorators import predPlot
         >>> predPlot.__doc__
     
     Author: @Daniel03
@@ -1123,8 +1124,11 @@ class docstring:
                     fname = func.__class__.__name__
                 else: fname = func.__name__
                 # mean there is no doctrings.
-                warnings.warn(" Object `%s` has none doctrings!`NoneType` object"
-                              "  has no attribute `find`."%fname)
+                # but silent the warnings  
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    warnings.warn(" Object `%s` has none doctrings!`NoneType`"
+                                  " object has no attribute `find`."%fname)
                 return func
             # find end _ix and remove 
             if func.__doc__.find(self.end)>=0: 
