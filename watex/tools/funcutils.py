@@ -109,7 +109,7 @@ def smart_strobj_recognition(
         detected.
         
     :Example:
-        >>> from watex.utils.funcutils import smart_strobj_recognition
+        >>> from watex.tools.funcutils import smart_strobj_recognition
         >>> from watex.methods import ResistivityProfiling 
         >>> rObj = ResistivityProfiling(AB= 200, MN= 20,)
         >>> smart_strobj_recognition ('dip', robj.__dict__))
@@ -175,7 +175,7 @@ def repr_callable_obj(obj: F  ):
     
     :Examples: 
         
-    >>> from watex.utils.funcutils import repr_callable_obj
+    >>> from watex.tools.funcutils import repr_callable_obj
     >>> from watex.methods.electrical import (
         ElectricalMethods, ResistivityProfiling)
     >>> callable_format(ElectricalMethods)
@@ -227,7 +227,7 @@ def accept_types (*objtypes: list ,
     
     :Example: 
         >>> import numpy as np; import pandas as pd 
-        >>> from watex.utils.funcutils import accept_types
+        >>> from watex.tools.funcutils import accept_types
         >>> accept_types (pd.Series, pd.DataFrame, tuple, list, str)
         ... "'Series','DataFrame','tuple','list' and 'str'"
         >>> atypes= accept_types (
@@ -303,7 +303,7 @@ def is_installing (module, upgrade=True , DEVNULL=False,
     :param subpkws: additional subprocess keywords arguments.
     
     :Example: 
-        >>> from pycsamt.utils.func_utils import is_installing
+        >>> from pycsamt.tools.funcutils import is_installing
         >>> is_installing(
             'tqdm', action ='install', DEVNULL=True, verbose =1)
         >>> is_installing(
@@ -374,7 +374,7 @@ def smart_format(iter_obj):
     :param iter_obj: iterable obj 
     
     :Example: 
-        >>> from pycsamt.utils.func_utils import smart_format
+        >>> from pycsamt.tools.funcutils import smart_format
         >>> smart_format(['model', 'iter', 'mesh', 'data'])
         ... 'model','iter','mesh' and 'data'
     """
@@ -476,7 +476,7 @@ def format_notes(text:str , cover_str: str ='~', inline=70, **kws):
                         between the first index to the inline text 
     :Example: 
         
-        >>> from watex.utils import func_utils as func 
+        >>> from watex.tools import funcutils as func 
         >>> text ='Automatic Option is set to ``True``.'\
             ' Composite estimator building is triggered.' 
         >>>  func.format_notes(text= text ,
@@ -634,20 +634,20 @@ def _set_depth_to_coeff(
     """
     Parameters
     ----------
-        * data : np.ndarray
-            must be on array channel .
-            
-        * depth_column_index : int
-            index of depth_column.
-            
-        * depth_axis : int, optional
-            Precise kind of orientation of depth data(axis =0 or axis=1) 
-            The *default* is 0.
-            
-        * coeff : float,
-            the value you want to multiplie depth. 
-            set depth to negative multiply by one. 
-            The *default* is -1.
+    * data : np.ndarray
+        must be on array channel .
+        
+    * depth_column_index : int
+        index of depth_column.
+        
+    * depth_axis : int, optional
+        Precise kind of orientation of depth data(axis =0 or axis=1) 
+        The *default* is 0.
+        
+    * coeff : float,
+        the value you want to multiplie depth. 
+        set depth to negative multiply by one. 
+        The *default* is -1.
 
     Returns
     -------
@@ -747,31 +747,31 @@ def _nonelist_checker(data, _checker=False ,
                                        
 def intell_index (datalist,assembly_dials =False):
     """
-    function to search index to differency value to string element like 
+    Function to search index to differency value to string element like 
     geological rocks and geologicals samples. It check that value are sorted
     in ascending order.
 
     Parameters
     ----------
-        * datalist : list
-                list of element : may contain value and rocks or sample .
-        * assembly_dials : list, optional
-                separate on two list : values and rocks or samples. 
-                The default is False.
+    * datalist : list
+            list of element : may contain value and rocks or sample .
+    * assembly_dials : list, optional
+            separate on two list : values and rocks or samples. 
+            The default is False.
 
     Returns
     -------
-        index: int
-             index of breaking up.
-        first_dial: list , 
-           first sclice of value part 
-        secund_dial: list , 
-          second slice of rocks or sample part.
-        assembly : list 
-             list of first_dial and second_dial
+    index: int
+         index of breaking up.
+    first_dial: list , 
+       first sclice of value part 
+    secund_dial: list , 
+      second slice of rocks or sample part.
+    assembly : list 
+         list of first_dial and second_dial
     
-    :Example: 
-        
+    Examples
+    ---------
         >>> import numpy as np
         >>> listtest =[['DH_Hole', 'Thick01', 'Thick02', 'Thick03',
         ...           'Thick04','Rock01', 'Rock02', 'Rock03', 'Rock04'],
@@ -835,8 +835,8 @@ def _nonevalue_checker (list_of_value, value_to_delete=None):
         list
             list_of_value , safe list without the deleted value .
     
-    :Example: 
-        
+    Examples
+    ---------
         >>> import numpy as np 
         >>> test=['DH_Hole (ID)', 'DH_East', 'DH_North',
         ...          'DH_Dip', 'Elevation ', 'DH_Azimuth', 
@@ -880,8 +880,8 @@ def _strip_item(item_to_clean, item=None, multi_space=12):
         list or ndarray
             item_to_clean , cleaned item 
             
-    :Example: 
-        
+    Examples
+    --------
      >>> import numpy as np
      >>> new_data=_strip_item (item_to_clean=np.array(
          ['      ss_data','    pati   ']))
@@ -921,16 +921,16 @@ def _cross_eraser (data , to_del, deep_cleaner =False):
 
     Parameters
     ----------
-        * data : list
-                Main data user want to filter.
-        * to_del : list
-                list of item you want to delete present on the main data.
-        * deep_cleaner : bool, optional
-                Way to deeply check. Sometimes the values are uncleaned and 
-            capitalizeed . this way must not find their safety correspondace 
-            then the algorth must clean item and to match all at
-            the same time before eraisng.
-            The *default* is False.
+    * data : list
+            Main data user want to filter.
+    * to_del : list
+            list of item you want to delete present on the main data.
+    * deep_cleaner : bool, optional
+            Way to deeply check. Sometimes the values are uncleaned and 
+        capitalizeed . this way must not find their safety correspondace 
+        then the algorth must clean item and to match all at
+        the same time before eraisng.
+        The *default* is False.
 
     Returns
     -------
@@ -939,7 +939,6 @@ def _cross_eraser (data , to_del, deep_cleaner =False):
 
     Examples
     --------
-        
         >>> data =['Z.mwgt','Z.pwgt','Freq',' Tx.Amp','E.mag','   E.phz',
         ...          '   B.mag','   B.phz','   Z.mag', '   Zphz  ']
         >>> data2=['   B.phz','   Z.mag',]
@@ -984,7 +983,7 @@ def _remove_str_word (char, word_to_remove, deep_remove=False):
         
     :Example: 
         
-        >>> from pycsamt.utils  import func_utils as func
+        >>> from watex.tools import funcutils as func
         >>> ch ='AMTAVG 7.76: "K1.fld", Dated 99-01-01,AMTAVG, 
         ...    Processed 11 Jul 17 AMTAVG'
         >>> ss=func._remove_str_word(char=ch, word_to_remove='AMTAVG', 
@@ -1023,7 +1022,7 @@ def stn_check_split_type(data_lines):
     
     :Example: 
         
-        >>> from pycsamt.utils  import func_utils as func
+        >>> from watex.tools  import funcutils as func
         >>> path =  os.path.join(os.environ["pyCSAMT"], 
                           'csamtpy','data', K6.stn)
         >>> with open (path, 'r', encoding='utf8') as f : 
@@ -1106,7 +1105,7 @@ def display_infos(infos, **kws):
     :param header: Change the `header` to other names. 
     :Example: 
         
-        >>> from watex.func_utils import display_infos
+        >>> from watex.tools.funcutils import display_infos
         >>> ipts= ['river water', 'fracture zone', 'granite', 'gravel',
              'sedimentary rocks', 'massive sulphide', 'igneous rocks', 
              'gravel', 'sedimentary rocks']
@@ -1182,6 +1181,7 @@ def convert_csvdata_from_fr_to_en(csv_fn, pf, destfile = 'pme.en.csv',
         # to execute this script, we need to import the two modules below
         >>> import os 
         >>> import csv 
+        >>> from watex.tools.funcutils import convert_csvdata_from_fr_to_en
         >>> path_pme_data = r'C:/Users\Administrator\Desktop\__elodata
         >>> datalist=convert_csvdata_from_fr_to_en(
             os.path.join( path_pme_data, _enuv2.csv') , 
@@ -1266,14 +1266,13 @@ def sanitize_unicode_string (str_) :
     """ Replace all spaces and remove all french accents characters.
     
     :Example:
-        
-        >>> from watex.utils.funcutils import sanitize_unicode_string 
-        >>> sentence ='Nos clients sont extrêmement satisfaits '\
-            'de la qualité du service fourni. En outre Nos clients '\
+        >>> from watex.tools.funcutils import sanitize_unicode_string 
+        >>> sentence ='Nos clients sont extrêmement satisfaits '
+            'de la qualité du service fourni. En outre Nos clients '
                 'rachètent frequemment nos "services".'
-       >>> sanitize_unicode_string  (sentence)
-       ... 'nosclientssontextrmementsatisfaitsdelaqualitduservice\\
-           fournienoutrenosclientsrachtentfrequemmentnosservices'
+        >>> sanitize_unicode_string  (sentence)
+        ... 'nosclientssontextrmementsatisfaitsdelaqualitduservice'
+            'fournienoutrenosclientsrachtentfrequemmentnosservices'
     """
     str_ = str_.strip()
     str_= re.sub('\s+', '', str_).lower(
@@ -1553,7 +1552,7 @@ def find_position_from_sa(
     
     :Example:
         
-        >>> from watex.utils.wmathandtricks import find_pk_from_selectedAn
+        >>> from watex.tools.funcutils import find_positon_from_sa
         >>> resan = np.array([168,130, 93,146,145])
         >>> pk= find_pk_from_selectedAn(
         ...    resan, pos=[90, 13], selectedPk= 'str20')
@@ -1640,8 +1639,8 @@ def fmt_text(
     
     :Example: 
         
-        >>> from watex.utils.wmathandtricks import fmtAnText
-        >>> fmtAnText(anFeatures =[1,130, 93,(146,145, 125)])
+        >>> from watex.tools.funcutils import fmt_text
+        >>> fmt_text(anFeatures =[1,130, 93,(146,145, 125)])
     
     """
     if title is None: 
@@ -1767,7 +1766,7 @@ def find_position_bounds(
     
     :Example: 
         
-        >>> from from watex.utils.wmathandtricks import find_pkBounds  
+        >>> from watex.tools.funcutilsimport find_position_bounds  
         >>> find_pkBounds(pk=110, rhoa=137, 
                           rhoa_range=np.array([175,132,137,139,170]))
     """
@@ -2124,7 +2123,7 @@ def get_type (
         
     :Example: 
         
-        >>> from watex.core.erp import get_type 
+        >>> from watex.tools.funcutils import get_type 
         >>> x = [60, 61, 62, 63, 68, 65, 80,  90, 100, 80, 100, 80]
         >>> pos= np.arange(0, len(x)*10, 10)
         >>> ano_type= get_type(erp_array= np.array(x),

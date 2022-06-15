@@ -59,7 +59,7 @@ type of arguments.
     instance, we generated two arrays (`arr1`and `arr2`) for different types:: 
         
         >>> import numpy as np
-        >>> from watex._typing import TypeVar, Array, DType
+        >>> from watex.typing import TypeVar, Array, DType
         >>> T = TypeVar ('T', float) 
         >>> A = TypeVar ('A', str, bytes )
         >>> arr1:Array[T, DType[T]] = np.arange(21) # dtype ='float'
@@ -73,7 +73,7 @@ type of arguments.
     like this:: 
         
         >>> import numpy as np 
-        >>> from watex._typing import TypeVar, Array, NDarray, DType 
+        >>> from watex.typing import TypeVar, Array, NDarray, DType 
         >>> T =TypeVar ('T', int)
         >>> U = TypeVar ('U')
         >>> multidarray = np.arange(7, 7).astype (np.int32)
@@ -90,8 +90,8 @@ type of arguments.
     is a subset of the whole |ERP| line. The demo is given below:: 
         
         >>> import numpy as np 
-        >>> from watex._typing import TypeVar, DType, Array , Sub
-        >>> from watex.utils.exmath import _define_conductive_zone
+        >>> from watex.typing import TypeVar, DType, Array , Sub
+        >>> from watex.tools.exmath import _define_conductive_zone
         >>> T= TypeVar ('T', float)
         >>> erp_array: Array[T, DType[T]] = np.random.randn (21) # whole line 
         >>> select_zone, _ = _define_conductive_zone (erp = erp_array , auto =True)
@@ -111,7 +111,7 @@ type of arguments.
         * Import required modules and generate the whole survey line::
             
             >>> import numpy as np 
-            >>> from watex._typing import TypeVar, DType, SP, Sub 
+            >>> from watex.typing import TypeVar, DType, SP, Sub 
             >>> T =TypeVar ('T', bound =int)
             >>> surveyL:SP = np.arange(0, 50 *121 , 50.).astype (np.int32)
             ... (work fine with MyPy )
@@ -122,13 +122,13 @@ type of arguments.
             -  We use the following fonction to to extract the specific
                 part of whole survey line `surveyL`:: 
                     
-                    >>> from watex.utils.exmath import _define_conductive_zone
-                    >>> subpos,_ = _define_conductive_zone (surveyL, s='S10') 
+                    >>> from watex.tools.exmath import define_conductive_zone
+                    >>> subpos,_ = define_conductive_zone (surveyL, s='S10') 
                     
             -  Now, we check the instance value `subpos` as subset array of 
                 of `SP`. Note that the station 'S10' is included in the 
                 extracted locations and is extented for seven points. For 
-                further details, refer to `_define_conductive_zone.__doc__`:: 
+                further details, refer to `define_conductive_zone.__doc__`:: 
                 
                     >>> def checksup_type (sp: Sub[SP[T, DType[T]]] = subpos ): 
                             ''' SP is an array of positions argument `sp`  
@@ -146,7 +146,7 @@ type of arguments.
         
         >>> import numpy as np 
         >>> import pandas pd 
-        >>> from watex._typing import TypeVar , Any, DType , Series, DataFrame
+        >>> from watex.typing import TypeVar , Any, DType , Series, DataFrame
         >>> T  =TypeVar('T')
         >>> seriesStr = pd.Series ([f'obx{s}' for s in range(21)],
                                  name ='stringobj')
@@ -318,7 +318,7 @@ class Series (DType[T], Generic [T]):
     :Example:
         >>> import numpy as np
         >>> import pandas as pd 
-        >>> from watex._typing import DType, Series  
+        >>> from watex.typing import DType, Series  
         >>> ser = pd.Series (np.arange (21), name ='nothing')
         
     .. code: Python 
@@ -347,7 +347,7 @@ class DataFrame (Series[T], Generic[T]):
     :Example:
         >>> import numpy as np
         >>> import pandas as pd 
-        >>> from watex._typing import DType, DataFrame 
+        >>> from watex.typing import DType, DataFrame 
         
     .. code: Python 
          

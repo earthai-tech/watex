@@ -81,7 +81,7 @@ def vesSelector(
     rhoa: Array |Series | List [float] = None, 
     AB :Array |Series = None, 
     MN: Array|Series | List[float] =None, 
-    rhoaIndex: Optional[int]  = None, 
+    index_rhoa: Optional[int]  = None, 
     **kws
 ) -> DataFrame : 
     """ Assert the validity of |VES| data and return a sanitize dataframe. 
@@ -96,10 +96,10 @@ def vesSelector(
         `MN/2`. 
     :param f: Path-like object or sounding dataframe. If given, the 
         others parameters could keep the ``None` values. 
-    :param rhoaIndex: int - The index to retrieve the resistivity data of a 
+    :param index_rhoa: int - The index to retrieve the resistivity data of a 
         specific sounding point. Sometimes the sounding data are composed of
         the different sounding values collected in the same survey area into 
-        different |ERP| line. For instance::
+        different |ERP| line. For instance:
             
             +------+------+----+----+----+----+----+
             | AB/2 | MN/2 |SE1 | SE2| SE3| ...|SEn |
@@ -114,30 +114,44 @@ def vesSelector(
         zone selected after the prior-interpretation. After transformation 
         via the function `ves_selector`, the header of the data should hold 
         the `resistivity`. For instance, refering to the table above, the 
-        data should be::
+        data should be:
             
-            +----+----+-------------+-------------+-------------+----
-            | AB | MN |resistivity  | resistivity | resistivity | ...
-            +----+----+-------------+-------------+-------------+----
+            +----+----+-------------+-------------+-------------+-----+
+            | AB | MN |resistivity  | resistivity | resistivity | ... |
+            +----+----+-------------+-------------+-------------+-----+
         
-        Therefore, the `rhoaIndex` is used to select the specific resistivity
+        Therefore, the `index_rhoa` is used to select the specific resistivity
         values i.e. select the corresponding sounding number  of the |VES| 
         expecting to locate the drilling operations or for computation. For 
-        esample, `rhaoIndex`=1 should figure out:: 
+        esample, `index_rhoa`=1 should figure out: 
             
-            +------+------+----+        +-----+----+------------+
-            | AB/2 | MN/2 |SE2 |  -->   | AB | MN |resistivity |
-            +------+------+----+        +----+----+------------+
+            +------+------+----+--------+-----+----+------------+
+            | AB/2 | MN/2 |SE2 |  -->   | AB  | MN |resistivity |
+            +------+------+----+--------+-----+----+------------+
         
-        If `rhoaIndex` is ``None`` and the number of sounding curves are more 
+        If `index_rhoa` is ``None`` and the number of sounding curves are more 
         than one, by default the first sounding curve is selected ie 
-        `rhoaIndex` equals to ``0``
+        `index_rhoa` equals to ``0``
     :param kws: dict - Pandas dataframe reading additionals
         keywords arguments.
         
     :return: -dataframe -Sanitize |VES| dataframe with ` AB`, `MN` and
         `resistivity` as the column headers. 
     
+    :Example: 
+        >>> from watex.tools.coreutils import vesSelector 
+        >>> df = vesSelector (data='data/ves/ves_gbalo.csv')
+        >>> df.head(3)
+        ...    AB   MN  resistivity
+            0   1  0.4          943
+            1   2  0.4         1179
+            2   3  0.4         1103
+        >>> df = vesSelector ('data/ves/ves_gbalo.csv', index_rhoa=3 )
+        >>> df.head(3) 
+        ...    AB   MN  resistivity
+            0   1  0.4          457
+            1   2  0.4          582
+            2   3  0.4          558
     """
     
     for arr in (AB , MN, rhoa): 
@@ -145,10 +159,10 @@ def vesSelector(
             _assert_all_types(arr, list, tuple, np.ndarray, pd.Series) 
             
     try: 
-        rhoaIndex =  rhoaIndex if rhoaIndex is None else int(rhoaIndex) 
+        index_rhoa =  index_rhoa if index_rhoa is None else int(index_rhoa) 
     except: 
         raise TypeError (
-            f'Index is an integer, not {type(rhoaIndex).__name__!r}')
+            f'Index is an integer, not {type(index_rhoa).__name__!r}')
         
     if data is not None: 
         if isinstance(data, str): 
@@ -175,17 +189,17 @@ def vesSelector(
             # In the case, we got a multiple resistivity values 
             # corresponding to the different sounding values 
             if rhoa.ndim > 1 :
-                if rhoaIndex is None: 
-                    rhoaIndex = 0 
-                elif rhoaIndex  >= len(rhoa.columns): 
-                    warnings.warn(f'The index `{rhoaIndex}` is out of the range' 
+                if index_rhoa is None: 
+                    index_rhoa = 0 
+                elif index_rhoa  >= len(rhoa.columns): 
+                    warnings.warn(f'The index `{index_rhoa}` is out of the range' 
                                   f' `{len(rhoa.columns)-1}` for selecting the'
                                   ' specific resistivity data. By default, we '
                                   'only keep the data at the index 0.'
                         )
-                    rhoaIndex = 0 
+                    index_rhoa= 0 
                     
-            rhoa = rhoa.iloc[:, rhoaIndex] if rhoa.ndim > 1 else rhoa 
+            rhoa = rhoa.iloc[:, index_rhoa] if rhoa.ndim > 1 else rhoa 
             
         if 'MN' in data.columns: 
             MN = data.MN 

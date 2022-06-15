@@ -18,16 +18,17 @@ import seaborn as sns
 from ..bases import FeatureInspection
 from ..tools._watexlog import watexlog
 import watex.exceptions as Wex
-from ..tools. mlutils import (
+from ..tools.mlutils import (
     cfexist , 
     findIntersectionGenObject,
     featureExistError,
     format_generic_obj
     )
-from .._typing import (Generic, 
-                    T,
-                    Iterable,
-                    Callable
+from ..typing import (
+    Generic, 
+    T,
+    Iterable,
+    Callable
 )
 
 _logger=watexlog.get_watex_logger(__name__)
@@ -40,22 +41,22 @@ class QuickPlot :
     
     Arguments 
     ----------
-            *df*: pd.core.DataFrame
-                Dataframe for quick plotting. Commonly `QuickPlot` deals 
-                with `:mod:`watex.analysis` package. 
-                
-            *data_fn*: str 
-                Raw data for plotting. `QuickPlot` doesnt straighforwadly  
-                read   the raw datafile. It calls  the module from 
-                :mod:`watex.analysis.basics.SupervisedLearning` module 
-                for data reading and sanitizing data before plotting.
-                
-            *flow_classes*: list of classes values to convert the categorical 
-                    features. default is [0., 1., 3.] which means: 
-                        - 0 m3/h  --> FR0
-                        - > 0 to 1 m3/h --> FR1
-                        - > 1 to 3 m3/h --> FR2
-                        - > 3 m3/h  --> FR3
+    *df*: pd.core.DataFrame
+        Dataframe for quick plotting. Commonly `QuickPlot` deals 
+        with `:mod:`watex.analysis` package. 
+        
+    *data_fn*: str 
+        Raw data for plotting. `QuickPlot` doesnt straighforwadly  
+        read   the raw datafile. It calls  the module from 
+        :mod:`watex.analysis.basics.SupervisedLearning` module 
+        for data reading and sanitizing data before plotting.
+        
+    *flow_classes*: list of classes values to convert the categorical 
+            features. default is [0., 1., 3.] which means: 
+                - 0 m3/h  --> FR0
+                - > 0 to 1 m3/h --> FR1
+                - > 1 to 3 m3/h --> FR2
+                - > 3 m3/h  --> FR3
 
     Hold others optionnal informations: 
         
@@ -235,7 +236,7 @@ class QuickPlot :
                     fig_title ='Distribution of flow classes(FR)'
         :Example: 
             
-            >>> from watex.viewer.plot import QuickPlot 
+            >>> from watex.view.plot import QuickPlot 
             >>> qplotObj = QuickPlot(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b')
             >>> qplotObj.hist_cat_distribution(target_name='flow')
@@ -326,7 +327,7 @@ class QuickPlot :
                                              'sep':0.25}}
         :Example: 
             
-            >>> from watex.viewer.plot import QuickPlot
+            >>> from watex.view.plot import QuickPlot
             >>> qplotObj = QuickPlot(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid')
@@ -424,7 +425,7 @@ class QuickPlot :
         
         :Example: 
             
-            >>> from watex.viewer.plot import QuickPlot 
+            >>> from watex.view.plot import QuickPlot 
             >>> qplotObj = QuickPlot(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
             ...             target_name = 'flow', set_style ='darkgrid')
@@ -549,7 +550,7 @@ class QuickPlot :
                 
         :Example: 
             
-            >>> from watex.viewer.plot import QuickPlot 
+            >>> from watex.view.plot import QuickPlot 
             >>> qplotObj = QuickPlot(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid', 
@@ -692,7 +693,7 @@ class QuickPlot :
    
         :Example: 
             
-            >>> from watex.viewer.plot import QuickPlot 
+            >>> from watex.view.plot import QuickPlot 
             >>> qkObj = QuickPlot(
             ...         data_fn ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid', 
@@ -843,7 +844,7 @@ class QuickPlot :
             
         :Example: 
             
-            >>> from watex.viewer.plot.QuickPlot import joint2features
+            >>> from watex.view.plot.QuickPlot import joint2features
             >>> qkObj = QuickPlot(
             ...        data_fn ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid', 
@@ -959,7 +960,7 @@ class QuickPlot :
             
         :Example: 
             
-            >>> from watex.viewer.plot.QuickPlot import  scatteringFeatures
+            >>> from watex.view.plot.QuickPlot import  scatteringFeatures
             >>> qkObj = QuickPlot(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid', 
@@ -1089,7 +1090,7 @@ class QuickPlot :
         
         :Example: 
             
-            >>> from viewer.plot.QuickPlot import discussingFeatures 
+            >>> from view.plot.QuickPlot import discussingFeatures 
             >>> qkObj = QuickPlot(  fig_legend_kws={'loc':'upper right'},
             ...          fig_title = '`sfi` vs`ohmS|`geol`',
             ...            )  
@@ -1192,8 +1193,8 @@ class QuickPlot :
         """ Create a scatter plot to visualize the data using `x` and `y` 
         considered as dataframe features. 
         
-        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
-        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        :param df: refer to :class:`watex.viewer.plot.QuickPlot`
+        :param data_fn: see :class:`watex.viewer.plot.QuickPlot`
         
         :param x: Column name to hold the x-axis values 
         :param y: column na me to hold the y-axis values 
@@ -1206,8 +1207,9 @@ class QuickPlot :
         
         :Example: 
             
-            >>> import watex.utils.ml_utils as mfunc
-            >>> from watex.processing.tranformers import StratifiedWithCategoryAdder
+            >>> import watex.tools.mlutils as mfunc
+            >>> from watex.bases.tranformers import StratifiedWithCategoryAdder
+            >>> from watex.view.plot import QuickPlot
             >>> df = mfunc.load_data('data/geo_fdata')
             >>> stratifiedNumObj= StratifiedWithCategoryAdder('flow')
             >>> strat_train_set , strat_test_set = \

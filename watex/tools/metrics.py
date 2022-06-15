@@ -3,6 +3,7 @@
 #       Created on Tue Oct  5 15:09:46 2021
 #       released under a MIT- licence.
 #       <etanoyau@gmail.com>
+
 import inspect
 import warnings  
 
@@ -20,13 +21,10 @@ from ..sklearn import (
     cross_val_predict, 
     )
 
-from ..typing import TypeVar
 from ._watexlog import watexlog
 from .mlutils import format_generic_obj 
 import watex.tools.decorators as deco
 import watex.exceptions as Wex
-
-T= TypeVar('T')
 
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -106,7 +104,9 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     Contreverse to the `confusion matrix`, a precision-recall 
     tradeoff is very interesting metric to get the accuracy of the 
     positive prediction named ``precison`` of the classifier with 
-    equation is:: 
+    equation is:
+    
+    .. math:: 
         
         precision = TP/(TP+FP)
         
@@ -117,7 +117,9 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     `precision` is typically used along another metric named `recall`,
      also `sensitivity` or `true positive rate(TPR)`:This is the ratio of 
     positive instances that are corectly detected by the classifier.  
-    Equation of`recall` is given as:: 
+    Equation of`recall` is given as:
+    
+    .. math::
         
         recall = TP/(TP+FN)
         
@@ -128,10 +130,12 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     mean of the `precision` and `recall`. Whereas the regular mean treats 
     all  values equaly, the harmony mean gives much more weight to low 
     values. As a result, the classifier will only get the `F1 score` if 
-    both `recalll` and `preccion` are high. The equation is given below::
+    both `recalll` and `preccion` are high. The equation is given below:
+    
+    .. math::
         
-        F1= 2/((1/precision)+(1/recall))
-        F1= 2* precision*recall/(precision+recall)
+        F1= 2/((1/precision)+(1/recall))\\
+        F1= 2* precision*recall /(precision+recall)\\
         F1 = TP/(TP+ (FN +FP)/2)
     
     The way to increase the precion and reduce the recall and vice versa
@@ -139,15 +143,14 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     
     Examples
     --------
-    
-        >>> from sklearn.linear_model import SGDClassifier
-        >>> from watex.metrics import precision_recall_tradeoff
-        >>> from watex.datasets import fetch_data 
-        >>> X, y= fetch_data('Bagoue prepared')
-        >>> sgd_clf = SGDClassifier()
-        >>> mObj = precision_recall_tradeoff (clf = sgd_clf, X= X, y = y,
-                                        classe_=1, cv=3 , y_tradeoff=0.90) 
-        >>> mObj.confusion_matrix
+    >>> from sklearn.linear_model import SGDClassifier
+    >>> from watex.tools.metrics import precision_recall_tradeoff
+    >>> from watex.datasets import fetch_data 
+    >>> X, y= fetch_data('Bagoue prepared')
+    >>> sgd_clf = SGDClassifier()
+    >>> mObj = precision_recall_tradeoff (clf = sgd_clf, X= X, y = y,
+                                    classe_=1, cv=3 , y_tradeoff=0.90) 
+    >>> mObj.confusion_matrix
     """
     
     # check y if value to plot is binarized ie.True of false 
@@ -240,7 +243,7 @@ def ROC_curve( roc_kws=None, **tradeoff_kws):
     as positive.It is equal to one minus the TNR, which is the ratio 
     of  negative  isinstance that are correctly classified as negative.
     The TNR is also called `specify`. Hence the ROC curve plot 
-    `sensitivity`(recall) versus 1-specifity.
+    `sensitivity` (recall) versus 1-specifity.
     
     Parameters 
     ----------
@@ -260,16 +263,14 @@ def ROC_curve( roc_kws=None, **tradeoff_kws):
         roc_curve additional keywords arguments
         
     See also
-    --------
-    
-        `ROC_curve` deals wuth optional and positionals keywords arguments 
-        of :meth:`~watex.utlis.ml_utils.Metrics.precisionRecallTradeoff`
+    ---------
+    `ROC_curve` deals wuth optional and positionals keywords arguments of
+    :meth:`~.tools.mlutils.Metrics.precisionRecallTradeoff`.
         
     Examples
-    ---------
-    
+    --------
         >>> from sklearn.linear_model import SGDClassifier
-        >>> from watex.metrics import ROC_curve
+        >>> from watex.tools.metrics import ROC_curve
         >>> from watex.datasets import fetch_data 
         >>> X, y= fetch_data('Bagoue prepared')
         >>> rocObj =ROC_curve(clf = sgd_clf,  X= X, 
@@ -333,20 +334,19 @@ def confusion_matrix_(clf, X, y,*, cv =7, plot_conf_max=False,
     conf_mx_kws: dict 
         Additional confusion matrix keywords arguments.
     
-    Example
+    Examples
     --------
-        
-        >>> from sklearn.svm import SVC 
-        >>> from watex.utils.ml_utils import Metrics 
-        >>> from watex.datasets import fetch_data 
-        >>> X,y = fetch_data('Bagoue dataset prepared') 
-        >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf',
-        ...              random_state =42) 
-        >>> confObj =confusion_matrix_(svc_clf,X=X,y=y,
-        ...                        plot_conf_max='error')
-        >>> confObj.norm_conf_mx
-        >>> confObj.conf_mx
-        >>> confObj.__dict__.keys()
+    >>> from sklearn.svm import SVC 
+    >>> from watex.tools.metrics import Metrics 
+    >>> from watex.datasets import fetch_data 
+    >>> X,y = fetch_data('Bagoue dataset prepared') 
+    >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf',
+    ...              random_state =42) 
+    >>> confObj =confusion_matrix_(svc_clf,X=X,y=y,
+    ...                        plot_conf_max='error')
+    >>> confObj.norm_conf_mx
+    >>> confObj.conf_mx
+    >>> confObj.__dict__.keys()
     """
     # Get all param values and set attributes 
     func_sig = inspect.signature(confusion_matrix_)

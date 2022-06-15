@@ -17,8 +17,8 @@ from ..tools.funcutils import (
     smart_strobj_recognition 
     )
 from ..tools.coreutils import (
+    _assert_station_positions,
     defineConductiveZone, 
-    _assert_station_positions,  
     fill_coordinates, 
     erpSelector, 
     vesSelector,
@@ -162,35 +162,34 @@ class ResistivityProfiling(ElectricalMethods):
     subsurface imaging method. It is most preferred to find groundwater during
     the campaigns of drinking water supply, especially in developing countries.
     Commonly, it is used in combinaision with the  the vertical electrical
-    sounding |VES| to speculated about the layer thickesses and the existence
-     of the fracture zone. 
+    sounding |VES| to speculated about the layer thickesses and the existence of
+    the fracture zone. 
     
     Arguments 
     ----------
     
     **station**: str 
-            Station name where the drilling is  expected to be located. The 
-            station should numbered from 1 not 0. So if ``S00` is given, the 
-            station name should be set to ``S01``. Moreover, if `dipole` value 
-            is set as keyword argument,i.e. the station is  named according
-            to the  value of the dipole. For instance for `dipole` equals to 
-            ``10m``, the first station should be ``S00``, the second ``S10`` , 
-            the third ``S20`` and so on. However, it is recommend to name the
-            station using counting numbers rather than using the dipole 
-            position.
+        Station name where the drilling is  expected to be located. The 
+        station should numbered from 1 not 0. So if ``S00` is given, the 
+        station name should be set to ``S01``. Moreover, if `dipole` value 
+        is set as keyword argument,i.e. the station is  named according
+        to the  value of the dipole. For instance for `dipole` equals to 
+        ``10m``, the first station should be ``S00``, the second ``S10`` , 
+        the third ``S20`` and so on. However, it is recommend to name the
+        station using counting numbers rather than using the dipole 
+        position.
             
     **dipole**: float 
-        Value of  the dipole length used during the exploration area. 
+       The dipole length used during the exploration area. 
         
     **auto**: bool 
-            Auto dectect the best conductive zone. If ``True``, the station 
-            position should be  the position `station` of the lower
-            resistivity value in |ERP|. 
+        Auto dectect the best conductive zone. If ``True``, the station 
+        position should be  the position `station` of the lower
+        resistivity value in |ERP|. 
     
     **kws**: dict 
          Additional |ERP| keywords arguments  
          
-    
     Examples
     --------
     >>> from watex.methods.electrical import ResistivityProfiling 
@@ -233,19 +232,19 @@ class ResistivityProfiling(ElectricalMethods):
         
         Parameters 
         ---------- 
-            **data**: Path-like obj, Array, Series, Dataframe. 
-                Data containing the the collected resistivity values in 
-                survey area. 
-                    
-            **columns**: list, 
-                Only necessary if the `data` is given as an array. No need to 
-                to explicitly defin when `data` is a dataframe or a Pathlike
-                object.
+        **data**: Path-like obj, Array, Series, Dataframe. 
+            Data containing the the collected resistivity values in 
+            survey area. 
                 
-            **kws**: dict, 
-                Additional keyword arguments; e.g. to force the station to 
-                match at least the best minimal resistivity value in the 
-                whole data collected in the survey area. 
+        **columns**: list, 
+            Only necessary if the `data` is given as an array. No need to 
+            to explicitly defin when `data` is a dataframe or a Pathlike
+            object.
+            
+        **kws**: dict, 
+            Additional keyword arguments; e.g. to force the station to 
+            match at least the best minimal resistivity value in the 
+            whole data collected in the survey area. 
                 
         Returns 
         -------
@@ -253,15 +252,16 @@ class ResistivityProfiling(ElectricalMethods):
             
         Notes
         ------
-                The station should numbered from 1 not 0. So if ``S00` 
-                is given, the station name should be set to ``S01``. 
-                Moreover, if `dipole` value is set as keyword argument,
-                i.e. the station is  named according to the  value of 
-                the dipole. For instance for `dipole` equals to ``10m``, 
-                the first station should be ``S00``, the second ``S10`` , 
-                the third ``S20`` and so on. However, it is recommend to 
-                name the station using counting numbers rather than using 
-                the dipole position.
+        The station should numbered from 1 not 0. So if ``S00` 
+        is given, the station name should be set to ``S01``. 
+        Moreover, if `dipole` value is set as keyword argument,
+        i.e. the station is  named according to the  value of 
+        the dipole. For instance for `dipole` equals to ``10m``, 
+        the first station should be ``S00``, the second ``S10`` , 
+        the third ``S20`` and so on. However, it is recommend to 
+        name the station using counting numbers rather than using 
+        the dipole position.
+        
         """
         
         self._logging.info('`Fit` method from {self.__class__.__name__!r}'
@@ -497,7 +497,7 @@ class VerticalSounding (ElectricalMethods):
         The index to retrieve the resistivity data of a specific sounding point.
         Sometimes the sounding data are composed of the different sounding 
         values collected in the same survey area into different |ERP| line.
-        For instance::
+        For instance:
             
             +------+------+----+----+----+----+----+
             | AB/2 | MN/2 |SE1 | SE2| SE3| ...|SEn |
@@ -512,20 +512,20 @@ class VerticalSounding (ElectricalMethods):
         zone selected after the prior-interpretation. After transformation 
         via the function `vesSelector`, the header of the data should hold 
         the `resistivity`. For instance, refering to the table above, the 
-        data should be::
+        data should be:
             
-            +----+----+-------------+-------------+-------------+----
-            | AB | MN |resistivity  | resistivity | resistivity | ...
-            +----+----+-------------+-------------+-------------+----
+            +----+----+-------------+-------------+-------------+-----+
+            | AB | MN |resistivity  | resistivity | resistivity | ... |
+            +----+----+-------------+-------------+-------------+-----+
         
         Therefore, the `vesorder` is used to select the specific resistivity
         values i.e. select the corresponding sounding number  of the |VES| 
         expecting to locate the drilling operations or for computation. For 
-        esample, `vesorder`=1 should figure out:: 
+        esample, `vesorder`=1 should figure out: 
             
-            +------+------+----+        +-----+----+------------+
+            +------+------+----+--------+----+----+------------+
             | AB/2 | MN/2 |SE2 |  -->   | AB | MN |resistivity |
-            +------+------+----+        +----+----+------------+
+            +------+------+----+--------+----+----+------------+
         
         If `vesorder` is ``None`` and the number of sounding curves are more 
         than one, by default the first sounding curve is selected ie 
@@ -546,7 +546,7 @@ class VerticalSounding (ElectricalMethods):
         resistivity value is randomly chosen.
         
     **objective**: str 
-        Type operation to outputs. By default, the function outputs the value
+        Type operation to output. By default, the function outputs the value
         of pseudo-area in :math:`$ohm.m^2$`. However, for plotting purpose by
         setting the argument to ``view``, its gives an alternatively outputs of
         X and Y, recomputed and projected as weel as the X and Y values of the
@@ -555,22 +555,22 @@ class VerticalSounding (ElectricalMethods):
         
     **kws**: dict 
         Additionnal keywords arguments from |VES| data operations. 
-        See :doc:`watex.utils.exmath.vesDataOperator` for futher details.
+        See :func:`watex.utils.exmath.vesDataOperator` for futher details.
         
     See also 
     ---------
-    .. _Kouadio et al 2022: https://doi.org/10.1029/2021WR031623
+     `Kouadio et al 2022 <https://doi.org/10.1029/2021WR031623>`_
     
     References
     ----------
-
-    Koefoed, O. (1970). A fast method for determining the layer distribution 
+    *Koefoed, O. (1970)*. A fast method for determining the layer distribution 
         from the raised kernel function in geoelectrical sounding. Geophysical
         Prospecting, 18(4), 564–570. https://doi.org/10.1111/j.1365-2478.1970.tb02129.x
         
-    Koefoed, O. (1976). Progress in the Direct Interpretation of Resistivity 
+    *Koefoed, O. (1976)*. Progress in the Direct Interpretation of Resistivity 
         Soundings: an Algorithm. Geophysical Prospecting, 24(2), 233–240.
         https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
+        
         
     Examples
     --------
@@ -610,26 +610,61 @@ class VerticalSounding (ElectricalMethods):
             
         
     def fit(self, data: str | DataFrame, **kwd ): 
-        """ Fit the sounding |VES| curves and computed the ohmic as well as 
-        the thicknesses of different layers ... 
+        """ Fit the sounding |VES| curves and computed the ohmic-area and set  
+        all the features for demarcating fractured zone from the selected 
+        anomaly. 
         
-        :param data: DataFrame - It is composed of spacing values `AB` and  the 
-        apparent resistivity values `rhoa`. If `data` is given, params `AB` and 
-        `rhoa` should be kept to ``None``.   
+        Parameters 
+        -----------
+        data:  Path-like object, DataFrame
+            The string argument is a path-like object. It must be a valid file
+            wich encompasses the collected data on the field. It shoud be
+            composed of spacing values `AB` and  the apparent resistivity 
+            values `rhoa`. By convention `AB` is half-space data i.e `AB/2`. 
+            So, if `data` is given, params `AB` and `rhoa` should be kept to
+            ``None``. If `AB` and `rhoa` is expected to be inputted, user must
+            set the `data`  to ``None`` values for API purpose. If not an error
+            will raise. Or the recommended way is to use the `vesSelector` tool
+            in :func:`watex.tools.vesSelector` to buid the |VES| data before 
+            feeding it to the algorithm. See the example below.
             
-        :param AB: array-like - Spacing of the current electrodes when exploring
-        in deeper. Units are in meters. Note that the `AB` is by convention 
-        equals to `AB/2`. It's taken as half-space of the investigation depth... 
+        AB: array-like 
+            The spacing of the current electrodes when exploring in deeper. Units  
+            are in meters. Note that the `AB` is by convention equals to `AB/2`. 
+            It's taken as half-space of the investigation depth... 
         
-        :param MN: array-like - Potential electrodes distances at each investigation 
-        depth. Note by convention the values are half-space and equals to `MN/2`.
+        MN: array-like 
+            Potential electrodes distances at each investigation depth. Note 
+            by convention the values are half-space and equals to `MN/2`.
         
-        :param rhoa: array-like - Apparent resistivity values collected in imaging 
-        in depth. Units are in Ω.m not log10(Ω.m)
+        rhoa: array-like 
+            Apparent resistivity values collected in imaging in depth. Units 
+            are in Ω.m not log10(Ω.m)
         
-        :param readableformats: tuple -Specific readable files. The defaults of 
-        files reading is ``xlsx`` and ``csc``. 
-        
+        readableformats: tuple 
+            Specific readable files. The default of  reading files are ``xlsx``
+            and ``csv``. Other formats should be add for future release.
+            
+        Returns 
+        -------
+         object: 
+             Useful for chaining methods 
+         
+        Examples 
+        ---------
+        >>> from watex.methods import VerticalSounding 
+        >>> from watex.tools import vesSelector 
+        >>> data = vesSelector ('data/ves/ves_gbalo.csv', index_rhoa=3)
+        >>> vObj = VerticalSounding().fit(data)
+        >>> vObj.fractured_zone_ # AB/2 position from 45 to 100 m depth.
+        ... array([ 45.,  50.,  55.,  60.,  70.,  80.,  90., 100.])
+        >>> vObj.fractured_zone_resistivity_
+        ...array([57.67588974, 61.21142365, 64.74695755, 68.28249146, 75.35355927,
+               82.42462708, 89.4956949 , 96.56676271])
+        >>> vObj.nareas_ 
+        ... 2
+        >>> vObj.ohmic_area_
+        ... 349.6432550517697
         """
         def prettyprinter (n, r,v): 
             """ Display some details when verbose is higher... 
@@ -653,14 +688,23 @@ class VerticalSounding (ElectricalMethods):
             print(f'Range {str(self.vesorder)!r} of resistivity data of the  '
                   'sshould be selected as the main sounding data. ')
         self.data_ = vesSelector(
-            data = data, rhoaIndex= self.vesorder, **kwd )
+            data = data, index_rhoa= self.vesorder, **kwd )
         self.max_depth_ = self.data_.AB.max()
         
+        if self.fromlog10: 
+            self.resistivity_ = np.power(
+                10, self.resistivity_)
+            if self.verbose > 7 : 
+                print("Sounding resistivity data should be converted to "
+                      "the concrete resistivity values (ohm.meters)"
+                      )
+            self.data_['resistivity'] = self.resistivity_
+            
         if self.fromS >= self.max_depth_ : 
             raise VESError(
-                " Process of the depth research monitoring is aborted!"
-                f" The searching point 'fromS'<{self.fromS}m> ' is expected "
-                 f"to be less than the maximum depth <{self.max_depth_}m>.")
+                " Process of the depth monitoring is aborted! The searching"
+                f" point of param 'fromS'<{self.fromS}m> ' is expected to "
+                 f" be less than the maximum depth <{self.max_depth_}m>.")
         
         if self.verbose >= 3 : 
             print("Pseudo-area should be computed from AB/2 ={str(self.fromS)}"
@@ -691,15 +735,15 @@ class VerticalSounding (ElectricalMethods):
         self.XY_ , _, self.XYarea_ = list(gc) 
         self.AB_ = self.XY_[:, 0] 
         self.resistivity_ = self.XY_[:, 1] 
-        self.fz_= self.XYarea_[:, 0] 
-        self.fz_resistivity_ = self.XYarea_[:, 1] 
+        self.fractured_zone_= self.XYarea_[:, 0] 
+        self.fractured_zone_resistivity_ = self.XYarea_[:, 1] 
         
         if self.verbose > 7 :
             print("The Parameter numbers were successfully computed.") 
         return self 
     
     def summary(self, keeponlyparams: bool = False) -> DataFrame : 
-        """ Summarize the most import parameters for prediction purpose.
+        """ Summarize the most import features for prediction purpose.
         
         If `keeponlyparams` is set to ``True``. Method should output only 
         the main important params for prediction purpose... 
@@ -737,40 +781,41 @@ class VerticalSounding (ElectricalMethods):
             
         return table_ 
         
-    def invert( self, data: str | DataFrame , strategy=None,  **kwd): 
-        """ Invert the |VES| data collected in the exporation area.
+    def invert( self, data: str | DataFrame , strategy=None, **kwd): 
+        """ Invert1D the |VES| data collected in the exporation area.
         
         :param data: Dataframe pandas - contains the depth measurement AB from 
-        current electrodes, the potentials electrodes MN and the collected 
-        apparents resistivities. 
+            current electrodes, the potentials electrodes MN and the collected 
+            apparents resistivities. 
         
         :param rho0: float - Value of the starting resistivity model. If ``None``, 
             `rho0` should be the half minumm value of the apparent resistivity  
             collected. Units is in Ω.m not log10(Ω.m)
         :param h0: float -  Thickness  in meter of the first layers in meters.
-         If ``None``, it should be the minimum thickess as possible ``1.``m. 
+             If ``None``, it should be the minimum thickess as possible ``1.``m. 
         
         :param strategy: str - Type of inversion scheme. The defaut is Hybrid Monte 
-        Carlo (HMC) known as ``HMCMC``. Another scheme is Bayesian neural network
-        approach (``BNN``). 
+            Carlo (HMC) known as ``HMCMC``. Another scheme is Bayesian neural network
+            approach (``BNN``). 
         
-        :param kws: dict - Additionnal keywords arguments from |VES| data  
-        operations. See :doc:`watex.utils.exmath.vesDataOperator` for futher
-        details.
+        :param kwd: dict - Additionnal keywords arguments from |VES| data  
+            operations. See :doc:`watex.utils.exmath.vesDataOperator` for futher
+            details.
         
         """
         self.data_ = getattr(self, 'data_', None)
         if self.data_ is None: 
-            self.data_ = vesSelector(
-                data = data, rhoaIndex= self.typeofop, **kwd )
+            raise FitError(f'Fit the {self.__class__.__name__!r} object first')
+  
         # invert data 
         #XXX TODO 
         if strategy is not None: 
             self.strategy = strategy 
             
         invertVES(data= self.data_, h0 = self.h0 , rho0 = self.rho0,
-                  typeof = self.strategy )
- 
+                  typeof = self.strategy , **kwd)
+        
+        return self 
     def __repr__(self):
         """ Pretty format for programmer following the API... """
         return repr_callable_obj(self)
@@ -779,8 +824,8 @@ class VerticalSounding (ElectricalMethods):
         if name.endswith ('_'): 
             if name not in self.__dict__.keys(): 
                 if name in ('data_', 'resistivity_', 'ohmic_area_', 'err_', 
-                            'roots_', 'XY_', 'XYarea_', 'AB_',
-                            'resistivity_', 'fz_', 'fz_resistivity_'): 
+                            'roots_', 'XY_', 'XYarea_', 'AB_','resistivity_',
+                            'fractured_zone_', 'fractured_zone__resistivity_'): 
                     raise FitError (
                         f'Fit the {self.__class__.__name__!r} object first'
                         )

@@ -23,13 +23,12 @@ from ..typing import (
     )
 from ..tools._watexlog import watexlog
 from ..tools.funcutils import categorize_flow 
-from ..analysis.dimensionality import Reducers
-from ..metrics import (
+from ..tools.metrics import (
     precision_recall_tradeoff, 
     ROC_curve,
     confusion_matrix_
     ) 
-
+from ..analysis.dimensionality import Reducers
 import watex.exceptions as Wex
 import watex.tools.decorators as deco
 T=TypeVar('T')
@@ -60,7 +59,7 @@ def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
         
         Author: Serafeim Loukas, serafeim.loukas@epfl.ch
     
-    and referenced to :href:`<https://towardsdatascience.com/...-python-7c274582c37e>`
+    and referenced to :href:`<https://towardsdatascience.com/...-python-7c274582c37e>`_
     Func is edited and add some new parameters to customize plots: 
         
     :param score: the projected data
@@ -69,6 +68,7 @@ def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
     :param y_classes: class categories
     :param markers: markers to plot classes. 
     :param colors: colors to customize plots 
+    
    """
     xs = score[:,0] # projection on PC1
     ys = score[:,1] # projection on PC2
@@ -668,7 +668,7 @@ class MLPlots:
                         )  
             
     @deco.docstring(precision_recall_tradeoff, start='Parameters', 
-                    end = 'Examples')        
+                    end = 'Notes')        
     def PrecisionRecall(self,
                         clf,
                         X,
@@ -682,16 +682,18 @@ class MLPlots:
         """ Precision/recall Tradeoff computes a score based on the decision 
         function. 
         
-        ..see also::  For parameter definitions, please refer to
-            :doc:`~watex.utils.ml_utils.Metrics.PrecisionRecallTradeoff`
-            for further details.
-            
         Parameters
         ---------
         kind: str 
             kind of plot. Plot precision-recall vs thresholds (``vsThreshod``)
             or precision vs recall (``vsThreshod``). Default is 
             ``vsThreshod``
+            
+        See also:
+        ---------
+            For parameter definitions, please refer to
+            :meth:`watex.tools.metrics.Metrics.PrecisionRecallTradeoff`
+            for further details.
             
         Examples
         ---------
@@ -1145,16 +1147,14 @@ class MLPlots:
                         orientation =self.fig_orientation)
     
     @deco.docstring(confusion_matrix_, start='Parameters', 
-                    end='Example')
+                    end='Examples')
     def confusion_matrix(self, clf, X, y, cv, *, plottype ='map', ylabel=None, 
                          matshow_kws=dict(), **conf_mx_kws): 
         """ Plot confusion matrix for error analysis
         
         Look a representation of the confusion matrix using Matplotlib matshow
         
-        .. see also: :class:`~watex.utils.ml_utils.Metrics.confusion_matrix` 
-        for furthers details about arguments.
-        
+
         Parameters 
         ----------
          plottype: str 
@@ -1168,37 +1168,42 @@ class MLPlots:
             Additional confusion matrix keywords arguments.
         ylabel: list 
             list of labels names  to hold the name of each categories.
+            
+            
+        See also 
+        ---------
+        see :meth:`~watex.tools.metrics.Metrics.confusion_matrix` 
+        for furthers details about arguments.
         
-        Example
+        Examples
         --------
-        
-            >>> from sklearn.svm import SVC 
-            >>> from watex.view.mlplot import MLPlots
-            >>> from watex.datasets import fetch_data 
-            >> X,y = fetch_data('Bagoue dataset prepared')
-            >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', 
-                              random_state =42) 
-            >>> matshow_kwargs ={
-                    'aspect': 'auto', # 'auto'equal
-                    'interpolation': None, 
-                   'cmap':'gray' }                   
-            >>> plot_kws ={'lw':3, 
-                   'lc':(.9, 0, .8), 
-                   'font_size':15., 
-                    'cb_format':None,
-                    'xlabel': 'Predicted classes',
-                    'ylabel': 'Actual classes',
-                    'font_weight':None,
-                    'tp_labelbottom':False,
-                    'tp_labeltop':True,
-                    'tp_bottom': False
-                    }
-            >>> mObj =MLPlots(**plot_kws)
-            >>> mObj.confusion_matrix(svc_clf, X=X,y=y,cv=7,                                   
-                                    ylabel=['FR0', 'FR1', 'FR2', 'FR3'], 
-                                    plottype='error'
-                                    matshow_kws = matshow_kwargs,
-                                    )
+        >>> from sklearn.svm import SVC 
+        >>> from watex.view.mlplot import MLPlots
+        >>> from watex.datasets import fetch_data 
+        >> X,y = fetch_data('Bagoue dataset prepared')
+        >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', 
+                          random_state =42) 
+        >>> matshow_kwargs ={
+                'aspect': 'auto', # 'auto'equal
+                'interpolation': None, 
+               'cmap':'gray' }                   
+        >>> plot_kws ={'lw':3, 
+               'lc':(.9, 0, .8), 
+               'font_size':15., 
+                'cb_format':None,
+                'xlabel': 'Predicted classes',
+                'ylabel': 'Actual classes',
+                'font_weight':None,
+                'tp_labelbottom':False,
+                'tp_labeltop':True,
+                'tp_bottom': False
+                }
+        >>> mObj =MLPlots(**plot_kws)
+        >>> mObj.confusion_matrix(svc_clf, X=X,y=y,cv=7,                                   
+                                ylabel=['FR0', 'FR1', 'FR2', 'FR3'], 
+                                plottype='error'
+                                matshow_kws = matshow_kwargs,
+                                )
         """
         _check_cmap = 'cmap' in matshow_kws.keys()
         if not _check_cmap or len(matshow_kws)==0: 
@@ -1339,45 +1344,45 @@ class MLPlots:
          ylabel: list 
             list of labels names  to hold the name of each categories.
             
-        Example
+        Examples
         --------
         
-            >>> from sklearn.svm import SVC 
-            >>> from watex.view.mlplot import MLPlots 
-            >>> from watex.datasets import fetch_data 
-            >>> X,y = fetch_data('Bagoue dataset prepared')
-            >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
-            >>> plot_kws ={'lw' :3.,                  # line width 
-                         'lc':(.9, 0, .8), 
-                         'ms':7.,                
-                         'yp_marker_style' :'o', 
-                         'fig_size':(12, 8),
-                        'font_size':15.,
-                        'xlabel': 'Test examples',
-                        'ylabel':'Flow categories' ,
-                        'marker_style':'o', 
-                        'markeredgecolor':'k', 
-                        'markerfacecolor':'b', 
-                        'markeredgewidth':3, 
-                        'yp_markerfacecolor' :'k', 
-                        'yp_markeredgecolor':'r', 
-                        'alpha' :1., 
-                        'yp_markeredgewidth':2.,
-                        'show_grid' :True,          
-                        'galpha' :0.2,              
-                        'glw':.5,                   
-                        'rotate_xlabel' :90.,
-                        'fs' :3.,                   
-                        's' :20 ,                  
-                        'rotate_xlabel':90
-                           }
-            >>> modObj = MLPlots(**plot_kws)
-            >>> modObj.model(y, X_=X, clf =svc_clf, 
-                          predict= True, 
-                          prefix ='b' ,
-                          fill_between =False, 
-                          ylabel=['FR0', 'FR1', 'FR2', 'FR3']
-                          )
+        >>> from sklearn.svm import SVC 
+        >>> from watex.view.mlplot import MLPlots 
+        >>> from watex.datasets import fetch_data 
+        >>> X,y = fetch_data('Bagoue dataset prepared')
+        >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
+        >>> plot_kws ={'lw' :3.,                  # line width 
+                     'lc':(.9, 0, .8), 
+                     'ms':7.,                
+                     'yp_marker_style' :'o', 
+                     'fig_size':(12, 8),
+                    'font_size':15.,
+                    'xlabel': 'Test examples',
+                    'ylabel':'Flow categories' ,
+                    'marker_style':'o', 
+                    'markeredgecolor':'k', 
+                    'markerfacecolor':'b', 
+                    'markeredgewidth':3, 
+                    'yp_markerfacecolor' :'k', 
+                    'yp_markeredgecolor':'r', 
+                    'alpha' :1., 
+                    'yp_markeredgewidth':2.,
+                    'show_grid' :True,          
+                    'galpha' :0.2,              
+                    'glw':.5,                   
+                    'rotate_xlabel' :90.,
+                    'fs' :3.,                   
+                    's' :20 ,                  
+                    'rotate_xlabel':90
+                       }
+        >>> modObj = MLPlots(**plot_kws)
+        >>> modObj.model(y, X_=X, clf =svc_clf, 
+                      predict= True, 
+                      prefix ='b' ,
+                      fill_between =False, 
+                      ylabel=['FR0', 'FR1', 'FR2', 'FR3']
+                      )
         """
         
         if index is not None:
