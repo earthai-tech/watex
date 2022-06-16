@@ -4,14 +4,11 @@
 """
 Created on Mon Jul  5 13:27:27 2021
 
-    Description:
-        Test to core module . Containers of modules  :mod:`~.core.erp.ERP` and 
-        :mod:~.core.ves.VES`
-        Test ouputfiles from rewriting and generating files , which includes:
-        Reference input data are from ERP_DATA_DIR and VES_DATA_DIR
-
-    References:
-        .. _module-core::`watex.core`
+Description:
+    Test to core module . Containers of modules  :mod:`~.methods.erp.ERP` and 
+    :mod:~.methods.electrical`.
+    Test ouputfiles from rewriting and generating files , which includes:
+    Reference input data are from ERP_DATA_DIR and VES_DATA_DIR
         
 @author: @Daniel03
 
@@ -21,10 +18,10 @@ import os
 import  unittest 
 import pytest
 
-from watex.core.erp import ERP 
+from watex.methods.erp import ERP 
 from tests import ERP_DATA_DIR, TEST_TEMP_DIR,  make_temp_dir 
 from tests import erp_test_location_name 
-from tests.core.__init__ import reset_matplotlib, watexlog, diff_files
+from tests.methods.__init__ import reset_matplotlib, watexlog, diff_files
 
 class TestERP(unittest.TestCase):
     """

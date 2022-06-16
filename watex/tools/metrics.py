@@ -248,7 +248,7 @@ def ROC_curve( roc_kws=None, **tradeoff_kws):
     Parameters 
     ----------
     clf: callable
-        classifier or estimator
+        classifier or estimator.
             
     X: ndarray, 
         Training data (trainset) composed of n-features.
@@ -278,7 +278,9 @@ def ROC_curve( roc_kws=None, **tradeoff_kws):
         >>> rocObj.__dict__.keys()
         >>> rocObj.roc_auc_score 
         >>> rocObj.fpr
+        
     """
+    
     mObj =Metrics()
     obj= precision_recall_tradeoff(**tradeoff_kws)
     for key in obj.__dict__.keys():

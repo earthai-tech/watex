@@ -30,31 +30,33 @@ class ERP_collection:
     Collection objects. The class collects all `erp` survey lines.
     Each `erp` is an singleton class object with their corresponding 
     attributes. The goal is to build a container  geao-elecricals to 
-    straigthforwardly given to :class:`~watex.core.geofeatures.Features`
+    straigthforwardly given to :class:`watex.bases.features.GeoFeatures`
     class.
-    
-    Arguments:
+     
+    Arguments
     ----------
-            *listOferpfn*: list, ndarray
-                        list of different `erp` files. 
-            *listOfposMinMax* : list 
-                        collection of different selected anomaly boundaries. 
-                        If not provided, the :attr:`~.core.erp.ERP.auto` 
-                        will triggered. It's recommanded to provided for all 
-                        `erp` your convenient anomaly boundaries like:: 
-                            
-                            listOfposMinMax=[(90, 130), (10, 70), ...]
-                        
-                        where ``(90,130)``is boundaries of selected anomaly on 
-                        the first `erp` line and ``(10,70)``is the boundaries
-                        of the second `erp` survey line and so on. 
-            *erpObjs*: list, ndarray 
-                Collection of objects from :class:~core.erp.ERP`. If objects 
-                are alread created. Gather them on a list and pass though the 
-                argument `erpObjs`
+    *listOferpfn*: list, ndarray
+        list of different `erp` files.
+            
+    *listOfposMinMax* : list 
+        collection of different selected anomaly boundaries. 
+        If not provided, the :attr:`~.methods.erp.ERP.auto` 
+        will triggered. It's recommanded to provided for all 
+        `erp` your convenient anomaly boundaries like:: 
+        
+            listOfposMinMax=[(90, 130), (10, 70), ...]
+    
+    where ``(90,130)``is boundaries of selected anomaly on 
+    the first `erp` line and ``(10,70)`` is the boundaries
+    of the second `erp` survey line and so on. 
+            
+    *erpObjs*: list, ndarray 
+        Collection of objects from :class:`~.methods.erp.ERP`. If objects 
+        are alread created. Gather them on a list and pass though the 
+        argument `erpObjs`.
     
     Holds on others optionals infos in ``kws`` arguments: 
-       
+    
     ======================  ==============  ===================================
     Attributes              Type                Description  
     ======================  ==============  ===================================
@@ -62,12 +64,12 @@ class ERP_collection:
                                             can provide the distance between 
                                             sites measurements as performed on 
                                             investigations site. If given, the 
-                                            automaticall `dipoleLength` compu-
-                                            tation will be turned off. 
-    fnames                 array_like       Array of `erp`survey lines name. 
+                                            automaticall `dipoleLength` 
+                                            computation will be turned off. 
+    fnames                  array_like      Array of `erp` survey lines name. 
                                             If each survey name is the location 
                                             name then will keep it. 
-    id                      array_like      Each `erp`obj reference numbers
+    id                      array_like      Each `erp` obj reference numbers
     erps_data               nd.array        Array composed of geo-electrical
                                             parameters. ndarray(nerp, 8) where 
                                             num is the number of `erp`obj
@@ -76,46 +78,46 @@ class ERP_collection:
                                             and the number of lines correspond 
                                             to the number of collected `erp`.
     ======================  ==============  ===================================
-        
+    
     It's posible to get from each `erp` collection the singular array of 
     different parameters considered as properties params:: 
-        
-        >>> from watex.core.erp import ERP_collection as ERPC
+    
+        >>> from watex.methods.erp import ERP_collection as ERPC
         >>> erpcol = ERPC(listOferpfn='list|path|filename')
         >>> erpcol.survey_ids
         >>> erpcol.selectedPoints
-        
-   Call the following :class:`~.erp.ERP_collection` properties attributes:
-    
+     
+    Call the following :class:`~.erp.ERP_collection` properties attributes:
+     
     ====================  ================  ===================================
-    properties              Type                Description  
+    Properties              Type                Description  
     ====================  ================  ===================================
     selectedPoints          array_like      Collection of Best anomaly 
-                                            position points 
+                                            position points. 
     survey_ids              array_like      Collection of all `erp` survey 
-                                            survey ids. :Note:Each ids is fol-
-                                            lowing by the prefix **e**.
+                                            survey ids. Note that each ids is
+                                            following by the prefix **e**.
     sfis                    array_like      Collection of best anomaly standard 
                                             fracturation index value. 
     powers                  array_like      Collection of best anomaly `power`
     magnitudes              array_like      Colection of best anomaly
-                                            magnitude in *ohm.m*
+                                            magnitude in *ohm.m*.
     shapes                  array_like      Collection of best anomaly shape. 
                                             For more details please refer to
-                                            :doc:`~core.erp.ERP`.
+                                            :doc:`~.erp.ERP`.
     types                   array_like      Collection of best anomaly type. 
-                                             Refer to :doc:`~core.erp.ERP` for
-                                             more details.
+                                            Refer to :doc:`~.erp.ERP` for
+                                            more details.
     ====================  ================  ===================================
-        
-    :Example: 
-        
-        >>> from watex.core.erp import ERP_collection 
-        >>> erpObjs =ERP_collection(listOferpfn= 'data/erp')
-        >>> erpObjs.erpdf
-        >>> erpObjs.survey_ids
-        ... ['e2059734331848' 'e2059734099144' 'e2059734345608']
-
+     
+    Examples
+    ---------
+    >>> from watex.methods.erp import ERP_collection 
+    >>> erpObjs =ERP_collection(listOferpfn= 'data/erp')
+    >>> erpObjs.erpdf
+    >>> erpObjs.survey_ids
+    ... ['e2059734331848' 'e2059734099144' 'e2059734345608']
+    
     """
     erpColums =['id', 
                 'east', 
@@ -305,22 +307,21 @@ class ERP_collection:
         on data array 
          
         :param attr_name: 
-            Name of attribute to get the informations of the properties 
+            Name of attribute to get the informations of the properties. 
              
         :type attra_name: str 
         
-        :param objslist: list of collection objects 
-        :type objslist; list 
+        :param objslist: list of collection objects. 
+        :type objslist: list 
         
         :Example:
-            
-            >>> from watex.core.erp.ERP_collection as ERPcol
+            >>> from watex.methods.erp.ERP_collection as ERPcol
             >>> erpObjs =ERPcol(listOferpfn= 'data/erp', 
             ...                export_erpFeatures=True,
             ...                    filename='ykroS')
             
-        
         """
+        
         if objslist is not None : 
             self.erpObjs = objslist 
         
@@ -339,6 +340,7 @@ class ERP_collection:
         :type savepath: str 
     
         """
+        
         filename = kwargs.pop('filename', None)
         if filename is not None : 
             self.filename =filename
@@ -451,29 +453,31 @@ class ERP :
     its features. Can select multiples anomalies  on ERP and give their
     features values. 
     
-    Arguments: 
+    Arguments 
     ----------
-            * erp_fn: str 
-                   Path to electrical resistivity profile 
-                   
-            * dipole_length: float
-                    Measurement electrodes. Distance between two electrodes in 
-                    meters. 
-            * auto: bool 
-                Trigger the automatic computation . If the `auto` is set to 
-                ``True``, dont need to provide the `posMinMax` argument
-                otherwise `posMinMax` must be given. 
-            * posMinMax: tuple, list, nd.array(1,2)
-                Selected anomaly boundary. The boundaries matches the startpoint 
-                as the begining of anomaly position and the endpoint as the end 
-                of anomaly position. If provided , `auto` will be turn off at
-                ``False`` even ``True``. 
+    * erp_fn: str 
+        Path to electrical resistivity profile 
+           
+    * dipole_length: float
+        Measurement electrodes. Distance between two electrodes in 
+        meters. 
+    * auto: bool 
+        Trigger the automatic computation . If the `auto` is set to 
+        ``True``, dont need to provide the `posMinMax` argument
+        otherwise `posMinMax` must be given. 
+    * posMinMax: tuple, list, nd.array(1,2)
+        Selected anomaly boundary. The boundaries matches the startpoint 
+        as the begining of anomaly position and the endpoint as the end 
+        of anomaly position. If provided , `auto` will be turn off at
+        ``False`` even ``True``. 
                     
-    :Note: Provide the `posMinMax` is strongly recommended for accurate 
-            geo-electrical features computation. If not given, the best anomaly 
-            will be selected automatically and probably could not match what you 
-            expect.
-            ... 
+    Notes 
+    ------
+    Provide the `posMinMax` is strongly recommended for accurate 
+    geo-electrical features computation. If not given, the best anomaly 
+    will be selected automatically and probably could not match what you 
+    expect.
+
             
     Hold others informations: 
         
@@ -502,7 +506,7 @@ class ERP :
 
     - To get the geo-electrical-features,  create an `erp` object by calling:: 
         
-        >>> from watex.core.erp import ERP 
+        >>> from watex.methods.erp import ERP 
         >>> anomaly_obj =ERP(erp_fn = '~/location_filename')
         
     The call of the following `erp` properties attributes:
@@ -529,25 +533,26 @@ class ERP :
                                             planes. 
     ====================  ================  ===================================
     
-    :Example: 
+    Examples 
+    ---------
         
-        >>> from watex.core.erp import ERP  
-        >>> anom_obj= ERP(erp_fn = 'data/l10_gbalo.xlsx', auto=False, 
-        ...                  posMinMax= (90, 130),turn_off=True)
-        >>> anom_obj.name 
-        ... l10_gbalo
-        >>> anom_obj.select_best_point_
-        ...110 
-        >>> anom_obj.select_best_value_
-        ...132
-        >>> anom_obj.best_magnitude
-        ...5
-        >>> nom_obj.best_power
-        ..40
-        >>> anom_obj.best_sfi
-        ...1.9394488747363936
-        >>> anom_obj.best_anr
-        ...0.5076113145430543
+    >>> from watex.methods.erp import ERP  
+    >>> anom_obj= ERP(erp_fn = 'data/l10_gbalo.xlsx', auto=False, 
+    ...                  posMinMax= (90, 130),turn_off=True)
+    >>> anom_obj.name 
+    ... l10_gbalo
+    >>> anom_obj.select_best_point_
+    ...110 
+    >>> anom_obj.select_best_value_
+    ...132
+    >>> anom_obj.best_magnitude
+    ...5
+    >>> nom_obj.best_power
+    ..40
+    >>> anom_obj.best_sfi
+    ...1.9394488747363936
+    >>> anom_obj.best_anr
+    ...0.5076113145430543
         
     """ 
     erpLabels =['pk', 
@@ -817,7 +822,7 @@ class ERP :
     
     @property 
     def dipoleLength(self): 
-        """Get the dipole length  i.e the distance between two measurement."""
+        """Get the dipole length i.e the distance between two measurement."""
         
         func.wrap_infos(
             'Distance bewteen measurement is = {0} m.'.
@@ -850,7 +855,7 @@ class ERP :
     
     @property 
     def best_power (self):
-        """Get the power from the select :attr:`select_best_point_`"""
+        """Get the power from the select :attr:`~.ERP.select_best_point_`. """
         self._power =wMath.compute_power(
             posMinMax=self.aBestInfos[self._best_key_point][2])
         
@@ -861,7 +866,7 @@ class ERP :
         return self._power 
     @property 
     def best_magnitude(self): 
-        """ Get the magnitude of the select :attr:`select_best_point_"""
+        """ Get the magnitude of the select :attr:`~.ERP.select_best_point_`."""
         
         self._magnitude =wMath.compute_magnitude(
             rhoa_max=self.rhoa_max,rhoa_min=self.select_best_value_)
@@ -876,7 +881,7 @@ class ERP :
     @property 
     def best_sfi(self) : 
         """Get the standard fraturation index from 
-        :attr:`select_best_point_"""
+        :attr:`~.ERP.select_best_point_`"""
         
         self._sfi = wMath.compute_sfi(pk_min=self.posi_min,
                                       pk_max=self.posi_max,
@@ -894,7 +899,7 @@ class ERP :
     def posi_max (self):
         """Get the right position of :attr:`select_best_point_ boundaries 
         using the station locations of unarbitrary positions got from
-        :attr:`dipoleLength`."""
+        :attr:`~.ERP.dipoleLength`."""
         
         return np.array(self.aBestInfos[self._best_key_point][2]).max()
     
@@ -902,21 +907,21 @@ class ERP :
     def posi_min (self):
         """Get the left position of :attr:`select_best_point_ boundaries 
         using the station locations of unarbitrary positions got from
-        :attr:`dipoleLength`."""
+        :attr:`~.ERP.dipoleLength`."""
         
         return np.array(self.aBestInfos[self._best_key_point][2]).min()
         
     @property 
     def rhoa_min (self):
         """Get the buttom position of :attr:`select_best_point_ boundaries 
-        using the magnitude  got from :attr:`abest_magnitude`."""
+        using the magnitude  got from :attr:`~.ERP.abest_magnitude`."""
     
         return np.array(self.aBestInfos[self._best_key_point][3]).min()
     
     @property 
     def rhoa_max (self):
         """Get the top position of :attr:`select_best_point_ boundaries 
-        using the magnitude  got from :attr:`abest_magnitude`."""
+        using the magnitude  got from :attr:`~.ERP.abest_magnitude`."""
     
         return np.array(self.aBestInfos[self._best_key_point][3]).max()
            
@@ -936,7 +941,7 @@ class ERP :
     @property 
     def best_anr (self ): 
         """Get the select best anomaly ratio `abest_anr` along the
-        :class:`~watex.core.erp.ERP`"""
+        :class:`~watex.methods.erp.ERP`"""
         
         pos_min_index = int(np.where(self.df['pk'].to_numpy(
             ) ==self.posi_min)[0])
@@ -1054,7 +1059,7 @@ def get_type (erp_array, posMinMax, pk, pos_array, dl):
         
     :Example: 
         
-        >>> from watex.core.erp import get_type 
+        >>> from watex.methods.erp import get_type 
         >>> x = [60, 61, 62, 63, 68, 65, 80,  90, 100, 80, 100, 80]
         >>> pos= np.arange(0, len(x)*10, 10)
         >>> ano_type= get_type(erp_array= np.array(x),

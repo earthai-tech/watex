@@ -62,14 +62,20 @@ def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
     and referenced to :href:`<https://towardsdatascience.com/...-python-7c274582c37e>`_
     Func is edited and add some new parameters to customize plots: 
         
-    :param score: the projected data
-    :param coeff: the eigenvectors (PCs)
-    :param y: the class labels
-    :param y_classes: class categories
-    :param markers: markers to plot classes. 
+    :param score: the projected data.
+    
+    :param coeff: the eigenvectors (PCs).
+    
+    :param y: the class labels.
+    
+    :param y_classes: class categories.
+    
+    :param markers: markers to plot classes.
+    
     :param colors: colors to customize plots 
     
    """
+   
     xs = score[:,0] # projection on PC1
     ys = score[:,1] # projection on PC2
     n = coeff.shape[0] # number of variables
@@ -148,7 +154,7 @@ class MLPlots:
     alpha               transparency number, *default* is ``0.5``  
     font_weight         weight of the font , *default* is ``bold``.        
     marker              marker of stations 
-                        *default* is r"$\blacktriangledown$"
+                        *default* is r"$\blacktriangledown$".
     ms                  size of marker in points. *default* is 5
     marker_style        style  of marker in points. *default* is ``o``.
     markerfacecolor     facecolor of the marker. *default* is ``yellow``
@@ -177,7 +183,7 @@ class MLPlots:
     pc                  line color of `Precision` metric *default* is ``k``
     s                   size of items in scattering plots. default is ``fs*40.``
     gls                 [ '-' | '.' | ':' ] line style of grid  
-                        *default* is '--'
+                        *default* is '--'.
     glc                 line color of the grid plot, *default* is ``k``
     glw                 line weight of the grid plot, *default* is ``2``
     galpha              transparency number of grid, *default* is ``0.5``  
@@ -329,7 +335,7 @@ class MLPlots:
              plot_dict:Generic[V] = None,
              **pca_kws):
             
-        """ Plot PCA component analysis using :class:`~sklearn.decomposition`. 
+        """ Plot PCA component analysis using :class:`~.sklearn.decomposition`. 
         
         PCA indentifies the axis that accounts for the largest amount of 
         variance in the trainset `X`. It also finds a second axis orthogonal 
@@ -389,7 +395,7 @@ class MLPlots:
         :param biplot: biplot pca features importance (pc1 and pc2) 
                 and visualize different variables according 
                 to Serafeim Loukas, serafeim.loukas@epfl.ch 
-
+        
         Usage:
             
             by default, :meth:`~watex.viewer.mlplot.MLPlot.PCA_` plot the first 
@@ -683,29 +689,28 @@ class MLPlots:
         function. 
         
         Parameters
-        ---------
+        -----------
         kind: str 
             kind of plot. Plot precision-recall vs thresholds (``vsThreshod``)
-            or precision vs recall (``vsThreshod``). Default is 
-            ``vsThreshod``
-            
-        See also:
-        ---------
-            For parameter definitions, please refer to
-            :meth:`watex.tools.metrics.Metrics.PrecisionRecallTradeoff`
-            for further details.
-            
+            or precision vs recall(``vsThreshod``). Default is ``vsThreshod``
+     
         Examples
         ---------
-
             >>> from sklearn.linear_model import SGDClassifier
-            >>> from watex.datasets.data_preparing import X_train_2
+            >>> from watex.datasets import X_prepared
             >>> from watex.datasets import y_prepared
             >>> sgd_clf = SGDClassifier(random_state= 42)
             >>> mlObj= MLPlots(lw =3., pc = 'k', rc='b', ps='-', rs='--')
-            >>> mlObj.PrecisionRecall(clf = sgd_clf,  X= X_train_2, 
+            >>> mlObj.PrecisionRecall(clf = sgd_clf,  X= X_prepared, 
             ...                y = y_prepared, classe_=1, cv=3,
             ...                 kind='vsRecall')
+            
+        See also
+        ---------
+        For parameter definitions, please refer to
+        :meth:`watex.tools.metrics.Metrics.PrecisionRecallTradeoff`
+        for further details.
+               
         """
         # call precision 
         prtObj = precision_recall_tradeoff(
@@ -848,16 +853,15 @@ class MLPlots:
             
         See also
         --------
-        
             `ROC_curve` deals wuth optional and positionals keywords arguments 
-            of :meth:`~watex.metrics.precision_recall_tradeoff`
+            of :meth:`watex.metrics.precision_recall_tradeoff`.
             
         Examples 
         --------
         
             >>> from sklearn.linear_model import SGDClassifier
             >>> from sklearn.ensemble import RandomForestClassifier
-            >>> from watex.datasets.data_preparing import X_train_2
+            >>> from watex.datasets import X_prepared
             >>> from watex.datasets import  y_prepared
             >>> sgd_clf = SGDClassifier(random_state= 42)
             >>> forest_clf =RandomForestClassifier(random_state=42)
@@ -1159,22 +1163,17 @@ class MLPlots:
         ----------
          plottype: str 
             can be `map` or `error` to visualize the matshow of prediction 
-            and errors  respectively
+            and errors  respectively.
             
         matshow_kws: dict 
-            matplotlib additional keywords arguments 
+            matplotlib additional keywords arguments. 
             
         conf_mx_kws: dict 
             Additional confusion matrix keywords arguments.
         ylabel: list 
             list of labels names  to hold the name of each categories.
             
-            
-        See also 
-        ---------
-        see :meth:`~watex.tools.metrics.Metrics.confusion_matrix` 
-        for furthers details about arguments.
-        
+  
         Examples
         --------
         >>> from sklearn.svm import SVC 
@@ -1203,7 +1202,12 @@ class MLPlots:
                                 ylabel=['FR0', 'FR1', 'FR2', 'FR3'], 
                                 plottype='error'
                                 matshow_kws = matshow_kwargs,
-                                )
+                                ) 
+        See also 
+        ---------
+        see :meth:`~watex.tools.metrics.Metrics.confusion_matrix` for furthers
+        details about arguments.
+        
         """
         _check_cmap = 'cmap' in matshow_kws.keys()
         if not _check_cmap or len(matshow_kws)==0: 
@@ -1759,8 +1763,11 @@ def appendLineParams(self, ax, xlim=None, ylim=None):
     """ DRY(Dont Repeat Yourself). So append  the remain lines configuration 
     such as xlabel, grid , legend and ticks parameters holf from `MLPlots`
     objects.
-    :param ax: axis to plot. 
+    
+    :param ax: axis to plot.
+    
     """
+    
     if self.xlabel is None: 
         self.xlabel =''
     if self.ylabel is None: 
@@ -1820,8 +1827,8 @@ def plot_matshow(self, matrix, x_label=None, y_label=None, **matshow_kws):
     ylabel: list 
        list of labels names  to hold the name of each categories.
        
-    Example
-    -------
+    Examples
+    ---------
     >>> import numpy as np
     >>> import watex.view.mlplot as WPL 
     >>>  matshow_kwargs ={

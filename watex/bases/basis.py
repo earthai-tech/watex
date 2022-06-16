@@ -21,6 +21,7 @@ import joblib
 from six.moves import urllib 
 from pprint import pprint  
 
+from ..documentation import __doc__
 from ..typing import (
     Tuple, 
     Optional, 
@@ -31,7 +32,8 @@ from ..tools.funcutils import (
     savepath_,
 )
 from ..tools.decorators import  (
-    writef ,
+    writef,
+    refAppender
     ) 
 from ..exceptions import (
     FileHandlingError, 
@@ -58,14 +60,19 @@ DATA_URL = GIT_ROOT  + DATA_PATH  + TGZ_FILENAME
 
 # __all__=['fetchDataFromLocalandWeb']
 
+
 #XXX TODO: 
+    
+@refAppender(__doc__)
 class WATer (ABCMeta): 
     """ Should be a SuperClass for methods classes. 
     
     Instanciate the class shoud raise an error. It should initialize arguments 
-    as well for |ERP| and for |VES|. The `Water` should set the 
-    attributes and check whether attributes  are suitable for  what the 
-    specific class expects to. """
+    as well for |ERP| and for |VES|. The `Water` should set the attributes and
+    check whether attributes  are suitable for  what the specific class expects
+    to. 
+
+    """
     
     @abstractmethod 
     def __init__(self, *args, **kwargs): 

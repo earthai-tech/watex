@@ -31,6 +31,7 @@ from ..typing import (
     Sub ,
     List ,
     DataFrame, 
+    Sub,
     )
 from ..property import P
 from ..exceptions import ( 
@@ -174,24 +175,23 @@ def repr_callable_obj(obj: F  ):
     :Raises: TypeError - If object is not a callable or instanciated. 
     
     :Examples: 
-        
-    >>> from watex.tools.funcutils import repr_callable_obj
-    >>> from watex.methods.electrical import (
-        ElectricalMethods, ResistivityProfiling)
-    >>> callable_format(ElectricalMethods)
-    ... 'ElectricalMethods(AB= None, arrangement= schlumberger,
-            area= None, MN= None, projection= UTM, datum= WGS84,
-            epsg= None, utm_zone= None, fromlog10= False)'
-    >>> callable_format(ResistivityProfiling)
-    ... 'ResistivityProfiling(station= None, dipole= 10.0, 
-            auto_station= False, kws= None)'
-    >>> robj= ResistivityProfiling (AB=200, MN=20, station ='S07')
-    >>> repr_callable_obj(robj)
-    ... 'ResistivityProfiling(AB= 200, MN= 20, arrangememt= schlumberger,
-            utm_zone= None, projection= UTM, datum= WGS84, epsg= None, 
-            area= None, fromlog10= False, dipole= 10.0, station= S07)'
-    >>> repr_callable_obj(robj.fit)
-    ... 'fit(data= None, kws= None)'
+        >>> from watex.tools.funcutils import repr_callable_obj
+        >>> from watex.methods.electrical import (
+            ElectricalMethods, ResistivityProfiling)
+        >>> callable_format(ElectricalMethods)
+        ... 'ElectricalMethods(AB= None, arrangement= schlumberger,
+                area= None, MN= None, projection= UTM, datum= WGS84,
+                epsg= None, utm_zone= None, fromlog10= False)'
+        >>> callable_format(ResistivityProfiling)
+        ... 'ResistivityProfiling(station= None, dipole= 10.0, 
+                auto_station= False, kws= None)'
+        >>> robj= ResistivityProfiling (AB=200, MN=20, station ='S07')
+        >>> repr_callable_obj(robj)
+        ... 'ResistivityProfiling(AB= 200, MN= 20, arrangememt= schlumberger,
+                utm_zone= None, projection= UTM, datum= WGS84, epsg= None, 
+                area= None, fromlog10= False, dipole= 10.0, station= S07)'
+        >>> repr_callable_obj(robj.fit)
+        ... 'fit(data= None, kws= None)'
 """
     
     # inspect.formatargspec(*inspect.getfullargspec(cls_or_func))
@@ -220,7 +220,9 @@ def accept_types (*objtypes: list ,
                   format: bool = False
                   ) -> List[str] | str : 
     """ List the type format that can be accepted by a function. 
-    :param objtypes: List of object types 
+    
+    :param objtypes: List of object types.
+    
     :param format: bool - format the list of the name of objects.
     
     :return: list of object type names or str of object names. 
@@ -244,8 +246,10 @@ def read_from_excelsheets(erp_file: str = None ) -> List[DataFrame]:
    
     :param erp_file:
         Excell workbooks containing `erp` profile data.
+        
     :return: A list composed of the name of `erp_file` at index =0 and the 
-            datataframes.
+      datataframes.
+      
     """
     
     allfls:Dict [str, Dict [T, List[T]] ] = pd.read_excel(
@@ -261,9 +265,13 @@ def check_dimensionality(obj, data, z, x):
     """ Check dimensionality of data and fix it.
     
     :param obj: Object, can be a class logged or else.
-    :param data: 2D grid data of ndarray (z, x) dimensions
-    :param z: array-like should be reduced along the row axis
+    
+    :param data: 2D grid data of ndarray (z, x) dimensions.
+    
+    :param z: array-like should be reduced along the row axis.
+    
     :param x: arraylike should be reduced along the columns axis.
+    
     """
     def reduce_shape(Xshape, x, axis_name=None): 
         """ Reduce shape to keep the same shape"""
@@ -295,11 +303,16 @@ def is_installing (module, upgrade=True , DEVNULL=False,
                   action=True, verbose =0, **subpkws): 
     """ Install or uninstall a module using the subprocess under the hood.
     
-    :param module: str, module name 
+    :param module: str, module name.
+    
     :param upgrade:bool, install the lastest version.
-    :param verbose:output a message 
-    :param DEVNULL: decline the stdoutput the message in the console 
-    :param action: str, install or uninstall a module 
+    
+    :param verbose:output a message.
+    
+    :param DEVNULL: decline the stdoutput the message in the console.
+    
+    :param action: str, install or uninstall a module.
+    
     :param subpkws: additional subprocess keywords arguments.
     
     :Example: 
@@ -370,11 +383,12 @@ def is_installing (module, upgrade=True , DEVNULL=False,
 
 
 def smart_format(iter_obj): 
-    """ Smart format iterable obj 
+    """ Smart format iterable ob.
+    
     :param iter_obj: iterable obj 
     
     :Example: 
-        >>> from pycsamt.tools.funcutils import smart_format
+        >>> from watex.tools.funcutils import smart_format
         >>> smart_format(['model', 'iter', 'mesh', 'data'])
         ... 'model','iter','mesh' and 'data'
     """
@@ -391,11 +405,13 @@ def smart_format(iter_obj):
         str_litteral += f" and {iter_obj[-1]!r}"
     return str_litteral
 
-def make_introspection(Obj , subObj): 
+def make_introspection(Obj: object , subObj: Sub[object])->None: 
     """ Make introspection by using the attributes of instance created to 
     populate the new classes created.
+    
     :param Obj: callable 
-        New object to fully inherits of `subObject` attributes 
+        New object to fully inherits of `subObject` attributes.
+        
     :param subObj: Callable 
         Instance created.
     """
@@ -408,8 +424,10 @@ def make_introspection(Obj , subObj):
             
 def cpath (savepath=None , dpath=None): 
     """ Control the existing path and create one of it does not exist.
+    
     :param savepath: Pathlike obj, str 
     :param dpath: str, default pathlike obj
+    
     """
     if dpath is None:
         file, _= os.path.splitext(os.path.basename(__file__))
@@ -426,11 +444,16 @@ def cpath (savepath=None , dpath=None):
 
 def show_quick_edi_stats(nedic , nedir, fmtl='~', lenl=77): 
     """ Format the Edi files and ckeck the number of edifiles
-    successfully read. 
-    :param nedic: number of input or collected edifiles 
-    :param nedir: number of edifiles read sucessfully 
-    :param fmt: str to format the stats line 
-    :param lenl: length of line denileation."""
+    successfully read.
+    
+    :param nedic: number of input or collected edifiles.
+    
+    :param nedir: number of edifiles read sucessfully.
+    
+    :param fmt: str to format the stats line.
+    
+    :param lenl: length of line denileation.
+    """
     
     def get_obj_len (value):
         """ Control if obj is iterable then take its length """
@@ -452,11 +475,12 @@ def show_quick_edi_stats(nedic , nedir, fmtl='~', lenl=77):
     print(fmtl * lenl )
 
 def sPath (name_of_path:str):
-    """ Savepath func. Create a path  with `name_of_path` 
-    if path not exists.
+    """ Savepath func. Create a path  with `name_of_path` if path not exists.
+    
     :param name_of_path: str, Path-like object. If path does not exist,
-    `name_of_path` should be created.
+        `name_of_path` should be created.
     """
+    
     try :
         savepath = os.path.join(os.getcwd(), name_of_path)
         if not os.path.isdir(savepath):
@@ -469,11 +493,14 @@ def sPath (name_of_path:str):
 
 def format_notes(text:str , cover_str: str ='~', inline=70, **kws): 
     """ Format note 
-    :param text: Text to be formated 
-    :param cover_str: type of ``str`` to surround the text 
-    :param inline: Nomber of character before going in liine 
+    :param text: Text to be formated.
+    
+    :param cover_str: type of ``str`` to surround the text.
+    
+    :param inline: Nomber of character before going in liine.
+    
     :param margin_space: Must be <1 and expressed in %. The empty distance 
-                        between the first index to the inline text 
+        between the first index to the inline text 
     :Example: 
         
         >>> from watex.tools import funcutils as func 
@@ -578,25 +605,24 @@ def interpol_scipy (
     
     Parameters 
     ------------
-        * x_value : np.ndarray 
-                    value on array data : original absciss 
-                    
-        * y_value : np.ndarray 
-                    value on array data : original coordinates (slope)
-                    
-        * x_new  : np.ndarray 
-                    new value of absciss you want to interpolate data 
-                    
-        * kind  : str 
-                projection kind : 
-                    maybe : "linear", "cubic"
-                    
-        * fill : str 
-            kind of extraolation, if None , *spi will use constraint interpolation 
-            can be "extrapolate" to fill_value.
-            
-        * plot : Boolean 
-            Set to True to see a wiewer graph
+    * x_value : np.ndarray 
+        value on array data : original abscissA 
+                
+    * y_value : np.ndarray 
+        value on array data : original coordinates (slope)
+                
+    * x_new  : np.ndarray 
+        new value of absciss you want to interpolate data 
+                
+    * kind  : str 
+        projection kind maybe : "linear", "cubic"
+                
+    * fill : str 
+        kind of extraolation, if None , *spi will use constraint interpolation 
+        can be "extrapolate" to fill_value.
+        
+    * plot : Boolean 
+        Set to True to see a wiewer graph
 
     Returns 
     --------
@@ -754,37 +780,39 @@ def intell_index (datalist,assembly_dials =False):
     Parameters
     ----------
     * datalist : list
-            list of element : may contain value and rocks or sample .
+        list of element. It may contain value and rocks or sample.
     * assembly_dials : list, optional
-            separate on two list : values and rocks or samples. 
-            The default is False.
+        separate on two list - values and rocks or samples. 
+        The default is ``False``.
 
     Returns
     -------
     index: int
-         index of breaking up.
+        Index of breaking up.
     first_dial: list , 
-       first sclice of value part 
+        First sclice of value part 
     secund_dial: list , 
-      second slice of rocks or sample part.
+        Second slice of rocks or sample part.
     assembly : list 
-         list of first_dial and second_dial
+        List of first_dial and second_dial
     
     Examples
     ---------
-        >>> import numpy as np
-        >>> listtest =[['DH_Hole', 'Thick01', 'Thick02', 'Thick03',
-        ...           'Thick04','Rock01', 'Rock02', 'Rock03', 'Rock04'],
-        ...           ['S01', '0.0', '98.62776918', '204.7500461','420.0266651','520', 'GRT', 
-        ...            'ATRK', 'GRT', 'ROCK','GRANODIORITE'],
-        ...           ['S02', '174.4293956', '313.9043882','974.8945704', 'GRT', 'ATRK', 'GRT']]
-        >>> listtest2=[listtest[1][1:],listtest[2][1:]]
-        >>> for ii in listtest2 :
-        >>> op=intell_index(datalist=ii)
-        >>> print("index:\n",op [0])
-        >>> print('firstDials :\n',op [1])
-        >>> print('secondDials:\n',op [2])
+    >>> import numpy as np
+    >>> listtest =[['DH_Hole', 'Thick01', 'Thick02', 'Thick03',
+    ...           'Thick04','Rock01', 'Rock02', 'Rock03', 'Rock04'],
+    ...           ['S01', '0.0', '98.62776918', '204.7500461','420.0266651','520', 'GRT', 
+    ...            'ATRK', 'GRT', 'ROCK','GRANODIORITE'],
+    ...           ['S02', '174.4293956', '313.9043882','974.8945704', 'GRT', 'ATRK', 'GRT']]
+    >>> listtest2=[listtest[1][1:],listtest[2][1:]]
+    >>> for ii in listtest2 :
+    >>> op=intell_index(datalist=ii)
+    >>> print("index:\n",op [0])
+    >>> print('firstDials :\n',op [1])
+    >>> print('secondDials:\n',op [2])
+    
     """
+    
     # assembly_dials=[]
     max_=0              # way to check whether values are in sort (ascending =True) order 
                         # because we go to deep (first value must be less than the next none)
@@ -978,17 +1006,17 @@ def _remove_str_word (char, word_to_remove, deep_remove=False):
 
     Returns
     -------
-        str 
-            char , new_char without the removed word .
+        str ; char , new_char without the removed word .
         
-    :Example: 
-        
-        >>> from watex.tools import funcutils as func
-        >>> ch ='AMTAVG 7.76: "K1.fld", Dated 99-01-01,AMTAVG, 
-        ...    Processed 11 Jul 17 AMTAVG'
-        >>> ss=func._remove_str_word(char=ch, word_to_remove='AMTAVG', 
-        ...                             deep_remove=False)
-        >>> print(ss)
+    Examples
+    ---------
+    >>> from watex.tools import funcutils as func
+    >>> ch ='AMTAVG 7.76: "K1.fld", Dated 99-01-01,AMTAVG, 
+    ...    Processed 11 Jul 17 AMTAVG'
+    >>> ss=func._remove_str_word(char=ch, word_to_remove='AMTAVG', 
+    ...                             deep_remove=False)
+    >>> print(ss)
+    
     """
     if type(char) is not str : char =str(char)
     if type(word_to_remove) is not str : word_to_remove=str(word_to_remove)
@@ -1142,8 +1170,9 @@ def display_infos(infos, **kws):
 def fr_en_parser (f, delimiter =':'): 
     """ Parse the translated data file. 
     
-    :param f: translation file to parse 
-    :param delimiter: str, delimiter
+    :param f: translation file to parse.
+    
+    :param delimiter: str, delimiter.
     
     :return: generator obj, composed of a list of 
         french  and english Input translation. 
@@ -1172,10 +1201,13 @@ def convert_csvdata_from_fr_to_en(csv_fn, pf, destfile = 'pme.en.csv',
     """ Translate variable data from french csva data  to english with 
     varibale parser file. 
     
-    :param csv_fn: data collected in csv format 
-    :param pf: parser file 
-    :param destfile: str,  Destination file, outputfile 
-    :param savepath: [Path-Like object, save data to a path 
+    :param csv_fn: data collected in csv format.
+    
+    :param pf: parser file. 
+    
+    :param destfile: str,  Destination file, outputfile.
+    
+    :param savepath: Path-Like object, save data to a path. 
                       
     :Example: 
         # to execute this script, we need to import the two modules below
