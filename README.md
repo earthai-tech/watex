@@ -65,7 +65,7 @@ If you use WATex in any published work, consider citing the [DOI](https://doi.or
 1. Key Laboratory of Geoscience Big Data and Deep Resource of Zhejiang Province , School of Earth Sciences, Zhejiang University, China
 2. Equipe de Recherche Géophysique Appliquée, Laboratoire de Géologie Ressources Minérales et Energétiques, UFR des Sciences de la Terre et des Ressources Minières, Université Félix Houphouët-Boigny, Cote d'Ivoire. 
 
-* Developer: [1](http://www.zju.edu.cn/english/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_Kouadio K. Laurent_](etanoyau@gmail.com),
+* Developer: [1](http://www.zju.edu.cn/english/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_@DanielMarie_](etanoyau@gmail.com),
 * Contributors: 
     - [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_Loukou Kouame Nicolas_](moayek@gmail.com)
     - [1](http://www.zju.edu.cn/english/) [_Binbin MI_](mibinbin@zju.edu.cn)
