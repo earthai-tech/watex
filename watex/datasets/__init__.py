@@ -52,7 +52,6 @@ BAGOUE_TAGS= (
 def fetch_data(param): 
     """ Fetch bagoue dataset values and details."""
     
-    
     if param.lower().find('original')>=0: 
         __logger.info('Fetching the Bagoue original data. Returns a dictionnary '
                       ' of area description, attributes and contest details.')

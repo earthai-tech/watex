@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
  
+from ..documentation import __doc__ 
 from ..property import P 
 from ..typing import (
     Any, 
@@ -46,8 +47,8 @@ from .gistools import (
     project_point_ll2utm, 
     project_point_utm2ll 
     )
-
-
+from .decorators import refAppender 
+# coreutils.__doc__= refAppender(__doc__)(coreutils)
 def _is_readable (
         f:str, 
         readableformats : Tuple[str] = ('.csv', '.xlsx'),
@@ -75,6 +76,7 @@ def _is_readable (
         
     return f 
     
+@refAppender(__doc__)
 def vesSelector( 
     data:str | DataFrame[DType[float|int]] = None, 
     *, 
@@ -88,14 +90,18 @@ def vesSelector(
     
     :param rhoa: array-like - Apparent resistivities collected during the 
         sounding. 
+        
     :param AB: array-like - Investigation distance between the current 
         electrodes. Note that the `AB` is by convention equals to `AB/2`. 
-        It's taken as half-space of the investigation depth... 
+        It's taken as half-space of the investigation depth.
+        
     :param MN: array-like - Potential electrodes distances at each investigation 
         depth. Note by convention the values are half-space and equals to 
         `MN/2`. 
+        
     :param f: Path-like object or sounding dataframe. If given, the 
         others parameters could keep the ``None` values. 
+        
     :param index_rhoa: int - The index to retrieve the resistivity data of a 
         specific sounding point. Sometimes the sounding data are composed of
         the different sounding values collected in the same survey area into 
@@ -123,7 +129,7 @@ def vesSelector(
         Therefore, the `index_rhoa` is used to select the specific resistivity
         values i.e. select the corresponding sounding number  of the |VES| 
         expecting to locate the drilling operations or for computation. For 
-        esample, `index_rhoa`=1 should figure out: 
+        esample, ``index_rhoa=1`` should figure out: 
             
             +------+------+----+--------+-----+----+------------+
             | AB/2 | MN/2 |SE2 |  -->   | AB  | MN |resistivity |
@@ -131,7 +137,8 @@ def vesSelector(
         
         If `index_rhoa` is ``None`` and the number of sounding curves are more 
         than one, by default the first sounding curve is selected ie 
-        `index_rhoa` equals to ``0``
+        `index_rhoa` equals to ``0``.
+        
     :param kws: dict - Pandas dataframe reading additionals
         keywords arguments.
         
@@ -139,6 +146,7 @@ def vesSelector(
         `resistivity` as the column headers. 
     
     :Example: 
+        
         >>> from watex.tools.coreutils import vesSelector 
         >>> df = vesSelector (data='data/ves/ves_gbalo.csv')
         >>> df.head(3)
@@ -426,7 +434,7 @@ def is_erp_series (
         ) -> DataFrame : 
     """ Validate the series.  
     
-    `data` should be the resistivity values with the one of the following 
+    The `data` should be the resistivity values with the one of the following 
     property index names ``resistivity`` or ``rho``. Will raises error 
     if not detected. If a`dipolelength` is given, a data should include 
     each station positions values. 
@@ -441,13 +449,12 @@ def is_erp_series (
         Distance of dipole during the whole survey line. If it is
         is not given , the station location should be computed and
         filled using the default value of the dipole. The *default* 
-         value is set to ``10 meters``. 
+        value is set to ``10 meters``. 
         
-    Return 
+    Returns 
     --------
-    
     A dataframe of the property indexes such as
-    ['station', 'easting','northing', 'resistivity'] 
+    ``['station', 'easting','northing', 'resistivity']``. 
     
     Raises 
     ------ 
@@ -499,7 +506,7 @@ def is_erp_dataframe (
     
     DataFrame should be reordered to fit the order of index properties. 
     Anyway it should he dataframe filled by ``0.`` where the property is
-    missing. However if `station` property is not given. station` property 
+    missing. However, if `station` property is not given. station` property 
     should be set by using the dipolelength default value equals to ``10.``.
     
     Parameters 
@@ -507,10 +514,8 @@ def is_erp_dataframe (
     
     data : Dataframe object 
         Dataframe object. The columns dataframe should match the property 
-        ERP property object such as: 
-            ['station','resistivity', 'longitude','latitude'] 
-            or 
-            ['station','resistivity', 'easting','northing']
+        ERP property object such as ``['station','resistivity', 'longitude','latitude']`` 
+        or ``['station','resistivity', 'easting','northing']``.
             
     dipolelength: float
         Distance of dipole during the whole survey line. If the station 
@@ -524,14 +529,13 @@ def is_erp_dataframe (
         
     Raises 
     ------
-    
     - None of the column matches the property indexes.  
     - Find duplicated values in the given data header.
     
     Examples
     --------
     >>> import numpy as np 
-    >>> from watex.tools.coreutils import _is_erp_dataframe 
+    >>> from watex.tools.coreutils import is_erp_dataframe 
     >>> df = pd.read_csv ('data/erp/testunsafedata.csv')
     >>> df.columns 
     ... Index(['x', 'stations', 'resapprho', 'NORTH'], dtype='object')
@@ -540,6 +544,7 @@ def is_erp_dataframe (
     ... Index(['station', 'easting', 'northing', 'resistivity'], dtype='object')
     
     """
+    
     data = _assert_all_types(data, pd.DataFrame)
     datac= data.copy() 
     
@@ -615,12 +620,9 @@ def erpSelector (
     
     `data` should be an array, a dataframe, series, or  arranged in ``.csv`` 
     or ``.xlsx`` formats. Be sure to provide the header of each columns in'
-    the worksheet. In a file is given, header columns should be aranged as:: 
-        
-        ['station','resistivity' ,'longitude', 'latitude']
-        
-    Note that coordinates columns (`longitude` and `latitude`) are not 
-    compulsory. 
+    the worksheet. In a file is given, header columns should be aranged as  
+    ``['station','resistivity' ,'longitude', 'latitude']``. Note that 
+    coordinates columns (`longitude` and `latitude`) are not  compulsory. 
     
     Parameters 
     ----------
@@ -633,34 +635,35 @@ def erpSelector (
     columns: list 
         list of the valuable columns. It can be used to fix along the axis 1 
         of the array the specific values. It should contain the prefix or 
-        the whole name of each item in  ['station','resistivity' ,
-                                         'longitude', 'latitude']
+        the whole name of each item in 
+        ``['station','resistivity' ,'longitude', 'latitude']``.
+        
     kws: dict
-        Additional pandas `~.read_csv` and `~.read_excel` 
+        Additional pandas `pd.read_csv` and `pd.read_excel` 
         methods keyword arguments. Be sure to provide the right argument. 
-        when reading `f`. For instance, provide `sep=','` argument when 
+        when reading `f`. For instance, provide ``sep= ','`` argument when 
         the file to read is ``xlsx`` format will raise an error. Indeed, 
         `sep` parameter is acceptable for parsing the `.csv` file format
         only.
         
-        
-   Return 
-   ------
-     DataFrame with valuable column(s). 
+         
+    Returns 
+    -------
+    DataFrame with valuable column(s). 
     
     Notes
     ------
-        The length of acceptable columns is ``4``. If the size of the 
-        columns is higher than `4`, the data should be shrunked to match
-        the expected columns. Futhermore, if the header is not specified in 
-        `f`, the defaut column arrangement should be used. Therefore, the 
-        second column should be considered as the ``resistivity` column. 
+    The length of acceptable columns is ``4``. If the size of the columns is 
+    higher than `4`, the data should be shrunked to match the expected columns.
+    Futhermore, if the header is not specified in `f` , the defaut column
+    arrangement should be used. Therefore, the second column should be 
+    considered as the ``resistivity`` column. 
      
     Examples
     ---------
     >>> import numpy as np 
-    >>> from watex.tools.coreutils import erp_selector
-    >>> df = erp_selector ('data/erp/testsafedata.csv')
+    >>> from watex.tools.coreutils import erpSelector
+    >>> df = erpSelector ('data/erp/testsafedata.csv')
     >>> df.shape 
     ... (45, 4)
     >>> list(df.columns) 
@@ -668,12 +671,12 @@ def erpSelector (
     >>> df = erp_selector('data/erp/testunsafedata.xlsx') 
     >>> list(df.columns)
     ... ['easting', 'station', 'resistivity', 'northing']
-    >>> df = erp_selector(np.random.randn(7, 7)) 
+    >>> df = erpSelector(np.random.randn(7, 7)) 
     >>> df.shape 
     ... (7, 4)
     >>> list(df.columns) 
     ... ['station', 'resistivity', 'longitude', 'latitude']
-
+    
     """
     
     if columns is ...: columns=None 
@@ -880,6 +883,7 @@ def _assert_station_positions(
     
     return  positions, dipoleLength 
 
+@refAppender(__doc__)
 def plotAnomaly(
     erp: Array | List[float],
     cz: Optional [Sub[Array], List[float]] = None, 
@@ -900,7 +904,7 @@ def plotAnomaly(
     Conductive zone can be supplied nannualy as a subset of the `erp` or by 
     specifyting the station expected for drilling location. For instance 
     ``S07`` for the seventh station. Futhermore, for automatic detection, one 
-    should set the station argument `s`  to ``auto``. However, it 's recommended 
+    should set the station argument `s` to ``auto``. However, it 's recommended 
     to provide the `cz` or the `s` to have full control. The conductive zone 
     is juxtaposed to the whole |ERP| survey. One can customize the `cz` plot by 
     filling with `Matplotlib pyplot`_ additional keywords araguments thought 
@@ -925,10 +929,10 @@ def plotAnomaly(
         
     :param savefig: str -  save figure. Refer  to `Matplotlib figure`_.
     
-    :param show_fig_tile: bool - display the title of the figure 
+    :param show_fig_tile: bool - display the title of the figure. 
     
     :param fig_title_kws: dict - Keywords arguments of figure suptile. Refer to 
-        `Matplotlib figsuptitle`_
+        `Matplotlib figsuptitle`_.
         
     :param style: str - the style for customizing visualization. For instance to 
         get the first seven available styles in pyplot, one can run 
@@ -962,11 +966,11 @@ def plotAnomaly(
         `s` can stay with it default value``None``. 
         
      
-    Web resources  
-    --------------
-    
+    References   
+    -----------
     See Matplotlib Axes: https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.tick_params.html
     GeekforGeeks: https://www.geeksforgeeks.org/style-plots-using-matplotlib/#:~:text=Matplotlib%20is%20the%20most%20popular,without%20using%20any%20other%20GUIs.
+    
     """
     
     def format_thicks (value, tick_number):
@@ -1399,21 +1403,6 @@ def _assert_file (
     return args , isfile 
  
 
-  
-"""
-.. |ERP| replace: Electrical resistivity profiling 
-
-.. |VES| replace: Vertical electrical sounding 
-
-.. _Matplotlib pyplot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
-
-.. _Matplotlib figure: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.figure.html
-
-.. _Matplotlib figsuptitle: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.suptitle.html
-
-.. _GeekforGeeks: https://www.geeksforgeeks.org/style-plots-using-matplotlib/#:~:text=Matplotlib%20is%20the%20most%20popular,without%20using%20any%20other%20GUIs.
-
-"""
 
 
 

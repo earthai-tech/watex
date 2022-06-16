@@ -39,23 +39,23 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
     
     Arguments 
     ---------- 
-        *base_num_feature*:str, 
-            Numerical features to categorize. 
-            
-        *threshold_operator*: float, 
-            The coefficient to divised the numerical features value to 
-            normalize the data 
-            
-        *max_category*: Maximum value fits a max category to gather all 
-            value greather than.
-            
-        *return_train*: bool, 
-            return the whole stratified trainset if set to ``True``.
-            usefull when the dataset is not enough. It is convenient to 
-            train all the whole trainset rather than a small amount of 
-            stratified data. Sometimes all the stratified data are 
-            not the similar equal one to another especially when the dataset 
-            is not enough.
+    *base_num_feature*: str, 
+        Numerical features to categorize. 
+        
+    *threshold_operator*: float, 
+        The coefficient to divised the numerical features value to 
+        normalize the data 
+        
+    *max_category*: Maximum value fits a max category to gather all 
+        value greather than.
+        
+    *return_train*: bool, 
+        Return the whole stratified trainset if set to ``True``.
+        usefull when the dataset is not enough. It is convenient to 
+        train all the whole trainset rather than a small amount of 
+        stratified data. Sometimes all the stratified data are 
+        not the similar equal one to another especially when the dataset 
+        is not enough.
         
     Another way to stratify dataset is to get insights from the dataset and 
     to add a new category as additional mileage. From this new attributes,
@@ -63,24 +63,25 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
     Once data is tratified, the new category will be drop and return the 
     train set and testset stratified. For instance::  
         
-        >>> from watex.processing.transformers import StratifiedWithCategoryAdder
+        >>> from watex.bases.transformers import StratifiedWithCategoryAdder
         >>> stratifiedNumObj= StratifiedWithCatogoryAdder('flow')
         >>> stratifiedNumObj.fit_transform(X=df)
         >>> stats2 = stratifiedNumObj.statistics_
         
-    Usage::
+    Usage
+    ------
+    In this example, we firstly categorize the `flow` attribute using 
+    the ceilvalue (see :func:`~discretizeCategoriesforStratification`) 
+    and groupby other values greater than the ``max_category`` value to the 
+    ``max_category`` andput in the temporary features. From this features 
+    the categorization is performed and stratified the trainset and 
+    the test set.
         
-        In this example, we firstly categorize the `flow` attribute using 
-        the ceilvalue (see :func:`~discretizeCategoriesforStratification`) 
-        and groupby other values greater than the ``max_category`` value to the 
-        ``max_category`` andput in the temporary features. From this features 
-        the categorization is performed and stratified the trainset and 
-        the test set.
+    Notes 
+    ------
+    If `base_num_feature` is not given, dataset will be stratified using 
+    purely random sampling.
         
-    Note::
-        
-        If `base_num_feature` is not given, dataset will be stratified using 
-        purely random sampling.
     """
     
     def __init__(self,
@@ -198,38 +199,42 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
     Transformer to stratified dataset to have data more representativce into 
     the trainset and the test set especially when data is not large enough.
     
-    Arguments: 
+    Arguments 
     ----------
-        *base_column*: str or int, 
-            Hyperparameters and can be index of the base mileage(category)
-            for stratifications. If `base_column` is None, will return 
-            the purely random sampling.
-        *test_size*: float 
-            Size to put in the test set 
-        *random_state*: shuffled number of instance in the overall dataset. 
-            default is ``42``.
-    
-    Usage::
+    *base_column*: str or int, 
+        Hyperparameters and can be index of the base mileage(category)
+        for stratifications. If `base_column` is None, will return 
+        the purely random sampling.
         
-        If data is  not large enough especially relative number of attributes
-        if much possible to run therisk of introducing a significant sampling 
-        biais.Therefore strafied sampling is a better way to avoid 
-         a significant biais of sampling survey. For instance:: 
-            
-            >>> from watex.processing.transformers import StratifiedUsingBaseCategory 
-            >>> from watex.utils.ml_utils import load_data 
-            >>> df = load_data('data/geo_fdata')
-            >>> stratifiedObj = StratifiedUsingBaseCategory(base_column='geol')
-            >>> stratifiedObj.fit_transform(X=df)
-            >>> stats= stratifiedObj.statistics_
+    *test_size*: float 
+        Size to put in the test set.
+        
+    *random_state*: shuffled number of instance in the overall dataset. 
+        default is ``42``.
+    
+    Usage 
+    ------
+    If data is  not large enough especially relative number of attributes
+    if much possible to run therisk of introducing a significant sampling 
+    biais.Therefore strafied sampling is a better way to avoid 
+     a significant biais of sampling survey. For instance:: 
+        
+        >>> from watex.bases.transformers import StratifiedUsingBaseCategory 
+        >>> from watex.tools.mlutils import load_data 
+        >>> df = load_data('data/geo_fdata')
+        >>> stratifiedObj = StratifiedUsingBaseCategory(base_column='geol')
+        >>> stratifiedObj.fit_transform(X=df)
+        >>> stats= stratifiedObj.statistics_
 
-    Note::
-        An :attr:`~statictics_` inspection attributes is good way to observe 
-        the test set generated using purely random sampling and using the 
-        stratified sampling. The stratified sampling has category 
-        ``base_column``proportions almost indentical to those in the full 
-        dataset whereas the testset generated using purely random sampling 
-        is quite skewed. 
+    Notes
+    ------
+    An :attr:`~.statictics_` inspection attributes is good way to observe 
+    the test set generated using purely random sampling and using the 
+    stratified sampling. The stratified sampling has category 
+    ``base_column``proportions almost indentical to those in the full 
+    dataset whereas the testset generated using purely random sampling 
+    is quite skewed. 
+    
     """
     
     def __init__(self, base_column =None,test_size=0.2, random_state=42):
@@ -333,18 +338,17 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
     
     Arguments 
     ----------
-        *num_columns_properties*: list 
-            list composed ofnumerical `features name`, list of 
-            `features boundaries` with their `categorized names`
+    *num_columns_properties*: list 
+        list composed ofnumerical `features name`, list of 
+        `features boundaries` with their `categorized names`.
             
     Notes
     ------
- 
     From the boundaries values including, features values can be transformed.
-    `num_columns_properties` is composed of::
+    `num_columns_properties` is composed of:
         
-        - `feature name` or index: eg:'flow`' or index of fllow ='12' 
-        - `features boundaries`:eg:[0., 1., 3] which correspond to::
+        - `feature name` or index equals to 'flow`' or index of flow ='12' 
+        - `features boundaries` equals to ``[0., 1., 3]`` may correspond to:
             
             - 0: features flow values with equal to 0. By default the begining 
                 value like 0 is unranged.
@@ -353,9 +357,8 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
             - >3 : get all values greater than 3. by default categorize values 
                 greater than  the last  values. 
             If the default classification is not suitable, create your own range
-                values like:: 
+                values like ``[[0-1], [1-3], 3] (1)``
                 
-                -[[0-1], [1-3], 3] (1)
         - `categorized names`: Be sure that if the value is provided as  without 
             ranging like (1). The number of `categorized values` must be 
             the size of the `features boundaries` +1. For instance, we try to 
@@ -370,30 +373,30 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
             
     Usage
     ------
+    Can categorize multiples features by setting each component explained 
+    above as list of tuples. For instance we try to replace the both 
+    numerical features `power` and `flow` in the dataframe by their 
+    corresponding `features boundaries. Here is how to set  the 
+    `num_columns_properties` like:: 
         
-        Can categorize multiples features by setting each component explained 
-        above as list of tuples. For instance we try to replace the both 
-        numerical features `power` and `flow` in the dataframe by their 
-        corresponding `features boundaries. Here is how to set  the 
-        `num_columns_properties` like:: 
+        num_columns_porperties =[
+            ('flow', ([0, 1, 3], ['FR0', 'FR1', 'FR2', 'FR3'])),
+            ('power', ([10, 30, 100], ['pw0', 'pw1', 'pw2', 'pw4']))
+            ]
             
-            num_columns_porperties =[
-                ('flow', ([0, 1, 3], ['FR0', 'FR1', 'FR2', 'FR3'])),
-                ('power', ([10, 30, 100], ['pw0', 'pw1', 'pw2', 'pw4']))
-                ]
-            
-    Example
+    Examples
     --------
-        
-        >>> from watex.utils.transformers import  CategorizeFeatures
-        >>> from watex.utils.ml_utils import load_data 
-        >>> df= mlfunc.load_data('data/geo_fdata')
-        >>> catObj = CategorizeFeatures(
-            num_columns_properties=num_columns_porperties )
-        >>> X= catObj.fit_transform(df)
-        >>> catObj.in_values_
-        >>> catObj.out_values_
+    >>> from watex.bases.transformers import  CategorizeFeatures
+    >>> from watex.tools.mlutils import load_data 
+    >>> df= mlfunc.load_data('data/geo_fdata')
+    >>> catObj = CategorizeFeatures(
+        num_columns_properties=num_columns_porperties )
+    >>> X= catObj.fit_transform(df)
+    >>> catObj.in_values_
+    >>> catObj.out_values_
+    
     """
+    
     def __init__(self, num_columns_properties=None): 
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
         
@@ -409,9 +412,9 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
         return self
     
     def transform(self, X, y=None) :
-        """ Tranform the data and return new array. Can straightforwardly
-        call :meth:`~TransformerMixin.fit_transform` inherited from 
-        scikit_learn."""
+        """ Transform the data and return new array. Can straightforwardly
+        call :meth:`~.sklearn.TransformerMixin.fit_transform` inherited 
+        from scikit_learn."""
         
         self.base_columns_ = [n_[0] for  n_ in self.num_columns_properties]
         self.in_values_ = [n_[1][0] for  n_ in self.num_columns_properties]
@@ -515,7 +518,7 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
     Create a new attributed using features index or litteral string operator.
     Inherits from scikit_learn `BaseEstimator`and `TransformerMixin` classes.
  
-    Paramters
+    Arguments 
     ----------
     *add_attributes* : bool,
             Decide to add new features values by combining 
@@ -542,29 +545,25 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
         
         attributes_ix='lwi_per_ohmS'
         
-    Or it could be the indexes of both features in the array like:: 
+    Or it could be the indexes of both features in the array like 
+    ``attributes_ix =[(10, 9)]`` which means the `lwi` and `ohmS` are
+    found at index ``10`` and ``9``respectively. Furthermore, multiples 
+    operations can be set by adding mutiples litteral string operator into a 
+    list like ``attributes_ix = [ 'power_per_magnitude', 'ohmS_per_lwi']``.
         
-        attributes_ix =[(10, 9)] 
+    Examples 
+    --------
+    >>> from watex.utils.transformers import CombinedAttributesAdder
+    >>> from watex.utils.ml_utils import load_data 
+    >>> df =load_data('data/geo_fdata')
+    >>> addObj = CombinedAttributesAdder(add_attributes=True, 
+                                 attributes_ix='lwi_per_ohmS')
+    >>> addObj.fit_transform(df)
+    >>> addObj.attributes_ix
+    >>> addObj.attribute_names_
     
-    which means the `lwi` and `ohmS` are found at index ``10`` and ``9``
-    respectively
-    
-    Furthermore, multiples operations can be set by adding mutiples litteral 
-    string operator into a list like::
-        
-        attributes_ix = [ 'power_per_magnitude', 'ohmS_per_lwi']
-        
-    Example::
-        
-        >>> from watex.utils.transformers import CombinedAttributesAdder
-        >>> from watex.utils.ml_utils import load_data 
-        >>> df =load_data('data/geo_fdata')
-        >>> addObj = CombinedAttributesAdder(add_attributes=True, 
-                                     attributes_ix='lwi_per_ohmS')
-        >>> addObj.fit_transform(df)
-        >>> addObj.attributes_ix
-        >>> addObj.attribute_names_
     """
+    
     def __init__(self, add_attributes =False, attributes_ix = 'lwi_per_ohmS'):
 
         self.add_attributes = add_attributes  
@@ -657,29 +656,30 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
     Select only numerical or categorial columns for operations. Work as the
     same like sckit-learn `make_colum_tranformer` 
     
-    Parameters 
+    Arguments  
     ----------
-        *attribute_names*: list or array_like 
-            List of  the main columns to keep the data 
-            
-        *select_type*: str 
-            Automatic numerical and categorial selector. If `select_type` is 
-            ``num``, only numerical values in dataframe are retrieved else 
-            ``cat`` for categorials attributes.
+    *attribute_names*: list or array_like 
+        List of  the main columns to keep the data 
+        
+    *select_type*: str 
+        Automatic numerical and categorial selector. If `select_type` is 
+        ``num``, only numerical values in dataframe are retrieved else 
+        ``cat`` for categorials attributes.
             
     Returns
     -------
         X: ndarray 
             New array with composed of data of selected `attribute_names`.
             
-    :Example:
-        
-        >>> from watex.utils.transformers import DataFrameSelector 
-        >>> from watex.utils.ml_utils import load_data   
-        >>> df = mlfunc.load_data('data/geo_fdata')
-        >>> XObj = DataFrameSelector(attribute_names=['power','magnitude','sfi'],
-        ...                          select_type=None)
-        >>> cdf = XObj.fit_transform(df)
+    Examples 
+    ---------
+    >>> from watex.bases.transformers import DataFrameSelector 
+    >>> from watex.tools.mlutils import load_data   
+    >>> df = mlfunc.load_data('data/geo_fdata')
+    >>> XObj = DataFrameSelector(attribute_names=['power','magnitude','sfi'],
+    ...                          select_type=None)
+    >>> cdf = XObj.fit_transform(df)
+    
     """  
     def __init__(self, attribute_names=None, select_type =None): 
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)

@@ -26,8 +26,10 @@ from typing import (
 .. |ERP| replace: Electrical resistivity profiling 
 
 .. _WATex: https://github.com/WEgeophysics/watex/
+.. _pandas DataFrame: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
+.. _Series: https://pandas.pydata.org/docs/reference/api/pandas.Series.html
 
-Some type variables customized need to be explained for easy understanding 
+Some customized type variables  need to be explained for easy understanding 
 in the whole package. Indeed, customized type hints is used to define the 
 type of arguments. 
 
@@ -117,7 +119,7 @@ type of arguments.
             ... (work fine with MyPy )
             
         * Let's verify whether the extract data from surveyL is also a subset 
-            of station positions::
+            of station positions:
                 
             -  We use the following fonction to to extract the specific
                 part of whole survey line `surveyL`:: 
@@ -181,10 +183,10 @@ to let the user aware when meeting such argument in a callable function.
     during the survey. 
     
 **p**: Typically mean position but by preference means station location
-     positions. The type hint used to defined the `p` is ``
-     ``Array[int, DType [int]]`` or ``List[int]``. Indeed, the position 
-     supposed to be on integer array and the given values enven in float 
-     should be casted to integers. 
+    positions. The type hint used to defined the `p` is ``
+    ``Array[int, DType [int]]`` or ``List[int]``. Indeed, the position 
+    supposed to be on integer array and the given values enven in float 
+    should be casted to integers. 
      
 **cz**: Stands for Conductive Zone. It is a subset of |ERP| so they share the 
     same type hint. However, for better demarcation, ``Sub`` is convenient to 
@@ -215,7 +217,7 @@ class AddShape (Generic [S]):
     
     """
 class Shape (Generic[M, S], AddShape[S]): 
-    """ Generic to construct a tuple shape for NDarray. `Shape has is 
+    """ Generic to construct a tuple shape for NDarray. `Shape` has is 
     written wait for two dimensional arrays with M-row and N-columns. However 
     for three dimensional,`Optional` Type could be: 
         
@@ -251,7 +253,7 @@ class Array(Generic[T, D]):
     
     
 class NDArray(Array[T, DType [T]], Generic [T, D ]) :
-    """ NDarray has ``M``rows, ``N``-columns, `Shape` and `DType` object. 
+    """ NDarray has ``M``rows, ``N`` -columns, `Shape` and `DType` object. 
     and Dtype. `Shape` is unbound for this class since it does not make since
     to sepecify more integers. However, `DType` seems useful to provide. 
     
@@ -306,7 +308,6 @@ class SP(Generic [T, D]):
         >>> import numpy as np 
         >>> positions: SP = np.arange(0, 21 * 10, 10.
                                      ).astype (np.int32) # integer values 
-     
     """
     ... 
     
@@ -338,13 +339,15 @@ class Series (DType[T], Generic [T]):
 class DataFrame (Series[T], Generic[T]): 
     """ Type hint variable to illutsrate the `pandas DataFrame`_ object. 
     
-    .._pandas DataFrame: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
+    .. _pandas DataFrame: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
+    .. _Series: https://pandas.pydata.org/docs/reference/api/pandas.Series.html
     
     Indeed, `pandas DataFrame`_ can be considered as an aggregation of `Series`_, 
     thus, the generic type hint variable is supposed to hold a `Series`_
     object. 
     
     :Example:
+        
         >>> import numpy as np
         >>> import pandas as pd 
         >>> from watex.typing import DType, DataFrame 

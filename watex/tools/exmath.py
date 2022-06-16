@@ -82,13 +82,14 @@ def find_limit_for_integration(
         b0: List[T] =[]
 )-> List[T]: 
     """ Use the roots between f curve and basement curves to 
-    detect the limit of integration... 
+    detect the limit of integration.
+    
     :param arri: array-like - Indexes array from masked array where 
         the value are true i.e. where b-f >0 => f> b. 
+        
     :param b0: list - Empy list to hold the limit during entire loop 
     
     .. note::
-        
         b > f ==> Curve b (basement) is above the fitting curve f. 
         b< f otherwise. 
         The pseudoarea is the area where b > f
@@ -96,6 +97,7 @@ def find_limit_for_integration(
     :return: list - integration bounds 
     
     """
+    
     s = ix_arr.min() - 1 # 0 -1 =-1
     oc = ix_arr.min() 
     for jj,  v in enumerate(ix_arr): 
@@ -121,6 +123,7 @@ def find_bound_for_integration(
     
     :param arri: array-like - Indexes array from masked array where 
         the value are true i.e. where b-f >0 => f> b. 
+        
     :param b0: list - Empy list to hold the limit during entire loop 
     
     .. note::
@@ -128,8 +131,10 @@ def find_bound_for_integration(
         b< f otherwise. 
         The pseudoarea is the area where b > f 
     
-    :return: list - integration bounds 
+    :return: list - integration bounds
+    
     """
+    
     # get the first index and arange this thin the end 
     psdiff = np.arange(ix_arr.min(), len(ix_arr) + ix_arr.min(), 1) 
     # make the difference to find the zeros values 
@@ -153,18 +158,22 @@ def fitfunc(
 )-> Tuple[F, Array[T]]: 
     """ Create polyfit function from a specifc sample data points. 
     
-    :param x: array-like of x-axis 
-    :param y: array-like of y-axis 
+    :param x: array-like of x-axis.
+    
+    :param y: array-like of y-axis.
+    
     :param deg: polynomial degree. If ``None`` should compute using the 
-        length of  extrema (local + global) 
+        length of  extrema (local + global).
+        
     :param sample: int - Number of data points should use for fitting 
-    function. Default is ``1000``. 
+        function. Default is ``1000``. 
     
     :returns: 
         - Polynomial function `f` 
-        - new axis  `x_new` generated from the samples
-        - projected sample values got from `f`
+        - new axis  `x_new` generated from the samples.
+        - projected sample values got from `f`.
     """
+    
     # generate a sample of values to cover the fit function 
     # thus compute ynew (yn) from the poly function f
     minl, = argrelextrema(y, np.less) 
@@ -203,7 +212,7 @@ def vesDataOperator(
         in deeper. Units are in meters. 
     
     :param rhoa: array-like - Apparent resistivity values collected in imaging 
-        in depth. Units are in Ω.m not log10(Ω.m)
+        in depth. Units are in :math:`\omega {.m}` not :math:`log10(\omega {.m})`
     
     :param data: DataFrame - It is composed of spacing values `AB` and  the 
         apparent resistivity values `rhoa`. If `data` is given, params `AB` and 
@@ -335,7 +344,9 @@ def ohmicArea(
         **kws
 ) -> float: 
     """ 
-    Compute the ohmic-area from the |VES|data collected in exploration area. 
+    Compute the ohmic-area from the |VES| data collected in exploration area. 
+    
+    .. |VES| replace: Vertical Electrical Sounding 
     
     :param data: Dataframe pandas - contains the depth measurement AB from 
         current electrodes, the potentials electrodes MN and the collected 
@@ -349,14 +360,14 @@ def ohmicArea(
         So the `ohmSkey` can be specified via the water inrush average value. 
         
     :param objective: str - Type operation to outputs. By default, the function 
-        outputs the value of pseudo-area in :math:`$\ohm.m^2$`. However, for 
+        outputs the value of pseudo-area in :math:`$\omega .m^2$`. However, for 
         plotting purpose by setting the argument to ``view``, its gives an 
         alternatively outputs of X and Y, recomputed and projected as weel as 
         the X and Y values of the expected fractured zone. Where X is the AB dipole 
         spacing when imaging to the depth and Y is the apparent resistivity computed 
     
     :param kws: dict - Additionnal keywords arguments from |VES| data operations. 
-        See :func:`watex.utils.exmath.vesDataOperator` for futher details. 
+        See :func:`watex.tools.exmath.vesDataOperator` for futher details. 
     
     :returns:  
         List of twice tuples: 
@@ -364,15 +375,17 @@ def ohmicArea(
             - `ohmS`is the pseudo-area computed expected to be a fractured zone 
             - `error` is the integration error 
             - `roots` is the integration  boundaries of the expected fractured 
-            zone where the basement rocks is located above the resistivity  
-            transform function. At these points both curves values equal to null.
+                zone where the basement rocks is located above the resistivity  
+                transform function. At these points both curves values equal 
+                to null.
         - Tuple `(XY, fit XY,XYohmSarea)`: 
             - `XY` is the ndarray(nvalues, 2) of the operated  of `AB` dipole 
-            spacing and resistivity `rhoa` values. 
+                spacing and resistivity `rhoa` values. 
             - `fit XY` is the fitting ndarray(nvalues, 2) uses to redraw the 
-            dummy resistivity transform function 
+                dummy resistivity transform function.
             - `XYohmSarea` is `ndarray(nvalues, 2)` of the dipole spacing and  
-            resistiviy values of the expected fracture zone. 
+                resistiviy values of the expected fracture zone. 
+     
             
     Raises
     -------
@@ -398,31 +411,36 @@ def ohmicArea(
     from :math:`$h(l)$` the :math:`$b_r (l)$` curve when the sounding curve
     :math:`$rho_T(l)$`  is below :math:`$b_r(l)$`, otherwise :math:`$S(l)$` is 
     equal to null. The computed area is called the ohmic-area :math:`$ohmS$` 
-    expressed in :math:`$ohm.m^2$` and constitutes the expected 'fractured zone'. 
-    Thus, :math:`$ohmS≠0$` confirms the existence of the fracture zone while 
+    expressed in :math:`$\omega .m^2$` and constitutes the expected 'fractured zone'. 
+    Thus, :math:`$ohmS \neq 0$` confirms the existence of the fracture zone while 
     :math:`$ohms=0$` raises doubts. The equation to determine the parameter 
     is given as:
         
     .. math:: 
         
-        ohmS=$$\int_{l_i}^{l_{i+1}} S(l)dl$$  s.t.  
-        S(l)=\Bigg\{b_r (l)  - rho_T (l) if   b_r (l)  > rho_T (l)\\
-               0.  if b_r (l)  < rho_T (l) 
-    
+        ohmS=\int_{ l_i}^{l_{i+1}} S(l)dl  \\
+            s.t.  \\
+        S(l)=\Bigg\{ b_r (l)  - rho_T (l) if   b_r (l)  > rho_T (l)\\
+               0.  if b_r (l)  <= rho_T (l) 
+        and 
+        \Bigg\{ b_r(l) = l + h(l) ; h(l) =\beta \\
+               rho_T(l)= l^2int_{0}^{\\infty} T_i(\lambda) h_1(\lambda l) \lambda d\lambda \\
+              l_i and l_{i+1} solve the equation S(l=0)}
+            
     where :math:`$l$` is half the current electrode spacing :math:`$AB/2$`,
-    :math:`$rho_T$` denotes the first-order of the Bessel function of the first 
-    kind, :math:`$beta$` is the coordinate value on y-axis direction of the
-    intercept term of the :math:`$b_r (l)$` and :math:`$h(l)$`,:math:`$T_i(λ)$`
+    :math:`$h_1$` denotes the first-order of the Bessel function of the first 
+    kind, :math:`$\beta $` is the coordinate value on y-axis direction of the
+    intercept term of the :math:`$b_r(l)$` and :math:`$h(l)$`, :math:`$T_i(\lambda )$`
     resistivity transform function,  :math:`$lamda$` denotes the integral variable,
     where n denotes the number of layers, :math:`$rho_i$` and :math:`$h_i$` are 
-    the resistivity and thickness of the :math:`$i-$`th layer, respectively.
+    the resistivity and thickness of the :math:`$i-th$` layer, respectively.
     Get more explanations and cleareance of formula  in the paper of 
     `Kouadio et al 2022`_. 
     
     Examples 
     ---------
     >>> from watex.tools.exmath import ohmicArea 
-    >>> from watex.utils.coreutils import vesSelector 
+    >>> from watex.tools.coreutils import vesSelector 
     >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx') 
     >>> (ohmS, err, roots), *_ = ohmicArea(data = data, ohmSkey =45, sum =True ) 
     ... (13.46012197818152, array([5.8131967e-12]), array([45.        , 98.07307307]))
@@ -435,22 +453,23 @@ def ohmicArea(
      
     References
     ----------
-    Kouadio, K.L., Nicolas, K.L., Binbin, M., Déguine, G.S.P. & Serge, 
-    K.K. (2021, October) Bagoue dataset-Cote d’Ivoire: Electrical profiling,
-    electrical sounding and boreholes data, Zenodo. doi:10.5281/zenodo.5560937
+    *Kouadio, K.L., Nicolas, K.L., Binbin, M., Déguine, G.S.P. & Serge*, 
+        *K.K. (2021, October)* Bagoue dataset-Cote d’Ivoire: Electrical profiling,
+        electrical sounding and boreholes data, Zenodo. doi:10.5281/zenodo.5560937
     
-    Koefoed, O. (1970). A fast method for determining the layer distribution 
-    from the raised kernel function in geoelectrical sounding. Geophysical
-    Prospecting, 18(4), 564–570. https://doi.org/10.1111/j.1365-2478.1970.tb02129.x
+    *Koefoed, O. (1970)*. A fast method for determining the layer distribution 
+        from the raised kernel function in geoelectrical sounding. Geophysical
+        Prospecting, 18(4), 564–570. https://doi.org/10.1111/j.1365-2478.1970.tb02129.x
          
-    Koefoed, O. (1976). Progress in the Direct Interpretation of Resistivity 
+    *Koefoed, O. (1976)*. Progress in the Direct Interpretation of Resistivity 
         Soundings: an Algorithm. Geophysical Prospecting, 24(2), 233–240.
         https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
         
     .. _Kouadio et al 2022: https://doi.org/10.1029/2021WR031623 or refer to 
-    the paper `FlowRatePredictionWithSVMs <https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623>`_
+        the paper `FlowRatePredictionWithSVMs <https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623>`_
     
     """
+    
     objkeys = ( 'ohms','none','eval', 'area', 'ohmic','true',
                'plot', 'mpl', 'false', 'graph','visual', 'view')
     
@@ -591,6 +610,8 @@ def _type_mechanism (
 def type_ (erp: Array[DType[float]] ) -> str: 
     """ Compute the type of anomaly. 
     
+    .. |ERP| replace: Electrical Resistivity Profiling 
+    
     The type parameter is defined by the African Hydraulic Study 
     Committee report (CIEH, 2001). Later it was implemented by authors such as 
     (Adam et al., 2020; Michel et al., 2013; Nikiema, 2012). `Type` comes to 
@@ -606,7 +627,7 @@ def type_ (erp: Array[DType[float]] ) -> str:
     For more details refers to references. 
     
     :param erp: array-like - Array of |ERP| line composed of apparent 
-    resistivity values. 
+        resistivity values. 
     
     :return: str -The `type` of anomaly. 
     
@@ -702,6 +723,8 @@ def shape (
     p:  SP =  ...,     
 ) -> str: 
     """ Compute the shape of anomaly. 
+
+    .. |ERP| replace: Electrical resistivity Profiling 
     
     The `shape` parameter is mostly used in the basement medium to depict the
     better conductive zone for the drilling location. According to Sombo et
@@ -871,6 +894,8 @@ def scalePosition(
     ---------- 
     Scipy Optimize <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html>
     
+    .. _scipy.optimize.curve_fit: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
+    
     Examples
     --------
     >>> from watex.tools import erpSelector, scalePosition 
@@ -974,6 +999,8 @@ def __sves__ (
     """ Divide the conductive zone in leftzone and rightzone from 
     the drilling location index . 
     
+    .. |VES| replace: Vertical Electrical Sounding 
+
     :param s_index - station location index expected for dilling location. 
         It refers to the position of |VES|. 
         
@@ -1014,9 +1041,9 @@ def detect_station_position (
     
     :param s: str, int - Station location  in the position array. It should 
         be the positionning of the drilling location. If the value given
-         is type string. It should be match the exact position to 
-         locate the drilling. Otherwise, if the value given is in float or 
-         integer type, it should be match the index of the position array. 
+        is type string. It should be match the exact position to 
+        locate the drilling. Otherwise, if the value given is in float or 
+        integer type, it should be match the index of the position array. 
          
     :param p: Array-like - Should be the  conductive zone as array of 
         station location values. 
@@ -1147,9 +1174,9 @@ def sfi (
     ----------
     - See `Numpy Polyfit <https://numpy.org/doc/stable/reference/generated/numpy.polyfit.html>`_
     - See `Stackoverflow <https://stackoverflow.com/questions/10457240/solving-polynomial-equations-in-python>`_
-    the answer of AkaRem edited by Tobu and Migilson. 
+        the answer of AkaRem edited by Tobu and Migilson. 
     - See `Numpy Errorstate <https://numpy.org/devdocs/reference/generated/numpy.errstate.html>`_ and 
-    how to implement the context manager. 
+        how to implement the context manager. 
     
     """
  
@@ -1235,7 +1262,10 @@ def plot_ (
     kind: Optional[str] = None , 
     **kws
     ) -> None : 
-    """ Quick visualization for fitting model, |ERP| and |VES| curves. 
+    """ Quick visualization for fitting model, |ERP| and |VES| curves.
+    
+    .. |VES| replace: Vertical Electrical Sounding 
+    .. |ERP| replace: Electrical resistivity Profiling 
     
     :param x: array-like - array of data for x-axis representation 
     :param y: array-like - array of data for plot y-axis  representation
@@ -1365,7 +1395,7 @@ def magnitude (cz:Sub[Array[float, DType[float]]] ) -> float:
     
     .. math::
     
-        magnitude=|rhoa_{min} -rhoa_{max}|
+        magnitude=|rhoa_{min} -rho a_{max}|
 
     :param cz: array-like. Array of apparent resistivity values composing 
         the conductive zone. 
@@ -1386,11 +1416,12 @@ def power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float :
     
     .. math::
         
-        power=|X_{LB}-X_{UB} |
+        power=|X_{LB} - X_{UB} |
     
     :param p: array-like. Station position of conductive zone.
     
     :return: Absolute value of the width of conductive zone in meters. 
+    
     """
     return np.abs(p.min()- p.max()) 
 
@@ -1411,8 +1442,10 @@ def _find_cz_bound_indexes (
     
     :return: The index of boundaries 'LB' and 'UB'. 
     
-    .. note::`cz` must be self-containing of `erp`. If ``False`` should  
-            raise and error. 
+    .. note::
+        
+        `cz` must be self-containing of `erp`. If ``False`` should raise and error. 
+        
     """
     # assert whether cz is a subset of erp. 
     if isinstance( erp, pd.Series): erp = erp.values 
@@ -1435,8 +1468,11 @@ def convert_distance_to_m(
     value is given.
     
     :param value: value to convert. 
-    "paramm converter: Equivalent if given in 'km' rather than 'meters'.
-    :param unit: unit to convert to."""
+    :paramm converter: Equivalent if given in ``km`` rather than ``m``.
+    :param unit: unit to convert to.
+    
+    """
+    
     if isinstance(value, str): 
         try:
             value = float(value.replace(unit, '')
@@ -1466,6 +1502,7 @@ def get_station_number (
     :param kws: :func:`convert_distance_to_m` additional arguments
     
     """
+    
     dipole=convert_distance_to_m(dipole, **kws)
     distance =convert_distance_to_m(distance, **kws)
 
@@ -1482,19 +1519,21 @@ def define_conductive_zone (
         extent:int =7): 
     """ Detect the conductive zone from `s`ves point.
     
-    :param erp: Resistivity values of electrical resistivity profiling(ERP)
+    :param erp: Resistivity values of electrical resistivity profiling(ERP).
+    
     :param stn: Station number expected for VES and/or drilling location.
+    
     :param sres: Resistivity value at station number `stn`. 
-                If `sres` is given, the auto-search will be triggered to 
-                find the station number that fits the resistivity value. 
-            
+        If `sres` is given, the auto-search will be triggered to 
+        find the station number that fits the resistivity value. 
+    
     :param distance: Distance from the first station to `stn`. If given, 
-                    be sure to provide the `dipole_length`
+        be sure to provide the `dipole_length`
     :param dipole_length: Length of the dipole. Comonly the distante between 
-                two close stations. Since we use config AB/2 
+        two close stations. Since we use config AB/2 
     :param extent: Is the width to depict the anomaly. If provide, need to be 
-                consistent along all ERP line. Should keep unchanged for other 
-                parameters definitions. Default is ``7``.
+        consistent along all ERP line. Should keep unchanged for other 
+        parameters definitions. Default is ``7``.
     :returns: 
         - CZ:Conductive zone including the station position 
         - sres: Resistivity value of the station number
@@ -1508,9 +1547,8 @@ def define_conductive_zone (
         not recommended.
         
     :Example: 
-        
         >>> import numpy as np
-        >>> from watex.utils.exmath import define_conductive_zone 
+        >>> from watex.tools.exmath import define_conductive_zone 
         >>> sample = np.random.randn(9)
         >>> cz, stn_res = define_conductive_zone(sample, 4, extent = 7)
         ... (array([ 0.32208638,  1.48349508,  0.6871188 , -0.96007639,
@@ -1520,7 +1558,7 @@ def define_conductive_zone (
     """
     try : 
         iter(erp)
-    except : raise Wex.WATexError_inputarguments(
+    except : raise Wex.ArgumentError (
             f'`erp` must be a sequence of values not {type(erp)!r}')
     finally: erp = np.array(erp)
   
@@ -1677,7 +1715,7 @@ def compute_sfi (
     
     :Example: 
         
-        >>> from watex.utils.exmath import compute_sfi 
+        >>> from watex.tools.exmath import compute_sfi 
         >>> sfi = compute_sfi(pk_min = 90,
         ...                      pk_max=130,
         ...                      rhoa_min=175,
@@ -1746,29 +1784,27 @@ def compute_anr (
         pos_bound_indexes: Array[DType[int]] | List[int]
         )-> float:
     """
-    Compute the select anomaly ratio (ANR) along with the
-    whole profile from SFI. The standardized resistivity values
-    `rhoa`  of is averaged from   X_begin to  X_end .
-    The ANR is a positive value. 
+    Compute the select anomaly ratio (ANR) along with the whole profile from
+    SFI. The standardized resistivity values`rhoa`  of is averaged from 
+    :math:`X_{begin} to :math:`X_{end}`. The ANR is a positive value. 
     
     :param sfi: 
+        Is standard fracturation index. please refer to :doc:`compute_sfi`.
         
-        Is standard fracturation index. please refer to :doc: `compute_sfi`
-        
-    :param rhoa_array: Resistivity values of :ref:`erp` line 
+    :param rhoa_array: Resistivity values of Electrical Resistivity Profiling
+        line 
     :type rhoa_array: array_like 
     
     :param pos_bound_indexes: 
-        
         Select anomaly station location boundaries indexes. Refer to 
-        :doc:`compute_power` of ``pos_bounds``. 
+        :doc:`.compute_power` of ``pos_bounds``. 
         
     :return: Anomaly ratio 
-    :rtype:float 
+    :rtype: float 
     
     :Example: 
         
-        >>> from watex.utils.exmath import compute_anr 
+        >>> from watex.tools.exmath import compute_anr 
         >>> import pandas as pd
         >>> anr = compute_anr(sfi=sfi, 
         ...                  rhoa_array=data = pd.read_excel(
@@ -1776,6 +1812,7 @@ def compute_anr (
         ...              pk_bound_indexes  = [9, 13])
         >>> anr
     """
+    
     stand = (rhoa_array - rhoa_array.mean())/np.std(rhoa_array)
     try: 
         stand_rhoa =stand[int(min(pos_bound_indexes)): 
@@ -1786,7 +1823,7 @@ def compute_anr (
     return sfi * np.abs(stand_rhoa.mean())
 
 
-@deprecated('Deprecated function to `:func:`watex.core.erp.get_type`'
+@deprecated('Deprecated function to `:func:`watex.methods.erp.get_type`'
             ' more efficient using median and index computation. It will '
             'probably deprecate soon for neural network pattern recognition.')
 def get_type (
@@ -1833,6 +1870,7 @@ def get_type (
         ...CB2P
 
     """
+    
     # Get position index 
     anom_type ='CP'
     index_pos = int(np.where(pos_array ==pk)[0])
@@ -1878,7 +1916,7 @@ def get_shape (
     
     :Example: 
         
-        >>> from watex.utils.exmath import get_shape 
+        >>> from watex.tools.exmath import get_shape 
         >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
         >>> shape = get_shape (rhoa_range= np.array(x))
         ... U
@@ -1911,7 +1949,6 @@ def get_shape (
             shape = 'C'
             
     return shape 
-
 
 
 def compute_power (
@@ -2144,10 +2181,10 @@ def select_anomaly (
     `auto` is set to ``True``. If `auto` is ``False``, it's usefull to 
     provide the anomaly boundaries from station position. Change  the argument 
     `dipole_length`  i.e. the distance between measurement electrode is not
-     equal to ``10`` m else give the `pos_array`. If the `pos_array` is given,
-     the `dipole_length` will be recomputed.
+    equal to ``10`` m else give the `pos_array`. If the `pos_array` is given,
+    the `dipole_length` will be recomputed.
      
-
+    
     :param rhoa_array: The apparent resistivity value of :ref:`erp` 
     :type rho_array: array_like 
     
@@ -2165,14 +2202,14 @@ def select_anomaly (
             
        where ``90`` is the `pk_min` and ``130`` is the `pk_max` 
        If `pos_bounds` is not given an station error will probably occurs 
-       from :class:`~.exceptions.WATexError_station`. 
+       from :class:`~.exceptions.StationError`. 
     
     :param dipole_length: 
         Is the distance between two closest measurement. If the value is known 
         it's better to provide it and don't need to provied a `pos_array`
         value. 
     :type dipole_length: float 
-
+    
     :param pos_bounds: 
         Is the tuple value of anomaly boundaries  composed of `pk_min` and 
         `pk_max`. Please refer to :func:`compute_power`. When provided 
@@ -2326,6 +2363,7 @@ def define_anomaly(
             bestSelectedDICT['{0}_{1}'.format(ii+1, pkb)]=collectanlyBounds
            
     return bestSelectedDICT
+
 """
 .. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
 
@@ -2333,11 +2371,11 @@ def define_anomaly(
 
 .. _Matplotlib plot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
 
-.._scipy.optimize.curve_fit: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
+.. _scipy.optimize.curve_fit: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
 
 .. |VES| replace: Vertical Electrical Sounding 
 
-.. |ERP| replace: Electrical resistivity profiling 
+.. |ERP| replace: Electrical resistivity Profiling 
 
 """
    

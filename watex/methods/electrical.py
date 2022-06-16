@@ -11,6 +11,7 @@ import warnings
 import numpy as np 
 import pandas as pd
 
+from ..documentation import __doc__ 
 from ..tools.funcutils import (
     repr_callable_obj,
     smart_format,
@@ -33,6 +34,8 @@ from ..tools.exmath import (
     ohmicArea, 
     invertVES,
     )
+from ..tools.decorators import refAppender 
+
 from ..typing import  ( 
     List, 
     Optional, 
@@ -50,7 +53,7 @@ from ..exceptions import (
 
 class ElectricalMethods : 
     """ Base class of geophysical electrical methods 
-    
+
     The electrical geophysical methods are used to determine the electrical
     resistivity of the earth's subsurface. Thus, electrical methods are 
     employed for those applications in which a knowledge of resistivity 
@@ -117,13 +120,17 @@ class ElectricalMethods :
                                             if both are provided.                           
     ======================  ==============  ===================================
                
+    
     Notes
     -------
-        The  `ElectricalMethods` consider the given resistivity values as 
-        a normal values and not on base 10 logarithm. So if log10 values 
-        are given, set the argument `fromlog10` value to ``True``.
+    The  `ElectricalMethods` consider the given resistivity values as 
+    a normal values and not on base 10 logarithm. So if log10 values 
+    are given, set the argument `fromlog10` value to ``True``.
+    
+    .. |VES| replace: Vertical Electrical Sounding 
     
     """
+    
     def __init__(self, 
                 AB: float = 200. , 
                 MN: float = 20.,
@@ -154,7 +161,8 @@ class ElectricalMethods :
         
         return repr_callable_obj  (self)
            
-        
+   
+@refAppender(__doc__)
 class ResistivityProfiling(ElectricalMethods): 
     """ Class deals with the Electrical Resistivity Profiling (ERP).
     
@@ -180,7 +188,7 @@ class ResistivityProfiling(ElectricalMethods):
         position.
             
     **dipole**: float 
-       The dipole length used during the exploration area. 
+        The dipole length used during the exploration area. 
         
     **auto**: bool 
         Auto dectect the best conductive zone. If ``True``, the station 
@@ -227,7 +235,7 @@ class ResistivityProfiling(ElectricalMethods):
              columns: str | List [str] = None, 
              **kws
             ) -> object: 
-        """ Fitting the :class:`ResistivityProfiling` 
+        """ Fitting the :class:`~.ResistivityProfiling` 
         and populate the class attributes.
         
         Parameters 
@@ -248,19 +256,17 @@ class ResistivityProfiling(ElectricalMethods):
                 
         Returns 
         -------
-               object instanciated 
+            object instanciated for chaining methods. 
             
         Notes
         ------
-        The station should numbered from 1 not 0. So if ``S00` 
-        is given, the station name should be set to ``S01``. 
-        Moreover, if `dipole` value is set as keyword argument,
-        i.e. the station is  named according to the  value of 
-        the dipole. For instance for `dipole` equals to ``10m``, 
-        the first station should be ``S00``, the second ``S10`` , 
-        the third ``S20`` and so on. However, it is recommend to 
-        name the station using counting numbers rather than using 
-        the dipole position.
+        The station should numbered from 1 not 0. So if ``S00`  is given, the 
+        station name should be set to ``S01``. Moreover, if `dipole` value is
+        set as keyword argument, i.e. the station is  named according to the 
+        value of the dipole. For instance for `dipole` equals to ``10m``, 
+        the first station should be ``S00``, the second ``S10``, the third 
+        ``S20`` and so on. However, it is recommend to name the station using 
+        counting numbers rather than using the dipole position.
         
         """
         
@@ -398,7 +404,8 @@ class ResistivityProfiling(ElectricalMethods):
         """ Summarize the most import parameters for prediction purpose.
         
         If `keeponlyparams` is set to ``True``. Method should output only 
-        the main important params for prediction purpose... 
+        the main important params for prediction purpose...
+        
         """
         
         try:
@@ -457,7 +464,7 @@ class ResistivityProfiling(ElectricalMethods):
             )
 
     
-    
+@refAppender(__doc__)    
 class VerticalSounding (ElectricalMethods): 
     """ 
     Vertical Electrical Sounding (|VES|) class; inherits of ElectricalMethods 
@@ -510,9 +517,9 @@ class VerticalSounding (ElectricalMethods):
         the resistivity data with a  specific numbers. Commonly the number 
         are randomly chosen. It does not refer to the expected best fracture
         zone selected after the prior-interpretation. After transformation 
-        via the function `vesSelector`, the header of the data should hold 
-        the `resistivity`. For instance, refering to the table above, the 
-        data should be:
+        via the function :func:`~watex.tools.coreutils.vesSelector`, the header  
+        of the data should hold the `resistivity`. For instance, refering to 
+        the table above, the data should be:
             
             +----+----+-------------+-------------+-------------+-----+
             | AB | MN |resistivity  | resistivity | resistivity | ... |
@@ -534,15 +541,15 @@ class VerticalSounding (ElectricalMethods):
     **typeofop**: str 
         Type of operation to apply  to the resistivity 
         values `rhoa` of the duplicated spacing points `AB`. The *default* 
-        operation is ``mean``. Sometimes at the potential electrodes (`MN`),the 
+        operation is ``mean``. Sometimes at the potential electrodes ( `MN` ),the 
         measurement of `AB` are collected twice after modifying the distance
         of `MN` a bit. At this point, two or many resistivity values are 
         targetted to the same distance `AB`  (`AB` still remains unchangeable 
         while while `MN` is changed). So the operation consists whether to the 
-        average (``mean``) resistiviy values or to take the ``median``values
+        average ( ``mean`` ) resistiviy values or to take the ``median`` values
         or to ``leaveOneOut`` (i.e. keep one value of resistivity among the 
-        different values collected at the same point`AB`) at the same spacing 
-        `AB`. Note that for the `LeaveOneOut``, the selected 
+        different values collected at the same point `AB` ) at the same spacing 
+        `AB`. Note that for the ``LeaveOneOut``, the selected 
         resistivity value is randomly chosen.
         
     **objective**: str 
@@ -565,16 +572,17 @@ class VerticalSounding (ElectricalMethods):
     ----------
     *Koefoed, O. (1970)*. A fast method for determining the layer distribution 
         from the raised kernel function in geoelectrical sounding. Geophysical
-        Prospecting, 18(4), 564–570. https://doi.org/10.1111/j.1365-2478.1970.tb02129.x
+        Prospecting, 18(4), 564–570. https://doi.org/10.1111/j.1365-2478.1970.tb02129.x .
         
     *Koefoed, O. (1976)*. Progress in the Direct Interpretation of Resistivity 
         Soundings: an Algorithm. Geophysical Prospecting, 24(2), 233–240.
-        https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
+        https://doi.org/10.1111/j.1365-2478.1976.tb00921.x .
         
         
     Examples
     --------
     >>> from watex.methods import VerticalSounding 
+    >>> from watex.tools import vesSelector 
     >>> vobj = VerticalSounding(fromS= 45, vesorder= 3)
     >>> vobj.fit('data/ves/ves_gbalo.xlsx')
     >>> vobj.ohmic_area_ # in ohm.m^2
@@ -584,8 +592,21 @@ class VerticalSounding (ElectricalMethods):
     >>> vobj.area1_, vobj.area2_ # value of each area in ohm.m^2 
     ... (254.28891096053943, 95.35434409123027) 
     >>> vobj.roots_ # different boundaries in pairs 
-    >>> [array([45.        , 57.55255255]), array([ 96.91691692, 100.        ])]
+    ... [array([45.        , 57.55255255]), array([ 96.91691692, 100.        ])]
+    >>> data = vesSelector ('data/ves/ves_gbalo.csv', index_rhoa=3)
+    >>> vObj = VerticalSounding().fit(data)
+    >>> vObj.fractured_zone_ # AB/2 position from 45 to 100 m depth.
+    ... array([ 45.,  50.,  55.,  60.,  70.,  80.,  90., 100.])
+    >>> vObj.fractured_zone_resistivity_
+    ...array([57.67588974, 61.21142365, 64.74695755, 68.28249146, 75.35355927,
+           82.42462708, 89.4956949 , 96.56676271])
+    >>> vObj.nareas_ 
+    ... 2
+    >>> vObj.ohmic_area_
+    ... 349.6432550517697
+    
     """
+    
     def __init__(self,
                  fromS: float = 45.,
                  rho0: float = None, 
@@ -608,12 +629,12 @@ class VerticalSounding (ElectricalMethods):
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
             
-        
+
     def fit(self, data: str | DataFrame, **kwd ): 
         """ Fit the sounding |VES| curves and computed the ohmic-area and set  
         all the features for demarcating fractured zone from the selected 
         anomaly. 
-        
+
         Parameters 
         -----------
         data:  Path-like object, DataFrame
@@ -631,7 +652,7 @@ class VerticalSounding (ElectricalMethods):
         AB: array-like 
             The spacing of the current electrodes when exploring in deeper. Units  
             are in meters. Note that the `AB` is by convention equals to `AB/2`. 
-            It's taken as half-space of the investigation depth... 
+            It's taken as half-space of the investigation depth. 
         
         MN: array-like 
             Potential electrodes distances at each investigation depth. Note 
@@ -648,24 +669,12 @@ class VerticalSounding (ElectricalMethods):
         Returns 
         -------
          object: 
-             Useful for chaining methods 
-         
-        Examples 
-        ---------
-        >>> from watex.methods import VerticalSounding 
-        >>> from watex.tools import vesSelector 
-        >>> data = vesSelector ('data/ves/ves_gbalo.csv', index_rhoa=3)
-        >>> vObj = VerticalSounding().fit(data)
-        >>> vObj.fractured_zone_ # AB/2 position from 45 to 100 m depth.
-        ... array([ 45.,  50.,  55.,  60.,  70.,  80.,  90., 100.])
-        >>> vObj.fractured_zone_resistivity_
-        ...array([57.67588974, 61.21142365, 64.74695755, 68.28249146, 75.35355927,
-               82.42462708, 89.4956949 , 96.56676271])
-        >>> vObj.nareas_ 
-        ... 2
-        >>> vObj.ohmic_area_
-        ... 349.6432550517697
+             Useful for chaining methods. 
+             
+        .. |VES| replace: Vertical Electrical Sounding 
+        
         """
+        
         def prettyprinter (n, r,v): 
             """ Display some details when verbose is higher... 
             
@@ -801,6 +810,8 @@ class VerticalSounding (ElectricalMethods):
         :param kwd: dict - Additionnal keywords arguments from |VES| data  
             operations. See :doc:`watex.utils.exmath.vesDataOperator` for futher
             details.
+        
+        .. |VES| replace: Vertical Electrical Sounding 
         
         """
         self.data_ = getattr(self, 'data_', None)
