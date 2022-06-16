@@ -12,7 +12,7 @@ Package Properties
 	
 **Module Scikit**
 =========================
-.. automodule:: watex.skearn
+.. automodule:: watex.sklearn
 	:members:
 	
 	
@@ -21,8 +21,15 @@ Package Properties
 .. automodule:: watex.typing
     :members:
 
+
 **Module Exceptions**
 =========================
 .. automodule:: watex.exceptions
+    :members:
+
+
+**Module Docs**
+=========================
+.. automodule:: watex.documentation
     :members:
 

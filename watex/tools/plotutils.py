@@ -14,8 +14,8 @@ import numpy as np
 # import matplotlib.cm as cm 
 import matplotlib.pyplot as plt
 
-from .tools import exceptions as Wex 
-from .tools.decorators import  ( 
+from . import exceptions as Wex 
+from .decorators import  ( 
     deprecated, 
     redirect_cls_or_func
     )

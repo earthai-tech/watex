@@ -62,7 +62,8 @@ def multipleGridSearches(
     Parameters
     ----------
     X: dataframe or ndarray
-        Training set data 
+        Training set data.
+        
     y: array_like 
         label or target data 
         
@@ -95,7 +96,7 @@ def multipleGridSearches(
         
     kindOfSearch:str
         Kinf of grid search. Can be ``GridSearchCV`` or ``RandomizedSearchCV``. 
-        Default is ```GridSearchCV``
+        Default is ``GridSearchCV``.
         
     random_state: int 
         State to shuffle the cross validation data. 
@@ -287,7 +288,7 @@ def prettyPrinter(
 class GridSearch: 
     """ Fine tune hyperparameters. 
     
-    `Search Grid will be able to  fiddle with the hyperparameters until to 
+    Search Grid will be able to  fiddle with the hyperparameters until to 
     find the great combination for model predictions. 
     
     :param base_estimator: Estimator to be fined tuned hyperparameters
@@ -297,7 +298,7 @@ class GridSearch:
     :param cv: Cross validation sampling. Default is `4` 
     
     :pram kind: Kind of search. Could be ``'GridSearchCV'`` or
-    ``RandomizedSearchCV``. Default is ``gridSearchCV`.
+        ``RandomizedSearchCV``. Default is ``GridSearchCV``.
     
     :param scoring: Type of score for errors evaluating. Default is 
         ``neg_mean_squared_error``. 
@@ -306,18 +307,18 @@ class GridSearch:
         
         >>> from pprint import pprint 
         >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from watex.utils._data_preparing_ import bagoue_train_set_prepared 
-        >>> from watex.utils._data_preparing_ import bagoue_label_encoded  
+        >>> from watex.datasets import  X_prepared, y_prepared, 
         >>> grid_params = [
         ...        {'n_estimators':[3, 10, 30], 'max_features':[2, 4, 6, 8]}, 
         ...        {'bootstrap':[False], 'n_estimators':[3, 10], 
         ...                             'max_features':[2, 3, 4]}]
         >>> forest_clf = RandomForestClassifier()
         >>> grid_search = GridSearch(forest_clf, grid_params)
-        >>> grid_search.fit(X= bagoue_train_set_prepared ,
-        ...                    y = bagoue_label_encoded)
+        >>> grid_search.fit(X= X_prepared,
+        ...                    y =  y_prepared,)
         >>> pprint(grid_search.best_params_ )
         >>> pprint(grid_search.cv_results_)
+        
     """
     
     __slots__=('_base_estimator',
@@ -509,6 +510,7 @@ class AttributeCkecker(ABC):
     
     Validate DataType mainly `X` train or test sets and `y` labels or
     and any others params types.
+    
     """
     
     def __set_name__(self, owner, name): 
@@ -573,13 +575,14 @@ class BaseEvaluation (object):
     :param y: array of labels data 
     
     :param s_ix: int, sampling index. 
-        If given, will sample the `X` and `y` 
+        If given, will sample the `X` and `y`. 
             
     :param columns: list of columns. Use to build dataframe `X` when `X` is 
         given as numpy ndarray. 
         
     :param pipeline: callable func 
-            Tranformer data and preprocessing 
+        Tranformer data and preprocessing.
+        
     :param cv: cross validation splits. Default is ``4``.
             
     """
@@ -622,14 +625,18 @@ class BaseEvaluation (object):
         """ Quick methods used to evaluate eastimator, display the 
         error results as well as the sample model_predictions.
         
-        :param X: Dataframe  be trained 
-        :param y: labels from trainset 
+        :param X: Dataframe  be trained.
+        
+        :param y: labels from trainset.
+        
         :param sample_ix: index to sample in the trainset and labels. 
+        
         :param kws: Estmator additional keywords arguments. 
-        :param fit: Fit the method for quick estimating 
-            Default is ``yes`` 
+        
+        :param fit: Fit the method for quick estimating. Default is ``yes`` 
             
         """ 
+        
         pprint =kws.pop('pprint', True) 
         if pprint is not None: 
             self.pprint = pprint 
@@ -716,13 +723,17 @@ class BaseEvaluation (object):
                   scoring ='neg_mean_squared_error' ): 
         """ Fit data once verified and compute the ``rmse`` scores.
         
-        :paramm obj: base estimator with base params
-        :param pprint: Display prediction of the quick evaluation 
-        ;param compute_cross: compute the cross validation 
+        :paramm obj: base estimator with base params.
+        
+        :param pprint: Display prediction of the quick evaluation.
+        
+        :param compute_cross: compute the cross validation.
+        
         :param scoring: Type of scoring for cross validation. Please refer to  
-                 :doc:~slkearn.sklearn.model_selection.cross_val_score
-                 for further details.
+                 :doc:`~.slkearn.model_selection.cross_val_score` for further 
+                 details.
         """
+        
         def display_scores(scores): 
             """ Display scores..."""
             print('scores:', scores)
@@ -799,19 +810,23 @@ Quick scores evaluation using cross validation.
 Parameters
 ----------
 clf: callable 
-    Classifer for testing default data 
+    Classifer for testing default data. 
 X: ndarray
     trainset data 
+    
 y: array_like 
     label data 
 cv: int 
-    KFold for data validation. 
+    KFold for data validation.
+    
 scoring: str 
-    type of error visualization 
+    type of error visualization. 
+    
 display: str or bool, 
     show the show on the stdout
+    
 Returns 
--------
+---------
 scores, mean_core: array_like, float 
     scaore after evaluation and mean of the score
 """

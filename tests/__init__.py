@@ -3,7 +3,7 @@ import os
 import shutil
 # import sys 
 
-from watex.utils._watexlog import watexlog
+from watex.tools._watexlog import watexlog
 from watex.datasets import fetch_data as BAGOUE_DATASET
 
 # sys.path.insert(0, os.path.abspath('..'))

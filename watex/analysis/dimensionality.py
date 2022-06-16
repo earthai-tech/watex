@@ -91,11 +91,12 @@ class Reducers:
         :param X: Dataset compose of n_features items for dimension reducing
         
         :param n_components: Number of dimension to preserve. If`n_components` 
-                is ranged between float 0. to 1., it indicated the number of 
-                variance ratio to preserve. If ``None`` as default value 
-                the number of variance to preserve is ``95%``.
+            is ranged between float 0. to 1., it indicated the number of 
+            variance ratio to preserve. If ``None`` as default value 
+            the number of variance to preserve is ``95%``.
+                
         :param plot_projection: Plot the explained varaince as a function 
-        of number of dimension. Default is``False``.
+            of number of dimension. Default is``False``.
         
         :param n_axes: Number of importance components to retrieve the 
             variance ratio. If ``None`` the features importance is computed 
@@ -104,7 +105,6 @@ class Reducers:
         :param plot_kws: Additional matplotlib.pyplot keywords arguments. 
         
         :Example: 
-            
             >>> from watex.analysis.dimensionality import Reducers
             >>> from watex.datasets import fetch_data
             >>> X, _= fetch_data('Bagoue analysis dataset')
@@ -226,7 +226,6 @@ class Reducers:
             Default binary filename to store in a binary file in  a disk.
         
         :Example: 
-            
             >>> from watex.analysis.dimensionality import Reducers
             >>> from watex.datasets import fetch_data 
             >>> X, _=fetch_data('Bagoue analyses data')
@@ -312,12 +311,11 @@ class Reducers:
             Dataset compose of n_features items for dimension reducing
         
         :param n_components: Number of dimension to preserve. If`n_components` 
-                is ranged between float 0. to 1., it indicated the number of 
-                variance ratio to preserve. If ``None`` as default value 
-                the number of variance to preserve is ``95%``.
+            is ranged between float 0. to 1., it indicated the number of 
+            variance ratio to preserve. If ``None`` as default value 
+            the number of variance to preserve is ``95%``.
         
         :Example:
-            
             >>> from watex.analysis.dimensionality import Reducers
             >>> from watex.datasets import fetch_data 
             >>> X, _=fetch_data('Bagoue analyses data')
@@ -357,7 +355,6 @@ class Reducers:
         """ Locally Linear Embedding(LLE) is nonlinear dimensinality reduction 
         based on closest neighbors (c.n).
         
-        
         LLE is another powerfull non linear dimensionality reduction(NLDR)
         technique. It is Manifold Learning technique that does not rely
         on projections like `PCA`. In a nutshell, works by first measurement
@@ -395,16 +392,16 @@ class Reducers:
              
         Example
         -------
+        >>> from watex.analysis.dimensionality import Reducers
+        >>> from watex.datasets import fetch_data 
+        >>> X, _=fetch_data('Bagoue analyses data')
+        >>> lle_kws ={
+        ...    'n_components': 4, 
+        ...    "n_neighbors": self.closest_neighbors}
+        >>> recObj= Reducers().LLE(self.X,
+        ...          **lle_kws)
+        >>> pprint(recObj.__dict__)
         
-            >>> from watex.analysis.dimensionality import Reducers
-            >>> from watex.datasets import fetch_data 
-            >>> X, _=fetch_data('Bagoue analyses data')
-            >>> lle_kws ={
-            ...    'n_components': 4, 
-            ...    "n_neighbors": self.closest_neighbors}
-            >>> recObj= Reducers().LLE(self.X,
-            ...          **lle_kws)
-            >>> pprint(recObj.__dict__)
         """
         
         from sklearn.manifold import LocallyLinearEmbedding
@@ -452,8 +449,10 @@ def get_best_kPCA_params(
     n_components: Number of dimension to preserve. If`n_components` 
             is ranged between float 0. to 1., it indicated the number of 
             variance ratio to preserve. 
+            
     y: array_like 
         label validation for supervised learning 
+        
     param_grid: list 
         list of parameters Grids. For instance::
             
@@ -470,6 +469,7 @@ def get_best_kPCA_params(
             ('kpca', KernelPCA(n_components=n_components))
             ('log_reg', LogisticRegression())
             ])
+            
     CV: int 
         number of K-Fold to cross validate the training set.
         
@@ -479,17 +479,17 @@ def get_best_kPCA_params(
     
     Example
     -------
+    >>> from watex.analysis.dimensionality import Reducers
+    >>> from watex.datasets import fetch_data 
+    >>> X, y=fetch_data('Bagoue analyses data')
+    >>> rObj = Reducers()
+    >>> kpca_best_params =get_best_kPCA_params(
+                    X,y=y,scoring = 'accuracy',
+                    n_components= 2, clf=clf, 
+                    param_grid=param_grid)
+    >>> kpca_best_params
+    ... {'kpca__gamma': 0.03, 'kpca__kernel': 'rbf'}
     
-        >>> from watex.analysis.dimensionality import Reducers
-        >>> from watex.datasets import fetch_data 
-        >>> X, y=fetch_data('Bagoue analyses data')
-        >>> rObj = Reducers()
-        >>> kpca_best_params =get_best_kPCA_params(
-                        X,y=y,scoring = 'accuracy',
-                        n_components= 2, clf=clf, 
-                        param_grid=param_grid)
-        >>> kpca_best_params
-        ... {'kpca__gamma': 0.03, 'kpca__kernel': 'rbf'}
     """
 
     if n_components is None: 
@@ -517,8 +517,10 @@ def make_introspection(
         )-> None: 
     """ Make introspection by using the attributes of instance created to 
     populate the new classes created.
+    
     :param Obj: callable 
-        New object to fully inherits of `subObject` attributes 
+        New object to fully inherits of `subObject` attributes.
+        
     :param subObj: Callable 
         Instance created.
     """
@@ -715,7 +717,7 @@ def prepareDataForPCA(
         
     encode_categorical_features__: bool
         Encode categorical data or text attributes. 
-        Default is :class:`sklearn.preprocessing.OrdinalEncoder` . 
+        Default is :class:`sklearn.preprocessing.OrdinalEncoder`. 
         
      Notes
      -----
@@ -908,22 +910,23 @@ and prepared data for `PCA` variance plot.
 
 Parameters 
 -----------
-    X: pd.DataFrame of ndarray 
-        dataset composed of initial features 
-    n_components: float of int
-        Number of dimension to preserve. If`n_components` 
-        is ranged between float 0. to 1., it indicated the number of 
-        variance ratio to preserve. If ``None`` as default value 
-        the number of variance to preserve is ``95%``.
+X: pd.DataFrame of ndarray 
+    dataset composed of initial features.
+    
+n_components: float oR int
+    Number of dimension to preserve. If`n_components` 
+    is ranged between float 0. to 1., it indicated the number of 
+    variance ratio to preserve. If ``None`` as default value 
+    the number of variance to preserve is ``95%``.
 
-    add_attributes: bool,
-        Decide to add new features values by combining 
-        numerical features operation. By default ease to 
-        divided two numerical features.
-                    
-    attributes_ix : str or list of int,
-        Divide two features from string litteral operation betwen or 
-        list of features indexes. 
+add_attributes: bool,
+    Decide to add new features values by combining 
+    numerical features operation. By default ease to 
+    divided two numerical features.
+                
+attributes_ix : str or list of int,
+    Divide two features from string litteral operation betwen or 
+    list of features indexes. 
     
 Returns 
 -------
@@ -932,23 +935,22 @@ Returns
     
 Examples
 --------
-
-    >>> from from watex.view.mlplot import MLPlots
-    >>> from watex.datasets.data_preparing import bagoue_train_set
-    >>> plot_kws = {'lc':(.9,0.,.8),
-            'lw' :3.,           # line width 
-            'font_size':7.,
-            'show_grid' :True,        # visualize grid 
-           'galpha' :0.2,              # grid alpha 
-           'glw':.5,                   # grid line width 
-           'gwhich' :'major',          # minor ticks
-            # 'fs' :3.,                 # coeff to manage font_size 
-            }
-    >>> mlObj =MLPlots(**plot_kws)
-    >>> pcaVarianceRatio(mlObj,
-    ...                     bagoue_train_set,
-    ...                     plot_var_ratio=True,
-    ...                     add_attributes=True)
+>>> from from watex.view.mlplot import MLPlots
+>>> from watex.datasets.data_preparing import bagoue_train_set
+>>> plot_kws = {'lc':(.9,0.,.8),
+        'lw' :3.,           # line width 
+        'font_size':7.,
+        'show_grid' :True,        # visualize grid 
+       'galpha' :0.2,              # grid alpha 
+       'glw':.5,                   # grid line width 
+       'gwhich' :'major',          # minor ticks
+        # 'fs' :3.,                 # coeff to manage font_size 
+        }
+>>> mlObj =MLPlots(**plot_kws)
+>>> pcaVarianceRatio(mlObj,
+...                     bagoue_train_set,
+...                     plot_var_ratio=True,
+...                     add_attributes=True)
 """
 # import inspect 
 # func_signature = inspect.signature(pcaVarianceRatio)

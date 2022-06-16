@@ -4,9 +4,8 @@ Created on Wed Sep 15 19:49:36 2021
 Description:
         Test to transformers module. Containers of modules  
         Test the functionalities of custums transformers 
-
-    References:
-        .. _module-utils::`watex.utils.transformers`
+        :mod:`watex.bases.transformers`
+        
 @author: @Daniel03
 """
 import os
@@ -19,9 +18,9 @@ import numpy as np
 import pandas as pd 
 
 from tests.__init__ import DATA_MID_PROCESSED
-from watex.utils.transformers import FrameUnion
+from watex.bases.transformers import FrameUnion
 from tests import  make_temp_dir , TEST_TEMP_DIR 
-from tests.core.__init__ import reset_matplotlib, watexlog
+from tests.methods.__init__ import reset_matplotlib, watexlog
 
 X, _=DATA_MID_PROCESSED
 class TestTransformers(unittest.TestCase):
