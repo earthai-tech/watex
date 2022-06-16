@@ -29,7 +29,7 @@ Until now, the methods implemented are adressed to a particular problem in water
  
     -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/); Neighbors: **KNN** ; Trees: **DTC**; Artificial neural networks **ANN**; 
     -  Ensemble methods (RandomForests, Bagging and Pasting, Boosting);  Apriori;
-    -  Kernel Principal Component Analysis **k-PCA**; t-distributed Stochastic Neighbor Embedding **t-SNE**; Randomized PCA; Locally Linear Embedding (**LLE**);
+    -  Kernel Principal Component Analysis **k-PCA**; t-distributed Stochastic Neighbor Embedding **t-SNE**; Randomized PCA; Locally Linear Embedding (**LLE**)
      
 - **Geophysical** 
 
