@@ -816,8 +816,8 @@ class MLPlots:
         To plot multiples classifiers, provide a list of classifiers. 
         
         Parameters 
-        ----------
-        clf: callables
+        -----------
+        clf: callable
             classifier or estimators. To use multiple classifier 
             set a list of classifer with their specific mmethods. 
             For instance::
@@ -825,11 +825,11 @@ class MLPlots:
                 [('SDG', SGDClassifier,"decision_function" ), 
                  ('FOREST',RandomForestClassifier,"predict_proba")]
                 
-        X: ndarray, 
+        X: ndarray (nsamples, nfeatures), 
             Training data (trainset) composed of n-features.
             
         y: array_like 
-            labelf for prediction. `y` is binary label by defaut. 
+            Labelf for prediction. `y` is binary label by defaut. 
             If '`y` is composed of multilabel, specify  the `classe_` 
             argumentto binarize the label(`True` ot `False`). ``True``  
             for `classe_`and ``False`` otherwise.
@@ -851,25 +851,26 @@ class MLPlots:
         roc_kws: dict 
             roc_curve additional keywords arguments
             
-        See also
-        --------
-            `ROC_curve` deals wuth optional and positionals keywords arguments 
-            of :meth:`watex.metrics.precision_recall_tradeoff`.
-            
         Examples 
         --------
+        >>> from sklearn.linear_model import SGDClassifier
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from watex.datasets import X_prepared
+        >>> from watex.datasets import y_prepared
+        >>> from watex.view.mlplot import MlPlots
+        >>> sgd_clf = SGDClassifier(random_state= 42)
+        >>> forest_clf =RandomForestClassifier(random_state=42)
+        >>> mlObj= MLPlots(lw =3., lc=(.9, 0, .8), font_size=7
+        >>> clfs =[('sgd', sgd_clf, "decision_function" ), 
+         ...      ('forest', forest_clf, "predict_proba")]
+        >>> mlObj.ROC_curve_(clf = clfs,  X= X_prepared, 
+        ...                      y = y_prepared, classe_=1, cv=3,)
         
-            >>> from sklearn.linear_model import SGDClassifier
-            >>> from sklearn.ensemble import RandomForestClassifier
-            >>> from watex.datasets import X_prepared
-            >>> from watex.datasets import  y_prepared
-            >>> sgd_clf = SGDClassifier(random_state= 42)
-            >>> forest_clf =RandomForestClassifier(random_state=42)
-            >>> mlObj= MLPlots(lw =3., lc=(.9, 0, .8), font_size=7
-            >>> clfs =[('sgd', sgd_clf, "decision_function" ), 
-             ...      ('forest', forest_clf, "predict_proba")]
-            >>> mlObj.ROC_curve_(clf = clfs,  X= X_train_2, 
-            ...                      y = y_prepared, classe_=1, cv=3,)
+        See also
+        --------
+        `ROC_curve` deals with optional and positionals arguments 
+        of :method:`~.watex.tools.metrics.Metrics.precision_recall_tradeoff`.
+            
         """
         
         # if method not given as tuple
