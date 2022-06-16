@@ -10,14 +10,13 @@ Welcome to WATex's documentation!
    :maxdepth: 2
    :caption: Contents:
    
-	analysis
-	bases
-	datasets
-	geology
-	methods
-	modeling
-	tools
-	view
+   analysis
+   bases
+   datasets 
+   geology 
+   methods
+   tools
+   view
 
 Indices and tables
 ==================
