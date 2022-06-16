@@ -1,4 +1,4 @@
-# WATex: A Machine Learning Research Toolbox in Hydrogeophysic
+# 💧 WATex: A Machine Learning Research Toolbox in Hydrogeophysic
 
 [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
  [![Requirements Status](https://requires.io/github/WEgeophysics/pyCSAMT/requirements.svg?branch=master)](https://requires.io/github/WEgeophysics/pyCSAMT/requirements/?branch=master)
@@ -12,7 +12,7 @@
 
 ##  Goals and Missions 
 
-WATex💧, for short, is  *A Machine Learning Research Toolbox in Hydrogeophysic*. 
+WATex, for short, is  *A Machine Learning Research Toolbox in Hydrogeophysic*. 
  It is entirely written in Python with supplemental materials implemented in Jupyter notebook.
   The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** 
    and secondly to participate in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) achievement.
