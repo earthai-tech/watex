@@ -44,6 +44,7 @@ extensions = [
     #'sphinx.ext.autosummary',
     # "sphinx_rtd_theme",
     'sphinx.ext.githubpages'
+    'autoapi.sphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
