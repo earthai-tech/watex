@@ -41,10 +41,10 @@ extensions = [
     'sphinx.ext.imgmath',
     # 'numpydoc',
     'sphinx.ext.napoleon',
-    #'sphinx.ext.autosummary',
+    'sphinx.ext.autosummary',
     # "sphinx_rtd_theme",
     'sphinx.ext.githubpages'
-    'autoapi.sphinx',
+    #'autoapi.sphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
