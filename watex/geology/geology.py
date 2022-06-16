@@ -5,17 +5,17 @@
 
 import os
 import warnings 
-from .._typing import (
+import numpy as np 
+import pandas as pd
+
+from ..typing import (
     TypeVar,
     Iterable, 
     Tuple,
     Callable 
 )
-import numpy as np 
-import pandas as pd
-
 from ..tools._watexlog import watexlog  
-import watex.tools.exceptions as Wex
+import watex.exceptions as Wex
 
 _logger =watexlog().get_watex_logger(__name__)
 
@@ -32,9 +32,9 @@ class Geology:
 class Borehole(Geology): 
     """
     Focused on Wells and `Borehole` offered to the population. To use the data
-     for prediction purpose, each `Borehole` provided must be referenced on 
-     coordinates values or provided the same as the one used on `ves` or `erp` 
-     file. 
+    for prediction purpose, each `Borehole` provided must be referenced on 
+    coordinates values or provided the same as the one used on `ves` or `erp` 
+    file. 
     
     """
     def __init__(self,
@@ -74,13 +74,12 @@ class Borehole(Geology):
  
 class geo_pattern: 
     """
-    Singleton class to deal with geopattern  with other modules.
-    It is and exhaustive pattern dict, can be add and change.
-     This pattern  will be depreacted later , to create for pyCSAMT,
-    its owwn geological pattern in coformity with the conventional 
-    geological swatches .Deal with USGS(US Geological Survey ) swatches
-     - references and FGDC (Digital cartographic Standard for Geological
-      Map Symbolisation-FGDCgeostdTM11A2_A-37-01cs2.eps).
+    Singleton class to deal with geopattern  with other modules. It is and 
+    exhaustive pattern dict, can be add and change. This pattern  will be 
+    deprecated later to and should be replaced by the geological pattern in 
+    following the conventional geological swatches. Deal with  the US Geological
+    Survey (USGS) swatches and the Digital cartographic Standard for Geological
+    Map (FGDC) Symbolisation-FGDCgeostdTM11A2_A-37-01cs2.eps.
          
     make _pattern:{'/', '\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
             /   - diagonal hatching
@@ -120,7 +119,7 @@ class geo_pattern:
              "ore minerals"  :       ['--|',(.8, .2, .2)],
              "graphite"    :         ['.++.',(.2, .7, .7)],
                         }
- 
+     
 def get_color_palette (RGB_color_palette): 
     """
     Convert RGB color into matplotlib color palette. In the RGB color 
@@ -139,9 +138,10 @@ def get_color_palette (RGB_color_palette):
      
     :Example: 
         
-        >>> from watex.core.geology import get_color_palette 
+        >>> from watex.geology.geology import get_color_palette 
         >>> get_color_palette (RGB_color_palette ='R128B128')
-    """   
+    """  
+    
     def ascertain_cp (cp): 
         if cp >255. : 
             warnings.warn(

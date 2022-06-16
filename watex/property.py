@@ -9,9 +9,11 @@
 from __future__ import annotations 
 """
 `WATex <https://github.com/WEgeophysics/watex/>`_ properties objects 
-====================================================================
+=====================================================================
 
 .. |ERP| replace: Electrical resistivity profiling 
+
+.. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
 
 """
 
@@ -223,10 +225,16 @@ class P:
     the packages. Its was used for assertion, comparison etceteara. These are 
     enumerated below into a property objects.
 
-    **frcolortags**: Stands for flow rate colors tags. Values are :: 
-                    '#CED9EF','#9EB3DD', '#3B70F2', '#0A4CEF'
+    .. |ERP| replace: Electrical resistivity profiling 
+    
+    Properties 
+    -----------
+    
+    **frcolortags**: Stands for flow rate colors tags. Values are  
+        '#CED9EF','#9EB3DD', '#3B70F2', '#0A4CEF'.
+                    
     **ididctags**: Stands for the list of index set in dictionary which encompasses 
-                key and values of all different prefixes.
+        key and values of all different prefixes.
                 
     **isation**: List of prefixes used for indexing the stations in the |ERP|. 
 
@@ -235,49 +243,52 @@ class P:
     **inorthing**: List of prefixes used to index the northing coordinates. 
      
     **iresistivity** List of prefix used for indexing the apparent resistivity 
-                values in the |ERP| data collected during the survey. 
+        values in the |ERP| data collected during the survey. 
 
     **isren**: Is the list of heads columns during the data collections. Any data 
-                head |ERP| data provided should be converted into 
-                the following arangement::
+        head |ERP| data provided should be converted into 
+        the following arangement:
                     
-            +----------+-------------+-----------+-----------+
-            |station   | resistivity | easting   | northing  | 
-            +----------+-------------+-----------+-----------+
+        +----------+-------------+-----------+-----------+
+        |station   | resistivity | easting   | northing  | 
+        +----------+-------------+-----------+-----------+
             
    **isrll**: Is the list of heads columns during the data collections. Any data 
-               head |ERP| data provided should be converted into 
-               the following arangement::
+        head |ERP| data provided should be converted into 
+        the following arangement:
                    
-            +----------+-------------+-------------+----------+
-            |station   | resistivity | longitude   | latitude | 
-            +----------+-------------+-------------+----------+
+        +----------+-------------+-------------+----------+
+        |station   | resistivity | longitude   | latitude | 
+        +----------+-------------+-------------+----------+
             
-    **P**: Typing class for fectching the properties. For instance:: 
+    **P**: Typing class for fectching the properties. 
         
-        >>> from watex._properties import P 
-        >>> P.idicttags 
-        ... <property at 0x1ec1f2c3ae0>
-        >>> P().idictags 
-        ... 
-        {'station': ['pk', 'sta', 'pos'], 'longitude': ['east', 'x', 'long', 'lon'],
-         'latitude': ['north', 'y', 'lat'], 'resistivity': ['rho', 'app', 'res']}
-        >>> {k:v for k, v in  P.__dict__.items() if '__' not in k}
-        ... {'_station': ['pk', 'sta', 'pos'],
-             '_easting': ['east', 'x', 'long'],
-             '_northing': ['north', 'y', 'lat'],
-             '_resistivity': ['rho', 'app', 'res'],
-             'frcolortags': <property at 0x1ec1f2fee00>,
-             'idicttags': <property at 0x1ec1f2c3ae0>,
-             'istation': <property at 0x1ec1f2c3ea0>,
-             'ieasting': <property at 0x1ec1f2c39f0>,
-             'inorthing': <property at 0x1ec1f2c3c70>,
-             'iresistivity': <property at 0x1ec1f2c3e00>,
-             'isenr': <property at 0x1ec1f2c3db0>}
-        >>> P().isrll 
-        ... ['station','resistivity','longitude','latitude']
-    
+    Examples 
+    --------
+    >>> from watex.property import P 
+    >>> P.idicttags 
+    ... <property at 0x1ec1f2c3ae0>
+    >>> P().idictags 
+    ... 
+    {'station': ['pk', 'sta', 'pos'], 'longitude': ['east', 'x', 'long', 'lon'],
+     'latitude': ['north', 'y', 'lat'], 'resistivity': ['rho', 'app', 'res']}
+    >>> {k:v for k, v in  P.__dict__.items() if '__' not in k}
+    ... {'_station': ['pk', 'sta', 'pos'],
+         '_easting': ['east', 'x', 'long'],
+         '_northing': ['north', 'y', 'lat'],
+         '_resistivity': ['rho', 'app', 'res'],
+         'frcolortags': <property at 0x1ec1f2fee00>,
+         'idicttags': <property at 0x1ec1f2c3ae0>,
+         'istation': <property at 0x1ec1f2c3ea0>,
+         'ieasting': <property at 0x1ec1f2c39f0>,
+         'inorthing': <property at 0x1ec1f2c3c70>,
+         'iresistivity': <property at 0x1ec1f2c3e00>,
+         'isenr': <property at 0x1ec1f2c3db0>}
+    >>> P().isrll 
+    ... ['station','resistivity','longitude','latitude']
+
     """
+    
     station_prefix   = [
         'pk','sta','pos'
     ]
@@ -366,10 +377,9 @@ class P:
     def _check_header_item (self, it , kind ='erp'): 
         """ Check whether the item exists in the property dictionnary.
         Use param `kind` to select the type of header that the data must 
-        collected:: 
-            
-            kind ='erp' -> for Electrical Resistivity Profiling  
-            kind= 'ves'- > for Vertical Electrical Sounding 
+        collected: 
+            `kind` = ``erp`` -> for Electrical Resistivity Profiling  
+            `kind` = ``ves`` - > for Vertical Electrical Sounding 
         """
             
         dict_ = self.idictcpr if kind =='ves' else self.idicttags
@@ -388,11 +398,13 @@ class P:
         headers. 
         
         :param hl: list or array, 
-            list of the given headers 
+            list of the given headers. 
+        :param kind: str 
+            Type of data fed into the algorithm. Can be ``ves`` for Vertical 
+            Electrical Sounding  and  ``erp`` for Electrical Resistivity Profiling . 
             
         :Example: 
-    
-            >>> from watex._property import P 
+            >>> from watex.property import P 
             >>> test_v= ['pos', 'easting', 'north', 'rhoa', 'lat', 'longitud']
             >>> pobj = P(test_v)
             >>> pobj ()
@@ -403,6 +415,7 @@ class P:
             ... ['station', 'easting', 'northing', 'resistivity', 
                  'latitude', 'longitude']
         """
+        
         v_ =list()
         
         self.hl = hl or self.hl 
@@ -464,8 +477,8 @@ class P:
     
     @property 
     def isrll(self): 
-        """ `SRLL` is the abbreviation of `S`for ``Stations``,`R``for 
-        resistivity, `L` for ``Longitude` and `L` for ``Latitude``. 
+        """ `SRLL` is the abbreviation of `S`for ``Stations``,`R`` for 
+        resistivity, `L` for ``Longitude`` and `L` for ``Latitude``. 
         `SRLL` is the expected columns in Electrical resistivity profiling.
         Indeed, it keeps the traditional collections sheets
         during the survey. """
@@ -474,14 +487,14 @@ class P:
     @property 
     def isren(self): 
         """ `SREN` is the abbreviation of `S`for ``Stations``,`R``for 
-        resistivity, `E` for ``easting` and `N` for ``northing``. 
+        resistivity, `E` for ``easting`` and `N` for ``northing``. 
         `SREN` is the expected columns in Electrical resistivity profiling.
         Indeed, it keeps the traditional collections sheets
         during the survey. """
         return self.erp_headen
     @property 
     def icpr (self): 
-        """ Keep only the |VES| header data..."""
+        """ Keep only the Vertical Electrical Sounding header data ..."""
         return [k.replace('_', '') 
                 for k in self.ves_props.keys() ] +['resistivity']
     
@@ -501,21 +514,26 @@ class BagoueNotes:
     Cote d’Ivoire.
     
     The average FR observed in this area fluctuates between 1
-    and 3 m3/h. Refer to the link of case story paper in the `repository 
-    part <https://github.com/WEgeophysics/watex#documentation>`_ to visualize the
-    location map of the study area with the geographical distribution of the
-    various boreholes in the region. The geophysical data and boreholes
-    data were collected from National  Office of Drinking Water (ONEP) and
-    West-Africa International Drilling  Company (FORACO-CI) during  the 
+    and 3 m3/h. Refer to the link of case story paper in the `repository docs`_
+    to visualize the location map of the study area with the geographical 
+    distribution of the various boreholes in the region. The geophysical data 
+    and boreholesdata were collected from National  Office of Drinking Water(ONEP) 
+    and West-Africa International Drilling  Company (FORACO-CI) during  the 
     Presidential Emergency Program (PPU) in 2012-2013 and the National Drinking 
-     Water Supply Program (PNAEP) in 2014.
-    
+    Water Supply Program (PNAEP) in 2014.
     The data are firstly composed of Electrical resistivity profile (ERP) data
     collected from geophysical survey lines with various arrays such as
     Schlumberger, gradient rectangle and Wenner (α or β) and the Vertical 
     electricalsounding (VES) data carried out on the selected anomalies.
     The configuration used during the ERP is Schlumberger with distance of
     AB is 200m and MN =20m.
+    
+    Refer to `FlowRatePredictionUsingSVMs`_ for further details. 
+    
+    .. _repository docs: https://github.com/WEgeophysics/watex#documentation>
+    
+    .. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
+    
     """
     bagkeys = ('num',
                 'name',
@@ -535,20 +553,20 @@ class BagoueNotes:
             'easting :UTM:29P-30N-WGS84', 
             'northing :UTM:29P-30N-WGS84', 
              'anomaly `power` or anomaly width in meter(m).'
-             '__ref :doc:watex.utils.exmath.compute_power', 
+             '__ref :doc:`watex.tools.exmath.compute_power`', 
             'anomaly `magnitude` or `height` in Ω.m '
-            '__ref :doc:watex.utils.exmath.compute_magnitude', 
+            '__ref :doc:`watex.tools.exmath.compute_magnitude`', 
             'anomaly `standard fracturing index`, no unit<=sqrt(2)'
-            '__ref :doc:watex.utils.exmath.compute_sfi', 
+            '__ref :doc:`watex.tools.exmath.compute_sfi`', 
              'anomaly `shape`. Can be `V`W`M`K`L`U`H`'
-             '__ref :doc:watex.utils.exmath.get_shape`', 
+             '__ref :doc:`watex.tools.exmath.get_shape`', 
               'anomaly `shape`. Can be `EC`CP`CB2P`NC`__'
-                'ref :doc:watex.utils.exmath.get_type`', 
+                'ref :doc:`watex.tools.exmath.get_type`', 
             'most dominant geology structure of the area where'
                 ' the erp or ves (geophysical survey) is done.', 
             'Ohmic surface compute on sounding curve in '
                 'relationship with VES1D inversion (Ω.m2)'
-                    '__ref :doc:`watex.core.ves`',
+                    '__ref :doc:`watex.methods.electrical.VerticalSounding`',
              'flow rate value of drilling in m3/h'
                     ]
     

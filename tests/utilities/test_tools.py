@@ -32,14 +32,14 @@ from tests.utilities.__init__ import (
     extraarray2D, 
 )
 from tests import make_temp_dir, erp_test_location_name 
-from tests.core.__init__ import (reset_matplotlib,
+from tests.methods.__init__ import (reset_matplotlib,
                                  watexlog, 
                                  diff_files)
-from watex.utils.coreutils import _data_sanitizer 
+from watex.tools.coreutils import _data_sanitizer 
 
-from watex.utils.exmath import (
-    _power ,
-    _magnitude , 
+from watex.tools.exmath import (
+    power ,
+    magnitude , 
     _find_cz_bound_indexes
                                 
 ) 

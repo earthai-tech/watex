@@ -79,21 +79,21 @@ class Preprocessing :
     deals with data features categorization, when numericall values is 
     provided standard anlysis either `qualitatif` or `quantitatives analyis`. 
     
-    Arguments: 
-    ---------
-        *dataf_fn*: str 
-            Path to analysis data file. 
-        *df*: pd.Core.DataFrame 
-                Dataframe of features for analysis . Must be contains of 
-                main parameters including the `target` pd.Core.series 
-                as columns of `df`. 
- 
-    
+    Arguments
+    -----------
+    *dataf_fn*: str 
+        Path to analysis data file. 
+        
+    *df*: pd.Core.DataFrame 
+            Dataframe of features for analysis . Must be contains of 
+            main parameters including the `target` pd.Core.series 
+            as columns of `df`. 
+
     Holds on others optionals infos in ``kwargs`` arguments: 
        
-    ====================  ============  =======================================
+    ===================    =========    =======================================
     Attributes              Type                Description  
-    ====================  ============  =======================================
+    ===================    =========    =======================================
     categorial_features     list        Categorical features list. If not given
                                         it should be find automatically.           
     numerical_features      list        Numerical features list. If not given, 
@@ -124,12 +124,12 @@ class Preprocessing :
     drop_columns            list        List collection of the unusefull 
                                         `features` for predicting. Can be elimi-
                                         nated by puting them on a drop list. 
-    ====================  ============  =======================================  
+    ==================     =========    =======================================  
 
     Can get other interessing attributes after buiding your preprocessor using 
-    the :meth:``watex.processing.sl.Preprocessing.make_preprocessor` or 
+    the :meth:`watex.bases.processing.Preprocessing.make_preprocessor` or 
     builing your test model using the
-    :meth:``watex.processing.sl.Preprocessing.make_preprocessing_model`.
+    :meth:`watex.bases.processing.Preprocessing.make_preprocessing_model`:
     
     ==============================  ==============  ===========================
     Attributes                      Type            Description  
@@ -150,22 +150,23 @@ class Preprocessing :
                                                     prediction on array_like. 
     ==============================  ==============  ===========================
     
-    Example: 
-        
-        >>> from watex.processing.basics import Preprocessing
-        >>> prepObj = Preprocessing(drop_features = ['lwi', 'x_m', 'y_m'],
-        ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
-        >>> prepObj.X_train, prepObj.X_test, prepObj.y_train, prepObj.y_test
-        >>> prepObj.categorial_features, prepObj.numerical_features 
-        >>> prepObj.random_state = 25 
-        >>> preObj.test_size = 0.25
-        >>> prepObj.make_preprocessor()         # use default preprocessing
-        >>> preObj.preprocessor
-        >>> prepObj.make_preprocessing_model( default_estimator='SVM')
-        >>> prepObj.preprocessing_model_score
-        >>> prepObj.preprocess_model_prediction
-        >>> prepObj.confusion_matrix
-        >>> prepObj.classification_report
+    
+    Examples
+    --------- 
+    >>> from watex.bases.processing import Preprocessing
+    >>> prepObj = Preprocessing(drop_features = ['lwi', 'x_m', 'y_m'],
+    ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
+    >>> prepObj.X_train, prepObj.X_test, prepObj.y_train, prepObj.y_test
+    >>> prepObj.categorial_features, prepObj.numerical_features 
+    >>> prepObj.random_state = 25 
+    >>> preObj.test_size = 0.25
+    >>> prepObj.make_preprocessor()         # use default preprocessing
+    >>> preObj.preprocessor
+    >>> prepObj.make_preprocessing_model( default_estimator='SVM')
+    >>> prepObj.preprocessing_model_score
+    >>> prepObj.preprocess_model_prediction
+    >>> prepObj.confusion_matrix
+    >>> prepObj.classification_report
 
     """
 
@@ -317,6 +318,7 @@ class Preprocessing :
             the targetted features. 
 
         """
+        
         drop_features = kws.pop('drop_features', None)
         target =kws.pop('target', None)
         random_state = kws.pop('random_state', None )
@@ -400,9 +402,9 @@ class Preprocessing :
         
         `make_preprocessor` arguments are only callable function of method or 
         preprocessor making.Different modules from the :mod:`sklearn` are 
-        used for the preprocessor building like:: 
+        used for the preprocessor building like: 
             
-            - :meth:`sklearn.pipeline.make_pipeline ` for pipeline creation. 
+            - :meth:`sklearn.pipeline.make_pipeline` for pipeline creation. 
             - :meth:`sklearn.preprocessing.OneHotEncoder` for categorial 
                 `features` encoding. 
             - :meth:`sklearn.preprocessing.PolynomialFeatures` for features 
@@ -414,16 +416,13 @@ class Preprocessing :
                 composing.
                 
         :param num_column_selector_: Callable method from sckitlearn 
-            Numerical column maker. Refer to  sklearn site for more details. 
-            :ref:`<https://scikit-learn.org/stable/modules/classes.html>` 
-            The default is:: 
-                
-                `make_column_selector(dtype_include=np.number)`
+            Numerical column maker. Refer to  sklearn site for  
+            :ref:'more details <https://scikit-learn.org/stable/modules/classes.html>` 
+            The default is ``make_column_selector(dtype_include=np.number)``
             
         :param cat_column_selector_`: 
-            Callable method. Categorical column selector. The default is::
-            
-                `make_column_selector(dtype_exclude=np.number)`
+            Callable method. Categorical column selector. The default is
+            ``make_column_selector(dtype_exclude=np.number)``
  
         :param features_engineering_: 
             Callable argument using :mod:`sklearn.preprocessing` different 
@@ -436,26 +435,30 @@ class Preprocessing :
                 `SelectKBest(f_classif, k=4),` 
            
         :param scalers_: Scaling data using many normalization or standardization 
-            methodike. The default is  `RobustScaler()`. 
+            methodike. The default is  ``RobustScaler``. 
             
         :param kwargs: Other additionals keywords arguments in 
-        `make_column_transformer()` and `make_pipeline()` methods. 
+            `make_column_transformer` and `make_pipeline` methods. 
         
-        :Note: 
-            Can build the default preprocessor by merely call::
-            
-                 >>> from watex.processing.sl import Preprocessing
-                 >>> preObj = Preprocessing(
-                     ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
-                     ...            ) 
-                 >>> preObj.make_preprocessor()
-                 >>> preObj.preprocessor
+        
+        Notes 
+        ------
+        We can build the default preprocessor by merely calling: 
+
+        .. code-block::
+        
+             >>> from watex.bases.processing import Preprocessing
+             >>> preObj = Preprocessing(
+                 ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
+                 ...            ) 
+             >>> preObj.make_preprocessor()
+             >>> preObj.preprocessor
                  
-            Or build your own preprocesor object using the example below: 
+        Or build your own preprocesor object using the example below: 
                 
-        :Example: 
-            
-            >>> from watex.processing.basics import Preprocessing
+        .. code-block::
+        
+            >>> from from watex.bases.processing import Preprocessing
             >>> from sklearn.preprocessing import StandardScaler 
             >>> preObj = Preprocessing(
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
@@ -471,8 +474,9 @@ class Preprocessing :
             ...    selectors_=SelectKBest(f_classif, k=4), 
             ...        encodages_= StandardScaler())
             >>> preObj.preprocessor
-             
+         
         """
+        
         preprocessor_kws = kwargs.pop('preprocessor_kws', {})
         make_pipeline_kws =kwargs.pop('make_pipeline_kws', {})
 
@@ -531,53 +535,57 @@ class Preprocessing :
            details. 
            
         :param estimator_: 
-            Callable estimator method to fit the model :: 
+            Callable estimator method to fit the model:: 
                 
                 `estimator_`= SGDClassifier(random_state=13)
             
             It's possible to 
             provide multiple estimator with configuration arguments into 
-            estimator dictionnary like: 
+            estimator dictionnary like:: 
                 
-                `estimator_`={'knn': KNeighborsClassifier(n_neighbors=10, 
+                estimator_={'knn': KNeighborsClassifier(n_neighbors=10, 
                                                           metric='manhattan') , 
                               'svc':SVC(C=100, gamma=1e-3, random_state=25)}
+                
             when multiple estimators is provided, the results of model fit and 
             prediction score should be in dict with estimator name. 
         
         :param defaut_estimator: 
             The default estimator for preprocessing model testing
             
-        :Note: If ``None`` estimator is given, the *default* estimator is `svm`
-            otherwise, provide the only prefix of the select  estimator into 
-            the `default_estimator` keywords argument like::
-                
-                >>> from watex.processing.sl import Preprocessing
-                >>> preObj = Preprocessing(
-                    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
-                >>> preObj.random_state = 7
-                >>> mfitspred= preObj.make_preprocessing_model(
-                    default_estimator='ada')
-                >>> preObj.preprocessing_model_score
-                >>> preObj.preprocess_model_prediction
-                >>> preObj.confusion_matrix
-                >>> preObj.classification_report
-        
-        Providing multiple estimator is possible like the example below: 
+        Notes
+        ------
+        If ``None`` estimator is given, the *default* estimator is `svm`
+        otherwise, provide the only prefix of the select  estimator into 
+        the `default_estimator` keywords argument like::
             
-        :Example: 
-            
-            >>> from watex.processing.basics import Preprocessing
+            >>> from watex.bases.processing import Preprocessing
             >>> preObj = Preprocessing(
-            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
-            >>>   from sklearn.ensemble import RandomForestClassifier
+                data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
             >>> preObj.random_state = 7
-            >>> preObj.make_preprocessing_model(estimators_={
-            ...    'RandomForestClassifier':RandomForestClassifier(
-            ...        n_estimators=200, random_state=0), 
-            ...    'SDGC':SGDClassifier(random_state=0)})
+            >>> mfitspred= preObj.make_preprocessing_model(
+                default_estimator='ada')
             >>> preObj.preprocessing_model_score
-            >>> preObj.preprocessing_model_prediction
+            >>> preObj.preprocess_model_prediction
+            >>> preObj.confusion_matrix
+            >>> preObj.classification_report
+        
+        Providing multiple estimator is possible like the example below. 
+            
+        Examples 
+        ---------
+        >>> from watex.bases.processing import Preprocessing
+        >>> preObj = Preprocessing(
+        ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx')
+        >>>   from sklearn.ensemble import RandomForestClassifier
+        >>> preObj.random_state = 7
+        >>> preObj.make_preprocessing_model(estimators_={
+        ...    'RandomForestClassifier':RandomForestClassifier(
+        ...        n_estimators=200, random_state=0), 
+        ...    'SDGC':SGDClassifier(random_state=0)})
+        >>> preObj.preprocessing_model_score
+        >>> preObj.preprocessing_model_prediction
+        
         """
         
         def model_evaluation(model, X_train, y_train, X_test, y_test): 
@@ -753,71 +761,72 @@ class Processing (Preprocessing) :
     
     Processing is usefull before modeling step. To process data, a default 
     implementation is given for  data `preprocessing` after data sanitizing.
-    It consists of creating a model pipeline using different `supervised 
-    learnings` methods. A default pipeline is created though the `prepocessor` 
+    It consists of creating a model pipeline using different supervised 
+    learnings methods. A default pipeline is created though the `prepocessor` 
     designing. Indeed  a `preprocessor` is a set of `transformers + estimators`
     and multiple other functions to boost the prediction. 
     
-     Arguments: 
-    ---------
-        *dataf_fn*: str 
-            Path to analysis data file. 
-        *df*: pd.Core.DataFrame 
-                Dataframe of features for analysis . Must be contains of 
-                main parameters including the `target` pd.Core.series 
-                as columns of `df`. 
+    Arguments 
+    -----------
+    *dataf_fn*: str 
+        Path to analysis data file. 
+    *df*: pd.Core.DataFrame 
+            Dataframe of features for analysis . Must be contains of 
+            main parameters including the `target` pd.Core.series 
+            as columns of `df`. 
  
-    
     Holds on others optionals infos in ``kwargs`` arguments: 
 
-    ====================  ============  =======================================
+    ==================    ============      ===================================
     Attributes              Type                Description  
-    ====================  ============  =======================================
-    auto                    bool        Trigger the composite estimator.
-                                        If ``True`` a SVC-composite estimator 
-                                        `preprocessor` is given. 
-                                        *default* is False.
-    pipelines               dict        Collect your own pipeline for model 
-                                        preprocessor trigging.
-                                        it should be find automatically.           
-    estimators              Callable    A given estimator. If ``None``, `SVM`
-                                        is auto-selected as default estimator.
-    model_score             float/dict  Model test score. Observe your test 
-                                        model score using your compose estimator 
-                                        for enhacement 
-    model_prediction        array_like  Observe your test model prediction for 
-                                        as well as the compose estimator 
-                                        enhancement.
-    preprocessor            Callable    Compose piplenes and estimators for 
-                                        default model scorage.
-    ====================  ============  =======================================  
+    ==================    ============      ===================================
+    auto                    bool            Trigger the composite estimator.
+                                            If ``True`` a SVC-composite  
+                                            estimator `preprocessor` is given. 
+                                            *default* is False.
+    pipelines               dict            Collect your own pipeline for model 
+                                            preprocessor trigging.
+                                            it should be find automatically.           
+    estimators              Callable        A given estimator. If ``None``,`SVM`
+                                            is auto-selected as default estimator.
+    model_score             float/dict      Model test score. Observe your test 
+                                            model score using your compose  
+                                            estimator for enhacement 
+    model_prediction        array_like      Observe your test model prediction for 
+                                            as well as the compose estimator 
+                                            enhancement.
+    preprocessor            Callable        Compose piplenes and estimators for 
+                                            default model scorage.
+    ==================    ============      ===================================  
     
-    :Example:: 
-        
-        >>> from watex.processing.basics import Processing
-        >>> from sklearn.preprocessing import StandardScaler
-        >>> from sklearn.ensemble import RandomForestClassifier 
-        >>> my_own_pipeline= {'num_column_selector_': 
-        ...                       make_column_selector(dtype_include=np.number),
-        ...                'cat_column_selector_': 
-        ...                    make_column_selector(dtype_exclude=np.number),
-        ...                'features_engineering_':
-        ...                    PolynomialFeatures(3,include_bias=True),
-        ...                'selectors_': SelectKBest(f_classif, k=4), 
-        ...               'encodages_': StandardScaler()
-        ...                 }
-        >>> my_estimator={
-        ...    'RandomForestClassifier':RandomForestClassifier(
-        ...    n_estimators=200, random_state=0)
-        ...    }
-        >>> processObj = Processing(
-        ...                    data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
-        ...                    pipeline= my_own_pipeline,
-        ...                    estimator=my_estimator)
-        >>> print(processObj.preprocessor)
-        >>> print(processObj.estimator)
-        >>> print(processObj.model_score)
-        >>> print(processObj.model_prediction)
+    
+    Examples 
+    ---------
+    >>> from watex.bases.processing  import Processing
+    >>> from sklearn.preprocessing import StandardScaler
+    >>> from sklearn.ensemble import RandomForestClassifier 
+    >>> my_own_pipeline= {'num_column_selector_': 
+    ...                       make_column_selector(dtype_include=np.number),
+    ...                'cat_column_selector_': 
+    ...                    make_column_selector(dtype_exclude=np.number),
+    ...                'features_engineering_':
+    ...                    PolynomialFeatures(3,include_bias=True),
+    ...                'selectors_': SelectKBest(f_classif, k=4), 
+    ...               'encodages_': StandardScaler()
+    ...                 }
+    >>> my_estimator={
+    ...    'RandomForestClassifier':RandomForestClassifier(
+    ...    n_estimators=200, random_state=0)
+    ...    }
+    >>> processObj = Processing(
+    ...                    data_fn ='data/geo_fdata/BagoueDataset2.xlsx', 
+    ...                    pipeline= my_own_pipeline,
+    ...                    estimator=my_estimator)
+    >>> print(processObj.preprocessor)
+    >>> print(processObj.estimator)
+    >>> print(processObj.model_score)
+    >>> print(processObj.model_prediction)
+    
     """  
     
     def __init__(self, data_fn = None, df=None , **kws):
@@ -901,6 +910,7 @@ class Processing (Preprocessing) :
              'encodages_': StandardScaler()
                          }
         """
+        
         import sklearn 
         
         if pipelines is None: 
@@ -1007,15 +1017,19 @@ class Processing (Preprocessing) :
                          y_train=None, val_curve_kws:Generic[T]=None, 
                          **kws):
         """ Compute the validation score and plot the validation curve if 
-         the argument `turn` of decorator is switched to ``on``. If 
-         validation keywords arguments `val_curve_kws` doest not contain a 
-         `param_range` key, the default param_range should be the one of 
-             decorator.
-  
-        :param model: The creating model. If ``None`` 
-        :param X_train: pd.core.frame.DataFrame  of selected trainset
-        :param x_test:  pd.DataFrame of  selected Data for testset 
-        :param y_train: array_like of selected data for evaluation set.        
+        the argument `turn` of decorator is switched to ``on``. If 
+        validation keywords arguments `val_curve_kws` doest not contain a 
+        `param_range` key, the default param_range should be the one of 
+            decorator.
+          
+        :param model: The creating model. If ``None``.
+        
+        :param X_train: pd.core.frame.DataFrame  of selected trainset.
+        
+        :param x_test:  pd.DataFrame of  selected Data for testset.
+        
+        :param y_train: array_like of selected data for evaluation set. 
+        
         :param y_test: array_like of selected data for model test 
         
         :param val_curve_kws:
@@ -1026,20 +1040,19 @@ class Processing (Preprocessing) :
                              "param_range": np.arange(1,210,10), 
                              "cv":4}
         :returns: 
-            
             - `train_score`: float|dict of trainset score 
             - `val_score` : float/dict of valisation score 
             - `switch`: Turn ``on`` or ``off`` the validation_plot.
             - `kk`: the validation `param_range` for plot.
         
         :Example: 
-            
-            >>> from watex.processing.basics import Processing 
+            >>> from watex.bases.processing  import Processing 
             >>> processObj = Processing(
                 data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
             >>> processObj.get_validation_curve(
                 switch_plot='on', preprocess_step=True)
         """
+        
         preprocess_step =kws.pop('preprocess_step', False)
         switch = kws.pop('switch_plot', 'off')
         val_kws = kws.pop('val_kws', None)
@@ -1124,15 +1137,15 @@ class Processing (Preprocessing) :
     def quick_estimation(self, estimator: Callable[...,T] = None, 
                          random_state:float = None, **kws): 
         """ Quick run the model without any processing.  If none estimator 
-        is provided ``SVC``estimator is used.
+        is provided ``SVC`` estimator is used.
         
-        :param estimators: Callable estimator. If ``None`, a ``svc`` is 
-                            used to quick estimate prediction. 
+        :param estimators: Callable estimator. If ``None``, a ``svc`` is 
+            used to quick estimate prediction. 
+                            
         :param random_state: The state of data shuffling.The default is ``7``.
                                         
         :Example: 
-            
-            >>> from watex.processing.sl import Processing 
+            >>> from watex.bases.processing import Processing 
             >>> processObj = Processing(
                 data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
             >>> processObj.quick_estimation(estimator=DecisionTreeClassifier(
@@ -1204,15 +1217,18 @@ def find_categorial_and_numerical_features(*, df= None, features= None,
     of dataset. 
     
     :param df: Container `pd.DataFrame` of all features in the dataset.
+    
     :param features:
         Iterable object ``list`` in the dataset. If `df` is given, don't need
         to set any others arguments. 
+        
     :param categorial_features: 
         list of selected categorial features. Need to provide the whole 
-        `features` to find the `numerical_values` 
+        `features` to find the `numerical_values`.
+        
     :param numerical_features: 
         list of selected `numerical_features`. If given, provides the 
-        `features` of the whole dataframe to find the `categorial_features`
+        `features` of the whole dataframe to find the `categorial_features`.
         
     :Note: Once the `features` argument is set, provide at least 
         `categorial_features` or `numerical_features` to find the one of 
@@ -1223,8 +1239,8 @@ def find_categorial_and_numerical_features(*, df= None, features= None,
         - `numerical_features`: list of quantitative parameters 
     
     :Example: 
-        
-        >>> from watex.processing.basics import find_categorial_and_numerical_features
+        >>> from watex.bases.processing import (
+            find_categorial_and_numerical_features, Preprocessing)
         >>> preObj = Preprocessing(
         ...     data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
         ...                )

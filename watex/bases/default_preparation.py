@@ -83,7 +83,8 @@ class BaseSteps(object):
                 ]
             
         Please refer to :doc:`watex.utils.transformers.CategorizeFeatures` 
-        fot furthers details. 
+        fot furthers details.
+        
     hash: bool, 
         If ``True``, it ensure that data will remain consistent accross 
         multiple runs, even if dataset is refreshed. Use test by id to hash 
@@ -98,10 +99,10 @@ class BaseSteps(object):
             attributes_ix = [(1, 0), (4,3)] 
     
         The operator by default is `division` . For more details, please 
-        refer to :doc:`~watex.utils.transformers.CombinedAttributesAdder`
+        refer to :doc:`~.bases.transformers.CombinedAttributesAdder`
     imputer_strategy: str 
         Type of strategy to replace the missing values. Refer to 
-        :class:`sklearn.impute.SimpleImputer`. Default is ``median``.
+        :class:`~.sklearn.SimpleImputer`. Default is ``median``.
         
     missing_values : float
         The value to be replaced.  Default is ``np.nan`` values.
@@ -127,26 +128,28 @@ class BaseSteps(object):
         useful in our case because the dataset is not large enough to avoid 
         the risk of introducing a significant bias.  Once data are stratified,
         data are divided into a trainset (80%) and test set (20%). 
-
-     The second steps consist of features selection, features engineering, 
-     encoding and data scaling using the pipeline via a parameters `pipeline`. 
-     If None pipeline is given, the default pipline is triggered.The features
-     engineering’s consist to aggregate features with experiencing combinations
-     of attributes into promising new features using the params `attributes_ix`
-     after setting the argument `add_attributes` to ``True``. The final step of
-     transformation consists of features scaling. The type of scaling used 
-     by default in this module is the standardization because it less affected 
-     by the outliers. 
-     Each transformation step must be executed in right order therefore a
-     full pipeline is created, composed of the numerical pipeline (deals with 
-     numerical features) and categorical pipeline (deals with categorial 
-     features). Both pipelines are combined and applied to the trainset and 
-     later to the test set. 
+        
+    ..   
+    
+    The second steps consist of features selection, features engineering, 
+    encoding and data scaling using the pipeline via a parameters `pipeline`. 
+    If None pipeline is given, the default pipline is triggered.The features
+    engineering’s consist to aggregate features with experiencing combinations
+    of attributes into promising new features using the params `attributes_ix`
+    after setting the argument `add_attributes` to ``True``. The final step of
+    transformation consists of features scaling. The type of scaling used 
+    by default in this module is the standardization because it less affected 
+    by the outliers. 
+    Each transformation step must be executed in right order therefore a
+    full pipeline is created, composed of the numerical pipeline (deals with 
+    numerical features) and categorical pipeline (deals with categorial 
+    features). Both pipelines are combined and applied to the trainset and 
+    later to the test set. 
      
-     Examples
-     --------
-     
-     ../datasets/config.py
+    Examples
+    ---------
+    
+    ../datasets/config.py
      
     """
     
@@ -205,15 +208,16 @@ class BaseSteps(object):
             self._data = self.getDataFrameFromFile(_data)
 
     def fit (self, X, y=None): 
-        """ Preparing steps 
+        """ Preparing steps. 
         
         Parameters
-        ---------
+        -----------
         X: ndarray, pd.DataFrame 
-             X or dataframe X 
+             X or dataframe X. 
         y: array_like, 
-            ylabel or target values 
+            ylabel or target values.
         """
+        
         self._logging.info('Start the default preparing steps including'
                            ' Data cleaning,features combinaisons ... using '
                            ' the `fit` method!')
@@ -419,9 +423,11 @@ class BaseSteps(object):
                 testset or trainset 
         Returns
         -------
-        - X_prepared. Data prepared after transformation 
-        -y-prepared. label prepared after transformation.
+            - X_prepared. Data prepared after transformation 
+            -y-prepared. label prepared after transformation.
+            
         """
+        
         self.fit(X, y)
     
         self.transform(on_testset =on_testset)
@@ -442,7 +448,7 @@ class BaseSteps(object):
         
     def stratifyFolds(self, data): 
         """ Stratified the dataset and return the trainset. Get more details 
-        in :doc:`watex.utils.transformers.StratifiedWithCategoryAdder`."""
+        in :doc:`watex.bases.transformers.StratifiedWithCategoryAdder`."""
 
         smsg =''
         if not self.hash:
@@ -560,6 +566,7 @@ class BaseSteps(object):
     def getDataFrameFromFile(data_fn =None, read_default_file =False, 
                              ):
         """ Get the dataframe from file and convert to pandas dataframe.
+        
         :param data_fn: str or Path_Like obj 
             Path to data file. 
         :param read_default_file: bool 
@@ -569,6 +576,7 @@ class BaseSteps(object):
         :return: 
             object data.
         """
+        
         PD_READ_FEATURES ={
             ".csv":pd.read_csv, 
               ".xlsx":pd.read_excel,
@@ -633,11 +641,12 @@ def defaultPipeline(X,  num_attributes, cat_attributes, y=None,
         
     Returns
     -------
-    - `mum_pipeline`: Pipeline to process numerical features 
-    -`cat_pipeline`: pipeline to process categorical features.
-    - `full_pipeline`: Full pipeline as the union of two pipelines 
-    -`y`: ylabel encoded if not None.
+        - `mum_pipeline`: Pipeline to process numerical features 
+        -`cat_pipeline`: pipeline to process categorical features.
+        - `full_pipeline`: Full pipeline as the union of two pipelines 
+        -`y`: ylabel encoded if not None.
     """
+    
     missing_values = kws.pop('missing_values', np.nan)
     strategy = kws.pop('strategy', 'median')
     sparse_output = kws.pop('sparse_output', True)

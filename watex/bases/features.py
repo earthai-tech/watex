@@ -50,42 +50,36 @@ class GeoFeatures:
     Borehole data(Boreh). Set all features values of differents
     investigation sites. Features class is  composed of :: 
     
-        - `erp` class  get from :class:`watex.core.erp.ERP_colection`
-        - `ves` collected from :class:`watex.core.ves.VES_collection
-        - `geol`  obtained from :class:`watex.core.geol.Geology` 
-        - `boreh ` get from :class:`watex.core.boreh.Borehole` 
-        
-    Arguments: 
-   -----------
-            *features_fn* :str , Path_like 
-                File to geoelectical  features files 
-            *ErpColObjs*: object 
-                    Collection object from `erp` survey lines. 
-            *vesObjs*: object, 
-                    Collection object from vertical electrical sounding (VES)
-                    curves. 
-            *geoObjs*: object, 
-                    Collection object from `geol` class.
-                    see :doc:`watex.core.geol.Geology`
-            *boreholeObjs*: object
-                    Collection of boreholes of all investigation sites.
-                    Refer to :doc:`watex.core.boreh.Borehole`
+    - `erp` class  get from :class:`watex.methods.erp.ERP_colection`
+    - `geol`  obtained from :class:`watex.geology.geology.Geology` 
+    - `boreh` get from :class:`watex.geology.geology.Borehole` 
     
-    :Note: 
-        Be sure to not miss any coordinates files. Indeed, 
-        each selected anomaly should have a borehole performed at 
-        that place for supervising learing. That means, each selected 
-        anomaly referenced by location coordinates and `id` on `erp` must 
-        have it own `ves`, `geol` and `boreh` data. 
-            ... 
-            
+    Arguments 
+    -----------
+    *features_fn* :str , Path_like 
+        File to geoelectical  features files.
+        
+    *ErpColObjs*: object 
+        Collection object from `erp` survey lines. 
+        
+    *vesObjs*: object, 
+        Collection object from vertical electrical sounding (VES) curves.
+        
+    *geoObjs*: object, 
+        Collection object from `geol` class. See :doc:`watex.geology.geology.Geology`.
+        
+    *boreholeObjs*: object
+        Collection of boreholes of all investigation sites.
+        Refer to :doc:`watex.geology.geology.Borehole`
+
+
     Holds on others optionals infos in ``kwargs`` arguments: 
-       
+    
     ============  ========================  ===================================
     Attributes              Type                Description  
     ============  ========================  ===================================
     df              pd.core.DataFrame       Container of all features composed 
-                                            of :attr:`~Features.featureLabels`
+                                        of :attr:`~Features.featureLabels`
     site_ids        array_like              ID of each survey locations.
     site_names      array_like              Survey locations names. 
     gFname          str                     Filename of `features_fn`.                                      
@@ -94,21 +88,26 @@ class GeoFeatures:
     geoObjs         obj                     Geology `geol` class object.
     borehObjs       obj                     Borehole `boreh` class obj.
     ============  ========================  ===================================   
-   
-    :Note: 
-        
-        For furher details about classes object , please refer to the classes 
-        documentation aforementionned.
-        
-    :Example: 
-        
-        >>> from watex.core.features import GeoFeatures 
-        >>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
-        >>> featObj =Features(features_fn= featurefn)
-        >>> featObj.site_ids
-        >>> featObj.site_names
-        >>> featObj.df
-        
+    
+         
+    Notes 
+    ------
+    Be sure to not miss any coordinates files. Indeed, each selected anomaly
+    should have a borehole performed at that place for supervising learing.
+    That means, each selected anomaly referenced by location coordinates and 
+    `id` on `erp` must have it own `ves`, `geol` and `boreh` data. For furher
+    details about classes object , please refer to the classes documentation 
+    aforementionned.
+
+    Examples
+    ---------
+    >>> from watex.bases.features import GeoFeatures 
+    >>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
+    >>> featObj =Features(features_fn= featurefn)
+    >>> featObj.site_ids
+    >>> featObj.site_names
+    >>> featObj.df
+     
     """
     
     readFeafmt ={
@@ -326,7 +325,7 @@ class GeoFeatures:
     def sanitize_fdataset(self): 
         """ Sanitize the feature dataset. Recognize the columns provided 
         by the users and resset according to the features labels disposals
-        :attr:`~Features.featureLabels`."""
+        :attr:`~.GeoFeatures.featureLabels`."""
         
         self.utm_flag =0
         OptsList, paramsList =[['bore', 'for'], 
@@ -374,6 +373,7 @@ class GeoFeatures:
             
             :return: sanitize columns
             :rtype: list 
+            
             """
             columns = [c.lower() for c in df.columns] 
             
@@ -411,7 +411,8 @@ class GeoFeatures:
         :type erp_fn: str 
         
         :return: horizontal distance im meters 
-        :rtype: np.array of all data
+        :rtype: np.array of all data.
+        
         """
         if not os.path.isfile(erp_fn):
             raise Wex.WATexError_file_handling('{} is not a file. '
@@ -480,19 +481,18 @@ class GeoFeatures:
     def controlObjId( erpObjID, boreObjID, geolObjID, vesObjsID): 
         """
         Control object id whether the each selected anomaly from `erp` matchs 
-        with its`ves` and `geol` and `borehole`
+        with its`ves` and `geol` and `borehole`.
         
-        :param erpObjID: ERP object ID. Refer to :doc`~core.erp.ERP_collection` 
+        :param erpObjID: ERP object ID. Refer to :doc`~.methods.erp.ERP_collection` 
         :type erpObjID: str 
         
-        :param boreObjID: Borehole ID.  Refer to :doc`~core.geology.Borehole`
+        :param boreObjID: Borehole ID.  Refer to :doc`~.geology.geology.Borehole`
         :type boreObjID: str 
         
-        :param boreObjID: Geology ID.  Refer to :doc`~core.geology.Geology`
-        :type boreObjID:str
+        :param boreObjID: Geology ID.  Refer to :doc:`~.geology.geology.Geology`
+        :type boreObjID: str
         
         :param vesObjsID: VES object ID. see :doc:`~core.ves.VES`
-        :param vesObjsID
         
         :return: New survey ID
         
@@ -518,9 +518,9 @@ class GeoFeatures:
     
     @writef(reason='write', from_='df')
     def exportdf (self, refout=None, to =None, savepath=None, **kwargs): 
-        """ Export dataframe from :attr:~core.geofeatures.df` to files 
+        """ Export dataframe from :attr:`~.features.GeoFeatures.df` to files 
         can be Excell sheet file or '.json' file. To get more details about 
-        the `writef` decorator , see :doc:`watex.utils.decorator.writef`. 
+        the `writef` decorator, see :doc:`watex.tools.decorators.writef`. 
         
         :param refout: 
             Output filename. If not given will be created refering to  the 
@@ -534,10 +534,10 @@ class GeoFeatures:
             will be created.
         :returns: 
             - `ndf`: new dataframe from `attr:`~.geofeatures.Features.df` 
-            - 
+     
         :Example: 
             
-            >>> from watex.core.geofeatures import Features 
+            >>> from watex.bases.features import Features 
             >>> featObj = Features(
             ...    features_fn= 'data/geo_fdata/BagoueDataset2.xlsx' )
             >>> featObj.exportdf(refout=ybro, to='csv')
@@ -569,9 +569,7 @@ class GeoFeatures:
         return ndf, self.to,  self.refout,\
             self.savepath, writeindex
         
-        
-        
- 
+
 class ID: 
     """
     Special class to manage Feature's ID. Each `erp` or `ves` or `geol` and
@@ -579,8 +577,8 @@ class ID:
     Eeach survey line is identified with its  common `ID` and point to 
     the same name.
     
-    :param _givenATTR:  Station or location name considered a 
-                    new name for attribute creating
+    :param _givenATTR:  Station or location name considered a new name for 
+        attribute creating
     :type _givenATTR: str 
     
     :param sns: Station names from `erp`, `ves` and `geol`. 
@@ -603,7 +601,8 @@ class ID:
     extracted from features dataFrame :attr:`watex.core.geofeatures.Features.df`
     
     :Note: To extract data from station location name `sns`, be sure to write 
-    the right name. If not an `AttributeError` occurs. 
+        the right name. If not an `AttributeError` occurs. 
+    
     """
     
     def __init__(self, **kwargs): 
@@ -622,16 +621,18 @@ class ID:
         given station name will be selected as a dataframe.
         
         :param givenATTR: 
-            
             Station or location name considered a new name for attribute 
-            creating:: 
-                
-                >>> from watex.core.geofeatures import Features
+            creating:
+            
+            .. code-block::
+            
+                >>> from watex.bases.features import Features
                 >>> location_name ='gbalo_l10'
                 >>> Features.gbalo
                 
         :return: As select part of DataFrame
         :rtype: pd.DataFrame 
+        
         """
         for attr, value in zip(['_givenATTR', 'df_', 'sns', 'id_cache', 'id_'], 
                              [_givenATTR, df_, sns, id_cache, id_]): 
@@ -651,19 +652,20 @@ class ID:
                     
 class FeatureInspection: 
     """ 
-    This class summarizes supervised learning methods inspection. It  
-    deals with data features categorization, when numericall values is 
-    provided standard anlysis either `qualitatif` or `quantitatives analyis`. 
+    This class summarizes supervised learning methods inspection. It deals with
+    data features categorization, when numericall values is provided standard 
+    anlysis either `qualitative` or `quantitative analyis`. 
     
-    Arguments: 
-    ---------
-        *dataf_fn*: str 
-            Path to analysis data file. 
-        *df*: pd.Core.DataFrame 
-                Dataframe of features for analysis . Must be contains of 
-                main parameters including the `target` pd.Core.series 
-                as columns of `df`. 
- 
+    Arguments 
+    -----------
+    *dataf_fn*: str 
+        Path to analysis data file. 
+        
+    *df*: pd.Core.DataFrame 
+        Dataframe of features for analysis . Must be contains of 
+        main parameters including the `target` pd.Core.series 
+        as columns of `df`. 
+     
     
     Holds on others optionals infos in ``kwargs`` arguments: 
        
@@ -679,7 +681,7 @@ class FeatureInspection:
                                             the main specific values to convert 
                                             numerical value to categorial trends.
     slmethod        str                     Supervised learning method name.The 
-                                            methods  can be:: 
+                                            methods  can be: 
                                             - Support Vector Machines ``svm``                                      
                                             - Kneighbors: ``knn` 
                                             - Decision Tree: ``dtc``. 
@@ -695,16 +697,15 @@ class FeatureInspection:
                                             :class:`~features.GeoFeatures`,the
                                             default `drop_columns` refer to 
                                             coordinates positions as : 
-                                                ['east', 'north']
+                                                ['east', 'north'].
     fn              str                     Data  extension file.                                        
     ============  ========================  ===================================   
     
     :Example:
-        
-        >>> from watex.analysis.basics import SLAnalyses
-        >>> slObj =SLAnalyses(data_fn =' data/geo_fdata/BagoueDataset2.xlsx')
+        >>> from watex.analysis.bases.features import FeatureInspection
+        >>> slObj =FeatureInspection(data_fn =' data/geo_fdata/BagoueDataset2.xlsx')
         >>> sObj.df 
-        >>> sObj.
+ 
     """
     
     def __init__(self, df =None , data_fn =None , **kws): 
@@ -865,7 +866,7 @@ class FeatureInspection:
                                 col_name: str =None, **kwargs): 
         """
         Main goals of this method is to classify the different flow classes
-         into four(04) considered as default values according to::
+        into four(04) considered as default values according to:
             
             CIEH. (2001). L’utilisation des méthodes géophysiques pour
             la recherche d’eaux dans les aquifères discontinus. 
@@ -902,8 +903,8 @@ class FeatureInspection:
             
         :Example:
             
-            >>> from watex.analysis.basics import SLAnalyses
-            >>> slObj = SLAnalyses(
+            >>> from watex.analysis.bases.features import FeatureInspection
+            >>> slObj = FeatureInspection(
             ...    data_fn='data/geo_fdata/BagoueDataset2.xlsx',
             ...    set_index =True)
             >>> slObj._df
@@ -986,7 +987,7 @@ class FeatureInspection:
               savepath:str =None, modname:str ='_anEX_',
               reset_index:bool =False): 
         """
-        Write analysis `df`. 
+        Write the analysis `df`. 
         
         Refer to :doc:`watex.__init__.exportdf` for more details about 
         the reference arguments ``refout``, ``to``, ``savepath``, ``modename``
@@ -994,8 +995,8 @@ class FeatureInspection:
         
         :Example: 
             
-            >>> from watex.analysis.slfeatures import SLAnalyses 
-            >>> slObj =SLAnalyses(
+            >>> from watex.analysis.bases.features import FeatureInspection
+            >>> slObj =FeatureInspection(
             ...   data_fn='data/geo_fdata/BagoueDataset2.xlsx',
             ...   set_index =True)
             >>> slObj.writedf()

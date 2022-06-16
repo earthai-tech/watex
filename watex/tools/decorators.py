@@ -5,8 +5,6 @@
 
 from __future__ import print_function 
 
-__docformat__='restructuredtext'
-
 import functools
 import inspect
 import os
@@ -23,24 +21,65 @@ from ..typing import (
     Optional,
     Callable ,
     T
-
 )
 from ._watexlog import watexlog
+
 _logger = watexlog.get_watex_logger(__name__)
 
+__docformat__='restructuredtext'
+
+class refAppender (object): 
+    """ Append the module docstring with reStructured Text references. 
+    
+    Indeed, when a `func` is decorated, it will add the reStructured Text 
+    references as an appender to its reference docstring. So, sphinx is 
+    can auto-retrieve some replacing values found inline  from the 
+    :doc:`watex.documentation`. 
+    
+    .. |VES| replace: Vertical Electrical Sounding 
+    .. |ERP| replace: Electrical Resistivity Profiling 
+    
+    Parameters
+    ----------
+    docref: str 
+        Reference of of the documentation for appending.
+    
+    Examples
+    ---------
+    >>> from watex.documentation import __doc__ 
+    >>> from watex.tools import decorators
+    >>> def donothing (): 
+            ''' Im here to just replace the `|VES|` and `|RES|` values by their
+            real meanings.'''
+            pass 
+    >>> decorated_donothing = decorators.refAppender(__doc__)(donothing) 
+    >>> decorated_donothing.__doc__ 
+    ... #new doctring appended and `|VES|` and `|ERP|` are replaced by 
+    ... #Vertical Electrical Sounding and Electrical resistivity profiling 
+    ... #during compilation in ReadTheDocs.
+ 
+    """
+    
+    def __init__(self, docref= None ): 
+        self.docref = docref 
+
+    def __call__(self, cls_or_func): 
+        return self.nfunc (cls_or_func)
+    def nfunc (self, f):
+        f.__doc__ += "\n" + self.docref or '' 
+        setattr(f , '__doc__', f.__doc__)
+        return  f 
+  
+    
 
 class deprecated(object):
     """
-        Description:
-            used to mark functions, methods and classes deprecated, and prints 
-            warning message when it called
-            decorators based on https://stackoverflow.com/a/40301488
+    Used to mark functions, methods and classes deprecated, and prints 
+    warning message when it called
+    decorators based on https://stackoverflow.com/a/40301488 .
 
-        Usage:
-            todo: write usage
-
-        Author: YingzhiGou
-        Date: 20/06/2017
+    Author: YingzhiGou
+    Date: 20/06/2017
     """
     def __init__(self, reason):  # pragma: no cover
         if inspect.isclass(reason) or inspect.isfunction(reason):
@@ -104,6 +143,7 @@ class gdal_data_check(object):
         If failed to find the data file, then ImportError will be raised.
 
         :param func: function to be decorated
+        
         """
   
         self._func = func
@@ -182,21 +222,16 @@ class gdal_data_check(object):
                 return False
 
 class redirect_cls_or_func(object) :
-    """
-        Description:
-            used to redirected functions or classes. Deprecated functions 
-            or class can call others use functions or classes.
-            
-        Usage:
-            .. todo:: use new function or class to replace old function 
-                method or class with multiple parameters.
+    """Used to redirected functions or classes. Deprecated functions  or class 
+    can call others use functions or classes.
+    
+    Use new function or class to replace old function method or class with 
+    multiple parameters.
 
-        Author: @Daniel03
-        Date: 18/10/2020
+    Author: @Daniel03
+    Date: 18/10/2020
+    
     """
-    
-    
-    
     def __init__(self, *args, **kwargs) :
         """
         self.new_func_or_cls is just a message of deprecating 
@@ -269,40 +304,34 @@ class redirect_cls_or_func(object) :
 
 class writef(object): 
     """
-    .. Description::
-            used to redirected functions or classes. Deprecated functions 
-            or class can call others use functions or classes.
-            
-    .. todo:: Decorate function or class to replace old function 
-        method or class with multiple parameters and export files
-        into many other format. `.xlsx` , `.csv` or regular format.
-
-        Author: @Daniel03
-        Date: 09/07/2021
-        
-    Decorator mainly focus to export data to other files. Exported file 
-    can `regular` file or excel sheets. 
-    
+    Used to redirected functions or classes. Deprecated functions  or class can
+    call others use functions or classes.
+             
+    Decorate function or class to replace old function method or class with 
+    multiple parameters and export files into many other format. `.xlsx` ,
+    `.csv` or regular format. Decorator mainly focus to export data to other
+    files. Exported file can `regular` file or excel sheets. 
     
     :param reason: 
         Explain the "What to do?". Can be `write` or `convert`.
         
     :param from_: 
-        
-         Can be ``df`` or ``regular``. If ``df``, `func` is called and collect 
-         its input argguments and write to appropriate extension. If `from_`is 
-         ``regular``, Can be a simple data put on list of string ready 
-         to output file into other format. 
-         
+        Can be ``df`` or ``regular``. If ``df``, `func` is called and collect 
+        its input argguments and write to appropriate extension. If `from_`is 
+        ``regular``, Can be a simple data put on list of string ready 
+        to output file into other format. 
     :type from_: str ``df`` or ``regular`` 
     
     :param to_: 
-            Exported file extension. Can be excel sheeet (`.xlsx`, `csv`)
-            or other kind of format. 
-                
+        Exported file extension. Can be excel sheeet (`.xlsx`, `csv`)
+        or other kind of format. 
+            
     :param savepath: 
-        Give the path to save the new file written. 
-    
+        Give the path to save the new file written.
+        
+    Author: @Daniel03
+    Date: 09/07/2021
+        
     """
     
     def __init__(self, reason:Optional[str]=None,  from_:Optional[str]=None,
@@ -523,16 +552,15 @@ class visualize_valearn_curve :
     Decorator to visualize the validation curve and learning curve 
     Once called, will  quick plot the `validation curve`.
             
-    .. todo:: Quick plot the validation curve 
+    Quick plot the validation curve 
         
     :param reason: what_going_there? validation cure or learning curve.
-                    - ``val`` for validation curve 
-                    -``learn`` for learning curve 
+        - ``val`` for validation curve 
+        -``learn`` for learning curve 
     :param turn:  Continue the plotting or switch off the plot and return 
-                the function. default is `off` else `on`.
+        the function. default is `off` else `on`.
     :param kwargs: 
-        Could be the keywords arguments for `matplotlib.pyplot`
-        library:: 
+        Could be the keywords arguments for `matplotlib.pyplot` library:: 
             
             train_kws={c:'r', s:10, marker:'s', alpha :0.5}
             val_kws= {c:'blue', s:10, marker:'h', alpha :1}
@@ -703,15 +731,13 @@ class visualize_valearn_curve :
     
 class predPlot: 
     """ 
-    Description:
-             Decorator to plot the prediction  
-             Once called, will  quick plot the `prediction`
-    Usage:
-        .. todo:: Quick plot the prediction model. Can be customize using the 
-                    multiples keywargs arguments.
-        
+    Decorator to plot the prediction.
+     
+    Once called, will  quick plot the `prediction`. Quick plot the prediction 
+    model. Can be customize using the multiples keywargs arguments.
+         
     :param turn:  Continue the plotting or switch off the plot and return 
-                the function. default is `off` else `on`.
+        the function. default is `off` else `on`.
     :param kws: 
         Could be the keywords arguments for `matplotlib.pyplot`
         library 
@@ -783,12 +809,11 @@ class predPlot:
 
 class PFI: 
     """ 
-    Description:
-             Decorator to plot Permutation future importance.
-             Can also plot dendrogram figure by setting `reason` to 'dendro`. 
-    Usage:
-        .. todo:: Quick plot the permutation  importance diagram. 
-            Can be customize using the multiples keywargs arguments.
+    Decorator to plot Permutation future importance. 
+    
+    Can also plot dendrogram figure by setting `reason` to 'dendro`.  Quick 
+    plot the permutation  importance diagram. Can be customize using the 
+    multiples keywargs arguments.
                     
     :param reason: what_going_there? validation curve or learning curve.
                     - ``pfi`` for permutation feature importance before
@@ -798,18 +823,20 @@ class PFI:
                 the function. default is `off` else `on`.
     :param kws: 
         Could be the keywords arguments for `matplotlib.pyplot`
-        library 
+        library.
+        
     :param barh_kws: matplotlib.pyplot.barh keywords arguments. 
         Refer to https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.barh.html
-    :param box_kws: matplotlib.pyplot.boxplot keyword arguments; 
-        Refer to :ref:`<https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.boxplot.html>`
+        
+    :param box_kws: :ref:`plt.boxplot` keyword arguments.
+        Refer to <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.boxplot.html>` 
     :param dendro_kws: scipy.cluster.hierarchy.dendrogram diagram 
     
-        see :ref:`<https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.dendrogram.html>`
+    .. see also:: `<https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.dendrogram.html>`
     
     Author: @Daniel03
     Date: 23/07/2021
-    
+
     """
     def __init__(self, reason ='pfi', turn ='off', **kwargs): 
         self._logging=watexlog().get_watex_logger(self.__class__.__name__)
@@ -919,14 +946,14 @@ class catmapflow2:
     """
     Decorator function  collected  from the `func`the `target_values` to be 
     categorized and the `cat_range_values` to change 
-    into `cat_classes` like:: 
+    into `cat_classes` like::
           
           cat_range_values= [0.0, [0.0, 3.0], [3.0, 6.0], [6.0, 10.0], 10.0]
           target_values =[1, 2., 3., 6., 7., 9., 15., 25, ...]
           
     Decorated Fonction returns the  new function decorated holding  
     values  categorized into categorial `cat_classes`.
-    For instance in groundwater exploration::
+    For instance in groundwater exploration:
         
         - FR0 --> `flow` is equal to ``0.``m3/h
         - FR1 --> `flow` is ``0 < FR ≤ 3`` m3/h
@@ -935,7 +962,7 @@ class catmapflow2:
         - FR4 --> `flow` is ``10.+`` in m3/h
 
     :return: Iterable object with new categorized values converted 
-    into `cat_classes`. 
+        into `cat_classes`. 
     
     Author: @Daniel03
     Date: 13/07/2021
@@ -1062,14 +1089,14 @@ class docstring:
             ...
             
     `predPlot` class class will holds new doctring with writedf.__doc__ 
-    appended from ``param reason`` to `param to_` 
+    appended from `param reason` to `param to_` 
             
     Examples
     --------
-        >>> from watex.tools.decorators import docstring 
-        >>> from watex.tools.decorators import writedf 
-        >>> from watex.tools.decorators import predPlot
-        >>> predPlot.__doc__
+    >>> from watex.tools.decorators import docstring 
+    >>> from watex.tools.decorators import writedf 
+    >>> from watex.tools.decorators import predPlot
+    >>> predPlot.__doc__
     
     Author: @Daniel03
     Date: 18/09/2021

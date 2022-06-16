@@ -48,65 +48,61 @@ class BaseModel:
     `{transformers +estimators}` so to have a great capability 
     of data generalization. 
     
-    Arguments: 
-    ---------
-        *dataf_fn*: str 
-            Path to analysis data file. 
-        *df*: pd.Core.DataFrame 
-                Dataframe of features for analysis . Must be contains of 
-                main parameters including the `target` pd.Core.series 
-                as columns of `df`. 
+    Arguments 
+    ----------
+    *dataf_fn*: str 
+        Path to analysis data file. 
+    *df*: pd.Core.DataFrame 
+        Dataframe of features for analysis . Must be contains of 
+        main parameters including the target name of pd.Core.series 
+        of columns of `df`. 
 
     Holds on others optionals infos in ``kwargs`` arguments: 
 
-    ====================  ============  =======================================
+    =================   ============    =======================================
     Attributes              Type        Description  
-    ====================  ============  =======================================
-    auto                    bool        Trigger the composite estimator.
+    =================   ============    =======================================
+    auto                 bool           Trigger the composite estimator.
                                         If ``True`` a SVC-composite estimator 
                                         `preprocessor` is given. 
                                         *default* is False.
-    pipelines               dict        Collect your own pipeline for model 
+    pipelines            dict           Collect your own pipeline for model 
                                         preprocessor trigging.
                                         it should be find automatically.           
-    estimators              Callable    A given estimator. If ``None``, `SVM`
+    estimators           Callable       A given estimator. If ``None``, `SVM`
                                         is auto-selected as default estimator.
-    model_score             float/dict  Model test score. Observe your test 
+    model_score          float/dict     Model test score. Observe your test 
                                         model score using your compose estimator 
                                         for enhancement or your own pipelines. 
-    model_prediction        array_like  Observe your test model prediction for 
+    model_prediction     array_like     Observe your test model prediction for 
                                         as well as the compose estimator 
                                         enhancement.
-    processor               Callable    Compose piplenes and estimators for 
+    processor            Callable       Compose piplenes and estimators for 
                                         default model scorage.
-    best_params_            dict        collect the best parameters after tuning 
-                                        the hyper-parameters
-    best_score_             float       The model best score after tuning 
-                                        implemeting the model `best_params_`.
-    ====================  ============  =======================================  
+    =================   ============    =======================================  
      
-    :Example: 
-        
-        >>> from watex.bases.modeling import BaseModel
-        >>> from sklearn.preprocessing import RobustScaler,  PolynomialFeatures 
-        >>> from sklearn.feature_selection import SelectKBest, f_classif 
-        >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from sklearn.compose import make_column_selector 
-        >>> estimator2= RandomForestClassifier()
-        >>> modelObj = BaseModel(
-        ...     data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
-        ...     pipelines = {
-        ...            'num_column_selector_': make_column_selector(
-        ...                dtype_include=np.number),
-        ...            'cat_column_selector_': make_column_selector(
-        ...                dtype_exclude=np.number),
-        ...            'features_engineering_':PolynomialFeatures(
-        ...                2, include_bias=False),
-        ...            'selectors_': SelectKBest(f_classif, k=2), 
-        ...            'encodages_': RobustScaler()
-        ...              }, 
-        ...     estimator = RandomForestClassifier()
-        ...        )
+    Examples
+    --------
+    >>> from watex.bases.modeling import BaseModel
+    >>> from sklearn.preprocessing import RobustScaler,  PolynomialFeatures 
+    >>> from sklearn.feature_selection import SelectKBest, f_classif 
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> from sklearn.compose import make_column_selector 
+    >>> estimator2= RandomForestClassifier()
+    >>> modelObj = BaseModel(
+    ...     data_fn ='data/geo_fdata/BagoueDataset2.xlsx',
+    ...     pipelines = {
+    ...            'num_column_selector_': make_column_selector(
+    ...                dtype_include=np.number),
+    ...            'cat_column_selector_': make_column_selector(
+    ...                dtype_exclude=np.number),
+    ...            'features_engineering_':PolynomialFeatures(
+    ...                2, include_bias=False),
+    ...            'selectors_': SelectKBest(f_classif, k=2), 
+    ...            'encodages_': RobustScaler()
+    ...              }, 
+    ...     estimator = RandomForestClassifier()
+    ...        )
     """
     def __init__(self, data_fn =None, df=None , **kwargs)->None: 
         self._logging = watexlog().get_watex_logger(self.__class__.__name__)
@@ -291,12 +287,17 @@ class BaseModel:
                   'linestyle':'-', 'label':'Validation set'}, 
         xlabel={'xlabel':'Training set '},
         ylabel={'ylabel':'performance on the validation set '})
-    def get_learning_curve (self, estimator:Callable[..., T]=None, X_train=None, 
-                         y_train=None, learning_curve_kws:Generic[T]=None,
-                         **kws)-> Iterable[T]: 
+    
+    def get_learning_curve (self, 
+                            estimator:Callable[..., T]=None,
+                            X_train=None, 
+                             y_train=None,
+                             learning_curve_kws:Generic[T]=None,
+                             **kws
+                             )-> Iterable[T]: 
         """ Compute the train score and validation curve to visualize 
         your learning curve. 
-  
+          
         :param estimator: The creating model. If ``None`` 
         :param X_train: pd.core.frame.DataFrame  of selected trainset
         :param x_test:  pd.DataFrame of  selected Data for testset 
@@ -311,22 +312,21 @@ class BaseModel:
                              "param_range": np.arange(1,210,10), 
                              "cv":4}
         :returns: 
-            
-            - `train_score`: float|dict of trainset score 
-            - `val_score` : float/dict of valisation score 
-            - `switch`: Turn ``on`` or ``off`` the learning curve of 
-                    validation curve.
-            -`trigDec`: Trigger the decorator 
+            - `train_score`: float|dict of trainset score. 
+            - `val_score` : float/dict of valisation score. 
+            - `switch`: Turn ``on`` or ``off`` the learning curve of validation
+                curve.
+            -`trigDec`: Trigger the decorator. 
             - `N`: number of param range for plotting.
             
         :Example:
-            
-            >>> from watex.modeling.basics import SLModeling
-            >>> processObj = SLModeling(
+            >>> from watex.bases.modeling import BaseModel
+            >>> processObj = BaseModel(
                 data_fn = 'data/geo_fdata/BagoueDataset2.xlsx')
             >>> processObj.get_learning_curve (
                 switch_plot='on', preprocessor=True)
         """
+        
         def compute_validation_curve(model, X_train, y_train, **param_kws):
             """ Compute learning curve and plot 
             errors with training set size"""
@@ -409,7 +409,6 @@ class BaseModel:
         :param grid_kws:dict of other gridSearch parameters
         
         :Example: 
-            
             >>> from watex.modeling.basics import SLModeling 
             >>> from sklearn.preprocessing import RobustScaler,PolynomialFeatures 
             >>> from sklearn.feature_selection import SelectKBest, f_classif 
@@ -605,15 +604,17 @@ class BaseModel:
         
         Permutation feature importance is a model inspection technique that
         can be used for any fitted estimator when the data is tabular.
-        This is especially useful for non-linear or opaque estimators.
-        
-        Refer to :ref:`<https://scikit-learn.org/stable/modules/permutation_importance.html>`
+        This is especially useful for non-linear or opaque estimators. Refer to
+        :ref:`this link <https://scikit-learn.org/stable/modules/permutation_importance.html>`_
         for more details. 
         
         :param estimator: The estimator to evaluate the importance of
-                      features. The default is `RandomForestClassifier`
-        :param X_train: pd.core.frame.DataFrame  of selected trainset
-        :param y_train: array_like of selected data for evaluation set.        
+            features. The default is ``RandomForestClassifier``.
+                      
+        :param X_train: pd.core.frame.DataFrame  of selected trainset.
+        
+        :param y_train: array_like of selected data for evaluation set.  
+        
         :param n_estimators: 
             Number of estimator composed the tree. The *default* is 100 
         :param n_repeats: Number of tree shuffling. The *default* is 10.
@@ -621,22 +622,25 @@ class BaseModel:
         :param pfi_kws: 
             `permution_importance` callable additional keywords arguments. 
         :param pfi_stype: Type of plot. Can be : 
-                    - ``pfi`` for permutation feature importance before
-                        and after shuffling trees  
-                    -``dendro`` for dendrogram plot . 
-                    The *default* is `pfi`
-        :param switch: Turn `on` or `off` the decorator.
+            - ``pfi`` for permutation feature importance before
+                and after shuffling trees  
+            -``dendro`` for dendrogram plot . 
+            The *default* is `pfi`.
+            
+        :param switch: Turn ``on`` or ``off`` the decorator.
             
         :Example:
             
-            >>> from watex.modeling.basics import SLModeling
+            >>> from watex.bases.modeling import BaseModel
             >>> from sklearn.ensemble import AdaBoostClassifier
-            >>> modelObj = SLModeling()
+            >>> modelObj = BaseModel()
             >>> modelObj.permutation_feature_importance(
             ...    estimator = AdaBoostClassifier(random_state=7),
             ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx',  
             ...     switch ='on', pfi_style='pfi')
+            
         """
+        
         savefig:Optional[T] =kws.pop('savefig', None)
         random_state:Optional[T] = kws.pop('random_state', None)
         n_estimators: int = kws.pop('n_estimators', 100)
