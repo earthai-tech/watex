@@ -811,19 +811,18 @@ class MLPlots:
                     method="decision_function",
                     cross_val_pred_kws =None,
                     **roc_kws):
-        """ Plot receiving operating characteric(ROC) classifiers. 
-        
-        To plot multiples classifiers, provide a list of classifiers. 
+        """
+        Plot receiving operating characteric (ROC) classifiers. 
         
         Parameters 
         -----------
-        clf: callable
-            classifier or estimators. To use multiple classifier 
-            set a list of classifer with their specific mmethods. 
-            For instance::
+        clf: list of objects, callable,
+            Classifier or estimators. To use multiple classifiers set a list
+            of classifer with their specific mmethods. For instance 
+            instance::
                 
                 [('SDG', SGDClassifier,"decision_function" ), 
-                 ('FOREST',RandomForestClassifier,"predict_proba")]
+                 ('FOREST', RandomForestClassifier,"predict_proba")]
                 
         X: ndarray (nsamples, nfeatures), 
             Training data (trainset) composed of n-features.
@@ -844,13 +843,14 @@ class MLPlots:
             
         method: str
             Method to get scores from each instance in the trainset. 
-            Ciuld be ``decison_funcion`` or ``predict_proba`` so 
+            Could be ``decison_funcion`` or ``predict_proba`` so 
             Scikit-Learn classifuier generally have one of the method. 
             Default is ``decision_function``.
             
         roc_kws: dict 
-            roc_curve additional keywords arguments
+            roc_curve additional keywords arguments.
             
+
         Examples 
         --------
         >>> from sklearn.linear_model import SGDClassifier
@@ -864,13 +864,8 @@ class MLPlots:
         >>> clfs =[('sgd', sgd_clf, "decision_function" ), 
          ...      ('forest', forest_clf, "predict_proba")]
         >>> mlObj.ROC_curve_(clf = clfs,  X= X_prepared, 
-        ...                      y = y_prepared, classe_=1, cv=3,)
-        
-        See also
-        --------
-        `ROC_curve` deals with optional and positionals arguments 
-        of :method:`~.watex.tools.metrics.Metrics.precision_recall_tradeoff`.
-            
+        ...                      y = y_prepared, classe_=1, cv=3)
+ 
         """
         
         # if method not given as tuple
