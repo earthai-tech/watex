@@ -33,7 +33,7 @@ from ..typing import (
     )
 
 # from ..analysis import categorize_flow
-from ..tools._watexlog import watexlog
+from .._watexlog import watexlog
 from .transformers import (
     DataFrameSelector,
     CombinedAttributesAdder, 

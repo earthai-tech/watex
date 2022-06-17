@@ -18,7 +18,7 @@ import pandas as pd
 # import matplotlib.pyplot as plt 
 from pandas.plotting import scatter_matrix 
 
-from .._sklearn import ( 
+from ..sklearn import ( 
     Pipeline,
     FeatureUnion,  
     StandardScaler, 

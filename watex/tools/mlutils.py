@@ -19,6 +19,7 @@ from six.moves import urllib
 import numpy as np 
 import pandas as pd 
 
+from .._watexlog import watexlog
 from ..sklearn import ( 
     train_test_split , 
     StratifiedShuffleSplit, 
@@ -42,13 +43,12 @@ from ..typing import (
     DataFrame, 
     Sub                 
 )
+from ..exceptions import ( 
+    ParameterNumberError  
+)
 from .funcutils import ( 
     savepath_, 
     smart_format
-)
-from ._watexlog import watexlog
-from ..exceptions import ( 
-    ParameterNumberError  
 )
 
 __logger = watexlog().get_watex_logger(__name__)

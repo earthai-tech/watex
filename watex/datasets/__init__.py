@@ -5,7 +5,7 @@
 import warnings
 
 from ..property  import BagoueNotes
-from ..tools._watexlog import watexlog
+from .._watexlog import watexlog
 from ..tools.mlutils import  ( 
     loadDumpedOrSerializedData, 
     format_generic_obj, 

@@ -31,7 +31,7 @@ from ..typing import (
 from ..tools.funcutils import (
     savepath_,
 )
-from ..tools.decorators import  (
+from ..decorators import  (
     writef,
     refAppender
     ) 
@@ -43,7 +43,7 @@ from ..tools.mlutils import (
     fetchSingleTGZData, 
     subprocess_module_installation
     )
-from ..tools._watexlog import watexlog
+from .._watexlog import  watexlog
 
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -77,7 +77,6 @@ class WATer (ABCMeta):
     @abstractmethod 
     def __init__(self, *args, **kwargs): 
         pass 
-
 
 def fetch_model(
         modelfile: str,

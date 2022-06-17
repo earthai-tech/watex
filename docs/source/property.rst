@@ -33,3 +33,17 @@ Package Properties
 .. automodule:: watex.documentation
     :members:
 
+
+**Module Decorators**
+=====================
+.. automodule:: watex.decorators
+	:members:
+	
+	
+**Module Logger**
+=====================
+.. automodule:: watex._watexlog
+	:members:
+	
+	
+	

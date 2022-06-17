@@ -14,8 +14,10 @@ import scipy.integrate as integrate
 from scipy.optimize import curve_fit
 import numpy as np
 import pandas as pd 
-import  matplotlib.pyplot as plt 
-
+import  matplotlib.pyplot as plt
+ 
+from .._watexlog import watexlog
+from ..decorators import deprecated
 from .. import exceptions as Wex 
 from ..property import P
 from ..typing import (
@@ -35,7 +37,6 @@ from ..typing import (
     DataFrame,
 )
 
-from ._watexlog import watexlog
 from .funcutils import (
     _assert_all_types, 
     drawn_boundaries, 
@@ -45,7 +46,6 @@ from .funcutils import (
     smart_format,
                          
 )
-from .decorators import deprecated 
 
 _logger =watexlog.get_watex_logger(__name__)
 

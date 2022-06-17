@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema 
 
-from ..tools._watexlog import watexlog 
+from .._watexlog import watexlog 
 import  watex.exceptions as Wex
 import  watex.tools.exmath as wMath 
 import watex.tools.funcutils as func

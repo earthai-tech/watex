@@ -21,7 +21,7 @@ from .exmath import (
     vesDataOperator, 
     scalePosition,
     )
-from .decorators import gdal_data_check
+from ..decorators import gdal_data_check
 
 HAS_GDAL = gdal_data_check(None)._gdal_data_found
 NEW_GDAL = False
