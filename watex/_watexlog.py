@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ===============================================================================
 
-.. synopsis_:: watex.utils._watexlog
+.. synopsis_:: watex._watexlog
             Module to deal with exceptions from all the whole scripts 
             
 Created on Tue May 18 12:53:48 2021

@@ -13,6 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
  
 from ..documentation import __doc__ 
+from ..decorators import  refAppender 
 from ..property import P 
 from ..typing import (
     Any, 
@@ -47,7 +48,7 @@ from .gistools import (
     project_point_ll2utm, 
     project_point_utm2ll 
     )
-from .decorators import refAppender 
+ 
 # coreutils.__doc__= refAppender(__doc__)(coreutils)
 def _is_readable (
         f:str, 

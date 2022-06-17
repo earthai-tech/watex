@@ -18,10 +18,10 @@ import  matplotlib.pyplot  as plt
 
 from ..typing import ( 
     Generic,
-    TypeVar, 
-    Iterable
+    V, 
+    Array, 
     )
-from ..tools._watexlog import watexlog
+from .._watexlog import watexlog
 from ..tools.funcutils import categorize_flow 
 from ..tools.metrics import (
     precision_recall_tradeoff, 
@@ -30,10 +30,9 @@ from ..tools.metrics import (
     ) 
 from ..analysis.dimensionality import Reducers
 import watex.exceptions as Wex
-import watex.tools.decorators as deco
-T=TypeVar('T')
-V=TypeVar('V', list, tuple, dict)
-Array =  Iterable[float]
+import watex.decorators as deco
+
+
 _logger=watexlog.get_watex_logger(__name__)
 
 

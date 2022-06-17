@@ -197,6 +197,8 @@ to let the user aware when meeting such argument in a callable function.
 """
 
 T = TypeVar('T')
+V = TypeVar('V')
+K = TypeVar('K')
 M =TypeVar ('M', bound= int ) 
 N= TypeVar('N',  bound =int )
 U= TypeVar('U')
