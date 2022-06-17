@@ -24,7 +24,7 @@ from ..sklearn import (
 )
 
 # import watex.utils.exceptions as Wex 
-from ..tools._watexlog import watexlog 
+from .._watexlog import watexlog 
 from ..tools.funcutils import categorize_flow 
 import  watex.tools.mlutils as mlfunc
 

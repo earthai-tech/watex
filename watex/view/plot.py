@@ -16,7 +16,7 @@ import pandas as pd
 import seaborn as sns 
 
 from ..bases import FeatureInspection
-from ..tools._watexlog import watexlog
+from .._watexlog import watexlog
 import watex.exceptions as Wex
 from ..tools.mlutils import (
     cfexist , 

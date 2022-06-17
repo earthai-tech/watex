@@ -34,8 +34,7 @@ from ..tools.exmath import (
     ohmicArea, 
     invertVES,
     )
-from ..tools.decorators import refAppender 
-
+from ..decorators import refAppender 
 from ..typing import  ( 
     List, 
     Optional, 
@@ -44,124 +43,16 @@ from ..typing import  (
     DataFrame, 
 
     )
-from ..property import assert_arrangement 
-from ..tools._watexlog import watexlog 
+from ..property import( 
+    ElectricalMethods
+    ) 
+from .._watexlog import watexlog 
 from ..exceptions import (
     FitError, 
     VESError
     )
 
-class ElectricalMethods : 
-    """ Base class of geophysical electrical methods 
 
-    The electrical geophysical methods are used to determine the electrical
-    resistivity of the earth's subsurface. Thus, electrical methods are 
-    employed for those applications in which a knowledge of resistivity 
-    or the resistivity distribution will solve or shed light on the problem 
-    at hand. The resolution, depth, and areal extent of investigation are 
-    functions of the particular electrical method employed. Once resistivity 
-    data have been acquired, the resistivity distribution of the subsurface 
-    can be interpreted in terms of soil characteristics and/or rock type and 
-    geological structure. Resistivity data are usually integrated with other 
-    geophysical results and with surface and subsurface geological data to 
-    arrive at an interpretation.
-    get more infos by consulting https://wiki.aapg.org/Electrical_methods 
-    
-    
-    The :class:`watex.methods.electrical.ElectricalMethods` compose the base 
-    class of all the geophysical methods that images the underground using 
-    the resistivity values. 
-    
-    Holds on others optionals infos in ``kws`` arguments: 
-       
-    ======================  ==============  ===================================
-    Attributes              Type                Description  
-    ======================  ==============  ===================================
-    AB                      float, array    Distance of the current electrodes
-                                            in meters. `A` and `B` are used 
-                                            as the first and second current 
-                                            electrodes by convention. Note that
-                                            `AB` is considered as an array of
-                                            depth measurement when using the
-                                            vertical electrical sounding |VES|
-                                            method i.e. AB/2 half-space. Default
-                                            is ``200``meters. 
-    MN                      float, array    Distance of the current electrodes 
-                                            in meters. `M` and `N` are used as
-                                            the first and second potential 
-                                            electrodes by convention. Note that
-                                            `MN` is considered as an array of
-                                            potential electrode spacing when 
-                                            using the collecting data using the 
-                                            vertical electrical sounding |VES|
-                                            method i.e MN/2 halfspace. Default 
-                                            is ``20.``meters. 
-    arrangement             str             Type of dipoles `AB` and `MN`
-                                            arrangememts. Can be *schlumberger*
-                                            *Wenner-alpha /wenner beta*,
-                                            *Gradient rectangular* or *dipole-
-                                            dipole*. Default is *schlumberger*.
-    area                    str             The name of the survey location or
-                                            the exploration area. 
-    fromlog10               bool            Set to ``True`` if the given 
-                                            resistivities values are collected 
-                                            on base 10 logarithm.
-    utm_zone                str             string (##N or ##S). utm zone in 
-                                            the form of number and North or South
-                                            hemisphere, 10S or 03N. 
-    datum                   str             well known datum ex. WGS84, NAD27,
-                                            etc.         
-    projection              str             projected point in lat and lon in 
-                                            Datum `latlon`, as decimal degrees 
-                                            or 'UTM'. 
-    epsg                    int             epsg number defining projection (see 
-                                            http://spatialreference.org/ref/ 
-                                            for moreinfo). Overrides utm_zone
-                                            if both are provided.                           
-    ======================  ==============  ===================================
-               
-    
-    Notes
-    -------
-    The  `ElectricalMethods` consider the given resistivity values as 
-    a normal values and not on base 10 logarithm. So if log10 values 
-    are given, set the argument `fromlog10` value to ``True``.
-    
-    .. |VES| replace: Vertical Electrical Sounding 
-    
-    """
-    
-    def __init__(self, 
-                AB: float = 200. , 
-                MN: float = 20.,
-                arrangement: str  = 'schlumberger', 
-                area : str = None, 
-                projection: str ='UTM', 
-                datum: str ='WGS84', 
-                epsg: int =None, 
-                utm_zone: str = None,  
-                fromlog10:bool =False, 
-                verbose: int = 0, 
-                ) -> None:
-        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.AB=AB 
-        self.MN=MN 
-        self.arrangememt=assert_arrangement(arrangement) 
-        self.utm_zone=utm_zone 
-        self.projection=projection 
-        self.datum=datum
-        self.epsg=epsg 
-        self.area=area 
-        self.fromlog10=fromlog10 
-        self.verbose=verbose 
-        
-      
-    def __repr__(self):
-        """ Pretty format for programmer following the API... """
-        
-        return repr_callable_obj  (self)
-           
-   
 @refAppender(__doc__)
 class ResistivityProfiling(ElectricalMethods): 
     """ Class deals with the Electrical Resistivity Profiling (ERP).
@@ -222,6 +113,7 @@ class ResistivityProfiling(ElectricalMethods):
                   **kws): 
         super().__init__(**kws) 
         
+        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         self.dipole=dipole
         self.station=station
         self.auto=auto 
@@ -618,6 +510,7 @@ class VerticalSounding (ElectricalMethods):
                  **kws) -> None : 
         super().__init__(**kws) 
         
+        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         self.fromS=fromS 
         self.vesorder=vesorder 
         self.typeofop=typeofop

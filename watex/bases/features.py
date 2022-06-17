@@ -26,10 +26,10 @@ from .basis import  (
     exportdf, 
     ) 
 
-from ..tools.decorators import writef 
+from ..decorators import writef 
 import  watex.exceptions as Wex
 import watex.tools.gistools as gisf 
-from watex.tools._watexlog import watexlog 
+from watex._watexlog import watexlog 
 
 _logger =watexlog().get_watex_logger(__name__)
 

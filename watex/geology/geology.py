@@ -14,7 +14,7 @@ from ..typing import (
     Tuple,
     Callable 
 )
-from ..tools._watexlog import watexlog  
+from .._watexlog import watexlog  
 import watex.exceptions as Wex
 
 _logger =watexlog().get_watex_logger(__name__)

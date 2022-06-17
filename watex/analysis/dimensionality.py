@@ -34,8 +34,8 @@ from ..typing import (
     Series, 
     Sub
     )
-from ..tools.decorators import docstring
-from ..tools._watexlog import watexlog
+from ..decorators import docstring
+from .._watexlog import watexlog
 from ..modeling.validation import GridSearch
 from ..bases.transformers import (
     DataFrameSelector,

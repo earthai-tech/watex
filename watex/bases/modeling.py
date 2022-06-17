@@ -32,9 +32,9 @@ from ..sklearn import (
     )
 from .processing import Processing 
 from ..tools.mlutils import formatModelScore 
-from ..tools._watexlog import watexlog 
+from .._watexlog import watexlog 
 import  watex.exceptions as Wex 
-import  watex.tools.decorators as deco
+import  watex.decorators as deco
 
 
 _logger =watexlog().get_watex_logger(__name__)

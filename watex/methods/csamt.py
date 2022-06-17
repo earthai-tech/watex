@@ -3,7 +3,7 @@
 
 import warnings 
 
-from ..tools._watexlog import watexlog
+from .._watexlog import watexlog
 from ..exceptions import ( 
     TopModuleError 
 ) 

@@ -5,7 +5,7 @@
 
 # transform test set using the default pipeline 
 # type of encoder use to encode label of training set
-from .._sklearn import LabelEncoder
+from ..sklearn import LabelEncoder
 
 from watex.datasets import  fetch_data 
 from .__init__ import fetch_data 

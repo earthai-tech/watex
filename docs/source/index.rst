@@ -15,6 +15,8 @@ Welcome to WATex's documentation!
    datasets 
    geology 
    methods
+   modeling
+   property
    tools
    view
 

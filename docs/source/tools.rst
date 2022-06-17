@@ -7,12 +7,6 @@ Package Tools
 =====================
 .. automodule:: watex.tools.coreutils
 	:members:
-
-
-**Module Decorators**
-=====================
-.. automodule:: watex.tools.decorators
-	:members:
 	
 	
 **Module ExMaths**

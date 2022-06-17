@@ -34,7 +34,7 @@ from ..sklearn import (
      GridSearchCV , 
      RandomizedSearchCV
 )
-from watex.tools._watexlog import watexlog
+from .._watexlog import watexlog
 
 T= TypeVar('T')
 KT=TypeVar('KT')
