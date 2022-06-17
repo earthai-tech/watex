@@ -21,6 +21,12 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
 
+from .._watexlog import watexlog
+from ..decorators import ( 
+    deprecated, 
+    catmapflow2, 
+    )
+
 from ..typing import ( 
     Tuple,
     Dict,
@@ -28,7 +34,6 @@ from ..typing import (
     Array,
     F,
     T,
-    Sub ,
     List ,
     DataFrame, 
     Sub,
@@ -39,12 +44,7 @@ from ..exceptions import (
     ParameterNumberError, 
     # ArgumentError
     )
-from ._watexlog import watexlog
-from .decorators import ( 
-    deprecated, 
-    catmapflow2, 
-    ) 
-
+ 
 _logger = watexlog.get_watex_logger(__name__)
 
 _msg= ''.join([

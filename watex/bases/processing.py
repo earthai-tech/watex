@@ -36,7 +36,7 @@ from ..sklearn import (
 ) 
  
 from .features import FeatureInspection
-from ..tools._watexlog import watexlog 
+from .._watexlog import watexlog 
 from ..tools.mlutils import (
     cfexist, 
     findDifferenceGenObject, 
@@ -53,7 +53,7 @@ from ..typing import (
 ) 
 
 import  watex.exceptions as Wex 
-import  watex.tools.decorators as deco
+import  watex.decorators as deco
 import  watex.tools.funcutils as func
 
 

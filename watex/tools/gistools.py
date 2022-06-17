@@ -13,12 +13,14 @@ Created on Fri Apr 14 14:47:48 2017
 # ==============================================================================
 import numpy as np
 
-from .decorators import  deprecated , gdal_data_check
-from ._watexlog import watexlog
+from .._watexlog import watexlog
+from ..decorators import (
+    deprecated ,
+    gdal_data_check
+    )
+
 try : 
-    
     import HAS_GDAL, EPSG_DICT
-    
     if HAS_GDAL:
         from osgeo import osr
         from osgeo.ogr import OGRERR_NONE
@@ -27,7 +29,6 @@ try :
 except :
     HAS_GDAL =False
     pass 
-
 
 _logger = watexlog.get_watex_logger(__name__)
 

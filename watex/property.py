@@ -3,21 +3,31 @@
 #   Created date: Fri Apr 15 10:46:56 2022
 #   Licence: MIT Licence 
 
-# from abc import ABCMeta 
 # import warnings 
-
 from __future__ import annotations 
+
+from abc import ( 
+    ABC, 
+    abstractmethod, 
+    )
+
+from .decorators import refAppender 
+from .documentation import __doc__ 
+
 """
 `WATex <https://github.com/WEgeophysics/watex/>`_ properties objects 
 =====================================================================
 
-.. |ERP| replace: Electrical resistivity profiling 
-
-.. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
-
 """
 
-__all__ = [ 'P', 'BagoueNotes' ]
+__all__ = [ 
+    "Water",
+    "BasePlot", 
+    'P',
+    'BagoueNotes',
+    "ElectricalMethods", 
+    "assert_arrangement"
+]
 
 array_configuration ={
     1 : (
@@ -219,6 +229,588 @@ _edi =[
     '>EQUIVLEN' , '>END'
 ] 
 
+@refAppender(__doc__) 
+class Water (ABC): 
+    """ Should be a SuperClass for methods classes which deals with water 
+    properties and components. Instanciate the class shoud raise an error. 
+    
+    Water (H2O) is a polar inorganic compound that is at room temperature a 
+    tasteless and odorless liquid, which is nearly colorless apart from an 
+    inherent hint of blue. It is by far the most studied chemical compound 
+    and is described as the "universal solvent"and the "solvent of life".
+    It is the most abundant substance on the surface of Earth and the only 
+    common substance to exist as a solid, liquid, and gas on Earth's surface.
+    It is also the third most abundant molecule in the universe 
+    (behind molecular hydrogen and carbon monoxide).
+    
+    The Base class initialize arguments for different methods such as the 
+    |ERP| and for |VES|. The `Water` should set the attributes and check 
+    whether attributes are suitable for what the specific class expects to. 
+    
+    Hold some properties informations: 
+        
+    =================   =======================================================
+    Property            Description        
+    =================   =======================================================
+    state               official names for the chemical compound r"$H_2O$". It 
+                        can be a matter of ``solid``, ``ice``, ``gaseous``, 
+                        ``water vapor`` or ``steam``. The *default* is ``None``.
+    taste               water from ordinary sources, including bottled mineral 
+                        water, usually has many dissolved substances, that may
+                        give it varying tastes and odors. Humans and other 
+                        animals have developed senses that enable them to
+                        evaluate the potability of water in order to avoid 
+                        water that is too ``salty`` or ``putrid``. 
+                        The *default** is ``potable``.    
+    odor                Pure water is usually described as tasteless and odorless, 
+                        although humans have specific sensors that can feel 
+                        the presence of water in their mouths,and frogs are known
+                        to be able to smell it. The **default** is ``pure``.
+    color               The color can be easily observed in a glass of tap-water
+                        placed against a pure white background, in daylight.
+                        The **default** is ``pure white background``. 
+    appearance          Pure water is visibly blue due to absorption of light 
+                        in the region ca. 600 nm – 800 nm. The **default** is 
+                        ``visible``. 
+    density             Water differs from most liquids in that it becomes
+                        less dense as it freezes. In 1 atm pressure, it reaches 
+                        its maximum density of ``1.000 kg/m3`` (62.43 lb/cu ft)
+                        at 3.98 °C (39.16 °F). The *default* units and values
+                        are ``kg/m3``and ``1.`` 
+    magnetism           Water is a diamagnetic material. Though interaction
+                        is weak, with superconducting magnets it can attain a 
+                        notable interaction. the *default* value is 
+                        r"-0.91 $\chi m$". Note that the  magnetism succeptibily 
+                        has no unit. 
+    capacity            stands for `heat capacity`. In thermodynamics, the 
+                        specific heat capacity (symbol cp) of a substance is the
+                        heat capacity of a sample of the substance divided by 
+                        the mass of the sample. Water has a very high specific
+                        heat capacity of 4184 J/(kg·K) at 20 °C 
+                        (4182 J/(kg·K) at 25 °C).The *default* is is ``4182 ``
+    vaporization        stands for `heat of vaporization`. Indeed, the enthalpy  
+                        of vaporization (symbol r"$\delta H_{vap}$"), also known 
+                        as the (latent) heat of vaporization or heat of 
+                        evaporation, is the amount of energy (enthalpy) that  
+                        must be added to a liquid substance to transform a 
+                        quantity of that substance into a gas. Water has a high 
+                        heat of vaporization i.e. 40.65 kJ/mol or 2257 kJ/kg 
+                        at the normal boiling point), both of which are a  
+                        result of the extensive hydrogen bonding between its 
+                        molecules. The *default* is ``2257 kJ/kg``. 
+    fusion              stands for `enthalpy of fusion` more commonly known as 
+                        latent heat of water is 333.55 kJ/kg at 0 °C. The 
+                        *default* is ``33.55``.
+    miscibility         Water is miscible with many liquids, including ethanol
+                        in all proportions. Water and most oils are immiscible 
+                        usually forming layers according to increasing density
+                        from the top. *default* is ``True``.                    
+    condensation        As a gas, water vapor is completely miscible with air so 
+                        the vapor's partial pressure is 2% of atmospheric 
+                        pressure and the air is cooled from 25 °C, starting at
+                        about 22 °C, water will start to condense, defining the
+                        dew point, and creating fog or dew. The *default* is the 
+                        degree of condensation set to ``22°C``. 
+    pressure            stands for `vapour pressure` of water. It is the pressure 
+                        exerted by molecules of water vapor in gaseous form 
+                        i.e. whether pure or in a mixture with other gases such
+                        as air.  The vapor pressure is given as a list from the 
+                        temperature T, 0°C (0.6113kPa) to 100°C(101.3200kPa). 
+                        *default* is ``(0.611, ..., 101.32)``.
+    compressibility     The compressibility of water is a function of pressure 
+                        and temperature. At 0 °C, at the limit of zero pressure,
+                        the compressibility is r"$5.1×10−10 P^{a^−1}$". The 
+                        *default* value is the value at 0 °C.
+    triple              stands for `triple point`. The temperature and pressure
+                        at which ordinary solid, liquid, and gaseous water 
+                        coexist in equilibrium is a triple point of water. The 
+                        `triple point` are set to (.001°C,611.657 Pa) and 
+                        (100 , 101.325kPa) for feezing (0°C) and boiling point
+                        (100°C) points. In addition, the `triple point` can be
+                        set as ``(20. , 101.325 kPa)`` for 20°C. By *default*,
+                        the `triple point` solid/liquid/vapour is set to 
+                        ``(.001, 611.657 Pa )``.
+    melting             stands for `melting point`. Water can remain in a fluid
+                        state down to its homogeneous nucleation point of about
+                        231 K (−42 °C; −44 °F). The melting point of ordinary
+                        hexagonal ice falls slightly under moderately high 
+                        pressures, by 0.0073 °C (0.0131 °F)/atm[h] or about 
+                        ``0.5 °C`` (0.90 °F)/70 atm considered as the 
+                        *default* value.                   
+    conductivity        In pure water, sensitive equipment can detect a very 
+                        slight electrical conductivity of 0.05501 ± 0.0001 
+                        μS/cm at 25.00 °C. *default* is  ``.05501``.  
+    polarity            An important feature of water is its polar nature. The
+                        structure has a bent molecular geometry for the two 
+                        hydrogens from the oxygen vertex. The *default* is 
+                        ``bent molecular geometry`` or ``angular or V-shaped``. 
+                        Other possibility is ``covalent bonds `` 
+                        ``VSEPR theory`` for Valence Shell Electron Repulsion.
+    cohesion            stands for the collective action of hydrogen bonds 
+                        between water molecules. The *default* is ``coherent``
+                        for the water molecules staying close to each other. 
+                        In addition, the `cohesion` refers to the tendency of
+                        similar or identical particles/surfaces to cling to
+                        one another.
+    adhesion            stands for the tendency of dissimilar particles or 
+                        surfaces to cling to one another. It can be 
+                        ``chemical adhesion``, ``dispersive adhesion``, 
+                        ``diffusive adhesion`` and ``disambiguation``.
+                        The *default* is ``disambiguation``.
+    tension             stands for the tendency of liquid surfaces at rest to 
+                        shrink into the minimum surface area possible. Water 
+                        has an unusually high surface tension of 71.99 mN/m 
+                        at 25 °C[63] which is caused by the strength of the
+                        hydrogen bonding between water molecules. This allows
+                        insects to walk on water. The *default*  value is to 
+                        ``71.99 mN/m at 25 °C``. 
+    action              stands for `Capillary action`. Water has strong cohesive
+                        and adhesive forces, it exhibits capillary action. 
+                        Strong cohesion from hydrogen bonding and adhesion 
+                        allows trees to transport water more than 100 m upward.
+                        So the *default* value is set to ``100.``meters. 
+    issolvent           Water is an excellent solvent due to its high dielectric
+                        constant. Substances that mix well and dissolve in water
+                        are known as hydrophilic ("water-loving") substances,
+                        while those that do not mix well with water are known
+                        as hydrophobic ("water-fearing") substances.           
+    tunnelling          stands for `quantum tunneling`. It is a quantum 
+                        mechanical phenomenon whereby a wavefunction can 
+                        propagate through a potential barrier. It can be 
+                        ``monomers`` for the motions which destroy and 
+                        regenerate the weak hydrogen bond by internal rotations, 
+                        or ``hexamer`` involving the concerted breaking of two 
+                        hydrogen bond. The *default* is ``hexamer`` discovered 
+                        on 18 March 2016.
+    reaction            stands for `acide-base reactions`. Water is 
+                        ``amphoteric`` i.e. it has the ability to act as either
+                        an acid or a base in chemical reactions.
+    ionization          In liquid water there is some self-ionization giving 
+                        ``hydronium`` ions and ``hydroxide`` ions. *default* is 
+                        ``hydroxide``. 
+    earthmass           stands for the earth mass ration in "ppm" unit. Water 
+                        is the most abundant substance on Earth and also the 
+                        third most abundant molecule in the universe after the 
+                        r"$H_2$" and r"$CO$". The *default* value is ``0.23``
+                        ppm of the earth's mass. 
+    occurence           stands for the abundant molecule in the Earth. Water 
+                        represents ``97.39%`` of the global water volume of
+                        1.38×109 km3 is found in the oceans considered as the 
+                        *default* value.
+    pH                  stands for `Potential of Hydrogens`. It also shows the 
+                        acidity in nature of water. For instance the "rain" is
+                        generally mildly acidic, with a pH between 5.2 and 5.8 
+                        if not having any acid stronger than carbon dioxide. At
+                        neutral pH, the concentration of the hydroxide ion 
+                        (r"$OH^{-}$) equals that of the (solvated) hydrogen ion
+                        (r"$H^{+}$), with a value close to r"$10^{−7} mol L−1$"
+                        at 25 °C. The *default* is ``7.`` or ``neutral`` or the
+                        name of any substance `pH` close to.
+    nommenclature       The accepted IUPAC name of water is ``oxidane`` or 
+                        simply ``water``. ``Oxidane`` is only intended to be 
+                        used as the name of the mononuclear parent hydride used
+                        for naming derivatives of water by substituent 
+                        nomenclature. The *default* name is ``oxidane``.                    
+    =================   =======================================================                        
+    
+    
+    See also 
+    --------
+    Water (chemical formula H2O) is an inorganic, transparent, tasteless, 
+    odorless, and nearly colorless chemical substance, which is the main 
+    constituent of Earth's hydrosphere and the fluids of all known living 
+    organisms (in which it acts as a solvent). It is vital for all known 
+    forms of life, even though it provides neither food, energy, nor organic 
+    micronutrients. Its chemical formula, H2O, indicates that each of its 
+    molecules contains one oxygen and two hydrogen atoms, connected by covalent
+    bonds. The hydrogen atoms are attached to the oxygen atom at an angle of
+    104.45°. "Water" is the name of the liquid state of H2O at standard 
+    temperature and pressure.
+
+    References
+    -----------
+    `Properties of water <https://en.wikipedia.org/wiki/Properties_of_water#Electrical_conductivity>`_
+    `Water concept <https://en.wikipedia.org/wiki/Water>`_ 
+    `Water triple point <https://en.wikipedia.org/wiki/Properties_of_water#/media/File:Phase_diagram_of_water.svg>`_
+    `IUPAC nommenclature <https://en.wikipedia.org/wiki/IUPAC_nomenclature_of_inorganic_chemistry>`_
+    
+    .. |ERP| replace: Electrical Resistivity Profiling 
+    .. |VES| replace: Vertical Electrical Sounding 
+    
+    """
+    
+    @abstractmethod 
+    def __init__(self, 
+                 state: str = None, 
+                 taste: str  = 'potable', 
+                 odor: int | str = 'pure', 
+                 appearance: str = 'visible',
+                 color: str = 'pure white background', 
+                 capacity: float = 4184. , 
+                 vaporization: float  = 2257.,  
+                 fusion = 33.55, 
+                 density: float = 1. ,
+                 magnetism: float = -.91, 
+                 miscibility: bool  =True , 
+                 condensation: float = 22, 
+                 pressure: tuple = (.6113, ..., 101.32), 
+                 compressibility: float  =5.1e-10, 
+                 triple: tuple = (.001, 611.657 ),
+                 conductivity: float = .05501,
+                 melting: float = .5,       
+                 polarity: str  ='bent molecular geometry ', 
+                 cohesion: str = 'coherent', 
+                 adhesion: str  ='disambiguation', 
+                 tension: float  = 71.99, 
+                 action: float  = 1.e2 ,
+                 issolvent: bool =True, 
+                 reaction:str  = 'amphoteric', # 
+                 ionisation:str  = "hydroxide", 
+                 tunneling: str  = 'hexamer' ,
+                 nommenclature: str ='oxidane', 
+                 earthmass: float =.23 , 
+                 occurence: float = .9739,
+                 pH: float| str = 7., 
+                 ): 
+       
+        self.state=state 
+        self.taste=taste 
+        self.odor=odor 
+        self.capacity=capacity 
+        self.vaporization=vaporization   
+        self.fusion=fusion 
+        self.density=density  
+        self.magnetism=magnetism 
+        self.miscibility=miscibility 
+        self.condensation=condensation 
+        self.pressure=pressure, 
+        self.compressibility=compressibility 
+        self.triple=triple 
+        self.conductivity=conductivity
+        self.melting=melting      
+        self.polarity=polarity  
+        self.cohesion=cohesion 
+        self.adhesion=adhesion 
+        self.tension=tension 
+        self.action=action 
+        self.issolvent=issolvent 
+        self.reaction=reaction
+        self.ionisation=ionisation 
+        self.tunneling=tunneling 
+        self.nommenclature=nommenclature
+        self.pH=pH
+     
+
+class BasePlot(ABC): 
+    """ Base class  deals with Machine learning and conventional Plots. 
+    
+    The `BasePlot`can not be instanciated. It is build on the top of other 
+    plotting classes  and its attributes are used for 
+    Hold others optionnal informations: 
+        
+    ==================  =======================================================
+    Property            Description        
+    ==================  =======================================================
+    fig_dpi             dots-per-inch resolution of the figure
+                        *default* is 300
+    fig_num             number of the figure instance
+                        *default* is 'Mesh'
+    fig_size            size of figure in inches (width, height)
+                        *default* is [5, 5]
+    savefig             savefigure's name, *default* is ``None``
+    fig_orientation     figure orientation. *default* is ``landscape``
+    fig_title           figure title. *default* is ``None``
+    fs                  size of font of axis tick labels, axis labels are
+                        fs+2. *default* is 6 
+    ls                  [ '-' | '.' | ':' ] line style of mesh lines
+                        *default* is '-'
+    lc                  line color of the plot, *default* is ``k``
+    lw                  line weight of the plot, *default* is ``1.5``
+    alpha               transparency number, *default* is ``0.5``  
+    font_weight         weight of the font , *default* is ``bold``.        
+    marker              marker of stations *default* is r"$\blacktriangledown$".
+    ms                  size of marker in points. *default* is 5
+    marker_style        style  of marker in points. *default* is ``o``.
+    marker_facecolor    facecolor of the marker. *default* is ``yellow``
+    marker_edgecolor    edgecolor of the marker. *default* is ``cyan``.
+    marker_edgewidth    width of the marker. *default* is ``3``.
+    x_minorticks        minortick according to x-axis size and *default* is 1.
+    y_minorticks        minortick according to y-axis size and *default* is 1.
+    font_size           size of font in inches (width, height)
+                        *default* is 3.
+    font_style          style of font. *default* is ``italic``
+    bins                histograms element separation between two bar. 
+                         *default* is ``10``. 
+    xlim                limit of x-axis in plot. *default* is None 
+    ylim                limit of y-axis in plot. *default* is None 
+    xlabel              label name of x-axis in plot. *default* is None 
+    ylabel              label name  of y-axis in plot. *default* is None 
+    rotate_xlabel       angle to rotate `xlabel` in plot. *default* is None 
+    rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
+    leg_kws             keyword arguments of legend. *default* is empty dict.
+    plt_kws             keyword arguments of plot. *default* is empty dict
+    rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
+                        *default* is '--'
+    ps                  [ '-' | '.' | ':' ] line style of `Precision `metric
+                        *default* is '-'
+    rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
+    pc                  line color of `Precision` metric *default* is ``k``
+    s                   size of items in scattering plots. default is ``fs*40.``
+    gls                 [ '-' | '.' | ':' ] line style of grid  
+                        *default* is '--'.
+    glc                 line color of the grid plot, *default* is ``k``
+    glw                 line weight of the grid plot, *default* is ``2``
+    galpha              transparency number of grid, *default* is ``0.5``  
+    gaxis               axis to plot grid.*default* is ``'both'``
+    gwhich              type of grid to plot. *default* is ``major``
+    tp_axis             axis  to apply ticks params. default is ``both``
+    tp_labelsize        labelsize of ticks params. *default* is ``italic``
+    tp_bottom           position at bottom of ticks params. *default*
+                        is ``True``.
+    tp_top              position at the top  of ticks params. *default*
+                        is ``True``.
+    tp_labelbottom      see label on the bottom of the ticks. *default* 
+                        is ``False``
+    tp_labeltop         see the label on the top of ticks. *default* is ``True``
+    cb_orientation      orientation of the colorbar. *default* is ``vertical``
+    cb_aspect           aspect of the colorbar. *default* is 20.
+    cb_shrink           shrink size of the colorbar. *default* is ``1.0``
+    cb_pad              pad of the colorbar of plot. *default* is ``.05``
+    cb_anchor           anchor of the colorbar. *default* is ``(0.0, 0.5)``
+    cb_panchor          proportionality anchor of the colorbar. *default* is 
+                        `` (1.0, 0.5)``.
+    cb_label            label of the colorbar. *default* is ``None``.      
+    cb_spacing          spacing of the colorbar. *default* is ``uniform``
+    cb_drawedges        draw edges inside of the colorbar. *default* is ``False``
+    cb_format           format of the colorbar values. *default* is ``None``.
+    ==================  =======================================================
+    """
+    
+    @abstractmethod 
+    def __init__(self,
+                 savefig: str = None,
+                 fig_num: int =  1,
+                 fig_size: tuple =  (12, 8),
+                 fig_dpi:int = 300,
+                 fig_legend: str =  None,
+                 fig_orientation: str ='landscape',
+                 fig_title:str = None,
+                 font_size: float =3.,
+                 font_style: str ='italic',
+                 font_weight: str = 'bold',
+                 fs: float = 5.,
+                 ms: float =3.,
+                 marker_style: str = 'D',
+                 marker_facecolor: str ='yellow',
+                 marker_edgecolor: str = 'cyan',
+                 marker_edgewidth: float =  3.,
+                 lc: str =  'k',
+                 ls: str = '-',
+                 lw: float = 1.,
+                 alpha: float =  .5,
+                 bins: int =  10,
+                 xlim: list = None, 
+                 ylim: list= None,
+                 xlabel: str  =  None,
+                 ylabel: str = None,
+                 rotate_xlabel: int = None,
+                 rotate_ylabel: int =None ,
+                 leg_kws: dict = dict(),
+                 plt_kws: dict = dict(), 
+                 s: float=  40.,
+                 show_grid: bool = False,
+                 galpha: float = .5,
+                 gaxis: str = 'both',
+                 gc: str = 'k',
+                 gls: str = '--',
+                 glw: float = 2.,
+                 gwhich: str = 'major',               
+                 tp_axis: str = 'both',
+                 tp_labelsize: float = 3.,
+                 tp_bottom: bool =True,
+                 tp_top: bool = True,
+                 tp_labelbottom: bool = False,
+                 tp_labeltop: bool = True,               
+                 cb_orientation: str = 'vertical',
+                 cb_aspect: float = 20.,
+                 cb_shrink: float =  1.,
+                 cb_pad: float =.05,
+                 cb_anchor: tuple = (0., .5),
+                 cb_panchor: tuple=  (1., .5),              
+                 cb_label: str = None,
+                 cb_spacing: str = 'uniform' ,
+                 cb_drawedges: bool = False,
+                 cb_format: float = None ,   
+          
+                 ): 
+        
+        self.savefig=savefig
+        self.fig_num=fig_num
+        self.fig_size=fig_size
+        self.fig_dpi=fig_dpi
+        self.fig_legend=fig_legend
+        self.fig_orientation=fig_orientation
+        self.fig_title=fig_title
+        self.font_size=font_size
+        self.font_style=font_style
+        self.font_weight=font_weight
+        self.fs=fs
+        self.ms=ms
+        self.marker_style=marker_style
+        self.marker_facecolor=marker_facecolor
+        self.marker_edgecolor=marker_edgecolor
+        self.marker_edgewidth=marker_edgewidth
+        self.lc=lc
+        self.ls=ls
+        self.lw=lw
+        self.alpha=alpha
+        self.bins=bins
+        self.xlim=xlim
+        self.ylim=ylim
+        self.xlabel=xlabel
+        self.ylabel=ylabel
+        self.rotate_xlabel=rotate_xlabel
+        self.rotate_ylabel=rotate_ylabel
+        self.leg_kws=leg_kws
+        self.plt_kws=plt_kws
+        self.s=self.fs*s
+        self.show_grid=show_grid
+        self.galpha=galpha
+        self.gaxis=gaxis
+        self.gc=gc
+        self.gls=gls
+        self.glw=glw
+        self.gwhich=gwhich
+        self.tp_axis=tp_axis
+        self.tp_labelsize=self.font_size*tp_labelsize  
+        self.tp_bottom=tp_bottom
+        self.tp_top=tp_top
+        self.tp_labelbottom=tp_labelbottom
+        self.tp_labeltop=tp_labeltop
+        self.cb_orientation=cb_orientation
+        self.cb_aspect=cb_aspect
+        self.cb_shrink=cb_shrink
+        self.cb_pad=cb_pad
+        self.cb_anchor=cb_anchor
+        self.cb_panchor=cb_panchor
+        self.cb_label=cb_label
+        self.cb_spacing=cb_spacing
+        self.cb_drawedges=cb_drawedges
+        self.cb_format=cb_format    
+   
+        self.cb_props = {
+            pname.replace('cb_', '') : pvalues
+                         for pname, pvalues in self.__dict__.items() 
+                         if pname.startswith('cb_')
+                         }
+       
+        
+class ElectricalMethods (ABC) : 
+    """ Base class of geophysical electrical methods 
+
+    The electrical geophysical methods are used to determine the electrical
+    resistivity of the earth's subsurface. Thus, electrical methods are 
+    employed for those applications in which a knowledge of resistivity 
+    or the resistivity distribution will solve or shed light on the problem 
+    at hand. The resolution, depth, and areal extent of investigation are 
+    functions of the particular electrical method employed. Once resistivity 
+    data have been acquired, the resistivity distribution of the subsurface 
+    can be interpreted in terms of soil characteristics and/or rock type and 
+    geological structure. Resistivity data are usually integrated with other 
+    geophysical results and with surface and subsurface geological data to 
+    arrive at an interpretation. Get more infos by consulting this
+    `link <https://wiki.aapg.org/Electrical_methods>`_ . 
+    
+    
+    The :class:`watex.methods.electrical.ElectricalMethods` compose the base 
+    class of all the geophysical methods that images the underground using 
+    the resistivity values. 
+    
+    Holds on others optionals infos in ``kws`` arguments: 
+       
+    ======================  ==============  ===================================
+    Attributes              Type                Description  
+    ======================  ==============  ===================================
+    AB                      float, array    Distance of the current electrodes
+                                            in meters. `A` and `B` are used 
+                                            as the first and second current 
+                                            electrodes by convention. Note that
+                                            `AB` is considered as an array of
+                                            depth measurement when using the
+                                            vertical electrical sounding |VES|
+                                            method i.e. AB/2 half-space. Default
+                                            is ``200``meters. 
+    MN                      float, array    Distance of the current electrodes 
+                                            in meters. `M` and `N` are used as
+                                            the first and second potential 
+                                            electrodes by convention. Note that
+                                            `MN` is considered as an array of
+                                            potential electrode spacing when 
+                                            using the collecting data using the 
+                                            vertical electrical sounding |VES|
+                                            method i.e MN/2 halfspace. Default 
+                                            is ``20.``meters. 
+    arrangement             str             Type of dipoles `AB` and `MN`
+                                            arrangememts. Can be *schlumberger*
+                                            *Wenner-alpha /wenner beta*,
+                                            *Gradient rectangular* or *dipole-
+                                            dipole*. Default is *schlumberger*.
+    area                    str             The name of the survey location or
+                                            the exploration area. 
+    fromlog10               bool            Set to ``True`` if the given 
+                                            resistivities values are collected 
+                                            on base 10 logarithm.
+    utm_zone                str             string (##N or ##S). utm zone in 
+                                            the form of number and North or South
+                                            hemisphere, 10S or 03N. 
+    datum                   str             well known datum ex. WGS84, NAD27,
+                                            etc.         
+    projection              str             projected point in lat and lon in 
+                                            Datum `latlon`, as decimal degrees 
+                                            or 'UTM'. 
+    epsg                    int             epsg number defining projection (see 
+                                            http://spatialreference.org/ref/ 
+                                            for moreinfo). Overrides utm_zone
+                                            if both are provided.                           
+    ======================  ==============  ===================================
+               
+    
+    Notes
+    -------
+    The  `ElectricalMethods` consider the given resistivity values as 
+    a normal values and not on base 10 logarithm. So if log10 values 
+    are given, set the argument `fromlog10` value to ``True``.
+    
+    .. |VES| replace: Vertical Electrical Sounding 
+    
+    """
+    
+    @abstractmethod 
+    def __init__(self, 
+                AB: float = 200. , 
+                MN: float = 20.,
+                arrangement: str  = 'schlumberger', 
+                area : str = None, 
+                projection: str ='UTM', 
+                datum: str ='WGS84', 
+                epsg: int =None, 
+                utm_zone: str = None,  
+                fromlog10:bool =False, 
+                verbose: int = 0, 
+                ) -> None:
+        
+        self.AB=AB 
+        self.MN=MN 
+        self.arrangememt=assert_arrangement(arrangement) 
+        self.utm_zone=utm_zone 
+        self.projection=projection 
+        self.datum=datum
+        self.epsg=epsg 
+        self.area=area 
+        self.fromlog10=fromlog10 
+        self.verbose=verbose 
+        
+            
 class P:
     """
     Data properties are values that are hidden to avoid modifications alongside 
@@ -523,8 +1115,8 @@ class BagoueNotes:
     Water Supply Program (PNAEP) in 2014.
     The data are firstly composed of Electrical resistivity profile (ERP) data
     collected from geophysical survey lines with various arrays such as
-    Schlumberger, gradient rectangle and Wenner (α or β) and the Vertical 
-    electricalsounding (VES) data carried out on the selected anomalies.
+    Schlumberger, gradient rectangle and Wenner (r"$\alpha $" or r"$\beta $) 
+    and the Vertical electricalsounding (VES) data carried out on the selected anomalies.
     The configuration used during the ERP is Schlumberger with distance of
     AB is 200m and MN =20m.
     

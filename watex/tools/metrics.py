@@ -10,6 +10,8 @@ import warnings
 import numpy as np 
 # from abc import ABC,abstractmethod
 from sklearn import metrics 
+
+from .._watexlog import watexlog
 from ..sklearn import ( 
     precision_recall_curve,
     precision_score,
@@ -21,9 +23,8 @@ from ..sklearn import (
     cross_val_predict, 
     )
 
-from ._watexlog import watexlog
 from .mlutils import format_generic_obj 
-import watex.tools.decorators as deco
+import watex.decorators as deco
 import watex.exceptions as Wex
 
 _logger = watexlog().get_watex_logger(__name__)
