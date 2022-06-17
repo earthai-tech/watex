@@ -38,7 +38,7 @@ Until now, the methods implemented are adressed to a particular problem in water
 
 ## Documentation 
 
-* API Documentation  : https://watex.readthedocs.io/en/master/
+* API Documentation: https://watex.readthedocs.io/en/master/
 * Home page: https://github.com/WEgeophysics/watex/wiki
 * Codes Snippets: https://github.com/WEgeophysics/watex/wiki/Some-functionalities
 * Case history: Implemented in `Bagoue` region in north part of [Cote d'Ivoire](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
