@@ -671,9 +671,9 @@ class MLPlots:
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation
                         )  
-            
-    @deco.docstring(precision_recall_tradeoff, start='Parameters', 
-                    end = 'Notes')        
+        
+    @deco.docSanitizer ()
+    @deco.docAppender(precision_recall_tradeoff, from_='Parameters', to= 'Notes')        
     def PrecisionRecall(self,
                         clf,
                         X,
@@ -1145,15 +1145,14 @@ class MLPlots:
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
     
-    @deco.docstring(confusion_matrix_, start='Parameters', 
-                    end='Examples')
+    @deco.docSanitizer()
+    @deco.docAppender(confusion_matrix_, from_='Parameters', to='Examples')
     def confusion_matrix(self, clf, X, y, cv, *, plottype ='map', ylabel=None, 
                          matshow_kws=dict(), **conf_mx_kws): 
         """ Plot confusion matrix for error analysis
         
-        Look a representation of the confusion matrix using Matplotlib matshow
+        Look a representation of the confusion matrix using Matplotlib matshow.
         
-
         Parameters 
         ----------
          plottype: str 
@@ -1176,28 +1175,29 @@ class MLPlots:
         >>> from watex.datasets import fetch_data 
         >> X,y = fetch_data('Bagoue dataset prepared')
         >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', 
-                          random_state =42) 
+        ...                  random_state =42) 
         >>> matshow_kwargs ={
-                'aspect': 'auto', # 'auto'equal
-                'interpolation': None, 
-               'cmap':'gray' }                   
+        ...        'aspect': 'auto', # 'auto'equal
+        ...        'interpolation': None, 
+        ...       'cmap':'gray' }                   
         >>> plot_kws ={'lw':3, 
-               'lc':(.9, 0, .8), 
-               'font_size':15., 
-                'cb_format':None,
-                'xlabel': 'Predicted classes',
-                'ylabel': 'Actual classes',
-                'font_weight':None,
-                'tp_labelbottom':False,
-                'tp_labeltop':True,
-                'tp_bottom': False
-                }
+        ...       'lc':(.9, 0, .8), 
+        ...       'font_size':15., 
+        ...        'cb_format':None,
+        ...        'xlabel': 'Predicted classes',
+        ...        'ylabel': 'Actual classes',
+        ...        'font_weight':None,
+        ...        'tp_labelbottom':False,
+        ...        'tp_labeltop':True,
+        ...        'tp_bottom': False
+        ...        }
         >>> mObj =MLPlots(**plot_kws)
         >>> mObj.confusion_matrix(svc_clf, X=X,y=y,cv=7,                                   
-                                ylabel=['FR0', 'FR1', 'FR2', 'FR3'], 
-                                plottype='error'
-                                matshow_kws = matshow_kwargs,
-                                ) 
+        ...                        ylabel=['FR0', 'FR1', 'FR2', 'FR3'], 
+        ...                        plottype='error'
+        ...                        matshow_kws = matshow_kwargs,
+        ...                        ) 
+        
         See also 
         ---------
         see :meth:`~watex.tools.metrics.Metrics.confusion_matrix` for furthers

@@ -415,7 +415,7 @@ class Water (ABC):
     
     
     See also 
-    --------
+    ----------
     Water (chemical formula H2O) is an inorganic, transparent, tasteless, 
     odorless, and nearly colorless chemical substance, which is the main 
     constituent of Earth's hydrosphere and the fluids of all known living 
@@ -427,16 +427,6 @@ class Water (ABC):
     104.45°. "Water" is the name of the liquid state of H2O at standard 
     temperature and pressure.
 
-    References
-    -----------
-    `Properties of water <https://en.wikipedia.org/wiki/Properties_of_water#Electrical_conductivity>`_
-    `Water concept <https://en.wikipedia.org/wiki/Water>`_ 
-    `Water triple point <https://en.wikipedia.org/wiki/Properties_of_water#/media/File:Phase_diagram_of_water.svg>`_
-    `IUPAC nommenclature <https://en.wikipedia.org/wiki/IUPAC_nomenclature_of_inorganic_chemistry>`_
-    
-    .. |ERP| replace: Electrical Resistivity Profiling 
-    .. |VES| replace: Vertical Electrical Sounding 
-    
     """
     
     @abstractmethod 
@@ -448,7 +438,7 @@ class Water (ABC):
                  color: str = 'pure white background', 
                  capacity: float = 4184. , 
                  vaporization: float  = 2257.,  
-                 fusion = 33.55, 
+                 fusion: float = 33.55, 
                  density: float = 1. ,
                  magnetism: float = -.91, 
                  miscibility: bool  =True , 
@@ -475,7 +465,9 @@ class Water (ABC):
        
         self.state=state 
         self.taste=taste 
-        self.odor=odor 
+        self.odor=odor
+        self.appearance=appearance
+        self.color=color
         self.capacity=capacity 
         self.vaporization=vaporization   
         self.fusion=fusion 
@@ -498,6 +490,8 @@ class Water (ABC):
         self.ionisation=ionisation 
         self.tunneling=tunneling 
         self.nommenclature=nommenclature
+        self.earthmass=earthmass 
+        self.occurence=occurence 
         self.pH=pH
      
 
