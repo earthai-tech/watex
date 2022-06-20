@@ -1,24 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from typing import (
-    TypeVar, 
-    List,
-    Tuple,
-    Sequence, 
-    Dict, 
-    Iterable, 
-    Callable, 
-    Union, 
-    Any , 
-    Generic,
-    Optional,
-    Union,
-    Type , 
-    Mapping,
-    Text,
-
-)
-
 """ 
 `WATex`_ Type variable definitions 
 ================================== 
@@ -195,6 +176,25 @@ to let the user aware when meeting such argument in a callable function.
     definition.
         
 """
+
+from typing import (
+    TypeVar, 
+    List,
+    Tuple,
+    Sequence, 
+    Dict, 
+    Iterable, 
+    Callable, 
+    Union, 
+    Any , 
+    Generic,
+    Optional,
+    Union,
+    Type , 
+    Mapping,
+    Text,
+
+)
 
 T = TypeVar('T')
 V = TypeVar('V')
