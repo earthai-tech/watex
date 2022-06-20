@@ -17,7 +17,11 @@ import pandas as pd
 import  matplotlib.pyplot as plt
  
 from .._watexlog import watexlog
-from ..decorators import deprecated
+from ..documentation import __doc__
+from ..decorators import ( 
+    deprecated, 
+    refAppender
+)
 from .. import exceptions as Wex 
 from ..property import P
 from ..typing import (
@@ -319,6 +323,7 @@ def invertVES (data: DataFrame[DType[float|int]] = None,
     :param rho0: float - Value of the starting resistivity model. If ``None``, 
         `rho0` should be the half minumm value of the apparent resistivity  
         collected. Units is in Ω.m not log10(Ω.m)
+        
     :param h0: float -  Thickness  in meter of the first layers in meters.
          If ``None``, it should be the minimum thickess as possible ``1.`` m. 
     
@@ -716,15 +721,12 @@ def type_ (erp: Array[DType[float]] ) -> str:
                 
     return type_ 
         
-   
 def shape (
     cz : Array | List [float], 
     s : Optional [str, int] = ..., 
     p:  SP =  ...,     
 ) -> str: 
     """ Compute the shape of anomaly. 
-
-    .. |ERP| replace: Electrical resistivity Profiling 
     
     The `shape` parameter is mostly used in the basement medium to depict the
     better conductive zone for the drilling location. According to Sombo et
@@ -775,7 +777,8 @@ def shape (
         en Cote d’Ivoire. Cas des departements de Sikensi et de Tiassale 
         (Sud de la Cote d’Ivoire). Universite Felix Houphouet Boigny.
     
-        
+    .. |ERP| replace:: Electrical Resistivity Profiling
+    
     """
     shape = 'V' # initialize the shape with the most common 
     
@@ -834,7 +837,7 @@ def shape (
     
     return shape 
     
-
+@refAppender(__doc__)
 def scalePosition(
         ydata: Array | SP | Series | DataFrame ,
         xdata: Array| Series = None, 
@@ -890,12 +893,6 @@ def scalePosition(
         np.inf, on the other hand 'trf' and 'dogbox' methods use Moore-Penrose
         pseudoinverse to compute the covariance matrix.
         
-    References 
-    ---------- 
-    Scipy Optimize <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html>
-    
-    .. _scipy.optimize.curve_fit: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
-    
     Examples
     --------
     >>> from watex.tools import erpSelector, scalePosition 
@@ -2364,20 +2361,7 @@ def define_anomaly(
            
     return bestSelectedDICT
 
-"""
-.. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
 
-.. _Matplotlib scatter: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.scatter.html
-
-.. _Matplotlib plot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
-
-.. _scipy.optimize.curve_fit: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
-
-.. |VES| replace: Vertical Electrical Sounding 
-
-.. |ERP| replace: Electrical resistivity Profiling 
-
-"""
    
     # if plot:
         

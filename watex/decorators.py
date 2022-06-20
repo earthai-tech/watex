@@ -8,6 +8,7 @@ from __future__ import print_function
 import functools
 import inspect
 import os
+import copy 
 import shutil
 import warnings
 
@@ -20,7 +21,7 @@ from .typing import (
     Iterable,
     Optional,
     Callable ,
-    T
+    T, F
 )
 from ._watexlog import watexlog
 
@@ -36,13 +37,13 @@ class refAppender (object):
     can auto-retrieve some replacing values found inline  from the 
     :doc:`watex.documentation`. 
     
-    .. |VES| replace: Vertical Electrical Sounding 
-    .. |ERP| replace: Electrical Resistivity Profiling 
+    .. |VES| replace:: Vertical Electrical Sounding 
+    .. |ERP| replace:: Electrical Resistivity Profiling 
     
     Parameters
     ----------
     docref: str 
-        Reference of of the documentation for appending.
+        Reference of the documentation for appending.
     
     Examples
     ---------
@@ -1187,18 +1188,335 @@ class docstring:
         return func
             
 
-
-
-
-
-
-
-
-
-
-
-
-
+class docAppender: 
+    """
+    Decorator to generate a new doctring from appending the other class docstrings. 
+    
+    Indeed from the startpoint <`from_`> and  the endpoint<`to`>, one can select 
+    the part of the any function or class doctrings to append to the existing 
+    doctring for a new doctring creation. This trip is useful to avoid 
+    redundancing parameters definitions everywhere in the scripts.
+    
+    Parameters 
+    -----------
+    func0: callable, 
+        Function or class to collect the doctring from. 
+    from_: str 
+        Reference word or expression to start the collection of the 
+        necessary doctring from the `func0`. It is the startpoint. The 
+        *default* is ``Parameters``. 
+        
+    to: str 
+        Reference word to end the collection of the necessary part of the 
+        docstring  of `func0`. It is the endpoint. The *default* is ``Returns``.
+        
+    insert: str, 
+        Reference word or expression to insert the collected doctring from 
+        the `func0` and append of the index of the `insert` word in `func`. 
+        If not found in the `func` doctring, it should retun None so nothing 
+        should be appended.  The *default* is ``Parameters``. 
+    
+    Examples
+    ---------
+    >>> from watex.decorators import docAppender 
+    >>> def func0 (*args, **kwargs): 
+            '''Im here so share my doctring. 
+            
+            Parameters 
+            -----------
+            * args: list, 
+                Collection of the positional arguments 
+            ** kwargs: dict 
+                Collection of keywords arguments 
+            Returns 
+            -------
+                 None: nothing 
+            '''
+            pass 
+    >>> def func(s, k=0): 
+            ''' Im here to append the docstring from func0
+            Parameters 
+            ----------
+            s: str , 
+                Any string value 
+            k: dict, 
+                first keyword arguments 
+                
+            Returns 
+            --------
+                None, I return nothing 
+            '''
+    >>> deco = docAppender(func0 , from_='Parameters',
+                            to='Returns', insert ='---\n')(func)
+    >>> deco.__doc__
+    ...
+    
+    Warnings 
+    --------
+    Be sure to append two doctrings with the same format. One may choose 
+    either the sphinx or the numpy  doc formats. Not Mixing the both.  
+    
+    """
+    insert_=('parameters',
+            'returns',
+            'raises', 
+            'examples',
+            'notes',
+            'references', 
+            'see also', 
+            'warnings'
+            )
+    
+    def __init__ (self,
+                  func0: Callable[[F], F] ,
+                  from_: str ='Parameters',
+                 to: str ='Returns',
+                 insertfrom: str = 'Parameters',
+                 remove =True ): 
+        self.func0 = func0 
+        self.from_=from_ 
+        self.to=to 
+        self.remove= remove
+        self.insert = insertfrom 
+        
+    def __call__(self, func): 
+        self._func = copy.deepcopy(func )
+        return self.make_newdoc (self._func)
+    
+    def  make_newdoc(self, func): 
+        """ make a new docs from the given class of function """
+        
+        def rpop(listitem): 
+            """ remove all blanck line in the item list. 
+            :param listitem: list- list of the items and pop all 
+            the existing blanck lines. """
+            # now pop all the index for blanck line 
+            isblanck = False 
+            for ii, item  in enumerate (listitem) : 
+                if item.strip()=='': 
+                    listitem.pop(ii)
+                    isblanck =True 
+            return rpop(listitem) if isblanck else False   
+        
+        def sanitize_docstring ( strv): 
+            """Sanitize string values and force the string to be 
+            on the same level for parameters and the arguments of the 
+            parameters. 
+            :param strv: str 
+            
+            return a new string sanitized that match the correct spaces for 
+            the sphinx documentation.
+            
+            """
+            if isinstance(strv, str): 
+                strv = strv.split('\n')
+            # remove the ''  in the first string
+            if strv[0].strip() =='':strv=strv[1:] 
+            # get the first occurence for parameters definitions 
+            ix_ = 0 ; 
+            for ix , value in enumerate (strv): 
+                if (value.lower().find(':param') >=0) or (value.lower(
+                        ).find('parameters')>=0): 
+                    ix_ = ix ; break 
+            # Put all explanations in the same level 
+            # before the parameters 
+            for k in range(ix_ +1): 
+                strv[k]= strv[k].strip() 
+        
+            for ii, initem in enumerate (strv): 
+                for v in self.insert_: 
+                    if initem.lower().find(v)>=0: 
+                        initem= initem.strip() 
+                        strv[ii]= initem
+                        break 
+    
+                if '--' in initem or (':' in initem and len(initem) < 50) : 
+                    strv[ii]= initem.strip() 
+                elif (initem.lower() not in self.insert_) and ii > ix_:  
+                    strv[ii]='    ' + initem.strip() 
+            
+            return '\n'.join(strv)  
+ 
+        # get the doctring from the main func0 
+        func0_dstr = self.func0.__doc__ 
+        # select the first occurence and remove '----' if exists 
+        if self.from_ is None: 
+            warnings.warn('Argument `from_` is missing. Should be the first'
+                          f' word of {self.func0.__name__!r} doctring.')
+            self.from_ = func0_dstr.split()[0]
+            
+        from_ix = func0_dstr.find(self.from_)
+        func0_dstr = func0_dstr [from_ix:]
+        # remove the first occurence of the from_ value and --- under if exists. 
+        # in the case where from =':param' remove can be set to False 
+        if self.remove: 
+            func0_dstr = func0_dstr.replace(self.from_, '', 1).replace('-', '')
+        # get the index of 'to' or set None if not given   
+        # now we are selected the part and append to the 
+        # existing doc func where do you want to insert 
+        to_ix = func0_dstr.find (self.to ) if self.to is not None else None 
+        func0_dstr= func0_dstr [:to_ix if to_ix >=0 else None]
+       
+        if self.insert.lower() not in (self.insert_): 
+            warnings.warn(f"It's seems the given  {self.insert!r} for docstring"
+                          f" insertion is missing to {self.insert_} list")
+        
+        in_ix =  self._func.__doc__.lower().find(self.insert.lower())
+        # assert  whether the given value insert from exists . 
+        if in_ix < 0 : 
+            warnings.warn(f"Insert {self.insert!r} value is not found in the "
+                          "{'class' if inspect.isclass(self._func) else 'function'")
+        # split the string with `\n` 
+        # and loop to find the first occurence 
+        # by default skip the next item which could be '----' 
+        # and insert to the list next point 
+        func0_dstr = func0_dstr.split('\n')
+        finalstr = self._func.__doc__.split('\n') 
+        
+        rpop(func0_dstr) 
+        func0_dstr =  '\n'.join(func0_dstr)    
+        for ii, oc in enumerate(finalstr) : 
+            if oc.lower().find(self.insert.lower()) >=0 : 
+                finalstr.insert (ii+2, func0_dstr)
+                finalstr = '\n'.join(finalstr);break 
+        
+        setattr(func, '__doc__', sanitize_docstring (finalstr))
+        
+        return func 
+    
+class docSanitizer: 
+    """Decorator to clean the doctring and  set all values of sections to 
+    the same level. 
+    
+    It sanitizes the doctring for the use of sphinx documentation. 
+    
+    Examples
+    --------
+    >>> from watex.decorators import docSanitizer 
+    >>> def messdocfunc(): 
+            ''' My doctring is mess. I need to be polished and well arranged.
+            
+            Im here to sanitize the mess doctring. 
+            
+            Parameters
+            ----------
+                    * args: list, 
+                        Collection of the positional arguments 
+                    ** kwargs: dict 
+                        Collection of keywords arguments 
+    
+            * kwargs: list,
+            Collection of the keyword arguments
+            
+            Warnings
+            --------
+            Let check for warnings string ... 
+            
+            ''' 
+    >>> cleandocfunc = docSanitizer()(messfocfunc)
+    >>> print(cleandocfunc.__doc__)
+    ... '''
+        My doctring is mess. I need to be polished and well arranged.
+    
+        Parameters
+        ----------
+        * args: list,
+            Collection of the positional arguments
+        ** kwargs: dict
+            Collection of keywords arguments
+        * kwargs: list,
+            Collection of the keyword arguments
+        '''
+    """
+    
+    insert_= ('parameters','returns','raises', 'examples','notes',
+            'references', 'see also', 'warnings', ':param', ':rtype', 
+            )
+    
+    def __call__(self, func): 
+        
+        func =copy.deepcopy(func)
+        
+        docstring = copy.deepcopy(func.__doc__) 
+        if isinstance(docstring , str): 
+            docstring = docstring .split('\n')
+        # remove the ''  in the first string
+        if docstring [0].strip() =='':docstring =docstring [1:] 
+        # get the first occurence for parameters definitions 
+        # and separate the doctring into two parts: descriptions 
+        #and corpus doctring as the remainings 
+        
+        ix_ = 0  
+        for ix , value in enumerate (docstring ): 
+            if (value.lower().find(':param') >=0) or (value.lower(
+                    ).find('parameters')>=0): 
+                ix_ = ix ; break 
+            
+        #-->  sanitize the descriptions part 
+        description =docstring [: ix_] ; 
+        # before the parameters 
+        for k in range(len(description)): 
+            description [k]= description [k].strip() 
+         # remove at the end of description the blanck space '\n' 
+        description = description[:-1] if  description[-1].strip(
+            )== ''  else description
+      
+        # --> work with the corpus docstrings 
+        # get indexes for other sections and removes spaces 
+        docstring = docstring [ix_:]
+        rpop (docstring)
+        ixb = len(docstring)
+        for ind , values in enumerate (docstring): 
+            if values.lower().strip() in (
+                    'examples', 'see also', 'warnings', 
+                     'notes', 'references'): 
+                ixb = ind ; break 
+        # all values in same level 
+        for k in range(ixb, len(docstring)): 
+            docstring [k]= docstring [k].strip() 
+        for ii, initem in enumerate (docstring ): 
+            for v in self.insert_: 
+                if initem.lower().find(v)>=0: 
+                    initem= initem.strip() 
+                    docstring [ii]= initem
+                    break 
+            if '--' in initem or (
+                    ':' in initem and len(initem) < 50
+                    ) or ix_>=ixb : 
+                docstring [ii]= initem.strip() 
+            elif (initem.lower() not in self.insert_
+                  ) and ix_< ii < ixb:  
+                docstring [ii]='    ' + initem.strip() 
+        # add  blanck line from indexes list ixs 
+        ixs=list()
+        for k, item in enumerate (docstring): 
+            for param in self.insert_[:-2]: 
+                if item.lower().strip() == param:  
+                    ixs.append(k)
+                    break   
+        ki =0  
+        for k in ixs : 
+            docstring.insert (k+ki, '')  
+            ki+=1 # add number of insertions 
+            
+        # --> combine the descriptions and docstring and set attributes 
+        setattr(func, '__doc__' , '\n'.join(description + docstring ))  
+          
+        return  func
+        
+###############################################################################
+# decorators utilities 
+def rpop(listitem): 
+    """ remove all blanck line in the item list. 
+    :param listitem: list- list of the items and pop all 
+    the existing blanck lines. """
+    # now pop all the index for blanck line 
+    isblanck = False 
+    for ii, item  in enumerate (listitem) : 
+        if item.strip()=='': 
+            listitem.pop(ii)
+            isblanck =True 
+    return rpop(listitem) if isblanck else False  
 
 
 
