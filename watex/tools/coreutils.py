@@ -13,7 +13,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
  
 from ..documentation import __doc__ 
-from ..decorators import  refAppender 
+from ..decorators import  (
+    refAppender, 
+    docSanitizer
+    ) 
 from ..property import P 
 from ..typing import (
     Any, 
@@ -237,6 +240,7 @@ def vesSelector(
     
     return sdata
  
+@docSanitizer()
 def fill_coordinates(
     data: DataFrame =None, 
     lon: Array = None,
