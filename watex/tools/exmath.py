@@ -20,7 +20,8 @@ from .._watexlog import watexlog
 from ..documentation import __doc__
 from ..decorators import ( 
     deprecated, 
-    refAppender
+    refAppender, 
+    docSanitizer
 )
 from .. import exceptions as Wex 
 from ..property import P
@@ -216,7 +217,7 @@ def vesDataOperator(
         in deeper. Units are in meters. 
     
     :param rhoa: array-like - Apparent resistivity values collected in imaging 
-        in depth. Units are in :math:`\omega {.m}` not :math:`log10(\omega {.m})`
+        in depth. Units are in :math:`\Omega {.m}` not :math:`log10(\Omega {.m})`
     
     :param data: DataFrame - It is composed of spacing values `AB` and  the 
         apparent resistivity values `rhoa`. If `data` is given, params `AB` and 
@@ -836,7 +837,8 @@ def shape (
             shape = 'M'
     
     return shape 
-    
+
+@docSanitizer()    
 @refAppender(__doc__)
 def scalePosition(
         ydata: Array | SP | Series | DataFrame ,
@@ -988,15 +990,12 @@ def scalePosition(
     return ydata_new, popt, pcov 
 
 
-
 def __sves__ (
         s_index: int  , 
         cz: Array | List[float], 
 ) -> Tuple[Array, Array]: 
     """ Divide the conductive zone in leftzone and rightzone from 
     the drilling location index . 
-    
-    .. |VES| replace: Vertical Electrical Sounding 
 
     :param s_index - station location index expected for dilling location. 
         It refers to the position of |VES|. 
@@ -1008,7 +1007,7 @@ def __sves__ (
         - --> Sves: Right side of conductive zone from |VES| location. 
         
     .. note:: Both sides included the  |VES| `Sves` position.
-    
+    .. |VES| replace:: Vertical Electrical Sounding 
     """
     try:  s_index = int(s_index)
     except: raise TypeError(

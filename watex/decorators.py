@@ -1285,19 +1285,7 @@ class docAppender:
     
     def  make_newdoc(self, func): 
         """ make a new docs from the given class of function """
-        
-        def rpop(listitem): 
-            """ remove all blanck line in the item list. 
-            :param listitem: list- list of the items and pop all 
-            the existing blanck lines. """
-            # now pop all the index for blanck line 
-            isblanck = False 
-            for ii, item  in enumerate (listitem) : 
-                if item.strip()=='': 
-                    listitem.pop(ii)
-                    isblanck =True 
-            return rpop(listitem) if isblanck else False   
-        
+ 
         def sanitize_docstring ( strv): 
             """Sanitize string values and force the string to be 
             on the same level for parameters and the arguments of the 
@@ -1436,8 +1424,8 @@ class docSanitizer:
     def __call__(self, func): 
         
         func =copy.deepcopy(func)
-        
         docstring = copy.deepcopy(func.__doc__) 
+        
         if isinstance(docstring , str): 
             docstring = docstring .split('\n')
         # remove the ''  in the first string
@@ -1507,7 +1495,7 @@ class docSanitizer:
 ###############################################################################
 # decorators utilities 
 def rpop(listitem): 
-    """ remove all blanck line in the item list. 
+    """ remove all blank line in the item list. 
     :param listitem: list- list of the items and pop all 
     the existing blanck lines. """
     # now pop all the index for blanck line 

@@ -24,7 +24,8 @@ import matplotlib.pyplot as plt
 from .._watexlog import watexlog
 from ..decorators import ( 
     deprecated, 
-    catmapflow2, 
+    catmapflow2,
+    docSanitizer
     )
 
 from ..typing import ( 
@@ -590,7 +591,7 @@ def sanitize_fdataset(
     return df , utm_flag
      
 
-                
+@docSanitizer()               
 def interpol_scipy (
         x_value,
         y_value,
@@ -649,7 +650,7 @@ def interpol_scipy (
     
     return y_new
 
-
+@docSanitizer()
 def _set_depth_to_coeff(
         data,
         depth_column_index,
@@ -680,7 +681,8 @@ def _set_depth_to_coeff(
         data : np.ndarray
             new data after set depth according to it value.
             
-    :Example: 
+    Examples 
+    --------
 
         >>>  import numpy as np 
         >>>  np.random.seed(4)
@@ -698,7 +700,8 @@ def _set_depth_to_coeff(
         data[depth_column_index,:]=data[depth_column_index,:]*coeff  
 
     return data
-                              
+
+@docSanitizer()                              
 def _nonelist_checker(data, _checker=False ,
                       list_to_delete=['\n']):
     """
@@ -726,7 +729,8 @@ def _nonelist_checker(data, _checker=False ,
         data : list
            data safeted exempt of the value we want to delete.
         
-    :Example: 
+    Examples
+    ---------
         
         >>> import numpy as np 
         >>> listtest =[['DH_Hole', 'Thick01', 'Thick02', 'Thick03',
@@ -770,7 +774,7 @@ def _nonelist_checker(data, _checker=False ,
     return _occ,num_turn,data
         
 
-                                       
+@docSanitizer()                                       
 def intell_index (datalist,assembly_dials =False):
     """
     Function to search index to differency value to string element like 
@@ -787,14 +791,14 @@ def intell_index (datalist,assembly_dials =False):
 
     Returns
     -------
-    index: int
-        Index of breaking up.
-    first_dial: list , 
-        First sclice of value part 
-    secund_dial: list , 
-        Second slice of rocks or sample part.
-    assembly : list 
-        List of first_dial and second_dial
+        index: int
+            Index of breaking up.
+        first_dial: list , 
+            First sclice of value part 
+        secund_dial: list , 
+            Second slice of rocks or sample part.
+        assembly : list 
+            List of first_dial and second_dial
     
     Examples
     ---------
