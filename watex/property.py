@@ -3,6 +3,92 @@
 #   Created date: Fri Apr 15 10:46:56 2022
 #   Licence: MIT Licence 
 
+"""
+`WATex <https://github.com/WEgeophysics/watex/>`_ properties objects 
+=====================================================================
+
+**Water**: Base class module. It contains all the water properties usefull 
+    for pure hydrogeological module writting. Instanciated the class should 
+    raise an error, however, its special attributes can be used by the child 
+    class object. 
+    
+**BasePlot**: The base class of all plots. It can be the parent class of all 
+    other plotting classes. The module :mod:`~.view.plot` uses the `BasePlot`
+    class for `Matplotlib plot`_.
+    
+**P**: Is a property class that handles the |ERP| and |VES| attributes. Along 
+    the :mod:`~.methods.electrical`, it deals with the electrical dipole 
+    arrangements, the data classsification and assert whether it is able to 
+    be read by the scripts. It is a lind of "asserter". Accept data or reject 
+    data provided by the used indicated the way to sanitize it before feeding 
+    to the algorithm: 
+        
+        >>> from watex.property import P 
+        >>> pObj = P() 
+        >>> P.idictags 
+        ... <property at 0x15b2248a450>
+        >>> pObj.idicttags 
+        ... {'station': ['pk', 'sta', 'pos'],
+        ...     'resistivity': ['rho', 'app', 'res', 'se', 'sounding.values'],
+        ...     'longitude': ['long', 'lon'],
+        ...     'latitude': ['lat'],
+        ...     'easting': ['east', 'x'],
+        ...     'northing': ['north', 'y']}
+        >>> rphead = ['res', 'x', 'y', '']
+        >>> pObj (rphead) # sanitize the given resistivity profiling head data.
+        ... ['resistivity', 'easting', 'northing']
+        >>> rphead = ['lat', 'x', 'rho', '']
+        ... ['latitude', 'easting', 'resistivity']
+        >>> rphead= ['pos', 'x', 'lon', 'north', 'latitud', 'app.res' ]
+        >>> pObj (rphead)
+        ... ['station', 'easting', 'longitude', 'northing', 'latitude', 'resistivity'] 
+        >>> # --> for sounding head assertion 
+        >>> vshead=['ab', 's', 'rho', 'potential']
+        >>> pObj (vshead, kind ='ves')
+        ... ['AB', 'resistivity'] # in the list of vshead, 
+        ... # only 'AB' and 'resistivity' columns are recognized. 
+        
+**BagoueNotes**: Give some details about the test dataset used throughout the 
+    `WATex`_ packages. It is a guidance for the user to get anay details about
+    the data preprocessed in order to wuick implement or testing the method.
+    Some examples to fetching infos and data are illustrated below:: 
+        
+        >>> from watex.datasets import fetch_data
+        >>> bag_records = fetch_data('original').get('DESCR')
+        ... 'https://doi.org/10.5281/zenodo.5571534: bagoue-original'
+        >>> data_contests =fetch_data('original').get('dataset-contest') 
+        ... {'__documentation:': '`watex.property.BagoueNotes.__doc__`',
+        ...     '__area': 'https://en.wikipedia.org/wiki/Ivory_Coast',
+        ...     '__casehistory': 'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
+        ...     '__wikipages': 'https://github.com/WEgeophysics/watex/wiki',
+        ...     '__citations': ('https://doi.org/10.1029/2021wr031623',
+        ...      ' https://doi.org/10.5281/zenodo.5529368')}
+        >>> #-->  fetching X, y dat
+        >>> # get the list of tags before 
+        >>> tags=fetch_data('original').get('tags')
+        ... ('Bagoue original', ...,'Bagoue prepared sets', 'Bagoue untouched test sets')
+        >>> len(tags)
+        ... 11 
+        >>> --> fetch the preprocessing sets of data 
+        >>> X, y = fetch_data('preprocessing')
+        >>> X.shape , y.shape 
+        ... ((344, 8), (344,)) 
+        >>> list(X.columns) 
+        ... ['power', 'magnitude', 'sfi', 'ohmS', 'lwi', 'shape', 'type', 'geol']
+        >>> X, y = fetch_data('prepared') # data are vectorized and onehotencoded 
+        ... ((344, 18), (344,))
+        >>> X, y = fetch_data('test sets')
+        >>> X.shape , y.shape
+        ... ((87, 12), (87,))
+        
+**ElectricalMethods**: Is another Base class of :mod:`~.methods.electrical` 
+    especially the :class:`~.methods.electrical.ResistivityProfiling` and 
+    :class:`~.methods.electrical.VerticalSounding`. It is composed of the 
+    details of geolocalisation of the survey area and the array configuration. 
+    It expects to hold other attributes as the development is still ongoing.
+    
+      
+"""
 # import warnings 
 from __future__ import annotations 
 
@@ -14,11 +100,7 @@ from abc import (
 from .decorators import refAppender 
 from .documentation import __doc__ 
 
-"""
-`WATex <https://github.com/WEgeophysics/watex/>`_ properties objects 
-=====================================================================
 
-"""
 
 __all__ = [ 
     "Water",

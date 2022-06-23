@@ -52,7 +52,6 @@ from .gistools import (
     project_point_utm2ll 
     )
  
-# coreutils.__doc__= refAppender(__doc__)(coreutils)
 def _is_readable (
         f:str, 
         readableformats : Tuple[str] = ('.csv', '.xlsx'),

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
+#   Copyright (c) 2021 Kouadio K. Laurent <etanoyau@gmail.com> 
+#   Created date: Fri Apr 10 08:46:56 2022
+#   Licence: MIT Licence 
 
 """ 
 `WATex`_ Type variable definitions 
 ================================== 
 
-.. |ERP| replace: Electrical resistivity profiling 
+.. |ERP| replace:: Electrical resistivity profiling 
 
 .. _WATex: https://github.com/WEgeophysics/watex/
 .. _pandas DataFrame: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
