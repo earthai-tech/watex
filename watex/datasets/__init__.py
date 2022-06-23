@@ -65,10 +65,12 @@ def fetch_data(param):
             'data=dfy2':df0,
             'attrs-infos':BagoueNotes.bagattr_infos, 
             'dataset-contest':{
-                '__documentation:':'`~watex.utils.infos.BagoueNotes.__doc__`', 
+                '__documentation:':'`watex.property.BagoueNotes.__doc__`', 
                 '__area':'https://en.wikipedia.org/wiki/Ivory_Coast', 
-                '__casehistory':'https://github.com/WEgeophysics/watex/blob/WATex-process/examples/codes/pred_r.PNG',
+                '__casehistory':'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
                 '__wikipages':'https://github.com/WEgeophysics/watex/wiki',
+                '__citations': ('https://doi.org/10.1029/2021wr031623', 
+                                ' https://doi.org/10.5281/zenodo.5529368')
                 },
             'tags':BAGOUE_TAGS
                 }
