@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
+#   Copyright (c) 2021 Kouadio K. Laurent <etanoyau@gmail.com> 
+#   Created date: Fri Apr 10 08:46:56 2022
+#   Licence: MIT Licence 
 
 """ 
 `WATex`_ Type variable definitions 
 ================================== 
 
-.. |ERP| replace: Electrical resistivity profiling 
+.. |ERP| replace:: Electrical resistivity profiling 
 
 .. _WATex: https://github.com/WEgeophysics/watex/
 .. _pandas DataFrame: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
@@ -85,11 +88,11 @@ type of arguments.
                 
 **SP**: Stands for Station positions. The unit of position may vary, however, 
     we keep for :mod:`watex.method.electrical.ElectricalResistivityProfiling`
-    the default unit in ``meters``by starting at position 0. Typically,
+    the default unit in ``meters`` by starting at position 0. Typically,
     positions are recording according to the dipole length. For the example, 
     we can generated a position values for ``121 stations`` with dipole 
     length equals to ``50m`` i.e the length of the survey line is ``6 km``. 
-    Here we go:: 
+    Here we go: 
         
         * Import required modules and generate the whole survey line::
             

@@ -5,6 +5,8 @@
 .. |VES| replace:: Vertical Electrical Sounding 
 .. |ERP| replace:: Electrical Resistivity Profiling 
 
+.. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
+
 .. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
 
 .. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623

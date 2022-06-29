@@ -35,10 +35,10 @@ class ERP_collection:
      
     Arguments
     ----------
-    *listOferpfn*: list, ndarray
+    listOferpfn: list, ndarray
         list of different `erp` files.
             
-    *listOfposMinMax* : list 
+    listOfposMinMax : list 
         collection of different selected anomaly boundaries. 
         If not provided, the :attr:`~.methods.erp.ERP.auto` 
         will triggered. It's recommanded to provided for all 
@@ -46,20 +46,20 @@ class ERP_collection:
         
             listOfposMinMax=[(90, 130), (10, 70), ...]
     
-    where ``(90,130)``is boundaries of selected anomaly on 
-    the first `erp` line and ``(10,70)`` is the boundaries
-    of the second `erp` survey line and so on. 
+        where ``(90,130)``is boundaries of selected anomaly on 
+        the first `erp` line and ``(10,70)`` is the boundaries
+        of the second `erp` survey line and so on. 
             
-    *erpObjs*: list, ndarray 
+    erpObjs: list, ndarray 
         Collection of objects from :class:`~.methods.erp.ERP`. If objects 
         are alread created. Gather them on a list and pass though the 
         argument `erpObjs`.
     
-    Holds on others optionals infos in ``kws`` arguments: 
+    Holds on others optionals infos in ``kws`: 
     
-    ======================  ==============  ===================================
+    ======================  =============   ===================================
     Attributes              Type                Description  
-    ======================  ==============  ===================================
+    ======================  =============   ===================================
     list_of_dipole_lengths  list            Collection of `dipoleLength`. User 
                                             can provide the distance between 
                                             sites measurements as performed on 
@@ -77,21 +77,21 @@ class ERP_collection:
     erpdf                   pd.DataFrame    A dataFrame of collected `erp` line 
                                             and the number of lines correspond 
                                             to the number of collected `erp`.
-    ======================  ==============  ===================================
+    ======================  =============   ===================================
     
     It's posible to get from each `erp` collection the singular array of 
-    different parameters considered as properties params:: 
+    different parameters considered as properties:: 
     
         >>> from watex.methods.erp import ERP_collection as ERPC
         >>> erpcol = ERPC(listOferpfn='list|path|filename')
         >>> erpcol.survey_ids
         >>> erpcol.selectedPoints
      
-    Call the following :class:`~.erp.ERP_collection` properties attributes:
+    Call the following :class:`ERP_collection` atribute properties:
      
-    ====================  ================  ===================================
+    ====================   ==============   ===================================
     Properties              Type                Description  
-    ====================  ================  ===================================
+    ====================   ==============   ===================================
     selectedPoints          array_like      Collection of Best anomaly 
                                             position points. 
     survey_ids              array_like      Collection of all `erp` survey 
@@ -104,11 +104,11 @@ class ERP_collection:
                                             magnitude in *ohm.m*.
     shapes                  array_like      Collection of best anomaly shape. 
                                             For more details please refer to
-                                            :doc:`~.erp.ERP`.
+                                            :doc:`ERP`.
     types                   array_like      Collection of best anomaly type. 
-                                            Refer to :doc:`~.erp.ERP` for
+                                            Refer to :doc:`ERP` for
                                             more details.
-    ====================  ================  ===================================
+    ====================   ==============   ===================================
      
     Examples
     ---------
@@ -769,8 +769,8 @@ class ERP :
 
     def sanitize_columns(self): 
         """
-        Get the columns of :ref:`erp` dataframe and set new names according to 
-        :class:`~watex.core.ERP.erpLabels` . 
+        Get the columns of electrical resistivity profiling  dataframe and set
+        new names according to :attr:`.ERP.erpLabels` . 
     
         """ 
 
