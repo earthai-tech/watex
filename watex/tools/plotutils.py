@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 from .. import exceptions as Wex 
 from ..decorators import  ( 
     deprecated, 
-    redirect_cls_or_func
+    redirect_cls_or_func, 
+    docSanitizer
     )
 
 
@@ -371,9 +372,10 @@ def resetting_colorbar_bound(cbmax , cbmin, number_of_ticks = 5, logscale=False)
                          ii in np.linspace(startpoint, 
                                            endpoint, number_of_ticks)])
     
-    
+@docSanitizer()   
 def slice_csamt_matrix ( block_matrix , station_offsets, 
-                        depth_offsets, offset_MinMax =(0, 1000),  doi='2000m' ) : 
+                        depth_offsets, offset_MinMax =(0, 1000),
+                        doi='2000m' ) : 
     """
     Using Wannamaker FE elements mesh to define rho matrix blocks , 
     need after inversion to slice the model 
@@ -383,32 +385,31 @@ def slice_csamt_matrix ( block_matrix , station_offsets,
     
     Parameters
     -----------
-    * block_matrix : ndarray(station_offsets.shape[0], 
+    block_matrix : ndarray(station_offsets.shape[0], 
                 matrix of station depth Resistivity model
                 depth_offsets.shape[0])
     
-    * depth_offset : array_like  
+    depth_offset : array_like  
                depth of investigation after generating by mesh file :>z_nodes . 
                
-    * station_offsets : array_like 
+    station_offsets : array_like 
               station _offsets : offset generate by mesh_file :>x_nodes .
               
-    * offset_MinMax : tuple  
-          the interval of data to keep . eg if station location start by 0 : 
-              off[0] = min and off[-1]=max (min, max):--> index 0 :
-              minimum value of station location -->index 1 : 
-                  maximum value of station location
-              *default* is (0,1000)
-                    
-    * doi : str , float 
+    offset_MinMax : tuple  
+          the interval of data to keep . eg if station location start by 0 
+            ``off[0] = min`` and ``off[-1]=max (min, max)`. For minimum value
+            of station location -->index 1maximum value of station location.
+            *default* is (0,1000)
+                  
+    doi : str , float 
             investigation depth ,  migth be [m|km]. 
             If value is provided is float number , it might take value 
-            as a default unit 'meter'. i.e : 1000="1000m"
+            as a default unit 'meter'. i.e : ``1000="1000m"``
                 
     Returns
     ---------
-        tuple 
-          new sliced station offset , new sliced depth offset  , new_matrix block , 
+        tuple- new sliced station offset , new sliced depth offset , 
+        new_matrix block , 
     """
     def depth_of_investigation(doi): 
         """

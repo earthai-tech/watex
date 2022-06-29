@@ -10,7 +10,7 @@ Package Properties
 	:members:
 
 	
-**Module Scikit**
+**Module Scikit-Learn**
 =========================
 .. automodule:: watex.sklearn
 	:members:

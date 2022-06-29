@@ -57,7 +57,7 @@ class Metrics(object):
 def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
                             method="decision_function",cross_val_pred_kws =None,
                             y_tradeoff =None, **prt_kws):
-    """ Precision/recall Tradeoff computes a score based on the decision 
+    r""" Precision/recall Tradeoff computes a score based on the decision 
     function. 
     
     Is assign the instance to the positive class if that score on 
@@ -107,9 +107,7 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     positive prediction named ``precison`` of the classifier with 
     equation is:
     
-    .. math:: 
-        
-        precision = TP/(TP+FP)
+    .. math:: precision = TP/(TP+FP)
         
     where ``TP`` is the True Positive and ``FP`` is the False Positive
     A trival way to have perfect precision is to make one single 
@@ -120,9 +118,7 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     positive instances that are corectly detected by the classifier.  
     Equation of`recall` is given as:
     
-    .. math::
-        
-        recall = TP/(TP+FN)
+    .. math:: recall = TP/(TP+FN)
         
     where ``FN`` is of couse the number of False Negatives. 
     It's often convenient to combine `preicion`and `recall` metrics into
@@ -135,10 +131,9 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     
     .. math::
         
-        F1= 2/((1/precision)+(1/recall))\\
-        F1= 2* precision*recall /(precision+recall)\\
-        F1 = TP/(TP+ (FN +FP)/2)
-    
+        F1 &= 2/((1/precision)+(1/recall))= 2* precision*recall /(precision+recall) \\ 
+           &= TP/(TP+ (FN +FP)/2)
+        
     The way to increase the precion and reduce the recall and vice versa
     is called `preicionrecall tradeoff`.
     
@@ -270,16 +265,16 @@ def ROC_curve( roc_kws=None, **tradeoff_kws):
         
     Examples
     --------
-        >>> from sklearn.linear_model import SGDClassifier
-        >>> from watex.tools.metrics import ROC_curve
-        >>> from watex.datasets import fetch_data 
-        >>> X, y= fetch_data('Bagoue prepared')
-        >>> rocObj =ROC_curve(clf = sgd_clf,  X= X, 
-                       y = y, classe_=1, cv=3 )                                
-        >>> rocObj.__dict__.keys()
-        >>> rocObj.roc_auc_score 
-        >>> rocObj.fpr
-        
+    >>> from sklearn.linear_model import SGDClassifier
+    >>> from watex.tools.metrics import ROC_curve
+    >>> from watex.datasets import fetch_data 
+    >>> X, y= fetch_data('Bagoue prepared')
+    >>> rocObj =ROC_curve(clf = sgd_clf,  X= X, 
+                   y = y, classe_=1, cv=3 )                                
+    >>> rocObj.__dict__.keys()
+    >>> rocObj.roc_auc_score 
+    >>> rocObj.fpr
+    
     """
     
     mObj =Metrics()

@@ -1200,8 +1200,8 @@ class MLPlots:
         
         See also 
         ---------
-        see :meth:`~watex.tools.metrics.Metrics.confusion_matrix` for furthers
-        details about arguments.
+        Refer to :meth:`watex.tools.metrics.Metrics.confusion_matrix` 
+        for furthers details.
         
         """
         _check_cmap = 'cmap' in matshow_kws.keys()
