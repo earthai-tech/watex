@@ -4,7 +4,7 @@
  [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
  [![Requirements Status](https://requires.io/github/WEgeophysics/pyCSAMT/requirements.svg?branch=master)](https://requires.io/github/WEgeophysics/pyCSAMT/requirements/?branch=master)
   ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
-  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5529368.svg)](https://doi.org/10.5281/zenodo.5529368)
+  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6657013.svg)](https://doi.org/10.5281/zenodo.6657013)
   ![GitHub release (latest by date)](https://img.shields.io/github/v/release/WEgeophysics/watex) 
   ![GitHub repo size](https://img.shields.io/github/repo-size/WEgeophysics/watex?style=flat-square) 
   ![GitHub issues](https://img.shields.io/github/issues/WEgeophysics/watex)
@@ -51,11 +51,11 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 
 ## Citations
 
-If you use WATex in any published work, consider citing the [DOI](https://doi.org/10.5281/zenodo.5529368) below:
+If you use WATex in any published work, consider citing the [DOI](https://doi.org/10.5281/zenodo.6657013) below:
 
 > *Kouadio, K. L., Kouame, L. N., Drissa, C., Mi, B., Kouamelan, K. S., Gnoleba, S. P. D., et al. (2022). Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resources Research, (May 2022). https://doi.org/10.1029/2021wr031623*
 
-> *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A Machine Learning Research Toolbox in Hydrogeophysic. https://doi.org/10.5281/zenodo.5529368*
+> *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A Machine Learning Research Toolbox in Hydrogeophysic. https://doi.org/10.5281/zenodo.6657013*
 
 ## System requirements
 * Python 3.8+ 
