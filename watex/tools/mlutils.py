@@ -77,18 +77,11 @@ __estimator ={
 def cfexist(features_to: List[Array], 
             features: List[str] )-> bool:      
     """
-    Desciption: 
-        
-        Control features existence into another list . List or array 
-        can be a dataframe columns for pratical examples.  
-        
-    Usage:
-        
-        todo: test usage
-            
+    Control features existence into another list . List or array can be a 
+    dataframe columns for pratical examples.  
+    
     :param features_to :list of array to be controlled .
-    :param features: list of whole features located on array of 
-                `pd.DataFrame.columns` 
+    :param features: list of whole features located on array of `pd.DataFrame.columns` 
     
     :returns: 
         -``True``:If the provided list exist in the features colnames 
@@ -106,19 +99,14 @@ def cfexist(features_to: List[Array],
 
 def format_generic_obj(generic_obj :Iterable[T])-> T: 
     """
-    Desciption: 
-        
-        Format a generic object using the number of composed items. 
-    
-    Usage:
-        
-        todo: write usage
+    Format a generic object using the number of composed items. 
+
     :param generic_obj: Can be a ``list``, ``dict`` or other `TypeVar` 
-    classified objects.
+        classified objects.
     
     :Example: 
         
-        >>> from watex.hints import format_generic_obj 
+        >>> from watex.tools.mlutils import format_generic_obj 
         >>> format_generic_obj ({'ohmS', 'lwi', 'power', 'id', 
         ...                         'sfi', 'magnitude'})
         
@@ -133,22 +121,16 @@ def findIntersectionGenObject(
         gen_obj2: Iterable[Any]
                               )-> set: 
     """
-     Desciption: 
-         
-        Find the intersection of generic object and keep the shortest len 
-        object `type` at the be beginning: 
-     
-    Usage:
-
-        todo: write usage
-        
+    Find the intersection of generic object and keep the shortest len 
+    object `type` at the be beginning 
+  
     :param gen_obj1: Can be a ``list``, ``dict`` or other `TypeVar` 
         classified objects.
     :param gen_obj2: Idem for `gen_obj1`.
     
     :Example: 
         
-        >>> from watex.hints import findIntersectionGenObject
+        >>> from watex.tools.mlutils import findIntersectionGenObject
         >>> findIntersectionGenObject(
         ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
         ...    {'ohmS', 'lwi', 'power'})
@@ -166,22 +148,16 @@ def findDifferenceGenObject(gen_obj1: Iterable[Any],
                             gen_obj2: Iterable[Any]
                               )-> None | set: 
     """
-     Desciption: 
-         
-        Find the difference of generic object and keep the shortest len 
-        object `type` at the be beginning: 
-     
-    Usage:
-
-        todo: write usage
-        
+    Find the difference of generic object and keep the shortest len 
+    object `type` at the be beginning: 
+ 
     :param gen_obj1: Can be a ``list``, ``dict`` or other `TypeVar` 
         classified objects.
     :param gen_obj2: Idem for `gen_obj1`.
     
     :Example: 
         
-        >>> from watex.viewer.hints import findDifferenceGenObject
+        >>> from watex.tools.mlutils import findDifferenceGenObject
         >>> findDifferenceGenObject(
         ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
         ...    {'ohmS', 'lwi', 'power'})
@@ -204,12 +180,9 @@ def findDifferenceGenObject(gen_obj1: Iterable[Any],
 def featureExistError(superv_features: Iterable[T], 
                       features:Iterable[T]) -> None:
     """
-    Description:
-        Catching feature existence errors.
-        
-    Usage: 
-        
-        to check error. If nothing occurs  then pass 
+    Catching feature existence errors.
+    
+    check error. If nothing occurs  then pass 
     
     :param superv_features: 
         list of features presuming to be controlled or supervised
@@ -245,19 +218,16 @@ def featureExistError(superv_features: Iterable[T],
 def controlExistingEstimator(
         estimator_name: str  ) -> Union [Dict[str, T], None]: 
     """ 
-    Description: 
-        When estimator name is provided by user , will chech the prefix 
-        corresponding
-        
-    Usage: 
-        
-        Catching estimator name and find the corresponding prefix 
+    When estimator name is provided by user , will chech the prefix 
+    corresponding
+
+    Catching estimator name and find the corresponding prefix 
         
     :param estimator_name: Name of given estimator 
     
     :Example: 
         
-        >>> from watex.viewer.hints import controlExistingEstimator 
+        >>> from watex.tools.mlutils import controlExistingEstimator 
         >>> test_est =controlExistingEstimator('svm')
         ('svc', 'SupportVectorClassifier')
         
@@ -293,8 +263,7 @@ def formatModelScore(
         model_score: Union [float, Dict[str, float]] = None,
         select_estimator: str = None ) -> None   : 
     """
-    Description : 
-        Format the result of `model_score`
+    Format the result of `model_score`
         
     :param model_score: Can be float or dict of float where key is 
                         the estimator name 
@@ -302,7 +271,7 @@ def formatModelScore(
     
     :Example: 
         
-        >>> from watex.viewer.hints import formatModelScore 
+        >>> from watex.tools.mlutils import formatModelScore 
         >>>  formatModelScore({'DecisionTreeClassifier':0.26, 
                       'BaggingClassifier':0.13}
         )
@@ -1058,7 +1027,7 @@ def default_data_splitting(X, y=None, *,  test_size =0.2, target =None,
     given and you want to consider a specific array as a target for 
     supervised learning, just turn `fetch_target` argument to ``True`` and 
     set the `target` argument as a numpy columns index or pandas dataframe
-     colums name. 
+    colums name. 
     
     :param X: np.ndarray or pd.DataFrame 
     :param y: array_like 
@@ -1075,8 +1044,7 @@ def default_data_splitting(X, y=None, *,  test_size =0.2, target =None,
     :param skws: additional scikit-lean keywords arguments 
         https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
     
-    :returns: list, length
-        List containing train-test split of inputs.
+    :returns: list, length -List containing train-test split of inputs.
         
     :Example: 
         

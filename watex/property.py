@@ -4,8 +4,12 @@
 #   Licence: MIT Licence 
 
 """
-`WATex <https://github.com/WEgeophysics/watex/>`_ properties objects 
-=====================================================================
+`WATex`_ property objects 
+=========================
+
+.. _WATex: https://github.com/WEgeophysics/watex/
+.. |ERP| replace:: Electrical resistivity profiling 
+.. |VES| replace:: Vertical Electrical Sounding 
 
 **Water**: Base class module. It contains all the water properties usefull 
     for pure hydrogeological module writting. Instanciated the class should 
@@ -21,7 +25,7 @@
     arrangements, the data classsification and assert whether it is able to 
     be read by the scripts. It is a lind of "asserter". Accept data or reject 
     data provided by the used indicated the way to sanitize it before feeding 
-    to the algorithm: 
+    to the algorithm:: 
         
         >>> from watex.property import P 
         >>> pObj = P() 
@@ -86,7 +90,6 @@
     :class:`~.methods.electrical.VerticalSounding`. It is composed of the 
     details of geolocalisation of the survey area and the array configuration. 
     It expects to hold other attributes as the development is still ongoing.
-    
       
 """
 # import warnings 
@@ -313,7 +316,7 @@ _edi =[
 
 @refAppender(__doc__) 
 class Water (ABC): 
-    """ Should be a SuperClass for methods classes which deals with water 
+    r""" Should be a SuperClass for methods classes which deals with water 
     properties and components. Instanciate the class shoud raise an error. 
     
     Water (H2O) is a polar inorganic compound that is at room temperature a 
@@ -343,16 +346,16 @@ class Water (ABC):
                         animals have developed senses that enable them to
                         evaluate the potability of water in order to avoid 
                         water that is too ``salty`` or ``putrid``. 
-                        The *default** is ``potable``.    
+                        The *default* is ``potable``.    
     odor                Pure water is usually described as tasteless and odorless, 
                         although humans have specific sensors that can feel 
                         the presence of water in their mouths,and frogs are known
-                        to be able to smell it. The **default** is ``pure``.
+                        to be able to smell it. The *default* is ``pure``.
     color               The color can be easily observed in a glass of tap-water
                         placed against a pure white background, in daylight.
                         The **default** is ``pure white background``. 
     appearance          Pure water is visibly blue due to absorption of light 
-                        in the region ca. 600 nm – 800 nm. The **default** is 
+                        in the region ca. 600 nm – 800 nm. The *default* is 
                         ``visible``. 
     density             Water differs from most liquids in that it becomes
                         less dense as it freezes. In 1 atm pressure, it reaches 
@@ -362,8 +365,8 @@ class Water (ABC):
     magnetism           Water is a diamagnetic material. Though interaction
                         is weak, with superconducting magnets it can attain a 
                         notable interaction. the *default* value is 
-                        r"-0.91 $\chi m$". Note that the  magnetism succeptibily 
-                        has no unit. 
+                        :math:`-0.91 \chi m`". Note that the  magnetism  
+                        succeptibily has no unit. 
     capacity            stands for `heat capacity`. In thermodynamics, the 
                         specific heat capacity (symbol cp) of a substance is the
                         heat capacity of a sample of the substance divided by 
@@ -371,8 +374,8 @@ class Water (ABC):
                         heat capacity of 4184 J/(kg·K) at 20 °C 
                         (4182 J/(kg·K) at 25 °C).The *default* is is ``4182 ``
     vaporization        stands for `heat of vaporization`. Indeed, the enthalpy  
-                        of vaporization (symbol r"$\delta H_{vap}$"), also known 
-                        as the (latent) heat of vaporization or heat of 
+                        of vaporization (symbol :math:`\delta H_{vap}`), also  
+                        known as the (latent) heat of vaporization or heat of 
                         evaporation, is the amount of energy (enthalpy) that  
                         must be added to a liquid substance to transform a 
                         quantity of that substance into a gas. Water has a high 
@@ -401,8 +404,8 @@ class Water (ABC):
                         *default* is ``(0.611, ..., 101.32)``.
     compressibility     The compressibility of water is a function of pressure 
                         and temperature. At 0 °C, at the limit of zero pressure,
-                        the compressibility is r"$5.1×10−10 P^{a^−1}$". The 
-                        *default* value is the value at 0 °C.
+                        the compressibility is ``5.1x10^−10 P^{a^−1}``. 
+                        The *default* value is the value at 0 °C.
     triple              stands for `triple point`. The temperature and pressure
                         at which ordinary solid, liquid, and gaseous water 
                         coexist in equilibrium is a triple point of water. The 
@@ -473,8 +476,8 @@ class Water (ABC):
     earthmass           stands for the earth mass ration in "ppm" unit. Water 
                         is the most abundant substance on Earth and also the 
                         third most abundant molecule in the universe after the 
-                        r"$H_2$" and r"$CO$". The *default* value is ``0.23``
-                        ppm of the earth's mass. 
+                        :math:`H_2 \quad \text{and} \quad CO` . The *default* 
+                        value is ``0.23``ppm of the earth's mass. 
     occurence           stands for the abundant molecule in the Earth. Water 
                         represents ``97.39%`` of the global water volume of
                         1.38×109 km3 is found in the oceans considered as the 
@@ -484,8 +487,8 @@ class Water (ABC):
                         generally mildly acidic, with a pH between 5.2 and 5.8 
                         if not having any acid stronger than carbon dioxide. At
                         neutral pH, the concentration of the hydroxide ion 
-                        (r"$OH^{-}$) equals that of the (solvated) hydrogen ion
-                        (r"$H^{+}$), with a value close to r"$10^{−7} mol L−1$"
+                        (:math:`OH^{-}`) equals that of the (solvated) hydrogen 
+                        ion(:math:`H^{+}`), with a value close to ``10^−7 mol L^−1`` 
                         at 25 °C. The *default* is ``7.`` or ``neutral`` or the
                         name of any substance `pH` close to.
     nommenclature       The accepted IUPAC name of water is ``oxidane`` or 
@@ -578,7 +581,7 @@ class Water (ABC):
      
 
 class BasePlot(ABC): 
-    """ Base class  deals with Machine learning and conventional Plots. 
+    r""" Base class  deals with Machine learning and conventional Plots. 
     
     The `BasePlot`can not be instanciated. It is build on the top of other 
     plotting classes  and its attributes are used for 
@@ -604,7 +607,7 @@ class BasePlot(ABC):
     lw                  line weight of the plot, *default* is ``1.5``
     alpha               transparency number, *default* is ``0.5``  
     font_weight         weight of the font , *default* is ``bold``.        
-    marker              marker of stations *default* is r"$\blacktriangledown$".
+    marker              marker of stations *default* is :math:`\blacktriangledown`.
     ms                  size of marker in points. *default* is 5
     marker_style        style  of marker in points. *default* is ``o``.
     marker_facecolor    facecolor of the marker. *default* is ``yellow``
@@ -828,7 +831,7 @@ class ElectricalMethods (ABC) :
                                             is ``20.``meters. 
     arrangement             str             Type of dipoles `AB` and `MN`
                                             arrangememts. Can be *schlumberger*
-                                            *Wenner-alpha /wenner beta*,
+                                            *Wenner- alpha / wenner beta*,
                                             *Gradient rectangular* or *dipole-
                                             dipole*. Default is *schlumberger*.
     area                    str             The name of the survey location or
@@ -857,7 +860,7 @@ class ElectricalMethods (ABC) :
     a normal values and not on base 10 logarithm. So if log10 values 
     are given, set the argument `fromlog10` value to ``True``.
     
-    .. |VES| replace: Vertical Electrical Sounding 
+    .. |VES| replace:: Vertical Electrical Sounding 
     
     """
     
@@ -895,7 +898,7 @@ class P:
 
     .. |ERP| replace: Electrical resistivity profiling 
     
-    Properties 
+    Parameters  
     -----------
     
     **frcolortags**: Stands for flow rate colors tags. Values are  
@@ -932,7 +935,7 @@ class P:
     **P**: Typing class for fectching the properties. 
         
     Examples 
-    --------
+    ---------
     >>> from watex.property import P 
     >>> P.idicttags 
     ... <property at 0x1ec1f2c3ae0>
@@ -1176,7 +1179,7 @@ class P:
                 
 
 class BagoueNotes: 
-    """"
+    r"""
     `Bagoue dataset` are are Bagoue region is located in WestAfrica and lies
     between longitudes 6° and 7° W and latitudes 9° and 11° N in the north of 
     Cote d’Ivoire.
@@ -1191,10 +1194,10 @@ class BagoueNotes:
     Water Supply Program (PNAEP) in 2014.
     The data are firstly composed of Electrical resistivity profile (ERP) data
     collected from geophysical survey lines with various arrays such as
-    Schlumberger, gradient rectangle and Wenner (r"$\alpha $" or r"$\beta $) 
+    Schlumberger, gradient rectangle and Wenner :math:`\alpha` or :math:`\beta` 
     and the Vertical electricalsounding (VES) data carried out on the selected anomalies.
     The configuration used during the ERP is Schlumberger with distance of
-    AB is 200m and MN =20m.
+    :math:`AB = 200m \quad \text{and} \quad  MN =20m`.
     
     Refer to `FlowRatePredictionUsingSVMs`_ for further details. 
     
@@ -1247,7 +1250,9 @@ class BagoueNotes:
 ## XXXX properties functions 
 def assert_arrangement(a: int | str ): 
     """ Assert whether the given arrangement is correct. 
+    
     :param a: int, float, str - Type of given electrical arrangement. 
+    
     :returns:
         - The correct arrangement name 
         - ``0`` which means ``False`` or a wrong given arrangements.   

@@ -60,41 +60,40 @@ class QuickPlot :
 
     Hold others optionnal informations: 
         
-    ==================  =======================================================
-    Key Words           Description        
-    ==================  =======================================================
-    fig_dpi             dots-per-inch resolution of the figure
-                        *default* is 300
-    fig_num             number of the figure instance
-                        *default* is 'Mesh'
-    fig_size            size of figure in inches (width, height)
-                        *default* is [5, 5]
-    savefig             savefigure's name, *default* is ``None``
-    fig_orientation     figure orientation. *default* is ``landscape``
-    fig_title           figure title. *default* is ``None``
-    fs                  size of font of axis tick labels, axis labels are
-                        fs+2. *default* is 6 
-    ls                  [ '-' | '.' | ':' ] line style of mesh lines
-                        *default* is '-'
-    lc                  line color of the plot, *default* is ``k``
-    lw                  line weight of the plot, *default* is ``1.5``
-    alpha               transparency number, *default* is ``0.5``  
-    font_weight         weight of the font , *default* is ``bold``.        
-    marker              marker of stations 
-                        *default* is r"$\blacktriangledown$"
-    ms                  size of marker in points. *default* is 5
-    mstyle              style  of marker in points. *default* is ``o``.
-    x_minorticks        minortick according to x-axis size and *default* is 1.
-    y_minorticks        minortick according to y-axis size and *default* is 1.
-    font_size           size of font in inches (width, height)
-                        *default* is 3.
-    font_style          style of font. *default* is ``italic``
-                        
-    bins                histograms element separation between two bar. 
-                         *default* is ``10``. 
-    xlim                limit of x-axis in plot. *default* is None 
-    ylim                limit of y-axis in plot. *default* is None 
-    ==================  =======================================================
+    ====================    ===================================================
+    Key Words               Description        
+    ====================    ===================================================
+    fig_dpi                 dots-per-inch resolution of the figure
+                            *default* is 300
+    fig_num                 number of the figure instance
+                            *default* is 'Mesh'
+    fig_size                size of figure in inches (width, height)
+                            *default* is [5, 5]
+    savefig                 savefigure's name, *default* is ``None``
+    fig_orientation         figure orientation. *default* is ``landscape``
+    fig_title               figure title. *default* is ``None``
+    fs                      size of font of axis tick labels, axis labels are
+                            fs+2. *default* is 6 
+    ls                      [ '-' | '.' | ':' ] line style of mesh lines
+                            *default* is '-'
+    lc                      line color of the plot, *default* is ``k``
+    lw                      line weight of the plot, *default* is ``1.5``
+    alpha                   transparency number, *default* is ``0.5``  
+    font_weight             weight of the font , *default* is ``bold``.        
+    marker                  marker of stations 
+                            *default* is r"$\blacktriangledown$"
+    ms                      size of marker in points. *default* is 5
+    mstyle                  style  of marker in points. *default* is ``o``.
+    x_minorticks            minortick according to x-axis size and *default* is 1.
+    y_minorticks            minortick according to y-axis size and *default* is 1.
+    font_size               size of font in inches (width, height)
+                            *default* is 3.
+    font_style              style of font. *default* is ``italic``
+    bins                    histograms element separation between two bar. 
+                             *default* is ``10``. 
+    xlim                    limit of x-axis in plot. *default* is None 
+    ylim                    limit of y-axis in plot. *default* is None 
+    ====================    ===================================================
     
     """
     readFeafmt ={".csv":pd.read_csv, ".xlsx":pd.read_excel,

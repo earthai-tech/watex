@@ -86,18 +86,18 @@ def find_limit_for_integration(
         ix_arr: Array[DType[int]],
         b0: List[T] =[]
 )-> List[T]: 
-    """ Use the roots between f curve and basement curves to 
+    r""" Use the roots between f curve and basement curves to 
     detect the limit of integration.
     
-    :param arri: array-like - Indexes array from masked array where 
-        the value are true i.e. where b-f >0 => f> b. 
+    :param ix_arr: array-like - Indexes array from masked array where  
+        the value are true i.e. where :math:` b-f > 0 \Rightarrow  b> f` . 
         
     :param b0: list - Empy list to hold the limit during entire loop 
     
     .. note::
-        b > f ==> Curve b (basement) is above the fitting curve f. 
-        b< f otherwise. 
-        The pseudoarea is the area where b > f
+        :math:`b > f \Longrightarrow` Curve b (basement) is above the fitting  
+        curve :math:`f` . :math:`b < f` otherwise. The pseudoarea is the area 
+        where :math:` b > f` .
     
     :return: list - integration bounds 
     
@@ -121,22 +121,22 @@ def find_bound_for_integration(
         ix_arr: Array[DType[int]],
         b0: List[T] =[]
 )-> List[T]: 
-    """ Recursive function. Use the roots between f curve and basement 
+    r""" Recursive function. Use the roots between f curve and basement 
     curves to detect the  integration bounds. The function use entirely 
     numpy for seaching integration bound. Since it is much faster than 
     `find_limit_for_integration` although both did the same tasks. 
     
-    :param arri: array-like - Indexes array from masked array where 
-        the value are true i.e. where b-f >0 => f> b. 
+    :param ix_arr: array-like - Indexes array from masked array where 
+        the value are true i.e. where :math:`b-f > 0 \Rightarrow b > f` . 
         
     :param b0: list - Empy list to hold the limit during entire loop 
     
-    .. note::
-        b > f ==> Curve b (basement) is above the fitting curve f. 
-        b< f otherwise. 
-        The pseudoarea is the area where b > f 
-    
     :return: list - integration bounds
+    
+    .. note::
+        :math:`b > f \Longrightarrow` Curve b (basement) is above the fitting curve 
+        :math:`f` . :math:`b < f` otherwise. The pseudoarea is the area where 
+        :math:`b > f` .
     
     """
     
@@ -349,34 +349,37 @@ def ohmicArea(
         objective: str = 'ohmS',
         **kws
 ) -> float: 
-    """ 
+    r""" 
     Compute the ohmic-area from the |VES| data collected in exploration area. 
     
-    .. |VES| replace: Vertical Electrical Sounding 
+    Parameters 
+    -----------
+    * data: Dataframe pandas - contains the depth measurement AB from current 
+        electrodes, the potentials electrodes MN and the collected apparents 
+        resistivities. 
     
-    :param data: Dataframe pandas - contains the depth measurement AB from 
-        current electrodes, the potentials electrodes MN and the collected 
-        apparents resistivities. 
-    
-    :param ohmSkey: float - The depth in meters from which one expects to find 
-        a fracture zone outside of pollutions. Indeed, the `ohmSkey` parameter is 
+    * ohmSkey: float - The depth in meters from which one expects to find a 
+        fracture zone outside of pollutions. Indeed, the `ohmSkey` parameter is 
         used to  speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For instance 
-        in :ref:`Bagoue region`, the average depth of water inrush is around ``45m``.
-        So the `ohmSkey` can be specified via the water inrush average value. 
+        in `Bagoue region`_ , the average depth of water inrush
+        is around ``45m``. So the `ohmSkey` can be specified via the water inrush 
+        average value. 
         
-    :param objective: str - Type operation to outputs. By default, the function 
-        outputs the value of pseudo-area in :math:`$\omega .m^2$`. However, for 
+    * objective: str - Type operation to outputs. By default, the function 
+        outputs the value of pseudo-area in :math:`$ \Omega .m^2 $`. However, for 
         plotting purpose by setting the argument to ``view``, its gives an 
         alternatively outputs of X and Y, recomputed and projected as weel as 
         the X and Y values of the expected fractured zone. Where X is the AB dipole 
         spacing when imaging to the depth and Y is the apparent resistivity computed 
     
-    :param kws: dict - Additionnal keywords arguments from |VES| data operations. 
+    kws: dict - Additionnal keywords arguments from |VES| data operations. 
         See :func:`watex.tools.exmath.vesDataOperator` for futher details. 
     
-    :returns:  
-        List of twice tuples: 
+    Returns 
+    --------
+    List of twice tuples:
+        
         - Tuple(ohmS, error, roots): 
             - `ohmS`is the pseudo-area computed expected to be a fractured zone 
             - `error` is the integration error 
@@ -391,57 +394,12 @@ def ohmicArea(
                 dummy resistivity transform function.
             - `XYohmSarea` is `ndarray(nvalues, 2)` of the dipole spacing and  
                 resistiviy values of the expected fracture zone. 
-     
-            
+ 
     Raises
     -------
-    VESError if the `ohmSkey` is greater or equal to the maximum investigation 
-    depth in meters.  
-    
-    See also
-    ---------
-    The `ohmS` value calculated from `pseudo-area` is a fully data-driven 
-    parameter and is used to evaluate a pseudo-area of the fracture zone from 
-    the depth where the basement rock is supposed to start. Usually, when 
-    exploring deeper using the |VES|, we are looking for groundwater in the
-    fractured rock that is outside the anthropic pollution (Biemi, 1992). Since 
-    the VES is an indirect method, we cannot ascertain whether the presumed 
-    fractured rock contains water inside. However, we assume that the fracture
-    zone could exist and should contain groundwater. Mathematically, based on the
-    VES1D model proposed by :ref:`Koefoed O. (1976)`, we consider a function
-    :math:`$rho_T(l)$`, a set of reducing resistivity transform function to lower
-    the boundary plane at half the current electrode spacing :math:`$(l)$`. 
-    From the sounding curve :math:`$rho_T(l)$`,  an imaginary basement rock curve
-    :math:`$b_r (l)$` of slope equal to ``45°`` with the horizontal :math:`$h(l)$`
-    was created. A pseudo-area :math:`$S(l)$` should be defined by extending 
-    from :math:`$h(l)$` the :math:`$b_r (l)$` curve when the sounding curve
-    :math:`$rho_T(l)$`  is below :math:`$b_r(l)$`, otherwise :math:`$S(l)$` is 
-    equal to null. The computed area is called the ohmic-area :math:`$ohmS$` 
-    expressed in :math:`$\omega .m^2$` and constitutes the expected 'fractured zone'. 
-    Thus, :math:`$ohmS \neq 0$` confirms the existence of the fracture zone while 
-    :math:`$ohms=0$` raises doubts. The equation to determine the parameter 
-    is given as:
-        
-    .. math:: 
-        
-        ohmS=\int_{ l_i}^{l_{i+1}} S(l)dl  \\
-            s.t.  \\
-        S(l)=\Bigg\{ b_r (l)  - rho_T (l) if   b_r (l)  > rho_T (l)\\
-               0.  if b_r (l)  <= rho_T (l) 
-        and 
-        \Bigg\{ b_r(l) = l + h(l) ; h(l) =\beta \\
-               rho_T(l)= l^2int_{0}^{\\infty} T_i(\lambda) h_1(\lambda l) \lambda d\lambda \\
-              l_i and l_{i+1} solve the equation S(l=0)}
-            
-    where :math:`$l$` is half the current electrode spacing :math:`$AB/2$`,
-    :math:`$h_1$` denotes the first-order of the Bessel function of the first 
-    kind, :math:`$\beta $` is the coordinate value on y-axis direction of the
-    intercept term of the :math:`$b_r(l)$` and :math:`$h(l)$`, :math:`$T_i(\lambda )$`
-    resistivity transform function,  :math:`$lamda$` denotes the integral variable,
-    where n denotes the number of layers, :math:`$rho_i$` and :math:`$h_i$` are 
-    the resistivity and thickness of the :math:`$i-th$` layer, respectively.
-    Get more explanations and cleareance of formula  in the paper of 
-    `Kouadio et al 2022`_. 
+    VESError 
+        If the `ohmSkey` is greater or equal to the maximum investigation 
+        depth in meters. 
     
     Examples 
     ---------
@@ -455,8 +413,55 @@ def ohmicArea(
                     AB= data.AB, rhoa =data.resistivity, ohmSkey =45, 
                     objective ='plot') 
     ... ((26, 2), (1000, 2), (8, 2))    
-
-     
+    
+    
+    See also
+    ---------
+    
+    The `ohmS` value calculated from `pseudo-area` is a fully data-driven 
+    parameter and is used to evaluate a pseudo-area of the fracture zone  
+    from the depth where the basement rock is supposed to start. Usually, 
+    when exploring deeper using the |VES|, we are looking for groundwater
+    in thefractured rock that is outside the anthropic pollution (Biemi, 1992).  
+    Since the VES is an indirect method, we cannot ascertain whether the 
+    presumed fractured rock contains water inside. However, we assume that 
+    the fracture zone could exist and should contain groundwater. Mathematically,
+    based on the VES1D model proposed by `Koefoed, O. (1976)`_ , we consider
+    a function :math:`$ \rho_T(l)$`, a set of reducing resistivity transform 
+    function to lower the boundary plane at half the current electrode  
+    spacing :math:`$(l)$`. From the sounding curve :math:`$\rho_T(l)$`,  
+    curve an imaginary basement rock :math:`$b_r (l)$` of slope equal to ``45°`` 
+    with the horizontal :math:`$h(l)$` was created. A pseudo-area :math:`$S(l)$`
+    should be defined by extending from :math:`$h(l)$` the :math:`$b_r (l)$` 
+    curve when the sounding curve :math:`$\rho_T(l)$`  is below :math:`$b_r(l)$`,
+    otherwise :math:`$S(l)$` is equal to null. The computed area is called the 
+    ohmic-area :math:`$ohmS$` expressed in :math:`$\Omega .m^2$` and constitutes
+    the expected *fractured zone*. Thus :math:`$ohmS$` ≠ :math:`0` confirms the 
+    existence of the fracture zone while of :math:`$Ohms=0$` raises doubts. 
+    The equation to determine the parameter is given as:
+    
+    .. math::
+    
+        ohmS & = &\int_{ l_i}^{l_{i+1}} S(l)dl \quad {s.t.} 
+        
+        S(l) & = &  b_r (l)  - \rho_T (l) \quad \text{if} \quad  b_r (l)  > \rho_T (l) \\
+             & = & 0.  \quad \text{if}  \quad b_r (l)  \leq \rho_T (l) 
+        
+        b_r(l) & = & l + h(l)  \quad ; \quad h(l) = \beta  
+        
+        \rho_T(l) & = & l^2 \int_{0}^{\infty} T_i( \lambda ) h_1( \lambda l) \lambda d\lambda 
+       
+    where :math:`l_i \quad \text{and} \quad l_{i+1}` solve the equation 
+    :math:`S(l=0)`; :math:`$l$` is half the current electrode spacing :math:`$AB/2$`,
+    and :math:`$h_1$` denotes the first-order of the Bessel function of the first 
+    kind, :math:`$ \beta $` is the coordinate value on y-axis direction of the
+    intercept term of the :math:`$b_r(l)$` and :math:`$h(l)$`, :math:`$T_i(\lambda )$`
+    resistivity transform function,  :math:`$lamda$` denotes the integral variable,
+    where n denotes the number of layers, :math:`$rho_i$` and :math:`$h_i$` are 
+    the resistivity and thickness of the :math:`$i-th$` layer, respectively.
+    Get more explanations and cleareance of formula  in the paper of 
+    `Kouadio et al 2022`_. 
+        
     References
     ----------
     *Kouadio, K.L., Nicolas, K.L., Binbin, M., Déguine, G.S.P. & Serge*, 
@@ -471,8 +476,17 @@ def ohmicArea(
         Soundings: an Algorithm. Geophysical Prospecting, 24(2), 233–240.
         https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
         
+    *Biemi, J. (1992)*. Contribution à l’étude géologique, hydrogéologique et par télédétection
+        de bassins versants subsaheliens du socle précambrien d’Afrique de l’Ouest:
+        hydrostructurale hydrodynamique, hydrochimie et isotopie des aquifères discontinus
+        de sillons et aires gran. In Thèse de Doctorat (IOS journa, p. 493). Abidjan, Cote d'Ivoire
+        
     .. _Kouadio et al 2022: https://doi.org/10.1029/2021WR031623 or refer to 
         the paper `FlowRatePredictionWithSVMs <https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623>`_
+    .. _Koefoed, O. (1970): https://doi.org/10.1111/j.1365-2478.1970.tb02129.x
+    .. _Koefoed, O. (1976): https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
+    .. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
+    .. |VES| replace: Vertical Electrical Sounding 
     
     """
     
@@ -836,10 +850,10 @@ def shape (
                 len(lmaxls) <=0  and len(lmaxrs) >=1): 
             shape = 'M'
     
-    return shape 
-
-@docSanitizer()    
+    return shape
+ 
 @refAppender(__doc__)
+@docSanitizer()    
 def scalePosition(
         ydata: Array | SP | Series | DataFrame ,
         xdata: Array| Series = None, 
@@ -880,16 +894,13 @@ def scalePosition(
         
     Returns 
     --------
-    - ydata - array -like 
-        Data scaled 
-    - popt - array-like 
-        Optimal values for the parameters so that the sum of the squared 
-        residuals of ``f(xdata, *popt) - ydata`` is minimized.
-    - pcov - array like 
-        The estimated covariance of popt. The diagonals provide the variance
-        of the parameter estimate. To compute one standard deviation errors 
-        on the parameters use ``perr = np.sqrt(np.diag(pcov))``. How the sigma 
-        parameter affects the estimated covariance depends on absolute_sigma 
+    - ydata - array -like - Data scaled 
+    - popt - array-like Optimal values for the parameters so that the sum of 
+        the squared residuals of ``f(xdata, *popt) - ydata`` is minimized.
+    - pcov - array like The estimated covariance of popt. The diagonals provide
+        the variance of the parameter estimate. To compute one standard deviation 
+        errors on the parameters use ``perr = np.sqrt(np.diag(pcov))``. How the
+        sigma parameter affects the estimated covariance depends on absolute_sigma 
         argument, as described above. If the Jacobian matrix at the solution
         doesn’t have a full rank, then ‘lm’ method returns a matrix filled with
         np.inf, on the other hand 'trf' and 'dogbox' methods use Moore-Penrose
@@ -914,14 +925,14 @@ def scalePosition(
     >>> easting_corrected, *_= scalePosition(ydata =df.easting , show=True)
     >>> df.easting.values 
     ... array([790284, 790281, 790277, 790270, 790265, 790260, 790254, 790248,
-           790243, 790237, 790231, 790224, 790218, 790211, 790206, 790200,
-           790194, 790187, 790181, 790175], dtype=int64)
+    ...       790243, 790237, 790231, 790224, 790218, 790211, 790206, 790200,
+    ...       790194, 790187, 790181, 790175], dtype=int64)
     >>> easting_corrected
     ... array([790288.18571705, 790282.30300999, 790276.42030293, 790270.53759587,
-           790264.6548888 , 790258.77218174, 790252.88947468, 790247.00676762,
-           790241.12406056, 790235.2413535 , 790229.35864644, 790223.47593938,
-           790217.59323232, 790211.71052526, 790205.8278182 , 790199.94511114,
-           790194.06240407, 790188.17969701, 790182.29698995, 790176.41428289])
+    ...       790264.6548888 , 790258.77218174, 790252.88947468, 790247.00676762,
+    ...       790241.12406056, 790235.2413535 , 790229.35864644, 790223.47593938,
+    ...       790217.59323232, 790211.71052526, 790205.8278182 , 790199.94511114,
+    ...       790194.06240407, 790188.17969701, 790182.29698995, 790176.41428289])
     
     """
     def linfunc (x, a, b): 
@@ -1249,6 +1260,7 @@ def sfi (
     
     return sfi 
 
+@refAppender(__doc__)
 def plot_ (
     *args : List [Union [str, Array, ...]],
     figsize: Tuple[int] = None,
@@ -1259,9 +1271,6 @@ def plot_ (
     **kws
     ) -> None : 
     """ Quick visualization for fitting model, |ERP| and |VES| curves.
-    
-    .. |VES| replace: Vertical Electrical Sounding 
-    .. |ERP| replace: Electrical resistivity Profiling 
     
     :param x: array-like - array of data for x-axis representation 
     :param y: array-like - array of data for plot y-axis  representation
@@ -1382,16 +1391,16 @@ def quickplot (arr: Array | List[float], dl:float  =10)-> None:
     
 
 def magnitude (cz:Sub[Array[float, DType[float]]] ) -> float: 
-    """ 
+    r""" 
     Compute the magnitude of selected conductive zone. 
     
     The magnitude parameter is the absolute resistivity value between
-    the minimum :math:`$rhoa_{min}$` and maximum :math:`$rhoa_{max}$` 
+    the minimum :math:`\min \rho_a` and maximum :math:`\max \rho_a` 
     value of selected anomaly:
     
     .. math::
     
-        magnitude=|rhoa_{min} -rho a_{max}|
+        magnitude=|\min\rho_a -\max\rho_a|
 
     :param cz: array-like. Array of apparent resistivity values composing 
         the conductive zone. 
@@ -1779,21 +1788,32 @@ def compute_anr (
         rhoa_array: Array | List[float],
         pos_bound_indexes: Array[DType[int]] | List[int]
         )-> float:
-    """
+    r"""
     Compute the select anomaly ratio (ANR) along with the whole profile from
     SFI. The standardized resistivity values`rhoa`  of is averaged from 
-    :math:`X_{begin} to :math:`X_{end}`. The ANR is a positive value. 
+    :math:`X_{begin}` to :math:`X_{end}`. The ANR is a positive value and the 
+    equation is given as:
+        
+    .. math:: 
+     
+        ANR= sfi * \frac{1}{N} * | \sum_{i=1}^{N} \frac{
+            \rho_{a_i} - \bar \rho_a}{\sigma_{\rho_a}} |
+       
+
+    where :math:`$\sigma_{rho_a}$`  and :math:`\bar \rho_a` are the standard 
+    deviation  and the mean of the resistivity values composing the selected
+    anomaly. 
     
     :param sfi: 
-        Is standard fracturation index. please refer to :doc:`compute_sfi`.
+        Is standard fracturation index. please refer to :func:`compute_sfi`.
         
     :param rhoa_array: Resistivity values of Electrical Resistivity Profiling
         line 
     :type rhoa_array: array_like 
     
     :param pos_bound_indexes: 
-        Select anomaly station location boundaries indexes. Refer to 
-        :doc:`.compute_power` of ``pos_bounds``. 
+        Select anomaly station location boundaries indexes. Refer to  
+        :func:`compute_power` of ``pos_bounds``. 
         
     :return: Anomaly ratio 
     :rtype: float 
@@ -2181,7 +2201,8 @@ def select_anomaly (
     the `dipole_length` will be recomputed.
      
     
-    :param rhoa_array: The apparent resistivity value of :ref:`erp` 
+    :param rhoa_array: The apparent resistivity value of Electrical Resistivity
+        Profiling. 
     :type rho_array: array_like 
     
     :param pos_array: The array of station position in meters 
