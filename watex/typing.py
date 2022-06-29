@@ -88,11 +88,11 @@ type of arguments.
                 
 **SP**: Stands for Station positions. The unit of position may vary, however, 
     we keep for :mod:`watex.method.electrical.ElectricalResistivityProfiling`
-    the default unit in ``meters``by starting at position 0. Typically,
+    the default unit in ``meters`` by starting at position 0. Typically,
     positions are recording according to the dipole length. For the example, 
     we can generated a position values for ``121 stations`` with dipole 
     length equals to ``50m`` i.e the length of the survey line is ``6 km``. 
-    Here we go:: 
+    Here we go: 
         
         * Import required modules and generate the whole survey line::
             

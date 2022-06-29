@@ -359,7 +359,7 @@ class ResistivityProfiling(ElectricalMethods):
 @refAppender(__doc__)    
 class VerticalSounding (ElectricalMethods): 
     """ 
-    Vertical Electrical Sounding (|VES|) class; inherits of ElectricalMethods 
+    Vertical Electrical Sounding (VES) class; inherits of ElectricalMethods 
     base class. 
     
     The VES is carried out to speculate about the existence of a fracture zone
@@ -368,14 +368,14 @@ class VerticalSounding (ElectricalMethods):
     one-dimensional. 
     
     Arguments 
-    ----------
-
+    -----------
+    
     **fromS**: float 
         The depth in meters from which one expects to find a fracture zone 
         outside of pollutions. Indeed, the `fromS` parameter is used to  
         speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For 
-        instance in :ref:`Bagoue region`, the average depth of water inrush 
+        instance in `Bagoue region`_ , the average depth of water inrush 
         is around ``45m``.So the `fromS` can be specified via the water inrush 
         average value. 
         
@@ -386,13 +386,13 @@ class VerticalSounding (ElectricalMethods):
         
     **h0**: float 
         Thickness  in meter of the first layers in meters.If ``None``, it 
-        should be the minimum thickess as possible ``1.``m. 
+        should be the minimum thickess as possible ``1.m`` . 
     
     **strategy**: str 
         Type of inversion scheme. The defaut is Hybrid Monte Carlo (HMC) known
         as ``HMCMC``. Another scheme is Bayesian neural network approach (``BNN``). 
         
-    **vesorder** int 
+    **vesorder**: int 
         The index to retrieve the resistivity data of a specific sounding point.
         Sometimes the sounding data are composed of the different sounding 
         values collected in the same survey area into different |ERP| line.
@@ -454,11 +454,11 @@ class VerticalSounding (ElectricalMethods):
         
     **kws**: dict 
         Additionnal keywords arguments from |VES| data operations. 
-        See :func:`watex.utils.exmath.vesDataOperator` for futher details.
+        See :func:`watex.tools.exmath.vesDataOperator` for futher details.
         
     See also 
     ---------
-     `Kouadio et al 2022 <https://doi.org/10.1029/2021WR031623>`_
+    `Kouadio et al 2022 <https://doi.org/10.1029/2021WR031623>`_
     
     References
     ----------
@@ -527,7 +527,7 @@ class VerticalSounding (ElectricalMethods):
         """ Fit the sounding |VES| curves and computed the ohmic-area and set  
         all the features for demarcating fractured zone from the selected 
         anomaly. 
-
+        
         Parameters 
         -----------
         data:  Path-like object, DataFrame
@@ -564,8 +564,8 @@ class VerticalSounding (ElectricalMethods):
          object: 
              Useful for chaining methods. 
              
-        .. |VES| replace: Vertical Electrical Sounding 
-        
+        .. |VES| replace:: Vertical Electrical Sounding 
+
         """
         
         def prettyprinter (n, r,v): 

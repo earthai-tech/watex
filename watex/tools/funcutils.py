@@ -590,8 +590,7 @@ def sanitize_fdataset(
     df = pd.DataFrame(data=_df.to_numpy(), columns= new_df_columns)
     return df , utm_flag
      
-
-@docSanitizer()               
+             
 def interpol_scipy (
         x_value,
         y_value,
@@ -650,7 +649,6 @@ def interpol_scipy (
     
     return y_new
 
-@docSanitizer()
 def _set_depth_to_coeff(
         data,
         depth_column_index,
@@ -1566,9 +1564,9 @@ def find_position_from_sa(
         pos=None,
         selectedPk=None): 
     """
-    Function to select the main :ref:`pk` from both :ref:`get_boundaries`. 
+    Function to select the main `pk` from both :func:`get_boundaries`.
     
-    :paran an_res_range: anomaly resistivity range on :ref:`erp` line. 
+    :paran an_res_range: anomaly resistivity range on |ERP| line. 
     :type an_res_range: array_like 
     
     :param pos: position of anomaly boundaries (inf and sup):
@@ -1594,6 +1592,7 @@ def find_position_from_sa(
         ...    resan, pos=[90, 13], selectedPk= 'str20')
         >>> pk
     
+    .. |ERP| replace:: Electrical Resistivity Profiling
     
     """
     #compute dipole length from pos
@@ -1730,20 +1729,20 @@ def find_feature_positions (
     :param anom_infos:
         
         Is a dictionnary of best anomaly points computed from 
-        :func:`compute_lower_anomaly` when `pk_bounds` is not given.  
-        see :doc:`compute_lower_anomaly`
+        :func:`drawn_anomaly_boundaries2` when `pk_bounds` is not given.  
+        see :func:`find_position_bounds`
         
     :param anom_rank: Automatic ranking after selecting best points 
         
     :param pk_rhoa_index: 
         
         Is tuple of selected anomaly resistivity value and index in the whole
-        :ref:`erp` line. for instance: 
+        |ERP| line. for instance: 
             
             pks_rhoa_index= (80., 17) 
             
         where "80" is the value of selected anomaly in ohm.m and "17" is the 
-        index of selected points in the :ref:`erp` array. 
+        index of selected points in the |ERP| array. 
         
     :param dl: 
         
@@ -1752,7 +1751,9 @@ def find_feature_positions (
         
     :returns: 
         
-        see :doc:`select_anomaly`
+        Refer to :doc:`.exmath.select_anomaly`
+    
+    .. |ERP| replace:: Electrical Resistivity Profiling
     
     """     
     rank_code = '{}_pk'.format(anom_rank)
@@ -1785,9 +1786,11 @@ def find_position_bounds(
         dl=10.
         ):
     """
-    Find station position boundary indexed in :ref:`erp` line. Usefull 
-    to get the boundaries indexes `pk_boun_indexes` for :ref:`erp` 
+    Find station position boundary indexed in |ERP| line. Usefull 
+    to get the boundaries indexes `pk_boun_indexes` for |ERP| 
     normalisation  when computing `anr` or else. 
+    
+    .. |ERP| replace:: Electrical Resistivity Profiling
     
     :param pk: Selected anomaly station value 
     :type pk: float 
@@ -1798,13 +1801,15 @@ def find_position_bounds(
     :rhoa_range: Selected anomaly values from `pk_min` to `pk_max` 
     :rhoa_range: array_like 
     
-    :parm dl: see :doc:`find_pkfeatures`
+    :parm dl: see :func:`find_position_from_sa` docstring.
     
     :Example: 
         
-        >>> from watex.tools.funcutilsimport find_position_bounds  
-        >>> find_pkBounds(pk=110, rhoa=137, 
+        >>> from watex.tools.funcutils import find_position_bounds  
+        >>> find_position_bounds(pk=110, rhoa=137, 
                           rhoa_range=np.array([175,132,137,139,170]))
+        
+    
     """
 
     if isinstance(pk, str): 
@@ -1929,7 +1934,7 @@ def drawn_anomaly_boundaries2(
 def get_boundaries(df): 
     """
     Define anomaly boundary `upper bound` and `lowerbound` from 
-    :ref:`ves` location. 
+    :ref:`define_position_bounds` location. 
         
     :param df: Dataframe pandas contained  the columns 
                 'pk', 'x', 'y', 'rho', 'dl'. 

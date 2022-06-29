@@ -330,8 +330,8 @@ class writef(object):
     :param savepath: 
         Give the path to save the new file written.
         
-    Author: @Daniel03
-    Date: 09/07/2021
+    *Author: @Daniel03*
+    *Date: 09/07/2021*
         
     """
     
@@ -1081,26 +1081,23 @@ class docstring:
     end: str 
         endpoint Value of the doctring. Stop considering point.
     
-    In the followings examples let try to append the `writedf` function
-    from ``param reason`` (start) to `param to_` (end) to the 
-    dostring to `predPlot` class like::
-        
-        @doctring(writedf, start ='param reason', end='param to_')
-        predPlot()
-            ...
-            
-    `predPlot` class class will holds new doctring with writedf.__doc__ 
-    appended from `param reason` to `param to_` 
-            
+
     Examples
     --------
-    >>> from watex.tools.decorators import docstring 
-    >>> from watex.tools.decorators import writedf 
-    >>> from watex.tools.decorators import predPlot
-    >>> predPlot.__doc__
     
-    Author: @Daniel03
-    Date: 18/09/2021
+    .. In the followings examples let try to append the `writedf` function
+       from ``param reason`` (start) to `param to_` (end) to the 
+       dostring to `predPlot` class. `predPlot` class class will holds new 
+       doctring with writedf.__doc__ appended from `param reason` to 
+       `param to_`.
+        
+    >>> from watex.decorators import writedf , predPlot, docstring 
+    >>> docs = doctring(writedf, start ='param reason', end='param to_')(predPlot)
+    >>> docs.__doc__
+    >>> predPlot.__doc__ # doc modified and holds the writedf docstring too.
+    
+    *Author: @Daniel03*
+    *Date: 18/09/2021*
     """
     def __init__(self, func0, start='Parameters', end=None ):
         
@@ -1220,34 +1217,34 @@ class docAppender:
     ---------
     >>> from watex.decorators import docAppender 
     >>> def func0 (*args, **kwargs): 
-            '''Im here so share my doctring. 
-            
-            Parameters 
-            -----------
-            * args: list, 
-                Collection of the positional arguments 
-            ** kwargs: dict 
-                Collection of keywords arguments 
-            Returns 
-            -------
-                 None: nothing 
-            '''
-            pass 
+    ...        '''Im here so share my doctring. 
+    ...        
+    ...        Parameters 
+    ...        -----------
+    ...        * args: list, 
+    ...            Collection of the positional arguments 
+    ...        ** kwargs: dict 
+    ...            Collection of keywords arguments 
+    ...        Returns 
+    ...        -------
+    ...             None: nothing 
+    ...        '''
+    ...        pass 
     >>> def func(s, k=0): 
-            ''' Im here to append the docstring from func0
-            Parameters 
-            ----------
-            s: str , 
-                Any string value 
-            k: dict, 
-                first keyword arguments 
-                
-            Returns 
-            --------
-                None, I return nothing 
-            '''
+    ...        ''' Im here to append the docstring from func0
+    ...        Parameters 
+    ...        ----------
+    ...        s: str , 
+    ...            Any string value 
+    ...        k: dict, 
+    ...            first keyword arguments 
+    ...            
+    ...        Returns 
+    ...        --------
+    ...            None, I return nothing 
+    ...        '''
     >>> deco = docAppender(func0 , from_='Parameters',
-                            to='Returns', insert ='---\n')(func)
+    ...                        to='Returns', insert ='---\\n')(func)
     >>> deco.__doc__
     ...
     
@@ -1382,39 +1379,41 @@ class docSanitizer:
     --------
     >>> from watex.decorators import docSanitizer 
     >>> def messdocfunc(): 
-            ''' My doctring is mess. I need to be polished and well arranged.
-            
-            Im here to sanitize the mess doctring. 
-            
-            Parameters
-            ----------
-                    * args: list, 
-                        Collection of the positional arguments 
-                    ** kwargs: dict 
-                        Collection of keywords arguments 
-    
-            * kwargs: list,
-            Collection of the keyword arguments
-            
-            Warnings
-            --------
-            Let check for warnings string ... 
-            
-            ''' 
+    ...        '''My doctring is mess. I need to be polished and well arranged.
+    ...        
+    ...        Im here to sanitize the mess doctring. 
+    ...        
+    ...        Parameters
+    ...        ----------
+    ...                * args: list, 
+    ...                    Collection of the positional arguments 
+    ...                ** kwargs: dict 
+    ...                    Collection of keywords arguments 
+    ...
+    ...        * kwargs: list,
+    ...        Collection of the keyword arguments
+    ...        
+    ...        Warnings
+    ...        --------
+    ...        Let check for warnings string ... 
+    ...        
+    ...       '''
+    ...       pass
     >>> cleandocfunc = docSanitizer()(messfocfunc)
     >>> print(cleandocfunc.__doc__)
     ... '''
-        My doctring is mess. I need to be polished and well arranged.
+    ...    My doctring is mess. I need to be polished and well arranged.
+    ...
+    ...    Parameters
+    ...    ----------
+    ...    * args: list,
+    ...       Collection of the positional arguments
+    ...    ** kwargs: dict
+    ...        Collection of keywords arguments
+    ...    * kwargs: list,
+    ...        Collection of the keyword arguments
+    ...    '''
     
-        Parameters
-        ----------
-        * args: list,
-            Collection of the positional arguments
-        ** kwargs: dict
-            Collection of keywords arguments
-        * kwargs: list,
-            Collection of the keyword arguments
-        '''
     """
     
     insert_= ('parameters','returns','raises', 'examples','notes',
