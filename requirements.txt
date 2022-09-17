@@ -20,5 +20,5 @@ tqdm
 pycsamt 
 autoapi 
 h5py, 
-xgboost 
+xgboost==1.5.0 
 h5pyViewer
