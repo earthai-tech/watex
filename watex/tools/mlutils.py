@@ -44,14 +44,15 @@ from ..typing import (
     Sub                 
 )
 from ..exceptions import ( 
-    ParameterNumberError  
+    ParameterNumberError , 
+    EstimatorError
 )
 from .funcutils import ( 
     savepath_, 
-    smart_format
+    smart_format, 
 )
 
-__logger = watexlog().get_watex_logger(__name__)
+_logger = watexlog().get_watex_logger(__name__)
 
 
 DOWNLOAD_ROOT = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/'
@@ -62,18 +63,42 @@ CSV_FILENAME = '/__tar.tgz_files__/___fmain.bagciv.data.csv'
 
 DATA_URL = DOWNLOAD_ROOT + DATA_PATH  + TGZ_FILENAME
 
-__estimator ={
-        'dtc': ['DecisionTreeClassifier', 'dtc', 'dec'],
+_estimators ={
+        'dtc': ['DecisionTreeClassifier', 'dtc', 'dec', 'dt'],
         'svc': ['SupportVectorClassifier', 'svc', 'sup', 'svm'],
-        'sdg': ['SGDClassifier','sdg', 'sdg'],
-        'knn': ['KNeighborsClassifier','knn''kne'],
-        'rdf': ['RandomForestClassifier', 'rdf', 'ran', 'rfc'],
-        'ada': ['AdaBoostClassifier','ada', 'adc'],
-        'vtc': ['VotingClassifier','vtc', 'vot'],
-        'bag': ['BaggingClassifier', 'bag', 'bag'],
-        'stc': ['StackingClassifier','stc', 'sta'],
-        }    
+        'sdg': ['SGDClassifier','sdg', 'sd', 'sdg'],
+        'knn': ['KNeighborsClassifier','knn', 'kne', 'knr'],
+        'rdf': ['RandomForestClassifier', 'rdf', 'rf', 'rfc',],
+        'ada': ['AdaBoostClassifier','ada', 'adc', 'adboost'],
+        'vtc': ['VotingClassifier','vtc', 'vot', 'voting'],
+        'bag': ['BaggingClassifier', 'bag', 'bag', 'bagg'],
+        'stc': ['StackingClassifier','stc', 'sta', 'stack'],
+    'xgboost': ['ExtremeGradientBoosting', 'xgboost', 'gboost', 'gbdm'], 
+     'logit': ['LogisticRegression', 'logit', 'lr', 'logreg'], 
+     'extree': ['ExtraTreesClassifier', 'extree', 'xtree', 'xtr']
+        }  
+# pickking objs   
+# def save(obj):
+#     return (obj.__class__, obj.__dict__)
 
+# def restore(cls, attributes):
+#     obj = cls.__new__(cls)
+#     obj.__dict__.update(attributes)
+#     return obj
+
+def getGlobalScore (
+        cvres : Dict[str, Array] 
+        ) -> Tuple [ Dict[str, Array] ,  Dict[str, Array]  ]: 
+    """ Retrieve the global mean and standard deviation score  from the 
+    cross validation containers. 
+    
+    :param cvres: cross validation results after training the models of number 
+        of parameters equals to N. 
+    :type cvres: dict of Array-like, Shape (N, ) """
+    return  ( cvres.get('mean_test_score').mean() ,
+             cvres.get('std_test_score').mean()) 
+    
+    
 def cfexist(features_to: List[Array], 
             features: List[str] )-> bool:      
     """
@@ -203,7 +228,7 @@ def featureExistError(superv_features: Iterable[T],
         
         print(' Features can not be a NoneType value.'
               'Please set a right features.')
-        __logger.error('NoneType can not be a features!')
+        _logger.error('NoneType can not be a features!')
     except :
         raise ParameterNumberError  (
            f'Parameters number of {features} is  not found in the '
@@ -216,7 +241,7 @@ def featureExistError(superv_features: Iterable[T],
             format(list(features)))
         
 def controlExistingEstimator(
-        estimator_name: str  ) -> Union [Dict[str, T], None]: 
+        estimator_name: str , raise_err =False ) -> Union [Dict[str, T], None]: 
     """ 
     When estimator name is provided by user , will chech the prefix 
     corresponding
@@ -232,32 +257,29 @@ def controlExistingEstimator(
         ('svc', 'SupportVectorClassifier')
         
     """
-    estimator_name = estimator_name.lower()
-
-    estfull = [ e_key[0] for e_key in __estimator.values()]
-    
-    full_estimator_name =None 
-    
-    for estim_key, estim_val in __estimator.items(): 
-        if estimator_name == estim_key : 
-            full_estimator_name = estim_val[0]
-            return estim_key , full_estimator_name 
+    estimator_name = str(estimator_name).lower().strip() 
+    e = None ; efx = None 
+    for k, v in _estimators.items() : 
+        v_ = list(map(lambda o: str(o).lower(), v)) 
         
-        elif estimator_name != estim_key : 
-            for s_estim in estim_val : 
-                if re.match(r'^{}+'.format(estimator_name),
-                            s_estim.lower()): 
-                    full_estimator_name = estim_val[0]
-                    return estim_key , full_estimator_name 
+        if estimator_name in v_ : 
+            e, efx = k, v[0]
+            break 
+    ef = list(map(lambda o: o[0], _estimators.values() ))
     
-    if full_estimator_name is None : 
-        __logger.error(
-            f'Estimator `{estimator_name}` not found in the default '
-            ' list {}'.format(format_generic_obj(estfull)).format(*estfull))
-        warnings.warn(
-            f'Estimator `{estimator_name}` not found in the default estimators'
-            ' list {}'.format(format_generic_obj(estfull)).format(*estfull))
+    if e is None: 
+        _logger.error(
+            f'Default estimator `{estimator_name}` not found ! Expect:'
+            ' {}'.format(format_generic_obj(ef)).format(*ef))
+        warnings.warn(f'Default estimator `{estimator_name}` not available.'
+            ' Expect: {}'.format(format_generic_obj(ef)).format(*ef))
+        if raise_err: 
+            raise EstimatorError(f'Unsupport estimator {estimator_name!r}')
+            
         return 
+    
+    return e, efx 
+
     
 def formatModelScore(
         model_score: Union [float, Dict[str, float]] = None,
@@ -333,7 +355,7 @@ def predict(
     if y_pred is None: 
         if clf is None: 
             warnings.warn('None estimator found! Could not predict `y` ')
-            __logger.error('NoneType `clf` <estimator> could not'
+            _logger.error('NoneType `clf` <estimator> could not'
                                 ' predict `y`.')
             raise ValueError('None estimator detected!'
                              ' could not predict `y`.') 
@@ -712,7 +734,7 @@ def fetch_model(
     if modelfile.endswith('.pkl'): from_joblib  =True 
     
     if from_joblib:
-       __logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+       _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
        try : 
            pickedfname = joblib.load(modelfile)
            # and later ....
@@ -724,12 +746,12 @@ def fetch_model(
                          "Please check your model filename."])
     
     if not from_joblib: 
-        __logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+        _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
         try: 
            # DeSerializing pickled data 
            with open(modelfile, 'rb') as modf: 
                pickedfname= pickle.load (modf)
-           __logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
+           _logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
                          "  using Python pickle module.`!")
            
            dmsg=f'Model `{modelfile!r} deserizaled from  {modelfile}`!'
@@ -738,7 +760,7 @@ def fetch_model(
                            f"{os.path.basename(modelfile)!r}"])
            
         else: 
-            __logger.info(dmsg)   
+            _logger.info(dmsg)   
 
     if verbose > 0: 
         pprint(
@@ -825,13 +847,13 @@ def dumpOrSerializeData (data , filename=None, savepath =None, to=None):
     if filename.endswith('.pkl'): 
         filename = filename.replace('.pkl', '')
         
-    __logger.info(f'Dumping data to `{filename}`!')    
+    _logger.info(f'Dumping data to `{filename}`!')    
     try : 
         if to is None or to =='joblib':
             joblib.dump(data, f'{filename}.pkl')
             
             filename +='.pkl'
-            __logger.info(f'Data dumped in `{filename} using '
+            _logger.info(f'Data dumped in `{filename} using '
                           'to `~.externals.joblib`!')
         elif to =='pypickle': 
             # force to move pickling data  to exception and write using 
@@ -839,10 +861,11 @@ def dumpOrSerializeData (data , filename=None, savepath =None, to=None):
             raise 
     except : 
         # Now try to pickle data Serializing data 
+        # Using HIGHEST_PROTOCOL is almost 2X faster and creates a file that
+        # is ~10% smaller.  Load times go down by a factor of about 3X.
         with open(filename, 'wb') as wfile: 
-            pickle.dump( data, wfile)
-        __logger.info( 'Data are well serialized  '
-                      'using Python pickle module.`')
+            pickle.dump( data, wfile, protocol=pickle.HIGHEST_PROTOCOL) 
+        _logger.info( 'Data are well serialized ')
         
     if savepath is not None:
         try : 
@@ -854,7 +877,8 @@ def dumpOrSerializeData (data , filename=None, savepath =None, to=None):
         except :
             print(f"--> It seems destination path {filename!r} already exists.")
 
-    if savepath is None: savepath =os.getcwd()
+    if savepath is None:
+        savepath =os.getcwd()
     print(f"Data are well {'serialized' if to=='pypickle' else 'dumped'}"
           f" to <{os.path.basename(filename)!r}> in {savepath!r} directory.")
    
@@ -879,22 +903,22 @@ def loadDumpedOrSerializedData (filename:str):
         raise FileExistsError(f"File {filename!r} does not exist.")
 
     _filename = os.path.basename(filename)
-    __logger.info(f"Loading data from `{_filename}`!")
+    _logger.info(f"Loading data from `{_filename}`!")
    
     data =None 
     try : 
         data= joblib.load(filename)
-        __logger.info(''.join([f"Data from {_filename !r} are sucessfully", 
+        _logger.info(''.join([f"Data from {_filename !r} are sucessfully", 
                       " loaded using ~.externals.joblib`!"]))
     except : 
-        __logger.info(
+        _logger.info(
             ''.join([f"Nothing to reload. It's seems data from {_filename!r}", 
                       " are not really dumped using ~external.joblib module!"])
             )
         # Try DeSerializing using pickle module
         with open(filename, 'rb') as tod: 
             data= pickle.load (tod)
-        __logger.info(f"Data from `{_filename!r} are well"
+        _logger.info(f"Data from `{_filename!r} are well"
                       " deserialized using Python pickle module.`!")
         
     is_none = data is None
@@ -925,12 +949,12 @@ def subprocess_module_installation (module, upgrade =True ):
         reqs = subprocess.check_output([sys.executable,'-m', 'pip',
                                         'freeze'])
         [r.decode().split('==')[0] for r in reqs.split()]
-        __logger.info(f"Intallation of `{module}` and dependancies"
+        _logger.info(f"Intallation of `{module}` and dependancies"
                      "was successfully done!") 
         MOD_IMP=True
      
     except: 
-        __logger.error("Failed to install the module =`{module}`.")
+        _logger.error("Failed to install the module =`{module}`.")
         print(f'---> Module {module!r} installation failed, Please use'
            f'  the following command {cmd} to manually install it.')
     return MOD_IMP 
@@ -972,7 +996,7 @@ def _assert_sl_target (target,  df=None, obj=None):
             msg += f" Max columns size is {df.shape[1]}"
 
         warnings.warn(msg, UserWarning)
-        __logger.warning(msg)
+        _logger.warning(msg)
         
     if target is not None: 
         if is_dataframe: 
@@ -982,7 +1006,7 @@ def _assert_sl_target (target,  df=None, obj=None):
                         f"Wrong target value {target!r}. Please select "
                         f"the right column name: {targets}"])
                     warnings.warn(msg, category= UserWarning)
-                    __logger.warning(msg)
+                    _logger.warning(msg)
                     target =None
             elif isinstance(target, (float, int)): 
                 is_ndarray =True 
@@ -995,14 +1019,14 @@ def _assert_sl_target (target,  df=None, obj=None):
                               f" Object type is {type(df)!r}. Target columns", 
                               "  index should be given instead."])
                 warnings.warn(msg, category= UserWarning)
-                __logger.warning(msg)
+                _logger.warning(msg)
                 target=None
             elif isinstance(target, (float,int)): 
                 target = int(target)
                 if not 0 <= target < _len: 
                     msg =f" Wrong target index. Should be {m_} {str(_len-1)!r}."
                     warnings.warn(msg, category= UserWarning)
-                    __logger.warning(msg) 
+                    _logger.warning(msg) 
                     target =None
                     
             if df is None: 
@@ -1012,7 +1036,7 @@ def _assert_sl_target (target,  df=None, obj=None):
                       " Need at least the data `numpy.ndarray|pandas.dataFrame`",
                       ])
                 warnings.warn(wmsg, UserWarning)
-                __logger.warning(wmsg)
+                _logger.warning(wmsg)
                 target =None
                 
             target = list(df.columns)[target] if is_dataframe else target

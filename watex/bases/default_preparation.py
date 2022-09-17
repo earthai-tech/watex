@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Sep 16 11:31:38 2021
-# This module is a set of processing tips 
 # released under a MIT- licence.
-#Created on Wed Sep 22 15:04:52 2021
 #@author: @Daniel03
 from __future__ import annotations 
 import os

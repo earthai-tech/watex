@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 # @author: Kouadio K. Laurent alias Daniel03
 """
-..synopsis:: 
-     `Search Grid will be able to  fiddle with the hyperparameters until to 
-    find the great combination for model predictions. 
-    
+`Search Grid will be able to  fiddle with the hyperparameters until to 
+find the great combination for model predictions. 
+
 Created on Tue Sep 21 19:45:40 2021
 
 @author: @Daniel03
@@ -12,7 +11,6 @@ Created on Tue Sep 21 19:45:40 2021
 from pprint import pprint  
 
 from sklearn.svm import SVC
-
 from watex.modeling.validation import GridSearch
 # modules below are imported for testing scripts.
 # Not usefull to import at least you provided your own dataset.
