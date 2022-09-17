@@ -3,7 +3,7 @@ from .basis import  (
     fetchDataFromLocalandWeb ,
     fetchSingleRARData ,
     fetchSingleTGZData, 
-    fetch_model
+    fetchModel
     ) 
 from .default_preparation import ( 
     BaseSteps, 

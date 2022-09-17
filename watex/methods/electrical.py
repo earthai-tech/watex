@@ -720,6 +720,7 @@ class VerticalSounding (ElectricalMethods):
                   typeof = self.strategy , **kwd)
         
         return self 
+    
     def __repr__(self):
         """ Pretty format for programmer following the API... """
         return repr_callable_obj(self)

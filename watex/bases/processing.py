@@ -38,12 +38,13 @@ from ..sklearn import (
 from .features import FeatureInspection
 from .._watexlog import watexlog 
 from ..tools.mlutils import (
+    _estimators,
     cfexist, 
     findDifferenceGenObject, 
     formatModelScore, 
     controlExistingEstimator,
     format_generic_obj,
-    __estimator
+    
     )
 from ..typing import ( 
     T, 
@@ -59,16 +60,16 @@ import  watex.tools.funcutils as func
 
 _logger =watexlog().get_watex_logger(__name__)
 
-d_estimators__={'dtc':DecisionTreeClassifier, 
+d_estimators_={'dtc':DecisionTreeClassifier, 
                 'svc':SVC, 
                 'sgd':SGDClassifier, 
                 'knn':KNeighborsClassifier 
                  }
 if _HAS_ENSEMBLE_ :
-    from ..sklearn import skl_ensemble__
+    from ..sklearn import skl_ensemble_
     
-    for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble__): 
-        d_estimators__[es_]=esf_ 
+    for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble_): 
+        d_estimators_[es_]=esf_ 
 
 
 class Preprocessing : 
@@ -636,23 +637,23 @@ class Preprocessing :
             self._logging.info('Loading default parameters into estimators.')
             #load all default config parameters 
 
-            for e_pref, e_v in d_estimators__.items(): 
+            for e_pref, e_v in d_estimators_.items(): 
                 try: 
                     if e_pref =='knn': 
-                        d_estimators__[e_pref]=KNeighborsClassifier (
+                        d_estimators_[e_pref]=KNeighborsClassifier (
                             n_neighbors=10,  metric='manhattan')           
                     elif e_pref =='svc': 
-                         d_estimators__[e_pref]=SVC(C=100, gamma=1e-3, 
+                         d_estimators_[e_pref]=SVC(C=100, gamma=1e-3, 
                                             random_state=self.random_state)
                     elif e_pref =='dtc': 
-                        d_estimators__[e_pref]=DecisionTreeClassifier(
+                        d_estimators_[e_pref]=DecisionTreeClassifier(
                             max_depth=100,random_state=self.random_state)
                     elif e_pref =='sgd': 
-                        d_estimators__[e_pref]=SGDClassifier(
+                        d_estimators_[e_pref]=SGDClassifier(
                             random_state=self.random_state) 
                         
                     elif e_pref =='rdf': 
-                        d_estimators__[e_pref]=e_v(n_estimators=200, 
+                        d_estimators_[e_pref]=e_v(n_estimators=200, 
                                               random_state=self.random_state)
                     elif e_pref in[ 'vtc', 'stc']:
                         compose_estimators = [('SGDC', SGDClassifier(
@@ -662,15 +663,15 @@ class Preprocessing :
                                     random_state=self.random_state)), 
                                 ('KNN', KNeighborsClassifier())]
                         
-                        d_estimators__[e_pref]=e_v(compose_estimators)
+                        d_estimators_[e_pref]=e_v(compose_estimators)
                        
                     elif e_pref =='bag':
-                        d_estimators__[e_pref]=e_v(
+                        d_estimators_[e_pref]=e_v(
                             base_estimator=KNeighborsClassifier(), 
                             n_estimators=100)
                         
                     elif e_pref =='stc': 
-                        d_estimators__[e_pref]=e_v(
+                        d_estimators_[e_pref]=e_v(
                                 [('SGDC', SGDClassifier(
                                     random_state=self.random_state)),
                                 ('DTC', DecisionTreeClassifier(
@@ -679,14 +680,14 @@ class Preprocessing :
                                 ('KNN', KNeighborsClassifier())])
                     else:
                         try :
-                            d_estimators__[e_pref]=e_v(
+                            d_estimators_[e_pref]=e_v(
                                 random_state=self.random_state)
                         except : 
-                            d_estimators__[e_pref]=e_v()
+                            d_estimators_[e_pref]=e_v()
                 except: pass 
                         
             # once loaded, select the estimator 
-            self._select_estimator_= d_estimators__[self.default_estimator]
+            self._select_estimator_= d_estimators_[self.default_estimator]
 
         self._logging.info(
             'End loading default parameters! The selected default estimator '
@@ -957,7 +958,7 @@ class Processing (Preprocessing) :
             
         if f_search is True : 
             # get the list of default estimator full names.
-            estfullname = [ e_key[0] for e_key in __estimator.values()]
+            estfullname = [ e_key[0] for e_key in _estimators.values()]
             
             if isinstance(estim, str): 
                 self._logging.debug(
@@ -980,7 +981,7 @@ class Processing (Preprocessing) :
                             f' Estimator `{estim}` not found! Please provide'
                             ' the estimator as Callable or class object.')
                     if len(estim_codecs) ==2: 
-                        self._select_estimator_= d_estimators__[
+                        self._select_estimator_= d_estimators_[
                             estim_codecs[0]]
                         self._estimator_name = estim_codecs[0]
     @property 

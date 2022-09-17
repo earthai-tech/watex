@@ -8,7 +8,7 @@
 .. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
 
 .. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
-
+.. _Kouadio et al: https://doi.org/10.1029/2021WR031623
 .. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
 
 .. _GeekforGeeks: https://www.geeksforgeeks.org/style-plots-using-matplotlib/#:~:text=Matplotlib%20is%20the%20most%20popular,without%20using%20any%20other%20GUIs

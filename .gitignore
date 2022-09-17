@@ -163,3 +163,4 @@ beka.py
 elo.py
 test_1.csv 
 pme.en.new_data/
+__svmmodels.pkl

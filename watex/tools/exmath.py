@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #   Copyright (c) 2021 Kouadio K. Laurent, 
-#   Created datae: on Fri Sep 17 11:25:15 2021
+#   Created date: on Fri Sep 17 11:25:15 2021
 #   Licence: MIT Licence 
 
 from __future__ import annotations 
@@ -54,6 +54,20 @@ from .funcutils import (
 
 _logger =watexlog.get_watex_logger(__name__)
 
+#XXXTODO
+def transmissibility (s, d, time, ): 
+    """Transmissibility T represents the ability of aquifer's water conductivity.
+    
+    It is the numeric equivalent of the product of hydraulic conductivity times
+    aquifer's thickness (T = KM), which means it is the seepage flow under the
+    condition of unit hydraulic gradient, unit time, and unit width
+    
+    
+    
+    """
+    
+    
+    
 def dummy_basement_curve(
         func: F ,
         ks: float ,
@@ -861,8 +875,7 @@ def scalePosition(
         c_order: Optional[int|str] = 0,
         show: bool =False, 
         **kws): 
-    """ Correct data location or position and return new corrected location
-    or data. 
+    """ Correct data location or position and return new corrected location 
     
     Parameters 
     ----------
@@ -1128,7 +1141,7 @@ def sfi (
         raw : bool = False,
         **plotkws
 ) -> float: 
-    """ 
+    r""" 
     Compute  the pseudo-fracturing index known as *sfi*. 
     
     The sfi parameter does not indicate the rock fracturing degree in 

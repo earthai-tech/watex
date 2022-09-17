@@ -29,11 +29,23 @@ _logger = watexlog.get_watex_logger(__name__)
 
 __docformat__='restructuredtext'
 
+class donothing : 
+    """ Decorator to do nothing. Just return the func as it was. 
+    The `param` reason is just used to specify the skipping reason. """
+    def __init__(self, reason = None ):
+        self.reason = reason 
+        
+    def __call__(self, cls_or_func) :
+        @functools.wraps (cls_or_func)
+        def new_func (*args, **kwargs): 
+            return cls_or_func (*args, **kwargs)
+        return new_func 
+    
 class refAppender (object): 
     """ Append the module docstring with reStructured Text references. 
     
     Indeed, when a `func` is decorated, it will add the reStructured Text 
-    references as an appender to its reference docstring. So, sphinx is 
+    references as an appender to its reference docstring. So, sphinx 
     can auto-retrieve some replacing values found inline  from the 
     :doc:`watex.documentation`. 
     

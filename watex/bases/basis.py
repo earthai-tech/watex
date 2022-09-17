@@ -45,10 +45,10 @@ from ..tools.mlutils import (
     )
 from .._watexlog import  watexlog
 
-__logger = watexlog().get_watex_logger(__name__)
+_logger = watexlog().get_watex_logger(__name__)
 
 LOCAL_DIR = 'data/geo_fdata'
-f__= os.path.join(LOCAL_DIR , 'main.bagciv.data.csv')
+f__= os.path.join(LOCAL_DIR, 'main.bagciv.data.csv')
 ZENODO_RECORD_ID_OR_DOI = '10.5281/zenodo.5571534'
 GIT_ROOT = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/' 
 GIT_REPO= 'https://github.com/WEgeophysics/watex'
@@ -60,33 +60,14 @@ DATA_URL = GIT_ROOT  + DATA_PATH  + TGZ_FILENAME
 
 # __all__=['fetchDataFromLocalandWeb']
 
-
-#XXX TODO: 
-    
-@refAppender(__doc__)
-class WATer (ABCMeta): 
-    """ Should be a SuperClass for methods classes. 
-    
-    Instanciate the class shoud raise an error. It should initialize arguments 
-    as well for |ERP| and for |VES|. The `Water` should set the attributes and
-    check whether attributes  are suitable for  what the specific class expects
-    to. 
-
-    """
-    
-    @abstractmethod 
-    def __init__(self, *args, **kwargs): 
-        pass 
-
-def fetch_model(
+def fetchModel(
         modelfile: str,
         modelpath: str = None,
         default: bool = True,
         modname: Optional[str] = None,
         verbose: int = 0
-                ): 
-    """ Fetch your model saved using Python pickle module or 
-    joblib module. 
+)-> object: 
+    """ Fetch your model saved using Python pickle module or joblib module. 
     
     :param modelfile: str or Path-Like object 
         dumped model file name saved using `joblib` or Python `pickle` module.
@@ -94,14 +75,14 @@ def fetch_model(
         Path to model dumped file =`modelfile`
     :default: bool, 
         Model parameters by default are saved into a dictionary. When default 
-        is ``True``, returns a tuple of pair (the model and its best parameters)
-        . If False return all values saved from `~.MultipleGridSearch`
+        is ``True``, returns a tuple of pair (the model and its best parameters).
+        If ``False`` return all values saved from `~.MultipleGridSearch`
        
     :modname: str 
-        Is the name of model to retrived from dumped file. If name is given 
+        Is the name of model to retreived from dumped file. If name is given 
         get only the model and its best parameters. 
     :verbose: int, level=0 
-        control the verbosity.More message if greater than 0.
+        control the verbosity. More messages if greater than 0.
     
     :returns:
         - `model_class_params`: if default is ``True``
@@ -109,7 +90,7 @@ def fetch_model(
         
     :Example: 
         >>> from watex.bases import fetch_model 
-        >>> my_model = fetch_model ('SVC__LinearSVC__LogisticRegression.pkl',
+        >>> my_model, = fetchModel ('SVC__LinearSVC__LogisticRegression.pkl',
                                     default =False,  modname='SVC')
         >>> my_model
     """
@@ -131,24 +112,26 @@ def fetch_model(
     if modelfile.endswith('.pkl'): from_joblib  =True 
     
     if from_joblib:
-       __logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+       _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
        try : 
            pickledmodel = joblib.load(modelfile)
+           if len(pickledmodel)>=2 : 
+               pickledmodel = pickledmodel[0]
            # and later ....
            # f'{pickfname}._loaded' = joblib.load(f'{pickfname}.pkl')
            dmsg=f"Model {modelfile !r} retreived from~.externals.joblib`!"
        except : 
-           dmsg=''.join([f"Nothing to retrived. It's seems model {modelfile !r}", 
+           dmsg=''.join([f"Nothing to retreive. It's seems model {modelfile !r}", 
                          " not really saved using ~external.joblib module! ", 
                          "Please check your model filename."])
     
     if not from_joblib: 
-        __logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+        _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
         try: 
            # DeSerializing pickled data 
            with open(modelfile, 'rb') as modf: 
                pickledmodel= pickle.load (modf)
-           __logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
+           _logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
                          "  using Python pickle module.`!")
            
            dmsg=f"Model {modelfile!r} deserizaled from  {modelfile!r}!"
@@ -157,7 +140,7 @@ def fetch_model(
                            f"{os.path.basename(modelfile)!r}"])
            
         else: 
-            __logger.info(dmsg)   
+            _logger.info(dmsg)   
            
     if verbose > 0: 
         pprint(
@@ -173,7 +156,7 @@ def fetch_model(
                                    pickledmodel[modname]['best_scores'],
                                    )
             if not default: 
-                model_class_params=pickledmodel[modname]
+                model_class_params= pickledmodel.get(modname), 
                 
         except KeyError as key_error: 
             warnings.warn(
@@ -192,17 +175,20 @@ def fetch_model(
         model_class_params =list()    
         
         for mm in pickledmodel.keys(): 
-            model_class_params.append((pickledmodel[mm]['best_model'], 
-                                      pickledmodel[mm]['best_params_'],
-                                      pickledmodel[modname]['best_scores']))
-    
+            try : 
+                model_class_params.append((pickledmodel[mm]['best_model'], 
+                                          pickledmodel[mm]['best_params_'],
+                                          pickledmodel[modname]['best_scores']))
+            except KeyError as key_error : 
+                raise KeyError (f"Unable to retrieve {key_error.args[0]!r}")
+                
         if verbose > 0: 
                pprint('Should return a list of tuple pairs:`best model`and '
                       ' `model best parameters.')
                
-        return model_class_params
+        return model_class_params, 
 
-    return pickledmodel
+    return pickledmodel, 
 
 
 @writef(reason='write', from_='df')
@@ -254,7 +240,6 @@ def exportdf (
     return df_, to,  refout, savepath, reset_index 
 
     
-
 def fetchDataFromLocalandWeb(f :str = f__): 
     """Retreive Bagoue dataset from Github repository or zenodo record. 
     
@@ -323,21 +308,21 @@ def fetchDataFromLocalandWeb(f :str = f__):
             os.makedirs(LOCAL_DIR )
         is_f_file = _fromlocal(f)
         if not is_f_file: 
-            __logger.info(f" File {os.path.basename(f)!r} Does not exist "
+            _logger.info(f" File {os.path.basename(f)!r} Does not exist "
                           "in local directory.")
             is_f_file =  _fromgithub()
             if not is_f_file :
-                __logger.info(mess + 'Github failed! We try Zenodo record.')
+                _logger.info(mess + 'Github failed! We try Zenodo record.')
                 is_f_file = _fromzenodo()
     
         if not is_f_file : 
-            __logger.info(mess + 'Zenodo failed!')
-            __logger.info (f"Unable to fetch {os.path.basename(f)!r} from Web")
+            _logger.info(mess + 'Zenodo failed!')
+            _logger.info (f"Unable to fetch {os.path.basename(f)!r} from Web")
             end = time.perf_counter() 
             time.sleep(abs(start -end))
             pbar.update(total)
             return 
-        __logger.info(f"{os.path.basename(f)!r} was successfully loaded.")
+        _logger.info(f"{os.path.basename(f)!r} was successfully loaded.")
         end = time.perf_counter() 
         time.sleep(abs(start -end))
         
@@ -352,7 +337,7 @@ def _fromlocal (f: str =f__) -> str :
     is_file =os.path.isfile(f)
     if not is_file :
         try: 
-            __logger.info("Fetching data from"
+            _logger.info("Fetching data from"
                           f" {TGZ_FILENAME.replace('/', '')}")
             print("\n---> Please wait while decompressing"
                   f" {TGZ_FILENAME.replace('/', '')!r} file... ")
@@ -361,7 +346,7 @@ def _fromlocal (f: str =f__) -> str :
                                rename_outfile='main.bagciv.data.csv')
             
         except : 
-            __logger.info(f"Fetching  {TGZ_FILENAME.replace('/', '')!r} failed")
+            _logger.info(f"Fetching  {TGZ_FILENAME.replace('/', '')!r} failed")
             print("---> Decompressing"
                   f" {TGZ_FILENAME.replace('/', '')!r} file failed ! ")
             return False 
@@ -475,7 +460,7 @@ def _fromzenodo(
         except : 
             # Connection problem may happens. 
             print('---> Zenodo_get installation failed!')
-            __logger.info("Failed to force installation of `zenodo_get`")
+            _logger.info("Failed to force installation of `zenodo_get`")
             
     else: success_import=True 
 
@@ -484,7 +469,7 @@ def _fromzenodo(
                               f"<{ZENODO_RECORD_ID_OR_DOI!r}.")
     # if zenodo_get is already installed Then used to 
     # wownloaed the record by calling the subprocess methods
-    __logger.info(" `zenodo_get` package already installed!") 
+    _logger.info(" `zenodo_get` package already installed!") 
         
     print(f"---> Please wait while the record <{ZENODO_RECORD_ID_OR_DOI}>"
           " is downloading...")
@@ -594,7 +579,7 @@ def fetchSingleRARData(
                 reqs = subprocess.check_output([sys.executable,'m', 'pip',
                                                 'freeze'])
                 [r.decode().split('==')[0] for r in reqs.split()]
-                __logger.info(f"Intallation of {name!r} was successfully done!") 
+                _logger.info(f"Intallation of {name!r} was successfully done!") 
                 print(f"---> Installing of {name!r} is sucessfully done!")
             except : 
                 print("--> Failed to install {name!r} module !")
@@ -614,7 +599,7 @@ def fetchSingleRARData(
             print(f"---> Please wait while `<{zip_file+'.rar'}="
                   "main.bagciv.data.csv>`is unraring...")
         # rarfile.RarFile.(os.path.join(zipdir, zip_file +'.rar'))
-        __logger.info("Extract {os.path.basename(CSV_FILENAME)!r}"
+        _logger.info("Extract {os.path.basename(CSV_FILENAME)!r}"
                       " from {zip_file + '.rar'} file.")
         #--------------------------work on the rar extraction since -----------
         # rar can not extract larger file excceed fo 50
