@@ -1,10 +1,24 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Sep 16 11:31:38 2021
-#       This module is a set of plot for module viewer
 #       released under a MIT- licence.
-#       @author: K.KL alias Daniel03<etanoyau@gamil.com>
+#       @author: K.KL alias Daniel03<etanoyau@gmail.com>
 
-# import os
+"""
+`WATex`_ MLPlot module 
+========================
+
+Is a set of plot templates  for visualising the trained models.  It gives a 
+quick alternative for users to save their time for writting their own plot 
+scripts. However to have full control of the plot, it is recommended to write 
+your own plot scripts. 
+Note that the package can not handle all the plots possibilty that offers the
+software. In the future, many plots should be removed and replaced by some  
+most efficient ones.
+
+.. _WATex: https://github.com/WEgeophysics/watex/
+
+"""
+from __future__ import annotations 
 import re
 import warnings
 import inspect 
@@ -14,41 +28,55 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl 
 import  matplotlib.pyplot  as plt
-# from matplotlib.lines import Line2D 
 
-from ..typing import ( 
-    Generic,
-    V, 
-    Array, 
-    )
 from .._watexlog import watexlog
+from ..decorators import ( 
+    docSanitizer , 
+    docAppender
+    )
+from ..analysis.dimensionality import Reducers
+from ..exceptions import ( 
+    PlotError, 
+    # TipError, 
+    ArgumentError 
+    )
+from ..property import BasePlot 
 from ..tools.funcutils import categorize_flow 
 from ..tools.metrics import (
     precision_recall_tradeoff, 
     ROC_curve,
     confusion_matrix_
     ) 
-from ..analysis.dimensionality import Reducers
-import watex.exceptions as Wex
-import watex.decorators as deco
-
+from ..tools.plotutils import ( 
+    D_COLORS, 
+    D_MARKERS, 
+    D_STYLES,
+    savefigure
+   ) 
+from ..typing import ( 
+    Generic,
+    Optional, 
+    V, 
+    List,
+    Array, 
+    NDArray,
+    DType, 
+    )
 
 _logger=watexlog.get_watex_logger(__name__)
 
 
-DEFAULTS_COLORS =[ 'g','gray','y', 'blue','orange','purple', 'lime','k', 'cyan', 
-                  (.6, .6, .6),
-                  (0, .6, .3), 
-                  (.9, 0, .8),
-                  (.8, .2, .8),
-                  (.0, .9, .4)
-                 ]
-
-DEFAULTS_MARKERS =['o','^','x', 'D', '8', '*', 'h', 'p', '>', 'o', 'd', 'H']
-DEFAULTS_STYLES = ['-','-', '--', '-.', ':', 'None', ' ', '', 'solid', 
-                   'dashed', 'dashdot','dotted' ]
-                                       
-def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
+def biPlot(
+        self, 
+        score: NDArray[DType [float]],
+        coeff: Array[DType[float]],
+        y: Array,
+        y_classes: List | Array [str] =None,
+        markers: str | List [str]  =None, 
+        colors: str | List [str ] =None, 
+        savefig : Optional[str] = None, 
+        dpi: Optional[float] = None,
+)-> None :
     """
     The biplot is the best way to visualize all-in-one following a PCA analysis.
     There is an implementation in R but there is no standard implementation
@@ -84,10 +112,10 @@ def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
     if y_classes is None: 
         y_classes = np.unique(y)
     if colors is None:
-        colors = DEFAULTS_COLORS
+        colors = D_COLORS
         colors = [colors[c] for c in range(len(y_classes))]
     if markers is None:
-        markers=DEFAULTS_MARKERS 
+        markers=D_MARKERS 
         markers = [markers[m] for m in range(len(y_classes))]
     for s,l in enumerate(y_classes):
         plt.scatter(xs[y==l],ys[y==l], 
@@ -123,8 +151,10 @@ def biPlot(self, score, coeff, y, y_classes=None, markers=None, colors=None):
                     which='both', 
                     labelsize=self.ms* self.fs)
     
+    if savefig is not None: 
+        savefigure (plt, savefig, dpi = dpi )
     
-class MLPlots: 
+class MLPlots(BasePlot): 
     """ Mainly deals with Machine learning metrics, 
     dimensional reduction plots and else. 
     
@@ -222,82 +252,16 @@ class MLPlots:
     ==================  =======================================================
     """
     def __init__(self,  **kws ): 
+        
+        super().__init__(**kws) 
+        
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
-        
-        self.savefig = kws.pop('savefig', None)
-        
-        self.fig_num= kws.pop('fig_num', 1)
-        self.fig_size = kws.pop('fig_size', (12, 8))
-        self.fig_dpi =kws.pop('fig_dpi', 300)
-        self.fig_legend= kws.pop('fig_legend_kws', None)
-        self.fig_orientation =kws.pop('fig_orientation','landscape')
-        self.fig_title =kws.pop('title', None)
-        
-        self.font_size =kws.pop('font_size',3.)
-        self.font_style=kws.pop('font_style', 'italic')
-        self.font_weight=kws.pop('font_weight', 'bold')
-        
-        self.fs =kws.pop('fs', 5.)
-        
-        self.ms =kws.pop('ms', 3.)
-        self.marker_style =kws.pop('marker_style', 'D')
-        self.marker_facecolor=kws.pop('markerfacecolor', 'yellow')
-        self.marker_edgecolor=kws.pop('markeredgecolor', 'cyan')
-        self.marker_edgewidth = kws.pop('markeredgewidth', 3.)
-        
-        self.lc = kws.pop('lc', 'k')
-        self.ls= kws.pop('ls', '-')
-        self.lw =kws.pop('lw', 1)
-        self.alpha = kws.pop('alpha', 0.5)
-        
-        self.bins = kws.pop('bins', 10)
-        
-        self.xlim =kws.pop('xlim', None )
-        self.ylim=kws.pop('y_lim', None) 
-        self.xlabel = kws.pop('xlabel', None)
-        self.ylabel =kws.pop('ylabel', None)
-        self.rotate_xlabel =kws.pop('rotate_xlabel', None)
-        self.rotate_ylabel=kws.pop('rotate_ylabel',None )
-        
-        self.leg_kws = kws.pop('leg_kws', dict())
-        self.plt_kws = kws.pop('plt_kws', dict())
         
         # precision(p) and recall(r) style(s) and color (c)
         self.rs =kws.pop('rs', '--')
         self.ps =kws.pop('ps', '-')
         self.rc =kws.pop('rc', (.6, .6, .6))
         self.pc =kws.pop('pc', 'k')
-    
-        self.s = kws.pop('s', self.fs *40.)
-        #show grid 
-        self.show_grid = kws.pop('show_grid',False)
-        self.galpha =kws.pop('galpha', 0.5)
-        self.gaxis =kws.pop('gaxis', 'both')
-        self.gc =kws.pop('gc', 'k')
-        self.gls =kws.pop('gls', '--')
-        self.glw =kws.pop('glw', 2.)
-        self.gwhich = kws.pop('gwhich', 'major')
-        
-        #tick params properties 
-        self.tp_axis =kws.pop('tp_axis', 'both')
-        self.tp_labelsize = kws.pop('tp_labelsize', self.font_size)
-        self.tp_bottom =kws.pop('tp_bottom', True)
-        self.tp_top =kws.pop('tp_top', True)
-        self.tp_labelbottom=kws.pop('tp_labelbottom', False)
-        self.tp_labeltop = kws.pop('tp_labeltop', True)
-
-        # colorbar axes properties 
-        self.cb_orientation =kws.pop('cb_orientation', 'vertical')
-        self.cb_aspect =kws.pop('cb_aspect', 20.)
-        self.cb_shrink= kws.pop('cb_shrink', 1.0)
-        self.cb_pad =kws.pop('cb_pad', 0.05)
-        self.cb_anchor =kws.pop('cb_anchor', (0.0, 0.5))
-        self.cb_panchor = kws.pop('cb_panchor',  (1.0, 0.5))
-        #colors bar properties 
-        self.cb_label =kws.pop('cb_label', None)
-        self.cb_spacing =kws.pop('cb_spacing', 'uniform') # propotional 
-        self.cb_drawedges =kws.pop('cb_drawedges', False)
-        self.cb_format =kws.pop('cb_format', None)
         
         # predicted properties 
         self.yp_lc =kws.pop('yp_lc', 'k') 
@@ -310,13 +274,87 @@ class MLPlots:
         
         for key in kws.keys(): 
             setattr(self, key, kws[key])
+        # self.savefig = kws.pop('savefig', None)
+        
+        # self.fig_num= kws.pop('fig_num', 1)
+        # self.fig_size = kws.pop('fig_size', (12, 8))
+        # self.fig_dpi =kws.pop('fig_dpi', 300)
+        # self.fig_legend= kws.pop('fig_legend_kws', None)
+        # self.fig_orientation =kws.pop('fig_orientation','landscape')
+        # self.fig_title =kws.pop('title', None)
+        
+        # self.font_size =kws.pop('font_size',3.)
+        # self.font_style=kws.pop('font_style', 'italic')
+        # self.font_weight=kws.pop('font_weight', 'bold')
+        
+        # self.fs =kws.pop('fs', 5.)
+        
+        # self.ms =kws.pop('ms', 3.)
+        # self.marker_style =kws.pop('marker_style', 'D')
+        # self.marker_facecolor=kws.pop('markerfacecolor', 'yellow')
+        # self.marker_edgecolor=kws.pop('markeredgecolor', 'cyan')
+        # self.marker_edgewidth = kws.pop('markeredgewidth', 3.)
+        
+        # self.lc = kws.pop('lc', 'k')
+        # self.ls= kws.pop('ls', '-')
+        # self.lw =kws.pop('lw', 1)
+        # self.alpha = kws.pop('alpha', 0.5)
+        
+        # self.bins = kws.pop('bins', 10)
+        
+        # self.xlim =kws.pop('xlim', None )
+        # self.ylim=kws.pop('y_lim', None) 
+        # self.xlabel = kws.pop('xlabel', None)
+        # self.ylabel =kws.pop('ylabel', None)
+        # self.rotate_xlabel =kws.pop('rotate_xlabel', None)
+        # self.rotate_ylabel=kws.pop('rotate_ylabel',None )
+        
+        # self.leg_kws = kws.pop('leg_kws', dict())
+        # self.plt_kws = kws.pop('plt_kws', dict())
+        
+        
+        
+    
+        # self.s = kws.pop('s', self.fs *40.)
+        # #show grid 
+        # self.show_grid = kws.pop('show_grid',False)
+        # self.galpha =kws.pop('galpha', 0.5)
+        # self.gaxis =kws.pop('gaxis', 'both')
+        # self.gc =kws.pop('gc', 'k')
+        # self.gls =kws.pop('gls', '--')
+        # self.glw =kws.pop('glw', 2.)
+        # self.gwhich = kws.pop('gwhich', 'major')
+        
+        #tick params properties 
+        # self.tp_axis =kws.pop('tp_axis', 'both')
+        # self.tp_labelsize = kws.pop('tp_labelsize', self.font_size)
+        # self.tp_bottom =kws.pop('tp_bottom', True)
+        # self.tp_top =kws.pop('tp_top', True)
+        # self.tp_labelbottom=kws.pop('tp_labelbottom', False)
+        # self.tp_labeltop = kws.pop('tp_labeltop', True)
+
+        # # colorbar axes properties 
+        # self.cb_orientation =kws.pop('cb_orientation', 'vertical')
+        # self.cb_aspect =kws.pop('cb_aspect', 20.)
+        # self.cb_shrink= kws.pop('cb_shrink', 1.0)
+        # self.cb_pad =kws.pop('cb_pad', 0.05)
+        # self.cb_anchor =kws.pop('cb_anchor', (0.0, 0.5))
+        # self.cb_panchor = kws.pop('cb_panchor',  (1.0, 0.5))
+        # #colors bar properties 
+        # self.cb_label =kws.pop('cb_label', None)
+        # self.cb_spacing =kws.pop('cb_spacing', 'uniform') # propotional 
+        # self.cb_drawedges =kws.pop('cb_drawedges', False)
+        # self.cb_format =kws.pop('cb_format', None)
+        
+       
+        
             
         # config all colorproperties into one.
-        self.cb_props = {
-            pname.replace('cb_', '') : pvalues
-                         for pname, pvalues in self.__dict__.items() 
-                         if pname.startswith('cb_')
-                         }
+        # self.cb_props = {
+        #     pname.replace('cb_', '') : pvalues
+        #                  for pname, pvalues in self.__dict__.items() 
+        #                  if pname.startswith('cb_')
+        #                  }
 
     def PCA_(self,
              X:[Array],
@@ -414,7 +452,7 @@ class MLPlots:
             ...                        biplot =False)
         """
         if plot_dict is None: 
-            plot_dict ={'y_colors':DEFAULTS_COLORS, 
+            plot_dict ={'y_colors':D_COLORS, 
                         's':100.}
             
         def mere_replace(_y, y_val, y_clas): 
@@ -672,8 +710,8 @@ class MLPlots:
                         orientation =self.fig_orientation
                         )  
         
-    @deco.docSanitizer ()
-    @deco.docAppender(precision_recall_tradeoff, from_='Parameters', to= 'Notes')        
+    @docSanitizer()
+    @docAppender(precision_recall_tradeoff, from_='Parameters', to= 'Notes')        
     def PrecisionRecall(self,
                         clf,
                         X,
@@ -900,16 +938,16 @@ class MLPlots:
         # create figure obj 
         fig = plt.figure(figsize = self.fig_size)
         ax = fig.add_subplot(1,1,1)
-        DEFAULTS_COLORS[0] = self.lc
-        DEFAULTS_STYLES[0]= self.ls
+        D_COLORS[0] = self.lc
+        D_STYLES[0]= self.ls
 
         for ii, (name, _clf, _)  in enumerate( clf): 
             ax.plot(rocObjs[ii].fpr, 
                     rocObjs[ii].tpr, 
                     label =name + ' (AUC={:.4f})'.format(
                         rocObjs[ii].roc_auc_score), 
-                    color =DEFAULTS_COLORS[ii],
-                    linestyle = DEFAULTS_STYLES[ii] , 
+                    color =D_COLORS[ii],
+                    linestyle = D_STYLES[ii] , 
                     linewidth = self.lw)
             
             
@@ -1024,7 +1062,7 @@ class MLPlots:
                     xy_labels = tem
                     
                     if len( xy_labels)<2: 
-                        raise Wex.WATexError_plot_featuresinputargument(
+                        raise ArgumentError(
                             f'Need two labels for plot. {len(xy_labels)!r}'
                             ' is given.')
                     
@@ -1040,11 +1078,11 @@ class MLPlots:
             y= X[:, 1]
    
         if x is None:
-            raise Wex.WATexError_value('NoneType could not be plotted.'
-                                       ' need `x-axis` value for plot.')
+            raise PlotError (
+                'NoneType could not be plotted.  need `x-axis` value for plot.')
         if y is None: 
-            raise Wex.WATexError_value('NoneType could not be plotted.'
-                                       ' Need `y-axis` value for plot.')
+            raise PlotError (
+                'NoneType could not be plotted. Need `y-axis` value for plot.')
         if len(x) !=len(y): 
             raise TypeError('`x`and `y` must have the same length. '
                             f'{len(x)!r} and {len(y)!r} are given respectively.')
@@ -1145,8 +1183,8 @@ class MLPlots:
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
     
-    @deco.docSanitizer()
-    @deco.docAppender(confusion_matrix_, from_='Parameters', to='Examples')
+    @docSanitizer()
+    @docAppender(confusion_matrix_, from_='Parameters', to='Examples')
     def confusion_matrix(self, clf, X, y, cv, *, plottype ='map', ylabel=None, 
                          matshow_kws=dict(), **conf_mx_kws): 
         """ Plot confusion matrix for error analysis
@@ -1736,8 +1774,8 @@ class MLPlots:
                          
         # customize plots with colors lines and 
         if len(lcs_kws)==0:
-            lcs_kws = {'lc':[self.lc, self.pc, self.rc ] + DEFAULTS_COLORS, 
-                     'ls':[self.ls, self.ps, self.rs] + DEFAULTS_STYLES
+            lcs_kws = {'lc':[self.lc, self.pc, self.rc ] + D_COLORS, 
+                     'ls':[self.ls, self.ps, self.rs] + D_STYLES
                      }
     
         fig = plt.figure(figsize = self.fig_size)
