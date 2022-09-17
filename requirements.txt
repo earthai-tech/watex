@@ -19,3 +19,6 @@ mtpy
 tqdm
 pycsamt 
 autoapi 
+h5py, 
+xgboost 
+h5pyViewer

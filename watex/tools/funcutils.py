@@ -4,7 +4,6 @@
 #   edited date: Wed Jul  7 22:23:02 2021 
 #   Licence: MIT 
 
-####################### import required modules #######################
 from __future__ import annotations 
 
 import os 
@@ -25,7 +24,6 @@ from .._watexlog import watexlog
 from ..decorators import ( 
     deprecated, 
     catmapflow2,
-    docSanitizer
     )
 
 from ..typing import ( 
@@ -45,7 +43,7 @@ from ..exceptions import (
     ParameterNumberError, 
     # ArgumentError
     )
- 
+
 _logger = watexlog.get_watex_logger(__name__)
 
 _msg= ''.join([
@@ -75,9 +73,6 @@ except ImportError:
     _logger.warning(_msg0)
     
     interp_import = False
-
-
-###################### end import module ##################################
 
 
 def smart_strobj_recognition(
@@ -216,6 +211,7 @@ def repr_callable_obj(obj: F  ):
     return   str (objname) + '(' + str (PARAMS_VALUES).replace (
             '{', '').replace('}', '').replace(
                 ':', '=').replace("'", '') + ')'
+
 
 def accept_types (*objtypes: list , 
                   format: bool = False
@@ -383,10 +379,11 @@ def is_installing (module, upgrade=True , DEVNULL=False,
     return MOD_IMP 
 
 
-def smart_format(iter_obj): 
+def smart_format(iter_obj, choice ='and'): 
     """ Smart format iterable ob.
     
     :param iter_obj: iterable obj 
+    :param choice: can be 'and' or 'or' for optional.
     
     :Example: 
         >>> from watex.tools.funcutils import smart_format
@@ -403,7 +400,7 @@ def smart_format(iter_obj):
         str_litteral= ','.join([f"{i!r}" for i in iter_obj ])
     elif len(iter_obj)>1: 
         str_litteral = ','.join([f"{i!r}" for i in iter_obj[:-1]])
-        str_litteral += f" and {iter_obj[-1]!r}"
+        str_litteral += f" {choice} {iter_obj[-1]!r}"
     return str_litteral
 
 def make_introspection(Obj: object , subObj: Sub[object])->None: 
@@ -436,13 +433,15 @@ def cpath (savepath=None , dpath=None):
                          '_']) #.replace('.py', '')
     if savepath is None : 
         savepath  = os.path.join(os.getcwd(), dpath)
+        try:os.mkdir(savepath)
+        except: pass 
     if savepath is not None:
         try :
             if not os.path.isdir(savepath):
                 os.mkdir(savepath)#  mode =0o666)
         except : pass 
     return savepath   
-
+  
 def show_quick_edi_stats(nedic , nedir, fmtl='~', lenl=77): 
     """ Format the Edi files and ckeck the number of edifiles
     successfully read.
@@ -649,347 +648,7 @@ def interpol_scipy (
     
     return y_new
 
-def _set_depth_to_coeff(
-        data,
-        depth_column_index,
-        coeff=1, 
-        depth_axis=0
-        ):
-    
-    """
-    Parameters
-    ----------
-    * data : np.ndarray
-        must be on array channel .
-        
-    * depth_column_index : int
-        index of depth_column.
-        
-    * depth_axis : int, optional
-        Precise kind of orientation of depth data(axis =0 or axis=1) 
-        The *default* is 0.
-        
-    * coeff : float,
-        the value you want to multiplie depth. 
-        set depth to negative multiply by one. 
-        The *default* is -1.
 
-    Returns
-    -------
-        data : np.ndarray
-            new data after set depth according to it value.
-            
-    Examples 
-    --------
-
-        >>>  import numpy as np 
-        >>>  np.random.seed(4)
-        >>>  data=np.random.rand(4,3)
-        >>>  data=data*(-1)
-        >>>  print("data\n",data)
-        >>>  data[:,1]=data[:,1]*(-1)
-        >>>  data[data<0]
-        >>>  print("data2\n",data)
-    """
-    
-    if depth_axis==0:
-        data[:,depth_column_index]=data[:,depth_column_index]*coeff
-    if depth_axis==1:
-        data[depth_column_index,:]=data[depth_column_index,:]*coeff  
-
-    return data
-
-@docSanitizer()                              
-def _nonelist_checker(data, _checker=False ,
-                      list_to_delete=['\n']):
-    """
-    Function to delete a special item on list in data.
-    Any item you want to delete is acceptable as long as item is on a list.
-    
-    Parameters
-    ----------
-        * data : list
-             container of list. Data must contain others list.
-             the element to delete should be on list.
-             
-        *  _checker : bool, optional
-              The default is False.
-             
-        * list_to_delete : TYPE, optional
-                The default is ['\n'].
-
-    Returns
-    -------
-        _occ : int
-            number of occurence.
-        num_turn : int
-            number of turns to elimate the value.
-        data : list
-           data safeted exempt of the value we want to delete.
-        
-    Examples
-    ---------
-        
-        >>> import numpy as np 
-        >>> listtest =[['DH_Hole', 'Thick01', 'Thick02', 'Thick03',
-        ...   'Thick04', 'sample02', 'sample03'], 
-        ...   ['sample04'], [], ['\n'], 
-        ...  ['S01', '98.62776918', '204.7500461', '420.0266651'], ['prt'],
-        ...  ['pup', 'pzs'],[], ['papate04', '\n'], 
-        ...  ['S02', '174.4293956'], [], ['400.12', '974.8945704'],
-        ...  ['pup', 'prt', 'pup', 'pzs', '', '\n'],
-        ...  ['saple07'], [], '',  ['sample04'], ['\n'],
-        ...  [''], [313.9043882], [''], [''], ['2'], [''], ['2'], [''], [''], ['\n'], 
-        ...  [''], ['968.82'], [], [],[], [''],[ 0.36], [''], ['\n']]
-        >>> ss=_nonelist_checker(data=listtest, _checker=True,
-        ...                        list_to_delete=[''])
-        >>> print(ss)
-    """
-    
-    _occ,num_turn=0,0
-    
-    
-    if _checker is False:
-        _occ=0
-        return _occ, num_turn, data 
-    
-   
-    while _checker is True :
-        if list_to_delete in data :
-            for indix , elem_chker in enumerate(data):
-                if list_to_delete == elem_chker :
-                    _occ=_occ+1
-                    del data[indix]
-                    if data[-1]==list_to_delete:
-                        _occ +=1
-                        # data=data[:-1]
-                        data.pop()
-        elif list_to_delete not in data :
-            _checker =False
-        num_turn+=1
-
-        
-    return _occ,num_turn,data
-        
-
-@docSanitizer()                                       
-def intell_index (datalist,assembly_dials =False):
-    """
-    Function to search index to differency value to string element like 
-    geological rocks and geologicals samples. It check that value are sorted
-    in ascending order.
-
-    Parameters
-    ----------
-    * datalist : list
-        list of element. It may contain value and rocks or sample.
-    * assembly_dials : list, optional
-        separate on two list - values and rocks or samples. 
-        The default is ``False``.
-
-    Returns
-    -------
-        index: int
-            Index of breaking up.
-        first_dial: list , 
-            First sclice of value part 
-        secund_dial: list , 
-            Second slice of rocks or sample part.
-        assembly : list 
-            List of first_dial and second_dial
-    
-    Examples
-    ---------
-    >>> import numpy as np
-    >>> listtest =[['DH_Hole', 'Thick01', 'Thick02', 'Thick03',
-    ...           'Thick04','Rock01', 'Rock02', 'Rock03', 'Rock04'],
-    ...           ['S01', '0.0', '98.62776918', '204.7500461','420.0266651','520', 'GRT', 
-    ...            'ATRK', 'GRT', 'ROCK','GRANODIORITE'],
-    ...           ['S02', '174.4293956', '313.9043882','974.8945704', 'GRT', 'ATRK', 'GRT']]
-    >>> listtest2=[listtest[1][1:],listtest[2][1:]]
-    >>> for ii in listtest2 :
-    >>> op=intell_index(datalist=ii)
-    >>> print("index:\n",op [0])
-    >>> print('firstDials :\n',op [1])
-    >>> print('secondDials:\n',op [2])
-    
-    """
-    
-    # assembly_dials=[]
-    max_=0              # way to check whether values are in sort (ascending =True) order 
-                        # because we go to deep (first value must be less than the next none)
-    for ii, value in enumerate (datalist):
-        try : 
-            thick=float(value)
-            if thick >= max_:
-                max_=thick 
-            else :
-                _logger.warning(
-                    "the input value {0} is less than the previous one."
-                " Please enter value greater than {1}.".format(thick, max_) )
-                warnings.warn(
-                    "Value {1} must be greater than the previous value {0}."\
-                    " Must change on your input data.".format(thick,max_))
-        except :
-            # pass
-            indexi=ii
-            break
-        
-    first_dial=datalist[:indexi]
-    second_dial =datalist[indexi:]
-
-    if assembly_dials:
-        
-        assembly_dials=[first_dial,second_dial]
-        
-        return indexi, assembly_dials
-        
-    return indexi, first_dial, second_dial
-
-def _nonevalue_checker (list_of_value, value_to_delete=None):
-    """
-    Function similar to _nonelist_checker. the function deletes the specific 
-    value on the list whatever the number of repetition of value_to_delete.
-    The difference with none list checker is value to delete 
-    may not necessary be on list.
-    
-    Parameters
-    ----------
-        * list_of_value : list
-                list to check.
-        * value_to_delete : TYPE, optional
-            specific value to delete. The default is ''.
-
-    Returns
-    -------
-        list
-            list_of_value , safe list without the deleted value .
-    
-    Examples
-    ---------
-        >>> import numpy as np 
-        >>> test=['DH_Hole (ID)', 'DH_East', 'DH_North',
-        ...          'DH_Dip', 'Elevation ', 'DH_Azimuth', 
-        ...            'DH_Top', 'DH_Bottom', 'DH_PlanDepth', 'DH_Decr', 
-        ...            'Mask', '', '', '', '']
-        >>> test0= _nonevalue_checker (list_of_value=test)
-        >>> print(test0)
-    """
-    if value_to_delete is None :
-        value_to_delete  =''
-    
-    if type (list_of_value) is not list :
-        list_of_value=list(list_of_value)
-        
-    start_point=1
-    while start_point ==1 :
-        if value_to_delete in list_of_value :
-            [list_of_value.pop(ii) for  ii, elm in\
-             enumerate (list_of_value) if elm==value_to_delete]
-        elif value_to_delete not in list_of_value :
-            start_point=0 # not necessary , just for secure the loop. 
-            break           # be sure one case or onother , it will break
-    return list_of_value 
-        
-def _strip_item(item_to_clean, item=None, multi_space=12):
-    """
-    Function to strip item around string values.  if the item to clean is None or 
-    item-to clean is "''", function will return None value
-
-    Parameters
-    ----------
-        * item_to_clean : list or np.ndarray of string 
-                 List to strip item.
-        * cleaner : str , optional
-                item to clean , it may change according the use. The default is ''.
-        * multi_space : int, optional
-                degree of repetition may find around the item. The default is 12.
-
-    Returns
-    -------
-        list or ndarray
-            item_to_clean , cleaned item 
-            
-    Examples
-    --------
-     >>> import numpy as np
-     >>> new_data=_strip_item (item_to_clean=np.array(
-         ['      ss_data','    pati   ']))
-     >>>  print(np.array(['      ss_data','    pati   ']))
-     ... print(new_data)
-
-    """
-    if item==None :item = ' '
-    
-    cleaner =[(''+ ii*'{0}'.format(item)) for ii in range(multi_space)]
-    
-    if type(item_to_clean ) != list :#or type(item_to_clean ) !=np.ndarray:
-        if type(item_to_clean ) !=np.ndarray:
-            item_to_clean=[item_to_clean]
-    if item_to_clean in cleaner or item_to_clean ==['']:
-        warnings.warn ('No data found in <item_to_clean :{}> We gonna return None.')
-        return None 
-
-  
-    try : 
-        multi_space=int(multi_space)
-    except : 
-        raise TypeError('argument <multplier> must be'\
-                        ' an integer not {0}'.format(type(multi_space)))
-    
-    for jj, ss in enumerate(item_to_clean) : 
-        for space in cleaner:
-            if space in ss :
-                new_ss=ss.strip(space)
-                item_to_clean[jj]=new_ss
-    
-    return item_to_clean
-    
-def _cross_eraser (data , to_del, deep_cleaner =False):
-    """
-    Function to delete some item present in another list. It may cheCk deeper 
-
-    Parameters
-    ----------
-    * data : list
-            Main data user want to filter.
-    * to_del : list
-            list of item you want to delete present on the main data.
-    * deep_cleaner : bool, optional
-            Way to deeply check. Sometimes the values are uncleaned and 
-        capitalizeed . this way must not find their safety correspondace 
-        then the algorth must clean item and to match all at
-        the same time before eraisng.
-        The *default* is False.
-
-    Returns
-    -------
-        list
-         data , list erased.
-
-    Examples
-    --------
-        >>> data =['Z.mwgt','Z.pwgt','Freq',' Tx.Amp','E.mag','   E.phz',
-        ...          '   B.mag','   B.phz','   Z.mag', '   Zphz  ']
-        >>> data2=['   B.phz','   Z.mag',]
-        ...     remain_data =cross_eraser(data=data, to_del=data2, 
-        ...                              deep_cleaner=True)
-        >>> print(remain_data)
-    """
-    
-    data , to_del=_strip_item(item_to_clean=data), _strip_item(
-        item_to_clean=to_del)
-    if deep_cleaner : 
-        data, to_del =[ii.lower() for ii in data], [jj.lower() 
-                                                    for jj in to_del]
-        
-    for index, item in enumerate(data): 
-        while item in to_del :
-            del data[index]
-            if index==len(data)-1 :
-                break
-
-    return data 
 
 def _remove_str_word (char, word_to_remove, deep_remove=False):
     """
@@ -2266,18 +1925,290 @@ def categorize_flow(
     return new_flow_values, target_array, flowClasses
     
     
+   
+def reshape(arr , axis = None) :
+    """ Detect the array shape and reshape it accordingly, back to the given axis. 
+    
+    :param array: array_like with number of dimension equals to 1 or 2 
+    :param axis: axis to reshape back array. If 'axis' is None and 
+        the number of dimension is greater than 1, it reshapes back array 
+        to array-like 
+    
+    :returns: New reshaped array 
+    
+    :Example: 
+        >>> import numpy as np 
+        >>> from watex.tools.funcutils import reshape 
+        >>> array = np.random.randn(50 )
+        >>> array.shape
+        ... (50,)
+        >>> ar1 = reshape(array, 1) 
+        >>> ar1.shape 
+        ... (1, 50)
+        >>> ar2 =reshape(ar1 , 0) 
+        >>> ar2.shape 
+        ... (50, 1)
+        >>> ar3 = reshape(ar2, axis = None)
+        >>> ar3.shape # goes back to the original array  
+        >>> ar3.shape 
+        ... (50,)
+        
+    """
+    arr = np.array(arr)
+    if arr.ndim > 2 : 
+        raise ValueError('Expect an array with max dimension equals to 2' 
+                         f' but {str(arr.ndim)!r} were given.')
+        
+    if axis  not in (0 , 1, -1, None): 
+        raise ValueError(f'Wrong axis value: {str(axis)!r}')
+        
+    if axis ==-1:
+        axis =None 
+    if arr.ndim ==1 : 
+        # ie , axis is None , array is an array-like object
+        s0, s1= arr.shape [0], None 
+    else : 
+        s0, s1 = arr.shape 
+    if s1 is None: 
+        return  arr.reshape ((1, s0)) if axis == 1 else (arr.reshape (
+            (s0, 1)) if axis ==0 else arr )
+    try : 
+        arr = arr.reshape ((s0 if s1==1 else s1, )) if axis is None else (
+            arr.reshape ((1, s0)) if axis==1  else arr.reshape ((s1, 1 ))
+            )
+    except ValueError: 
+        # error raises when user mistakes to input the right axis. 
+        # (ValueError: cannot reshape array of size 54 into shape (1,1)) 
+        # then return to him the original array 
+        pass 
+
+    return arr   
     
     
+def ismissing(refarr, arr, fill_value = np.nan, return_index =False): 
+    """ Get the missing values in array-like and fill it  to match the length
+    of the reference array. 
+    
+    The function makes sense especially for frequency interpollation in the 
+    'attenuation band' when using the audio-frequency magnetotelluric methods. 
+    
+    :param arr: array-like- Array to extended with fill value. It should be  
+        shorter than the `refarr`. Otherwise it returns the same array `arr` 
+    :param refarr: array-like- the reference array. It should have a greater 
+        length than the array 
+    :param fill_value: float - Value to fill the `arr` to match the length of 
+        the `refarr`. 
+    :param return_index: bool or str - array-like, index of the elements element 
+        in `arr`. Default is ``False``. Any other value should returns the 
+        mask of existing element in reference array
+        
+    :returns: array and values missings or indexes in reference array. 
+    
+    :Example: 
+        
+    >>> import numpy as np 
+    >>> from watex.tools.funcutils import ismissing
+    >>> refreq = np.linspace(7e7, 1e0, 20) # 20 frequencies as reference
+    >>> # remove the value between index 7 to 12 and stack again
+    >>> freq = np.hstack ((refreq.copy()[:7], refreq.copy()[12:] ))  
+    >>> f, m  = ismissing (refreq, freq)
+    >>> f, m  
+    ...array([7.00000000e+07, 6.63157895e+07, 6.26315791e+07, 5.89473686e+07,
+           5.52631581e+07, 5.15789476e+07, 4.78947372e+07,            nan,
+                      nan,            nan,            nan,            nan,
+           2.57894743e+07, 2.21052638e+07, 1.84210534e+07, 1.47368429e+07,
+           1.10526324e+07, 7.36842195e+06, 3.68421147e+06, 1.00000000e+00])
+    >>> m # missing values 
+    ... array([44210526.68421052, 40526316.21052632, 36842105.73684211,
+           33157895.2631579 , 29473684.78947368])
+    >>>  _, m_ix  = ismissing (refreq, freq, return_index =True)
+    >>> m_ix 
+    ... array([ 7,  8,  9, 10, 11], dtype=int64)
+    >>> # assert the missing values from reference values 
+    >>> refreq[m_ix ] # is equal to m 
+    ... array([44210526.68421052, 40526316.21052632, 36842105.73684211,
+           33157895.2631579 , 29473684.78947368]) 
+        
+    """
+    return_index = str(return_index).lower() 
+    fill_value = _assert_all_types(fill_value, float, int)
+    if return_index in ('false', 'value', 'val') :
+        return_index ='values' 
+    elif return_index  in ('true', 'index', 'ix') :
+        return_index = 'index' 
+    else : 
+        return_index = 'mask'
+    
+    ref = refarr.copy() ; mask = np.isin(ref, arr)
+    miss_values = ref [~np.isin(ref, arr)] 
+    miss_val_or_ix  = (ref [:, None] == miss_values).argmax(axis=0
+                         ) if return_index =='index' else ref [~np.isin(ref, arr)] 
+    
+    miss_val_or_ix = mask if return_index =='mask' else miss_val_or_ix 
+    # if return_missing_values: 
+    ref [~np.isin(ref, arr)] = fill_value 
+    #arr= np.hstack ((arr , np.repeat(fill_value, 0 if m <=0 else m  ))) 
+    #refarr[refarr ==arr] if return_index else arr 
+    return  ref , miss_val_or_ix   
+
+
+def fillNaN(arr, method ='ff'): 
+    """ Most efficient way to back/forward-fill NaN values in numpy array. 
+    
+    Parameters 
+    ---------- 
+    arr : ndarray 
+        Array containing NaN values to be filled 
+    method: str 
+        Method for filling. Can be forward fill ``ff`` or backward fill `bf``. 
+        or ``both`` for the two methods. Default is `ff`. 
+        
+    Returns
+    -------
+    new array filled. 
+    
+    Notes 
+    -----
+    When NaN value is framed between two valid numbers, ``ff`` and `bf` performs 
+    well the filling operations. However, when the array is ended by multiple 
+    NaN values, the ``ff`` is recommended. At the opposite the ``bf`` is  the 
+    method suggested. The ``both``argument does the both tasks at the expense of 
+    the computation cost. 
+    
+    Examples 
+    --------- 
+        
+    >>> import numpy as np 
+    >>> from from watex.tools.funcutils import fillNaN 
+    >>> arr2d = np.random.randn(7, 3)
+    >>> # change some value into NaN 
+    >>> arr2d[[0, 2, 3, 3 ],[0, 2,1, 2]]= np.nan
+    >>> arr2d 
+    ... array([[        nan, -0.74636104,  1.12731613],
+           [ 0.48178017, -0.18593812, -0.67673698],
+           [ 0.17143421, -2.15184895,         nan],
+           [-0.6839212 ,         nan,         nan]])
+    >>> fillNaN (arr2d) 
+    ... array([[        nan, -0.74636104,  1.12731613],
+           [ 0.48178017, -0.18593812, -0.67673698],
+           [ 0.17143421, -2.15184895, -2.15184895],
+           [-0.6839212 , -0.6839212 , -0.6839212 ]])
+    >>> fillNaN(arr2d, 'bf')
+    ... array([[-0.74636104, -0.74636104,  1.12731613],
+           [ 0.48178017, -0.18593812, -0.67673698],
+           [ 0.17143421, -2.15184895,         nan],
+           [-0.6839212 ,         nan,         nan]])
+    >>> fillNaN (arr2d, 'both')
+    ... array([[-0.74636104, -0.74636104,  1.12731613],
+           [ 0.48178017, -0.18593812, -0.67673698],
+           [ 0.17143421, -2.15184895, -2.15184895],
+           [-0.6839212 , -0.6839212 , -0.6839212 ]])
+    
+    References 
+    ----------
+    Some function below are edited by the authors in pyQuestion.com website. 
+    There are other way more efficient to perform this task by calling the module 
+    `Numba` to accelerate the computation time. However, at the time this script 
+    is writen (August 17th, 2022) , `Numba` works with `Numpy` version 1.21. The
+    latter  is older than the one used in for writting this package (1.22.3 ). 
+    
+    For furher details, one can refer to the following link: 
+    https://pyquestions.com/most-efficient-way-to-forward-fill-nan-values-in-numpy-array
+    
+    """
+    def ffill (arr): 
+        """ Forward fill."""
+        idx = np.where (~mask, np.arange(mask.shape[1]), 0)
+        np.maximum.accumulate (idx, axis =1 , out =idx )
+        return arr[np.arange(idx.shape[0])[:, None], idx ]
+    
+    def bfill (arr): 
+        """ Backward fill """
+        idx = np.where (~mask, np.arange(mask.shape[1]) , mask.shape[1]-1)
+        idx = np.minimum.accumulate(idx[:, ::-1], axis =1)[:, ::-1]
+        return arr [np.arange(idx.shape [0])[:, None], idx ]
+    
+    method= str(method).lower().strip() 
+    
+    if arr.ndim ==1: 
+        arr = reshape(arr, axis=1)  
+        
+    if method  in ('backward', 'bf',  'bwd'):
+        method = 'bf' 
+    elif method in ('forward', 'ff', 'fwd'): 
+        method= 'ff' 
+    elif method in ('both', 'ffbf', 'fbwf', 'bff'): 
+        method ='both'
+    if method not in ('bf', 'ff', 'both'): 
+        raise ValueError ("Expect a backward <'bf'>, forward <'ff'> fill "
+                          f" or both <'bff'> not {method!r}")
+    mask = np.isnan (arr)  
+    if method =='both': 
+        arr = ffill(arr) ;
+        #mask = np.isnan (arr)  
+        arr = bfill(arr) 
+    
+    return (ffill(arr) if method =='ff' else bfill(arr)
+            ) if method in ('bf', 'ff') else arr    
     
     
+def get_params (obj: object 
+                ) -> Dict: 
+    """
+    Get object parameters. 
     
+    Object can be callable or instances 
     
+    :param obj: object , can be callable or instance 
     
+    :return: dict of parameters values 
     
+    :examples: 
+        >>> from sklearn.svm import SVC 
+        >>> from watex.tools.funcutils import get_params 
+        >>> sigmoid= SVC (
+            **{
+                'C': 512.0,
+                'coef0': 0,
+                'degree': 1,
+                'gamma': 0.001953125,
+                'kernel': 'sigmoid',
+                'tol': 1.0 
+                }
+            )
+        >>> pvalues = get_params( sigmoid)
+        >>> {'decision_function_shape': 'ovr',
+             'break_ties': False,
+             'kernel': 'sigmoid',
+             'degree': 1,
+             'gamma': 0.001953125,
+             'coef0': 0,
+             'tol': 1.0,
+             'C': 512.0,
+             'nu': 0.0,
+             'epsilon': 0.0,
+             'shrinking': True,
+             'probability': False,
+             'cache_size': 200,
+             'class_weight': None,
+             'verbose': False,
+             'max_iter': -1,
+             'random_state': None
+         }
+    """
+    if hasattr (obj, '__call__'): 
+        cls_or_func_signature = inspect.signature(obj)
+        PARAMS_VALUES = {k: None if v.default is (inspect.Parameter.empty 
+                         or ...) else v.default 
+                    for k, v in cls_or_func_signature.parameters.items()
+                    # if v.default is not inspect.Parameter.empty
+                    }
+    elif hasattr(obj, '__dict__'): 
+        PARAMS_VALUES = {k:v  for k, v in obj.__dict__.items() 
+                         if not (k.endswith('_') or k.startswith('_'))}
     
-    
-    
-    
+    return PARAMS_VALUES
+
     
     
     

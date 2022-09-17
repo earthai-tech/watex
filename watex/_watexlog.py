@@ -88,7 +88,7 @@ class watexlog:
         return logger
 
     @staticmethod
-    def load_configure_set_logfile (path2configfile=None): # loggername =None, setLevel=Name
+    def load_configure_set_logfile (path2configfile=None): 
         """
         configure/setup the logging according to the input configure .yaml file.
 
@@ -101,7 +101,7 @@ class watexlog:
         ownUserLogger="wlog.yml"
         if path2configfile is None :
             env_var=os.environ['watex']
-            path2configfile =os.path.join( env_var, 'watex','utils',
+            path2configfile =os.path.join( env_var, 'watex','tools',
                 ownUserLogger)
             
 
@@ -111,7 +111,9 @@ class watexlog:
                     
                     logging.info('Effective yaml configuration file :%s', path2configfile)
                 else :
-                    logging.exception('File provided {%s}, is not a .yaml config file !'%os.path.basename(path2configfile))
+                    logging.exception(
+                        'File provided {%s}, is not a .yaml config file !'%os.path.basename(
+                            path2configfile))
             else :
                 
                 logging.exception ('Wrong path to .yaml config file.')
@@ -132,7 +134,7 @@ def test_yaml_configfile(yamlfile="wlog.yml"):
 
     UsersOwnConfigFile = yamlfile
     watexlog.load_configure(UsersOwnConfigFile)
-    logger = watexlog.get_csamtpy_logger(__name__)
+    logger = watexlog.get_watex_logger(__name__)
     
     print((logger, id(logger), logger.name, logger.level, logger.handlers))
     
