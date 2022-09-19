@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+# Created on Tue May 17 11:30:51 2022
+#       Author: LKouadio <etanoyau@gmail.com>
+#       Licence: MIT
+
 import warnings 
 
 from ..decorators import refAppender 
@@ -13,7 +17,6 @@ from ..typing import (
     Optional, 
     Array, 
     NDArray, 
-   
     )
 from ..bases import fetchModel 
 from ..exceptions import (
@@ -21,7 +24,6 @@ from ..exceptions import (
     FitError 
     )
 from .._watexlog import watexlog 
-
 from ..tools.mlutils import (
     controlExistingEstimator 
     )
@@ -57,7 +59,7 @@ class pModels :
         of 04 kernels such as the ``rbf`` for radial basis function , the 
         ``poly`` for polynomial , ``sig`` for sigmoid and ``lin`` for linear. 
         Default is ``rbf``. Each kernel is a model attributes of SVM class. 
-        For instance to retrived the pretrained model with kernel = 'poly', we 
+        For instance to retreived the pretrained model with kernel = 'poly', we 
         must use after fitting :class:`.pModels` class:: 
             
             >>> pModels(model='svm').fit().SVM.poly.best_estimator_ 
