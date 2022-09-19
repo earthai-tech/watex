@@ -13,7 +13,6 @@ from math import factorial
 from scipy.signal import argrelextrema 
 import scipy.integrate as integrate
 from scipy.optimize import curve_fit
-# from scipy.signal import fftconvolve
 from scipy.integrate import quad 
 import numpy as np
 import pandas as pd 
@@ -26,7 +25,13 @@ from ..decorators import (
     refAppender, 
     docSanitizer
 )
-from .. import exceptions as Wex 
+from ..exceptions import ( 
+    StationError, 
+    ParameterNumberError, 
+    VESError, 
+    ERPError,
+    ExtractionError,
+    )
 from ..property import P
 from ..typing import (
     T, 
@@ -563,7 +568,7 @@ def vesDataOperator(
         rhoa, np.ndarray, list, tuple, pd.Series))
  
     if len(AB)!= len(rhoa): 
-        raise Wex.VESError(
+        raise VESError(
             'Deep measurement `AB` must have the same size with '
             ' the collected apparent resistivity `rhoa`.'
             f' {len(AB)} and {len(rhoa)} were given.')
@@ -812,7 +817,7 @@ def ohmicArea(
         raise ValueError (f'Could not convert value {ohmSkey!r} to float')
         
     if ohmSkey >= X.max(): 
-        raise Wex.VESError(f"The startpoint 'ohmSkey={ohmSkey}m'is expected "
+        raise VESError(f"The startpoint 'ohmSkey={ohmSkey}m'is expected "
                            f"to be less than the 'maxdepth={X.max()}m'.")
 
     #-------> construct the fitting curves for 1000 points 
@@ -1100,7 +1105,7 @@ def shape (
                 s= int(s.lower().replace('s', '')) 
             except: 
                 if p is ( None or ...): 
-                    raise Wex.StationError(
+                    raise StationError(
                         "Need the positions `p` of the conductive zone "
                         "to be supplied.'NoneType' is given.")
                     
@@ -1110,7 +1115,7 @@ def shape (
             s_index= _assert_all_types(s, int)
             
     if s_index >= len(cz): 
-        raise Wex.StationError(
+        raise StationError(
             f"Position should be less than '7': got '{s_index}'")
     lbound , rbound = cz[:s_index +1] , cz[s_index :]
     ls , rs = lbound[0] , rbound [-1] # left side and right side (s) 
@@ -1382,19 +1387,19 @@ def detect_station_position (
         if s > len(p): # consider this as the dipole length position: 
             # now let check whether the given value is module of the station 
             if s % dl !=0 : 
-                raise Wex.WATexError_station  (
+                raise StationError  (
                     f'Unable to detect the station position {S}')
             elif s % dl == 0 and s <= p.max(): 
                 # take the index 
                 s_index = s//dl
                 return int(s_index), s_index * dl 
             else : 
-                raise Wex.StationError (
+                raise StationError (
                     f'Station {S} is out of the range; max position = {max(p)}'
                 )
         else : 
             if s >= len(p): 
-                raise Wex.WATexError_station (
+                raise StationError (
                     'Location index must be less than the number of'
                     f' stations = {len(p)}. {s} is gotten.')
             # consider it as integer index 
@@ -1486,7 +1491,7 @@ def sfi (
         p = np.arange (0, len(cz) * dipolelength, dipolelength)
    
     if len(p) != len(cz): 
-        raise Wex.StationError (
+        raise StationError (
             'Array of position and conductive zone must have the same length:'
             f' `{len(p)}` and `{len(cz)}` were given.')
         
@@ -1854,7 +1859,7 @@ def define_conductive_zone (
     """
     try : 
         iter(erp)
-    except : raise Wex.ArgumentError (
+    except : raise ERPError (
             f'`erp` must be a sequence of values not {type(erp)!r}')
     finally: erp = np.array(erp)
   
@@ -1865,20 +1870,20 @@ def define_conductive_zone (
         elif sres is not None: 
             snix, = np.where(erp==sres)
             if len(snix)==0: 
-                raise Wex.ParameterNumberError(
+                raise VESError(
                     "Could not  find the resistivity value of the VES "
                     "station. Please provide the right value instead.") 
                 
             elif len(snix)==2: 
                 stn = int(snix[0]) + 1
         else :
-            raise Wex.ArgumentError (
+            raise StationError (
                 '`stn` is needed or at least provide the survey '
                 'dipole length and the distance from the first '
                 'station to the VES station. ')
             
     if erp.size < stn : 
-        raise Wex.StationError(
+        raise StationError(
             f"Wrong station number =`{stn}`. Is larger than the "
             f" number of ERP stations = `{erp.size}` ")
     
@@ -2292,7 +2297,7 @@ def compute_power (
         pk_max= np.array(posMinMax).max()
     
     if posMinMax is None and (pk_min is None or pk_max is None) : 
-        raise Wex.WATexError_parameter_number(
+        raise ParameterNumberError (
             'Could not compute the anomaly power. Provide at least'
              'the anomaly position boundaries or the left(`pk_min`) '
              'and the right(`pk_max`) boundaries.')
@@ -2327,7 +2332,7 @@ def compute_magnitude(
         rhoa_max= np.array(rhoaMinMax).max()
         
     if rhoaMinMax is None and (rhoa_min  is None or rhoa_min is None) : 
-        raise Wex.ParameterNumberError(
+        raise ParameterNumberError(
             'Could not compute the anomaly magnitude. Provide at least'
             'the anomaly resistivy value boundaries or the buttom(`rhoa_min`)'
              'and the top(`rhoa_max`) boundaries.')
@@ -2357,7 +2362,7 @@ def get_minVal(
             try : 
                 array =np.array([float(array)])
             except: 
-                raise Wex.WATexError_float('Could not convert %s to float!')
+                raise TypeError('Could not convert %s to float!')
     try : 
         # first option:find minimals locals values 
         minlocals = argrelextrema(array, np.less)[0]
@@ -2543,8 +2548,7 @@ def select_anomaly (
     
     if auto is False : 
         if None in pos_bounds  or pos_bounds is None : 
-            raise Wex.ErrorSite('One position is missed' 
-                                'Please provided it!')
+            raise StationError('One position is missed; Please provided it!')
         
         pos_bounds = np.array(pos_bounds)
         pos_min, pos_max  = pos_bounds.min(), pos_bounds.max()
@@ -2635,7 +2639,7 @@ def define_anomaly(
         # check if bound is on station positions
         for spk in pksbounds : 
             if not pksbounds.min() <= spk <= pksbounds.max(): 
-                raise  Wex.ExtractionError(
+                raise  ExtractionError(
                     'Bound <{0}> provided is out of range !'
                    'Dipole length is set to = {1} m.'
                    ' Please set a new bounds.')
@@ -2966,7 +2970,7 @@ def interpolate1d (
             t_arr = fillNaN(t_arr, method = method)
             t_arr= reshape(t_arr)
             
-        yc, *_= scale_values(t_arr)
+        yc, *_= scaley (t_arr)
         # replace the at NaN positions value in  t_arr 
         # with their corresponding scaled values 
         arr_new [np.isnan(arr_new)]= yc[np.isnan(arr_new)]
