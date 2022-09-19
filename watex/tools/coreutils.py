@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Copyright (c) 2021  @Daniel03 <etanoyau@gmail.com>
+#   Copyright (c) 2021  LKouadio <etanoyau@gmail.com>
 #   Created date: Fri Apr 15 10:46:56 2022
 #   Licence: MIT Licence 
 """

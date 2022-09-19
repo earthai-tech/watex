@@ -1,5 +1,5 @@
-# 💧 WATex: A Machine Learning Research Toolbox in Hydrogeophysic
-
+# 💧 WATex: A machine learning research library in hydrogeophysic
+S
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
  [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
  [![Requirements Status](https://requires.io/github/WEgeophysics/pyCSAMT/requirements.svg?branch=master)](https://requires.io/github/WEgeophysics/pyCSAMT/requirements/?branch=master)
@@ -34,14 +34,14 @@ Until now, the methods implemented are adressed to a particular problem in water
 - **Geophysical** 
 
     - Electrical ( Electrical Resistivity Profiling;  Vertical Electrical Sounding ) 
-    - Electromagnetics ( Controlled Source Audio-frequency Magnetotelluric )
+    - Electromagnetics ( Audio-frequency Magnetotelluric )
 
 ## Documentation 
 
-* API Documentation  : https://watex.readthedocs.io/en/latest/
-* Home page: https://github.com/WEgeophysics/watex/wiki
-* Codes Snippets: https://github.com/WEgeophysics/watex/wiki/Some-functionalities
-* Case history: Implemented in `Bagoue` region in north part of [Cote d'Ivoire](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
+* [API Documentation](https://watex.readthedocs.io/en/latest/)
+* [Home page](https://github.com/WEgeophysics/watex/wiki)
+* [Codes Snippets](https://github.com/WEgeophysics/watex/wiki/Some-functionalities)
+* [Case history using _WATex_](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
          
 
 ## Licence 
@@ -51,11 +51,9 @@ WATex is under Massachusetts Institute of Technology License [MIT](https://www.m
 
 ## Citations
 
-If you use WATex in any published work, consider citing the [DOI](https://doi.org/10.5281/zenodo.5529368) below:
+If you use `WATex` in any published work, consider citing the [DOI](https://doi.org/10.5281/zenodo.5529368) below:
 
-> *Kouadio, K. L., Kouame, L. N., Drissa, C., Mi, B., Kouamelan, K. S., Gnoleba, S. P. D., et al. (2022). Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resources Research, (May 2022). https://doi.org/10.1029/2021wr031623*
-
-> *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A Machine Learning Research Toolbox in Hydrogeophysic. https://doi.org/10.5281/zenodo.5529368*
+> *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A machine learning research library in hydrogeophysic. https://doi.org/10.5281/zenodo.5529368*
 
 ## System requirements
 * Python 3.8+ 

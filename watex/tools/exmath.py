@@ -70,7 +70,7 @@ def d_hanning_window(
         )-> F: 
     """ Discrete hanning function.
     
-    For futher details  please refer to https://doi.org/10.1190/1.2400625
+    For futher details, please refer to https://doi.org/10.1190/1.2400625
     
     :param x: variable point along the window width
     :param xk: Center of the window `W`. It presumes to host the most weigth.   
@@ -485,8 +485,6 @@ def fitfunc(
     
     return f, xn, yp  
 
-
-  
 def vesDataOperator(
         AB : Array = None, 
         rhoa: Array= None ,

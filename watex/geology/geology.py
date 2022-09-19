@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Wed Jul  7 22:23:02 2021 hz
-# This module is part of the WATex core package, which is released under a
-# MIT- licence.
+# Copyright (c) 2021 Lkouadio, Wed Jul  7 22:23:02 2021 hz
+# Licence:  MIT- licence.
 
 import os
 import warnings 
@@ -9,14 +8,16 @@ import numpy as np
 import pandas as pd
 
 from ..typing import (
-    TypeVar,
-    Iterable, 
-    Tuple,
-    Callable 
+    Array 
 )
 from .._watexlog import watexlog  
-import watex.exceptions as Wex
-
+from ..exceptions import ( 
+    GeoArgumentError , 
+    ParameterNumberError, 
+    )
+from ..tools.site import (
+    Location 
+    )
 _logger =watexlog().get_watex_logger(__name__)
 
 
@@ -147,7 +148,7 @@ def get_color_palette (RGB_color_palette):
             warnings.warn(
                 ' !RGB value is range 0 to 255 pixels , '
                 'not beyond !. Your input values is = {0}.'.format(cp))
-            raise Wex.WATexError_parameter_number(
+            raise ParameterNumberError(
                 'Error color RGBA value ! '
                 'RGB value  provided is = {0}.'
                 ' It is larger than 255 pixels.'.format(cp))

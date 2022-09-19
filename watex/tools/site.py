@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+#      Copyright (c) 2021 LKouadio 
+#      Created on Mon Sep 19 10:29:24 2022
+#      Licence: MIT- licence.
+#      @author-email: <etanoyau@gmail.com>
 """
-Created on Mon Sep 19 10:29:24 2022
-
-@author: Daniel
+Manage station location data.
 """
 import copy 
 import re
@@ -103,12 +105,11 @@ class Location (object):
     def utm_zone (self, utm_zone): 
         utm_xone = copy.deepcopy(utm_zone) 
         utm_zone = str(utm_zone).upper().strip() 
-        str_ = f"{'|'.join([UTM_DESIGNATOR.keys()]).lower()}"
-        regex= re.compile(rf'{str_}')
+        str_ = f"{'|'.join([ i for i in UTM_DESIGNATOR.keys()]).lower()}"
+        regex= re.compile(rf'{str_}', flags=re.IGNORECASE)
         if regex.search(utm_zone) is None: 
-           raise ValueError (f"Wrong UTM_ZONE value!: {utm_xone} ")
-      
-        self._utm_zone =utm_zone
+           raise SiteError (f"Wrong UTM zone value!: {utm_xone!r} ")
+        self._utm_zone =utm_zone.upper() 
     
     @lat.setter 
     def lat (self, lat): 
@@ -206,7 +207,6 @@ class Location (object):
             
         return self.east, self.north
     
-        
         
     def to_latlon(self, east=None, north= None, utm_zone=None, 
                   reference_ellipsoid=None , datum = None ): 
