@@ -90,11 +90,22 @@
     :class:`~.methods.electrical.VerticalSounding`. It is composed of the 
     details of geolocalisation of the survey area and the array configuration. 
     It expects to hold other attributes as the development is still ongoing.
-      
+     
+**IsEdi**: Is an abstract Base class for control the valid EDI. It is also 
+    used to ckeck whether object is an instance of EDI object. For instance:: 
+    
+        >>> import pycsamt
+        >>> from watex.property import IsEdi 
+        >>> from watex.methods.em import EM
+        >>> IsEdi.register (pycsamt.core.edi.Edi )
+        >>> ediObj= EM().fit(r'data/edis').ediObjs_ [0] # one edi-file for assertion 
+        >>> isinstance (ediObj, IsEdi)
+        ... True 
+        
 """
 # import warnings 
 from __future__ import annotations 
-
+import os 
 from abc import ( 
     ABC, 
     abstractmethod, 
@@ -102,6 +113,10 @@ from abc import (
 
 from .decorators import refAppender 
 from .documentation import __doc__ 
+from .exceptions import ( 
+    FileHandlingError, 
+    EDIError 
+    )
 
 
 
@@ -111,7 +126,10 @@ __all__ = [
     'P',
     'BagoueNotes',
     "ElectricalMethods", 
-    "assert_arrangement"
+    "assert_arrangement", 
+    "IsEdi",
+    "UTM_DESIGNATOR", 
+    
 ]
 
 array_configuration ={
@@ -134,7 +152,7 @@ array_configuration ={
     }
 
   
-utm_zone_designator ={
+UTM_DESIGNATOR ={
     'X':[72,84], 
     'W':[64,72], 
     'V':[56,64],
@@ -158,64 +176,9 @@ utm_zone_designator ={
     'Z':[-80,84]
 }
     
+# XXX EDI-
 
-
-# XXX EDI-Jand AVG property indexes 
-
-# A. Jones file indexes 
-_j=[
-    '>AZIMUTH',
-    '>LATITUDE',
-    '>LONGITUDE',
-    '>ELEVATION',
-    
-    'RXX','RXY','RYX',
-    'RYY','RTE','RTM',
-    'RAV','RDE','RZX',
-    'RZY','SXX','SXY',
-    'SYX','SYY','STE',
-    'STM','SAV','SDE',
-    'SZX','SZY','ZXX',
-    'ZXY','ZYX', 'ZYY',
-    'ZTE','ZTM','ZAV',
-    'ZDE','ZZX','ZZY', 
-    'QXX','QXY','QYX',
-    'QYY','QTE','QTM',
-    'QAV','QDE','QZX',
-    'QZY','CXX','CXY',
-    'CYX','CYY', 'CTE',
-    'CTM','CAV', 'CDE',
-    'CZX','CZY','TXX',
-    'TXY','TYX','TYY',
-    'TTE','TTM','TAV',
-    'TDE','TZX','TZY',
-    'ZXX','ZXY','ZYX'
-]
-    
-# Zonge Engineering file indexes 
-_avg=[
-    'skp','Station',
-    'Freq','Comp',
-    'Amps','Emag',
-    'Ephz','Hmag',
-    'Hphz','Resistivity',
-    'Phase','%Emag',
-    'sEphz','%Hmag',
-    'sHphz','%Rho',
-    'sPhz', 'Tx.Amp',
-    'E.mag','E.phz',
-    'B.mag','B.phz',
-    'Z.mag','Z.phz',
-    'ARes.mag','SRes',
-    'E.wgt', 'B.wgt',
-    'E.%err','E.perr',
-    'B.%err','B.perr',
-    'Z.%err','Z.perr',
-    'ARes.%err'
-]
-    
-    
-_edi =[
+_EDI =[
     #Head=Infos-Frequency-Rhorot
     # Zrot and end blocks
     '>HEAD','>INFO',
@@ -889,7 +852,68 @@ class ElectricalMethods (ABC) :
         self.fromlog10=fromlog10 
         self.verbose=verbose 
         
+
+
+class IsEdi(ABC): 
+    """ Assert SEG MT/EMAP Data Interchange Standard EDI-file .
+    
+    EDI stands for Electrical Data Interchange module can read and write an *.edi 
+    file as the 'standard ' format of magnetotellurics. Each section of the .edi 
+    file belongs to a class object, thus the elements of each section are attributes 
+    for easy access. Edi is outputted  following the SEG documentation and rules  
+    of EMAP (Electromagnetic  Array Profiling) and MT sections. 
+    
+    * [1]  Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 
+    1rt ed. Society of Exploration Geophysicists, Texas 7831, USA.
+    
+    """
+    @property
+    @abstractmethod 
+    def is_valid (self): 
+        """ Assert whether EDI is valid."""
+        pass 
+        
+    def _assert_edi (self, 
+                     file: str ,
+                     deep: bool  =True
+                     )-> bool : 
+        """ Assert EDI- file .  
+        :param file: str - path-like object 
+        :param deep: bool - Open the file and assert whether it is a valid EDI
+            if ``False``, just control the EDI extension . """
+        flag = False 
+        if file  is None : 
+            raise  FileHandlingError("NoneType can not be checked. Please"
+                                     " provide the right file.") 
+        if isinstance(file  , str): 
+            flag = os.path.splitext(file )[-1].replace('.', '')
             
+        if flag =='edi' and not deep : 
+            return True 
+            # Open the file now 
+        elif flag !='edi': 
+            raise EDIError('')
+        try :
+            with open (file, 'r', encoding ='utf8') as f : 
+                    edi_data =f.readlines()
+        except PermissionError:
+            msg =''.join(['https://stackoverflow.com/questions/36434764/',
+                          'permissionerror-errno-13-permission-denied'])
+            raise PermissionError("This Error occurs because you try to access"
+                                  " a file from Python without having the necessary"
+                                  " permissions. Please read the following guide"
+                                  f" {msg!r} to fix that issue")
+        if flag =='edi': 
+            if (_EDI[0] not in  edi_data[0]) or  (
+                    _EDI[-1] not in  edi_data[-1]): 
+                
+                raise EDIError(" Unrecognized SEG- EDI-file. Follow the "
+                               "[Wight, D.E., Drive, B., 1988.] to build a"
+                               " correct EDI- file.")
+            flag =True 
+            
+        return flag 
+     
 class P:
     """
     Data properties are values that are hidden to avoid modifications alongside 
@@ -1265,7 +1289,7 @@ def assert_arrangement(a: int | str ):
         
     return 0
 
-    
+
     
     
     

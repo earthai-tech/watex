@@ -101,8 +101,7 @@ class watexlog:
         ownUserLogger="wlog.yml"
         if path2configfile is None :
             env_var=os.environ['watex']
-            path2configfile =os.path.join( env_var, 'watex','tools',
-                ownUserLogger)
+            path2configfile =os.path.join( env_var, 'watex',ownUserLogger)
             
 
         elif path2configfile is not None :

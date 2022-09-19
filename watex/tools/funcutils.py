@@ -2211,11 +2211,103 @@ def get_params (obj: object
 
     
     
+def fit_by_ll(ediObjs): 
+    """ Fit edi by location and reorganize EDI (sort EDI) according to the site  
+    longitude and latitude coordinates. 
     
+    EDIs data are mostly reading in an alphabetically order, so the reoganization  
+
+    according to the location(longitude and latitude) is usefull for distance 
+    betwen site computing with a right position at each site.  
     
+    :param ediObjs: list of EDI object , composed of a collection of 
+        pycsamt.core.edi.Edi object 
+    :type ediObjs: pycsamt.core.edi.Edi_Collection 
+
     
+    :returns: array splitted into ediObjs and Edifiles basenames 
+    :rtyple: tuple 
     
+    :Example: 
+        >>> import numpy as np 
+        >>> from watex.methods.em import EM
+        >>> from watex.tools.funcutils import fit_by_ll
+        >>> edipath ='data/edi_ss' 
+        >>> cediObjs = EM (edipath) 
+        >>> ediObjs = np.random.permutation(cediObjs.ediObjs) # shuffle the  
+        ... # the collection of ediObjs 
+        >>> ediObjs, ediObjbname = fit_by_ll(ediObjs) 
+        ...
     
+    """
+    #get the ediObjs+ names in ndarray(len(ediObjs), 2) 
+    objnames = np.c_[ediObjs, np.array(
+        list(map(lambda obj: os.path.basename(obj.edifile), ediObjs)))]
+    lataddlon = np.array (list(map(lambda obj: obj.lat + obj.lon , ediObjs)))
+    sort_ix = np.argsort(lataddlon) 
+    objnames = objnames[sort_ix ] 
+    #ediObjs , objbnames = np.hsplit(objnames, 2) 
+    return objnames[:, 0], objnames[:, -1]
+   
+    
+def make_ids(arr, prefix =None, how ='py'): 
+    """ Generate auto Id according to the number of given sites. 
+    
+    :param arr: Iterable object to generate an id site . For instance it can be 
+        the array-like or list of EDI object that composed a collection of 
+        pycsamt.core.edi.Edi object. 
+    :type ediObjs: array-like, list or tuple 
+
+    :param prefix: string value to add as prefix of given id. Prefix can be 
+        the site name.
+    :type prefix: str 
+    
+    :param how: Mode to index the station. Default is 'Python indexing' i.e. 
+        the counting starts by 0. Any other mode will start the counting by 1.
+    :type cmode: str 
+    
+    :return: ID number formated 
+    :rtype: list 
+    
+    :Example: 
+        >>> from watex.tools.func_utils import make_ids 
+        >>> values = ['edi1', 'edi2', 'edi3'] 
+        >>> make_ids (values, 'ix')
+        ... ['ix0', 'ix1', 'ix2']
+        
+    """ 
+    fm='{:0' +'{}'.format(int(np.log10(len(arr))) + 1) +'}'
+    id_ =[str(prefix) + fm.format(i if how=='py'else i+ 1 ) if prefix is not 
+          None else fm.format(i if how=='py'else i+ 1) 
+          for i in range(len(arr))] 
+    return id_    
+    
+def show_edi_stats(nedic , nedir, fmtl='~', lenl=77): 
+    """ Format the Edi files and ckeck the number of edifiles
+    successfully read. 
+    :param nedic: number of input or collected edifiles 
+    :param nedir: number of edifiles read sucessfully 
+    :param fmt: str to format the stats line 
+    :param lenl: length of line denileation."""
+    
+    def get_obj_len (value):
+        """ Control if obj is iterable then take its length """
+        try : 
+            iter(value)
+        except :pass 
+        else : value =len(value)
+        return value 
+    nedic = get_obj_len(nedic)
+    nedir = get_obj_len(nedir)
+    
+    print(fmtl * lenl )
+    mesg ='|'.join( ['|{0:<15}{1:^2} {2:<7}',
+                     '{3:<15}{4:^2} {5:<7}',
+                     '{6:<9}{7:^2} {8:<7}%|'])
+    print(mesg.format('Data collected','=',  nedic, 'EDI success. read',
+                      '=', nedir, 'Rate','=', round ((nedir/nedic) *100, 2),
+                      2))
+    print(fmtl * lenl )    
     
     
     
