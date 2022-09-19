@@ -7,10 +7,6 @@
 `WATex`_ property objects 
 =========================
 
-.. _WATex: https://github.com/WEgeophysics/watex/
-.. |ERP| replace:: Electrical resistivity profiling 
-.. |VES| replace:: Vertical Electrical Sounding 
-
 **Water**: Base class module. It contains all the water properties usefull 
     for pure hydrogeological module writting. Instanciated the class should 
     raise an error, however, its special attributes can be used by the child 
@@ -101,7 +97,12 @@
         >>> ediObj= EM().fit(r'data/edis').ediObjs_ [0] # one edi-file for assertion 
         >>> isinstance (ediObj, IsEdi)
         ... True 
-        
+ 
+
+.. _WATex: https://github.com/WEgeophysics/watex/
+.. |ERP| replace:: Electrical resistivity profiling 
+.. |VES| replace:: Vertical Electrical Sounding 
+
 """
 # import warnings 
 from __future__ import annotations 
@@ -117,8 +118,6 @@ from .exceptions import (
     FileHandlingError, 
     EDIError 
     )
-
-
 
 __all__ = [ 
     "Water",
