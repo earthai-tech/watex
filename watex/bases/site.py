@@ -5,6 +5,7 @@
 #      @author-email: <etanoyau@gmail.com>
 """
 Manage station location data.
+
 """
 import copy 
 import re
@@ -12,7 +13,7 @@ import warnings
 
 import numpy as np 
 
-from .gistools import (
+from ..tools.gistools import (
     assert_elevation_value, 
     assert_lat_value, 
     assert_lon_value , 

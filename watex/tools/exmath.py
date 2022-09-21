@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Copyright (c) 2021 Kouadio K. Laurent, 
+#   Copyright (c) 2021 LKouadio, 
 #   Created date: on Fri Sep 17 11:25:15 2021
 #   Licence: MIT Licence 
 

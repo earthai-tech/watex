@@ -1,16 +1,26 @@
 # -*- coding: utf-8 -*-
+# Created by jrpeacock  https://github.com/MTgeophysics/mtpy.git> 
+# edited by LKouadio 
 """
-   
-Created on Fri Apr 14 14:47:48 2017
-...:: Module author :: jrpeacock 
+GIS Utilities 
+================
 
-@author : jrpeacock 
+This module contains tools to help project between coordinate systems. The 
+module will first use GDAL if installed.  If GDAL is not installed then 
+pyproj is used. Main functions are:
+        
+    * project_point_ll2utm
+    * project_point_utm2ll
+    
+These can take in a point or an array or list of points to project.
 
+latitude and longitude can be input as:
+    * 'DD:mm:ss.ms'
+    * 'DD.decimal_degrees'
+    * float(DD.decimal_degrees)
+    
 """
 
-# ==============================================================================
-# Imports
-# ==============================================================================
 import numpy as np
 
 from .._watexlog import watexlog
@@ -18,7 +28,9 @@ from ..decorators import (
     deprecated ,
     gdal_data_check
     )
-
+from ..exceptions import ( 
+    GISError
+    )
 try : 
     import HAS_GDAL, EPSG_DICT
     if HAS_GDAL:
@@ -33,11 +45,6 @@ except :
 _logger = watexlog.get_watex_logger(__name__)
 
 
-class GIS_ERROR(Exception):
-    pass
-#==============================================================================
-# Make sure lat and lon are in decimal degrees
-#==============================================================================
 def _assert_minutes(minutes):
     assert 0 <= minutes < 60., \
         'minutes needs to be <60 and >0, currently {0:.0f}'.format(minutes)
@@ -50,6 +57,16 @@ def _assert_seconds(seconds):
         'seconds needs to be <60 and >0, currently {0:.3f}'.format(seconds)
     return seconds
 
+def _resume(deg_or_min, value):
+    """ resume the countdown and  add one if seconds or degree is equal to 60.  
+
+    Commonly seconds and minutes should not end by 60, otherwise one 
+    min or  hour is topped. Thus the second and minute restart counting. 
+    This is useful to skip the assertion error when second and minutes are 
+    equal to 60. Conversion is done instead. 
+    """
+    return ( deg_or_min + value//60, value%60 )  if float (value) >=60. else (
+        deg_or_min, value )  
 
 def convert_position_str2float(position_str):
     """
@@ -70,18 +87,20 @@ def convert_position_str2float(position_str):
         >>> import mtpy.utils.gis_tools as gis_tools
         >>> gis_tools.convert_position_str2float('-118:34:56.3')
     """
-
+    
     if position_str in [None, 'None']:
         return None
     
     p_list = position_str.split(':')
     if len(p_list) != 3:
-        raise ValueError(
-            '{0} not correct format, should be DD:MM:SS'.format(position_str))
+        raise ValueError('{0} not correct format, should be DD:MM:SS'.format(position_str))
 
-    deg = float(p_list[0])
-    minutes = _assert_minutes(float(p_list[1]))
-    sec = _assert_seconds(float(p_list[2]))
+    deg = float(p_list[0]) 
+    minutes = float(p_list[1])
+    sec = float(p_list[2])
+    
+    minutes, sec = _resume(minutes, sec) 
+    deg, minutes =  _resume(deg, minutes) 
 
     # get the sign of the position so that when all are added together the
     # position is in the correct place
@@ -198,10 +217,6 @@ def convert_position_float2str(position):
 
     return position_str
 
-
-# ==============================================================================
-# Project a point
-# ==============================================================================
 @deprecated("NATO UTM zone is used in other part of mtpy,"
             " this function is for Standard UTM")
 def get_utm_string_from_sr(spatialreference):
@@ -306,13 +321,13 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
         if isinstance(datum, int):
             ogrerr = ll_cs.ImportFromEPSG(datum)
             if ogrerr != OGRERR_NONE:
-                raise GIS_ERROR("GDAL/osgeo ogr error code: {}".format(ogrerr))
+                raise GISError("GDAL/osgeo ogr error code: {}".format(ogrerr))
         elif isinstance(datum, str):
             ogrerr = ll_cs.SetWellKnownGeogCS(datum)
             if ogrerr != OGRERR_NONE:
-                raise GIS_ERROR("GDAL/osgeo ogr error code: {}".format(ogrerr))
+                raise GISError("GDAL/osgeo ogr error code: {}".format(ogrerr))
         else:
-            raise GIS_ERROR("""datum {0} not understood, needs to be EPSG as int
+            raise GISError("""datum {0} not understood, needs to be EPSG as int
                                or a well known datum as a string""".format(datum))
 
         # set utm coordinate system
@@ -324,7 +339,7 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
         if HAS_GDAL:
             ogrerr = utm_cs.ImportFromEPSG(epsg)
             if ogrerr != OGRERR_NONE:
-                raise GIS_ERROR("GDAL/osgeo ogr error code: {}".format(ogrerr))
+                raise GISError("GDAL/osgeo ogr error code: {}".format(ogrerr))
         else:
             import pyproj 
             pp = pyproj.Proj('+init=EPSG:%d'%(epsg))
@@ -334,7 +349,7 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
         if HAS_GDAL:
             ogrerr = utm_cs.CopyGeogCSFrom(ll_cs)
             if ogrerr != OGRERR_NONE:
-                raise GIS_ERROR("GDAL/osgeo ogr error code: {}".format(ogrerr))
+                raise GISError("GDAL/osgeo ogr error code: {}".format(ogrerr))
         # end if
         if utm_zone is None or not isinstance(None, str) or utm_zone.lower() == 'none':
             # get the UTM zone in the datum coordinate system, otherwise
@@ -371,7 +386,8 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
         projected_point['easting'][ii] = point[0]
         projected_point['northing'][ii] = point[1]
         if(HAS_GDAL): projected_point['elev'][ii] = point[2]
-        projected_point['utm_zone'][ii] = utm_zone if utm_zone is not None else get_utm_zone(lat[ii], lon[ii])[2]
+        projected_point['utm_zone'][ii] = utm_zone if utm_zone is not None \
+            else get_utm_zone(lat[ii], lon[ii])[2]
     # end for
 
     # if just projecting one point, then return as a tuple so as not to break
@@ -414,11 +430,11 @@ def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=None):
     try:
         easting = float(easting)
     except ValueError:
-        raise GIS_ERROR("easting is not a float")
+        raise GISError("easting is not a float")
     try:
         northing = float(northing)
     except ValueError:
-        raise GIS_ERROR("northing is not a float")
+        raise GISError("northing is not a float")
 
     if HAS_GDAL:
         # set utm coordinate system
@@ -451,7 +467,7 @@ def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=None):
         is_northern = False if utm_zone < 0 else True
         zone_number = abs(utm_zone)
     else:
-        print("epsg and utm_zone", str(epsg), str(utm_zone))
+        # print("epsg and utm_zone", str(epsg), str(utm_zone))
 
         raise NotImplementedError(
             "utm_zone type (%s, %s) not supported"%(type(utm_zone), str(utm_zone)))

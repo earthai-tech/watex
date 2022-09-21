@@ -11,21 +11,49 @@ import warnings
 # import json  
 import datetime
 import  shutil
+
 import numpy as np 
 import pandas as pd
 from scipy.signal import argrelextrema 
 
 from .._watexlog import watexlog 
-import  watex.exceptions as Wex
-import  watex.tools.exmath as wMath 
-import watex.tools.funcutils as func
-import watex.tools.gistools as gis
+
+from ..exceptions import ( 
+    FileHandlingError,
+    ERPError, 
+    
+    )
+# import  watex.exceptions as Wex
+# import  watex.tools.exmath as wMath 
+from ..tools.exmath import ( 
+    select_anomaly, 
+    compute_anr,
+    compute_sfi,
+    compute_power, 
+    compute_magnitude 
+    
+    )
+# import watex.tools.funcutils as func
+from ..tools.funcutils import ( 
+    display_infos, 
+    savepath_, 
+    get_boundaries, 
+    wrap_infos, 
+
+    )
+from ..tools.gistools import ( 
+    ll_to_utm, 
+    utm_to_ll, 
+    project_point_ll2utm, 
+    project_point_utm2ll 
+    )
+# import watex.tools.gistools as gis
 
 _logger =watexlog.get_watex_logger(__name__)
 
 sys.path.insert(0, os.path.abspath('.'))
 
-class ERP_collection: 
+class ERPCollection: 
     """
     Collection objects. The class collects all `erp` survey lines.
     Each `erp` is an singleton class object with their corresponding 
@@ -182,7 +210,7 @@ class ERP_collection:
                                       for file in os.listdir (
                                               self.listOferpfn)]
                 else : 
-                    raise Wex.WATexError_ERP(
+                    raise ERPError(
                         'File or path provided is wrong! Please give a'
                         ' a right path.')
                         
@@ -256,7 +284,7 @@ class ERP_collection:
                   f' {"s" if len(unreadfiles)>1 else ""} enumerate below:'
                   .format(len(unreadfiles)))
             
-            func.display_infos(infos=unreadfiles,
+            display_infos(infos=unreadfiles,
                     header=f"Unread file{'s' if len(unreadfiles)>1 else ''}")
             
         if self.erpObjs is not None and self.listOferpfn is None : 
@@ -389,11 +417,11 @@ class ERP_collection:
                               index =False)
 
         if self.savepath is None :
-            self.savepath = func.savepath_('_erpData_')
+            self.savepath = savepath_('_erpData_')
             
         if self.savepath is not None :
             if not os.path.isdir(self.savepath): 
-                self.savepath = func.savepath_('_erpData_')
+                self.savepath = savepath_('_erpData_')
             try : 
                 shutil.move(os.path.join(os.getcwd(),self.filename) ,
                         os.path.join(self.savepath , self.filename))
@@ -635,7 +663,7 @@ class ERP :
         if erp_f is not None : self.erp_fn = erp_f 
 
         if not os.path.isfile(self.erp_fn): 
-            raise Wex.WATexError_file_handling(
+            raise FileHandlingError (
                 'No right file detected ! Please provide the right path.')
         name , exT=os.path.splitext(self.erp_fn)
 
@@ -648,7 +676,7 @@ class ERP :
         #boundaries are given 
         self.auto, self._shape, self._type, self._select_best_point,\
             self.anom_boundaries, self._df = \
-                func.get_boundaries(df_)
+                get_boundaries(df_)
  
         self.data =self._df.to_numpy()
         self._name = os.path.basename(name)
@@ -677,13 +705,13 @@ class ERP :
 
             for ii in range(len(self._longitude)):
                 try : 
-                    self.utm_zone, utm_easting, utm_northing = gis.ll_to_utm(
+                    self.utm_zone, utm_easting, utm_northing = ll_to_utm(
                                             reference_ellipsoid=23, 
                                               lon=self._longitude[ii],
                                               lat = self._latitude[ii])
                 except : 
                     utm_easting, utm_northing, \
-                        self.utm_zone= gis.project_point_ll2utm(
+                        self.utm_zone= project_point_ll2utm(
                         lon=self._longitude[ii],
                         lat = self._latitude[ii])
                     
@@ -714,13 +742,13 @@ class ERP :
                                                 self.df['east'].to_numpy())): 
                 try : 
                     self._latitude [ii],\
-                        self._longitude [ii] = gis.utm_to_ll(23,
+                        self._longitude [ii] = utm_to_ll(23,
                             northing = north, 
                             easting = east, 
                             zone = self.utm_zone) 
                 except: 
                     self._latitude[ii], \
-                        self._longitude [ii] = gis.project_point_utm2ll(
+                        self._longitude [ii] = project_point_utm2ll(
                                         northing = north, 
                                         easting = east, 
                                         utm_zone = self.utm_zone) 
@@ -749,7 +777,7 @@ class ERP :
                     self.df['pk'].to_numpy())-1)
                     
    
-        self.aBestInfos= wMath.select_anomaly(
+        self.aBestInfos= select_anomaly(
                              rhoa_array= self.df['rhoa'].to_numpy(), 
                              pos_array= self.df['pk'].to_numpy(), 
                              auto = self.auto, 
@@ -816,7 +844,7 @@ class ERP :
                 self._select_best_point_,
                 int(self._select_best_point_/self.dipoleLength)+1
                                               )
-        func.wrap_infos(mes, on =self.turn_on) 
+        wrap_infos(mes, on =self.turn_on) 
         
         return self._select_best_point_
     
@@ -824,7 +852,7 @@ class ERP :
     def dipoleLength(self): 
         """Get the dipole length i.e the distance between two measurement."""
         
-        func.wrap_infos(
+        wrap_infos(
             'Distance bewteen measurement is = {0} m.'.
             format(self._dipoleLength), off = self.turn_on)
         
@@ -849,17 +877,17 @@ class ERP :
             
         mess[-1]=mess[-1].replace('\n', '')
         
-        func.wrap_infos(''.join([ss for ss in mess]),
+        wrap_infos(''.join([ss for ss in mess]),
                          on = self.turn_on)
         return self._best_points  
     
     @property 
     def best_power (self):
         """Get the power from the select :attr:`~.ERP.select_best_point_`. """
-        self._power =wMath.compute_power(
+        self._power =compute_power(
             posMinMax=self.aBestInfos[self._best_key_point][2])
         
-        func.wrap_infos(
+        wrap_infos(
             'The power of selected best point is = {0}'.format(self._power),
                         on = self.turn_on)
         
@@ -868,10 +896,10 @@ class ERP :
     def best_magnitude(self): 
         """ Get the magnitude of the select :attr:`~.ERP.select_best_point_`."""
         
-        self._magnitude =wMath.compute_magnitude(
+        self._magnitude =compute_magnitude(
             rhoa_max=self.rhoa_max,rhoa_min=self.select_best_value_)
                                                  
-        func.wrap_infos(
+        wrap_infos(
            'The magnitude of selected best point is = {0}'.
            format(self._magnitude),
           on = self.turn_on)
@@ -883,14 +911,14 @@ class ERP :
         """Get the standard fraturation index from 
         :attr:`~.ERP.select_best_point_`"""
         
-        self._sfi = wMath.compute_sfi(pk_min=self.posi_min,
+        self._sfi = compute_sfi(pk_min=self.posi_min,
                                       pk_max=self.posi_max,
                                       rhoa_min=self.rhoa_min,
                                       rhoa_max=self.rhoa_max,
                                       rhoa=self.select_best_value_, 
                                       pk=self.select_best_point_)
         
-        func.wrap_infos('SFI computed at the selected best point is = {0}'.
+        wrap_infos('SFI computed at the selected best point is = {0}'.
                         format(self._sfi), 
                         on =self.turn_on)
         return self._sfi
@@ -932,7 +960,7 @@ class ERP :
             self.aBestInfos[self._best_key_point][1]
             )
         
-        func.wrap_infos('Best conductive value selected is = {0} Ω.m'.
+        wrap_infos('Best conductive value selected is = {0} Ω.m'.
                         format(self._select_best_value), 
                         on =self.turn_on) 
         
@@ -948,11 +976,11 @@ class ERP :
         pos_max_index = int(np.where(self.df['pk'].to_numpy(
             ) ==self.posi_max)[0])
 
-        self._anr = wMath.compute_anr(sfi = self.best_sfi,
+        self._anr = compute_anr(sfi = self.best_sfi,
                                       rhoa_array = self.df['rhoa'].to_numpy(), 
                                       pos_bound_indexes= [pos_min_index ,
                                                           pos_max_index ])
-        func.wrap_infos('Best cover   = {0} % of the whole ERP line'.
+        wrap_infos('Best cover   = {0} % of the whole ERP line'.
                         format(self._anr*100), 
                         on =self.turn_on) 
         
@@ -969,7 +997,7 @@ class ERP :
                                   pos_array=self.df['pk'].to_numpy() , 
                                   dl= self.dipoleLength)
         
-        func.wrap_infos('Select anomaly type is = {}'.
+        wrap_infos('Select anomaly type is = {}'.
                        format(self._type), 
                        on =self.turn_on) 
         return self._type 
@@ -982,7 +1010,7 @@ class ERP :
             self._shape = get_shape(
                 rhoa_range=self.aBestInfos[self._best_key_point][4])
         
-        func.wrap_infos('Select anomaly shape is = {}'.
+        wrap_infos('Select anomaly shape is = {}'.
                        format(self._shape), 
                        on =self.turn_on) 
         return self._shape 

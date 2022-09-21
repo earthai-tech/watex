@@ -6,6 +6,7 @@
 from __future__ import annotations 
 
 import os 
+import re 
 import copy
 import warnings
 import numpy as np 
@@ -15,7 +16,10 @@ from ..documentation import __doc__
 from ..tools.funcutils import (
     repr_callable_obj,
     smart_format,
-    smart_strobj_recognition 
+    smart_strobj_recognition , 
+    is_installing,
+    make_ids, 
+    show_stats,
     )
 from ..tools.coreutils import (
     _assert_station_positions,
@@ -23,7 +27,7 @@ from ..tools.coreutils import (
     fill_coordinates, 
     erpSelector, 
     vesSelector,
-    
+    parseStations,
 ) 
 from ..tools.exmath import (
     shape, 
@@ -49,10 +53,474 @@ from ..property import(
 from .._watexlog import watexlog 
 from ..exceptions import (
     FitError, 
-    VESError
+    VESError, 
+    ERPError,
+    StationError, 
     )
+_logger = watexlog().get_watex_logger(__name__ )
+
+TQDM= False 
+try : 
+    import tqdm 
+except ImportError: 
+    is_success = is_installing('tqdm'
+                               )
+    if not is_success: 
+        warnings.warn("'Auto-install tqdm' failed. Could be installed it manually"
+                      " Can get 'tqdm' here <https://pypi.org/project/tqdm/> ")
+        _logger.info ("Failed to install automatically 'tqdm'. Can get the " 
+                      "package via  https://pypi.org/project/tqdm/")
+    else : TQDM = True 
+    
+else: TQDM = True 
 
 
+class DCResistivity (ElectricalMethods)  : 
+    """ A collection of DC-resistivity profiling classes. 
+    
+    It reads and compute electrical parameters. Each line compose a specific
+    object and gather all the attributes of :class:`~.ResistivityProfiling` for
+    easy use. For instance, the expeced drilling location point  and its 
+    resistivity value for two survey lines ( line1 and line2) can be fetched 
+    as:: 
+        
+        >>> <object>.line1.sves_ ; <object>.line1.sves_resistivity_ 
+        >>> <object>.line2.sves_ ; <object>.line2.sves_resistivity_ 
+    
+    
+    Arguments 
+    ----------
+    
+    **stations**: list or str (path-like object )
+        list of station name where the drilling is expected to be located. It 
+        strongly linked to the name of used to specify the center position of 
+        each dipole when the survey data is collected. Each survey can have its 
+        own way for numbering the positions, howewer if the station is given 
+        it should be one ( presumed to be the suitable point for drilling) in 
+        the survey lines. Commonly it is called the `sves` which mean at this 
+        point, the DC-sounding will be operated. Be sure to provide the correct
+        station to compute the electrical parameters. 
+        
+        It is recommed to provide the positioning of the station expected to 
+        hold the drillings. However if `stations` is None, the auto-way for 
+        computing electrical features should be triggered. User can also 
+        provide the list of stations by hand. In that case, each station should
+        numbered from 1 not 0. For instance: 
+            
+            *  in a survey line of 20 positions. We considered the station 13 
+                as the best point to locate the drilling. Therefore the name  
+                of the station should be 'S13'. In other survey line (line2)
+                the second point of my survey is considered the suitable one 
+                to locate my drilling. Considering the two survey lines, the 
+                list of stations sould be '['S13', 'S2']
+                
+            * `stations` can also be arrange in a single to be parsed which 
+                refer to the string arguments. 
+            
+    **dipole**: float 
+        The dipole length used during the exploration area. If `dipole` value 
+        is set as keyword argument,i.e. the station name is overwritten and 
+        is henceforth named according to the  value of the dipole. For instance
+        for `dipole` equals to ``10m``, the first station should be ``S00``, 
+        the second ``S10`` , the third ``S20`` and so on. However, it is 
+        recommend to name the station using counting numbers rather than using 
+        the dipole  position.
+        
+    **auto**: bool 
+        Auto dectect the best conductive zone. If ``True``, the station 
+        position should be  the  `station` of the lower resistivity value 
+        in |ERP|. 
+    
+    **read_sheets**: bool, 
+        Read the data in sheets. Here its assumes the data  of each survey 
+        lines are arrange in a single excell worksheets. Note that if 
+        `read_sheets` is set to ``True`` and the file is not in excell format, 
+        a TypError will raise. 
+        
+    **kws**: dict 
+         Additional |ERP| keywords arguments  
+         
+    Examples
+    ---------
+    (1)-> Get DC -resistivity profiling from the individual Resistivity object 
+    
+    >>> from watex.methods import ResistivityProfiling 
+    >>> from watex.methods import DCResistivity  
+    >>> robj1= ResistivityProfiling(auto=True) # auto detection 
+    >>> robj1.utm_zone = '50N'
+    >>> robj1.fit('testsafedata.xlsx') 
+    >>> robj1.sves_
+    ... 
+    >>> robj2= ResistivityProfiling(auto=True, utm_zone='40S') 
+    >>> robj2.fit('testunsafedata.csv') 
+    >>> robj2.sves_ 
+    ... 
+    >>> # read the both objects 
+    >>> dcobjs = DCResistivity()
+    >>> dcobjs.fit([robj1, robj2]) 
+    >>> dcobjs.sves_ 
+    ... 
+    >>> dcobjs.line1.sves_ # => robj1.sves_
+    >>> dcobjs.line2.sves_ # => robj2.sves_ 
+    
+    (2) -> Read from a collection of excell data 
+    
+    >>> datapath = r'data/erp'
+    >>> dcobjs.read_sheets=True 
+    >>> dcobjs.fit(datapath) 
+    >>> dcobjs.nlines_  # getting the number of survey lines 
+    ... 9
+    >>> dcobjs.sves_ # stations of the best conductive zone 
+        ... array(['S017', 'S006', 'S000', 'S036', 'S036', 'S036', 'S036', 'S036',
+               'S001'], dtype='<U33')
+    >>> dcobjs.sves_resistivities_ # the lower conductive resistivities 
+    ... array([  80,   50, 1101,  500,  500,  500,  500,  500,   93], dtype=int64)
+    >>> dcobjs.powers_ 
+    ... array([ 50,  60,  30,  60,  60, 180, 180, 180,  40])
+    >>> dcobjs.sves_ # stations of the best conductive zone 
+    ... array(['S017', 'S006', 'S000', 'S036', 'S036', 'S036', 'S036', 'S036',
+           'S001'], dtype='<U33')
+    
+    (2) -> Read data and all sheets, assumes all data are arranged in a sheets
+    
+    >>> dcobjs.read_sheets=True
+    >>> dcobjs.fit(datapath) 
+    >>> dcobjs.nlines_ # here it assumes all the data are in single worksheets.
+    ... 4 
+    >>> dcobjs.line4.conductive_zone_ # conductive zone of the line 4 
+    ... array([1460, 1450,  950,  500, 1300, 1630, 1400], dtype=int64)
+    >>> dcobjs.sfis_
+    >>> array([1.05085691, 0.07639077, 0.03592814, 0.07639077, 0.07639077,
+           0.07639077, 0.07639077, 0.07639077, 1.08655919])
+    >>> dcobjs.line3.sfi_ # => robj1.sfi_
+    ... array([0.03592814]) # for line 3 
+    
+    """
+    
+    def __init__(self, 
+                 stations: Optional[List[str]]= None,
+                 dipole: float = 10.,
+                 auto: bool = False, 
+                 read_sheets:bool=False, 
+                 **kws
+                 ):
+        super().__init__(**kws)
+        
+        self._logging=watexlog.get_watex_logger(self.__class__.__name__)
+        
+        self.stations=stations 
+        self.dipole=dipole 
+        self.auto=auto 
+        self.read_sheets=read_sheets 
+        
+        for k in list (kws.keys()): 
+            setattr (self, k, kws[k])
+        
+    def fit(self, 
+            data : List[str] | List [DataFrame],
+            **kws)-> object : 
+        """ Read and fit the collections of data  
+        
+        Parameters 
+        ----------
+        **data**: List of path-like obj, or :class:`~.ResistivityProfiling`
+            object. Data containing the collection of DC-resistivity values of 
+            of multiple survey areas. 
+                
+        **kws**: str, 
+            Additional keyword from :func:watex.tools.coreutils.parseStations`.
+            It refers to the `station_delimiter` parameters. If the attribute 
+            :attr:`~.ResistivityProfilings.stations` is given as a path-like 
+            object. If the stations are disposed in the same line, it is 
+            convenient to provide the delimiter to parse the stations. 
+            
+        Returns 
+        -------
+            object instanciated from :class:`~.ResistivityProfiling`.
+            
+        Notes
+        ------
+        The stations should numbered from 1 not 0 and might fit the number of 
+        the survey line. Each survey line expect to hold one positionning 
+        drilling. 
+        
+        
+        """
+        
+        def _geterpattr (attr , dl ): 
+            """ Get attribute from the each DC-resistivity object and 
+            collect into numpy array. 
+            
+            If `stack` is ``True``, it will collect stacked data allong axis 1. 
+            :param attr: attribute name 
+            :param dl: list of erp object 
+            """
+            # np.warnings.filterwarnings(
+            #     'ignore', category=np.VisibleDeprecationWarning)  
+            return np.array(list(map(lambda o : getattr(o, attr), dl )), 
+                            dtype =object)  
+        
+        self._logging.info (" {self.__class__.__name__!r} collects the "
+                            "resistivity objects ")
+        
+        #-> Initialize collection objects 
+        # - collected the unreadable data ; readable data  
+        self.unknow_data_= list() ; self.data_= list() 
+        
+        # check whether object is readable as ERP objs
+        #  -> if not assume a path or file is given 
+        if not self._readfromerpObjs (data):
+            self._readfrompath (data, **kws)
+            
+        #show stats 
+        print()
+        show_stats (data , self.data_, obj = 'DC-ERP' , lenl=79)
+        
+        self.ids_ = np.array(make_ids (self.survey_names_, 'line', None, True)) 
+        
+        # set each line as an object with attributes
+        # can be retrieved like self.line1_.sves_ 
+        self.lines_ = np.empty_like (self.ids_, dtype =object )
+        for kk, (id_ , line) in enumerate (zip( self.ids_, self.data_)) : 
+            obj = type (f"{line}", (ElectricalMethods,), line.__dict__ )
+            self.__setattr__(f"{id_}", obj)
+            self.lines_[kk]= obj  # set lines objects 
+            
+        # -> lines numbers 
+        self.nlines_ = self.lines_.size 
+        
+        if self.verbose > 3: 
+            print("Each line is an object class inherits from all attributes" 
+                  " of DC-resistivity profiling object. For instance the"
+                  "the right drilling point of the first line  can be fetched"
+                  "  as: <self.line1.sves_> ")
+            
+        # can also retrieve an attributes in other ways 
+        # make usefull attributess
+        if self.verbose > 7: 
+            print("Populate the other  attributes and data can be"
+                  " fetched as array of N-number of survey lines.  ")
+            
+        # set expected the drilling point positions and resistivity values  
+        self.sves_ = _geterpattr ('sves_', self.data_)
+        self.sves_resistivities_ =  _geterpattr (
+            'sves_resistivity_', self.data_ ).astype(float)
+        
+        # set the expected drilling points coordinates  at each line 
+        for name in  ('lat', 'lon', 'east','north'): 
+            setattr (self, f"sves_{name}s_", _geterpattr (
+                f"sves_{name}_", self.data_).astype(float))
+
+        # set the predictor parameters attributes 
+        for name in  ('power', 'magnitude', 'type','sfi'): 
+            setattr (self, f"{name}s_", _geterpattr (f"{name}_", self.data_) 
+                     if name =='type' else  _geterpattr (f"{name}_", self.data_
+                                                         ).astype(float) 
+                     )
+
+        return self 
+    
+      
+    def _readfromerpObjs(self, data: List[object ] ): 
+        """ Read object metadata object. 
+        
+        A set of :class:`.ResistivityProfiling` objects.
+        
+        :param data: list-a collection of :class:`~.ResistivityProfiling` 
+            objects
+        
+        :returns: bool- whether an object is readable as a DC-resistivity 
+            profiling object or not.``False`` otherwise.  
+        """
+
+        self._logging.info ("Read a collection 'ResistivityProfiling' objects")
+        
+        if not isinstance( data, (list, tuple, np.ndarray)): 
+            data =[data]
+        # assert whether each element compose the data is ERP object  
+        s = set ([ isinstance (o, ResistivityProfiling ) for o in data  ]) 
+        if len(s)!=1 or (len(s) ==1  and not tuple(s)[0]): 
+            return False 
+        
+        # show the progress bar        
+        pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
+                     desc ='dc-erp', ncols =77)
+        
+        for kk , o in enumerate(pbar) :
+            try: 
+                if isinstance (o, ResistivityProfiling ): 
+                    self.data_.append(o) 
+            except : self.unknow_data_.append(o) 
+            
+            pbar.update(kk) if TQDM else ''
+        
+        (pbar.close (), print('-completed-') ) if TQDM else ''
+        
+        if len(self.data_)==0 : 
+            warnings.warn("No DC-resistvity profiling data detected. Make a" 
+                          "collection of profiling object using "
+                          ":class:`watex.methods.electrical.ResistivityProfiling`"
+                          " class.")
+            raise ERPError("None DC-Resistivity profiling data found!"
+                           )
+            
+        # make a ids 
+        if self.verbose > 3 : 
+            print("Set the ids for each line e.g. line001 for the first line.")
+        
+        self.survey_names_ = np.array(make_ids(self.data_, 'line', None, True))
+        
+        return True 
+    
+        
+    def _readfrompath (self, data: List[str] ,
+                       **kws ): 
+        """ Read data from a file or a path-like object. 
+        
+        It collects the list of |ERP| files and create an |ERP| object from 
+        :class:`.ResistivityProfiling`. 
+        
+        :param data: str or path-like object, 
+        
+        :param kws: Additional keyword from 
+            :func:`watex.tools.coreutils.parseStations`. It refers to the 
+            `station_delimiter` parameters. 
+            
+        """
+        
+        self._logging.info (" {self.__class__.__name__!r} collects the "
+                            "resistivity objects ")
+        ddict = dict() 
+        regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
+        
+        self.survey_names_ = None  # initialize 
+        if isinstance(data, str ): 
+            if os.path.isfile (data): 
+                 data =[data ]
+            elif os.path.dirname(data): 
+                data = [os.path.join( data, d ) for d in os.listdir(data)] 
+            else : raise FileNotFoundError("File not found")
+           
+        if self.read_sheets: 
+            _, ex = os.path.splitext( data[0])
+            if ex != '.xlsx': 
+                raise TypeError (" Reading multisheets expects an excel file."
+                                 " extension not: {ex!r}")
+            for d in data : 
+                try: 
+                    ddict.update ( **pd.read_excel (d , sheet_name =None))
+                except : pass 
+                    
+                #collect stations names
+            if len(ddict)==0 : 
+                raise ERPError ("Can'find the DC-resistitivity profiling data "
+                                )
+            self.survey_names_ = list(map(
+                lambda o: regex.sub('_', o).lower(), ddict.keys()))
+
+            if self.verbose > 3: 
+                print(f"Number of the collected data from stations are"
+                      f" : {len(self.survey_names_)}")
+                
+            data = list(ddict.values ())
+            
+        # make a survey id from collection object 
+        if self.survey_names_ is None: 
+            self.survey_names_ = list(map(lambda o :regex.sub(
+                '_',  os.path.basename(o)), data ))
+            
+        # remove the extension and keep files names 
+        self.survey_names_ = list(
+            map(lambda o: o.split('.')[0], self.survey_names_)) 
+        
+        # self.ids_ = make_ids (self.survey_names_, 'line', None, True ) 
+        
+        # if list of station is not given for each file 
+        # note that here station is station where one expect to 
+        # locate a drilling drilling i.e. sves 
+        if self.stations is None: 
+            self.stations = np.repeat ([None], len(self.survey_names_))
+            
+        elif self.stations is not None: 
+            
+            if os.path.isfile (self.stations): 
+                self.stations =parseStations(self.stations, **kws)
+                
+            if isinstance (self.stations, str): 
+                self.stations=[self.stations ]
+                
+            msg =''.join([ 
+                    "### Number of station does not fit the number of survey"
+                    "lines(=>{0}). Expect one station for eachline but {1}"
+                    " {2} given."
+                ])
+       
+            if len(self.stations)!= len(self.survey_names_): 
+                self._logging.error (msg)
+                warnings.warn(msg.format(len(self.survey_names_), len(self.stations), 
+                    "{'is' if len(self.stations)<2 else 'are'}") )
+                
+                if self.verbose > 3: 
+                    print("-->!Number of DC-resistivity data read sucessufully"
+                          f"= {len(self.survey_names_)}. Number of the given"
+                          "  stations considered as a drilling points"
+                          "={len(self.stations)}. Station must fit each survey"
+                          "lines."
+                          )
+                    
+                raise StationError (msg)
+               
+        # show the progress bar        
+        pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
+                     desc ='dc-erp', ncols =77)
+      
+        # -> read the data and make erp Objs 
+         
+        for kk,  o  in enumerate (pbar)  :
+            try : 
+                rpObj = ResistivityProfiling( 
+                    station = self.stations[kk] , 
+                    dipole= self.dipole,
+                    auto=True if self.stations[kk] is None else self.auto, 
+                    utm_zone = self.utm_zone, 
+                    )
+                self.data_.append (rpObj.fit(o))
+                self.stations[kk] = rpObj.sves_ 
+                
+            except : 
+               self.data_unknown_.append(o)
+        #     pbar.update(kk) if TQDM else ''
+        # (pbar.close (), print('-completed-') ) if TQDM else ''
+
+        if self.verbose > 3: 
+                print(" Number of file unsucceful read is:"
+                      f" {len(self.data_unknown_)}")
+        
+   
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        return repr_callable_obj  (self, exception='line')
+       
+    
+    def __getattr__(self, name):
+        if name.endswith ('_'): 
+            if name not in self.__dict__.keys(): 
+                if name in ('data_', 'resistivities_', 'sves_lons_', 'sves_lats_',
+                            'sves_easts_', 'sves_norths_', 'sves_resistivities_',
+                            'powers_', 'magnitudes_','shapes_','types_','sfis_'
+                            'lines_', 'nlines_', 'ids_', 'survey_names_'): 
+                    raise FitError (
+                        f'Fit the {self.__class__.__name__!r} object first'
+                        )
+                
+        rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+        appender  = "" if rv is None else f'. Do you mean {rv!r}'
+        
+        raise AttributeError (
+            f'{self.__class__.__name__!r} object has no attribute {name!r}'
+            f'{appender}{"" if rv is None else "?"}'
+            )        
+            
 @refAppender(__doc__)
 class ResistivityProfiling(ElectricalMethods): 
     """ Class deals with the Electrical Resistivity Profiling (ERP).
@@ -83,8 +551,8 @@ class ResistivityProfiling(ElectricalMethods):
         
     **auto**: bool 
         Auto dectect the best conductive zone. If ``True``, the station 
-        position should be  the position `station` of the lower
-        resistivity value in |ERP|. 
+        position should be  the  `station` of the lower resistivity value 
+        in |ERP|. 
     
     **kws**: dict 
          Additional |ERP| keywords arguments  
@@ -169,13 +637,13 @@ class ResistivityProfiling(ElectricalMethods):
                 raise TypeError ( f'{data!r} object should be a file,'
                                  f' got {type(data).__name__!r}'
                                  )
-
+        
         data = erpSelector(data, columns) 
         self.data_ = copy.deepcopy(data) 
         
         self.data_, self.utm_zone = fill_coordinates(
-            self.data_, utm_zone= self.utm_zone, 
-            datum = self.datum , epsg= self.epsg ) 
+            self.data_, utm_zone= self.utm_zone, datum = self.datum ,
+            epsg= self.epsg,verbose = self.verbose) 
         self.resistivity_ = self.data_.resistivity 
         # convert app.rho to the concrete value 
         # if log10 rho are provided.
@@ -743,6 +1211,59 @@ class VerticalSounding (ElectricalMethods):
             f'{appender}{"" if rv is None else "?"}'
             )
 
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     

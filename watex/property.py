@@ -111,6 +111,7 @@ from abc import (
     ABC, 
     abstractmethod, 
     )
+import pandas as pd 
 
 from .decorators import refAppender 
 from .documentation import __doc__ 
@@ -125,30 +126,12 @@ __all__ = [
     'P',
     'BagoueNotes',
     "ElectricalMethods", 
-    "assert_arrangement", 
+    #"assert_arrangement", 
     "IsEdi",
+    "Config", 
     "UTM_DESIGNATOR", 
     
 ]
-
-array_configuration ={
-    1 : (
-        ['Schlumberger','AB>> MN','slbg'], 
-        'S'
-        ), 
-    2 : (
-        ['Wenner','AB=MN'], 
-         'W'
-         ), 
-    3: (
-        ['Dipole-dipole','dd','AB<BM>MN','MN<NA>AB'],
-        'DD'
-        ), 
-    4: (
-        ['Gradient-rectangular','[AB]MN', 'MN[AB]','[AB]'],
-        'GR'
-        )
-    }
 
   
 UTM_DESIGNATOR ={
@@ -842,7 +825,7 @@ class ElectricalMethods (ABC) :
         
         self.AB=AB 
         self.MN=MN 
-        self.arrangememt=assert_arrangement(arrangement) 
+        self.arrangememt=Config.arrangement(arrangement) 
         self.utm_zone=utm_zone 
         self.projection=projection 
         self.datum=datum
@@ -1270,26 +1253,73 @@ class BagoueNotes:
                     }
 
 
-## XXXX properties functions 
-def assert_arrangement(a: int | str ): 
-    """ Assert whether the given arrangement is correct. 
+class Config: 
     
-    :param a: int, float, str - Type of given electrical arrangement. 
+    """ Container of property elements. 
     
-    :returns:
-        - The correct arrangement name 
-        - ``0`` which means ``False`` or a wrong given arrangements.   
+    Out of bag to keep unmodificable elements. Trick to encapsulate all the 
+    element that are not be allow to be modified.
+    
     """
     
-    for k, v in array_configuration.items(): 
-        if a == k  or str(a).lower().strip() in ','.join (
-                v[0]).lower() or a ==v[1]: 
-            return  v[0][0].lower()
-        
-    return 0
-
-
+    @property 
+    def arraytype (self):
+        """ Different array from |ERP| configuration. 
     
+         Array-configuration  can be added as the development progresses. 
+         
+        """
+        return {
+        1 : (
+            ['Schlumberger','AB>> MN','slbg'], 
+            'S'
+            ), 
+        2 : (
+            ['Wenner','AB=MN'], 
+             'W'
+             ), 
+        3: (
+            ['Dipole-dipole','dd','AB<BM>MN','MN<NA>AB'],
+            'DD'
+            ), 
+        4: (
+            ['Gradient-rectangular','[AB]MN', 'MN[AB]','[AB]'],
+            'GR'
+            )
+        }
+    @property
+    def parsers(self ): 
+        """ Readable format that can be read and parse the data  """
+        return {
+                 ".csv" : pd.read_csv, 
+                 ".xlsx": pd.read_excel,
+                 ".json": pd.read_json,
+                 ".html": pd.read_json,
+                 ".sql" : pd.read_sql, 
+                 ".xml" : pd.read_xml , 
+                 ".fwf" : pd.read_fwf, 
+                 ".pkl" : pd.read_pickle, 
+                 ".sas" : pd.read_sas, 
+                 ".spss": pd.read_spss, 
+                 }
+        
+    @staticmethod 
+    def arrangement(a: int | str ): 
+        """ Assert whether the given arrangement is correct. 
+        
+        :param a: int, float, str - Type of given electrical arrangement. 
+        
+        :returns:
+            - The correct arrangement name 
+            - ``0`` which means ``False`` or a wrong given arrangements.   
+        """
+        
+        for k, v in Config().arraytype.items(): 
+            if a == k  or str(a).lower().strip() in ','.join (
+                    v[0]).lower() or a ==v[1]: 
+                return  v[0][0].lower()
+            
+        return 0
     
     
     
