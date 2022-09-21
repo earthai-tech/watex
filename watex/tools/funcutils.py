@@ -161,7 +161,7 @@ def smart_strobj_recognition(
 
     return  rv 
 
-def repr_callable_obj(obj: F  ): 
+def repr_callable_obj(obj: F  , exception = None ): 
     """ Represent callable objects. 
     
     Format class, function and instances objects. 
@@ -206,7 +206,15 @@ def repr_callable_obj(obj: F  ):
     elif hasattr(obj, '__dict__'): 
         objname=obj.__class__.__name__
         PARAMS_VALUES = {k:v  for k, v in obj.__dict__.items() 
-                         if not (k.endswith('_') or k.startswith('_'))}
+                         if not (k.endswith('_') or k.startswith('_'))
+                         }
+    if exception is not None : 
+        # skip collecting as params 
+        # remove the keys in rama lines
+        exs = [key for key in PARAMS_VALUES.keys() if key.find(
+            exception)>=0]
+        for d in exs: 
+            PARAMS_VALUES.pop(d, None) 
 
     return   str (objname) + '(' + str (PARAMS_VALUES).replace (
             '{', '').replace('}', '').replace(
@@ -442,37 +450,6 @@ def cpath (savepath=None , dpath=None):
         except : pass 
     return savepath   
   
-def show_quick_edi_stats(nedic , nedir, fmtl='~', lenl=77): 
-    """ Format the Edi files and ckeck the number of edifiles
-    successfully read.
-    
-    :param nedic: number of input or collected edifiles.
-    
-    :param nedir: number of edifiles read sucessfully.
-    
-    :param fmt: str to format the stats line.
-    
-    :param lenl: length of line denileation.
-    """
-    
-    def get_obj_len (value):
-        """ Control if obj is iterable then take its length """
-        try : 
-            iter(value)
-        except :pass 
-        else : value =len(value)
-        return value 
-    nedic = get_obj_len(nedic)
-    nedir = get_obj_len(nedir)
-    
-    print(fmtl * lenl )
-    mesg ='|'.join( ['|{0:<15}{1:^2} {2:<7}',
-                     '{3:<15}{4:^2} {5:<7}',
-                     '{6:<9}{7:^2} {8:<7}%|'])
-    print(mesg.format('EDI collected','=',  nedic, 'EDI success. read',
-                      '=', nedir, 'Rate','=', round ((nedir/nedic) *100, 2),
-                      2))
-    print(fmtl * lenl )
 
 def sPath (name_of_path:str):
     """ Savepath func. Create a path  with `name_of_path` if path not exists.
@@ -2250,7 +2227,7 @@ def fit_by_ll(ediObjs):
     return objnames[:, 0], objnames[:, -1]
    
     
-def make_ids(arr, prefix =None, how ='py'): 
+def make_ids(arr, prefix =None, how ='py', skip=False): 
     """ Generate auto Id according to the number of given sites. 
     
     :param arr: Iterable object to generate an id site . For instance it can be 
@@ -2266,27 +2243,36 @@ def make_ids(arr, prefix =None, how ='py'):
         the counting starts by 0. Any other mode will start the counting by 1.
     :type cmode: str 
     
+    :param skip: skip the strong formatage. the formatage acccording to the 
+        number of collected file. 
+    :type skip: bool 
     :return: ID number formated 
     :rtype: list 
     
     :Example: 
+        >>> import numpy as np 
         >>> from watex.tools.func_utils import make_ids 
         >>> values = ['edi1', 'edi2', 'edi3'] 
         >>> make_ids (values, 'ix')
         ... ['ix0', 'ix1', 'ix2']
+        >>> data = np.random.randn(20)
+        >>>  make_ids (data, prefix ='line', how=None)
+        ... ['line01','line02','line03', ... , line20] 
+        >>> make_ids (data, prefix ='line', how=None, skip =True)
+        ... ['line1','line2','line3',..., line20] 
         
     """ 
-    fm='{:0' +'{}'.format(int(np.log10(len(arr))) + 1) +'}'
+    fm='{:0' + ('1' if skip else '{}'.format(int(np.log10(len(arr))) + 1)) +'}'
     id_ =[str(prefix) + fm.format(i if how=='py'else i+ 1 ) if prefix is not 
           None else fm.format(i if how=='py'else i+ 1) 
           for i in range(len(arr))] 
     return id_    
     
-def show_edi_stats(nedic , nedir, fmtl='~', lenl=77): 
-    """ Format the Edi files and ckeck the number of edifiles
-    successfully read. 
-    :param nedic: number of input or collected edifiles 
-    :param nedir: number of edifiles read sucessfully 
+def show_stats(nedic , nedir, fmtl='~', lenl=77, obj='EDI'): 
+    """ Estimate the file successfully read reading over the unread files
+
+    :param nedic: number of input or collected files 
+    :param nedir: number of files read sucessfully 
     :param fmt: str to format the stats line 
     :param lenl: length of line denileation."""
     
@@ -2304,7 +2290,7 @@ def show_edi_stats(nedic , nedir, fmtl='~', lenl=77):
     mesg ='|'.join( ['|{0:<15}{1:^2} {2:<7}',
                      '{3:<15}{4:^2} {5:<7}',
                      '{6:<9}{7:^2} {8:<7}%|'])
-    print(mesg.format('Data collected','=',  nedic, 'EDI success. read',
+    print(mesg.format('Data collected','=',  nedic, f'{obj} success. read',
                       '=', nedir, 'Rate','=', round ((nedir/nedic) *100, 2),
                       2))
     print(fmtl * lenl )    

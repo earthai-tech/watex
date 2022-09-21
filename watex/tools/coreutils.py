@@ -3,8 +3,8 @@
 #   Created date: Fri Apr 15 10:46:56 2022
 #   Licence: MIT Licence 
 """
-Module for `WATex`_ core utilities 
-=====================================
+`WATex`_ core utilities 
+========================
 
 Encompasses the main functionalities for class and methods to sucessfully 
 run. Somes modules are written and shortcutted for the users to do some 
@@ -12,9 +12,11 @@ singular tasks before feeding to the main algorithms.
 
 """
 from __future__ import  annotations 
-import os 
+import os
+import re 
 import warnings 
 import copy 
+import itertools 
 
 import numpy as np 
 import pandas as pd 
@@ -25,7 +27,10 @@ from ..decorators import  (
     refAppender, 
     docSanitizer
     ) 
-from ..property import P 
+from ..property import ( 
+    P , 
+    Config, 
+    )
 from ..typing import (
     Any, 
     List ,  
@@ -40,20 +45,22 @@ from ..typing import (
     DType, 
     Sub, 
     SP
+    
 )
 from ..exceptions import ( 
     StationError, 
     HeaderError, 
     ResistivityError,
     ERPError,
-    VESError
+    VESError, 
+    FileHandlingError, 
 )
 from .funcutils import (
     smart_format as smft,
     _isin , 
     _assert_all_types,
     accept_types,
-    read_from_excelsheets
+    read_from_excelsheets, 
     ) 
 from .gistools import (
     assert_lat_value,
@@ -66,34 +73,39 @@ from .gistools import (
     HAS_GDAL, 
     )
 
-
+#XXX OPTIMIZE 
 def _is_readable (
         f:str, 
-        readableformats : Tuple[str] = ('.csv', '.xlsx'),
         **kws
  ) -> DataFrame: 
     """ Specific files that can be read file throughout the packages 
     :param f: Path-like object -Should be a readable files. 
-    :param readableformats: tuple -Specific readable files 
-    
+    :param kws: Pandaas readableformats additional keywords arguments. 
     :return: dataframe - A dataframe with head contents... 
     
     """
+    cpObj= Config().parsers 
     if not os.path.isfile: 
         raise TypeError (
             f'Expected a Path-like object, got : {type(f).__name__!r}')
-
-    if os.path.splitext(f)[1].lower() not in readableformats:
-        raise TypeError(f'Can only parse the {smft(readableformats)} files'
+    _, ex = os.path.splitext(f) 
+    if ex.lower() not in tuple (cpObj.keys()):
+        raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
                         )
-    
-    if f.endswith ('.csv'): 
-        f = pd.read_csv (f,**kws) 
-    elif f.endswith ('.xlsx'): 
-        f = pd.read_excel(f, **kws )
+
+    try : 
+        f = cpObj[ex](f, **kws)
         
+    except FileNotFoundError:
+        raise FileNotFoundError (
+            "No such file in directory: {os.path.basename (f)!r}")
+    except: 
+        raise FileHandlingError (
+            f" Can not parse the file : {os.path.basename (f)!r}")
+
     return f 
     
+
 @refAppender(__doc__)
 def vesSelector( 
     data:str | DataFrame[DType[float|int]] = None, 
@@ -263,7 +275,8 @@ def fill_coordinates(
     north: Array = None, 
     epsg: Optional[int] = None , 
     utm_zone: Optional [str]  = None,
-    datum: str  = 'WGS84'
+    datum: str  = 'WGS84', 
+    verbose:int =0, 
 ) -> Tuple [DataFrame, str] : 
     """ Recompute coordinates values  
     
@@ -274,38 +287,32 @@ def fill_coordinates(
     -----------
     
     data : dataframe, 
-                    Dataframe contains the `lat`, `lon` or `east` and `north`. 
-                    All data dont need to  be provided. If ('lat', 'lon') and 
-                    (`east`, `north`) are given, ('`easting`, `northing`')
-                    should be overwritten.
+        Dataframe contains the `lat`, `lon` or `east` and `north`. All data 
+        don't need to  be provided. If ('lat', 'lon') and (`east`, `north`) 
+        are given, ('`easting`, `northing`') should be overwritten.
         
     lat: array-like float or string (DD:MM:SS.ms)
-                  Values composing the `longitude`  of point
+        Values composing the `longitude`  of point
 
     lon: array-like float or string (DD:MM:SS.ms)
-                  Values composing the `longitude`  of point
+        Values composing the `longitude`  of point
               
-    east : array-le float
-                 Values composing the northing coordinate in meters
+    east : array-like float
+        Values composing the northing coordinate in meters
                  
     north : array-like float
-                Values composing the northing coordinate in meters
+        Values composing the northing coordinate in meters
 
     datum: string
-                well known datum ex. WGS84, NAD27, etc.
+        well known datum ex. WGS84, NAD27, etc.
                 
     projection: string
-                projected point in lat and lon in Datum `latlon`, as decimal
-                degrees or 'UTM'.
+        projected point in lat and lon in Datum `latlon`, as decimal degrees 
+        or 'UTM'.
                 
     epsg: int
-               epsg number defining projection (see 
-               http://spatialreference.org/ref/ for moreinfo)
-               Overrides utm_zone if both are provided
-                  
-                      
-    datum: string
-        well known datum ex. WGS84, NAD27, etc.
+        epsg number defining projection (see http://spatialreference.org/ref/ 
+        for moreinfo). Overrides utm_zone if both are provided
         
     utm_zone : string
             zone number and 'S' or 'N' e.g. '55S'. Defaults to the
@@ -320,7 +327,7 @@ def fill_coordinates(
     """
     def _get_coordcomps (str_, df):
         """ Retrieve coordinate values and assert whether values are given. 
-        If ``True``, retunrs `array` of `given item` and valid type of the 
+        If ``True``, returns `array` of `given item` and valid type of the 
         data. Note that if data equals to ``0``, we assume values are not 
         provided. 
         
@@ -392,10 +399,11 @@ def fill_coordinates(
             
     elif e_isvalid and n_isvalid: 
         if utm_zone is None: 
-            warnings.warn(
-                'Should provide the `UTM` for `latitute` and `longitude`'
-                ' calculus. `NoneType` can not be used as UTM zone number.'
-                ' Refer to the documentation.')
+            if verbose > 0: 
+                warnings.warn(
+                    'Should provide the `UTM` for `latitute` and `longitude`'
+                    ' calculus. `NoneType` can not be used as UTM zone number.'
+                    ' Refer to the documentation.')
         try : 
             lat , lon, utm_zone = _set_coordinate_values(
                 east.values, north.values,
@@ -961,10 +969,13 @@ def plotAnomaly(
             plt.style.available[:7]
         Futher details can be foud in Webresources below or click on 
         `GeekforGeeks`_. 
+        
     :param czkws: dict - keywords `Matplotlib pyplot`_ additional arguments to 
-        customize the `cz` plot. 
+        customize the `cz` plot.
+        
     :param legkws: dict - keywords Matplotlib legend additional keywords
         arguments. 
+        
     :param kws: dict - additional keywords argument for `Matplotlib pyplot`_ to 
         customize the `erp` plot.
         
@@ -1131,7 +1142,7 @@ def plotAnomaly(
         
     plt.show()
         
-
+#XXX OPTIMIZE 
 def defineConductiveZone(
     erp:Array| pd.Series | List[float] ,
     s: Optional [str ,  int] = None, 
@@ -1145,13 +1156,18 @@ def defineConductiveZone(
     drilling location `s`. If drilling location is not provided, it would be 
     by default the very low resistivity values found in the `erp` line. 
     
+    Parameters 
+    -----------
+    erp : array_like,
+        the array contains the apparent resistivity values 
+    s: str or int, 
+        is the station position. 
+    auto: bool
+        If ``True``, the station position should be the position of the lower 
+        resistivity value in |ERP|. 
     
-    :param erp: array_like, the array contains the apparent resistivity values 
-    :param s: str or int, is the station position. 
-    :param auto: bool. If ``True``, the station position should be 
-            the position of the lower resistivity value in |ERP|. 
-    
-    :returns: 
+    Returns 
+    -------- 
         - conductive zone of resistivity values 
         - conductive zone positionning 
         - station position index in the conductive zone
@@ -1159,28 +1175,40 @@ def defineConductiveZone(
     
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.coreutils import  _define_conductive_zone
+        >>> from watex.tools.coreutils import defineConductiveZone
         >>> test_array = np.random.randn (10)
-        >>> selected_cz ,*_ = _define_conductive_zone(test_array, 's20') 
+        >>> selected_cz ,*_ = defineConductiveZone(test_array, 's20') 
         >>> shortPlot(test_array, selected_cz )
     """
-    if isinstance(erp, pd.Series): erp = erp.values 
+    if isinstance(erp, pd.DataFrame): 
+        try: erp = erp.resistivity  
+        except AttributeError: 
+            raise ResistivityError (" Resistivity data is missing ")
+            
+    if isinstance(erp, pd.Series):
+        erp = erp.values 
     
     # conductive zone positioning
     pcz : Optional [Array]  = None  
     
     if s is None and auto is False: 
-        raise TypeError ('Expected the station position. NoneType is given.')
+        raise StationError("Expect a station position or trigger the 'auto'"
+                        "to 'True'. NoneType is given.")
+        
     elif s is None and auto: 
-        s, = np.where (erp == erp.min()) 
-        s=int(s)
+        s= np.argwhere (erp ==erp.min())
+        s= int(s) if len(s) ==1 else int(s[0])
+        # s, = np.where (erp == erp.min()) 
+        # s=int(s)
     s, pos = _assert_stations(s, **kws )
+    
     # takes the last position if the position is outside 
     # the number of stations. 
     pos = len(erp) -1  if pos >= len(erp) else pos 
     # frame the `sves` (drilling position) and define the conductive zone 
     ir = erp[:pos][-3:] ;  il = erp[pos:pos +3 +1 ]
     cz = np.concatenate((ir, il))
+
     if p is not None: 
         if len(p) != len(erp): 
             raise StationError (
@@ -1192,10 +1220,12 @@ def defineConductiveZone(
         
     # Get the new position in the selected conductive zone 
     # from the of the whole erp 
-    pix, = np.where (cz == erp[pos])
+    pix= np.argwhere (cz == erp[pos])
+    pix = pix [0] if len(pix) > 1 else pix 
 
     return cz , pcz, int(pix), pos
 
+#XXX OPTIMIZE 
 def _assert_stations(
     s:Any , 
     dipole:Any = None,
@@ -1250,20 +1280,22 @@ def _assert_stations(
     """
     # in the case s is string: eg. "00", "pk01", "S001"
     ix = 0
-
+    stnl =P().istation 
     s = _assert_all_types(s, str, int, float)
+
+    s = str(s).strip() 
+    regex = re.compile (r'\d+', flags= re.IGNORECASE)
+    s = regex.findall (s)
+    if len(s)==0: 
+        raise StationError (f"Wrong station name {s!r}. Station must be "
+                            f"prefixed by {smft(stnl +['S'], 'or')} e.g. "
+                            "'S00' for the first station")
+    else : s = int(s[0])
     
-    if isinstance(s, str): 
-        s =s.lower().replace('pk', '').replace('s', '').replace('ta', '')
-        try : 
-            s = int(s )
-        except : 
-            raise TypeError ('Unable to convert str to float.')
-        else : 
-            # set index to 0 , is station `S00` is found for instance.
-            if s ==0 : 
-                keepindex =True 
-            
+    if s ==0 : 
+        # set index to 0 , is station `S00` is found for instance.
+        keepindex =True 
+
     st = copy.deepcopy(s)
     
     if isinstance(s, int):  
@@ -1291,8 +1323,7 @@ def _assert_stations(
             try : 
                 dipole = float(dipole) 
             except : 
-                raise StationError( 'Invalid literal value for'
-                                         f' dipole : {dipole!r}')
+                raise StationError(f'Invalid literal value for dipole: {dipole!r}')
         # since the renamed from dipole starts at 0 
         # e.g. 0(S1)---10(S2)---20(S3) ---30(S4)etc ..
         ix = int(st//dipole)  ; s= "S{:02}".format(ix +1)
@@ -1423,9 +1454,19 @@ def _assert_file (
     return args , isfile 
  
 
-def make_ll_coordinates(reflong, reflat, nsites,  *,  r=45., utm_zone =None,   
-                        step='1km', order= '+', todms=False, is_utm =False,
-                        **kws): 
+def makeCoords(
+        reflong: str | Tuple[float], 
+        reflat: str | Tuple[float], 
+        nsites: int ,  
+        *,  
+        r: int =45.,
+        utm_zone: Optional[str] =None,   
+        step: Optional[str|float] ='1km', 
+        order: str = '+', 
+        todms: bool =False, 
+        is_utm: bool  =False,
+        **kws
+  )-> Tuple[Array[DType[float]]]: 
     """ Generate multiples stations coordinates (longitudes, latitudes)
     from a reference station/site.
     
@@ -1499,7 +1540,7 @@ def make_ll_coordinates(reflong, reflat, nsites,  *,  r=45., utm_zone =None,
     
     Examples 
     --------
-    >>> from watex.tools.funcutils import make_ll_coordinates 
+    >>> from watex.tools.coreutils import make_ll_coordinates 
     >>> rlons, rlats = make_ll_coordinates('110:29:09.00', '26:03:05.00', 
     ...                                     nsites = 7, todms=True)
     >>> rlons
@@ -1603,8 +1644,47 @@ def make_ll_coordinates(reflong, reflat, nsites,  *,  r=45., utm_zone =None,
     return (reflon_ar , reflat_ar ) if order =='+' else (
         reflon_ar[::-1] , reflat_ar[::-1] )  
 
+#XXX OPTIMIZE 
+def parseStations(sfn :str ,
+                   station_delimiter:Optional[str]=None,
+                   )-> Array [str]: 
+    """ Parse stations file and output to array 
+    
+    :param sfn: path-like object, full path to station file. The station file 
+        must be composed of only the station values. Commonly it can be used to 
+        specify the selected station of all DC-resistity line where one expects
+        to locate the drilling. 
+        
+    :param delimiter: str , delimiter to separate the different stations 
+    
+    :return: 
+        array: array of station name. 
+        
+    :note: if all station prefixes belong to the module station property object 
+        i.e :class:`watex.property.P.istation`, the prefix should be overwritten 
+        to only keep the `S`. For instance 'pk25'-> 'S25'
+    
+    """
+    if not os.path.isfile (sfn): 
+        raise FileNotFoundError("No file found:")
+    
+    with open(sfn, 'r', encoding ='utf8') as f : 
+        sdata = f.readlines () 
+    if station_delimiter is not None: 
+        # flatter list into a list 
+        sdata = list(map (lambda l: l.split(station_delimiter), sdata ))
+        sdata = list(itertools.chain(*sdata))
 
-
+    regex =re.compile (rf"{'|'.join([a for a in (P().istation+['S'])])}", 
+                       flags =re.IGNORECASE)
+    
+    sdata = list(map(lambda o:  regex.sub('S', o.strip()), 
+                     sdata )
+                 ) 
+    # for consitency delte all empty string in the list 
+    sdata = list(filter (None, sdata ))
+    
+    return np.array(sdata )
 
 
 

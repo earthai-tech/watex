@@ -2,6 +2,12 @@
 
 from .electrical import (
     ResistivityProfiling ,
-    VerticalSounding
+    VerticalSounding, 
+    DCResistivity, 
 )
 
+from .em import ( 
+    EM, 
+    Processing 
+    
+    )

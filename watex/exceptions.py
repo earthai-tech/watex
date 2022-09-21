@@ -1,5 +1,16 @@
 # -*- coding: utf-8 -*-
 
+""" 
+Exceptions of packages `WATex`_ 
+================================
+
+Each exception is related to its modules following py the suffix `Error`. It 
+inherits from top BaseExceptiom of Python build-in functions. To drop or change 
+any exception here, after any change, move to its reference  module to change 
+it so.  
+
+
+"""
 class ArgumentError(Exception): 
     pass 
 class SiteError(Exception): 
@@ -14,7 +25,7 @@ class EDIError(Exception):
 class HeaderError(Exception):
     pass 
 
-class ConfigurationError(Exception):
+class ConfigError(Exception):
     pass
 
 class FileHandlingError(Exception):
@@ -68,7 +79,7 @@ class VESError(Exception):
 class ExtractionError(Exception): 
     pass 
 
-class CSAMTError (Exception): 
+class EMError (Exception): 
     pass 
 
 class FrequencyError (Exception): 
@@ -85,3 +96,5 @@ class FitError (Exception):
 class ScikitLearnImportError(Exception ): 
     pass 
 
+class GISError (Exception): 
+    pass 
