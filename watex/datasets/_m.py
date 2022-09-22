@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#       Author: Kouadio K.Laurent<etanoyau@gmail.con>
+#       Author: LKouadio <etanoyau@gmail.con>
 #       Create:on Fri Sep 10 15:37:59 2021
 #       Licence: MIT
 

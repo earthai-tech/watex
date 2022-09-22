@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, zju-ufhb
-# This module is part of the WATex core package, which is released under a
+# Copyright (c) 2021 LKouadio
 # MIT- licence.
 
 from __future__ import print_function 

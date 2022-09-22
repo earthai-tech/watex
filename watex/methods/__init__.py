@@ -3,7 +3,8 @@
 from .electrical import (
     ResistivityProfiling ,
     VerticalSounding, 
-    DCResistivity, 
+    DCProfiling, 
+    DCSounding,
 )
 
 from .em import ( 

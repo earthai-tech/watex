@@ -76,7 +76,7 @@ from ..typing import (
     List,
     Tuple, 
     Dict, 
-    Array, 
+    ArrayLike, 
     NDArray, 
     DType,
     EDIO,
@@ -101,7 +101,7 @@ else :
     HAS_MOD=True 
     
 if HAS_MOD : 
-    from pycsamt.core import (
+    from pycsamt.ff.core import (
         edi, 
         z as EMz 
         ) 
@@ -603,7 +603,7 @@ class EM(IsEdi):
     def get_full_frequency (self, 
                             data: Optional[str|List[EDIO]] = None,
                             to_log10:bool  =False 
-                            )-> Array[DType[float]]: 
+                            )-> ArrayLike[DType[float]]: 
         """ Get the frequency with clean data. 
         
         The full or plain frequency is array frequency with no missing  data during 
@@ -988,7 +988,7 @@ class updateZ(EM):
     def _make_zObj (self, 
                     kk: int ,
                     *, 
-                    freq: Array[DType[float]], 
+                    freq: ArrayLike[DType[float]], 
                     z_dict: Dict[str, NDArray[DType[complex]]]
                     )-> NDArray[DType[complex]]: 
         """ Make new Z object from frequency and dict tensor component Z. 
@@ -1752,7 +1752,7 @@ class Processing (EM) :
                             ediObj: EDIO , 
                             new_Z: NDArray [DType[complex]], 
                             tfunc: F, 
-                            cfreq: Array, slice_: slice =None, 
+                            cfreq: ArrayLike, slice_: slice =None, 
                             ix_s: int = 0 , 
                             ix_end: int  = -1, 
                             )-> NDArray [DType[complex]]: 
@@ -1812,11 +1812,11 @@ class Processing (EM) :
     
     @staticmethod 
     def freq_interpolation (
-            y:Array[DType[T]] ,
+            y:ArrayLike[DType[T]] ,
             /, 
             buffer:Optional[Tuple[float]] = None ,  
             kind: str  ='freq' 
-            )-> Array[DType[T]]: 
+            )-> ArrayLike[DType[T]]: 
         """ Interpolate frequency in frequeny buffer range.  
         
         :param y: array-like, shape(N, ) - Can be a frequency array or periods
@@ -1871,9 +1871,9 @@ class Processing (EM) :
     
     @staticmethod 
     def controlFrequencyBuffer (
-            freq: Array[DType[T]], 
+            freq: ArrayLike[DType[T]], 
             buffer:Optional[Tuple[float]] = None 
-            )-> Array[DType[T]] :
+            )-> ArrayLike[DType[T]] :
         """ Assert the frequency buffer and find the nearest value if the 
         value of the buffer is not in frequency ranges .
         
@@ -1945,7 +1945,7 @@ class Processing (EM) :
             * ,  
             tol: float = .5 , 
             return_freq: bool =False 
-            )->Tuple[float, Array]: 
+            )->Tuple[float, ArrayLike]: 
         """ Check the quality control of the collected EDIs. 
         
         Analyse the data in the EDI collection and return the quality control value.

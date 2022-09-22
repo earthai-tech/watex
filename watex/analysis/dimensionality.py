@@ -28,7 +28,7 @@ from ..typing import (
     Optional, 
     F, 
     T,
-    Array, 
+    ArrayLike, 
     NDArray, 
     DataFrame,
     Series, 
@@ -113,10 +113,10 @@ class Reducers:
             >>> pca.features_importances_
         """
         def findFeaturesImportances(
-                fnames: Array,
+                fnames: ArrayLike,
                 components: float |int ,
                 n_axes: int =2
-                )-> Array: 
+                )-> ArrayLike: 
             """ Retreive the features importance with variance ratio.
             
             :param fnames: array_like of feature's names
@@ -421,7 +421,7 @@ def get_best_kPCA_params(
         X:NDArray | DataFrame,
         n_components: float | int =2,
         *,
-        y: Array | Series=None,
+        y: ArrayLike | Series=None,
         param_grid: Dict[str, Any] =None, 
         clf: F =None,
         cv: int =7,
@@ -529,10 +529,10 @@ def make_introspection(
         setattr(Obj, key, value)
         
 def find_features_importances(
-        fnames: Array,
+        fnames: ArrayLike,
         components: float | int,
         n_axes: int =2
-        )-> Array: 
+        )-> ArrayLike: 
     """ Retreive the features importance with variance ratio.
     :param fnames: array_like of feature's names
     :param components: pca components on different axes 
@@ -607,7 +607,7 @@ def plot_projection(
 def get_component_with_most_variance(
         X: NDArray | DataFrame,
         **pca_kws
-        )->Array:
+        )->ArrayLike:
     """ Get the number of component with 95% ratio
     :param X: Training set.
     :param pca_kws: additional pca  keywords arguments.

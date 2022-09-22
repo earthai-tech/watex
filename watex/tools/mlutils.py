@@ -37,7 +37,7 @@ from ..typing import (
     Iterable ,
     T,
     F, 
-    Array, 
+    ArrayLike, 
     NDArray,
     DType, 
     DataFrame, 
@@ -87,8 +87,8 @@ _estimators ={
 #     return obj
 
 def getGlobalScore (
-        cvres : Dict[str, Array] 
-        ) -> Tuple [ Dict[str, Array] ,  Dict[str, Array]  ]: 
+        cvres : Dict[str, ArrayLike] 
+        ) -> Tuple [ Dict[str, ArrayLike] ,  Dict[str, ArrayLike]  ]: 
     """ Retrieve the global mean and standard deviation score  from the 
     cross validation containers. 
     
@@ -99,7 +99,7 @@ def getGlobalScore (
              cvres.get('std_test_score').mean()) 
     
     
-def cfexist(features_to: List[Array], 
+def cfexist(features_to: List[ArrayLike], 
             features: List[str] )-> bool:      
     """
     Control features existence into another list . List or array can be a 
@@ -324,8 +324,8 @@ def formatModelScore(
     print('-'*77)
     
 def predict(
-        y_true: Array,
-        y_pred: Array =None,
+        y_true: ArrayLike,
+        y_pred: ArrayLike =None,
         *, 
         X_: Optional [NDArray]=None, 
         clf:Optional [F[T]]=None,
@@ -637,7 +637,7 @@ def split_train_test_by_id(
     return data.loc[~in_test_set], data.loc[in_test_set]
 
 def discretizeCategoriesforStratification(
-        data: Union [Array, DataFrame],
+        data: Union [ArrayLike, DataFrame],
         in_cat:str =None,
         new_cat:Optional [str] = None, 
         **kws
@@ -661,7 +661,7 @@ def discretizeCategoriesforStratification(
     return data 
 
 def stratifiedUsingDiscretedCategories(
-        data: Union [Array, DataFrame],
+        data: Union [ArrayLike, DataFrame],
         cat_name:str , 
         n_splits:int =1, 
         test_size:float= 0.2, 

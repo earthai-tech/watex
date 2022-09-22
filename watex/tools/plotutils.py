@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2021  Kouadio K.Laurent, Wed Jul  7 22:23:02 2021 hz
+# Copyright © 2021  LKouadio, Wed Jul  7 22:23:02 2022 hz
 # @author: ~alias @Daniel03
 
 # import sys
@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 from ..exceptions import ( 
     TipError, 
-    PlotError
+    PlotError, 
 
     )
 
@@ -294,10 +294,9 @@ def fmt_text (data_text, fmt='~', leftspace = 3, return_to_line =77) :
     return text 
 
 
-    
 # Plotting functions
 
-def Plotvec1(u, z, v):
+def plotvec1(u, z, v):
     """
     Plot tips function with  three vectors. 
     
@@ -325,7 +324,7 @@ def Plotvec1(u, z, v):
     plt.ylim(-2, 2)
     plt.xlim(-2, 2)
 
-def Plotvec2(a,b):
+def plotvec2(a,b):
     """
     Plot tips function with two vectors
     Just use to get the orthogonality of two vector for other purposes 
@@ -340,7 +339,7 @@ def Plotvec2(a,b):
     :Example: 
         
         >>> import numpy as np 
-        >>> from watex.tools.plotutils import Potvec2
+        >>> from watex.tools.plotutils import plotvec2
         >>> a=np.array([1,0])
         >>> b=np.array([0,1])
         >>> Plotvec2(a,b)
@@ -355,10 +354,176 @@ def Plotvec2(a,b):
     plt.ylim(-2, 2)
     plt.xlim(-2, 2)  
 
-
-
-
+def ploterrorbar(
+        ax,
+        x_array,
+        y_array,
+        y_error=None,
+        x_error=None,
+        color='k',
+        marker='x',
+        ms=2, 
+        ls=':', 
+        lw=1, 
+        e_capsize=2,
+        e_capthick=.5,
+        picker=None,
+        **kws
+ )-> object:
+    """
+    convinience function to make an error bar instance
     
+    Arguments
+    ---------
+    
+    ax: matplotlib.axes 
+        instance axes to put error bar plot on
+
+    x_array: np.ndarray(nx)
+        array of x values to plot
+                  
+    y_array: np.ndarray(nx)
+        array of y values to plot
+                  
+    y_error: np.ndarray(nx)
+        array of errors in y-direction to plot
+    
+    x_error: np.ndarray(ns)
+        array of error in x-direction to plot
+                  
+    color: string or (r, g, b)
+        color of marker, line and error bar
+                
+    marker: string
+        marker type to plot data as
+                 
+    ms: float
+        size of marker
+             
+    ls: string
+        line style between markers
+             
+    lw: float
+        width of line between markers
+    
+    e_capsize: float
+        size of error bar cap
+    
+    e_capthick: float
+        thickness of error bar cap
+    
+    picker: float
+          radius in points to be able to pick a point. 
+        
+        
+    Returns:
+    ---------
+    errorbar_object: matplotlib.Axes.errorbar 
+           error bar object containing line data, errorbars, etc.
+    """
+    # this is to make sure error bars 
+    #plot in full and not just a dashed line
+    if x_error is not None:
+        x_err = x_error
+    else:
+        x_err = None
+
+    if y_error is not None:
+        y_err = y_error
+    else:
+        y_err = None
+
+    eobj = ax.errorbar(
+        x_array,
+        y_array,
+        marker=marker,
+        ms=ms,
+        mfc='None',
+        mew=lw,
+        mec=color,
+        ls=ls,
+        xerr=x_err,
+        yerr=y_err,
+        ecolor=color,
+        color=color,
+        picker=picker,
+        lw=lw,
+        elinewidth=lw,
+        capsize=e_capsize,
+        # capthick=e_capthick
+        **kws
+         )
+    
+    return eobj
+
+def get_color_palette (RGB_color_palette): 
+    """
+    Convert RGB color into matplotlib color palette. In the RGB color 
+    system two bits of data are used for each color, red, green, and blue. 
+    That means that each color runson a scale from 0 to 255. Black  would be
+    00,00,00, while white would be 255,255,255. Matplotlib has lots of
+    pre-defined colormaps for us . They are all normalized to 255, so they run
+    from 0 to 1. So you need only normalize data, then we can manually  select 
+    colors from a color map  
+
+    :param RGB_color_palette: str value of RGB value 
+    :type RGB_color_palette: str 
+        
+    :returns: rgba, tuple of (R, G, B)
+    :rtype: tuple
+     
+    :Example: 
+        
+        >>> from watex.tools.plotutils import get_color_palette 
+        >>> get_color_palette (RGB_color_palette ='R128B128')
+    """  
+    
+    def ascertain_cp (cp): 
+        if cp >255. : 
+            warnings.warn(
+                ' !RGB value is range 0 to 255 pixels , '
+                'not beyond !. Your input values is = {0}.'.format(cp))
+            raise ValueError('Error color RGBA value ! '
+                             'RGB value  provided is = {0}.'
+                            ' It is larger than 255 pixels.'.format(cp))
+        return cp
+    if isinstance(RGB_color_palette,(float, int, str)): 
+        try : 
+            float(RGB_color_palette)
+        except : 
+              RGB_color_palette= RGB_color_palette.lower()
+             
+        else : return ascertain_cp(float(RGB_color_palette))/255.
+    
+    rgba = np.zeros((3,))
+    
+    if 'r' in RGB_color_palette : 
+        knae = RGB_color_palette .replace('r', '').replace(
+            'g', '/').replace('b', '/').split('/')
+        try :
+            _knae = ascertain_cp(float(knae[0]))
+        except : 
+            rgba[0]=1.
+        else : rgba [0] = _knae /255.
+        
+    if 'g' in RGB_color_palette : 
+        knae = RGB_color_palette .replace('g', '/').replace(
+            'b', '/').split('/')
+        try : 
+            _knae =ascertain_cp(float(knae[1]))
+        except : 
+            rgba [1]=1.
+            
+        else :rgba[1]= _knae /255.
+    if 'b' in RGB_color_palette : 
+        knae = knae = RGB_color_palette .replace('g', '/').split('/')
+        try : 
+            _knae =ascertain_cp(float(knae[1]))
+        except :
+            rgba[2]=1.
+        else :rgba[2]= _knae /255.
+        
+    return tuple(rgba)       
 
     
 

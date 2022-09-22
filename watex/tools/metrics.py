@@ -8,9 +8,15 @@ import inspect
 import warnings  
 
 import numpy as np 
-# from abc import ABC,abstractmethod
 from sklearn import metrics 
-
+from ..typing import ( 
+    List, 
+    Optional, 
+    ArrayLike , 
+    NDArray,
+    F
+    
+    )
 from .._watexlog import watexlog
 from ..sklearn import ( 
     precision_recall_curve,
@@ -23,9 +29,15 @@ from ..sklearn import (
     cross_val_predict, 
     )
 
-from .mlutils import format_generic_obj 
-import watex.decorators as deco
-import watex.exceptions as Wex
+from .mlutils import ( 
+    format_generic_obj
+    ) 
+from ..decorators import ( 
+    docstring 
+    )
+from ..exceptions import ( 
+    ArgumentError 
+    )
 
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -54,9 +66,18 @@ class Metrics(object):
         return getattr(self, 'metrics')
 
     
-def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
-                            method="decision_function",cross_val_pred_kws =None,
-                            y_tradeoff =None, **prt_kws):
+def precision_recall_tradeoff(
+        clf:F, 
+        X:NDArray,
+        y:ArrayLike,
+        *,
+        cv:int =7,
+        classe_: str | Optional[List[str]]=None,
+        method:str ="decision_function",
+        cross_val_pred_kws: Optional[dict]  =None,
+        y_tradeoff: Optional[float] =None,
+        **prt_kws
+        )-> object:
     r""" Precision/recall Tradeoff computes a score based on the decision 
     function. 
     
@@ -165,17 +186,13 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
         try : 
             classe_= int(classe_)
         except ValueError: 
-            raise Wex.WATexError_inputarguments(
-                'Need integer value. Could not convert to Float.')
+            raise ValueError('Need integer value. Could not convert to Float.')
         except TypeError: 
-            raise Wex.WATexError_inputarguments(
-                'Could not convert {type(classe_)!r}') 
+            raise TypeError('Could not convert {type(classe_)!r}') 
     
         if classe_ not in y: 
-            raise Wex.ArgumentError(
-                'Value must contain a least a value of label '
-                    '`y`={0}'.format(
-                        format_generic_obj(y).format(*list(y))))
+            raise ArgumentError('Value must contain a least a value of label '
+                    '`y`={0}'.format(format_generic_obj(y).format(*list(y))))
                                  
         y=(y==classe_)
         
@@ -206,11 +223,9 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
         try : 
             float(y_tradeoff)
         except ValueError: 
-            raise Wex.WATexError_float(
-                f"Could not convert {y_tradeoff!r} to float.")
+            raise ValueError(f"Could not convert {y_tradeoff!r} to float.")
         except TypeError: 
-            raise Wex.WATexError_inputarguments(
-                f'Invalid type `{type(y_tradeoff)}`')
+            raise TypeError(f'Invalid type `{type(y_tradeoff)}`')
             
         y_score_pred = (mObj.y_scores > y_tradeoff) 
         mObj.precision_score_tradeoff = precision_score(y,
@@ -227,8 +242,8 @@ def precision_recall_tradeoff(clf, X,y,*, cv =7,classe_ =None,
     
     return mObj
     
-@deco.docstring(precision_recall_tradeoff, start ='Parameters', end ='Notes')
-def ROC_curve( roc_kws=None, **tradeoff_kws): 
+@docstring(precision_recall_tradeoff, start ='Parameters', end ='Notes')
+def ROC_curve( roc_kws:dict =None, **tradeoff_kws): 
     """The Receiving Operating Characteric (ROC) curve is another common
     tool  used with binary classifiers. 
     
@@ -291,8 +306,16 @@ def ROC_curve( roc_kws=None, **tradeoff_kws):
     return mObj 
 
     
-def confusion_matrix_(clf, X, y,*, cv =7, plot_conf_max=False, 
-                     crossvalp_kws=dict(), **conf_mx_kws ): 
+def confusion_matrix_(
+        clf:F, 
+        X:NDArray, 
+        y:ArrayLike,
+        *, 
+        cv:int =7, 
+        plot_conf_max:bool =False, 
+        crossvalp_kws:dict=dict(), 
+        **conf_mx_kws 
+        )->object: 
     """ Evaluate the preformance of the model or classifier by counting 
     the number of the times instances of class A are classified in class B. 
     

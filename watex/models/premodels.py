@@ -15,7 +15,7 @@ from ..tools.funcutils import (
 
 from ..typing import (  
     Optional, 
-    Array, 
+    ArrayLike, 
     NDArray, 
     )
 from ..bases import fetchModel 
@@ -79,7 +79,6 @@ class pModels :
             >>> pModels(model='svm').fit().SVM.rbf.best_estimator_ 
             ...  SVC(C=2.0, coef0=0, degree=1, gamma=0.125)
             
-        
     target: str 
         Two type of classification is predicted. The binary classification ``bin``
         and the multiclass classification ``multi``. default is ``bin``. When  
@@ -151,7 +150,7 @@ class pModels :
         self.kernel = kernel 
         
         
-    def fit (self, X:NDArray = None , y: Array = None ): 
+    def fit (self, X:NDArray = None , y: ArrayLike = None ): 
         """ Fit the pretrained model data and populate its corresponding 
         attributes. 
         
@@ -349,12 +348,12 @@ Note
 To fetched the pretrained model with parameter (out-of-bag ), need to use the 
 '_' at the end of the model name like 'ExtraTrees_'. 
 However the pretrained model of Support Vector Machines  with underscore means 
-were used to fine tuned the multiclassification targets. 
+the fine tuned multiclassification targets not 'out-of-bag' parameters. 
 
 """
 #-- Fetch the pretrained model data 
 try : 
-    _pDATA,  = fetchModel ('./watex/p.models.pkl', default = False )
+    _pDATA,  = fetchModel ('./watex/etc/p.models.pkl', default = False )
 except: 
     # set to None if something goes wrong 
     _pDATA = None 

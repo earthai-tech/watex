@@ -27,7 +27,7 @@ from ..tools.coreutils import (
     fill_coordinates, 
     erpSelector, 
     vesSelector,
-    parseStations,
+    parseDCArgs ,
 ) 
 from ..tools.exmath import (
     shape, 
@@ -44,7 +44,8 @@ from ..typing import  (
     Optional, 
     NDArray, 
     Series , 
-    DataFrame, 
+    DataFrame,
+    F
 
     )
 from ..property import( 
@@ -74,8 +75,11 @@ except ImportError:
     
 else: TQDM = True 
 
+__all__=['DCProfiling', 'DCSounding',
+         'ResistivityProfiling', 'VerticalSounding'
+         ]
 
-class DCResistivity (ElectricalMethods)  : 
+class DCProfiling(ElectricalMethods)  : 
     """ A collection of DC-resistivity profiling classes. 
     
     It reads and compute electrical parameters. Each line compose a specific
@@ -145,21 +149,21 @@ class DCResistivity (ElectricalMethods)  :
     (1)-> Get DC -resistivity profiling from the individual Resistivity object 
     
     >>> from watex.methods import ResistivityProfiling 
-    >>> from watex.methods import DCResistivity  
+    >>> from watex.methods import DCProfiling  
     >>> robj1= ResistivityProfiling(auto=True) # auto detection 
     >>> robj1.utm_zone = '50N'
-    >>> robj1.fit('testsafedata.xlsx') 
+    >>> robj1.fit('data/erp/testsafedata.xlsx') 
     >>> robj1.sves_
-    ... 
+    ... 'S036'
     >>> robj2= ResistivityProfiling(auto=True, utm_zone='40S') 
-    >>> robj2.fit('testunsafedata.csv') 
+    >>> robj2.fit('data/erp/l11_gbalo.xlsx') 
     >>> robj2.sves_ 
-    ... 
+    ... 'S006'
     >>> # read the both objects 
-    >>> dcobjs = DCResistivity()
+    >>> dcobjs = DCProfiling()
     >>> dcobjs.fit([robj1, robj2]) 
     >>> dcobjs.sves_ 
-    ... 
+    ... array(['S036', 'S006'], dtype=object)
     >>> dcobjs.line1.sves_ # => robj1.sves_
     >>> dcobjs.line2.sves_ # => robj2.sves_ 
     
@@ -171,8 +175,8 @@ class DCResistivity (ElectricalMethods)  :
     >>> dcobjs.nlines_  # getting the number of survey lines 
     ... 9
     >>> dcobjs.sves_ # stations of the best conductive zone 
-        ... array(['S017', 'S006', 'S000', 'S036', 'S036', 'S036', 'S036', 'S036',
-               'S001'], dtype='<U33')
+    ... array(['S017', 'S006', 'S000', 'S036', 'S036', 'S036', 'S036', 'S036',
+           'S001'], dtype='<U33')
     >>> dcobjs.sves_resistivities_ # the lower conductive resistivities 
     ... array([  80,   50, 1101,  500,  500,  500,  500,  500,   93], dtype=int64)
     >>> dcobjs.powers_ 
@@ -246,37 +250,21 @@ class DCResistivity (ElectricalMethods)  :
         
         
         """
-        
-        def _geterpattr (attr , dl ): 
-            """ Get attribute from the each DC-resistivity object and 
-            collect into numpy array. 
-            
-            If `stack` is ``True``, it will collect stacked data allong axis 1. 
-            :param attr: attribute name 
-            :param dl: list of erp object 
-            """
-            # np.warnings.filterwarnings(
-            #     'ignore', category=np.VisibleDeprecationWarning)  
-            return np.array(list(map(lambda o : getattr(o, attr), dl )), 
-                            dtype =object)  
-        
         self._logging.info (" {self.__class__.__name__!r} collects the "
                             "resistivity objects ")
         
         #-> Initialize collection objects 
-        # - collected the unreadable data ; readable data  
-        self.unknow_data_= list() ; self.data_= list() 
+        # - collected the unreadable data; readable data  
+        self.isnotvalid_= list() ; self.data_= list() 
         
         # check whether object is readable as ERP objs
         #  -> if not assume a path or file is given 
-        if not self._readfromerpObjs (data):
-            self._readfrompath (data, **kws)
-            
-        #show stats 
-        print()
-        show_stats (data , self.data_, obj = 'DC-ERP' , lenl=79)
         
-        self.ids_ = np.array(make_ids (self.survey_names_, 'line', None, True)) 
+        if not _readfromdcObjs (self, data):
+            _readfrompath (self, data,**kws)
+            
+        # makeids objects 
+        self.ids_ = np.array(make_ids (self.survey_names_,'line',None, True)) 
         
         # set each line as an object with attributes
         # can be retrieved like self.line1_.sves_ 
@@ -320,195 +308,20 @@ class DCResistivity (ElectricalMethods)  :
 
         return self 
     
-      
-    def _readfromerpObjs(self, data: List[object ] ): 
-        """ Read object metadata object. 
-        
-        A set of :class:`.ResistivityProfiling` objects.
-        
-        :param data: list-a collection of :class:`~.ResistivityProfiling` 
-            objects
-        
-        :returns: bool- whether an object is readable as a DC-resistivity 
-            profiling object or not.``False`` otherwise.  
-        """
-
-        self._logging.info ("Read a collection 'ResistivityProfiling' objects")
-        
-        if not isinstance( data, (list, tuple, np.ndarray)): 
-            data =[data]
-        # assert whether each element compose the data is ERP object  
-        s = set ([ isinstance (o, ResistivityProfiling ) for o in data  ]) 
-        if len(s)!=1 or (len(s) ==1  and not tuple(s)[0]): 
-            return False 
-        
-        # show the progress bar        
-        pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
-                     desc ='dc-erp', ncols =77)
-        
-        for kk , o in enumerate(pbar) :
-            try: 
-                if isinstance (o, ResistivityProfiling ): 
-                    self.data_.append(o) 
-            except : self.unknow_data_.append(o) 
-            
-            pbar.update(kk) if TQDM else ''
-        
-        (pbar.close (), print('-completed-') ) if TQDM else ''
-        
-        if len(self.data_)==0 : 
-            warnings.warn("No DC-resistvity profiling data detected. Make a" 
-                          "collection of profiling object using "
-                          ":class:`watex.methods.electrical.ResistivityProfiling`"
-                          " class.")
-            raise ERPError("None DC-Resistivity profiling data found!"
-                           )
-            
-        # make a ids 
-        if self.verbose > 3 : 
-            print("Set the ids for each line e.g. line001 for the first line.")
-        
-        self.survey_names_ = np.array(make_ids(self.data_, 'line', None, True))
-        
-        return True 
-    
-        
-    def _readfrompath (self, data: List[str] ,
-                       **kws ): 
-        """ Read data from a file or a path-like object. 
-        
-        It collects the list of |ERP| files and create an |ERP| object from 
-        :class:`.ResistivityProfiling`. 
-        
-        :param data: str or path-like object, 
-        
-        :param kws: Additional keyword from 
-            :func:`watex.tools.coreutils.parseStations`. It refers to the 
-            `station_delimiter` parameters. 
-            
-        """
-        
-        self._logging.info (" {self.__class__.__name__!r} collects the "
-                            "resistivity objects ")
-        ddict = dict() 
-        regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
-        
-        self.survey_names_ = None  # initialize 
-        if isinstance(data, str ): 
-            if os.path.isfile (data): 
-                 data =[data ]
-            elif os.path.dirname(data): 
-                data = [os.path.join( data, d ) for d in os.listdir(data)] 
-            else : raise FileNotFoundError("File not found")
-           
-        if self.read_sheets: 
-            _, ex = os.path.splitext( data[0])
-            if ex != '.xlsx': 
-                raise TypeError (" Reading multisheets expects an excel file."
-                                 " extension not: {ex!r}")
-            for d in data : 
-                try: 
-                    ddict.update ( **pd.read_excel (d , sheet_name =None))
-                except : pass 
-                    
-                #collect stations names
-            if len(ddict)==0 : 
-                raise ERPError ("Can'find the DC-resistitivity profiling data "
-                                )
-            self.survey_names_ = list(map(
-                lambda o: regex.sub('_', o).lower(), ddict.keys()))
-
-            if self.verbose > 3: 
-                print(f"Number of the collected data from stations are"
-                      f" : {len(self.survey_names_)}")
-                
-            data = list(ddict.values ())
-            
-        # make a survey id from collection object 
-        if self.survey_names_ is None: 
-            self.survey_names_ = list(map(lambda o :regex.sub(
-                '_',  os.path.basename(o)), data ))
-            
-        # remove the extension and keep files names 
-        self.survey_names_ = list(
-            map(lambda o: o.split('.')[0], self.survey_names_)) 
-        
-        # self.ids_ = make_ids (self.survey_names_, 'line', None, True ) 
-        
-        # if list of station is not given for each file 
-        # note that here station is station where one expect to 
-        # locate a drilling drilling i.e. sves 
-        if self.stations is None: 
-            self.stations = np.repeat ([None], len(self.survey_names_))
-            
-        elif self.stations is not None: 
-            
-            if os.path.isfile (self.stations): 
-                self.stations =parseStations(self.stations, **kws)
-                
-            if isinstance (self.stations, str): 
-                self.stations=[self.stations ]
-                
-            msg =''.join([ 
-                    "### Number of station does not fit the number of survey"
-                    "lines(=>{0}). Expect one station for eachline but {1}"
-                    " {2} given."
-                ])
-       
-            if len(self.stations)!= len(self.survey_names_): 
-                self._logging.error (msg)
-                warnings.warn(msg.format(len(self.survey_names_), len(self.stations), 
-                    "{'is' if len(self.stations)<2 else 'are'}") )
-                
-                if self.verbose > 3: 
-                    print("-->!Number of DC-resistivity data read sucessufully"
-                          f"= {len(self.survey_names_)}. Number of the given"
-                          "  stations considered as a drilling points"
-                          "={len(self.stations)}. Station must fit each survey"
-                          "lines."
-                          )
-                    
-                raise StationError (msg)
-               
-        # show the progress bar        
-        pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
-                     desc ='dc-erp', ncols =77)
-      
-        # -> read the data and make erp Objs 
-         
-        for kk,  o  in enumerate (pbar)  :
-            try : 
-                rpObj = ResistivityProfiling( 
-                    station = self.stations[kk] , 
-                    dipole= self.dipole,
-                    auto=True if self.stations[kk] is None else self.auto, 
-                    utm_zone = self.utm_zone, 
-                    )
-                self.data_.append (rpObj.fit(o))
-                self.stations[kk] = rpObj.sves_ 
-                
-            except : 
-               self.data_unknown_.append(o)
-        #     pbar.update(kk) if TQDM else ''
-        # (pbar.close (), print('-completed-') ) if TQDM else ''
-
-        if self.verbose > 3: 
-                print(" Number of file unsucceful read is:"
-                      f" {len(self.data_unknown_)}")
-        
-   
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
-        return repr_callable_obj  (self, exception='line')
+        return repr_callable_obj  (self, 'line')
        
     
     def __getattr__(self, name):
         if name.endswith ('_'): 
             if name not in self.__dict__.keys(): 
-                if name in ('data_', 'resistivities_', 'sves_lons_', 'sves_lats_',
-                            'sves_easts_', 'sves_norths_', 'sves_resistivities_',
-                            'powers_', 'magnitudes_','shapes_','types_','sfis_'
-                            'lines_', 'nlines_', 'ids_', 'survey_names_'): 
+                if name in (
+                        'data_', 'resistivities_', 'sves_lons_', 'sves_lats_',
+                        'sves_easts_', 'sves_norths_', 'sves_resistivities_',
+                        'powers_', 'magnitudes_','shapes_','types_','sfis_'
+                        'lines_', 'nlines_', 'ids_', 'survey_names_', 
+                        'isnotvalid_'): 
                     raise FitError (
                         f'Fit the {self.__class__.__name__!r} object first'
                         )
@@ -520,7 +333,278 @@ class DCResistivity (ElectricalMethods)  :
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
             f'{appender}{"" if rv is None else "?"}'
             )        
+
+@refAppender(__doc__)
+class DCSounding(ElectricalMethods) : 
+    """ Direct-Current Electrical Sounding 
+    
+    A collection of |VES| class and computed predictors paramaters accordingly. 
+    
+    The VES is carried out to speculate about the existence of a fracture zone
+    and the layer thicknesses. Commonly, it comes as supplement methods to |ERP| 
+    after selecting the best conductive zone when survey is made on 
+    one-dimensional. Data from each DC-sounding site can be retrieved using::
+        
+        >>> <object>.site<number>.<:attr:`~.VerticalSounding.<attr>_`
+        
+    For instance to fetch the DC-sounding data position and the resistivity 
+    in depth of the fractured zone for the first site, we use:: 
+        
+        >>> <object>.site1.fractured_zone_
+        >>> <object>.site1.fractured_zone_resistivity_
+    
+    Arguments 
+    -----------
+    
+    **fromS**: float , list of float
+        The collection of the depth in meters from which one expects to find a 
+        fracture zone outside of pollutions. Indeed, the `fromS` parameter is 
+        used to speculate about the expected groundwater in the fractured rocks 
+        under the average level of water inrush in a specific area. For 
+        instance in `Bagoue region`_ , the average depth of water inrush 
+        is around ``45m``.So the `fromS` can be specified via the water inrush 
+        average value. 
+        
+    **rho0**: float 
+        Value of the starting resistivity model. If ``None``, `rho0` should be
+        the half minumm value of the apparent resistivity  collected. Units is
+        in Ω.m not log10(Ω.m)
+        
+    **h0**: float 
+        Thickness  in meter of the first layers in meters.If ``None``, it 
+        should be the minimum thickess as possible ``1.m`` . 
+    
+    **strategy**: str 
+        Type of inversion scheme. The defaut is Hybrid Monte Carlo (HMC) known
+        as ``HMCMC``. Another scheme is Bayesian neural network approach (``BNN``). 
+        
+    **vesorder**: int 
+        The index to retrieve the resistivity data of a specific sounding point.
+        Sometimes the sounding data are composed of the different sounding 
+        values collected in the same survey area into different |ERP| line.
+        For instance:
             
+            +------+------+----+----+----+----+----+
+            | AB/2 | MN/2 |SE1 | SE2| SE3| ...|SEn |
+            +------+------+----+----+----+----+----+
+            
+        Where `SE` are the electrical sounding data values  and `n` is the 
+        number of the sounding points selected. `SE1`, `SE2` and `SE3` are 
+        three  points selected for |VES| i.e. 3 sounding points carried out 
+        either in the same |ERP| or somewhere else. These sounding data are 
+        the resistivity data with a  specific numbers. Commonly the number 
+        are randomly chosen. It does not refer to the expected best fracture
+        zone selected after the prior-interpretation. After transformation 
+        via the function :func:`~watex.tools.coreutils.vesSelector`, the header  
+        of the data should hold the `resistivity`. For instance, refering to 
+        the table above, the data should be:
+            
+            +----+----+-------------+-------------+-------------+-----+
+            | AB | MN |resistivity  | resistivity | resistivity | ... |
+            +----+----+-------------+-------------+-------------+-----+
+        
+        Therefore, the `vesorder` is used to select the specific resistivity
+        values i.e. select the corresponding sounding number  of the |VES| 
+        expecting to locate the drilling operations or for computation. For 
+        esample, `vesorder`=1 should figure out: 
+            
+            +------+------+----+--------+----+----+------------+
+            | AB/2 | MN/2 |SE2 |  -->   | AB | MN |resistivity |
+            +------+------+----+--------+----+----+------------+
+        
+        If `vesorder` is ``None`` and the number of sounding curves are more 
+        than one, by default the first sounding curve is selected ie 
+        `rhoaIndex` equals to ``0``
+        
+    **typeofop**: str 
+        Type of operation to apply  to the resistivity 
+        values `rhoa` of the duplicated spacing points `AB`. The *default* 
+        operation is ``mean``. Sometimes at the potential electrodes ( `MN` ),the 
+        measurement of `AB` are collected twice after modifying the distance
+        of `MN` a bit. At this point, two or many resistivity values are 
+        targetted to the same distance `AB`  (`AB` still remains unchangeable 
+        while while `MN` is changed). So the operation consists whether to the 
+        average ( ``mean`` ) resistiviy values or to take the ``median`` values
+        or to ``leaveOneOut`` (i.e. keep one value of resistivity among the 
+        different values collected at the same point `AB` ) at the same spacing 
+        `AB`. Note that for the ``LeaveOneOut``, the selected 
+        resistivity value is randomly chosen.
+        
+    **objective**: str 
+        Type operation to output. By default, the function outputs the value
+        of pseudo-area in :math:`$ohm.m^2$`. However, for plotting purpose by
+        setting the argument to ``view``, its gives an alternatively outputs of
+        X and Y, recomputed and projected as weel as the X and Y values of the
+        expected fractured zone. Where X is the AB dipole spacing when imaging 
+        to the depth and Y is the apparent resistivity computed.
+        
+    **kws**: dict 
+        Additionnal keywords arguments from |VES| data operations. 
+        See :func:`watex.tools.exmath.vesDataOperator` for futher details.
+        
+    Examples 
+    --------
+    (1) -> read a single DC Electrical Sounding file 
+    
+    >>> from watex.methods.electrical import DCSounding
+    >>> dsobj = DCSounding ()  
+    >>> dsobj.fromS = 30. # start detecting the fracture zone from 30m depth.
+    >>> dsobj.fit('data/ves/ves_gbalo.xlsx')
+    >>> dsobj.ohmic_areas_
+    ...  array([523.25458506])
+    >>> dsobj.site1.fractured_zone_ # show the positions of the fracture zone 
+    ... array([ 28.,  32.,  36.,  40.,  45.,  50.,  55.,  60.,  70.,  80.,  90.,
+           100.])
+    >>> dsobj.line1.fractured_zone_resistivity_
+    ... array([ 68.74273843,  71.57116555,  74.39959268,  77.2280198 ,
+                80.76355371,  84.29908761,  87.83462152,  91.37015543,
+                98.44122324, 105.51229105, 112.58335886, 119.65442667])
+    
+    (2) -> read multiple sounding files 
+    >>> dsobj.fit('data/ves')
+    >>> dsobj.ohmic_areas_  
+    ... array([ 523.25458506,  523.25458506, 1207.41759558]) 
+    >>> dsobj.nareas_ 
+    ... array([2., 2., 3.]) 
+    >>> dsobj.survey_names_
+    ... ['ves_gbalo', 'ves_gbalo', 'ves_gbalo_unique']
+    >>> dsobj.nsites_ 
+    ... 3 
+    >>> dsobj.site1.ohmic_area_
+    ... 523.2545850558677  # => dsobj.ohmic_areas_ -> line 1:'ves_gbalo'
+    
+    
+    """
+           
+    def __init__(self,
+                 fromS:float=45.,
+                 rho0:float=None, 
+                 h0 :float=1., 
+                 read_sheets:bool=False, 
+                 strategy:str='HMCMC',
+                 vesorder:int=None, 
+                 typeofop:str='mean',
+                 objective: Optional[str] = 'coverall',
+                 **kws) -> None : 
+        super().__init__(**kws) 
+        
+        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
+        self.fromS=fromS 
+        self.vesorder=vesorder 
+        self.typeofop=typeofop
+        self.objective=objective 
+        self.rho0=rho0, 
+        self.h0=h0
+        self.strategy = strategy, 
+        self.read_sheets= read_sheets
+        
+        for key in list( kws.keys()): 
+            setattr(self, key, kws[key])
+            
+    def fit(self, data : List[str] | List [DataFrame], **kws): 
+        """ Fit the DC- electrical sounding 
+        
+        Fit the sounding |VES| curves and computed the ohmic-area and set  
+        all the features for demarcating fractured zone from the selected 
+        anomaly. 
+        
+        Parameters 
+        -----------
+        data:  list of path-like object, or DataFrames
+            The string argument is a path-like object. It must be a valid file
+            wich encompasses the collected data on the field. It shoud be
+            composed of spacing values `AB` and  the apparent resistivity 
+            values `rhoa`. By convention `AB` is half-space data i.e `AB/2`. 
+            So, if `data` is given, params `AB` and `rhoa` should be kept to
+            ``None``. If `AB` and `rhoa` is expected to be inputted, user must
+            set the `data`  to ``None`` values for API purpose. If not an error
+            will raise. Or the recommended way is to use the `vesSelector` tool
+            in :func:`watex.tools.vesSelector` to buid the |VES| data before 
+            feeding it to the algorithm. See the example below.
+            
+        kws: dict 
+            additional keywords arguments, specific to the readable files. 
+            Refer to :method:`watex.property.Config.parsers` . Use the key()
+            to get all the readables format. 
+            
+        Returns 
+        -------
+         object: A collection of |VES| objects 
+         
+        """
+        self._logging.info (" {self.__class__.__name__!r} collects the "
+                            "resistivity objects ")
+        
+        #-> Initialize collection objects 
+        # - collected the unreadable data ; readable data  
+        self.isnotvalid_= list() ; self.data_= list() 
+        
+        # check whether object is readable as ERP objs
+        #  -> if not assume a path or file is given 
+        if not _readfromdcObjs (self, data, VerticalSounding, VESError):
+            _readfrompath (self, data, VerticalSounding,  **kws)
+            
+        self.ids_ = np.array(make_ids (self.survey_names_, 'site', None, True)) 
+        
+        # set each line as an object with attributes
+        # can be retrieved like self.line1_.fractured_zone_ 
+        self.lines_ = np.empty_like (self.ids_, dtype =object )
+        for kk, (id_ , site) in enumerate (zip( self.ids_, self.data_)) : 
+            obj = type (f"{site}", (ElectricalMethods,), site.__dict__ )
+            self.__setattr__(f"{id_}", obj)
+            self.lines_[kk]= obj  # set lines objects 
+            
+        # -> lines numbers 
+        self.nlines_ = self.lines_.size 
+        
+        if self.verbose > 3: 
+            print("Each line is an object class inherits from all attributes" 
+                  " of DC-electrical sounding object. For instance the number"
+                  " of ohmic areas computed of the first line can be fetched"
+                  "  as: <self.line1.ohmic_area_> ")
+            
+        # can also retrieve an attributes in other ways 
+        # make usefull attributess
+        if self.verbose > 7: 
+            print("Populate the other  attributes and data can be"
+                  " fetched as array of N-number of survey lines.  ")
+           
+        # set expected the drilling point positions and resistivity values  
+        self.ohmic_areas_ = _geterpattr ('ohmic_area_', self.data_).astype(float)
+        self.nareas_ =  _geterpattr (
+            'nareas_', self.data_ ).astype(float)
+        
+        # All other attributes can be retrieved. For instance line1
+        # self.line1.XY_, self.line1.XYarea_  or 
+        # self.line1.AB_ ,  self.line.XY_
+
+        if self.verbose > 7: 
+            print("Parameters numbers are well computed ")
+            
+        return self 
+
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        return repr_callable_obj  (self, 'line')
+       
+    
+    def __getattr__(self, name):
+        if name.endswith ('_'): 
+            if name not in self.__dict__.keys(): 
+                if name in ('data_','n_areas_', 'ohmic_areas_', 'isnotvalid_'
+                            'nlines_', 'survey_names_'): 
+                    raise FitError (
+                        f'Fit the {self.__class__.__name__!r} object first'
+                        )
+                
+        rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+        appender  = "" if rv is None else f'. Do you mean {rv!r}'
+        
+        raise AttributeError (
+            f'{self.__class__.__name__!r} object has no attribute {name!r}'
+            f'{appender}{"" if rv is None else "?"}'
+            )        
+        
 @refAppender(__doc__)
 class ResistivityProfiling(ElectricalMethods): 
     """ Class deals with the Electrical Resistivity Profiling (ERP).
@@ -1023,16 +1107,14 @@ class VerticalSounding (ElectricalMethods):
             Apparent resistivity values collected in imaging in depth. Units 
             are in Ω.m not log10(Ω.m)
         
-        readableformats: tuple 
-            Specific readable files. The default of  reading files are ``xlsx``
-            and ``csv``. Other formats should be add for future release.
+        kwds: dict 
+            additional keywords arguments, specific to the readable files. 
+            Refer to :method:`watex.property.Config.parsers` . Use the key()
+            to get all the readables format. 
             
         Returns 
         -------
-         object: 
-             Useful for chaining methods. 
-             
-        .. |VES| replace:: Vertical Electrical Sounding 
+         object: a DC -resistivity |VES| object.  
 
         """
         
@@ -1212,13 +1294,267 @@ class VerticalSounding (ElectricalMethods):
             )
 
     
+def _readfromdcObjs(self, data: List[object ] ,
+                     dcmethod:object=ResistivityProfiling ,  
+                     exception: F = ERPError ): 
+    """ Read object metadata object. 
+    
+    A set of :class:`.ResistivityProfiling` objects.
+    
+    :param data: list-a collection of  DC-resistivity method 
+        objects
+    
+    :returns: bool- whether an object is readable as a DC-resistivity 
+        profiling or sounding object or not.``False`` otherwise.  
+    """
+
+    self._logging.info (f"Read a collection '{dcmethod.__name__!r}' objects")
+    
+    # assert whether the method is implemented 
+    if dcmethod.__name__  not in ( 'ResistivityProfiling', 
+                                  'VerticalSounding'):
+        raise NotImplementedError(
+        f"Method {dcmethod.__name__!r} is not implemented")
+        
+    if not isinstance( data, (list, tuple, np.ndarray)): 
+        data =[data]
+    # assert whether each element compose the data is ERP object  
+    s = set ([ isinstance (o, dcmethod ) for o in data  ]) 
+    if len(s)!=1 or (len(s) ==1  and not tuple(s)[0]): 
+        return False 
+    
+    # show the progress bar        
+    pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
+                 desc ="dc-erp" if dcmethod.__name__ =='ResistivityProfiling'\
+                     else'dc-ves',
+                 ncols =77)
+    
+    for kk , o in enumerate(pbar) :
+        try: 
+            if isinstance (o, dcmethod ): 
+                self.data_.append(o) 
+        except : self.isnotvalid_.append(o) 
+        
+    #     pbar.update(kk) if TQDM else ''
+    # (pbar.close (), print('-completed-') ) if TQDM else ''
+    
+    if len(self.data_)==0 : 
+        warnings.warn("No DC-resistvity profiling data detected. Make a collection" 
+                      f" of profiling object using {dcmethod.__name__!r} class."
+                      )
+        raise exception("None DC-Resistivity profiling data found!"
+                       )
+        
+    #show stats 
+    if self.verbose > 0:
+        print()
+        show_stats (data , self.data_,
+                    obj = 'DC-ERP' if dcmethod.__name__=='ResistivityProfiling' \
+                        else 'DC-VES' ,
+                    lenl=79)
+        
+    # make a ids 
+    if self.verbose > 3 : 
+        print("Set the ids for each line e.g. line1 for the first line.")
+    
+    self.survey_names_ = np.array(make_ids(self.data_, 'line', None, True))
+    
+    return True 
 
     
+def _readfrompath (self, data: List[str] ,
+                   dcmethod: object= ResistivityProfiling, 
+                   **kws ): 
+    """ Read data from a file or a path-like object. 
+    
+    It collects the list of |ERP| or |VES| files and create a DC -resistivity
+    object from a DC -resistivity method. 
+    
+    :param data: str or path-like object, 
+    
+    :param kws: Additional keyword from 
+        :func:`watex.tools.coreutils.parseStations`. It refers to the 
+        `station_delimiter` parameters. 
+        
+    """
+    self._logging.info (" {self.__class__.__name__!r} collects the "
+                        "resistivity objects ")
+    
+    # assert whether the method is implemented 
+    if dcmethod.__name__  not in ( 'ResistivityProfiling', 
+                                  'VerticalSounding'):
+        raise NotImplementedError(
+        f"Method {dcmethod.__name__!r} is not implemented")
+        
+        
+    ddict = dict() 
+    regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
+    
+    self.survey_names_ = None  # initialize 
+    if isinstance(data, str ): 
+        if os.path.isfile (data): 
+             data =[data ]
+        elif os.path.dirname(data): 
+            data = [os.path.join( data, d ) for d in os.listdir(data)] 
+        else : raise FileNotFoundError("File not found")
+       
+    if self.read_sheets: 
+        _, ex = os.path.splitext( data[0])
+        if ex != '.xlsx': 
+            raise TypeError (" Reading multisheets expects an excel file."
+                             " extension not: {ex!r}")
+        for d in data : 
+            try: 
+                ddict.update ( **pd.read_excel (d , sheet_name =None))
+            except : pass 
+                
+            #collect stations names
+        if len(ddict)==0 : 
+            raise ERPError ("Can'find the DC-resistitivity profiling data "
+                            )
+        self.survey_names_ = list(map(
+            lambda o: regex.sub('_', o).lower(), ddict.keys()))
+
+        if self.verbose > 3: 
+            print(f"Number of the collected data from stations are"
+                  f" : {len(self.survey_names_)}")
+            
+        data = list(ddict.values ())
+        
+    # make a survey id from collection object 
+    if self.survey_names_ is None: 
+        self.survey_names_ = list(map(lambda o :regex.sub(
+            '_',  os.path.basename(o)), data ))
+        
+    # remove the extension and keep files names 
+    self.survey_names_ = list(
+        map(lambda o: o.split('.')[0], self.survey_names_)) 
+    
+
+    # populate and assert stations and fromS   
+    #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # if list of station is not given for each file 
+    # note that here station is station where one expect to 
+    # locate a drilling drilling i.e. sves
+    _parse_dc_args(self, dcmethod,  **kws)
+  
+    # show the progress bar 
+    pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
+                 desc ="dc-erp" if dcmethod.__name__ =='ResistivityProfiling'\
+                     else'dc-ves',
+                 ncols =77)
+  
+    # -> read the data and make dc Objs 
+    for kk,  o  in enumerate (pbar)  :
+        try :
+            if dcmethod.__name__=='ResistivityProfiling':
+                dcObj = dcmethod( 
+                    station = self.stations[kk] , 
+                    dipole= self.dipole,
+                    auto=True if self.stations[kk] is None else self.auto, 
+                    utm_zone = self.utm_zone, 
+                    )
+                self.data_.append (dcObj.fit(o))
+                self.stations[kk] = dcObj.sves_ 
+                
+            elif dcmethod.__name__ =='VerticalSounding': 
+                dcObj = dcmethod(
+                    fromS=self.fromS[kk], 
+                    vesorder=self.vesorder,
+                    typeofop=self.typeofop,
+                    objective=self.objective,
+                    rho0=self.rho0, 
+                    h0=self.h0,
+                    strategy=self.strategy
+                    )
+                self.data_.append (dcObj.fit(o))
+   
+        except : 
+            self.isnotvalid_.append(o)
+            
+    #     pbar.update(kk) if TQDM else ''
+    # (pbar.close (), print('-completed-') ) if TQDM else ''
+    
+    if self.verbose > 0:
+        #show stats 
+        print()
+        show_stats (data , self.data_,
+                    obj = 'DC-ERP' if dcmethod.__name__=='ResistivityProfiling' \
+                        else 'DC-VES' ,
+                    lenl=79)
+        
+    if self.verbose > 3: 
+            print(" Number of file unsucceful read is:"
+                  f" {len(self.isnotvalid_)}")
     
     
+def _parse_dc_args(self, dcmethod: object , **kws): 
+    """ parse dc arguments to  fit the number of survey lines and populate
+    sanitize the attributes accordingly.
     
+    :param kws: Additional keyword from 
+        :func:`watex.tools.coreutils.parseDCArgs`. It refers to the 
+        `station_delimiter` parameters. 
+    """  
+    flag=0
+    if dcmethod.__name__=='ResistivityProfiling': 
+        sf , arg = self.stations , 'stations'
+        flag=0
+    elif dcmethod.__name__=='VerticalSounding': 
+        sf, arg =self.fromS , 'fromS'
+        flag=1
     
+        
+    if sf is None: 
+        sf= np.repeat ([45.], len(self.survey_names_)) if flag else np.repeat(
+            [None], len(self.survey_names_)) 
+        
+    elif sf is not None: 
+        if os.path.isfile (str(sf)): 
+            sf=parseDCArgs(sf, arg=arg, **kws)
+        elif isinstance (sf, str): 
+            sf= [sf]
+        if isinstance(sf, (int , float)) and flag: 
+            sf= np.repeat ([sf], len(self.survey_names_))
+        
+        msg =''.join([ 
+                f"### Number of {arg} does not fit the number of sites ",
+                "lines(=>{0}). Expect one station for eachline but {1}",
+                " {2} given."
+            ])
+        
+    if len(sf)!= len(self.survey_names_): 
+        self._logging.error (msg)
+        warnings.warn(msg.format(len(self.survey_names_),len(sf), 
+            f"{'is' if len(sf)<2 else 'are'}") )
+            
+        if self.verbose > 3: 
+            print("-->!Number of DC-resistivity data read sucessfully"
+                  f"= {len(self.survey_names_)}. Number of the given"
+                  "  stations considered as a drilling points"
+                  "={len(sf)}. Station must fit each survey lines."
+                  )
+                    
+        raise StationError (msg)
+        
+    if not flag: 
+        self.stations = sf 
+    elif flag:
+        self.fromS = sf 
+        
+        
+def _geterpattr (attr , dl ): 
+    """ Get attribute from the each DC-resistivity object and 
+    collect into numpy array. 
     
+    If `stack` is ``True``, it will collect stacked data allong axis 1. 
+    :param attr: attribute name 
+    :param dl: list of erp object 
+    """
+    # np.warnings.filterwarnings(
+    #     'ignore', category=np.VisibleDeprecationWarning)  
+    return np.array(list(map(lambda o : getattr(o, attr), dl )), 
+                    dtype =object)     
     
     
     
