@@ -14,7 +14,7 @@ from ..typing import (
     TypeVar,
     Iterable ,
     F, 
-    Array, 
+    ArrayLike, 
     NDArray, 
     Dict,
     Any
@@ -44,7 +44,7 @@ __logger = watexlog().get_watex_logger(__name__)
 
 def multipleGridSearches(
         X: NDArray, 
-        y:Array,
+        y:ArrayLike,
         estimators: F, 
         grid_params: Dict[str, Any],
         scoring:str  ='neg_mean_squared_error', 
@@ -590,7 +590,7 @@ class BaseEvaluation (object):
     def __init__(self, 
                  base_estimator: F,
                  X: NDArray, 
-                 y:Array,
+                 y:ArrayLike,
                  s_ix:int =None,
                  cv: int =7,  
                  pipeline: List[F]= None, 
@@ -789,7 +789,7 @@ class BaseEvaluation (object):
 def quickscoring_evaluation_using_cross_validation(
         clf: F,
         X:NDArray,
-        y:Array,
+        y:ArrayLike,
         cv:int =7,
         scoring:str  ='accuracy', 
         display: str ='off'

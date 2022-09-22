@@ -4,8 +4,8 @@
 #   Licence: MIT Licence 
 
 """ 
-`WATex`_ Type variable definitions 
-================================== 
+`WATex`_ Type variables
+======================== 
 
 .. |ERP| replace:: Electrical resistivity profiling 
 
@@ -255,15 +255,15 @@ class DType (Generic [T]):
         """ Get Generic Type object and return Type Variable"""
         ...  
        
-class Array(Generic[T, D]): 
+class ArrayLike(Generic[T, D]): 
     """ Arry Type here means the 1D array i.e singular column. """
     
-    def __getitem__ (self, T) -> Union ['Array', T]: 
+    def __getitem__ (self, T) -> Union ['ArrayLike', T]: 
         """ Return Type of the given Type variable. """ 
         ... 
     
     
-class NDArray(Array[T, DType [T]], Generic [T, D ]) :
+class NDArray(ArrayLike[T, DType [T]], Generic [T, D ]) :
     """ NDarray has ``M``rows, ``N`` -columns, `Shape` and `DType` object. 
     and Dtype. `Shape` is unbound for this class since it does not make since
     to sepecify more integers. However, `DType` seems useful to provide. 
@@ -345,7 +345,7 @@ class Series (DType[T], Generic [T]):
         """ Get the type variable of item T and return `Series`_ object."""
         return self 
     
-class EDIO(Generic [str, T]): 
+class EDIO(Generic [T]): 
     """ EDIO stand for Electrical Data Interchange (EDI) Object. It is an object 
     built from `pycsamt`_ or `MTpy`_ packages.
     
@@ -395,8 +395,8 @@ class DataFrame (Series[T], Generic[T]):
         return self     
     
 if __name__=='__main__': 
-    def test (array:Sub[SP[Array[int, DType[int]], DType [int]]]):... 
-    def test2 (array:Sub[SP[Array, DType [int]]]):... 
+    def test (array:Sub[SP[ArrayLike[int, DType[int]], DType [int]]]):... 
+    def test2 (array:Sub[SP[ArrayLike, DType [int]]]):... 
     
     DFSTR  = DataFrame [Series[DType[str]]]
     DF = DataFrame [DType [object]]

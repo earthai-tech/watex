@@ -57,5 +57,4 @@ DATA_EXTRA = os.path.join(ERP_DATA_DIR, 'testunsafedata_extra.csv')
 
 # set test logging configure
 watexlog.load_configure(
-    os.path.join(os.path.abspath('./watex'),'tools', 
-                 "wlog.yml"))
+    os.path.join(os.path.abspath('./watex'),'tools', "wlog.yml"))

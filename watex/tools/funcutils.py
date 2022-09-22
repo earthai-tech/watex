@@ -9,6 +9,7 @@ from __future__ import annotations
 import os 
 import re 
 import sys 
+import itertools
 import inspect 
 import subprocess 
 import warnings
@@ -30,7 +31,7 @@ from ..typing import (
     Tuple,
     Dict,
     Any,
-    Array,
+    ArrayLike,
     F,
     T,
     List ,
@@ -41,7 +42,6 @@ from ..property import P
 from ..exceptions import ( 
     EDIError,
     ParameterNumberError, 
-    # ArgumentError
     )
 
 _logger = watexlog.get_watex_logger(__name__)
@@ -161,34 +161,39 @@ def smart_strobj_recognition(
 
     return  rv 
 
-def repr_callable_obj(obj: F  , exception = None ): 
+def repr_callable_obj(obj: F  , skip = None ): 
     """ Represent callable objects. 
     
     Format class, function and instances objects. 
     
     :param obj: class, func or instances
         object to format. 
+    :param skip: str , 
+        attribute name that is not end with '_' and whom it needs to be 
+        skipped. 
+        
     :Raises: TypeError - If object is not a callable or instanciated. 
     
     :Examples: 
-        >>> from watex.tools.funcutils import repr_callable_obj
-        >>> from watex.methods.electrical import (
-            ElectricalMethods, ResistivityProfiling)
-        >>> callable_format(ElectricalMethods)
-        ... 'ElectricalMethods(AB= None, arrangement= schlumberger,
-                area= None, MN= None, projection= UTM, datum= WGS84,
-                epsg= None, utm_zone= None, fromlog10= False)'
-        >>> callable_format(ResistivityProfiling)
-        ... 'ResistivityProfiling(station= None, dipole= 10.0, 
-                auto_station= False, kws= None)'
-        >>> robj= ResistivityProfiling (AB=200, MN=20, station ='S07')
-        >>> repr_callable_obj(robj)
-        ... 'ResistivityProfiling(AB= 200, MN= 20, arrangememt= schlumberger,
-                utm_zone= None, projection= UTM, datum= WGS84, epsg= None, 
-                area= None, fromlog10= False, dipole= 10.0, station= S07)'
-        >>> repr_callable_obj(robj.fit)
-        ... 'fit(data= None, kws= None)'
-"""
+        
+    >>> from watex.tools.funcutils import repr_callable_obj
+    >>> from watex.methods.electrical import (
+        ElectricalMethods, ResistivityProfiling)
+    >>> callable_format(ElectricalMethods)
+    ... 'ElectricalMethods(AB= None, arrangement= schlumberger,
+            area= None, MN= None, projection= UTM, datum= WGS84,
+            epsg= None, utm_zone= None, fromlog10= False)'
+    >>> callable_format(ResistivityProfiling)
+    ... 'ResistivityProfiling(station= None, dipole= 10.0, 
+            auto_station= False, kws= None)'
+    >>> robj= ResistivityProfiling (AB=200, MN=20, station ='S07')
+    >>> repr_callable_obj(robj)
+    ... 'ResistivityProfiling(AB= 200, MN= 20, arrangememt= schlumberger,
+            utm_zone= None, projection= UTM, datum= WGS84, epsg= None, 
+            area= None, fromlog10= False, dipole= 10.0, station= S07)'
+    >>> repr_callable_obj(robj.fit)
+    ... 'fit(data= None, kws= None)'
+    """
     
     # inspect.formatargspec(*inspect.getfullargspec(cls_or_func))
     if not hasattr (obj, '__call__') and not hasattr(obj, '__dict__'): 
@@ -208,11 +213,16 @@ def repr_callable_obj(obj: F  , exception = None ):
         PARAMS_VALUES = {k:v  for k, v in obj.__dict__.items() 
                          if not (k.endswith('_') or k.startswith('_'))
                          }
-    if exception is not None : 
-        # skip collecting as params 
-        # remove the keys in rama lines
-        exs = [key for key in PARAMS_VALUES.keys() if key.find(
-            exception)>=0]
+    if skip is not None : 
+        # skip some inner params 
+        # remove them as the main function or class params 
+        if isinstance(skip, (tuple, list, np.ndarray)): 
+            skip = list(map(str, skip ))
+            exs = [key for key in PARAMS_VALUES.keys() if key in skip]
+        else:
+            skip =str(skip).strip() 
+            exs = [key for key in PARAMS_VALUES.keys() if key.find(skip)>=0]
+ 
         for d in exs: 
             PARAMS_VALUES.pop(d, None) 
 
@@ -1073,8 +1083,8 @@ def _stats (X_, y_true,*, y_pred,
      
     
 def _isin (
-        arr: Array | List [float] ,
-        subarr: Sub [Array] |Sub[List[float]] | float 
+        arr: ArrayLike | List [float] ,
+        subarr: Sub [ArrayLike] |Sub[List[float]] | float 
 ) -> bool : 
     """ Check whether the subset array `subcz` is in  `cz` array. 
     
@@ -2293,8 +2303,154 @@ def show_stats(nedic , nedir, fmtl='~', lenl=77, obj='EDI'):
     print(mesg.format('Data collected','=',  nedic, f'{obj} success. read',
                       '=', nedir, 'Rate','=', round ((nedir/nedic) *100, 2),
                       2))
-    print(fmtl * lenl )    
+    print(fmtl * lenl ) 
     
+def concat_array_from_list (list_of_array , concat_axis = 0) :
+    """ Concat array from list and set the None value in the list as NaN.
+    
+    :param list_of_array: List of array elements 
+    :type list of array: list 
+    
+    :param concat_axis: axis for concatenation ``0`` or ``1``
+    :type concat_axis: int 
+    
+    :returns: Concatenated array with shape np.ndaarry(
+        len(list_of_array[0]), len(list_of_array))
+    :rtype: np.ndarray 
+    
+    :Example: 
+        
+    >>> import numpy as np 
+    >>> from watex.tools.funcutils import concat_array_from_list 
+    >>> np.random.seed(0)
+    >>> ass=np.random.randn(10)
+    >>> ass = ass2=np.linspace(0,15,10)
+    >>> concat_array_from_list ([ass, ass]) 
+    
+    """
+    concat_axis =int(_assert_all_types(concat_axis, int, float))
+    if concat_axis not in (0 , 1): 
+        raise ValueError(f'Unable to understand axis: {str(concat_axis)!r}')
+    
+    list_of_array = list(map(lambda e: np.array([np.nan])
+                             if e is None else np.array(e), list_of_array))
+    # if the list is composed of one element of array, keep it outside
+    # reshape accordingly 
+    if len(list_of_array)==1:
+        ar = (list_of_array[0].reshape ((1,len(list_of_array[0]))
+                 ) if concat_axis==0 else list_of_array[0].reshape(
+                        (len(list_of_array[0]), 1)
+                 )
+             ) if list_of_array[0].ndim ==1 else list_of_array[0]
+                     
+        return ar 
+
+    #if concat_axis ==1: 
+    list_of_array = list(map(
+            lambda e:e.reshape(e.shape[0], 1) if e.ndim ==1 else e ,
+            list_of_array)
+        ) if concat_axis ==1 else list(map(
+            lambda e:e.reshape(1, e.shape[0]) if e.ndim ==1 else e ,
+            list_of_array))
+                
+    return np.concatenate(list_of_array, axis = concat_axis)
+    
+def station_id (id_, is_index= 'index', how=None, **kws): 
+    """ 
+    From id get the station  name as input  and return index `id`. 
+    Index starts at 0.
+    
+    :param id_: str, of list of the name of the station or indexes . 
+    
+    :param is_index: bool 
+        considered the given station as a index. so it remove all the letter and
+        keep digit as index of each stations. 
+        
+    :param how: :param how: Mode to index the station. Default is 
+        'Python indexing' i.e.the counting starts by 0. Any other mode will 
+        start the counting by 1. Note that if `is_index` is ``True`` and the 
+        param `how` is set to it default value ``py``, the station index should 
+        be downgraded to 1. 
+        
+    :param kws: additionnal keywords arguments from :func:`~.make_ids`.
+    
+    :return: station index. If the list `id_` is given will return the tuple.
+    
+    :example:
+        
+    >>> from watex.tools.funcutils import station_id 
+    >>> dat1 = ['S13', 's02', 's85', 'pk20', 'posix1256']
+    >>> station_id (dat1)
+    ... (13, 2, 85, 20, 1256)
+    >>> station_id (dat1, how='py')
+    ... (12, 1, 84, 19, 1255)
+    >>> station_id (dat1, is_index= None, prefix ='site')
+    ... ('site1', 'site2', 'site3', 'site4', 'site5')
+    >>> dat2 = 1 
+    >>> station_id (dat2) # return index like it is
+    ... 1
+    >>> station_id (dat2, how='py') # considering the index starts from 0
+    ... 0
+    
+    """
+    is_iterable =False 
+    is_index = str(is_index).lower().strip() 
+    isix=True if  is_index in ('true', 'index', 'yes', 'ix') else False 
+    
+    regex = re.compile(r'\d+', flags=re.IGNORECASE)
+    try : 
+        iter (id_)
+    except : 
+        id_= [id_]
+    else : is_iterable=True 
+    
+    #remove all the letter 
+    id_= list(map( lambda o: regex.findall(o), list(map(str, id_))))
+    # merge the sequences list and for consistency remove emty list or str 
+    id_=tuple(filter (None, list(itertools.chain(*id_)))) 
+    
+    # if considering as Python index return value -1 other wise return index 
+    
+    id_ = tuple (map(int, np.array(id_, dtype = np.int32)-1)
+                 ) if how =='py' else tuple ( map(int, id_)) 
+    
+    if (np.array(id_) < 0).any(): 
+        warnings.warn('Index contains negative values. Be aware that you are'
+                      " using a Python indexing. Otherwise turn 'how' argumennt"
+                      " to 'None'.")
+    if not isix : 
+        id_= tuple(make_ids(id_, how= how,  **kws))
+        
+    if not is_iterable : 
+        try: id_ = id_[0]
+        except : warnings.warn("The station id is given as a non iterable "
+                          "object, but can keep the same format in return.")
+        if id_==-1: id_= 0 if how=='py' else id_ + 2 
+
+    return id_
+
+def assert_doi(doi): 
+    """
+     assert the depath of investigation Depth of investigation converter 
+
+    :param doi: depth of investigation in meters.  If value is given as string 
+        following by yhe index suffix of kilometers 'km', value should be 
+        converted instead. 
+    :type doi: str|float 
+    
+    :returns doi:value in meter
+    :rtype: float
+           
+    """
+    if isinstance (doi, str):
+        if doi.find('km')>=0 : 
+            try: doi= float(doi.replace('km', '000')) 
+            except :TypeError (" Unrecognized value. Expect value in 'km' "
+                           f"or 'm' not: {doi!r}")
+    try: doi = float(doi)
+    except: TypeError ("Depth of investigation must be a float number "
+                       "not: {str(type(doi).__name__!r)}")
+    return doi
     
     
     

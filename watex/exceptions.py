@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """ 
-Exceptions of packages `WATex`_ 
-================================
+`WATex`_ Exceptions 
+====================
 
 Each exception is related to its modules following py the suffix `Error`. It 
 inherits from top BaseExceptiom of Python build-in functions. To drop or change 
@@ -55,6 +55,8 @@ class FeatureError(Exception):
 class EstimatorError(Exception):
     pass
 
+class GeoPropertyError(Exception): 
+    pass
 class GeoArgumentError(Exception): 
     pass
 
@@ -62,6 +64,8 @@ class HintError(Exception):
     pass
 
 class SQLError(Exception): 
+    pass
+class StrataError(Exception): 
     pass
 
 class SQLManagerError(Exception): 

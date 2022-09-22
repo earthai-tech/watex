@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Wed Jul  7 22:23:02 2021 hz
-# This module is part of the WATex viewer package, which is released under a
+# Copyright (c) 2021 LKouadio, Wed Jul  7 22:23:02 2021 hz
 # MIT- licence.
  
 import os
@@ -1089,7 +1088,7 @@ class QuickPlot :
         
         :Example: 
             
-            >>> from view.plot.QuickPlot import discussingFeatures 
+            >>> from watex.view.plot.QuickPlot import discussingFeatures 
             >>> qkObj = QuickPlot(  fig_legend_kws={'loc':'upper right'},
             ...          fig_title = '`sfi` vs`ohmS|`geol`',
             ...            )  

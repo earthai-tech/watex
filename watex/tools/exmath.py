@@ -41,7 +41,7 @@ from ..typing import (
     Dict, 
     Any, 
     Union,
-    Array,
+    ArrayLike,
     NDArray,
     DType,
     Optional,
@@ -69,7 +69,7 @@ _logger =watexlog.get_watex_logger(__name__)
 mu0 = 4 * np.pi * 1e-7 
 
 def d_hanning_window(
-        x: Array[DType[float]],
+        x: ArrayLike[DType[float]],
         xk: float , 
         W: int 
         )-> F: 
@@ -122,8 +122,8 @@ def betaj (
 
 def rhoa2z ( 
         rhoa: NDArray[DType[T]], 
-        phs:NDArray, 
-        freq: Array
+        phs:ArrayLike, 
+        freq: ArrayLike
 )-> NDArray[DType[T]]:
     r""" Convert apparent resistivity to impendance tensor z 
     
@@ -165,7 +165,7 @@ def rhoa2z (
 
 def z2rhoa (
         z:NDArray [DType[complex]], 
-        freq: Array[DType[float]]
+        freq: ArrayLike[DType[float]]
 )-> NDArray[DType[float]]:
     r""" Convert impendance tensor z  to apparent resistivity
     
@@ -196,13 +196,13 @@ def z2rhoa (
     return np.abs(z)**2 / (2 * np.pi * freq[:, None] * mu0 )
 
 def savitzky_golay1d (
-        y: Array[DType[T]], 
+        y: ArrayLike[DType[T]], 
         window_size:int , 
         order: int, 
         deriv: int =0, 
         rate: int =1, 
         mode: str ='same'
-        )-> Array[DType[T]]:
+        )-> ArrayLike[DType[T]]:
     r"""Smooth (and optionally differentiate) data with a Savitzky-Golay filter.
     
     The Savitzky-Golay filter removes high frequency noise from data. It has the 
@@ -380,7 +380,7 @@ def dummy_basement_curve(
 
 
 def find_limit_for_integration(
-        ix_arr: Array[DType[int]],
+        ix_arr: ArrayLike[DType[int]],
         b0: List[T] =[]
 )-> List[T]: 
     r""" Use the roots between f curve and basement curves to 
@@ -415,7 +415,7 @@ def find_limit_for_integration(
 
 
 def find_bound_for_integration(
-        ix_arr: Array[DType[int]],
+        ix_arr: ArrayLike[DType[int]],
         b0: List[T] =[]
 )-> List[T]: 
     r""" Recursive function. Use the roots between f curve and basement 
@@ -453,11 +453,11 @@ def find_bound_for_integration(
  
     
 def fitfunc(
-        x: Array[T], 
-        y: Array[T], 
+        x: ArrayLike[T], 
+        y: ArrayLike[T], 
         deg: float | int  =None,
         sample: int =1000
-)-> Tuple[F, Array[T]]: 
+)-> Tuple[F, ArrayLike[T]]: 
     """ Create polyfit function from a specifc sample data points. 
     
     :param x: array-like of x-axis.
@@ -491,12 +491,12 @@ def fitfunc(
     return f, xn, yp  
 
 def vesDataOperator(
-        AB : Array = None, 
-        rhoa: Array= None ,
+        AB : ArrayLike = None, 
+        rhoa: ArrayLike= None ,
         data: DataFrame  =None,
         typeofop: str = None, 
         outdf: bool = False, 
-)-> Tuple[Array] | DataFrame : 
+)-> Tuple[ArrayLike] | DataFrame : 
     """ Check the data in the given deep measurement and set the suitable
     operations for duplicated spacing distance of current electrodes `AB`. 
     
@@ -610,8 +610,8 @@ def invertVES (data: DataFrame[DType[float|int]] = None,
                rho0: float = None , 
                h0 : float = None, 
                typeof : str = 'HMCMC', 
-               
-               **kwd)->Tuple [Array]: 
+               **kwd
+               )->Tuple [ArrayLike]: 
     """ Invert the |VES| data collected in the exporation area.
     
     :param data: Dataframe pandas - contains the depth measurement AB from 
@@ -888,7 +888,7 @@ def ohmicArea(
  
 
 def _type_mechanism (
-        cz: Array |List[float],
+        cz: ArrayLike |List[float],
         dipolelength : float =10.
 ) -> Tuple[str, float]: 
     """ Using the type mechanism helps to not repeat several time the same 
@@ -924,7 +924,7 @@ def _type_mechanism (
     
     return status, wcz 
 
-def type_ (erp: Array[DType[float]] ) -> str: 
+def type_ (erp: ArrayLike[DType[float]] ) -> str: 
     """ Compute the type of anomaly. 
     
     .. |ERP| replace: Electrical Resistivity Profiling 
@@ -1034,7 +1034,7 @@ def type_ (erp: Array[DType[float]] ) -> str:
     return type_ 
         
 def shape (
-    cz : Array | List [float], 
+    cz : ArrayLike | List [float], 
     s : Optional [str, int] = ..., 
     p:  SP =  ...,     
 ) -> str: 
@@ -1152,8 +1152,8 @@ def shape (
 @refAppender(__doc__)
 @docSanitizer()    
 def scalePosition(
-        ydata: Array | SP | Series | DataFrame ,
-        xdata: Array| Series = None, 
+        ydata: ArrayLike | SP | Series | DataFrame ,
+        xdata: ArrayLike| Series = None, 
         func : Optional [F] = None ,
         c_order: Optional[int|str] = 0,
         show: bool =False, 
@@ -1299,8 +1299,8 @@ def scalePosition(
 
 def __sves__ (
         s_index: int  , 
-        cz: Array | List[float], 
-) -> Tuple[Array, Array]: 
+        cz: ArrayLike | List[float], 
+) -> Tuple[ArrayLike, ArrayLike]: 
     """ Divide the conductive zone in leftzone and rightzone from 
     the drilling location index . 
 
@@ -1416,8 +1416,8 @@ def detect_station_position (
     return int(s_index) , s 
     
 def sfi (
-        cz: Sub[Array[T, DType[T]]] | List[float] ,
-        p: Sub[SP[Array, DType [int]]] | List [int] = None, 
+        cz: Sub[ArrayLike[T, DType[T]]] | List[float] ,
+        p: Sub[SP[ArrayLike, DType [int]]] | List [int] = None, 
         s: Optional [str] =None, 
         dipolelength: Optional [float] = None, 
         plot: bool = False,
@@ -1558,7 +1558,7 @@ def sfi (
 
 @refAppender(__doc__)
 def plot_ (
-    *args : List [Union [str, Array, ...]],
+    *args : List [Union [str, ArrayLike, ...]],
     figsize: Tuple[int] = None,
     raw : bool = False, 
     style : str = 'seaborn',   
@@ -1678,7 +1678,7 @@ def plot_ (
     plt.show ()
         
     
-def quickplot (arr: Array | List[float], dl:float  =10)-> None: 
+def quickplot (arr: ArrayLike | List[float], dl:float  =10)-> None: 
     """Quick plot to see the anomaly"""
     
     plt.plot(np.arange(0, len(arr) * dl, dl), arr , ls ='-', c='k')
@@ -1686,7 +1686,7 @@ def quickplot (arr: Array | List[float], dl:float  =10)-> None:
     
     
 
-def magnitude (cz:Sub[Array[float, DType[float]]] ) -> float: 
+def magnitude (cz:Sub[ArrayLike[float, DType[float]]] ) -> float: 
     r""" 
     Compute the magnitude of selected conductive zone. 
     
@@ -1705,7 +1705,7 @@ def magnitude (cz:Sub[Array[float, DType[float]]] ) -> float:
     """
     return np.abs (cz.max()- cz.min()) 
 
-def power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float : 
+def power (p:Sub[SP[ArrayLike, DType [int]]] | List[int] ) -> float : 
     """ 
     Compute the power of the selected conductive zone. Anomaly `power` 
     is closely referred to the width of the conductive zone.
@@ -1728,8 +1728,8 @@ def power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float :
 
 
 def _find_cz_bound_indexes (
-    erp: Union[Array[float, DType[float]], List[float], pd.Series],
-    cz: Union [Sub[Array], List[float]] 
+    erp: Union[ArrayLike[float, DType[float]], List[float], pd.Series],
+    cz: Union [Sub[ArrayLike], List[float]] 
 )-> Tuple[int, int]: 
     """ 
     Fetch the limits 'LB' and 'UB' of the selected conductive zone.
@@ -1811,7 +1811,7 @@ def get_station_number (
 
 @deprecated('Function is going to be removed for the next release ...')
 def define_conductive_zone (
-        erp: Array | List[float],
+        erp: ArrayLike | List[float],
         stn: Optional [int] = None,
         sres:Optional [float] = None,
         *, 
@@ -1985,7 +1985,7 @@ def compute_sfi (
         pk_max: float, 
         rhoa_min: float,
         rhoa_max: float, 
-        rhoa: Array | List[float], 
+        rhoa: ArrayLike | List[float], 
         pk: SP[int]
         ) -> float : 
     """
@@ -2081,8 +2081,8 @@ def compute_sfi (
     
 def compute_anr (
         sfi: float , 
-        rhoa_array: Array | List[float],
-        pos_bound_indexes: Array[DType[int]] | List[int]
+        rhoa_array: ArrayLike | List[float],
+        pos_bound_indexes: ArrayLike[DType[int]] | List[int]
         )-> float:
     r"""
     Compute the select anomaly ratio (ANR) along with the whole profile from
@@ -2139,7 +2139,7 @@ def compute_anr (
             ' more efficient using median and index computation. It will '
             'probably deprecate soon for neural network pattern recognition.')
 def get_type (
-        erp_array: Array | List [float], 
+        erp_array: ArrayLike | List [float], 
         posMinMax:Tuple[int] | List[int],
         pk: float | int,
         pos_array: SP[DType[float]],
@@ -2208,7 +2208,7 @@ def get_type (
             'more convenient to recognize anomaly shape using ``median line``'
             'rather than ``mean line`` below.')   
 def get_shape (
-        rhoa_range: Array | List [float]
+        rhoa_range: ArrayLike | List [float]
         )-> str : 
     """
     Find anomaly `shape`  from apparent resistivity values framed to
@@ -2340,7 +2340,7 @@ def compute_magnitude(
     return np.abs(rhoa_max -rhoa_min)
 
 def get_minVal(
-        array: Array[T] | List [T]
+        array: ArrayLike[T] | List [T]
         )->List[T] : 
     """
     Function to find the three minimum values on array and their 
@@ -2405,11 +2405,11 @@ def get_minVal(
     return holdList 
     
 def compute_lower_anomaly(
-    erp_array: Array |List [float],
+    erp_array: ArrayLike |List [float],
     station_position: SP[float]=None, 
     step: Optional[int] =None, 
     **kws
-    )-> Tuple[Dict[str, Any], Array, List[Array], List[Tuple[int, float]]]: 
+    )-> Tuple[Dict[str, Any], ArrayLike, List[ArrayLike], List[Tuple[int, float]]]: 
     """
     Function to get the minimum value on the ERP array. 
     If `pk` is provided wil give the index of pk
@@ -2482,7 +2482,7 @@ def compute_lower_anomaly(
 @deprecated ('Autodetection is instable, it should be modified for '
              'the future realease.')
 def select_anomaly ( 
-        rhoa_array:Array,
+        rhoa_array:ArrayLike,
         pos_array:SP =None,
         auto: bool =True,
         dipole_length =10., 
@@ -2588,7 +2588,7 @@ def select_anomaly (
                 }
     
 def define_anomaly(
-        erp_data: Array | List [float],
+        erp_data: ArrayLike | List [float],
         station_position: SP[DType[float|int]]=None,
         pks: Optional[int]=None, 
         dipole_length: float =10., 
@@ -2677,11 +2677,11 @@ def define_anomaly(
     return bestSelectedDICT
 
 def scaley(
-        y: Array , 
-        x: Array =None, 
+        y: ArrayLike , 
+        x: ArrayLike =None, 
         deg: int = None,  
         func:F =None
-        )-> Tuple[Array, Array, F]: 
+        )-> Tuple[ArrayLike, ArrayLike, F]: 
     """ Scaling value using a fitting curve. 
     
     Create polyfit function from a specifc data points `x` to correct `y` 
@@ -2746,8 +2746,8 @@ def scaley(
     return  yc, x ,  f  
 
 def fittensor(
-    refreq:Array , 
-    compfreq: Array ,
+    refreq:ArrayLike , 
+    compfreq: ArrayLike ,
     z: NDArray[DType[complex]] , 
     fill_value: Optional[float] = np.nan
 )->NDArray[DType[complex]] : 
@@ -2816,14 +2816,14 @@ def fittensor(
     return z_new 
     
 def interpolate1d (
-        arr:Array[DType[T]], 
+        arr:ArrayLike[DType[T]], 
         kind:str = 'slinear', 
         method:str='mean', 
         order:Optional[int] = None, 
         fill_value:str ='extrapolate',
         limit:Tuple[float] =None, 
         **kws
-    )-> Array[DType[T]]:
+    )-> ArrayLike[DType[T]]:
     """ Interpolate array containing invalid values `NaN`
     
     Usefull function to interpolate the missing frequency values in the 
@@ -2985,13 +2985,13 @@ def interpolate1d (
    
 
 def moving_average (
-    y:Array[DType[T]],
+    y:ArrayLike[DType[T]],
     *, 
     window_size:int  = 3 , 
     method:str  ='sma',
     mode:str  ='same', 
     alpha: int  =.5 
-)-> Array[DType[T]]: 
+)-> ArrayLike[DType[T]]: 
     """ A moving average is  used with time series data to smooth out
     short-term fluctuations and highlight longer-term trends or cycles.
     

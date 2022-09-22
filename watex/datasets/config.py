@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent,Thu Sep 23 16:19:52 2021
-# automate datapreparation.
+# automate data preparation.
 import os 
 
 from ..bases import  (
     BaseSteps, 
    fetchDataFromLocalandWeb 
    ) 
-from ..tools.mlutils import dumpOrSerializeData
+from ..tools.mlutils import (
+    dumpOrSerializeData
+    )
 
 __all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
           'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1',
@@ -89,12 +91,12 @@ yT= prepareObj.y_
 # Another tricks to keep your test sets safe is to  use `dumpOrSerializeData` 
 # to keep your test site info a savefile for the first run like::
 
-if not os.path.isfile ('watex/datasets/__Xy.pkl'): 
+if not os.path.isfile ('watex/etc/__Xy.pkl'): 
     train_data =(X_prepared,y_prepared )
     dumpOrSerializeData(data, filename ='__Xy.pkl', to='joblib', 
-                              savepath='watex/datasets')
-if not os.path.isfile('watex/datasets/__XTyT.pkl'): 
+                              savepath='watex/etc')
+if not os.path.isfile('watex/etc/__XTyT.pkl'): 
     test_data=(XT, yT)
     dumpOrSerializeData(test_data, filename ='__XTyT.pkl', to='joblib', 
-                          savepath='watex/datasets')
+                          savepath='watex/etc')
     

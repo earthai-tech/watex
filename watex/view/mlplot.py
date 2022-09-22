@@ -58,7 +58,7 @@ from ..typing import (
     Optional, 
     V, 
     List,
-    Array, 
+    ArrayLike, 
     NDArray,
     DType, 
     )
@@ -69,9 +69,9 @@ _logger=watexlog.get_watex_logger(__name__)
 def biPlot(
         self, 
         score: NDArray[DType [float]],
-        coeff: Array[DType[float]],
-        y: Array,
-        y_classes: List | Array [str] =None,
+        coeff: ArrayLike[DType[float]],
+        y: ArrayLike,
+        y_classes: List | ArrayLike [str] =None,
         markers: str | List [str]  =None, 
         colors: str | List [str ] =None, 
         savefig : Optional[str] = None, 

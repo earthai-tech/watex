@@ -41,7 +41,7 @@ from ..typing import (
     NDArray,
     DataFrame, 
     Series,
-    Array, 
+    ArrayLike, 
     DType, 
     Sub, 
     SP
@@ -60,7 +60,8 @@ from .funcutils import (
     _isin , 
     _assert_all_types,
     accept_types,
-    read_from_excelsheets, 
+    read_from_excelsheets,
+    reshape,
     ) 
 from .gistools import (
     assert_lat_value,
@@ -110,9 +111,9 @@ def _is_readable (
 def vesSelector( 
     data:str | DataFrame[DType[float|int]] = None, 
     *, 
-    rhoa: Array |Series | List [float] = None, 
-    AB :Array |Series = None, 
-    MN: Array|Series | List[float] =None, 
+    rhoa: ArrayLike |Series | List [float] = None, 
+    AB :ArrayLike |Series = None, 
+    MN: ArrayLike|Series | List[float] =None, 
     index_rhoa: Optional[int]  = None, 
     **kws
 ) -> DataFrame : 
@@ -269,10 +270,10 @@ def vesSelector(
 @docSanitizer()
 def fill_coordinates(
     data: DataFrame =None, 
-    lon: Array = None,
-    lat: Array = None,
-    east: Array = None,
-    north: Array = None, 
+    lon: ArrayLike = None,
+    lat: ArrayLike = None,
+    east: ArrayLike = None,
+    north: ArrayLike = None, 
     epsg: Optional[int] = None , 
     utm_zone: Optional [str]  = None,
     datum: str  = 'WGS84', 
@@ -913,8 +914,8 @@ def _assert_station_positions(
 
 @refAppender(__doc__)
 def plotAnomaly(
-    erp: Array | List[float],
-    cz: Optional [Sub[Array], List[float]] = None, 
+    erp: ArrayLike | List[float],
+    cz: Optional [Sub[ArrayLike], List[float]] = None, 
     s: Optional [str] = None, 
     figsize: Tuple [int, int] = (10, 4),
     fig_dpi: int = 300 ,
@@ -1144,12 +1145,12 @@ def plotAnomaly(
         
 #XXX OPTIMIZE 
 def defineConductiveZone(
-    erp:Array| pd.Series | List[float] ,
+    erp:ArrayLike| pd.Series | List[float] ,
     s: Optional [str ,  int] = None, 
     p: SP = None,  
     auto: bool = False, 
     **kws,
-) -> Tuple [Array, int] :
+) -> Tuple [ArrayLike, int] :
     """ Define conductive zone as subset of the erp line.
     
     Indeed the conductive zone is a specific zone expected to hold the 
@@ -1189,7 +1190,7 @@ def defineConductiveZone(
         erp = erp.values 
     
     # conductive zone positioning
-    pcz : Optional [Array]  = None  
+    pcz : Optional [ArrayLike]  = None  
     
     if s is None and auto is False: 
         raise StationError("Expect a station position or trigger the 'auto'"
@@ -1466,7 +1467,7 @@ def makeCoords(
         todms: bool =False, 
         is_utm: bool  =False,
         **kws
-  )-> Tuple[Array[DType[float]]]: 
+  )-> Tuple[ArrayLike[DType[float]]]: 
     """ Generate multiples stations coordinates (longitudes, latitudes)
     from a reference station/site.
     
@@ -1645,17 +1646,37 @@ def makeCoords(
         reflon_ar[::-1] , reflat_ar[::-1] )  
 
 #XXX OPTIMIZE 
-def parseStations(sfn :str ,
-                   station_delimiter:Optional[str]=None,
-                   )-> Array [str]: 
-    """ Parse stations file and output to array 
+def parseDCArgs(fn :str , 
+                delimiter:Optional[str]=None,
+                 arg='stations'
+                 )-> ArrayLike [str]: 
+    """ Parse DC `stations` and `fromS` arguments from file and output to 
+    array accordingly.
     
-    :param sfn: path-like object, full path to station file. The station file 
-        must be composed of only the station values. Commonly it can be used to 
-        specify the selected station of all DC-resistity line where one expects
+    The `fromS` argument is the depth in meters from which one expects to find  
+    a fracture zone outside of pollutions. Indeed, the `fromS` parameter is
+    used to  speculate about the expected groundwater in the fractured rocks 
+    under the average level of water inrush in a specific area. For more details
+    refer to :attr:`watex.methods.electrical.VerticalSounding.fromS` 
+    documentation. 
+    
+    :param fn: path-like object, full path to DC station or fromS file. 
+        if data is considered as a station file, it must be composed  
+        the station names. Commonly it can be used to specify the selected 
+        station of all DC-resistity line where one expects
         to locate the drilling. 
+        Conversly, the fromS file should not include any letter so if given, 
+        ot sould be removed.  
+        
+    :param arg: str of the attribute of the DC methods.Any other value except 
+        ``station`` should considered as ``fromS`` value and will parse the 
+        file accordingly. 
         
     :param delimiter: str , delimiter to separate the different stations 
+        or 'fromS' value. For instance, use use < delimiter=' '> when all 
+        values are separated with space and be arranged in the same line like::
+            
+            >>> 'S02 S12 S12 S15 S28 S30' # file line of the file.
     
     :return: 
         array: array of station name. 
@@ -1664,29 +1685,44 @@ def parseStations(sfn :str ,
         i.e :class:`watex.property.P.istation`, the prefix should be overwritten 
         to only keep the `S`. For instance 'pk25'-> 'S25'
     
+    :Example: 
+        >>> from watex.tools.coreutils import parseDCArgs 
+        >>> sf='data/sfn.txt' # use delimiter if values are in the same line. 
+        >>> sdata= parseDCArgs(sf)
+        >>> sdata 
+        ...
+        >>> # considered that the digits in the file correspond to the depths 
+        >>> fdata= parseDCArgs(sf, arg='fromS') 
+        >>> fdata 
+        ...
     """
-    if not os.path.isfile (sfn): 
+    if not os.path.isfile (fn): 
         raise FileNotFoundError("No file found:")
-    
-    with open(sfn, 'r', encoding ='utf8') as f : 
+    arg= str(arg).lower().strip() 
+    if arg.find('station')>=0 : 
+        arg ='station'
+    with open(fn, 'r', encoding ='utf8') as f : 
         sdata = f.readlines () 
-    if station_delimiter is not None: 
+    if delimiter is not None: 
         # flatter list into a list 
-        sdata = list(map (lambda l: l.split(station_delimiter), sdata ))
+        sdata = list(map (lambda l: l.split(delimiter), sdata ))
         sdata = list(itertools.chain(*sdata))
 
     regex =re.compile (rf"{'|'.join([a for a in (P().istation+['S'])])}", 
-                       flags =re.IGNORECASE)
+                       flags =re.IGNORECASE
+                       ) if arg =='station' else re.compile (
+                           r'\d+', flags=re.IGNORECASE ) 
     
     sdata = list(map(lambda o:  regex.sub('S', o.strip()), 
                      sdata )
-                 ) 
+                 ) if arg =='station' else list(map(
+                     lambda o:  regex.findall(o.strip()), sdata )
+                              )
     # for consitency delte all empty string in the list 
     sdata = list(filter (None, sdata ))
     
-    return np.array(sdata )
-
-
+    return np.array(sdata )if arg=='station' else reshape (np.array(
+        sdata ).astype(float))
 
 
 
