@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 import pandas as pd 
 
-from ..sklearn import (
+from .._sklearn import (
     OrdinalEncoder ,
     SimpleImputer ,
     StandardScaler, 

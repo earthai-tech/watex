@@ -112,7 +112,7 @@ except :
     warnings.warn("Gradient Boosting Machine is installing."
                   " Please wait... ")
     print('!-> Please wait for Gradient Boosting Machines to be installed...')
-    IS_GBM = is_installing('xgboost==1.5.0')
+    IS_GBM = is_installing('xgboost')
     if IS_GBM : 
         print("!---> 'xgboost' installation is complete")
     else : 

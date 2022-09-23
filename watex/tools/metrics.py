@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent
+#       Copyright (c) 2021 LKouadio
 #       Created on Tue Oct  5 15:09:46 2021
 #       released under a MIT- licence.
 #       <etanoyau@gmail.com>
+
+from __future__ import annotations 
 
 import inspect
 import warnings  
@@ -18,7 +20,7 @@ from ..typing import (
     
     )
 from .._watexlog import watexlog
-from ..sklearn import ( 
+from .._sklearn import ( 
     precision_recall_curve,
     precision_score,
     recall_score,

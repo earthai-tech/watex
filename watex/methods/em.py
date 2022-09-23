@@ -72,11 +72,11 @@ from ..property import (
     IsEdi 
     )
 from ..typing import ( 
+    ArrayLike, 
     Optional, 
     List,
     Tuple, 
     Dict, 
-    ArrayLike, 
     NDArray, 
     DType,
     EDIO,
@@ -670,8 +670,7 @@ class EM(IsEdi):
         Parameters 
         ----------- 
         ediObjs: str or :mod:`~.core.edi.Edi_collection` object 
-            Collections of EDI-objects from `pycsamt`_ and `MTpy`_ packages 
-            or full path to EDI files.
+            Collections of EDI-objects from `pycsamt`_ or full path to EDI files.
         out: str 
             kind of data to output. Be sure to provide the component to retrieve 
             the attribute from the collection object. Except the `error` and 
@@ -698,7 +697,7 @@ class EM(IsEdi):
         >>> from watex.methods.em import EM 
         >>> edipath ='data/edis'
         >>> emObjs= EM().fit(edipath)
-        >>> phyx = EM.make2d (emObjs.ediObjs_, 'phaseyx')
+        >>> phyx = EM().make2d (emObjs.ediObjs_, 'phaseyx')
         >>> phyx 
         ... array([[ 26.42546593,  32.71066454,  30.9222746 ],
                [ 44.25990541,  40.77911136,  41.0339148 ],
@@ -1150,7 +1149,7 @@ class Processing (EM) :
         
 
     def tma (self,
-             data =str|List[EDIO]
+             data:str|List[EDIO]
     )-> NDArray[DType[float]] :
         
         """ A trimmed-moving-average filter to estimate average apparent
@@ -1315,7 +1314,7 @@ class Processing (EM) :
         return (self.res2d_ , self.phs2d_ , self.freqs_, self.c,
                 self.window_size, self.component, self.out) 
     
-    def ama (self, data =str|List[EDIO]
+    def ama (self, data:str|List[EDIO]
              )-> NDArray[DType[float]] :
         """ 
         Use an adaptive-moving-average filter to estimate average apparent 
@@ -1397,7 +1396,7 @@ class Processing (EM) :
         return zjc if self.out =='z' else rc 
 
     def flma (self, 
-              data =str|List[EDIO]
+              data:str|List[EDIO]
         )-> NDArray[DType[float]] :
         """ Use a fixed-length-moving-average filter to estimate average apparent
         resistivities at a single static-correction-reference frequency. 
@@ -1501,7 +1500,7 @@ class Processing (EM) :
         parameter based on the Z magnitude is the skew defined by Swift (1967) as
         follows:
         
-        .. math:: skew_{swift}= |Z_{xx} + Z_{yy} \frac{ Z_{xy} - Z-{yx}}| 
+        .. math:: skew_{swift}= |\frac{Z_{xx} + Z_{yy}}{ Z_{xy} - Z_{yx}}| 
             
         When the :math:`skew_{swift}`  is close to ``0.``, we assume a 1D or 2D model
         when the :math:`skew_{swift}` is greater than ``>=0.2``, we assume 3D local 
@@ -1513,7 +1512,7 @@ class Processing (EM) :
         
         .. math::
             
-            skew_{Bahr} & = & \sqrt{ |[D_1, S_2] -[S_1, D_2]|} \frac{|D_2|} \quad \text{where} 
+            skew_{Bahr} & = & \sqrt{ \frac{|[D_1, S_2] -[S_1, D_2]|}{|D_2|}} \quad \text{where} 
             
             S_1 & = & Z_{xx} + Z_{yy} \quad ; \quad  S_2 = Z_{xy} + Z_{yx} 
             D_1 & = &  Z_{xx} - Z_{yy} \quad ; \quad  D_2 = Z_{xy} - Z_{yx}
@@ -1524,8 +1523,8 @@ class Processing (EM) :
             
         .. math:: 
           
-            [C_1, C_2] & = & Im (C_2 C_1 ^{*})
-                       & = & R_e(C_1) Im(C_2) - R_e(C_2) Im(C_1)
+            [C_1, C_2] & = & \text{Im} C_2*C_1^{*}
+                       & = & \text{Re} C_1 * \text{Im}C_2  - R_e(C_2)* \text{Im}C_1
                         
         Indeed, :math:`skew_{Bahr}` measures the deviation from the symmetry condition
         through the phase differences between each pair of tensor elements,considering

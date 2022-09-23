@@ -29,7 +29,9 @@ from ..typing import (
     Iterable,
     Callable
 )
-
+from ..property import ( 
+    Config
+    )
 _logger=watexlog.get_watex_logger(__name__)
 
 
@@ -50,14 +52,16 @@ class QuickPlot :
         :mod:`watex.analysis.basics.SupervisedLearning` module 
         for data reading and sanitizing data before plotting.
         
-    *flow_classes*: list of classes values to convert the categorical 
-            features. default is [0., 1., 3.] which means: 
-                - 0 m3/h  --> FR0
-                - > 0 to 1 m3/h --> FR1
-                - > 1 to 3 m3/h --> FR2
-                - > 3 m3/h  --> FR3
+    *flow_classes*: list of float, 
+        list of classes values to convert the categorical features. Default is
+        [0., 1., 3.] which means:: 
+            
+            - 0 m3/h  --> FR0
+            - > 0 to 1 m3/h --> FR1
+            - > 1 to 3 m3/h --> FR2
+            - > 3 m3/h  --> FR3
 
-    Hold others optionnal informations: 
+    Hold others optionnal attributes infos: 
         
     ====================    ===================================================
     Key Words               Description        
@@ -95,17 +99,11 @@ class QuickPlot :
     ====================    ===================================================
     
     """
-    readFeafmt ={".csv":pd.read_csv, ".xlsx":pd.read_excel,
-                 ".json":pd.read_json,".html":pd.read_json,
-                 ".sql" : pd.read_sql
-                 } 
-    
-    def __init__(self, df=None, data_fn = None , **kwargs): 
+
+    def __init__(self,  **kwargs): 
         
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
-        self._df =df 
-        self._data_fn = data_fn 
         self._target_classes = kwargs.pop('target_labels',[0., 1., 3.])
         self.target_name= kwargs.pop('target_name', 'flow')
 
@@ -161,9 +159,6 @@ class QuickPlot :
         for key in kwargs.keys(): 
             setattr(self, key, kwargs[key])
 
-        if self._data_fn is not None: 
-            self.data_fn = self._data_fn 
-        
     @property 
     def df (self): 
         """ DataFrame of analysis. """
@@ -196,14 +191,32 @@ class QuickPlot :
         elif isinstance(self._data_fn, str) : 
             if os.path.isfile (self.data_fn):
                 self.gFname, exT=os.path.splitext(self.data_fn)
-                if exT in self.readFeafmt.keys(): self._fn =exT 
+                pcf = Config().parsers 
+                if exT in pcf.keys(): self._fn =exT 
                 else: self._fn ='?'
-                self.df = self.readFeafmt[exT](self._data_fn)
+                self.df = pcf[exT](self._data_fn)
                 self.gFname = os.path.basename(self.gFname)
         elif isinstance(self._data_fn, pd.DataFrame): 
             self.df = self._data_fn
 
 
+    def fit(self, df=None, data_fn = None ): 
+        """ fit function and set arguments and populate arguments  """
+        
+        if df is not None : 
+            self.df = df 
+        if data_fn is not None : 
+            self._data_fn = data_fn 
+
+        if self._data_fn is not None :
+            self.data_fn = self._data_fn  
+            
+        if self.df is None: 
+            raise TypeError("No data found!")
+            
+        return self 
+    
+        
     def hist_cat_distribution(self, df=None, data_fn =None, 
                               target_name : str =None,   **kws): 
         """
@@ -248,13 +261,7 @@ class QuickPlot :
         
         if savefig is not None : self.savefig = savefig
         
-        if df is not None : 
-            self.df = df 
-        if data_fn is not None : 
-            self._data_fn = data_fn 
-
-        if self._data_fn is not None :
-            self.data_fn = self._data_fn  
+       
         if target_name is not None: 
             self.target_name =target_name 
         

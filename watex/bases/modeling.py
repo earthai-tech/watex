@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Wed Jul  7 22:23:02 2021 hz
-# This module is part of the WATex modeling package, which is released under a
+# Copyright (c) 2021 LKouadio, Wed Jul  7 22:23:02 2021 
 # MIT- licence.
 
 from __future__ import ( 
@@ -21,7 +20,7 @@ from ..typing import (
     Optional,
     Union 
   )
-from ..sklearn import ( 
+from .._sklearn import ( 
     make_pipeline, 
     validation_curve, 
     RandomizedSearchCV, 
@@ -31,10 +30,22 @@ from ..sklearn import (
     confusion_matrix
     )
 from .processing import Processing 
-from ..tools.mlutils import formatModelScore 
+from ..tools.mlutils import ( 
+    formatModelScore 
+    )
+from ..decorators import ( 
+    pfi, 
+    visualize_valearn_curve, 
+    predplot, 
+    )
 from .._watexlog import watexlog 
-import  watex.exceptions as Wex 
-import  watex.decorators as deco
+from ..exceptions import ( 
+    EstimatorError, 
+    ArgumentError
+    )
+
+# import  watex.exceptions as Wex 
+# import  watex.decorators as deco
 
 
 _logger =watexlog().get_watex_logger(__name__)
@@ -280,7 +291,7 @@ class BaseModel:
         if self.auto:
             self.processor = self.pipelines 
 
-    @deco.visualize_valearn_curve(reason ='learn_curve',turn='off',
+    @visualize_valearn_curve(reason ='learn_curve',turn='off',
          plot_style='line', train_kws={'color':'blue', 'linewidth':2, 
                    'marker':'o','linestyle':'dashed', 'label':'Training set'}, 
         val_kws ={'color':'r', 'linewidth':3,'marker':'H',
@@ -365,7 +376,7 @@ class BaseModel:
                 warnings.warn(
                     'Estimator is not given! Set `preprocessor` to ``True``'
                     ' to get the default estimator curve.')
-                raise Wex.WATexError_Estimators(
+                raise EstimatorError(
                     'Estimator not found! Please provide your estimator model '
                     ' or trigger the default composite estimator by enabling '
                     '`preprocessor` to ``True``.')
@@ -481,7 +492,7 @@ class BaseModel:
         
         return self.best_score_ , self.best_params_ 
     
-    @deco.predPlot(turn='off', fig_size =(10, 5), ObsLine =('on','ypred'))
+    @predplot(turn='off', fig_size =(10, 5), ObsLine =('on','ypred'))
     def get_model_prediction(self, estimator:Callable[..., T]=None,
                                  X_test:Optional[T]=None , 
                                  y_test:Optional[T]=None, 
@@ -541,7 +552,7 @@ class BaseModel:
                                     pipelines = self.pipelines,
                                     estimator= self.estimator)
             else: 
-                raise Wex.WATexError_inputarguments(
+                raise ArgumentError(
                     "Could not find any data for reading!")
         
         self.y_pred= self.estimator.predict(self.X_test)
@@ -588,7 +599,7 @@ class BaseModel:
                 plt.ylabel('Importance of feature in %')
                 plt.show()
 
-    @deco.PFI(reason ='pfi', turn='off', fig_size= (10,3),savefig=None,
+    @pfi(reason ='pfi', turn='off', fig_size= (10,3),savefig=None,
               barh_kws= {'color':'blue','edgecolor':'k', 'linewidth':2},
               box_kws= {'vert':False}, dendro_kws={'leaf_rotation':90},
               fig_title= 'PFI diagram')    
@@ -680,7 +691,7 @@ class BaseModel:
                     'No data found ! Could not read modeling object.')
                 warnings.warn(
                     'No data found to read. Could not read the modeling object.')
-                raise Wex.WATexError_inputarguments(
+                raise ArgumentError(
                     "Could not find any data to read!")
                 
             elif (self._data_fn or self._df ) is not None: 
