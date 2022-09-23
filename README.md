@@ -62,6 +62,7 @@ Until now, the methods implemented are mainly adressed to a particular problem i
 If you use the software in any published work, I will much appreciate to cite the paper or the [DOI](https://doi.org/10.5281/zenodo.5529368) below:
 
 > *Kouadio, K. L., Kouame, L. N., Drissa, C., Mi, B., Kouamelan, K. S., Gnoleba, S. P. D., et al. (2022). Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resources Research, (May 2022). https://doi.org/10.1029/2021wr031623*
+
 > *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A machine learning research library in hydrogeophysic. https://doi.org/10.5281/zenodo.5529368*
 
 
