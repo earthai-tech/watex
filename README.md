@@ -1,6 +1,6 @@
 # 💧 _WATex_: A machine learning research package in hydrogeophysic
 
-### * Life is much better with potable water *
+### *Life is much better with potable water*
 
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
  [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
@@ -39,7 +39,7 @@ Until now, the methods implemented are mainly adressed to a particular problem i
     - Electromagnetic ( Audio-frequency Magnetotelluric )
     - Logging 
     
-- ** HydroGeology** 
+- **HydroGeology** 
 
     - 2D stratigraphic layer modeling  
     - Hydrogeology parameter calculations 
@@ -64,6 +64,7 @@ Until now, the methods implemented are mainly adressed to a particular problem i
 If you use the software in any published work, I will much appreciate to cite the paper or the [DOI](https://doi.org/10.5281/zenodo.5529368) below:
 
 > *Kouadio, K. L., Kouame, L. N., Drissa, C., Mi, B., Kouamelan, K. S., Gnoleba, S. P. D., et al. (2022). Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resources Research, (May 2022). https://doi.org/10.1029/2021wr031623*
+
 > *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A machine learning research library in hydrogeophysic. https://doi.org/10.5281/zenodo.5529368*
 
 
@@ -75,7 +76,7 @@ If you use the software in any published work, I will much appreciate to cite th
 1. Department of Geophysics, School of Geosciences & Info-physics, [Central South University](https://en.csu.edu.cn/), China.
 2. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny]( https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
 
-* Developer: [1](https://en.csu.edu.cn/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_LKouadio_](etanoyau@gmail.com),
+* Developer: [1](https://en.csu.edu.cn/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) - [_LKouadio_](etanoyau@gmail.com) <<etanoyau@gmail.com>>
 
 
 
