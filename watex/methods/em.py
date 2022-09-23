@@ -1049,17 +1049,9 @@ class Processing (EM) :
     
     Parameters 
     ----------
-    ediObjs: list  of  pycsamt.core.edi.Edi or mtpy.core.edi.Edi objects 
-        Collections of EDI-objects from `pycsamt`_ and `MTpy`_ packages
-        
-    self.res2d_ : np.ndarray, shape  (N, M)
-        2D dimensional resistivity data. N for number of frequency and 
-        M for number of stations/sites. No need to provide if ediObjs is given.
-        
-    phs2d: np.ndarray (N, M)
-        2D dimensional phase array of number of frequency x number of stations/sites, 
-        No need to provide if ediObjs is given.
-        
+    data: Path-like object or list  of  `pycsamt.core.edi.Edi` objects 
+        Collections of EDI-objects from `pycsamt`_ 
+    
     freqs: array-like, shape (N)
         Frequency array. It should be the complete frequency used during the 
         survey area. It can be get using the :func:`get_full_frequency` 
@@ -1131,11 +1123,11 @@ class Processing (EM) :
     
     def __init__(self,
                  window_size:int =5, 
-                 component:str  = 'xy', 
+                 component:str ='xy', 
                  mode: str ='same', 
-                 method:str  = 'slinear', 
-                 out:str  = 'srho', 
-                 c: str = 2, 
+                 method:str ='slinear', 
+                 out:str  ='srho', 
+                 c: str =2, 
                  **kws): 
         super().__init__(**kws)
         
@@ -1162,7 +1154,7 @@ class Processing (EM) :
         
         Parameters 
         ----------
-        ediObjs: list  of  pycsamt.core.edi.Edi or mtpy.core.edi.Edi objects 
+        data: path-like object or list  of  pycsamt.core.edi.Edi 
             Collections of EDI-objects from `pycsamt`_ 
     
         Returns 
@@ -1260,8 +1252,12 @@ class Processing (EM) :
                       ): 
         """ Asserts argument of |EMAP| filter and returns useful arguments.
         
-        :param args: Argument of EMAP filter. Refer to functions :func:`~.tma`, 
-            :func:`~.flma` and :func:`~.ama` documentation. 
+        data: path-like object or list  of  pycsamt.core.edi.Edi 
+            Collections of EDI-objects from `pycsamt`_ 
+            
+        :note: created to collect argument of EMAP filters. Refer to functions 
+        :func:`~.tma`, :func:`~.flma` and :func:`~.ama` documentation. 
+            
         """
         self.component= str(self.component).lower().strip() 
         self.out= str(self.out).lower().strip() 
@@ -1327,7 +1323,7 @@ class Processing (EM) :
         
         Parameters 
         ----------
-        ediObjs: list  of  pycsamt.core.edi.Edi 
+        data: path-like object or list  of  pycsamt.core.edi.Edi 
             Collections of EDI-objects from `pycsamt`_ 
             
         Returns 
@@ -1408,7 +1404,7 @@ class Processing (EM) :
         
         Parameters 
         ----------
-        ediObjs: list  of  pycsamt.core.edi.Edi 
+        data: path-like object or list  of  pycsamt.core.edi.Edi 
             Collections of EDI-objects from `pycsamt`_ 
    
         Returns 
@@ -1515,6 +1511,7 @@ class Processing (EM) :
             skew_{Bahr} & = & \sqrt{ \frac{|[D_1, S_2] -[S_1, D_2]|}{|D_2|}} \quad \text{where} 
             
             S_1 & = & Z_{xx} + Z_{yy} \quad ; \quad  S_2 = Z_{xy} + Z_{yx} 
+            
             D_1 & = &  Z_{xx} - Z_{yy} \quad ; \quad  D_2 = Z_{xy} - Z_{yx}
             
         Note that The phase differences between two complex numbers :math:`C_1` and 
@@ -1524,7 +1521,8 @@ class Processing (EM) :
         .. math:: 
           
             [C_1, C_2] & = & \text{Im} C_2*C_1^{*}
-                       & = & \text{Re} C_1 * \text{Im}C_2  - R_e(C_2)* \text{Im}C_1
+            
+            [C_1, C_2]  & = & \text{Re} C_1 * \text{Im}C_2  - R_e(C_2)* \text{Im}C_1
                         
         Indeed, :math:`skew_{Bahr}` measures the deviation from the symmetry condition
         through the phase differences between each pair of tensor elements,considering

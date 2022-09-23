@@ -1,6 +1,6 @@
 # 💧 _WATex_: A machine learning research package in hydrogeophysic
 
-### * Life is much better with potable water *
+### *Life is much better with potable water*
 
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
  [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
