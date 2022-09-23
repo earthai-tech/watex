@@ -9,6 +9,8 @@
 `A machine learning research for hydrogeophysic` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+**`Life is much better with potable water`**
+
 `WATex`_ is an open-source package entirely written in Python to bring a piece of solution 
 in the field of groundwater exploration (GWE). It uses the  ML learning methods to compute electrical and logging features to predict 
 to predict the flow rate and also the hydrogeological parameters such as water content (water inflow), the medium permeability. 
@@ -18,8 +20,8 @@ All modules and packages are written to intend solving real-engineering problems
 .. _WATex: https://github.com/WEgeophysics/watex/
 
 
-Development progress of `WATex`  
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+`WATex's` development 
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 `WATex`_ works with the learning methods enumerated below:
 
