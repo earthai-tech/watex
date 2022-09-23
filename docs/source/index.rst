@@ -9,7 +9,7 @@
 `A machine learning research for hydrogeophysic` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**`Life is much better with potable water`**
+***Life is much better with potable water***
 
 `WATex`_ is an open-source package entirely written in Python to bring a piece of solution 
 in the field of groundwater exploration (GWE). It uses the  ML learning methods to compute electrical and logging features to predict 
