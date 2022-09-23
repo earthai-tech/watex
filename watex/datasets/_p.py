@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep  7 16:47:58 2021
-
-@author: @Daniel03
-
 Data default preparation 
 =========================
 
 This module is a part of case history proccessing in Bagoue Area. It is 
 not a perfect processing by give some steps of data preparing and 
 pipeline creation.
-    
+
+Created on Tue Sep  7 16:47:58 2021
+@author: @Daniel03    
 """
 # import modules 
 import numpy as np 

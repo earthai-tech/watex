@@ -31,5 +31,13 @@
 .. _Water triple point: https://en.wikipedia.org/wiki/Properties_of_water#/media/File:Phase_diagram_of_water.svg
 .. _WATex: https://github.com/WEgeophysics/watex/
 
+.. _pycsamt: https://github.com/WEgeophysics/pycsamt
+.. |MT| replace:: Magnetetolluric 
+.. |AMT| replace:: Audio-Magnetotellurics 
+.. |CSAMT| replace:: Controlled Source |AMT| 
+.. |NSAMT| replace:: Natural Source |AMT| 
+.. |EM| replace:: electromagnetic
+.. |EMAP| replace:: |EM| array profiling
+
 """
 

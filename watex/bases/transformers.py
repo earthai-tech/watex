@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd 
 # from pandas.api.types import is_integer_dtype
 
-from ..sklearn import ( 
+from .._sklearn import ( 
     StratifiedShuffleSplit, 
     train_test_split,
     BaseEstimator,

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 Kouadio K. Laurent, Wed Sep 15 11:39:43 2021 
-# This module is a set of datasets packages
 # released under a MIT- licence.
 import warnings
 
@@ -179,6 +178,7 @@ Returns
         using Ordianal Encoder.  
     `_pipeline`: the default pipeline. 
 """
+
 
 
 

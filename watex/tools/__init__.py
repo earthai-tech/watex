@@ -8,7 +8,8 @@ from .coreutils import (
     plotAnomaly, 
     vesSelector, 
     erpSelector, 
-    defineConductiveZone, 
+    defineConductiveZone,
+    makeCoords, 
     )
 from .exmath import ( 
     type_,
@@ -20,7 +21,14 @@ from .exmath import (
     invertVES, 
     vesDataOperator, 
     scalePosition,
+    rhoa2z, 
+    z2rhoa, 
+    interpolate1d, 
+    interpolate2d,
+    scaley, 
+    fittensor, 
     )
+
 from ..decorators import gdal_data_check
 
 HAS_GDAL = gdal_data_check(None)._gdal_data_found
@@ -35,7 +43,6 @@ else:
     import osgeo
     if hasattr(osgeo, '__version__') and int(osgeo.__version__[0]) >= 3:
         NEW_GDAL = True
-
 
 # Import pyproj and set ESPG_DICT 
 EPSG_DICT = {}
@@ -59,13 +66,6 @@ try:
             pass  
    
 except Exception:
-    # Failed to load EPSG codes and corresponding proj4 projections strings
-    # from pyproj.
-    # Since version 1.9.5 the epsg file stored in pyproj_datadir has been
-    #removed and replaced by 'proj.db', which is stored in a different folder.
-    # Since the underlying proj4 projection strings haven't changed, we 
-    # simply load a local copy of these mappings to ensure backward
-    # compatibility.
     path = os.path.dirname(os.path.abspath(__file__))
     epsg_dict_fn = os.path.join(path, 'epsg.npy')
 

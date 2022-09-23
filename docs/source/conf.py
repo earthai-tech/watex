@@ -12,16 +12,16 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('../watex'))
+# sys.path.insert(0, os.path.abspath('..'))
+# sys.path.insert(0, os.path.abspath('../..'))
+# sys.path.insert(0, os.path.abspath('../watex'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'WATex'
-copyright = '2022, Kouadio K. Laurent'
-author = 'DanielMarie'
+copyright = '2022, LKouadio'
+author = 'LKouadio'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1'

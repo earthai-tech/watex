@@ -1,5 +1,5 @@
-# 💧 WATex: A Machine Learning Research Toolbox in Hydrogeophysic
-
+# 💧 _WATex_: A machine learning research package in hydrogeophysic
+S
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
  [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
  [![Requirements Status](https://requires.io/github/WEgeophysics/watex/requirements.svg?branch=master)](https://requires.io/github/WEgeophysics/watex/requirements/?branch=master)
@@ -12,65 +12,69 @@
 
 ##  Goals and Missions 
 
-**WATex**, for short, is  *A Machine Learning Research Toolbox in Hydrogeophysic*. 
- It is entirely written in Python with supplemental materials implemented in Jupyter notebook.
+**_WATex_** is entirely written in Python with supplemental materials implemented in Jupyter notebook.
   The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** 
    and secondly to participate in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) achievement.
-   It encompasses different geophysical methods from Electrical to Electromagnetic  
-    methods targeting the field of water explorations. Later, it expects to implement the near surface 
-    seismic (e.g., for cavities groundwater detection) and the induced polarisation methods that is somewhat 
-    used in the hot water exploration. Furthermore, it is also intend to include pure Hydrogeology methods. 
+   It encompasses different methods: from geophysical (Electrical to Electromagnetic) to hydrogeology (drilling and parameters calculation) methods 
+   mainly focusing on the field of groundwater explorations. The use of machine learning methods in the hydrogeophysic parameter predictions 
+   such as the DC-elctrical and hydrogeology parameters will allow to right locate the place for the
+   drilling operations and also to predict the water content in the well. This will minimize the risk of unsucessfull drillings and the hugely reduce the cost 
+   of the hydrogeology parameter collections.  
  
 ## Methods Implemented
 
-Until now, the methods implemented are adressed to a particular problem in water exploration field. 
+Until now, the methods implemented are mainly adressed to a particular problem in water exploration field. These are:
 
 - **Learning** 
  
     -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/); Neighbors: **KNN** ; Trees: **DTC**; Artificial neural networks **ANN**; 
-    -  Ensemble methods (RandomForests, Bagging and Pasting, Boosting);  Apriori;
+    -  Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking);  Apriori;
     -  Kernel Principal Component Analysis **k-PCA**; t-distributed Stochastic Neighbor Embedding **t-SNE**; Randomized PCA; Locally Linear Embedding (**LLE**)
      
 - **Geophysical** 
 
-    - Electrical ( Electrical Resistivity Profiling;  Vertical Electrical Sounding ) 
-    - Electromagnetics ( Controlled Source Audio-frequency Magnetotelluric )
+    - Electrical (DC- Resistivity Profiling;  DC- Electrical Sounding ) 
+    - Electromagnetic ( Audio-frequency Magnetotelluric )
+    - Logging 
+    
+- ** HydroGeology** 
+
+    - 2D stratigraphic layer modeling  
+    - Hydrogeology parameter calculations 
+    - Drillings operations and boreholes ( in progress)
+
 
 ## Documentation 
 
-* API Documentation: https://watex.readthedocs.io/en/latest/
-* Home page: https://github.com/WEgeophysics/watex/wiki
-* Codes Snippets: https://github.com/WEgeophysics/watex/wiki/Some-functionalities
-* Case history: Implemented in `Bagoue` region in north part of [Cote d'Ivoire](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
-         
+* [API Documentation](https://watex.readthedocs.io/en/latest/)
+* [Home page](https://github.com/WEgeophysics/watex/wiki)
+* [Case history using _WATex_](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
 
+         
 ## Licence 
 
-WATex is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
+**_WATex_** is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
 
 
 ## Citations
 
-If you use WATex in any published work, consider citing the [DOI](https://doi.org/10.5281/zenodo.6657013) below:
+
+If you use the software in any published work, I will much appreciate to cite the paper or the [DOI](https://doi.org/10.5281/zenodo.5529368) below:
 
 > *Kouadio, K. L., Kouame, L. N., Drissa, C., Mi, B., Kouamelan, K. S., Gnoleba, S. P. D., et al. (2022). Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resources Research, (May 2022). https://doi.org/10.1029/2021wr031623*
+> *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A machine learning research library in hydrogeophysic. https://doi.org/10.5281/zenodo.5529368*
 
-> *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A Machine Learning Research Toolbox in Hydrogeophysic. https://doi.org/10.5281/zenodo.6657013*
 
 ## System requirements
 * Python 3.8+ 
 
 ## Contributors
   
-1. Key Laboratory of Geoscience Big Data and Deep Resource of Zhejiang Province , School of Earth Sciences, Zhejiang University, China
-2. Equipe de Recherche Géophysique Appliquée, Laboratoire de Géologie Ressources Minérales et Energétiques, UFR des Sciences de la Terre et des Ressources Minières, Université Félix Houphouët-Boigny, Cote d'Ivoire. 
+1. Department of Geophysics, School of Geosciences & Info-physics, [Central South University](https://en.csu.edu.cn/), China.
+2. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny]( https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
 
-* Developer: [1](http://www.zju.edu.cn/english/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_@DanielMarie_](etanoyau@gmail.com),
-* Contributors: 
-    - [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_Loukou Kouame Nicolas_](moayek@gmail.com)
-    - [1](http://www.zju.edu.cn/english/) [_Binbin MI_](mibinbin@zju.edu.cn)
-    - [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_Serge Kouamelan Kouamelan_](kouamelan2006@yahoo.fr)
-    
+* Developer: [1](https://en.csu.edu.cn/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) [_LKouadio_](etanoyau@gmail.com),
+
 
 
 

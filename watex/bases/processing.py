@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, Wed Jul 14 20:00:26 2021
+# Copyright (c) 2021 LKouadio, Wed Jul 14 20:00:26 2021
 # MIT- licence.
 
 from __future__ import (
@@ -13,7 +13,7 @@ import inspect
 import numpy as np 
 import pandas as pd 
 
-from ..sklearn import ( 
+from .._sklearn import ( 
      DecisionTreeClassifier, 
      KNeighborsClassifier, 
      OneHotEncoder, 
@@ -66,7 +66,7 @@ d_estimators_={'dtc':DecisionTreeClassifier,
                 'knn':KNeighborsClassifier 
                  }
 if _HAS_ENSEMBLE_ :
-    from ..sklearn import skl_ensemble_
+    from .._sklearn import skl_ensemble_
     
     for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble_): 
         d_estimators_[es_]=esf_ 
