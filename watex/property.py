@@ -901,7 +901,7 @@ class P:
     the packages. Its was used for assertion, comparison etceteara. These are 
     enumerated below into a property objects.
 
-    .. |ERP| replace: Electrical resistivity profiling 
+    .. |ERP| replace:: Electrical resistivity profiling 
     
     Parameters  
     -----------

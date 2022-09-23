@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from ..typing import (
-    Array 
+    ArrayLike 
 )
 from .._watexlog import watexlog  
 from ..exceptions import ( 
@@ -308,40 +308,36 @@ class Structural(Base) :
                   
     Holds the following information:
         
-    ==========================  ===============  ==============================
+    ==========================  ==========   ==================================
     Attributes                  Type             Explanation
-    ==========================  ===============  ==============================
-    boudin_axis                 geos_obj         boudin    
-    fold_axial_plane            geos_obj         axial plam of structural fold.
-    banding_gneissosity         geos_obj         gneissossity of boudin plan  
-    s_fabric                    geos_obj         fabric plan
-    fault_plane                 geos_obj         fault plan 
-    fracture_joint_set          geos_obj         fracture joint 
-    undifferentiated_plane      geos_obj         unnamed geological structure 
-    sharp_contact               geos_obj         sharp contact `various 
-                                                 discrepancy` 
-                                                 contact `stratigraphy 
-                                                 discrepancy`  
-                                                 fracture or fault discrepancies
-    ==========================  ===============  ===============================
+    ==========================  ==========   ==================================
+    boudin_axis                 geos_obj      boudin    
+    fold_axial_plane            geos_obj      axial plam of structural fold.
+    banding_gneissosity         geos_obj      gneissossity of boudin plan  
+    s_fabric                    geos_obj      fabric plan
+    fault_plane                 geos_obj      fault plan 
+    fracture_joint_set          geos_obj      fracture joint 
+    undifferentiated_plane      geos_obj      unnamed geological structure 
+    sharp_contact               geos_obj      sharp contact `various discrepancy` 
+                                              contact `stratigraphy discrepancy`  
+                                              fracture or fault discrepancies
+    ==========================  =========    ==================================
 
     More attributes can be added by inputing a key word dictionary
 
     :Example: 
         
     >>> from watex.geology import Structural 
-    >>> slobj=Structural() 
-    ... slobj.fit() 
-    >>> 
-    >>> slobj.boudin_axis.code_ 
-    ... 
-    >>> slobj.boudin_axis.name_
-    ... 
-    >>> structural.boudin_axis.color_
-    ... 
+    >>> s=Structural().fit() 
+    >>> s.boudin_axis.code_ 
+    ... 'lsb'
+    >>> s.boudin_axis.name_
+    ... 'Boudin Axis'
+    >>> s.boudin_axis.color_
+    ... 'R128GB'
         
     """  
-    _logger.info('Set Structural main geological informations. ')
+    _logger.info('Set structural main geological informations. ')
     
     def __init__(self, configfile =None, **kwds):
         super().__init__(**kwds)
@@ -356,12 +352,17 @@ class Structural(Base) :
     
     def fit(self, configfile= None , **kwd): 
         """ Configure the structural data and set each object as attributes """
+        is_prop=False 
         if configfile is not None: 
             self.configfile = configfile 
         if self.configfile is None: 
             self.configfile =  self.configfile = os.path.join(
                  'watex/etc', 'agso_stcodes'.upper() + '.csv' )
+            # hide configfile if the one of the package is used  
+            is_prop =True  
         setstructures(self, configfile =self.configfile,  **kwd)
+        
+        self.configfile = None if is_prop else self.configfile  
         
         return self 
         

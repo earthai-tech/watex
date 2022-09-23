@@ -883,7 +883,7 @@ class ERP :
     
     @property 
     def best_power (self):
-        """Get the power from the select :attr:`~.ERP.select_best_point_`. """
+        """Get the power from the select :attr:`~.ERP.select_best_point`. """
         self._power =compute_power(
             posMinMax=self.aBestInfos[self._best_key_point][2])
         
@@ -894,7 +894,7 @@ class ERP :
         return self._power 
     @property 
     def best_magnitude(self): 
-        """ Get the magnitude of the select :attr:`~.ERP.select_best_point_`."""
+        """ Get the magnitude of the select :attr:`~.ERP.select_best_point`."""
         
         self._magnitude =compute_magnitude(
             rhoa_max=self.rhoa_max,rhoa_min=self.select_best_value_)

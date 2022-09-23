@@ -11,7 +11,7 @@ from pprint import pprint
 import numpy as np
 import pandas as pd 
 
-from ..sklearn import  (
+from .._sklearn import  (
     Pipeline,
     FeatureUnion, 
     SimpleImputer, 

@@ -11,8 +11,6 @@ from ..typing import (
     Tuple,
     List,
     Optional,
-    TypeVar,
-    Iterable ,
     F, 
     ArrayLike, 
     NDArray, 
@@ -28,17 +26,13 @@ from pprint import pprint
 import pandas as pd 
 import numpy as np 
 
-from ..sklearn import (
+from .._sklearn import (
      mean_squared_error,
      cross_val_score, 
      GridSearchCV , 
      RandomizedSearchCV
 )
 from .._watexlog import watexlog
-
-T= TypeVar('T')
-KT=TypeVar('KT')
-VT=TypeVar('VT')
 
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -335,7 +329,7 @@ class GridSearch:
                
     def __init__(self,
                  base_estimator:F,
-                 grid_params:Iterable[T],
+                 grid_params:Dict[str,Any],
                  cv:int =4,
                  kind:str ='GridSearchCV',
                  scoring:str = 'neg_mean_squared_error',

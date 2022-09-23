@@ -745,7 +745,7 @@ class visualize_valearn_curve :
         
         return viz_val_decorated
     
-class predPlot: 
+class predplot: 
     """ 
     Decorator to plot the prediction.
      
@@ -758,7 +758,7 @@ class predPlot:
         Could be the keywords arguments for `matplotlib.pyplot`
         library 
                 
-    Author: K. Laurent alias @Daniel03
+    Author: LKouadio alias @Daniel
     Date: 23/07/2021
     """
     def __init__(self, turn='off', **kws): 
@@ -823,7 +823,7 @@ class predPlot:
         return pred_decorated
 
 
-class PFI: 
+class pfi: 
     """ 
     Decorator to plot Permutation future importance. 
     

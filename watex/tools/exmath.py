@@ -638,7 +638,8 @@ def invertVES (data: DataFrame[DType[float|int]] = None,
     
     pass 
 
-    
+
+@refAppender(__doc__)    
 def ohmicArea(
         data: DataFrame[DType[float|int]] = None, 
         ohmSkey: float = 45., 
@@ -777,14 +778,7 @@ def ohmicArea(
         de bassins versants subsaheliens du socle précambrien d’Afrique de l’Ouest:
         hydrostructurale hydrodynamique, hydrochimie et isotopie des aquifères discontinus
         de sillons et aires gran. In Thèse de Doctorat (IOS journa, p. 493). Abidjan, Cote d'Ivoire
-        
-    .. _Kouadio et al 2022: https://doi.org/10.1029/2021WR031623 or refer to 
-        the paper `FlowRatePredictionWithSVMs <https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623>`_
-    .. _Koefoed, O. (1970): https://doi.org/10.1111/j.1365-2478.1970.tb02129.x
-    .. _Koefoed, O. (1976): https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
-    .. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
-    .. |VES| replace: Vertical Electrical Sounding 
-    
+ 
     """
     
     objkeys = ( 'ohms','none','eval', 'area', 'ohmic','true',
@@ -2772,13 +2766,14 @@ def fittensor(
     :param return: new Z filled by invalid value `NaN` where the frequency is 
         missing in the data. 
     
+    
     Example::
     >>> import numpy as np 
-    >>> from watex.tools.exmath import fit_tensor
+    >>> from watex.tools.exmath import fittensor
     >>> refreq = np.linspace(7e7, 1e0, 20) # 20 frequencies as reference
     >>> freq_ = np.hstack ((refreq.copy()[:7], refreq.copy()[12:] )) 
     >>> z = np.random.randn(len(freq_)) *10 # assume length of  freq as 
-    >>>                 # the same like the tensor Z value 
+    ...                 # the same like the tensor Z value 
     >>> zn  = fit_tensor (refreq, freq_, z)
     >>> z # some frequency values are missing but not visible. 
     ...array([-23.23448367,   2.93185982,  10.81194723, -12.46326732,

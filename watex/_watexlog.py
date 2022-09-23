@@ -45,16 +45,17 @@ class watexlog:
                 watexlog().set_logger_output()
             
         elif configfile.endswith(".yaml") or configfile.endswith(".yml") :
-            this_module_path=os.path.abspath(__file__)
+            this_module_file=os.path.abspath(__file__)
     
-            print('module path', this_module_path)
+            print('yaml config file', this_module_file)
             
-            logging.info ("this module is : %s", this_module_path)
+            logging.info ("this module is : %s", this_module_file)
             print('os.path.dirname(this_module_path)=',
-                  os.path.dirname(this_module_path))
+                  os.path.dirname(this_module_file))
 
-            yaml_path=os.path.join(os.path.dirname(this_module_path),
+            yaml_path=os.path.join(os.path.dirname(this_module_file),
                                    configfile)
+    
             print("yaml_path", yaml_path)
             
             logging.info('Effective yaml configuration file %s', yaml_path)

@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd 
 
 from .._watexlog import watexlog
-from ..sklearn import ( 
+from .._sklearn import ( 
     train_test_split , 
     StratifiedShuffleSplit, 
     confusion_matrix, 

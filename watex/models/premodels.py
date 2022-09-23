@@ -27,7 +27,7 @@ from .._watexlog import watexlog
 from ..tools.mlutils import (
     controlExistingEstimator 
     )
-from ..sklearn import ( 
+from .._sklearn import ( 
         _pMODELS 
 
     )
