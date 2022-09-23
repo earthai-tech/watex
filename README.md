@@ -37,7 +37,7 @@ Until now, the methods implemented are mainly adressed to a particular problem i
     - Electromagnetic ( Audio-frequency Magnetotelluric )
     - Logging 
     
-- ** HydroGeology** 
+- **HydroGeology** 
 
     - 2D stratigraphic layer modeling  
     - Hydrogeology parameter calculations 
