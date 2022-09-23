@@ -3,7 +3,7 @@ import os
 import shutil
 # import sys 
 
-from watex.tools._watexlog import watexlog
+from watex._watexlog import watexlog
 from watex.datasets import fetch_data as BAGOUE_DATASET
 
 # sys.path.insert(0, os.path.abspath('..'))
@@ -57,5 +57,4 @@ DATA_EXTRA = os.path.join(ERP_DATA_DIR, 'testunsafedata_extra.csv')
 
 # set test logging configure
 watexlog.load_configure(
-    os.path.join(os.path.abspath('./watex'),'tools', 
-                 "wlog.yml"))
+    os.path.join(os.path.abspath('./watex'), "wlog.yml"))

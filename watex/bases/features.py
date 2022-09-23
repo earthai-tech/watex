@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Kouadio K. Laurent, zju-ufhb
-# This module is part of the WATex core package, which is released under a
+# Copyright (c) 2021 LKouadio
 # MIT- licence.
 
 from __future__ import print_function 
 
 import os
 import re 
+import xml.etree.ElementTree as ET
 import pandas as pd 
 import numpy as np 
-import xml.etree.ElementTree as ET
 
 from ..tools.funcutils import  ( 
     savepath_ , 
@@ -22,24 +21,30 @@ from ..typing import (
     T
     )
 
-from .basis import  ( 
+from .base import  ( 
     exportdf, 
     ) 
-
-from ..decorators import writef 
-import  watex.exceptions as Wex
-import watex.tools.gistools as gisf 
+from ..property import ( 
+    Config 
+    )
+from ..decorators import ( 
+    writef
+    ) 
+from ..exceptions import ( 
+    FileHandlingError, 
+    FeatureError, 
+    ArgumentError, 
+    ParameterNumberError, 
+   )
+from ..tools.gistools import ( 
+    ll_to_utm, 
+    project_point_ll2utm
+    
+    )
 from watex._watexlog import watexlog 
 
 _logger =watexlog().get_watex_logger(__name__)
 
-PD_READ_FEATURES={
-    ".csv":pd.read_csv, 
-     ".xlsx":pd.read_excel,
-     ".json":pd.read_json,
-     ".html":pd.read_json,
-     ".sql" : pd.read_sql
-} 
 
 __docformat__='restructuredtext'
 
@@ -110,13 +115,6 @@ class GeoFeatures:
      
     """
     
-    readFeafmt ={
-                ".csv":pd.read_csv, 
-                 ".xlsx":pd.read_excel,
-                 ".json":pd.read_json,
-                 ".html":pd.read_json,
-                 ".sql" : pd.read_sql
-                 }  
     featureLabels = [
                     'id', 
                     'east',
@@ -160,16 +158,16 @@ class GeoFeatures:
     def fn(self, features_fn) :
         """ Get the Features file and  seek for pd.Core methods 
         construction."""
-        
+        cpl = Config().parsers
         if not os.path.isfile(features_fn): 
-            raise Wex.FileHandlingError (
+            raise FileHandlingError (
                 'No file detected. Could read `{0}`,`{1}`,`{2}`,'
-                '`{3}` and `{4}`files.'.format(*list(self.readFeafmt.keys())))
+                '`{3}` and `{4}`files.'.format(*list(cpl.keys())))
         
         self.gFname, exT=os.path.splitext(features_fn)
-        if exT in self.readFeafmt.keys(): self._fn =exT 
+        if exT in cpl.keys(): self._fn =exT 
         else: self._fn ='?'
-        self._df = self.readFeafmt[exT](features_fn)
+        self._df = cpl[exT](features_fn)
         self.gFname = os.path.basename(self.gFname)
  
     def _readFeatures_(self, features_fn =None, ErpColObjs=None , vesObjs=None,
@@ -194,7 +192,7 @@ class GeoFeatures:
                 fimp =1        
                 
         if self.features_fn is None and fimp ==1:
-            raise Wex.WATexError_geoFeatures(
+            raise FeatureError (
                 'Features file is not given. Please provide specific'
                 ' objects from`erp`, `ves`, `geology` and `borehole` data'
                 'Call each specific collection class to build each'
@@ -217,13 +215,13 @@ class GeoFeatures:
                 self._northing =np.zeros_like (self._easting)
                 for ii in range(len(self._northing)):
                     try : 
-                        self.utm_zone, utm_easting, utm_northing = gisf.ll_to_utm(
+                        self.utm_zone, utm_easting, utm_northing = ll_to_utm(
                                         reference_ellipsoid=23, 
                                         lat=self.df['lon'].to_numpy()[ii],
                                         lon = self.df['lat'].to_numpy()[ii])
                     except : 
                         utm_easting, utm_northing, \
-                            self.utm_zone= gisf.project_point_ll2utm(
+                            self.utm_zone= project_point_ll2utm(
                             lat=self.df['lat'].to_numpy()[ii],
                             lon = self.df['lon'].to_numpy()[ii])
                         
@@ -273,7 +271,7 @@ class GeoFeatures:
                                 self.vesObjs.vesdf['id'] ]]
             
             if all(temlen) is False:
-                raise Wex.WATexError_geoFeatures(
+                raise FeatureError  (
                     '`ERP`, `VES`, `Geology` and `Borehole` Features must '
                     'have the same length. You  give <{0},{1},{2}, and '
                     '{3} respectively.'.format(*temlen))
@@ -415,9 +413,8 @@ class GeoFeatures:
         
         """
         if not os.path.isfile(erp_fn):
-            raise Wex.WATexError_file_handling('{} is not a file. '
-                                               'Please provide a right file !'
-                                               .format(erp_fn))
+            raise FileHandlingError (
+                '{} is not a file. Please provide a right file !'.format(erp_fn))
         # with open(erp_fn, 'r') as fcsv: 
         #     csvData = fcsv.readlines()
             
@@ -470,9 +467,9 @@ class GeoFeatures:
             self.erp_data =data_fn 
         
         if not os.path.isfile(self.erp_data): 
-            raise Wex.WATexError_file_handling('{} is not a file. '
-                                               'Please provide a right file !'
-                                               .format(self.erp_data))
+            raise FileHandlingError(
+                '{} is not a file. Please provide a '
+                'right file !'.format(self.erp_data))
         ex_file = os.path.splitext(self.erp_data)[1] 
         if not ex_file in self.dataType.keys(): 
             pass 
@@ -507,7 +504,7 @@ class GeoFeatures:
                 
                 new_id [ii] ='e{0:07}'.format(ii+1)
             else: 
-                raise Wex.WATexError_geoFeatures(
+                raise FeatureError(
                     "Survey location's name must be the same for `erp`, "
                     ' `ves` and `geol` but you are given '
                     '<{0}, {1}, {2}> respectively. Please rename'
@@ -739,7 +736,7 @@ class FeatureInspection:
     def target(self, targ): 
         """ Chech the target and must be in ``str``."""
         if not isinstance(targ, str): 
-            raise Wex.WATexError_geoFeatures(
+            raise  FeatureError(
                 'Features `target` must be a str'
                 ' value not `{}`.'.format(type(targ)))
         self._target =str(targ)
@@ -764,7 +761,7 @@ class FeatureInspection:
                         *list(self._flow_classes)))
                 
             else: 
-                raise Wex.WATexError_inputarguments(mess)
+                raise ArgumentError(mess)
    
         else: 
             self._logging.info('Flow classes is successfully set.')
@@ -779,17 +776,17 @@ class FeatureInspection:
     def fn(self, features_fn) :
         """ Get the Features file and  seek for pd.Core methods 
         construction."""
-        
+        cpl = Config().parsers
         if not os.path.isfile(features_fn): 
-            raise Wex.FileHandlingError(
+            raise FileHandlingError(
                 'No file detected. Could read `{0}`,`{1}`,`{2}`,'
-                '`{3}` and `{4}`files.'.format(*list(PD_READ_FEATURES.keys())))
+                '`{3}` and `{4}`files.'.format(*list(cpl.keys() )))
         
         self.gFname, exT=os.path.splitext(features_fn)
-        if exT in PD_READ_FEATURES.keys(): self._fn =exT 
+        if exT in cpl.key() : self._fn =exT 
         else: self._fn ='?'
         
-        self._df = PD_READ_FEATURES[exT](features_fn)
+        self._df = cpl[exT](features_fn)
     
         self.gFname = os.path.basename(self.gFname)
     
@@ -937,7 +934,7 @@ class FeatureInspection:
             if isinstance(drop_columns, (list, np.ndarray)): 
                 if  len(set(list(self._df.columns)).intersection(
                         set(drop_columns))) !=len(drop_columns):
-                    raise Wex.WATexError_parameter_number(
+                    raise  ParameterNumberError (
                         'Drop values are not found on dataFrame columns. '
                         'Please provided the right names for droping.')
             self._drop_columns = list(drop_columns) 

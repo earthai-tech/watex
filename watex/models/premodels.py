@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+# Created on Tue May 17 11:30:51 2022
+#       Author: LKouadio <etanoyau@gmail.com>
+#       Licence: MIT
+
 import warnings 
 
 from ..decorators import refAppender 
@@ -11,9 +15,8 @@ from ..tools.funcutils import (
 
 from ..typing import (  
     Optional, 
-    Array, 
+    ArrayLike, 
     NDArray, 
-   
     )
 from ..bases import fetchModel 
 from ..exceptions import (
@@ -21,11 +24,10 @@ from ..exceptions import (
     FitError 
     )
 from .._watexlog import watexlog 
-
 from ..tools.mlutils import (
     controlExistingEstimator 
     )
-from ..sklearn import ( 
+from .._sklearn import ( 
         _pMODELS 
 
     )
@@ -57,7 +59,7 @@ class pModels :
         of 04 kernels such as the ``rbf`` for radial basis function , the 
         ``poly`` for polynomial , ``sig`` for sigmoid and ``lin`` for linear. 
         Default is ``rbf``. Each kernel is a model attributes of SVM class. 
-        For instance to retrived the pretrained model with kernel = 'poly', we 
+        For instance to retreived the pretrained model with kernel = 'poly', we 
         must use after fitting :class:`.pModels` class:: 
             
             >>> pModels(model='svm').fit().SVM.poly.best_estimator_ 
@@ -77,7 +79,6 @@ class pModels :
             >>> pModels(model='svm').fit().SVM.rbf.best_estimator_ 
             ...  SVC(C=2.0, coef0=0, degree=1, gamma=0.125)
             
-        
     target: str 
         Two type of classification is predicted. The binary classification ``bin``
         and the multiclass classification ``multi``. default is ``bin``. When  
@@ -149,7 +150,7 @@ class pModels :
         self.kernel = kernel 
         
         
-    def fit (self, X:NDArray = None , y: Array = None ): 
+    def fit (self, X:NDArray = None , y: ArrayLike = None ): 
         """ Fit the pretrained model data and populate its corresponding 
         attributes. 
         
@@ -347,12 +348,12 @@ Note
 To fetched the pretrained model with parameter (out-of-bag ), need to use the 
 '_' at the end of the model name like 'ExtraTrees_'. 
 However the pretrained model of Support Vector Machines  with underscore means 
-were used to fine tuned the multiclassification targets. 
+the fine tuned multiclassification targets not 'out-of-bag' parameters. 
 
 """
 #-- Fetch the pretrained model data 
 try : 
-    _pDATA,  = fetchModel ('./watex/p.models.pkl', default = False )
+    _pDATA,  = fetchModel ('./watex/etc/p.models.pkl', default = False )
 except: 
     # set to None if something goes wrong 
     _pDATA = None 

@@ -7,10 +7,6 @@
 `WATex`_ property objects 
 =========================
 
-.. _WATex: https://github.com/WEgeophysics/watex/
-.. |ERP| replace:: Electrical resistivity profiling 
-.. |VES| replace:: Vertical Electrical Sounding 
-
 **Water**: Base class module. It contains all the water properties usefull 
     for pure hydrogeological module writting. Instanciated the class should 
     raise an error, however, its special attributes can be used by the child 
@@ -90,20 +86,39 @@
     :class:`~.methods.electrical.VerticalSounding`. It is composed of the 
     details of geolocalisation of the survey area and the array configuration. 
     It expects to hold other attributes as the development is still ongoing.
-      
+     
+**IsEdi**: Is an abstract Base class for control the valid EDI. It is also 
+    used to ckeck whether object is an instance of EDI object. For instance:: 
+    
+        >>> import pycsamt
+        >>> from watex.property import IsEdi 
+        >>> from watex.methods.em import EM
+        >>> IsEdi.register (pycsamt.core.edi.Edi )
+        >>> ediObj= EM().fit(r'data/edis').ediObjs_ [0] # one edi-file for assertion 
+        >>> isinstance (ediObj, IsEdi)
+        ... True 
+ 
+
+.. _WATex: https://github.com/WEgeophysics/watex/
+.. |ERP| replace:: Electrical resistivity profiling 
+.. |VES| replace:: Vertical Electrical Sounding 
+
 """
 # import warnings 
 from __future__ import annotations 
-
+import os 
 from abc import ( 
     ABC, 
     abstractmethod, 
     )
+import pandas as pd 
 
 from .decorators import refAppender 
 from .documentation import __doc__ 
-
-
+from .exceptions import ( 
+    FileHandlingError, 
+    EDIError 
+    )
 
 __all__ = [ 
     "Water",
@@ -111,30 +126,14 @@ __all__ = [
     'P',
     'BagoueNotes',
     "ElectricalMethods", 
-    "assert_arrangement"
+    "IsEdi",
+    "Config", 
+    "UTM_DESIGNATOR", 
+    
 ]
 
-array_configuration ={
-    1 : (
-        ['Schlumberger','AB>> MN','slbg'], 
-        'S'
-        ), 
-    2 : (
-        ['Wenner','AB=MN'], 
-         'W'
-         ), 
-    3: (
-        ['Dipole-dipole','dd','AB<BM>MN','MN<NA>AB'],
-        'DD'
-        ), 
-    4: (
-        ['Gradient-rectangular','[AB]MN', 'MN[AB]','[AB]'],
-        'GR'
-        )
-    }
-
   
-utm_zone_designator ={
+UTM_DESIGNATOR ={
     'X':[72,84], 
     'W':[64,72], 
     'V':[56,64],
@@ -158,64 +157,9 @@ utm_zone_designator ={
     'Z':[-80,84]
 }
     
+# XXX EDI-
 
-
-# XXX EDI-Jand AVG property indexes 
-
-# A. Jones file indexes 
-_j=[
-    '>AZIMUTH',
-    '>LATITUDE',
-    '>LONGITUDE',
-    '>ELEVATION',
-    
-    'RXX','RXY','RYX',
-    'RYY','RTE','RTM',
-    'RAV','RDE','RZX',
-    'RZY','SXX','SXY',
-    'SYX','SYY','STE',
-    'STM','SAV','SDE',
-    'SZX','SZY','ZXX',
-    'ZXY','ZYX', 'ZYY',
-    'ZTE','ZTM','ZAV',
-    'ZDE','ZZX','ZZY', 
-    'QXX','QXY','QYX',
-    'QYY','QTE','QTM',
-    'QAV','QDE','QZX',
-    'QZY','CXX','CXY',
-    'CYX','CYY', 'CTE',
-    'CTM','CAV', 'CDE',
-    'CZX','CZY','TXX',
-    'TXY','TYX','TYY',
-    'TTE','TTM','TAV',
-    'TDE','TZX','TZY',
-    'ZXX','ZXY','ZYX'
-]
-    
-# Zonge Engineering file indexes 
-_avg=[
-    'skp','Station',
-    'Freq','Comp',
-    'Amps','Emag',
-    'Ephz','Hmag',
-    'Hphz','Resistivity',
-    'Phase','%Emag',
-    'sEphz','%Hmag',
-    'sHphz','%Rho',
-    'sPhz', 'Tx.Amp',
-    'E.mag','E.phz',
-    'B.mag','B.phz',
-    'Z.mag','Z.phz',
-    'ARes.mag','SRes',
-    'E.wgt', 'B.wgt',
-    'E.%err','E.perr',
-    'B.%err','B.perr',
-    'Z.%err','Z.perr',
-    'ARes.%err'
-]
-    
-    
-_edi =[
+_EDI =[
     #Head=Infos-Frequency-Rhorot
     # Zrot and end blocks
     '>HEAD','>INFO',
@@ -880,7 +824,7 @@ class ElectricalMethods (ABC) :
         
         self.AB=AB 
         self.MN=MN 
-        self.arrangememt=assert_arrangement(arrangement) 
+        self.arrangememt=Config.arrangement(arrangement) 
         self.utm_zone=utm_zone 
         self.projection=projection 
         self.datum=datum
@@ -889,14 +833,75 @@ class ElectricalMethods (ABC) :
         self.fromlog10=fromlog10 
         self.verbose=verbose 
         
+
+
+class IsEdi(ABC): 
+    """ Assert SEG MT/EMAP Data Interchange Standard EDI-file .
+    
+    EDI stands for Electrical Data Interchange module can read and write an *.edi 
+    file as the 'standard ' format of magnetotellurics. Each section of the .edi 
+    file belongs to a class object, thus the elements of each section are attributes 
+    for easy access. Edi is outputted  following the SEG documentation and rules  
+    of EMAP (Electromagnetic  Array Profiling) and MT sections. 
+    
+    * [1]  Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 
+    1rt ed. Society of Exploration Geophysicists, Texas 7831, USA.
+    
+    """
+    @property
+    @abstractmethod 
+    def is_valid (self): 
+        """ Assert whether EDI is valid."""
+        pass 
+        
+    def _assert_edi (self, 
+                     file: str ,
+                     deep: bool  =True
+                     )-> bool : 
+        """ Assert EDI- file .  
+        :param file: str - path-like object 
+        :param deep: bool - Open the file and assert whether it is a valid EDI
+            if ``False``, just control the EDI extension . """
+        flag = False 
+        if file  is None : 
+            raise  FileHandlingError("NoneType can not be checked. Please"
+                                     " provide the right file.") 
+        if isinstance(file  , str): 
+            flag = os.path.splitext(file )[-1].replace('.', '')
             
+        if flag =='edi' and not deep : 
+            return True 
+            # Open the file now 
+        elif flag !='edi': 
+            raise EDIError('')
+        try :
+            with open (file, 'r', encoding ='utf8') as f : 
+                    edi_data =f.readlines()
+        except PermissionError:
+            msg =''.join(['https://stackoverflow.com/questions/36434764/',
+                          'permissionerror-errno-13-permission-denied'])
+            raise PermissionError("This Error occurs because you try to access"
+                                  " a file from Python without having the necessary"
+                                  " permissions. Please read the following guide"
+                                  f" {msg!r} to fix that issue")
+        if flag =='edi': 
+            if (_EDI[0] not in  edi_data[0]) or  (
+                    _EDI[-1] not in  edi_data[-1]): 
+                
+                raise EDIError(" Unrecognized SEG- EDI-file. Follow the "
+                               "[Wight, D.E., Drive, B., 1988.] to build a"
+                               " correct EDI- file.")
+            flag =True 
+            
+        return flag 
+     
 class P:
     """
     Data properties are values that are hidden to avoid modifications alongside 
     the packages. Its was used for assertion, comparison etceteara. These are 
     enumerated below into a property objects.
 
-    .. |ERP| replace: Electrical resistivity profiling 
+    .. |ERP| replace:: Electrical resistivity profiling 
     
     Parameters  
     -----------
@@ -1247,29 +1252,155 @@ class BagoueNotes:
                     }
 
 
-## XXXX properties functions 
-def assert_arrangement(a: int | str ): 
-    """ Assert whether the given arrangement is correct. 
+class Config: 
     
-    :param a: int, float, str - Type of given electrical arrangement. 
+    """ Container of property elements. 
     
-    :returns:
-        - The correct arrangement name 
-        - ``0`` which means ``False`` or a wrong given arrangements.   
+    Out of bag to keep unmodificable elements. Trick to encapsulate all the 
+    element that are not be allow to be modified.
+    
     """
     
-    for k, v in array_configuration.items(): 
-        if a == k  or str(a).lower().strip() in ','.join (
-                v[0]).lower() or a ==v[1]: 
-            return  v[0][0].lower()
+    @property 
+    def arraytype (self):
+        """ Different array from |ERP| configuration. 
+    
+         Array-configuration  can be added as the development progresses. 
+         
+        """
+        return {
+        1 : (
+            ['Schlumberger','AB>> MN','slbg'], 
+            'S'
+            ), 
+        2 : (
+            ['Wenner','AB=MN'], 
+             'W'
+             ), 
+        3: (
+            ['Dipole-dipole','dd','AB<BM>MN','MN<NA>AB'],
+            'DD'
+            ), 
+        4: (
+            ['Gradient-rectangular','[AB]MN', 'MN[AB]','[AB]'],
+            'GR'
+            )
+        }
+    @property
+    def parsers(self ): 
+        """ Readable format that can be read and parse the data  """
+        return {
+                 ".csv" : pd.read_csv, 
+                 ".xlsx": pd.read_excel,
+                 ".json": pd.read_json,
+                 ".html": pd.read_json,
+                 ".sql" : pd.read_sql, 
+                 ".xml" : pd.read_xml , 
+                 ".fwf" : pd.read_fwf, 
+                 ".pkl" : pd.read_pickle, 
+                 ".sas" : pd.read_sas, 
+                 ".spss": pd.read_spss, 
+                 }
         
-    return 0
-
+    @staticmethod 
+    def arrangement(a: int | str ): 
+        """ Assert whether the given arrangement is correct. 
+        
+        :param a: int, float, str - Type of given electrical arrangement. 
+        
+        :returns:
+            - The correct arrangement name 
+            - ``0`` which means ``False`` or a wrong given arrangements.   
+        """
+        
+        for k, v in Config().arraytype.items(): 
+            if a == k  or str(a).lower().strip() in ','.join (
+                    v[0]).lower() or a ==v[1]: 
+                return  v[0][0].lower()
+            
+        return 0
     
+    @property 
+    def geo_rocks_properties(self ):
+        """ Get some sample of the geological rocks. """
+        return {
+             "basement rocks" :            [1e99,1e6 ],
+             "igneous rocks":              [1e6, 1e3], 
+             "duricrust"   :               [5.1e3 , 5.1e2],
+             "gravel/sand" :               [1e4  , 7.943e0],
+             "conglomerate"    :           [1e4  , 8.913e1],
+             "dolomite/limestone" :        [1e5 ,  1e3],
+            "permafrost"  :                [1e5  , 4.169e2],
+             "metamorphic rocks" :         [5.1e2 , 1e1],
+             "tills"  :                    [8.1e2 , 8.512e1],
+             "standstone conglomerate" :   [1e4 , 8.318e1],
+             "lignite/coal":               [7.762e2 , 1e1],
+             "shale"   :                   [5.012e1 , 3.20e1],
+             "clay"   :                    [1e2 ,  5.012e1],
+             "saprolite" :                 [6.310e2 , 3.020e1],
+             "sedimentary rocks":          [1e4 , 1e0],
+             "fresh water"  :              [3.1e2 ,1e0],
+             "salt water"   :              [1e0 , 1.41e0],
+             "massive sulphide" :          [1e0   ,  1e-2],
+             "sea water"     :             [1.231e-1 ,1e-1],
+             "ore minerals"  :             [1e0   , 1e-4],
+             "graphite"    :               [3.1623e-2, 3.162e-3]
+                
+                }
     
-    
-    
-    
+    @property 
+    def rockpatterns(self): 
+        """Default geological rocks patterns. 
+        
+        pattern are not exhaustiv, can be added and changed. This pattern
+        randomly choosen its not exatly match the rocks geological patterns 
+        as described with the conventional geological swatches relate to 
+        the USGS(US Geological Survey ) swatches- references and FGDC 
+        (Digital cartographic Standard for Geological  Map Symbolisation 
+         -FGDCgeostdTM11A2_A-37-01cs2.eps)
+        
+        The following symbols can be used to create a matplotlib pattern. 
+        
+        make _pattern:{'/', '\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
+                       
+            /   - diagonal hatching
+            \   - back diagonal
+            |   - vertical
+            -   - horizontal
+            +   - crossed
+            x   - crossed diagonal
+            o   - small circle
+            O   - large circle
+            .   - dots
+            *   - stars
+        """
+        return  {
+             "basement rocks" :      ['.+++++.', (.25, .5, .5)],
+             "igneous rocks":        ['.o.o.', (1., 1., 1.)], 
+             "duricrust"   :         ['+.+',(1., .2, .36)],
+             "gravel" :              ['oO',(.75,.86,.12)],
+             "sand":                 ['....',(.23, .36, .45)],
+             "conglomerate"    :     ['.O.', (.55, 0., .36)],
+             "dolomite" :            ['.-.', (0., .75, .23)],
+             "limestone" :           ['//.',(.52, .23, .125)],
+            "permafrost"  :          ['o.', (.2, .26, .75)],
+             "metamorphic rocks" :   ['*o.', (.2, .2, .3)],
+             "tills"  :              ['-.', (.7, .6, .9)],
+             "standstone ":          ['..', (.5, .6, .9)],
+             "lignite coal":         ['+/.',(.5, .5, .4)],
+             "coal":                 ['*.', (.8, .9, 0.)],
+             "shale"   :             ['=', (0., 0., 0.7)],
+             "clay"   :              ['=.',(.9, .8, 0.8)],
+             "saprolite" :           ['*/',(.3, 1.2, .4)],
+             "sedimentary rocks":    ['...',(.25, 0., .25)],
+             "fresh water"  :        ['.-.',(0., 1.,.2)],
+             "salt water"   :        ['o.-',(.2, 1., .2)],
+             "massive sulphide" :    ['.+O',(1.,.5, .5 )],
+             "sea water"     :       ['.--',(.0, 1., 0.)],
+             "ore minerals"  :       ['--|',(.8, .2, .2)],
+             "graphite"    :         ['.++.',(.2, .7, .7)],
+             
+             }
     
     
     

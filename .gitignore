@@ -74,6 +74,7 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs2/
+docs/_html
 
 # PyBuilder
 target/
@@ -164,3 +165,4 @@ elo.py
 test_1.csv 
 pme.en.new_data/
 __svmmodels.pkl
+

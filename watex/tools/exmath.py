@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Copyright (c) 2021 Kouadio K. Laurent, 
+#   Copyright (c) 2021 LKouadio, 
 #   Created date: on Fri Sep 17 11:25:15 2021
 #   Licence: MIT Licence 
 
@@ -8,10 +8,12 @@ from __future__ import annotations
 import copy 
 import inspect 
 import warnings 
+from math import factorial
 
 from scipy.signal import argrelextrema 
 import scipy.integrate as integrate
 from scipy.optimize import curve_fit
+from scipy.integrate import quad 
 import numpy as np
 import pandas as pd 
 import  matplotlib.pyplot as plt
@@ -23,7 +25,13 @@ from ..decorators import (
     refAppender, 
     docSanitizer
 )
-from .. import exceptions as Wex 
+from ..exceptions import ( 
+    StationError, 
+    ParameterNumberError, 
+    VESError, 
+    ERPError,
+    ExtractionError,
+    )
 from ..property import P
 from ..typing import (
     T, 
@@ -33,7 +41,8 @@ from ..typing import (
     Dict, 
     Any, 
     Union,
-    Array,
+    ArrayLike,
+    NDArray,
     DType,
     Optional,
     Sub, 
@@ -49,25 +58,299 @@ from .funcutils import (
     find_position_from_sa , 
     find_feature_positions,
     smart_format,
-                         
+    reshape,
+    ismissing,
+    fillNaN, 
+    spi                   
 )
 
 _logger =watexlog.get_watex_logger(__name__)
 
-#XXXTODO
-def transmissibility (s, d, time, ): 
-    """Transmissibility T represents the ability of aquifer's water conductivity.
+mu0 = 4 * np.pi * 1e-7 
+
+def d_hanning_window(
+        x: ArrayLike[DType[float]],
+        xk: float , 
+        W: int 
+        )-> F: 
+    """ Discrete hanning function.
     
-    It is the numeric equivalent of the product of hydraulic conductivity times
-    aquifer's thickness (T = KM), which means it is the seepage flow under the
-    condition of unit hydraulic gradient, unit time, and unit width
+    For futher details, please refer to https://doi.org/10.1190/1.2400625
     
+    :param x: variable point along the window width
+    :param xk: Center of the window `W`. It presumes to host the most weigth.   
+    :param W: int, window-size; preferably set to odd number. It must be less than
+         the dipole length. 
+    :return: Anonymous function (x,xk, W)
+    """
+    return lambda x, xk, W: 1/W * (1 + np.cos (
+        2 * np.pi * (x-xk) /W)) if np.abs(x-xk) <= W/2 else  0.
+     
+def betaj (
+        xj: int ,
+        L: int , 
+        W: int , 
+        **kws
+ )-> float : 
+    """ Weight factor function for convoluting at station/site j.
     
+    The function deals with the discrete hanning window based on ideas presented 
+    in Torres-Verdin and Bostick, 1992, https://doi.org/10.1190/1.2400625.
+    
+    :param xj: int, position of the point to compute its weight. 
+    :param W: int, window size, presumes to be the number of dipole. 
+    :param L: int : length of dipole in meters 
+    :param kws: dict , additional :func:`scipy.intergate.quad` functions.
+    
+    :return: Weight value at the position `xj`, prefix-`x`is used to specify  
+        the direction. Commonly the survey direction is considered as `x`.
+        
+    :example: 
+        >>> from watex.exmath import betaj 
+        >>> # compute the weight point for window-size = 5 at position j =2
+        >>> L= 1 ; W=5 
+        >>> betaj (xj = 2 , L=L, W=W )
+        ... 0.35136534572813144
+    """
+    if W < L : 
+        raise ValueError("Window-size must be greater than the dipole length.")
+        
+    xk = W/2 
+    # vec_betaj = np.vectorize( betaj ) ; vec_betaj(0, 1, 5)
+    return  quad (d_hanning_window, xj - L/2 , xj +L/2, args=( xk, W), 
+                  **kws)[0]
+
+def rhoa2z ( 
+        rhoa: NDArray[DType[T]], 
+        phs:ArrayLike, 
+        freq: ArrayLike
+)-> NDArray[DType[T]]:
+    r""" Convert apparent resistivity to impendance tensor z 
+    
+    :param rhoa: Apparent resistivity in :math:`\Omega.m` 
+    :type rhoa: ndarray, shape (N, M) 
+    
+    :param phs: Phase in degrees 
+    :type phs: ndarray, shape (N, M) 
+    :param freq: Frequency in Hertz
+    :type freq: array-like , shape (N, )
+    :
+    :return: Impendance tensor; Tensor is a complex number in :math:`\Omega`.  
+    :rtype: ndarray, shape (N, M), dtype = 'complex' 
+    
+    :example: 
+    >>> import numpy as np 
+    >>> rhoa = np.array([1623.73691735])
+    >>> phz = np.array([45.])
+    >>> f = np.array ([1014])
+    >>> rhoa2z(rhoa, phz, f)
+    ... array([[2.54950976+2.54950976j]])
     
     """
+    rhoa = np.array(rhoa); freq = np.array(freq) ; phs = np.array(phs) 
     
+    if len(phs) != len(rhoa): 
+        raise ValueError ("Phase and rhoa must have the same length."
+                          f" {len(phs)} & {len(rhoa)} are given.")
+
+    if len(freq) != len(rhoa): 
+        raise ValueError("frequency and rhoa must have the same length."
+                         "{len(freq} & {len(rhoa)} are given.")
+        
+    omega0 = 2 * np.pi * freq[:, None]
+    z= np.sqrt(rhoa * omega0 * mu0 ) * (np.cos (
+        np.deg2rad(phs)) + 1j * np.sin(np.deg2rad(phs)))
     
+    return z 
+
+def z2rhoa (
+        z:NDArray [DType[complex]], 
+        freq: ArrayLike[DType[float]]
+)-> NDArray[DType[float]]:
+    r""" Convert impendance tensor z  to apparent resistivity
     
+    :param z: Impedance tensor  in :math:`\Omega` 
+    :type z: ndarray, shape (N, M) 
+ 
+    :param freq: Frequency in Hertz
+    :type freq: array-like , shape (N, )
+    :
+    :return: Apparent resistivity in :math:`\Omega.m`  
+    :rtype: ndarray, shape (N, M) 
+    
+    :example: 
+    >>> import numpy as np 
+    >>> z = np.array([2 + 1j *3 ])
+    >>> f = np.array ([1014])
+    >>> z2rhoa(z, f)
+    ... array([[1623.73691735]])
+        
+    """
+
+    z = np.array(z, dtype = 'complex' ) ;  freq = np.array(freq)
+
+    if len(freq) != len(z): 
+        raise ValueError("frequency and tensor z must have the same length."
+                         f"{len(freq)} & {len(z)} are given.")
+ 
+    return np.abs(z)**2 / (2 * np.pi * freq[:, None] * mu0 )
+
+def savitzky_golay1d (
+        y: ArrayLike[DType[T]], 
+        window_size:int , 
+        order: int, 
+        deriv: int =0, 
+        rate: int =1, 
+        mode: str ='same'
+        )-> ArrayLike[DType[T]]:
+    r"""Smooth (and optionally differentiate) data with a Savitzky-Golay filter.
+    
+    The Savitzky-Golay filter removes high frequency noise from data. It has the 
+    advantage of preserving the original shape and features of the signal better
+    than other types of filtering approaches, such as moving averages techniques.
+    
+    Parameters
+    ----------
+    y : array_like, shape (N,)
+        the values of the time history of the signal.
+    window_size : int
+        the length of the window. Must be an odd integer number.
+    order : int
+        the order of the polynomial used in the filtering.
+        Must be less then `window_size` - 1.
+    deriv: int
+        the order of the derivative to compute (default = 0 means only smoothing)
+    mode: str 
+         mode of the border prepending. Should be ``valid`` or ``same``. 
+         ``same`` is used for prepending or appending the first value of
+         array for smoothing.Default is ``same``.  
+    Returns
+    -------
+    ys : ndarray, shape (N)
+        the smoothed signal (or it's n-th derivative).
+    Notes
+    -----
+    The Savitzky-Golay is a type of low-pass filter, particularly suited for 
+    smoothing noisy data. The main idea behind this approach is to make for 
+    each point a least-square fit with a polynomial of high order over a
+    odd-sized window centered at the point.
+    
+    Examples
+    --------
+    >>> import numpy as np 
+    >>> import matplotlib.pyplot as plt 
+    >>> from watex.exmath import savitzky_golay1d 
+    >>> t = np.linspace(-4, 4, 500)
+    >>> y = np.exp( -t**2 ) + np.random.normal(0, 0.05, t.shape)
+    >>> ysg = savitzky_golay1d(y, window_size=31, order=4)
+    >>> plt.plot(t, y, label='Noisy signal')
+    >>> plt.plot(t, np.exp(-t**2), 'k', lw=1.5, label='Original signal')
+    >>> plt.plot(t, ysg, 'r', label='Filtered signal')
+    >>> plt.legend()
+    >>> plt.show()
+    
+    References
+    ----------
+    .. [1] A. Savitzky, M. J. E. Golay, Smoothing and Differentiation of
+       Data by Simplified Least Squares Procedures. Analytical
+       Chemistry, 1964, 36 (8), pp 1627-1639.
+    .. [2] Numerical Recipes 3rd Edition: The Art of Scientific Computing
+       W.H. Press, S.A. Teukolsky, W.T. Vetterling, B.P. Flannery
+       Cambridge University Press ISBN-13: 9780521880688
+    .. [3] https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter#Moving_average
+    
+    """
+
+    try:
+        window_size = np.abs(np.int(window_size))
+        order = np.abs(np.int(order))
+    except ValueError:
+        raise ValueError("window_size and order have to be of type int")
+    if window_size % 2 != 1 or window_size < 1:
+        raise TypeError("window_size size must be a positive odd number")
+    if window_size < order + 2:
+        raise TypeError("window_size is too small for the polynomials order")
+    order_range = range(order+1)
+    
+    half_window = (window_size -1) // 2
+    # precompute coefficients
+    b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
+    m = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
+    # pad the signal at the extremes with
+    # values taken from the signal itself
+    firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
+    lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
+    y = np.concatenate((firstvals, y, lastvals))
+    return np.convolve( m[::-1], y, mode=mode)
+
+def interpolate2d (
+        arr2d: NDArray[float] , 
+        method:str  = 'slinear', 
+        **kws): 
+    """ Interpolate the data in 2D dimensional array. 
+    
+    If the data contains some missing values. It should be replaced by the 
+    interpolated values. 
+    
+    Parameters 
+    -----------
+    arr2d : np.ndarray, shape  (N, M)
+        2D dimensional data 
+        
+    method: str, default ``linear``
+        Interpolation technique to use. Can be ``nearest``or ``pad``. 
+    
+    kws: dict 
+        Additional keywords. Refer to :func:`~.interpolate1d`. 
+        
+    Returns 
+    -------
+    arr2d:  np.ndarray, shape  (N, M)
+        2D dimensional data interpolated 
+    
+    Examples 
+    ---------
+    >>> from watex.methods.em import EM 
+    >>> from watex.tools.exmath import interpolate2d 
+    >>> # make 2d matrix of frequency
+    >>> emObj = EM().fit(r'data/edis')
+    >>> freq2d = emObj.make2d (out = 'freq')
+    >>> freq2d_i = interpolate2d(freq2d ) 
+    >>> freq2d.shape 
+    ...(55, 3)
+    >>> freq2d 
+    ... array([[7.00000e+04, 7.00000e+04, 7.00000e+04],
+           [5.88000e+04, 5.88000e+04, 5.88000e+04],
+           ...
+            [6.87500e+00, 6.87500e+00, 6.87500e+00],
+            [        nan,         nan, 5.62500e+00]])
+    >>> freq2d_i
+    ... array([[7.000000e+04, 7.000000e+04, 7.000000e+04],
+           [5.880000e+04, 5.880000e+04, 5.880000e+04],
+           ...
+           [6.875000e+00, 6.875000e+00, 6.875000e+00],
+           [5.625000e+00, 5.625000e+00, 5.625000e+00]])
+    
+    References 
+    ----------
+    
+    https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html
+    https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.interpolate.interp2d.html        
+        
+    """ 
+    arr2d = np.array(arr2d)
+    if len(arr2d.shape) ==1: 
+        arr2d = arr2d[:, None] # put on 
+    if arr2d.shape[0] ==1: 
+        arr2d = reshape (arr2d, axis=0)
+
+    arr2d  = np.hstack ([ reshape (interpolate1d(arr2d[:, ii], kind=method, 
+                                        method ='pd', **kws), axis=0)
+                         for ii in  range (arr2d.shape[1])])
+    return arr2d 
+
+
+
 def dummy_basement_curve(
         func: F ,
         ks: float ,
@@ -97,7 +380,7 @@ def dummy_basement_curve(
 
 
 def find_limit_for_integration(
-        ix_arr: Array[DType[int]],
+        ix_arr: ArrayLike[DType[int]],
         b0: List[T] =[]
 )-> List[T]: 
     r""" Use the roots between f curve and basement curves to 
@@ -132,7 +415,7 @@ def find_limit_for_integration(
 
 
 def find_bound_for_integration(
-        ix_arr: Array[DType[int]],
+        ix_arr: ArrayLike[DType[int]],
         b0: List[T] =[]
 )-> List[T]: 
     r""" Recursive function. Use the roots between f curve and basement 
@@ -170,11 +453,11 @@ def find_bound_for_integration(
  
     
 def fitfunc(
-        x: Array[T], 
-        y: Array[T], 
+        x: ArrayLike[T], 
+        y: ArrayLike[T], 
         deg: float | int  =None,
         sample: int =1000
-)-> Tuple[F, Array[T]]: 
+)-> Tuple[F, ArrayLike[T]]: 
     """ Create polyfit function from a specifc sample data points. 
     
     :param x: array-like of x-axis.
@@ -206,14 +489,14 @@ def fitfunc(
     yp = f(xn)
     
     return f, xn, yp  
-    
+
 def vesDataOperator(
-        AB : Array = None, 
-        rhoa: Array= None ,
+        AB : ArrayLike = None, 
+        rhoa: ArrayLike= None ,
         data: DataFrame  =None,
         typeofop: str = None, 
         outdf: bool = False, 
-)-> Tuple[Array] | DataFrame : 
+)-> Tuple[ArrayLike] | DataFrame : 
     """ Check the data in the given deep measurement and set the suitable
     operations for duplicated spacing distance of current electrodes `AB`. 
     
@@ -285,7 +568,7 @@ def vesDataOperator(
         rhoa, np.ndarray, list, tuple, pd.Series))
  
     if len(AB)!= len(rhoa): 
-        raise Wex.VESError(
+        raise VESError(
             'Deep measurement `AB` must have the same size with '
             ' the collected apparent resistivity `rhoa`.'
             f' {len(AB)} and {len(rhoa)} were given.')
@@ -327,8 +610,8 @@ def invertVES (data: DataFrame[DType[float|int]] = None,
                rho0: float = None , 
                h0 : float = None, 
                typeof : str = 'HMCMC', 
-               
-               **kwd)->Tuple [Array]: 
+               **kwd
+               )->Tuple [ArrayLike]: 
     """ Invert the |VES| data collected in the exporation area.
     
     :param data: Dataframe pandas - contains the depth measurement AB from 
@@ -355,7 +638,8 @@ def invertVES (data: DataFrame[DType[float|int]] = None,
     
     pass 
 
-    
+
+@refAppender(__doc__)    
 def ohmicArea(
         data: DataFrame[DType[float|int]] = None, 
         ohmSkey: float = 45., 
@@ -494,14 +778,7 @@ def ohmicArea(
         de bassins versants subsaheliens du socle précambrien d’Afrique de l’Ouest:
         hydrostructurale hydrodynamique, hydrochimie et isotopie des aquifères discontinus
         de sillons et aires gran. In Thèse de Doctorat (IOS journa, p. 493). Abidjan, Cote d'Ivoire
-        
-    .. _Kouadio et al 2022: https://doi.org/10.1029/2021WR031623 or refer to 
-        the paper `FlowRatePredictionWithSVMs <https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623>`_
-    .. _Koefoed, O. (1970): https://doi.org/10.1111/j.1365-2478.1970.tb02129.x
-    .. _Koefoed, O. (1976): https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
-    .. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
-    .. |VES| replace: Vertical Electrical Sounding 
-    
+ 
     """
     
     objkeys = ( 'ohms','none','eval', 'area', 'ohmic','true',
@@ -534,7 +811,7 @@ def ohmicArea(
         raise ValueError (f'Could not convert value {ohmSkey!r} to float')
         
     if ohmSkey >= X.max(): 
-        raise Wex.VESError(f"The startpoint 'ohmSkey={ohmSkey}m'is expected "
+        raise VESError(f"The startpoint 'ohmSkey={ohmSkey}m'is expected "
                            f"to be less than the 'maxdepth={X.max()}m'.")
 
     #-------> construct the fitting curves for 1000 points 
@@ -605,7 +882,7 @@ def ohmicArea(
  
 
 def _type_mechanism (
-        cz: Array |List[float],
+        cz: ArrayLike |List[float],
         dipolelength : float =10.
 ) -> Tuple[str, float]: 
     """ Using the type mechanism helps to not repeat several time the same 
@@ -641,7 +918,7 @@ def _type_mechanism (
     
     return status, wcz 
 
-def type_ (erp: Array[DType[float]] ) -> str: 
+def type_ (erp: ArrayLike[DType[float]] ) -> str: 
     """ Compute the type of anomaly. 
     
     .. |ERP| replace: Electrical Resistivity Profiling 
@@ -751,7 +1028,7 @@ def type_ (erp: Array[DType[float]] ) -> str:
     return type_ 
         
 def shape (
-    cz : Array | List [float], 
+    cz : ArrayLike | List [float], 
     s : Optional [str, int] = ..., 
     p:  SP =  ...,     
 ) -> str: 
@@ -822,7 +1099,7 @@ def shape (
                 s= int(s.lower().replace('s', '')) 
             except: 
                 if p is ( None or ...): 
-                    raise Wex.StationError(
+                    raise StationError(
                         "Need the positions `p` of the conductive zone "
                         "to be supplied.'NoneType' is given.")
                     
@@ -832,7 +1109,7 @@ def shape (
             s_index= _assert_all_types(s, int)
             
     if s_index >= len(cz): 
-        raise Wex.StationError(
+        raise StationError(
             f"Position should be less than '7': got '{s_index}'")
     lbound , rbound = cz[:s_index +1] , cz[s_index :]
     ls , rs = lbound[0] , rbound [-1] # left side and right side (s) 
@@ -869,8 +1146,8 @@ def shape (
 @refAppender(__doc__)
 @docSanitizer()    
 def scalePosition(
-        ydata: Array | SP | Series | DataFrame ,
-        xdata: Array| Series = None, 
+        ydata: ArrayLike | SP | Series | DataFrame ,
+        xdata: ArrayLike| Series = None, 
         func : Optional [F] = None ,
         c_order: Optional[int|str] = 0,
         show: bool =False, 
@@ -1016,8 +1293,8 @@ def scalePosition(
 
 def __sves__ (
         s_index: int  , 
-        cz: Array | List[float], 
-) -> Tuple[Array, Array]: 
+        cz: ArrayLike | List[float], 
+) -> Tuple[ArrayLike, ArrayLike]: 
     """ Divide the conductive zone in leftzone and rightzone from 
     the drilling location index . 
 
@@ -1104,19 +1381,19 @@ def detect_station_position (
         if s > len(p): # consider this as the dipole length position: 
             # now let check whether the given value is module of the station 
             if s % dl !=0 : 
-                raise Wex.WATexError_station  (
+                raise StationError  (
                     f'Unable to detect the station position {S}')
             elif s % dl == 0 and s <= p.max(): 
                 # take the index 
                 s_index = s//dl
                 return int(s_index), s_index * dl 
             else : 
-                raise Wex.StationError (
+                raise StationError (
                     f'Station {S} is out of the range; max position = {max(p)}'
                 )
         else : 
             if s >= len(p): 
-                raise Wex.WATexError_station (
+                raise StationError (
                     'Location index must be less than the number of'
                     f' stations = {len(p)}. {s} is gotten.')
             # consider it as integer index 
@@ -1133,8 +1410,8 @@ def detect_station_position (
     return int(s_index) , s 
     
 def sfi (
-        cz: Sub[Array[T, DType[T]]] | List[float] ,
-        p: Sub[SP[Array, DType [int]]] | List [int] = None, 
+        cz: Sub[ArrayLike[T, DType[T]]] | List[float] ,
+        p: Sub[SP[ArrayLike, DType [int]]] | List [int] = None, 
         s: Optional [str] =None, 
         dipolelength: Optional [float] = None, 
         plot: bool = False,
@@ -1208,7 +1485,7 @@ def sfi (
         p = np.arange (0, len(cz) * dipolelength, dipolelength)
    
     if len(p) != len(cz): 
-        raise Wex.StationError (
+        raise StationError (
             'Array of position and conductive zone must have the same length:'
             f' `{len(p)}` and `{len(cz)}` were given.')
         
@@ -1275,7 +1552,7 @@ def sfi (
 
 @refAppender(__doc__)
 def plot_ (
-    *args : List [Union [str, Array, ...]],
+    *args : List [Union [str, ArrayLike, ...]],
     figsize: Tuple[int] = None,
     raw : bool = False, 
     style : str = 'seaborn',   
@@ -1395,7 +1672,7 @@ def plot_ (
     plt.show ()
         
     
-def quickplot (arr: Array | List[float], dl:float  =10)-> None: 
+def quickplot (arr: ArrayLike | List[float], dl:float  =10)-> None: 
     """Quick plot to see the anomaly"""
     
     plt.plot(np.arange(0, len(arr) * dl, dl), arr , ls ='-', c='k')
@@ -1403,7 +1680,7 @@ def quickplot (arr: Array | List[float], dl:float  =10)-> None:
     
     
 
-def magnitude (cz:Sub[Array[float, DType[float]]] ) -> float: 
+def magnitude (cz:Sub[ArrayLike[float, DType[float]]] ) -> float: 
     r""" 
     Compute the magnitude of selected conductive zone. 
     
@@ -1422,7 +1699,7 @@ def magnitude (cz:Sub[Array[float, DType[float]]] ) -> float:
     """
     return np.abs (cz.max()- cz.min()) 
 
-def power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float : 
+def power (p:Sub[SP[ArrayLike, DType [int]]] | List[int] ) -> float : 
     """ 
     Compute the power of the selected conductive zone. Anomaly `power` 
     is closely referred to the width of the conductive zone.
@@ -1445,8 +1722,8 @@ def power (p:Sub[SP[Array, DType [int]]] | List[int] ) -> float :
 
 
 def _find_cz_bound_indexes (
-    erp: Union[Array[float, DType[float]], List[float], pd.Series],
-    cz: Union [Sub[Array], List[float]] 
+    erp: Union[ArrayLike[float, DType[float]], List[float], pd.Series],
+    cz: Union [Sub[ArrayLike], List[float]] 
 )-> Tuple[int, int]: 
     """ 
     Fetch the limits 'LB' and 'UB' of the selected conductive zone.
@@ -1528,7 +1805,7 @@ def get_station_number (
 
 @deprecated('Function is going to be removed for the next release ...')
 def define_conductive_zone (
-        erp: Array | List[float],
+        erp: ArrayLike | List[float],
         stn: Optional [int] = None,
         sres:Optional [float] = None,
         *, 
@@ -1576,7 +1853,7 @@ def define_conductive_zone (
     """
     try : 
         iter(erp)
-    except : raise Wex.ArgumentError (
+    except : raise ERPError (
             f'`erp` must be a sequence of values not {type(erp)!r}')
     finally: erp = np.array(erp)
   
@@ -1587,20 +1864,20 @@ def define_conductive_zone (
         elif sres is not None: 
             snix, = np.where(erp==sres)
             if len(snix)==0: 
-                raise Wex.ParameterNumberError(
+                raise VESError(
                     "Could not  find the resistivity value of the VES "
                     "station. Please provide the right value instead.") 
                 
             elif len(snix)==2: 
                 stn = int(snix[0]) + 1
         else :
-            raise Wex.ArgumentError (
+            raise StationError (
                 '`stn` is needed or at least provide the survey '
                 'dipole length and the distance from the first '
                 'station to the VES station. ')
             
     if erp.size < stn : 
-        raise Wex.StationError(
+        raise StationError(
             f"Wrong station number =`{stn}`. Is larger than the "
             f" number of ERP stations = `{erp.size}` ")
     
@@ -1702,7 +1979,7 @@ def compute_sfi (
         pk_max: float, 
         rhoa_min: float,
         rhoa_max: float, 
-        rhoa: Array | List[float], 
+        rhoa: ArrayLike | List[float], 
         pk: SP[int]
         ) -> float : 
     """
@@ -1798,8 +2075,8 @@ def compute_sfi (
     
 def compute_anr (
         sfi: float , 
-        rhoa_array: Array | List[float],
-        pos_bound_indexes: Array[DType[int]] | List[int]
+        rhoa_array: ArrayLike | List[float],
+        pos_bound_indexes: ArrayLike[DType[int]] | List[int]
         )-> float:
     r"""
     Compute the select anomaly ratio (ANR) along with the whole profile from
@@ -1856,7 +2133,7 @@ def compute_anr (
             ' more efficient using median and index computation. It will '
             'probably deprecate soon for neural network pattern recognition.')
 def get_type (
-        erp_array: Array | List [float], 
+        erp_array: ArrayLike | List [float], 
         posMinMax:Tuple[int] | List[int],
         pk: float | int,
         pos_array: SP[DType[float]],
@@ -1925,7 +2202,7 @@ def get_type (
             'more convenient to recognize anomaly shape using ``median line``'
             'rather than ``mean line`` below.')   
 def get_shape (
-        rhoa_range: Array | List [float]
+        rhoa_range: ArrayLike | List [float]
         )-> str : 
     """
     Find anomaly `shape`  from apparent resistivity values framed to
@@ -2014,7 +2291,7 @@ def compute_power (
         pk_max= np.array(posMinMax).max()
     
     if posMinMax is None and (pk_min is None or pk_max is None) : 
-        raise Wex.WATexError_parameter_number(
+        raise ParameterNumberError (
             'Could not compute the anomaly power. Provide at least'
              'the anomaly position boundaries or the left(`pk_min`) '
              'and the right(`pk_max`) boundaries.')
@@ -2049,7 +2326,7 @@ def compute_magnitude(
         rhoa_max= np.array(rhoaMinMax).max()
         
     if rhoaMinMax is None and (rhoa_min  is None or rhoa_min is None) : 
-        raise Wex.ParameterNumberError(
+        raise ParameterNumberError(
             'Could not compute the anomaly magnitude. Provide at least'
             'the anomaly resistivy value boundaries or the buttom(`rhoa_min`)'
              'and the top(`rhoa_max`) boundaries.')
@@ -2057,7 +2334,7 @@ def compute_magnitude(
     return np.abs(rhoa_max -rhoa_min)
 
 def get_minVal(
-        array: Array[T] | List [T]
+        array: ArrayLike[T] | List [T]
         )->List[T] : 
     """
     Function to find the three minimum values on array and their 
@@ -2079,7 +2356,7 @@ def get_minVal(
             try : 
                 array =np.array([float(array)])
             except: 
-                raise Wex.WATexError_float('Could not convert %s to float!')
+                raise TypeError('Could not convert %s to float!')
     try : 
         # first option:find minimals locals values 
         minlocals = argrelextrema(array, np.less)[0]
@@ -2122,11 +2399,11 @@ def get_minVal(
     return holdList 
     
 def compute_lower_anomaly(
-    erp_array: Array |List [float],
+    erp_array: ArrayLike |List [float],
     station_position: SP[float]=None, 
     step: Optional[int] =None, 
     **kws
-    )-> Tuple[Dict[str, Any], Array, List[Array], List[Tuple[int, float]]]: 
+    )-> Tuple[Dict[str, Any], ArrayLike, List[ArrayLike], List[Tuple[int, float]]]: 
     """
     Function to get the minimum value on the ERP array. 
     If `pk` is provided wil give the index of pk
@@ -2199,7 +2476,7 @@ def compute_lower_anomaly(
 @deprecated ('Autodetection is instable, it should be modified for '
              'the future realease.')
 def select_anomaly ( 
-        rhoa_array:Array,
+        rhoa_array:ArrayLike,
         pos_array:SP =None,
         auto: bool =True,
         dipole_length =10., 
@@ -2265,8 +2542,7 @@ def select_anomaly (
     
     if auto is False : 
         if None in pos_bounds  or pos_bounds is None : 
-            raise Wex.ErrorSite('One position is missed' 
-                                'Please provided it!')
+            raise StationError('One position is missed; Please provided it!')
         
         pos_bounds = np.array(pos_bounds)
         pos_min, pos_max  = pos_bounds.min(), pos_bounds.max()
@@ -2306,7 +2582,7 @@ def select_anomaly (
                 }
     
 def define_anomaly(
-        erp_data: Array | List [float],
+        erp_data: ArrayLike | List [float],
         station_position: SP[DType[float|int]]=None,
         pks: Optional[int]=None, 
         dipole_length: float =10., 
@@ -2357,7 +2633,7 @@ def define_anomaly(
         # check if bound is on station positions
         for spk in pksbounds : 
             if not pksbounds.min() <= spk <= pksbounds.max(): 
-                raise  Wex.ExtractionError(
+                raise  ExtractionError(
                     'Bound <{0}> provided is out of range !'
                    'Dipole length is set to = {1} m.'
                    ' Please set a new bounds.')
@@ -2394,13 +2670,436 @@ def define_anomaly(
            
     return bestSelectedDICT
 
-
-   
-    # if plot:
+def scaley(
+        y: ArrayLike , 
+        x: ArrayLike =None, 
+        deg: int = None,  
+        func:F =None
+        )-> Tuple[ArrayLike, ArrayLike, F]: 
+    """ Scaling value using a fitting curve. 
+    
+    Create polyfit function from a specifc data points `x` to correct `y` 
+    values.  
+    
+    :param y: array-like of y-axis. Is the array of value to be scaled. 
+    
+    :param x: array-like of x-axis. If `x` is given, it should be the same 
+        length as `y`, otherwise and error will occurs. Default is ``None``. 
+    
+    :param func: callable - The model function, ``f(x, ...)``. It must take 
+        the independent variable as the first argument and the parameters
+        to fit as separate remaining arguments.  `func` can be a ``linear``
+        function i.e  for ``f(x)= ax +b`` where `a` is slope and `b` is the 
+        intercept value. It is recommended according to the `y` value 
+        distribution to set up  a custom function for better fitting. If `func`
+        is given, the `deg` is not needed.   
         
-    #     (X, Y, x_new, y_projected, oB, f_brl(oB))
-    #     plt.loglog(X, Y , label ='Raw Rhoa curve')
-    #     plt.loglog(x_new, y_projected , label = 'Fitting Rhoa curve')
-    #     plt.xlabel('AB/2'); plt.ylabel('Resistivity(ohm.m)')
-    #     plt.loglog (oB, f_brl(oB), label= 'Dummy basement curve') 
-    #     plt.legend()
+    :param deg: polynomial degree. If  value is ``None``, it should  be 
+        computed using the length of extrema (local and/or global) values.
+ 
+    :returns: 
+        - y: array scaled - projected sample values got from `f`.
+        - x: new x-axis - new axis  `x_new` generated from the samples.
+        - linear of polynomial function `f` 
+        
+    :references: 
+        Wikipedia, Curve fitting, https://en.wikipedia.org/wiki/Curve_fitting
+        Wikipedia, Polynomial interpolation, https://en.wikipedia.org/wiki/Polynomial_interpolation
+    :Example: 
+        >>> import numpy as np 
+        >>> import matplotlib.pyplot as plt 
+        >>> from watex.exmath import scale_values 
+        >>> rdn = np.random.RandomState(42) 
+        >>> x0 =10 * rdn.rand(50)
+        >>> y = 2 * x0  +  rnd.randn(50) -1
+        >>> plt.scatter(x0, y)
+        >>> yc, x , f = scale_values(y) 
+        >>> plt.plot(x, y, x, yc) 
+        
+    """   
+
+    if str(func).lower() != 'none': 
+        if not hasattr(func, '__call__') or not inspect.isfunction (func): 
+            raise TypeError(
+                f'`func` argument is a callable not {type(func).__name__!r}')
+
+    # get the number of local minimum to approximate degree. 
+    minl, = argrelextrema(y, np.less) 
+    # get the number of degrees
+    degree = len(minl) + 1
+    if x is None: 
+        x = np.arange(len(y)) # np.linspace(0, 4, len(y))
+    if len(x) != len(y): 
+        raise ValueError(" `x` and `y` arrays must have the same length."
+                        f"'{len(x)}' and '{len(y)}' are given.")
+        
+    coeff = np.polyfit(x, y, int(deg) if deg is not None else degree)
+    f = np.poly1d(coeff) if func is  None else func 
+    yc = f (x ) # corrected value of y 
+
+    return  yc, x ,  f  
+
+def fittensor(
+    refreq:ArrayLike , 
+    compfreq: ArrayLike ,
+    z: NDArray[DType[complex]] , 
+    fill_value: Optional[float] = np.nan
+)->NDArray[DType[complex]] : 
+    """ Fit each tensor component to the complete frequency range. 
+    
+    The complete frequency is the frequency with clean data. It contain all the 
+    frequency range on the site. During the survey, the missing frequencies 
+    lead to missing tensor data. So the function will indicate where the tensor 
+    data is missing and fit to the prior frequencies. 
+    
+    :param refreq: Reference frequency - Should be the complete frequency 
+        collected in the field. 
+        
+    :param comfreq: array-like, should the frequency of the survey area.
+    
+    :param z: array-like, should be the  tensor value (real or imaginary part ) 
+        at the component  xx, xy, yx, yy. 
+        
+    :param fill_value: float 
+        Value to replace the missing data in tensors. Default is ``NaN``. 
+        
+    :param return: new Z filled by invalid value `NaN` where the frequency is 
+        missing in the data. 
+    
+    
+    Example::
+    >>> import numpy as np 
+    >>> from watex.tools.exmath import fittensor
+    >>> refreq = np.linspace(7e7, 1e0, 20) # 20 frequencies as reference
+    >>> freq_ = np.hstack ((refreq.copy()[:7], refreq.copy()[12:] )) 
+    >>> z = np.random.randn(len(freq_)) *10 # assume length of  freq as 
+    ...                 # the same like the tensor Z value 
+    >>> zn  = fit_tensor (refreq, freq_, z)
+    >>> z # some frequency values are missing but not visible. 
+    ...array([-23.23448367,   2.93185982,  10.81194723, -12.46326732,
+             1.57312908,   7.23926576, -14.65645799,   9.85956253,
+             3.96269863, -10.38325124,  -4.29739755,  -8.2591703 ,
+            21.7930423 ,   0.21709129,   4.07815217])
+    >>> # zn show where the frequencies are missing  
+    >>> # the NaN value means in a missing value in  tensor Z at specific frequency  
+    >>> zn 
+    ... array([-23.23448367,   2.93185982,  10.81194723, -12.46326732,
+             1.57312908,   7.23926576, -14.65645799,          nan,
+                    nan,          nan,          nan,          nan,
+             9.85956253,   3.96269863, -10.38325124,  -4.29739755,
+            -8.2591703 ,  21.7930423 ,   0.21709129,   4.07815217])
+    >>> # let visualize where the missing frequency value in tensor Z 
+    >>> refreq 
+    ... array([7.00000000e+07, 6.63157895e+07, 6.26315791e+07, 5.89473686e+07,
+           5.52631581e+07, 5.15789476e+07, 4.78947372e+07, 4.42105267e+07*,
+           4.05263162e+07*, 3.68421057e+07*, 3.31578953e+07*, 2.94736848e+07*,
+           2.57894743e+07, 2.21052638e+07, 1.84210534e+07, 1.47368429e+07,
+           1.10526324e+07, 7.36842195e+06, 3.68421147e+06, 1.00000000e+00])
+    >>> refreq[np.isnan(zn)] #we can see the missing value between [7:12](*) in refreq 
+    ... array([44210526.68421052, 40526316.21052632, 36842105.73684211,
+           33157895.2631579 , 29473684.78947368])
+    
+    """
+    
+    freqn, mask = ismissing(refarr= refreq , arr =compfreq, return_index='mask',
+                            fill_value = fill_value)
+    
+    #mask_isin = np.isin(refreq, compfreq)
+    z_new = np.full_like(freqn,fill_value = fill_value) 
+    z_new[mask] = reshape(z) 
+    
+    return z_new 
+    
+def interpolate1d (
+        arr:ArrayLike[DType[T]], 
+        kind:str = 'slinear', 
+        method:str='mean', 
+        order:Optional[int] = None, 
+        fill_value:str ='extrapolate',
+        limit:Tuple[float] =None, 
+        **kws
+    )-> ArrayLike[DType[T]]:
+    """ Interpolate array containing invalid values `NaN`
+    
+    Usefull function to interpolate the missing frequency values in the 
+    tensor components. 
+    
+    Parameters 
+    ----------
+    arr: array_like 
+        Array to interpolate containg invalid values. The invalid value here 
+        is `NaN`. 
+        
+    kind: str or int, optional
+        Specifies the kind of interpolation as a string or as an integer 
+        specifying the order of the spline interpolator to use. The string 
+        has to be one of ``linear``, ``nearest``, ``nearest-up``, ``zero``, 
+        ``slinear``,``quadratic``, ``cubic``, ``previous``, or ``next``. 
+        ``zero``, ``slinear``, ``quadratic``and ``cubic`` refer to a spline 
+        interpolation of zeroth, first, second or third order; ``previous`` 
+        and ``next`` simply return the previous or next value of the point; 
+        ``nearest-up`` and ``nearest`` differ when interpolating half-integers 
+        (e.g. 0.5, 1.5) in that ``nearest-up`` rounds up and ``nearest`` rounds 
+        down. If `method` param is set to ``pd`` which refers to pd.interpolate 
+        method , `kind` can be set to ``polynomial`` or ``pad`` interpolation. 
+        Note that the polynomial requires you to specify an `order` while 
+        ``pad`` requires to specify the `limit`. Default is ``slinear``.
+        
+    method: str, optional  
+        Method of interpolation. Can be ``base`` for `scipy.interpolate.interp1d`
+        ``mean`` or ``bff`` for scaling methods and ``pd``for pandas interpolation 
+        methods. Note that the first method is fast and efficient when the number 
+        of NaN in the array if relatively few. It is less accurate to use the 
+        `base` interpolation when the data is composed of many missing values.
+        Alternatively, the scaled method(the  second one) is proposed to be the 
+        alternative way more efficient. Indeed, when ``mean`` argument is set, 
+        function replaces the NaN values by the nonzeros in the raw array and 
+        then uses the mean to fit the data. The result of fitting creates a smooth 
+        curve where the index of each NaN in the raw array is replaced by its 
+        corresponding values in the fit results. The same approach is used for
+        ``bff`` method. Conversely, rather than averaging the nonzeros values, 
+        it uses the backward and forward strategy  to fill the NaN before scaling.
+        ``mean`` and ``bff`` are more efficient when the data are composed of 
+        lot of missing values. When the interpolation `method` is set to `pd`, 
+        function uses the pandas interpolation but ended the interpolation with 
+        forward/backward NaN filling since the interpolation with pandas does
+        not deal with all NaN at the begining or at the end of the array. Default 
+        is ``base``.
+        
+    fill_value: array-like or (array-like, array_like) or ``extrapolate``, optional
+        If a ndarray (or float), this value will be used to fill in for requested
+        points outside of the data range. If not provided, then the default is
+        NaN. The array-like must broadcast properly to the dimensions of the 
+        non-interpolation axes.
+        If a two-element tuple, then the first element is used as a fill value
+        for x_new < x[0] and the second element is used for x_new > x[-1]. 
+        Anything that is not a 2-element tuple (e.g., list or ndarray,
+        regardless of shape) is taken to be a single array-like argument meant 
+        to be used for both bounds as below, above = fill_value, fill_value.
+        Using a two-element tuple or ndarray requires bounds_error=False.
+        Default is ``extrapolate``. 
+        
+    kws: dict 
+        Additional keyword arguments from :class:`spi.interp1d`. 
+    
+    Returns 
+    -------
+    array like - New interpoolated array. `NaN` values are interpolated. 
+    
+    Notes 
+    ----- 
+    When interpolated thoughout the complete frequencies  i.e all the frequency 
+    values using the ``base`` method, the missing data in `arr`  can be out of 
+    the `arr` range. So, for consistency and keep all values into the range of 
+    frequency, the better idea is to set the param `fill_value` in kws argument
+    of ``spi.interp1d`` to `extrapolate`. This will avoid an error to raise when 
+    the value to  interpolated is extra-bound of `arr`. 
+    
+    
+    References 
+    ----------
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
+    https://www.askpython.com/python/examples/interpolation-to-fill-missing-entries
+    
+    Examples 
+    --------
+    >>> import numpy as np 
+    >>> import matplotlib.pyplot as plt 
+    >>> from watex.tools.exmath  import interpolate1d,
+    >>> z = np.random.randn(17) *10 # assume 17 freq for 17 values of tensor Z 
+    >>> z [[7, 10, 16]] =np.nan # replace some indexes by NaN values 
+    >>> zit = interpolate1d (z, kind ='linear')
+    >>> z 
+    ... array([ -1.97732415, -16.5883156 ,   8.44484348,   0.24032979,
+              8.30863276,   4.76437029, -15.45780568,          nan,
+             -4.11301794, -10.94003412,          nan,   9.22228383,
+            -15.40298253,  -7.24575491,  -7.15149205, -20.9592011 ,
+                     nan]),
+    >>> zn 
+    ...array([ -1.97732415, -16.5883156 ,   8.44484348,   0.24032979,
+             8.30863276,   4.76437029, -15.45780568,  -4.11301794,
+           -10.94003412,   9.22228383, -15.40298253,  -7.24575491,
+            -7.15149205, -20.9592011 , -34.76691014, -48.57461918,
+           -62.38232823])
+    >>> zmean = interpolate1d (z,  method ='mean')
+    >>> zbff = interpolate1d (z, method ='bff')
+    >>> zpd = interpolate1d (z,  method ='pd')
+    >>> plt.plot( np.arange (len(z)),  zit, 'v--', 
+              np.arange (len(z)), zmean, 'ok-',
+              np.arange (len(z)), zbff, '^g:',
+              np.arange (len(z)), zpd,'<b:', 
+              np.arange (len(z)), z,'o', 
+              )
+    >>> plt.legend(['interp1d', 'mean strategy', 'bff strategy',
+                    'pandas strategy', 'data'], loc='best')
+    
+    """
+    method =str(method).strip().lower() 
+    if method in ('pandas', 'pd', 'series', 'dataframe','df'): 
+        method = 'pd' 
+    elif method in ('interp1d', 'scipy', 'base', 'simpler', 'i1d'): 
+        method ='base' 
+    
+    # check whether there is nan and masked invalid 
+    # and take only the valid values 
+    t_arr = arr.copy() 
+    
+    if method =='base':
+        mask = ~np.ma.masked_invalid(arr).mask  
+        arr = arr[mask] # keep the valid values
+        f = spi.interp1d( x= np.arange(len(arr)), y= arr, kind =kind, 
+                         fill_value =fill_value, **kws) 
+        arr_new = f(np.arange(len(t_arr)))
+        
+    if method in ('mean', 'bff'): 
+        arr_new = arr.copy()
+        
+        if method =='mean': 
+            # use the mean of the valid value
+            # and fill the nan value
+            mean = t_arr[~np.isnan(t_arr)].mean()  
+            t_arr[np.isnan(t_arr)]= mean  
+            
+        if method =='bff':
+            # fill NaN values back and forward.
+            t_arr = fillNaN(t_arr, method = method)
+            t_arr= reshape(t_arr)
+            
+        yc, *_= scaley (t_arr)
+        # replace the at NaN positions value in  t_arr 
+        # with their corresponding scaled values 
+        arr_new [np.isnan(arr_new)]= yc[np.isnan(arr_new)]
+        
+    if method =='pd': 
+        t_arr= pd.Series (t_arr)
+        t_arr = np.array(t_arr.interpolate(
+            method =kind, order=order, limit = limit ))
+        arr_new = reshape(fillNaN(t_arr, method= 'bff')) # for consistency 
+        
+    return arr_new 
+   
+
+def moving_average (
+    y:ArrayLike[DType[T]],
+    *, 
+    window_size:int  = 3 , 
+    method:str  ='sma',
+    mode:str  ='same', 
+    alpha: int  =.5 
+)-> ArrayLike[DType[T]]: 
+    """ A moving average is  used with time series data to smooth out
+    short-term fluctuations and highlight longer-term trends or cycles.
+    
+    Funtion analyzes data points by creating a series of averages of different
+    subsets of the full data set. 
+    
+    Parameters 
+    ----------
+    y : array_like, shape (N,)
+        the values of the time history of the signal.
+        
+    window_size : int
+        the length of the window. Must be greater than 1 and preferably
+        an odd integer number.Default is ``3``
+        
+    method: str 
+        variant of moving-average. Can be ``sma``, ``cma``, ``wma`` and ``ema`` 
+        for simple, cummulative, weight and exponential moving average. Default 
+        is ``wma``. 
+        
+    mode: str
+        returns the convolution at each point of overlap, with an output shape
+        of (N+M-1,). At the end-points of the convolution, the signals do not 
+        overlap completely, and boundary effects may be seen. Can be ``full``,
+        ``same`` and ``valid``. See :doc:`~np.convole` for more details. Default 
+        is ``same``. 
+        
+    alpha: float, 
+        smoothing factor. Only uses in exponential moving-average. Default is 
+        ``.5``.
+    
+    Returns 
+    --------
+    ya: array like, shape (N,) 
+        Averaged time history of the signal
+    
+    Notes 
+    -------
+    The first element of the moving average is obtained by taking the average 
+    of the initial fixed subset of the number series. Then the subset is
+    modified by "shifting forward"; that is, excluding the first number of the
+    series and including the next value in the subset.
+    
+    Examples
+    --------- 
+    >>> import numpy as np ; import matplotlib.pyplot as plt 
+    >>> from watex.tools.exmath  import moving_average 
+    >>> data = np.random.randn (37) 
+    >>> # add gaussion noise to the data 
+    >>> data = 2 * np.sin( data)  + np.random.normal (0, 1 , len(data))
+    >>> window = 5  # fixed size to 5 
+    >>> sma = moving_average(data, window) 
+    >>> cma = moving_average(data, window, method ='cma' )
+    >>> wma = moving_average(data, window, method ='wma' )
+    >>> ema = moving_average(data, window, method ='ema' , alpha =0.6)
+    >>> x = np.arange(len(data))
+    >>> plt.plot (x, data, 'o', x, sma , 'ok--', x, cma, 'g-.', x, wma, 'b:')
+    >>> plt.legend (['data', 'sma', 'cma', 'wma'])
+    
+    References 
+    ----------
+    .. * [1] https://en.wikipedia.org/wiki/Moving_average
+    .. * [2] https://www.sciencedirect.com/topics/engineering/hanning-window
+    .. * [3] https://stackoverflow.com/questions/12816011/weighted-moving-average-with-numpy-convolve
+    
+    """
+    y = np.array(y)
+    try:
+        window_size = np.abs(_assert_all_types(int(window_size), int))
+    except ValueError:
+        raise ValueError("window_size has to be of type int")
+    if window_size < 1:
+        raise TypeError("window_size size must be a positive odd number")
+    if  window_size > len(y):
+        raise TypeError("window_size is too large for averaging"
+                        f"Window must be greater than 0 and less than {len(y)}")
+    
+    method =str(method).lower().strip().replace ('-', ' ') 
+    
+    if method in ('simple moving average',
+                  'simple', 'sma'): 
+        method = 'sma' 
+    elif method  in ('cumulative average', 
+                     'cumulative', 'cma'): 
+        method ='cma' 
+    elif method  in ('weighted moving average',
+                     'weight', 'wma'): 
+        method = 'wma'
+    elif method in('exponential moving average',
+                   'exponential', 'ema'):
+        method = 'ema'
+    else : 
+        raise ValueError ("Variant average methods only includes "
+                          f" {smart_format(['sma', 'cma', 'wma', 'ema'], 'or')}")
+    if  1. <= alpha <= 0 : 
+        raise ValueError ('alpha should be less than 1. and greater than 0. ')
+        
+    if method =='sma': 
+        ya = np.convolve(y , np.ones (window_size), mode ) / window_size 
+        
+    if method =='cma': 
+        y = np.cumsum (y) 
+        ya = np.array([ y[ii]/ len(y[:ii +1]) for ii in range(len(y))]) 
+        
+    if method =='wma': 
+        w = np.cumsum(np.ones(window_size, dtype = float))
+        w /= np.sum(w)
+        ya = np.convolve(y, w[::-1], mode ) #/window_size
+        
+    if method =='ema': 
+        ya = np.array ([y[0]]) 
+        for ii in range(1, len(y)): 
+            v = y[ii] * alpha + ( 1- alpha ) * ya[-1]
+            ya = np.append(ya, v)
+            
+    return ya 

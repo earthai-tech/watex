@@ -11,10 +11,8 @@ from ..typing import (
     Tuple,
     List,
     Optional,
-    TypeVar,
-    Iterable ,
     F, 
-    Array, 
+    ArrayLike, 
     NDArray, 
     Dict,
     Any
@@ -28,7 +26,7 @@ from pprint import pprint
 import pandas as pd 
 import numpy as np 
 
-from ..sklearn import (
+from .._sklearn import (
      mean_squared_error,
      cross_val_score, 
      GridSearchCV , 
@@ -36,15 +34,11 @@ from ..sklearn import (
 )
 from .._watexlog import watexlog
 
-T= TypeVar('T')
-KT=TypeVar('KT')
-VT=TypeVar('VT')
-
 __logger = watexlog().get_watex_logger(__name__)
 
 def multipleGridSearches(
         X: NDArray, 
-        y:Array,
+        y:ArrayLike,
         estimators: F, 
         grid_params: Dict[str, Any],
         scoring:str  ='neg_mean_squared_error', 
@@ -335,7 +329,7 @@ class GridSearch:
                
     def __init__(self,
                  base_estimator:F,
-                 grid_params:Iterable[T],
+                 grid_params:Dict[str,Any],
                  cv:int =4,
                  kind:str ='GridSearchCV',
                  scoring:str = 'neg_mean_squared_error',
@@ -590,7 +584,7 @@ class BaseEvaluation (object):
     def __init__(self, 
                  base_estimator: F,
                  X: NDArray, 
-                 y:Array,
+                 y:ArrayLike,
                  s_ix:int =None,
                  cv: int =7,  
                  pipeline: List[F]= None, 
@@ -789,7 +783,7 @@ class BaseEvaluation (object):
 def quickscoring_evaluation_using_cross_validation(
         clf: F,
         X:NDArray,
-        y:Array,
+        y:ArrayLike,
         cv:int =7,
         scoring:str  ='accuracy', 
         display: str ='off'
