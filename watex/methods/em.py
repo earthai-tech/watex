@@ -403,7 +403,7 @@ class EM(IsEdi):
         Parameters 
         ------------
   
-        ediObjs: list 
+        data: Path-like object for  list of pycsamt.core.edi.Edi objects
             Collection of edi object from pycsamt.core.edi.Edi 
         dataid: list 
             list of ids to  rename the existing EDI-dataid from  
@@ -611,11 +611,11 @@ class EM(IsEdi):
         due to the weak of missing frequency at certain band especially in the 
         attenuation band. 
         
-        :param ediObjs: Collections of EDI-objects from `pycsamt`_ and `MTpy`_ 
-            packages or full path to EDI files. 
-        :type ediObjs: str or :mod:`~.core.edi.Edi_collection` object 
+        :param data: full path to EDI files or collection of  `pycsamt`_ 
+            package Edi-objects 
+        :type data: path-like object or list of pycsamt.core.edi objects 
         
-        :param to_log10: Export frequency to base 10 logarithm 
+        :param to_log10: export frequency to base 10 logarithm 
         :type to_log10: bool, 
         
         :returns: frequency with clean data. Out of `attenuation band` if survey 
@@ -669,7 +669,7 @@ class EM(IsEdi):
         
         Parameters 
         ----------- 
-        ediObjs: str or :mod:`~.core.edi.Edi_collection` object 
+        data: Path-like object or list of pycsamt.core.edi objects
             Collections of EDI-objects from `pycsamt`_ or full path to EDI files.
         out: str 
             kind of data to output. Be sure to provide the component to retrieve 
@@ -1603,8 +1603,8 @@ class Processing (EM) :
     
         Parameters 
         ---------- 
-        ediObjs: list  of  pycsamt.core.edi.Edi 
-            Collections of EDI-objects from `pycsamt`_ 
+        data: Path-like object or list of pycsamt.core.edi objects
+            Collections of EDI-objects from `pycsamt`_ or full path to EDI files. 
             
         buffer: list [max, min] frequency in Hz
             list of maximum and minimum frequencies. It must contain only two values.
@@ -1948,7 +1948,7 @@ class Processing (EM) :
         Analyse the data in the EDI collection and return the quality control value.
         It indicate how percentage are the data to be representative.
        
-        :param ediObjs: list  of  pycsamt.core.edi.Edi objects 
+        :param data: Path-like object or list  of  pycsamt.core.edi.Edi objects 
                 Collections of EDI-objects from `pycsamt`_
         :param tol: float, 
             the tolerance parameter. The value indicates the rate from which the 
@@ -2052,7 +2052,7 @@ class Processing (EM) :
         
         Parameters 
         ----------
-        ediObjs: list  of  :class:`pycsamt.core.edi.Edi`  
+        data: Path-like object or list of  :class:`pycsamt.core.edi.Edi`  
             collections of EDI-objects from `pycsamt`_ 
                 
         tol : float, 
