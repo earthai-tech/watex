@@ -2774,7 +2774,7 @@ def fittensor(
     >>> freq_ = np.hstack ((refreq.copy()[:7], refreq.copy()[12:] )) 
     >>> z = np.random.randn(len(freq_)) *10 # assume length of  freq as 
     ...                 # the same like the tensor Z value 
-    >>> zn  = fit_tensor (refreq, freq_, z)
+    >>> zn  = fittensor (refreq, freq_, z)
     >>> z # some frequency values are missing but not visible. 
     ...array([-23.23448367,   2.93185982,  10.81194723, -12.46326732,
              1.57312908,   7.23926576, -14.65645799,   9.85956253,

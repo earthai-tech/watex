@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 LKouadio, 
+# Copyright (c) 2022 LKouadio, 
 # Licence: MIT
 
 import os
@@ -195,7 +195,7 @@ class Structures(Base):
     
     @property 
     def by_force(self): 
-        """ Force configuration is auto getting the property file failed!"""
+        """ Force configuration if auto getting the property file fails."""
         codef =['code','label','__description','pattern', 'pat_size',	
                 'pat_density','pat_thickness','color']
         
