@@ -6,7 +6,7 @@
 💧 `WATex's` documentation
 ================================
 
-`A machine learning research for hydrogeophysic` 
+`A machine learning research in hydrogeophysic` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 < *Life is much better with potable water* >
@@ -27,7 +27,7 @@ All modules and packages are written to intend solving real-engineering problems
 
 * `Support vector machines`
 * `Neighbors: KNN`
-* `Trees: DTC, Extratrees` 
+* `Trees: Decision Tree (DTC), Extratrees` 
 * `Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking)`
 * `Apriori`
 * `Kernel Principal Component Analysis k-PCA`
@@ -43,8 +43,9 @@ and the geophysical methods:
 * `Logging`
 
 
-`WATex` API
-^^^^^^^^^^^^^^^^^
+
+`WATex` User Guide 
+^^^^^^^^^^^^^^^^^^^
 
 .. toctree::
    :maxdepth: 2
@@ -53,10 +54,18 @@ and the geophysical methods:
    installation
    getting_started
    tutorials
-   api
+   script
 
 
+`WATex` API
+^^^^^^^^^^^^^^^^^
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference API
+
+   api/watex
+   
 Indices and tables
 ==================
 

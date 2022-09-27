@@ -86,6 +86,10 @@ def _is_readable (
     
     """
     cpObj= Config().parsers 
+    
+    if isinstance (f, pd.DataFrame): 
+        return f 
+    
     if not os.path.isfile: 
         raise TypeError (
             f'Expected a Path-like object, got : {type(f).__name__!r}')

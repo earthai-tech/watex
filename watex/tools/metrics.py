@@ -32,7 +32,7 @@ from .._sklearn import (
     )
 
 from .mlutils import ( 
-    format_generic_obj
+    formatGenericObj
     ) 
 from ..decorators import ( 
     docstring 
@@ -194,7 +194,7 @@ def precision_recall_tradeoff(
     
         if classe_ not in y: 
             raise ArgumentError('Value must contain a least a value of label '
-                    '`y`={0}'.format(format_generic_obj(y).format(*list(y))))
+                    '`y`={0}'.format(formatGenericObj(y).format(*list(y))))
                                  
         y=(y==classe_)
         

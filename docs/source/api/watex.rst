@@ -2,7 +2,7 @@
 **Package Bases**
 ===================================
 
-Module Basis
+Module Base
 ---------------------
 .. automodule:: watex.bases.base
 	:members:
@@ -12,7 +12,7 @@ Module Features
 .. automodule:: watex.bases.features
     :members:
 
-Module Default-Preparation
+Module Prepare
 --------------------------------
 .. automodule:: watex.bases.prepare
 	:members:
@@ -24,18 +24,18 @@ Module modeling
 	
 
 Module Processing
---------------------------------
+---------------------------------------
 .. automodule:: watex.bases.processing
 	:members:
 
 Module Transformers
---------------------------------
+-----------------------------------------
 .. automodule:: watex.bases.transformers
 	:members:
 	
 
 Module Site
---------------------------------
+------------------------------------------
 .. automodule:: watex.bases.site
 	:members:
 	
@@ -56,7 +56,7 @@ Module Loader
 
 	
 Module Dimensionality
---------------------------------
+----------------------------------------------
 .. automodule:: watex.analysis.dimensionality
 	:members:
 
@@ -71,20 +71,20 @@ Module Base
 	:members:
 
 Module Geology
---------------------------------
+---------------------------------------
 .. automodule:: watex.geology.geology
 	:members:
 
 
 Module Geodatabase
---------------------------------
+-----------------------------------------
 .. automodule:: watex.geology.database
 	:members:
 	
 	
 Module Strata
---------------------------------
-.. automodule:: watex.geology.statigraphic
+--------------------------------------------
+.. automodule:: watex.geology.stratigraphic
 	:members:
 	
 

@@ -43,7 +43,7 @@ from ..tools.mlutils import (
     findDifferenceGenObject, 
     formatModelScore, 
     controlExistingEstimator,
-    format_generic_obj,
+    formatGenericObj,
     
     )
 from ..typing import ( 
@@ -973,7 +973,7 @@ class Processing (Preprocessing) :
                     warnings(
                         f'Given estimator``{estim}`` does not exist in the '
                         '  list of default estimators {}.'.format(
-                            format_generic_obj(
+                            formatGenericObj(
                             estfullname)).format(*estfullname))
                 else: 
                     if estim_codecs is None: 

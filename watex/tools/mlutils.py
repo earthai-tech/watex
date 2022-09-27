@@ -122,7 +122,7 @@ def cfexist(features_to: List[ArrayLike],
         return True
     else: return False 
 
-def format_generic_obj(generic_obj :Iterable[T])-> T: 
+def formatGenericObj(generic_obj :Iterable[T])-> T: 
     """
     Format a generic object using the number of composed items. 
 

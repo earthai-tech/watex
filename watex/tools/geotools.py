@@ -24,9 +24,7 @@ from .funcutils import (
     smart_format, 
     station_id, 
     )
-from ..exceptions import ( 
-    SrataError
-    )
+
 from .._watexlog import watexlog 
 _logger = watexlog().get_watex_logger(__name__ )
 

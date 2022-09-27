@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021 LKouadio, Wed Jul  7 22:23:02 2021 hz
 # MIT- licence.
- 
+
+from __future__ import annotations 
 import os
 import warnings
 import numpy as np 
@@ -16,492 +17,756 @@ import seaborn as sns
 
 from ..bases import FeatureInspection
 from .._watexlog import watexlog
-import watex.exceptions as Wex
+
 from ..tools.mlutils import (
     cfexist , 
     findIntersectionGenObject,
     featureExistError,
-    format_generic_obj
+    formatGenericObj
     )
 from ..typing import (
-    Generic, 
-    T,
+    List,
+    Dict,
+    Optional,
+    NDArray, 
+    ArrayLike, 
     Iterable,
-    Callable
+    DataFrame, 
+    Series,
+    F, 
+    
 )
 from ..property import ( 
-    Config
+    BasePlot, 
     )
+from ..tools.coreutils import ( 
+    _is_readable 
+    )
+from ..tools.funcutils import ( 
+    _assert_all_types , 
+    repr_callable_obj, 
+    smart_strobj_recognition
+    )
+from ..exceptions import ( 
+    ParameterNumberError , 
+    FileHandlingError, 
+    PlotError, 
+    TipError,
+    FeatureError, 
+    FitError
+    )
+
+
 _logger=watexlog.get_watex_logger(__name__)
 
 
-class QuickPlot : 
+class QuickPlot (BasePlot)  : 
     """
     Special class deals with analysis modules. To quick plot diagrams, 
     histograms and bar plots.
     
     Arguments 
     ----------
-    *df*: pd.core.DataFrame
-        Dataframe for quick plotting. Commonly `QuickPlot` deals 
-        with `:mod:`watex.analysis` package. 
+    **data**: str or pd.core.DataFrame
+        Path -like object or Dataframe. If data is given as path-like object,
+        QuickPlot`  calls  the module from :mod:`watex.bases.features`
+        for data reading and sanitizing before plotting. Be aware in this
+        case to provide the target name and possible the `classes` of for 
+        data analysis. Both str or dataframe need to provide the name of target. 
         
-    *data_fn*: str 
-        Raw data for plotting. `QuickPlot` doesnt straighforwadly  
-        read   the raw datafile. It calls  the module from 
-        :mod:`watex.analysis.basics.SupervisedLearning` module 
-        for data reading and sanitizing data before plotting.
+    **y**: array-like, optional 
+        array of the target. Must be the same length as the data. If `y` is 
+        provided and `data` is given as ``str`` or ``DataFrame``, all the data 
+        should be considered as the X data for analysis. 
         
-    *flow_classes*: list of float, 
-        list of classes values to convert the categorical features. Default is
-        [0., 1., 3.] which means:: 
+    **nameoftarget**: str, 
+        the name of the target from data analysis. In the both cases where the 
+        data is given as string of dataframe, `nameoftarget` must be provided. 
+        Otherwise an error will occurs. 
+ 
+    **classes**: list of float, 
+        list of the categorial values encoded to numerical. For instance, for
+        `flow` data analysis in the Bagoue dataset, the `classes` could be 
+        ``[0., 1., 3.]`` which means:: 
             
             - 0 m3/h  --> FR0
             - > 0 to 1 m3/h --> FR1
             - > 1 to 3 m3/h --> FR2
             - > 3 m3/h  --> FR3
-
+            
+    **mapflow**: bool, 
+        Is refer to the flow rate prediction using DC-resistivity features and 
+        work when the `nameoftarget` is set to ``flow``. If set to True, value 
+        in the target columns should map to categorical values. Commonly the 
+        flow rate values are given as a trend of numerical values. For a 
+        classification purpose, flow rate must be converted to categorical 
+        values which are mainly refered to the type of types of hydraulic. 
+        Mostly the type of hydraulic system is in turn tided to the number of 
+        the living population in a specific area. For instance, flow classes 
+        can be ranged as follow: 
+    
+            - FR = 0 is for dry boreholes
+            - 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
+            - 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
+            - 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
+        
+        Note that this flow range is not exhaustive and can be modified according 
+        to the type of hydraulic required on the project. 
+        
     Hold others optionnal attributes infos: 
         
-    ====================    ===================================================
+    =================   ========================================================
     Key Words               Description        
-    ====================    ===================================================
-    fig_dpi                 dots-per-inch resolution of the figure
-                            *default* is 300
-    fig_num                 number of the figure instance
-                            *default* is 'Mesh'
-    fig_size                size of figure in inches (width, height)
-                            *default* is [5, 5]
-    savefig                 savefigure's name, *default* is ``None``
-    fig_orientation         figure orientation. *default* is ``landscape``
-    fig_title               figure title. *default* is ``None``
-    fs                      size of font of axis tick labels, axis labels are
-                            fs+2. *default* is 6 
-    ls                      [ '-' | '.' | ':' ] line style of mesh lines
-                            *default* is '-'
-    lc                      line color of the plot, *default* is ``k``
-    lw                      line weight of the plot, *default* is ``1.5``
-    alpha                   transparency number, *default* is ``0.5``  
-    font_weight             weight of the font , *default* is ``bold``.        
-    marker                  marker of stations 
-                            *default* is r"$\blacktriangledown$"
-    ms                      size of marker in points. *default* is 5
-    mstyle                  style  of marker in points. *default* is ``o``.
-    x_minorticks            minortick according to x-axis size and *default* is 1.
-    y_minorticks            minortick according to y-axis size and *default* is 1.
-    font_size               size of font in inches (width, height)
-                            *default* is 3.
-    font_style              style of font. *default* is ``italic``
-    bins                    histograms element separation between two bar. 
-                             *default* is ``10``. 
-    xlim                    limit of x-axis in plot. *default* is None 
-    ylim                    limit of y-axis in plot. *default* is None 
-    ====================    ===================================================
+    =================   ========================================================
+    fig_dpi             dots-per-inch resolution of the figure
+                        *default* is 300
+    fig_num             number of the figure instance
+                        *default* is 'Mesh'
+    fig_size            size of figure in inches (width, height)
+                        *default* is [5, 5]
+    savefig             savefigure's name, *default* is ``None``
+    fig_orientation     figure orientation. *default* is ``landscape``
+    fig_title           figure title. *default* is ``None``
+    fs                  size of font of axis tick labels, axis labels are
+                        fs+2. *default* is 6 
+    ls                  [ '-' | '.' | ':' ] line style of mesh lines
+                        *default* is '-'
+    lc                  line color of the plot, *default* is ``k``
+    lw                  line weight of the plot, *default* is ``1.5``
+    alpha               transparency number, *default* is ``0.5``  
+    font_weight         weight of the font , *default* is ``bold``.        
+    marker              marker of stations *default* is :math:`\blacktriangledown`.
+    ms                  size of marker in points. *default* is 5
+    marker_style        style  of marker in points. *default* is ``o``.
+    marker_facecolor    facecolor of the marker. *default* is ``yellow``
+    marker_edgecolor    edgecolor of the marker. *default* is ``cyan``.
+    marker_edgewidth    width of the marker. *default* is ``3``.
+    xminorticks         minortick according to x-axis size and *default* is 1.
+    yminorticks         minortick according to y-axis size and *default* is 1.
+    font_size           size of font in inches (width, height)
+                        *default* is 3.
+    font_style          style of font. *default* is ``italic``
+    bins                histograms element separation between two bar. 
+                         *default* is ``10``. 
+    xlim                limit of x-axis in plot. *default* is None 
+    ylim                limit of y-axis in plot. *default* is None 
+    xlabel              label name of x-axis in plot. *default* is None 
+    ylabel              label name  of y-axis in plot. *default* is None 
+    rotate_xlabel       angle to rotate `xlabel` in plot. *default* is None 
+    rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
+    leg_kws             keyword arguments of legend. *default* is empty dict.
+    plt_kws             keyword arguments of plot. *default* is empty dict
+    rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
+                        *default* is '--'
+    ps                  [ '-' | '.' | ':' ] line style of `Precision `metric
+                        *default* is '-'
+    rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
+    pc                  line color of `Precision` metric *default* is ``k``
+    s                   size of items in scattering plots. default is ``fs*40.``
+    gls                 [ '-' | '.' | ':' ] line style of grid  
+                        *default* is '--'.
+    glc                 line color of the grid plot, *default* is ``k``
+    glw                 line weight of the grid plot, *default* is ``2``
+    galpha              transparency number of grid, *default* is ``0.5``  
+    gaxis               axis to plot grid.*default* is ``'both'``
+    gwhich              type of grid to plot. *default* is ``major``
+    tp_axis             axis  to apply ticks params. default is ``both``
+    tp_labelsize        labelsize of ticks params. *default* is ``italic``
+    tp_bottom           position at bottom of ticks params. *default*
+                        is ``True``.
+    tp_top              position at the top  of ticks params. *default*
+                        is ``True``.
+    tp_labelbottom      see label on the bottom of the ticks. *default* 
+                        is ``False``
+    tp_labeltop         see the label on the top of ticks. *default* is ``True``
+    cb_orientation      orientation of the colorbar. *default* is ``vertical``
+    cb_aspect           aspect of the colorbar. *default* is 20.
+    cb_shrink           shrink size of the colorbar. *default* is ``1.0``
+    cb_pad              pad of the colorbar of plot. *default* is ``.05``
+    cb_anchor           anchor of the colorbar. *default* is ``(0.0, 0.5)``
+    cb_panchor          proportionality anchor of the colorbar. *default* is 
+                        `` (1.0, 0.5)``.
+    cb_label            label of the colorbar. *default* is ``None``.      
+    cb_spacing          spacing of the colorbar. *default* is ``uniform``
+    cb_drawedges        draw edges inside of the colorbar. *default* is ``False``
+    cb_format           format of the colorbar values. *default* is ``None``.
+    sns_orient          seaborn fig orientation. *default* is ``v`` which refer
+                        to vertical 
+    sns_style           seaborn style 
+    sns_palette         seaborn palette 
+    sns_height          seaborn height of figure. *default* is ``4.``. 
+    sns_aspect          seaborn aspect of the figure. *default* is ``.7``
+    sns_theme_kws       seaborn keywords theme arguments. default is ``{
+                        'style':4., 'palette':.7}``
+    ================    ========================================================
     
     """
 
-    def __init__(self,  **kwargs): 
+    def __init__(self,  classes = None, nameoftarget= None,  **kws): 
+        super().__init__(**kws)
         
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
-        self._target_classes = kwargs.pop('target_labels',[0., 1., 3.])
-        self.target_name= kwargs.pop('target_name', 'flow')
+        self.classes = kws.pop('classes',[0., 1., 3.])
+        self.nameoftarget= kws.pop('nameoftarget', None)
+        self.mapflow= kws.pop('mapflow', False)
 
-        self.fig_num= kwargs.pop('fig_num', 1)
-        self.fig_size = kwargs.pop('fig_size', [12,6])
-        self.fig_dpi =kwargs.pop('fig_dpi', 300)
-        self.savefig = kwargs.pop('savefig', None)
-        self.fig_legend= kwargs.pop('fig_legend_kws', None)
-        
-        self.fig_orientation =kwargs.pop('fig_orientation','landscape')
-        self.fig_title =kwargs.pop('title', None)
-        
-        self.x_minorticks=kwargs.pop('xminorticks', 1)
-        self.y_minorticks =kwargs.pop('yminorticks', 1)
-        
-        self.font_size =kwargs.pop('font_size',3.)
-        self.font_style=kwargs.pop('font_style', 'italic')
-        self.fs =kwargs.pop('fs', 2.)
-        
-        self.mstyle =kwargs.pop('maker_style', 'o')
-        self.ms =kwargs.pop('ms', 3)
-        # self.mplfont =kwargs.pop('font','cursive')
-        self.markerfacecolor=kwargs.pop('markefacecolor', 'r')
-        self.markeredgecolor=kwargs.pop('markeredgecolor', 'gray')
-        
-        self.lc = kwargs.pop('color', 'k')
-        self.font_weight =kwargs.pop('font_weight', 'bold')
-        self.ls= kwargs.pop('ls', '-')
-        self.lw =kwargs.pop('lw', 1.5)
-        self.alpha = kwargs.pop('alpha', 0.5)
-        
-        self.stacked = kwargs.pop('stacked', False)
-        self.bins = kwargs.pop('bins', 10)
-        
-        self.xlim =kwargs.pop('xlim', None )
-        self.ylim=kwargs.pop('y_lim', None) 
-
-        self.sns_orient =kwargs.pop('orient', 'v')
-        self.sns_style =kwargs.pop('sns_style', None)
-        self.sns_palette = kwargs.pop('sns_palette', None)
-        self.sns_height =kwargs.pop ('sns_height', 4.)
-        self.sns_aspect =kwargs.pop ('sns_aspect', .7)
-        self.sns_theme_kws = kwargs.pop('set_theme', 
+        self.sns_orient =kws.pop('sns_orient', 'v')
+        self.sns_style =kws.pop('sns_style', None)
+        self.sns_palette = kws.pop('sns_palette', None)
+        self.sns_height =kws.pop ('sns_height', 4.)
+        self.sns_aspect =kws.pop ('sns_aspect', .7)
+        self.sns_theme_kws = kws.pop('sns_theme_kws', 
                                         {'style':self.sns_style, 
-                                         'palette':self.sns_palette, 
-                                                      }
+                                         'palette':self.sns_palette }
                                         )
+        self.data_ =None 
+        self.y = None 
+        
+        for key in kws.keys(): 
+            setattr(self, key, kws[key])
 
-        self.xlabel=kwargs.pop('xlabel', None)
-        self.ylabel=kwargs.pop('ylabel', None)
-        
-        
-        for key in kwargs.keys(): 
-            setattr(self, key, kwargs[key])
 
     @property 
-    def df (self): 
-        """ DataFrame of analysis. """
-        return self._df 
+    def data(self): 
+        return self.data_ 
     
-    @df.setter 
-    def df (self, dff): 
-        """ Ressetting dataframe when comming from raw file. """
-        if dff is not None : 
-            self._df = dff
-
-    @property 
-    def data_fn(self): 
-        return self._data_fn 
-    
-    @data_fn.setter 
-    def data_fn (self, datafn):
-        """ Can read the data file provided  and set the data into 
-        pd.DataFrame by calling :class:~analysis.basics.SLAnalyses`  
-          topopulate convenient attributes. """
-        if datafn is not None : 
-            self._data_fn = datafn 
-        if self.target_name =='flow':
-           slObj= FeatureInspection(
-                data_fn=self._data_fn, set_index=True, 
-                flow_classes = self._target_classes , 
-                target = self.target_name
-                           )
-           self.df= slObj.df 
-        elif isinstance(self._data_fn, str) : 
-            if os.path.isfile (self.data_fn):
-                self.gFname, exT=os.path.splitext(self.data_fn)
-                pcf = Config().parsers 
-                if exT in pcf.keys(): self._fn =exT 
-                else: self._fn ='?'
-                self.df = pcf[exT](self._data_fn)
-                self.gFname = os.path.basename(self.gFname)
-        elif isinstance(self._data_fn, pd.DataFrame): 
-            self.df = self._data_fn
-
-
-    def fit(self, df=None, data_fn = None ): 
-        """ fit function and set arguments and populate arguments  """
+    @data.setter 
+    def data (self, data):
+        """ Read the data file
         
-        if df is not None : 
-            self.df = df 
-        if data_fn is not None : 
-            self._data_fn = data_fn 
-
-        if self._data_fn is not None :
-            self.data_fn = self._data_fn  
+        Can read the data file provided  and set the data into pd.DataFrame by
+        calling :class:`watex.bases.features.FeatureInspection`  to populate 
+        convenient attributes especially when the target name is specified as 
+        `flow`. Be sure to set other name if you dont want to consider flow 
+        features inspection."""
+          
+        if str(self.nameoftarget).lower() =='flow':
+           fobj= FeatureInspection( set_index=True, 
+                flow_classes = self.classes , 
+                target = self.nameoftarget, 
+                mapflow= self.mapflow 
+                           ).fit(data=data)
+           self.data_= fobj.data  
+        elif isinstance(data, str) :
+            self.data_ = _is_readable(data )
+        elif isinstance(data, pd.DataFrame): 
+            self.data_ = data
             
-        if self.df is None: 
-            raise TypeError("No data found!")
+        if str(self.nameoftarget).lower() in self.data_.columns.str.lower(): 
+            ix = list(self.data.columns.str.lower()).index (
+                self.nameoftarget.lower() )
+            self.y = self.data_.iloc [:, ix ]
+
+            self.X_ = self.data_.drop(columns =self.data_.columns[ix] , 
+                                         )
+            
+    def fit(self,
+            data: str | DataFrame, 
+            y: Optional[Series| ArrayLike]=None
+            )-> object : 
+        """ Fit data and populate the arguments for plotting purposes. 
+        
+        Parameters 
+        ----------
+        data: str or pd.core.DataFrame, 
+            Path -like object or Dataframe. If data is given as path-like object,
+            `QuickPlot` calls  the module from :mod:`watex.bases.features`
+            for data reading and sanitizing data before plotting. Be aware in this
+            case to provide the target name and possible the `classes` of for 
+            data analysis. Both str or dataframe need to provide the name of target. 
+        
+        y: array-like, optional 
+            array of the target. Must be the same length as the data. If `y` is 
+            provided and `data` is given as ``str`` or ``DataFrame``, all the data 
+            should be considered as the X data for analysis. 
+            
+        Examples 
+        --------
+
+        >>> from watex.view.plot import QuickPlot
+        >>> qplotObj= QuickPlot(xlabel = 'Flow classes in m3/h',
+                                ylabel='Number of  occurence (%)')
+        >>> qplotObj.nameoftarget= None # eith nameof target set to None 
+        >>> qplotObj.fit(data)
+        >>> qplotObj.data.iloc[1:2, :]
+        ...  num name    east      north  ...         ohmS        lwi      geol flow
+            1    2   b2  791227  1159566.0  ...  1135.551531  21.406531  GRANITES  0.8
+        >>> qplotObj.nameoftarget= 'flow'
+        >>> qplotObj.mapflow= True # map the flow from num. values to categ. values
+        >>> qplotObj.fit(data)
+        >>> qplotObj.data.iloc[1:2, :]
+        ... num  power  magnitude shape  ...         ohmS        lwi      geol  flow
+        id                               ...                                        
+        b2    2   70.0      142.0     V  ...  1135.551531  21.406531  GRANITES   FR1
+         
+        """
+        self.data = data 
+        if y is not None: 
+            y = _assert_all_types(y, np.ndarray, list, tuple, pd.Series)
+            if len(y)!= len(self.data) :
+                raise ValueError(
+                    f"y and data must have the same length but {len(y)} and"
+                    f" {len(self.data)} were given respectively.")
+            
+            self.y = pd.Series (y , name = self.nameoftarget or 'none')
+            # for consistency get the name of target 
+            self.nameoftarget = self.y.name 
+            
             
         return self 
     
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        return repr_callable_obj  (self, skip ='y')
+       
+    def __getattr__(self, name):
+        if name.endswith ('_'): 
+            if name not in self.__dict__.keys(): 
+                if name in ('data_', 'X_'): 
+                    raise FitError (
+                        f'Fit the {self.__class__.__name__!r} object first'
+                        )
+                
+        rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+        appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
-    def hist_cat_distribution(self, df=None, data_fn =None, 
-                              target_name : str =None,   **kws): 
+        raise AttributeError (
+            f'{self.__class__.__name__!r} object has no attribute {name!r}'
+            f'{appender}{"" if rv is None else "?"}'
+            )        
+        
+#XXXOPTIMIZE         
+    def histCatDistribution(self, data:  str | DataFrame = None, 
+                               stacked: bool = False,  **kws): 
         """
         Quick plot a distributions of categorized classes according to the 
         percentage of occurence. 
         
-        :param df: Dataframe to quickplotted
-        :param data_fn: 
-                Datafile to be read. `QuickPlot`  will call `SLAnalyses`
-                module to read file and sanitizing data before plotting. 
-        :param target_name: 
-                Specify the `target_name` for histogram plot. If not given 
-                an `UnboundLocalError` will raise.
-                
-        :param xlabel: Optional, x-axis label name. 
-                If ``none`` will generated a defaut value ::
-                    
-                    xlabel= 'Flow classes in m3/h'
-                    
-        :param ylabel: Optional,   y-axis label name. 
-                If ``none`` will generated a defaut value::
-                    
-                    ylabel = 'Number of  occurence (%)' 
-                    
-        :param fig_title: Optional, figure title `str` name. 
-                If ``none`` will generated a defaut value:
-                    
-                    fig_title ='Distribution of flow classes(FR)'
-        :Example: 
+        Parameters 
+        -----------
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Both are the sequence of data. If 
+            data is given as path-like object,`QuickPlot` reads and sanitizes 
+            data before plotting. Be aware in this case to provide the target 
+            name and possible the `classes` of for data inspection. Both str or
+            dataframe need to provide the name of target. 
             
-            >>> from watex.view.plot import QuickPlot 
-            >>> qplotObj = QuickPlot(
-            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b')
-            >>> qplotObj.hist_cat_distribution(target_name='flow')
+        stacked: bool 
+            Pill bins one to another as a cummulative values. *default* is 
+            ``False``. 
+            
+        bins : int, optional 
+             contains the integer or sequence or string
+             
+        range : list, optional 
+            is the lower and upper range of the bins
+        
+        density : bool, optional
+             contains the boolean values 
+            
+        weights : array-like, optional
+            is an array of weights, of the same shape as `data`
+            
+        bottom : float, optional 
+            is the location of the bottom baseline of each bin
+            
+        histtype : str, optional 
+            is used to draw type of histogram. {'bar', 'barstacked', step, 'stepfilled'}
+            
+        align : str, optional
+             controls how the histogram is plotted. {'left', 'mid', 'right'}
+             
+        rwidth : float, optional,
+            is a relative width of the bars as a fraction of the bin width
+            
+        log : bool, optional
+            is used to set histogram axis to a log scale
+            
+        color : str, optional 
+            is a color spec or sequence of color specs, one per dataset
+            
+        label : str , optional
+            is a string, or sequence of strings to match multiple datasets
+            
+        normed : bool, optional
+            an optional parameter and it contains the boolean values. It uses 
+            the density keyword argument instead.
+            
+        Examples 
+        ---------
+        >>> from watex.view.plot import QuickPlot 
+        >>> qplotObj= QuickPlot(xlabel = 'Flow classes in m3/h',
+                                ylabel='Number of  occurence (%)'
+                                lc='b')
+        >>> qplotObj.histCatDistribution()
         
         """
+        self._logging.info('Quick plot of categorized classes distributions.'
+                           f' the target name: {self.nameoftarget!r}')
         
-        savefig =kws.pop('savefig', None)
-        xlabel =kws.pop('xlabel', None)
-        ylabel =kws.pop('xlabel', None)
-        fig_title =kws.pop('fig_title', None)
-        
-        if savefig is not None : self.savefig = savefig
-        
-       
-        if target_name is not None: 
-            self.target_name =target_name 
-        
-        for attr, valattr, optval in zip(
-                ['target_name', 'xlabel', 'ylabel', 'fig_title'], 
-                [target_name, xlabel, ylabel, fig_title],
-                ['flow', 'Flow classes in m3/h','Number of  occurence (%)',
-                'Distribution of flow classes(FR)' ]
-                ): 
+        if self.data_ is None: 
+            self.fit(data)
+            
+        if self.data is None: 
+            raise PlotError( "Can plot histogram with NoneType value!")
 
-            if getattr(self, attr) is None: 
-                if attr =='target_name': 
-                    self._logging.error(
-                        'No `target_name` is known. Please specify the target'
-                        " column's name for `cat_distribution` plot.")
-                    raise Wex.WATexError_plot_featuresinputargument(
-                        'No `target_name` is detected.Please specify the target'
-                        " column's name for `cat_distribution` plot.") 
-                
-                if valattr is None : 
-                   valattr = optval
-                   
-                setattr(self, attr, valattr)
-                
-        self._logging('Quick plot a distributions of categorized classes.'
-                      f'Target name is ={self.target_name}')      
+        if self.nameoftarget is None and self.y is None: 
+            raise FeatureError("Please specify the name of the target. ")
+
         # reset index 
-
-        df_= self.df.copy(deep=True)  #make a copy for safety 
+        df_= self.data_.copy()  #make a copy for safety 
         df_.reset_index(inplace =True)
         
         plt.figure(figsize =self.fig_size)
-        plt.hist(df_[self.target_name], bins=self.bins ,
-                  stacked = self.stacked , color= self.lc)
+        plt.hist(df_[self.nameoftarget], bins=self.bins ,
+                  stacked = stacked , color= self.lc , **kws)
 
         plt.xlabel(self.xlabel)
         plt.ylabel(self.ylabel)
         plt.title(self.fig_title)
 
         if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
-                        orientation =self.fig_orientation)
+            plt.savefig(self.savefig,dpi=self.fig_dpi,
+                        orientation =self.fig_orientation
+                        )
         
-    def bar_cat_distribution(self, df=None, data_fn =None, 
-                              target_name : str ='flow',
-                              basic_plot: bool = True,
-                              groupby: Generic[T]=None, **kws):
+    def barCatDistribution(self,
+                           data: str | DataFrame =None, 
+                           basic_plot: bool = True,
+                           groupby: List[str] | Dict [str, float] =None,
+                           **kws):
         """
         Bar plot distribution. Can plot a distribution according to 
         the occurence of the `target` in the data and other parameters 
         
-        :param df: DataFrame of data containers 
-        :param target_name: Name of the target 
-        :param data_fn:  see :doc:`watex.viewer.plot.QuickPlot` documentation.
-        
-        :param basic_pot: Plot only the occurence of targetted columns. 
-        :param specific_plot: 
+        Parameters 
+        -----------
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Both are the sequence of data. If 
+            data is given as path-like object,`QuickPlot` reads and sanitizes 
+            data before plotting. Be aware in this case to provide the target 
+            name and possible the `classes` of for data inspection. Both str or
+            dataframe need to provide the name of target. 
             
-            Plot others features located in the df columns. The plot features
-            can be on ``list`` and use default plot properties. To customize 
-            plot provide the features on ``dict`` with convenients properties 
+        basic_pot: bool, 
+            Plot only the occurence of targetted columns from 
+            `matplotlib.pyplot.bar` function. 
+            
+        groupby: list or dict, optional 
+            Group features for plotting. For instance it plot others features 
+            located in the df columns. The plot features can be on ``list``
+            and use default plot properties. To customize plot provide, one may 
+            provide, the features on ``dict`` with convenients properties 
             like::
 
-                - `groupby`= ['shape', 'type'] #{'type':{'color':'b',
+                * `groupby`= ['shape', 'type'] #{'type':{'color':'b',
                                              'width':0.25 , 'sep': 0.}
                                      'shape':{'color':'g', 'width':0.25, 
                                              'sep':0.25}}
-        :Example: 
+        kws: dict, 
+            Additional keywords arguments from `seaborn.countplot`
             
+        Examples
+        ----------
             >>> from watex.view.plot import QuickPlot
-            >>> qplotObj = QuickPlot(
-            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
-            ...             target_name = 'flow', set_theme ='darkgrid')
-            >>> qplotObj.bar_cat_distribution(basic_plot =False, 
-            ...                                  groupby=['shape' ],
-            ...                          xlabel ='Anomaly type ',
-            ...                          ylabel='Number of  occurence (%)' )
+            >>> data = 'data/geodata/main.bagciv.data.csv'
+            >>> qplotObj= QuickPlot(xlabel = 'Anomaly type',
+                                    ylabel='Number of  occurence (%)',
+                                    lc='b', nameoftarget='flow')
+            >>> qplotObj.sns_style = 'darkgrid'
+            >>> qplotObj.fit(data)
+            >>> qplotObj. barCatDistribution(basic_plot =False, 
+            ...                                groupby=['shape' ])
+   
         """
         
-        if df is not None : self.df = df 
-        if target_name is not None : 
-            self.target_name =target_name
-        if data_fn is not None : 
-            self._data_fn = data_fn 
-      
-        if self._data_fn is not None :
-            self.data_fn = self._data_fn   
+        if data is not None: 
+            self.data= data 
             
-        for plst, plsval in zip(['basic_plot', 'groupby'], 
-                 [basic_plot, groupby]): 
-            if not hasattr(self, plst): 
-                setattr(self, plst, plsval)
-    
-        for key in kws.keys(): 
-            setattr(self, key , kws[key])
+        if self.data_ is None: 
+            raise PlotError ("NoneType can not be plotted!")
 
         fig, ax = plt.subplots(figsize = self.fig_size)
         
-        df_= self.df.copy(deep=True)  #make a copy for safety 
+        df_= self.data.copy(deep=True)  #make a copy for safety 
         df_.reset_index(inplace =True)
         
-        if self.groupby is None:
+        if groupby is None:
             mess= ''.join([
                 'Basic plot is turn to``False`` but no specific plot is', 
                 "  detected. Please provide a specific column's into "
                 " a `specific_plot` argument."])
             self._logging.debug(mess)
             warnings.warn(mess)
-            self.basic_plot =True
+            basic_plot =True
             
-        if self.basic_plot : 
-            ax.bar(list(set(df_[self.target_name])), 
-                        df_[self.target_name].value_counts(normalize =True),
-                        label= self.fig_title, color = self.lc)  
+        if basic_plot : 
+            ax.bar(list(set(df_[self.nameoftarget])), 
+                        df_[self.nameoftarget].value_counts(normalize =True),
+                        label= self.fig_title, color = self.lc, )  
     
-        if self.groupby is not None : 
+        if groupby is not None : 
             if hasattr(self, 'sns_style'): 
                 sns.set_style(self.sns_style)
-            if isinstance(self.groupby, str): 
-                self.groupby =[self.groupby]
-            if isinstance(self.groupby , dict):
-                self.groupby =list(self.groupby.keys())
-            for sll in self.groupby :
-                ax= sns.countplot(x= sll,  hue=self.target_name, 
-                                  data = df_, 
-                              orient = self.sns_orient, ax=ax )
+            if isinstance(groupby, str): 
+                self.groupby =[groupby]
+            if isinstance(groupby , dict):
+                groupby =list(groupby.keys())
+            for sll in groupby :
+                ax= sns.countplot(x= sll,  hue=self.nameoftarget, 
+                                  data = df_, orient = self.sns_orient,
+                                  ax=ax ,**kws)
 
         ax.set_xlabel(self. xlabel)
         ax.set_ylabel (self.ylabel)
         ax.set_title(self.fig_title)
         ax.legend() 
         
-        self._logging.info(
-            'Multiple bar plot distribution grouped by  `{0}`.'.format(
-                format_generic_obj(self.groupby)).format(*self.groupby))
+        if groupby is not None: 
+            self._logging.info(
+                'Multiple bar plot distribution grouped by  {0}.'.format(
+                    formatGenericObj(groupby)).format(*groupby))
         
         if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
+            plt.savefig(self.savefig,dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
         plt.show()
         
-    def multi_cat_distribution(self, df =None, data_fn =None,  x_features=None ,
-                               targets=None, y_features=None, kind:str='count',
-                               sns_style: str =None, **kws): 
+
+    
+    def multiCatDistribution(self, 
+                             data : str | DataFrame = None, 
+                             *, 
+                             x =None, 
+                             col=None, 
+                             hue =None, 
+                             targets: List[str]=None,
+                             x_features:List[str]=None ,
+                             y_features: List[str]=None, 
+                             kind:str='count',
+                             **kws): 
         """
+        Figure-level interface for drawing categorical plots onto a FacetGrid.
+        
         Multiple categorials plots  from targetted pd.series. 
         
-        `x_features` , `y_features` as well as `targets` must be among the 
-        dataframe. 
-        
-        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
-        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
-        
-        :param x_features: 
-            x-axis features. More than 01, put the x_features 
-            on a list. 
-        :param y_features: 
-            y_axis features matchs the columns name for `sns.catplot`.
-            If number of feature is more than one, create a list to hold 
-            all features. 
-        :param targets: 
-            corresponds to `sns.catplot` argument ``hue``. If more than one, 
-            set the targets on a list. 
-        
-        :Example: 
+        Parameters 
+        -----------
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` of for data inspection. Both str or dataframe
+            need to provide the name of target. 
             
-            >>> from watex.view.plot import QuickPlot 
-            >>> qplotObj = QuickPlot(
-            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
-            ...             target_name = 'flow', set_style ='darkgrid')
-            >>> fdict={
-            ...            'x_features':['shape', 'type', 'type'], 
-            ...            'y_features':['type', 'geol', 'shape'], 
-            ...            'targets':['flow', 'flow', 'geol'],
-            ...            } 
-            >>>    qplotObj.multi_cat_distribution(**fdict)  
+        x, y, hue: list , Optional, 
+            names of variables in data. Inputs for plotting long-form data. 
+            See examples for interpretation. Here it can correspond to  
+            `x_features` , `y_features` and `targets` from dataframe. Note that
+            each columns item could be correspond as element of `x`, `y` or `hue`. 
+            For instance x_features could refer to x-axis features and must be 
+            more than 0 and set into a list. the `y_features` might match the 
+            columns name for `sns.catplot`. If number of feature is more than 
+            one, create a list to hold all features is recommended. 
+            the `y` should fit the  `sns.catplot` argument ``hue``. Like other 
+            it should be on list of features are greater than one. 
+        
+        row, colnames of variables in data, optional
+            Categorical variables that will determine the faceting of the grid.
+        
+        col_wrapint
+            "Wrap" the column variable at this width, so that the column facets 
+            span multiple rows. Incompatible with a row facet.
+        
+        estimator: string or callable that maps vector -> scalar, optional
+            Statistical function to estimate within each categorical bin.
+        
+        errorbar: string, (string, number) tuple, or callable
+            Name of errorbar method (either "ci", "pi", "se", or "sd"), or a 
+            tuple with a method name and a level parameter, or a function that
+            maps from a vector to a (min, max) interval.
+        
+        n_bootint, optional
+            Number of bootstrap samples used to compute confidence intervals.
+        
+        units: name of variable in data or vector data, optional
+            Identifier of sampling units, which will be used to perform a 
+            multilevel bootstrap and account for repeated measures design.
+        
+        seed: int, numpy.random.Generator, or numpy.random.RandomState, optional
+            Seed or random number generator for reproducible bootstrapping.
+        
+        order, hue_order: lists of strings, optional
+            Order to plot the categorical levels in; otherwise the levels are 
+            inferred from the data objects.
+        
+        row_order, col_order: lists of strings, optional
+            Order to organize the rows and/or columns of the grid in, otherwise
+            the orders are inferred from the data objects.
+        
+        height: scalar
+            Height (in inches) of each facet. See also: aspect.
+        
+        aspect:scalar
+            Aspect ratio of each facet, so that aspect * height gives the width
+            of each facet in inches.
+        
+        kind: str, optional
+            `The kind of plot to draw, corresponds to the name of a categorical 
+            axes-level plotting function. Options are: "strip", "swarm", "box", 
+            "violin", "boxen", "point", "bar", or "count".
+        
+        native_scale: bool, optional
+            When True, numeric or datetime values on the categorical axis 
+            will maintain their original scaling rather than being converted 
+            to fixed indices.
+        
+        formatter: callable, optional
+            Function for converting categorical data into strings. Affects both
+            grouping and tick labels.
+        
+        orient: "v" | "h", optional
+            Orientation of the plot (vertical or horizontal). This is usually 
+            inferred based on the type of the input variables, but it can be 
+            used to resolve ambiguity when both x and y are numeric or when 
+            plotting wide-form data.
+        
+        color: matplotlib color, optional
+            Single color for the elements in the plot.
+        
+        palette: palette name, list, or dict
+            Colors to use for the different levels of the hue variable. 
+            Should be something that can be interpreted by color_palette(), 
+            or a dictionary mapping hue levels to matplotlib colors.
+        
+        hue_norm: tuple or matplotlib.colors.Normalize object
+            Normalization in data units for colormap applied to the hue 
+            variable when it is numeric. Not relevant if hue is categorical.
+        
+        legend: str or bool, optional
+            Set to False to disable the legend. With strip or swarm plots, 
+            this also accepts a string, as described in the axes-level 
+            docstrings.
+        
+        legend_out: bool
+            If True, the figure size will be extended, and the legend will be 
+            drawn outside the plot on the center right.
+        
+        share{x,y}: bool, 'col', or 'row' optional
+            If true, the facets will share y axes across columns and/or x axes 
+            across rows.
+        
+        margin_titles:bool
+            If True, the titles for the row variable are drawn to the right of 
+            the last column. This option is experimental and may not work in 
+            all cases.
+        
+        facet_kws: dict, optional
+            Dictionary of other keyword arguments to pass to FacetGrid.
+        
+        kwargs: key, value pairings
+            Other keyword arguments are passed through to the underlying 
+            plotting function.
+
+        Examples
+        ---------
+        >>> from watex.view.plot import QuickPlot 
+        >>> data = 'data/geodata/main.bagciv.data.csv'
+        >>> qplotObj= QuickPlot(lc='b', nameoftarget='flow')
+        >>> qplotObj.sns_style = 'darkgrid'
+        >>> fdict={
+        ...            'x':['shape', 'type', 'type'], 
+        ...            'col':['type', 'geol', 'shape'], 
+        ...            'hue':['flow', 'flow', 'geol'],
+        ...            } 
+        >>> qplotObj.multiCatDistribution(**fdict)
             
         """
-        
-        features_dict=kws.pop('features_dict',None )
-        
-        if sns_style is not None: 
-            self.sns_style = sns_style
-
-        for key in kws.keys(): 
-            setattr(self, key, kws[key])
-        
-        if data_fn is not None : 
-            self.data_fn = data_fn
+        if data is not None: 
+            self.data= data 
             
-        minlen=9999999
-        if features_dict is None : 
-            features_dict ={ feature: featvalue  for
-                            feature, featvalue in zip(
-                                ['x_features', 'y_features', 'targets'],
-                            [x_features, y_features, targets] )}
+        if self.data_ is None: 
+            raise PlotError ("NoneType can not be plotted!")
+            
+        # set 
+        if x is None : x = [None] 
+        if col is None: xol =[None] 
+        if hue is None: hue =[None] 
         
-        if features_dict is not None : 
-            for ffn, ffval in features_dict.items():
+        maxlen = max([len(i) for i in [x, col, hue]])  
+        
+        x = [None if n !=None else n for ii, n  in range(maxlen)] 
+        col = [None if n !=None else n for n in range(maxlen)]
+        hue =  [None if n !=None else n for n in range(maxlen)]
+        l=list()
+        for i in range (maxlen): 
+            if i!= None: 
+                l.append(None)
+                
+        #features_dict=kws.pop('features_dict',None )
+        
+        # if sns_style is not None: 
+        #     self.sns_style = sns_style
 
-                if ffval is None: 
-                    warnings.warn(f'Need `{ffn}` value for multiple '
-                                  'categorical plotting.')
-                    raise Wex.WATexError_plot_featuresinputargument(
-                        f'Need `{ffn}` value for multiple categorial plots.')
-                if isinstance(ffval, str): 
-                    ffval=[ffval]
-                    
-                if minlen > len(ffval): 
-                    minlen= len(ffval)
-            features_dict ={ feature: featvalue[:minlen] for
-                            feature, featvalue in zip(
-                                ['x_features', 'y_features', 'targets'],
-                            [x_features, y_features, targets] )}
+        # for key in kws.keys(): 
+        #     setattr(self, key, kws[key])
         
-        df_= self.df.copy(deep=True)
+        # if data is not None : 
+        #     self.data = data
+            
+        # minlen=9999999
+        # if features_dict is None : 
+        #     features_dict ={ feature: featvalue  for
+        #                     feature, featvalue in zip(
+        #                         ['x_features', 'y_features', 'targets'],
+        #                     [x_features, y_features, targets] )}
+        
+        # if features_dict is not None : 
+        #     for ffn, ffval in features_dict.items():
+
+        #         if ffval is None: 
+        #             warnings.warn(f'Need `{ffn}` value for multiple '
+        #                           'categorical plotting.')
+        #             raise PlotError(
+        #                 f'Need `{ffn}` value for multiple categorial plots.')
+        #         if isinstance(ffval, str): 
+        #             ffval=[ffval]
+                    
+        #         if minlen > len(ffval): 
+        #             minlen= len(ffval)
+        #     features_dict ={ feature: featvalue[:minlen] for
+        #                     feature, featvalue in zip(
+        #                         ['x_features', 'y_features', 'targets'],
+        #                     [x_features, y_features, targets] )}
+        print(len(x))
+        df_= self.data.copy(deep=True)
         df_.reset_index(inplace=True )
          
         if not hasattr(self, 'ylabel'): 
             self.ylabel= 'Number of  occurence (%)'
             
-        self._logging.info(
-            'Multiple categorical plots  from targetted `{0}`.'.format(
-                format_generic_obj(targets)).format(*targets))
+        if hue is not None: 
+            self._logging.info(
+                'Multiple categorical plots  from targetted {0}.'.format(
+                    formatGenericObj(hue)).format(*hue))
         
-        for ii in range(minlen): 
-            
-            sns.catplot( data = df_, kind= kind, 
-                    x=features_dict ['x_features'][ii], 
-                    col= features_dict['y_features'][ii], 
-                    hue=features_dict['targets'][ii],
-                    linewidth = self.lw, 
-                    height = self.sns_height,
-                    aspect = self.sns_aspect, 
+        for ii in range(len(x)): 
+            sns.catplot( data = df_,
+                        kind= kind, 
+                        x=  x[ii], #features_dict ['x_features'][ii], 
+                        col=col[ii], # features_dict['y_features'][ii], 
+                        hue= hue[ii], #features_dict['targets'][ii],
+                        linewidth = self.lw, 
+                        height = self.sns_height,
+                        aspect = self.sns_aspect,
+                        **kws
                     ).set_ylabels(self.ylabel)
-            
         
-            plt.show()
+    
+        plt.show()
        
         if self.sns_style is not None: 
             sns.set_style(self.sns_style)
@@ -509,7 +774,7 @@ class QuickPlot :
         print('--> Multiple plots sucessfully done!')    
         
         
-    def plot_correlation_matrix(self, df=None, data_fn =None, 
+    def plot_correlation_matrix(self, df=None, data =None, 
                                 feature_names=None, plot_params:str ='qual',
                                  target:str =None, corr_method: str ='pearson',
                                  min_periods=1, **sns_kws) -> None: 
@@ -522,8 +787,8 @@ class QuickPlot :
         `target` is set to ``flow``. If not the case and ``feature_names`` are 
         still ``None``, an errors raises. 
 
-        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
-        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        :param df: refer to :doc:`watex.view.plot.QuickPlot`
+        :param data: see :doc:`watex.view.plot.QuickPlot`
         
         :param target: 
             
@@ -557,7 +822,7 @@ class QuickPlot :
             
             >>> from watex.view.plot import QuickPlot 
             >>> qplotObj = QuickPlot(
-            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
+            ...    data ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid', 
             ...             fig_title='Qualitative features correlation')
             >>> sns_kwargs ={'annot': False, 
@@ -570,8 +835,8 @@ class QuickPlot :
         """
 
         
-        if data_fn is not None : 
-            self.data_fn = data_fn
+        if data is not None : 
+            self.data = data
         
         df_= self.df.copy(deep=True)
         # df_.reset_index(inplace=True )
@@ -594,7 +859,7 @@ class QuickPlot :
                         *feature_names))
                 plot_params='quan'
             else: 
-                raise Wex.WATexError_inputarguments(
+                raise PlotError(
                     f"Feature's name is set to ``{feature_names}``."
                     "Please provided the right `plot_params` argument "
                     "not {plot_params}."
@@ -606,12 +871,12 @@ class QuickPlot :
                                features = df_.columns) 
                 
         except: 
-            raise Wex.WATexError_parameter_number(
+            raise ParameterNumberError(
                 f'Parameters number of {feature_names} is  not found in the '
                 ' dataframe columns ={0}'.format(list(df_.columns)))
         else : 
             if reH is False: 
-                raise Wex.WATexError_parameter_number(
+                raise ParameterNumberError(
                 f'Parameters number `{feature_names}` is  not found in the '
                 ' dataframe columns ={0}'.format(list(df_.columns)))
 
@@ -653,7 +918,7 @@ class QuickPlot :
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
             
-        fmObj = format_generic_obj(feature_names)
+        fmObj = formatGenericObj(feature_names)
         
         print(" --> Successfully plot of matrix correlation between "
               f"{'categorial' if plot_params =='qual' else 'numerical'}"
@@ -661,16 +926,16 @@ class QuickPlot :
               
         plt.show()
                 
-    def plot_numerical_features(self, df=None, data_fn =None , target= None,
-                                  numerical_features:Iterable[T]=None, 
+    def plot_numerical_features(self, df=None, data =None , target= None,
+                                  numerical_features=None, 
                                   trigger_map_lower_kws: bool =False, 
-                                  map_lower_kws: Generic[T]=None, **sns_kws): 
+                                  map_lower_kws=None, **sns_kws): 
         """
         Plot qualitative features distribution using correlative aspect. Be 
         sure to provided numerical features arguments. 
         
-        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
-        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        :param df: refer to :doc:`watex.view.plot.QuickPlot`
+        :param data: see :doc:`watex.view.plot.QuickPlot`
         
         :param numerical features: 
             List of numerical features to plot for  correlating analyses. 
@@ -700,7 +965,7 @@ class QuickPlot :
             
             >>> from watex.view.plot import QuickPlot 
             >>> qkObj = QuickPlot(
-            ...         data_fn ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
+            ...         data ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid', 
             ...             fig_title='Quantitative features correlation'
             ...             )  
@@ -717,8 +982,8 @@ class QuickPlot :
             ...                                    **sns_pkws)
                                                 
         """
-        if data_fn is not None : 
-            self.data_fn = data_fn
+        if data is not None : 
+            self.data = data
             
         if df is not None : self.ddf = df 
         
@@ -736,13 +1001,13 @@ class QuickPlot :
                     ' No target  is detected and your purpose'
                     'is not for water exploration. Could not plot numerical'
                     " features' distribution.")
-                raise Wex.WATexError_geoFeatures(
+                raise FeatureError(
                     'Target feature is missing. Could not plot numerical'
                     '  features. Please provide the right target``hue`` name.'
                     )
         elif target is not None : 
             if not target in df_.columns: 
-                raise Wex.WATexError_inputarguments(
+                raise FeatureError(
                     f"The given target {target} is wrong. Please provide the "
                     " the right target (hue)instead.")
         
@@ -760,12 +1025,12 @@ class QuickPlot :
             resH= cfexist(features_to= numerical_features,
                                features = df_.columns)
         except:
-             raise Wex.WATexError_parameter_number(
+             raise ParameterNumberError(
                 f'Parameters number of {numerical_features} is  not found in the '
                 ' dataframe columns ={0}'.format(list(df_.columns)))
         
         else: 
-            if not resH:  raise Wex.WATexError_parameter_number(
+            if not resH:  raise ParameterNumberError(
                 f'Parameters number is ``{numerical_features}``. NoneType'
                 '  object is not allowed in  dataframe columns ={0}'.
                 format(list(df_.columns)))
@@ -788,7 +1053,7 @@ class QuickPlot :
                     
                     tem.append(ff)
             if len(tem)==0 : 
-                raise Wex.WATexError_parameter_number(
+                raise ParameterNumberError(
                     " No parameter number is found. Plot is cancelled."
                     'Provide a right numerical features different'
                     ' from `{}`'.format(rem))
@@ -817,8 +1082,8 @@ class QuickPlot :
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
    
-    def joint2features(self,*, data_fn =None, df=None, 
-                      features: Iterable[T]=['ohmS', 'lwi'], 
+    def joint2features(self,*, data =None, df=None, 
+                      features=['ohmS', 'lwi'], 
                       join_kws=None, marginals_kws=None, 
                       **sns_kwargs)-> None:
         """
@@ -826,8 +1091,8 @@ class QuickPlot :
         
         Draw a plot of two features with bivariate and univariate graphs. 
         
-        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
-        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        :param df: refer to :doc:`watex.view.plot.QuickPlot`
+        :param data: see :doc:`watex.view.plot.QuickPlot`
         
         :param features: 
             List of quantitative features to plot for correlating analyses.
@@ -851,7 +1116,7 @@ class QuickPlot :
             
             >>> from watex.view.plot.QuickPlot import joint2features
             >>> qkObj = QuickPlot(
-            ...        data_fn ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
+            ...        data ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid', 
             ...             fig_title='Quantitative features correlation'
             ...             )  
@@ -867,8 +1132,8 @@ class QuickPlot :
             ...            **sns_pkws, 
             ...            ) 
         """
-        if data_fn is not None : 
-            self.data_fn = data_fn
+        if data is not None : 
+            self.data = data
         if df is not None: self.df = df 
         
         df_= self.df.copy(deep=True)
@@ -881,12 +1146,12 @@ class QuickPlot :
                   'Please set a right features.')
             self._logging.error('NoneType can not be a features!')
         except :
-            raise Wex.WATexError_parameter_number(
+            raise ParameterNumberError(
                f'Parameters number of {features} is  not found in the '
                ' dataframe columns ={0}'.format(list(df_.columns)))
         
         else: 
-            if not resH:  raise Wex.WATexError_parameter_number(
+            if not resH:  raise ParameterNumberError(
                 f'Parameters number is ``{features}``. NoneType object is'
                 ' not allowed in  dataframe columns ={0}'.
                 format(list(df_.columns)))
@@ -898,7 +1163,7 @@ class QuickPlot :
             try: 
                 df_=df_.astype({ff:np.float})
             except ValueError: 
-                raise  Wex.WATexError_geoFeatures(
+                raise  FeatureError(
                     f" Feature `{ff}` is qualitative parameter."
                     ' Could not convert string values to float')
                 
@@ -912,7 +1177,7 @@ class QuickPlot :
             self._logging.error(
                 'Could not jointplotted. Need two features. Only {0} '
                 'is given.'.format(len(features)))
-            raise Wex.WATexError_parameter_number(
+            raise ParameterNumberError(
                 'Only {0} is feature number is given. Need two '
                 'features!'.format(len(features)))
             
@@ -930,9 +1195,9 @@ class QuickPlot :
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
             
-    def scatteringFeatures(self,data_fn=None, df=None, 
-                           features:Iterable[T] =['lwi', 'flow'],
-                           relplot_kws:Generic[T] = None, 
+    def scatteringFeatures(self,data=None, df=None, 
+                           features=['lwi', 'flow'],
+                           relplot_kws= None, 
                            **sns_kwargs )->None: 
         """
         Draw a scatter plot with possibility of several semantic features 
@@ -945,8 +1210,8 @@ class QuickPlot :
         the human visual system can see trends and patterns
         that indicate a relationship. 
         
-        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
-        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        :param df: refer to :doc:`watex.view.plot.QuickPlot`
+        :param data: see :doc:`watex.view.plot.QuickPlot`
         
         :param features: 
             List of features to plot for scattering analyses.
@@ -967,7 +1232,7 @@ class QuickPlot :
             
             >>> from watex.view.plot.QuickPlot import  scatteringFeatures
             >>> qkObj = QuickPlot(
-            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
+            ...    data ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
             ...             target_name = 'flow', set_theme ='darkgrid', 
             ...             fig_title='geol vs lewel of water inflow',
             ...             xlabel='Level of water inflow (lwi)', 
@@ -998,8 +1263,8 @@ class QuickPlot :
             ...                    ) 
             
         """
-        if data_fn is not None : 
-            self.data_fn = data_fn
+        if data is not None : 
+            self.data = data
             
         if df is not None: self.df = df 
         
@@ -1025,7 +1290,7 @@ class QuickPlot :
             self._logging.error(
                 'Could not scattering. Need two features. Only {0} '
                 'is given.'.format(len(features)))
-            raise Wex.WATexError_parameter_number(
+            raise ParameterNumberError(
                 'Only {0} is feature is given. Need two '
                 'features!'.format(len(features)))
 
@@ -1046,10 +1311,10 @@ class QuickPlot :
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
     
-    def discussingFeatures(self,df=None, data_fn=None,
-                           features:Iterable[T]=['ohmS','sfi', 'geol', 'flow'],
-                           map_kws:Generic[T]=None, 
-                           map_func: Callable[..., T]= None, 
+    def discussingFeatures(self,df=None, data=None,
+                           features=['ohmS','sfi', 'geol', 'flow'],
+                           map_kws=None, 
+                           map_func= None, 
                            **sns_kws)-> None: 
         """
         Porvides the features names at least 04 and discuss with 
@@ -1060,8 +1325,8 @@ class QuickPlot :
         The plots it produces are often called “lattice”, “trellis”, or
         “small-multiple” graphics. 
         
-        :param df: refer to :doc:`watex.viewer.plot.QuickPlot`
-        :param data_fn: see :doc:`watex.viewer.plot.QuickPlot`
+        :param df: refer to :doc:`watex.view.plot.QuickPlot`
+        :param data: see :doc:`watex.view.plot.QuickPlot`
         
         :param features: 
             
@@ -1104,13 +1369,13 @@ class QuickPlot :
             ...                  }
             >>> map_kws={'edgecolor':"w"}   
             >>> qkObj.discussingFeatures(
-            ...    data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , 
+            ...    data ='data/geo_fdata/BagoueDataset2.xlsx' , 
             ...                         features =['ohmS', 'sfi','geol', 'flow'],
             ...                           map_kws=map_kws,  **sns_pkws
             ...                         )   
         """
-        if data_fn is not None : 
-            self.data_fn = data_fn
+        if data is not None : 
+            self.data = data
         if df is not None: 
             self.df = df 
         df_= self.df.copy(deep=True)
@@ -1139,7 +1404,7 @@ class QuickPlot :
                 'Could not plot features. Need three features. Only {0} '
                 '{1} given.'.format(len(features), verb))
             
-            raise Wex.WATexError_parameter_number(
+            raise ParameterNumberError(
                 'Only {0:02} feature{1} {2} given. Need at least 03 '
                 'features!'.format(len(features),pl,  verb))
             
@@ -1170,7 +1435,7 @@ class QuickPlot :
                         
                 self._logging.error('{map_func} is not callable !'
                                     'Use `plt.scatter` as default function.')
-                raise Wex.WATexError_inputarguments(
+                raise FeatureError(
                     '`Argument `map_func` should be a callable not {0}'.
                     format(type(map_func)))
                 
@@ -1192,14 +1457,14 @@ class QuickPlot :
                         dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
         
-    def discover_and_visualize_data(self, df = None, data_fn:str =None, 
+    def discover_and_visualize_data(self, df = None, data:str =None, 
                                     x:str =None, y:str =None, kind:str ='scatter',
-                                    s_col:T ='lwi', leg_kws:dict ={}, **pd_kws):
+                                    s_col ='lwi', leg_kws:dict ={}, **pd_kws):
         """ Create a scatter plot to visualize the data using `x` and `y` 
         considered as dataframe features. 
         
-        :param df: refer to :class:`watex.viewer.plot.QuickPlot`
-        :param data_fn: see :class:`watex.viewer.plot.QuickPlot`
+        :param df: refer to :class:`watex.view.plot.QuickPlot`
+        :param data: see :class:`watex.view.plot.QuickPlot`
         
         :param x: Column name to hold the x-axis values 
         :param y: column na me to hold the y-axis values 
@@ -1229,8 +1494,8 @@ class QuickPlot :
             >>> qkObj.discover_and_visualize_data(
             ...    df = bag_train_set, x= 'east', y='north', **pd_kws)
         """
-        if data_fn is not None : 
-            self.data_fn = data_fn
+        if data is not None : 
+            self.data = data
         if df is not None: 
             self.df = df 
         df_= self.df.copy(deep=True)
@@ -1258,7 +1523,7 @@ if __name__=='__main__':
                       }
 
     map_kws={'edgecolor':"w"}   
-    qkObj.discussingFeatures(data_fn ='data/geo_fdata/BagoueDataset2.xlsx' , 
+    qkObj.discussingFeatures(data ='data/geo_fdata/BagoueDataset2.xlsx' , 
                               features =['ohmS', 'sfi','geol', 'flow'],
                                 map_kws=map_kws,  **sns_pkws
                               )   

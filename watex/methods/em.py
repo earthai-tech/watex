@@ -10,7 +10,7 @@ Module EM
 The EM module is related for a few meter exploration in the case of groundwater 
 exploration. Module provides some basics processing step for EMAP data fitering
 and remove noises. Commonly the methods mostly used in the groundwater 
-exo=ploration is the audio-magnetoteluric because iof the shortest frequency 
+exploration is the audio-magnetoteluric because iof the shortest frequency 
 and rapid executions. Furthermore, we can also listed some other advantages 
 such as: 
     
@@ -372,8 +372,8 @@ class EM(IsEdi):
         
         self.stnames = self.edinames 
         
-        self.freqs_ = self.get_full_frequency(self.ediObjs_)
-        self.refreq_ = self.get_reference_frequency(self.ediObjs_)
+        self.freqs_ = self.getfullfrequency (self.ediObjs_)
+        self.refreq_ = self.getreferencefrequency(self.ediObjs_)
         
         return self 
     
@@ -600,7 +600,7 @@ class EM(IsEdi):
         
         return self 
 
-    def get_full_frequency (self, 
+    def getfullfrequency  (self, 
                             data: Optional[str|List[EDIO]] = None,
                             to_log10:bool  =False 
                             )-> ArrayLike[DType[float]]: 
@@ -627,7 +627,7 @@ class EM(IsEdi):
             >>> from pycsamt.core.edi import Edi_collection 
             >>> edipath = 'data/edis' 
             >>> cObjs = Edi_collection (edipath) # object from Edi_collection 
-            >>> ref = EM().get_full_frequency(cObjs.ediObjs)  
+            >>> ref = EM().getfullfrequency (cObjs.ediObjs)  
             >>> ref
             ... array([7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04, 3.50000e+04,
                    2.94000e+04, 2.47000e+04, 2.08000e+04, 1.75000e+04, 1.47000e+04,
@@ -684,7 +684,7 @@ class EM(IsEdi):
             the specific one. Default is ``complex``.
             
         kws: dict 
-            Additional keywords arguments from :func:`~.get_full_frequency`. 
+            Additional keywords arguments from :func:`~.getfullfrequency `. 
         
         Returns 
         -------- 
@@ -829,7 +829,7 @@ class EM(IsEdi):
         
         return mat2d 
     
-    def get_reference_frequency (self,
+    def getreferencefrequency (self,
                                  data: Optional[str|List[EDIO]] = None,
                                  to_log10: bool =False): 
         """ Get the reference frequency from collection Edis objects.
@@ -854,7 +854,7 @@ class EM(IsEdi):
         ---------
         >>> from watex.methods.em import EM  
         >>> edipath ='data/3edis'
-        >>> ref = EM().get_reference_frequency(edipath, to_log10=True)
+        >>> ref = EM().getreferencefrequency(edipath, to_log10=True)
         >>> ref 
         ... 4.845098040014257 # in Hz 
         
@@ -868,7 +868,7 @@ class EM(IsEdi):
         if self.ediObjs_ is None: 
             self.fit(self.data_)
             
-        self.freqs_= self.get_full_frequency(self.ediObjs_)
+        self.freqs_= self.getfullfrequency (self.ediObjs_)
         # fit z and find all missing data from complete frequency f 
         # we take only the componet xy for fitting.
 
@@ -1054,7 +1054,7 @@ class Processing (EM) :
     
     freqs: array-like, shape (N)
         Frequency array. It should be the complete frequency used during the 
-        survey area. It can be get using the :func:`get_full_frequency` 
+        survey area. It can be get using the :func:`getfullfrequency ` 
         No need if ediObjs is provided. 
         
     window_size : int
@@ -1808,7 +1808,7 @@ class Processing (EM) :
         return new_Z 
     
     @staticmethod 
-    def freq_interpolation (
+    def freqInterpolation (
             y:ArrayLike[DType[T]] ,
             /, 
             buffer:Optional[Tuple[float]] = None ,  
@@ -1831,7 +1831,7 @@ class Processing (EM) :
         :example: 
             >>> from watex.methods.em import Processing
             >>> pobj = Processing().fit('data/edis')
-            >>> f = get_full_frequency(pobj.ediObjs_)
+            >>> f = getfullfrequency (pobj.ediObjs_)
             >>> buffer = [5.86000e+04, 1.6300e+01]
             >>> f 
             ... array([7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04, 3.50000e+04,
@@ -1839,7 +1839,7 @@ class Processing (EM) :
                    ...
                    2.75000e+01, 2.25000e+01, 1.87500e+01, 1.62500e+01, 1.37500e+01,
                    1.12500e+01, 9.37500e+00, 8.12500e+00, 6.87500e+00, 5.62500e+00])
-            >>> new_f = freq_interpolation(f, buffer = buffer)
+            >>> new_f = freqInterpolation(f, buffer = buffer)
             >>> new_f 
             ... array([5.88000000e+04, 4.93928459e+04, 4.14907012e+04, 3.48527859e+04,
                    2.92768416e+04, 2.45929681e+04, 2.06584471e+04, 1.73533927e+04,
@@ -1967,7 +1967,7 @@ class Processing (EM) :
 
             >>> from watex.methods.em import Processing
             >>> pobj = Processing().fit('data/edis')
-            >>> f = pobj.get_full_frequency(pobj.ediObjs_)
+            >>> f = pobj.getfullfrequency (pobj.ediObjs_)
             >>> len(f)
             ... 55 # 55 frequencies 
             >>> c, = pobj.qc (pobj.ediObjs_, tol = .6 ) # mean 60% to consider the data as
@@ -2103,7 +2103,7 @@ class Processing (EM) :
     
         ff = np.delete (f[:, None], no_ix, 0)
         # interpolate frequency 
-        new_f  = Processing.freq_interpolation (reshape (ff)) 
+        new_f  = Processing.freqInterpolation (reshape (ff)) 
         
         # gather the 2D z objects
         

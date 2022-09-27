@@ -6,6 +6,7 @@ import os
 import re
 import warnings 
 import numpy as np 
+
 import pandas as pd
 
 from ..typing import (
@@ -194,7 +195,7 @@ class Structures(Base):
             
     
     @property 
-    def by_force(self): 
+    def force(self): 
         """ Force configuration if auto getting the property file fails."""
         codef =['code','label','__description','pattern', 'pat_size',	
                 'pat_density','pat_thickness','color']
@@ -268,10 +269,41 @@ class Structures(Base):
     
     
     def fit(self, **kwd ): 
-        """ Fit and set the geological strutures as object attributes"""
+        """ Fit and set the geological strutures as object attributes and `kwd`
+        arguments refer to the argument below. 
+        
+        Parameters 
+        -----------
+        
+        configfile: str 
+            is a configure file  from 'AGS0' data 
+        fillna: float, 
+            fill NaN values in the AGS0 file. The default values to fill is
+            `0` for False. 
+            
+        Notes
+        -----
+        Each geological strutures can be retrieved as an attribute. For 
+        instance to get the code, the label and the pattern density of the 
+        'amphibolite'. 
+        
+        Example:
+        -------- 
+        >>> from watex.geology import Structures 
+        >>> sobj = Structures().fit() 
+        >>> sobj.amphibolite.code 
+        ... 'AMP'
+        >>> sobj.amphibolite.label_
+        ... 'AMP'
+        >>> sobj.amphibolite.pat_density_
+        ... 0. # not set 
+        >>> # To get all the key (attributes of the structures ), uses:: 
+        >>> sobj.keys 
+                
+        """
         try:
             setstructures(self, **kwd)
-        except : self.by_force 
+        except : self.force 
         
         return self 
     

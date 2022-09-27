@@ -74,7 +74,6 @@ class Base (object):
     """
     
     def __init__(self, **kwargs):
-                
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         
         

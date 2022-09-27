@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2022 LKouadio a.k.a Daniel 
+# Created on Thu Sep 22 12:21:11 2022
+# Licence: MIT
+
 """
-Stratigraphic module 
-====================
+Stratigraphic 
+==============
 Construct layers model from given layers properties such as density , porosity 
 permeability, transimissivity, resistivity , patches and so on ... 
 
-Created on Thu Sep 22 12:21:11 2022
-
-@author: Daniel
 """
 import os
 import warnings
@@ -125,10 +126,8 @@ class GeoStrataModel(Geodrill, Base):
 
     Examples
     ----------
-    # since it inherits the `Geodrill packages` which works with occam2d 
-    # model, we can use for example the occam2d model files 
     >>> from watex.geology.stratigraphy import Geostratigraphic 
-    >>> path=r'F:\ThesisImp\occam2D\invers+files\inver_res\K4'
+    >>> path=r'data/inversfiles/inver_res/K4'
     >>> inversion_files = {'model_fn':'Occam2DModel', 
     ...                   'mesh_fn': 'Occam2DMesh',
     ...                    "iter_fn":'ITER27.iter',
@@ -147,9 +146,15 @@ class GeoStrataModel(Geodrill, Base):
     >>> geosObj._createNM(ptol =0.1)
     >>> geosObj.nm 
 
+    Notes
+    ------
+    Module inherits the `Geodrill packages` which works with occam2d  model.
+    Occam2d inversion files are also acceptables for building model blocks 
+    
+    
     """
     def __init__(self, crm=None, beta=5, ptol=0.1 , n_epochs=100,  **kwargs):
-        super().__init__(self, **kwargs)
+        super().__init__( **kwargs)
         
         self.crm =crm 
         self._beta =beta 
