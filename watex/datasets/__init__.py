@@ -7,7 +7,7 @@ from ..property  import BagoueNotes
 from .._watexlog import watexlog
 from ..tools.mlutils import  ( 
     loadDumpedOrSerializedData, 
-    format_generic_obj, 
+    formatGenericObj, 
     )
 from ..exceptions import DatasetError
 
@@ -113,7 +113,7 @@ def fetch_data(param):
         raise DatasetError(
             'Arguments ~`{0}` not found in default tags:'
              ' {1}. Unable to fetch data.'.format(param, 
-              format_generic_obj (BAGOUE_TAGS)).format(
+              formatGenericObj (BAGOUE_TAGS)).format(
                 *list(BAGOUE_TAGS)))
     
 def loadingdefaultSerializedData (f, d0, dtype ='test'): 

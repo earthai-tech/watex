@@ -44,21 +44,22 @@
             
   <section id="watex-s-documentation">
 <h1>💧 <cite>WATex’s</cite> documentation<a class="headerlink" href="#watex-s-documentation" title="Permalink to this heading">¶</a></h1>
-<section id="a-machine-learning-research-for-hydrogeophysic">
-<h2><cite>A machine learning research for hydrogeophysic</cite><a class="headerlink" href="#a-machine-learning-research-for-hydrogeophysic" title="Permalink to this heading">¶</a></h2>
+<section id="a-machine-learning-research-in-hydrogeophysic">
+<h2><cite>A machine learning research in hydrogeophysic</cite><a class="headerlink" href="#a-machine-learning-research-in-hydrogeophysic" title="Permalink to this heading">¶</a></h2>
+<p>&lt; <em>Life is much better with potable water</em> &gt;</p>
 <p><a class="reference external" href="https://github.com/WEgeophysics/watex/">WATex</a> is an open-source package entirely written in Python to bring a piece of solution
 in the field of groundwater exploration (GWE). It uses the  ML learning methods to compute electrical and logging features to predict
 to predict the flow rate and also the hydrogeological parameters such as water content (water inflow), the medium permeability.
 Currently, it deals with the geophysical methods (DC resistivity profiling &amp; sounding, Electromagnetic methods for short-periods (Audio-freqency magnetotellurics)).
 All modules and packages are written to intend solving real-engineering problems in the field of GWE.</p>
 </section>
-<section id="development-progress-of-watex">
-<h2>Development progress of <cite>WATex</cite><a class="headerlink" href="#development-progress-of-watex" title="Permalink to this heading">¶</a></h2>
+<section id="watex-s-development">
+<h2><cite>WATex’s</cite> development<a class="headerlink" href="#watex-s-development" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="https://github.com/WEgeophysics/watex/">WATex</a> works with the learning methods enumerated below:</p>
 <ul class="simple">
 <li><p><cite>Support vector machines</cite></p></li>
 <li><p><cite>Neighbors: KNN</cite></p></li>
-<li><p><cite>Trees: DTC, Extratrees</cite></p></li>
+<li><p><cite>Trees: Decision Tree (DTC), Extratrees</cite></p></li>
 <li><p><cite>Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking)</cite></p></li>
 <li><p><cite>Apriori</cite></p></li>
 <li><p><cite>Kernel Principal Component Analysis k-PCA</cite></p></li>
@@ -74,77 +75,36 @@ All modules and packages are written to intend solving real-engineering problems
 <li><p><cite>Logging</cite></p></li>
 </ul>
 </section>
-<section id="watex-api">
-<h2><cite>WATex</cite> API<a class="headerlink" href="#watex-api" title="Permalink to this heading">¶</a></h2>
+<section id="watex-user-guide">
+<h2><cite>WATex</cite> User Guide<a class="headerlink" href="#watex-user-guide" title="Permalink to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html"><strong>Installation</strong></a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html"><strong>Getting started</strong></a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html"><strong>Tutorials</strong></a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html"><strong>Package Bases</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.bases.base">Module Basis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.bases.features">Module Features</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.bases.prepare">Module Default-Preparation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.bases.modeling">Module modeling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.bases.processing">Module Processing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.bases.transformers">Module Transformers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.bases.site">Module Site</a></li>
+<li class="toctree-l1"><a class="reference internal" href="script.html"><strong>Command line interface</strong></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="script.html#watex-commands-in-progress-not-available-yet"><code class="code docutils literal notranslate"><span class="pre">watex</span></code> commands (<cite>in progress- not available yet</cite>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="script.html#extending-the-command-line-interface">Extending the command line interface</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#package-datasets"><strong>Package Datasets</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-loader">Module Loader</a></li>
 </ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#package-analysis"><strong>Package Analysis</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.analysis.dimensionality">Module Dimensionality</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#package-geology"><strong>Package Geology</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.geology.core">Module Base</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.geology.geology">Module Geology</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.geology.database">Module Geodatabase</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-strata">Module Strata</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#package-methods"><strong>Package Methods</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.methods.electrical">Module Electrical</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.methods.em">Module EM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.methods.erp">Module ERP</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.methods.hydro">Module Hydrogeology</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#package-models"><strong>Package Models</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.models.premodels">Module PreModels</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.models.validation">Module Validation</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#package-properties"><strong>Package Properties</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.property">Module Property</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex._sklearn">Module Scikit</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.typing">Module Typing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.exceptions">Module Exceptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.documentation">Module Docs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.decorators">Module Decorators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex._watexlog">Module Logger</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#package-tools"><strong>Package Tools</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.tools.coreutils">Module Coreutils</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.tools.exmath">Module ExMaths</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.tools.funcutils">Module FuncUtils</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.tools.gistools">Module GisTools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.tools.metrics">Module Metrics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.tools.mlutils">Module MLTools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.tools.plotutils">Module PlotUtils</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.tools.hydrotools">Module HydroTools</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html#package-view"><strong>Package View</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.view.mlplot">Module MLPlot</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#module-watex.view.plot">Module Plot</a></li>
-</ul>
-</li>
+</div>
+</section>
+<section id="watex-api">
+<h2><cite>WATex</cite> API<a class="headerlink" href="#watex-api" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Reference API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html"><strong>Package Bases</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html#package-datasets"><strong>Package Datasets</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html#package-analysis"><strong>Package Analysis</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html#package-geology"><strong>Package Geology</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html#package-methods"><strong>Package Methods</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html#package-models"><strong>Package Models</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html#package-properties"><strong>Package Properties</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html#package-tools"><strong>Package Tools</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html#package-view"><strong>Package View</strong></a></li>
 </ul>
 </div>
 </section>
@@ -169,8 +129,9 @@ All modules and packages are written to intend solving real-engineering problems
     <h3><a href="#">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">💧 <cite>WATex’s</cite> documentation</a><ul>
-<li><a class="reference internal" href="#a-machine-learning-research-for-hydrogeophysic"><cite>A machine learning research for hydrogeophysic</cite></a></li>
-<li><a class="reference internal" href="#development-progress-of-watex">Development progress of <cite>WATex</cite></a></li>
+<li><a class="reference internal" href="#a-machine-learning-research-in-hydrogeophysic"><cite>A machine learning research in hydrogeophysic</cite></a></li>
+<li><a class="reference internal" href="#watex-s-development"><cite>WATex’s</cite> development</a></li>
+<li><a class="reference internal" href="#watex-user-guide"><cite>WATex</cite> User Guide</a></li>
 <li><a class="reference internal" href="#watex-api"><cite>WATex</cite> API</a></li>
 </ul>
 </li>

@@ -557,8 +557,8 @@ class BasePlot(ABC):
     marker_facecolor    facecolor of the marker. *default* is ``yellow``
     marker_edgecolor    edgecolor of the marker. *default* is ``cyan``.
     marker_edgewidth    width of the marker. *default* is ``3``.
-    x_minorticks        minortick according to x-axis size and *default* is 1.
-    y_minorticks        minortick according to y-axis size and *default* is 1.
+    xminorticks         minortick according to x-axis size and *default* is 1.
+    yminorticks         minortick according to y-axis size and *default* is 1.
     font_size           size of font in inches (width, height)
                         *default* is 3.
     font_style          style of font. *default* is ``italic``
@@ -623,10 +623,10 @@ class BasePlot(ABC):
                  font_weight: str = 'bold',
                  fs: float = 5.,
                  ms: float =3.,
-                 marker_style: str = 'D',
-                 marker_facecolor: str ='yellow',
-                 marker_edgecolor: str = 'cyan',
-                 marker_edgewidth: float =  3.,
+                 marker: str = 'o',
+                 markerfacecolor: str ='yellow',
+                 markeredgecolor: str = 'cyan',
+                 markeredgewidth: float =  3.,
                  lc: str =  'k',
                  ls: str = '-',
                  lw: float = 1.,
@@ -634,6 +634,8 @@ class BasePlot(ABC):
                  bins: int =  10,
                  xlim: list = None, 
                  ylim: list= None,
+                 xminorticks: int=1, 
+                 yminorticks: int =1,
                  xlabel: str  =  None,
                  ylabel: str = None,
                  rotate_xlabel: int = None,
@@ -664,7 +666,12 @@ class BasePlot(ABC):
                  cb_spacing: str = 'uniform' ,
                  cb_drawedges: bool = False,
                  cb_format: float = None ,   
-          
+                 sns_orient: str ='v', 
+                 sns_style: str = None, 
+                 sns_palette: str= None, 
+                 sns_height: float=4. , 
+                 sns_aspect:float =.7, 
+                 sns_theme_kws: dict = None,
                  ): 
         
         self.savefig=savefig
@@ -679,10 +686,10 @@ class BasePlot(ABC):
         self.font_weight=font_weight
         self.fs=fs
         self.ms=ms
-        self.marker_style=marker_style
-        self.marker_facecolor=marker_facecolor
-        self.marker_edgecolor=marker_edgecolor
-        self.marker_edgewidth=marker_edgewidth
+        self.marker=marker
+        self.marker_facecolor=markerfacecolor
+        self.marker_edgecolor=markeredgecolor
+        self.marker_edgewidth=markeredgewidth
         self.lc=lc
         self.ls=ls
         self.lw=lw
@@ -690,6 +697,8 @@ class BasePlot(ABC):
         self.bins=bins
         self.xlim=xlim
         self.ylim=ylim
+        self.x_minorticks=xminorticks
+        self.y_minorticks=yminorticks
         self.xlabel=xlabel
         self.ylabel=ylabel
         self.rotate_xlabel=rotate_xlabel
@@ -719,7 +728,16 @@ class BasePlot(ABC):
         self.cb_label=cb_label
         self.cb_spacing=cb_spacing
         self.cb_drawedges=cb_drawedges
-        self.cb_format=cb_format    
+        self.cb_format=cb_format  
+        self.sns_orient =sns_orient
+        self.sns_style =sns_style
+        self.sns_palette = sns_palette
+        self.sns_height =sns_height
+        self.sns_aspect =sns_aspect
+        self.sns_theme_kws = sns_theme_kws or {'style':self.sns_style, 
+                                         'palette':self.sns_palette, 
+                                                      }
+                                       
    
         self.cb_props = {
             pname.replace('cb_', '') : pvalues

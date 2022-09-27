@@ -146,7 +146,7 @@ class DCProfiling(ElectricalMethods)  :
          
     Examples
     ---------
-    (1)-> Get DC -resistivity profiling from the individual Resistivity object 
+    (1) -> Get DC -resistivity profiling from the individual Resistivity object 
     
     >>> from watex.methods import ResistivityProfiling 
     >>> from watex.methods import DCProfiling  
@@ -185,7 +185,7 @@ class DCProfiling(ElectricalMethods)  :
     ... array(['S017', 'S006', 'S000', 'S036', 'S036', 'S036', 'S036', 'S036',
            'S001'], dtype='<U33')
     
-    (2) -> Read data and all sheets, assumes all data are arranged in a sheets
+    (3) -> Read data and all sheets, assumes all data are arranged in a sheets
     
     >>> dcobjs.read_sheets=True
     >>> dcobjs.fit(datapath) 
@@ -461,6 +461,7 @@ class DCSounding(ElectricalMethods) :
                 98.44122324, 105.51229105, 112.58335886, 119.65442667])
     
     (2) -> read multiple sounding files 
+    
     >>> dsobj.fit('data/ves')
     >>> dsobj.ohmic_areas_  
     ... array([ 523.25458506,  523.25458506, 1207.41759558]) 

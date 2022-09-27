@@ -18,4 +18,5 @@ seaborn
 tqdm
 pycsamt 
 autoapi 
-xgboost 
+xgboost
+click 

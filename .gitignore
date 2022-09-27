@@ -166,3 +166,5 @@ test_1.csv
 pme.en.new_data/
 __svmmodels.pkl
 
+# remove the scripts in the remote 
+scripts/ 
