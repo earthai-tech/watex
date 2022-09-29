@@ -14,7 +14,7 @@ import os
 import sys
 
 #for p in ('.', '..', '../..', '../watex', './src/watex', '../src/watex'): 
-for p in ('../../', '../src/', '../../src/watex', '../../src/' ): 
+for p in ('../../', '../src/', '../../src/watex', '../../src/' , '../src/'): 
     sys.path.insert(0, os.path.abspath(p))
 
 # -- Element functions ------------------------------------------------
@@ -171,7 +171,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'WATex', u'WATex Documentation',
-     author, 'WATex', 'A Machine Learning Research Toolbox in Hydrogeophysic',
+     author, 'WATex', 'A Machine Learning Research Package in Hydrogeophysic',
      'Miscellaneous'),
 ]
 
