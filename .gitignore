@@ -170,4 +170,4 @@ pme.en.new_data/
 __svmmodels.pkl
 
 # remove the scripts in the remote 
-watex/src/scripts/ 
+src/scripts/ 
