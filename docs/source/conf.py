@@ -24,7 +24,7 @@ def run_apidoc(_):
     import os
     import shutil
     cur_dir = os.path.dirname(__file__)
-    module = os.path.join(cur_dir, '../src/watex')
+    module = os.path.join(cur_dir, '../../src/watex')
     output_path = os.path.join(cur_dir, 'api')
     shutil.rmtree(output_path, ignore_errors=True)
     main(['--separate',
@@ -172,7 +172,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'WATex', u'WATex Documentation',
-     author, 'WATex', 'A Machine Learning Research Toolbox in Hydrogeophysic',
+     author, 'WATex', 'A Machine Learning Research Package in Hydrogeophysic',
      'Miscellaneous'),
 ]
 
