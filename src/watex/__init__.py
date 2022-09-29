@@ -40,13 +40,13 @@ if __name__ =='__main__' or __package__ is None:
 
 
 # configure the logger 
-from ._watexlog import watexlog
+from watex._watexlog import watexlog
 try: 
     watexlog.load_configure(os.path.join(
-        os.path.abspath('.'),'watex', "wlog.yml"))
+        os.path.abspath('.'), "watex", "wlog.yml"))
 except: 
     watexlog.load_configure(os.path.join(
-        os.path.abspath('.'), "wlog.yml"))
+        os.path.abspath('.'),'src', "wlog.yml"))
 
 # set loging Level
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
