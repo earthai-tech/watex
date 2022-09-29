@@ -1,0 +1,14 @@
+!table
+!version 300
+!charset WindowsLatin1
+!edit_version 650
+
+Definition Table
+  Type NATIVE Charset "Neutral"
+  Fields 1
+    ID Integer ;
+begin_metadata
+"\IsReadOnly" = "FALSE"
+"\MapInfo" = ""
+"\MapInfo\TableID" = "9557dd39-be94-4f44-a416-1647feec7af0"
+end_metadata

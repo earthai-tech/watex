@@ -1,0 +1,195 @@
+!Workspace
+!Version  950
+!Charset WindowsLatin1
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\Carte_RCI.TAB" As Carte_RCI Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\YYU" As YYU Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\autres regions" As autres_regions Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\balmer 1" As balmer_1 Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\braj soubre" As braj_soubre Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\contour region sp" As contour_region_sp Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\lim sous prefectures" As lim_sous_prefectures Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\limit region int" As limit_region_int Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\ocean atlant" As ocean_atlant Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\position grand berreby" As position_grand_berreby Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\position san pedro" As position_san_pedro Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\postion grand berreby" As postion_grand_berreby Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\TEX ocean atlantique" As TEX_ocean_atlantique Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\TEXT REGION" As TEXT_REGION Interactive
+Open Table "C:\Users\HP PAVILLON 15\Documents\MAPINFO STAT\carte balmer ym\TEXT SAN PEDRO" As TEXT_SAN_PEDRO Interactive
+Open Table "cadran 1" As cadran_1 Interactive
+Open Table "r sanp et gbokele" As r_sanp_et_gbokele Interactive
+Open Table "separateur de deux regions" As separateur_de_deux_regions Interactive
+Open Table "limites souspref" As limites_souspref Interactive
+Open Table "ocean atlan" As ocean_atlan Interactive
+Open Table "barrage" As barrage Interactive
+Open Table "TEXT SAN PEDRO1" As TEXT_SAN_PEDRO1 Interactive
+Open Table "grand bereby1" As grand_bereby1 Interactive
+Open Table "posist sp" As posist_sp Interactive
+Open Table "posit gbere" As posit_gbere Interactive
+Open Table "TEXT ocan atlan" As TEXT_ocan_atlan Interactive
+Open Table "TEXT nom des regions" As TEXT_nom_des_regions Interactive
+Open Table "C:\Users\HP PAVILLON 15\AppData\Local\Temp\MIPRO\MapInfo.Application_2692\Grid" As Grid Interactive
+Open Table "cadran toute la carte" As cadran_toute_la_carte Interactive
+Open Table "OOO" As OOO Interactive
+Open Table "position Balmer" As position_Balmer Interactive
+Open Table "text balm" As text_balm Interactive
+Open Table "effacement" As effacement Interactive
+Map From effacement,text_balm,position_Balmer,OOO,cadran_toute_la_carte,
+  Grid,TEXT_nom_des_regions,TEXT_ocan_atlan,posit_gbere,posist_sp,grand_bereby1,
+  TEXT_SAN_PEDRO1,barrage,limites_souspref,separateur_de_deux_regions,r_sanp_et_gbokele,ocean_atlan,cadran_1,Carte_RCI 
+  Position (0.0520833,0.0520833) Units "in"
+  Width 5.91667 Units "in" Height 3.16667 Units "in" 
+Set Window FrontWindow() ScrollBars Off Autoscroll On Enhanced On Smooth Text Antialias Image High
+Set Map
+  CoordSys Earth Projection 1, 104
+  Center (6.595366789,4.78763024)
+  Zoom 109.0287481 Units "km"
+  Preserve Zoom Display Zoom
+  Distance Units "km" Area Units "sq km" XY Units "degree"
+Set Map Layer 0 Selectable
+Set Map
+  Layer 1
+    Display Global
+    Global Pen (1,1,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line None Position Center Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 2
+    Display Graphic
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line Arrow Position Right Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 3
+    Display Graphic
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line Arrow Position Right Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 4
+    Display Global
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Times New Roman",1,28,0)
+    Label Line Arrow Position Right Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 5
+    Display Global
+    Global Pen (3,2,0) Brush (1,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line None Position Center Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 6
+    Display Graphic
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line Arrow Position Right Font ("Arial",0,9,0) Pen (1,2,0) 
+      With Description
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 7
+    Display Graphic
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line Arrow Position Right Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 8
+    Display Global
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",256,9,255,16777215)
+    Label Line Arrow Position Right Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 9
+    Display Global
+    Global Pen (1,2,0) Brush (67,0,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line None Position Center Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 10
+    Display Global
+    Global Pen (1,2,0) Brush (12,0,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line None Position Center Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 11
+    Display Graphic
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line Arrow Position Right Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 12
+    Display Graphic
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line Arrow Position Right Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 13
+    Display Global
+    Global Pen (1,2,0) Brush (15,5293567,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line None Position Center Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 14
+    Display Global
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (2,2,0) Font ("Arial",0,9,0)
+    Label Line Arrow Position Above Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates Off Offset 2
+      Visibility On
+  Layer 15
+    Display Global
+    Global Pen (1,2,0) Brush (2,16777215,16777215) Symbol (35,0,12) Line (4,74,14708736) Font ("Arial",0,9,0)
+    Label Line Arrow Position Above Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates Off Offset 2
+      Visibility On
+  Layer 16
+    Display Global
+    Global Pen (1,2,0) Brush (13,16768208,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line None Position Center Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 17
+    Display Global
+    Global Pen (1,1,0) Brush (2,61680,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line None Position Center Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 18
+    Display Global
+    Global Pen (2,2,0) Brush (1,16777215,16777215) Symbol (35,0,12) Line (1,2,0) Font ("Arial",0,9,0)
+    Label Line None Position Center Font ("Arial",0,9,0) Pen (1,2,0) 
+      With ID
+      Parallel On Auto Off Overlap Off Duplicates On Offset 2
+      Visibility On
+  Layer 19
+    Display Off
+    Global Pen (1,2,0)  Brush (2,16777215,16777215)  Symbol (35,0,12)  Line (1,2,0)  Font ("Arial",0,9,0)
+    Selectable Off
+    Zoom (3.3, 1300) Units "km" 
+  contrast 50 
+  brightness 50 
+  alpha 255 
+    transparency off 
+  color 0 
+    grayscale off 
+Set Map Layer 1 Editable
+Set Window FrontWindow() Printer
+ Name "Envoyer à OneNote 2013" Orientation Portrait Copies 1
+ Papersize 9
+Dim WorkspaceMaximizedWindow As Integer
+WorkspaceMaximizedWindow = Frontwindow()
+Set Window WorkspaceMaximizedWindow Max
+Undim WorkspaceMaximizedWindow

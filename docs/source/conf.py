@@ -13,8 +13,32 @@
 import os
 import sys
 
-for p in ('.', '..', '../..', '../watex'): 
+#for p in ('.', '..', '../..', '../watex', './src/watex', '../src/watex'): 
+for p in ('../../', '../src/', '../../src/watex', '../../src/' ): 
     sys.path.insert(0, os.path.abspath(p))
+
+# -- Element functions ------------------------------------------------
+
+def run_apidoc(_):
+    from sphinx.ext.apidoc import main
+    import os
+    import shutil
+    cur_dir = os.path.dirname(__file__)
+    module = os.path.join(cur_dir, '../../src/watex')
+    output_path = os.path.join(cur_dir, 'api')
+    shutil.rmtree(output_path, ignore_errors=True)
+    main(['--separate',
+        '--module-first',
+        '--no-toc',
+        '--force',
+        '-o', output_path, module,
+    ])
+
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
+    # app.add_javascript('copybutton.js')
+    app.add_js_file('copybutton.js')
 
 # -- Project information -----------------------------------------------------
 
@@ -22,8 +46,11 @@ project = 'WATex'
 copyright = '2022, LKouadio'
 author = 'LKouadio'
 
+import watex 
 # The full version, including alpha/beta/rc tags
 release = '0.1'
+# release = watex.__version__
+# version = '.'.join(release.split('.')[:2])
 
 
 # -- General configuration ---------------------------------------------------
