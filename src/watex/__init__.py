@@ -51,3 +51,15 @@ except:
 # set loging Level
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
+
+from . import ( 
+    analysis, 
+    bases, 
+    datasets, 
+    geology, 
+    methods, 
+    models, 
+    tools, 
+    view,
+    )
+
