@@ -45,8 +45,7 @@ def setup(app):
 project = 'WATex'
 copyright = '2022, LKouadio'
 author = 'LKouadio'
-
-import watex 
+ 
 # The full version, including alpha/beta/rc tags
 release = '0.1'
 # release = watex.__version__
