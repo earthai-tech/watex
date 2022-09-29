@@ -15,7 +15,8 @@ import os
 import yaml
 import logging 
 import logging.config
-import inspect 
+import inspect
+import warnings  
 
 class watexlog:
     """
@@ -26,7 +27,8 @@ class watexlog:
     @staticmethod
     def load_configure (
             path2configure =None, 
-            OwnloggerBaseConf=False
+            OwnloggerBaseConf=False, 
+            verbose=False, 
             ) :
         """
         configure/setup the logging according to the input configfile
@@ -47,16 +49,17 @@ class watexlog:
         elif configfile.endswith(".yaml") or configfile.endswith(".yml") :
             this_module_file=os.path.abspath(__file__)
     
-            print('yaml config file', this_module_file)
+            if verbose: print('yaml config file', this_module_file) 
             
             logging.info ("this module is : %s", this_module_file)
-            print('os.path.dirname(this_module_path)=',
-                  os.path.dirname(this_module_file))
+            if verbose :
+                print('os.path.dirname(this_module_path)=',
+                  os.path.dirname(this_module_file)) 
 
             yaml_path=os.path.join(os.path.dirname(this_module_file),
                                    configfile)
     
-            print("yaml_path", yaml_path)
+            if verbose: print("yaml_path", yaml_path) 
             
             logging.info('Effective yaml configuration file %s', yaml_path)
 
