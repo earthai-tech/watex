@@ -2129,9 +2129,7 @@ def compute_anr (
     return sfi * np.abs(stand_rhoa.mean())
 
 
-@deprecated('Deprecated function to `:func:`watex.methods.erp.get_type`'
-            ' more efficient using median and index computation. It will '
-            'probably deprecate soon for neural network pattern recognition.')
+@deprecated('Function should be removed for the next release.')
 def get_type (
         erp_array: ArrayLike | List [float], 
         posMinMax:Tuple[int] | List[int],
@@ -2197,7 +2195,8 @@ def get_type (
             anom_type = 'EC'
 
     return anom_type   
-    
+
+  
 @deprecated('`Deprecated function. Replaced by :meth:~core.erp.get_shape` ' 
             'more convenient to recognize anomaly shape using ``median line``'
             'rather than ``mean line`` below.')   

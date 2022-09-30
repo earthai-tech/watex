@@ -46,10 +46,10 @@ from ._watexlog import watexlog
 
 try: 
     watexlog.load_configure(os.path.join(
-        os.path.abspath('.'), "watex", "wlog.yml"))
+        os.path.abspath('.'), "wlog.yml"))
 except: 
     watexlog.load_configure(os.path.join(
-        os.path.abspath('.'),'src', "wlog.yml"))
+        os.path.abspath('.'),'watex', "wlog.yml"))
 
 # set loging Level
 logging.getLogger('matplotlib').setLevel(logging.WARNING)

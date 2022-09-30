@@ -1043,17 +1043,16 @@ class catmapflow2:
     
             :return `new_target_array`: Iterable object categorized.
             """
-            cat_range_values, target_array, catfc = func(*args, **kwargs)
-            
+            self.cat_range_values, target_array, catfc = func(*args, **kwargs)
             if catfc is not None : 
                 self.cat_classes = catfc
 
-            if len(cat_range_values) != len(self.cat_classes): 
+            if len(self.cat_range_values) != len(self.cat_classes): 
             
                 self._logging.error(
                     'Length of `cat_range_values` and `cat_classes` provided '
                     'must be the same length not ``{0}`` and'
-                    ' ``{1}`` respectively.'.format(len(cat_range_values),
+                    ' ``{1}`` respectively.'.format(len(self.cat_range_values),
                                                     len(self.cat_classes)))
             try : 
 
@@ -1062,13 +1061,12 @@ class catmapflow2:
             except : 
                 new_target_array = np.zeros_like(target_array)
                 for ii, ff in enumerate(target_array) : 
-                    new_target_array[ii] = self.mapf(crval=ff, 
-                                            nfval=cat_range_values, 
-                                            fc=self.cat_classes)
+                    new_target_array[ii] = self.mapf(crval=ff)
+                    
             return new_target_array
         return wrapper  
 
-    def mapf(self, crval,  nfval, fc):
+    def mapf(self, crval):
         """
         Categorizing loop to hold the convenient classes according 
         to the `cat_range_value` provided. Come as supplement 
@@ -1079,23 +1077,24 @@ class catmapflow2:
         :param fc: Object to replace the`crval` belonging 
             to `cat_classes`
         """
+        nfval = self.cat_range_values.copy()  
         for ii, val in enumerate(nfval):
             try : 
                 if isinstance(val, (float, int)): 
                     if crval ==nfval[0]: 
-                        return fc[0]
+                        return self.cat_classes[0]
                     elif crval>= nfval[-1] : 
-                        return fc[-1]
+                        return self.cat_classes[-1]
                 elif isinstance(val, (list, tuple)):
                     if len(val)>1: 
                         if  val[0] < crval <= val[-1] : 
-                            return fc[ii]
+                            return self.cat_classes[ii]
             except : 
                 
                 if crval ==0.: 
-                    return fc[0]
+                    return self.cat_classes[0]
                 elif crval>= nfval[-1] : 
-                    return fc[-1]
+                    return self.cat_classes[-1]
 
 class docstring:
     """ Generate new doctring of a function or class by appending the doctring 

@@ -17,14 +17,17 @@ import numpy as np
 from ..tools.funcutils import  ( 
     savepath_ , 
     sanitize_fdataset, 
-    categorize_flow, 
+    # categorize_flow, 
     fillNaN, 
     )
     
 from ..typing import ( 
+    Tuple, 
     List,
     Optional, 
-    DataFrame, 
+    DataFrame,
+    ArrayLike, 
+    T
     )
 
 from .base import  ( 
@@ -32,7 +35,8 @@ from .base import  (
     ) 
 
 from ..decorators import ( 
-    writef
+    writef, 
+    catmapflow2
     ) 
 from ..exceptions import ( 
     FileHandlingError, 
@@ -740,7 +744,7 @@ class FeatureInspection:
         self.col_name= col_name 
         
         self.index_col_id =kws.pop('col_id', 'id')
-        self.drop_columns =kws.pop('drop_columns', ['east', 'north'])
+        self.drop_columns =kws.pop('drop_columns', None)
 
         
         self.cache_ =None 
@@ -979,25 +983,78 @@ class FeatureInspection:
         exportdf(df= self.df , refout=self.refout,
                to=self.to, savepath =self.savepath, 
                reset_index =self.reset_index, modname =self.modname)
-            
         
-if __name__=='__main__': 
-    featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
+            
+@catmapflow2(cat_classes=['FR0', 'FR1', 'FR2', 'FR3'])#, 'FR4'] )
+def categorize_flow(
+        target_array: ArrayLike[T] ,
+        flow_values: List [float],
+        **kwargs
+    ) -> Tuple[ List[float], T, List[str]]: 
+    """ 
+    Categorize `flow` into different classes. If the optional
+    `flow_classes`  argument is given, it should be erased the
+    `cat_classes` argument of decororator `deco.catmapflow`.
     
-    # featObj =GeoFeatures(features_fn= featurefn)
+    :param target_array: Flow array to be categorized 
     
-    # df=featObj.df
-    # print(df)
-    #df2, *_ = 
-    # featObj.exportdf()
+    :param flow_values: 
+        
+        The way to be categorized. Distribute the flow values 
+        of numerical values considered as pseudo_classes like:: 
     
-    # print(featObj.site_names)
-    # print(featObj.id_)
-    # print(featObj.id)
-    # print(featObj.b125)
-    # dff= featObj.df
-    # print(dff)
-       
+            flow_values= [0.0, [0.0, 3.0], [3.0, 6.0], [6.0, 10.0], 10.0] (1)
+            
+        if ``flow_values`` is given as follow:: 
+            
+            flow_values =[0. , 3., 6., 10.] (2)
+        
+        It should convert the type (2) to (1).
+        
+    :param flow_classes: 
+        Values of categorized flow rates 
+        
+    :returns: 
+        
+        - ``new_flow_values``: Iterable object as type (2) 
+        - ``target_array``: Raw flow iterable object to be categorized
+        - ``flowClasses``: If given , see ``flow_classes`` param. 
+            
+    """
+    flowClasses =  kwargs.pop('classes', None)
+
+    new_flow_values = []
+    inside_inter_flag= False
+    
+    if isinstance(flow_values, (tuple, np.ndarray)): 
+        flow_values =list(flow_values)
+    # Loop and find 
+    for jj, _iter in enumerate(flow_values) : 
+        if isinstance(_iter, (list, tuple, np.ndarray)): 
+            inside_inter_flag = True 
+            flow_values[jj]= list(_iter)
+ 
+    if inside_inter_flag: 
+        new_flow_values =flow_values 
+    
+    if inside_inter_flag is False: 
+        flow_values= sorted(flow_values)
+        # if 0. in flow_values : 
+        #     new_flow_values.append(0.) 
+        for ss, val in enumerate(flow_values) : 
+            if ss ==0 : 
+                #append always the first values. 
+                 new_flow_values.append(val) 
+            # if val !=0. : 
+            else:
+                if val ==flow_values[-1]: 
+                    new_flow_values.append([flow_values[ss-1], val])
+                    new_flow_values.append(val)
+                else: 
+                   new_flow_values.append([flow_values[ss-1], val])
+ 
+    return new_flow_values, target_array, flowClasses        
+
         
         
         
