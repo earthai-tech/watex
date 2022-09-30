@@ -484,7 +484,7 @@ class EM(IsEdi):
             
         Examples
         ---------
-        >>> from watex.methods.em import EM()
+        >>> from watex.methods.em import EM
         >>> edipath = r'../data/edis'
         >>> savepath =  r'/Users/Daniel/Desktop/ediout'
         >>> emObjs = EM().fit(edipath)
