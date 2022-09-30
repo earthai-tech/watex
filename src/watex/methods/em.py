@@ -479,16 +479,17 @@ class EM(IsEdi):
             
         Returns 
         --------
-        EM: :class:`~.EM` instance  
-            An EM object. 
+        EM: :class:`~.EM` instance
+             Returns ``self`` for easy method chaining.
             
         Examples
         ---------
-        >>> from pycsamt.core.edi import Edi_Collection
-        >>> edipath = r'/Users/Daniel/Desktop/edi'
+        >>> from watex.methods.em import EM()
+        >>> edipath = r'../data/edis'
         >>> savepath =  r'/Users/Daniel/Desktop/ediout'
-        >>> cObjs = Edi_collection (edipath)
-        >>> cObjs.rewrite_edis(by='id', edi_prefix ='b1',savepath =savepath)
+        >>> emObjs = EM().fit(edipath)
+        >>> emObjs.rewrite_edis(by='id', edi_prefix ='b1',
+                                savepath =savepath)
         
         """
         def replace_reflatlon (  olist , nval, kind ='reflat'):
