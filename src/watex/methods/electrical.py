@@ -548,21 +548,21 @@ class DCSounding(ElectricalMethods) :
         self.ids_ = np.array(make_ids (self.survey_names_, 'site', None, True)) 
         
         # set each line as an object with attributes
-        # can be retrieved like self.line1_.fractured_zone_ 
-        self.lines_ = np.empty_like (self.ids_, dtype =object )
+        # can be retrieved like self.site1_.fractured_zone_ 
+        self.sites_ = np.empty_like (self.ids_, dtype =object )
         for kk, (id_ , site) in enumerate (zip( self.ids_, self.data_)) : 
             obj = type (f"{site}", (ElectricalMethods,), site.__dict__ )
             self.__setattr__(f"{id_}", obj)
-            self.lines_[kk]= obj  # set lines objects 
+            self.sites_[kk]= obj  # set site objects 
             
         # -> lines numbers 
-        self.nlines_ = self.lines_.size 
+        self.nsites_ = self.sites_.size 
         
         if self.verbose > 3: 
             print("Each line is an object class inherits from all attributes" 
                   " of DC-electrical sounding object. For instance the number"
                   " of ohmic areas computed of the first line can be fetched"
-                  "  as: <self.line1.ohmic_area_> ")
+                  "  as: <self.sit1.ohmic_area_> ")
             
         # can also retrieve an attributes in other ways 
         # make usefull attributess
@@ -576,8 +576,8 @@ class DCSounding(ElectricalMethods) :
             'nareas_', self.data_ ).astype(float)
         
         # All other attributes can be retrieved. For instance line1
-        # self.line1.XY_, self.line1.XYarea_  or 
-        # self.line1.AB_ ,  self.line.XY_
+        # self.site1.XY_, self.site1.XYarea_  or 
+        # self.site1.AB_ ,  self.site.XY_
 
         if self.verbose > 7: 
             print("Parameters numbers are well computed ")
@@ -1218,7 +1218,7 @@ class VerticalSounding (ElectricalMethods):
         """
         
         try:
-             getattr(self, 'ohmic_area_'); getattr(self, 'fz_')
+             getattr(self, 'ohmic_area_'); getattr(self, 'fractured_zone_')
         except FitError:
             raise FitError(
                 "Can't call the method 'summary' without fitting the"
@@ -1538,9 +1538,9 @@ def _parse_dc_args(self, dcmethod: object , **kws):
             sf= np.repeat ([sf], len(self.survey_names_))
         
         msg =''.join([ 
-                f"### Number of {arg} does not fit the number of sites ",
-                "lines(=>{0}). Expect one station for eachline but {1}",
-                " {2} given."
+                f"### Number of {arg!r} does not fit the number of"
+                f" {'sites' if arg =='fromS' else 'stations'}. "
+                "Expect {0} but {1} {2} given."
             ])
         
     if len(sf)!= len(self.survey_names_): 
@@ -1552,10 +1552,12 @@ def _parse_dc_args(self, dcmethod: object , **kws):
             print("-->!Number of DC-resistivity data read sucessfully"
                   f"= {len(self.survey_names_)}. Number of the given"
                   "  stations considered as a drilling points"
-                  "={len(sf)}. Station must fit each survey lines."
+                  f"={len(sf)}. Station must fit each survey lines."
                   )
                     
-        raise StationError (msg)
+        raise StationError (msg.format(
+            len(self.survey_names_), len(sf) , f"{'is' if len(sf) <=1 else 'are'}",
+            ))
         
     if not flag: 
         self.stations = sf 
