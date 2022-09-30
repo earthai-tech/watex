@@ -53,13 +53,16 @@ plot_kws = {'lw' :3.,           # line width
            'gwhich' :'major',          # minor ticks
             # 'fs' :3.,                 # coeff to manage font_size 
             }
+
 leg_kws ={'loc':'lower left',
           'fontsize': 18.}
+
 mlObj= MLPlots(leg_kws=leg_kws, **plot_kws
                )
 # additional scikit_lean precision recall keywords arguments 
 prt_kws =dict()
 #call object
+
 mlObj.PrecisionRecall(clf = svc_clf, 
                           X= X_prepared, 
                           y = y_prepared, 

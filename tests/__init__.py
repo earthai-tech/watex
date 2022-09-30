@@ -45,6 +45,7 @@ DATA_MID_PROCESSED= BAGOUE_DATASET('Bagoue data preprocessed')
 DATA_ANALYSES = BAGOUE_DATASET('Bagoue analysis')
 
 erp_test_location_name ='l10_gbalo.xlsx'
+
 PREFIX = ['station','easting', 'northing', 'resistivity' ]
 
 DATA_UNSAFE= os.path.join(ERP_DATA_DIR, 'testunsafedata.csv')
@@ -58,3 +59,4 @@ DATA_EXTRA = os.path.join(ERP_DATA_DIR, 'testunsafedata_extra.csv')
 # set test logging configure
 watexlog.load_configure(
     os.path.join(os.path.abspath('./watex'), "wlog.yml"))
+

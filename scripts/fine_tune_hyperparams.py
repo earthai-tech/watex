@@ -12,6 +12,7 @@ from sklearn.linear_model import LogisticRegression , SGDClassifier
 from sklearn.svm import SVC, LinearSVC 
 
 from watex.view.mlplot import MLPlots 
+
 from watex.modeling.validation import multipleGridSearches 
 #  Test data
 from watex.datasets import fetch_data 
@@ -20,25 +21,31 @@ X_prepared, y_prepared = fetch_data('Bagoue dataset prepared')
 #cross validation Kfold 
 cv = 7
 # type of scores 
+
 scoring ='neg_mean_squared_error'#accuracy'#'neg_mean_squared_error'#
+
 
 # random state for estimator s
 random_state =42 
 # kind of grid search 
 kind ='GridSearchCV'
+
 #save to joblib 
 save2joblib =True 
+
 # differnts 
 logreg_clf = LogisticRegression(random_state =random_state)
 linear_svc_clf = LinearSVC(random_state =random_state)
 sgd_clf = SGDClassifier(random_state = random_state)
 svc_clf = SVC(random_state =random_state) 
 # build estimators 
+
 estimators = (svc_clf,linear_svc_clf, logreg_clf )
 
 # plot fine tuned params: 
 plot_fineTune =False
     
+
 # save to joblib 
 # once the best model found. save it to job lib
 gridParams =([
@@ -46,6 +53,7 @@ gridParams =([
         {'kernel':['sigmoid'],'degree':[1, 3,5, 7], 'coef0':[1, 2, 3], 'C': [1e-2, 1e-1, 1, 10, 100]}
         ], 
         [{'C':[1e-2, 1e-1, 1, 10, 100], 'loss':['hinge']}], 
+
         [dict()],
         # [dict()]
     )
@@ -82,3 +90,4 @@ if plot_fineTune :
     lcs_kws ={'lc':['k', 'k', 'k'], #(.9,0.,.8)
               'ls':['-', ':', '-.']}
     mlObj.plotModelvsCV(clfs =clfs, scores =scores, **lcs_kws)
+
