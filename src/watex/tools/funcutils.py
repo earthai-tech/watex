@@ -207,7 +207,10 @@ def repr_callable_obj(obj: F  , skip = None ):
     elif hasattr(obj, '__dict__'): 
         objname=obj.__class__.__name__
         PARAMS_VALUES = {k:v  for k, v in obj.__dict__.items() 
-                         if not (k.endswith('_') or k.startswith('_'))
+                         if not ((k.endswith('_') or k.startswith('_') 
+                                  # remove the dict objects
+                                  or k.endswith('_kws') or k.endswith('_props'))
+                                 )
                          }
     if skip is not None : 
         # skip some inner params 
@@ -948,34 +951,24 @@ def sanitize_unicode_string (str_) :
     """ Replace all spaces and remove all french accents characters.
     
     :Example:
-        >>> from watex.tools.funcutils import sanitize_unicode_string 
-        >>> sentence ='Nos clients sont extrêmement satisfaits '
-            'de la qualité du service fourni. En outre Nos clients '
-                'rachètent frequemment nos "services".'
-        >>> sanitize_unicode_string  (sentence)
-        ... 'nosclientssontextrmementsatisfaitsdelaqualitduservice'
-            'fournienoutrenosclientsrachtentfrequemmentnosservices'
+    >>> from watex.tools.funcutils import sanitize_unicode_string 
+    >>> sentence ='Nos clients sont extrêmement satisfaits '
+        'de la qualité du service fourni. En outre Nos clients '
+            'rachètent frequemment nos "services".'
+    >>> sanitize_unicode_string  (sentence)
+    ... 'nosclientssontextrmementsatisfaitsdelaqualitduservice'
+        'fournienoutrenosclientsrachtentfrequemmentnosservices'
     """
-    str_ = str_.strip()
-    str_= re.sub('\s+', '', str_).lower(
-        ).replace('.', ''
-        ).replace('à', 'a'
-        ).replace("'", ""
-        ).replace('(', ''
-        ).replace(')', ''
-        ).replace('-', ''
-        ).replace('"', ''
-        ).replace("é", "e"
-        ).replace("è", "e"
-        ).replace ('ê','e'
-        ).replace("â", 'a'
-        ).replace (',',""
-        ).replace("\\",''
-        ).replace("/", ''
-        ).replace("ô", 'o'
-        ).replace("’", ''
-        )
+    sp_re = re.compile (r"[.'()-\\/’]")
+    e_re = re.compile(r'[éèê]')
+    a_re= re.compile(r'[àâ]')
 
+    str_= re.sub('\s+', '', str_.strip().lower())
+    
+    for cobj , repl  in zip ( (sp_re, e_re, a_re), 
+                             ("", 'e', 'a')): 
+        str_ = cobj.sub(repl, str_)
+    
     return str_             
                   
 def read_main (csv_fn , pf , delimiter =':',

@@ -15,8 +15,7 @@ import os
 import yaml
 import logging 
 import logging.config
-import inspect
-import warnings  
+import inspect 
 
 class watexlog:
     """

@@ -135,37 +135,37 @@ def get_params (obj: object
     :return: dict of parameters values 
     
     :examples: 
-        >>> from sklearn.svm import SVC 
-        >>> from watex.tools.funcutils import get_params 
-        >>> sigmoid= SVC (
-            **{
-                'C': 512.0,
-                'coef0': 0,
-                'degree': 1,
-                'gamma': 0.001953125,
-                'kernel': 'sigmoid',
-                'tol': 1.0 
-                }
-            )
-        >>> pvalues = get_params( sigmoid)
-        >>> {'decision_function_shape': 'ovr',
-             'break_ties': False,
-             'kernel': 'sigmoid',
-             'degree': 1,
-             'gamma': 0.001953125,
-             'coef0': 0,
-             'tol': 1.0,
-             'C': 512.0,
-             'nu': 0.0,
-             'epsilon': 0.0,
-             'shrinking': True,
-             'probability': False,
-             'cache_size': 200,
-             'class_weight': None,
-             'verbose': False,
-             'max_iter': -1,
-             'random_state': None
-         }
+    >>> from sklearn.svm import SVC 
+    >>> from watex.tools.funcutils import get_params 
+    >>> sigmoid= SVC (
+        **{
+            'C': 512.0,
+            'coef0': 0,
+            'degree': 1,
+            'gamma': 0.001953125,
+            'kernel': 'sigmoid',
+            'tol': 1.0 
+            }
+        )
+    >>> pvalues = get_params( sigmoid)
+    >>> {'decision_function_shape': 'ovr',
+         'break_ties': False,
+         'kernel': 'sigmoid',
+         'degree': 1,
+         'gamma': 0.001953125,
+         'coef0': 0,
+         'tol': 1.0,
+         'C': 512.0,
+         'nu': 0.0,
+         'epsilon': 0.0,
+         'shrinking': True,
+         'probability': False,
+         'cache_size': 200,
+         'class_weight': None,
+         'verbose': False,
+         'max_iter': -1,
+         'random_state': None
+     }
     """
     if hasattr (obj, '__call__'): 
         cls_or_func_signature = inspect.signature(obj)

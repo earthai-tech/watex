@@ -210,7 +210,7 @@ class QuickPlot (BasePlot)  :
     def __init__(self,  classes = None, nameoftarget= None,  **kws): 
         
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
-        self.classes = kws.pop('classes',[0., 1., 3.])
+        self.classes = kws.pop('classes', None)
         self.nameoftarget= kws.pop('nameoftarget', None)
         self.mapflow= kws.pop('mapflow', False)
         
@@ -238,8 +238,9 @@ class QuickPlot (BasePlot)  :
         features inspection."""
           
         if str(self.nameoftarget).lower() =='flow':
+            # default inspection for DC -flow rate prediction
            fobj= FeatureInspection( set_index=True, 
-                flow_classes = self.classes , 
+                flow_classes = self.classes or [0., 1., 3] , 
                 target = self.nameoftarget, 
                 mapflow= self.mapflow 
                            ).fit(data=data)
@@ -276,7 +277,12 @@ class QuickPlot (BasePlot)  :
             array of the target. Must be the same length as the data. If `y` is 
             provided and `data` is given as ``str`` or ``DataFrame``, all the data 
             should be considered as the X data for analysis. 
-            
+          
+         Returns
+         -------
+         :class:`QuickPlot` instance
+             Returns ``self`` for easy method chaining.
+             
         Examples 
         --------
 
@@ -314,7 +320,7 @@ class QuickPlot (BasePlot)  :
     
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
-        return repr_callable_obj  (self, skip ='y')
+        return repr_callable_obj  (self, skip ='y') 
        
     def __getattr__(self, name):
         if name.endswith ('_'): 
@@ -387,7 +393,12 @@ class QuickPlot (BasePlot)  :
         normed : bool, optional
             an optional parameter and it contains the boolean values. It uses 
             the density keyword argument instead.
-            
+          
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+             
         Examples 
         ---------
         >>> from watex.view.plot import QuickPlot 
@@ -426,6 +437,8 @@ class QuickPlot (BasePlot)  :
                         orientation =self.fig_orientation
                         )
         
+        return self 
+    
     def barCatDistribution(self,
                            data: str | DataFrame =None, 
                            basic_plot: bool = True,
@@ -461,11 +474,16 @@ class QuickPlot (BasePlot)  :
                                              'sep':0.25}}
         kws: dict, 
             Additional keywords arguments from `seaborn.countplot`
-            
+          
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+              
         Examples
         ----------
             >>> from watex.view.plot import QuickPlot
-            >>> data = 'data/geodata/main.bagciv.data.csv'
+            >>> data = '../data/geodata/main.bagciv.data.csv'
             >>> qplotObj= QuickPlot(xlabel = 'Anomaly type',
                                     ylabel='Number of  occurence (%)',
                                     lc='b', nameoftarget='flow')
@@ -526,11 +544,14 @@ class QuickPlot (BasePlot)  :
         if self.savefig is not None :
             plt.savefig(self.savefig,dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
-        plt.show()
+            
+        plt.show() if self.savefig is None else plt.close () 
         
         print('--> Bar distribution plot successfully done!'
               )if self.verbose > 0 else print()  
-
+        
+        return self 
+    
     
     def multiCatDistribution(self, 
                              data : str | DataFrame = None, 
@@ -667,11 +688,16 @@ class QuickPlot (BasePlot)  :
         kwargs: key, value pairings
             Other keyword arguments are passed through to the underlying 
             plotting function.
-
+            
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+             
         Examples
         ---------
         >>> from watex.view.plot import QuickPlot 
-        >>> data = 'data/geodata/main.bagciv.data.csv'
+        >>> data = '../data/geodata/main.bagciv.data.csv'
         >>> qplotObj= QuickPlot(lc='b', nameoftarget='flow')
         >>> qplotObj.sns_style = 'darkgrid'
         >>> qplotObj.mapflow=True # to categorize the flow rate 
@@ -737,7 +763,8 @@ class QuickPlot (BasePlot)  :
         print('--> Multiple distribution plots sucessfully done!'
               ) if self.verbose > 0 else print()     
         
-        
+        return self 
+    
     def correlationMatrix(self,
                         data: str | DataFrame =None, 
                         cortype:str ='num',
@@ -789,11 +816,16 @@ class QuickPlot (BasePlot)  :
         sns_kws: Other seabon heatmap arguments. Refer to 
                 https://seaborn.pydata.org/generated/seaborn.heatmap.html
                 
-                
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+             
+           
         Example 
         ---------
         >>> from watex.view.plot import QuickPlot 
-        >>> qplotObj = QuickPlot().fit('data/geodata/main.bagciv.data.csv')
+        >>> qplotObj = QuickPlot().fit('../data/geodata/main.bagciv.data.csv')
         >>> sns_kwargs ={'annot': False, 
         ...            'linewidth': .5, 
         ...            'center':0 , 
@@ -854,8 +886,9 @@ class QuickPlot (BasePlot)  :
         print(" --> Correlation matrix plot successfully done !" 
               ) if self.verbose > 0 else print()
               
-        
-#XXXOPTIMIZE                 
+        return self 
+    
+              
     def numfeatures(self, 
                     data: str | DataFrame =None ,
                     features=None, 
@@ -898,13 +931,17 @@ class QuickPlot (BasePlot)  :
             http://seaborn.pydata.org/generated/seaborn.pairplot.html for 
             further details.             
                      
-        
-   
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+            
+              
         Examples
         ---------
             
             >>> from watex.view.plot import QuickPlot 
-            >>> data = 'data/geodata/main.bagciv.data.csv'
+            >>> data = '../data/geodata/main.bagciv.data.csv'
             >>> qkObj = QuickPlot(mapflow =True, nameoftarget='flow'
                                       ).fit(data)
             >>> qkObj.sns_style ='darkgrid', 
@@ -959,124 +996,116 @@ class QuickPlot (BasePlot)  :
             
         plt.show() if self.savefig is None else plt.close () 
         
-   
-    def joint2features(self,*, data =None, df=None, 
-                      features=['ohmS', 'lwi'], 
-                      join_kws=None, marginals_kws=None, 
-                      **sns_kwargs)-> None:
+        return self 
+    
+    def joint2features(self,features: List [str], *,
+                       data: str | DataFrame=None, 
+                       join_kws=None, marginals_kws=None, 
+                       **sns_kws):
         """
         Joint methods allow to visualize correlation of two features. 
         
         Draw a plot of two features with bivariate and univariate graphs. 
         
-        :param df: refer to :doc:`watex.view.plot.QuickPlot`
-        :param data: see :doc:`watex.view.plot.QuickPlot`
+        Parameters 
+        -----------
+        features: list
+            List of numerical features to plot for correlating analyses. 
+            will raise an error if features does not exist in the data 
         
-        :param features: 
-            List of quantitative features to plot for correlating analyses.
-            Can change the *default* value for your convenient data features.
-            
-        :param join_kws: 
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+
+        join_kws:dict, optional 
             Additional keyword arguments are passed to the function used 
             to draw the plot on the joint Axes, superseding items in the 
             `joint_kws` dictionary.
             
-        :param marginals_kws: 
+        marginals_kws: dict, optional 
             Additional keyword arguments are passed to the function used 
             to draw the plot on the marginals Axes. 
             
-        :param sns_kwargs: 
+        sns_kwargs: dict, optional
             keywords arguments of seaborn joinplot methods. Refer to 
             :ref:`<http://seaborn.pydata.org/generated/seaborn.jointplot.html>` 
             for more details about usefull kwargs to customize plots. 
-            
-        :Example: 
-            
-            >>> from watex.view.plot.QuickPlot import joint2features
-            >>> qkObj = QuickPlot(
-            ...        data ='data/geo_fdata/BagoueDataset2.xlsx', lc='b', 
-            ...             target_name = 'flow', set_theme ='darkgrid', 
-            ...             fig_title='Quantitative features correlation'
-            ...             )  
-            >>> sns_pkws={
-            ...            'kind':'reg' , #'kde', 'hex'
-            ...            # "hue": 'flow', 
-            ...               }
-            >>> joinpl_kws={"color": "r", 
-                            'zorder':0, 'levels':6}
-            >>> plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}           
-            >>> qkObj.joint2features(features=['ohmS', 'lwi'], 
-            ...            join_kws=joinpl_kws, marginals_kws=plmarg_kws, 
-            ...            **sns_pkws, 
-            ...            ) 
+          
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+              
+             
+        Example
+        --------
+        >>> from watex.view.plot import QuickPlot 
+        >>> data = r'../data/geodata/main.bagciv.data.csv'
+        >>> qkObj = QuickPlot( lc='b', sns_style ='darkgrid', 
+        ...             fig_title='Quantitative features correlation'
+        ...             ).fit(data)  
+        >>> sns_pkws={
+        ...            'kind':'reg' , #'kde', 'hex'
+        ...            # "hue": 'flow', 
+        ...               }
+        >>> joinpl_kws={"color": "r", 
+                        'zorder':0, 'levels':6}
+        >>> plmarg_kws={'color':"r", 'height':-.15, 'clip_on':False}           
+        >>> qkObj.joint2features(features=['ohmS', 'lwi'], 
+        ...            join_kws=joinpl_kws, marginals_kws=plmarg_kws, 
+        ...            **sns_pkws, 
+        ...            ) 
         """
         if data is not None : 
             self.data = data
-        if df is not None: self.df = df 
+  
+        df_= self.data.copy(deep=True)
         
-        df_= self.df.copy(deep=True)
-        
-        try : 
-            resH= cfexist(features_to= features,features = df_.columns)
-        except TypeError: 
+        if isinstance (features, str): 
+            features =[features]
             
-            print(' Features can not be a NoneType value.'
-                  'Please set a right features.')
-            self._logging.error('NoneType can not be a features!')
-        except :
-            raise ParameterNumberError(
-               f'Parameters number of {features} is  not found in the '
-               ' dataframe columns ={0}'.format(list(df_.columns)))
-        
-        else: 
-            if not resH:  raise ParameterNumberError(
-                f'Parameters number is ``{features}``. NoneType object is'
-                ' not allowed in  dataframe columns ={0}'.
-                format(list(df_.columns)))
-        
-        if isinstance(features, str): 
-            features=[features]
+        if features is None: 
+            self._logging.error(f"Valid features are {smart_format(df_.columns)}")
+            raise PlotError("NoneType can not be a feature nor plotted.")
+            
+        df_= selectfeatures(df_, features)
+
         # checker whether features is quantitative features 
-        for ff in features: 
-            try: 
-                df_=df_.astype({ff:np.float})
-            except ValueError: 
-                raise  FeatureError(
-                    f" Feature `{ff}` is qualitative parameter."
-                    ' Could not convert string values to float')
-                
-        if len(features)>2: 
-            self._logging.debug(
-                'Features length provided is = {0}. The first two '
-                'features `{1}` is used for joinplot.'.format(
-                    len(features), features[:2]))
-            features=list(features)[:2]
-        elif len(features)<=1: 
-            self._logging.error(
-                'Could not jointplotted. Need two features. Only {0} '
-                'is given.'.format(len(features)))
-            raise ParameterNumberError(
-                'Only {0} is feature number is given. Need two '
-                'features!'.format(len(features)))
+        df_ = selectfeatures(df_, include= 'number') 
+        
+        if len(df_.columns) != 2: 
+            raise PlotError(f" Joinplot needs two features. {len(df_.columns)}"
+                            f" {'was' if len(df_.columns)<=1 else 'were'} given")
             
-        ax= sns.jointplot(features[0], features[1], data=df_,  **sns_kwargs)
+            
+        ax= sns.jointplot(data=df_, x=features[0], y=features[1],   **sns_kws)
 
         if join_kws is not None:
+            join_kws = _assert_all_types(join_kws,dict)
             ax.plot_joint(sns.kdeplot, **join_kws)
+            
         if marginals_kws is not None: 
+            marginals_kws= _assert_all_types(marginals_kws,dict)
+            
             ax.plot_marginals(sns.rugplot, **marginals_kws)
             
-        plt.show()
+        plt.show() if self.savefig is None else plt.close () 
         
         if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
+            plt.savefig(self.savefig,dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
             
-    def scatteringFeatures(self,data=None, df=None, 
-                           features=['lwi', 'flow'],
+        return self 
+          
+    def scatteringfeatures(self,features: List [str], *,
+                           data: str | DataFrame=None,
                            relplot_kws= None, 
-                           **sns_kwargs )->None: 
+                           **sns_kws ): 
         """
         Draw a scatter plot with possibility of several semantic features 
         groupings.
@@ -1085,131 +1114,136 @@ class QuickPlot (BasePlot)  :
         how features in a dataset relate to each other and how those
         relationships depend on other features. Visualization can be a core 
         component of this process because, when data are visualized properly,
-        the human visual system can see trends and patterns
-        that indicate a relationship. 
+        the human visual system can see trends and patterns that indicate a 
+        relationship. 
         
-        :param df: refer to :doc:`watex.view.plot.QuickPlot`
-        :param data: see :doc:`watex.view.plot.QuickPlot`
+        Parameters 
+        -----------
+        features: list
+            List of numerical features to plot for correlating analyses. 
+            will raise an error if features does not exist in the data 
         
-        :param features: 
-            List of features to plot for scattering analyses.
-            Can change the *default* value for your convenient data features.
-        
-        :param relplot_kws: 
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+
+        relplot_kws: dict, optional 
             Extra keyword arguments to show the relationship between 
             two features with semantic mappings of subsets.
             refer to :ref:`<http://seaborn.pydata.org/generated/seaborn.relplot.html#seaborn.relplot>`
             for more details. 
             
-        :param sns_kwargs:
+        sns_kwargs:dict, optional
             kwywords arguments to control what visual semantics are used 
             to identify the different subsets. For more details, please consult
             :ref:`<http://seaborn.pydata.org/generated/seaborn.scatterplot.html>`. 
             
-        :Example: 
             
-            >>> from watex.view.plot.QuickPlot import  scatteringFeatures
-            >>> qkObj = QuickPlot(
-            ...    data ='data/geo_fdata/BagoueDataset2.xlsx' , lc='b', 
-            ...             target_name = 'flow', set_theme ='darkgrid', 
-            ...             fig_title='geol vs lewel of water inflow',
-            ...             xlabel='Level of water inflow (lwi)', 
-            ...             ylabel='Flow rate in m3/h'
-            ...            )  
-            >>> marker_list= ['o','s','P', 'H']
-            >>> markers_dict = {key:mv 
-            ...               for key, mv in zip( list (
-            ...                       dict(qkObj.df ['geol'].value_counts(
-            ...                           normalize=True)).keys()), 
-            ...                            marker_list)}
-            >>> sns_pkws={'markers':markers_dict, 
-            ...          'sizes':(20, 200),
-            ...          "hue":'geol', 
-            ...          'style':'geol',
-            ...         "palette":'deep',
-            ...          'legend':'full',
-            ...          # "hue_norm":(0,7)
-            ...            }
-            >>> regpl_kws = {'col':'flow', 
-            ...             'hue':'lwi', 
-            ...             'style':'geol',
-            ...             'kind':'scatter'
-            ...            }
-            >>> qkObj.scatteringFeatures(features=['lwi', 'flow'],
-            ...                         relplot_kws=regpl_kws,
-            ...                         **sns_pkws, 
-            ...                    ) 
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+              
+        Examples
+        ----------
+        >>> from watex.view.plot import  QuickPlot 
+        >>> data = r'../data/geodata/main.bagciv.data.csv'
+        >>> qkObj = QuickPlot(lc='b', sns_style ='darkgrid', 
+        ...             fig_title='geol vs lewel of water inflow',
+        ...             xlabel='Level of water inflow (lwi)', 
+        ...             ylabel='Flow rate in m3/h'
+        ...            ) 
+        >>>
+        >>> qkObj.nameoftarget='flow' # target the DC-flow rate prediction dataset
+        >>> qkObj.mapflow=True  # to hold category FR0, FR1 etc..
+        >>> qkObj.fit(data) 
+        >>> marker_list= ['o','s','P', 'H']
+        >>> markers_dict = {key:mv for key, mv in zip( list (
+        ...                       dict(qkObj.data ['geol'].value_counts(
+        ...                           normalize=True)).keys()), 
+        ...                            marker_list)}
+        >>> sns_pkws={'markers':markers_dict, 
+        ...          'sizes':(20, 200),
+        ...          "hue":'geol', 
+        ...          'style':'geol',
+        ...         "palette":'deep',
+        ...          'legend':'full',
+        ...          # "hue_norm":(0,7)
+        ...            }
+        >>> regpl_kws = {'col':'flow', 
+        ...             'hue':'lwi', 
+        ...             'style':'geol',
+        ...             'kind':'scatter'
+        ...            }
+        >>> qkObj.scatteringfeatures(features=['lwi', 'flow'],
+        ...                         relplot_kws=regpl_kws,
+        ...                         **sns_pkws, 
+        ...                    ) 
             
         """
         if data is not None : 
             self.data = data
             
-        if df is not None: self.df = df 
-        
-        df_= self.df.copy(deep=True)
+        df_= self.data.copy(deep=True)
         
         # controller function
-        try:
-            featureExistError(superv_features=features, 
-                                    features=df_.columns)
-        except: 
-            warnings.warn(f'Feature {features} controlling failed!')
-        else: 
-            self._logging.info(
-                f'Feature{features} controlling passed !')
+        if isinstance (features, str): 
+            features =[features]
             
-        if len(features)>2: 
-            self._logging.debug(
-                'Features length provided is = {0}. The first two '
-                'features `{1}` are used for joinplot.'.format(
-                    len(features), features[:2]))
-            features=list(features)[:2]
-        elif len(features)<=1: 
-            self._logging.error(
-                'Could not scattering. Need two features. Only {0} '
-                'is given.'.format(len(features)))
-            raise ParameterNumberError(
-                'Only {0} is feature is given. Need two '
-                'features!'.format(len(features)))
-
-        ax= sns.scatterplot(features[0],features[1], data=df_, **sns_kwargs)
+        if features is None: 
+            self._logging.error(f"Valid features are {smart_format(df_.columns)}")
+            raise PlotError("NoneType can not be a feature nor plotted.")
+            
+        if len(features) < 2: 
+            raise PlotError(f" Scatterplot needs at least two features. {len(df_.columns)}"
+                            f" {'was' if len(df_.columns)<=1 else 'were'} given")
+            
+        # assert wether the feature exists 
+        selectfeatures(df_, features)
+        
+        ax= sns.scatterplot(data=df_,  x=features[0], y=features[1],
+                              **sns_kws)
         
         ax.set_xlabel(self.xlabel)
         ax.set_ylabel(self.ylabel)
         ax.set_title(self.fig_title)
         
         if relplot_kws is not None: 
+            relplot_kws = _assert_all_types(relplot_kws, dict)
             sns.relplot(data=df_, x= features[0], y=features[1],
                         **relplot_kws)
             
-        plt.show()
-        
         if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
+            plt.savefig(self.savefig,dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
-    
-    def discussingFeatures(self,df=None, data=None,
-                           features=['ohmS','sfi', 'geol', 'flow'],
-                           map_kws=None, 
-                           map_func= None, 
+            
+        plt.show() if self.savefig is None else plt.close ()    
+        
+        return self 
+       
+    def discussingfeatures(self, features=['ohmS','sfi', 'geol', 'flow'], *, 
+                           data: str | DataFrame= None,
+                           map_kws: Optional[dict]=None, 
+                           map_func: Optional[F] = None, 
                            **sns_kws)-> None: 
         """
-        Porvides the features names at least 04 and discuss with 
+        Provides the features names at least 04 and discuss with 
         their distribution. 
         
         This method maps a dataset onto multiple axes arrayed in a grid of
         rows and columns that correspond to levels of features in the dataset. 
         The plots it produces are often called “lattice”, “trellis”, or
-        “small-multiple” graphics. 
+        'small-multiple' graphics. 
         
-        :param df: refer to :doc:`watex.view.plot.QuickPlot`
-        :param data: see :doc:`watex.view.plot.QuickPlot`
-        
-        :param features: 
-            
-            List of features for discussion plot. Can change the *default*
-            value to the own features. The number of recommended 
+        Parameters 
+        -----------
+        features: list
+            List of features for discussing. The number of recommended 
             features for better analysis is four (04) classified as below: 
                 
                 features_disposal = ['x', 'y', 'col', 'target|hue']
@@ -1221,69 +1255,80 @@ class QuickPlot (BasePlot)  :
                 - `target` or `hue` for targetted examples, *default* is ``flow``
             
             If 03 `features` are given, the latter is considered as a `target`
+        
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
 
-        :param map_kws: 
+        map_kws:dict, optional 
             Extra keyword arguments for mapping plot.
             
-        :param func_map: 
-            
-            Plot style `function`. Can be a .. _matplotlib-pyplot:`mpl.plt` like
-            ``plt.scatter`` or .._seaborn-scatterplot:`sns.plt` like 
+        func_map: callable, Optional 
+            callable object,  is a plot style function. Can be a 'matplotlib-pyplot'
+            function  like ``plt.scatter`` or 'seaborn-scatterplot' like 
             ``sns.scatterplot``. The *default* is ``sns.scatterplot``.
   
-        :param sns_kwargs:
+        sns_kwargs: dict, optional
            kwywords arguments to control what visual semantics are used 
            to identify the different subsets. For more details, please consult
            :ref:`<http://seaborn.pydata.org/generated/seaborn.FacetGrid.html>`. 
         
-        :Example: 
-            
-            >>> from watex.view.plot.QuickPlot import discussingFeatures 
-            >>> qkObj = QuickPlot(  fig_legend_kws={'loc':'upper right'},
-            ...          fig_title = '`sfi` vs`ohmS|`geol`',
-            ...            )  
-            >>> sns_pkws={'aspect':2 , 
-            ...          "height": 2, 
-            ...                  }
-            >>> map_kws={'edgecolor':"w"}   
-            >>> qkObj.discussingFeatures(
-            ...    data ='data/geo_fdata/BagoueDataset2.xlsx' , 
-            ...                         features =['ohmS', 'sfi','geol', 'flow'],
-            ...                           map_kws=map_kws,  **sns_pkws
-            ...                         )   
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+
+        Example
+        --------
+        >>> from watex.view.plot import  QuickPlot 
+        >>> data = r'../data/geodata/main.bagciv.data.csv'
+        >>> qkObj = QuickPlot(  leg_kws={'loc':'upper right'},
+        ...          fig_title = '`sfi` vs`ohmS|`geol`',
+        ...            ) 
+        >>> qkObj.nameoftarget='flow' # target the DC-flow rate prediction dataset
+        >>> qkObj.mapflow=True  # to hold category FR0, FR1 etc..
+        >>> qkObj.fit(data) 
+        >>> sns_pkws={'aspect':2 , 
+        ...          "height": 2, 
+        ...                  }
+        >>> map_kws={'edgecolor':"w"}   
+        >>> qkObj.discussingfeatures(features =['ohmS', 'sfi','geol', 'flow'],
+        ...                           map_kws=map_kws,  **sns_pkws
+        ...                         )   
         """
         if data is not None : 
             self.data = data
-        if df is not None: 
-            self.df = df 
-        df_= self.df.copy(deep=True)
+
+        df_= self.data.copy(deep=True)
         
-        try:
-            featureExistError(superv_features=features, 
-                                    features=df_.columns)
-        except: 
-            warnings.warn(f'Feature {features} controlling failed!')
-        else: 
-            self._logging.info(
-                f'Feature{features} controlling passed !')
-        
+        if isinstance (features, str ): 
+            features =[features]
+            
         if len(features)>4: 
-            self._logging.debug(
-                'Features length provided is = {0:02}. The first four '
-                'features `{1}` are used for joinplot.'.format(
-                    len(features), features[:4]))
+            if self.verbose:  
+                self._logging.debug(
+                    'Features length provided is = {0:02}. The first four '
+                    'features `{1}` are used for joinplot.'.format(
+                        len(features), features[:4]))
+                
             features=list(features)[:4]
             
         elif len(features)<=2: 
             if len(features)==2:verb, pl='are','s'
             else:verb, pl='is',''
             
-            self._logging.error(
-                'Could not plot features. Need three features. Only {0} '
-                '{1} given.'.format(len(features), verb))
+            if self.verbose: 
+                self._logging.error(
+                    'Expect three features at least. {0} '
+                    '{1} given.'.format(len(features), verb))
             
-            raise ParameterNumberError(
-                'Only {0:02} feature{1} {2} given. Need at least 03 '
+            raise PlotError(
+                '{0:02} feature{1} {2} given. Expect at least 03 '
                 'features!'.format(len(features),pl,  verb))
             
         elif len(features)==3:
@@ -1291,11 +1336,12 @@ class QuickPlot (BasePlot)  :
             msg='03 Features are given. The last feature `{}` should be'\
                 ' considered as the`targetted`feature or `hue` value.'.format(
                     features[-1])
-            self._logging.debug(msg)
+            if self.verbose: 
+                self._logging.debug(msg)
             
-            warnings.warn(
-                'The last feature `{}` is used as targetted feature!'.format(
-                    features[-1]))
+                warnings.warn(
+                    '03 features are given, the last one `{}` is used as '
+                    'target!'.format(features[-1]))
             
             features.insert(2, None)
     
@@ -1304,79 +1350,92 @@ class QuickPlot (BasePlot)  :
         
         if map_func is None: 
             map_func = sns.scatterplot #plt.scatter
+            
         if map_func is not None : 
             if not hasattr(map_func, '__call__'): 
-                warnings.warn(f'Object {map_func} must be a callable, not {0}.'
-                    'Can be `plt.scatter` or <matplotlib.pyplot|'
-                    'seaborn.scatterplot>''function supported.'.format(
-                    type(map_func)))
-                        
-                self._logging.error('{map_func} is not callable !'
-                                    'Use `plt.scatter` as default function.')
-                raise FeatureError(
-                    '`Argument `map_func` should be a callable not {0}'.
-                    format(type(map_func)))
-                
+                raise TypeError(
+                    f'map_func must be a callable object not {map_func.__name__!r}'
+                    )
+
         if map_kws is None : 
+            map_kws = _assert_all_types(map_kws,dict)
             map_kws={'edgecolor':"w"}
             
-        try : 
-            ax.map(map_func, features[0], features[1], #edgecolor=self.edgecolor,
-                   **map_kws).add_legend(**self.fig_legend)
-            
-        except AttributeError:
-            print('`{}` object has not attribute `get`'.format(
-                type(self.fig_legend)))
-            
-        plt.show()
-        
+        if (map_func and map_kws) is not None: 
+            ax.map(map_func, features[0], features[1], 
+                   **map_kws).add_legend(**self.leg_kws) 
+      
+
         if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
+            plt.savefig(self.savefig, dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
         
-    def discover_and_visualize_data(self, df = None, data:str =None, 
+        plt.show() if self.savefig is None else plt.close ()
+         
+        return self 
+         
+    def discover_and_visualize(self, data: str | DataFrame= None, 
                                     x:str =None, y:str =None, kind:str ='scatter',
                                     s_col ='lwi', leg_kws:dict ={}, **pd_kws):
         """ Create a scatter plot to visualize the data using `x` and `y` 
         considered as dataframe features. 
         
-        :param df: refer to :class:`watex.view.plot.QuickPlot`
-        :param data: see :class:`watex.view.plot.QuickPlot`
-        
-        :param x: Column name to hold the x-axis values 
-        :param y: column na me to hold the y-axis values 
-        :param s_col: Size for scatter points. 'Default is 
-            ``fs`` time the features colum `lwi`.
+        Parameters 
+        -----------
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+
+        x: str , 
+            Column name to hold the x-axis values 
+        y: str, 
+            column na me to hold the y-axis values 
+        s_col: column for scatter points. 'Default is ``fs`` time the features
+            column `lwi`.
             
-        :param pd_kws: 
+        pd_kws: dict, optional, 
             Pandas plot keywords arguments 
-        :param leg_kws: Matplotlib legend keywords arguments 
-        
-        :Example: 
             
-            >>> import watex.tools.mlutils as mfunc
-            >>> from watex.bases.tranformers import StratifiedWithCategoryAdder
-            >>> from watex.view.plot import QuickPlot
-            >>> df = mfunc.load_data('data/geo_fdata')
-            >>> stratifiedNumObj= StratifiedWithCategoryAdder('flow')
-            >>> strat_train_set , strat_test_set = \
-            ...    stratifiedNumObj.fit_transform(X=df)
-            >>> bag_train_set = strat_train_set.copy()   
-            >>> pd_kws ={'alpha': 0.4, 
-            ...         'label': 'flow m3/h', 
-            ...         'c':'flow', 
-            ...         'cmap':plt.get_cmap('jet'), 
-            ...         'colorbar':True}
-            >>> qkObj=QuickPlot(fs=25.)
-            >>> qkObj.discover_and_visualize_data(
-            ...    df = bag_train_set, x= 'east', y='north', **pd_kws)
+        leg_kws:dict, kws 
+            Matplotlib legend keywords arguments 
+            
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+            
+        Example
+        --------- 
+        >>> import watex.tools.mlutils as mfunc
+        >>> from watex.bases.transformers import StratifiedWithCategoryAdder
+        >>> from watex.view.plot import QuickPlot
+        >>> data = r'../data/geodata/main.bagciv.data.csv'
+        >>> df = mfunc.load_data(data)
+        >>> stratifiedNumObj= StratifiedWithCategoryAdder('flow')
+        >>> strat_train_set , *_= \
+        ...    stratifiedNumObj.fit_transform(X=df) 
+        >>> pd_kws ={'alpha': 0.4, 
+        ...         'label': 'flow m3/h', 
+        ...         'c':'flow', 
+        ...         'cmap':plt.get_cmap('jet'), 
+        ...         'colorbar':True}
+        >>> qkObj=QuickPlot(fs=25.)
+        >>> qkObj.fit(strat_train_set)
+        >>> qkObj.discover_and_visualize( x= 'east', y='north', **pd_kws)
+    
         """
         if data is not None : 
             self.data = data
-        if df is not None: 
-            self.df = df 
-        df_= self.df.copy(deep=True)
+            
+        if self.data is None: 
+            raise FitError("Fit the {self.__class__.__name__!r} instance.")
+            
+        df_= self.data.copy(deep=True)
         
          # visualize the data and get insights
         if 's' not in pd_kws.keys(): 
@@ -1384,27 +1443,18 @@ class QuickPlot (BasePlot)  :
              
         df_.plot(kind=kind, x=x, y=y, **pd_kws)
         
+        self.leg_kws = self.leg_kws or dict () 
+        
         plt.legend(**leg_kws)
         
         if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
+            plt.savefig(self.savefig,dpi=self.fig_dpi,
                         orientation =self.fig_orientation)
+            
+        plt.show () if self.savefig is None else plt.close()
+        
+        return self 
     
-if __name__=='__main__': 
-    
-    qkObj = QuickPlot(  fig_legend_kws={'loc':'upper right'},
-                      fig_title = '`sfi` vs`ohmS|`geol`',
-                        )  
-    sns_pkws={'aspect':2 , 
-              "height": 2, 
-                      }
-
-    map_kws={'edgecolor':"w"}   
-    qkObj.discussingFeatures(data ='data/geo_fdata/BagoueDataset2.xlsx' , 
-                              features =['ohmS', 'sfi','geol', 'flow'],
-                                map_kws=map_kws,  **sns_pkws
-                              )   
 
         
         

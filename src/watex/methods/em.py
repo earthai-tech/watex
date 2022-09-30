@@ -153,9 +153,9 @@ class EM(IsEdi):
     def __init__(self, survey_name:str  =None ): 
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
     
-        self.Location =Location ()
         self.survey_name =survey_name
-        
+        self.Location_= Location()
+      
         self._latitude = None
         self._longitude=None
         self._elevation= None 
@@ -169,38 +169,37 @@ class EM(IsEdi):
 
     @latitude.setter 
     def latitude(self, latitude):
-        if isinstance(latitude, (float, int)): 
-            latitude= [latitude]
-        self._latitude = np.array ( 
-            list (map ( lambda o : self.Location.lat , latitude ))) 
-        
+        self._assertattr ( 'latitude', latitude,
+            self.Location_.lat
+            )
+
     @property 
     def longitude(self): 
         return self._longitude 
+    
     @longitude.setter 
     def longitude(self, longitude):
-        if isinstance(longitude, (float, int)): 
-            longitude= [longitude]
-        self._longitude = np.array ( 
-            list (map ( lambda o : self.Location.lon , 
-                       longitude))) 
+        self._assertattr ( 'longitude', longitude,
+            self.Location_.lon 
+            )
 
     @property 
     def elevation(self): 
-        return self._elevation  
+        return self._elevation 
+    
     @elevation.setter 
     def elevation(self, elevation):
-        if isinstance(elevation, (float, int)): 
-            elevation= [elevation]
-        self._elevation = np.array ( 
-            list (map ( lambda o : self.Location.elev , elevation))) 
+        self._assertattr ('elevation', elevation,
+            self.Location_.elev 
+            )
         
     @property 
     def stnames(self):
         return self._station_names
     @stnames.setter 
     def stnames (self, edi_stations):
-        try : _assert_all_types(edi_stations, list, tuple, np.ndarray)
+        try : _assert_all_types(edi_stations, list,
+                                tuple, np.ndarray)
         except : self._station_names = self.id_ 
         else : self._station_names = list(
             map(lambda n: n.replace('.edi', ''), edi_stations))
@@ -233,7 +232,22 @@ class EM(IsEdi):
             
         return  obj 
               
-    
+    def _assertattr (self, name, value,  locprop ): 
+        """ Read and set attributes from location object . 
+        For instance:: 
+            >>> name = 'longitude',object = self.Location.lon
+            >>> self._longitude = np.array ( 
+            ...     list (map ( lambda o : self.Location.lon , 
+            ...                longitude)))
+        """
+        if isinstance(value, (float, int)): 
+            value= [value]
+        s=np.zeros_like(value)
+        for i, p in enumerate(value): 
+            locprop = p ; s[i] = locprop 
+        setattr(self, f'_{name}', s )
+        
+        
     def fit (self, 
              data: str|List[EDIO]
              ):
@@ -252,7 +266,7 @@ class EM(IsEdi):
         Examples 
         --------
         >>> from watex.methods.em import EM 
-        >>> emObjs = EM (r'data/edis')
+        >>> emObjs = EM().fit (r'data/edis')
         >>> emObjs.ediObjs_ 
         ... 
 
@@ -465,7 +479,7 @@ class EM(IsEdi):
             
         Returns 
         --------
-        EM: :class:`~.EM` object 
+        EM: :class:`~.EM` instance  
             An EM object. 
             
         Examples
@@ -830,8 +844,9 @@ class EM(IsEdi):
         return mat2d 
     
     def getreferencefrequency (self,
-                                 data: Optional[str|List[EDIO]] = None,
-                                 to_log10: bool =False): 
+                                data: Optional[str|List[EDIO]] = None,
+                                to_log10: bool =False
+                                ): 
         """ Get the reference frequency from collection Edis objects.
         
         The highest frequency with clean data should be selected as the  

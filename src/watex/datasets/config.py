@@ -11,13 +11,25 @@ from ..tools.mlutils import (
     dumpOrSerializeData
     )
 
-__all__ = ['X', 'y', 'X0','y0', 'XT', 'yT','_X',
-          'X_prepared', 'y_prepared',  '_pipeline','df0', 'df1',
-          'conf_kws'] 
+__all__ = [
+    'X',
+    'y',
+    'X0',
+    'y0',
+    'XT',
+    'yT',
+    '_X',
+    'X_prepared',
+    'y_prepared',
+    '_pipeline',
+    'df0',
+    'df1',
+    'conf_kws'
+  ] 
 
 
 # path to dataset 
-data_fn ='data/geo_fdata/main.bagciv.data.csv'
+data_fn ='../data/geodata/main.bagciv.data.csv'
 if not os.path.isfile(data_fn): 
     data_fn= fetchDataFromLocalandWeb()
 #-------------------------------------------------------------------------
@@ -88,8 +100,8 @@ df1 = prepareObj._df1
 XT = prepareObj.X_
 yT= prepareObj.y_
 
-# Another tricks to keep your test sets safe is to  use `dumpOrSerializeData` 
-# to keep your test site info a savefile for the first run like::
+#  keep the test sets safe using  `dumpOrSerializeData` 
+# save the test set info in a savefile for the first run like::
 
 if not os.path.isfile ('watex/etc/__Xy.pkl'): 
     train_data =(X_prepared,y_prepared )

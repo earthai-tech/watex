@@ -633,7 +633,7 @@ class visualize_valearn_curve :
         
         @functools.wraps(func) 
         def viz_val_decorated(*args, **kwargs): 
-            """ Decorated function """
+            """ Decorated function for vizualization """
 
             if self.reason.lower().find('val')>=0: 
                 self.reason ='val'
@@ -661,78 +661,11 @@ class visualize_valearn_curve :
                 self.k= param_range 
                 
             plt.figure(figsize=self.fig_size)
-            # create figure obj 
-            # fig,ax = plt.subplots(figuresize = self.fig_size)
-            # ax = fig.add_subplot(len (train_score),1,1) 
 
             if self.turn in ['on', 1, True]: 
-                    
                 # if not isinstance(param_range, bool): 
-                if not isinstance(train_score, dict):
-                    train_score={'_':train_score}
-                    val_score = {'_': val_score}
-
-               # create figure obj 
-                # fig, ax = plt.subplots(len (train_score), sharex=True,
-                #                        figsize = self.fig_size,
-                #                       )
-                # ax = fig.add_subplot(len (train_score),1,1) 
-
-                for ii, (trainkey, trainval) in enumerate(
-                        train_score.items()): 
-  
-                    if self.reason !='learn':
-                        trainval*=100
-                        val_score[trainkey]  *=100 
-                    try: 
-                        
-                        if self.scatterplot: 
-                            plt.scatter(self.k, val_score[trainkey].mean(axis=1),
-                                        **self.val_kws )
-                            plt.scatter(self.k, trainval.mean(axis=1) ,
-                                   **self.train_kws)
-                    except : 
-                        # if exveption occurs maybe from matplotlib properties 
-                        # then run the line plot 
-                            plt.plot(self.k, val_score[trainkey].mean(axis=1),
-                                     **self.val_kws)
-       
-                            plt.plot(self.k, trainval.mean(axis=1),
-                                     **self.train_kws)
-                            
-                    try : 
-                        if self.lineplot : 
-                            plt.plot(self.k, val_score[trainkey].mean(axis=1),
-                                     **self.val_kws)
-       
-                            plt.plot(self.k, trainval.mean(axis=1),
-                                     **self.train_kws)
-                    except : 
-                    
-                        plt.scatter(self.k, val_score[trainkey].mean(axis=1),
-                                    **self.val_kws )
-                        plt.scatter(self.k, trainval.mean(axis=1) ,
-                               **self.train_kws)
-                        
-                    
-                if isinstance(self.xlabel, dict):
-                    plt.xlabel(**self.xlabel)
-                else :  plt.xlabel(self.xlabel)
-                
-                if isinstance(self.ylabel, dict):
-                    plt.ylabel(**self.ylabel)
-                else :  plt.ylabel(self.ylabel)
-                
-                plt.tick_params(axis='both', 
-                      labelsize= self.font_size )
-                
-                if self.show_grid is True:
-                    plt.grid(self.show_grid, **self.grid_kws
-                            )
-                
-                plt.legend()
-                plt.show()
-                    
+                self._plot_train_val_score(train_score, val_score)
+      
                 if self.savefig is not None: 
                     if isinstance(self.savefig, dict):
                         plt.savefig(**self.savefig)
@@ -745,6 +678,83 @@ class visualize_valearn_curve :
         
         return viz_val_decorated
     
+    def _plot_train_val_score (self, train_score, val_score): 
+        """ loop to plot the train val score""" 
+        
+        if not isinstance(train_score, dict):
+            train_score={'_':train_score}
+            val_score = {'_': val_score}
+
+        for trainkey, trainval in train_score.items(): 
+            if self.reason !='learn':
+                trainval*=100
+                val_score[trainkey] *=100 
+            try: 
+                if self.scatterplot: 
+                    plt.scatter(self.k,
+                                val_score[trainkey].mean(axis=1),
+                                **self.val_kws 
+                                )
+                    plt.scatter(self.k,
+                                trainval.mean(axis=1) ,
+                                **self.train_kws
+                           )
+            except : 
+                # if exception occurs maybe from matplotlib properties 
+                # then run the line plot 
+                plt.plot(self.k, 
+                         val_score[trainkey].mean(axis=1),
+                         **self.val_kws
+                         )
+
+                plt.plot(self.k,
+                         trainval.mean(axis=1),
+                         **self.train_kws
+                         )
+                    
+            try : 
+                if self.lineplot : 
+                    plt.plot(self.k, 
+                             val_score[trainkey].mean(axis=1),
+                             **self.val_kws
+                             )
+
+                    plt.plot(self.k, 
+                             trainval.mean(axis=1),
+                             **self.train_kws
+                             )
+            except : 
+            
+                plt.scatter(self.k, 
+                            val_score[trainkey].mean(axis=1),
+                            **self.val_kws 
+                            )
+                plt.scatter(self.k,
+                            trainval.mean(axis=1) ,
+                       **self.train_kws
+                       )
+                
+            
+        if isinstance(self.xlabel, dict):
+            plt.xlabel(**self.xlabel)
+        else :  plt.xlabel(self.xlabel)
+        
+        if isinstance(self.ylabel, dict):
+            plt.ylabel(**self.ylabel)
+        else :  plt.ylabel(self.ylabel)
+        
+        plt.tick_params(axis='both', 
+              labelsize= self.font_size )
+        
+        if self.show_grid is True:
+            plt.grid(self.show_grid, **self.grid_kws
+                    )
+        
+        plt.legend()
+        plt.show()
+                
+        
+                
 class predplot: 
     """ 
     Decorator to plot the prediction.
@@ -888,63 +898,13 @@ class pfi:
             if savefig is not None: self.savefig = savefig 
             
             if self.turn ==('on' or True or 1): 
-                fig, (ax1, ax2) = plt.subplots(1, 2,figsize=self.fig_size)
-                                                   
-                if self.reason == 'pfi': 
+                fig, axes = plt.subplots(1, 2,figsize=self.fig_size)
                     
-                    ax1.barh(tree_indices,
-                             clf.feature_importances_[tree_importance_sorted_idx] *100,
-                             height=0.7, **self.barh_kws)
-                    ax1.set_yticklabels(data_columns[tree_importance_sorted_idx])
-                    ax1.set_yticks(tree_indices)
-                    ax1.set_ylim((0, len(clf.feature_importances_)))
-                    ax2.boxplot(result.importances[perm_sorted_idx].T *100,
-                                labels=data_columns[perm_sorted_idx], **self.box_kws)
-                    
-                    ax1.set_xlabel(**{k:v +' before shuffling (%)' 
-                                      for k, v in self.xlab.items()} )
-                    ax1.set_ylabel(**self.ylab)
-                    ax2.set_xlabel(**{k:v +' after shuffling (%)' 
-                                      for k, v in self.xlab.items()} )
-                    try : 
-                        
-                        ax1.set_title(self.fig_title + ' using '+\
-                                      clf.__class__.__name__)
-                    except : 
-                        ax1.set_title(self.fig_title)
-  
-                    fig.tight_layout()
-                    
-                if self.reason == 'dendro': 
-                    from scipy.stats import spearmanr
-                    from scipy.cluster import hierarchy
-                    
-                    if X is None : 
-                        self._logging.debug('Please provide the train features !')
-                        warnings.warn(
-                            ' Parameter `X` is missing. '
-                            ' Could not plot the dendromarc diagram')
-                        return func(*args, **kwargs)
-                    
-                    elif X is not None: 
+                self._plot_barh_or_spearman(
+                    X, clf, func, fig, axes, self.reason,
+                    tree_indices, tree_importance_sorted_idx, data_columns, \
+                        result , perm_sorted_idx, **kwargs)   
 
-                        corr = spearmanr(X).correlation *100
-                        corr_linkage = hierarchy.ward(corr)
-                        dendro = hierarchy.dendrogram(corr_linkage,
-                                                labels=data_columns, ax=ax1,
-                                                **self.dendro_kws)
-                        dendro_idx = np.arange(0, len(dendro['ivl']))
-                        
-                        ax2.imshow(corr[dendro['leaves'], :][:, dendro['leaves']])
-                        ax2.set_xticks(dendro_idx)
-                        ax2.set_yticks(dendro_idx)
-                        ax2.set_xticklabels(dendro['ivl'], rotation='vertical')
-                        ax2.set_yticklabels(dendro['ivl'])
-                        ax1.set_ylabel(**{k:v +' linkage matrix' 
-                                            for k, v in self.ylab.items()} )
-                        fig.tight_layout()
-            
-                
                 plt.show()   
                     
                 if self.savefig is not None: 
@@ -956,7 +916,70 @@ class pfi:
             return func(*args, **kwargs)
         
         return  feat_importance_dec
+    
+    
+    def _plot_barh_or_spearman (self, X, clf, func,  fig, axes , reason,
+                                *args, **kwargs): 
+        """ Plot bar histogram and spearmean """
+        
+        ax1, ax2 = axes 
+        
+        tree_indices, tree_importance_sorted_idx, data_columns, \
+            result , perm_sorted_idx = args 
+        
+        if reason == 'pfi': 
+            
+            ax1.barh(tree_indices,
+                     clf.feature_importances_[tree_importance_sorted_idx] *100,
+                     height=0.7, **self.barh_kws)
+            ax1.set_yticklabels(data_columns[tree_importance_sorted_idx])
+            ax1.set_yticks(tree_indices)
+            ax1.set_ylim((0, len(clf.feature_importances_)))
+            ax2.boxplot(result.importances[perm_sorted_idx].T *100,
+                        labels=data_columns[perm_sorted_idx], **self.box_kws)
+            
+            ax1.set_xlabel(**{k:v +' before shuffling (%)' 
+                              for k, v in self.xlab.items()} )
+            ax1.set_ylabel(**self.ylab)
+            ax2.set_xlabel(**{k:v +' after shuffling (%)' 
+                              for k, v in self.xlab.items()} )
+            try : 
+                
+                ax1.set_title(self.fig_title + ' using '+\
+                              clf.__class__.__name__)
+            except : 
+                ax1.set_title(self.fig_title)
 
+            fig.tight_layout()
+            
+        if reason == 'dendro': 
+            from scipy.stats import spearmanr
+            from scipy.cluster import hierarchy
+            
+            if X is None : 
+                self._logging.debug('Please provide the train features !')
+                warnings.warn(
+                    ' Parameter `X` is missing. '
+                    ' Could not plot the dendromarc diagram')
+                return func(*args, **kwargs)
+            
+            elif X is not None: 
+
+                corr = spearmanr(X).correlation *100
+                corr_linkage = hierarchy.ward(corr)
+                dendro = hierarchy.dendrogram(corr_linkage,
+                                        labels=data_columns, ax=ax1,
+                                        **self.dendro_kws)
+                dendro_idx = np.arange(0, len(dendro['ivl']))
+                
+                ax2.imshow(corr[dendro['leaves'], :][:, dendro['leaves']])
+                ax2.set_xticks(dendro_idx)
+                ax2.set_yticks(dendro_idx)
+                ax2.set_xticklabels(dendro['ivl'], rotation='vertical')
+                ax2.set_yticklabels(dendro['ivl'])
+                ax1.set_ylabel(**{k:v +' linkage matrix' 
+                                    for k, v in self.ylab.items()} )
+                fig.tight_layout()
 
 class catmapflow2: 
     """
@@ -1025,35 +1048,6 @@ class catmapflow2:
             if catfc is not None : 
                 self.cat_classes = catfc
 
-            def mapf(crval,  nfval=cat_range_values , fc=self.cat_classes):
-                """
-                Categorizing loop to hold the convenient classes according 
-                to the `cat_range_value` provided. Come as supplement 
-                tools when ``maping`` object doesnt work properly.
-                
-                :param crval: value to be categorized 
-                :param nfval: array of `cat_range_values`
-                :param fc: Object to replace the`crval` belonging 
-                    to `cat_classes`
-                """
-                for ii, val in enumerate(nfval):
-                    try : 
-                        if isinstance(val, (float, int)): 
-                            if crval ==nfval[0]: 
-                                return fc[0]
-                            elif crval>= nfval[-1] : 
-                                return fc[-1]
-                        elif isinstance(val, (list, tuple)):
-                            if len(val)>1: 
-                                if  val[0] < crval <= val[-1] : 
-                                    return fc[ii]
-                    except : 
-                        
-                        if crval ==0.: 
-                            return fc[0]
-                        elif crval>= nfval[-1] : 
-                            return fc[-1]
-        
             if len(cat_range_values) != len(self.cat_classes): 
             
                 self._logging.error(
@@ -1063,17 +1057,45 @@ class catmapflow2:
                                                     len(self.cat_classes)))
             try : 
 
-                new_target_array = np.array(list(map( mapf, target_array)))
+                new_target_array = np.array(list(map( self.mapf, target_array)))
    
             except : 
                 new_target_array = np.zeros_like(target_array)
                 for ii, ff in enumerate(target_array) : 
-                    new_target_array[ii] = mapf(crval=ff, 
+                    new_target_array[ii] = self.mapf(crval=ff, 
                                             nfval=cat_range_values, 
                                             fc=self.cat_classes)
             return new_target_array
         return wrapper  
 
+    def mapf(self, crval,  nfval, fc):
+        """
+        Categorizing loop to hold the convenient classes according 
+        to the `cat_range_value` provided. Come as supplement 
+        tools when ``maping`` object doesnt work properly.
+        
+        :param crval: value to be categorized 
+        :param nfval: array of `cat_range_values`
+        :param fc: Object to replace the`crval` belonging 
+            to `cat_classes`
+        """
+        for ii, val in enumerate(nfval):
+            try : 
+                if isinstance(val, (float, int)): 
+                    if crval ==nfval[0]: 
+                        return fc[0]
+                    elif crval>= nfval[-1] : 
+                        return fc[-1]
+                elif isinstance(val, (list, tuple)):
+                    if len(val)>1: 
+                        if  val[0] < crval <= val[-1] : 
+                            return fc[ii]
+            except : 
+                
+                if crval ==0.: 
+                    return fc[0]
+                elif crval>= nfval[-1] : 
+                    return fc[-1]
 
 class docstring:
     """ Generate new doctring of a function or class by appending the doctring 

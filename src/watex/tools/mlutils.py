@@ -85,11 +85,11 @@ def selectfeatures (
         features: List[str] =None, 
         include = None, 
         exclude = None,
-        coerce: bool=True,
+        coerce: bool=False,
         **kwd
         ): 
     """ Select features  and return new dataframe.  
-    By default 
+    
     :param df: a dataframe for features selections 
     :param features: list of features to select. Lits of features must be in the 
         dataframe otherwise an error occurs. 
@@ -97,10 +97,11 @@ def selectfeatures (
         be ``number``. 
     :param exclude: type of the data to exclude in the dataframe `df`. Can be 
         ``number`` i.e. only non-digits data will be keep in the data return.
-    :param coerce: for consistency check digit values  and transform them to 
-        numeric values before selection. 
-        
+    :param coerce: return the whole dataframe with transforming numeric columns.
+        Be aware that no selection is done and no error is raises instead. 
+        *default* is ``False``
     :param kwd: additional keywords arguments from `pd.astype` function 
+    
     :ref: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.astype.html
     """
     
@@ -126,7 +127,8 @@ def selectfeatures (
     if features is not None: 
         return df [features] 
     # raise ValueError: at least one of include or exclude must be nonempty
-    return df.select_dtypes (include, exclude)
+    # use coerce to no raise error and return data frame instead.
+    return df if coerce else df.select_dtypes (include, exclude) 
     
     
 def getGlobalScore (

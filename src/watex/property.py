@@ -97,7 +97,6 @@
         >>> ediObj= EM().fit(r'data/edis').ediObjs_ [0] # one edi-file for assertion 
         >>> isinstance (ediObj, IsEdi)
         ... True 
- 
 
 .. _WATex: https://github.com/WEgeophysics/watex/
 .. |ERP| replace:: Electrical resistivity profiling 

@@ -11,7 +11,7 @@ from ..tools.mlutils import  (
     )
 from ..exceptions import DatasetError
 
-__logger = watexlog().get_watex_logger(__name__)
+_logger = watexlog().get_watex_logger(__name__)
 
 try:
     from .config import (
@@ -25,11 +25,11 @@ try:
         )
 except : 
     
-    __logger.debug("None Config file detected. Be aware that you will not able "
+    _logger.debug("None Config file detected. Be aware that you will not able "
                     "implements the basics examples of the scripts or Basic "
                     " steps of datapreparing!")
     warnings.warn("None config file detected! Be aware you will not take into"
-                  " advantage of the basics steps thoughout the scripts. "
+                  " advantage of the basic steps thoughout the scripts. "
                   " Future implementation will presume to fetch data "
                   " automatically from repository or  from zenodo record.", 
                   FutureWarning)
@@ -52,8 +52,7 @@ def fetch_data(param):
     """ Fetch bagoue dataset values and details."""
     
     if param.lower().find('original')>=0: 
-        __logger.info('Fetching the Bagoue original data. Returns a dictionnary '
-                      ' of area description, attributes and contest details.')
+        _logger.info('Fetch Bagoue original  data complete - returns a dict contest details.')
         
         return {
             'COL_NAMES': data.columns, 
@@ -75,38 +74,37 @@ def fetch_data(param):
                 }
     
     elif param.lower().find('stratified')>=0: 
-        __logger.info('Fetching the stratified training data `X` and `y`')
+        _logger.info("Stratified training data successfull done: 'X' & 'y'")
         
         return  X, y
     
     elif param.lower().find('prepared')>=0:
-        __logger.info('Fetching the prepared data `X` and `y`')
-        Xp, yp= loadingdefaultSerializedData ('watex/datasets/__Xy.pkl',
+        _logger.info("Prepared data complete: 'X' & 'y' ")
+        Xp, yp= loadingdefaultSerializedData ('watex/etc/__Xy.pkl',
                                               (X_prepared, y_prepared),
                                               dtype='prepared training' )
         return Xp, yp
     
     elif param.lower().find('semi-')>=0 or param.lower().find('fit')>=0 or \
         param.lower().find('mid-')>=0 or param.lower().find('preprocess')>=0: 
-        __logger.info('Fetching the mid-preparation data `X` and `y`')
+        _logger.info("Mid-preparation data complete: 'X' & 'y'")
 
         return X0, y0 
     
     elif param.lower().find('test set')>=0  or param.lower().find('x test')>=0: 
-        __logger.info('Fetching the stratified test set `X` and `y`')
+        _logger.info("Stratified test set complete: 'X' & 'y'")
         
-        XT0, yT0= loadingdefaultSerializedData ('watex/datasets/__XTyT.pkl',
+        XT0, yT0= loadingdefaultSerializedData ('watex/etc/__XTyT.pkl',
                                               (XT, yT), dtype='test' )
         return XT0, yT0
     
     elif param.lower().find('pipeline')>=0:
-        __logger.info('Fetching the transformer pipeline =`defaultPipeline`')
+        _logger.info("Default transformer pipeline built: 'defaultpipe'")
 
         return _pipeline
     
     elif _pca_set_checker(param.lower()):
-        __logger.info('Fetching the data for analyses. Text attributes'
-                      ' are ordinarily encoded to numerical categories.')
+        _logger.info('Analysis data ready - ordinarily encoded to numeric')
         return _X, y_prepared 
     
     else : 
@@ -117,7 +115,8 @@ def fetch_data(param):
                 *list(BAGOUE_TAGS)))
     
 def loadingdefaultSerializedData (f, d0, dtype ='test'): 
-    """ Retrive Bagoue data from dumped or Serialized file.
+    """ Retreive Bagoue data from dumped or Serialized file.
+    
     :param f: str or Path-Like obj 
         Dumped or Serialized default data 
     :param d0: tuple 
@@ -126,17 +125,17 @@ def loadingdefaultSerializedData (f, d0, dtype ='test'):
     :param dtype:str 
         Type of data to retreive.
     """
-    load_source ='Serialized'
+    load_source ='serialized'
     try : 
         X, y= loadDumpedOrSerializedData(f)
     except : 
-        __logger.info(f"Fetching data from {load_source!r} source failed. "
-                       " We try `Config` loading source...")
-        load_source='Config'
+        _logger.info(f"Fetch data from {load_source!r} source failed. "
+                       " Use local 'config' source instead ...")
+        load_source='config'
         X, y =d0
         
-    __logger.info(f"Loading the {dtype} data from <{load_source}>"
-                  "successfuly done!")
+    _logger.info(f"Loading {dtype!r} data from <{load_source}>"
+                  "successfuly done")
     
     return X, y
 

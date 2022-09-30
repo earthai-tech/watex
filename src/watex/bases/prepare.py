@@ -215,10 +215,10 @@ class BaseSteps(object):
         y: array_like, 
             ylabel or target values.
         """
-        
-        self._logging.info('Start the default preparing steps including'
-                           ' Data cleaning,features combinaisons ... using '
-                           ' the `fit` method!')
+        if self.verbose > 0 : 
+            self._logging.info('Start the default preparing steps including'
+                               ' Data cleaning,features combinaisons ... using '
+                               ' the `fit` method!')
         if isinstance(y, pd.Series): 
             y =y.values 
         # convert to pandas X with features names 
@@ -233,9 +233,10 @@ class BaseSteps(object):
             if isinstance(self.drop_features, str): 
                 self.drop_features=[ self.drop_features]
                 
-            self._logging.info('Dropping useless features {0}'.format(
-                MLU.format_generic_obj(self.drop_features)).format(
-                    *self.drop_features))
+            if self.verbose > 3 :
+                self._logging.info('Dropping useless features {0}'.format(
+                    MLU.formatGenericObj(self.drop_features)).format(
+                        *self.drop_features))
             
             X.drop(self.drop_features, inplace =True, axis =1)
             
@@ -256,8 +257,9 @@ class BaseSteps(object):
                 self.categorizefeatures_props)]
   
             if self.target in feat_to_: 
-                self._logging.info('Change the numerical target `%s` into'
-                                  ' categorical features.'%self.target)
+                if self.verbose > 3: 
+                    self._logging.info('Change the numerical target `%s` into'
+                                      ' categorical features.'%self.target)
                 
                 feat_ix = feat_to_.index(self.target)
                 get_targetprops =[self.categorizefeatures_props[feat_ix]]
@@ -270,10 +272,10 @@ class BaseSteps(object):
                 feat_to_.pop(feat_ix)
                 
             if len(self.categorizefeatures_props) !=0 : 
-                
-                self._logging.info(
-                    f'Change the numerical features `{feat_to_}` into'
-                                  ' categorical features.')
+                if self.verbose > 3: 
+                    self._logging.info(
+                        f'Change the numerical features `{feat_to_}` into'
+                                      ' categorical features.')
                 cObj = CategorizeFeatures(
                     num_columns_properties=self.categorizefeatures_props)
                 X = cObj.fit_transform(X)
@@ -284,19 +286,22 @@ class BaseSteps(object):
         # --> experiencing features combinaisons 
         if self.add_attributes : 
             if self.attributes_ix is  None: 
-                warnings.warn( 'Attributes indexes|names are None.'
-                              ' Set attributes indexes or names to experience'
-                              ' the attributes combinaisons.'
-                              )
+                if self.verbose > 3: 
+                    warnings.warn( 'Attributes indexes|names are None.'
+                                  ' Set attributes indexes or names to experience'
+                                  ' the attributes combinaisons.'
+                                  )
             elif self.attributes_ix is  not None:
-                try:
-                    self._logging.info('Experiencing combinaisons attributes'
-                                      ' {0}.'.format(MLU.format_generic_obj(
-                                          self.attributes_ix)).format(
-                                              *self.attributes_ix))
-                except : 
-                    self._logging.info('Experiencing combinaisons attributes'
-                                      ' {0}.'.format(self.attributes_ix))
+                if self.verbose > 7 : 
+                    try:
+                        
+                        self._logging.info('Experiencing combinaisons attributes'
+                                          ' {0}.'.format(MLU.format_generic_obj(
+                                              self.attributes_ix)).format(
+                                                  *self.attributes_ix))
+                    except : 
+                        self._logging.info('Experiencing combinaisons attributes'
+                                          ' {0}.'.format(self.attributes_ix))
                                           
                 cObj = CombinedAttributesAdder(
                     add_attributes=self.add_attributes, 
@@ -314,7 +319,8 @@ class BaseSteps(object):
         #convert final data the default numerical features.
         self.cat_attributes_, self.num_attributes_=list(), list()
         for fname in self.attribute_names_: 
-            self._logging.info('Convert dataframe `X` to numeric !')
+            if self.verbose > 7: 
+                self._logging.info('Convert dataframe `X` to numeric ')
             try : 
                 X = X.astype({fname:np.float64})
             except : 
