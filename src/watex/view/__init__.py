@@ -3,7 +3,7 @@ from .mlplot import (
     MLPlots, 
     )
 from .plot import ( 
-    QuickPlot 
+    QuickPlot , 
+    Plot 
     )
-if __package__ is None or __name__=='__main__': 
-    __package__= 'watex'
+

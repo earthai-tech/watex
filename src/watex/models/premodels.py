@@ -18,16 +18,16 @@ from ..typing import (
     ArrayLike, 
     NDArray, 
     )
-from ..bases import fetchModel 
 from ..exceptions import (
     EstimatorError, 
     FitError 
     )
 from .._watexlog import watexlog 
 from ..tools.mlutils import (
-    controlExistingEstimator 
+    controlExistingEstimator , 
+    fetchModel 
     )
-from .._sklearn import ( 
+from ..exlib import ( 
         _pMODELS 
 
     )

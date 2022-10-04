@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2022 LKouadio a.k.a Daniel 
-# Created on Thu Sep 22 12:21:11 2022
+# Copyright (c) 2022 LKouadio
+# email <etanoyau@gmail.com> 
+# created on Thu Sep 22 12:21:11 2022
 # Licence: MIT
 
 """
@@ -14,6 +15,7 @@ import os
 import warnings
 import copy
 # import shutil 
+
 # from six.moves import urllib 
 # from pprint import pprint 
 
@@ -23,11 +25,17 @@ from pycsamt.geodrill.geocore import (
     Geodrill 
     )
 	
+from ..tools.coreutils import ( 
+    serialize_data, 
+    load_serialized_data, 
+    )
 from ..tools.funcutils import ( 
     smart_format, 
     # sPath,
     is_installing, 
     concat_array_from_list,
+    parse_json, 
+    parse_yaml,
     )
 from ..tools.geotools import (
     _sanitize_db_items,
@@ -43,12 +51,7 @@ from ..tools.geotools import (
     lns_and_tres_split, 
     
     )
-from ..bases.base import ( 
-    parse_json, 
-    parse_yaml,
-    serialize_data, 
-    load_serialized_data, 
-    )
+
 from ..decorators import (
     gplot2d
     )

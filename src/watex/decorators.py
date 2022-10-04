@@ -32,6 +32,26 @@ _logger = watexlog.get_watex_logger(__name__)
 
 __docformat__='restructuredtext'
 
+class formatdocs: 
+    """ Format docstrings 
+    
+    Collect parameters or returns from documentation and format the doctrings 
+    it returns new docstrings. 
+    
+    """
+    def __init__(self, kind= None): 
+        self.kind = kind  
+    def __call__(self, cls_or_func): 
+        
+        @functools.wraps (cls_or_func)
+        def new_func (*args, **kwd): 
+            # cls_or_func.__doc__ = f"{inspect.getdoc(cls_or_func)}" 
+            setattr(cls_or_func, '__doc__', f"{inspect.getdoc(cls_or_func)}" 
+                    )
+            return cls_or_func (*args, **kwd)
+        
+        return new_func 
+    
 class donothing : 
     """ Decorator to do nothing. Just return the func as it was. 
     The `param` reason is just used to specify the skipping reason. """

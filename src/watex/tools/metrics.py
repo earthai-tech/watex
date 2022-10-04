@@ -20,7 +20,7 @@ from ..typing import (
     
     )
 from .._watexlog import watexlog
-from .._sklearn import ( 
+from ..exlib import ( 
     precision_recall_curve,
     precision_score,
     recall_score,

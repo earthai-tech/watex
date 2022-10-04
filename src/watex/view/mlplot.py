@@ -4,8 +4,8 @@
 #       @author: K.KL alias Daniel03<etanoyau@gmail.com>
 
 """
-`WATex`_ MLPlot module 
-========================
+`WATex`_ MLPlot
+===============
 
 Is a set of plot templates  for visualising the trained models.  It gives a 
 quick alternative for users to save their time for writting their own plot 
@@ -35,13 +35,13 @@ from ..decorators import (
     docAppender
     )
 from ..analysis.dimensionality import Reducers
+from ..bases.features import categorize_flow 
 from ..exceptions import ( 
     PlotError, 
     # TipError, 
     ArgumentError 
     )
 from ..property import BasePlot 
-from ..tools.funcutils import categorize_flow 
 from ..tools.metrics import (
     precision_recall_tradeoff, 
     ROC_curve,
@@ -253,8 +253,6 @@ class MLPlots(BasePlot):
     """
     def __init__(self,  **kws ): 
         
-        super().__init__(**kws) 
-        
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
         
         # precision(p) and recall(r) style(s) and color (c)
@@ -272,93 +270,15 @@ class MLPlots(BasePlot):
         self.yp_marker_facecolor =kws.pop('yp_markerfacecolor', 'k')
         self.yp_marker_edgewidth= kws.pop('yp_markeredgewidth', 2.)
         
-        for key in kws.keys(): 
-            setattr(self, key, kws[key])
-        # self.savefig = kws.pop('savefig', None)
+        super().__init__(**kws) 
         
-        # self.fig_num= kws.pop('fig_num', 1)
-        # self.fig_size = kws.pop('fig_size', (12, 8))
-        # self.fig_dpi =kws.pop('fig_dpi', 300)
-        # self.fig_legend= kws.pop('fig_legend_kws', None)
-        # self.fig_orientation =kws.pop('fig_orientation','landscape')
-        # self.fig_title =kws.pop('title', None)
-        
-        # self.font_size =kws.pop('font_size',3.)
-        # self.font_style=kws.pop('font_style', 'italic')
-        # self.font_weight=kws.pop('font_weight', 'bold')
-        
-        # self.fs =kws.pop('fs', 5.)
-        
-        # self.ms =kws.pop('ms', 3.)
-        # self.marker_style =kws.pop('marker_style', 'D')
-        # self.marker_facecolor=kws.pop('markerfacecolor', 'yellow')
-        # self.marker_edgecolor=kws.pop('markeredgecolor', 'cyan')
-        # self.marker_edgewidth = kws.pop('markeredgewidth', 3.)
-        
-        # self.lc = kws.pop('lc', 'k')
-        # self.ls= kws.pop('ls', '-')
-        # self.lw =kws.pop('lw', 1)
-        # self.alpha = kws.pop('alpha', 0.5)
-        
-        # self.bins = kws.pop('bins', 10)
-        
-        # self.xlim =kws.pop('xlim', None )
-        # self.ylim=kws.pop('y_lim', None) 
-        # self.xlabel = kws.pop('xlabel', None)
-        # self.ylabel =kws.pop('ylabel', None)
-        # self.rotate_xlabel =kws.pop('rotate_xlabel', None)
-        # self.rotate_ylabel=kws.pop('rotate_ylabel',None )
-        
-        # self.leg_kws = kws.pop('leg_kws', dict())
-        # self.plt_kws = kws.pop('plt_kws', dict())
-        
-        
-        
-    
-        # self.s = kws.pop('s', self.fs *40.)
-        # #show grid 
-        # self.show_grid = kws.pop('show_grid',False)
-        # self.galpha =kws.pop('galpha', 0.5)
-        # self.gaxis =kws.pop('gaxis', 'both')
-        # self.gc =kws.pop('gc', 'k')
-        # self.gls =kws.pop('gls', '--')
-        # self.glw =kws.pop('glw', 2.)
-        # self.gwhich = kws.pop('gwhich', 'major')
-        
-        #tick params properties 
-        # self.tp_axis =kws.pop('tp_axis', 'both')
-        # self.tp_labelsize = kws.pop('tp_labelsize', self.font_size)
-        # self.tp_bottom =kws.pop('tp_bottom', True)
-        # self.tp_top =kws.pop('tp_top', True)
-        # self.tp_labelbottom=kws.pop('tp_labelbottom', False)
-        # self.tp_labeltop = kws.pop('tp_labeltop', True)
+        # for key in kws.keys(): 
+        #     setattr(self, key, kws[key])
 
-        # # colorbar axes properties 
-        # self.cb_orientation =kws.pop('cb_orientation', 'vertical')
-        # self.cb_aspect =kws.pop('cb_aspect', 20.)
-        # self.cb_shrink= kws.pop('cb_shrink', 1.0)
-        # self.cb_pad =kws.pop('cb_pad', 0.05)
-        # self.cb_anchor =kws.pop('cb_anchor', (0.0, 0.5))
-        # self.cb_panchor = kws.pop('cb_panchor',  (1.0, 0.5))
-        # #colors bar properties 
-        # self.cb_label =kws.pop('cb_label', None)
-        # self.cb_spacing =kws.pop('cb_spacing', 'uniform') # propotional 
-        # self.cb_drawedges =kws.pop('cb_drawedges', False)
-        # self.cb_format =kws.pop('cb_format', None)
-        
-       
-        
-            
-        # config all colorproperties into one.
-        # self.cb_props = {
-        #     pname.replace('cb_', '') : pvalues
-        #                  for pname, pvalues in self.__dict__.items() 
-        #                  if pname.startswith('cb_')
-        #                  }
 
     def PCA_(self,
-             X:[Array],
-             y:Array,
+             X:ArrayLike,
+             y:ArrayLike,
              n_components:int =None, 
              n_axes: int=2,
              y_type :str =None, 

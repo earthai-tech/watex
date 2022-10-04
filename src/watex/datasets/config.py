@@ -3,9 +3,10 @@
 # automate data preparation.
 import os 
 
+from .load import loadBagoueDataset
+
 from ..bases import  (
     BaseSteps, 
-   fetchDataFromLocalandWeb 
    ) 
 from ..tools.mlutils import (
     dumpOrSerializeData
@@ -24,14 +25,15 @@ __all__ = [
     '_pipeline',
     'df0',
     'df1',
-    'conf_kws'
+    'conf_kws', 
+    'data'
   ] 
 
 
 # path to dataset 
 data_fn ='../data/geodata/main.bagciv.data.csv'
 if not os.path.isfile(data_fn): 
-    data_fn= fetchDataFromLocalandWeb()
+    data_fn= loadBagoueDataset ()
 #-------------------------------------------------------------------------
 # target or label name. 
 target ='flow'

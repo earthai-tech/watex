@@ -6,17 +6,17 @@ formatters:
         datefmt: "%Y-%m-%dT %H:%M:%S %p"
 
 handlers:
-    # console: # screen display print out
-    #     class: logging.StreamHandler
-    #     level: DEBUG  #INFO
-    #     formatter: simple
-    #     stream: ext://sys.stdout
+    console: # screen display print out
+        class: logging.StreamHandler
+        level: DEBUG  #INFO
+        formatter: simple
+        stream: ext://sys.stdout
 
     info_file_handler:
         class: logging.handlers.RotatingFileHandler
         level: DEBUG
         formatter: simple
-        filename: watex/wlogfiles/infos.log
+        filename: wlogfiles/infos.log
         maxBytes: 1000000 # 1MB
         backupCount: 2
         encoding: utf8
@@ -25,7 +25,7 @@ handlers:
         class: logging.handlers.RotatingFileHandler
         level: ERROR
         formatter: simple
-        filename: watex/wlogfiles/errors.log
+        filename: wlogfiles/errors.log
         maxBytes: 1000000 # 1MB
         backupCount: 2
         encoding: utf8

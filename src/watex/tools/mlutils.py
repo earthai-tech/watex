@@ -2,9 +2,10 @@
 #      Copyright (c) 2021 Kouadio K. Laurent, Sat Aug 28 16:26:04 2021
 #      released under a MIT- licence.
 #      @author: @Daniel03 <etanoyau@gmail.com>
+
 from __future__ import annotations 
 import os 
-import re
+# import re
 import inspect 
 import hashlib 
 import tarfile 
@@ -20,7 +21,7 @@ import numpy as np
 import pandas as pd 
 
 from .._watexlog import watexlog
-from .._sklearn import ( 
+from ..exlib  import ( 
     train_test_split , 
     StratifiedShuffleSplit, 
     confusion_matrix, 
@@ -80,6 +81,48 @@ _estimators ={
      'extree': ['ExtraTreesClassifier', 'extree', 'xtree', 'xtr']
         }  
 
+def existfeatures (df, features, error='raise'): 
+    """Control whether the features exists or not  
+    
+    :param df: a dataframe for features selections 
+    :param features: list of features to select. Lits of features must be in the 
+        dataframe otherwise an error occurs. 
+    :param error: str - raise if the features don't exist in the dataframe. 
+        *default* is ``raise`` and ``ignore`` otherwise. 
+        
+    :return: bool 
+        assert whether the features exists 
+    """
+    isf = False  
+    
+    error= 'raise' if error.lower().strip().find('raise')>= 0  else 'ignore' 
+
+    if isinstance(features, str): 
+        features =[features]
+        
+    features = _assert_all_types(features, list, tuple, np.ndarray)
+    set_f =  set (features).intersection (set(df.columns))
+    if len(set_f)!= len(features): 
+        nfeat= len(features) 
+        msg = f"Feature{'s' if nfeat >1 else ''}"
+        if len(set_f)==0:
+            if error =='raise':
+                raise ValueError (f"{msg} {smart_format(features)} "
+                                  f"{'does not' if nfeat <2 else 'dont'}"
+                                  " exist in the dataframe")
+            isf = False 
+        # get the difference 
+        diff = set (features).difference(set_f) if len(
+            features)> len(set_f) else set_f.difference (set(features))
+        nfeat= len(diff)
+        if error =='raise':
+            raise ValueError(f"{msg} {smart_format(diff)} not found in"
+                             " the dataframe.")
+        isf = False  
+    else : isf = True 
+    
+    return isf  
+    
 def selectfeatures (
         df: DataFrame,
         features: List[str] =None, 
@@ -106,21 +149,7 @@ def selectfeatures (
     """
     
     if features is not None: 
-        features = _assert_all_types(features, list, tuple, np.ndarray)
-        set_f =  set (features).intersection (set(df.columns))
-        if len(set_f)!= len(features): 
-            nfeat= len(features) 
-            msg = f"Feature{'s' if nfeat >1 else ''}"
-            if len(set_f)==0:
-                raise ValueError (f"{msg} {smart_format(features)} "
-                                  f"{'does not' if nfeat <2 else 'dont'}"
-                                  " exist in the dataframe")
-            # get the difference 
-            diff = set (features).difference(set_f) if len(
-                features)> len(set_f) else set_f.difference (set(features))
-            nfeat= len(diff)
-            raise ValueError(f"{msg} {smart_format(diff)} not found in the dataframe.")
-        
+        existfeatures(df, features, error ='raise')
     # change the dataype 
     df = df.astype (float, errors ='ignore', **kwd) 
     # assert whether the features are in the data columns
@@ -1013,7 +1042,7 @@ def subprocess_module_installation (module, upgrade =True ):
         MOD_IMP=True
      
     except: 
-        _logger.error("Failed to install the module =`{module}`.")
+        _logger.error(f"Fail to install the module =`{module}`.")
         print(f'---> Module {module!r} installation failed, Please use'
            f'  the following command {cmd} to manually install it.')
     return MOD_IMP 
@@ -1170,7 +1199,135 @@ def default_data_splitting(X, y=None, *,  test_size =0.2, target =None,
     return  X, XT, y, yT
 
     
+def fetchModel(
+        modelfile: str,
+        modelpath: str = None,
+        default: bool = True,
+        modname: Optional[str] = None,
+        verbose: int = 0
+)-> object: 
+    """ Fetch your model saved using Python pickle module or joblib module. 
+    
+    :param modelfile: str or Path-Like object 
+        dumped model file name saved using `joblib` or Python `pickle` module.
+    :param modelpath: path-Like object , 
+        Path to model dumped file =`modelfile`
+    :default: bool, 
+        Model parameters by default are saved into a dictionary. When default 
+        is ``True``, returns a tuple of pair (the model and its best parameters).
+        If ``False`` return all values saved from `~.MultipleGridSearch`
+       
+    :modname: str 
+        Is the name of model to retreived from dumped file. If name is given 
+        get only the model and its best parameters. 
+    :verbose: int, level=0 
+        control the verbosity. More messages if greater than 0.
+    
+    :returns:
+        - `model_class_params`: if default is ``True``
+        - `pickledmodel`: model dumped and all parameters if default is `False`
         
+    :Example: 
+        >>> from watex.bases import fetch_model 
+        >>> my_model, = fetchModel ('SVC__LinearSVC__LogisticRegression.pkl',
+                                    default =False,  modname='SVC')
+        >>> my_model
+    """
+    
+    try:
+        isdir =os.path.isdir( modelpath)
+    except TypeError: 
+        #stat: path should be string, bytes, os.PathLike or integer, not NoneType
+        isdir =False
+        
+    if isdir and modelfile is not None: 
+        modelfile = os.join.path(modelpath, modelfile)
+
+    isfile = os.path.isfile(modelfile)
+    if not isfile: 
+        raise FileNotFoundError (f"File {modelfile!r} not found!")
+        
+    from_joblib =False 
+    if modelfile.endswith('.pkl'): from_joblib  =True 
+    
+    if from_joblib:
+       _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+       try : 
+           pickledmodel = joblib.load(modelfile)
+           if len(pickledmodel)>=2 : 
+               pickledmodel = pickledmodel[0]
+           # and later ....
+           # f'{pickfname}._loaded' = joblib.load(f'{pickfname}.pkl')
+           dmsg=f"Model {modelfile !r} retreived from~.externals.joblib`!"
+       except : 
+           dmsg=''.join([f"Nothing to retreive. It's seems model {modelfile !r}", 
+                         " not really saved using ~external.joblib module! ", 
+                         "Please check your model filename."])
+    
+    if not from_joblib: 
+        _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+        try: 
+           # DeSerializing pickled data 
+           with open(modelfile, 'rb') as modf: 
+               pickledmodel= pickle.load (modf)
+           _logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
+                         "  using Python pickle module.`!")
+           
+           dmsg=f"Model {modelfile!r} deserizaled from  {modelfile!r}!"
+        except: 
+            dmsg =''.join([" Unable to deserialized the "
+                           f"{os.path.basename(modelfile)!r}"])
+           
+        else: 
+            _logger.info(dmsg)   
+           
+    if verbose > 0: 
+        pprint(
+            dmsg 
+            )
+           
+    if modname is not None: 
+        keymess = "{modname!r} not found."
+        try : 
+            if default:
+                model_class_params  =( pickledmodel[modname]['best_model'], 
+                                   pickledmodel[modname]['best_params_'], 
+                                   pickledmodel[modname]['best_scores'],
+                                   )
+            if not default: 
+                model_class_params= pickledmodel.get(modname), 
+                
+        except KeyError as key_error: 
+            warnings.warn(
+                f"Model name {modname!r} not found in the list of dumped"
+                f" models = {list(pickledmodel.keys()) !r}")
+            raise KeyError from key_error(keymess + "Shoud try the model's"
+                                          f"names ={list(pickledmodel.keys())!r}")
+        
+        if verbose > 0: 
+            pprint('Should return a tuple of `best model` and the'
+                   ' `model best parameters.')
+           
+        return model_class_params  
+            
+    if default:
+        model_class_params =list()    
+        
+        for mm in pickledmodel.keys(): 
+            try : 
+                model_class_params.append((pickledmodel[mm]['best_model'], 
+                                          pickledmodel[mm]['best_params_'],
+                                          pickledmodel[modname]['best_scores']))
+            except KeyError as key_error : 
+                raise KeyError (f"Unable to retrieve {key_error.args[0]!r}")
+                
+        if verbose > 0: 
+               pprint('Should return a list of tuple pairs:`best model`and '
+                      ' `model best parameters.')
+               
+        return model_class_params, 
+
+    return pickledmodel,       
         
         
         

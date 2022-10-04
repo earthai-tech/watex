@@ -3,7 +3,7 @@
 # @author: ~alias @Daniel03
 
 # import sys
-# import re 
+import re 
 import os
 import datetime 
 import warnings
@@ -12,12 +12,18 @@ import numpy as np
 # import matplotlib as mpl 
 # import matplotlib.cm as cm 
 import matplotlib.pyplot as plt
+import missingno as msno 
 
+from .funcutils import ( 
+    _assert_all_types, 
+    smart_format
+    )
 from ..exceptions import ( 
     TipError, 
     PlotError, 
 
     )
+from ..documentation import paramDocs 
 
 D_COLORS =[
     'g',
@@ -67,6 +73,104 @@ D_STYLES = [
 ]
 
  
+def missing(self, data , *, kind =None, sample = None,  **kwd): 
+    """
+    Vizualize patterns in the missing data.
+    
+    Parameters 
+    ------------
+    {paramDocs.data}
+    
+    kind: str, Optional 
+        kind of visualization. Can be ``dendrogramm``, ``mbar`` or ``bar`` plot 
+        for dendrogram , :mod:`msno` bar and :mod:`plt` visualization 
+        respectively:: 
+            
+            * ``bar`` plot counts the  nonmissing data  using pandas
+            *  ``mbar`` use the :mod:`msno` package to count the number 
+                of nonmissing data. 
+            * dendrogram`` show the clusterings of where the data is missing. 
+                leaves that are the same level predict one onother presence 
+                (empty of filled). The vertical arms are used to indicate how  
+                different cluster are. short arms mean that branch are 
+                similar. 
+            * ``corr` creates a heat map showing if there are correlations 
+                where the data is missing. In this case, it does look like 
+                the locations where missing data are corollated.
+            * ``None`` is the default vizualisation. It is useful for viewing 
+                contiguous area of the missing data which would indicate that 
+                the missing data is  not random. The :code:`matrix` function 
+                includes a sparkline along the right side. Patterns here would 
+                also indicate non-random missing data. It is recommended to limit 
+                the number of sample to be able to see the patterns. 
+   
+            Any other value will raise an error 
+        
+    sample: int, Optional
+        Number of row to visualize. This is usefull when data is composed of 
+        many rows. Skrunked the data to keep some sample for visualization is 
+        recommended.  ``None`` plot all the samples ( or examples) in the data 
+        
+    kws: dict 
+        Additional keywords arguments of :mod:`msno.matrix` plot. 
+        
+        
+    Return
+    -------
+    ``self``: `{self.__class__.__name__}` instance 
+        returns ``self`` for easy method chaining.
+        
+    Example
+    --------
+    >>> import pandas as pd 
+    >>> from watex.view import Plot 
+    >>> from watex.tools.plotutils import missing 
+    >>> data = pd.read_csv ( '../../data/geodata/main.bagciv.data.csv' ) 
+    >>> p = Plot()
+    >>> p.fig_size = (12, 4)
+    >>> missing(p, data , kind ='dendro')
+    
+    """
+    kstr =('dendrogram', 'bar', 'mbar')
+    kind = str(kind).lower().strip() 
+    
+    regex = re.compile (r'none|dendro|corr|base|default|mbar|bar', 
+                        flags= re.IGNORECASE)
+    kind = regex.search(kind) 
+    if kind is None: 
+        raise ValueError (f"Expect {smart_format(kstr, 'or')} not: {kind!r}")
+        
+    kind = kind.group()
+    if kind in ('none', 'default', 'base'): kind ='none'
+    
+    if sample is not None: 
+        sample = _assert_all_types(sample, int, float)
+        
+    if kind =='bar': 
+        fig, ax = plt.subplots (figsize = self.fig_size, **kwd )
+        (1- data.isnull().mean()).abs().plot.bar(ax=ax)
+
+    elif kind =='mbar': 
+        ax = msno.bar(data if sample is None else data.sample (sample),
+                      figsize = self.fig_size )
+
+    elif kind =='dendro': 
+        ax = msno.dendrogram(data, **kwd) 
+
+        
+    elif kind =='corr': 
+        ax= msno.heatmap(data, figsize = self.figsize)
+    else : 
+        ax = msno.matrix(data if sample is None else data.sample (sample),
+                         figsize= self.fig_size , **kwd)
+    
+    if self.savefig is not None:
+        fig.savefig(self.savefig, dpi =self.fig_dpi ) if kind =='bar' else ax.get_figure (
+            ).savefig (self.savefig,  dpi =self.fig_dpi)
+    
+    return self 
+ 
+
 
 def savefigure (fig: object ,
              figname: str = None,

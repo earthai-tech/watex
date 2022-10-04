@@ -3,7 +3,7 @@
 # MIT- licence.
 
 from __future__ import annotations 
-import os
+
 import copy
 import warnings
 import numpy as np 
@@ -20,9 +20,9 @@ from ..bases import FeatureInspection
 from .._watexlog import watexlog
 
 from ..tools.mlutils import (
-    cfexist , 
-    findIntersectionGenObject,
-    featureExistError,
+    # cfexist , 
+    # findIntersectionGenObject,
+    # featureExistError,
     formatGenericObj, 
     selectfeatures 
     )
@@ -30,9 +30,7 @@ from ..typing import (
     List,
     Dict,
     Optional,
-    NDArray, 
     ArrayLike, 
-    Iterable,
     DataFrame, 
     Series,
     F, 
@@ -51,10 +49,7 @@ from ..tools.funcutils import (
     smart_format 
     )
 from ..exceptions import ( 
-    ParameterNumberError , 
-    FileHandlingError, 
     PlotError, 
-    TipError,
     FeatureError, 
     FitError
     )
@@ -62,7 +57,107 @@ from ..exceptions import (
 
 _logger=watexlog.get_watex_logger(__name__)
 
-
+class Plot (BasePlot): 
+    """ A plot shadow class. 
+    
+    It is created to only collected the attributes of Abtract Base class of 
+    :class:`watex.property.BasePlot`. 
+    
+    `Plot` class holds the following attributes for visualization.
+    
+    
+    ==================  =======================================================
+    Property            Description        
+    ==================  =======================================================
+    fig_dpi             dots-per-inch resolution of the figure
+                        *default* is 300
+    fig_num             number of the figure instance
+                        *default* is 'Mesh'
+    fig_size            size of figure in inches (width, height)
+                        *default* is [5, 5]
+    savefig             savefigure's name, *default* is ``None``
+    fig_orientation     figure orientation. *default* is ``landscape``
+    fig_title           figure title. *default* is ``None``
+    fs                  size of font of axis tick labels, axis labels are
+                        fs+2. *default* is 6 
+    ls                  [ '-' | '.' | ':' ] line style of mesh lines
+                        *default* is '-'
+    lc                  line color of the plot, *default* is ``k``
+    lw                  line weight of the plot, *default* is ``1.5``
+    alpha               transparency number, *default* is ``0.5``  
+    font_weight         weight of the font , *default* is ``bold``.        
+    marker              marker of stations *default* is :math:`\blacktriangledown`.
+    ms                  size of marker in points. *default* is 5
+    marker_style        style  of marker in points. *default* is ``o``.
+    marker_facecolor    facecolor of the marker. *default* is ``yellow``
+    marker_edgecolor    edgecolor of the marker. *default* is ``cyan``.
+    marker_edgewidth    width of the marker. *default* is ``3``.
+    xminorticks         minortick according to x-axis size and *default* is 1.
+    yminorticks         minortick according to y-axis size and *default* is 1.
+    font_size           size of font in inches (width, height)
+                        *default* is 3.
+    font_style          style of font. *default* is ``italic``
+    bins                histograms element separation between two bar. 
+                         *default* is ``10``. 
+    xlim                limit of x-axis in plot. *default* is None 
+    ylim                limit of y-axis in plot. *default* is None 
+    xlabel              label name of x-axis in plot. *default* is None 
+    ylabel              label name  of y-axis in plot. *default* is None 
+    rotate_xlabel       angle to rotate `xlabel` in plot. *default* is None 
+    rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
+    leg_kws             keyword arguments of legend. *default* is empty dict.
+    plt_kws             keyword arguments of plot. *default* is empty dict
+    rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
+                        *default* is '--'
+    ps                  [ '-' | '.' | ':' ] line style of `Precision `metric
+                        *default* is '-'
+    rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
+    pc                  line color of `Precision` metric *default* is ``k``
+    s                   size of items in scattering plots. default is ``fs*40.``
+    gls                 [ '-' | '.' | ':' ] line style of grid  
+                        *default* is '--'.
+    glc                 line color of the grid plot, *default* is ``k``
+    glw                 line weight of the grid plot, *default* is ``2``
+    galpha              transparency number of grid, *default* is ``0.5``  
+    gaxis               axis to plot grid.*default* is ``'both'``
+    gwhich              type of grid to plot. *default* is ``major``
+    tp_axis             axis  to apply ticks params. default is ``both``
+    tp_labelsize        labelsize of ticks params. *default* is ``italic``
+    tp_bottom           position at bottom of ticks params. *default*
+                        is ``True``.
+    tp_top              position at the top  of ticks params. *default*
+                        is ``True``.
+    tp_labelbottom      see label on the bottom of the ticks. *default* 
+                        is ``False``
+    tp_labeltop         see the label on the top of ticks. *default* is ``True``
+    cb_orientation      orientation of the colorbar. *default* is ``vertical``
+    cb_aspect           aspect of the colorbar. *default* is 20.
+    cb_shrink           shrink size of the colorbar. *default* is ``1.0``
+    cb_pad              pad of the colorbar of plot. *default* is ``.05``
+    cb_anchor           anchor of the colorbar. *default* is ``(0.0, 0.5)``
+    cb_panchor          proportionality anchor of the colorbar. *default* is 
+                        `` (1.0, 0.5)``.
+    cb_label            label of the colorbar. *default* is ``None``.      
+    cb_spacing          spacing of the colorbar. *default* is ``uniform``
+    cb_drawedges        draw edges inside of the colorbar. *default* is ``False``
+    cb_format           format of the colorbar values. *default* is ``None``.
+    sns_orient          seaborn fig orientation. *default* is ``v`` which refer
+                        to vertical 
+    sns_style           seaborn style 
+    sns_palette         seaborn palette 
+    sns_height          seaborn height of figure. *default* is ``4.``. 
+    sns_aspect          seaborn aspect of the figure. *default* is ``.7``
+    sns_theme_kws       seaborn keywords theme arguments. default is ``{
+                        'style':4., 'palette':.7}``
+    verbose             control the verbosity. Higher value, more messages.
+                        *default* is ``0``.
+    ==================  =======================================================
+    
+    """
+    def __init__(self, **kws):
+        super().__init__(**kws)
+    
+    
 class QuickPlot (BasePlot)  : 
     r"""
     Special class deals with analysis modules. To quick plot diagrams, 
@@ -1374,9 +1469,10 @@ class QuickPlot (BasePlot)  :
          
         return self 
          
-    def discover_and_visualize(self, data: str | DataFrame= None, 
-                                    x:str =None, y:str =None, kind:str ='scatter',
-                                    s_col ='lwi', leg_kws:dict ={}, **pd_kws):
+    def discover_and_visualize(self,
+                               data: str | DataFrame= None, 
+                               x:str =None, y:str =None, kind:str ='scatter',
+                               s_col ='lwi', leg_kws:dict ={}, **pd_kws):
         """ Create a scatter plot to visualize the data using `x` and `y` 
         considered as dataframe features. 
         

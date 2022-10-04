@@ -91,10 +91,8 @@ class watexlog:
         Python interpreter.
         :return: logger 
         """
-        logger =logging.getLogger(loggername)
-        watexlog.load_configure() #set configuration 
-
-        return logger
+        return logging.getLogger(loggername) # logger 
+ 
 
     @staticmethod
     def load_configure_set_logfile (
@@ -239,10 +237,12 @@ def test_yaml_configfile(yamlfile="wlog.yml"):
     
 if __name__=='__main__':
     # ownerlogfile = '/watex/wlog.yml'
-    watexlog().load_configure(path2configure='wlog.yml')
+    # watexlog().load_configure(path2configure='wlog.yml')
     
-    watexlog().get_watex_logger().error('First pseudo test error')
-    watexlog().get_watex_logger().info('Just a logging test')
+    # watexlog().get_watex_logger().error('First pseudo test error')
+    # watexlog().get_watex_logger().info('Just a logging test')
+    
+    print(os.path.abspath(watexlog.__name__))
     
 
     

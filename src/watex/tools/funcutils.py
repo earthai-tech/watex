@@ -8,14 +8,17 @@ from __future__ import annotations
 
 import os 
 import re 
-import sys 
-import itertools
-import inspect 
-import subprocess 
-import warnings
+import sys
 import csv 
+import copy  
+import json
+import yaml
 import shutil 
-from copy import deepcopy 
+import inspect  
+import warnings
+import itertools
+import subprocess 
+from six.moves import urllib 
 
 import numpy as np 
 import pandas as pd 
@@ -26,6 +29,7 @@ from .._watexlog import watexlog
 from ..typing import ( 
     Tuple,
     Dict,
+    Optional,
     Any,
     ArrayLike,
     F,
@@ -70,7 +74,107 @@ except ImportError:
     
     interp_import = False
 
+def is_installing (
+        module: str , 
+        upgrade: bool=True , 
+        action: bool=True, 
+        DEVNULL: bool=False,
+        verbose: int=0,
+        **subpkws
+    )-> bool: 
+    """ Install or uninstall a module/package using the subprocess 
+    under the hood.
+    
+    Parameters 
+    ------------
+    module: str,
+        the module or library name to install using Python Index Package `PIP`
+    
+    upgrade: bool,
+        install the lastest version of the package. *default* is ``True``.   
+        
+    DEVNULL:bool, 
+        decline the stdoutput the message in the console 
+    
+    action: str,bool 
+        Action to perform. 'install' or 'uninstall' a package. *default* is 
+        ``True`` which means 'intall'. 
+        
+    verbose: int, Optional
+        Control the verbosity i.e output a message. High level 
+        means more messages. *default* is ``0``.
+         
+    subpkws: dict, 
+        additional subprocess keywords arguments 
+    Returns 
+    ---------
+    success: bool 
+        whether the package is sucessfully installed or not. 
+        
+    Example
+    --------
+    >>> from watex import is_installing
+    >>> is_installing(
+        'tqdm', action ='install', DEVNULL=True, verbose =1)
+    >>> is_installing(
+        'tqdm', action ='uninstall', verbose =1)
+    """
+    #implement pip as subprocess 
+    # refer to https://pythongeeks.org/subprocess-in-python/
+    if not action: 
+        if verbose > 0 :
+            print("---> No action `install`or `uninstall`"
+                  f" of the module {module!r} performed.")
+        return action  # DO NOTHING 
+    
+    success=False 
 
+    action_msg ='uninstallation' if action =='uninstall' else 'installation' 
+
+    if action in ('install', 'uninstall', True) and verbose > 0:
+        print(f'---> Module {module!r} {action_msg} will take a while,'
+              ' please be patient...')
+        
+    cmdg =f'<pip install {module}> | <python -m pip install {module}>'\
+        if action in (True, 'install') else ''.join([
+            f'<pip uninstall {module} -y> or <pip3 uninstall {module} -y ',
+            f'or <python -m pip uninstall {module} -y>.'])
+        
+    upgrade ='--upgrade' if upgrade else '' 
+    
+    if action == 'uninstall':
+        upgrade= '-y' # Don't ask for confirmation of uninstall deletions.
+    elif action in ('install', True):
+        action = 'install'
+
+    cmd = ['-m', 'pip', f'{action}', f'{module}', f'{upgrade}']
+
+    try: 
+        STDOUT = subprocess.DEVNULL if DEVNULL else None 
+        STDERR= subprocess.STDOUT if DEVNULL else None 
+    
+        subprocess.check_call(
+            [sys.executable] + cmd, stdout= STDOUT, stderr=STDERR,
+                              **subpkws)
+        if action in (True, 'install'):
+            # freeze the dependancies
+            reqs = subprocess.check_output(
+                [sys.executable,'-m', 'pip','freeze'])
+            [r.decode().split('==')[0] for r in reqs.split()]
+
+        success=True
+        
+    except: 
+
+        if verbose > 0 : 
+            print(f'---> Module {module!r} {action_msg} failed. Please use'
+                f' the following command: {cmdg} to manually do it.')
+    else : 
+        if verbose > 0: 
+            print(f"{action_msg.capitalize()} of `{module}` "
+                      "and dependancies was successfully done!") 
+        
+    return success 
 def smart_strobj_recognition(
         name: str  ,
         container: List | Tuple | Dict[Any, Any ],
@@ -315,88 +419,6 @@ def check_dimensionality(obj, data, z, x):
     
     return data , z, x 
 
-def is_installing (module, upgrade=True , DEVNULL=False,
-                  action=True, verbose =0, **subpkws): 
-    """ Install or uninstall a module using the subprocess under the hood.
-    
-    :param module: str, module name.
-    
-    :param upgrade:bool, install the lastest version.
-    
-    :param verbose:output a message.
-    
-    :param DEVNULL: decline the stdoutput the message in the console.
-    
-    :param action: str, install or uninstall a module.
-    
-    :param subpkws: additional subprocess keywords arguments.
-    
-    :Example: 
-        >>> from pycsamt.tools.funcutils import is_installing
-        >>> is_installing(
-            'tqdm', action ='install', DEVNULL=True, verbose =1)
-        >>> is_installing(
-            'tqdm', action ='uninstall', verbose =1)
-    """
-    #implement pip as subprocess 
-    # refer to https://pythongeeks.org/subprocess-in-python/
-    if not action: 
-        if verbose > 0 :
-            print("---> No action `install`or `uninstall`"
-                  f" of the module {module!r} performed.")
-        return action  # DO NOTHING 
-    
-    MOD_IMP=False 
-
-    action_msg ='uninstallation' if action =='uninstall' else 'installation' 
-
-    if action in ('install', 'uninstall', True) and verbose > 0:
-        print(f'---> Module {module!r} {action_msg} will take a while,'
-              ' please be patient...')
-        
-    cmdg =f'<pip install {module}> | <python -m pip install {module}>'\
-        if action in (True, 'install') else ''.join([
-            f'<pip uninstall {module} -y> or <pip3 uninstall {module} -y ',
-            f'or <python -m pip uninstall {module} -y>.'])
-        
-    upgrade ='--upgrade' if upgrade else '' 
-    
-    if action == 'uninstall':
-        upgrade= '-y' # Don't ask for confirmation of uninstall deletions.
-    elif action in ('install', True):
-        action = 'install'
-
-    cmd = ['-m', 'pip', f'{action}', f'{module}', f'{upgrade}']
-
-    try: 
-        STDOUT = subprocess.DEVNULL if DEVNULL else None 
-        STDERR= subprocess.STDOUT if DEVNULL else None 
-    
-        subprocess.check_call(
-            [sys.executable] + cmd, stdout= STDOUT, stderr=STDERR,
-                              **subpkws)
-        if action in (True, 'install'):
-            # freeze the dependancies
-            reqs = subprocess.check_output(
-                [sys.executable,'-m', 'pip','freeze'])
-            [r.decode().split('==')[0] for r in reqs.split()]
-            _logger.info( f"{action_msg.capitalize()} of `{module}` "
-                         "and dependancies was successfully done!") 
-        MOD_IMP=True
-        
-    except: 
-        _logger.error(f"Failed to {action} the module =`{module}`.")
-        
-        if verbose > 0 : 
-            print(f'---> Module {module!r} {action_msg} failed. Please use'
-                f' the following command: {cmdg} to manually do it.')
-    else : 
-        if verbose > 0: 
-            print(f"{action_msg.capitalize()} of `{module}` "
-                      "and dependancies was successfully done!") 
-        
-    return MOD_IMP 
-
 
 def smart_format(iter_obj, choice ='and'): 
     """ Smart format iterable ob.
@@ -552,8 +574,8 @@ def sanitize_fdataset(
         :return: sanitize columns
         :rtype: list 
         """
-        columns = [c.lower() for c in df.columns] 
         
+        columns = [c.lower() for c in df.columns] 
         for ii, celemnt in enumerate(columns): 
             for listOption, param in zip(optionsList, params): 
                  for option in listOption:
@@ -567,9 +589,9 @@ def sanitize_fdataset(
                              utm_flag =1
                          break
 
-        return columns
+        return columns, utm_flag 
 
-    new_df_columns= getandReplace(
+    new_df_columns, utm_flag = getandReplace(
         optionsList=P.param_options,
             params=P.param_ids,
             df= _df
@@ -881,7 +903,7 @@ def convert_csvdata_from_fr_to_en(csv_fn, pf, destfile = 'pme.en.csv',
     csv_1b = [row [:ix +1] for row in csv_data] 
     csv_2b =[row [ix+1:] for row in csv_data ]
     # make a copy of csv_1b
-    csv_1bb= deepcopy(csv_1b)
+    csv_1bb= copy.deepcopy(csv_1b)
    
     for ii, rowline in enumerate( csv_1bb[3:]) : # skip the first two rows 
         for jj , row in enumerate(rowline): 
@@ -984,8 +1006,8 @@ def read_main (csv_fn , pf , delimiter =':',
     csv_1b = [row [:ix +1] for row in csv_data] 
     csv_2b =[row [ix+1:] for row in csv_data ]
     # make a copy of csv_1b
-    csv_1bb= deepcopy(csv_1b)
-    copyd = deepcopy(csv_1bb); is_missing =list()
+    csv_1bb= copy.deepcopy(csv_1b)
+    copyd = copy.deepcopy(csv_1bb); is_missing =list()
     
     # skip the first two rows 
     for ii, rowline in enumerate( csv_1bb[3:]) : 
@@ -1054,7 +1076,7 @@ def _stats (X_, y_true,*, y_pred,
         # initialize array with full of zeros
     # get the values counts of the columns to analyse 'geol' for instance
     s=  X_[from_c].value_counts() # getarray of values 
-    s_values = s.values 
+    #s_values = s.values 
     # create a pseudo serie and get the values counts of each elements
     # and get the values counts
 
@@ -2307,7 +2329,462 @@ def assert_doi(doi):
     return doi
     
     
+def parse_json(json_fn =None,
+               data=None, 
+               todo='load',
+               savepath=None,
+               verbose:int =0,
+               **jsonkws) :
+    """ Parse Java Script Object Notation file and collect data from JSON
+    config file. 
     
+    :param json_fn: Json filename, URL or output JSON name if `data` is 
+        given and `todo` is set to ``dump``.Otherwise the JSON output filename 
+        should be the `data` or the given variable name.
+    :param data: Data in Python obj to serialize. 
+    :param todo: Action to perform with JSON: 
+        - load: Load data from the JSON file 
+        - dump: serialize data from the Python object and create a JSON file
+    :param savepath: If ``default``  should save the `json_fn` 
+        If path does not exist, should save to the <'_savejson_'>
+        default path .
+    :param verbose: int, control the verbosity. Output messages
+    
+    .. see also:: Read more about JSON doc
+            https://docs.python.org/3/library/json.html
+         or https://www.w3schools.com/python/python_json.asp 
+         or https://www.geeksforgeeks.org/json-load-in-python/
+         ...
+ 
+    :Example: 
+        >>> PATH = 'data/model'
+        >>> k_ =['model', 'iter', 'mesh', 'data']
+        >>> try : 
+            INVERS_KWS = {
+                s +'_fn':os.path.join(PATH, file) 
+                for file in os.listdir(PATH) 
+                          for s in k_ if file.lower().find(s)>=0
+                          }
+        except :
+            INVERS=dict()
+        >>> TRES=[10, 66,  70, 100, 1000, 3000]# 7000]     
+        >>> LNS =['river water','fracture zone', 'MWG', 'LWG', 
+              'granite', 'igneous rocks', 'basement rocks']
+        >>> import watex.tools.funcutils as FU
+        >>> geo_kws ={'oc2d': INVERS_KWS, 
+                      'TRES':TRES, 'LN':LNS}
+        # serialize json data and save to  'jsontest.json' file
+        >>> FU.parse_json(json_fn = 'jsontest.json', 
+                          data=geo_kws, todo='dump', indent=3,
+                          savepath ='data/saveJSON', sort_keys=True)
+        # Load data from 'jsontest.json' file.
+        >>> FU.parse_json(json_fn='data/saveJSON/jsontest.json', todo ='load')
+    
+    """
+    todo, domsg =return_ctask(todo)
+    # read urls by default json_fn can hold a url 
+    try :
+        if json_fn.find('http') >=0 : 
+            todo, json_fn, data = fetch_json_data_from_url(json_fn, todo)
+    except:
+        #'NoneType' object has no attribute 'find' if data is not given
+        pass 
+
+    if todo.find('dump')>=0:
+        json_fn = get_config_fname_from_varname(
+            data, config_fname= json_fn, config='.json')
+        
+    JSON = dict(load=json.load,# use loads rather than load  
+                loads=json.loads, 
+                dump= json.dump, 
+                dumps= json.dumps)
+    try :
+        if todo=='load': # read JSON files 
+            with open(json_fn) as fj: 
+                data =  JSON[todo](fj)  
+        elif todo=='loads': # can be JSON string format 
+            data = JSON[todo](json_fn) 
+        elif todo =='dump': # store data in JSON file.
+            with open(f'{json_fn}.json', 'w') as fw: 
+                data = JSON[todo](data, fw, **jsonkws)
+        elif todo=='dumps': # store data in JSON format not output file.
+            data = JSON[todo](data, **jsonkws)
+
+    except json.JSONDecodeError: 
+        raise json.JSONDecodeError(f"Unable {domsg} JSON {json_fn!r} file. "
+                              "Please check your file.", f'{json_fn!r}', 1)
+    except: 
+        msg =''.join([
+        f"{'Unrecognizable file' if todo.find('load')>=0 else'Unable to serialize'}"
+        ])
+        
+        raise TypeError(f'{msg} {json_fn!r}. Please check your'
+                        f" {'file' if todo.find('load')>=0 else 'data'}.")
+        
+    cparser_manager(f'{json_fn}.json',savepath, todo=todo, dpath='_savejson_', 
+                    verbose=verbose , config='JSON' )
+
+    return data 
+ 
+def fetch_json_data_from_url (url:str , todo:str ='load'): 
+    """ Retrieve JSON data from url 
+    :param url: Universal Resource Locator .
+    :param todo:  Action to perform with JSON:
+        - load: Load data from the JSON file 
+        - dump: serialize data from the Python object and create a JSON file
+    """
+    with urllib.request.urlopen(url) as jresponse :
+        source = jresponse.read()
+    data = json.loads(source)
+    if todo .find('load')>=0:
+        todo , json_fn  ='loads', source 
+        
+    if todo.find('dump')>=0:  # then collect the data and dump it
+        # set json default filename 
+        todo, json_fn = 'dumps',  '_urlsourcejsonf.json'  
+        
+    return todo, json_fn, data 
+    
+def parse_csv(
+        csv_fn:str =None,
+        data=None, 
+        todo='reader', 
+         fieldnames=None, 
+         savepath=None,
+         header: bool=False, 
+         verbose:int=0,
+         **csvkws
+   ) : 
+    """ Parse comma separated file or collect data from CSV.
+    
+    :param csv_fn: csv filename,or output CSV name if `data` is 
+        given and `todo` is set to ``write|dictwriter``.Otherwise the CSV 
+        output filename should be the `c.data` or the given variable name.
+    :param data: Sequence Data in Python obj to write. 
+    :param todo: Action to perform with JSON: 
+        - reader|DictReader: Load data from the JSON file 
+        - writer|DictWriter: Write data from the Python object 
+        and create a CSV file
+    :param savepath: If ``default``  should save the `csv_fn` 
+        If path does not exist, should save to the <'_savecsv_'>
+        default path.
+    :param fieldnames: is a sequence of keys that identify the order
+        in which values in the dictionary passed to the `writerow()`
+            method are written `csv_fn` file.
+    :param savepath: If ``default``  should save the `csv_fn` 
+        If path does not exist, should save to the <'_savecsv_'>
+        default path .
+    :param verbose: int, control the verbosity. Output messages
+    :param csvkws: additional keywords csv class arguments 
+    
+    .. see also:: Read more about CSV module in:
+        https://docs.python.org/3/library/csv.html or find some examples
+        here https://www.programcreek.com/python/example/3190/csv.DictWriter 
+        or find some FAQS here: 
+    https://stackoverflow.com/questions/10373247/how-do-i-write-a-python-dictionary-to-a-csv-file
+        ...
+    :Example:
+        >>> import watex.tools.funcutils as FU
+        >>> PATH = 'data/model'
+        >>> k_ =['model', 'iter', 'mesh', 'data']
+        >>> try : 
+            INVERS_KWS = {
+                s +'_fn':os.path.join(PATH, file) 
+                for file in os.listdir(PATH) 
+                          for s in k_ if file.lower().find(s)>=0
+                          }
+        except :
+            INVERS=dict()
+        >>> TRES=[10, 66,  70, 100, 1000, 3000]# 7000]     
+        >>> LNS =['river water','fracture zone', 'MWG', 'LWG', 
+              'granite', 'igneous rocks', 'basement rocks']
+        >>> geo_kws ={'oc2d': INVERS_KWS, 
+                      'TRES':TRES, 'LN':LNS}
+        >>> # write data and save to  'csvtest.csv' file 
+        >>> # here the `data` is a sequence of dictionary geo_kws
+        >>> FU.parse_csv(csv_fn = 'csvtest.csv',data = [geo_kws], 
+                         fieldnames = geo_kws.keys(),todo= 'dictwriter',
+                         savepath = 'data/saveCSV')
+        # collect csv data from the 'csvtest.csv' file 
+        >>> FU.parse_csv(csv_fn ='data/saveCSV/csvtest.csv',
+                         todo='dictreader',fieldnames = geo_kws.keys()
+                         )
+    
+    """
+    todo, domsg =return_ctask(todo) 
+    
+    if todo.find('write')>=0:
+        csv_fn = get_config_fname_from_varname(
+            data, config_fname= csv_fn, config='.csv')
+    try : 
+        if todo =='reader': 
+            with open (csv_fn, 'r') as csv_f : 
+                csv_reader = csv.reader(csv_f) # iterator 
+                data =[ row for row in csv_reader]
+                
+        elif todo=='writer': 
+            # write without a blank line, --> new_line =''
+            with open(f'{csv_fn}.csv', 'w', newline ='',
+                      encoding ='utf8') as new_csvf:
+                csv_writer = csv.writer(new_csvf, **csvkws)
+                csv_writer.writerows(data) if len(
+                    data ) > 1 else csv_writer.writerow(data)  
+                # for row in data:
+                #     csv_writer.writerow(row) 
+        elif todo=='dictreader':
+            with open (csv_fn, 'r', encoding ='utf8') as csv_f : 
+                # generate an iterator obj 
+                csv_reader= csv.DictReader (csv_f, fieldnames= fieldnames) 
+                # return csvobj as a list of dicts
+                data = list(csv_reader) 
+        
+        elif todo=='dictwriter':
+            with open(f'{csv_fn}.csv', 'w') as new_csvf:
+                csv_writer = csv.DictWriter(new_csvf, **csvkws)
+                if header:
+                    csv_writer.writeheader()
+                # DictWriter.writerows()expect a list of dicts,
+                # while DictWriter.writerow() expect a single row of dict.
+                csv_writer.writerow(data) if isinstance(
+                    data , dict) else csv_writer.writerows(data)  
+                
+    except csv.Error: 
+        raise csv.Error(f"Unable {domsg} CSV {csv_fn!r} file. "
+                      "Please check your file.")
+    except: 
+
+        msg =''.join([
+        f"{'Unrecognizable file' if todo.find('read')>=0 else'Unable to write'}"
+        ])
+        
+        raise TypeError(f'{msg} {csv_fn!r}. Please check your'
+                        f" {'file' if todo.find('read')>=0 else 'data'}.")
+    cparser_manager(f'{csv_fn}.csv',savepath, todo=todo, dpath='_savecsv_', 
+                    verbose=verbose , config='CSV' )
+    
+    return data  
+   
+def return_ctask (todo:Optional[str]=None) -> Tuple [str, str]: 
+    """ Get the convenient task to do if users misinput the `todo` action.
+    
+    :param todo: Action to perform: 
+        - load: Load data from the config [YAML|CSV|JSON] file
+        - dump: serialize data from the Python object and 
+            create a config [YAML|CSV|JSON] file."""
+            
+    def p_csv(v, cond='dict', base='reader'):
+        """ Read csv instead. 
+        :param v: str, value to do 
+        :param cond: str, condition if  found in the value `v`. 
+        :param base: str, base task to do if condition `cond` is not met. 
+        
+        :Example: 
+            
+        >>> todo = 'readingbook' 
+        >>> p_csv(todo) <=> 'dictreader' if todo.find('dict')>=0 else 'reader' 
+        """
+        return  f'{cond}{base}' if v.find(cond) >=0 else base   
+    
+    ltags = ('load', 'recover', True, 'fetch')
+    dtags = ('serialized', 'dump', 'save', 'write','serialize')
+    if todo is None: 
+        raise ValueError('NoneType action can not be perform. Please '
+                         'specify your action: `load` or `dump`?' )
+    
+    todo =str(todo).lower() 
+    ltags = list(ltags) + [todo] if  todo=='loads' else ltags
+    dtags= list(dtags) +[todo] if  todo=='dumps' else dtags 
+
+    if todo in ltags: 
+        todo = 'loads' if todo=='loads' else 'load'
+        domsg= 'to parse'
+    elif todo in dtags: 
+        todo = 'dumps' if todo=='dumps' else 'dump'
+        domsg  ='to serialize'
+    elif todo.find('read')>=0:
+        todo = p_csv(todo)
+        domsg= 'to read'
+    elif todo.find('write')>=0: 
+        todo = p_csv(todo, base ='writer')
+        domsg =' to write'
+        
+    else :
+        raise ValueError(f'Wrong action {todo!r}. Please select'
+                         f' the right action to perform: `load` or `dump`?'
+                        ' for [JSON|YAML] and `read` or `write`? '
+                        'for [CSV].')
+    return todo, domsg  
+
+def parse_yaml (yml_fn:str =None, data=None,
+                todo='load', savepath=None,
+                verbose:int =0, **ymlkws) : 
+    """ Parse yml file and collect data from YAML config file. 
+    
+    :param yml_fn: yaml filename and can be the output YAML name if `data` is 
+        given and `todo` is set to ``dump``.Otherwise the YAML output filename 
+        should be the `data` or the given variable name.
+    :param data: Data in Python obj to serialize. 
+    :param todo: Action to perform with YAML: 
+        - load: Load data from the YAML file 
+        - dump: serialize data from the Python object and create a YAML file
+    :param savepath: If ``default``  should save the `yml_fn` 
+        to the default path otherwise should store to the convenient path.
+        If path does not exist, should set to the default path.
+    :param verbose: int, control the verbosity. Output messages
+    
+    .. see also:: Read more about YAML file https://pynative.com/python-yaml/
+         or https://python.land/data-processing/python-yaml and download YAML 
+         at https://pypi.org/project/PyYAML/
+         ...
+
+    """ 
+    
+    todo, domsg =return_ctask(todo)
+    #in the case user use dumps or loads with 's'at the end 
+    if todo.find('dump')>= 0: 
+        todo='dump'
+    if todo.find('load')>=0:
+        todo='load'
+    if todo=='dump':
+        yml_fn = get_config_fname_from_varname(data, yml_fn)
+    try :
+        if todo=='load':
+            with open(yml_fn) as fy: 
+                data =  yaml.load(fy, Loader=yaml.SafeLoader)  
+                # args =yaml.safe_load(fy)
+        elif todo =='dump':
+        
+            with open(f'{yml_fn}.yml', 'w') as fw: 
+                data = yaml.dump(data, fw, **ymlkws)
+    except yaml.YAMLError: 
+        raise yaml.YAMLError(f"Unable {domsg} YAML {yml_fn!r} file. "
+                             'Please check your file.')
+    except: 
+        msg =''.join([
+        f"{'Unrecognizable file' if todo=='load'else'Unable to serialize'}"
+        ])
+        
+        raise TypeError(f'{msg} {yml_fn!r}. Please check your'
+                        f" {'file' if todo=='load' else 'data'}.")
+        
+    cparser_manager(f'{yml_fn}.yml',savepath, todo=todo, dpath='_saveyaml_', 
+                    verbose=verbose , config='YAML' )
+
+    return data 
+ 
+def cparser_manager (cfile,
+                     savepath =None, 
+                     todo:str ='load', dpath=None,
+                     verbose =0, **pkws): 
+    """ Save and output message according to the action. 
+    :param cfile: name of the configuration file
+    :param savepath: Path-like object 
+    :param dpath: default path 
+    :param todo: Action to perform with config file. Can ve 
+        ``load`` or ``dump``
+    :param config: Type of configuration file. Can be ['YAML|CSV|JSON]
+    :param verbose: int, control the verbosity. Output messages
+    
+    """
+    if savepath is not None:
+        if savepath =='default': 
+            savepath = None 
+        yml_fn,_= move_cfile(cfile,savepath, dpath=dpath)
+    if verbose > 0: 
+        print_cmsg(yml_fn, todo, **pkws)
+        
+    
+def get_config_fname_from_varname(data,
+                                  config_fname=None,
+                                  config='.yml') -> str: 
+    """ use the variable name given to data as the config file name.
+    :param data: Given data to retrieve the variable name 
+    :param config_fname: Configurate variable filename. If ``None`` , use 
+        the name of the given varibale data 
+    :param config: Type of file for configuration. Can be ``json``, ``yml`` 
+        or ``csv`` file. default is ``yml``.
+    :return: str, the configuration data.
+    
+    """
+    try:
+        if '.' in config: 
+            config =config.replace('.','')
+    except:pass # in the case None is given
+    
+    if config_fname is None: # get the varname 
+        # try : 
+        #     from varname.helpers import Wrapper 
+        # except ImportError: 
+        #     import_varname=False 
+        #     import_varname = FU.subprocess_module_installation('varname')
+        #     if import_varname: 
+        #         from varname.helpers import Wrapper 
+        # else : import_varname=True 
+        try : 
+            for c, n in zip(['yml', 'yaml', 'json', 'csv'],
+                            ['cy.data', 'cy.data', 'cj.data',
+                             'c.data']):
+                if config ==c:
+                    config_fname= n
+                    break 
+            if config_fname is None:
+                raise # and go to except  
+        except: 
+            #using fstring 
+            config_fname= f'{data}'.split('=')[0]
+            
+    elif config_fname is not None: 
+        config_fname= config_fname.replace(
+            f'.{config}', '').replace(f'.{config}', '').replace('.yaml', '')
+    
+    return config_fname
+    
+
+def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
+    """ Move file to its savepath and output message. 
+    If path does not exist, should create one to save data.
+    :param cfile: name of the configuration file
+    :param savepath: Path-like object 
+    :param dpath: default path 
+    
+    :returns: 
+        - configuration file 
+        - out message 
+    """
+    savepath = cpath(savepath, **ckws)
+    try :shutil.move(cfile, savepath)
+    except: warnings.warn("It seems the path already exists!")
+    
+    cfile = os.path.join(savepath, cfile)
+    
+    msg = ''.join([
+    f'--> Data was successfully stored to {os.path.basename(cfile)!r}', 
+        f' and saved to {os.path.realpath(cfile)!r}.']
+        )
+        
+    return cfile, msg
+
+def print_cmsg(cfile:str, todo:str='load', config:str='YAML') -> str: 
+    """ Output configuration message. 
+    
+    :param cfile: name of the configuration file
+    :param todo: Action to perform with config file. Can be 
+        ``load`` or ``dump``
+    :param config: Type of configuration file. Can be [YAML|CSV|JSON]
+    """
+    if todo=='load': 
+        msg = ''.join([
+        f'--> Data was successfully stored to {os.path.basename(cfile)!r}', 
+            f' and saved to {os.path.realpath(cfile)!r}.']
+            )
+    elif todo=='dump': 
+        msg =''.join([ f"--> {config.upper()} {os.path.basename(cfile)!r}", 
+                      " data was sucessfully loaded."])
+    return msg 
+
+
+
+  
     
     
     

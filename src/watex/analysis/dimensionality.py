@@ -11,16 +11,17 @@ import warnings
 import numpy as np
 import pandas as pd 
 
-from .._sklearn import (
-    OrdinalEncoder ,
-    SimpleImputer ,
-    StandardScaler, 
-    MinMaxScaler,
-    PCA, 
-    IncrementalPCA, 
-    KernelPCA, 
+# from ..exlib import (
+#     OrdinalEncoder ,
+#     SimpleImputer ,
+#     StandardScaler, 
+#     MinMaxScaler,
+#     PCA, 
+#     IncrementalPCA, 
+#     KernelPCA, 
 
-    )
+#     )
+
 from ..typing import (
     List,
     Any,

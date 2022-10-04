@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd 
 # from pandas.api.types import is_integer_dtype
 
-from .._sklearn import ( 
+from ..exlib  import ( 
     StratifiedShuffleSplit, 
     train_test_split,
     BaseEstimator,
@@ -25,7 +25,7 @@ from .._sklearn import (
 
 # import watex.utils.exceptions as Wex 
 from .._watexlog import watexlog 
-from ..tools.funcutils import categorize_flow 
+from .features import categorize_flow 
 import  watex.tools.mlutils as mlfunc
 
 __docformat__='restructuredtext'

@@ -26,7 +26,7 @@ from pprint import pprint
 import pandas as pd 
 import numpy as np 
 
-from .._sklearn import (
+from ..exlib import (
      mean_squared_error,
      cross_val_score, 
      GridSearchCV , 

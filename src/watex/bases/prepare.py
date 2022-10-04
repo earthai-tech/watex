@@ -11,7 +11,7 @@ from pprint import pprint
 import numpy as np
 import pandas as pd 
 
-from .._sklearn import  (
+from ..exlib import  (
     Pipeline,
     FeatureUnion, 
     SimpleImputer, 
@@ -43,6 +43,9 @@ from ..tools import (
     mlutils as MLU, 
     funcutils as FCU, 
    )
+
+from .features import categorize_flow 
+
 import watex.exceptions as Wex
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -547,7 +550,7 @@ class BaseSteps(object):
                     f"The given y categories are `{np.unique(ycat)}`",
                     f" and should be converted to text values = {ytext}"])
        
-                df0[self.target]= FCU.categorize_flow(
+                df0[self.target]= categorize_flow(
                 target_array= df0[self.target], 
                 flow_values =ycat, classes=ytext)
                 

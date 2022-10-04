@@ -24,15 +24,13 @@ from ..tools.funcutils import  (
 from ..typing import ( 
     Tuple, 
     List,
+    Union, 
     Optional, 
     DataFrame,
     ArrayLike, 
     T
     )
 
-from .base import  ( 
-    exportdf, 
-    ) 
 
 from ..decorators import ( 
     writef, 
@@ -1055,7 +1053,53 @@ def categorize_flow(
  
     return new_flow_values, target_array, flowClasses        
 
+@writef(reason='write', from_='df')
+def exportdf (
+    df : DataFrame =None,
+    refout: Optional [str] =None, 
+    to: Optional [str] =None, 
+    savepath:Optional [str] =None,
+    modname: str  ='_wexported_', 
+    reset_index: bool =True
+) -> Tuple [DataFrame, Union[str], bool ]: 
+    """ 
+    Export dataframe ``df``  to `refout` files. 
+    
+    `refout` file can be Excell sheet file or '.json' file. To get more details 
+    about the `writef` decorator , see :doc:`watex.utils.decorator.writef`. 
+    
+    :param refout: 
+        Output filename. If not given will be created refering to the 
+        exported date. 
         
+    :param to: Export type; Can be `.xlsx` , `.csv`, `.json` and else.
+       
+    :param savepath: 
+        Path to save the `refout` filename. If not given
+        will be created.
+    :param modname: Folder to hold the `refout` file. Change it accordingly.
+        
+    :returns: 
+        - `df_`: new dataframe to be exported. 
+        
+    """
+    if df is None :
+        warnings.warn(
+            'Once ``df`` arguments in decorator :`class:~decorator.writef`'
+            ' is selected. The main type of file ready to be written MUST be '
+            'a pd.DataFrame format. If not an error raises. Please refer to '
+            ':doc:`~.utils.decorator.writef` for more details.')
+        
+        raise FileHandlingError(
+            'No dataframe detected. Please provided your dataFrame.')
+
+    df_ =df.copy(deep=True)
+    if reset_index is True : 
+        df_.reset_index(inplace =True)
+    if savepath is None :
+        savepath = savepath_(modname)
+        
+    return df_, to,  refout, savepath, reset_index         
         
         
         

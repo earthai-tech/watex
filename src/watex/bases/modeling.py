@@ -20,7 +20,7 @@ from ..typing import (
     Optional,
     Union 
   )
-from .._sklearn import ( 
+from ..exlib  import ( 
     make_pipeline, 
     validation_curve, 
     RandomizedSearchCV, 
@@ -46,7 +46,6 @@ from ..exceptions import (
 
 # import  watex.exceptions as Wex 
 # import  watex.decorators as deco
-
 
 _logger =watexlog().get_watex_logger(__name__)
 

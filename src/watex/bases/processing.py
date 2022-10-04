@@ -13,7 +13,7 @@ import inspect
 import numpy as np 
 import pandas as pd 
 
-from .._sklearn import ( 
+from ..exlib  import ( 
      DecisionTreeClassifier, 
      KNeighborsClassifier, 
      OneHotEncoder, 
@@ -66,7 +66,7 @@ d_estimators_={'dtc':DecisionTreeClassifier,
                 'knn':KNeighborsClassifier 
                  }
 if _HAS_ENSEMBLE_ :
-    from .._sklearn import skl_ensemble_
+    from ..exlib import skl_ensemble_
     
     for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble_): 
         d_estimators_[es_]=esf_ 
