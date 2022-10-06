@@ -5,7 +5,7 @@
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
  [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
  [![Requirements Status](https://requires.io/github/WEgeophysics/watex/requirements.svg?branch=master)](https://requires.io/github/WEgeophysics/watex/requirements/?branch=master)
-  ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
+  ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=b&style=flat-square)
   [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6657013.svg)](https://doi.org/10.5281/zenodo.6657013)
   ![GitHub release (latest by date)](https://img.shields.io/github/v/release/WEgeophysics/watex) 
   ![GitHub repo size](https://img.shields.io/github/repo-size/WEgeophysics/watex?style=flat-square) 
