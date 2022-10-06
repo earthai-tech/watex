@@ -92,6 +92,7 @@ IPython
 
 # spyder 
 .pylint.d/
+.pylint.d
 
 # pipenv
 #   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
@@ -173,7 +174,7 @@ __svmmodels.pkl
 watex/scripts/ 
 scripts/
 
-# ignore the useless __init__.py 
-watex/__init__.py 
+
+
 
 
