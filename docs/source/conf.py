@@ -13,8 +13,7 @@
 import os
 import sys
 
-#for p in ('.', '..', '../..', '../watex', './src/watex', '../src/watex'): 
-for p in ('../', '../watex/', '../../watex', '..' , '../watex/'): 
+for p in ('../../',): 
     sys.path.insert(0, os.path.abspath(p))
 
 # -- Element functions ------------------------------------------------
@@ -33,7 +32,6 @@ def run_apidoc(_):
         '--force',
         '-o', output_path, module,
     ])
-
 
 def setup(app):
     app.connect('builder-inited', run_apidoc)
