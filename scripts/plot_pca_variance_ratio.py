@@ -15,6 +15,7 @@ from watex.analysis.dimensionality import pcaVarianceRatio
 # module below are imported for testing scripts.
 # Not usefull to import since you have your own dataset.
 from watex.datasets import fetch_data 
+
 X,_ = fetch_data('bagoue analysis')
 
 # plot variance_ratio
@@ -26,6 +27,7 @@ pca_n_components  =0.95 # can be n=2 etc.
 
 # addtributes indexes addeds 
 # new features is created from indexes of existing numerical attribues 
+
 new_features =[
             (0, 1),
             # (0,3), 
@@ -62,6 +64,7 @@ plot_kws = {'fig_size':(8, 12),
         # 'fs' :3.,                 # coeff to manage font_size 
         'leg_kws': {'loc':'upper left', 
                         'fontsize':15.}
+
         }
 mlObj =MLPlots(**plot_kws)
 

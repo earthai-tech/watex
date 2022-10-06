@@ -55,7 +55,7 @@ Until now, the methods implemented are mainly adressed to a particular problem i
          
 ## Licence 
 
-**_WATex_** is under Massachusetts Institute of Technology License [MIT](https://www.mit.edu/~amini/LICENSE.md).
+**_WATex_** is under [3-Clause BSD](https://opensource.org/licenses/BSD-3-Clause) License.
 
 
 ## Citations

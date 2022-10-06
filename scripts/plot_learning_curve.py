@@ -29,6 +29,7 @@ trainset= X_prepared
 # y -labels 
 y_array =y_prepared
 # base estimator. If baseeastimator is set, should replace the default estimator 
+
 baseEstimator =SVC( random_state=42) #(random_state=42, C=10, gamma=1e-2, kernel ='rbf')
 
 # processing module kwargs
@@ -59,6 +60,7 @@ switch_plot='on'
 autoPreprocessing =False 
 
 #call get_validation method drom processing Object 
+
 processObj = BaseModel(
                     data_fn =datafn, 
                     df = df, 

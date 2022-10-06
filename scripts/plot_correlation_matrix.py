@@ -49,5 +49,5 @@ sns_kwargs ={'annot': False,
             'center':0 , 
             # 'cmap':'jet_r', 
             'cbar':True}
-qkObj.plot_correlation_matrix(
+qkObj.correlationMatrix (
     plot_params=plot_params, **sns_kwargs,)

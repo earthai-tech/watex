@@ -11,11 +11,13 @@ Created on Tue Sep 21 19:45:40 2021
 from pprint import pprint  
 
 from sklearn.svm import SVC
-from watex.modeling.validation import GridSearch
+
+from watex.models.validation import GridSearch
 # modules below are imported for testing scripts.
 # Not usefull to import at least you provided your own dataset.
 from watex.datasets import fetch_data
 X_prepared, y_prepared =fetch_data('Bagoue data prepared')
+
 
 # set the SVM grid parameters 
 grid_params = [
@@ -27,9 +29,11 @@ grid_params = [
          }
         ]
 #{'C': 100, 'coef0': 1, 'degree': 1, 'gamma': 0.01, 'kernel': 'rbf'}
+
 # forest_clf = RandomForestClassifier(random_state =42)
 # grid_search = SearchedGrid(forest_clf, grid_params, kind='RandomizedSearchCV')
 # grid_search.fit(X= X_prepared , y = y_prepared)
+
 
 cv =7
 
@@ -44,6 +48,7 @@ svc_clf = SVC(random_state=42,
                 # C=10, gamma=1e-2, kernel ='poly', degree=7, coef0=2
               )
 # grid_ keywords arguments 
+
 grid_kws ={'scoring':'accuracy'} #[-0.26763848]'neg_mean_squared_error'#
 grid_searchObj= GridSearch(svc_clf,
                            grid_params,
@@ -54,9 +59,11 @@ grid_searchObj= GridSearch(svc_clf,
 grid_searchObj.fit(X= X_prepared , y = y_prepared)
 
 pprint(grid_searchObj.best_params_ )
+
 # cvres = grid_searchObj.cv_results_ 
 # pprint(cvres)
 # pprint(cvres['mean_test_score'])
+
 
 # if your estimator has a `feature_importances_`attributes, call it by 
 # uncomment the section below. If return None, mean the estimator doesnt have 

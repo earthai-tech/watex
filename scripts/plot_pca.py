@@ -42,6 +42,7 @@ Created on Tue Sep 21 10:25:59 2021
 """
 
 
+
 from watex.view.mlplot import MLPlots 
 # modules below are imported for testing scripts.
 # Not usefull to import since you provided your own dataset.
@@ -78,6 +79,7 @@ pca_kws =dict()
 nAxes = 7 
 pc1_axis = 'Axis 1'
 pc2_axis ='Axis 2'
+
 #plot_key words arguments 
 plot_kws = {
             # 'lw' :3.,           # line width 

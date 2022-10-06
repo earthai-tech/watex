@@ -20,3 +20,6 @@ pycsamt
 autoapi 
 xgboost
 click 
+missingno
+pandas_profiling 
+pyjanitor 

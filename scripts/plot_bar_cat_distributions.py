@@ -8,6 +8,7 @@ Created on Tue Aug 24 19:52:53 2021
 """
 
 
+
 from watex.view.plot import QuickPlot
 from watex.datasets import fetch_data 
 
