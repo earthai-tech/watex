@@ -14,7 +14,7 @@ import os
 import sys
 
 #for p in ('.', '..', '../..', '../watex', './src/watex', '../src/watex'): 
-for p in ('../../', '../src/', '../../src/watex', '../../src/' , '../src/'): 
+for p in ('../', '../watex/', '../../watex', '..' , '../watex/'): 
     sys.path.insert(0, os.path.abspath(p))
 
 # -- Element functions ------------------------------------------------
@@ -24,7 +24,7 @@ def run_apidoc(_):
     import os
     import shutil
     cur_dir = os.path.dirname(__file__)
-    module = os.path.join(cur_dir, '../../src/watex')
+    module = os.path.join(cur_dir, '../../watex')
     output_path = os.path.join(cur_dir, 'api')
     shutil.rmtree(output_path, ignore_errors=True)
     main(['--separate',
