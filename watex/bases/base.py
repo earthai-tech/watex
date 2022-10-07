@@ -358,7 +358,7 @@ class Missing (Data) :
     kind: str, Optional 
         type of visualization. Can be ``dendrogramm``, ``mbar`` or ``bar``. 
         ``corr`` plot  for dendrogram , :mod:`msno` bar,  :mod:`plt`
-        and :mod:`msno` correlation  visualization respectively:: 
+        and :mod:`msno` correlation  visualization respectively: 
             
             * ``bar`` plot counts the  nonmissing data  using pandas
             *  ``mbar`` use the :mod:`msno` package to count the number 
@@ -425,7 +425,7 @@ class Missing (Data) :
         kind: str, Optional 
             kind of visualization. Can be ``dendrogramm``, ``mbar`` or ``bar`` plot 
             for dendrogram , :mod:`msno` bar and :mod:`plt` visualization 
-            respectively:: 
+            respectively: 
                 
                 * ``bar`` plot counts the  nonmissing data  using pandas
                 *  ``mbar`` use the :mod:`msno` package to count the number 
@@ -665,7 +665,9 @@ For supervised Learning for instance, suc as regression or clasification, our
 intent is to have a function that transforms features into a label. If we 
 were to write this as an algebra formula, it would be look like:: 
     
-    .. math::`y = f(X)`
+    .. math::
+        
+        y = f(X)
 
 :code:`X` is a matrix. Each row represent a `sample` of data or information 
 about individual. Every columns in :code:`X` is a `feature`.The output of 

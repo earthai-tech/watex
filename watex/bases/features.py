@@ -18,7 +18,7 @@ from ..tools.funcutils import  (
     savepath_ , 
     sanitize_fdataset, 
     # categorize_flow, 
-    fillNaN, 
+    # fillNaN, 
     )
     
 from ..typing import ( 
@@ -39,8 +39,6 @@ from ..decorators import (
 from ..exceptions import ( 
     FileHandlingError, 
     FeatureError, 
-    ArgumentError, 
-    ParameterNumberError, 
    )
 from ..tools.gistools import ( 
     ll_to_utm, 
@@ -62,7 +60,7 @@ class GeoFeatures:
     Features class. Deals  with Electrical Resistivity profile (VES), 
     Vertical electrical Sounding (VES), Geological (Geol) data and 
     Borehole data(Boreh). Set all features values of differents
-    investigation sites. Features class is  composed of :: 
+    investigation sites. Features class is  composed of: 
     
     - `erp` class  get from :class:`watex.methods.erp.ERP_colection`
     - `geol`  obtained from :class:`watex.geology.geology.Geology` 
@@ -483,16 +481,20 @@ class GeoFeatures:
         Control object id whether the each selected anomaly from `erp` matchs 
         with its`ves` and `geol` and `borehole`.
         
-        :param erpObjID: ERP object ID. Refer to :doc`~.methods.erp.ERP_collection` 
+        :param erpObjID: ERP object ID. Refer to 
+            :class:`watex.methods.erp.ERP_collection` 
         :type erpObjID: str 
         
-        :param boreObjID: Borehole ID.  Refer to :doc`~.geology.geology.Borehole`
+        :param boreObjID: Borehole ID.  Refer to 
+            :class:`watex.geology.drilling.Borehole`
         :type boreObjID: str 
         
-        :param boreObjID: Geology ID.  Refer to :doc:`~.geology.geology.Geology`
+        :param boreObjID: Geology ID.  Refer to 
+            :class:`watex.geology.geology.Geology`
         :type boreObjID: str
         
-        :param vesObjsID: VES object ID. see :doc:`~core.ves.VES`
+        :param vesObjsID: VES object ID. Refer to 
+            :class:`watex.methods.electrical.VerticalSounding`
         
         :return: New survey ID
         
@@ -520,7 +522,7 @@ class GeoFeatures:
     def exportdf (self, refout=None, to =None, savepath=None, **kwargs): 
         """ Export dataframe from :attr:`~.features.GeoFeatures.df` to files 
         can be Excell sheet file or '.json' file. To get more details about 
-        the `writef` decorator, see :doc:`watex.tools.decorators.writef`. 
+        the `writef` decorator, see :func:`watex.decorators.writef`. 
         
         :param refout: 
             Output filename. If not given will be created refering to  the 
@@ -586,8 +588,10 @@ class ID:
     
     :param id_: 
         Indentification site number. See col ``id`` of :attr:`~geofeatures.id_`
+        
     :param id_cache: 
         New id of station number kept on caches 
+        
     :param df_: Features dataFrame. Refer to :attr:~geofeatures.df 
     
     :Example: 
@@ -659,17 +663,17 @@ class FeatureInspection:
     Parameters  
     -----------
     *data*: str or pd.core.DataFrame  
-        Path-like object or pandas Dataframe. Must contains of the  main 
-        parameters including the `target` the target. 
+        Path-like object or pandas Dataframe. Must contain the  main 
+        parameters including the `target`. 
         
-    **target**:str 
-        The target for predicting purposes. Here for groundwater exploration, 
-        we specify the target as ``flow``. 
+    **tname**:str 
+        The tname for predicting purposes. Here for groundwater exploration, 
+        we specify the name of the target as ``flow``. 
         
     **flow_classes**: list or array_like 
         The way to classify the flow. Provide the main specific values to convert 
         the  categorial trends to numerical values.  Different projects have 
-        different targeting flow rate. Might specify either for village hydraulic, 
+        different tnameing flow rate. Might specify either for village hydraulic, 
         or improved village hydraulic  or urban hydraulics. 
         
     **drop_columns**: list  
@@ -700,10 +704,6 @@ class FeatureInspection:
         please provided the `col_name`, otherwise it should be the ``id`` as 
         as a default columns item. 
         
-    **target**:str 
-        The target for predicting purposes. Here for groundwater exploration, 
-        we specify the target as ``flow``. 
-        
     **sanitize**: 
         polish the data and remove inconsistent columns in the data which are 
         not refer to the predicting features. It is able to change for instance
@@ -725,7 +725,7 @@ class FeatureInspection:
     """
     
     def __init__(self,
-                 target:str ='flow' ,
+                 tname:str ='flow' ,
                  mapflow:bool =True, 
                  sanitize:bool =False,
                  flow_classes: List[float] = [0., 1., 3.],
@@ -734,7 +734,7 @@ class FeatureInspection:
                  **kws): 
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
-        self.target =target
+        self.tname =tname
         self.set_index =set_index 
         self.sanitize =sanitize
         self.mapflow =mapflow
@@ -756,7 +756,7 @@ class FeatureInspection:
         return self.flow_classes_
     @flow_classes.setter 
     def flow_classes(self, flow_classes): 
-        """ When targeting features is numerically considered, The `setter` 
+        """ When tnameing features is numerically considered, The `setter` 
         try to classified into different classes provided. """
         if flow_classes is None: 
             flow_classes = [0.,  3.,  6., 10.]
@@ -813,9 +813,9 @@ class FeatureInspection:
             if isinstance(self.drop_columns, str) :
                 self.drop_columns =[self.drop_columns]
             cache = cache + self.drop_columns 
-            if isinstance(self.target, str): 
-                cache.append(self.target)
-            else : cache + list(self.target)
+            if isinstance(self.tname, str): 
+                cache.append(self.tname)
+            else : cache + list(self.tname)
             
         for cc in cache: 
             if cc not in self.data_.columns: 
@@ -856,7 +856,7 @@ class FeatureInspection:
         
         *data*: str or pd.core.DataFrame  
             Path-like object or pandas Dataframe. Must contains of the  main 
-            parameters including the `target` the target. 
+            parameters including the `tname` the tname. 
             
         Returns
         --------
@@ -874,6 +874,20 @@ class FeatureInspection:
         2    3   b3   80.0       87.0  ...   767.562500   0.000000  GRANITES   FR1
         
         
+        Notes 
+        --------
+        The paper mentions 04 types of hydraulic according to the population 
+        demand and the number of living inhabitants. The hydraulic system are
+        defined as:
+         
+         *  FR = 0 is for dry boreholes
+         *  0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
+         *  3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
+         *  6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
+         
+        The flow classes can be modified according to the type of hydraulic
+        proposed for the project. 
+        
         References 
         ------------
             
@@ -881,20 +895,6 @@ class FeatureInspection:
             la recherche d’eaux dans les aquifères discontinus. 
             Série Hydrogéologie, 169.
             
-       The paper mentions 04 types of hydraulic according to the population 
-       demand and the number of living inhabitants. The hydraulic system are
-       defined as:
-            
-        *  FR = 0 is for dry boreholes
-        *  0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
-        *  3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
-        *  6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
-            
-        Notes 
-        -------
-        The flow classes can be modified according to the type of hydraulic
-        proposed for the project. 
-        
         """
         
         self.data = data 
@@ -922,8 +922,8 @@ class FeatureInspection:
             self.data_.drop(columns = self.drop_columns, inplace =True)
             
         if self.mapflow is True : 
-            self.data_[self.target]= categorize_flow(
-                target_array= self.data_[self.target], 
+            self.data_[self.tname]= categorize_flow(
+                tname_array= self.data_[self.tname], 
                 flow_values =self.flow_classes)
   
         if self.set_index :
@@ -940,16 +940,15 @@ class FeatureInspection:
                 self.index_col_id ='id'
                 # self.df.set_index('name', inplace =True)
 
-        if self.target =='flow': 
+        if self.tname =='flow': 
             self.data_ =self.data_.astype({
                              'power':np.float, 
                              'magnitude':np.float, 
                              'sfi':np.float, 
                              'ohmS': np.float, 
                               'lwi': np.float, 
-                              })  
-        
-        
+                              }
+                )  
         return self 
     
     
@@ -959,8 +958,8 @@ class FeatureInspection:
         """
         Write the analysis `df`. 
         
-        Refer to :doc:`watex.__init__.exportdf` for more details about 
-        the reference arguments ``refout``, ``to``, ``savepath``, ``modename``
+        Refer to :func:`watex.decorators.exportdf` for more details about 
+        the arguments ``refout``, ``to``, ``savepath``, ``modename``
         and ``rest_index``. 
         
         :Example: 
@@ -985,7 +984,7 @@ class FeatureInspection:
             
 @catmapflow2(cat_classes=['FR0', 'FR1', 'FR2', 'FR3'])#, 'FR4'] )
 def categorize_flow(
-        target_array: ArrayLike[T] ,
+        tname_array: ArrayLike[T] ,
         flow_values: List [float],
         **kwargs
     ) -> Tuple[ List[float], T, List[str]]: 
@@ -994,7 +993,7 @@ def categorize_flow(
     `flow_classes`  argument is given, it should be erased the
     `cat_classes` argument of decororator `deco.catmapflow`.
     
-    :param target_array: Flow array to be categorized 
+    :param tname_array: Flow array to be categorized 
     
     :param flow_values: 
         
@@ -1015,8 +1014,8 @@ def categorize_flow(
     :returns: 
         
         - ``new_flow_values``: Iterable object as type (2) 
-        - ``target_array``: Raw flow iterable object to be categorized
-        - ``flowClasses``: If given , see ``flow_classes`` param. 
+        - ``tname_array``: Raw flow iterable object to be categorized
+        - ``flowClasses``: If given , see ``flow_classes`` params. 
             
     """
     flowClasses =  kwargs.pop('classes', None)
@@ -1051,7 +1050,7 @@ def categorize_flow(
                 else: 
                    new_flow_values.append([flow_values[ss-1], val])
  
-    return new_flow_values, target_array, flowClasses        
+    return new_flow_values, tname_array, flowClasses        
 
 @writef(reason='write', from_='df')
 def exportdf (

@@ -446,8 +446,11 @@ target: Array-like or :class:`pd.Series`
     variable, outcome variable, response variable, ground truth or label. 
     `Scikit-learn`_ works with targets that have minimal structure: a class 
     from a finite set, a finite real-valued number, multiple classes, or 
-    multiple numbers. Refer to `Scikit-learn`_ `target types`_ .
+    multiple numbers. Refer to `Scikit-learn`_ `target types`_ . Note that 
+    throughout this library, a `target` is considered as a `pd.Series` where 
+    the name is `tname` and the variable `y` i.e `target = tname + y`.
     .. _target types: https://scikit-learn.org/stable/glossary.html#glossary-target-types
+    
     """,
     model="""
 model: callable, always as a function,    
