@@ -3,19 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-💧 `WATex's` documentation
-================================
+💧 `WATex's` documentation 
+==============================
 
-`A machine learning research in hydrogeophysic` 
+`A machine learning research for hydrogeophysic` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 < *Life is much better with potable water* >
 
-`WATex`_ is an open-source package entirely written in Python to bring a piece of solution 
-in the field of groundwater exploration (GWE). It uses the  ML learning methods to compute electrical and logging features to predict 
-to predict the flow rate and also the hydrogeological parameters such as water content (water inflow), the medium permeability. 
-Currently, it deals with the geophysical methods (DC resistivity profiling & sounding, Electromagnetic methods for short-periods (Audio-freqency magnetotellurics)). 
-All modules and packages are written to intend solving real-engineering problems in the field of GWE.  
+`WATex`_ is an open-source library entirely written in Python to bring a piece of solution 
+in the field of groundwater exploration (GWE). It computes some electrical, logging and hydrogeology features  
+and uses the machine learning methods to predict some water content target such as the flow rate and 
+the hydrogeological parameters(e.g. the permeabilty coefficient related to the water inrush). 
+Indeed, the package deals with the geophysical (DC resistivity profiling & sounding, Electromagnetic for short-periods (Audio-freqency magnetotellurics)), 
+logging and hydrogeology methods. The modules are written to intend solving real-engineering problems and will 
+grow in the future release as the new methods are discovered especially in the GWE field.   
 
 .. _WATex: https://github.com/WEgeophysics/watex/
 
@@ -23,25 +25,43 @@ All modules and packages are written to intend solving real-engineering problems
 `WATex's` development 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`WATex`_ works with the learning methods enumerated below:
+:code:`watex` works with methods enumerated below: 
 
-* `Support vector machines`
-* `Neighbors: KNN`
-* `Trees: Decision Tree (DTC), Extratrees` 
-* `Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking)`
-* `Apriori`
-* `Kernel Principal Component Analysis k-PCA`
-* `t-distributed Stochastic Neighbor Embedding t-SNE`
-* `Randomized PCA`
-* `Locally Linear Embedding (LLE)`
+* learning:
 
-and the geophysical methods:
+    * `Support vector machines`
+    * `Neighbors: KNN`
+    * `Trees: Decision Tree (DTC), Extratrees` 
+    * `Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking)`
+    * `Apriori`
+    * `Kernel Principal Component Analysis k-PCA`
+    * `t-distributed Stochastic Neighbor Embedding t-SNE`
+    * `Randomized PCA`
+    * `Locally Linear Embedding (LLE)`
 
-* `DC- Electrical Resistivity Profiling`
-* `DC- Vertical Electrical Sounding`
-* `Audio-frequency Magnetotellurics`
-* `Logging`
+* geophysical:
 
+    * `DC- Electrical Resistivity Profiling`
+    * `DC- Vertical Electrical Sounding`
+    * `Audio-frequency Magnetotellurics`
+    * `Logging`
+    
+* hydrogeology: 
+
+    * `geology structures` 
+    * `geostrata model conception`  
+    * `borehole, drill & Hydro-parameters calculation (in progress)`
+
+`WATex's` benefits
+^^^^^^^^^^^^^^^^^^^^
+
+:code:`watex` has been used to solve real-engineering problem, such as the FR prediction 
+during the campaigns for drinking water supply. It aims computing some geoelectrical parameters 
+using the DC-resistivity method (Resistivity Profiling and vertical sounding) and used the 
+`Support vector machines` for the FR prediction with a success rate greater than 77% . The case history is published in 
+`Water Resources Research`_ journal known as one of the most popular journal in the GWE field research.  
+
+.. _Water Resources Research: https://doi.org/10.1029/2021wr031623
 
 
 `WATex` User Guide 

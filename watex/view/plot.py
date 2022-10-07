@@ -440,24 +440,24 @@ class QuickPlot (BasePlot)  :
     
     Arguments 
     ----------
-    **data**: str or pd.core.DataFrame
+    data: str or pd.core.DataFrame
         Path -like object or Dataframe. If data is given as path-like object,
         QuickPlot`  calls  the module from :mod:`watex.bases.features`
         for data reading and sanitizing before plotting. Be aware in this
         case to provide the target name and possible the `classes` of for 
         data analysis. Both str or dataframe need to provide the name of target. 
         
-    **y**: array-like, optional 
+    y: array-like, optional 
         array of the target. Must be the same length as the data. If `y` is 
         provided and `data` is given as ``str`` or ``DataFrame``, all the data 
         should be considered as the X data for analysis. 
         
-    **nameoftarget**: str, 
+    nameoftarget: str, 
         the name of the target from data analysis. In the both cases where the 
         data is given as string of dataframe, `nameoftarget` must be provided. 
         Otherwise an error will occurs. 
  
-    **classes**: list of float, 
+    classes: list of float, 
         list of the categorial values encoded to numerical. For instance, for
         `flow` data analysis in the Bagoue dataset, the `classes` could be 
         ``[0., 1., 3.]`` which means:: 
@@ -467,7 +467,7 @@ class QuickPlot (BasePlot)  :
             - > 1 to 3 m3/h --> FR2
             - > 3 m3/h  --> FR3
             
-    **mapflow**: bool, 
+    mapflow: bool, 
         Is refer to the flow rate prediction using DC-resistivity features and 
         work when the `nameoftarget` is set to ``flow``. If set to True, value 
         in the target columns should map to categorical values. Commonly the 
@@ -483,13 +483,13 @@ class QuickPlot (BasePlot)  :
             - 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
             - 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
         
-        Note that this flow range is not exhaustive and can be modified according 
-        to the type of hydraulic required on the project. 
+    Note that the flow range from `mapflow` is not exhaustive and can be 
+    modified according to the type of hydraulic required on the project. 
         
-    Hold others optionnal attributes infos: 
+    Hold others optional attributes informations: 
         
     =================   ========================================================
-    Key Words               Description        
+    KeyWords            Description        
     =================   ========================================================
     fig_dpi             dots-per-inch resolution of the figure
                         *default* is 300
@@ -1826,7 +1826,7 @@ class QuickPlot (BasePlot)  :
         return self 
 
     
-ExPlot .__doc__="""\
+ExPlot .__doc__=r"""\
 Exploratory plot for data analysis 
 
 `ExPlot` is a shadow class. Explore data is needed to create a model since 

@@ -12,7 +12,7 @@ import pytest
 import numpy as np 
 import pandas as pd 
 
-from watex.core.erp import ERP 
+from watex.methods.erp import ERP 
 from tests import ( 
     ERP_DATA_DIR,
     TEST_TEMP_DIR, 
@@ -21,9 +21,14 @@ from tests import (
     DATA_SAFE, 
     DATA_SAFE_XLS,
     DATA_EXTRA ,
-    PREFIX
+    PREFIX, 
+    reset_matplotlib,
+    watexlog, 
+    diff_files, 
+    make_temp_dir, 
+    erp_test_location_name 
 )
-from tests.utilities.__init__ import (
+from tests.random_sample import (
     dipoleLength, 
     dipoleLengthX, 
     array1D , 
@@ -31,10 +36,7 @@ from tests.utilities.__init__ import (
     array2DX, 
     extraarray2D, 
 )
-from tests import make_temp_dir, erp_test_location_name 
-from tests.methods.__init__ import (reset_matplotlib,
-                                 watexlog, 
-                                 diff_files)
+
 from watex.tools.coreutils import _data_sanitizer 
 
 from watex.tools.exmath import (

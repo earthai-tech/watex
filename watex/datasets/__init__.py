@@ -52,7 +52,7 @@ except :
 _BTAGS = ( 
     'mid', 
     'semi', 
-    'preprocessing', 
+    'preprocess', 
     'fit',
     'analysis', 
     'pca',
@@ -60,6 +60,7 @@ _BTAGS = (
     'dimension',
     'test',
     'pipe',
+    'prepared'
     )
 
 _msg =dict (
@@ -85,24 +86,25 @@ _BVAL= dict (
         'data=dfy2':_df0,
         'attrs-infos':BagoueNotes.bagattr_infos, 
         'dataset-contest':{
-            '__documentation:':'`watex.property.BagoueNotes.__doc__`', 
-            '__area':'https://en.wikipedia.org/wiki/Ivory_Coast', 
-            '__casehistory':'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
-            '__wikipages':'https://github.com/WEgeophysics/watex/wiki',
-            '__citations': ('https://doi.org/10.1029/2021wr031623', 
+            '_documentation:':'`watex.property.BagoueNotes.__doc__`', 
+            '_area':'https://en.wikipedia.org/wiki/Ivory_Coast', 
+            '_casehistory':'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
+            '_wikipages':'https://github.com/WEgeophysics/watex/wiki',
+            '_citations': ('https://doi.org/10.1029/2021wr031623', 
                             ' https://doi.org/10.5281/zenodo.5529368')
             },
         'tags': ('original', 
                  'stratified',
-                 'mid-evaluation', 
-                 'semi-preparing', 
-                 'preprocessing', 
+                 'mid', 
+                 'semi', 
+                 'preprocess', 
                  'pipe', 
                  'analyses', 
                  'pca',
                  'reduce dimension', 
                  'test'
                  'pipe',
+                 'prepared',
                  )
             }, 
     stratified= (
@@ -137,7 +139,7 @@ def fetch_data(tag):
                 
                 >>> fetch_data ('bagoue original').get ('data=df')
         * ['stratified'] => stratification data
-        * ['mid' |'semi'|'preprocessing'|'fit']=> data cleaned with 
+        * ['mid' |'semi'|'preprocess'|'fit']=> data cleaned with 
             attributes experience combinaisons.
         * ['pipe']=>  default pipeline created during the data preparing.
         * ['analyses'|'pca'|'reduce dimension']=> data with text attributes
@@ -170,7 +172,7 @@ def fetch_data(tag):
     if _pca_set_checker(pm.lower()): 
         pm = 'analysis'
     
-    elif pm in ('mid','semi', 'preprocessing', 'fit'): 
+    elif pm in ('mid','semi', 'preprocess', 'fit'): 
         pm = 'semi' 
         
     if pm =='prepared': 

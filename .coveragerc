@@ -1,0 +1,8 @@
+[run]
+branch = True
+source = watex
+parallel = True
+omit =
+    */watex/_watexlog/*
+    */watex/_docstrings/*
+    **/setup.py

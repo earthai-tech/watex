@@ -7,13 +7,13 @@ ERP
 =======
 DC-1D Resistivty drilling location Auto-detecting 
 
-Warnings
+Notes
 ---------
 This module is one of the earlier module designed for predicting flow rate by 
 computing the electrical parameters. Originaly the idea was to automate 
 everything to facilite the task of the users. All things the users need to do 
 is to arrange the electrical data according to the standard arrangement proposed 
-by thus library in :class:`watex.property.P` such as::
+by thus library in :class:`watex.property.P` such as:
     
     === ======== =========== ========== ======== ======= ========
     *pk  *x         *y          *rho      sloc     shape  type   
@@ -37,7 +37,15 @@ by thus library in :class:`watex.property.P` such as::
     - `se` means the sounding location on the survey. can be `ves` or `0`. 
     - `V` anomaly-shape and can be 'W', 'K', 'U', 'H', 'C' and 'M' 
     - `CP` anomaly type and can be 'CB2P', 'NC' or 'EC' 
-    
+
+The main interesting part in this module is the collection of ERP where 
+the module can rewrite the data and arrange it following the aforementioned  
+disposal (above proposed by the library). If data  is given in a separate sheets 
+(from excel files), the parser exports each sheet and rewrite accordingly. The 
+limit of this approach is that the parser only read the excel as csv format. 
+
+Warnings 
+----------    
 So once the data is  well organized, the module is able to compute all the 
 parameters and select the best location for drilling after analyzing all the 
 different point in dataset. 
@@ -49,15 +57,8 @@ the drilling points. To handle this issue, we recommended to use the module
 are a bagground of the geology of the area and whether you are not in marshes 
 area or a complex geological area which unfortunately is something difficult 
 to know in advance. 
-
-The main interesting part in this module is the collection of ERP where 
-the module can rewrite the data and arrange it following the aforementioned  
-disposal (above proposed by the library). If data  is given in a separate sheets 
-(from excel files), the parser exports each sheet and rewrite accordingly. The 
-limit of this approach is that the parser only read the excel as csv format. 
-
 To well organize the watex API and remediate to the problem of automation, it 
-is recommanded to use the :class:`watex.methods.electrical.DCProfiling`. The 
+is recommended to use the :class:`watex.methods.electrical.DCProfiling`. The 
 latter provides fast and efficient way to compute the electrical 
 parameters with a few margin of errors. The module with deprecated in the future 
 release and rewrite the automation of the erp parser sheets using the deep 

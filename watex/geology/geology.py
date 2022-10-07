@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Licence:BSD 3-Clause
-# author: LKouadio <etanoyau@gmail.com>
+# Author: LKouadio <etanoyau@gmail.com>
 
 import os
 import re

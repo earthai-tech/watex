@@ -21,10 +21,15 @@ import os
 import  unittest 
 import pytest
 
-from watex.core.erp import ERP 
-from tests import ERP_DATA_DIR, TEST_TEMP_DIR,  make_temp_dir 
+from watex.methods.erp import ERP 
+from tests import  ( 
+    
+    ERP_PATH, TEST_TEMP_DIR,  
+    make_temp_dir 
+    ) 
+
 from tests import erp_test_location_name 
-from tests.core.__init__ import reset_matplotlib, watexlog, diff_files
+from tests.__init__ import reset_matplotlib, watexlog, diff_files
 
 class TestERP(unittest.TestCase):
     """
@@ -68,7 +73,7 @@ class TestERP(unittest.TestCase):
         for option in [True, False]: 
             if option is False : pos_boundaries = (90, 130)
             else : pos_boundaries  =None
-            anomaly_obj =ERP(erp_fn = os.path.join(ERP_DATA_DIR,
+            anomaly_obj =ERP(erp_fn = os.path.join(ERP_PATH,
                                                    erp_test_location_name), 
                          auto=option, dipole_length =self.dipole_length, 
                          posMinMax= pos_boundaries, turn_on =True)

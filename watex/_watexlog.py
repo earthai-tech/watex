@@ -47,8 +47,11 @@ class watexlog:
                 watexlog().set_logger_output()
             
         elif configfile.endswith(".yaml") or configfile.endswith(".yml") :
+            #################################################
+            #this_module_file=os.path.dirname(os.path.abspath(__file__))
+            #######################################################
             this_module_file=os.path.abspath(__file__)
-    
+            # print('this_module_file====', this_module_file)
             if verbose:
                 print('yaml config file', this_module_file) 
             
@@ -60,12 +63,16 @@ class watexlog:
                                    configfile)
     
             if verbose: 
-                print("Effective yaml configuration file {yaml_path}") 
-
+                print(f"Effective yaml configuration file {yaml_path!r}") 
             if os.path.exists(yaml_path) :
+                # try : 
                 with open (yaml_path,"rt") as f :
                     config=yaml.safe_load(f.read())
                 logging.config.dictConfig(config)
+                # except : 
+                #     with open (os.path.dirname (yaml_path),"rt") as f :
+                #         config=yaml.safe_load(f.read())
+                #     logging.config.dictConfig(config)
             else :
                 logging.exception(
                     "the config yaml file %s does not exist?", yaml_path)

@@ -14,13 +14,19 @@ from pprint import pprint
 import numpy as np 
 # import pandas as pd 
 
-from tests.__init__ import DATA_ANALYSES
-from tests import  make_temp_dir , TEST_TEMP_DIR 
-from tests.core.__init__ import reset_matplotlib, watexlog
-from watex.analysis.dimensionality import (Reducers,plot_projection, 
-                                           get_best_kPCA_params)
+from tests.__init__ import ( 
+    ANALYSIS_DATA,
+    make_temp_dir , TEST_TEMP_DIR , 
+    reset_matplotlib, watexlog
+    ) 
 
-X, y=DATA_ANALYSES
+from watex.analysis.dimensionality import (
+    Reducers,
+    plot_projection, 
+    get_best_kPCA_params
+    )
+
+X, y=ANALYSIS_DATA
 class TestReducers(unittest.TestCase):
     """
     Test differents Reducers: 
