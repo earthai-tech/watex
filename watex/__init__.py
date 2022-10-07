@@ -2,7 +2,7 @@
 # Licence:BSD 3-Clause
 # author: @Daniel<etanoyau@gmail.com>
 """
-💧 Machine Learning Research Package for Hydrogeophysic 
+💧 A machine learning research package for hydrogeophysic 
 =========================================================
 
 :code:`watex` stands for *WAT-er EX-ploration*, it is an open-source package 
