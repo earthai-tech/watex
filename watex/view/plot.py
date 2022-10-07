@@ -101,10 +101,44 @@ sns_aspect: scalar (float, int)
     each facet in inches. *default* is ``.7``
     """, 
     )
+_qkp_params = dict (  
+    classes ="""
+classes: list of int | float, [categorized classes] 
+    list of the categorial values encoded to numerical. For instance, for
+    `flow` data analysis in the Bagoue dataset, the `classes` could be 
+    ``[0., 1., 3.]`` which means:: 
+        
+        - 0 m3/h  --> FR0
+        - > 0 to 1 m3/h --> FR1
+        - > 1 to 3 m3/h --> FR2
+        - > 3 m3/h  --> FR3    
+    """, 
+    mapflow ="""   
+mapflow: bool, 
+    Is refer to the flow rate prediction using DC-resistivity features and 
+    work when the `tname` is set to ``flow``. If set to True, value 
+    in the target columns should map to categorical values. Commonly the 
+    flow rate values are given as a trend of numerical values. For a 
+    classification purpose, flow rate must be converted to categorical 
+    values which are mainly refered to the type of types of hydraulic. 
+    Mostly the type of hydraulic system is in turn tided to the number of 
+    the living population in a specific area. For instance, flow classes 
+    can be ranged as follow: 
 
+        - FR = 0 is for dry boreholes
+        - 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
+        - 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
+        - 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
+    
+    Note that the flow range from `mapflow` is not exhaustive and can be 
+    modified according to the type of hydraulic required on the project.   
+    """
+)
 _param_docs = DocstringComponents.from_nested_components(
+    core=_core_docs["params"],
     base=DocstringComponents(_baseplot_params), 
-    sns = DocstringComponents(_sns_params)
+    sns = DocstringComponents(_sns_params), 
+    qdoc= DocstringComponents(_qkp_params)
     )
 #++++++++++++++++++++++++++++++++++ end +++++++++++++++++++++++++++++++++++++++
 
@@ -431,157 +465,13 @@ class ExPlot (BasePlot):
         
         return self 
 
-
-
-class QuickPlot (BasePlot)  : 
-    r"""
-    Special class deals with analysis modules. To quick plot diagrams, 
-    histograms and bar plots.
-    
-    Arguments 
-    ----------
-    data: str or pd.core.DataFrame
-        Path -like object or Dataframe. If data is given as path-like object,
-        QuickPlot`  calls  the module from :mod:`watex.bases.features`
-        for data reading and sanitizing before plotting. Be aware in this
-        case to provide the target name and possible the `classes` of for 
-        data analysis. Both str or dataframe need to provide the name of target. 
-        
-    y: array-like, optional 
-        array of the target. Must be the same length as the data. If `y` is 
-        provided and `data` is given as ``str`` or ``DataFrame``, all the data 
-        should be considered as the X data for analysis. 
-        
-    nameoftarget: str, 
-        the name of the target from data analysis. In the both cases where the 
-        data is given as string of dataframe, `nameoftarget` must be provided. 
-        Otherwise an error will occurs. 
  
-    classes: list of float, 
-        list of the categorial values encoded to numerical. For instance, for
-        `flow` data analysis in the Bagoue dataset, the `classes` could be 
-        ``[0., 1., 3.]`` which means:: 
-            
-            - 0 m3/h  --> FR0
-            - > 0 to 1 m3/h --> FR1
-            - > 1 to 3 m3/h --> FR2
-            - > 3 m3/h  --> FR3
-            
-    mapflow: bool, 
-        Is refer to the flow rate prediction using DC-resistivity features and 
-        work when the `nameoftarget` is set to ``flow``. If set to True, value 
-        in the target columns should map to categorical values. Commonly the 
-        flow rate values are given as a trend of numerical values. For a 
-        classification purpose, flow rate must be converted to categorical 
-        values which are mainly refered to the type of types of hydraulic. 
-        Mostly the type of hydraulic system is in turn tided to the number of 
-        the living population in a specific area. For instance, flow classes 
-        can be ranged as follow: 
-    
-            - FR = 0 is for dry boreholes
-            - 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
-            - 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
-            - 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
-        
-    Note that the flow range from `mapflow` is not exhaustive and can be 
-    modified according to the type of hydraulic required on the project. 
-        
-    Hold others optional attributes informations: 
-        
-    =================   ========================================================
-    KeyWords            Description        
-    =================   ========================================================
-    fig_dpi             dots-per-inch resolution of the figure
-                        *default* is 300
-    fig_num             number of the figure instance
-                        *default* is 'Mesh'
-    fig_size            size of figure in inches (width, height)
-                        *default* is [5, 5]
-    savefig             savefigure's name, *default* is ``None``
-    fig_orientation     figure orientation. *default* is ``landscape``
-    fig_title           figure title. *default* is ``None``
-    fs                  size of font of axis tick labels, axis labels are
-                        fs+2. *default* is 6 
-    ls                  [ '-' | '.' | ':' ] line style of mesh lines
-                        *default* is '-'
-    lc                  line color of the plot, *default* is ``k``
-    lw                  line weight of the plot, *default* is ``1.5``
-    alpha               transparency number, *default* is ``0.5``  
-    font_weight         weight of the font , *default* is ``bold``.        
-    marker              marker of stations *default* is :math:`\blacktriangledown`.
-    ms                  size of marker in points. *default* is 5
-    marker_style        style  of marker in points. *default* is ``o``.
-    marker_facecolor    facecolor of the marker. *default* is ``yellow``
-    marker_edgecolor    edgecolor of the marker. *default* is ``cyan``.
-    marker_edgewidth    width of the marker. *default* is ``3``.
-    xminorticks         minortick according to x-axis size and *default* is 1.
-    yminorticks         minortick according to y-axis size and *default* is 1.
-    font_size           size of font in inches (width, height)
-                        *default* is 3.
-    font_style          style of font. *default* is ``italic``
-    bins                histograms element separation between two bar. 
-                         *default* is ``10``. 
-    xlim                limit of x-axis in plot. *default* is None 
-    ylim                limit of y-axis in plot. *default* is None 
-    xlabel              label name of x-axis in plot. *default* is None 
-    ylabel              label name  of y-axis in plot. *default* is None 
-    rotate_xlabel       angle to rotate `xlabel` in plot. *default* is None 
-    rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
-    leg_kws             keyword arguments of legend. *default* is empty dict.
-    plt_kws             keyword arguments of plot. *default* is empty dict
-    rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
-                        *default* is '--'
-    ps                  [ '-' | '.' | ':' ] line style of `Precision `metric
-                        *default* is '-'
-    rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
-    pc                  line color of `Precision` metric *default* is ``k``
-    s                   size of items in scattering plots. default is ``fs*40.``
-    gls                 [ '-' | '.' | ':' ] line style of grid  
-                        *default* is '--'.
-    glc                 line color of the grid plot, *default* is ``k``
-    glw                 line weight of the grid plot, *default* is ``2``
-    galpha              transparency number of grid, *default* is ``0.5``  
-    gaxis               axis to plot grid.*default* is ``'both'``
-    gwhich              type of grid to plot. *default* is ``major``
-    tp_axis             axis  to apply ticks params. default is ``both``
-    tp_labelsize        labelsize of ticks params. *default* is ``italic``
-    tp_bottom           position at bottom of ticks params. *default*
-                        is ``True``.
-    tp_top              position at the top  of ticks params. *default*
-                        is ``True``.
-    tp_labelbottom      see label on the bottom of the ticks. *default* 
-                        is ``False``
-    tp_labeltop         see the label on the top of ticks. *default* is ``True``
-    cb_orientation      orientation of the colorbar. *default* is ``vertical``
-    cb_aspect           aspect of the colorbar. *default* is 20.
-    cb_shrink           shrink size of the colorbar. *default* is ``1.0``
-    cb_pad              pad of the colorbar of plot. *default* is ``.05``
-    cb_anchor           anchor of the colorbar. *default* is ``(0.0, 0.5)``
-    cb_panchor          proportionality anchor of the colorbar. *default* is 
-                        `` (1.0, 0.5)``.
-    cb_label            label of the colorbar. *default* is ``None``.      
-    cb_spacing          spacing of the colorbar. *default* is ``uniform``
-    cb_drawedges        draw edges inside of the colorbar. *default* is ``False``
-    cb_format           format of the colorbar values. *default* is ``None``.
-    sns_orient          seaborn fig orientation. *default* is ``v`` which refer
-                        to vertical 
-    sns_style           seaborn style 
-    sns_palette         seaborn palette 
-    sns_height          seaborn height of figure. *default* is ``4.``. 
-    sns_aspect          seaborn aspect of the figure. *default* is ``.7``
-    sns_theme_kws       seaborn keywords theme arguments. default is ``{
-                        'style':4., 'palette':.7}``
-    verbose             control the verbosity. Higher value, more messages. 
-                        *default* is ``0``.
-    ================    ========================================================
-    
-    """
-
-    def __init__(self,  classes = None, nameoftarget= None,  **kws): 
+class QuickPlot (BasePlot)  : 
+    def __init__(self,  classes = None, tname= None,  **kws): 
         
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         self.classes = kws.pop('classes', None)
-        self.nameoftarget= kws.pop('nameoftarget', None)
+        self.tname= kws.pop('tname', None)
         self.mapflow= kws.pop('mapflow', False)
         
         super().__init__(**kws)
@@ -607,11 +497,11 @@ class QuickPlot (BasePlot)  :
         `flow`. Be sure to set other name if you dont want to consider flow 
         features inspection."""
           
-        if str(self.nameoftarget).lower() =='flow':
+        if str(self.tname).lower() =='flow':
             # default inspection for DC -flow rate prediction
            fobj= FeatureInspection( set_index=True, 
                 flow_classes = self.classes or [0., 1., 3] , 
-                target = self.nameoftarget, 
+                target = self.tname, 
                 mapflow= self.mapflow 
                            ).fit(data=data)
            self.data_= fobj.data  
@@ -620,9 +510,9 @@ class QuickPlot (BasePlot)  :
         elif isinstance(data, pd.DataFrame): 
             self.data_ = data
             
-        if str(self.nameoftarget).lower() in self.data_.columns.str.lower(): 
+        if str(self.tname).lower() in self.data_.columns.str.lower(): 
             ix = list(self.data.columns.str.lower()).index (
-                self.nameoftarget.lower() )
+                self.tname.lower() )
             self.y = self.data_.iloc [:, ix ]
 
             self.X_ = self.data_.drop(columns =self.data_.columns[ix] , 
@@ -659,12 +549,12 @@ class QuickPlot (BasePlot)  :
         >>> from watex.view.plot import QuickPlot
         >>> qplotObj= QuickPlot(xlabel = 'Flow classes in m3/h',
                                 ylabel='Number of  occurence (%)')
-        >>> qplotObj.nameoftarget= None # eith nameof target set to None 
+        >>> qplotObj.tname= None # eith nameof target set to None 
         >>> qplotObj.fit(data)
         >>> qplotObj.data.iloc[1:2, :]
         ...  num name    east      north  ...         ohmS        lwi      geol flow
             1    2   b2  791227  1159566.0  ...  1135.551531  21.406531  GRANITES  0.8
-        >>> qplotObj.nameoftarget= 'flow'
+        >>> qplotObj.tname= 'flow'
         >>> qplotObj.mapflow= True # map the flow from num. values to categ. values
         >>> qplotObj.fit(data)
         >>> qplotObj.data.iloc[1:2, :]
@@ -681,9 +571,9 @@ class QuickPlot (BasePlot)  :
                     f"y and data must have the same length but {len(y)} and"
                     f" {len(self.data)} were given respectively.")
             
-            self.y = pd.Series (y , name = self.nameoftarget or 'none')
+            self.y = pd.Series (y , name = self.tname or 'none')
             # for consistency get the name of target 
-            self.nameoftarget = self.y.name 
+            self.tname = self.y.name 
             
             
         return self 
@@ -779,7 +669,7 @@ class QuickPlot (BasePlot)  :
         
         """
         self._logging.info('Quick plot of categorized classes distributions.'
-                           f' the target name: {self.nameoftarget!r}')
+                           f' the target name: {self.tname!r}')
         
         if self.data_ is None: 
             self.fit(data)
@@ -787,7 +677,7 @@ class QuickPlot (BasePlot)  :
         if self.data is None: 
             raise PlotError( "Can plot histogram with NoneType value!")
 
-        if self.nameoftarget is None and self.y is None: 
+        if self.tname is None and self.y is None: 
             raise FeatureError("Please specify the name of the target. ")
 
         # reset index 
@@ -795,7 +685,7 @@ class QuickPlot (BasePlot)  :
         df_.reset_index(inplace =True)
         
         plt.figure(figsize =self.fig_size)
-        plt.hist(df_[self.nameoftarget], bins=self.bins ,
+        plt.hist(df_[self.tname], bins=self.bins ,
                   stacked = stacked , color= self.lc , **kws)
 
         plt.xlabel(self.xlabel)
@@ -856,7 +746,7 @@ class QuickPlot (BasePlot)  :
             >>> data = '../data/geodata/main.bagciv.data.csv'
             >>> qplotObj= QuickPlot(xlabel = 'Anomaly type',
                                     ylabel='Number of  occurence (%)',
-                                    lc='b', nameoftarget='flow')
+                                    lc='b', tname='flow')
             >>> qplotObj.sns_style = 'darkgrid'
             >>> qplotObj.fit(data)
             >>> qplotObj. barCatDistribution(basic_plot =False, 
@@ -885,8 +775,8 @@ class QuickPlot (BasePlot)  :
             basic_plot =True
             
         if basic_plot : 
-            ax.bar(list(set(df_[self.nameoftarget])), 
-                        df_[self.nameoftarget].value_counts(normalize =True),
+            ax.bar(list(set(df_[self.tname])), 
+                        df_[self.tname].value_counts(normalize =True),
                         label= self.fig_title, color = self.lc, )  
     
         if groupby is not None : 
@@ -897,7 +787,7 @@ class QuickPlot (BasePlot)  :
             if isinstance(groupby , dict):
                 groupby =list(groupby.keys())
             for sll in groupby :
-                ax= sns.countplot(x= sll,  hue=self.nameoftarget, 
+                ax= sns.countplot(x= sll,  hue=self.tname, 
                                   data = df_, orient = self.sns_orient,
                                   ax=ax ,**kws)
 
@@ -1067,8 +957,8 @@ class QuickPlot (BasePlot)  :
         Examples
         ---------
         >>> from watex.view.plot import QuickPlot 
-        >>> data = '../data/geodata/main.bagciv.data.csv'
-        >>> qplotObj= QuickPlot(lc='b', nameoftarget='flow')
+        >>> data = 'data/geodata/main.bagciv.data.csv'
+        >>> qplotObj= QuickPlot(lc='b', tname='flow')
         >>> qplotObj.sns_style = 'darkgrid'
         >>> qplotObj.mapflow=True # to categorize the flow rate 
         >>> qplotObj.fit(data)
@@ -1311,7 +1201,7 @@ class QuickPlot (BasePlot)  :
             
             >>> from watex.view.plot import QuickPlot 
             >>> data = '../data/geodata/main.bagciv.data.csv'
-            >>> qkObj = QuickPlot(mapflow =True, nameoftarget='flow'
+            >>> qkObj = QuickPlot(mapflow =True, tname='flow'
                                       ).fit(data)
             >>> qkObj.sns_style ='darkgrid', 
             >>> qkObj.fig_title='Quantitative features correlation'
@@ -1344,7 +1234,7 @@ class QuickPlot (BasePlot)  :
    
         df_= selectfeatures(df_, include ='number')
         
-        ax =sns.pairplot(data =df_, hue=self.nameoftarget,**sns_kws)
+        ax =sns.pairplot(data =df_, hue=self.tname,**sns_kws)
         
         if map_lower_kws is not None : 
             try : 
@@ -1528,7 +1418,7 @@ class QuickPlot (BasePlot)  :
         ...             ylabel='Flow rate in m3/h'
         ...            ) 
         >>>
-        >>> qkObj.nameoftarget='flow' # target the DC-flow rate prediction dataset
+        >>> qkObj.tname='flow' # target the DC-flow rate prediction dataset
         >>> qkObj.mapflow=True  # to hold category FR0, FR1 etc..
         >>> qkObj.fit(data) 
         >>> marker_list= ['o','s','P', 'H']
@@ -1595,7 +1485,7 @@ class QuickPlot (BasePlot)  :
         
         return self 
        
-    def discussingfeatures(self, features=['ohmS','sfi', 'geol', 'flow'], *, 
+    def discussingfeatures(self, features, *, 
                            data: str | DataFrame= None,
                            map_kws: Optional[dict]=None, 
                            map_func: Optional[F] = None, 
@@ -1655,11 +1545,11 @@ class QuickPlot (BasePlot)  :
         Example
         --------
         >>> from watex.view.plot import  QuickPlot 
-        >>> data = r'../data/geodata/main.bagciv.data.csv'
+        >>> data = 'data/geodata/main.bagciv.data.csv'
         >>> qkObj = QuickPlot(  leg_kws={'loc':'upper right'},
         ...          fig_title = '`sfi` vs`ohmS|`geol`',
         ...            ) 
-        >>> qkObj.nameoftarget='flow' # target the DC-flow rate prediction dataset
+        >>> qkObj.tname='flow' # target the DC-flow rate prediction dataset
         >>> qkObj.mapflow=True  # to hold category FR0, FR1 etc..
         >>> qkObj.fit(data) 
         >>> sns_pkws={'aspect':2 , 
@@ -1824,7 +1714,6 @@ class QuickPlot (BasePlot)  :
         plt.show () if self.savefig is None else plt.close()
         
         return self 
-
     
 ExPlot .__doc__=r"""\
 Exploratory plot for data analysis 
@@ -1907,7 +1796,103 @@ Examples
     params=_param_docs,
     returns= _core_docs["returns"],
 )
-        
+ 
+QuickPlot.__doc__=r"""\
+Special class dealing with analysis modules for quick diagrams, 
+histograms and bar visualization.
+
+Originally, it was designed for the flow rate prediction, however, it still 
+works with any other dataset by following the parameters details. 
+  
+Parameters 
+-------------
+{params.core.data}
+{params.core.y}
+{params.core.tname}
+{params.qdoc.classes}
+{params.qdoc.mapflow}
+{params.base.savefig}
+{params.base.fig_dpi}
+{params.base.fig_num}
+{params.base.fig_size}
+{params.base.fig_orientation}
+{params.base.fig_title}
+{params.base.fs}
+{params.base.ls}
+{params.base.lc}
+{params.base.lw}
+{params.base.alpha}
+{params.base.font_weight}
+{params.base.font_style}
+{params.base.font_size}
+{params.base.ms}
+{params.base.marker}
+{params.base.marker_facecolor}
+{params.base.marker_edgecolor}
+{params.base.marker_edgewidth}
+{params.base.xminorticks}
+{params.base.yminorticks}
+{params.base.bins}
+{params.base.xlim}
+{params.base.ylim}
+{params.base.xlabel}
+{params.base.ylabel}
+{params.base.rotate_xlabel}
+{params.base.rotate_ylabel}
+{params.base.leg_kws}
+{params.base.plt_kws}
+{params.base.glc}
+{params.base.glw}
+{params.base.galpha}
+{params.base.gaxis}
+{params.base.gwhich}
+{params.base.tp_axis}
+{params.base.tp_labelsize}
+{params.base.tp_bottom}
+{params.base.tp_labelbottom}
+{params.base.tp_labeltop}
+{params.base.cb_orientation}
+{params.base.cb_aspect}
+{params.base.cb_shrink}
+{params.base.cb_pad}
+{params.base.cb_anchor}
+{params.base.cb_panchor}
+{params.base.cb_label}
+{params.base.cb_spacing}
+{params.base.cb_drawedges} 
+{params.sns.sns_orient}
+{params.sns.sns_style}
+{params.sns.sns_palette}
+{params.sns.sns_height}
+{params.sns.sns_aspect}
+
+Returns
+--------
+{returns.self}
+
+Examples
+---------
+>>> from watex.view.plot import  QuickPlot 
+>>> data = 'data/geodata/main.bagciv.data.csv'
+>>> qkObj = QuickPlot(  leg_kws= dict( loc='upper right'),
+...          fig_title = '`sfi` vs`ohmS|`geol`',
+...            ) 
+>>> qkObj.tname='flow' # target the DC-flow rate prediction dataset
+>>> qkObj.mapflow=True  # to hold category FR0, FR1 etc..
+>>> qkObj.fit(data) 
+>>> sns_pkws= dict ( aspect = 2 , 
+...          height= 2, 
+...                  )
+>>> map_kws= dict( edgecolor="w")    
+>>> qkObj.discussingfeatures(features =['ohmS', 'sfi','geol', 'flow'],
+...                           map_kws=map_kws,  **sns_pkws
+...                         )   
+""".format(
+    params=_param_docs,
+    returns= _core_docs["returns"],
+)
+      
+      
 
         
 # import matplotlib.cm as cm 
