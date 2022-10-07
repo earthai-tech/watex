@@ -489,7 +489,7 @@ class QuickPlot (BasePlot)  :
     Hold others optional attributes informations: 
         
     =================   ========================================================
-    Key Words               Description        
+    KeyWords            Description        
     =================   ========================================================
     fig_dpi             dots-per-inch resolution of the figure
                         *default* is 300
