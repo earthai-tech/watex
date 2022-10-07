@@ -77,7 +77,7 @@ sample: int, Optional,
 kind: str, Optional 
     type of visualization. Can be ``dendrogramm``, ``mbar`` or ``bar``. 
     ``corr`` plot  for dendrogram , :mod:`msno` bar,  :mod:`plt`
-    and :mod:`msno` correlation  visualization respectively:: 
+    and :mod:`msno` correlation  visualization respectively: 
         * ``bar`` plot counts the  nonmissing data  using pandas
         *  ``mbar`` use the :mod:`msno` package to count the number 
             of nonmissing data. 
@@ -115,7 +115,6 @@ _logger = watexlog().get_watex_logger(__name__)
 class Data: 
     def __init__ (self, 
                   verbose: int =0, 
-                  **kwd 
                   ): 
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
 
