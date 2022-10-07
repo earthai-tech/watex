@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Sep 15 19:49:36 2021
-Description:
-        Test to transformers module. Containers of modules  
-        Test the functionalities of custums transformers 
+Description 
+^^^^^^^^^^^^^^
 
-    References:
-        .. _module-utils::`watex.utils.transformers`
+Test to transformers module. Containers of modules  
+Test the functionalities of custums transformers 
+:mod:`watex.bases.transformers`
+
+Created on Wed Sep 15 19:49:36 2021
 @author: @Daniel03
 """
-import os
-# import datetime
 import  unittest 
 import pytest
 from pprint import pprint 
@@ -18,32 +17,83 @@ from pprint import pprint
 import numpy as np 
 import pandas as pd 
 
-from tests.__init__ import DATA_MID_PROCESSED
-from watex.utils.transformers import FrameUnion
-from tests import  make_temp_dir , TEST_TEMP_DIR 
-from tests.core.__init__ import reset_matplotlib, watexlog
+from watex.bases.transformers import  ( 
+    FrameUnion ) 
+from watex.bases.base import (
+    Missing, 
+    Data, 
+    )
+from watex.bases.features import  ( 
+    FeatureInspection, 
+    ) 
+from watex.bases.modeling import ( 
+    Processing ,
+    )
+from watex.bases.prepare import ( 
+    BaseSteps 
+    )
 
-X, _=DATA_MID_PROCESSED
-class TestTransformers(unittest.TestCase):
+from watex.bases.processing import ( 
+    Preprocessing 
+    )
+
+from tests.__init__ import  (
+    SEMI_PROCESSED_DATA, 
+    ORIGINAL_DATA 
+    
+
+    )
+
+X, _=SEMI_PROCESSED_DATA
+
+##################### test classes 
+
+# class TestTransformers(unittest.TestCase):
+#     """
+#     Test differents transformers 
+#     """
+class MyBaseClass (unittest.TestCase ): 
+    """ Test class from :class:`watex.bases.base` """
+    def test_data (self): 
+        ...
+        
+    # @classmethod 
+    # def setUpClass(cls):
+    #     """
+    #     Reset building matplotlib plot and generate tempdir inputfiles 
+        
+    #     """
+    #     reset_matplotlib()
+    #     cls._temp_dir = make_temp_dir(cls.__name__)
+
+    # def setUp(self): 
+        
+    #     if not os.path.isdir(TEST_TEMP_DIR):
+    #         print('--> outdir not exist , set to None !')
+    #         watexlog.get_watex_logger().error('Outdir does not exist !')
+            
+  
+class MyFeatures (unittest.TestCase): 
+    """ Test class from :class:`watex.bases.features`"""
+    
+class MyBaseModelingClass (unittest.TestCase): 
+    """ Base modeling class """
+    
+class MyPrepareClass (unittest.TestCase): 
+    """ Relate from Base preparation class"""
+    
+class MyBaseProcessingClass (unittest.TestCase): 
+    """ Test Base processing class from :class:`watex.bases.processing` """
+    
+########### TESTS 
+
+# def test_missing(): 
+#     BaseSteps()
+    
+class MyTransformers(unittest.TestCase):
     """
     Test differents transformers 
-    """
-    
-    @classmethod 
-    def setUpClass(cls):
-        """
-        Reset building matplotlib plot and generate tempdir inputfiles 
-        
-        """
-        reset_matplotlib()
-        cls._temp_dir = make_temp_dir(cls.__name__)
-
-    def setUp(self): 
-        
-        if not os.path.isdir(TEST_TEMP_DIR):
-            print('--> outdir not exist , set to None !')
-            watexlog.get_watex_logger().error('Outdir does not exist !')
-            
+    """  
     @pytest.mark.xfail(reason="skip  to avoid AttributeError occurs! Indeed"
                       "Unitest version doesn't Recognize the method"
                       " toarray()` use in :class:~transformers.FrameUnion"
@@ -65,6 +115,7 @@ class TestTransformers(unittest.TestCase):
         applying scaling on numerical features and encoding categorical
         features  """
         f= 0
+    
         display =kws.pop('display', True)
         
         frameObj = FrameUnion(num_attributes =num_attributes , 
@@ -101,15 +152,7 @@ class TestTransformers(unittest.TestCase):
                         'dtype mappings argument.')
         else :
             self.num_attributes = frameObj.num_attributes 
-            self.cat_attributes = frameObj.cat_attributes 
-            self.param_search = frameObj.param_search 
-            self.imput_data = frameObj.imput_data 
-            self.strategy =frameObj.strategy 
-            self.scale = frameObj.scale
-            self.encode =frameObj.encode 
-            self.scale_mode = frameObj.scale_mode
             self.encode_mode = frameObj.encode_mode
-    
             self.X_=frameObj.X_
             self.X_num_= frameObj.X_num_
             self.X_cat_ =frameObj.X_cat_
@@ -147,6 +190,13 @@ class TestTransformers(unittest.TestCase):
                     pprint('Headvalues of new dataframe X:')
                     print(self.df_X.head())
         
+            # self.cat_attributes = frameObj.cat_attributes 
+            # self.param_search = frameObj.param_search 
+            # self.imput_data = frameObj.imput_data 
+            # self.strategy =frameObj.strategy 
+            # self.scale = frameObj.scale
+            # self.encode =frameObj.encode 
+            # self.scale_mode = frameObj.scale_mode
         
 if __name__=='__main__': 
     unittest.main()

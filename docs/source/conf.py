@@ -12,10 +12,11 @@
 #
 import os
 import sys
+# import sphinx_rtd_theme
 
-for p in ('../../',): 
+for p in ('..', '../../' ): #../../'
     sys.path.insert(0, os.path.abspath(p))
-
+# print(sys.path )
 # -- Element functions ------------------------------------------------
 
 def run_apidoc(_):
@@ -23,14 +24,14 @@ def run_apidoc(_):
     import os
     import shutil
     cur_dir = os.path.dirname(__file__)
-    module = os.path.join(cur_dir, '../../watex')
+    module = os.path.join(os.path.dirname (cur_dir), '../../watex')
     output_path = os.path.join(cur_dir, 'api')
     shutil.rmtree(output_path, ignore_errors=True)
     main(['--separate',
         '--module-first',
         '--no-toc',
         '--force',
-        '-o', output_path, module,
+        '-o', output_path, module, 'tests/'
     ])
 
 def setup(app):
@@ -39,7 +40,9 @@ def setup(app):
     app.add_js_file('copybutton.js')
 
 # -- Project information -----------------------------------------------------
-
+# cur_dir = os.path.dirname(__file__)
+# print(os.path.dirname(__file__))
+# print(os.path.join(os.path.dirname (cur_dir), 'watex')) 
 project = 'WATex'
 copyright = '2022, LKouadio'
 author = 'LKouadio'
@@ -66,7 +69,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
     # "sphinx_rtd_theme",
-    'sphinx.ext.githubpages'
+    'sphinx.ext.githubpages', 
+    # 'nbsphinx',
     #'autoapi.sphinx',
 ]
 
@@ -99,8 +103,8 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'classic'#'alabaster', 'bizstyle'#'traditional'#'haiku' #
+#'nature' #'classic'#'alabaster', 'bizstyle'#'traditional'#'haiku' # 'sphinx_rtd_theme' 
+html_theme = 'classic'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -169,7 +173,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'WATex', u'WATex Documentation',
-     author, 'WATex', 'A Machine Learning Research Package in Hydrogeophysic',
+     author, 'watex', 'A machine learning research library for hydrogeophysic',
      'Miscellaneous'),
 ]
 
@@ -202,7 +206,8 @@ MOCK_MODULES = [
     'osgeo.ogr',
     'osgeo.gdal',
     'osgeo.osr',
-    #'strata',#'mtpy',
+    'test',
+
 ]
 
 import mock

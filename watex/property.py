@@ -526,9 +526,10 @@ class Water (ABC):
 class BasePlot(ABC): 
     r""" Base class  deals with Machine learning and conventional Plots. 
     
-    The `BasePlot`can not be instanciated. It is build on the top of other 
-    plotting classes  and its attributes are used for 
-    Hold others optionnal informations: 
+    The `BasePlot` can not be instanciated. It is build on the top of other 
+    plotting classes  and its attributes are used for external plots.
+    
+    Hold others optional informations: 
         
     ==================  =======================================================
     Property            Description        

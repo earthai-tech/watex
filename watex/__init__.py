@@ -5,9 +5,9 @@
 💧 Machine Learning Research Package for Hydrogeophysic 
 =========================================================
 
-:code:`watex` stands fpor *WAT-er EX-ploration, it is an open-source package 
+:code:`watex` stands for *WAT-er EX-ploration*, it is an open-source package 
 entirely written in Python to bring a piece of solution in the field of 
-groundwater exploration (GWE) of the wide program of WATER4ALL and for the 
+groundwater exploration (GWE) of the wide program of **WATER4ALL** and for the 
 Sustanaible Development Goals N6 achievement( `SDGn6`_ ). And, packages and 
 modules are written to solve real-engineering problems in the field of GWE. 
 Currently, it deals with the differents methods: 
@@ -28,7 +28,7 @@ the hugely reduce the cost of the hydrogeology parameter collections.
 """
 import os 
 import sys 
-import logging 
+# import logging 
 
 __version__='0.1.2' ; __author__= 'LKouadio'
 
@@ -45,33 +45,34 @@ if  __package__ is None:
 
 
 # configure the logger 
-from ._watexlog import watexlog
+# from ._watexlog import watexlog
 
 try: 
     conffile = os.path.join(
         os.path.dirname(__file__),  "watex/wlog.yml")
+
     if not os.path.isfile (conffile ): 
         raise 
 except: 
     conffile = os.path.join(
         os.path.dirname(__file__), "wlog.yml")
 
-watexlog.load_configure(conffile)
-# set loging Level
-logging.getLogger('matplotlib').setLevel(logging.WARNING)
+# watexlog.load_configure(conffile)
+# # set loging Level
+# logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
 # ================
 # import required modules 
     
-from . import ( 
-    analysis, 
-    bases, 
-    datasets, 
-    geology, 
-    methods, 
-    models, 
-    tools, 
-    view,
-    )
+# from . import ( 
+#     analysis, 
+#     bases, 
+#     datasets, 
+#     geology, 
+#     methods, 
+#     models, 
+#     tools, 
+#     view,
+#     )
 
 

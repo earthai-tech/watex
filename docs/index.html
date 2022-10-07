@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>💧 WATex’s documentation &#8212; WATex 0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -45,19 +45,24 @@
             
   <section id="watex-s-documentation">
 <h1>💧 <cite>WATex’s</cite> documentation<a class="headerlink" href="#watex-s-documentation" title="Permalink to this heading">¶</a></h1>
-<section id="a-machine-learning-research-in-hydrogeophysic">
-<h2><cite>A machine learning research in hydrogeophysic</cite><a class="headerlink" href="#a-machine-learning-research-in-hydrogeophysic" title="Permalink to this heading">¶</a></h2>
+<section id="a-machine-learning-research-for-hydrogeophysic">
+<h2><cite>A machine learning research for hydrogeophysic</cite><a class="headerlink" href="#a-machine-learning-research-for-hydrogeophysic" title="Permalink to this heading">¶</a></h2>
 <p>&lt; <em>Life is much better with potable water</em> &gt;</p>
-<p><a class="reference external" href="https://github.com/WEgeophysics/watex/">WATex</a> is an open-source package entirely written in Python to bring a piece of solution
-in the field of groundwater exploration (GWE). It uses the  ML learning methods to compute electrical and logging features to predict
-to predict the flow rate and also the hydrogeological parameters such as water content (water inflow), the medium permeability.
-Currently, it deals with the geophysical methods (DC resistivity profiling &amp; sounding, Electromagnetic methods for short-periods (Audio-freqency magnetotellurics)).
-All modules and packages are written to intend solving real-engineering problems in the field of GWE.</p>
+<p><a class="reference external" href="https://github.com/WEgeophysics/watex/">WATex</a> is an open-source library entirely written in Python to bring a piece of solution
+in the field of groundwater exploration (GWE). It computes some electrical, logging and hydrogeology features
+and uses the machine learning methods to predict some water content target such as the flow rate and
+the hydrogeological parameters(e.g. the permeabilty coefficient related to the water inrush).
+Indeed, the package deals with the geophysical (DC resistivity profiling &amp; sounding, Electromagnetic for short-periods (Audio-freqency magnetotellurics)),
+logging and hydrogeology methods. The modules are written to intend solving real-engineering problems and will
+grow in the future release as the new methods are discovered especially in the GWE field.</p>
 </section>
 <section id="watex-s-development">
 <h2><cite>WATex’s</cite> development<a class="headerlink" href="#watex-s-development" title="Permalink to this heading">¶</a></h2>
-<p><a class="reference external" href="https://github.com/WEgeophysics/watex/">WATex</a> works with the learning methods enumerated below:</p>
-<ul class="simple">
+<p><a class="reference external" href="https://github.com/WEgeophysics/watex/">WATex</a> works with methods enumerated below:</p>
+<ul>
+<li><p>learning:</p>
+<blockquote>
+<div><ul class="simple">
 <li><p><cite>Support vector machines</cite></p></li>
 <li><p><cite>Neighbors: KNN</cite></p></li>
 <li><p><cite>Trees: Decision Tree (DTC), Extratrees</cite></p></li>
@@ -68,13 +73,36 @@ All modules and packages are written to intend solving real-engineering problems
 <li><p><cite>Randomized PCA</cite></p></li>
 <li><p><cite>Locally Linear Embedding (LLE)</cite></p></li>
 </ul>
-<p>and the geophysical methods:</p>
-<ul class="simple">
+</div></blockquote>
+</li>
+<li><p>geophysical:</p>
+<blockquote>
+<div><ul class="simple">
 <li><p><cite>DC- Electrical Resistivity Profiling</cite></p></li>
 <li><p><cite>DC- Vertical Electrical Sounding</cite></p></li>
 <li><p><cite>Audio-frequency Magnetotellurics</cite></p></li>
 <li><p><cite>Logging</cite></p></li>
 </ul>
+</div></blockquote>
+</li>
+<li><p>hydrogeology:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><cite>geology structures</cite></p></li>
+<li><p><cite>geostrata model conception</cite></p></li>
+<li><p><cite>borehole, drill &amp; Hydro-parameters calculation (in progress)</cite></p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="watex-s-benefits">
+<h2><cite>WATex’s</cite> benefits<a class="headerlink" href="#watex-s-benefits" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="https://github.com/WEgeophysics/watex/">WATex</a> has been used to solve real-engineering problem, such as the FR prediction
+during the campaigns for drinking water supply. It aims computing some geoelectrical parameters
+using the DC-resistivity method (Resistivity Profiling and vertical sounding) and used the
+<cite>Support vector machines</cite> for the FR prediction with a success rate greater than 77% . The case history is published in
+<a class="reference external" href="https://doi.org/10.1029/2021wr031623">Water Resources Research</a> journal known as one of the most popular journal in the GWE field research.</p>
 </section>
 <section id="watex-user-guide">
 <h2><cite>WATex</cite> User Guide<a class="headerlink" href="#watex-user-guide" title="Permalink to this heading">¶</a></h2>
@@ -122,8 +150,9 @@ All modules and packages are written to intend solving real-engineering problems
     <h3><a href="#">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">💧 <cite>WATex’s</cite> documentation</a><ul>
-<li><a class="reference internal" href="#a-machine-learning-research-in-hydrogeophysic"><cite>A machine learning research in hydrogeophysic</cite></a></li>
+<li><a class="reference internal" href="#a-machine-learning-research-for-hydrogeophysic"><cite>A machine learning research for hydrogeophysic</cite></a></li>
 <li><a class="reference internal" href="#watex-s-development"><cite>WATex’s</cite> development</a></li>
+<li><a class="reference internal" href="#watex-s-benefits"><cite>WATex’s</cite> benefits</a></li>
 <li><a class="reference internal" href="#watex-user-guide"><cite>WATex</cite> User Guide</a></li>
 <li><a class="reference internal" href="#watex-api"><cite>WATex</cite> API</a></li>
 </ul>

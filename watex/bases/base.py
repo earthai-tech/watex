@@ -19,7 +19,7 @@ from ..tools.coreutils import (
     _is_readable 
     )
 
-from ..documentation import ( 
+from .._docstring import ( 
     DocstringComponents,
     _core_docs,
     ) 
@@ -274,7 +274,7 @@ class Data:
         -------
         ``self``: :class:`watex.bases.base.Data` instance 
             returns ``self`` for easy method chaining.
-            
+        
         """
         pattern = str (pattern)
         
