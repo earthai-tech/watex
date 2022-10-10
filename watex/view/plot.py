@@ -30,11 +30,12 @@ from .._docstring import (
 from ..tools.mlutils import (
     existfeatures,
     formatGenericObj, 
-    selectfeatures 
+    selectfeatures , 
+    exporttarget 
     )
 from ..typing import (
     Any , 
-    Tuple, 
+    # Tuple, 
     List,
     Dict,
     Optional,
@@ -56,6 +57,7 @@ from ..tools.funcutils import (
     smart_strobj_recognition, 
     smart_format,
     reshape, 
+    shrunkformat 
     
     )
 from ..exceptions import ( 
@@ -68,6 +70,13 @@ try:
     import missingno as msno 
 except : pass 
 
+try : 
+    from yellowbrick.features import (
+        JointPlotVisualizer
+        )
+except: pass 
+
+
 from .._watexlog import watexlog    
 _logger=watexlog.get_watex_logger(__name__)
 
@@ -79,7 +88,6 @@ sns_orient: 'v' | 'h', optional
     based on the type of the input variables, but it can be used to resolve 
     ambiguity when both x and y are numeric or when plotting wide-form data. 
     *default* is ``v`` which refer to 'vertical'  
-    
     """, 
     sns_style="""
 sns_style: dict, or one of {darkgrid, whitegrid, dark, white, ticks}
@@ -135,7 +143,7 @@ mapflow: bool,
     """
 )
 _param_docs = DocstringComponents.from_nested_components(
-    core=_core_docs["params"],
+    core=_core_docs["params"], 
     base=DocstringComponents(_baseplot_params), 
     sns = DocstringComponents(_sns_params), 
     qdoc= DocstringComponents(_qkp_params)
@@ -149,13 +157,36 @@ class ExPlot (BasePlot):
            " this method"
            )
     
-    def __init__(self, **kws):
+    def __init__(self, tname:str = None, inplace:bool = False, **kws):
         super().__init__(**kws)
-        self.y= None 
-        self.data = None 
-
         
-    def fit(self, data: str |DataFrame =None, y:ArrayLike = None,  **kws ): 
+        self.tname= tname
+        self.inplace= inplace 
+        self.data= None 
+        self.target_= None
+        self.y_= None 
+        self.xname_=None, 
+        self.yname_=None 
+
+    @property 
+    def inspect(self): 
+        """ Inspect data and trigger plot after checking the data entry. 
+        Raises `NotFittedError` if `ExPlot` is not fitted yet."""
+        if self.data is None: 
+            raise NotFittedError(self.msg.format(
+                expobj=self)
+            )
+        return 1 
+     
+    def save (self, fig): 
+        """ savefigure if figure properties are given. """
+        if self.savefig is not None: 
+            fig.savefig (self.savefig,dpi = self.fig_dpi , 
+                         bbox_inches = 'tight'
+                         )
+        plt.show() if self.savefig is None else plt.close () 
+        
+    def fit(self, data: str |DataFrame,  **kws ): 
         """ Fit data and populate the arguments for plotting purposes. 
         
         There is no conventional procedure for checking if a method is fitted. 
@@ -180,173 +211,308 @@ class ExPlot (BasePlot):
         """
         if data is not None: 
             self.data = _is_readable(data, **kws)
-        if y is not None: 
-            self.y = y 
+        if self.tname is not None:
+            self.target_, self.data  = exporttarget(
+                self.data , self.tname, self.inplace ) 
+            self.y_ = reshape (self.target_.values ) # for consistency 
             
         return self 
     
-    def scatter (self, data : str |DataFrame =None,
-                 name =None, 
-                 y =None,
+    def plotjoint (self, xname , yname , pkg='sns', yb_kws =None, **kws): 
+        """ fancier scatterplot that includes histogram on the edge as well as 
+        a regression line call a `joinplot` """
+        
+        lib = copy.deepcopy(pkg)
+        regex = re.compile (r"(seaborn|sns|none|default)|(yel|brick|yb)")
+        pkg= regex.search (pkg) 
+        if pkg is not None: 
+            if pkg.group (1) is not None:  
+                pkg ='sns'
+            elif pkg.group(2) is not None: 
+                pkg ='yb'
+           
+            if pkg is None: 
+                raise ValueError (" Expect ['sns' or 'yb'] for seaborn or "
+                                  f"yellowbrick library plot, got: {lib!r}")
+        hue = kwd.pop('hue', None) 
+        self.tname = hue or self.tname 
+        
+        self.xname_ = xname or self.xname_ 
+        self.yname = yname or self.yname_ 
+        
+        yb_kws = yb_kws or dict() 
+        yb_kws = _assert_all_types(yb_kws, dict)
+        
+        if pkg =='yb': 
+            fig, ax = plt.subplots(figsize = self.fig_size )
+            jpv = JointPlotVisualizer(ax =ax , 
+                                feature = self.xname_, 
+                                target = self.tname, 
+                                fig = fig )
+            if self.y_ is not None 
+            jpv.fit(self.data [self.xname_], 
+                    self.data [self.tname] if self.y_ is None else self.y_
+                    **yb_kws) 
+            jpv.show() 
+            
+        elif pkg ='sns': 
+            sns.set(rc={"figure.figsize":self.fig_size}) 
+            df = self.data.copy() 
+            if (self.tname not in df.columns) and (self.y_ is not None): 
+                df [self.tname] = self.y_ # set new dataframe with a target 
+                
+            fig = sns.jointplot(data= df, x = self.xname_, 
+                                y= self.yname_, hue = self.tname, 
+                                **kws
+                                ) 
+        
+        
+    def plotscatter (self, xname:str =None, yname:str = None, 
+                     c:str |Series|ArrayLike =None, s: int |ArrayLike =None, 
                  **kwd): 
         """ Shown the relationship between two numeric columns. This is very
         way with pandas. 
         
         Parameters 
         ------------
-        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
+        xname, yname : vectors or keys in data
+            Variables that specify positions on the x and y axes. Both are 
+            the column names to consider. Shoud be items in the dataframe 
+            columns. Raise an error if elements do not exist.
+          
+        c: str, int or array_like, Optional
+            The color of each point. Possible values are:
+                * A single color string referred to by name, RGB or RGBA code,
+                     for instance 'red' or '#a98d19'.
+                * A sequence of color strings referred to by name, RGB or RGBA 
+                    code, which will be used for each point’s color recursively.
+                    For instance [‘green’,’yellow’] all points will be filled 
+                    in green or yellow, alternatively.
+                * A column name or position whose values will be used to color 
+                    the marker points according to a colormap.
+                    
+        s: scalar or array_like, Optional, 
+            The size of each point. Possible values are:
+                * A single scalar so all points have the same size.
+                * A sequence of scalars, which will be used for each point’s 
+                    size recursively. For instance, when passing [2,14] all 
+                    points size will be either 2 or 14, alternatively.
+        kwd: dict, 
+            Other keyword arguments are passed down to `seaborn.scatterplot`_ .
             
+        Returns 
+        -----------
+        ``self``: `ExPlot` instance 
+            returns ``self`` for easy method chaining.
+              
+        .. _seaborn.scatterplot: https://seaborn.pydata.org/generated/seaborn.scatterplot.html
+        
+        See also
+        ---------
+        Scatterplot: https://seaborn.pydata.org/generated/seaborn.scatterplot.html
+        Pd.scatter plot: https://www.w3resource.com/pandas/dataframe/dataframe-plot-scatter.php
         
         """
+        self.inspect 
+        
+        hue = kwd.pop('hue', None) 
+        
+        self.xname_ = xname or self.xname_ 
+        self.yname = yname or self.yname_ 
+        
+        if hue is not None: 
+            self.tname = hue 
+            
+            
+        if xname is not None: 
+            existfeatures( self.data, self.xname_ )
+        if yname is not None: 
+            existfeatures( self.data, self.yname_ )
+            
+        if self.sns_style is not None: 
+           sns.set_style(self.sns_style)
+        # state the fig plot and change the figure size 
+        sns.set(rc={"figure.figsize":self.fig_size}) #width=3, #height=4
+        # try : 
+        sns.scatterplot( data = self.data, x = self.xname_, y=self.yname_, 
+                        hue =self.tname, 
+                        # ax =ax , # call matplotlib.pyplot.gca() internally
+                        **kwd)
+        # except : 
+        #     warnings.warn("The following variable cannot be assigned with "
+        #                   "wide-form data: `hue`; use the pandas scatterplot "
+        #                   "instead.")
+            
+        #     self.data.plot.scatter (x =xname , y=yname, c=c,
+        #                             s = s,  ax =ax  )
+        
+        self.save(fig) 
+        
         return self 
     
-    def histvstarget (self, 
-                      c: Any, *, 
-                      y: ArrayLike | Series =None, 
-                      name: str ,
-                      c_label: str = None, 
-                      other_label: str= None,
+    def plothistvstarget (self, xname: str, 
+                      c: Any =None, *,  
+                      posilabel: str = None, 
+                      neglabel: str= None,
+                      kind='binarize', 
                       **kws
                       ): 
         """ A histogram of continuous against the target of binary plot. 
         
         Parameters 
         ----------
-        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        
-        y: Array like, shape (M, )
-            array of the features M and 
+        xname: str, 
+            the column name to consider on x-axis. Shoud be  an item in the  
+            dataframe columns. Raise an error if element does not exist.  
+            
         c: str or  int  
             the class value in `y` to consider. Raise an error if not in `y`. 
             value `c` can be considered as the binary positive class 
-        name: str, 
-            the column name to consider. Shoud be  an item of the dataframe 
-            columns. Raise an error it element does not exist. 
             
-        c_label: str 
-            legend label for the `c` ( binary positive class )
+        posilabel: str, Optional 
+            the label of `c` considered as the positive class 
+        neglabel: str, Optional
+            the label of other classes (categories) except `c` considered as 
+            the negative class 
+        kind: str, Optional, (default, 'binarize') 
+            the kind of plot features against target. `binarize` considers 
+            plotting the positive class ('c') vs negative class ('not c')
+        
+        kws: dict, 
+            Additional keyword arguments of  `seaborn displot`_ 
             
-        other_label: str 
-            name to give other classes in `y`. Can be considered as the binary 
-            negative class. 
-          
-        Return
-        -------
-        ``self``: `Plot` instance 
-            returns ``self`` for easy method chaining.
-            
+        Returns 
+        --------
+        {returns.self}
+
+        See also 
+        --------
+        {seealso.displot}
+        {seealso.histplot}
+
         Examples
         --------
         >>> import pandas as pd 
-        >>> from watex.view import Plot
-        >>> from watex.view.plot import histvstarget 
-        >>> data = pd.read_csv ( '../../data/geodata/main.bagciv.data.csv' ) 
-        >>> p = Plot()
+        >>> from watex.view import ExPlot
+        >>> data = pd.read_csv ( 'data/geodata/main.bagciv.data.csv' ) 
+        >>> p = ExPlot(tname ='flow').fit(data)
         >>> p.fig_size = (12, 4)
-        >>> p.savefig ='../../bbox.png'
-        >>> histvstarget (p, data, data.flow, c = 0,  name= 'sfi', 
-                          c_label='dried borehole (m3/h)',
-                          other_label = 'accept. boreholes'
+        >>> p.savefig ='bbox.png'
+        >>> p.plothistvstarget (name= 'sfi', c = 0, kind = 'binarize',  kde=True, 
+                          posilabel='dried borehole (m3/h)',
+                          neglabel = 'accept. boreholes'
                           )
-        """
-        if self.data is None: 
-            raise NotFittedError(self.msg.format(
-                expobj=self)
-            )
-            
-        self.data = _assert_all_types(self.data, pd.DataFrame)
-        if y is not None: 
-            self.y = y 
-        
-        self.y = self.y.values if isinstance(
-            self.y, pd.Series) else reshape (self.y)
-        
-        existfeatures(self.data, name) # assert the name in the columns 
-        
-        if not _isin (self.y, c): 
-            raise ValueError (f"Expect 'c' value in the target 'y', got:{c}")
-        
-        fig, _ = plt.subplots (figsize = self.fig_size )
-        mask = self.y == c 
+        """.format( returns= _core_docs["returns"], 
+                    seealso=_core_docs["seealso"]
+                    )
      
-        ax = sns.displot (self.data[mask][name], 
-                          label= c_label, 
-                          linewidth = self.lw, 
-                          height = self.sns_height,
-                          aspect = self.sns_aspect,
-                          **kws
-                      ).set_ylabels(self.ylabel)
-          
-        ax= sns.displot (self.data[~mask][name], 
-                          label= other_label, 
-                          linewidth = self.lw, 
-                          height = self.sns_height,
-                          aspect = self.sns_aspect,
-                          
-                          **kws,
+        self.inspect 
+            
+        self.xname_ = xname or self.xname_ 
+        
+        existfeatures(self.data, self.xname_) # assert the name in the columns
+        df = self.data.copy() 
+       
+        if str(kind).lower().strip().find('bin')>=0: 
+            if c  is None: 
+                raise ValueError ("Need a categorical class value for binarizing")
+                
+            _assert_all_types(c, float, int)
+            
+            if self.y_ is None: 
+                raise ValueError ("target name is missing. Specify the `tname`"
+                                  f" and refit {self.__class__.__name__!r} ")
+            if not _isin(self.y_, c ): 
+                raise ValueError (f"c-value should be a class label, got '{c}'"
+                                  )
+            mask = self.y_ == c 
+            # for consisteny use np.unique to get the classes
+            
+            neglabel = neglabel or shrunkformat( 
+                np.unique (self.y_[~(self.y_ == c)]) 
+                )
+
+        else: 
+  
+            if self.tname is None: 
+                raise ValueError("Can't plot binary classes with missing"
+                                 " target name ")
+            df[self.tname] = df [self.tname].map(
+                lambda x : 1 if ( x == c if isinstance(c, str) else x <=c 
+                                 )  else 0  # mapping binary target
+                )
+
+        #-->  now plot 
+        # state the fig plot  
+        sns.set(rc={"figure.figsize":self.fig_size}) 
+        if  str(kind).lower().strip().find('bin')>=0: 
+            g=sns.histplot (data = df[mask][self.xname_], 
+                            label= posilabel or str(c) , 
+                            linewidth = self.lw, 
+                            **kws
                           )
-    
+            
+            g=sns.histplot( data = df[~mask][self.xname_], 
+                              label= neglabel , 
+                              linewidth = self.lw,
+                              **kws,
+                              )
+        else : 
+            g=sns.histplot (data =df , 
+                              x = self.xname_,
+                              hue= self.tname,
+                              linewidth = self.lw, 
+                          **kws
+                        )
+            
         if self.sns_style is not None: 
             sns.set_style(self.sns_style)
             
-        # ax.set_xlim (self.xlim )
-        ax.add_legend ()
+        g.legend ()
         
-        if self.savefig is not None: 
-            fig.savefig (self.savefig , dpi = self.fig_dpi , 
-                         bbox_inches = 'tight')
-        
-        plt.show() if self.savefig is None else plt.close()
-        
+        self.save(g)
+  
         return self 
     
-    def histogram (self, *, 
-                   name: str , kind:str = 'hist', 
-                   fig_size: Tuple [int] =None,
+
+    
+    def plothistogram (self,xname: str , *,  kind:str = 'hist', 
                    **kws 
                    ): 
         """ A histogram visualization of numerica data.  
         
         Parameters 
         ----------
-        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        name: str 
-            feature name in the dataframe. raise an error , if it does not 
-            exist in the dataframe 
+        xname: str , xlabel 
+            feature name in the dataframe  and is the label on x-axis. 
+            Raises an error , if it does not exist in the dataframe 
         kind: str 
             Mode of pandas series plotting. the *default* is ``hist``. 
             
         kws: dict, 
             additional keywords arguments from : func:`pandas.DataFrame.plot` 
             
-       Return
+        Return
         -------
-        ``self``: `Plot` instance 
+        ``self``: `ExPlot` instance 
             returns ``self`` for easy method chaining.
             
         """
-        if self.data is None: 
-            raise NotFittedError(self.msg.format(
-                expobj=self)
-            )
-                
-        name = _assert_all_types(name,str )
+        self.inspect  
+        self.xname_ = xname or self.xname_ 
+        xname = _assert_all_types(self.xname_,str )
         # assert whether whether  feature exists 
-        existfeatures(self.data, name)
+        existfeatures(self.data, self.xname_)
     
-        fig, ax = plt.subplots (figsize = fig_size or self.fig_size )
-        self.data [name].plot(kind = kind , ax= ax  , **kws )
-        fig.savefig ( self.savefig , dpi = self.fig_dpi  )
+        fig, ax = plt.subplots (figsize = self.fig_size or self.fig_size )
+        self.data [self.xname_].plot(kind = kind , ax= ax  , **kws )
         
-        plt.show() if self.savefig is not None else plt.close () 
+        self.save(fig)
         
         return self 
     
     
-    def missing(self, *, 
+    def plotmissing(self, *, 
                 kind: str =None, 
                 sample: float = None,  
                 **kwd
@@ -365,7 +531,7 @@ class ExPlot (BasePlot):
             respectively: 
                 
             * ``bar`` plot counts the  nonmissing data  using pandas
-            *  ``mbar`` use the :mod:`msno` package to count the number 
+            * ``mbar`` use the :mod:`msno` package to count the number 
                 of nonmissing data. 
             * dendrogram`` show the clusterings of where the data is missing. 
                 leaves that are the same level predict one onother presence 
@@ -375,7 +541,7 @@ class ExPlot (BasePlot):
             * ``corr` creates a heat map showing if there are correlations 
                 where the data is missing. In this case, it does look like 
                 the locations where missing data are corollated.
-            * ``None`` is the default vizualisation. It is useful for viewing 
+            * ``mpatterns`` is the default vizualisation. It is useful for viewing 
                 contiguous area of the missing data which would indicate that 
                 the missing data is  not random. The :code:`matrix` function 
                 includes a sparkline along the right side. Patterns here would 
@@ -404,18 +570,15 @@ class ExPlot (BasePlot):
         >>> data = pd.read_csv ('data/geodata/main.bagciv.data.csv' ) 
         >>> p = ExPlot().fit(data)
         >>> p.fig_size = (12, 4)
-        >>> p.missing(kind ='corr')
+        >>> p.plotmissing(kind ='corr')
         
         """
-        if self.data is None: 
-            raise NotFittedError(self.msg.format(
-                expobj=self)
-            )
+        self.inspect 
             
-        kstr =('dendrogram', 'bar', 'mbar')
+        kstr =('dendrogram', 'bar', 'mbar', 'correlation', 'mpatterns')
         kind = str(kind).lower().strip() 
         
-        regex = re.compile (r'none|dendro|corr|base|default|mbar|bar', 
+        regex = re.compile (r'none|dendro|corr|base|default|mbar|bar|mpat', 
                             flags= re.IGNORECASE)
         kind = regex.search(kind) 
         
@@ -424,8 +587,8 @@ class ExPlot (BasePlot):
             
         kind = kind.group()
   
-        if kind in ('none', 'default', 'base'): 
-            kind ='mbar'
+        if kind in ('none', 'default', 'base', 'mpat'): 
+            kind ='mpat'
         
         if sample is not None: 
             sample = _assert_all_types(sample, int, float)
@@ -434,7 +597,7 @@ class ExPlot (BasePlot):
             fig, ax = plt.subplots (figsize = self.fig_size, **kwd )
             (1- self.data.isnull().mean()).abs().plot.bar(ax=ax)
     
-        elif kind  in ('mbar', 'dendro', 'corr'): 
+        elif kind  in ('mbar', 'dendro', 'corr', 'mpat'): 
             try : 
                 msno 
             except : 
@@ -464,8 +627,15 @@ class ExPlot (BasePlot):
                 ).savefig (self.savefig,  dpi =self.fig_dpi)
         
         return self 
+    
+    def __repr__(self): 
+        """ Represent the output class format """
+        return  "<{0!r}:xname={1!r}, yname={2!r} , tname={3!r}>".format(
+            self.__class__.__name__, self.xname_ , self.yname_ , self.tname 
+            )
 
- 
+
+                       
 class QuickPlot (BasePlot)  : 
     def __init__(self,  classes = None, tname= None,  **kws): 
         

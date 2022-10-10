@@ -53,17 +53,20 @@ ANALYSIS_DATA = fetch_data(
 
 erp_test_location_name ='l10_gbalo.xlsx'
 
-PREFIX = ['station',
-          'easting',
-          'northing',
-          'resistivity' 
-          ]
+PREFIX = [
+    'station', 
+    'resistivity', 
+    'longitude', 
+    'latitude', 
+    'easting', 
+    'northing'
+ ]
 
 DATA_UNSAFE= os.path.join(
     ERP_PATH, 'testunsafedata.csv'
     )
 DATA_SAFE = os.path.join(
-    VES_PATH, 'testsafedata.csv'
+    ERP_PATH, 'testsafedata.csv'
     )
 
 DATA_UNSAFE_XLS = os.path.join(

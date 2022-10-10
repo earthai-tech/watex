@@ -81,6 +81,39 @@ _estimators ={
      'extree': ['ExtraTreesClassifier', 'extree', 'xtree', 'xtr']
         }  
 
+
+            
+def exporttarget (df, tname, inplace = True): 
+    """ Extract target and modified data in place or not . 
+    
+    :param df: A dataframe with features including the target name `tname`
+    :param tname: A target name. It should be include in the dataframe columns 
+        otherwise an error is raised. 
+    :param inplace: modified the dataframe inplace. if ``False`` return the 
+        dataframe. the *defaut* is ``True`` 
+        
+    :returns: Tuple of the target and dataframe (modified or not)
+    
+    :example: 
+    >>> from watex.datasets import fetch_data '
+    >>> from watex.tools.mlutils import exporttarget 
+    >>> data0 = fetch_data ('bagoue original').get('data=dfy1') 
+    >>> # no modification 
+    >>> target, data_no = exporttarget (data0 , 'sfi', False )
+    >>> len(data_no.columns ) , len(data0.columns ) 
+    ... (13, 13)
+    >>> # modified in place 
+    >>> target, data= exporttarget (data0 , 'sfi')
+    >>> len(data.columns ) , len(data0.columns ) 
+    ... (12, 12)
+        
+    """
+    df = _assert_all_types(df, pd.DataFrame)
+    existfeatures(df, tname) # assert tname 
+    
+    return (df.pop(tname), df) if inplace else (df[tname], df ) 
+    
+    
 def existfeatures (df, features, error='raise'): 
     """Control whether the features exists or not  
     

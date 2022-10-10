@@ -76,11 +76,9 @@ import pandas as pd
 from scipy.signal import argrelextrema 
 
 from .._watexlog import watexlog 
-
 from ..exceptions import ( 
     FileHandlingError,
     ERPError, 
-    
     )
 from ..tools.exmath import ( 
     select_anomaly, 
@@ -88,14 +86,12 @@ from ..tools.exmath import (
     compute_sfi,
     compute_power, 
     compute_magnitude 
-    
     )
 from ..tools.funcutils import ( 
     display_infos, 
     savepath_, 
     get_boundaries, 
     wrap_infos, 
-
     )
 from ..tools.gistools import ( 
     ll_to_utm, 

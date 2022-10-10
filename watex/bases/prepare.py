@@ -589,7 +589,7 @@ class BaseSteps(object):
                     f" and should be converted to text values = {ytext}"])
        
                 df0[self.tname]= categorize_flow(
-                target_array= df0[self.tname], 
+                target= df0[self.tname], 
                 flow_values =ycat, classes=ytext)
                 
                 cmsg +='\ Conversion successfully done!'

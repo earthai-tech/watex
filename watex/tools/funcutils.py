@@ -30,6 +30,7 @@ from ..typing import (
     Tuple,
     Dict,
     Optional,
+    Iterable,
     Any,
     ArrayLike,
     F,
@@ -73,6 +74,89 @@ except ImportError:
     _logger.warning(_msg0)
     
     interp_import = False
+
+def shrunkformat (text: str | Iterable[Any] , 
+                  maxsize: int =7 , insert_at: str = None, 
+                  sep =None, 
+                 ) : 
+    """ format class and add elipsis when classe are greater than maxview 
+    
+    :param text: str - a text to shrunk and format. Can also be an iterable
+        object. 
+    :param maxsize: int, the size limit to keep in the formatage text. *default* 
+        is ``7``.
+    :param insert_at: str, the place to insert the ellipsis. If ``None``,  
+        shrunk the text and put the ellipsis, between the text beginning and 
+        the text endpoint. Can be ``beginning``, or ``end``. 
+    :param sep: str if the text is delimited by a kind of character, the `sep` 
+        parameters could be usefull so it would become a starting point for 
+        word counting. *default*  is `None` which means word is counting from 
+        the space. 
+        
+    :example: 
+        
+    >>> import numpy as np 
+    >>> from watex.tools.funcutils import shrunkformat
+    >>> text=" I'm a long text and I will be shrunked and replace by ellipsis."
+    >>> shrunkformat (text)
+    ... 'Im a long ... and replace by ellipsis.'
+    >>> shrunkformat (text, insert_at ='end')
+    ...'Im a long ... '
+    >>> arr = np.arange(30)
+    >>> shrunkformat (arr, maxsize=10 )
+    ... '0 1 2 3 4  ...  25 26 27 28 29'
+    >>> shrunkformat (arr, insert_at ='begin')
+    ... ' ...  26 27 28 29'
+    
+    """
+    is_str = False 
+    maxsize = int (_assert_all_types(maxsize, float, int))
+                   
+    regex = re.compile (r"(begin|start|beg)|(end|close|last)")
+    insert_at = str(insert_at).lower().strip() 
+    gp = regex.search (insert_at) 
+    if gp is not None: 
+        if gp.group (1) is not None:  
+            insert_at ='begin'
+        elif gp.group(2) is not None: 
+            insert_at ='end'
+        if insert_at is None: 
+            warnings.warn(f"Expect ['begining'|'end'], got {insert_at!r}"
+                          " Default value is used instead.")
+    if isinstance(text , str): 
+        textsplt = text.strip().split(sep) # put text on list 
+        is_str =True 
+        
+    elif hasattr (text , '__iter__'): 
+        textsplt = list(text )
+        
+    if len(textsplt) < maxsize : 
+        return  text 
+    
+    if is_str : 
+        rl = textsplt [:len(textsplt)//2][: maxsize//2]
+        ll= textsplt [len(textsplt)//2:][-maxsize//2:]
+        
+        if sep is None: sep =' '
+        spllst = [f'{sep}'.join ( rl), f'{sep}'.join ( ll)]
+        
+    else : spllst = [
+        textsplt[: maxsize//2 ] ,textsplt[-maxsize//2:]
+        ]
+    if insert_at =='begin': 
+        spllst.insert(0, ' ... ') ; spllst.pop(1)
+    elif insert_at =='end': 
+        spllst.pop(-1) ; spllst.extend ([' ... '])
+        
+    else : 
+        spllst.insert (1, ' ... ')
+    
+    spllst = spllst if is_str else str(spllst)
+    
+    return re.sub(r"[\[,'\]]", '', ''.join(spllst), 
+                  flags=re.IGNORECASE 
+                  ) 
+    
 
 def is_installing (
         module: str , 

@@ -732,11 +732,10 @@ def erpSelector (
             if ',' in columns: columns =columns.split(',')
             
     if isinstance(f, str):
-        if os.path.isfile(f): 
-            try : 
-                f = _is_readable(f, **kws)
-            except TypeError as typError: 
-                raise ERPError (str(typError))
+        try : 
+            f = _is_readable(f, **kws)
+        except TypeError as typError: 
+            raise ERPError (str(typError))
             
     if isinstance( f, np.ndarray): 
         name = copy.deepcopy(columns)

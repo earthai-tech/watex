@@ -27,6 +27,7 @@ from ..typing import (
     Union, 
     Optional, 
     DataFrame,
+    Series,
     ArrayLike, 
     T
     )
@@ -923,7 +924,7 @@ class FeatureInspection:
             
         if self.mapflow is True : 
             self.data_[self.tname]= categorize_flow(
-                tname_array= self.data_[self.tname], 
+                target= self.data_[self.tname], 
                 flow_values =self.flow_classes)
   
         if self.set_index :
@@ -984,7 +985,7 @@ class FeatureInspection:
             
 @catmapflow2(cat_classes=['FR0', 'FR1', 'FR2', 'FR3'])#, 'FR4'] )
 def categorize_flow(
-        tname_array: ArrayLike[T] ,
+        target: Series | ArrayLike[T] ,
         flow_values: List [float],
         **kwargs
     ) -> Tuple[ List[float], T, List[str]]: 
@@ -993,7 +994,7 @@ def categorize_flow(
     `flow_classes`  argument is given, it should be erased the
     `cat_classes` argument of decororator `deco.catmapflow`.
     
-    :param tname_array: Flow array to be categorized 
+    :param target: Flow array to be categorized 
     
     :param flow_values: 
         
@@ -1050,7 +1051,7 @@ def categorize_flow(
                 else: 
                    new_flow_values.append([flow_values[ss-1], val])
  
-    return new_flow_values, tname_array, flowClasses        
+    return new_flow_values, target, flowClasses        
 
 @writef(reason='write', from_='df')
 def exportdf (

@@ -8,44 +8,38 @@ Created on Wed Apr 27 13:18:23 2022
 import os
 # import datetime
 import  unittest 
-import pytest
+# import pytest
+import copy 
 import numpy as np 
 import pandas as pd 
 
-from watex.methods.erp import ERP 
-from tests import ( 
-    ERP_DATA_DIR,
-    TEST_TEMP_DIR, 
+from tests import (
+    ORIGINAL_DATA, 
     DATA_UNSAFE_XLS, 
     DATA_UNSAFE, 
     DATA_SAFE, 
     DATA_SAFE_XLS,
     DATA_EXTRA ,
     PREFIX, 
-    reset_matplotlib,
-    watexlog, 
-    diff_files, 
-    make_temp_dir, 
-    erp_test_location_name 
 )
 from tests.random_sample import (
-    dipoleLength, 
-    dipoleLengthX, 
     array1D , 
     array2D, 
     array2DX, 
     extraarray2D, 
 )
+from watex.tools.coreutils import  ( 
+    erpSelector
+    ) 
 
-from watex.tools.coreutils import _data_sanitizer 
+from watex.tools.mlutils import ( 
+    exporttarget 
+    ) 
+from watex.tools.funcutils import ( 
+    shrunkformat )
 
-from watex.tools.exmath import (
-    power ,
-    magnitude , 
-    _find_cz_bound_indexes
-                                
-) 
-class TestUtils(unittest.TestCase):
+
+class TestTools(unittest.TestCase):
     """
     Test electrical resistivity profile  and compute geo-lectrical features 
     as followings : 
@@ -64,46 +58,60 @@ class TestUtils(unittest.TestCase):
         
         )
 
-    @classmethod 
-    def setUpClass(cls):
-        """
-        Reset building matplotlib plot and generate tempdir inputfiles 
+    def test_skrunkformat (self): 
+        """ shortcut text by adding  ellipsis """
+        arr = np.arange(30)
+        text =" I'm a long text and I will be shrunked and replace by ellipsis."
         
-        """
-        reset_matplotlib()
-        cls._temp_dir = make_temp_dir(cls.__name__)
+        ftext = shrunkformat (text, insert_at ='end')
+        # print(ftext)
+        self.assertEqual('Im a long ... ', ftext)
+        ftext2 = shrunkformat (arr, insert_at ='begin')
+        self.assertEqual(' ...  26 27 28 29', ftext2)
+        
+      
+        
+    def test_exporttarget (self): 
+        """ Assert the target exportation, modified or not the retur values """
 
-    def setUp(self): 
-        if not os.path.isdir(TEST_TEMP_DIR):
-            print('--> outdir not exist , set to None !')
-            watexlog.get_watex_logger().error('Outdir does not exist !')
-            
-    def test_find_cz_bound_indexes (self): 
+        df = copy.deepcopy(ORIGINAL_DATA.get ('data=dfy1')) 
+        data0 = copy.deepcopy(df) 
         
-        pass 
-    def test_assert_station_positions (self): 
-        pass 
-    
-    def test_sanitize_collected_data (self) :
+        # no modification 
+        # tname = 'flow'
+        target, data_no = exporttarget (data0 , 'flow', False )
+        self.assertEqual(len(data_no.columns ) , len(data0.columns ) )
+        explen = len(df.columns)  -1   
+        # modified in place 
+        target, data= exporttarget (data0 , 'flow')
+        self.assertEqual ( len(data.columns ) , len(data0.columns ) ) 
+        # expect to get a length minum 01 ( target columns )
+        self.assertEqual(explen, len(data.columns ))
+   
+
+    def test_erpSelector  (self) :
         """ Test the capability of the  func to  read and fetch data 
         straigthly from `csv` and `xlsx` and sanitize data to fit the 
         corresponding ``PREFIX``. """
 
         for i, f in enumerate(self.data_collections):
             print('i=', i)
-            df =  _data_sanitizer( f)
-            col = list(df.columns) if isinstance(df, pd.DataFrame) else [df.name] # for Series
+            df =  erpSelector( f)
+            col = list(df.columns) if isinstance(
+                df, pd.DataFrame) else [df.name] # for Series
             if os.path.isfile (f): 
-                print(os.path.basename(os.path.splitext(f)[0].lower()) )
-                if os.path.basename(os.path.splitext(f)[0].lower()) in (
+                print(os.path.basename(
+                    os.path.splitext(f)[0].lower()) )
+                if os.path.basename(
+                        os.path.splitext(f)[0].lower()) in (
                         'testunsafedata', 'testunsafedata_extra'): 
                     print('PASSED')
                     print('col ==', col)
-                    self.assertListEqual(col , ['easting', 'station',
-                                                 'resistivity', 'northing'])
+                    self.assertListEqual(col , PREFIX)
                     
-                elif os.path.basename(os.path.splitext(f)[0].lower()) =='testsafedata': 
-                    self.assertEqual(len(col), len(PREFIX ),
+                elif os.path.basename(
+                        os.path.splitext(f)[0].lower()) =='testsafedata': 
+                    self.assertEqual(len(col), len(PREFIX),
                         f'The length of data columns={col}  is '
                         f' different from the expected length ={len(PREFIX)}.')
    
@@ -117,6 +125,10 @@ class TestUtils(unittest.TestCase):
                         f'{col}')
                 
 if __name__=='__main__': 
+    
+    # p = TestTools() 
+    # p.test_skrunkformat()  
+    
     unittest.main()
 
     
