@@ -6,6 +6,7 @@
 from __future__ import annotations 
 import os 
 # import re
+import copy 
 import inspect 
 import hashlib 
 import tarfile 
@@ -82,7 +83,89 @@ _estimators ={
         }  
 
 
-            
+def correlatedfeatures(
+        df:DataFrame ,
+        corr:str ='pearson', 
+        threshold: float=.95 , 
+        fmt: bool= False 
+        )-> DataFrame: 
+    """Find the correlated features/columns in the dataframe. 
+    
+    Indeed, highly correlated columns don't add value and can throw off 
+    features importance and interpretation of regression coefficients. If we  
+    had correlated columns, choose to remove either the columns from  
+    level_0 or level_1 from the features data is a good choice. 
+    
+    Parameters 
+    -----------
+    df: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
+        Dataframe containing samples M  and features N
+    corr: str, ['pearson'|'spearman'|'covariance']
+        Method of correlation to perform. Note that the 'person' and 
+        'covariance' don't support string value. If such kind of data 
+        is given, turn the `corr` to `spearman`. *default* is ``pearson``
+        
+    threshold: int, default is ``0.95``
+        the value from which can be considered as a correlated data. Should not 
+        be greater than 1. 
+        
+    fmt: bool, default {``False``}
+        format the correlated dataframe values 
+        
+    Returns 
+    ---------
+    df: `pandas.DataFrame`
+        Dataframe with cilumns equals to [level_0, level_1, pearson]
+        
+    Examples
+    --------
+    >>> from watex.tools.mlutils import correlatedcolumns 
+    >>> df_corr = correlatedcolumns (data , corr='spearman',
+                                     fmt=None, threshold=.95
+                                     )
+    """
+    th= copy.deepcopy(threshold) 
+    threshold = str(threshold)  
+    try : 
+        threshold = float(threshold.replace('%', '')
+                          )/1e2  if '%' in threshold else float(threshold)
+    except: 
+        raise TypeError (
+            f"Threshold should be a float value, got: {type(th).__name__!r}")
+          
+    if threshold >= 1 or threshold <= 0 : 
+        raise ValueError (
+            f"threshold must be ranged between 0 and 1, got {th!r}")
+      
+    if corr not in ('pearson', 'covariance', 'spearman'): 
+        raise ValueError (
+            f"Expect ['pearson'|'spearman'|'covariance'], got{corr!r} ")
+    # collect numerical values and exclude cat values 
+    df = selectfeatures(df, include ='number')
+        
+    # use pipe to chain different func applied to df 
+    c_df = ( 
+        df.corr()
+        .pipe(
+            lambda df1: pd.DataFrame(
+                np.tril (df1, k=-1 ), # low triangle zeroed 
+                columns = df.columns, 
+                index =df.columns, 
+                )
+            )
+            .stack ()
+            .rename(corr)
+            .pipe(
+                lambda s: s[
+                    s.abs()> threshold 
+                    ].reset_index()
+                )
+                .query("level_0 not in level_1")
+        )
+
+    return  c_df.style.format({corr :"{:2.f}"}) if fmt else c_df 
+
+                           
 def exporttarget (df, tname, inplace = True): 
     """ Extract target and modified data in place or not . 
     
@@ -655,21 +738,24 @@ def fetchSingleTGZData(
     return os.path.join(savefile, rename_outfile)
     
 def load_data (
-        data_path: str = DATA_PATH,
-        filename: str =CSV_FILENAME,
-        sep: str  =',' )-> DataFrame:
-    """ Load CSV file to pd.dataframe. 
+        data: str = None,
+        delimiter: str  =None ,
+        **kws
+        )-> DataFrame:
+    """ Load csv file to a frame. 
     
-    :param data_path: path to data file 
-    :param filename: name of file. 
+    :param data_path: path to data csv file 
+    :param delimiter: str, item for data  delimitations. 
+    :param kws: dict, additional keywords arguments passed to :class:`pandas.read_csv`
+    :return: pandas dataframe 
     
     """ 
-    if os.path.isfile(data_path): 
-        return pd.read_csv(data_path, sep)
-    
-    csv_path = os.path.join(data_path , filename)
-    
-    return pd.read_csv(csv_path, sep)
+    if not os.path.isfile(data): 
+        raise TypeError("Expect a valid CSV file.")
+    if (os.path.splitext(data)[1].replace('.', '')).lower() !='csv': 
+        raise ValueError("Read only a csv file.")
+        
+    return pd.read_csv(data, delimiter=delimiter, **kws) 
 
 
 def split_train_test (

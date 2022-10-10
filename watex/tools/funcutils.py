@@ -74,7 +74,90 @@ except ImportError:
     _logger.warning(_msg0)
     
     interp_import = False
+#-----
+ 
+def url_checker (url: str , install:bool = False, 
+                      raises:str ='ignore')-> bool : 
+    """
+    check whether the URL is reachable or not. 
+    
+    function uses the requests library. If not install, set the `install`  
+    parameter to ``True`` to subprocess install it. 
+    
+    Parameters 
+    ------------
+    url: str, 
+        link to the url for checker whether it is reachable 
+    install: bool, 
+        Action to install the 'requests' module if module is not install yet.
+    raises: str 
+        raise errors when url is not recheable rather than returning ``0``.
+        if ``raises` is ``ignore``, and module 'requests' is not installed, it 
+        will use the django url validator. However, the latter only assert 
+        whether url is right but not validate its reachability. 
+              
+    Returns
+    --------
+        ``True``{1} for reacheable and ``False``{0} otherwise. 
+        
+    Example
+    ----------
+    >>> from watex.tools.funcutils import url_checker 
+    >>> url_checker ("http://www.example.com")
+    ...  0 # not reacheable 
+    >>> url_checker ("https://watex.readthedocs.io/en/latest/api/watex.html")
+    ... 1 
+    
+    """
+    isr =0 ; success = False 
+    
+    regex = re.compile(
+        r'^(?:http|ftp)s?://' # http:// or https://
+        #domain...
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+        r'localhost|' #localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+        r'(?::\d+)?' # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE
+        )
+    
+    try : 
+        import requests 
+    except ImportError: 
+        if install: 
+            success  = is_installing('requests', DEVNULL=True) 
+        if not success: 
+            if raises: 
+                raise ModuleNotFoundError(
+                    "auto-installation of 'requests' failed."
+                    " Install it mannually.")
+                
+    else : success=True  
+    
+    if success: 
+        try:
+            get = requests.get(url) #Get Url
+            if get.status_code == 200: # if the request succeeds 
+                isr =1 # (f"{url}: is reachable")
+                
+            else:
+                warnings.warn(
+                    f"{url}: is not reachable, status_code: {get.status_code}")
+                isr =0 
+        
+        except requests.exceptions.RequestException as e:
+            if raises : 
+                raise SystemExit(f"{url}: is not reachable \nErr: {e}")
+            else: isr =0 
+            
+    if not success : 
+        # use django url validation regex
+        # https://github.com/django/django/blob/stable/1.3.x/django/core/validators.py#L45
+        isr = 1 if re.match(regex, url) is not None else 0 
+        
+    return isr 
 
+    
 def shrunkformat (text: str | Iterable[Any] , 
                   maxsize: int =7 , insert_at: str = None, 
                   sep =None, 
@@ -259,6 +342,7 @@ def is_installing (
                       "and dependancies was successfully done!") 
         
     return success 
+
 def smart_strobj_recognition(
         name: str  ,
         container: List | Tuple | Dict[Any, Any ],

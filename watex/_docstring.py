@@ -586,7 +586,6 @@ scatterplot : Plot data using points.
     lineplot="""
 lineplot : Plot data using lines.
     """,
-
     # Distribution plots
     displot="""
 displot : Figure-level interface to distribution plot functions.
@@ -617,7 +616,9 @@ violinplot : Draw an enhanced boxplot using kernel density estimation.
     pointplot="""
 pointplot : Plot point estimates and CIs using markers and lines.
     """,
-
+    boxplot="""
+boxplot : Draw an enhanced boxplot.
+     """,
     # Multiples
     jointplot="""
 jointplot : Draw a bivariate plot with univariate marginal distributions.

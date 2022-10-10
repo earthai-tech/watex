@@ -47,7 +47,7 @@ Until now, the methods implemented are mainly adressed to a particular problem i
 
 ## Documentation 
 
-* [API Documentation](https://watex.readthedocs.io/en/latest/)
+* [API](https://watex.readthedocs.io/en/latest/)
 * [Home page](https://github.com/WEgeophysics/watex/wiki)
 * [Case history using _WATex_](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
 

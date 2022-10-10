@@ -33,7 +33,8 @@ from watex.tools.coreutils import  (
     ) 
 
 from watex.tools.mlutils import ( 
-    exporttarget 
+    exporttarget , 
+    correlatedfeatures
     ) 
 from watex.tools.funcutils import ( 
     shrunkformat )
@@ -57,7 +58,8 @@ class TestTools(unittest.TestCase):
         array1D , array2D, array2D [:, :2],  array2DX, extraarray2D
         
         )
-
+    df = copy.deepcopy(ORIGINAL_DATA.get ('data=dfy1')) 
+    
     def test_skrunkformat (self): 
         """ shortcut text by adding  ellipsis """
         arr = np.arange(30)
@@ -69,19 +71,28 @@ class TestTools(unittest.TestCase):
         ftext2 = shrunkformat (arr, insert_at ='begin')
         self.assertEqual(' ...  26 27 28 29', ftext2)
         
-      
+    def test_correlated_columns (self): 
+        """ assert the correlated columns """
+        try: 
+            df_corr = correlatedfeatures (self.df , corr='spearman', 
+                                         fmt=None, threshold='80')
+        except ValueError : 
+            self.assertRaises(ValueError)
+        df_corr = correlatedfeatures (self.df , corr='spearman', 
+                                     fmt=None, threshold='80%')
+        self.assertEqual(0, len(df_corr))
         
     def test_exporttarget (self): 
         """ Assert the target exportation, modified or not the retur values """
 
-        df = copy.deepcopy(ORIGINAL_DATA.get ('data=dfy1')) 
-        data0 = copy.deepcopy(df) 
+        #df = copy.deepcopy(ORIGINAL_DATA.get ('data=dfy1')) 
+        data0 = copy.deepcopy(self.df) 
         
         # no modification 
         # tname = 'flow'
         target, data_no = exporttarget (data0 , 'flow', False )
         self.assertEqual(len(data_no.columns ) , len(data0.columns ) )
-        explen = len(df.columns)  -1   
+        explen = len(self.df.columns)  -1   
         # modified in place 
         target, data= exporttarget (data0 , 'flow')
         self.assertEqual ( len(data.columns ) , len(data0.columns ) ) 

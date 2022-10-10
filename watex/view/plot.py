@@ -17,7 +17,12 @@ import warnings
 
 import numpy as np 
 import  matplotlib.pyplot  as plt
+import matplotlib.ticker as mticker
 import pandas as pd 
+from pandas.plotting import ( 
+    radviz , 
+    parallel_coordinates
+    ) 
 import seaborn as sns 
 
 from ..bases import FeatureInspection
@@ -35,7 +40,6 @@ from ..tools.mlutils import (
     )
 from ..typing import (
     Any , 
-    # Tuple, 
     List,
     Dict,
     Optional,
@@ -72,10 +76,12 @@ except : pass
 
 try : 
     from yellowbrick.features import (
-        JointPlotVisualizer
+        JointPlotVisualizer, 
+        Rank2D, 
+        RadViz, 
+        ParallelCoordinates,
         )
 except: pass 
-
 
 from .._watexlog import watexlog    
 _logger=watexlog.get_watex_logger(__name__)
@@ -165,8 +171,9 @@ class ExPlot (BasePlot):
         self.data= None 
         self.target_= None
         self.y_= None 
-        self.xname_=None, 
+        self.xname_=None 
         self.yname_=None 
+        
 
     @property 
     def inspect(self): 
@@ -186,7 +193,7 @@ class ExPlot (BasePlot):
                          )
         plt.show() if self.savefig is None else plt.close () 
         
-    def fit(self, data: str |DataFrame,  **kws ): 
+    def fit(self, data: str |DataFrame,  **kws )->'ExPlot': 
         """ Fit data and populate the arguments for plotting purposes. 
         
         There is no conventional procedure for checking if a method is fitted. 
@@ -217,59 +224,579 @@ class ExPlot (BasePlot):
             self.y_ = reshape (self.target_.values ) # for consistency 
             
         return self 
-    
-    def plotjoint (self, xname , yname , pkg='sns', yb_kws =None, **kws): 
-        """ fancier scatterplot that includes histogram on the edge as well as 
-        a regression line call a `joinplot` """
+
+    def plotparallelcoords (
+            self, 
+            classes: List [Any] = None, 
+            pkg = 'pd',
+            rxlabel: int =45 , 
+            **kwd
+            )->'ExPlot': 
+        """ Use parallel coordinates in multivariates for clustering 
+        visualization  
         
-        lib = copy.deepcopy(pkg)
-        regex = re.compile (r"(seaborn|sns|none|default)|(yel|brick|yb)")
-        pkg= regex.search (pkg) 
-        if pkg is not None: 
-            if pkg.group (1) is not None:  
-                pkg ='sns'
-            elif pkg.group(2) is not None: 
-                pkg ='yb'
-           
-            if pkg is None: 
-                raise ValueError (" Expect ['sns' or 'yb'] for seaborn or "
-                                  f"yellowbrick library plot, got: {lib!r}")
-        hue = kwd.pop('hue', None) 
-        self.tname = hue or self.tname 
+        Parameters 
+        ------------
+        classes: list, default: None
+            a list of class names for the legend The class labels for each 
+            class in y, ordered by sorted class index. These names act as a 
+            label encoder for the legend, identifying integer classes or 
+            renaming string labels. If omitted, the class labels will be taken 
+            from the unique values in y.
+            
+            Note that the length of this list must match the number of unique 
+            values in y, otherwise an exception is raised.
+        pkg: str, Optional, 
+            kind or library to use for visualization. can be ['sns'|'pd'] for 
+            'yellowbrick' or 'pandas' respectively. *default* is ``pd``.
+            
+        rxlabel: int, default is ``45`` 
+            rotate the xlabel when using pkg is set to ``pd``. 
+            
+        kws: dict, 
+            Additional keywords arguments are passed down to 
+            :class:`yellowbrick.ParallelCoordinates` and
+            :func:`pandas.plotting.parallel_coordinates`
+            
+        Returns 
+        --------
+        ``self``: `ExPlot` instance and returns ``self`` for easy method chaining. 
+        
+        Examples
+        --------
+        >>> from watex.datasets import fetch_data 
+        >>> from watex.view import ExPlot 
+        >>> data =fetch_data('original data').get('data=dfy1')
+        >>> p = ExPlot (tname ='flow').fit(data)
+        >>> p.plotparallelcoords(pkg='yb')
+        >>> <'ExPlot':xname=None, yname=None , tname='flow'>
+         
+        """
+        self.inspect 
+        
+        if str(pkg) in ('yellowbrick', 'yb'): 
+            pkg ='yb'
+        else: pkg ='pd' 
+        
+        fig, ax = plt.subplots(figsize = self.fig_size )
+        
+        df = self.data .copy() 
+        df = selectfeatures(df, include ='number')
+        
+        if pkg =='yb': 
+            pc =ParallelCoordinates(ax =ax , 
+                                    features = df.columns, 
+                                    classes =classes , 
+                                    **kwd 
+                                    )
+            pc.fit(df, y = None or self.y_)
+            pc.transform (df)
+            label_format = '{:.0f}'
+            
+            ticks_loc = list(ax.get_xticks())
+            ax.xaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
+            ax.set_xticklabels([label_format.format(x) for x in ticks_loc], 
+                               rotation =rxlabel)
+            
+        elif pkg =='pd': 
+            if self.tname is not None: 
+                if self.tname not in df.columns :
+                    df[self.tname ]= self.y_ 
+            parallel_coordinates(df, class_column= self.tname, 
+                                 ax= ax, **kwd
+                                 )
+        self.save (fig)
+        
+        return self 
+    
+    def plotradviz (self,
+                    classes: List [Any] = None, 
+                    pkg:str = 'pd',
+                    **kwd
+                    )-> 'ExPlot': 
+        """ plot each sample on circle or square, with features on the  
+        circonference to vizualize separateky between target. 
+        
+        Values are normalized and each figure has a spring that pulls samples 
+        to it based on the value. 
+        
+        Parameters 
+        ------------
+        
+        classes: list of int | float, [categorized classes] 
+            must be a value in the target.  Specified classes must match 
+            the number of unique values in target. otherwise an error occurs.
+            the default behaviour  i.e. ``None`` detect all classes in unique  
+            value in the target. 
+            
+        pkg: str, Optional, 
+            kind or library to use for visualization. can be ['sns'|'pd']  for 
+             'yellowbrick' or 'pandas' respectively. default is ``pd``.   
+        kws: dict, 
+            Additional keywords arguments are passed down to 
+            :class:`yellowbrick.RadViZ` and :func:`pandas.plotting.radviz`
+            
+        Returns 
+        -----------
+        ``self``: `ExPlot` instance and returns ``self`` for easy method chaining. 
+        
+        Examples 
+        ---------
+        (1)-> using yellowbrick RadViz 
+        
+        >>> from watex.datasets import fetch_data 
+        >>> from watex.view import ExPlot 
+        >>> data0 = fetch_data('bagoue original').get('data=dfy1')
+        >>> p = ExPlot(tname ='flow').fit(data0)
+        >>> p.plotradviz(classes= [0, 1, 2, 3] ) # can set to None 
+        
+        (2) -> Using pandas radviz plot 
+        
+        >>> # use pandas with 
+        >>> data2 = fetch_data('bagoue original').get('data=dfy2')
+        >>> p = ExPlot(tname ='flow').fit(data2)
+        >>> p.plotradviz(classes= None, pkg='pd' )
+        ... <'ExPlot':xname=None, yname=None , tname='flow'>
+        """
+        self.inspect 
+        
+        fig, ax = plt.subplots(figsize = self.fig_size )
+        df = self.data .copy() 
+        
+        if str(pkg) in ('yellowbrick', 'yb'): 
+            pkg ='yb'
+        else: pkg ='pd' 
+        
+        if classes is None :  
+            if self.tname is None: 
+                raise TypeError (
+                    "target name is missing. Can not fetch the target."
+                    " Provide the target name instead."
+                    )
+            classes = list(np.unique (self.y_))
+            
+        df = selectfeatures(df, include ='number')
+
+        if pkg =='yb': 
+            rv = RadViz( ax = ax , 
+                        classes = classes , 
+                        features = df.columns,
+                        **kwd 
+                        )
+            rv.fit(df, y =None or self.y_ )
+            _ = rv.transform(df )
+            
+        elif pkg =='pd': 
+            if (self.tname is not None)  and (self.y_ is not None) :
+                df [self.tname] = self.y_ 
+            radviz (df , class_column= self.tname , ax = ax, 
+                    **kwd 
+                    )
+            
+        self.save (fig)
+        
+        return self 
+    
+        
+    def plotpairwisecomparison (
+            self ,  
+            corr:str = 'pearson', 
+            pkg:str ='sns', 
+            **kws
+            )-> 'ExPlot': 
+        """ Create pairwize comparizons bteween features. 
+        
+        Plots shows a ['pearson'|'spearman'|'covariance'] correlation. 
+        Parameters 
+        -----------
+        corr: str, ['pearson'|'spearman'|'covariance']
+            Method of correlation to perform. Note that the 'person' and 
+            'covariance' don't support string value. If such kind of data 
+            is given, turn the `corr` to `spearman`. 
+            *default* is ``pearson``
+        
+        pkg: str, Optional, 
+            kind or library to use for visualization. can be ['sns'|'yb']  for 
+            'seaborn' or 'yellowbrick' respectively. default is ``sns``.   
+        kws: dict, 
+            Additional keywords arguments are passed down to 
+            :class:`yellowbrick.Rand2D` and `seaborn.heatmap`
+        
+        Returns 
+        -----------
+        ``self``: `ExPlot` instance and returns ``self`` for easy method chaining.
+             
+        Example 
+        ---------
+        >>> from watex.datasets import fetch_data 
+        >>> from watex.view import ExPlot 
+        >>> data = fetch_data ('bagoue original').get('data=dfy1') 
+        >>> p= ExPlot(tname='flow').fit(data)
+        >>> p.plotPairwiseComparison(fmt='.2f', corr='spearman', pkg ='yb'
+                                     annot=True, 
+                                     cmap='RdBu_r', 
+                                     vmin=-1, 
+                                     vmax=1 )
+        ... <'ExPlot':xname='sfi', yname='ohmS' , tname='flow'>
+        """
+        self.inspect 
+        
+        if str(pkg) in ('yellowbrick', 'yb'): 
+            pkg ='yb'
+        else: pkg ='sns' 
+  
+        fig, ax = plt.subplots(figsize = self.fig_size )
+        df = self.data .copy() 
+        
+        if pkg =='yb': 
+            pcv = Rank2D( ax = ax, 
+                         features = df.columns, 
+                         algorithm=corr, **kws)
+            pcv.fit(df, y = None or self.y_ )
+            pcv.transform(df)
+            
+        elif pkg =='sns': 
+            sns.set(rc={"figure.figsize":self.fig_size}) 
+            fig = sns.heatmap(data =df.corr() , **kws
+                             )
+        
+        self.save (fig)
+        
+        return self 
+        
+    def plotcatcomparison(
+            self, 
+            xname: str =None, 
+            yname:str =None, 
+            q:int =10 , 
+            bins: int=3 , 
+            cmap:str = 'viridis',
+            duplicates:str ='drop', 
+            **kws
+        )->'ExPlot': 
+        """Compare two ordinal categories 
+        
+        It simulates that the the bining of 'xname' into a `q` quantiles, and 
+        'yname'into `bins`. Plot is normalized so its fills all the vertical area.
+        which makes easy to see that in the `4*q %` quantiles.  
+        
+        Parameters 
+        -------------
+        xname, yname : vectors or keys in data
+            Variables that specify positions on the x and y axes. Both are 
+            the column names to consider. Shoud be items in the dataframe 
+            columns. Raise an error if elements do not exist.
+        q: int or list-like of float
+            Number of quantiles. 10 for deciles, 4 for quartiles, etc. 
+            Alternately array of quantiles, e.g. [0, .25, .5, .75, 1.] for 
+            quartiles.
+        bins: int, sequence of scalars, or IntervalIndex
+            The criteria to bin by.
+
+            * int : Defines the number of equal-width bins in the range of x. 
+                The range of x is extended by .1% on each side to include the 
+                minimum and maximum values of x.
+
+            * sequence of scalars : Defines the bin edges allowing for non-uniform 
+                width. No extension of the range of x is done.
+
+            * IntervalIndex : Defines the exact bins to be used. Note that 
+                IntervalIndex for bins must be non-overlapping.
+                
+        labels: array or False, default None
+            Used as labels for the resulting bins. Must be of the same length 
+            as the resulting bins. If False, return only integer indicators of 
+            the bins. If True, raises an error.
+            
+        cmap: str, color or list of color, optional
+            The matplotlib colormap  of the bar faces.
+            
+        duplicates: {default 'raise', 'drop}, optional
+            If bin edges are not unique, raise ValueError or drop non-uniques.
+            *default* is 'drop'
+        kws: dict, 
+            Other keyword arguments are passed down to `pandas.qcut` .
+            
+        Returns 
+        -------
+        ``self``: `ExPlot` instance and returns ``self`` for easy method chaining.
+        
+        Examples 
+        ---------
+        >>> from watex.datasets import fetch_data 
+        >>> from watex.view import ExPlot 
+        >>> data = fetch_data ('bagoue original').get('data=dfy1') 
+        >>> p= ExPlot(tname='flow').fit(data)
+        >>> p.plotcatcomparison(xname ='sfi', yname='ohmS')
+        """
+        self.inspect 
         
         self.xname_ = xname or self.xname_ 
-        self.yname = yname or self.yname_ 
+        self.yname_ = yname or self.yname_ 
         
+        fig, ax = plt.subplots(figsize = self.fig_size )
+        
+        df = self.data .copy() 
+        (df.assign(
+            xname_bin = pd.qcut( 
+                df[self.xname_], q = q, labels =False, 
+                duplicates = duplicates, **kws
+                ),
+            yname_bin = pd.cut(
+                df[self.yname_], bins =bins, labels =False, 
+                duplicates = duplicates,
+                ), 
+            )
+        .groupby (['xname_bin', 'yname_bin'])
+        .size ().unstack()
+        .pipe(lambda df: df.div(df.sum(1), axis=0))
+        .plot.bar(stacked=True, 
+                  width=1, 
+                  ax=ax, 
+                  cmap =cmap)
+        .legend(bbox_to_anchor=(1, 1))
+        )
+                  
+        self.save(fig)
+        return self 
+         
+    def plotbv (
+            self, 
+            xname: str =None, 
+            yname:str =None, 
+            kind:str ='box',
+            **kwd
+        )->'ExPlot': 
+        """Visualize distributions using the box, boxen or violin plots
+        
+        Parameters 
+        -------------
+        xname, yname : vectors or keys in data
+            Variables that specify positions on the x and y axes. Both are 
+            the column names to consider. Shoud be items in the dataframe 
+            columns. Raise an error if elements do not exist.
+            
+        kind: str 
+            style of the plot. Can be ['box'|'boxen'|'violin']. 
+            *default* is ``box``
+            
+        kwd: dict, 
+            Other keyword arguments are passed down to `seaborn.boxplot` .
+            
+        {returns.self}
+        
+        Example
+        --------
+        >>> from watex.datasets import fetch_data 
+        >>> from watex.view import ExPlot 
+        >>> data = fetch_data ('bagoue original').get('data=dfy1') 
+        >>> p= ExPlot(tname='flow').fit(data)
+        >>> p.plotbv(xname='flow', yname='sfi', kind='violin')
+        
+        See also
+        ---------
+        {seealso.boxplot}
+        {seealso.violinplot}
+        """.format (
+            returns = _core_docs['returns'], 
+            seealso =_core_docs ['seealso']
+        )
+    
+        self.inspect 
+        
+        self.xname_ = xname or self.xname_ 
+        self.yname_ = yname or self.yname_ 
+        
+        kind = str(kind).lower() 
+    
+        if kind.find('violin')>=0: kind = 'violin'
+        elif kind.find('boxen')>=0 : kind ='boxen'
+        else : kind ='box'
+        
+        df = self.data.copy() 
+        if (self.tname not in df.columns) and (self.y_ is not None): 
+            df [self.tname] = self.y_  
+        
+        if kind =='box': 
+            g= sns.boxplot( 
+                data = df , 
+                x= self.xname_,
+                y=self.yname_ , 
+                **kwd
+                )
+        if kind =='boxen': 
+            g= sns.boxenplot( 
+                data = df , 
+                x= self.xname_, 
+                y=self.yname_ , 
+                **kwd
+                )
+        if kind =='violin': 
+            g = sns.violinplot( 
+                data = df , 
+                x= self.xname_, 
+                y=self.yname_ , 
+                **kwd
+                )
+        
+        self.save(g)
+        
+        return self 
+    
+    
+    def plotpairgrid (
+            self, 
+            xname: str =None, 
+            yname:str =None, 
+            vars: List[str]= None, 
+            **kwd 
+    ) -> 'ExPlot': 
+        """ Create a pair grid. 
+        
+        Is a matrix of columns and kernel density estimations. To color by a 
+        columns from a dataframe, use 'hue' parameter. 
+        
+        Parameters 
+        -------------
+        xname, yname : vectors or keys in data
+            Variables that specify positions on the x and y axes. Both are 
+            the column names to consider. Shoud be items in the dataframe 
+            columns. Raise an error if elements do not exist.
+        vars: list, str 
+            list of items in the dataframe columns. Raise an error if items 
+            dont exist in the dataframe columns. 
+        kws: dict, 
+            Other keyword arguments are passed down to `seaborn.joinplot`_ .
+            
+        Returns 
+        -----------
+        ``self``: `ExPlot` instance and returns ``self`` for easy method chaining.
+            
+        Example
+        --------
+        >>> from watex.datasets import fetch_data 
+        >>> from watex.view import ExPlot 
+        >>> data = fetch_data ('bagoue original').get('data=dfy1') 
+        >>> p= ExPlot(tname='flow').fit(data)
+        >>> p.plotpairgrid (vars = ['magnitude', 'power', 'ohmS'] ) 
+        ... <'ExPlot':xname=(None,), yname=None , tname='flow'>
+        
+        """
+        self.inspect 
+        
+        self.xname_ = xname or self.xname_ 
+        self.yname_ = yname or self.yname_ 
+
+        df = self.data.copy() 
+        if (self.tname not in df.columns) and (self.y_ is not None): 
+            df [self.tname] = self.y_ # set new dataframe with a target
+        if vars is None : 
+            vars = [self.xname_, self.y_name ]
+            
+        sns.set(rc={"figure.figsize":self.fig_size}) 
+        g = sns.pairplot (df, vars= vars, hue = self.tname, 
+                            **kwd, 
+                             )
+        self.save(g)
+        
+        return self 
+    
+    def plotjoint (
+            self, 
+            xname: str, 
+            yname:str =None,  
+            corr: str = 'pearson', 
+            kind:str ='scatter', 
+            pkg='sns', 
+            yb_kws =None, 
+            **kws
+    )->'ExPlot': 
+        """ fancier scatterplot that includes histogram on the edge as well as 
+        a regression line call a `joinplot` 
+        
+        Parameters 
+        -------------
+        xname, yname : vectors or keys in data
+            Variables that specify positions on the x and y axes. Both are 
+            the column names to consider. Shoud be items in the dataframe 
+            columns. Raise an error if elements do not exist.
+        pkg: str, Optional, 
+            kind or library to use for visualization. can be ['sns'|'yb']  for 
+            'seaborn' or 'yellowbrick'. default is ``sns``.   
+        yb_kws: dict, 
+            Additional keywords arguments from 
+            :class:`yellowbrick.JointPlotVisualizer`
+        kws: dict, 
+            Other keyword arguments are passed down to `seaborn.joinplot`_ .
+            
+         Returns 
+         -----------
+         ``self``: `ExPlot` instance and returns ``self`` for easy method chaining.
+             
+        Notes 
+        -------
+        When using the `yellowbrick` library and array i.e a (x, y) variables 
+        in the columns as well as the target arrays must not contain infs or NaNs
+        values. A value error raises if that is the case. 
+        
+        .. _seaborn.joinplot: https://seaborn.pydata.org/generated/seaborn.joinplot.html
+        
+        """
+        pkg = str(pkg).lower().strip() 
+        if pkg in ('yb', 'yellowbrick'): pkg ='yb'
+        else:  pkg ='sns'
+        
+        self.inspect 
+        
+        self.xname_ = xname or self.xname_ 
+        self.yname_ = yname or self.yname_ 
+        
+        # assert yb_kws arguments 
         yb_kws = yb_kws or dict() 
         yb_kws = _assert_all_types(yb_kws, dict)
         
         if pkg =='yb': 
             fig, ax = plt.subplots(figsize = self.fig_size )
-            jpv = JointPlotVisualizer(ax =ax , 
-                                feature = self.xname_, 
-                                target = self.tname, 
-                                fig = fig )
-            if self.y_ is not None 
-            jpv.fit(self.data [self.xname_], 
-                    self.data [self.tname] if self.y_ is None else self.y_
-                    **yb_kws) 
-            jpv.show() 
-            
-        elif pkg ='sns': 
+            jpv = JointPlotVisualizer(
+                ax =ax , 
+                # columns = self.data.columns, 
+                correlation=corr, 
+                feature = self.xname_, 
+                target = self.tname, 
+                kind = kind , 
+                fig = fig 
+                )
+            jpv.fit(
+                self.data [self.xname_], 
+                self.data [self.tname] if self.y_ is None else self.y_,
+                    **yb_kws
+                    ) 
+
+        elif pkg =='sns': 
             sns.set(rc={"figure.figsize":self.fig_size}) 
             df = self.data.copy() 
             if (self.tname not in df.columns) and (self.y_ is not None): 
                 df [self.tname] = self.y_ # set new dataframe with a target 
                 
-            fig = sns.jointplot(data= df, x = self.xname_, 
-                                y= self.yname_, hue = self.tname, 
-                                **kws
-                                ) 
+            fig = sns.jointplot(
+                data= df, 
+                x = self.xname_, 
+                y= self.yname_,
+                **kws
+                ) 
+            
+        self.save(fig )
         
+        return self 
         
-    def plotscatter (self, xname:str =None, yname:str = None, 
-                     c:str |Series|ArrayLike =None, s: int |ArrayLike =None, 
-                 **kwd): 
+    def plotscatter (
+            self, 
+            xname:str =None, 
+            yname:str = None, 
+            c:str |Series|ArrayLike =None, 
+            s: int |ArrayLike =None, 
+            **kwd
+        )->'ExPlot': 
         """ Shown the relationship between two numeric columns. This is very
         way with pandas. 
         
@@ -304,13 +831,20 @@ class ExPlot (BasePlot):
         -----------
         ``self``: `ExPlot` instance 
             returns ``self`` for easy method chaining.
-              
-        .. _seaborn.scatterplot: https://seaborn.pydata.org/generated/seaborn.scatterplot.html
+
+        Example 
+        ---------
+        >>> from watex.view import ExPlot 
+        >>> p = ExPlot(tname='flow').fit(data).plotscatter (
+            xname ='sfi', yname='ohmS')
+        >>> p.
+        ...  <'ExPlot':xname='sfi', yname='ohmS' , tname='flow'>
         
         See also
         ---------
         Scatterplot: https://seaborn.pydata.org/generated/seaborn.scatterplot.html
         Pd.scatter plot: https://www.w3resource.com/pandas/dataframe/dataframe-plot-scatter.php
+        .. _seaborn.scatterplot: https://seaborn.pydata.org/generated/seaborn.scatterplot.html
         
         """
         self.inspect 
@@ -318,12 +852,11 @@ class ExPlot (BasePlot):
         hue = kwd.pop('hue', None) 
         
         self.xname_ = xname or self.xname_ 
-        self.yname = yname or self.yname_ 
+        self.yname_ = yname or self.yname_ 
         
         if hue is not None: 
             self.tname = hue 
-            
-            
+
         if xname is not None: 
             existfeatures( self.data, self.xname_ )
         if yname is not None: 
@@ -334,15 +867,14 @@ class ExPlot (BasePlot):
         # state the fig plot and change the figure size 
         sns.set(rc={"figure.figsize":self.fig_size}) #width=3, #height=4
         # try : 
-        sns.scatterplot( data = self.data, x = self.xname_, y=self.yname_, 
-                        hue =self.tname, 
+        fig= sns.scatterplot( data = self.data, x = self.xname_,
+                             y=self.yname_, hue =self.tname, 
                         # ax =ax , # call matplotlib.pyplot.gca() internally
                         **kwd)
         # except : 
         #     warnings.warn("The following variable cannot be assigned with "
         #                   "wide-form data: `hue`; use the pandas scatterplot "
         #                   "instead.")
-            
         #     self.data.plot.scatter (x =xname , y=yname, c=c,
         #                             s = s,  ax =ax  )
         
@@ -350,13 +882,15 @@ class ExPlot (BasePlot):
         
         return self 
     
-    def plothistvstarget (self, xname: str, 
-                      c: Any =None, *,  
-                      posilabel: str = None, 
-                      neglabel: str= None,
-                      kind='binarize', 
-                      **kws
-                      ): 
+    def plothistvstarget (
+            self, 
+            xname: str, 
+            c: Any =None, *,  
+            posilabel: str = None, 
+            neglabel: str= None,
+            kind='binarize', 
+            **kws
+        )->'ExPlot': 
         """ A histogram of continuous against the target of binary plot. 
         
         Parameters 
@@ -476,7 +1010,7 @@ class ExPlot (BasePlot):
     
 
     
-    def plothistogram (self,xname: str , *,  kind:str = 'hist', 
+    def plothist(self,xname: str , *,  kind:str = 'hist', 
                    **kws 
                    ): 
         """ A histogram visualization of numerica data.  
@@ -768,7 +1302,7 @@ class QuickPlot (BasePlot)  :
             f'{appender}{"" if rv is None else "?"}'
             )        
        
-    def histCatDistribution(self, data:  str | DataFrame = None, 
+    def histcatdist(self, data:  str | DataFrame = None, 
                                stacked: bool = False,  **kws): 
         """
         Quick plot a distributions of categorized classes according to the 
@@ -835,7 +1369,7 @@ class QuickPlot (BasePlot)  :
         >>> qplotObj= QuickPlot(xlabel = 'Flow classes in m3/h',
                                 ylabel='Number of  occurence (%)'
                                 lc='b')
-        >>> qplotObj.histCatDistribution()
+        >>> qplotObj.histcatdist()
         
         """
         self._logging.info('Quick plot of categorized classes distributions.'
@@ -869,7 +1403,7 @@ class QuickPlot (BasePlot)  :
         
         return self 
     
-    def barCatDistribution(self,
+    def barcatdist(self,
                            data: str | DataFrame =None, 
                            basic_plot: bool = True,
                            groupby: List[str] | Dict [str, float] =None,
@@ -919,7 +1453,7 @@ class QuickPlot (BasePlot)  :
                                     lc='b', tname='flow')
             >>> qplotObj.sns_style = 'darkgrid'
             >>> qplotObj.fit(data)
-            >>> qplotObj. barCatDistribution(basic_plot =False, 
+            >>> qplotObj. barcatdist(basic_plot =False, 
             ...                                groupby=['shape' ])
    
         """
@@ -983,7 +1517,7 @@ class QuickPlot (BasePlot)  :
         return self 
     
     
-    def multiCatDistribution(self, 
+    def multicatdist(self, 
                              data : str | DataFrame = None, 
                              *, 
                              x =None, 
@@ -995,7 +1529,8 @@ class QuickPlot (BasePlot)  :
                              kind:str='count',
                              **kws): 
         """
-        Figure-level interface for drawing categorical plots onto a FacetGrid.
+        Figure-level interface for drawing multiple categorical distributions
+        plots onto a FacetGrid.
         
         Multiple categorials plots  from targetted pd.series. 
         
@@ -1137,7 +1672,7 @@ class QuickPlot (BasePlot)  :
         ...            'col':['type', 'geol', 'shape'], 
         ...            'hue':['flow', 'flow', 'geol'],
         ...            } 
-        >>> qplotObj.multiCatDistribution(**fdict)
+        >>> qplotObj.multicatdist(**fdict)
             
         """
         if data is not None: 
@@ -1195,7 +1730,7 @@ class QuickPlot (BasePlot)  :
         
         return self 
     
-    def correlationMatrix(self,
+    def corrmatrix(self,
                         data: str | DataFrame =None, 
                         cortype:str ='num',
                         features: Optional[List[str]] = None, 
@@ -1261,7 +1796,7 @@ class QuickPlot (BasePlot)  :
         ...            'center':0 , 
         ...            # 'cmap':'jet_r', 
         ...            'cbar':True}
-        >>> qplotObj.correlationMatrix(cortype='cat', **sns_kwargs) 
+        >>> qplotObj.corrmatrix(cortype='cat', **sns_kwargs) 
             
         """
         corc = str(copy.deepcopy(cortype))
@@ -1803,11 +2338,12 @@ class QuickPlot (BasePlot)  :
          
         return self 
          
-    def discover_and_visualize(self,
-                               data: str | DataFrame= None, 
-                               x:str =None, y:str =None, kind:str ='scatter',
-                               s_col ='lwi', leg_kws:dict ={}, **pd_kws):
-        """ Create a scatter plot to visualize the data using `x` and `y` 
+    def naiveviz(self,
+                data: str | DataFrame= None, 
+                x:str =None, y:str =None, kind:str ='scatter',
+                s_col ='lwi', leg_kws:dict ={}, **pd_kws
+                ):
+        """ Create a plot to visualize the data using `x` and `y` 
         considered as dataframe features. 
         
         Parameters 
@@ -1856,7 +2392,7 @@ class QuickPlot (BasePlot)  :
         ...         'colorbar':True}
         >>> qkObj=QuickPlot(fs=25.)
         >>> qkObj.fit(strat_train_set)
-        >>> qkObj.discover_and_visualize( x= 'east', y='north', **pd_kws)
+        >>> qkObj.naiveviz( x= 'east', y='north', **pd_kws)
     
         """
         if data is not None : 

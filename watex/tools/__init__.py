@@ -33,7 +33,8 @@ from .mlutils import (
     getGlobalScore, 
     discretizeCategoriesforStratification,
     stratifiedUsingDiscretedCategories, 
-    split_train_test
+    split_train_test, 
+    correlatedcolumns, 
     
     )
 from ..decorators import gdal_data_check
