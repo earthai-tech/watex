@@ -52,7 +52,6 @@ from ..typing import (
     DType, 
     Sub, 
     SP
-    
 )
 from ..exceptions import ( 
     StationError, 
@@ -69,7 +68,6 @@ from .funcutils import (
     accept_types,
     read_from_excelsheets,
     reshape,
-    # is_installing, 
     sPath
     ) 
 from .gistools import (
@@ -102,10 +100,13 @@ def _is_readable (
     
     if isinstance (f, pd.DataFrame): 
         return f 
-    
-    if not os.path.isfile: 
+
+    if 'http' in f: # force pandas read html etc 
+        pass 
+    elif not os.path.isfile :# or ('http' not in f) : 
         raise TypeError (
-            f'Expected a Path-like object, got : {type(f).__name__!r}')
+            f'Expected a Path-like object or url, got : {type(f).__name__!r}')
+        
     _, ex = os.path.splitext(f) 
     if ex.lower() not in tuple (cpObj.keys()):
         raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"

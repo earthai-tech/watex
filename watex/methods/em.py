@@ -53,7 +53,6 @@ from ..tools.funcutils import (
     reshape, 
     smart_strobj_recognition, 
     repr_callable_obj, 
-    
     ) 
 from ..tools.exmath import ( 
     scalePosition, 
@@ -65,13 +64,13 @@ from ..tools.exmath import (
     z2rhoa, 
     mu0, 
     )
-from ..bases.site import Location 
 from ..tools.coreutils import ( 
     makeCoords, 
     )
 from ..property import (
     IsEdi 
     )
+from ..site import Location 
 from ..typing import ( 
     ArrayLike, 
     Optional, 
@@ -957,7 +956,7 @@ class EM(IsEdi):
             f'{appender}{"" if rv is None else "?"}'
             )
 
-class updateZ(EM): 
+class _zupdate(EM): 
     """ A decorator for impedance tensor updating. 
     
     Update a Z object from each EDI object composing the collection objects 
@@ -1602,7 +1601,7 @@ class Processing (EM) :
         return skw, mu
 
 
-    def restoreTensorZ(self,
+    def zrestore(self,
                        data: str|List[EDIO],
                        *, 
                        buffer: Tuple[float]=None, 
@@ -1709,7 +1708,7 @@ class Processing (EM) :
         >>> # One can specify the frequency buffer like the example below, However 
         >>> # it is not necessaray at least there is a a specific reason to fix the frequencies 
         >>> buffer = [1.45000e+04,1.11500e+01]
-        >>> zobjs_b =  pObjs.restoreTensorZ(pObjs.ediObjs_, buffer = buffer
+        >>> zobjs_b =  pObjs.zrestore(pObjs.ediObjs_, buffer = buffer
                                             ) # with buffer 
         
         """
@@ -2054,7 +2053,7 @@ class Processing (EM) :
         return np.around (ck, 2), new_f   if return_freq else index   
 
 
-    @updateZ(option = 'write')
+    @_zupdate(option = 'write')
     def getValidData(self, 
                      data:Optional[str|List[EDIO]]=None,
                      tol:float = .5 ,  

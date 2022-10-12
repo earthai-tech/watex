@@ -24,3 +24,4 @@ click
 missingno
 pandas_profiling 
 pyjanitor 
+openpyxl

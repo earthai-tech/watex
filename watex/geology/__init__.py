@@ -7,3 +7,13 @@ from .geology import (
 from .drilling import ( 
     Borehole 
     )
+from .stratigraphic import  GeoStrataModel
+
+__all__=[ 
+    'Geology' ,  
+    'Structures',
+    'Structural', 
+    'Borehole', 
+    'GeoStrataModel', 
+    
+    ]

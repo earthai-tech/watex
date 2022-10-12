@@ -12,7 +12,7 @@ import warnings
 
 import numpy as np 
 
-from ..tools.gistools import (
+from .tools.gistools import (
     assert_elevation_value, 
     assert_lat_value, 
     assert_lon_value , 
@@ -22,11 +22,11 @@ from ..tools.gistools import (
     project_point_utm2ll
     
     )
-from ..exceptions import ( 
+from .exceptions import ( 
     SiteError 
     )
-from .._watexlog import watexlog 
-from ..property import ( 
+from ._watexlog import watexlog 
+from .property import ( 
     UTM_DESIGNATOR
     )
 class Location (object): 

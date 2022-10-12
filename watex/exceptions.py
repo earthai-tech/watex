@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """ 
-`WATex`_ Exceptions 
-====================
+Exceptions 
+=============
 
 Each exception is related to its modules following py the suffix `Error`. It 
 inherits from top BaseExceptiom of Python build-in functions. To drop or change 

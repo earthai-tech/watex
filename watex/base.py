@@ -1,50 +1,27 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Created:on Tue Oct 12 15:37:59 2021
-#   Edited:on Fri Sep 10 15:37:59 2022
-
 
 from __future__ import annotations 
-  
 import re 
 import sys 
+import inspect 
+import subprocess
+from collections import defaultdict
 from warnings import warn
 
-from ..tools.mlutils import ( 
-    existfeatures,
-    selectfeatures 
-    )
-from ..tools.coreutils import ( 
-    _is_readable 
-    )
-
-from .._docstring import ( 
-    DocstringComponents,
-    _core_docs,
-    ) 
-from ..typing import (
-    List, 
-    Optional, 
-    DataFrame, 
-    )
-from ..tools.funcutils import (
-    _assert_all_types, 
-    is_installing, 
-    repr_callable_obj,
-    smart_strobj_recognition,
-)
- 
-from ..exceptions import (
-    NotFittedError
-    )
-from ..view.plot import (
-   ExPlot
-    )
-
 from .._watexlog import  watexlog
+from ._docstring import DocstringComponents, _core_docs
+from .typing import List, Optional, DataFrame 
+from .tools.mlutils import existfeatures, selectfeatures 
+from .tools.coreutils import _is_readable 
+from .tools.funcutils import (_assert_all_types,  repr_callable_obj, 
+                              smart_strobj_recognition )
+from .exceptions import NotFittedError
+from .view.plot import ExPlot
 
 # +++ add base documentations +++
+
 _base_params = dict ( 
     axis="""
 axis: {0 or 'index', 1 or 'columns'}, default 0
@@ -101,7 +78,6 @@ kind: str, Optional
 inplace: bool, default False
     Whether to modify the DataFrame rather than creating a new one.    
     """
-
  )
 
 _param_docs = DocstringComponents.from_nested_components(
@@ -113,14 +89,10 @@ _param_docs = DocstringComponents.from_nested_components(
 _logger = watexlog().get_watex_logger(__name__)
 
 class Data: 
-    def __init__ (self, 
-                  verbose: int =0, 
-                  ): 
+    def __init__ (self, verbose: int =0): 
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
-
         self.verbose=verbose 
         self.data_=None 
-        
         
     @property 
     def data (self ):
@@ -155,8 +127,7 @@ class Data:
             Returns ``self`` for easy method chaining.
             
         """ 
-        
-        
+
         if data is not None: 
             self.data = data 
 
@@ -555,7 +526,6 @@ class Missing (Data) :
                 self.data.drop (columns = self.columns , axis = axis , 
                                 inplace = False , **kwd)
 
-        
         return self 
     
     @property 
@@ -566,7 +536,6 @@ class Missing (Data) :
         
         return self.data.isna().any().any() 
     
-
     def replace (self, 
                  data:str |DataFrame = None , 
                  columns: List[str] = None,
@@ -637,22 +606,114 @@ class Missing (Data) :
             
         return self 
     
+class Base:
+    """Base class for all class in watex.
 
-class Explore (Data): 
+    Notes
+    -----
+    All class defined should specify all the parameters that can be set
+    at the class level in their ``__init__`` as explicit keyword
+    arguments (no ``*args`` or ``**kwargs``).
     """
-    Exploratory data analysis 
-    
-    It is needed to create a model since it gives a feel for the data and also 
-    at great excuses to meet and discuss issues with business units that 
-    controls the data. 
-    
-    """
-    
-    def __init__( self, **kwd): 
-        
-        super().__init__(*kwd)
 
+    @classmethod
+    def _get_param_names(cls):
+        """Get parameter names for the estimator"""
+        # fetch the constructor or the original constructor before
+        # deprecation wrapping if any
+        init = getattr(cls.__init__, "deprecated_original", cls.__init__)
+        if init is object.__init__:
+            # No explicit constructor to introspect
+            return []
 
+        # introspect the constructor arguments to find the model parameters
+        # to represent
+        init_signature = inspect.signature(init)
+        # Consider the constructor parameters excluding 'self'
+        parameters = [
+            p
+            for p in init_signature.parameters.values()
+            if p.name != "self" and p.kind != p.VAR_KEYWORD
+        ]
+        for p in parameters:
+            if p.kind == p.VAR_POSITIONAL:
+                raise RuntimeError(
+                    "scikit-learn estimators should always "
+                    "specify their parameters in the signature"
+                    " of their __init__ (no varargs)."
+                    " %s with constructor %s doesn't "
+                    " follow this convention." % (cls, init_signature)
+                )
+        # Extract and sort argument names excluding 'self'
+        return sorted([p.name for p in parameters])
+
+    def get_params(self, deep=True):
+        """
+        Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep : bool, default=True
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns
+        -------
+        params : dict
+            Parameter names mapped to their values.
+        """
+        out = dict()
+        for key in self._get_param_names():
+            value = getattr(self, key)
+            if deep and hasattr(value, "get_params"):
+                deep_items = value.get_params().items()
+                out.update((key + "__" + k, val) for k, val in deep_items)
+            out[key] = value
+        return out
+
+    def set_params(self, **params):
+        """Set the parameters of this estimator.
+
+        The method works on simple estimators as well as on nested objects
+        (such as :class:`~sklearn.pipeline.Pipeline`). The latter have
+        parameters of the form ``<component>__<parameter>`` so that it's
+        possible to update each component of a nested object.
+
+        Parameters
+        ----------
+        **params : dict
+            Estimator parameters.
+
+        Returns
+        -------
+        self : estimator instance
+            Estimator instance.
+        """
+        if not params:
+            # Simple optimization to gain speed (inspect is slow)
+            return self
+        valid_params = self.get_params(deep=True)
+
+        nested_params = defaultdict(dict)  # grouped by prefix
+        for key, value in params.items():
+            key, delim, sub_key = key.partition("__")
+            if key not in valid_params:
+                local_valid_params = self._get_param_names()
+                raise ValueError(
+                    f"Invalid parameter {key!r} for estimator {self}. "
+                    f"Valid parameters are: {local_valid_params!r}."
+                )
+
+            if delim:
+                nested_params[key][sub_key] = value
+            else:
+                setattr(self, key, value)
+                valid_params[key] = value
+
+        for key, sub_params in nested_params.items():
+            valid_params[key].set_params(**sub_params)
+
+        return self
 
 Data.__doc__="""\
 Data base class
@@ -703,44 +764,161 @@ Examples
     params=_param_docs,
     returns=_core_docs["returns"],
 )
+def get_params (obj: object 
+                ) -> dict: 
+    """
+    Get object parameters. 
+    
+    Object can be callable or instances 
+    
+    :param obj: object , can be callable or instance 
+    
+    :return: dict of parameters values 
+    
+    :examples: 
+    >>> from sklearn.svm import SVC 
+    >>> from watex.tools.funcutils import get_params 
+    >>> sigmoid= SVC (
+        **{
+            'C': 512.0,
+            'coef0': 0,
+            'degree': 1,
+            'gamma': 0.001953125,
+            'kernel': 'sigmoid',
+            'tol': 1.0 
+            }
+        )
+    >>> pvalues = get_params( sigmoid)
+    >>> {'decision_function_shape': 'ovr',
+         'break_ties': False,
+         'kernel': 'sigmoid',
+         'degree': 1,
+         'gamma': 0.001953125,
+         'coef0': 0,
+         'tol': 1.0,
+         'C': 512.0,
+         'nu': 0.0,
+         'epsilon': 0.0,
+         'shrinking': True,
+         'probability': False,
+         'cache_size': 200,
+         'class_weight': None,
+         'verbose': False,
+         'max_iter': -1,
+         'random_state': None
+     }
+    """
+    if hasattr (obj, '__call__'): 
+        cls_or_func_signature = inspect.signature(obj)
+        PARAMS_VALUES = {k: None if v.default is (inspect.Parameter.empty 
+                         or ...) else v.default 
+                    for k, v in cls_or_func_signature.parameters.items()
+                    # if v.default is not inspect.Parameter.empty
+                    }
+    elif hasattr(obj, '__dict__'): 
+        PARAMS_VALUES = {k:v  for k, v in obj.__dict__.items() 
+                         if not (k.endswith('_') or k.startswith('_'))}
+    
+    return PARAMS_VALUES
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def is_installing (
+        module: str , 
+        upgrade: bool=True , 
+        action: bool=True, 
+        DEVNULL: bool=False,
+        verbose: int=0,
+        **subpkws
+    )-> bool: 
+    """ Install or uninstall a module/package using the subprocess 
+    under the hood.
+    
+    Parameters 
+    ------------
+    module: str,
+        the module or library name to install using Python Index Package `PIP`
+    
+    upgrade: bool,
+        install the lastest version of the package. *default* is ``True``.   
         
+    DEVNULL:bool, 
+        decline the stdoutput the message in the console 
+    
+    action: str,bool 
+        Action to perform. 'install' or 'uninstall' a package. *default* is 
+        ``True`` which means 'intall'. 
+        
+    verbose: int, Optional
+        Control the verbosity i.e output a message. High level 
+        means more messages. *default* is ``0``.
+         
+    subpkws: dict, 
+        additional subprocess keywords arguments 
+    Returns 
+    ---------
+    success: bool 
+        whether the package is sucessfully installed or not. 
+        
+    Example
+    --------
+    >>> from watex import is_installing
+    >>> is_installing(
+        'tqdm', action ='install', DEVNULL=True, verbose =1)
+    >>> is_installing(
+        'tqdm', action ='uninstall', verbose =1)
+    """
+    #implement pip as subprocess 
+    # refer to https://pythongeeks.org/subprocess-in-python/
+    if not action: 
+        if verbose > 0 :
+            print("---> No action `install`or `uninstall`"
+                  f" of the module {module!r} performed.")
+        return action  # DO NOTHING 
+    
+    success=False 
+
+    action_msg ='uninstallation' if action =='uninstall' else 'installation' 
+
+    if action in ('install', 'uninstall', True) and verbose > 0:
+        print(f'---> Module {module!r} {action_msg} will take a while,'
+              ' please be patient...')
+        
+    cmdg =f'<pip install {module}> | <python -m pip install {module}>'\
+        if action in (True, 'install') else ''.join([
+            f'<pip uninstall {module} -y> or <pip3 uninstall {module} -y ',
+            f'or <python -m pip uninstall {module} -y>.'])
+        
+    upgrade ='--upgrade' if upgrade else '' 
+    
+    if action == 'uninstall':
+        upgrade= '-y' # Don't ask for confirmation of uninstall deletions.
+    elif action in ('install', True):
+        action = 'install'
+
+    cmd = ['-m', 'pip', f'{action}', f'{module}', f'{upgrade}']
+
+    try: 
+        STDOUT = subprocess.DEVNULL if DEVNULL else None 
+        STDERR= subprocess.STDOUT if DEVNULL else None 
+    
+        subprocess.check_call(
+            [sys.executable] + cmd, stdout= STDOUT, stderr=STDERR,
+                              **subpkws)
+        if action in (True, 'install'):
+            # freeze the dependancies
+            reqs = subprocess.check_output(
+                [sys.executable,'-m', 'pip','freeze'])
+            [r.decode().split('==')[0] for r in reqs.split()]
+
+        success=True
+        
+    except: 
+
+        if verbose > 0 : 
+            print(f'---> Module {module!r} {action_msg} failed. Please use'
+                f' the following command: {cmdg} to manually do it.')
+    else : 
+        if verbose > 0: 
+            print(f"{action_msg.capitalize()} of `{module}` "
+                      "and dependancies was successfully done!") 
+        
+    return success 

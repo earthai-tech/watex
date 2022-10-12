@@ -63,6 +63,8 @@ from .funcutils import (
     fillNaN, 
     spi                   
 )
+try: import scipy.stats as spstats
+except: pass 
 
 _logger =watexlog.get_watex_logger(__name__)
 
@@ -2197,7 +2199,7 @@ def get_type (
     return anom_type   
 
   
-@deprecated('`Deprecated function. Replaced by :meth:~core.erp.get_shape` ' 
+@deprecated('`Deprecated function. Replaced by :func:`.getshape` ' 
             'more convenient to recognize anomaly shape using ``median line``'
             'rather than ``mean line`` below.')   
 def get_shape (
@@ -2255,7 +2257,213 @@ def get_shape (
             
     return shape 
 
+#XXX TODO Deprecated for the next release 
+def gettype (erp_array, posMinMax, pk, pos_array, dl): 
+    """
+    Find anomaly type from app. resistivity values and positions locations 
+    
+    :param erp_array: App.resistivty values of all `erp` lines 
+    :type erp_array: array_like 
+    
+    :param posMinMax: Selected anomaly positions from startpoint and endpoint 
+    :type posMinMax: list or tuple or nd.array(1,2)
+    
+    :param pk: Position of selected anomaly in meters 
+    :type pk: float or int 
+    
+    :param pos_array: Stations locations or measurements positions 
+    :type pos_array: array_like 
+    
+    :param dl: 
+        
+        Distance between two receiver electrodes measurement. The same 
+        as dipole length in meters. 
+    
+    :returns: 
+        - ``EC`` for Extensive conductive. 
+        - ``NC`` for narrow conductive. 
+        - ``CP`` for conductive plane 
+        - ``CB2P`` for contact between two planes. 
+        
+    :Example: 
+        
+        >>> from watex.methods.erp import get_type 
+        >>> x = [60, 61, 62, 63, 68, 65, 80,  90, 100, 80, 100, 80]
+        >>> pos= np.arange(0, len(x)*10, 10)
+        >>> ano_type= get_type(erp_array= np.array(x),
+        ...            posMinMax=(10,90), pk=50, pos_array=pos, dl=10)
+        >>> ano_type
+        ...CB2P
 
+    """
+    # Get position index 
+    anom_type ='CP'
+    index_pos = int(np.where(pos_array ==pk)[0])
+    # if erp_array [:index_pos +1].mean() < np.median(erp_array) or\
+    #     erp_array[index_pos:].mean() < np.median(erp_array) : 
+    #         anom_type ='CB2P'
+    if erp_array [:index_pos+1].mean() < np.median(erp_array) and \
+        erp_array[index_pos:].mean() < np.median(erp_array) : 
+            anom_type ='CB2P'
+            
+    elif erp_array [:index_pos +1].mean() >= np.median(erp_array) and \
+        erp_array[index_pos:].mean() >= np.median(erp_array) : 
+                
+        if  dl <= (max(posMinMax)- min(posMinMax)) <= 5* dl: 
+            anom_type = 'NC'
+
+        elif (max(posMinMax)- min(posMinMax))> 5 *dl: 
+            anom_type = 'EC'
+
+    return anom_type
+
+#XXX TODO remove next release 
+def getshape(rhoa_range): 
+    
+    """ 
+    Find anomaly `shape`  from apparent resistivity values framed to
+    the best points. 
+ 
+    :param rhoa_range: The apparent resistivity from selected anomaly bounds
+                        :attr:`~core.erp.ERP.anom_boundaries`
+    :type rhoa_range: array_like or list 
+    
+    :returns: 
+        - V
+        - W
+        - K 
+        - C
+        - M
+        - U
+    
+    :Example: 
+        
+        >>> from watex.core.erp import get_shape 
+        >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
+        >>> shape = get_shape (rhoa_range= np.array(x))
+        ...U
+    
+    """
+    shape ='V'
+    try: 
+
+        minlocals_ix, = argrelextrema(rhoa_range, np.less)
+    except : 
+ 
+        minlocals_ix = argrelextrema(rhoa_range, np.less)
+    try : 
+
+        maxlocals_ix, = argrelextrema(rhoa_range, np.greater)
+    except : maxlocals_ix = argrelextrema(rhoa_range, np.greater)
+    
+    value_of_median = np.median(rhoa_range)
+    
+    coef_UH = 1.2 
+    c_=[rhoa_range[0] , rhoa_range[-1] ]
+
+    if len(minlocals_ix)==0 : 
+        if len(maxlocals_ix)==0 and\
+            (max(c_) and min(c_)) > value_of_median : 
+            return 'U'
+        
+        return 'C' 
+
+    if len(minlocals_ix) ==1 : 
+
+        if max(c_) > np.median(rhoa_range) and min(c_) <  value_of_median/2: 
+            return 'C'
+
+        elif rhoa_range[minlocals_ix] > value_of_median or \
+            rhoa_range[minlocals_ix] > max(c_): 
+            return 'M'
+    if len(minlocals_ix)>1 : 
+        if (max(c_) or min(c_))> value_of_median : 
+            shape ='W'
+            if max(c_) > value_of_median and\
+                min(c_) > value_of_median: 
+                if rhoa_range[maxlocals_ix].mean()> value_of_median : 
+                    if  coef_UH * rhoa_range[minlocals_ix].mean(): 
+                        shape ='H'
+                        
+                        coef_UH = 1.
+                        
+                        if rhoa_range[minlocals_ix].mean() <= coef_UH * \
+                            rhoa_range[maxlocals_ix].mean():
+                            shape = 'U'
+                        
+            else : shape ='K'
+            
+        elif (rhoa_range[0] and rhoa_range[-1]) < np.median(rhoa_range): 
+            shape =  'M'    
+
+        return shape 
+        
+    return shape  
+           
+def get_type2 (erp_array, posMinMax, pk, pos_array, dl=None): 
+    """
+    Find anomaly type from app. resistivity values and positions locations 
+    
+    :param erp_array: App.resistivty values of all `erp` lines 
+    :type erp_array: array_like 
+    
+    :param posMinMax: Selected anomaly positions from startpoint and endpoint 
+    :type posMinMax: list or tuple or nd.array(1,2)
+    
+    :param pk: Position of selected anomaly in meters 
+    :type pk: float or int 
+    
+    :param pos_array: Stations locations or measurements positions 
+    :type pos_array: array_like 
+    
+    :param dl: 
+        
+        Distance between two receiver electrodes measurement. The same 
+        as dipole length in meters. 
+    
+    :returns: 
+        - ``EC`` for Extensive conductive. 
+        - ``NC`` for narrow conductive. 
+        - ``CP`` for conductive plane 
+        - ``CB2P`` for contact between two planes. 
+        
+    :Example: 
+        
+        >>> from watex.core.erp import get_type 
+        >>> x = [60, 61, 62, 63, 68, 65, 80,  90, 100, 80, 100, 80]
+        >>> pos= np.arange(0, len(x)*10, 10)
+        >>> ano_type= get_type(erp_array= np.array(x),
+        ...            posMinMax=(10,90), pk=50, pos_array=pos, dl=10)
+        >>> ano_type
+        ...CB2P
+
+    """
+    if dl is None: 
+        dl = max(pos_array) - min(pos_array) / (len(pos_array)-1)
+        
+    # Get position index 
+    pos_ix = np.array(pos_array)- min(pos_array) /dl 
+    pos_ix.astype(np.int32) # get index 
+
+    anom_type ='CP'
+    index_pos = int(np.where(pos_array ==pk)[0])
+    
+    left_bound= erp_array [:index_pos+1].mean() 
+    right_bound =  erp_array[index_pos:].mean()
+    med_= np.median(erp_array) 
+
+    if  (left_bound < med_  and  right_bound >= med_) or \
+        (left_bound >= med_ and right_bound < med_) : 
+            anom_type ='CB2P'
+            
+    if left_bound > med_  and  right_bound > med_ : 
+        if  dl <= (max(posMinMax)- min(posMinMax)) <= 5* dl: 
+            anom_type = 'NC'
+        elif (max(posMinMax)- min(posMinMax))> 5 *dl: 
+            anom_type = 'EC'
+
+    return anom_type 
+	
 def compute_power (
         posMinMax:float =None,
         pk_min: Optional[float]=None ,
@@ -3102,3 +3310,142 @@ def moving_average (
             ya = np.append(ya, v)
             
     return ya 
+
+
+def get_profile_angle (
+        easting: float =None, northing: float =None, msg:str ="ignore" ): 
+    """
+    compute geoprofile angle. 
+    Parameters 
+    -----------
+    * easting : array_like 
+            easting coordiantes values 
+    * northing : array_like 
+            northing coordinates values
+    * msg: output a little message if msg is set to "raises"
+    
+    Returns 
+    ---------
+    float
+         profile_angle 
+    float 
+        geo_electric_strike 
+    """
+    msg = (
+        "Need to import scipy.stats as a single module. Sometimes import scipy "
+        "differently  with stats may not work. Use either `import scipy.stats`"
+        " rather than `import scipy as sp`" 
+        )
+    
+    if easting is None or northing is None : 
+        raise TypeError('NoneType can not be computed !')
+        
+        # use the one with the lower standard deviation
+    try :
+        easting = easting.astype('float')
+        northing = northing.astype('float')
+    except : 
+        raise ValueError('Could not convert input argument to float!')
+    try : 
+        profile1 = spstats.linregress(easting, northing)
+        profile2 =spstats.linregress(northing, easting)
+    except:
+        warnings.warn(msg)
+        
+    profile_line = profile1[:2]
+    # if the profile is rather E=E(N),
+    # the parameters have to converted  into N=N(E) form:
+    
+    if profile2[4] < profile1[4]:
+        profile_line = (1. / profile2[0], -profile2[1] / profile2[0])
+
+    # if self.profile_angle is None:
+    profile_angle = (90 - (np.arctan(profile_line[0]) * 180 / np.pi)) % 180
+    
+    # otherwise: # have 90 degree ambiguity in 
+    #strike determination# choose strike which offers larger
+    #  angle with profile if profile azimuth is in [0,90].
+    if msg=="raises": 
+        print("+++ -> Profile angle is {0:+.2f} degrees E of N".format(
+                profile_angle
+                ) )
+    return np.around( profile_angle,2)
+     
+def get_strike (
+        profile_angle:float = None, 
+        easting =None, northing:float=None, 
+        gstrike:float =None, 
+        msg:str="ignore"
+        )->Tuple[float, float, str]:
+    """
+    Compute geoelectric strike from profile angle, easting and northing.
+    
+    Parameters
+    -------------
+    *  profile_angle : float 
+        If not provided , will comput with easting and northing coordinates 
+    * easting : array_like 
+        Easting coordiantes values 
+    * northing : array_like 
+        Northing coordinates values 
+    * gstrike : float 
+        strike value , if provided, will recomputed geo_electric strike .
+     * msg: output a little message if msg is set to "raises"
+     
+    Returns 
+    --------
+    float
+         profile_angle in degree E of N 
+    float 
+        geo_electric_strike in degrees E of N
+     
+    """
+    
+    if profile_angle is None and  easting is None and northing is None : 
+        _logger.debug("NoneType is given. Use 'gstrike' to recompute the "
+                      "geoelectrical strike")
+        if gstrike is None :
+            raise TypeError("Could not compute geo-electrike strike!")
+    
+    if profile_angle is None : 
+        if easting is not None and northing is not None : 
+            profile_angle ,_ = get_profile_angle(
+                                easting, northing)
+    
+    if gstrike is None : 
+        if 0<= profile_angle < 90 :
+            geo_electric_strike  = profile_angle + 90  
+        elif 90<=profile_angle < 180 :
+            geo_electric_strike = profile_angle -90
+        elif 180 <= profile_angle <270 :
+            geo_electric_strike = - profile_angle +90 
+        else :
+            geo_electric_strike  = - profile_angle -90 
+        
+        geo_electric_strike  %= 180   
+    
+    if gstrike is not None : # recomputed geo_electrike strike 
+        if 0 <= profile_angle < 90:
+            if np.abs(profile_angle - gstrike) < 45:
+                geo_electric_strike  = gstrike+ 90
+     
+        elif 90 <= profile_angle < 135:
+            if profile_angle - gstrike < 45:
+                geo_electric_strike = gstrike - 90
+        else:
+            if profile_angle - gstrike >= 135:
+               geo_electric_strike = gstrike+ 90
+        geo_electric_strike %=  180         # keep value of
+        #geoelectrike strike less than 180 degree
+        
+    geo_electric_strike =np.floor(geo_electric_strike)
+    if msg=="raises": 
+        print("+++ -> Profile angle is {0:+.2f} degrees E of N".format(
+            geo_electric_strike))
+    return  geo_electric_strike, profile_angle 
+        
+        
+        
+        
+        
+        

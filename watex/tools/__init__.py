@@ -18,7 +18,6 @@ from .exmath import (
     magnitude, 
     sfi, 
     ohmicArea, 
-    invertVES, 
     vesDataOperator, 
     scalePosition,
     rhoa2z, 
@@ -34,7 +33,8 @@ from .mlutils import (
     discretizeCategoriesforStratification,
     stratifiedUsingDiscretedCategories, 
     split_train_test, 
-    correlatedcolumns, 
+    correlatedfeatures, 
+    findCatandNumFeatures,
     
     )
 from ..decorators import gdal_data_check
@@ -78,3 +78,34 @@ except Exception:
     epsg_dict_fn = os.path.join(path, 'epsg.npy')
 
     EPSG_DICT = np.load(epsg_dict_fn, allow_pickle=True).item()
+    
+
+__all__=[
+        'plotAnomaly', 
+        'vesSelector', 
+        'erpSelector', 
+        'defineConductiveZone',
+        'makeCoords', 
+        'type_',
+        'shape', 
+        'power', 
+        'magnitude', 
+        'sfi', 
+        'ohmicArea', 
+        'vesDataOperator', 
+        'scalePosition',
+        'rhoa2z', 
+        'z2rhoa', 
+        'interpolate1d', 
+        'interpolate2d',
+        'scaley', 
+        'fittensor', 
+        'selectfeatures', 
+        'getGlobalScore', 
+        'discretizeCategoriesforStratification',
+        'stratifiedUsingDiscretedCategories', 
+        'split_train_test', 
+        'correlatedfeatures', 
+        'findCatandNumFeatures',
+
+        ]

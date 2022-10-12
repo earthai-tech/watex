@@ -10,7 +10,7 @@ Automate the loading data
 import os 
 from .load import loadBagoueDataset
 
-from ..bases import  (
+from ..cases import  (
     BaseSteps, 
    ) 
 from ..tools.mlutils import (

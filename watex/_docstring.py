@@ -12,101 +12,11 @@ __all__=[
     '_core_returns', 
     '_core_params',
     'refglossary',
-    '_core_docs', 
-    'xgboostdoc', 
-    'sklearndoc', 
+    '_core_docs',  
     ]
 
-sklearndoc = type ('sklearndoc', () , dict (
-    __doc__ ="""\ 
-    Machine Learning in Python
-    
-    Scikit-learn (Sklearn) is the most useful and robust library for machine 
-    learning in Python. It provides a selection of efficient tools for machine 
-    learning and statistical modeling including classification, regression, 
-    clustering and dimensionality reduction via a consistence interface in Python. 
-    This library, which is largely written in Python, is built upon NumPy, SciPy 
-    and Matplotlib.
-    
-    It was originally called scikits.learn and was initially developed by David 
-    Cournapeau as a Google summer of code project in 2007. Later, in 2010, 
-    Fabian Pedregosa, Gael Varoquaux, Alexandre Gramfort, and Vincent Michel,
-    from FIRCA (French Institute for Research in Computer Science and Automation), 
-    took this project at another level and made the first public release 
-    (v0.1 beta) on 1st Feb. 2010. At this time, itts version history is listed above 
 
-        * May 2019: scikit-learn 0.21.0
-        * March 2019: scikit-learn 0.20.3
-        * December 2018: scikit-learn 0.20.2        
-        * November 2018: scikit-learn 0.20.1        
-        * September 2018: scikit-learn 0.20.0        
-        * July 2018: scikit-learn 0.19.2        
-        * July 2017: scikit-learn 0.19.0        
-        * September 2016. scikit-learn 0.18.0        
-        * November 2015. scikit-learn 0.17.0        
-        * March 2015. scikit-learn 0.16.0        
-        * July 2014. scikit-learn 0.15.0        
-        * August 2013. scikit-learn 0.14
-    
-    Installation
-    -------------
-    If you already installed NumPy and Scipy, following are the two easiest 
-    ways to install scikit-learn. Following command can be used to install 
-    scikit-learn via::
-        
-        * Using pip
-        
-        :code:`pip install -U scikit-learn`
-        
-        * Using conda
-        
-        :conda:`install scikit-learn`
-        
-    On the other hand, if NumPy and Scipy is not yet installed on your Python 
-    workstation then, you can install them by using either pip or conda.
-    
-    Another option to use scikit-learn is to use Python distributions like 
-    Canopy and Anaconda because they both ship the latest version of scikit-learn.
-    
-    References 
-    ----------
-    .. https://scikit-learn.org/stable/index.html
-    
-    """
-    ) 
-)
-    
-xgboostdoc = type ('xgboostdoc', (), dict (
-    __doc__= """\
-    Extreme Gradient Boosting
-    
-    XGBoost XgBoost stands for Extreme Gradient Boosting, is an open-source 
-    software library that implements optimized distributed gradient boosting 
-    machine learning algorithms under the Gradient Boosting framework.
-    
-    XgBoost, which was proposed by the researchers at the University of 
-    Washington. It is a library written in C++ which optimizes the training for 
-    Gradient  Boosting. Before understanding the XGBoost, we first need to 
-    understand the trees especially the decision tree. 
-    
-    Indeed , a Decision tree(DT) is a flowchart-like tree structure, where 
-    each internal node denotes a test on an attribute, each branch represents 
-    an outcome of the test, and each leaf node (terminal node) holds a class 
-    label. A tree can be 'learned' by splitting the source set into subsets 
-    based on an attribute value test. This process is repeated on each derived 
-    subset in a recursive manner called recursive partitioning. The recursion 
-    is completed when the subset at a node all has the same value of the target 
-    variable, or when splitting no longer adds value to the predictions.
-    
-    References 
-    -----------
-    ..[1] https://www.geeksforgeeks.org/xgboost/
-    ..[2] https://www.nvidia.com/en-us/glossary/data-science/xgboost/
-    
-    """
-    )
-)
-    
+      
 refglossary =type ('refglossary', (), dict (
     __doc__="""\
     .. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9

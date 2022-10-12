@@ -19,7 +19,7 @@ from pprint import pprint
 import numpy as np
 import pandas as pd 
  
-from ..exlib import  (
+from ..exlib.sklearn import  (
     Pipeline,
     FeatureUnion, 
     SimpleImputer, 
@@ -41,7 +41,7 @@ from ..typing import (
     )
 
 from .._watexlog import watexlog
-from .transformers import (
+from ..transformers import (
     DataFrameSelector,
     CombinedAttributesAdder, 
     CategorizeFeatures,

@@ -9,3 +9,12 @@ from .premodels import (
     p, 
     pModels 
     )
+
+__all__=[
+    "BaseEvaluation", 
+    "GridSearch", 
+    "multipleGridSearches", 
+    "p", 
+    "pModels", 
+    
+    ]

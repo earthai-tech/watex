@@ -4,13 +4,16 @@
 #   Created on Sat Oct  1 15:24:33 2022
 
 """
-`WATex`_ Data Loader 
-=====================
+Data Loader 
+==============
 
 Fetch data online from zenodo record or repository.  
 
 """
-from __future__ import (print_function , annotations )
+from __future__ import (
+    print_function , 
+    annotations 
+    )
 import os 
 import time
 import sys 
@@ -56,7 +59,6 @@ _GIT_DICT = dict(
     blob_root = 'https://github.com/WEgeophysics/watex/blob/master/'
  )
 _GIT_DICT ['url_tgz'] = _GIT_DICT.get ('root') + _TGZ_DICT.get('tgz_f')
-
 
 
 def loadBagoueDataset (): 
@@ -198,14 +200,16 @@ class Loader:
         Example
         ---------
         >>> from watex.datasets.load import Loader 
-        >>> loadObj = Loader (zenodo_record= '10.5281/zenodo.5571534',
+        >>> loadObj = Loader (
+                zenodo_record= '10.5281/zenodo.5571534',
                 content_url=  'https://raw.githubusercontent.com/WEgeophysics/watex/master/',
                 repo_url= 'https://github.com/WEgeophysics/watex',
                 tgz_file='https://raw.githubusercontent.com/WEgeophysics/watex/master/data/__tar.tgz/fmain.bagciv.data.tar.gz',
                 blobcontent_url =   'https://github.com/WEgeophysics/watex/blob/master/',
                 zip_or_rar_file= 'BagoueCIV__dataset__main.rar',
                 csv_file =  '/__tar.tgz_files__/___fmain.bagciv.data.csv',
-                verbose=  10)
+                verbose=  10
+                )
         >>> loadObj.fit('data/geodata/main.bagciv.data.csv')
         ... ### -> Wait while decompressing 'fmain.bagciv.data.tar.gz' file ... 
         ... --- -> Fail to decompress 'fmain.bagciv.data.tar.gz' file

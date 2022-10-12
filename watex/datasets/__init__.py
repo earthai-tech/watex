@@ -12,7 +12,7 @@ from online (repository or zenodo record )
 
 try:
     from watex.datasets.config import fetch_data
-except : 
+except ImportError : 
     from warnings import warn 
     from .._watexlog import watexlog
     
@@ -23,7 +23,8 @@ except :
             )
     watexlog().get_watex_logger(__name__).debug(m); warn(m, UserWarning)
 
-     
+else : 
+    __all__=['fetch_data']
     
 
 

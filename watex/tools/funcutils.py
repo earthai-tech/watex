@@ -127,7 +127,7 @@ def url_checker (url: str , install:bool = False,
         if install: 
             success  = is_installing('requests', DEVNULL=True) 
         if not success: 
-            if raises: 
+            if raises=='raises': 
                 raise ModuleNotFoundError(
                     "auto-installation of 'requests' failed."
                     " Install it mannually.")
@@ -146,7 +146,7 @@ def url_checker (url: str , install:bool = False,
                 isr =0 
         
         except requests.exceptions.RequestException as e:
-            if raises : 
+            if raises=='raises': 
                 raise SystemExit(f"{url}: is not reachable \nErr: {e}")
             else: isr =0 
             

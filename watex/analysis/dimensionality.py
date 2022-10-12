@@ -467,7 +467,7 @@ def get_best_kPCA_params(
             ('log_reg', LogisticRegression())
             ])
             
-    CV: int 
+    cv: int 
         number of K-Fold to cross validate the training set.
         
     grid_kws:dict
@@ -933,7 +933,8 @@ Returns
 Examples
 --------
 >>> from from watex.view.mlplot import MLPlots
->>> from watex.datasets.data_preparing import bagoue_train_set
+>>> from watex.datasets import fetch_data 
+>>> from watex.analysis import pcaVarianceRatio
 >>> plot_kws = {'lc':(.9,0.,.8),
         'lw' :3.,           # line width 
         'font_size':7.,
@@ -943,11 +944,10 @@ Examples
        'gwhich' :'major',          # minor ticks
         # 'fs' :3.,                 # coeff to manage font_size 
         }
+>>> X, _ = fetch_data ('Bagoue data analysis')
 >>> mlObj =MLPlots(**plot_kws)
->>> pcaVarianceRatio(mlObj,
-...                     bagoue_train_set,
-...                     plot_var_ratio=True,
-...                     add_attributes=True)
+>>> pcaVarianceRatio(mlObj,X, plot_var_ratio=True)
+
 """
 # import inspect 
 # func_signature = inspect.signature(pcaVarianceRatio)

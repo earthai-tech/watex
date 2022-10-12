@@ -25,9 +25,16 @@ from .._watexlog import watexlog
 from ..exlib  import ( 
     train_test_split , 
     StratifiedShuffleSplit, 
+    accuracy_score,
     confusion_matrix, 
-    mean_squared_error 
-    
+    mean_squared_error , 
+    classification_report ,
+    f1_score,
+    precision_recall_curve, 
+    precision_score,
+    recall_score, 
+    roc_auc_score, 
+    roc_curve
 )
 from ..typing import (
     List,
@@ -43,6 +50,7 @@ from ..typing import (
     NDArray,
     DType, 
     DataFrame, 
+    Series,
     Sub                 
 )
 from ..exceptions import ( 
@@ -53,19 +61,23 @@ from .funcutils import (
     _assert_all_types, 
     savepath_, 
     smart_format, 
-    
 )
-
 _logger = watexlog().get_watex_logger(__name__)
 
 
-DOWNLOAD_ROOT = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/'
-# from Zenodo: 'https://zenodo.org/record/5560937#.YWQBOnzithE'
-DATA_PATH = 'data/__tar.tgz'  # 'BagoueCIV__dataset__main/__tar.tgz_files__'
-TGZ_FILENAME = '/fmain.bagciv.data.tar.gz'
-CSV_FILENAME = '/__tar.tgz_files__/___fmain.bagciv.data.csv'
 
-DATA_URL = DOWNLOAD_ROOT + DATA_PATH  + TGZ_FILENAME
+_scorers = { 
+    "classification_report":classification_report,
+    'precision_recall': precision_recall_curve,
+    "confusion_matrix":confusion_matrix,
+    'precision': precision_score,
+    "accuracy": accuracy_score,
+    "mse":mean_squared_error, 
+    "recall": recall_score, 
+    'auc': roc_auc_score, 
+    'roc': roc_curve, 
+    'f1':f1_score,
+    }
 
 _estimators ={
         'dtc': ['DecisionTreeClassifier', 'dtc', 'dec', 'dt'],
@@ -82,6 +94,95 @@ _estimators ={
      'extree': ['ExtraTreesClassifier', 'extree', 'xtree', 'xtr']
         }  
 
+def evalModel(
+        model: F, 
+        X:NDArray |DataFrame, 
+        y: ArrayLike |Series, 
+        Xt:NDArray |DataFrame, 
+        yt:ArrayLike |Series=None, 
+        scorer:str | F = 'accuracy',
+        eval:bool =False,
+        **kws
+    ): 
+    """ Evaluate model and quick test the score with metric scorers. 
+    
+    Parameters
+    --------------
+    model: Callable, {'preprocessor + estimator } | estimator,
+        the preprocessor is list of step for data handling all encapsulated 
+        on the pipeline. model can also be a simple estimator with `fit`,
+        
+    X: N-d array, shape (N, M) 
+       the training set composed of N-columns and the M-samples. The 
+        feature set excludes the target `y`. 
+    y: arraylike , shape (M)
+        the target is composed of M-examples in supervised learning. 
+    
+    Xt: N-d array, shape (N, M) 
+        test set array composed of N-columns and the M-samples. The 
+        feature set excludes the target `y`. 
+    yt: arraylike , shape (M)
+        test label (or test target)  composed of M-examples in 
+        supervised learning.
+        
+    scorer: str, Callable, 
+        a scorer is a metric  function for model evaluation. If given as string 
+        it should be the prefix of the following metrics: 
+            
+            * "classification_report"     -> for classification_report,
+            * 'precision_recall'          -> for precision_recall_curve,
+            * "confusion_matrix"          -> for a confusion_matrix,
+            * 'precision'                 -> for  precision_score,
+            * "accuracy"                  -> for  accuracy_score
+            * "mse"                       -> for mean_squared_error, 
+            * "recall"                    -> for  recall_score, 
+            * 'auc'                       -> for  roc_auc_score, 
+            * 'roc'                       -> for  roc_curve 
+            * 'f1'                        -> for f1_score,
+            
+        Other string prefix values should raises an errors 
+        
+    kws: dict, 
+        Additionnal keywords arguments from scklearn metric function.
+        
+    Returns 
+    ----------
+    Tuple : (score, ypred)
+        the model score or the predicted y if `predict` is set to ``True``. 
+        
+    """
+
+    score = None 
+    if X.ndim ==1: 
+        X = X.reshape(-1, 1) 
+    if Xt.ndim ==1: 
+        Xt = Xt.reshape(-1, 1)
+        
+    model.fit(X, y)
+    # model.transform(X, y)
+    ypred = model.predict(Xt)
+    
+    if eval : 
+        if yt is None: 
+            raise TypeError(" NoneType 'yt' cannot be used for model evaluation.")
+            
+        if scorer is None: 
+           scorer =  _scorers['accuracy']
+           
+        if isinstance (scorer, str): 
+            if str(scorer) not in _scorers.keys(): 
+                raise ValueError (
+                    "Given scorer {scorer!r }is unknown. Accepts "
+                    f" only {smart_format(_scorers.keys())}") 
+                
+            scorer = _scorers.get(scorer)
+        elif not hasattr (scorer, '__call__'): 
+            raise TypeError ("scorer should be a callable object,"
+                             f" got {type(scorer).__name__!r}")
+            
+        score = scorer (yt, ypred, **kws)
+    
+    return  ypred, score  
 
 def correlatedfeatures(
         df:DataFrame ,
@@ -615,11 +716,11 @@ def write_excel(
             with pd.ExcelWriter(f"z{site_name}_{ii}.xlsx") as writer: 
                 df.to_excel(writer, index=False)
     
-   
+
 def fetchGeoDATA (
-    data_url:str = DATA_URL,
-    data_path:str =DATA_PATH,
-    tgz_filename:str  =TGZ_FILENAME
+    data_url:str ,
+    data_path:str ,
+    tgz_filename:str 
    ) -> None: 
     """ Fetch data from data repository in zip of 'targz_file. 
     
@@ -640,9 +741,9 @@ def fetchGeoDATA (
     data_tgz.close()
     
 def fetchTGZDatafromURL (
-    data_url:str =DATA_URL, 
-    data_path:str =DATA_PATH,
-    tgz_file=TGZ_FILENAME, 
+    data_url:str , 
+    data_path:str ,
+    tgz_file, 
     file_to_retreive=None,
     **kws
     ) -> Union [str, None]: 
@@ -654,6 +755,18 @@ def fetchTGZDatafromURL (
     :param data_url: url to the datafilename where `tgz` filename is located  
     :param data_path: absolute path to the `tgz` filename 
     :param filename: `tgz` filename. 
+    
+    :example: 
+    >>> from watex.tools.mlutils import fetchTGZDatafromURL
+    >>> DOWNLOAD_ROOT = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/'
+    >>> # from Zenodo: 'https://zenodo.org/record/5560937#.YWQBOnzithE'
+    >>> DATA_PATH = 'data/__tar.tgz'  # 'BagoueCIV__dataset__main/__tar.tgz_files__'
+    >>> TGZ_FILENAME = '/fmain.bagciv.data.tar.gz'
+    >>> CSV_FILENAME = '/__tar.tgz_files__/___fmain.bagciv.data.csv'
+    >>> fetchTGZDatafromURL (data_url= DATA_URL,
+                            data_path=DATA_PATH,
+                            tgz_filename=TGZ_FILENAME
+                            ) 
     """
     f= None
     if data_url is not None: 
@@ -1461,7 +1574,63 @@ def fetchModel(
 
     return pickledmodel,       
         
+def findCatandNumFeatures( 
+        df: DataFrame= None, 
+        features: List[str]= None,  
+        return_frames: bool= False 
+        ) -> Tuple[List[str] | DataFrame, List[str] |DataFrame]: 
+    """ 
+    Retrieve the categorial or numerical features on whole features 
+    of dataset. 
+    
+    Parameters 
+    -----------
+    df: Dataframe 
+        Dataframe with columns composing the features
         
+    features: list of str, 
+        list of the column names. If the dataframe is big, can set the only 
+        required features. If features are provided, frame should be shrunked 
+        to match the only given features before the numerical and categorical 
+        features search. Note that an error will raises if any of one features 
+        is missing in the dataframe. 
+        
+    return_frames: bool, 
+        if set to ``True``, it returns two separated dataframes (cat & num) 
+        otherwise, it only returns the cat and num columns names. 
+ 
+    Returns
+    ---------
+    Tuple:  `cat_features` and  `num_features` names or frames 
+       
+    Examples 
+    ----------
+    >>> from watex.datasets import fetch_data 
+    >>>> from watex.tools import findCatandNumFeatures
+    >>> data = fetch_data ('bagoue original').get('data=dfy2')
+    >>> cat, num = findCatandNumFeatures(data)
+    >>> cat, num 
+    ... (['type', 'geol', 'shape', 'name', 'flow'],
+     ['num', 'east', 'north', 'power', 'magnitude', 'sfi', 'ohmS', 'lwi'])
+    >>> cat, num = findCatandNumFeatures(
+        data, features = ['geol', 'ohmS', 'sfi'])
+    ... (['geol'], ['ohmS', 'sfi'])
+        
+    """
+    
+    if features is None: 
+        features = list(df.columns) 
+        
+    existfeatures(df, list(features))
+    df = df[features].copy() 
+    
+    # get num features 
+    num = selectfeatures(df, include = 'number')
+    catnames = findDifferenceGenObject (df.columns, num.columns ) 
+
+    return ( df[catnames], num) if return_frames else (
+        list(catnames), list(num.columns)  )
+   
         
         
         

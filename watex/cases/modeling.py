@@ -21,7 +21,7 @@ from ..typing import (
     Optional,
     Union 
   )
-from ..exlib  import ( 
+from ..exlib.sklearn  import ( 
     make_pipeline, 
     validation_curve, 
     RandomizedSearchCV, 

@@ -17,10 +17,7 @@ import numpy as np
 from ..tools.funcutils import  ( 
     savepath_ , 
     sanitize_fdataset, 
-    # categorize_flow, 
-    # fillNaN, 
-    )
-    
+    )   
 from ..typing import ( 
     Tuple, 
     List,
@@ -31,8 +28,6 @@ from ..typing import (
     ArrayLike, 
     T
     )
-
-
 from ..decorators import ( 
     writef, 
     catmapflow2
@@ -44,11 +39,8 @@ from ..exceptions import (
 from ..tools.gistools import ( 
     ll_to_utm, 
     project_point_ll2utm
-    
     )
-from ..tools.coreutils import ( 
-    _is_readable 
-    )
+from ..tools.coreutils import _is_readable 
 from watex._watexlog import watexlog 
 
 _logger =watexlog().get_watex_logger(__name__)

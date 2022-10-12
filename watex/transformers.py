@@ -11,8 +11,7 @@ import warnings
 import numpy as np 
 import pandas as pd 
 # from pandas.api.types import is_integer_dtype
-
-from ..exlib  import ( 
+from .exlib.sklearn  import ( 
     StratifiedShuffleSplit, 
     train_test_split,
     BaseEstimator,
@@ -23,9 +22,12 @@ from ..exlib  import (
     OneHotEncoder 
 )
  
-from .._watexlog import watexlog 
+from ._watexlog import watexlog 
+from ..tools.mlutils import (  
+    discretizeCategoriesforStratification, 
+    stratifiedUsingDiscretedCategories
+    )
 from .features import categorize_flow 
-import  watex.tools.mlutils as mlfunc
 
 __docformat__='restructuredtext'
 
@@ -116,7 +118,7 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
         if self.base_num_feature is not None:
             in_c= 'temf_'
             # discretize the new added category from the threshold value
-            X = mlfunc.discretizeCategoriesforStratification(
+            X = discretizeCategoriesforStratification(
                                              X,
                                             in_cat=self.base_num_feature, 
                                              new_cat=in_c, 
@@ -296,7 +298,7 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
         
         if self.base_flag_: 
             strat_train_set, strat_test_set = \
-                mlfunc.stratifiedUsingDiscretedCategories(X, self.base_column)
+                stratifiedUsingDiscretedCategories(X, self.base_column)
                 
             # get statistic from `basecolumn category proportions into the 
             # the whole dataset, in the testset generated using purely random 

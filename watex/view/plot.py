@@ -26,7 +26,6 @@ from pandas.plotting import (
 import seaborn as sns 
 
 from ..bases import FeatureInspection
-
 from .._docstring import ( 
     DocstringComponents,
     _core_docs,
@@ -48,12 +47,8 @@ from ..typing import (
     Series,
     F, 
 )
-from ..property import ( 
-    BasePlot, 
-    )
-from ..tools.coreutils import ( 
-    _is_readable 
-    )
+from ..property import BasePlot
+from ..tools.coreutils import _is_readable 
 from ..tools.funcutils import ( 
     _assert_all_types , 
     _isin, 
@@ -712,7 +707,7 @@ class ExPlot (BasePlot):
             **kws
     )->'ExPlot': 
         """ fancier scatterplot that includes histogram on the edge as well as 
-        a regression line call a `joinplot` 
+        a regression line called a `joinplot` 
         
         Parameters 
         -------------
@@ -797,8 +792,7 @@ class ExPlot (BasePlot):
             s: int |ArrayLike =None, 
             **kwd
         )->'ExPlot': 
-        """ Shown the relationship between two numeric columns. This is very
-        way with pandas. 
+        """ Shown the relationship between two numeric columns. 
         
         Parameters 
         ------------
