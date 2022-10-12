@@ -356,13 +356,13 @@ class DCSounding(ElectricalMethods) :
     Arguments 
     -----------
     
-    **fromS**: float , list of float
+    **froms**: float , list of float
         The collection of the depth in meters from which one expects to find a 
-        fracture zone outside of pollutions. Indeed, the `fromS` parameter is 
+        fracture zone outside of pollutions. Indeed, the `froms` parameter is 
         used to speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For 
         instance in `Bagoue region`_ , the average depth of water inrush 
-        is around ``45m``.So the `fromS` can be specified via the water inrush 
+        is around ``45m``.So the `froms` can be specified via the water inrush 
         average value. 
         
     **rho0**: float 
@@ -448,7 +448,7 @@ class DCSounding(ElectricalMethods) :
     
     >>> from watex.methods.electrical import DCSounding
     >>> dsobj = DCSounding ()  
-    >>> dsobj.fromS = 30. # start detecting the fracture zone from 30m depth.
+    >>> dsobj.froms = 30. # start detecting the fracture zone from 30m depth.
     >>> dsobj.fit('data/ves/ves_gbalo.xlsx')
     >>> dsobj.ohmic_areas_
     ...  array([523.25458506])
@@ -478,7 +478,7 @@ class DCSounding(ElectricalMethods) :
     """
            
     def __init__(self,
-                 fromS:float=45.,
+                 froms:float=45.,
                  rho0:float=None, 
                  h0 :float=1., 
                  read_sheets:bool=False, 
@@ -490,7 +490,7 @@ class DCSounding(ElectricalMethods) :
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.fromS=fromS 
+        self.froms=froms 
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
@@ -658,7 +658,6 @@ class ResistivityProfiling(ElectricalMethods):
     ... 30
     
     """
-    
     def __init__ (self, 
                   station: str | None = None,
                   dipole: float = 10.,
@@ -930,13 +929,13 @@ class VerticalSounding (ElectricalMethods):
     Arguments 
     -----------
     
-    **fromS**: float 
+    **froms**: float 
         The depth in meters from which one expects to find a fracture zone 
-        outside of pollutions. Indeed, the `fromS` parameter is used to  
+        outside of pollutions. Indeed, the `froms` parameter is used to  
         speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For 
         instance in `Bagoue region`_ , the average depth of water inrush 
-        is around ``45m``.So the `fromS` can be specified via the water inrush 
+        is around ``45m``.So the `froms` can be specified via the water inrush 
         average value. 
         
     **rho0**: float 
@@ -1035,7 +1034,7 @@ class VerticalSounding (ElectricalMethods):
     --------
     >>> from watex.methods import VerticalSounding 
     >>> from watex.tools import vesSelector 
-    >>> vobj = VerticalSounding(fromS= 45, vesorder= 3)
+    >>> vobj = VerticalSounding(froms= 45, vesorder= 3)
     >>> vobj.fit('data/ves/ves_gbalo.xlsx')
     >>> vobj.ohmic_area_ # in ohm.m^2
     ... 349.6432550517697
@@ -1060,7 +1059,7 @@ class VerticalSounding (ElectricalMethods):
     """
     
     def __init__(self,
-                 fromS: float = 45.,
+                 froms: float = 45.,
                  rho0: float = None, 
                  h0 : float = 1., 
                  strategy: str = 'HMCMC',
@@ -1071,7 +1070,7 @@ class VerticalSounding (ElectricalMethods):
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.fromS=fromS 
+        self.froms=froms 
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
@@ -1161,17 +1160,17 @@ class VerticalSounding (ElectricalMethods):
                       )
             self.data_['resistivity'] = self.resistivity_
             
-        if self.fromS >= self.max_depth_ : 
+        if self.froms >= self.max_depth_ : 
             raise VESError(
                 " Process of the depth monitoring is aborted! The searching"
-                f" point of param 'fromS'<{self.fromS}m> ' is expected to "
+                f" point of param 'froms'<{self.froms}m> ' is expected to "
                  f" be less than the maximum depth <{self.max_depth_}m>.")
         
         if self.verbose >= 3 : 
-            print("Pseudo-area should be computed from AB/2 ={str(self.fromS)}"
+            print("Pseudo-area should be computed from AB/2 ={str(self.froms)}"
                   f" to {self.max_depth_} meters. "
                   )
-        r = ohmicArea( data = self.data_ , sum = False, ohmSkey = self.fromS,  
+        r = ohmicArea( data = self.data_ , sum = False, ohmSkey = self.froms,  
                     objective = self.objective , typeofop = self.typeofop, 
                     )
         self._logging.info(f'Populating {self.__class__.__name__!r} property'
@@ -1226,7 +1225,7 @@ class VerticalSounding (ElectricalMethods):
         
         usefulparams = (
             'area', 'AB','MN', 'arrangememt','utm_zone', 'objective', 'rho0',
-             'h0', 'fromS', 'max_depth_', 'ohmic_area_', 'nareas_')
+             'h0', 'froms', 'max_depth_', 'ohmic_area_', 'nareas_')
         
         table_= pd.DataFrame (
             {f"{k}": getattr(self, k , np.nan )
@@ -1269,7 +1268,7 @@ class VerticalSounding (ElectricalMethods):
             approach (``BNN``). 
         
         :param kwd: dict - Additionnal keywords arguments from |VES| data  
-            operations. See :doc:`watex.utils.exmath.vesDataOperator` for futher
+            operations. See :doc:`watex.tools.exmath.vesDataOperator` for futher
             details.
         
         .. |VES| replace: Vertical Electrical Sounding 
@@ -1449,7 +1448,7 @@ def _readfrompath (self, data: List[str] ,
         map(lambda o: o.split('.')[0], self.survey_names_)) 
     
 
-    # populate and assert stations and fromS   
+    # populate and assert stations and froms   
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # if list of station is not given for each file 
     # note that here station is station where one expect to 
@@ -1478,7 +1477,7 @@ def _readfrompath (self, data: List[str] ,
                 
             elif dcmethod.__name__ =='VerticalSounding': 
                 dcObj = dcmethod(
-                    fromS=self.fromS[kk], 
+                    froms=self.froms[kk], 
                     vesorder=self.vesorder,
                     typeofop=self.typeofop,
                     objective=self.objective,
@@ -1521,7 +1520,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
         sf , arg = self.stations , 'stations'
         flag=0
     elif dcmethod.__name__=='VerticalSounding': 
-        sf, arg =self.fromS , 'fromS'
+        sf, arg =self.froms , 'froms'
         flag=1
     
         
@@ -1539,7 +1538,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
         
         msg =''.join([ 
                 f"### Number of {arg!r} does not fit the number of"
-                f" {'sites' if arg =='fromS' else 'stations'}. "
+                f" {'sites' if arg =='froms' else 'stations'}. "
                 "Expect {0} but {1} {2} given."
             ])
         
@@ -1562,7 +1561,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
     if not flag: 
         self.stations = sf 
     elif flag:
-        self.fromS = sf 
+        self.froms = sf 
         
         
 def _geterpattr (attr , dl ): 

@@ -4,7 +4,6 @@
 #   Created date: on Fri Sep 17 11:25:15 2021
 
 from __future__ import annotations 
-
 import copy 
 import inspect 
 import warnings 
@@ -50,7 +49,6 @@ from ..typing import (
     Series, 
     DataFrame,
 )
-
 from .funcutils import (
     _assert_all_types, 
     drawn_boundaries, 

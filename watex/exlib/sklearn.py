@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
-#   Created on Thu May 19 13:40:53 2022 
+#   Licence:BSD 3-Clause
+#   Author: LKouadio <etanoyau@gmail.com>
+"""
+Scikit-learn external 
+=======================
 
+The module gives a sypnosis of the module suse throughout the watex packages. 
+The mecanism of importation associates 'exlib' to 'sklearn' like 
+`watex.exlib.sklearn` to different the estimators classes from scikit and 
+others machines learnings algorithms. 
+
+"""
 sklearndoc = type ('sklearndoc', () , dict (
     __doc__ ="""\ 
     Machine Learning in Python
@@ -61,7 +71,6 @@ sklearndoc = type ('sklearndoc', () , dict (
 )
     
 import warnings 
-from ..base import is_installing
 
 _HAS_ENSEMBLE_=False
 
@@ -69,6 +78,7 @@ try :
     from sklearn.ensemble import  RandomForestClassifier
 except: 
     from .exceptions import ScikitLearnImportError 
+    from ..base import is_installing
     _HAS_ENSEMBLE_ = is_installing('sklearn')
     if not _HAS_ENSEMBLE_: 
         warnings.warn(
@@ -159,6 +169,7 @@ from sklearn.preprocessing import (
     LabelBinarizer,
     LabelEncoder,
 ) 
+from sklearn.utils.estimator_checks import check_estimator
 from sklearn.svm import SVC 
 from sklearn.tree import DecisionTreeClassifier
 
@@ -208,6 +219,7 @@ __all__=[
     'MinMaxScaler', 
     'LabelBinarizer',
     'LabelEncoder',
+    'check_estimator', 
     'SVC', 
     'DecisionTreeClassifier',
     'RandomForestClassifier',

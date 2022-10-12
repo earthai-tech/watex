@@ -3,7 +3,6 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created date: Thu Sep 22 10:50:13 2022
 
-
 """
 Core geology 
 =====================

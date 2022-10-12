@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd 
 
 from .._watexlog import watexlog
-from ..exlib  import ( 
+from ..exlib.sklearn import ( 
     train_test_split , 
     StratifiedShuffleSplit, 
     accuracy_score,

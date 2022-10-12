@@ -3,7 +3,6 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created on Tue May 17 11:30:51 2022
 
-
 """
 Module EM 
 ==========
@@ -101,6 +100,7 @@ else :
     HAS_MOD=True 
     
 if HAS_MOD : 
+    #XXX TODO : prior revise the pkg structure to pycsamt.core ...
     from pycsamt.ff.core import (
         edi, 
         z as EMz 
@@ -213,7 +213,7 @@ class EM(IsEdi):
         obj: str | EDIO 
         )-> edi.Edi  : 
         """Assert that the given argument is an EDI -object from modules 
-        EDi of pyCSAMT and MTpy packages. A TypeError will occurs otherwise.
+        EDI of pycsamt and MTpy packages. A TypeError will occurs otherwise.
         
         :param obj: Full path EDI file or `pycsamt`_.
         :type obj: str or str or  pycsamt.core.edi.Edi or mtpy.core.edi.Edi 
@@ -1147,13 +1147,13 @@ class Processing (EM) :
                  **kws): 
         super().__init__(**kws)
         
-        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.window_size =window_size 
-        self.component = component 
-        self.mode = mode 
-        self.method = method 
-        self.out = out 
-        self.c = c
+        self._logging= watexlog.get_watex_logger(self.__class__.__name__)
+        self.window_size=window_size 
+        self.component=component 
+        self.mode=mode 
+        self.method=method 
+        self.out=out 
+        self.c=c
         
 
     def tma (self,

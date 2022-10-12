@@ -1,17 +1,16 @@
-IF SKLEARN_OPENMP_PARALLELISM_ENABLED:
+IF WATEX_OPENMP_PARALLELISM_ENABLED:
     import os
     cimport openmp
     from joblib import cpu_count
 
-
 def _openmp_parallelism_enabled():
-    """Determines whether scikit-learn has been built with OpenMP
+    """Determines whether watex has been built with OpenMP
     It allows to retrieve at runtime the information gathered at compile time.
     """
-    # SKLEARN_OPENMP_PARALLELISM_ENABLED is resolved at compile time during
+    # WATEX_OPENMP_PARALLELISM_ENABLED is resolved at compile time during
     # cythonization. It is defined via the `compile_time_env` kwarg of the
     # `cythonize` call and behaves like the `-D` option of the C preprocessor.
-    return SKLEARN_OPENMP_PARALLELISM_ENABLED
+    return WATEX_OPENMP_PARALLELISM_ENABLED
 
 
 cpdef _openmp_effective_n_threads(n_threads=None):
@@ -30,12 +29,12 @@ cpdef _openmp_effective_n_threads(n_threads=None):
       ``|n_threads + 1|``. In particular ``n_threads = -1`` will use as many
       threads as there are available cores on the machine.
     - Raise a ValueError for ``n_threads = 0``.
-    If scikit-learn is built without OpenMP support, always return 1.
+    If watex is built without OpenMP support, always return 1.
     """
     if n_threads == 0:
         raise ValueError("n_threads = 0 is invalid")
 
-    IF SKLEARN_OPENMP_PARALLELISM_ENABLED:
+    IF WATEX_OPENMP_PARALLELISM_ENABLED:
         if os.getenv("OMP_NUM_THREADS"):
             # Fall back to user provided number of threads making it possible
             # to exceed the number of cpus.
@@ -56,9 +55,9 @@ cpdef _openmp_effective_n_threads(n_threads=None):
 
 cdef inline int _openmp_thread_num() nogil:
     """Return the number of the thread calling this function.
-    If scikit-learn is built without OpenMP support, always return 0.
+    If watex is built without OpenMP support, always return 0.
     """
-    IF SKLEARN_OPENMP_PARALLELISM_ENABLED:
+    IF WATEX_OPENMP_PARALLELISM_ENABLED:
         return openmp.omp_get_thread_num()
     ELSE:
         return 0

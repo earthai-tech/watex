@@ -9,14 +9,14 @@ import inspect
 import subprocess
 from collections import defaultdict
 from warnings import warn
+import numpy as np
 
-from .._watexlog import  watexlog
+from ._watexlog import  watexlog
 from ._docstring import DocstringComponents, _core_docs
 from .typing import List, Optional, DataFrame 
-from .tools.mlutils import existfeatures, selectfeatures 
 from .tools.coreutils import _is_readable 
 from .tools.funcutils import (_assert_all_types,  repr_callable_obj, 
-                              smart_strobj_recognition )
+                              smart_strobj_recognition, smart_format )
 from .exceptions import NotFittedError
 from .view.plot import ExPlot
 
@@ -298,15 +298,13 @@ class Data:
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
             f'{appender}{"" if rv is None else "?"}'
             )        
-        
-        
 
 class Missing (Data) : 
     """ Deal with missing in Data 
     
     Most algorithms will not work with missing data. Notable exceptions are the 
-    recent boosting libraries such as the XGBoost (:doc:`watex.documentation.xgboost.__doc__`) 
-    CatBoost and LightGBM. 
+    recent boosting libraries such as the XGBoost 
+    (:doc:`watex.documentation.xgboost.__doc__`) CatBoost and LightGBM. 
     As with many things in machine learning , there are no hard answaers for how 
     to treat a missing data. Also, missing data could  represent different 
     situations. There are three warious way to handle missing data:: 
@@ -607,7 +605,7 @@ class Missing (Data) :
         return self 
     
 class Base:
-    """Base class for all class in watex.
+    """Base class for all classes in watex for parameters retrievals
 
     Notes
     -----
@@ -638,7 +636,7 @@ class Base:
         for p in parameters:
             if p.kind == p.VAR_POSITIONAL:
                 raise RuntimeError(
-                    "scikit-learn estimators should always "
+                    "watex classes should always "
                     "specify their parameters in the signature"
                     " of their __init__ (no varargs)."
                     " %s with constructor %s doesn't "
@@ -654,8 +652,8 @@ class Base:
         Parameters
         ----------
         deep : bool, default=True
-            If True, will return the parameters for this estimator and
-            contained subobjects that are estimators.
+            If True, will return the parameters for this class and
+            contained subobjects.
 
         Returns
         -------
@@ -674,7 +672,7 @@ class Base:
     def set_params(self, **params):
         """Set the parameters of this estimator.
 
-        The method works on simple estimators as well as on nested objects
+        The method works on simple classes as well as on nested objects
         (such as :class:`~sklearn.pipeline.Pipeline`). The latter have
         parameters of the form ``<component>__<parameter>`` so that it's
         possible to update each component of a nested object.
@@ -755,15 +753,13 @@ Returns
    
 Examples
 --------
-
 .. include:: ../docs/data.rst
-
-
 
 """.format(
     params=_param_docs,
     returns=_core_docs["returns"],
 )
+    
 def get_params (obj: object 
                 ) -> dict: 
     """
@@ -921,4 +917,82 @@ def is_installing (
             print(f"{action_msg.capitalize()} of `{module}` "
                       "and dependancies was successfully done!") 
         
-    return success 
+    return success
+ 
+def existfeatures (df, features, error='raise'): 
+    """Control whether the features exists or not  
+    
+    :param df: a dataframe for features selections 
+    :param features: list of features to select. Lits of features must be in the 
+        dataframe otherwise an error occurs. 
+    :param error: str - raise if the features don't exist in the dataframe. 
+        *default* is ``raise`` and ``ignore`` otherwise. 
+        
+    :return: bool 
+        assert whether the features exists 
+    """
+    isf = False  
+    
+    error= 'raise' if error.lower().strip().find('raise')>= 0  else 'ignore' 
+
+    if isinstance(features, str): 
+        features =[features]
+        
+    features = _assert_all_types(features, list, tuple, np.ndarray)
+    set_f =  set (features).intersection (set(df.columns))
+    if len(set_f)!= len(features): 
+        nfeat= len(features) 
+        msg = f"Feature{'s' if nfeat >1 else ''}"
+        if len(set_f)==0:
+            if error =='raise':
+                raise ValueError (f"{msg} {smart_format(features)} "
+                                  f"{'does not' if nfeat <2 else 'dont'}"
+                                  " exist in the dataframe")
+            isf = False 
+        # get the difference 
+        diff = set (features).difference(set_f) if len(
+            features)> len(set_f) else set_f.difference (set(features))
+        nfeat= len(diff)
+        if error =='raise':
+            raise ValueError(f"{msg} {smart_format(diff)} not found in"
+                             " the dataframe.")
+        isf = False  
+    else : isf = True 
+    
+    return isf  
+    
+def selectfeatures (
+        df: DataFrame,
+        features: List[str] =None, 
+        include = None, 
+        exclude = None,
+        coerce: bool=False,
+        **kwd
+        ): 
+    """ Select features  and return new dataframe.  
+    
+    :param df: a dataframe for features selections 
+    :param features: list of features to select. Lits of features must be in the 
+        dataframe otherwise an error occurs. 
+    :param include: the type of data to retrieved in the dataframe `df`. Can  
+        be ``number``. 
+    :param exclude: type of the data to exclude in the dataframe `df`. Can be 
+        ``number`` i.e. only non-digits data will be keep in the data return.
+    :param coerce: return the whole dataframe with transforming numeric columns.
+        Be aware that no selection is done and no error is raises instead. 
+        *default* is ``False``
+    :param kwd: additional keywords arguments from `pd.astype` function 
+    
+    :ref: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.astype.html
+    """
+    
+    if features is not None: 
+        existfeatures(df, features, error ='raise')
+    # change the dataype 
+    df = df.astype (float, errors ='ignore', **kwd) 
+    # assert whether the features are in the data columns
+    if features is not None: 
+        return df [features] 
+    # raise ValueError: at least one of include or exclude must be nonempty
+    # use coerce to no raise error and return data frame instead.
+    return df if coerce else df.select_dtypes (include, exclude) 

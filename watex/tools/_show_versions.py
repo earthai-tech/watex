@@ -8,12 +8,11 @@ adapted from :func:`pandas.show_versions`
 # License: BSD 3 clause
 import platform
 import sys
-from ..tools.thread import threadpool_info
 from .. import __version__
-
-
-from ._openmp_helpers import _openmp_parallelism_enabled
-
+from .thread import threadpool_info
+try:
+    from ._openmp_helpers import _openmp_parallelism_enabled
+except: pass 
 
 def _get_sys_info():
     """System information

@@ -18,7 +18,6 @@ from ..tools.mlutils import  (
     loadDumpedOrSerializedData, 
     )
 from ..exceptions import DatasetError
-
 from .._watexlog import watexlog
 from ._p import ( 
     _X,
