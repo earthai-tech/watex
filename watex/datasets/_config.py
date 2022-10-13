@@ -39,7 +39,7 @@ from ._p import (
 _logger = watexlog().get_watex_logger(__name__)
 
 
-__all__=['fetch_data']
+__all__=['_fetch_data']
 
 _BTAGS = ( 
     'mid', 
@@ -114,45 +114,7 @@ _BVAL= dict (
         ), 
 )
   
-def fetch_data(tag): 
-    """ Fetch dataset from 'tag'. A tag correspond to each level of data 
-    processing. 
-    
-    An example of retrieving Bagoue dataset can be experimented.
-
-    Parameters 
-    ------------
-    tag: str,  
-        stage of data processing. Tthere are different options to retrieve data
-        Could be:
-            
-        * ['original'] => original or raw data -& returns a dict of details 
-            contex combine with get method to get the dataframe like::
-                
-                >>> fetch_data ('bagoue original').get ('data=df')
-        * ['stratified'] => stratification data
-        * ['mid' |'semi'|'preprocess'|'fit']=> data cleaned with 
-            attributes experience combinaisons.
-        * ['pipe']=>  default pipeline created during the data preparing.
-        * ['analyses'|'pca'|'reduce dimension']=> data with text attributes
-            only encoded using the ordinal encoder +  attributes  combinaisons. 
-        * ['test'] => stratified test set data
-
-           
-    Returns
-    -------
-        `data`: Original data 
-        `X`, `y` : Stratified train set and training target 
-        `X0`, `y0`: data cleaned after dropping useless features and combined 
-            numerical attributes combinaisons if ``True``
-        `X_prepared`, `y_prepared`: Data prepared after applying  all the 
-           transformation via the transformer (pipeline). 
-        `XT`, `yT` : stratified test set and test label  
-        `_X`: Stratified training set for data analysis. So None sparse
-            matrix is contained. The text attributes (categorical) are converted 
-            using Ordianal Encoder.  
-        `_pipeline`: the default pipeline. 
-    """
+def _fetch_data(tag): 
     r=None 
     pm =regex.search (tag)
     if pm is None: 
@@ -212,5 +174,46 @@ def _pca_set_checker (param):
             return True 
     return False 
    
+    
+_fetch_data.__doc__ ="""\
+    
+Fetch dataset from 'tag'. A tag correspond to each level of data 
+processing. 
 
+An example of retrieving Bagoue dataset can be experimented.
+
+Parameters 
+------------
+tag: str,  
+    stage of data processing. Tthere are different options to retrieve data
+    Could be:
+        
+    * ['original'] => original or raw data -& returns a dict of details 
+        contex combine with get method to get the dataframe like::
+            
+            >>> fetch_data ('bagoue original').get ('data=df')
+    * ['stratified'] => stratification data
+    * ['mid' |'semi'|'preprocess'|'fit']=> data cleaned with 
+        attributes experience combinaisons.
+    * ['pipe']=>  default pipeline created during the data preparing.
+    * ['analyses'|'pca'|'reduce dimension']=> data with text attributes
+        only encoded using the ordinal encoder +  attributes  combinaisons. 
+    * ['test'] => stratified test set data
+
+       
+Returns
+-------
+    `data`: Original data 
+    `X`, `y` : Stratified train set and training target 
+    `X0`, `y0`: data cleaned after dropping useless features and combined 
+        numerical attributes combinaisons if ``True``
+    `X_prepared`, `y_prepared`: Data prepared after applying  all the 
+       transformation via the transformer (pipeline). 
+    `XT`, `yT` : stratified test set and test label  
+    `_X`: Stratified training set for data analysis. So None sparse
+        matrix is contained. The text attributes (categorical) are converted 
+        using Ordianal Encoder.  
+    `_pipeline`: the default pipeline.    
+    
+"""
     

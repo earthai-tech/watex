@@ -907,7 +907,7 @@ def test_set_check_id (
         hash:F[T]
         ) -> bool: 
     """ 
-    Get the testset id and set the corresponding unique identifier. 
+    Get the test set id and set the corresponding unique identifier. 
     
     Compute the a hash of each instance identifier, keep only the last byte 
     of the hash and put the instance in the testset if this value is lower 

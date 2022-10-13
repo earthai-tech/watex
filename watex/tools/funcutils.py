@@ -13,7 +13,8 @@ import csv
 import copy  
 import json
 import yaml
-import shutil 
+import shutil
+import numbers 
 import inspect  
 import warnings
 import itertools
@@ -74,8 +75,9 @@ except ImportError:
     _logger.warning(_msg0)
     
     interp_import = False
+    
 #-----
- 
+
 def url_checker (url: str , install:bool = False, 
                       raises:str ='ignore')-> bool : 
     """
@@ -2950,6 +2952,32 @@ def print_cmsg(cfile:str, todo:str='load', config:str='YAML') -> str:
                       " data was sucessfully loaded."])
     return msg 
 
+
+def random_state_validator(seed):
+    """Turn seed into a np.random.RandomState instance.
+    
+    Parameters
+    ----------
+    seed : None, int or instance of RandomState
+        If seed is None, return the RandomState singleton used by np.random.
+        If seed is an int, return a new RandomState instance seeded with seed.
+        If seed is already a RandomState instance, return it.
+        Otherwise raise ValueError.
+        
+    Returns
+    -------
+    :class:`numpy:numpy.random.RandomState`
+        The random state object based on `seed` parameter.
+    """
+    if seed is None or seed is np.random:
+        return np.random.mtrand._rand
+    if isinstance(seed, numbers.Integral):
+        return np.random.RandomState(seed)
+    if isinstance(seed, np.random.RandomState):
+        return seed
+    raise ValueError(
+        "%r cannot be used to seed a numpy.random.RandomState instance" % seed
+    )
 
 
   

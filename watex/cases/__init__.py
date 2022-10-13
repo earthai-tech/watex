@@ -2,13 +2,13 @@
 """
 Cases: Pratical cases 
 =======================
-the 'cases' subpackages implements function and modules already validated and 
-used to solve real ingeneering problems like the FR predictions and boosting 
+the 'cases' subpackage implements function and modules already validated and 
+used to solve real engineering problems like the FR predictions and boosting 
 using the bases learners , SVC  and  ensembles paradigms. 
 
-'Features', 'processing', 'modeling' and 'prepare' modules and bases steps can 
-be used for processing and analyses to give quick depiction of how data 
-is look like and and can figure out the next processing steps for solving the 
+'features', 'processing', 'modeling' and 'prepare' modules are the bases steps  
+and can be used for processing and analyses to give quick depiction of how data 
+is look like. This can figure out the next processing steps for solving the 
 evidence problem. 
 
 """

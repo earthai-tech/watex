@@ -2,7 +2,12 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created date: on Fri Sep 17 11:25:15 2021
-
+# """
+# Extension maths utilities 
+# ===========================
+# Utilities to process and compute parameters. Algebra calculus of the packages 
+# is performed.
+# """
 from __future__ import annotations 
 import copy 
 import inspect 

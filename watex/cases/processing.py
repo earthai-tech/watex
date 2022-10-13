@@ -41,7 +41,6 @@ from ..exlib.sklearn  import (
     validation_curve ,
     SimpleImputer,
     Pipeline,
-    check_estimator, 
     _HAS_ENSEMBLE_,   
     ) 
 from ..tools.coreutils import ( 
@@ -78,7 +77,7 @@ d_estimators_={'dtc':DecisionTreeClassifier,
                 'knn':KNeighborsClassifier 
                  }
 if _HAS_ENSEMBLE_ :
-    from ..exlib import skl_ensemble_
+    from ..exlib.sklearn import skl_ensemble_
     
     for es_, esf_ in zip(['rdf', 'ada', 'vtc', 'bag','stc'], skl_ensemble_): 
         d_estimators_[es_]=esf_ 
@@ -466,7 +465,6 @@ class Preprocessing :
             
         return self.pipe_  
         
-        
     def baseEvaluation(self, model:F=None, eval_metric=False, **kws
                  )->float: 
         """
@@ -517,22 +515,9 @@ class Preprocessing :
         ------
         If ``None`` estimator is given, the *default* estimator is `svm`
         otherwise, provide the  prefix to select  the convenience estimator 
-        into the  default dict `default_estimator` keywords argument like::
-            
-            >>> from watex.cases.processing import Preprocessing
-            >>> from watex.datasets import fetch_data 
-            >>> data = fetch_data ('bagoue original').get('data=dfy2')
-            >>> preObj = Preprocessing()
-            >>> preObj.tname = 'flow' # specify the target name 
-            >>> preObj.random_state = 7
-            >>> preObj.fit(data =data )
-            >>> preObj.basemodel ()
-            >>> preObj.base_score_ 
-            >>> preObj.confusion_matrix_
-            >>> preObj.classification_report_
-        
-        Providing multiple estimator is possible like the example below. 
-            
+        into the  default dict `default_estimator`. Get the default dict by 
+        calling `<instance>._getdestimators()>`
+
         Examples 
         ---------
         >>> from watex.cases.processing import Preprocessing 
@@ -805,6 +790,7 @@ class Processing (Preprocessing) :
             "https://scikit-learn.org/stable/modules/classes.html#module-sklearn.pipeline"
             )
         try : 
+            from sklearn.utils.estimator_checks import check_estimator
             check_estimator(e )
         except: 
             if not  ( hasattr(e, '__dict__') and hasattr(
@@ -1041,13 +1027,13 @@ class Processing (Preprocessing) :
         :param random_state: The state of data shuffling.The default is ``7``.
                                         
         :Example: 
-            >>> from watex.cases.processing import Processing 
-            >>> processObj = Processing(
-                data = 'data/geo_fdata/BagoueDataset2.xlsx')
-            >>> processObj.quick_estimation(estimator=DecisionTreeClassifier(
-                max_depth=100, random_state=13)
-            >>> processObj.model_score
-            >>> processObj.model_prediction
+        >>> from watex.cases.processing import Processing 
+        >>> processObj = Processing(
+            data = 'data/geo_fdata/BagoueDataset2.xlsx')
+        >>> processObj.quick_estimation(estimator=DecisionTreeClassifier(
+            max_depth=100, random_state=13)
+        >>> processObj.model_score
+        >>> processObj.model_prediction
         
         """
         
@@ -1149,8 +1135,7 @@ default_estimator: callable, F or sckitlearn estimator
     - 'vtc': VotingClassifier
     - 'bag': BaggingClassifier 
     - 'stc': StackingClassifier
-    If estimator is not given the default is ``svm`` or 
-                                    ``svc``.
+    If estimator is not given the default is ``svm`` or ``svc``.
 test_size: float,       
     The test set data size. Must be less than 1.The sample test size is 
     ``0.2`` either 20% of dataset.      
@@ -1218,10 +1203,10 @@ Examples
 ...                    data ='data/geo_fdata/BagoueDataset2.xlsx', 
 ...                    pipeline= my_own_pipeline,
 ...                    estimator=my_estimator)
->>> print(processObj.preprocessor)
->>> print(processObj.estimator)
->>> print(processObj.model_score)
->>> print(processObj.model_prediction)
+>>> print(processObj.preprocessor_)
+>>> print(processObj.estimator_)
+>>> print(processObj.model_score_)
+>>> print(processObj.model_prediction_)
     
 """.format(
     params=_param_docs,

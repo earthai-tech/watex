@@ -23,11 +23,11 @@ from .exlib.sklearn  import (
 )
  
 from ._watexlog import watexlog 
-from ..tools.mlutils import (  
+from .tools.mlutils import (  
     discretizeCategoriesforStratification, 
     stratifiedUsingDiscretedCategories
     )
-from .features import categorize_flow 
+from .tools.hydroutils import categorize_flow 
 
 __docformat__='restructuredtext'
 

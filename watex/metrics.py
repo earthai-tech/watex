@@ -13,11 +13,11 @@ a group of metrics will typically be used to build a dashboard that
 management or analysts review on a regular basis to maintain performance
 assessments, opinions, and business strategies.
 
-Here we implement some `Scikit-learn`_ metrics like `precision`, `recall`
+Here we implement some `scikit-learn`_ metrics like `precision`, `recall`
 `f1_score` , `confusion matrix`, and `receiving operating characteristic`
 (R0C)
 
-.. _Scikit_learn: https://scikit-learn.org/
+.. _scikit_learn: https://scikit-learn.org/
 """
 from __future__ import annotations 
 
@@ -29,16 +29,16 @@ from ._docstring import (
     DocstringComponents,
     _core_docs,
     )
+from ._watexlog import watexlog
 from .typing import ( 
     List, 
     Optional, 
     ArrayLike , 
     NDArray,
     F
-    
     )
-from ._watexlog import watexlog
-from .exlib import ( 
+from .exceptions import ArgumentError 
+from .exlib.sklearn import ( 
     precision_recall_curve,
     precision_score,
     recall_score,
@@ -47,10 +47,6 @@ from .exlib import (
     roc_curve, 
     roc_auc_score,
     cross_val_predict, 
-    )
-
-from .exceptions import ( 
-    ArgumentError 
     )
 
 _logger = watexlog().get_watex_logger(__name__)

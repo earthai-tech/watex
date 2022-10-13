@@ -75,9 +75,9 @@ os.environ.setdefault("KMP_INIT_AT_FORK", "FALSE")
 
 try:
     # This variable is injected in the __builtins__ by the build
-    # process. It is used to enable importing subpackages of sklearn when
+    # process. It is used to enable importing subpackages of watex when
     # the binaries are not built
-    # mypy error: Cannot determine type of '__SKLEARN_SETUP__'
+    # mypy error: Cannot determine type of '__WATEX_SETUP__'
     __WATEX_SETUP__  # type: ignore
 except NameError:
     __WATEX_SETUP__ = False
@@ -89,7 +89,7 @@ if __WATEX_SETUP__:
 else:
     # `_distributor_init` allows distributors to run custom init code.
     # For instance, for the Windows wheel, this is used to pre-load the
-    # vcomp shared library runtime for OpenMP embedded in the sklearn/.libs
+    # vcomp shared library runtime for OpenMP embedded in the watex/.libs
     # sub-folder.
     # It is necessary to do this prior to importing show_versions as the
     # later is linked to the OpenMP runtime to make it possible to introspect

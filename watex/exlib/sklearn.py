@@ -116,10 +116,15 @@ from sklearn.compose import (
     make_column_selector , 
     ColumnTransformer
 )
+from sklearn.covariance import ( 
+    ShrunkCovariance, 
+    LedoitWolf
+    )
 from sklearn.decomposition import (
     PCA ,
     IncrementalPCA,
-    KernelPCA
+    KernelPCA, 
+    FactorAnalysis
 ) 
 from sklearn.feature_selection import ( 
     SelectKBest, 
@@ -169,7 +174,6 @@ from sklearn.preprocessing import (
     LabelBinarizer,
     LabelEncoder,
 ) 
-from sklearn.utils.estimator_checks import check_estimator
 from sklearn.svm import SVC 
 from sklearn.tree import DecisionTreeClassifier
 
@@ -180,6 +184,9 @@ __all__=[
     "make_column_transformer",
     'make_column_selector' , 
     'ColumnTransformer',
+    'ShrunkCovariance', 
+    'LedoitWolf', 
+    'FactorAnalysis',
     'PCA' ,
     'IncrementalPCA',
     'KernelPCA', 
@@ -219,7 +226,6 @@ __all__=[
     'MinMaxScaler', 
     'LabelBinarizer',
     'LabelEncoder',
-    'check_estimator', 
     'SVC', 
     'DecisionTreeClassifier',
     'RandomForestClassifier',

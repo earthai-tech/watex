@@ -1,6 +1,7 @@
 from .mlplot import ( 
     biPlot, 
     MLPlots, 
+    plotlearningcurve
     )
 from .plot import ( 
     QuickPlot , 
@@ -8,3 +9,10 @@ from .plot import (
 
     )
 
+__all__=[
+    "biPlot", 
+    "MLPlots", 
+    "QuickPlot" , 
+    "ExPlot",
+    "plotlearningcurve"
+    ]

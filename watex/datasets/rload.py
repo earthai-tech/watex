@@ -2,13 +2,11 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com> 
 #   Created on Sat Oct  1 15:24:33 2022
-
 """
-Data Loader 
+Remote Loader 
 ==============
 
 Fetch data online from zenodo record or repository.  
-
 """
 from __future__ import (
     print_function , 
@@ -30,7 +28,6 @@ from ..typing import (
 from ..tools.funcutils import (
     is_installing 
 )
-
 from ..exceptions import (
     ExtractionError 
 )
@@ -39,7 +36,6 @@ from ..tools.mlutils import (
     subprocess_module_installation
     )
 from .._watexlog import  watexlog
-
 _logger = watexlog().get_watex_logger(__name__)
 
 ##### config repo data ################################################

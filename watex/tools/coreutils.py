@@ -248,9 +248,9 @@ def vesSelector(
             if rhoa.ndim > 1 :
                 if index_rhoa is None: 
                     index_rhoa = 0 
-                elif index_rhoa  >= len(rhoa.columns): 
+                elif (index_rhoa  >= len(rhoa.columns)) or index_rhoa <0 : 
                     warnings.warn(f'The index `{index_rhoa}` is out of the range' 
-                                  f' `{len(rhoa.columns)-1}` for selecting the'
+                                  f'`{len(rhoa.columns)-1}` for selecting the'
                                   ' specific resistivity data. By default, we '
                                   'only keep the data at the index 0.'
                         )
@@ -642,9 +642,18 @@ def is_erp_dataframe (
     # replace by 0. the non existence column
     # reorder the column to match 
     # ['station','resistivity', 'easting','northing', ]
+    
     data_ = data[cold] 
     data_.columns = c  
-    data_= data_.reindex (columns =pObj.idicttags.keys(), fill_value =0.) 
+    
+    msg = ERPError("Unknow the DC-ERP data. ERP data must contain"
+                   f" {smft(pObj.idicttags.keys())}")
+    try : 
+        data_= data_.reindex (columns =pObj.idicttags.keys(), fill_value =0.
+                              ) 
+    except : 
+        raise msg 
+        
     dipolelength = _assert_all_types(
         dipolelength , float, int) if dipolelength is not None else None 
     
