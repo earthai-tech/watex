@@ -99,8 +99,9 @@ def _to_dataframe(data, tnames=None , feature_names =None, target =None ):
 def csv_data_loader(
     data_file,*, data_module=DMODULE, descr_file=None, descr_module=DESCR,
 ):
-    with resources.open_text(data_module, data_file) as csv_file:
-  # with resources.files(DMODULES).joinpath(data_file).open('r', encoding='utf-8')
+    #with resources.open_text(data_module, data_file) as csv_file:
+    print(__package__)
+    with resources.files(DMODULE).joinpath(data_file).open('r', encoding='utf-8') as csv_file:
         data_file = csv.reader(csv_file)
         
         temp = next(data_file)

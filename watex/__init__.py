@@ -41,7 +41,6 @@ if  __package__ is None:
     sys.path.append( os.path.dirname(__file__))
     __package__ ='watex'
 
-
 # configure the logger 
 # from ._watexlog import watexlog
 try: 
@@ -54,7 +53,6 @@ except:
     conffile = os.path.join(
         os.path.dirname(__file__), "wlog.yml")
 
-# watexlog.load_configure(conffile)
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)
 

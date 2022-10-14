@@ -4,14 +4,14 @@ import watex
 import os 
 
 try:
-    from setuptools import setup
+    from setuptools import setup  
 except ImportError:
     setuptools = False
     from distutils.core import setup
 else:
     setuptools = True
     
-with open(os.path.join(os.path.abspath('.'), 'READMDE.md'), 'r') as fm:
+with open(os.path.join(os.path.abspath('.'), 'README.md'), 'r') as fm:
     LONG_DESCRIPTION =fm.read()
 
 setup_kwargs = {}
@@ -36,7 +36,6 @@ if setuptools is False:
 # "You must explicitly list all packages in packages: the Distutils will not
 # recursively scan your source tree looking for any directory with an
 # __init__.py file"
-
 setup_kwargs['packages'] = [ 
     'watex',
     'watex.datasets',
@@ -57,6 +56,7 @@ setup_kwargs['install_requires'] = [
     'scipy>=0.14.0',
     'matplotlib',
     'mtpy >=1.1.0',
+    'threadpoolctl >= 2.0.0', 
     'pyyaml',
     'pyproj',
     'configparser', 
@@ -73,12 +73,10 @@ setup_kwargs['install_requires'] = [
                                      
 setup_kwargs['python_requires'] ='>=3.8'
 
-authors =["Kouadio K. Laurent"]
-authors_emails =['etanoyau@gmail.com,']
 setup(
  	name="watex",
  	version=watex.__version__,
- 	author=' '.join([aa for aa in authors]),
+ 	author="Kouadio K. Laurent",
     author_email='etanoyau@gmail.com',
     maintainer="Kouadio K. Laurent",
     maintainer_email='etanoyau@gmail.com',
@@ -93,25 +91,33 @@ setup(
         "Installation guide" : "https://github.com/WEgeophysics/watex/wiki/watex-installation-guide-for-Windows--and-Linux", 
         #"User guide" : "https://github.com/WEgeophysics/watex/blob/develop/docs/watex%20User%20Guide.pdf",
         },
- 	#data_files=[('', ['watex/tools/epsg.npy',]),], #this will install datafiles in wearied palce such as ~/.local/
  	include_package_data=True,
  	license="BSD 3-Clause LICENCE v3",
  	classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",
+        "Intended Audience :: Developers",
         # "Topic :: Software Development :: Build Tools",
+        "Topic :: Software Development",
         'Topic :: Scientific/Engineering :: Geophysics',
         'Topic :: Scientific/Engineering :: Geosciences',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: C ',
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: Implementation :: CPython",
         "Operating System :: OS Independent",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX",
+        "Operating System :: Unix",
         ],
     keywords="hydrogeophysic, groundwater, machine learning, water , geophysic",
+    zip_safe=True, 
     #package_dir={"": "watex"},  # Optional
+ 	# data_files=[('', ['watex/tools/epsg.npy',]),], #this will install datafiles in wearied palce such as ~/.local/
     package_data={'watex': [
-                            'tools/_openmp_helpers.pxd', 
-                            'tools/espg.npy',
+                            'utils/_openmp_helpers.pxd', 
+                            'utils/espg.npy',
                             'etc/*', 
                             'datasets/descr/*', 
                             'datasets/data/*', 
@@ -120,7 +126,7 @@ setup(
                             '_build/*'
                             
                             ], 
-                    "":[
+                    "":["*.pxd",
                         'data/*', 
                         'examples/*', 
                         'ipynb/*', 

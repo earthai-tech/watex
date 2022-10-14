@@ -25,3 +25,4 @@ missingno
 pandas_profiling 
 pyjanitor 
 openpyxl
+threadpoolctl >= 2.0.0

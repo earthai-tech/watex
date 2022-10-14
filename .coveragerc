@@ -6,3 +6,5 @@ omit =
     */watex/_watexlog/*
     */watex/_docstrings/*
     **/setup.py
+exclude_lines =
+    pragma: no cover
