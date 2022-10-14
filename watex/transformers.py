@@ -23,11 +23,11 @@ from .exlib.sklearn  import (
 )
  
 from ._watexlog import watexlog 
-from .tools.mlutils import (  
+from .utils.mlutils import (  
     discretizeCategoriesforStratification, 
     stratifiedUsingDiscretedCategories
     )
-from .tools.hydroutils import categorize_flow 
+from .utils.hydroutils import categorize_flow 
 
 __docformat__='restructuredtext'
 
@@ -221,7 +221,7 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
      a significant biais of sampling survey. For instance:: 
         
         >>> from watex.bases.transformers import StratifiedUsingBaseCategory 
-        >>> from watex.tools.mlutils import load_data 
+        >>> from watex.utils.mlutils import load_data 
         >>> df = load_data('data/geo_fdata')
         >>> stratifiedObj = StratifiedUsingBaseCategory(base_column='geol')
         >>> stratifiedObj.fit_transform(X=df)
@@ -388,7 +388,7 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
     Examples
     --------
     >>> from watex.bases.transformers import  CategorizeFeatures
-    >>> from watex.tools.mlutils import load_data 
+    >>> from watex.utils.mlutils import load_data 
     >>> df= mlfunc.load_data('data/geo_fdata')
     >>> catObj = CategorizeFeatures(
         num_columns_properties=num_columns_porperties )
@@ -675,7 +675,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
     Examples 
     ---------
     >>> from watex.bases.transformers import DataFrameSelector 
-    >>> from watex.tools.mlutils import load_data   
+    >>> from watex.utils.mlutils import load_data   
     >>> df = mlfunc.load_data('data/geo_fdata')
     >>> XObj = DataFrameSelector(attribute_names=['power','magnitude','sfi'],
     ...                          select_type=None)

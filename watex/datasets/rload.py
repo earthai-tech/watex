@@ -25,13 +25,13 @@ from six.moves import urllib
 from ..typing import (
     Optional, 
     )
-from ..tools.funcutils import (
+from ..utils.funcutils import (
     is_installing 
 )
 from ..exceptions import (
     ExtractionError 
 )
-from ..tools.mlutils import (
+from ..utils.mlutils import (
     fetchSingleTGZData, 
     subprocess_module_installation
     )
@@ -95,7 +95,6 @@ def loadBagoueDataset ():
         verbose=  10 
           ).fit(_DATA)
     
-
 class Loader: 
     """ Load data from online 
     

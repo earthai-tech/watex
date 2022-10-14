@@ -89,10 +89,12 @@ def _is_readable (
         f:str, 
         **kws
  ) -> DataFrame: 
-    """ Specific files that can be read file throughout the packages 
+    """ Assert and read specific files and url allowed by the package
     
-    :param f: Path-like object -Should be a readable files. 
-    :param kws: Pandaas readableformats additional keywords arguments. 
+    Readable files are systematically convert to a frame.  
+    
+    :param f: Path-like object -Should be a readable files or url  
+    :param kws: Pandas readableformats additional keywords arguments. 
     :return: dataframe - A dataframe with head contents... 
     
     """
@@ -111,13 +113,12 @@ def _is_readable (
     if ex.lower() not in tuple (cpObj.keys()):
         raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
                         )
-
     try : 
         f = cpObj[ex](f, **kws)
         
     except FileNotFoundError:
         raise FileNotFoundError (
-            "No such file in directory: {os.path.basename (f)!r}")
+            f"No such file in directory: {os.path.basename (f)!r}")
     except: 
         raise FileHandlingError (
             f" Can not parse the file : {os.path.basename (f)!r}")
@@ -196,7 +197,7 @@ def vesSelector(
     
     :Example: 
         
-        >>> from watex.tools.coreutils import vesSelector 
+        >>> from watex.utils.coreutils import vesSelector 
         >>> df = vesSelector (data='data/ves/ves_gbalo.csv')
         >>> df.head(3)
         ...    AB   MN  resistivity
@@ -511,7 +512,7 @@ def is_erp_series (
     --------
     >>> import numpy as np 
     >>> import pandas as pd 
-    >>> from watex.tools.coreutils imprt is_erp_series 
+    >>> from watex.utils.coreutils imprt is_erp_series 
     >>> data = pd.Series (np.abs (np.random.rand (42)), name ='res') 
     >>> data = is_erp_series (data)
     >>> data.columns 
@@ -582,7 +583,7 @@ def is_erp_dataframe (
     Examples
     --------
     >>> import numpy as np 
-    >>> from watex.tools.coreutils import is_erp_dataframe 
+    >>> from watex.utils.coreutils import is_erp_dataframe 
     >>> df = pd.read_csv ('data/erp/testunsafedata.csv')
     >>> df.columns 
     ... Index(['x', 'stations', 'resapprho', 'NORTH'], dtype='object')
@@ -718,7 +719,7 @@ def erpSelector (
     Examples
     ---------
     >>> import numpy as np 
-    >>> from watex.tools.coreutils import erpSelector
+    >>> from watex.utils.coreutils import erpSelector
     >>> df = erpSelector ('data/erp/testsafedata.csv')
     >>> df.shape 
     ... (45, 4)
@@ -831,7 +832,7 @@ def _fetch_prefix_index (
        
     :Example: 
         >>> from numpy as np 
-        >>> from watex.tools.coreutils import _assert_positions
+        >>> from watex.utils.coreutils import _assert_positions
         >>> array1 = np.c_[np.arange(0, 70, 10), np.random.randn (7,3)]
         >>> col = ['pk', 'x', 'y', 'rho']
         >>> index, = _fetch_prefix_index (array1 , col = ['pk', 'x', 'y', 'rho'], 
@@ -908,7 +909,7 @@ def _assert_station_positions(
     :Example: 
         
         >>> from numpy as np 
-        >>> from watex.tools.coreutils import _assert_station_positions
+        >>> from watex.utils.coreutils import _assert_station_positions
         >>> array1 = np.c_[np.arange(0, 70, 10), np.random.randn (7,3)]
         >>> col = ['pk', 'x', 'y', 'rho']
         >>> _assert_positions(array1, col)
@@ -1009,7 +1010,7 @@ def plotAnomaly(
    
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.coreutils import ( 
+        >>> from watex.utils.coreutils import ( 
         ...    plot_anomaly, _define_conductive_zone)
         >>> test_array = np.random.randn (10)
         >>> selected_cz ,*_ = _define_conductive_zone(test_array, 7) 
@@ -1202,7 +1203,7 @@ def defineConductiveZone(
     
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.coreutils import defineConductiveZone
+        >>> from watex.utils.coreutils import defineConductiveZone
         >>> test_array = np.random.randn (10)
         >>> selected_cz ,*_ = defineConductiveZone(test_array, 's20') 
         >>> shortPlot(test_array, selected_cz )
@@ -1289,7 +1290,7 @@ def _assert_stations(
         position.
             
     :Example: 
-        >>> from watex.tools.coreutils import _assert_stations
+        >>> from watex.utils.coreutils import _assert_stations
         >>> _assert_stations('pk01')
         ... ('S01', 0)
         >>> _assert_stations('S1')
@@ -1377,7 +1378,7 @@ def _parse_args (
             
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.coreutils import _parse_args
+        >>> from watex.utils.coreutils import _parse_args
         >>> a, b = np.arange (1, 10 , 0.5), np.random.randn(9).reshape(3, 3)
         >>> _parse_args ([a, 'data/erp/l2_gbalo.xlsx', b])
         ... array([[1.1010000e+03, 0.0000000e+00, 7.9075200e+05, 1.0927500e+06],
@@ -1446,7 +1447,7 @@ def _assert_file (
         
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.coreutils import  _assert_file
+        >>> from watex.utils.coreutils import  _assert_file
         >>> a, b = np.arange (1, 10 , 0.5), np.random.randn(9).reshape(3, 3)
         >>> data = [a, 'data/erp/l2_gbalo', b] # collection of 03 objects 
         >>>  # but read only the Path-Like object 
@@ -1567,7 +1568,7 @@ def makeCoords(
     
     Examples 
     --------
-    >>> from watex.tools.coreutils import make_ll_coordinates 
+    >>> from watex.utils.coreutils import make_ll_coordinates 
     >>> rlons, rlats = make_ll_coordinates('110:29:09.00', '26:03:05.00', 
     ...                                     nsites = 7, todms=True)
     >>> rlons
@@ -1712,7 +1713,7 @@ def parseDCArgs(fn :str ,
         to only keep the `S`. For instance 'pk25'-> 'S25'
     
     :Example: 
-        >>> from watex.tools.coreutils import parseDCArgs 
+        >>> from watex.utils.coreutils import parseDCArgs 
         >>> sf='data/sfn.txt' # use delimiter if values are in the same line. 
         >>> sdata= parseDCArgs(sf)
         >>> sdata 
@@ -1858,7 +1859,7 @@ def load_serialized_data (filename, verbose=0):
 
     :Example:
         
-        >>> from watex.tools.functils import load_serialized_data
+        >>> from watex.utils.functils import load_serialized_data
         >>> data = load_serialized_data(
         ...    filename = '_memory_/__mymemoryfile.2021-10-29_14-49-35.647295__.pkl', 
         ...    verbose =3)

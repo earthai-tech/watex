@@ -15,7 +15,7 @@ import pandas as pd
 from .._docstring import refglossary
 from .._watexlog import watexlog 
 from ..decorators import refAppender 
-from ..tools.funcutils import (
+from ..utils.funcutils import (
     repr_callable_obj,
     smart_format,
     smart_strobj_recognition , 
@@ -23,7 +23,7 @@ from ..tools.funcutils import (
     make_ids, 
     show_stats,
     )
-from ..tools.coreutils import (
+from ..utils.coreutils import (
     _assert_station_positions,
     defineConductiveZone, 
     fill_coordinates, 
@@ -31,7 +31,7 @@ from ..tools.coreutils import (
     vesSelector,
     parseDCArgs ,
 ) 
-from ..tools.exmath import (
+from ..utils.exmath import (
     shape, 
     type_, 
     power, 
@@ -232,7 +232,7 @@ class DCProfiling(ElectricalMethods)  :
             of multiple survey areas. 
                 
         **kws**: str, 
-            Additional keyword from :func:watex.tools.coreutils.parseStations`.
+            Additional keyword from :func:watex.utils.coreutils.parseStations`.
             It refers to the `station_delimiter` parameters. If the attribute 
             :attr:`~.ResistivityProfilings.stations` is given as a path-like 
             object. If the stations are disposed in the same line, it is 
@@ -395,7 +395,7 @@ class DCSounding(ElectricalMethods) :
         the resistivity data with a  specific numbers. Commonly the number 
         are randomly chosen. It does not refer to the expected best fracture
         zone selected after the prior-interpretation. After transformation 
-        via the function :func:`~watex.tools.coreutils.vesSelector`, the header  
+        via the function :func:`~watex.utils.coreutils.vesSelector`, the header  
         of the data should hold the `resistivity`. For instance, refering to 
         the table above, the data should be:
             
@@ -440,7 +440,7 @@ class DCSounding(ElectricalMethods) :
         
     **kws**: dict 
         Additionnal keywords arguments from |VES| data operations. 
-        See :func:`watex.tools.exmath.vesDataOperator` for futher details.
+        See :func:`watex.utils.exmath.vesDataOperator` for futher details.
         
     Examples 
     --------
@@ -520,7 +520,7 @@ class DCSounding(ElectricalMethods) :
             ``None``. If `AB` and `rhoa` is expected to be inputted, user must
             set the `data`  to ``None`` values for API purpose. If not an error
             will raise. Or the recommended way is to use the `vesSelector` tool
-            in :func:`watex.tools.vesSelector` to buid the |VES| data before 
+            in :func:`watex.utils.vesSelector` to buid the |VES| data before 
             feeding it to the algorithm. See the example below.
             
         kws: dict 
@@ -968,7 +968,7 @@ class VerticalSounding (ElectricalMethods):
         the resistivity data with a  specific numbers. Commonly the number 
         are randomly chosen. It does not refer to the expected best fracture
         zone selected after the prior-interpretation. After transformation 
-        via the function :func:`~watex.tools.coreutils.vesSelector`, the header  
+        via the function :func:`~watex.utils.coreutils.vesSelector`, the header  
         of the data should hold the `resistivity`. For instance, refering to 
         the table above, the data should be:
             
@@ -1013,7 +1013,7 @@ class VerticalSounding (ElectricalMethods):
         
     **kws**: dict 
         Additionnal keywords arguments from |VES| data operations. 
-        See :func:`watex.tools.exmath.vesDataOperator` for futher details.
+        See :func:`watex.utils.exmath.vesDataOperator` for futher details.
         
     See also 
     ---------
@@ -1099,7 +1099,7 @@ class VerticalSounding (ElectricalMethods):
             ``None``. If `AB` and `rhoa` is expected to be inputted, user must
             set the `data`  to ``None`` values for API purpose. If not an error
             will raise. Or the recommended way is to use the `vesSelector` tool
-            in :func:`watex.tools.vesSelector` to buid the |VES| data before 
+            in :func:`watex.utils.vesSelector` to buid the |VES| data before 
             feeding it to the algorithm. See the example below.
             
         AB: array-like 
@@ -1268,7 +1268,7 @@ class VerticalSounding (ElectricalMethods):
             approach (``BNN``). 
         
         :param kwd: dict - Additionnal keywords arguments from |VES| data  
-            operations. See :doc:`watex.tools.exmath.vesDataOperator` for futher
+            operations. See :doc:`watex.utils.exmath.vesDataOperator` for futher
             details.
         
         .. |VES| replace: Vertical Electrical Sounding 
@@ -1390,7 +1390,7 @@ def _readfrompath (self, data: List[str] ,
     :param data: str or path-like object, 
     
     :param kws: Additional keyword from 
-        :func:`watex.tools.coreutils.parseStations`. It refers to the 
+        :func:`watex.utils.coreutils.parseStations`. It refers to the 
         `station_delimiter` parameters. 
         
     """
@@ -1512,7 +1512,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
     sanitize the attributes accordingly.
     
     :param kws: Additional keyword from 
-        :func:`watex.tools.coreutils.parseDCArgs`. It refers to the 
+        :func:`watex.utils.coreutils.parseDCArgs`. It refers to the 
         `station_delimiter` parameters. 
     """  
     flag=0

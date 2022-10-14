@@ -48,14 +48,14 @@ from ..transformers import (
     StratifiedWithCategoryAdder
 )
 
-from ..tools.coreutils import (
+from ..utils.coreutils import (
     _is_readable 
     )
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     smart_format,
     
     )
-from ..tools.mlutils import ( 
+from ..utils.mlutils import ( 
     _assert_sl_target, 
     formatGenericObj,
     split_train_test_by_id, 

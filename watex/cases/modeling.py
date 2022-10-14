@@ -31,7 +31,7 @@ from ..exlib.sklearn  import (
     confusion_matrix
     )
 from .processing import Processing 
-from ..tools.mlutils import ( 
+from ..utils.mlutils import ( 
     formatModelScore 
     )
 from ..decorators import ( 

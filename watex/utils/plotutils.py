@@ -340,7 +340,7 @@ def plotvec2(a,b):
     :Example: 
         
         >>> import numpy as np 
-        >>> from watex.tools.plotutils import plotvec2
+        >>> from watex.utils.plotutils import plotvec2
         >>> a=np.array([1,0])
         >>> b=np.array([0,1])
         >>> Plotvec2(a,b)
@@ -475,7 +475,7 @@ def get_color_palette (RGB_color_palette):
      
     :Example: 
         
-        >>> from watex.tools.plotutils import get_color_palette 
+        >>> from watex.utils.plotutils import get_color_palette 
         >>> get_color_palette (RGB_color_palette ='R128B128')
     """  
     

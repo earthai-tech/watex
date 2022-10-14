@@ -20,7 +20,7 @@ from pprint import pprint
 # import numpy as np
 # import pandas as pd 
 
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     smart_format, 
     sPath,
     is_installing, 
@@ -227,7 +227,7 @@ def get_agso_properties(config_file =None, orient ='series'):
         https://www.geeksforgeeks.org/python-pandas-dataframe-to_dict/
         
     :Example: 
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> data=get_agso_properties('watex/etc/AGSO_STCODES.csv')
         >>> code_descr={key:value for key , value in zip (data["CODE"],
                                                        data['__DESCRIPTION'])}

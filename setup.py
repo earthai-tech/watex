@@ -40,7 +40,7 @@ if setuptools is False:
 setup_kwargs['packages'] = [ 
     'watex',
     'watex.datasets',
-    'watex.tools',
+    'watex.utils',
     'watex.etc',
     'watex.analysis',
     'watex.methods',
@@ -48,7 +48,6 @@ setup_kwargs['packages'] = [
     'watex.externals',
     'watex.geology',
     'watex.exlib',
-    'watex.tools',
     'watex.cases'
      ]
 # force install watex. Once watex is installed , pyyaml and pyproj 

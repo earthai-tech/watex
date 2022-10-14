@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 import pandas as pd 
 import numpy as np 
 
-from ..tools.funcutils import  ( 
+from ..utils.funcutils import  ( 
     savepath_ , 
     sanitize_fdataset, 
     )   
@@ -23,7 +23,7 @@ from ..typing import (
     Optional, 
     DataFrame,
     )
-from ..tools.hydroutils import ( 
+from ..utils.hydroutils import ( 
     writef,  
     exportdf, 
     categorize_flow
@@ -32,11 +32,11 @@ from ..exceptions import (
     FileHandlingError, 
     FeatureError, 
    )
-from ..tools.gistools import ( 
+from ..utils.gistools import ( 
     ll_to_utm, 
     project_point_ll2utm
     )
-from ..tools.coreutils import _is_readable 
+from ..utils.coreutils import _is_readable 
 from watex._watexlog import watexlog 
 
 _logger =watexlog().get_watex_logger(__name__)

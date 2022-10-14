@@ -104,7 +104,7 @@ def url_checker (url: str , install:bool = False,
         
     Example
     ----------
-    >>> from watex.tools.funcutils import url_checker 
+    >>> from watex.utils.funcutils import url_checker 
     >>> url_checker ("http://www.example.com")
     ...  0 # not reacheable 
     >>> url_checker ("https://watex.readthedocs.io/en/latest/api/watex.html")
@@ -181,7 +181,7 @@ def shrunkformat (text: str | Iterable[Any] ,
     :example: 
         
     >>> import numpy as np 
-    >>> from watex.tools.funcutils import shrunkformat
+    >>> from watex.utils.funcutils import shrunkformat
     >>> text=" I'm a long text and I will be shrunked and replace by ellipsis."
     >>> shrunkformat (text)
     ... 'Im a long ... and replace by ellipsis.'
@@ -376,7 +376,7 @@ def smart_strobj_recognition(
         detected.
         
     :Example:
-        >>> from watex.tools.funcutils import smart_strobj_recognition
+        >>> from watex.utils.funcutils import smart_strobj_recognition
         >>> from watex.methods import ResistivityProfiling 
         >>> rObj = ResistivityProfiling(AB= 200, MN= 20,)
         >>> smart_strobj_recognition ('dip', robj.__dict__))
@@ -446,7 +446,7 @@ def repr_callable_obj(obj: F  , skip = None ):
     
     :Examples: 
         
-    >>> from watex.tools.funcutils import repr_callable_obj
+    >>> from watex.utils.funcutils import repr_callable_obj
     >>> from watex.methods.electrical import  ResistivityProfiling
     >>> repr_callable_obj(ResistivityProfiling)
     ... 'ResistivityProfiling(station= None, dipole= 10.0, 
@@ -519,7 +519,7 @@ def accept_types (*objtypes: list ,
     
     :Example: 
         >>> import numpy as np; import pandas as pd 
-        >>> from watex.tools.funcutils import accept_types
+        >>> from watex.utils.funcutils import accept_types
         >>> accept_types (pd.Series, pd.DataFrame, tuple, list, str)
         ... "'Series','DataFrame','tuple','list' and 'str'"
         >>> atypes= accept_types (
@@ -597,7 +597,7 @@ def smart_format(iter_obj, choice ='and'):
     :param choice: can be 'and' or 'or' for optional.
     
     :Example: 
-        >>> from watex.tools.funcutils import smart_format
+        >>> from watex.utils.funcutils import smart_format
         >>> smart_format(['model', 'iter', 'mesh', 'data'])
         ... 'model','iter','mesh' and 'data'
     """
@@ -974,7 +974,7 @@ def display_infos(infos, **kws):
     :param header: Change the `header` to other names. 
     :Example: 
         
-        >>> from watex.tools.funcutils import display_infos
+        >>> from watex.utils.funcutils import display_infos
         >>> ipts= ['river water', 'fracture zone', 'granite', 'gravel',
              'sedimentary rocks', 'massive sulphide', 'igneous rocks', 
              'gravel', 'sedimentary rocks']
@@ -1054,7 +1054,7 @@ def convert_csvdata_from_fr_to_en(csv_fn, pf, destfile = 'pme.en.csv',
         # to execute this script, we need to import the two modules below
         >>> import os 
         >>> import csv 
-        >>> from watex.tools.funcutils import convert_csvdata_from_fr_to_en
+        >>> from watex.utils.funcutils import convert_csvdata_from_fr_to_en
         >>> path_pme_data = r'C:/Users\Administrator\Desktop\__elodata
         >>> datalist=convert_csvdata_from_fr_to_en(
             os.path.join( path_pme_data, _enuv2.csv') , 
@@ -1139,7 +1139,7 @@ def sanitize_unicode_string (str_) :
     """ Replace all spaces and remove all french accents characters.
     
     :Example:
-    >>> from watex.tools.funcutils import sanitize_unicode_string 
+    >>> from watex.utils.funcutils import sanitize_unicode_string 
     >>> sentence ='Nos clients sont extrêmement satisfaits '
         'de la qualité du service fourni. En outre Nos clients '
             'rachètent frequemment nos "services".'
@@ -1415,7 +1415,7 @@ def find_position_from_sa(
     
     :Example:
         
-        >>> from watex.tools.funcutils import find_positon_from_sa
+        >>> from watex.utils.funcutils import find_positon_from_sa
         >>> resan = np.array([168,130, 93,146,145])
         >>> pk= find_pk_from_selectedAn(
         ...    resan, pos=[90, 13], selectedPk= 'str20')
@@ -1503,7 +1503,7 @@ def fmt_text(
     
     :Example: 
         
-        >>> from watex.tools.funcutils import fmt_text
+        >>> from watex.utils.funcutils import fmt_text
         >>> fmt_text(anFeatures =[1,130, 93,(146,145, 125)])
     
     """
@@ -1634,7 +1634,7 @@ def find_position_bounds(
     
     :Example: 
         
-        >>> from watex.tools.funcutils import find_position_bounds  
+        >>> from watex.utils.funcutils import find_position_bounds  
         >>> find_position_bounds(pk=110, rhoa=137, 
                           rhoa_range=np.array([175,132,137,139,170]))
         
@@ -1971,7 +1971,7 @@ def reshape(arr , axis = None) :
     
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.funcutils import reshape 
+        >>> from watex.utils.funcutils import reshape 
         >>> array = np.random.randn(50 )
         >>> array.shape
         ... (50,)
@@ -2040,7 +2040,7 @@ def ismissing(refarr, arr, fill_value = np.nan, return_index =False):
     :Example: 
         
     >>> import numpy as np 
-    >>> from watex.tools.funcutils import ismissing
+    >>> from watex.utils.funcutils import ismissing
     >>> refreq = np.linspace(7e7, 1e0, 20) # 20 frequencies as reference
     >>> # remove the value between index 7 to 12 and stack again
     >>> freq = np.hstack ((refreq.copy()[:7], refreq.copy()[12:] ))  
@@ -2112,7 +2112,7 @@ def fillNaN(arr, method ='ff'):
     --------- 
         
     >>> import numpy as np 
-    >>> from from watex.tools.funcutils import fillNaN 
+    >>> from from watex.utils.funcutils import fillNaN 
     >>> arr2d = np.random.randn(7, 3)
     >>> # change some value into NaN 
     >>> arr2d[[0, 2, 3, 3 ],[0, 2,1, 2]]= np.nan
@@ -2198,7 +2198,7 @@ def get_params (obj: object
     
     :examples: 
         >>> from sklearn.svm import SVC 
-        >>> from watex.tools.funcutils import get_params 
+        >>> from watex.utils.funcutils import get_params 
         >>> sigmoid= SVC (
             **{
                 'C': 512.0,
@@ -2264,7 +2264,7 @@ def fit_by_ll(ediObjs):
     :Example: 
         >>> import numpy as np 
         >>> from watex.methods.em import EM
-        >>> from watex.tools.funcutils import fit_by_ll
+        >>> from watex.utils.funcutils import fit_by_ll
         >>> edipath ='data/edi_ss' 
         >>> cediObjs = EM (edipath) 
         >>> ediObjs = np.random.permutation(cediObjs.ediObjs) # shuffle the  
@@ -2307,7 +2307,7 @@ def make_ids(arr, prefix =None, how ='py', skip=False):
     
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.func_utils import make_ids 
+        >>> from watex.utils.func_utils import make_ids 
         >>> values = ['edi1', 'edi2', 'edi3'] 
         >>> make_ids (values, 'ix')
         ... ['ix0', 'ix1', 'ix2']
@@ -2367,7 +2367,7 @@ def concat_array_from_list (list_of_array , concat_axis = 0) :
     :Example: 
         
     >>> import numpy as np 
-    >>> from watex.tools.funcutils import concat_array_from_list 
+    >>> from watex.utils.funcutils import concat_array_from_list 
     >>> np.random.seed(0)
     >>> ass=np.random.randn(10)
     >>> ass = ass2=np.linspace(0,15,10)
@@ -2424,7 +2424,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
     
     :example:
         
-    >>> from watex.tools.funcutils import station_id 
+    >>> from watex.utils.funcutils import station_id 
     >>> dat1 = ['S13', 's02', 's85', 'pk20', 'posix1256']
     >>> station_id (dat1)
     ... (13, 2, 85, 20, 1256)
@@ -2540,7 +2540,7 @@ def parse_json(json_fn =None,
         >>> TRES=[10, 66,  70, 100, 1000, 3000]# 7000]     
         >>> LNS =['river water','fracture zone', 'MWG', 'LWG', 
               'granite', 'igneous rocks', 'basement rocks']
-        >>> import watex.tools.funcutils as FU
+        >>> import watex.utils.funcutils as FU
         >>> geo_kws ={'oc2d': INVERS_KWS, 
                       'TRES':TRES, 'LN':LNS}
         # serialize json data and save to  'jsontest.json' file
@@ -2654,7 +2654,7 @@ def parse_csv(
     https://stackoverflow.com/questions/10373247/how-do-i-write-a-python-dictionary-to-a-csv-file
         ...
     :Example:
-        >>> import watex.tools.funcutils as FU
+        >>> import watex.utils.funcutils as FU
         >>> PATH = 'data/model'
         >>> k_ =['model', 'iter', 'mesh', 'data']
         >>> try : 

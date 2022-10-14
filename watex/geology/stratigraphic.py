@@ -24,11 +24,11 @@ from pycsamt.geodrill.geocore import (
     Geodrill 
     )
 	
-from ..tools.coreutils import ( 
+from ..utils.coreutils import ( 
     serialize_data, 
     load_serialized_data, 
     )
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     smart_format, 
     # sPath,
     is_installing, 
@@ -36,7 +36,7 @@ from ..tools.funcutils import (
     parse_json, 
     parse_yaml,
     )
-from ..tools.geotools import (
+from ..utils.geotools import (
     _sanitize_db_items,
     _assert_model_type,
     assert_len_lns_tres, 

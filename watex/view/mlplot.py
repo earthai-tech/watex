@@ -38,7 +38,7 @@ from ..metrics import (
     ROC_curve, 
     confusion_matrix_
     )
-from ..tools.plotutils import ( 
+from ..utils.plotutils import ( 
     D_COLORS, 
     D_MARKERS, 
     D_STYLES,
@@ -829,7 +829,7 @@ class MLPlots(BasePlot):
         See also
         ---------
         For parameter definitions, please refer to
-        :meth:`watex.tools.metrics.Metrics.PrecisionRecallTradeoff`
+        :meth:`watex.utils.metrics.Metrics.PrecisionRecallTradeoff`
         for further details.
                
         """
@@ -1322,7 +1322,7 @@ class MLPlots(BasePlot):
         
         See also 
         ---------
-        Refer to :meth:`watex.tools.metrics.Metrics.confusion_matrix` 
+        Refer to :meth:`watex.utils.metrics.Metrics.confusion_matrix` 
         for furthers details.
         
         """
@@ -2036,7 +2036,7 @@ if __name__=='__main__':
     # from sklearn.linear_model import SGDClassifier
     # from sklearn.ensemble import RandomForestClassifier
     from watex.datasets import fetch_data 
-    import  watex.tools.mlutils as mfunc
+    import  watex.utils.mlutils as mfunc
     df = mfunc.load_data('data/geo_fdata')
     X,_ = fetch_data('Bagoue stratified sets')
     X_,_= fetch_data('test sets')

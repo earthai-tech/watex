@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap 
 from .._docstring import _core_docs 
 from ..exlib.sklearn import (train_test_split, StandardScaler, PCA )
-from ..tools.plotutils import (D_COLORS, D_MARKERS)
+from ..utils.plotutils import (D_COLORS, D_MARKERS)
 # ---
 
 def extract_pca (X): 

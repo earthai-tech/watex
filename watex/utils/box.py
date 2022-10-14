@@ -21,7 +21,7 @@ class Boxspace(dict): #Bunch
     
     Examples
     --------
-    >>> from watex.tools.import Boxspace 
+    >>> from watex.utils.import Boxspace 
     >>> bs = Boxspace(pkg='watex',  objective ='give water', version ='0.1.dev')
     >>> bs['pkg']
     'watex'

@@ -43,17 +43,17 @@ from ..exlib.sklearn  import (
     Pipeline,
     _HAS_ENSEMBLE_,   
     ) 
-from ..tools.coreutils import ( 
+from ..utils.coreutils import ( 
     _is_readable , 
     _assert_all_types
     )
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     format_notes, 
     repr_callable_obj, 
     smart_strobj_recognition, 
     smart_format
     )
-from ..tools.mlutils import (
+from ..utils.mlutils import (
     formatModelScore, 
     controlExistingEstimator,
     findCatandNumFeatures,

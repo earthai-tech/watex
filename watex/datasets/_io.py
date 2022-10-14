@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
-#   Author: LKouadio <etanoyau@gmail.com>.
 """
 Base IO code for managing all the datasets 
 Created on Thu Oct 13 14:26:47 2022
 @author: Daniel
 """
 import os 
+import csv 
 import shutil 
 import numpy as np 
 import pandas as pd 
-import csv 
-from importlib import resources
 from pathlib import Path 
-from ..tools.coreutils import _is_readable 
+from importlib import resources
 from collections import namedtuple
-from ..tools.funcutils import random_state_validator 
-from ..tools.box import Boxspace 
+from ..utils.coreutils import _is_readable 
+from ..utils.funcutils import random_state_validator 
+from ..utils.box import Boxspace 
 
-DATA = "watex.datasets.data" ; DESCR = "watex.datasets.descr"
+DMODULE = "watex.datasets.data" ; DESCR = "watex.datasets.descr"
 
 # create a namedtuple for remote data and url 
 RemoteMetadata = namedtuple("RemoteMetadata", ["file", "url", "checksum"])
@@ -42,7 +41,7 @@ If the folder does not already exist, it is automatically created.
 Parameters
 ----------
 data : str, default=None
-    The path to scikit-learn data directory. If `None`, the default path
+    The path to watex data directory. If `None`, the default path
     is `~/watex_data`.
 Returns
 -------
@@ -69,7 +68,7 @@ def _to_dataframe(data, tnames=None , feature_names =None, target =None ):
      
     :param data: str, or path-like object 
         data file to read or dataframe 
-    :param feature_names: List of features to selects. Prefereably 
+    :param feature_names: List of features to selects. Preferably 
         should be include in the dataframe columns 
     :params target: Ndarray or array-like, 
         A target for supervised learning . Can be nd array -for muliclass 
@@ -98,9 +97,10 @@ def _to_dataframe(data, tnames=None , feature_names =None, target =None ):
     return df, X, y 
 
 def csv_data_loader(
-    data_file,*, data_module=DATA,descr_file=None, descr_module=DESCR,
+    data_file,*, data_module=DMODULE, descr_file=None, descr_module=DESCR,
 ):
     with resources.open_text(data_module, data_file) as csv_file:
+  # with resources.files(DMODULES).joinpath(data_file).open('r', encoding='utf-8')
         data_file = csv.reader(csv_file)
         
         temp = next(data_file)
@@ -172,10 +172,10 @@ descr_module : str or module, default='watex.datasets.descr'
     Module where `descr_file` lives. See also :func:`description_loader`.
     The default  is `'watex.datasets.descr'`.
      
- Returns
- -------
- fdescr : str
-     Content of `descr_file_name`.
+Returns
+-------
+fdescr : str
+    Content of `descr_file_name`.
 
 """
 
@@ -251,13 +251,13 @@ Individual samples are assumed to be files stored a two levels folder
 structure such as the following:
     container_folder/
         category_1_folder/
-            file_1.txt
-            file_2.txt
+            file1.txt
+            file2.txt
             ...
-            file_42.txt
+            file30.txt
         category_2_folder/
-            file_43.txt
-            file_44.txt
+            file31.txt
+            file32.txt
             ...
 The folder names are used as supervised signal label names. The individual
 file names are not important.
@@ -296,15 +296,14 @@ decode_error : {'strict', 'ignore', 'replace'}, default='strict'
     Instruction on what to do if a byte sequence is given to analyze that
     contains characters not of the given `encoding`. Passed as keyword
     argument 'errors' to bytes.decode.
-random_state : int, RandomState instance or None, default=0
+random_state : int, RandomState instance or None, default=42
     Determines random number generation for dataset shuffling. Pass an int
     for reproducible output across multiple function calls.
-    See :term:`Glossary <random_state>`.
 allowed_extensions : list of str, default=None
     List of desired file extensions to filter the files to be loaded.
 Returns
 -------
-data : :class:`~watex._core.BowlSpace`
+data : :class:`~watex.utils.Boxspace`
     Dictionary-like object, with the following attributes.
     data : list of str
         Only present when `load_content=True`.

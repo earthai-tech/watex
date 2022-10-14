@@ -446,7 +446,7 @@ conf_mx_kws: dict
 Examples
 --------
 >>> from sklearn.svm import SVC 
->>> from watex.tools.metrics import Metrics 
+>>> from watex.utils.metrics import Metrics 
 >>> from watex.datasets import fetch_data 
 >>> X,y = fetch_data('Bagoue dataset prepared') 
 >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf',

@@ -31,7 +31,7 @@ from .._docstring import (
     _core_docs,
     _baseplot_params
     )
-from ..tools.mlutils import (
+from ..utils.mlutils import (
     existfeatures,
     formatGenericObj, 
     selectfeatures , 
@@ -48,8 +48,8 @@ from ..typing import (
     F, 
 )
 from ..property import BasePlot
-from ..tools.coreutils import _is_readable 
-from ..tools.funcutils import ( 
+from ..utils.coreutils import _is_readable 
+from ..utils.funcutils import ( 
     _assert_all_types , 
     _isin, 
     repr_callable_obj, 
@@ -203,7 +203,7 @@ class ExPlot (BasePlot):
 
         kws: dict 
             Additional keywords arguments from 
-            :func:watex.tools.coreutils._is_readable`
+            :func:watex.utils.coreutils._is_readable`
            
         Return
         -------
@@ -2371,7 +2371,7 @@ class QuickPlot (BasePlot)  :
             
         Example
         --------- 
-        >>> import watex.tools.mlutils as mfunc
+        >>> import watex.utils.mlutils as mfunc
         >>> from watex.bases.transformers import StratifiedWithCategoryAdder
         >>> from watex.view.plot import QuickPlot
         >>> data = r'../data/geodata/main.bagciv.data.csv'

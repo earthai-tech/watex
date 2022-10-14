@@ -121,7 +121,7 @@ def fit_rocks(logS_array, lns_, tres_):
             
     :Example: 
         
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> import watex.geology.core as GC 
         >>> obj= GC.quick_read_geomodel()
         >>> pslns , pstres,  ps_lnstres= GU.make_strata(obj)
@@ -154,7 +154,7 @@ def assert_station(id, nm =None):
     :param nm: matrix of new stratiraphy model built. 
     :return: Index at specific station
     :Example:
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> import watex.geology.core as GC 
         >>> obj= GC.quick_read_geomodel()
         >>> GU.assert_station(id=47, nm=geoObj.nmSites)
@@ -186,7 +186,7 @@ def find_distinct_items_and_indexes(items, cumsum =False ):
         - cumsum: cumulative sum of numerical items
         
     :Example: 
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> test_values = [2,2, 5, 8, 8, 8, 10, 12, 1, 1, 2, 3, 3,4, 4, 6]
         >>> ditems, dindexes, cumsum = GU.find_distinct_items_and_indexes(
             test_values, cumsum =True)
@@ -236,7 +236,7 @@ def grouped_items( items, dindexes, force =True ):
     :return: distinct items grouped 
     
     :Example:  
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> test_values = [2,2, 5, 8, 8, 8, 10, 12, 1, 1, 2, 3, 3,4, 4, 6]
         >>> dindexes,* _ = GU.find_distinct_items_and_indexes(
             test_values, cumsum =False)
@@ -423,7 +423,7 @@ def _sanitize_db_items (value, force =True ):
     
     :Example:
         
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> test=['(1.0, 0.5019607843137255, 1.0)','(+o++.)',
         ...          '(0.25, .0, 0.98)', '(0.23, .0, 1.)']
         >>> GU._sanitize_db_items (test)
@@ -611,7 +611,7 @@ def pseudostratigraphic_log (thick, layers, station, *,
              no errors should raised. 
 
     :Example: 
-        >>> from watex.tools.geotools as GU   
+        >>> from watex.utils.geotools as GU   
         >>> layers= ['$(i)$', 'granite', '$(i)$', 'granite']
         >>> thicknesses= [59.0, 150.0, 590.0, 200.0]
         >>> hatch =['//.', '.--', '+++.', 'oo+.']
@@ -717,7 +717,7 @@ def _assert_list_len_and_item_type(lista, listb, typea=None, typeb=None):
         - idem of `listb`
         
     :Example: 
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> thicknesses= [59.0, 150.0, 590.0, 200.0]
         >>> hatch =['//.', '.--', '+++.', 'oo+.']
         >>> GU._assert_list_len_and_item_type(thicknesses, hatch,
@@ -780,7 +780,7 @@ def set_default_hatch_color_values(hatch, color, dhatch='.--',
             -if ``False`` color =[(0.5019607843137255, 0.0, 1.0)]
             - if ``True`` color = (0.5019607843137255, 0.0, 1.0)
     :Example: 
-        >>> from watex.tools.geotools as  GU.
+        >>> from watex.utils.geotools as  GU.
         >>> hatch =['//.', 'none', '+++.', None]
         >>> color =[(0.5019607843137255, 0.0, 1.0), None, (0.8, 0.6, 1.),'lime']
         >>> GU.set_default_hatch_color_values(hatch, color))
@@ -919,7 +919,7 @@ def map_top (top, data, end=None):
         default values giving values. 
         
     :Example:
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> ex= [ 59.0, 150.0, 590.0, 200.0] # layers thicknesses 
         >>> GU.map_top(60, ex)
         ... ((3, [60, 999.0], [149.0, 590.0, 200.0]), 'coverall = 100.0 %')
@@ -980,7 +980,7 @@ def smart_zoom(v):
     :return: ratio float value of iteration list value including the 
         the value range (top and the bottom values).
     :Example: 
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> GU.smart_zoom ('1/4')
         ... 0.25
         >>> GU.smart_zoom ([60, 20])
@@ -1063,7 +1063,7 @@ def frame_top_to_bottom (top, bottom, data ):
             instead of raising errors. 
             
     :Example: 
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> layer_thicknesses = [ 59.0, 150.0, 590.0, 200.0]
         >>> top , bottom = 10, 120 # in meters 
         >>> GU.frame_top_to_bottom( top = top, bottom =bottom,
@@ -1144,7 +1144,7 @@ def zoom_processing(zoom, data, layers =None,
             the name of exact layers at the depth.
     
     :Example: 
-        >>> import watex.tools.geotools as GU
+        >>> import watex.utils.geotools as GU
         >>> layers= ['$(i)$', 'granite', '$(i)$', 'granite']
         >>> thicknesses= [59.0, 150.0, 590.0, 200.0]
         >>> hatch =['//.', 'none', '+++.', None]

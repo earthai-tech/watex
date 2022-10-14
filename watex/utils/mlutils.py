@@ -220,7 +220,7 @@ def correlatedfeatures(
         
     Examples
     --------
-    >>> from watex.tools.mlutils import correlatedcolumns 
+    >>> from watex.utils.mlutils import correlatedcolumns 
     >>> df_corr = correlatedcolumns (data , corr='spearman',
                                      fmt=None, threshold=.95
                                      )
@@ -280,7 +280,7 @@ def exporttarget (df, tname, inplace = True):
     
     :example: 
     >>> from watex.datasets import fetch_data '
-    >>> from watex.tools.mlutils import exporttarget 
+    >>> from watex.utils.mlutils import exporttarget 
     >>> data0 = fetch_data ('bagoue original').get('data=dfy1') 
     >>> # no modification 
     >>> target, data_no = exporttarget (data0 , 'sfi', False )
@@ -422,7 +422,7 @@ def formatGenericObj(generic_obj :Iterable[T])-> T:
     
     :Example: 
         
-        >>> from watex.tools.mlutils import formatGenericObj 
+        >>> from watex.utils.mlutils import formatGenericObj 
         >>> formatGenericObj ({'ohmS', 'lwi', 'power', 'id', 
         ...                         'sfi', 'magnitude'})
         
@@ -446,7 +446,7 @@ def findIntersectionGenObject(
     
     :Example: 
         
-        >>> from watex.tools.mlutils import findIntersectionGenObject
+        >>> from watex.utils.mlutils import findIntersectionGenObject
         >>> findIntersectionGenObject(
         ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
         ...    {'ohmS', 'lwi', 'power'})
@@ -473,7 +473,7 @@ def findDifferenceGenObject(gen_obj1: Iterable[Any],
     
     :Example: 
         
-        >>> from watex.tools.mlutils import findDifferenceGenObject
+        >>> from watex.utils.mlutils import findDifferenceGenObject
         >>> findDifferenceGenObject(
         ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
         ...    {'ohmS', 'lwi', 'power'})
@@ -543,7 +543,7 @@ def controlExistingEstimator(
     
     :Example: 
         
-        >>> from watex.tools.mlutils import controlExistingEstimator 
+        >>> from watex.utils.mlutils import controlExistingEstimator 
         >>> test_est =controlExistingEstimator('svm')
         ('svc', 'SupportVectorClassifier')
         
@@ -584,7 +584,7 @@ def formatModelScore(
     
     :Example: 
         
-        >>> from watex.tools.mlutils import formatModelScore 
+        >>> from watex.utils.mlutils import formatModelScore 
         >>>  formatModelScore({'DecisionTreeClassifier':0.26, 
                       'BaggingClassifier':0.13}
         )
@@ -757,7 +757,7 @@ def fetchTGZDatafromURL (
     :param filename: `tgz` filename. 
     
     :example: 
-    >>> from watex.tools.mlutils import fetchTGZDatafromURL
+    >>> from watex.utils.mlutils import fetchTGZDatafromURL
     >>> DOWNLOAD_ROOT = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/'
     >>> # from Zenodo: 'https://zenodo.org/record/5560937#.YWQBOnzithE'
     >>> DATA_PATH = 'data/__tar.tgz'  # 'BagoueCIV__dataset__main/__tar.tgz_files__'

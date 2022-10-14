@@ -79,7 +79,7 @@ from ..exceptions import (
     FileHandlingError,
     ERPError, 
     )
-from ..tools.exmath import ( 
+from ..utils.exmath import ( 
     select_anomaly, 
     compute_anr,
     compute_sfi,
@@ -88,13 +88,13 @@ from ..tools.exmath import (
     gettype, 
     getshape 
     )
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     display_infos, 
     savepath_, 
     get_boundaries, 
     wrap_infos, 
     )
-from ..tools.gistools import ( 
+from ..utils.gistools import ( 
     ll_to_utm, 
     utm_to_ll, 
     project_point_ll2utm, 

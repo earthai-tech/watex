@@ -11,10 +11,10 @@ from online (repository or zenodo record )
 import re
 
 from ..property  import BagoueNotes
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     smart_format 
     )
-from ..tools.mlutils import  ( 
+from ..utils.mlutils import  ( 
     loadDumpedOrSerializedData, 
     )
 from ..exceptions import DatasetError

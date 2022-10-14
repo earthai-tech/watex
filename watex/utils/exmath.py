@@ -316,7 +316,7 @@ def interpolate2d (
     Examples 
     ---------
     >>> from watex.methods.em import EM 
-    >>> from watex.tools.exmath import interpolate2d 
+    >>> from watex.utils.exmath import interpolate2d 
     >>> # make 2d matrix of frequency
     >>> emObj = EM().fit(r'data/edis')
     >>> freq2d = emObj.make2d (out = 'freq')
@@ -542,8 +542,8 @@ def vesDataOperator(
     
     :Example: 
         
-        >>> from watex.tools.exmath import vesDataOperator
-        >>> from watex.tools.coreutils import vesSelector 
+        >>> from watex.utils.exmath import vesDataOperator
+        >>> from watex.utils.coreutils import vesSelector 
         >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx')
         >>> len(data)
         ... (32, 3) # include the potentiel electrode values `MN`
@@ -677,7 +677,7 @@ def ohmicArea(
         spacing when imaging to the depth and Y is the apparent resistivity computed 
     
     kws: dict - Additionnal keywords arguments from |VES| data operations. 
-        See :func:`watex.tools.exmath.vesDataOperator` for futher details. 
+        See :func:`watex.utils.exmath.vesDataOperator` for futher details. 
     
     Returns 
     --------
@@ -706,8 +706,8 @@ def ohmicArea(
     
     Examples 
     ---------
-    >>> from watex.tools.exmath import ohmicArea 
-    >>> from watex.tools.coreutils import vesSelector 
+    >>> from watex.utils.exmath import ohmicArea 
+    >>> from watex.utils.coreutils import vesSelector 
     >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx') 
     >>> (ohmS, err, roots), *_ = ohmicArea(data = data, ohmSkey =45, sum =True ) 
     ... (13.46012197818152, array([5.8131967e-12]), array([45.        , 98.07307307]))
@@ -902,7 +902,7 @@ def _type_mechanism (
         
     :Example:
         >>> import numpy as np 
-        >>> from watex.tools.exmath import _type_mechanism
+        >>> from watex.utils.exmath import _type_mechanism
         >>> rang = random.RandomState(42)
         >>> test_array2 = rang.randn (7)
         >>> _type_mechanism(np.abs(test_array2))
@@ -950,7 +950,7 @@ def type_ (erp: ArrayLike[DType[float]] ) -> str:
     :Example: 
         
         >>> import numpy as np 
-        >>> from watex.tools.exmath import type_
+        >>> from watex.utils.exmath import type_
         >>> rang = random.RandomState(42)
         >>> test_array2 = rang.randn (7)
         >>> type_(np.abs(test_array2))
@@ -1063,7 +1063,7 @@ def shape (
     :Example: 
         >>> import numpy as np 
         >>> rang = random.RandomState(42)
-        >>> from watex.tools.exmath import shape_ 
+        >>> from watex.utils.exmath import shape_ 
         >>> test_array1 = np.arange(10)
         >>> shape_ (test_array1)
         ...  'C'
@@ -1457,7 +1457,7 @@ def sfi (
         
         >>> from numpy as np 
         >>> from watex.properties import P 
-        >>> from watex.tools.exmath import sfi 
+        >>> from watex.utils.exmath import sfi 
         >>> rang = np.random.RandomState (42) 
         >>> condzone = np.abs(rang.randn (7)) 
         >>> # no visualization and default value `s` with gloabl minimal rho
@@ -1596,7 +1596,7 @@ def plot_ (
     
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.exmath import plot_ 
+        >>> from watex.utils.exmath import plot_ 
         >>> x, y = np.arange(0 , 60, 10) ,np.abs( np.random.randn (6)) 
         >>> KWS = dict (xlabel ='Stations positions', ylabel= 'resistivity(ohm.m)', 
                     rlabel = 'raw cuve', rotate = 45 ) 
@@ -1848,7 +1848,7 @@ def define_conductive_zone (
         
     :Example: 
         >>> import numpy as np
-        >>> from watex.tools.exmath import define_conductive_zone 
+        >>> from watex.utils.exmath import define_conductive_zone 
         >>> sample = np.random.randn(9)
         >>> cz, stn_res = define_conductive_zone(sample, 4, extent = 7)
         ... (array([ 0.32208638,  1.48349508,  0.6871188 , -0.96007639,
@@ -1933,7 +1933,7 @@ def shortPlot (sample, cz=None):
     
     :Example: 
         >>> import numpy as np 
-        >>> from watex.tools.exmath import shortPlot, define_conductive_zone 
+        >>> from watex.utils.exmath import shortPlot, define_conductive_zone 
         >>> test_array = np.random.randn (10)
         >>> selected_cz ,*_ = define_conductive_zone(test_array, 7) 
         >>> shortPlot(test_array, selected_cz )
@@ -2015,7 +2015,7 @@ def compute_sfi (
     
     :Example: 
         
-        >>> from watex.tools.exmath import compute_sfi 
+        >>> from watex.utils.exmath import compute_sfi 
         >>> sfi = compute_sfi(pk_min = 90,
         ...                      pk_max=130,
         ...                      rhoa_min=175,
@@ -2115,7 +2115,7 @@ def compute_anr (
     
     :Example: 
         
-        >>> from watex.tools.exmath import compute_anr 
+        >>> from watex.utils.exmath import compute_anr 
         >>> import pandas as pd
         >>> anr = compute_anr(sfi=sfi, 
         ...                  rhoa_array=data = pd.read_excel(
@@ -2226,7 +2226,7 @@ def get_shape (
     
     :Example: 
         
-        >>> from watex.tools.exmath import get_shape 
+        >>> from watex.utils.exmath import get_shape 
         >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
         >>> shape = get_shape (rhoa_range= np.array(x))
         ... U
@@ -2491,7 +2491,7 @@ def compute_power (
     
     :Example: 
         
-        >>> from watex.tools.exmath import compute_power 
+        >>> from watex.utils.exmath import compute_power 
         >>> power= compute_power(80, 130)
     
     
@@ -2639,7 +2639,7 @@ def compute_lower_anomaly(
     
     :Example: 
         
-        >>> from watex.tools.exmath import compute_lower_anolamy 
+        >>> from watex.utils.exmath import compute_lower_anolamy 
         >>> import pandas as pd 
         >>> path_to_= 'data/l10_gbalo.xlsx'
         >>> dataRes=pd.read_excel(erp_data).to_numpy()[:,-1]
@@ -2979,7 +2979,7 @@ def fittensor(
     
     Example::
     >>> import numpy as np 
-    >>> from watex.tools.exmath import fittensor
+    >>> from watex.utils.exmath import fittensor
     >>> refreq = np.linspace(7e7, 1e0, 20) # 20 frequencies as reference
     >>> freq_ = np.hstack ((refreq.copy()[:7], refreq.copy()[12:] )) 
     >>> z = np.random.randn(len(freq_)) *10 # assume length of  freq as 
@@ -3115,7 +3115,7 @@ def interpolate1d (
     --------
     >>> import numpy as np 
     >>> import matplotlib.pyplot as plt 
-    >>> from watex.tools.exmath  import interpolate1d,
+    >>> from watex.utils.exmath  import interpolate1d,
     >>> z = np.random.randn(17) *10 # assume 17 freq for 17 values of tensor Z 
     >>> z [[7, 10, 16]] =np.nan # replace some indexes by NaN values 
     >>> zit = interpolate1d (z, kind ='linear')
@@ -3243,7 +3243,7 @@ def moving_average (
     Examples
     --------- 
     >>> import numpy as np ; import matplotlib.pyplot as plt 
-    >>> from watex.tools.exmath  import moving_average 
+    >>> from watex.utils.exmath  import moving_average 
     >>> data = np.random.randn (37) 
     >>> # add gaussion noise to the data 
     >>> data = 2 * np.sin( data)  + np.random.normal (0, 1 , len(data))

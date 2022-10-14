@@ -12,7 +12,7 @@ from .rload import loadBagoueDataset
 from ..cases import  (
     BaseSteps, 
    ) 
-from ..tools.mlutils import (
+from ..utils.mlutils import (
     dumpOrSerializeData
     )
 

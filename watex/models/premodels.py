@@ -8,7 +8,7 @@ import warnings
 from .._docstring import refglossary
 from .._watexlog import watexlog 
 from ..decorators import refAppender 
-from ..tools.funcutils import (
+from ..utils.funcutils import (
     repr_callable_obj,
     smart_format,
     smart_strobj_recognition, 
@@ -22,7 +22,7 @@ from ..exceptions import (
     EstimatorError, 
     NotFittedError 
     )
-from ..tools.mlutils import (
+from ..utils.mlutils import (
     controlExistingEstimator , 
     fetchModel 
     )

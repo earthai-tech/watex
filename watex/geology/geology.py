@@ -12,11 +12,11 @@ from .core import (
     Base, 
     get_agso_properties 
     )
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     repr_callable_obj, 
     smart_strobj_recognition
     )
-from ..tools.plotutils import ( 
+from ..utils.plotutils import ( 
     get_color_palette 
     )
 from ..exceptions import ( 

@@ -43,7 +43,7 @@ from ..exceptions import (
     NotFittedError, 
     EMError, 
 ) 
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     is_installing,
     _assert_all_types, 
     make_ids, 
@@ -53,7 +53,7 @@ from ..tools.funcutils import (
     smart_strobj_recognition, 
     repr_callable_obj, 
     ) 
-from ..tools.exmath import ( 
+from ..utils.exmath import ( 
     scalePosition, 
     fittensor, 
     betaj, 
@@ -63,7 +63,7 @@ from ..tools.exmath import (
     z2rhoa, 
     mu0, 
     )
-from ..tools.coreutils import ( 
+from ..utils.coreutils import ( 
     makeCoords, 
     )
 from ..property import (
@@ -475,7 +475,7 @@ class EM(IsEdi):
             
         kws: dict 
             Additionnal keyword arguments from `~Edi.write_edifile` and 
-            :func:`watex.tools.coreutils.make_ll_coordinates`. 
+            :func:`watex.utils.coreutils.make_ll_coordinates`. 
             
         Returns 
         --------

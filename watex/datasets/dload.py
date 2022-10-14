@@ -5,28 +5,63 @@
 load different data as a compliant functions 
 ============================================= 
 
-Inspired with the machine learning popular dataset loading 
+Inspired from the machine learning popular dataset loading 
 
 Created on Thu Oct 13 16:26:47 2022
 @author: Daniel
 """
-from warning import warn 
-from ._io import csv_data_loader, _to_dataframe , DATA 
-from ..tools.coreutils import vesSelector, erpSelector 
-from ..tools.mlutils import split_train_test_by_id #(split_train_test , 
-from ..tools.box import Boxspace
+from warnings import warn 
+from ._io import csv_data_loader, _to_dataframe , DMODULE 
+from ..utils.coreutils import vesSelector, erpSelector 
+from ..utils.mlutils import split_train_test_by_id 
+from ..utils.box import Boxspace
 
-def load_tankesse (*, as_frame =True, **kws ):
+__all__= [ "load_bagoue" , "load_gbalo", "load_iris", "load_semien",
+          "load_tankesse",  "load_boundiali"]
+
+def load_tankesse (
+        *, as_frame =True, tag=None, **kws 
+   ):
     data_file ="tankesse.csv"
     df =  erpSelector(f = data_file  , **kws)
-    return df if as_frame else df.values 
+    return df if as_frame else Boxspace(
+            data = df.values , 
+            resistivity = df.resistivity.values,  
+            station= df.stations.values, 
+            northing = df.northing.values,
+            easting = df.easting.values, 
+            longitude= df.longitude.values, 
+            latitude = df.latitude.values
+            ) 
 
-def load_semien (*, as_frame =True , index_rhoa =0, **kws ):
+def load_boundiali (
+        *, as_frame =True, tag=None,**kws 
+  ):
+    data_file ="boundiali_ves.csv"
+    df =  vesSelector(f = data_file  , **kws)
+    return df if as_frame else Boxspace(
+            data = df.values , 
+            resistivity = df.resistivity.values,  
+            AB= df.AB.values, 
+            MN = df.MN.values,
+            ) 
+
+def load_semien (
+        *, as_frame =True , index_rhoa =0, tag=None, **kws
+ ):
     data_file ="semien_ves.csv"
     df = vesSelector(data= data_file, index_rhoa = index_rhoa, **kws) 
-    return df if as_frame else df.values 
+    return df if as_frame else Boxspace( 
+        data = df.values , 
+        resistivity = df.resistivity.values,  
+        AB= df.AB.values, 
+        MN = df.MN.values,
+        )
 
-def load_gbalo (*, kind ='ves', as_frame=True, index_rhoa = 0 , **kws ): 
+def load_gbalo (
+        *, kind ='ves', as_frame=True, index_rhoa = 0 , tag=None, **kws 
+): 
+    d= dict() 
     kind =str(kind).lower().strip() 
     
     if kind not in ("erp", "ves"): 
@@ -34,12 +69,31 @@ def load_gbalo (*, kind ='ves', as_frame=True, index_rhoa = 0 , **kws ):
         kind="erp"
     data_file = f"dc{kind}_gbalo.csv" 
     if "ves" in data_file: 
-        return vesSelector(data =data_file , index_rhoa= index_rhoa , **kws) 
+        df=vesSelector(data =data_file , index_rhoa= index_rhoa , **kws) 
+        d = dict( 
+            data = df.values , 
+            resistivity = df.resistivity.values,  
+            station= df.stations.values, 
+            northing = df.northing.values,
+            easting = df.easting.values, 
+            longitude= df.longitude.values, 
+            latitude = df.latitude.values
+            )
     if "erp" in data_file : 
-        return erpSelector(data_file )
+        df= erpSelector(data_file )
+        d = dict(
+            data = df.values , 
+            resistivity = df.resistivity.values,  
+            AB= df.AB.values, 
+            MN = df.MN.values
+        )
+    if as_frame: return df 
+    
+    return Boxspace( **d )
     
 def load_bagoue(
-        *, return_X_y=False, as_frame=True, split_X_y=False, test_size =.3 ,  
+        *, return_X_y=False, as_frame=True, split_X_y=False, test_size =.3 , 
+        tag=None 
  ):
     data_file = "bagoue.csv"
     data, target, target_names, fdescr = csv_data_loader(
@@ -74,7 +128,7 @@ def load_bagoue(
         DESCR=fdescr,
         feature_names=feature_names,
         filename=data_file,
-        data_module=DATA,
+        data_module=DMODULE,
     )
 
 def load_iris(*, return_X_y=False, as_frame=False):
@@ -101,7 +155,7 @@ def load_iris(*, return_X_y=False, as_frame=False):
     return Boxspace(
         data=data,target=target,frame=frame,target_names=target_names,
         DESCR=fdescr,feature_names=feature_names,filename=data_file,
-        data_module=DATA,
+        data_module=DMODULE,
         )
 
 load_iris.__doc__="""\

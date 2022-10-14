@@ -1260,15 +1260,15 @@ class BagoueNotes:
             'easting :UTM:29P-30N-WGS84', 
             'northing :UTM:29P-30N-WGS84', 
              'anomaly `power` or anomaly width in meter(m).'
-             '__ref :doc:`watex.tools.exmath.compute_power`', 
+             '__ref :doc:`watex.utils.exmath.compute_power`', 
             'anomaly `magnitude` or `height` in Ω.m '
-            '__ref :doc:`watex.tools.exmath.compute_magnitude`', 
+            '__ref :doc:`watex.utils.exmath.compute_magnitude`', 
             'anomaly `standard fracturing index`, no unit<=sqrt(2)'
-            '__ref :doc:`watex.tools.exmath.compute_sfi`', 
+            '__ref :doc:`watex.utils.exmath.compute_sfi`', 
              'anomaly `shape`. Can be `V`W`M`K`L`U`H`'
-             '__ref :doc:`watex.tools.exmath.get_shape`', 
+             '__ref :doc:`watex.utils.exmath.get_shape`', 
               'anomaly `shape`. Can be `EC`CP`CB2P`NC`__'
-                'ref :doc:`watex.tools.exmath.get_type`', 
+                'ref :doc:`watex.utils.exmath.get_type`', 
             'most dominant geology structure of the area where'
                 ' the erp or ves (geophysical survey) is done.', 
             'Ohmic surface compute on sounding curve in '

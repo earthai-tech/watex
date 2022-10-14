@@ -14,8 +14,8 @@ import numpy as np
 from ._watexlog import  watexlog
 from ._docstring import DocstringComponents, _core_docs
 from .typing import List, Optional, DataFrame 
-from .tools.coreutils import _is_readable 
-from .tools.funcutils import (_assert_all_types,  repr_callable_obj, 
+from .utils.coreutils import _is_readable 
+from .utils.funcutils import (_assert_all_types,  repr_callable_obj, 
                               smart_strobj_recognition, smart_format )
 from .exceptions import NotFittedError
 from .view.plot import ExPlot
@@ -149,7 +149,7 @@ class Data:
             Columns or features to keep in the datasets
 
         kwd: dict, 
-        additional keywords arguments from :func:`watex.tools.mlutils.selectfeatures`
+        additional keywords arguments from :func:`watex.utils.mlutils.selectfeatures`
  
         Returns 
         ---------
@@ -773,7 +773,7 @@ def get_params (obj: object
     
     :examples: 
     >>> from sklearn.svm import SVC 
-    >>> from watex.tools.funcutils import get_params 
+    >>> from watex.utils.funcutils import get_params 
     >>> sigmoid= SVC (
         **{
             'C': 512.0,

@@ -12,7 +12,7 @@ import warnings
 
 import numpy as np 
 
-from .tools.gistools import (
+from .utils.gistools import (
     assert_elevation_value, 
     assert_lat_value, 
     assert_lon_value , 
