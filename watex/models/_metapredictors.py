@@ -15,7 +15,7 @@ from ..exlib.slearn import (
     SVC, 
     VotingClassifier, 
     )
-from ..exlib.others import XGBClassifier 
+from ..exlib.more import XGBClassifier 
 
 __all__=['_pMODELS']
 

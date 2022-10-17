@@ -1,7 +1,10 @@
 from .mlplot import ( 
     biPlot, 
-    MLPlots, 
-    plotlearningcurve
+    BaseMetricPlot, 
+    plotLearningCurves, 
+    plotSilhouette,
+    plotDendrogram, 
+    plotBindDendro2Heatmap, 
     )
 from .plot import ( 
     QuickPlot , 
@@ -11,8 +14,11 @@ from .plot import (
 
 __all__=[
     "biPlot", 
-    "MLPlots", 
+    "BaseMetricPlot", 
     "QuickPlot" , 
     "ExPlot",
-    "plotlearningcurve"
+    "plotLearningCurves", 
+    "plotSilhouette", 
+    "plotDendrogram", 
+    "plotBindDendro2Heatmap"
     ]

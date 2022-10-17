@@ -100,7 +100,8 @@ else :
     HAS_MOD=True 
     
 if HAS_MOD : 
-    #XXX TODO : prior revise the pkg structure to pycsamt.core ...
+    #XXX TODO : prior revise the pkg structure to pycsamt.core 
+    # since ff subpackage does no longer exist in newest version
     from pycsamt.ff.core import (
         edi, 
         z as EMz 
@@ -485,7 +486,7 @@ class EM(IsEdi):
         Examples
         ---------
         >>> from watex.methods.em import EM
-        >>> edipath = r'../data/edis'
+        >>> edipath = r'data/edis'
         >>> savepath =  r'/Users/Daniel/Desktop/ediout'
         >>> emObjs = EM().fit(edipath)
         >>> emObjs.rewrite_edis(by='id', edi_prefix ='b1',
@@ -2059,7 +2060,7 @@ class Processing (EM) :
                      tol:float = .5 ,  
                      **kws 
                      )-> NDArray[DType[complex]]: 
-        """ Rewrite EDI with the valid data.  
+        """ Rewrite EDI and get the valid data.  
         
         Function analyzes the data  to keep the good ones. The goodness of the data 
         depends on the  `threshold` rate.  For instance 50% means to consider an 

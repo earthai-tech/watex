@@ -111,6 +111,7 @@ from sklearn.base import(
     BaseEstimator,
     TransformerMixin
 )
+from sklearn.cluster import KMeans 
 from sklearn.compose import ( 
     make_column_transformer, 
     make_column_selector , 
@@ -146,7 +147,8 @@ from sklearn.metrics import (
     precision_score,
     recall_score, 
     roc_auc_score, 
-    roc_curve
+    roc_curve, 
+    silhouette_samples
 )  
 from sklearn.model_selection import ( 
     train_test_split , 
@@ -181,6 +183,7 @@ from sklearn.tree import DecisionTreeClassifier
 __all__=[
     "BaseEstimator",
     "TransformerMixin",
+    "KMeans", 
     "make_column_transformer",
     'make_column_selector' , 
     'ColumnTransformer',
@@ -206,6 +209,7 @@ __all__=[
     'recall_score', 
     'roc_auc_score', 
     'roc_curve',
+    'silhouette_samples', 
     'train_test_split' , 
     'validation_curve', 
     'StratifiedShuffleSplit' , 

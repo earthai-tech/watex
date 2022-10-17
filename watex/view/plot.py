@@ -25,7 +25,7 @@ from pandas.plotting import (
     ) 
 import seaborn as sns 
 
-from ..bases import FeatureInspection
+from ..cases.features import FeatureInspection
 from .._docstring import ( 
     DocstringComponents,
     _core_docs,

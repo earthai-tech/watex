@@ -297,8 +297,55 @@ class Data:
         raise AttributeError (
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
             f'{appender}{"" if rv is None else "?"}'
-            )        
+            ) 
+        
+Data.__doc__="""\
+Data base class
 
+Typically, we train a model with a matrix of data. Note that pandas Dataframe 
+is the most used because it is very nice to have columns lables even though 
+Numpy arrays work as well. 
+
+For supervised Learning for instance, suc as regression or clasification, our 
+intent is to have a function that transforms features into a label. If we 
+were to write this as an algebra formula, it would be look like:: 
+    
+    .. math::
+        
+        y = f(X)
+
+:code:`X` is a matrix. Each row represent a `sample` of data or information 
+about individual. Every columns in :code:`X` is a `feature`.The output of 
+our function, :code:`y`, is a vector that contains labels (for classification)
+or values (for regression). 
+
+In Python, by convention, we use the variable name :code:`X` to hold the 
+sample data even though the capitalization of variable is a violation of  
+standard naming convention (see PEP8). 
+
+Parameters 
+-----------
+{params.core.data}
+{params.base.columns}
+{params.base.axis}
+{params.base.sample}
+{params.base.kind}
+{params.base.inplace}
+{params.core.verbose}
+
+Returns
+-------
+{returns.self}
+   
+Examples
+--------
+.. include:: ../docs/data.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+)
+ 
 class Missing (Data) : 
     """ Deal with missing in Data 
     
@@ -604,7 +651,7 @@ class Missing (Data) :
             
         return self 
     
-class Base:
+class _Base:
     """Base class for all classes in watex for parameters retrievals
 
     Notes
@@ -713,53 +760,574 @@ class Base:
 
         return self
 
-Data.__doc__="""\
-Data base class
-
-Typically, we train a model with a matrix of data. Note that pandas Dataframe 
-is the most used because it is very nice to have columns lables even though 
-Numpy arrays work as well. 
-
-For supervised Learning for instance, suc as regression or clasification, our 
-intent is to have a function that transforms features into a label. If we 
-were to write this as an algebra formula, it would be look like:: 
+class Perceptron (_Base): 
+    r""" Object oriented perceptron API class. Perceptron classifier 
     
-    .. math::
+    Inspired from Rosenblatt concept of perceptron rules. Indeed, Rosenblatt 
+    published the first concept of perceptron learning rule based on the MCP 
+    (McCulloth-Pitts) neuron model. With the perceptron rule, Rosenblatt 
+    proposed an algorithm thar would automatically learn the optimal weights 
+    coefficients that would them be multiplied by the input features in order 
+    to make the decision of whether a neuron fires (transmits a signal) or not. 
+    In the context of supervised learning and classification, such algirithm 
+    could them be used to predict whether a new data points belongs to one 
+    class or the other. 
+    
+    Rosenblatt initial perceptron rule and the perceptron algorithm can be 
+    summarized by the following steps: 
+        - initialize the weights at 0 or small random numbers. 
+        - For each training examples, :math:`x^{(i)}`:
+            - Compute the output value :math:`\hat{y}`. 
+            - update the weighs. 
+    the weights :math:`w` vector can be fromally written as: 
+        .. math:: 
+            
+            w := w_j + \delta w_j
+            
+    Parameters 
+    -----------
+    eta: float, 
+        Learning rate between (0. and 1.) 
+    n_iter: int , 
+        number of iteration passes over the training set 
+    random_state: int, default is 42
+        random number generator seed for random weight initialization.
         
-        y = f(X)
-
-:code:`X` is a matrix. Each row represent a `sample` of data or information 
-about individual. Every columns in :code:`X` is a `feature`.The output of 
-our function, :code:`y`, is a vector that contains labels (for classification)
-or values (for regression). 
-
-In Python, by convention, we use the variable name :code:`X` to hold the 
-sample data even though the capitalization of variable is a violation of  
-standard naming convention (see PEP8). 
-
-Parameters 
------------
-{params.core.data}
-{params.base.columns}
-{params.base.axis}
-{params.base.sample}
-{params.base.kind}
-{params.base.inplace}
-{params.core.verbose}
-
-Returns
--------
-{returns.self}
-   
-Examples
---------
-.. include:: ../docs/data.rst
-
-""".format(
-    params=_param_docs,
-    returns=_core_docs["returns"],
-)
+    Attributes 
+    ----------
+    w_: Array-like, 
+        Weight after fitting 
+    errors_: list 
+        Number of missclassification (updates ) in each epoch
     
+        
+    References
+    ------------
+    .. [1] Rosenblatt F, 1957, The perceptron:A perceiving and Recognizing
+        Automaton,Cornell Aeoronautical Laboratory 1957
+    .. [2] McCulloch W.S and W. Pitts, 1943. A logical calculus of Idea of 
+        Immanent in Nervous Activity, Bulleting of Mathematical Biophysics, 
+        5(4): 115-133, 1943.
+    
+    """
+    def __init__(self, eta:float = .01 , n_iter: int = 50 , 
+                 random_state:int = 42 ) :
+        super().__init__()
+        self.eta=eta 
+        self.n_iter=n_iter 
+        self.random_state=random_state 
+        
+    def fit(self , X, y ): 
+        """ Fit the training data 
+        
+        Parameters 
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        Returns 
+        --------
+        self: `Perceptron` instance 
+            returns ``self`` for easy method chaining.
+        """
+        rgen = np.random.RandomState(self.random_state)
+        
+        self.w_ = rgen.normal(loc=0. , scale =.01 , size = 1 + X.shape[1]
+                              )
+        self.erros_ =list() 
+        for _ in range (self.n_iter):
+            errors =0 
+            for xi, target in zip(X, y):
+                update = self.eta * (target - self.predict(xi))
+                self.w_[1:] += update * xi 
+                self.w_[0] += update 
+                errors  += int(update !=0.) 
+            self.errors_.append(errors)
+        
+        return self 
+    
+    def net_input(self, X) :
+        """ Compute the net input """
+        return np.dot (X, self.w_[1:]) + self.w_[0] 
+
+    def predict (self, X): 
+        """
+       Predict the  class label after unit step
+        
+        Parameters
+        ----------
+        X : Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns
+        -------
+        ypred: predicted class label after the unit step  (1, or -1)
+
+        """             
+        return np.where (self.net_input(X) >=.0 , 1 , -1 )
+    
+    def __repr__(self): 
+        """ Represent the output class """
+        
+        tup = tuple (f"{key}={val}".replace ("'", '') for key, val in 
+                     self.get_params().items() )
+        
+        return self.__class__.__name__ + str(tup).replace("'", "") 
+        
+class AdelineStochasticGradientDescent (_Base) :
+    r""" Adaptative Linear Neuron Classifier  with batch  (stochastic) 
+    gradient descent 
+    
+    A stochastic gradient descent is apopular alternative wich is sometimes 
+    also cal iterative or online gradient descent. Instead of updating the 
+    weights based on the sum of accumulated erros over all training examples 
+    :math:`x^{(i)}`: 
+        
+        .. math:: 
+            
+            \delta w: \sum{i} (y^{(i)} -\phi( z^{(i)}))x^(i)
+            
+    the weights are updated incremetally for each training examples: 
+        
+        .. math:: 
+            
+            \neta(y^{(i)} - \phi(z^{(i)})) x^{(i)}
+            
+    Parameters 
+    -----------
+    eta: float, 
+        Learning rate between (0. and 1.) 
+    n_iter: int, 
+        number of iteration passes over the training set 
+    suffle: bool, 
+        shuffle training data every epoch if True to prevent cycles. 
+
+    random_state: int, default is 42
+        random number generator seed for random weight initialization.
+        
+    Attributes 
+    ----------
+    w_: Array-like, 
+        Weight after fitting 
+    cost_: list 
+        Sum of squares cost function (updates ) in each epoch
+        
+    See also 
+    ---------
+    AdelineGradientDescent: :class:`watex.base.AdelineGradientDescent` 
+    
+    References 
+    -----------
+    .. [1] Windrow and al., 1960. An Adaptative "Adeline" Neuron Using Chemical
+        "Memistors", Technical reports Number, 1553-2,B Windrow and al., 
+        standford Electron labs, Standford, CA,October 1960. 
+            
+    """
+    def __init__(self, eta:float = .01 , n_iter: int = 50 , shuffle=True, 
+                 random_state:int = 42 ) :
+        super().__init__()
+        self.eta=eta 
+        self.n_iter=n_iter 
+        self.shuffle=shuffle 
+        self.random_state=random_state 
+        
+        self.w_initialized =False 
+        
+    def fit(self , X, y ): 
+        """ Fit the training data 
+        
+        Parameters 
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        Returns 
+        --------
+        self: `Perceptron` instance 
+            returns ``self`` for easy method chaining.
+        """   
+        self._init_weights (X.shape[1])
+        self.cost_=list() 
+        for i in range(self.n_iter ): 
+            if self.shuffle: 
+                X, y = self._shuffle (X, y) 
+            cost =[] 
+            for xi , target in zip(X, y) :
+                cost.append(self._update_weights(xi, target)) 
+            avg_cost = sum(cost)/len(y) 
+            self.cost_.append(avg_cost) 
+        
+        return self 
+    
+    def partial_fit(self, X, y):
+        """
+        Fit training data without reinitialising the weights 
+        
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        Returns 
+        --------
+        self: `Perceptron` instance 
+            returns ``self`` for easy method chaining.
+
+        """
+        if not self.w_initialized : 
+           self._init_weights (X.shape[1])
+          
+        if y.ravel().shape [0]> 1: 
+            for xi, target in zip(X, y):
+                self._update_weights (xi, target) 
+        else: 
+            self._update_weights (X, y)
+                
+        return self 
+    
+    def _shuffle (self, X, y):
+        """
+        Shuffle training data 
+        
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+
+        Returns
+        -------
+        Training and target data shuffled  
+
+        """
+        r= self.rgen.permutation(len(y)) 
+        return X[r], y[r]
+    
+    def _init_weights (self, m): 
+        """
+        Initialize weights with small random numbers 
+
+        Parameters
+        ----------
+        m : int 
+           random number for weights initialization .
+
+        """
+        self.rgen =  np.random.RandomState(self.random_state)
+        self.w_ = self.rgen.normal(loc=.0 , scale=.01, size = 1+ m) 
+        self.w_initialized = True 
+        
+    def _update_weights (self, X, y):
+        """
+        Adeline learning rules to update the weights 
+
+        Parameters
+        ----------
+        X : Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set for initializing
+        y :array-like, shape (M, ) ``M=m-samples``, 
+            train target for initializing 
+
+        Returns
+        -------
+        cost: list,
+            sum-squared errors 
+
+        """
+        output = self.activation (self.net_input(X))
+        errors =(y - output ) 
+        self.w_[1:] += self.eta * X.dot(errors) 
+        cost = errors **2 /2. 
+        
+        return cost 
+    
+    def net_input (self, X):
+        """
+        Compute the net input X 
+        
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns
+        -------
+       weight net inputs 
+
+        """
+        return np.dot (X, self.w_[1:]) + self.w_[0] 
+
+    def activation (self, X):
+        """
+        Compute the linear activation 
+
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns
+        -------
+        X: activate NDArray 
+
+        """
+        return X 
+    
+    def predict (self, X):
+        """
+        Predict the  class label after unit step
+        
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns
+        -------
+        ypred: predicted class label after the unit step  (1, or -1)
+        """
+        return np.where (self.activation(self.net_input(X))>=0. , 1, -1)
+    
+    def __repr__(self): 
+        """ Represent the output class """
+        
+        tup = tuple (f"{key}={val}".replace ("'", '') for key, val in 
+                     self.get_params().items() )
+        
+        return self.__class__.__name__ + str(tup).replace("'", "") 
+    
+class AdelineGradientDescent (_Base): 
+    r"""Adaptative Linear Neuron Classifier 
+    
+    ADAptative LInear NEuron (Adaline) was published by Bernard Widrow and 
+    his doctoral studentTeed Hoff only a few uears after Rosenblatt's 
+    perceptron algorithm. It can be  considered as impovrment of the latter 
+    Windrow and al., 1960.
+    
+    Adaline illustrates the key concepts of defining and minimizing continuous
+    cost function. This lays the groundwork for understanding more advanced 
+    machine learning algorithm for classification, such as Logistic Regression, 
+    Support Vector Machines,and Regression models.  
+    
+    The key difference between Adaline rule (also know as the WIdrow-Hoff rule) 
+    and Rosenblatt's perceptron is that the weights are updated based on linear 
+    activation function rather than unit step function like in the perceptron. 
+    In Adaline, this linear activation function :math:`\phi(z)` is simply 
+    the identifu function of the net input so that:
+        
+        .. math:: 
+            
+            \phi (w^Tx)= w^Tx 
+    
+    while the linear activation function is used for learning the weights. 
+    
+    Parameters 
+    -----------
+    eta: float, 
+        Learning rate between (0. and 1.) 
+    n_iter: int , 
+        number of iteration passes over the training set 
+    random_state: int, default is 42
+        random number generator seed for random weight initialization.
+        
+    Attributes 
+    ----------
+    w_: Array-like, 
+        Weight after fitting 
+    cost_: list 
+        Sum of squares cost function (updates ) in each epoch
+        
+    
+    References 
+    -----------
+    .. [1] Windrow and al., 1960. An Adaptative "Adeline" Neuron Using Chemical
+        "Memistors", Technical reports Number, 1553-2,B Windrow and al., 
+        standford Electron labs, Standford, CA,October 1960. 
+        
+    """
+    def __init__(self, eta:float = .01 , n_iter: int = 50 , 
+                 random_state:int = 42 ) :
+        super().__init__()
+        self.eta=eta 
+        self.n_iter=n_iter 
+        self.random_state=random_state 
+        
+    def fit(self , X, y ): 
+        """ Fit the training data 
+        
+        Parameters 
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        Returns 
+        --------
+        self: `Perceptron` instance 
+            returns ``self`` for easy method chaining.
+        """
+        rgen = np.random.RandomState(self.random_state)
+        
+        self.w_ = rgen.normal(loc=0. , scale =.01 , size = 1 + X.shape[1]
+                              )
+        self.cost_ =list()    
+        
+        for i in range (self.n_iter): 
+            net_input = self.net_input (X) 
+            output = self.activation (net_input) 
+            errors =  ( y -  output ) 
+            self.w_[1:] += self.eta * X.T.dot(errors)
+            self.w_[0] += self.eta * errors.sum() 
+            cost = (errors **2 ).sum() / 2. 
+            self.cost_.append(cost) 
+        
+        return self 
+    
+    def net_input (self, X):
+        """
+        Compute the net input X 
+        
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns
+        -------
+       weight net inputs 
+
+        """
+        return np.dot (X, self.w_[1:]) + self.w_[0] 
+
+    def activation (self, X):
+        """
+        Compute the linear activation 
+
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns
+        -------
+        X: activate NDArray 
+
+        """
+        return X 
+    
+    def predict (self, X):
+        """
+        Predict the  class label after unit step
+        
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns
+        -------
+        ypred: predicted class label after the unit step  (1, or -1)
+        """
+        return np.where (self.activation(self.net_input(X))>=0. , 1, -1)
+    
+    def __repr__(self): 
+        """ Represent the output class """
+        
+        tup = tuple (f"{key}={val}".replace ("'", '') for key, val in 
+                     self.get_params().items() )
+        
+        return self.__class__.__name__ + str(tup).replace("'", "") 
+        
 def get_params (obj: object 
                 ) -> dict: 
     """
@@ -773,7 +1341,7 @@ def get_params (obj: object
     
     :examples: 
     >>> from sklearn.svm import SVC 
-    >>> from watex.utils.funcutils import get_params 
+    >>> from watex.base import get_params 
     >>> sigmoid= SVC (
         **{
             'C': 512.0,
@@ -856,7 +1424,7 @@ def is_installing (
         
     Example
     --------
-    >>> from watex import is_installing
+    >>> from watex.base import is_installing
     >>> is_installing(
         'tqdm', action ='install', DEVNULL=True, verbose =1)
     >>> is_installing(

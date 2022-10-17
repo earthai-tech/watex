@@ -749,8 +749,6 @@ class BasePlot(ABC):
         self.sns_theme_kws=sns_theme_kws or {'style':self.sns_style, 
                                          'palette':self.sns_palette, 
                                                       }
-                                       
-        
         self.cb_props = {
             pname.replace('cb_', '') : pvalues
                          for pname, pvalues in self.__dict__.items() 

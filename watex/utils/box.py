@@ -4,7 +4,7 @@ Created on Thu Oct 13 14:52:26 2022
 
 @author: Daniel
 """
-class Boxspace(dict): #Bunch 
+class Boxspace(dict):  
     """Is a container object exposing keys as attributes.
     
     BowlSpace objects are sometimes used as an output for functions and methods.
@@ -16,7 +16,7 @@ class Boxspace(dict): #Bunch
         >>> Boxspace = namedtuple ('Boxspace', [< attaributes names >] )
         
     However the explicit class that inhers from build-in dict is easy to 
-    easily handle attributes and to avoid multiple error where the given name 
+    handle attributes and to avoid multiple error where the given name 
     in the `names` attributes does not match the expected attributes to fetch. 
     
     Examples
@@ -24,9 +24,9 @@ class Boxspace(dict): #Bunch
     >>> from watex.utils.import Boxspace 
     >>> bs = Boxspace(pkg='watex',  objective ='give water', version ='0.1.dev')
     >>> bs['pkg']
-    'watex'
+    ... 'watex'
     >>> bs.pkg
-    'watex'
+    ... 'watex'
     >>> bs.objective 
     ... 'give water'
     >>> bs.version

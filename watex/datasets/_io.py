@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
+#   Author: LKouadio
 """
 Base IO code for managing all the datasets 
 Created on Thu Oct 13 14:26:47 2022
-@author: Daniel
 """
 import os 
 import csv 
@@ -13,9 +13,9 @@ import pandas as pd
 from pathlib import Path 
 from importlib import resources
 from collections import namedtuple
+from ..utils.box import Boxspace 
 from ..utils.coreutils import _is_readable 
 from ..utils.funcutils import random_state_validator 
-from ..utils.box import Boxspace 
 
 DMODULE = "watex.datasets.data" ; DESCR = "watex.datasets.descr"
 
@@ -62,7 +62,7 @@ def remove_data(data=None): #clear
     
 
 def _to_dataframe(data, tnames=None , feature_names =None, target =None ): 
-    """ Validate that data is readble py pdans rearder and parse the data.
+    """ Validate that data is readble py pandas rearder and parse the data.
      then separate data from training to target. Be sure that the target 
      must be included to the dataframe columns 
      
@@ -91,35 +91,56 @@ def _to_dataframe(data, tnames=None , feature_names =None, target =None ):
     
     if target is not None: 
         df = pd.concat ([d0, target], axis =1 )# stack to columns 
-    
-    X = df[feature_names ] ; y = df [tnames] 
+
+    X = df[feature_names ]  
+    y = df [tnames[0]] if len(tnames)==1 else df [tnames]
     
     return df, X, y 
 
 def csv_data_loader(
     data_file,*, data_module=DMODULE, descr_file=None, descr_module=DESCR,
+    include_headline =False, 
 ):
+    feature_names= None # expect to extract features as the head columns 
+    cat_feature_exist = False # for homogeneous feature control
+    with resources.files(data_module).joinpath(
+            data_file).open('r', encoding='utf-8') as csv_file:
     #with resources.open_text(data_module, data_file) as csv_file:
-    print(__package__)
-    with resources.files(DMODULE).joinpath(data_file).open('r', encoding='utf-8') as csv_file:
         data_file = csv.reader(csv_file)
-        
         temp = next(data_file)
         n_samples = int(temp[0]) ; n_features = int(temp[1])
-        target_names = np.array(temp[2:])
-        data = np.empty((n_samples, n_features))
-        target = np.empty((n_samples,), dtype=int)
-
+        # remove empty if exist in the list 
+        tnames = np.array(list(filter(None,temp[2:])))
+        # to prevent an error change the datatype to string 
+        data = np.empty((n_samples, n_features)).astype('<U99')
+        target = np.empty((n_samples,), dtype=float)
+        if include_headline: 
+            # remove target  expected to be located to the last columns
+            feature_names = list(next(data_file)[:-1])  
+            
+        #XXX TODO: move the target[i] to try exception if target is str 
         for i, ir in enumerate(data_file):
-            data[i] = np.asarray(ir[:-1], dtype=np.float64)
-            target[i] = np.asarray(ir[-1], dtype=int)
-
+            try : 
+                data[i] = np.asarray(ir[:-1], dtype=np.float64)
+            except ValueError: 
+                data[i] = np.asarray(ir[:-1], dtype ='<U99' ) # dont convert anything 
+                cat_feature_exist = True # mean cat feature exists
+            target[i] = np.asarray(ir[-1], dtype=float)
+            
+    if not cat_feature_exist: 
+        # reconvert the datatype to float 
+        data = data.astype (np.float)
+    # reconvert target if problem is classification rather than regression 
+    try : 
+        target =target.astype(np.int )
+    except : pass  
+    
     if descr_file is None:
-        return data, target, target_names
+        return data, target, tnames, feature_names
     else:
         assert descr_module is not None
         descr = description_loader(descr_module=descr_module, descr_file=descr_file)
-        return data, target, target_names, descr
+        return data, target, tnames, feature_names,  descr
 
 csv_data_loader.__doc__="""\
 Loads `data_file` from `data_module with `importlib.resources`.
@@ -155,8 +176,10 @@ descr : str, optional
 
 """
 
-def description_loader(descr_file, *, descr_module=DESCR):
-    fdescr = resources.read_text(descr_module, descr_file)
+def description_loader(descr_file, *, descr_module=DESCR, encoding ='utf8'):
+    fdescr=resources.files(descr_module).joinpath(descr_file).read_text(
+        encoding=encoding)
+    #fdescr = resources.read_text(descr_module, descr_file)
     return fdescr
 
 description_loader.__doc__ ="""\

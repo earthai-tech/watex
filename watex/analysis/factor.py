@@ -57,7 +57,7 @@ Compute PCA score and Factor Analysis scores from training X
   
 Parameters 
 -----------
-{params.core.X}
+{params.X}
 
 n_features: int, 
     number of features that composes X 
@@ -78,11 +78,11 @@ shrunk_cov_score.__doc__="""\
 shrunk the covariance scores 
 Parameters 
 -----------
-{params.core.X} 
+{params.X} 
 
 Returns
 -----------
-score: score of covariance estimator (best ) with shunkage
+score: score of covariance estimator (best ) with shrinkage
 
 """.format(
     params =_core_docs["params"]
@@ -157,7 +157,7 @@ probabilistic PCA and Factor Analysis  models
   
 Parameters 
 -----------
-{params.core.X}
+{params.X}
 
 n_features: int, 
     number of features that composes X 
@@ -171,7 +171,7 @@ random_state: int , default {{42}}
     Determines random number generation for dataset shuffling. Pass an int
     for reproducible output across multiple function calls.
     
-{params.core.verbose}
+{params.verbose}
 
 Returns 
 ---------

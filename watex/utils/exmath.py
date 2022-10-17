@@ -14,12 +14,16 @@ import inspect
 import warnings 
 from math import factorial
 
+import numpy as np
+import pandas as pd 
 from scipy.signal import argrelextrema 
 import scipy.integrate as integrate
 from scipy.optimize import curve_fit
 from scipy.integrate import quad 
-import numpy as np
-import pandas as pd 
+from scipy.cluster.hierarchy import  linkage 
+from scipy.spatial.distance import ( 
+    pdist, squareform 
+    )
 import  matplotlib.pyplot as plt
  
 from .._watexlog import watexlog
@@ -72,6 +76,210 @@ except: pass
 _logger =watexlog.get_watex_logger(__name__)
 
 mu0 = 4 * np.pi * 1e-7 
+
+def linkage_matrix(
+    df: DataFrame ,
+    columns:List[str] =None,  
+    kind:str ='design', 
+    metric:str ='euclidean',   
+    method:str ='complete', 
+    as_frame =False,
+    optimal_ordering=False, 
+ )->NDArray: 
+    r""" Compute the distance matrix from the hierachical clustering algorithm
+    
+    Parameters 
+    ------------ 
+    df: dataframe or NDArray of (n_samples, n_features) 
+        dataframe of Ndarray. If array is given , must specify the column names
+        to much the array shape 1 
+    columns: list 
+        list of labels to name each columns of arrays of (n_samples, n_features) 
+        If dataframe is given, don't need to specify the columns. 
+        
+    kind: str, ['squareform'|'condense'|'design'], default is {'design'}
+        kind of approach to summing up the linkage matrix. 
+        Indeed, a condensed distance matrix is a flat array containing the 
+        upper triangular of the distance matrix. This is the form that ``pdist`` 
+        returns. Alternatively, a collection of :math:`m` observation vectors 
+        in :math:`n` dimensions may be passed as  an :math:`m` by :math:`n` 
+        array. All elements of the condensed distance matrix must be finite, 
+        i.e., no NaNs or infs.
+        Alternatively, we could used the ``squareform`` distance matrix to yield
+        different distance values than expected. 
+        the ``design`` approach uses the complete inpout example matrix  also 
+        called 'design matrix' to lead correct linkage matrix similar to 
+        `squareform` and `condense``. 
+        
+    metric : str or callable, default is {'euclidean'}
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+        
+    method : str, optional, default is {'complete'}
+        The linkage algorithm to use. See the ``Linkage Methods`` section below
+        for full descriptions.
+        
+    optimal_ordering : bool, optional
+        If True, the linkage matrix will be reordered so that the distance
+        between successive leaves is minimal. This results in a more intuitive
+        tree structure when the data are visualized. defaults to False, because
+        this algorithm can be slow, particularly on large datasets. See
+        also :func:`scipy.cluster.hierarchy.linkage`. 
+        
+        
+    Returns 
+    --------
+    row_clusters: linkage matrix 
+        consist of several rows where each rw represents one merge. The first 
+        and second columns denotes the most dissimilar members of each cluster 
+        and the third columns reports the distance between those members 
+        
+        
+    Linkage Methods 
+    -----------------
+    The following are methods for calculating the distance between the
+    newly formed cluster :math:`u` and each :math:`v`.
+
+      * method='single' assigns
+
+        .. math::
+           d(u,v) = \\min(dist(u[i],v[j]))
+
+        for all points :math:`i` in cluster :math:`u` and
+        :math:`j` in cluster :math:`v`. This is also known as the
+        Nearest Point Algorithm.
+
+      * method='complete' assigns
+
+        .. math::
+           d(u, v) = \\max(dist(u[i],v[j]))
+
+        for all points :math:`i` in cluster u and :math:`j` in
+        cluster :math:`v`. This is also known by the Farthest Point
+        Algorithm or Voor Hees Algorithm.
+
+      * method='average' assigns
+
+        .. math::
+           d(u,v) = \\sum_{ij} \\frac{d(u[i], v[j])}
+                                   {(|u|*|v|)}
+
+        for all points :math:`i` and :math:`j` where :math:`|u|`
+        and :math:`|v|` are the cardinalities of clusters :math:`u`
+        and :math:`v`, respectively. This is also called the UPGMA
+        algorithm.
+
+      * method='weighted' assigns
+
+        .. math::
+           d(u,v) = (dist(s,v) + dist(t,v))/2
+
+        where cluster u was formed with cluster s and t and v
+        is a remaining cluster in the forest (also called WPGMA).
+
+      * method='centroid' assigns
+
+        .. math::
+           dist(s,t) = ||c_s-c_t||_2
+
+        where :math:`c_s` and :math:`c_t` are the centroids of
+        clusters :math:`s` and :math:`t`, respectively. When two
+        clusters :math:`s` and :math:`t` are combined into a new
+        cluster :math:`u`, the new centroid is computed over all the
+        original objects in clusters :math:`s` and :math:`t`. The
+        distance then becomes the Euclidean distance between the
+        centroid of :math:`u` and the centroid of a remaining cluster
+        :math:`v` in the forest. This is also known as the UPGMC
+        algorithm.
+
+      * method='median' assigns :math:`d(s,t)` like the ``centroid``
+        method. When two clusters :math:`s` and :math:`t` are combined
+        into a new cluster :math:`u`, the average of centroids s and t
+        give the new centroid :math:`u`. This is also known as the
+        WPGMC algorithm.
+
+      * method='ward' uses the Ward variance minimization algorithm.
+        The new entry :math:`d(u,v)` is computed as follows,
+
+        .. math::
+
+           d(u,v) = \\sqrt{\\frac{|v|+|s|}
+                               {T}d(v,s)^2
+                        + \\frac{|v|+|t|}
+                               {T}d(v,t)^2
+                        - \\frac{|v|}
+                               {T}d(s,t)^2}
+
+        where :math:`u` is the newly joined cluster consisting of
+        clusters :math:`s` and :math:`t`, :math:`v` is an unused
+        cluster in the forest, :math:`T=|v|+|s|+|t|`, and
+        :math:`|*|` is the cardinality of its argument. This is also
+        known as the incremental algorithm.
+
+    Warning: When the minimum distance pair in the forest is chosen, there
+    may be two or more pairs with the same minimum distance. This
+    implementation may choose a different minimum than the MATLAB
+    version.
+    
+    See Also
+    --------
+    scipy.spatial.distance.pdist : pairwise distance metrics
+
+    References
+    ----------
+    .. [1] Daniel Mullner, "Modern hierarchical, agglomerative clustering
+           algorithms", :arXiv:`1109.2378v1`.
+    .. [2] Ziv Bar-Joseph, David K. Gifford, Tommi S. Jaakkola, "Fast optimal
+           leaf ordering for hierarchical clustering", 2001. Bioinformatics
+           :doi:`10.1093/bioinformatics/17.suppl_1.S22`
+
+    """
+    df = _assert_all_types(df, pd.DataFrame, np.ndarray)
+    
+    if columns is not None: 
+        if isinstance (columns , str):
+            columns = [columns]
+        if len(columns)!= df.shape [1]: 
+            raise TypeError("Number of columns must fit the shape of X."
+                            f" got {len(columns)} instead of {df.shape [1]}"
+                            )
+        df = pd.DataFrame(data = df, columns = columns )
+        
+    kind= str(kind).lower().strip() 
+    if kind not in ('squareform', 'condense', 'design'): 
+        raise ValueError(f"Unknown method {method!r}. Expect 'squareform',"
+                         " 'condense' or 'design'.")
+        
+    labels = [f'ID_{i}' for i in range(len(df))]
+    if kind =='squareform': 
+        row_dist = pd.DataFrame (squareform ( 
+        pdist(df, metric= metric )), columns = labels  , 
+        index = labels)
+        row_clusters = linkage (row_dist, method =method, metric =metric
+                                )
+    if kind =='condens': 
+        row_clusters = linkage (pdist(df, metric =metric), method =method
+                                )
+    if kind =='design': 
+        row_clusters = linkage(df.values, method = method, 
+                               optimal_ordering=optimal_ordering )
+        
+    if as_frame: 
+        
+        row_clusters = pd.DataFrame ( row_clusters, 
+                                     columns = [ 'row label 1', 
+                                                'row lable 2', 
+                                                'distance', 
+                                                'no. of items in clust.'
+                                                ], 
+                                     index = ['cluster %d' % (i +1) for i in 
+                                              range(row_clusters.shape[0])
+                                              ]
+                                     )
+    return row_clusters 
 
 def d_hanning_window(
         x: ArrayLike[DType[float]],
@@ -1203,7 +1411,7 @@ def scalePosition(
         
     Examples
     --------
-    >>> from watex.tools import erpSelector, scalePosition 
+    >>> from watex.utils import erpSelector, scalePosition 
     >>> df = erpSelector('data/erp/l10_gbalo.xlsx') 
     >>> df.columns 
     ... Index(['station', 'resistivity', 'longitude', 'latitude', 'easting',

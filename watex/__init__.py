@@ -55,6 +55,11 @@ except:
 
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)
+# disable the matplotlib font manager logger.
+logging.getLogger('matplotlib.font_manager').disabled = True
+# or ust suppress the DEBUG messages but not the others from that logger.
+# logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+
 
 # setting up 
 # On OSX, we can get a runtime error due to multiple OpenMP libraries loaded

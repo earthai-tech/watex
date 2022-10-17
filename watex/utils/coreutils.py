@@ -15,6 +15,7 @@ singular tasks before feeding to the main algorithms.
 from __future__ import  annotations 
 import os
 import re 
+import pathlib
 import warnings 
 import copy 
 import shutil 
@@ -27,17 +28,10 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
  
-from .._docstring import (
-    refglossary 
-    )
-from ..decorators import  (
-    refAppender, 
-    docSanitizer
-    ) 
-from ..property import ( 
-    P , 
-    Config, 
-    )
+from .._docstring import refglossary 
+from .._watexlog import watexlog
+from ..decorators import refAppender, docSanitizer
+from ..property import P , Config
 from ..typing import (
     Any, 
     List ,  
@@ -80,7 +74,6 @@ from .gistools import (
     project_point_utm2ll, 
     HAS_GDAL, 
     )
-from .._watexlog import watexlog
 
 _logger = watexlog.get_watex_logger(__name__)
 
@@ -102,11 +95,13 @@ def _is_readable (
     
     if isinstance (f, pd.DataFrame): 
         return f 
-
-    if 'http' in f: # force pandas read html etc 
-        pass 
+    
     elif not os.path.isfile :# or ('http' not in f) : 
-        raise TypeError (
+        try : 
+            if 'http' in f: # force pandas read html etc 
+                pass 
+        except:
+            raise TypeError (
             f'Expected a Path-like object or url, got : {type(f).__name__!r}')
         
     _, ex = os.path.splitext(f) 
@@ -223,7 +218,7 @@ def vesSelector(
             f'Index is an integer, not {type(index_rhoa).__name__!r}')
         
     if data is not None: 
-        if isinstance(data, str): 
+        if isinstance(data, (str,  pathlib.PurePath)): 
             try : 
                 data = _is_readable(data, **kws)
             except TypeError as typError: 
@@ -742,7 +737,7 @@ def erpSelector (
             columns =columns.replace(':', ',').replace(';', ',')
             if ',' in columns: columns =columns.split(',')
             
-    if isinstance(f, str):
+    if isinstance(f, (str,  pathlib.PurePath)):
         try : 
             f = _is_readable(f, **kws)
         except TypeError as typError: 
@@ -1548,7 +1543,7 @@ def makeCoords(
         Convert the degree decimal values into the DD:MM:SS. Default is ``False``. 
         
     kws: dict, 
-        Additional keywords of :func:`.gis_tools.gis.project_point_utm2ll`. 
+        Additional keywords of :func:`.gistools.project_point_utm2ll`. 
         
     Returns 
     -------
@@ -1568,7 +1563,7 @@ def makeCoords(
     
     Examples 
     --------
-    >>> from watex.utils.coreutils import make_ll_coordinates 
+    >>> from watex.utils.coreutils import makeCoords 
     >>> rlons, rlats = make_ll_coordinates('110:29:09.00', '26:03:05.00', 
     ...                                     nsites = 7, todms=True)
     >>> rlons
@@ -1577,7 +1572,7 @@ def makeCoords(
     >>> rlats 
     ... array(['26:03:05.00', '26:03:38.81', '26:04:12.62', '26:04:46.43',
            '26:05:20.23', '26:05:54.04', '26:06:27.85'], dtype='<U11')
-    >>> rlons, rlats = make_ll_coordinates ((116.7, 119.90) , (44.2 , 40.95),
+    >>> rlons, rlats = makeCoords ((116.7, 119.90) , (44.2 , 40.95),
                                             nsites = 238, step =20. ,
                                             order = '-', r= 125)
     >>> rlons 
@@ -1680,7 +1675,7 @@ def parseDCArgs(fn :str ,
     """ Parse DC `stations` and `fromS` arguments from file and output to 
     array accordingly.
     
-    The `fromS` argument is the depth in meters from which one expects to find  
+    The `froms` argument is the depth in meters from which one expects to find  
     a fracture zone outside of pollutions. Indeed, the `fromS` parameter is
     used to  speculate about the expected groundwater in the fractured rocks 
     under the average level of water inrush in a specific area. For more details
@@ -1703,7 +1698,7 @@ def parseDCArgs(fn :str ,
         or 'fromS' value. For instance, use use < delimiter=' '> when all 
         values are separated with space and be arranged in the same line like::
             
-            >>> 'S02 S12 S12 S15 S28 S30' # file line of the file.
+            >>> 'S02 S12 S12 S15 S28 S30' #  line of the file.
     
     :return: 
         array: array of station name. 
@@ -1719,7 +1714,7 @@ def parseDCArgs(fn :str ,
         >>> sdata 
         ...
         >>> # considered that the digits in the file correspond to the depths 
-        >>> fdata= parseDCArgs(sf, arg='fromS') 
+        >>> fdata= parseDCArgs(sf, arg='froms') 
         >>> fdata 
         ...
     """
@@ -1776,7 +1771,7 @@ def serialize_data(
     :Example:
         
         >>> import numpy as np
-        >>> import watex.bases.base import serialize_data
+        >>> import watex.utils.coreutils import serialize_data
         >>> data = np.arange(15)
         >>> file = serialize_data(data, filename=None,  force=True, 
         ...                          savepath =None, verbose =3)

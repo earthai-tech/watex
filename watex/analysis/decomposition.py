@@ -28,20 +28,37 @@ def extract_pca (X):
     # constructing the covariance matrix 
     cov_mat = np.cov(X.T)
     eigen_vals, eigen_vecs = np.linalg.eig (cov_mat)
-    return eigen_vals, eigen_vecs
+    return eigen_vals, eigen_vecs, X
 
 extract_pca.__doc__="""\
  A naive approach to extract PCA from training set X 
  
 Parameters 
 ----------
-{params.core.X}
+{params.X}
 
 Returns 
 --------
-Tuple (eigen_vals, eigen_vecs): 
-    Eigen values and eigen vectors 
+Tuple (eigen_vals, eigen_vecs, Xsc): 
+    Eigen values , eigen vectors and Xsc scaled (standardized)
     
+Examples
+---------
+>>> from watex.exlib.sklearn import SimpleImputer 
+>>> from watex.utils import selectfeatures 
+>>> from watex.datasets import fetch_data 
+>>> from watex.analysis import extract_pca 
+>>> data= fetch_data("bagoue original").get('data=dfy1') # encoded flow categories 
+>>> y = data.flow ; X= data.drop(columns='flow') 
+>>> # select the numerical features 
+>>> X =selectfeatures(X, include ='number')
+>>> # imputed the missing data 
+>>> X = SimpleImputer().fit_transform(X)
+>>> eigval, eigvecs, _ = extract_pca(X)
+>>> eigval 
+... array([2.09220756, 1.43940464, 0.20251943, 1.08913226, 0.97512157,
+       0.85749283, 0.64907948, 0.71364687])
+
 Notes 
 -------
 All consequent principal component (pc) will have the larget variance 
@@ -62,7 +79,7 @@ returns real eigh eigenvalues
 )
     
 def total_variance_ratio (X, view =False): 
-    eigen_vals, eigen_vcs = extract_pca(X)
+    eigen_vals, eigen_vcs, _ = extract_pca(X)
     tot =sum(eigen_vals)
     # sorting the eigen values by decreasing 
     # order to rank the eigen_vectors
@@ -75,7 +92,7 @@ def total_variance_ratio (X, view =False):
         plt.step (range(1, len(eigen_vals)+1), cum_var_exp, where ='mid', 
                   label="Cumulative explained variance")
         plt.ylabel ("Explained variance ratio")
-        plt.xlable ('Principal component analysis')
+        plt.xlabel ('Principal component analysis')
         plt.legend (loc ='best')
         plt.tight_layout()
         plt.show () 
@@ -106,6 +123,15 @@ Returns
 ---------
 cum_var_exp : array-like 
     Cumulative sum of variance total explained. 
+    
+Examples 
+----------
+>>> from watex.analysis import total_variance_ratio 
+>>> # Use the X value in the example of `extract_pca` function   
+>>> cum_var = total_variance_ratio(X, view=True)
+>>> cum_var
+... array([0.26091916, 0.44042728, 0.57625294, 0.69786032, 0.80479823,
+       0.89379712, 0.97474381, 1.        ])
 """
 
 def feature_transformation (
@@ -113,7 +139,7 @@ def feature_transformation (
     # select k vectors which correspond to the k largest 
     # eigenvalues , where k is the dimesionality of the new  
     # subspace (k<=d) 
-    eigen_vals, eigen_vecs = extract_pca(X)
+    eigen_vals, eigen_vecs, X = extract_pca(X)
     # -> sorting the eigen values by decreasing order 
     eigen_pairs = [ (np.abs(eigen_vals[i]) , eigen_vecs[:, i]) 
                    for i in range(len(eigen_vals))]
@@ -124,14 +150,14 @@ def feature_transformation (
         #XXX TODO: transform component > 2 
         warn("N-component !=2 is not implemented yet.", UserWarning)
     w= np.hstack((eigen_pairs[0][1][:, np.newaxis], 
-                 eigen_pairs [1][1][:np.newaxis])
+                 eigen_pairs [1][1][:, np.newaxis])
                  ) 
     # In pratice the number of principal component has to be 
     # determined by a tradeoff between computational efficiency 
     # and the performance of the classifier.
     
     #-> transform X onto a PCA subspace( the pc one on two)
-    X_transf = X[0].dot(w)
+    X_transf = X.dot(w)
     
     if view: 
         if y is None: 
@@ -163,8 +189,8 @@ decomposed to the covariances matrices.
     
 Parameters 
 -----------
-{params.core.X} 
-{params.core.y}
+{params.X} 
+{params.y}
 
 positive_class: int, 
     class label as an integer indenfier within the class representation. 
@@ -176,6 +202,15 @@ Returns
 ---------
 X_transf : nd-array 
     X PCA training set transformed.
+    
+Examples 
+>>> from watex.analysis import feature_transformation 
+>>> # Use the X, y value in the example of `extract_pca` function  
+>>> Xtransf = feature_transformation(X, y=y,  positive_class = 2 , view =True)
+>>> Xtransf[0] 
+... array([-1.0168034 ,  2.56417088])
+
+
 """.format(params = _core_docs["params"]
 )
 
@@ -203,12 +238,11 @@ def _decision_region (X, y, clf, resolution =.02 ):
         plt.scatter (x= X[y ==cl, 0] , y = X[y==cl, 1], 
                      alpha =.6 , 
                      color = cmap(idx), 
-                     edgecolors='k', 
+                     edgecolors='black', 
                      marker = markers[idx], 
                      label=cl 
                      ) 
         
-
 def decision_region (
         X, y, clf, Xt =None, yt=None, random_state = 42, test_size = .3 , 
         scaling =True, split =False,  n_components =2 , view ='X',
@@ -243,7 +277,7 @@ def decision_region (
             if Xt_pca is None: 
                 raise TypeError("Cannot plot missing test sets (Xt, yt)")
             _decision_region(Xt_pca, yt, clf=clf, resolution =resolution )
-        plt.label("PC1")
+        plt.xlabel("PC1")
         plt.ylabel ("PC2")
         plt.legend (loc= 'lower left')
         plt.show ()
@@ -260,11 +294,11 @@ principal component axes.
 
 Parameters 
 -----------
-{params.core.X}
-{params.core.y}
-{params.core.Xt}
-{params.core.yt}
-{params.core.clf}
+{params.X}
+{params.y}
+{params.Xt}
+{params.yt}
+{params.clf}
 
 random_state: int, default {{42}}
     state of shuffling the data
@@ -301,11 +335,19 @@ nd-array | arraylike (return_expl_variance_ratio=True)
 Examples
 ---------
 >>> from watex.datasets import fetch_data 
->>> from sklearn.linear_model import LogisticRegression 
+>>> from watex.exlib.sklearn import SimpleImputer, LogisticRegression  
 >>> from watex.analysis.decomposition import decision_region 
->>> lr_clf = LogisticRegression(multi_class ='ovr', random_state =1, solver ='lbgfs') 
->>> X, y = fetch_data ('bagoue training')
->>> _= decision_region(X, y, clf=lr_clf, split = True, view ='Xt') # test set view
+>>> >>> data= fetch_data("bagoue original").get('data=dfy1') # encoded flow categories 
+>>> y = data.flow ; X= data.drop(columns='flow') 
+>>> # select the numerical features 
+>>> X =selectfeatures(X, include ='number')
+>>> # imputed the missing data 
+>>> X = SimpleImputer().fit_transform(X)
+>>> lr_clf = LogisticRegression(multi_class ='ovr', random_state =1, solver ='lbfgs') 
+>>> Xpca= decision_region(X, y, clf=lr_clf, split = True, view ='Xt') # test set view
+>>> Xpca[0] 
+... array([-1.02925449,  1.42195127])
+
 """.format(params = _core_docs["params"]
 )
 

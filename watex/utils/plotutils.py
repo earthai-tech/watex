@@ -17,9 +17,13 @@ import matplotlib.pyplot as plt
 from ..exceptions import ( 
     TipError, 
     PlotError, 
-
     )
-
+is_mlxtend =False 
+try : 
+    from mlxtend.Plotting import ( 
+        scatterplotmatrix , heatmap ) 
+except : pass 
+else : is_mlxtend =True 
 
 D_COLORS =[
     'g',
@@ -68,7 +72,166 @@ D_STYLES = [
     'dotted' 
 ]
 
+def plotelbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
+               marker='o', savefig =None, **kwd): 
+    """ Plot the optimal number of cluster, k', for a given class 
+    
+    :param distorsions: list - list of values withing the ssum-squared-error 
+    (SSE) also called  inertia_` in sckit-learn. 
+    
+    :param n_clusters: number of clusters. where k starts and end. 
+    
+    :returns: ax: Matplotlib.pyplot axes objects 
+    
+    :Example: 
+    >>> import numpy as np 
+    >>> from sklearn.cluster import KMeans 
+    >>> from watex.datasets import load_iris 
+    >>> from watex.utils.plotutils import plotelbow
+    >>> d= load_iris ()
+    >>> X= d.data [:, 0][:, np.newaxis] # take the first axis 
+    >>> # compute distorsiosn for KMeans range 
+    >>> distorsions =[] ; n_clusters = 11
+    >>> for i in range (1, n_clusters ): 
+            km =KMeans (n_clusters =i , 
+                        init= 'k-means++', 
+                        n_init=10 , 
+                        max_iter=300, 
+                        random_state =0 
+                        )
+            km.fit(X) 
+            distorsions.append(km.inertia_) 
+    >>> plotelbow (distorsions, n_clusters =n_clusters)
+        
+    """
+    fig, ax = plt.subplots ( nrows=1 , ncols =1 , figsize = fig_size ) 
+    
+    ax.plot (range (1, n_clusters), distorsions , marker = marker, 
+              **kwd )
+    plt.xlabel ("Number of clusters") 
+    plt.ylabel ("Distorsion")
+    plt.tight_layout()
+    
+    if savefig is not None: 
+        savefigure(fig, savefig )
+    plt.show() if savefig is None else plt.close () 
+    
+    return ax 
 
+
+def plotcostvsepochs(regs, *,  fig_size = (10 , 4 ), marker ='o', 
+                     savefig =None, **kws): 
+    """ Plot the cost agianst the number of epochs  for the two different 
+    learnings rates 
+    
+    Parameters 
+    ----------
+    regs: Callable, single or list of regression estimators 
+        Estimator should be already fitted.
+    fig_size: tuple , default is (10, 4)
+        the size of figure 
+    kws: dict , 
+        Additionnal keywords arguments passes to :func:`matplotlib.pyplot.plot`
+    Returns 
+    ------- 
+    ax: Matplotlib.pyplot axes objects 
+    
+    Examples 
+    ---------
+    >>> from watex.datasets import load_iris 
+    >>> from watex.bases import AdelineGradientDescent
+    >>> from watex.utils.plotutils import plotcostvsepochs
+    >>> X, y = load_iris (return_X_y= True )
+    >>> ada1 = AdelineGradientDescent (n_iter= 10 , eta= .01 ).fit(X, y) 
+    >>> ada2 = AdelineGradientDescent (n_iter=10 , eta =.0001 ).fit(X, y)
+    >>> plotcostvsepochs (reg = [ada1, ada2] ) 
+
+    """
+    if not isinstance (regs, (list, tuple, np.array)): 
+        regs =[regs]
+    s = set ([hasattr(o, '__class__') for o in regs ])
+
+    if len(s) != 1: 
+        raise ValueError(" All regression should be an estimator already fitted.")
+    if not list(s) [0] : 
+        raise TypeError(f" Need an estimator, got {type(s[0]).__name__!r}")
+    
+    fig, ax = plt.subplots ( nrows=1 , ncols =len(regs) , figsize = fig_size ) 
+    
+    for k, m in enumerate (regs)  : 
+        
+        ax[k].plot(range(1, len(m.cost_)+ 1 ), np.log10 (m.cost_),
+                   marker =marker, **kws)
+        ax[k].set_xlabel ("Epochs") 
+        ax[k].set_ylabel ("Log(sum-squared-error)")
+        ax[k].set_title("%s -Learning rate %.4f" % (m.__class__.__name__, m.eta )) 
+        
+    if savefig is not None: 
+        savefigure(fig, savefig )
+    plt.show() if savefig is None else plt.close () 
+    
+    return ax 
+
+    
+def plotmlxtendheatmap (df, columns =None, **kws): 
+    """ Plot correlation matrix array  as a heat map 
+    
+    :param df: dataframe pandas  
+    :param columns: list of features, 
+        If given, only the dataframe with that features is considered. 
+    :param kws: additional keyword arguments passed to 
+        :func:`mlxtend.plotting.heatmap`
+    :return: :func:`mlxtend.plotting.heatmap` axes object 
+    
+    """
+    cm = np.corrcoef(df[columns]. values.T)
+    ax= heatmap(cm, row_names = columns , column_names = columns, **kws )
+    plt.show () 
+    
+    return ax 
+
+def plotmlxtendmatrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
+    """ Visualize the pair wise correlation between the different features in  
+    the dataset in one place. 
+    
+    :param df: dataframe pandas  
+    :param columns: list of features, 
+        If given, only the dataframe with that features is considered. 
+    :param fig_size: tuple of int (width, heigh) 
+        Size of the displayed figure 
+    :param alpha: figure transparency, default is ``.5``. 
+    
+    :return: :func:`mlxtend.plotting.scatterplotmatrix` axes object 
+    
+    """
+    if not is_mlxtend: 
+        warnings.warn(" 'mlxtend' package is missing. Can plot scatter matrix."
+                      " install it mannually via 'pip' or 'conda'.")
+        return  ModuleNotFoundError("'mlextend' package is missing. Install it" 
+                                    " using 'pip' or 'conda'")
+    if isinstance (columns, str): 
+        columns = [columns ] 
+    try: 
+        iter (columns)
+    except : 
+        raise TypeError(" Columns should be an iterable object, not"
+                        f" {type (columns).__name__!r}")
+    columns =list(columns)
+    
+    
+    if columns is not None: 
+        df =df[columns ] 
+        
+    ax = scatterplotmatrix (
+        df[columns].values , figsize =fig_size,names =columns , alpha =alpha 
+        )
+    plt.tight_layout()
+
+    plt.show () 
+    
+    return ax 
+
+    
 def savefigure (fig: object ,
              figname: str = None,
              ext:str  ='.png',

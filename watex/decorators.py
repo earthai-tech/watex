@@ -51,14 +51,14 @@ class refAppender (object):
     references as an appender to its reference docstring. So, sphinx 
     can auto-retrieve some replacing values found inline  from the 
     :doc:`watex.documentation`. 
-    
-    .. |VES| replace:: Vertical Electrical Sounding 
-    .. |ERP| replace:: Electrical Resistivity Profiling 
-    
+
     Parameters
     ----------
     docref: str 
         Reference of the documentation for appending.
+        
+    .. |VES| replace:: Vertical Electrical Sounding 
+    .. |ERP| replace:: Electrical Resistivity Profiling          
     
     Examples
     ---------
@@ -73,7 +73,7 @@ class refAppender (object):
     ... #new doctring appended and `|VES|` and `|ERP|` are replaced by 
     ... #Vertical Electrical Sounding and Electrical resistivity profiling 
     ... #during compilation in ReadTheDocs.
- 
+
     """
     
     def __init__(self, docref= None ): 
@@ -179,7 +179,7 @@ class gdal_data_check(object):
                     "Ignore GDAL as it is not working. Will use `pyproj` "
                     f"OR download the GDAL wheel from {self._gdal_wheel_resources}"
                     " and use `pip install <path-to-wheel-file.whl>` "
-                    "for GDAL installation. Get furher details via "
+                    "for GDAL installation. Get further details via "
                     f"{self._gdal_installation_guide}"
                               )
 

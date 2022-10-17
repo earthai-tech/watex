@@ -6,13 +6,12 @@
 Learning Plots
 ===============
 
-Is a set of plot templates  for visualising the trained models.  It gives a 
+Is a set of plot templates  for visualising the ML models.  It gives a 
 quick alternative for users to save their time for writting their own plot 
 scripts. However to have full control of the plot, it is recommended to write 
 your own plot scripts. 
-Note that the package can not handle all the plots possibilty that offers the
-software. In the future, many plots should be removed and replaced by some  
-most efficient ones.
+Note that this module can not handle all the plots that can offer the
+software. 
 
 """
 from __future__ import annotations 
@@ -23,13 +22,21 @@ from abc import ABCMeta
 
 import numpy as np 
 import pandas as pd
+from scipy.cluster.hierarchy import (
+    dendrogram, 
+    # set_link_color_palette 
+    )
 import matplotlib as mpl 
 import  matplotlib.pyplot  as plt
+from matplotlib import cm 
 
 from .._watexlog import watexlog
 from ..analysis.dimensionality import Reducers
-from ..bases.features import categorize_flow 
-from ..exlib.sklearn import learning_curve 
+from ..exlib.sklearn import ( 
+    learning_curve , 
+    silhouette_samples, 
+    )
+
 from ..exceptions import PlotError, ArgumentError 
 from ..decorators import docSanitizer , docAppender
 from ..property import BasePlot 
@@ -38,6 +45,8 @@ from ..metrics import (
     ROC_curve, 
     confusion_matrix_
     )
+from ..utils.exmath import linkage_matrix 
+from ..utils.hydroutils import categorize_flow 
 from ..utils.plotutils import ( 
     D_COLORS, 
     D_MARKERS, 
@@ -47,27 +56,361 @@ from ..utils.plotutils import (
 from ..typing import ( 
     Generic,
     Optional, 
+    Tuple, 
     V, 
     List,
     ArrayLike, 
     NDArray,
     DType, 
+    DataFrame, 
     )
 
 
 _logger=watexlog.get_watex_logger(__name__)
 
+def plotBindDendro2Heatmap (
+    df: DataFrame |NDArray, 
+    columns: List[str] =None, 
+    labels:Optional[List[str]] =None,
+    metric:str ='euclidean',  
+    method:str ='complete', 
+    kind:str = 'design', 
+    cmap:str ='hot_r', 
+    fig_size:Tuple[int] =(8, 8), 
+    facecolor:str ='white', 
+    **kwd
+):
+    """
+    Attached dendrogram to a heat map 
+    
+    Hiearchical dendrogram are often used in combination with a heat map wich 
+    qllows us to represent the individual value in data array or matrix 
+    containing our training examples with a color code. 
+    
+    Parameters 
+    ------------
+    df: dataframe or NDArray of (n_samples, n_features) 
+        dataframe of Ndarray. If array is given , must specify the column names
+        to much the array shape 1 
+    columns: list 
+        list of labels to name each columns of arrays of (n_samples, n_features) 
+        If dataframe is given, don't need to specify the columns. 
+        
+    kind: str, ['squareform'|'condense'|'design'], default is {'design'}
+        kind of approach to summing up the linkage matrix. 
+        Indeed, a condensed distance matrix is a flat array containing the 
+        upper triangular of the distance matrix. This is the form that ``pdist`` 
+        returns. Alternatively, a collection of :math:`m` observation vectors 
+        in :math:`n` dimensions may be passed as  an :math:`m` by :math:`n` 
+        array. All elements of the condensed distance matrix must be finite, 
+        i.e., no NaNs or infs.
+        Alternatively, we could used the ``squareform`` distance matrix to yield
+        different distance values than expected. 
+        the ``design`` approach uses the complete inpout example matrix  also 
+        called 'design matrix' to lead correct linkage matrix similar to 
+        `squareform` and `condense``. 
+        
+    metric : str or callable, default is {'euclidean'}
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+        
+    method : str, optional, default is {'complete'}
+        The linkage algorithm to use. See the ``Linkage Methods`` section below
+        for full descriptions in :func:`watex.utils.exmath.linkage_matrix`
+        
+    labels : ndarray, optional
+        By default, ``labels`` is None so the index of the original observation
+        is used to label the leaf nodes.  Otherwise, this is an :math:`n`-sized
+        sequence, with ``n == Z.shape[0] + 1``. The ``labels[i]`` value is the
+        text to put under the :math:`i` th leaf node only if it corresponds to
+        an original observation and not a non-singleton cluster.
+        
+    cmap: str , default is {'hot_r'}
+        matplotlib color map 
+     
+    fig_size: str , Tuple , default is {(8, 8)}
+        the size of the figure 
+    facecolor: str , default is {"white"}
+        Matplotlib facecolor 
+  
+    kwd: dict 
+        additional keywords arguments passes to 
+        :func:`scipy.cluster.hierarchy.dendrogram` 
 
-def plotlearningcurve(
-        estimator, title, X,  y, axes=None, ylim=None, cv=None, n_jobs=None,
-    train_sizes=np.linspace(0.1, 1.0, 5), display_legend = True, 
+    """
+    if columns is not None: 
+        if isinstance (columns , str):
+            columns = [columns]
+        if len(columns)!= df.shape [1]: 
+            raise TypeError("X and columns must be consistent,"
+                            f" got {len(columns)} instead of {df.shape [1]}"
+                            )
+        df = pd.DataFrame(data = df, columns = columns )
+        
+    # create a new figure object  and define x axis position 
+    # and y poaition , width, heigh of the dendrogram via the  
+    # add_axes attributes. Furthermore, we rotate the dengrogram
+    # to 90 degree counter-clockwise. 
+    fig = plt.figure (figsize = fig_size , facecolor = facecolor )
+    axd = fig.add_axes ([.09, .1, .2, .6 ])
+    
+    row_cluster = linkage_matrix(df = df, metric= metric, 
+                                 method =method , kind = kind ,  
+                                 )
+    orient ='left' # use orientation 'right for matplotlib version < v1.5.1
+    mpl_version = mpl.__version__.split('.')
+    if mpl_version [0] =='1' : 
+        if mpl_version [1] =='5' : 
+            if float(mpl_version[2]) < 1. :
+                orient = 'right'
+                
+    r = dendrogram(row_cluster , orientation= orient,  
+                   **kwd )
+    # 2. reorder the data in our initial dataframe according 
+    # to the clustering label that can be accessed by a dendrogram 
+    # which is essentially a Python dictionnary via a key leaves 
+    df_rowclust = df.iloc [r['leaves'][::-1]]
+    
+    # 3. construct the heatmap from the reordered dataframe and position 
+    # in the next ro the dendrogram 
+    axm = fig.add_axes ([.23, .1, .6, .6]) 
+    cax = axm.matshow (df_rowclust , 
+                       interpolation = 'nearest' , 
+                       cmap=cmap, 
+                       )
+    #4.  modify the asteric  of the dendogram  by removing the axis 
+    # ticks and hiding the axis spines. Also we add a color bar and 
+    # assign the feature and data record names to names x and y axis  
+    # tick lables, respectively 
+    
+    axd.set_xticks ([]) # set ticks invisible 
+    axd.set_yticks ([])
+    for i in axd.spines.values () : 
+        i.set_visible (False) 
+    fig.colorbar(cax )
+    axm.set_xticklabels ([''] + list (df_rowclust.columns))
+    axm.set_yticklabels ([''] + list(df_rowclust .index ))
+    
+    plt.show () 
+    
+    
+def plotDendrogram (df, columns =None, labels =None,metric ='euclidean',  
+                   method ='complete', kind = 'design',
+                   return_r =False , 
+                   **kwd ): 
+    """ Visualize the linkage matrix in the results of dendogram 
+    
+    
+    Parameters 
+    -----------
+    df: dataframe or NDArray of (n_samples, n_features) 
+        dataframe of Ndarray. If array is given , must specify the column names
+        to much the array shape 1 
+    columns: list 
+        list of labels to name each columns of arrays of (n_samples, n_features) 
+        If dataframe is given, don't need to specify the columns. 
+        
+    kind: str, ['squareform'|'condense'|'design'], default is {'design'}
+        kind of approach to summing up the linkage matrix. 
+        Indeed, a condensed distance matrix is a flat array containing the 
+        upper triangular of the distance matrix. This is the form that ``pdist`` 
+        returns. Alternatively, a collection of :math:`m` observation vectors 
+        in :math:`n` dimensions may be passed as  an :math:`m` by :math:`n` 
+        array. All elements of the condensed distance matrix must be finite, 
+        i.e., no NaNs or infs.
+        Alternatively, we could used the ``squareform`` distance matrix to yield
+        different distance values than expected. 
+        the ``design`` approach uses the complete inpout example matrix  also 
+        called 'design matrix' to lead correct linkage matrix similar to 
+        `squareform` and `condense``. 
+        
+    metric : str or callable, default is {'euclidean'}
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+        
+    method : str, optional, default is {'complete'}
+        The linkage algorithm to use. See the ``Linkage Methods`` section below
+        for full descriptions in :func:`watex.utils.exmath.linkage_matrix`
+        
+    labels : ndarray, optional
+        By default, ``labels`` is None so the index of the original observation
+        is used to label the leaf nodes.  Otherwise, this is an :math:`n`-sized
+        sequence, with ``n == Z.shape[0] + 1``. The ``labels[i]`` value is the
+        text to put under the :math:`i` th leaf node only if it corresponds to
+        an original observation and not a non-singleton cluster.
+        
+    return_r: bool, default='False', 
+        return r-dictionnary if set to 'True' otherwise return nothing 
+    
+    kwd: dict 
+        additional keywords arguments passes to 
+        :func:`scipy.cluster.hierarchy.dendrogram` 
+        
+    Returns
+    -------
+    r : dict
+        A dictionary of data structures computed to render the
+        dendrogram. Its has the following keys:
+
+        ``'color_list'``
+          A list of color names. The k'th element represents the color of the
+          k'th link.
+
+        ``'icoord'`` and ``'dcoord'``
+          Each of them is a list of lists. Let ``icoord = [I1, I2, ..., Ip]``
+          where ``Ik = [xk1, xk2, xk3, xk4]`` and ``dcoord = [D1, D2, ..., Dp]``
+          where ``Dk = [yk1, yk2, yk3, yk4]``, then the k'th link painted is
+          ``(xk1, yk1)`` - ``(xk2, yk2)`` - ``(xk3, yk3)`` - ``(xk4, yk4)``.
+
+        ``'ivl'``
+          A list of labels corresponding to the leaf nodes.
+
+        ``'leaves'``
+          For each i, ``H[i] == j``, cluster node ``j`` appears in position
+          ``i`` in the left-to-right traversal of the leaves, where
+          :math:`j < 2n-1` and :math:`i < n`. If ``j`` is less than ``n``, the
+          ``i``-th leaf node corresponds to an original observation.
+          Otherwise, it corresponds to a non-singleton cluster.
+
+        ``'leaves_color_list'``
+          A list of color names. The k'th element represents the color of the
+          k'th leaf.
+          
+    Examples 
+    ----------
+    >>> from watex.datasets import load_iris 
+    >>> from watex.view import plotDendrogram
+    >>> data = load_iris () 
+    >>> X =data.data[:, :2] 
+    >>> plotDendrogram (X, columns =['X1', 'X2' ] ) 
+
+    """
+    
+    row_cluster = linkage_matrix(df = df, columns = columns, metric= metric, 
+                                 method =method , kind = kind ,
+                                 )
+    #make dendogram black (1/2)
+    # set_link_color_palette(['black']) 
+    r= dendrogram(row_cluster, labels= labels  , 
+                           # make dendogram colors (2/2)
+                           # color_threshold= np.inf,  
+                           **kwd)
+    plt.tight_layout()
+    plt.ylabel ('Euclidian distance')
+    plt.show ()
+    
+    return r if return_r else None 
+
+    
+def plotSilhouette (X, y_pred, metric ='eucledian', **kwds ):
+    r"""Plot quantifying the quality  of clustering silhouette 
+    
+    Parameters 
+    ---------
+    X : array-like of shape (n_samples_a, n_samples_a) if metric == \
+            "precomputed" or (n_samples_a, n_features) otherwise
+        An array of pairwise distances between samples, or a feature array.
+
+    y_pred : array-like of shape (n_samples,)
+        Label values for each sample.
+
+    metric : str or callable, default='euclidean'
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the distance function.
+        If using a ``scipy.spatial.distance`` metric, the parameters are still
+        metric dependent. See the scipy docs for usage examples.
+        
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> from sklearn.cluster import KMeans 
+    >>> from watex.datasets import load_iris 
+    >>> from watex.view.mlplot import plotSilhouette
+    >>> d= load_iris ()
+    >>> X= d.data [:, 0][:, np.newaxis] # take the first axis 
+    >>> km= KMeans (n_clusters =3 , init='k-means ++', n_init =10 , 
+                    max_iter = 300 , 
+                    tol=1e-4, 
+                    random_state =0 
+                    )
+    >>> y_km = km.fit_predict(X) 
+    >>> plotSilhouette (X, y_km)
+  
+    See also 
+    ---------
+    Silhouette is used as graphical tools,  to plot a measure how tighly is  
+    grouped the examples of the clusters are.  To calculate the silhouette 
+    coefficient, three steps is allows: 
+        - calculate the **cluster cohesion**, :math:`a(i)`, as the average 
+            distance between examples, :math:`x^{(i)}`, and all the others 
+            points
+        - calculate the **cluster separation**, :math:`b^{(i)}` from the next 
+            average distance between the example , :math:`x^{(i)}` amd all 
+            the example of nearest cluster 
+        - calculate the silhouette, :math:`s^{(i)}`, as the difference between 
+            the cluster cohesion and separation divided by the greater of the 
+            two, as shown here: 
+                
+            .. math:: 
+                
+                s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
+    
+        Note that the sihouette coefficient is bound between -1 and 1 
+    
+    """
+    cluster_labels = np.unique (y_pred) 
+    n_clusters = cluster_labels.shape [0] 
+    silhouette_vals = silhouette_samples(X, y = y_pred, metric = metric ,
+                                         **kwds)
+    y_ax_lower , y_ax_upper = 0, 0 
+    yticks =[]
+    
+    for i, c  in enumerate (cluster_labels ) : 
+        c_silhouette_vals = silhouette_vals[y_pred ==c ] 
+        c_silhouette_vals.sort()
+        y_ax_upper += len(c_silhouette_vals)
+        color =cm.jet (float(i)/n_clusters )
+        plt.barh(range(y_ax_lower, y_ax_upper), c_silhouette_vals, 
+                 height =1.0 , 
+                 edgecolor ='none', 
+                 color =color, 
+                 )
+        yticks.append((y_ax_lower + y_ax_upper)/2.)
+        y_ax_lower += len(c_silhouette_vals)
+    silhouette_avg = np.mean(silhouette_vals) 
+    plt.axvline (silhouette_avg, 
+                 color='red', 
+                 linestyle ='--'
+                 )
+    plt.yticks(yticks, cluster_labels +1 ) 
+    plt.ylabel ("Cluster") 
+    plt.xlabel ("Silhouette coefficient")
+    plt.tight_layout()
+
+    plt.show() 
+    
+def plotLearningCurves(
+    model,  X,  y, axes=None, ylim=None, cv=5, n_jobs=None,
+    train_sizes=np.linspace(0.1, 1.0, 5), display_legend = True, title=None,
 ):
     """Generate 3 plots: the test and training learning curve, the training
     samples vs fit times curve, the fit times vs score curve.
 
     Parameters
     ----------
-    estimator : estimator instance
+    model : estimator instance
         An estimator instance implementing `fit` and `predict` methods which
         will be cloned for each validation.
 
@@ -121,7 +464,8 @@ def plotlearningcurve(
         (default: np.linspace(0.1, 1.0, 5))
         
     display_legend: bool, default ='True' 
-        display the legend 
+        display the legend
+        
     Returns
     ----------
     axes: Matplotlib axes 
@@ -137,7 +481,7 @@ def plotlearningcurve(
     axes[0].set_ylabel("Score")
 
     train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(
-        estimator,
+        model,
         X,
         y,
         cv=cv,
@@ -318,8 +662,8 @@ def biPlot(
     
 
 
-class MLPlots(BasePlot): 
-    """ Mainly deals with Machine learning metrics
+class BaseMetricPlot(BasePlot): 
+    """ Plot Supervised  Machine learning metrics
     
     Inherited from :class:`BasePlot`. Dimensional reduction plots and is 
     composed of decomposition tips, confusion matrix plots and else. 
@@ -435,11 +779,7 @@ class MLPlots(BasePlot):
         self.yp_marker_edgewidth= kws.pop('yp_markeredgewidth', 2.)
         
         super().__init__(**kws) 
-        
-        # for key in kws.keys(): 
-        #     setattr(self, key, kws[key])
-
-
+    
     def PCA_(self,
              X:ArrayLike,
              y:ArrayLike,

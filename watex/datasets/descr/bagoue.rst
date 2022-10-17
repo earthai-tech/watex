@@ -28,7 +28,7 @@ Bagoue DC parameters dataset
 	
     :Date: October, 2022
 
-The data of Bagoue area was collected in the Bagoue region (northern part of Cote d’Ivoire, West Africa) 
+The data of Bagoue area was collected in the Bagoue region (northern part of Cote d Ivoire, West Africa) 
 during the campaign for Drinking Water Supply (CDWS) projects (the projects the Presidential Emergency Program in 2012-2013 and the National 
 Drinking Water Supply Program (PNAEP) in 2014 (Kra et al. 2016, Mel et al. 2017)).  It is composed of 
 431 DC-Electrical Resistivity Profile (ERP), 407 DC-Electrical Sounding (VES), and 431 boreholes data. Moreover, the array configurations 
@@ -36,7 +36,7 @@ of the ERP and VES methods during both programs are Schlumberger with 200 m for 
 
 .. topic:: References
 
-   - Kouadio, K.L., Kouame, L.N., Drissa, C., Mi, B., Kouamelan, K.S., Gnoleba, S.P.D., Zhang, H., et al. (2022)'Groundwater Flow Rate Prediction from Geo-Electrical Features using Support Vector Machines.' Water Resour. Res. doi:10.1029/2021wr031623
-   - Kra, K.J., Koffi, Y.S.K., Alla, K.A. & Kouadio, A.F. (2016) 'Projets d’émergence post-crise et disparité territoriale en Côte d’Ivoire.' Les Cah. du CELHTO, 2, 608–624.
-   - Mel, E.A.C.T., Adou, D.L. & Ouattara, S. (2017) 'Le programme presidentiel d’urgence (PPU) et son impact dans le departement de Daloa (Cote d’Ivoire).' Rev. Géographie Trop. d’Environnement, 2, 10. Retrieved from http://revue-geotrope.com/update/root_revue/20181202/13-Article-MEL-AL.pdf
+   - Kouadio, K.L., Kouame, L.N., Drissa, C., Mi, B., Kouamelan, K.S., Gnoleba, S.P.D., Zhang, H., et al. (2022). Groundwater Flow Rate Prediction from Geo-Electrical Features using Support Vector Machines.' Water Resour. Res. doi:10.1029/2021wr031623
+   - Kra, K.J., Koffi, Y.S.K., Alla, K.A. & Kouadio, A.F. (2016) 'Projets d emergence post-crise et disparite territoriale en Cote dIvoire.' Les Cah. du CELHTO, 2, 608_624.
+   - Mel, E.A.C.T., Adou, D.L. & Ouattara, S. (2017) 'Le programme presidentiel d urgence (PPU) et son impact dans le departement de Daloa (Cote dIvoire).' Rev. Geographie Trop. dEnvironnement, 2, 10. Retrieved from http://revue-geotrope.com/update/root_revue/20181202/13-Article-MEL-AL.pdf
    - Many, many more ...

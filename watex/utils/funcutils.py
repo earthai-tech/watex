@@ -161,14 +161,14 @@ def url_checker (url: str , install:bool = False,
 
     
 def shrunkformat (text: str | Iterable[Any] , 
-                  maxsize: int =7 , insert_at: str = None, 
+                  chunksize: int =7 , insert_at: str = None, 
                   sep =None, 
                  ) : 
     """ format class and add elipsis when classe are greater than maxview 
     
     :param text: str - a text to shrunk and format. Can also be an iterable
         object. 
-    :param maxsize: int, the size limit to keep in the formatage text. *default* 
+    :param chunksize: int, the size limit to keep in the formatage text. *default* 
         is ``7``.
     :param insert_at: str, the place to insert the ellipsis. If ``None``,  
         shrunk the text and put the ellipsis, between the text beginning and 
@@ -188,14 +188,14 @@ def shrunkformat (text: str | Iterable[Any] ,
     >>> shrunkformat (text, insert_at ='end')
     ...'Im a long ... '
     >>> arr = np.arange(30)
-    >>> shrunkformat (arr, maxsize=10 )
+    >>> shrunkformat (arr, chunksize=10 )
     ... '0 1 2 3 4  ...  25 26 27 28 29'
     >>> shrunkformat (arr, insert_at ='begin')
     ... ' ...  26 27 28 29'
     
     """
     is_str = False 
-    maxsize = int (_assert_all_types(maxsize, float, int))
+    chunksize = int (_assert_all_types(chunksize, float, int))
                    
     regex = re.compile (r"(begin|start|beg)|(end|close|last)")
     insert_at = str(insert_at).lower().strip() 
@@ -215,18 +215,18 @@ def shrunkformat (text: str | Iterable[Any] ,
     elif hasattr (text , '__iter__'): 
         textsplt = list(text )
         
-    if len(textsplt) < maxsize : 
+    if len(textsplt) < chunksize : 
         return  text 
     
     if is_str : 
-        rl = textsplt [:len(textsplt)//2][: maxsize//2]
-        ll= textsplt [len(textsplt)//2:][-maxsize//2:]
+        rl = textsplt [:len(textsplt)//2][: chunksize//2]
+        ll= textsplt [len(textsplt)//2:][-chunksize//2:]
         
         if sep is None: sep =' '
         spllst = [f'{sep}'.join ( rl), f'{sep}'.join ( ll)]
         
     else : spllst = [
-        textsplt[: maxsize//2 ] ,textsplt[-maxsize//2:]
+        textsplt[: chunksize//2 ] ,textsplt[-chunksize//2:]
         ]
     if insert_at =='begin': 
         spllst.insert(0, ' ... ') ; spllst.pop(1)
@@ -683,7 +683,7 @@ def format_notes(text:str , cover_str: str ='~', inline=70, **kws):
         between the first index to the inline text 
     :Example: 
         
-        >>> from watex.tools import funcutils as func 
+        >>> from watex.utils import funcutils as func 
         >>> text ='Automatic Option is set to ``True``.'\
             ' Composite estimator building is triggered.' 
         >>>  func.format_notes(text= text ,
@@ -829,7 +829,6 @@ def interpol_scipy (
     return y_new
 
 
-
 def _remove_str_word (char, word_to_remove, deep_remove=False):
     """
     Small funnction to remove a word present on  astring character 
@@ -851,7 +850,7 @@ def _remove_str_word (char, word_to_remove, deep_remove=False):
         
     Examples
     ---------
-    >>> from watex.tools import funcutils as func
+    >>> from watex.utils import funcutils as func
     >>> ch ='AMTAVG 7.76: "K1.fld", Dated 99-01-01,AMTAVG, 
     ...    Processed 11 Jul 17 AMTAVG'
     >>> ss=func._remove_str_word(char=ch, word_to_remove='AMTAVG', 
@@ -891,13 +890,12 @@ def stn_check_split_type(data_lines):
     
     :Example: 
         
-        >>> from watex.tools  import funcutils as func
-        >>> path =  os.path.join(os.environ["pyCSAMT"], 
-                          'csamtpy','data', K6.stn)
+        >>> from watex.utils  import funcutils as func
+        >>> path =  data/ K6.stn
         >>> with open (path, 'r', encoding='utf8') as f : 
         ...                     data= f.readlines()
         >>>  print(func.stn_check_split_type(data_lines=data))
-            
+        
     """
 
     split_type =[',', ':',' ',';' ]
@@ -1039,8 +1037,8 @@ def fr_en_parser (f, delimiter =':'):
 
 def convert_csvdata_from_fr_to_en(csv_fn, pf, destfile = 'pme.en.csv',
                                   savepath =None, delimiter =':'): 
-    """ Translate variable data from french csva data  to english with 
-    varibale parser file. 
+    """ Translate variable data from french csv data  to english with 
+    parser file. 
     
     :param csv_fn: data collected in csv format.
     
@@ -1209,7 +1207,7 @@ def read_main (csv_fn , pf , delimiter =':',
     
 
 #XXX TODO : move the stats func 
-def _stats (X_, y_true,*, y_pred,
+def _stats (X_, y_true,*, y_pred, # noqa
             from_c ='geol', 
             drop_columns =None, 
             columns=None )  : 

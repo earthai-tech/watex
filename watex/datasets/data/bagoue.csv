@@ -1,4 +1,4 @@
-431,13,,,,,,,,,,,
+431,12,flow,,,,,,,,,,
 num,name,east,north,power,magnitude,shape,type,sfi,ohmS,lwi,geol,flow
 1,b1,790496,1175071,110,136,W,CP,0.388908543,1666.165142,32.0235849,VOLCANO-SEDIM. SCHISTS,2.5
 2,b2,791227,1159566,70,142,V,EC,1.340127019,1135.551531,21.4065306,GRANITES,0.8

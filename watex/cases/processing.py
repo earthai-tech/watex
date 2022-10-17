@@ -13,9 +13,7 @@ import inspect
 import numpy as np 
 import pandas as pd 
 
-from .._docstring import ( 
-    DocstringComponents, _core_docs
-    )
+from .._docstring import  DocstringComponents, _core_docs
 from .._watexlog import watexlog 
 from ..decorators import visualize_valearn_curve
 from ..exceptions import ( 
@@ -188,7 +186,7 @@ class Preprocessing :
             Note that if the data is given, it is not necessary to provide the
             `X` and `y`. By specifying the target name `tname`, the target 
             should be remove to the data. 
-        split_xy: bool, default {'True'}
+        split_X_y: bool, default {'True'}
             split the datatset to training set {X, y } and test set {Xt, yt}. 
             Otherwise `X` and `y` should be considered as traning sets.  
             
@@ -208,7 +206,7 @@ class Preprocessing :
 
         """
         data = fit_params.pop('data', None)
-        split_Xy= fit_params.pop('split_Xy', True)
+        split_X_y= fit_params.pop('split_X_y', True)
         
         self.X_ = None or X 
         self.y_ = None or y 
@@ -254,7 +252,7 @@ class Preprocessing :
         self.y_ = self.y_.astype ('category').cat.codes
         
         # splitted dataset 
-        if split_Xy: 
+        if split_X_y: 
             if self.y_ is None :
                 warnings.warn("target name 'tname' is None. Cannot retrieve"
                               " the target 'y' from the dataset")

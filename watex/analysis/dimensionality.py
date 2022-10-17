@@ -34,7 +34,7 @@ from ..typing import (
 from ..decorators import docstring
 from .._watexlog import watexlog
 from ..models.validation import GridSearch
-from ..bases.transformers import (
+from ..transformers import (
     DataFrameSelector,
     CombinedAttributesAdder
    )

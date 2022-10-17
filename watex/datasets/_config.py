@@ -4,8 +4,8 @@
 """
 Dataset 
 ==========
-Fetch data set from the local machine. It data does not exist, retrieve it 
-from online (repository or zenodo record ) 
+Fetch data set from the local machine. If data does not exist, retrieve it 
+from the remote (repository or zenodo record ) 
  
 """
 import re

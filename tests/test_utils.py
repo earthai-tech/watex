@@ -28,15 +28,15 @@ from tests.random_sample import (
     array2DX, 
     extraarray2D, 
 )
-from watex.tools.coreutils import  ( 
+from watex.utils.coreutils import  ( 
     erpSelector
     ) 
 
-from watex.tools.mlutils import ( 
+from watex.utils.mlutils import ( 
     exporttarget , 
     correlatedfeatures
     ) 
-from watex.tools.funcutils import ( 
+from watex.utils.funcutils import ( 
     shrunkformat )
 
 
