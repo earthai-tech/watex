@@ -28,9 +28,10 @@ Until now, the methods implemented are mainly adressed to a particular problem i
 
 - **Learning** 
  
-    -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/); Neighbors: **KNN** ; Trees: **DTC**; Artificial neural networks **ANN**; 
+    -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/); Neighbors: **KNN** ; Trees: **DTC**; 
     -  Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking);  Apriori;
     -  Kernel Principal Component Analysis **k-PCA**; t-distributed Stochastic Neighbor Embedding **t-SNE**; Randomized PCA; Locally Linear Embedding (**LLE**)
+    -  Clusterings algorithms: KMeans, Hierachical clusters 
      
 - **Geophysical** 
 
