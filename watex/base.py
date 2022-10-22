@@ -7,9 +7,10 @@ import re
 import sys 
 import inspect 
 import subprocess
+# import operator 
+import numpy as np
 from collections import defaultdict
 from warnings import warn
-import numpy as np
 
 from ._watexlog import  watexlog
 from ._docstring import DocstringComponents, _core_docs
@@ -17,8 +18,23 @@ from .typing import List, Optional, DataFrame
 from .utils.coreutils import _is_readable 
 from .utils.funcutils import (_assert_all_types,  repr_callable_obj, 
                               smart_strobj_recognition, smart_format )
+from .exlib.sklearn import ( clone, LabelEncoder, _name_estimators , 
+                            BaseEstimator, ClassifierMixin )  
 from .exceptions import NotFittedError
 from .view.plot import ExPlot
+
+__all__=[
+    "Data", 
+    "Missing", 
+    "AdelineGradientDescent", 
+    "AdelineStochasticGradientDescent", 
+    "MajorityVoteClassifier", 
+    "Perceptron", 
+    "existfeatures", 
+    "is_installing", 
+    "selectfeatures" , 
+    "get_params" 
+    ]
 
 # +++ add base documentations +++
 
@@ -268,6 +284,7 @@ class Data:
         
         return self 
     
+    #XXX TODO # use logical and to quick merge two frames 
     def merge (self) : 
         """ Merge two series whatever the type with operator `&&`. 
         
@@ -398,8 +415,8 @@ class Missing (Data) :
     
     Examples 
     --------
-    >>> from watex.bases.base import Missing
-    >>> data ='../../data/geodata/main.bagciv.data.csv' 
+    >>> from watex.base import Missing
+    >>> data ='data/geodata/main.bagciv.data.csv' 
     >>> ms= Missing().fit(data) 
     >>> ms.plot_.fig_size = (12, 4 ) 
     >>> ms.plot () 
@@ -479,8 +496,8 @@ class Missing (Data) :
         
         Examples 
         --------
-        >>> from watex.bases.base import Missing
-        >>> data ='../../data/geodata/main.bagciv.data.csv' 
+        >>> from watex.base import Missing
+        >>> data ='data/geodata/main.bagciv.data.csv' 
         >>> ms= Missing().fit(data) 
         >>> ms.plot_.fig_size = (12, 4 ) 
         >>> ms.plot () 
@@ -489,7 +506,7 @@ class Missing (Data) :
         if data is not None: 
             self.data = data 
             
-        ExPlot().missing( self.data, kind =  self.kind, 
+        ExPlot().plotmissing( self.data, kind =  self.kind, 
                 sample = self.sample, **kwd )
         return  self 
 
@@ -889,6 +906,285 @@ class Perceptron (_Base):
                      self.get_params().items() )
         
         return self.__class__.__name__ + str(tup).replace("'", "") 
+    
+
+class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ): 
+    """
+    A majority vote Ensemble classifier 
+    
+    Combine different classification algorithms associate with individual 
+    weights for confidence. The goal is to build a stronger meta-classifier 
+    that balance out of the individual classifiers weaknes on a particular  
+    datasets. In more precise in mathematical terms, the weighs majority 
+    vote can be expressed as follow: 
+        
+        .. math:: 
+            
+            \hat{y} = arg \max{i} \sum {j=1}^{m} w_j\chi_A (C_j(x)=1)
+    
+    where :math:`w_j` is a weight associated with a base classifier, C_j; 
+    :math:`\hat{y}` is the predicted class label of the ensemble. :math:`A` is 
+    the set of the unique class label; :math:`\chi_A` is the characteristic 
+    function or indicator function which returns 1 if the predicted class of 
+    the jth clasifier matches i (C_j(x)=1). For equal weights, the equation 
+    is simplified as follow: 
+        
+        .. math:: 
+            
+            \hat{y} = mode {{C_1(x), C_2(x), ... , C_m(x)}}
+            
+    Parameters 
+    ------------
+    
+    clfs: {array_like}, shape (n_classifiers)
+        Differents classifier for ensembles 
+        
+    vote: str , ['classlabel', 'probability'], default is {'classlabel'}
+        If 'classlabel' the prediction is based on the argmax of the class 
+        label. Otherwise, if 'probability', the argmax of the sum of the 
+        probabilities is used to predict the class label. Note it is 
+        recommended for calibrated classifiers. 
+        
+    weights:{array-like}, shape (n_classifiers, ), Optional, default=None 
+        If a list of `int` or `float`, values are provided, the classifier 
+        are weighted by importance; it uses the uniform weights if 'weights' is
+        ``None``.
+        
+    Attributes 
+    ------------
+    classes_: array_like, shape (n_classifiers) 
+        array of classifiers withencoded classes labels 
+    
+    classifiers_: list, 
+        list of fitted classifiers 
+        
+    Examples 
+    ---------
+    >>> from watex.exlib.sklearn import (
+        LogisticRegression,DecisionTreeClassifier ,KNeighborsClassifier, 
+         Pipeline , cross_val_score , train_test_split , StandardScaler , 
+         SimpleImputer )
+    >>> from watex.datasets import fetch_data 
+    >>> from watex.base import MajorityVoteClassifier 
+    >>> from watex.base import selectfeatures 
+    >>> data = fetch_data('bagoue original').get('data=dfy1')
+    >>> X0 = data.iloc [:, :-1]; y0 = data ['flow'].values  
+    >>> # exclude the categorical value for demonstration 
+    >>> # binarize the target y 
+    >>> y = np.asarray (list(map (lambda x: 0 if x<=1 else 1, y0))) 
+    >>> X = selectfeatures (X0, include ='number')
+    >>> X = SimpleImputer().fit_transform (X) 
+    >>> X, Xt , y, yt = train_test_split(X, y)
+    >>> clf1 = LogisticRegression(penalty ='l2', solver ='lbfgs') 
+    >>> clf2= DecisionTreeClassifier(max_depth =1 ) 
+    >>> clf3 = KNeighborsClassifier( p =2 , n_neighbors=1) 
+    >>> pipe1 = Pipeline ([('sc', StandardScaler()), 
+                           ('clf', clf1)])
+    >>> pipe3 = Pipeline ([('sc', StandardScaler()), 
+                           ('clf', clf3)])
+    
+    (1) -> Test the each classifier results taking individually 
+    
+    >>> clf_labels =['Logit', 'DTC', 'KNN']
+    >>> # test the results without using the MajorityVoteClassifier
+    >>> for clf , label in zip ([pipe1, clf2, pipe3], clf_labels): 
+            scores = cross_val_score(clf, X, y , cv=10 , scoring ='roc_auc')
+            print("ROC AUC: %.2f (+/- %.2f) [%s]" %(scores.mean(), 
+                                                     scores.std(), 
+                                                     label))
+    ... ROC AUC: 0.91 (+/- 0.05) [Logit]
+        ROC AUC: 0.73 (+/- 0.07) [DTC]
+        ROC AUC: 0.77 (+/- 0.09) [KNN]
+    
+    (2) _> Implement the MajorityVoteClassifier
+    
+    >>> # test the resuls with Majority vote  
+    >>> mv_clf = MajorityVoteClassifier(clfs = [pipe1, clf2, pipe3])
+    >>> clf_labels += ['Majority voting']
+    >>> all_clfs = [pipe1, clf2, pipe3, mv_clf]
+    >>> for clf , label in zip (all_clfs, clf_labels): 
+            scores = cross_val_score(clf, X, y , cv=10 , scoring ='roc_auc')
+            print("ROC AUC: %.2f (+/- %.2f) [%s]" %(scores.mean(), 
+                                                     scores.std(), label))
+    ... ROC AUC: 0.91 (+/- 0.05) [Logit]
+        ROC AUC: 0.73 (+/- 0.07) [DTC]
+        ROC AUC: 0.77 (+/- 0.09) [KNN]
+        ROC AUC: 0.92 (+/- 0.06) [Majority voting] # give good score & less errors 
+    """     
+    
+    def __init__(self, clfs, weights = None , vote ='classlabel'):
+        
+        self.clfs=clfs 
+        self.weights=weights
+        self.vote=vote 
+        
+        self.classifier_names_={}
+  
+    def fit(self, X, y):
+        """
+        Fit classifiers 
+        
+        Parameters
+        ----------
+
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        Returns 
+        --------
+        self: `MajorityVoteClassifier` instance 
+            returns ``self`` for easy method chaining.
+        """
+
+        self._check_clfs_vote_and_weights ()
+        
+        # use label encoder to ensure that class start by 0 
+        # which is important for np.argmax call in predict 
+        self._labenc = LabelEncoder () 
+        self._labenc.fit(y)
+        self.classes_ = self._labenc.classes_ 
+        
+        self.classifiers_ = list()
+        for clf in self.clfs: 
+            fitted_clf= clone (clf).fit(X, self._labenc.transform(y))
+            self.classifiers_.append (fitted_clf ) 
+            
+        return self 
+    
+    def predict(self, X):
+        """
+        Predict the class label of X 
+        
+        Parameters
+        ----------
+        
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+            
+        Returns
+        -------
+        maj_vote:{array_like}, shape (n_examples, )
+            Predicted class label array 
+            
+
+        """
+        if self.vote =='proba': 
+            maj_vote = np.argmax (self.predict_proba(X), axis =1 )
+        if self.vote =='label': 
+            # collect results from clf.predict 
+            preds = np.asarray(
+                [clf.predict(X) for clf in self.classifiers_ ]).T 
+            maj_vote = np.apply_along_axis(
+                lambda x : np.argmax( 
+                    np.bincount(x , weights = self.weights )), 
+                    axis = 1 , 
+                    arr= preds 
+                    
+                    )
+            maj_vote = self._labenc.inverse_transform(maj_vote )
+        
+        return maj_vote 
+    
+    def predict_proba (self, X): 
+        """
+        Predict the class probabilities an return average probabilities which 
+        is usefull when computing the the receiver operating characteristic 
+        area under the curve (ROC AUC ). 
+        
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns
+        -------
+        avg_proba: {array_like }, shape (n_examples, n_classes) 
+            weights average probabilities for each class per example. 
+
+        """
+        probas = np.asarray (
+            [ clf.predict_proba(X) for clf in self.classifiers_ ])
+        avg_proba = np.average (probas , axis = 0 , weights = self.weights ) 
+        
+        return avg_proba 
+    
+    def get_params( self , deep = True ): 
+        """ Overwrite the get params from `_Base` class  and get 
+        classifiers parameters from GridSearch . """
+        
+        if not deep : 
+            return super().get_params(deep =False )
+        if deep : 
+            out = self.classifier_names_.copy() 
+            for name, step in self.classifier_names_.items() : 
+                for key, value in step.get_params (deep =True).items (): 
+                    out['%s__%s'% (name, key)]= value 
+        
+        return out 
+        
+    def _check_clfs_vote_and_weights (self): 
+        """ assert the existence of classifiers, vote type and the 
+         classfifers weigths """
+        l = "https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html"
+        if self.clfs is None: 
+            raise TypeError( "Expect at least one classifiers. ")
+
+        if hasattr(self.clfs , '__class__') and hasattr(
+                self.clfs , '__dict__'): 
+            self.clfs =[self.clfs ]
+      
+        s = set ([ (hasattr(o, '__class__') and hasattr(o, '__dict__')) for o 
+                  in self.clfs])
+        
+        if  not list(s)[0] or len(s)!=1:
+            raise TypeError(
+                "Classifier should be a class object, not {0!r}. Please refer"
+                " to Scikit-Convention to write your own estimator <{1!r}>."
+                .format('type(self.clfs).__name__', l)
+                )
+        self.classifier_names_ = {
+            k : v for k, v  in _name_estimators(self.clfs)
+            }
+        
+        regex= re.compile(r'(class|label|target)|(proba)')
+        v= regex.search(self.vote)
+        if v  is None : 
+            raise ValueError ("Vote argument must be 'probability' or "
+                              "'classlabel', got %r"%self.vote )
+        if v is not None: 
+            if v.group (1) is not None:  
+                self.vote  ='label'
+            elif v.group(2) is not None: 
+                self.vote  ='proba'
+           
+        if self.weights and len(self.weights)!= len(self.clfs): 
+           raise ValueError(" Number of classifier must be consistent with "
+                            " the weights. got {0} and {1} respectively."
+                            .format(len(self.clfs), len(self.weights))
+                            )
+            
         
 class AdelineStochasticGradientDescent (_Base) :
     r""" Adaptative Linear Neuron Classifier  with batch  (stochastic) 

@@ -2,7 +2,6 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 
-from ..base import get_params 
 from ..exlib.slearn import (
     AdaBoostClassifier, 
     BaggingClassifier, 
@@ -16,7 +15,7 @@ from ..exlib.slearn import (
     VotingClassifier, 
     )
 from ..exlib.more import XGBClassifier 
-
+from ..utils.funcutils import get_params 
 __all__=['_pMODELS']
 
 

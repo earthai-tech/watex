@@ -23,9 +23,11 @@ from .exlib.sklearn  import (
 )
  
 from ._watexlog import watexlog 
+from .utils.funcutils import parse_attrs , to_numeric_dtypes
 from .utils.mlutils import (  
     discretizeCategoriesforStratification, 
-    stratifiedUsingDiscretedCategories
+    stratifiedUsingDiscretedCategories, 
+    existfeatures 
     )
 from .utils.hydroutils import categorize_flow 
 
@@ -521,31 +523,43 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
  
     Arguments 
     ----------
-    *add_attributes* : bool,
-            Decide to add new features values by combining 
-            numerical features operation. By default ease to 
-            divided two numerical features.
+    *attribute_names* : list of str , optional
+        List of features for combinaison. Decide to combine new feature
+        values by from `operator` parameters. By default, the combinaison it 
+        is ratio of the given attribute/numerical features. For instance, 
+        ``attribute_names=['lwi', 'ohmS']`` will divide the feature 'lwi' by 
+        'ohmS'.
                     
-    *attributes_ix* : str or list of int,
-            Divide two features from string litteral operation betwen or 
-            list of features indexes. 
+    *attributes_indexes* : list of int,
+        index of each feature/feature for experience combinaison. User 
+        warning should raise if any index does match the dataframe of array 
+        columns.
             
+    *operator*: str, default ='/' 
+        Type of operation to perform. Can be ['/', '+', '-', '*', '%']  
+        
     Returns
     --------   
     X : np.ndarray, 
-        A  new array contained the new data from the `attributes_ix` operation. 
-        If `add_attributes` is set to ``False``, will return the same array 
+        A  new array contained the new data from the `attrs_indexes` operation. 
+        If `attr_names` and attr_indexes is ``None``, will return the same array 
         like beginning. 
     
     Notes
     ------
-    A litteral string operator is a by default divided two numerical fetaures
-    separated by the main word "_per_". For instance, to create a new
-    feature based on the division of the features ``lwi`` and the feature 
-    ``ohmS``, the litteral string operator is::
+    A litteral string operator can be used. For instance dividing two numerical 
+    features can be illustrated using the word "per" separated by underscore like 
+    "_per_" For instance, to create a new feature based on the division of 
+    the features ``lwi`` and ``ohmS``, the litteral string operator that holds
+    the ``attribute_names`` could be::
         
-        attributes_ix='lwi_per_ohmS'
+        attribute_names='lwi_per_ohmS'
         
+    The same litteral string is valid for multiplication (_mul_) , 
+    substraction (_sub_) , modulo (_mod_) and addition (_add_). However, 
+    indexes of features can also use rather than `attribute_names` providing
+    the `operator` parameters. 
+    
     Or it could be the indexes of both features in the array like 
     ``attributes_ix =[(10, 9)]`` which means the `lwi` and `ohmS` are
     found at index ``10`` and ``9``respectively. Furthermore, multiples 
@@ -554,103 +568,249 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
         
     Examples 
     --------
-    >>> from watex.utils.transformers import CombinedAttributesAdder
-    >>> from watex.utils.ml_utils import load_data 
-    >>> df =load_data('data/geo_fdata')
-    >>> addObj = CombinedAttributesAdder(add_attributes=True, 
-                                 attributes_ix='lwi_per_ohmS')
-    >>> addObj.fit_transform(df)
-    >>> addObj.attributes_ix
-    >>> addObj.attribute_names_
-    
+    >>> import pandas as pd 
+    >>> from watex.transformers import CombinedAttributesAdder
+    >>> from watex.datasets.dload import load_bagoue 
+    >>> X, y = load_bagoue (as_frame =True ) 
+    >>> cobj = CombinedAttributesAdder (attribute_names='lwi_per_ohmS')
+    >>> Xadded = cobj.fit_transform(X)
+    >>> cobj.attribute_names_
+    ... ['num',
+         'name',
+         'east',
+         'north',
+         'power',
+         'magnitude',
+         'shape',
+         'type',
+         'sfi',
+         'ohmS',
+         'lwi',
+         'geol',
+         'lwi_div_ohmS'] # new attributes with 'lwi'/'ohmS'
+    >>> df0 = pd.DataFrame (Xadded, columns = cobj.attribute_names_)
+    >>> df0['lwi_div_ohmS']
+    ... 0           0.0
+        1      0.000002
+        2      0.000005
+        3      0.000004
+        4      0.000008
+          
+        426    0.453359
+        427    0.382985
+        428    0.476676
+        429    0.457371
+        430    0.379429
+        Name: lwi_div_ohmS, Length: 431, dtype: object
+    >>> cobj = CombinedAttributesAdder (
+        attribute_names=['lwi', 'ohmS', 'power'], operator='+')
+    >>> df0 = pd.DataFrame (cobj.fit_transform(X),
+                            columns = cobj.attribute_names_)
+    >>> df0.iloc [:, -1]
+    ... 0      1777.165142
+        1      1207.551531
+        2         850.5625
+        3      1051.943553
+        4       844.095833
+            
+        426      1708.8585
+        427      1705.5375
+        428      1568.9825
+        429     1570.15625
+        430      1666.9185
+        Name: lwi_add_ohmS_add_power, Length: 431, dtype: object
+    >>> cobj = CombinedAttributesAdder (
+        attribute_indexes =[1,6], operator='+')
+    >>> df0 = pd.DataFrame (cobj.fit_transform(X), 
+                            columns = cobj.attribute_names_)
+    >>> df0.iloc [:, -1]
+    ... 0        b1W
+        1        b2V
+        2        b3V
+        3        b4W
+        4        b5W
+         
+        426    b427W
+        427    b428V
+        428    b429V
+        429    b430V
+        430    b431V
+        Name: name_add_shape, Length: 431, dtype: object
     """
+    _op ={'x': ('prod', 'mul', '*', 'x'), 
+        'add': ('add', '+', 'plus'), 
+        'div': ('quot', '/', 'div', 'per'), 
+        'sub': ('sub', '-', 'less'), 
+        'mod': ('mod', '%'),
+        }
     
-    def __init__(self, add_attributes =False, attributes_ix = 'lwi_per_ohmS'):
+    def __init__(
+            self, 
+            attribute_names =None, 
+            attribute_indexes = None, 
+            operator: str='/', 
+        ):
 
-        self.add_attributes = add_attributes  
-        self.attributes_ix = attributes_ix
-
-        self.attribute_names_ =list()
+        self.attribute_names=attribute_names
+        self.attribute_indexes= attribute_indexes
+        self.operator=operator
+        self.attribute_names_=None 
         
     def fit(self, X, y=None ):
+        """
+        Parameters 
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        Returns 
+        --------
+        self: `CombinedAttributesAdder` instance 
+            returns ``self`` for easy method chaining.
+        
+        """
         return self 
     
-    def transform(self, X, y=None):
-        """ Tranform the data and return new array. Can straightforwardly
-        call fit_transform method inherited from `TransformerMixin` class."""
+    def transform(self, X): 
+        """ Tranform X and return new array with experience attributes
+        combinaison. 
+        
+        Parameters 
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+
+        Returns 
+        --------
+        X: NDarray,  Ndarray ( M x N+1 matrix) 
+            returns X transformed (``M=m-samples``, & ``N=n+1-features``) 
+            with attribute  combined. 
+            
+            .. versionadded:: 0.1.3
+            
+        """
+        columns =[]
+        self.operator = self._get_operator (
+            self.operator or self.attribute_names)
+        
+        if self.operator is None: 
+            warnings.warn("None or Invalid operator cannot be use for "
+                          "attribute combinaisons.")
+        if isinstance (self.attribute_names, str): 
+            self.attribute_names_ = parse_attrs(self.attribute_names) 
+        
+        elif isinstance(self.attribute_names, 
+                        (list, tuple, np.ndarray) ):
+            self.attribute_names_ = self.attribute_names 
+            
+        if isinstance(X, pd.DataFrame) : 
+            # asset wether attributes exists 
+            # no raise errors, return the dataframe 
+            if self.attribute_names_ : 
+                existfeatures(X, self.attribute_names_  )
+            # get the index of attributes from dataframe 
+            if self.attribute_names_: 
+                self.attribute_indexes = list(map (
+                    lambda o: list(X.columns).index (o), self.attribute_names_)
+                    ) 
+                
+            elif self.attribute_indexes : 
+                # try :
+                self.attribute_names_ = list(map (
+                    lambda ix: list(X.columns)[ix], self.attribute_indexes)
+                    ) 
+                # except IndexError: 
+                #     raise IndexError("List of index is out the range.")
+                
+            columns = X.columns 
+            X= to_numeric_dtypes(X)
+            X= X.values 
+            
+        if self.attribute_indexes: 
+            X = self._operate(X)
+        
+        if self.attribute_names_ is not None: 
+            self.attribute_names_ = list(columns) + ([
+                f'_{self.operator}_'.join([ v for v in self.attribute_names_ ])
+                ] if self._isfine else [])
+        
+        return X 
+            
+    def _get_operator (self, operator): 
+        """ Get operator for combining  attribute """
+        
+        for k, v in self._op.items() :
+            for o in v: 
+                if operator.find(o) >=0 : 
+                    self.operator = k 
+                    return self.operator 
+        return 
+    
+    def _operate (self,  X): 
+        """ Operate data from indexes """
         def weird_division(ix_):
             """ Replace 0. value to 1 in denominator for division 
             calculus."""
             return ix_ if ix_!=0. else 1
-        def nan_division(ix_): 
-            """ If value is np.nan then return np.nan"""
-            return ix_ if ix_!=np.nan else -1 
         
-        ifdf_c, t__=list(), list() # keep the pd.Dataframe columns 
-        if self.attributes_ix is not None: 
-            if isinstance(self.attributes_ix , str): 
-                self.attributes_ix = [self.attributes_ix]
-                
-            for attr_ in self.attributes_ix : 
-                if isinstance(attr_, str):
-                    # break str characters with
-                    t_= attr_.replace('_', '').split('per')
-                    self.attribute_names_.append(tuple(t_))
+        msg=("Unsupported operand type(s)! index provided {} doesn't match"
+             " any numerical features. Experience combinaison attributes"
+             " is not possible.")
         
-        if isinstance(X, pd.DataFrame): 
-            if len(self.attribute_names_) !=0: 
-                # get index from columns positions  and change the 
-                # the litteral string operator to index values from 
-                # columns names.
-                self.attributes_ix = [(int(X.columns.get_loc(col_n[0])), 
-                      int(X.columns.get_loc(col_n[1]) ))
-                 for col_n in self.attribute_names_]
-                # pop attributes 
-                # get index of ('magnitude', 'power')
-                idx = self.attribute_names_.index(self.attribute_names_[0])
-                self.attribute_names_.pop(idx)
-                
-            ifdf_c= list(X.columns)
-                
-            X= X.values 
-
-        if self.add_attributes: 
-            for num_ix , deno_ix  in self.attributes_ix :
+        self._isfine=True 
+        Xc =X[:, self.attribute_indexes]
+        cb= Xc[:, 0 ] ; Xc=Xc[:,  1: ]
         
-                try: 
-
-                    num_per_deno = X[:, num_ix] /X[:, deno_ix ]
+        for k in range (Xc.shape[1]): 
+            try : 
+                if self.operator =='mod': 
+                    cb %= Xc[:, k]
+                if self.operator =='add': 
+                    cb += Xc[:, k]
+                if self.operator =='sub': 
+                    cb -= Xc[:, k]
+                if self.operator =='div': 
+                    # if the denominator contain nan or 0 
+                    # a weird division is triggered and replace 
+                    # the denominator by 1
+                    try : 
+                        cb /= Xc[:, k]
+                    except ZeroDivisionError: 
+                        wv= np.array(
+                            list(map(weird_division, Xc[:, k])))
+                        cb /=wv
+    
+                    except ( TypeError, RuntimeError, RuntimeWarning):
+                        warnings.warn(msg.format(
+                            self.attribute_indexes[1:][k])) 
+                        
+                if self.operator =='x': 
+                    cb *= Xc[:, k]        
                     
-                except ZeroDivisionError:
-                    # replace the existing 0 to 1 to operate a new division.
-                    weird_divison_values = np.array(
-                        list(map(weird_division, X[:, deno_ix ])))
-  
-                    num_per_deno = X[:, num_ix] /weird_divison_values
-                    
-                except  TypeError: #RuntimeError| RuntimeWarning:
-                    warnings.warn(
-                        'Unsupported operand type(s)! Indexes provided'
-                        f" `({num_ix},{deno_ix})` don't match any numerical" 
-                        ' features. Experience combinaison attributes is'
-                        ' not possible! Please provide the right indexes!'
-                        )
-                except: 
-
-                    num_per_deno = np.float(
-                        X[:, num_ix]) /np.float(X[:, deno_ix ])
-               
-                X= np.c_[X, num_per_deno ]
-                
-                if len(ifdf_c) !=0: 
-                    t__.append(
-                        str(ifdf_c[num_ix])+ '_per_'+str(ifdf_c[deno_ix]))
-                    
-            # if len(self.attribute_names_) ==0: 
-            self.attribute_names_+= t__
+            except: 
+                warnings.warn(msg.format(self.attribute_indexes[1:][k])) 
+                self._isfine =False          
             
+        X =  np.c_[X, cb ]  if self._isfine else X 
+        
         return X 
-     
+
 class DataFrameSelector(BaseEstimator, TransformerMixin):
     """ Select data from specific attributes for column transformer. 
     
@@ -772,42 +932,41 @@ class FrameUnion (BaseEstimator, TransformerMixin) :
     
     Arguments
     ---------
-        num_attributes: list 
-            List of numerical attributes 
-            
-        cat_attributes: list 
-            list of categorial attributes 
-            
-        scale: bool 
-            Features scaling. Default is ``True`` and use 
-            `:class:~sklearn.preprocessing.StandarScaler` 
-            
-        imput_data: bool , 
-            Replace the missing data. Default is ``True`` and use 
-            :attr:`~sklearn.impute.SimpleImputer.strategy`. 
-            
-        param_search: bool, 
-            If `num_attributes` and `cat_attributes`are None, the numerical 
-            features and categorial features` should be found automatically.
-            Default is ``True``
-            
-        scale_mode:bool, 
-            Mode of data scaling. Default is ``StandardScaler``but can be 
-            a ``MinMaxScaler`` 
-            
-        encode_mode: bool, 
-            Mode of data encoding. Default is ``OrdinalEncoder`` but can be 
-            ``OneHotEncoder`` but creating a sparse matrix. Once selected, 
-            the new shape of ``X`` should be different from the original 
-            shape. 
+    num_attributes: list 
+        List of numerical attributes 
+        
+    cat_attributes: list 
+        list of categorial attributes 
+        
+    scale: bool 
+        Features scaling. Default is ``True`` and use 
+        `:class:~sklearn.preprocessing.StandarScaler` 
+        
+    imput_data: bool , 
+        Replace the missing data. Default is ``True`` and use 
+        :attr:`~sklearn.impute.SimpleImputer.strategy`. 
+        
+    param_search: bool, 
+        If `num_attributes` and `cat_attributes`are None, the numerical 
+        features and categorial features` should be found automatically.
+        Default is ``True``
+        
+    scale_mode:bool, 
+        Mode of data scaling. Default is ``StandardScaler``but can be 
+        a ``MinMaxScaler`` 
+        
+    encode_mode: bool, 
+        Mode of data encoding. Default is ``OrdinalEncoder`` but can be 
+        ``OneHotEncoder`` but creating a sparse matrix. Once selected, 
+        the new shape of ``X`` should be different from the original 
+        shape. 
     
     Example
     ------- 
-    
-        >>> from watex.datasets import X_
-        >>> from watex.utils.transformers import FrameUnion 
-        >>> frameObj = FrameUnion(X_, encoding =OneHotEncoder)
-        >>> X= frameObj.fit_transform(X_)
+    >>> from watex.datasets import X_
+    >>> from watex.utils.transformers import FrameUnion 
+    >>> frameObj = FrameUnion(X_, encoding =OneHotEncoder)
+    >>> X= frameObj.fit_transform(X_)
         
     """  
     def __init__(self,
@@ -919,17 +1078,6 @@ class FrameUnion (BaseEstimator, TransformerMixin) :
         return X
         
 
-                      
-if __name__=='__main__': 
-    # import matplotlib.pyplot as plt 
-    # df =pd.read_csv('data/geo_fdata/_bagoue_civ_loc_ves&erpdata.csv')
-    # # print(df)
-    df = mlfunc.load_data('data/geo_fdata')
-    stratifiedNumObj= StratifiedWithCategoryAdder('flow', n_splits=1,
-                                                  return_train=True)
-    # strat_train_set , strat_test_set = stratifiedNumObj.fit_transform(X=df)
-    # bag_train_set = strat_train_set.copy()
-    # test_label = bag_train_set['flow'].copy()
 
 
 

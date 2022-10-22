@@ -4,7 +4,7 @@
 Make Dataset 
 ===============
 
-Automate the loading data
+Automate the loading of dataset   
 
 """
 import os 
@@ -56,19 +56,19 @@ drop_features= ['num',
                 # 'type' 
                 ]
 # experiences attributes combinaisions 
-add_attributes =False
+add_attributes =None 
 # add attributes indexes to create a new features. 
-attributesIndexes = [
-                    (0, 1),
-                    # (3,4), 
-                    # (1,4), 
-                    # (0, 4)
-                    ] 
+attributesIndexes = None #[
+                        # (0, 1),
+                        # (3,4), 
+                        # (1,4), 
+                        # (0, 4)
+                        # ] 
 # categorize a features on the trainset or label 
 feature_props_to_categorize =[
     ('flow', ([0., 1., 3.], ['FR0', 'FR1', 'FR2', 'FR3'])),
     ]
-                        
+                 
 # bring your own pipelines .if None, use default pipeline.
 ownPipeline =None 
 _conf_kws = {'tname':nameoftarget, 
@@ -86,7 +86,7 @@ prepareObj =BaseSteps(
     categorizefeature_props = feature_props_to_categorize,
     tname=nameoftarget, 
     add_attributes = add_attributes, 
-    attributes_ix = attributesIndexes, 
+    attribute_indexes =attributesIndexes, 
     hash=False
     )
 

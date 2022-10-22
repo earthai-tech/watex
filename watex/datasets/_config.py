@@ -134,7 +134,7 @@ def _fetch_data(tag):
             'watex/etc/__Xy.pkl',(_Xp, _yp), dtype='training' 
                 )
     elif pm =='test': 
-        r = loadingdefaultSerializedData (
+        r, = loadingdefaultSerializedData (
             'watex/etc/__XTyT.pkl',(_XT, _yT), dtype='test' ),
     else : 
         try : 

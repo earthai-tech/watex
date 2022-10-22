@@ -1512,16 +1512,16 @@ class QuickPlot (BasePlot)  :
     
     
     def multicatdist(self, 
-                             data : str | DataFrame = None, 
-                             *, 
-                             x =None, 
-                             col=None, 
-                             hue =None, 
-                             targets: List[str]=None,
-                             x_features:List[str]=None ,
-                             y_features: List[str]=None, 
-                             kind:str='count',
-                             **kws): 
+                    data : str | DataFrame = None, 
+                    *, 
+                    x =None, 
+                    col=None, 
+                    hue =None, 
+                    targets: List[str]=None,
+                    x_features:List[str]=None ,
+                    y_features: List[str]=None, 
+                    kind:str='count',
+                    **kws): 
         """
         Figure-level interface for drawing multiple categorical distributions
         plots onto a FacetGrid.
@@ -2592,9 +2592,75 @@ Examples
     returns= _core_docs["returns"],
 )
       
-      
+def viewtemplate (y, /, xlabel=None, ylabel =None,  **kws):
+    """
+    Quick view template
+    
+    Parameters 
+    -----------
+    y: Arraylike , shape (N, )
+    xlabel: str, Optional 
+        Label for naming the x-abscissia 
+    ylabel: str, Optional, 
+        Label for naming the y-coordinates.
+    kws: dict, 
+        keywords argument passed to :func:`matplotlib.pyplot.plot`
 
+    """
+    label =kws.pop('label', None)
+    # create figure obj 
+    obj = ExPlot()
+    fig = plt.figure(figsize = obj.fig_size)
+    ax = fig.add_subplot(1,1,1)
+    ax.plot(y,
+            color= obj.lc, 
+            linewidth = obj.lw,
+            linestyle = obj.ls , 
+            label =label, 
+            **kws
+            )
+    
+    if obj.xlabel is None: 
+        obj.xlabel =xlabel or ''
+    if obj.ylabel is None: 
+        obj.ylabel =ylabel  or ''
+
+    ax.set_xlabel( obj.xlabel,
+                  fontsize= .5 * obj.font_size * obj.fs 
+                  )
+    ax.set_ylabel (obj.ylabel,
+                   fontsize= .5 * obj.font_size * obj.fs
+                   )
+    ax.tick_params(axis='both', 
+                   labelsize=.5 * obj.font_size * obj.fs
+                   )
+    
+    if obj.show_grid is True : 
+        if obj.gwhich =='minor': 
+              ax.minorticks_on() 
+        ax.grid(obj.show_grid,
+                axis=obj.gaxis,
+                which = obj.gwhich, 
+                color = obj.gc,
+                linestyle=obj.gls,
+                linewidth=obj.glw, 
+                alpha = obj.galpha
+                )
+          
+        if len(obj.leg_kws) ==0 or 'loc' not in obj.leg_kws.keys():
+             obj.leg_kws['loc']='upper left'
         
+        ax.legend(**obj.leg_kws)
+        
+
+        plt.show()
+        
+        if obj.savefig is not None :
+            plt.savefig(obj.savefig,
+                        dpi=obj.fig_dpi,
+                        orientation =obj.fig_orientation
+                        )     
+
 # import matplotlib.cm as cm 
 # import matplotlib.colorbar as mplcb
 # from mpl_toolkits.axes_grid1 import make_axes_locatable

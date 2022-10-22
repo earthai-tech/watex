@@ -19,6 +19,7 @@ from matplotlib.colors import ListedColormap
 from .._docstring import _core_docs 
 from ..exlib.sklearn import (train_test_split, StandardScaler, PCA )
 from ..utils.plotutils import (D_COLORS, D_MARKERS)
+from ..utils.funcutils import _assert_all_types 
 # ---
 
 def extract_pca (X): 
@@ -192,6 +193,8 @@ Parameters
 {params.X} 
 {params.y}
 
+n_components: int, default=2 
+    Number of components with most total variance ratio. 
 positive_class: int, 
     class label as an integer indenfier within the class representation. 
     
@@ -352,13 +355,218 @@ Examples
 )
 
 
+def linear_discriminant_analysis (
+        X, y, n_components = 2 , view=False, verbose = 0  , return_X=True, 
+ ): 
+    n_components = int (_assert_all_types (n_components, int, float ))
+    # standardize the features 
+    eigen_vals, eigen_vcs, X = extract_pca(X)
+    # compute the mean vectors which will use to 
+    # construct the within classes scatter matrix 
+    np.set_printoptions(precision=4) 
+    mean_vecs =list() 
+    for label in range (1, len(np.unique (y))): 
+        mean_vecs.append (np.mean(X[y==label], axis =0 ))
+        if verbose : 
+            print('MV %s: %s\n' %(label , mean_vecs[label -1]))
+            
+    # compute the within class Sw using the mean vector; 
+    # calculated by summing up the individual scatter matrices 
+    
+    d = X.shape [1]  # number of features
+    SW =np.zeros ((d, d ))
+    #==========================================================================
+    # for label , mv in zip (range (1 , len(np.unique (y))), mean_vecs): 
+    #     class_scatter = np.zeros ((d, d) )
+    #     for row in X [y==label ]: 
+    #         row, mv= row.reshape (d, 1), mv.reshape (d, 1)
+    #         class_scatter += (row - mv ).dot(row - mv).T 
+    #         SW += class_scatter 
+    # if verbose : 
+    #     print("within-class scatter matrix: %sx %s" % (
+    #         SW.shape [0], SW.shape[1]))
+    
+    # the assumption that we are making when we are computing the  
+    # scatter matrices  is that the labels in the training datasets 
+    # are uniformly distributed. Howeverm, if we print the number 
+    # of class labels, we see that this assumtions is violated. 
+    # for instance : 
+    # >>> print('class label distributions: %s' % np.bincount (y)[1:])
+    #==========================================================================
+    # the better way is to scale the individual scatter matrices, before 
+    # sum them up as scatter matrix SW.  when dividing the scatter matrices 
+    # by the number of classes examples , we can see that computig the  
+    # scatter matrix is the same as covariance matrix 
+    
+    for label , mv in zip (range (1 , len(np.unique (y))), mean_vecs): 
+        class_scatter =np.cov(X[y==label].T )
+        SW += class_scatter 
+
+    if verbose : 
+        print("Scaled within-class scatter matrix: %sx %s" % (
+            SW.shape [0], SW.shape[1]))
+    # compute between classes scatter matrix SB 
+    mean_overall = np.mean (X, axis = 0 )  # include the example from c classes 
+    SB = np.zeros ((d, d)) 
+    for i, mean_vec in enumerate( mean_vecs ): 
+        n = X[y == i+1 , :].shape [0] 
+        mean_vec = mean_vec.reshape (d, 1) # make column vector 
+        mean_overall = mean_overall.reshape (d, 1)
+        SB += n * (mean_vec - mean_overall ).dot ((mean_vec - mean_overall).T)
+        
+    if verbose : 
+        if verbose : 
+            print("Between within-class scatter matrix: %sx%s" % (
+                SB.shape [0], SB.shape[1]))
+    
+    # select discriminant for the new feature subspace 
+    eigen_vals, eigen_vecs = np.linalg.eig (np.linalg.inv (SW).dot(SB))
+    # sort the eigen value in descending order 
+    eigen_pairs = [ (np.abs (eigen_vals[i]), eigen_vecs [:, i])
+                     for i in range(len(eigen_vals ))
+                     ]
+    eigen_pairs = sorted (eigen_pairs, key =lambda k: k[0], reverse =True )
+    if verbose : 
+        print("Eigen values in descending order:\n")
+        for eig_val in eigen_pairs : 
+            print(eig_val[0])
+            
+    if view : 
+        tot = sum(eigen_vals.real )
+        discr = [(i/tot ) for i in sorted (eigen_vals.real , reverse =True ) 
+                 ]
+        cum_discr = np.cumsum(discr) 
+        plt.bar (range (1 , 1+ X.shape [1]), discr , alpha =.5 , 
+                 align= 'center', label ='Individual "discriminability"'
+                 )
+        plt.step (range (1 , 1+ X.shape [1]), cum_discr , where ='mid', 
+                  label ='Cumulative "discriminality"')
+        plt.ylabel ('"Discriminability" ratio') 
+        plt.xlabel ("Linear discriminants")
+        plt.ylim ([ -0.1 , 1.1 ])
+        plt.legend (loc ='best')
+        plt.tight_layout() 
+        plt.show () 
+    
+    # stack the two most discrimative eigen columns 
+    # to create the transformation matrix W  for two components 
+    # W = np.hstack((eigen_pairs[0][1][:, np.newaxis].real, 
+    #                eigen_pairs[1][1][:, np.newaxis].real )
+    #               )
+    W0 = np.hstack(tuple (eigen_pairs[k][1][:, np.newaxis].real 
+                          for k in range (len(eigen_pairs)))
+                   ) 
+    if n_components > W0.shape [1]: 
+        warn (f"n_component '{n_components}' is larger than the most  "
+               f"discriminant vector '{W0.shape [1]}'")
+        n_components = W0.shape [1] 
+        
+    W = W0 [:, :n_components]
+  
+    if verbose: 
+        print("07 first values  of W:\n", W[:5, :])
+    # we can now transform the training dataset 
+    # from  matrix  W 
+    return  X.dot(W) if return_X else W 
 
 
+linear_discriminant_analysis.__doc__=r"""\
+Linear Discriminant Analysis (LDA) 
 
+LDA is used as a technique for feature extraction to increase the 
+computational efficiency and reduce the degree of overfitting due to the 
+curse of dimensionnality in non-regularized models. The general concept  
+behind LDA is very similar to the principal component analysis (PCA), but  
+whereas PCA attempts to find the orthogonal component axes of minimum 
+variance in a dataset, the goal in LDA is to find the features subspace 
+that optimize class separability.
+ 
+The main steps requiered to perform LDA are summarized below: 
+    
+    1. Standardize the d-dimensional datasets (d is the number of features)
+    2. For each class , compute the d-dimensional mean vectors. Thus for 
+        each mean feature value, :math:`\mu_m` with respect to the examples
+        of class :math:`i`: 
+            
+        .. math:: 
+            
+            m_i = \frac{1}{n_i} \sum{x\in D_i} x_m 
+            
+    3. Construct the between-clas scatter matrix, :math:`S_B` and the 
+        within class scatter matrix, :math:`S_W`. 
+        Individual scatter matrices are scalled :math:`S_i` before we sum 
+        them up as scatter matrix :math:`S_W` as: 
+            
+            .. math:: 
+                
+                \sum{i} & = &  \frac{1}{n_i}S_i 
+                
+                \sum{i} & = & \frac{1}{n_i} \sum{x\in D_i} (x-m_i)(x-m_i)^T
+                
+        The within-class is also called the covariance matrix, thus we cam 
+        compute the between class scatter_matrix :math:`S_B`. 
+        
+        .. math:: 
+            
+            S_B= \sum{i}^{n_i}(m_i-m) (m_i-m)^T 
+            
+        where :math:`m` is the overall mean that is computed , including 
+        examples from all c classes. 
 
+    4. Compute the eigenvectors and corresponding eigenvalues of the matrix 
+        :math:`S_W^{-1}S_B`. 
+    5. Sort the eigenvalues by decreasing order to rank the corresponding 
+        eigenvectors 
+    6. Choose the :math:`k` eigenvectors that correspond to the :math:`k` 
+        largest eigenvalues to construct :math:`dxk`-dimensional 
+        transformation matrix, :math:`W`; the eigenvectors are the columns 
+        of this matrix. 
+    7. project the examples onto the new_features subspaces using the 
+    transformation matrix :math:`W`.  
+    
+Parameters 
+-----------
+X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+    Training set; Denotes data that is observed at training and 
+    prediction time, used as independent variables in learning. 
+    When a matrix, each sample may be represented by a feature vector, 
+    or a vector of precomputed (dis)similarity with each training 
+    sample. :code:`X` may also not be a matrix, and may require a 
+    feature extractor or a pairwise metric to turn it into one  before 
+    learning a model.
+y: array-like, shape (M, ) ``M=m-samples``, 
+    train target; Denotes data that may be observed at training time 
+    as the dependent variable in learning, but which is unavailable 
+    at prediction time, and is usually the target of prediction. 
+  
+n_components: int, default =2 
+    Number of components considered as the most discriminative eigen vector.
+    
+return_X: bool, default =True 
+    return the transformed training set from `n_components`. 
 
-
-
+view: bool ,default =False, 
+    Visualize the LDA plot. If set to ``True``, the plot is triggered. 
+    
+Returns 
+--------
+X or W: ndarray (n_samples, 2 ) 
+    The transformed train set (X) or matrix (W) from the most discriminative 
+    eigenvector columns
+    
+Examples
+----------
+>>> from watex.datasets import fetch_data 
+>>> from watex.exlib.sklearn import SimpleImputer, LogisticRegression  
+>>> from watex.analysis.decomposition import linear_discriminant_analysis 
+>>> data= fetch_data("bagoue original").get('data=dfy1') # encoded flow
+>>> y = data.flow ; X= data.drop(columns='flow') 
+>>> # select the numerical features 
+>>> X =selectfeatures(X, include ='number')
+>>> # imputed the missing data 
+>>> X = SimpleImputer().fit_transform(X)
+>>> Xtr= linear_discriminant_analysis (X, y , view =True)
+"""
 
 
 

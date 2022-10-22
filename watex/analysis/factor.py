@@ -182,8 +182,11 @@ Tuple (pca_scores, fa_scores):
 )    
     
     
-def make_data (): 
-    """ generate a sampling data for probabilistic PCA and Factor Analysis 
+def make_data (
+        n_samples= 1000, n_features=50, rank =  10, sigma=1., 
+        random_state =42
+   ): 
+    """ Generate a sampling data for probabilistic PCA and Factor Analysis 
     model comparison 
     By default: 
         nsamples    = 1000 
@@ -198,12 +201,8 @@ def make_data ():
     * n_components: number of components  50 features. 
     
     """
-    #############################################################################
     # Create the data
-    
-    n_samples, n_features, rank = 1000, 50, 10
-    sigma = 1.
-    rng = np.random.RandomState(42)
+    rng = np.random.RandomState(random_state )
     U, _, _ = linalg.svd(rng.randn(n_features, n_features))
     X = np.dot(rng.randn(n_samples, rank), U[:, :rank].T)
     
@@ -213,10 +212,8 @@ def make_data ():
     # Adding heteroscedastic noise
     sigmas = sigma * rng.rand(n_features) + sigma / 2.
     X_hetero = X + rng.randn(n_samples, n_features) * sigmas
-    
-    #############################################################################
+
     # Fit the models
-    
     n_components = np.arange(0, n_features, 5)  # options for n_components
     
     return X, X_homo, X_hetero , n_components

@@ -102,3 +102,5 @@ class ScikitLearnImportError(Exception ):
 
 class GISError (Exception): 
     pass 
+class LearningError(Exception): 
+    pass 

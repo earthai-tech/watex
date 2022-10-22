@@ -109,7 +109,9 @@ skl_ensemble_= [
         
 from sklearn.base import(
     BaseEstimator,
-    TransformerMixin
+    TransformerMixin, 
+    ClassifierMixin, 
+    clone 
 )
 from sklearn.cluster import KMeans 
 from sklearn.compose import ( 
@@ -164,7 +166,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import (
     Pipeline, 
     make_pipeline ,
-    FeatureUnion
+    FeatureUnion, 
+    _name_estimators, 
 )
 from sklearn.preprocessing import (
     OneHotEncoder,
@@ -183,6 +186,8 @@ from sklearn.tree import DecisionTreeClassifier
 __all__=[
     "BaseEstimator",
     "TransformerMixin",
+    "ClassifierMixin", 
+    "clone", 
     "KMeans", 
     "make_column_transformer",
     'make_column_selector' , 
@@ -222,6 +227,7 @@ __all__=[
     'Pipeline', 
     'make_pipeline' ,
     'FeatureUnion', 
+    '_name_estimators',
     'OneHotEncoder',
     'PolynomialFeatures', 
     'RobustScaler' ,

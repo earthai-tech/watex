@@ -72,6 +72,8 @@ D_STYLES = [
     'dotted' 
 ]
 
+
+            
 def plotelbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
                marker='o', savefig =None, **kwd): 
     """ Plot the optimal number of cluster, k', for a given class 

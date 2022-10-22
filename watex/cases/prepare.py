@@ -3,22 +3,39 @@
 # author: LKouadio <etanoyau@gmail.com>
 
 """
-Base Preparation 
-==================
+Base data preparation for case studies 
+========================================
 
-Base electrical data preparation. As an example in `Bagoue dataset`, it is 
-used for preparing different kind of data related from the processing steps. 
+Base module helps to automate data preparation at once. It is created for fast 
+data preparation in real engineering cases study. The bases step has been 
+used to solve a flow rate prediction problems [1]_. Its steps procedure 
+can straighforwardly help user to fast reach the same goal as the published 
+paper. An example of  different kind of `Bagoue dataset [2]_ , is prepared  
+using the `BaseSteps` module. 
+
+References
+------------
+    
+.. [1] Kouadio, K.L., Kouame, L.N., Drissa, C., Mi, B., Kouamelan, K.S., 
+    Gnoleba, S.P.D., Zhang, H., et al. (2022) Groundwater Flow Rate 
+    Prediction from Geo‐Electrical Features using Support Vector Machines. 
+    Water Resour. Res. :doi:`10.1029/2021wr031623`
+.. [2] Kouadio, K.L., Nicolas, K.L., Binbin, M., Déguine, G.S.P. & Serge, 
+    K.K. (2021, October) Bagoue dataset-Cote d’Ivoire: Electrical profiling,
+    electrical sounding and boreholes data, Zenodo. :doi:`10.5281/zenodo.5560937`
 
 """
 from __future__ import annotations 
 
 import inspect
+import copy
 import warnings
 from pprint import pprint
 
 import numpy as np
 import pandas as pd 
  
+from .._watexlog import watexlog
 from ..exlib.sklearn import  (
     Pipeline,
     FeatureUnion, 
@@ -27,7 +44,9 @@ from ..exlib.sklearn import  (
     OrdinalEncoder, 
     OneHotEncoder,
     LabelBinarizer,
-    LabelEncoder
+    LabelEncoder, 
+    MinMaxScaler,
+    PCA,
 ) 
 from ..typing import (
     Tuple, 
@@ -40,28 +59,21 @@ from ..typing import (
     DataFrame, 
     )
 
-from .._watexlog import watexlog
 from ..transformers import (
     DataFrameSelector,
     CombinedAttributesAdder, 
     CategorizeFeatures,
     StratifiedWithCategoryAdder
 )
-
-from ..utils.coreutils import (
-    _is_readable 
-    )
-from ..utils.funcutils import ( 
-    smart_format,
-    
-    )
+from .features import categorize_flow 
+from ..utils.coreutils import _is_readable 
+from ..utils.funcutils import smart_format,to_numeric_dtypes
 from ..utils.mlutils import ( 
     _assert_sl_target, 
     formatGenericObj,
-    split_train_test_by_id, 
-    
+    split_train_test_by_id,
+    selectfeatures
     )
-from .features import categorize_flow 
 
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -110,16 +122,29 @@ class BaseSteps(object):
         multiple runs, even if dataset is refreshed. Use test by id to hash 
         training and test sets when data is splitting. 
         
-    add_attributes: bool, 
+    add_attributes: list, optional
         Experience the combinaison <numerical> attributes. 
+        List of features for combinaison. Decide to combine features to create
+        a new feature value from `operator` parameters. By default, the 
+        combinaison is ratio of the given attribute/numerical features. 
+        For instance, ``attribute_names=['lwi', 'ohmS']`` will divide the 
+        feature 'lwi' by 'ohmS'.
         
-    attributes_ix: list 
+   operator: str, default ='/' 
+        Type of operation to perform when combining features. 
+        Can be ['/', '+', '-', '*', '%']  
+        
+    attribute_indexes: list of int,
         List of attributes indexes to combines. For instance:: 
             
-            attributes_ix = [(1, 0), (4,3)] 
+            attribute_indexes = [1, 0] # or [4, 3]
 
-        The operator by default is `division` . For more details, please 
-        refer to :doc:`~.bases.transformers.CombinedAttributesAdder`
+        The operator by default is `division` . Indexes of each 
+        attribute/feature for experiencing combinaison. User warning should 
+        raise if any index does match the dataframe of array 
+        columns.For more details, refer to 
+        :class:`~watex.transformers.CombinedAttributesAdder`
+ 
     imputer_strategy: str 
         Type of strategy to replace the missing values. Refer to 
         :class:`~.sklearn.SimpleImputer`. Default is ``median``.
@@ -154,7 +179,7 @@ class BaseSteps(object):
     encoding and data scaling using the pipeline via a parameter `pipeline`. 
     If None pipeline is given, the default pipline is triggered.The features
     engineering’s consist to aggregate features with experiencing combinations
-    of attributes into promising new features using the params `attributes_ix`
+    of attributes into promising new features using the params `attribute_indexes`
     after setting the argument `add_attributes` to ``True``. The final step of
     transformation consists of features scaling. The type of scaling used 
     by default in this module is the standardization because it less affected 
@@ -178,37 +203,39 @@ class BaseSteps(object):
     ../datasets/config.py
     
     """
-    def __init__(self,
-                 tname: Optional [str] = None, 
-                 return_all=True,
-                 drop_features: Optional[List [str]] = None, 
-                 categorizefeature_props: Tuple [str, List[int, str]] = None,
-                 add_attributes: bool = True, 
-                 attributes_ix: List[Tuple[int]]= None, 
-                 imputer_strategy: str ='median', 
-                 missing_values: float | int  = np.nan, 
-                 pipeline: Optional[F] = None,
-                 test_size: float = 0.2,
-                 hash: bool = False,
-                 random_state: int = 42,
-                 verbose: int =0,
-                 **kwargs
-                 ):
+    def __init__(
+            self,
+            tname: Optional [str] = None, 
+            return_all=True,
+            drop_features: Optional[List [str]] = None, 
+            categorizefeature_props: Tuple [str, List[int, str]] = None,
+            add_attributes: bool = True, 
+            attribute_indexes: List[Tuple[int]]= None, 
+            operator:str='/', 
+            imputer_strategy: str ='median', 
+            missing_values: float | int  = np.nan, 
+            pipeline: Optional[F] = None,
+            test_size: float = 0.2,
+            hash: bool = False,
+            random_state: int = 42,
+            verbose: int =0,
+            **kwargs
+       ):
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         
-        self.tname_= tname 
-        self.drop_features =drop_features 
-        self.categorizefeatures_props = categorizefeature_props 
-        self.return_train = return_all
-        self.add_attributes = add_attributes 
-        self.attributes_ix = attributes_ix
-        self.imputer_strategy = imputer_strategy 
-        self.missing_values = missing_values
-        self.pipeline =pipeline 
-        self.test_size =test_size
+        self.tname_=tname 
+        self.drop_features=drop_features 
+        self.categorizefeatures_props=categorizefeature_props 
+        self.return_train=return_all
+        self.add_attributes=add_attributes 
+        self.attribute_indexes=attribute_indexes
+        self.imputer_strategy=imputer_strategy 
+        self.missing_values=missing_values
+        self.pipeline=pipeline 
+        self.test_size=test_size
         self.hash=hash
-        self.random_state =random_state
-        self.verbose =verbose
+        self.random_state=random_state
+        self.verbose=verbose
 
         self.data_ = None 
         for key in list(kwargs.keys()):
@@ -321,27 +348,28 @@ class BaseSteps(object):
             
         # --> experiencing features combinaisons 
         if self.add_attributes : 
-            if self.attributes_ix is  None: 
+            if self.attribute_indexes is  None: 
                 if self.verbose > 3: 
                     warnings.warn( 'Attributes indexes|names are None.'
                                   ' Set attributes indexes or names to experience'
                                   ' the attributes combinaisons.'
                                   )
-            elif self.attributes_ix is  not None:
+            elif self.attribute_indexes is  not None:
                 if self.verbose > 7 : 
                     try:
                         
                         self._logging.info('Experiencing combinaisons attributes'
                                           ' {0}.'.format(formatGenericObj (
-                                              self.attributes_ix)).format(
-                                                  *self.attributes_ix))
+                                              self.attribute_indexes)).format(
+                                                  *self.attribute_indexes))
                     except : 
                         self._logging.info('Experiencing combinaisons attributes'
-                                          ' {0}.'.format(self.attributes_ix))
+                                          ' {0}.'.format(self.attribute_indexes))
                                           
                 cObj = CombinedAttributesAdder(
-                    add_attributes=self.add_attributes, 
-                    attributes_ix=self.attributes_ix )
+                    attribute_indexes= self.attribute_indexes , 
+                    attribute_names =self.add_attributes
+                                )
                 X=cObj.fit_transform(X)  # return numpy array        
                     
                # get the attributes and create new pdFrame with new attributes 
@@ -414,13 +442,13 @@ class BaseSteps(object):
             self.y0=y 
         
         if self.pipeline is None :
-            _, _, self.pipeline, self.y_prepared= defaultPipeline(
+            _, _, self.pipeline, self.y_prepared= default_pipeline(
                 X= self.X0, 
                 y = self.y0,
                 **pkws
                 )
         # keep another type of encodage using the Ordinal encoder           
-        _, _, self.pca_pipeline,_ = defaultPipeline(
+        _, _, self.pca_pipeline,_ = default_pipeline(
             X= self.X0, 
             pca=True,
             **pkws
@@ -616,7 +644,7 @@ class BaseSteps(object):
         """ keep the stratified label y"""
         return self.__y 
     
-def defaultPipeline(X,  num_attributes, cat_attributes, y=None,
+def default_pipeline(X,  num_attributes, cat_attributes, y=None,
                     labelEncodage='LabelEncoder', **kws): 
     """ Default pipeline use for preprocessing the`Bagoue` dataset  used'
     for implement of this workflow. 
@@ -682,3 +710,263 @@ def defaultPipeline(X,  num_attributes, cat_attributes, y=None,
         ])
     
     return num_pipeline, cat_pipeline, full_pipeline, y   
+
+def default_preparation(
+        X: NDArray| DataFrame, 
+        imputer_strategy: Optional[str] =None,
+        missing_values : float =np.nan,
+        num_indexes: List[int] =None, 
+        cat_indexes: List[int] =None, 
+        scaler: Optional[str] =None ,
+        encode_cat_features: bool = True, 
+        columns:List[str] =None, 
+        )-> NDArray: 
+    
+    """ Automate the data preparation to be ready for PCA analyses  
+
+    Data preparation consist to imput missing values, scales the numerical 
+    features and encoded the categorial features. 
+    
+    Parameters 
+    ----------
+    X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+        Training set; Denotes data that is observed at training and 
+        prediction time, used as independent variables in learning. 
+        When a matrix, each sample may be represented by a feature vector, 
+        or a vector of precomputed (dis)similarity with each training 
+        sample. :code:`X` may also not be a matrix, and may require a 
+        feature extractor or a pairwise metric to turn it into one  before 
+        learning a model.
+        
+    imputer_strategy: str, default ='most_frequent' 
+        Strategy proposed to replace the missing  values. Can be ``mean`` or
+        ``median`` or ``most_frequent``. 
+        Be aware , it `mean` or `median` are given, be sure that the data 
+        are not composed of categorial fatures. 
+        
+    missing_values: float
+        Value to replace the missing value in `X` ndarray or dataframe. 
+        Default is ``np.nan`
+    num_indexes: 
+        list of indexes to select the numerical data if categorical data  
+        columns exist in  `X` ndarray. 
+        
+    cat_indexes: 
+        list of indexes to select the categorical data if numerical data 
+        columns exists in  `X` ndarray. 
+        
+    scaler: str, default, is
+        type of feature scaling applied on numerical features. 
+        Can be ``MinMaxScaler``. Default is ``StandardScaler``
+        
+    encode_cat_features: bool
+        Encode categorical data or text attributes. 
+        Default is :class:`sklearn.preprocessing.OrdinalEncoder`. 
+        
+    columns: list, Optional, 
+        list of columns to compose a dataframe if `X` is given as 
+        an `NDAarray`.
+        
+    Returns
+    --------
+    X: NDArray | Dataframe
+     Notes
+     -----
+     `num_indexes` and `cat_indexes` are mainly used when type of data `x` is 
+     np.ndarray(m, nf) where `m` is number of instances or examples and 
+     `nf` if number of attributes or features. `selector_` is used  for 
+     dataframe preprocessing.
+    """
+    
+    imputer_strategy = imputer_strategy or 'most_frequent'
+    scaler = scaler or 'StandardScaler'
+    
+    sc=copy.deepcopy(scaler)
+    scaler = str(scaler).lower().strip() 
+    if scaler.find ('std')>=0 or scaler.find ('stand')>=0: 
+        scaler ='std'
+    if scaler .find('minmax')>=0: scaler ='minmax'
+    if scaler not in ('std', 'minmax'): 
+        raise ValueError(
+            f"Expect 'MinMaxScaler' or 'StandardScaler' not {sc!r}")
+        
+    #regex = re.compile (r"[''|NAN|np.nan", re.IGNORECASE )
+    is_frame =False 
+    if isinstance(X, pd.DataFrame): 
+        is_frame= True 
+        
+    elif isinstance(X, np.ndarray): 
+        # if cat_indexes are given whereas num_indexes is None
+        # considere the remain indexes are cat_index and vice-versa 
+        if cat_indexes is not None: 
+            num_indexes = list(set([i for i in range(X.shape[1])]
+                                   ).difference( set(cat_indexes)))
+               
+        if num_indexes is not None: 
+             cat_indexes = list(set([i for i in range(X.shape[1])]
+                                    ).difference( set(num_indexes)))
+               
+        if num_indexes is not None: 
+            X_num = np.float(X[:, num_indexes])
+            
+        if cat_indexes is not None: 
+            X_cat =X[:, cat_indexes]
+        
+    # --> processing numerical features 
+    numcols =list()
+    if is_frame:
+        c = X.columns 
+        # replace empty string by Nan 
+        X= X.replace(r'^\s*$', np.nan, regex=True) 
+    # replace nan by np.nan by the most frequent no matter 
+    # the data contain categorical or numerical. 
+    # if stragey is other than most_frequent, be sure that all 
+    # the data are numerical data. 
+    imputer_obj = SimpleImputer(missing_values=missing_values,
+                                strategy=imputer_strategy)
+    X =imputer_obj.fit_transform(X)
+    if is_frame: 
+        # reconvert data to frame
+        # and convert to numerical dtypes 
+        X = to_numeric_dtypes(X, columns= c )
+        # select feature before triggering 
+        # the preprocessing 
+        #-> coerce to True , return dataframe if columns is None 
+        X = selectfeatures(X, features= columns, coerce =True ) 
+        X_num = selectfeatures(X, include= 'number')
+        X_cat = selectfeatures(X, exclude='number')
+        catcols = list(X_cat.columns) 
+        numcols = list(X_num.columns)
+        
+        if encode_cat_features: 
+             encodeObj= OrdinalEncoder()
+             X_cat= encodeObj.fit_transform(X_cat)
+    # scale the dataset 
+    if scaler=='std': 
+        scalerObj =StandardScaler()
+        X_num= scalerObj .fit_transform(X_num)
+        
+    if scaler=='minmax':
+        scalerObj =MinMaxScaler()
+        X_num= scalerObj .fit_transform(X_num)
+
+    X= np.c_[X_num, X_cat]
+
+    if is_frame: 
+        X= pd.DataFrame (X, columns = numcols + catcols)
+        
+    # for consistency replace all np.nan by median values 
+     # replace nan by np.nan
+    impObj = SimpleImputer(missing_values=missing_values,
+                           strategy=imputer_strategy)
+    X =impObj.fit_transform(X )
+    
+    if is_frame: 
+        # return dataframe like it was 
+        X= pd.DataFrame (X, columns = numcols + catcols)
+        
+    return X 
+    
+def base_transform(
+    X: NDArray | DataFrame, 
+    n_components: float|int=0.95,
+    attr_names: List[str] =None,
+    attr_indexes:List[int]= None, 
+    operator:str= None, 
+    view: bool =False,
+    verbose:int=None, 
+    **kws 
+    )-> NDArray: 
+
+    if (attr_names  and attr_indexes) is None: 
+        warnings.warn(
+            "NoneType can not experienced attributes combinaisons."
+            " Attributes indexes for combinaison must be supplied.")
+          
+    if (attr_names or attr_indexes ) : 
+        operator = operator or '/'
+        cObj = CombinedAttributesAdder(attribute_names=attr_names, 
+                                   attribute_indexes=attr_indexes, 
+                                   operator=operator )
+        X=cObj.fit_transform(X) 
+        X = pd.DataFrame (X, columns = cObj.attribute_names_ )
+    # reduce dimension of the datasets 
+    
+    X = default_preparation(X=X, **kws)
+    pca =PCA(n_components=n_components)
+    pca.fit_transform(X)
+    cumsum = np.cumsum(pca.explained_variance_ratio_)
+
+    if view: 
+        from watex.view import viewtemplate 
+        viewtemplate (cumsum, xlabel ='Dimensions', 
+                      ylabel='Explained variance', 
+                      label='Explained variance curve'
+                      )
+        
+    return X 
+
+base_transform.__doc__="""\
+Tranformed X using PCA and plot variance ratio by experiencing 
+the attributes combinaisons. 
+
+Create a new attributes using features index or litteral string operator.
+and prepared data for `PCA` variance plot.
+
+Parameters 
+-----------
+X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+    Training set; Denotes data that is observed at training and 
+    prediction time, used as independent variables in learning. 
+    When a matrix, each sample may be represented by a feature vector, 
+    or a vector of precomputed (dis)similarity with each training 
+    sample. :code:`X` may also not be a matrix, and may require a 
+    feature extractor or a pairwise metric to turn it into one  before 
+    learning a model.
+    
+n_components: float oR int
+    Number of dimension to preserve. If`n_components` 
+    is ranged between float 0. to 1., it indicated the number of 
+    variance ratio to preserve. If ``None`` as default value 
+    the number of variance to preserve is ``95%``.
+
+attr_names: list of str , optional
+    List of features for combinaison. Decide to combine new feature
+    values by from `operator` parameters. By default, the combinaison it 
+    is ratio of the given attribute/numerical features. For instance, 
+    ``attribute_names=['lwi', 'ohmS']`` will divide the feature 'lwi' by 
+    'ohmS'.
+                
+attr_indexes : list of int,
+    index of each feature/feature for experience combinaison. User 
+    warning should raise if any index does match the dataframe of array 
+    columns.
+        
+operator: str, default ='/' 
+    Type of operation to perform when combining features. Can be 
+    ['/', '+', '-', '*', '%']    
+    
+Returns 
+-------
+    X: n_darray, or pd.dataframe
+    New array of dataframe with new attributes combined. 
+    
+Examples
+--------
+>>> from from watex.view.mlplot import MLPlots
+>>> from watex.datasets import fetch_data 
+>>> from watex.analysis import pcaVarianceRatio
+>>> plot_kws = {'lc':(.9,0.,.8),
+        'lw' :3.,           # line width 
+        'font_size':7.,
+        'show_grid' :True,        # visualize grid 
+       'galpha' :0.2,              # grid alpha 
+       'glw':.5,                   # grid line width 
+       'gwhich' :'major',          # minor ticks
+        # 'fs' :3.,                 # coeff to manage font_size 
+        }
+>>> X, _ = fetch_data ('Bagoue data analysis')
+>>> mlObj =MLPlots(**plot_kws)
+>>> pcaVarianceRatio(mlObj,X, plot_var_ratio=True)
+
+"""

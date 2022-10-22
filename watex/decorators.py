@@ -3,14 +3,12 @@
 #   Author: LKouadio alias @Daniel <etanoyau@gmail.com>
 
 from __future__ import print_function 
-
 import functools
 import inspect
 import os
 import copy 
 import shutil
 import warnings
-
 import datetime 
 import numpy as np
 import  matplotlib.pyplot as plt 
@@ -1040,9 +1038,9 @@ class catmapflow2:
             if len(self.cat_range_values) != len(self.cat_classes): 
             
                 self._logging.error(
-                    'Length of `cat_range_values` and `cat_classes` provided '
-                    'must be the same length not ``{0}`` and'
-                    ' ``{1}`` respectively.'.format(len(self.cat_range_values),
+                    "Length of  categorical `values` and `classes` provided"
+                    " must be consistent; '{0}' and '{1}' are given "
+                    "respectively.".format(len(self.cat_range_values),
                                                     len(self.cat_classes)))
             try : 
 

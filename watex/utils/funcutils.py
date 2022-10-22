@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Edited date: Wed Jul  7 22:23:02 2021 
-#   Revised date: Wed Aug  10 18:20:01 2022 
 
 from __future__ import annotations 
 
@@ -26,7 +24,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from .._watexlog import watexlog
-
 from ..typing import ( 
     Tuple,
     Dict,
@@ -39,6 +36,7 @@ from ..typing import (
     List ,
     DataFrame, 
     Sub,
+    NDArray, 
     )
 from ..property import P
 from ..exceptions import ( 
@@ -78,6 +76,108 @@ except ImportError:
     
 #-----
 
+
+def to_numeric_dtypes (
+        arr: NDArray | DataFrame, *, columns:List[str] = None, 
+        return_feature_types:bool =False , missing_values:float = np.nan, 
+    )-> DataFrame : 
+    """ Convert array to dataframe and coerce arguments to appropriate dtypes. 
+    
+    Parameters 
+    -----------
+    arr: Ndarray or Dataframe, shape (M=samples, N=features)
+        Array of dataframe to create 
+    columns: list of str, optional 
+        Usefull to create a dataframe when array is given. Be aware to fit the 
+        number of array columns (shape[1])
+    return_feature_types: bool, default=False, 
+        return the list of numerical and categorial features
+    missing_values: float: 
+        Replace the missing or empty string if exist in the dataframe.
+    Returns 
+    --------
+    df or (df, nf, cf): Dataframe of values casted to numeric types 
+        also return `nf` and `cf`  if `return_feature_types` is set
+        to``True``.
+    
+    Examples
+    ---------
+    >>> from watex.datasets.dload import load_bagoue
+    >>> from watex.utils.funcutils import to_numeric_dtypes
+    >>> X, y = load_bagoue (as_frame =True ) 
+    >>> X0 =X[['shape', 'power', 'magnitude']]
+    >>> X0.dtypes 
+    ... shape        object
+        power        object
+        magnitude    object
+        dtype: object
+    >>> df = to_numeric_dtypes(X0)
+    >>> df.dtypes 
+    ... shape         object
+        power        float64
+        magnitude    float64
+        dtype: object
+        
+    """
+    if isinstance (arr, np.ndarray) and columns is None: 
+        warnings.warn("Array is given while columns is not supplied.")
+    # reconvert data to frame 
+    df = pd.DataFrame (arr, columns =columns  
+                       ) if isinstance (arr, np.ndarray) else arr 
+    
+    nf,cf =[], []
+    #replace empty string by Nan if NaN exist in dataframe  
+    df= df.replace(r'^\s*$', missing_values, regex=True)
+    
+    # check the possibililty to cast all 
+    # the numerical data 
+    for serie in df.columns: 
+        try: 
+            df= df.astype(
+                {serie:np.float64})
+            nf.append(serie)
+        except:
+            cf.append(serie)
+            continue
+        
+    return (df, nf, cf) if return_feature_types else df 
+
+            
+def parse_attrs (attr, /, regex=None ): 
+    """ Parse attributes using the regular expression.
+    
+    Remove all string non-alphanumeric and some operator indicators,  and 
+    fetch attributes names. 
+    
+    Parameters 
+    -----------
+    
+    attr: str, text litteral containing the attributes 
+        names 
+        
+    regex: `re` object, default is 
+        Regular expresion object. the default is:: 
+            
+            >>> import re 
+            >>> re.compile (r'per|mod|mul|add|sub|[_#&*@!_,;\s-]\s*', 
+                                flags=re.IGNORECASE) 
+    Returns
+    -------
+    attr: List of attributes 
+    
+    Examples
+    ---------
+    >>> from watex.utils.funcutils import parse_attrs 
+    >>> parse_attrs('lwi_sub_ohmSmulmagnitude')
+    ... ['lwi', 'ohmS', 'magnitude']
+    
+    
+    """
+    regex = regex or re.compile (r'per|mod|mul|add|sub|[_#&*@!_,;\s-]\s*', 
+                        flags=re.IGNORECASE) 
+    attr= list(filter (None, regex.split(attr)))
+    return attr 
+    
 def url_checker (url: str , install:bool = False, 
                       raises:str ='ignore')-> bool : 
     """
@@ -416,7 +516,10 @@ def smart_strobj_recognition(
     # sanitize our dummny container item ... 
     #container_ = [it.strip(s) for it in container_ for s in stripitems ]
     if name.lower() in container_: 
-        ix = container_.index (name)
+        try:
+            ix = container_.index (name)
+        except ValueError: 
+            raise AttributeError("{name!r} attribute is not defined")
         
     if deep and ix is None:
         # go deeper in the search... 
@@ -2978,8 +3081,60 @@ def random_state_validator(seed):
     )
 
 
-  
+def is_iterable (y, /)->bool: 
+    """ Asserts iterable object and returns 'True' or 'False' """
+    return hasattr (y, '__iter__') 
+
     
+def str2columns (text, /, regex=None , pattern = None): 
+    """Split text using the non-alphanumeric makrkers using regular expression 
+    Remove all string non-alphanumeric and some operator indicators,  and 
+    fetch attributes names. 
+    
+    Parameters 
+    -----------
+    
+    text: str, 
+        text litteral containing the columns the names to retrieve
+        
+    regex: `re` object, default is 
+        Regular expresion object. the default is:: 
+            
+            >>> import re 
+            >>> re.compile (r'[_#&*@!_,;\s-]\s*', flags=re.IGNORECASE) 
+    pattern: str, default = '[_#&*@!_,;\s-]\s*'
+        The base pattern to split the text into a columns
+        
+    Returns
+    -------
+    attr: List of attributes 
+    
+    Examples
+    ---------
+    >>> from watex.utils.funcutils import str2columns 
+    >>> text = ('this.is the text to split. It is an: example of; splitting str - to text.')
+    >>> tsplitted= str2columns (text ) 
+    ... ['this',
+         'is',
+         'the',
+         'text',
+         'to',
+         'split',
+         'It',
+         'is',
+         'an:',
+         'example',
+         'of',
+         'splitting',
+         'str',
+         'to',
+         'text']
+
+    """
+    pattern = r'[_#&.*@!_,;\s-]\s*'
+    regex = regex or re.compile (pattern, flags=re.IGNORECASE) 
+    text= list(filter (None, regex.split(text)))
+    return text 
     
     
     

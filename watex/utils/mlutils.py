@@ -61,6 +61,8 @@ from .funcutils import (
     _assert_all_types, 
     savepath_, 
     smart_format, 
+    str2columns, 
+    is_iterable
 )
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -94,6 +96,7 @@ _estimators ={
      'extree': ['ExtraTreesClassifier', 'extree', 'xtree', 'xtr']
         }  
 
+#------
 def evalModel(
         model: F, 
         X:NDArray |DataFrame, 
@@ -931,6 +934,7 @@ def split_train_test_by_id(
         data:DataFrame,
         test_ratio:float,
         id_column:Optional[List[int]]=None,
+        keep_colindex:bool=True, 
          hash : F =hashlib.md5
          )-> Tuple[ Sub[DataFrame[DType[T]]], Sub[DataFrame[DType[T]]]] : 
     """
@@ -954,6 +958,9 @@ def split_train_test_by_id(
         
     ids = data[id_column]
     in_test_set =ids.apply(lambda id_:test_set_check_id(id_, test_ratio, hash))
+    if not keep_colindex: 
+        data.drop (columns ='index', inplace =True )
+        
     return data.loc[~in_test_set], data.loc[in_test_set]
 
 def discretizeCategoriesforStratification(
@@ -1632,10 +1639,337 @@ def findCatandNumFeatures(
         list(catnames), list(num.columns)  )
    
         
+def cattarget(arr :ArrayLike |Series , /, func: F  = None,  labels= None) : 
+    """ Categorize array to number of labels. 
+    
+    Classifier numerical values according to the given label values. Labels 
+    are a list of integers where each integer is a group of unique identifier  
+    of a sample in the dataset. 
+    
+    Parameters 
+    -----------
+    arr: array-like |pandas.Series 
+        array or series containing numerical values. If a non-numerical values 
+        is given , an errors will raises. 
+    func: Callable, 
+        Function to categorize the target y.  
+    labels: int, list of int, 
+        if an integer value is given, it should be considered as the number 
+        of category to split 'y'. For instance ``label=3`` and applied on 
+        the first ten number, the labels values should be ``[0, 1, 2]``. 
+        If labels are given as a list, items must be self-contain in the 
+        target 'y'.
+        
+    Return
+    --------
+    arr: Arraylike |pandas.Series
+        The category array with unique identifer labels 
+        
+    Examples 
+    --------
+
+    >>> from watex.utils.mlutils import cattarget 
+    >>> def binfunc(v): 
+            if v < 3 : return 0 
+            else : return 1 
+    >>> arr = np.arange (10 )
+    >>> arr 
+    ... array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    >>> target = cattarget(arr, func =binfunc)
+    ... array([0, 0, 0, 1, 1, 1, 1, 1, 1, 1], dtype=int64)
+    >>> cattarget(arr, labels =3 )
+    ... array([0, 0, 0, 0, 1, 1, 1, 2, 2, 2])
+    >>> cattarget(arr, labels =[0 ,  2,  4] )
+    ... array([0, 0, 0, 2, 2, 4, 4, 4, 4, 4])
+    
+    """
+    arr = _assert_all_types(arr, np.ndarray, pd.Series) 
+    is_arr =False 
+    if isinstance (arr, np.ndarray ) :
+        arr = pd.Series (arr  , name = 'none') 
+        is_arr =True 
+        
+    if func is not None: 
+        if not  inspect.isfunction (func): 
+            raise TypeError (
+                f'Expect a function but got {type(func).__name__!r}')
+            
+        arr= arr.apply (func )
+        
+        return  arr.values  if is_arr else arr   
+    
+    name = arr.name 
+    arr = arr.values 
+
+    if labels is not None: 
+        arr = _cattarget (arr , labels)
+
+    return arr  if is_arr else pd.Series (arr, name =name  )
+
+def _cattarget (ar , labels ): 
+    """ A shadow function of :func:`watex.utils.funcutils.cattarget`. 
+    
+    :param ar: array-like of numerical values 
+    :param labels: int or list of int- the number of category to split 'ar'
+        into. 
+    :return: array-like of int , array of categorized values.  
+    """
+    # assert labels 
+    if isinstance(labels, (list, tuple, np.ndarray)):
+        labels =[int (_assert_all_types(lab, int, float)) 
+                 for lab in labels ]
+        labels = np.array (labels , dtype = np.int32 ) 
+        cc = labels 
+        # assert whether element is on the array 
+        s = set (ar).intersection(labels) 
+        
+        if len(s) != len(labels): 
+            mv = set(labels).difference (s) 
+            
+            fmt = [f"{'s' if len(mv) >1 else''} ", mv,
+                   f"{'is' if len(mv) <=1 else'are'}"]
+            warnings.warn("Label values must be array self-contain item. "
+                           "Label{0} {1} {2} missing in the array.".format(
+                               *fmt)
+                          )
+            raise ValueError (
+                "label value{0} {1} {2} missing in the array.".format(*fmt))
+    else : 
+        labels = int (_assert_all_types(labels , int, float))
+        labels = np.linspace ( min(ar), max (ar),
+                              labels + 1 ) + .00000001 
+        
+        # split arr and get the range of with max bound 
+        cc = np.arange (len(labels))
+        # array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        # array([0, 0, 0, 0, 1, 1, 1, 2, 2, 2]) # 3 classes 
+        #  array([ 0.        ,  3.33333333,  6.66666667, 10.        ]) + 
+    # to avoid the index bound error 
+    # append nan value to lengthen arr 
+    
+    r = np.append (labels , np.nan ) 
+        
+    l= list() 
+    for i in range (len(r)): 
+        if i == len(r) -2 : 
+            l.append (np.repeat ( cc[i], len(ar))) 
+            break 
+        ix = np.argwhere (( ar <= r [ i + 1 ]))
+        l.append (np.repeat (cc[i], len (ar[ix ])))  
+        # remove the value ready for i label 
+        # categorization 
+        ar = np.delete (ar, ix  )
+        
+    return np.hstack (l).astype (np.int32)        
         
         
+def projection_validator (X, Xt=None, columns =None ):
+    """ Retrieve x, y coordinates of a datraframe ( X, Xt ) from columns 
+    names or indexes. 
+    
+    If X or Xt are given as an arrays, `columns` may hold integers from 
+    selecting the the coordinates 'x' and 'y'. 
+    
+    Parameters 
+    ---------
+    X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+        training set; Denotes data that is observed at training and prediction 
+        time, used as independent variables in learning. The notation 
+        is uppercase to denote that it is ordinarily a matrix. When a matrix, 
+        each sample may be represented by a feature vector, or a vector of 
+        precomputed (dis)similarity with each training sample. 
+
+    Xt: Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+        Shorthand for "test set"; data that is observed at testing and 
+        prediction time, used as independent variables in learning. The 
+        notation is uppercase to denote that it is ordinarily a matrix.
+    columns: list of str or index, optional 
+        columns is usefull what a dataframe is given  with a dimension size 
+        greater than 2. If such data is passed to `X` or `Xt`, columns must
+        hold the name to considered as 'easting', 'northing' when UTM 
+        coordinates are given or 'latitude' , 'longitude' when latlon are 
+        given. 
+        If dimension size is greater than 2 and columns is None , an error 
+        will raises to prevent the user to provide the index for 'y' and 'x' 
+        coordinated retrieval. 
+      
+    Returns 
+    -------
+    ( x, y, xt, yt ), (xname, yname, xtname, ytname), Tuple of coordinate 
+        arrays and coordinate labels 
+ 
+    """
+    # initialize arrays and names 
+    init_none = [None for i in range (4)]
+    x,y, xt, yt = init_none
+    xname,yname, xtname, ytname = init_none 
+    
+    m="{0} must be an iterable object, not {1!r}"
+    ms= ("{!r} is given while columns are not supplied. set the list of "
+        " feature names or indexes to fetch 'x' and 'y' coordinate arrays." )
+    
+    # args = list(args) + [None for i in range (5)]
+    # x, y, xt, yt, *_ = args 
+    X =_assert_all_types(X, np.ndarray, pd.DataFrame ) 
+    
+    if Xt is not None: 
+        Xt = _assert_all_types(Xt, np.ndarray, pd.DataFrame)
+        
+    if columns is not None: 
+        if isinstance (columns, str): 
+            columns = str2columns(columns )
+        
+        if not is_iterable(columns): 
+            raise ValueError(m.format('columns', type(columns).__name__))
+        
+        columns = list(columns) + [ None for i in range (5)]
+        xname , yname, xtname, ytname , *_= columns 
+
+    if isinstance(X, pd.DataFrame):
+      
+        x, xname, y, yname = _validate_columns(X, xname, yname)
+        
+    elif isinstance(X, np.ndarray):
+        x, y = _is_valid_coordinate_arrays (X, xname, yname )    
         
         
+    if isinstance (Xt, pd.DataFrame) :
+        # the test set holds the same feature names
+        # as the train set 
+        if xtname is None: 
+            xtname = xname
+        if ytname is None: 
+            ytname = yname 
+            
+        xt, xtname, yt, ytname = _validate_columns(X, xname, yname)
+
+    elif isinstance(Xt, np.ndarray):
+        
+        if xtname is None: 
+            xtname = xname
+        if ytname is None: 
+            ytname = yname 
+            
+        xt, yt = _is_valid_coordinate_arrays (Xt, xtname, ytname , 'test')
+        
+    if (x is None) or (y is None): 
+        raise ValueError (ms.format('X'))
+    if Xt is not None: 
+        if (xt is None) or (yt is None): 
+            warnings.warn (ms.format('X'))
+
+    return  (x, y , xt, yt ) , (
+        xname, yname, xtname, ytname ) 
+    
+
+def _validate_columns (df, xni, yni ): 
+    """ Validate the feature name  in the dataframe using either the 
+    string litteral name of the index position in the columns.
+    
+    :param df: pandas.DataFrame- Dataframe with feature names as columns. 
+    :param xni: str, int- feature name  or position index in the columns for 
+        x-coordinate 
+    :param yni: str, int- feature name  or position index in the columns for 
+        y-coordinate 
+    
+    :returns: (x, ni) Tuple of (pandas.Series, and names) for x and y 
+        coordinates respectively.
+    
+    """
+    def _r (ni): 
+        if isinstance(ni, str): # feature name
+            existfeatures(df, ni ) 
+            s = df[ni]  
+        elif isinstance (ni, (int, float)):# feature index
+            s= df.iloc[:, int(ni)] 
+            ni = s.name 
+        return s, ni 
+        
+    xs , ys = [None, None ]
+    if df.ndim ==1: 
+        raise ValueError ("Expect a dataframe of two dimensions, got '1'")
+        
+    elif df.shape[1]==2: 
+       warnings.warn("columns are not specify while array has dimension"
+                     "equals to 2. Expect indexes 0 and 1 for (x, y)"
+                     "coordinates respectively.")
+       xni= df.iloc[:, 0].name 
+       yni= df.iloc[:, 1].name 
+    else: 
+        ms = ("The matrix of features is greater than 2. Need column names or"
+              " indexes to  retrieve the 'x' and 'y' coordinate arrays." ) 
+        e =' Only {!r} is given.' 
+        me=''
+        if xni is not None: 
+            me =e.format(xni)
+        if yni is not None: 
+            me=e.format(yni)
+           
+        if (xni is None) or (yni is None ): 
+            raise ValueError (ms + me)
+            
+    xs, xni = _r (xni) ;  ys, yni = _r (yni)
+  
+    return xs, xni , ys, yni 
+
+
+def _validate_array_indexer (arr, index): 
+    """ Select the appropriate coordinates (x,y) arrays from indexes.  
+    
+    Index is used  to retrieve the array of (x, y) coordinates if dimension 
+    of `arr` is greater than 2. Since we expect x, y coordinate for projecting 
+    coordinates, 1-d  array `X` is not acceptable. 
+    
+    :param arr: ndarray (n_samples, n_features) - if nfeatures is greater than 
+        2 , indexes is needed to fetch the x, y coordinates . 
+    :param index: int, index to fetch x, and y coordinates in multi-dimension
+        arrays. 
+    :returns: arr- x or y coordinates arrays. 
+
+    """
+    if arr.ndim ==1: 
+        raise ValueError ("Expect an array of two dimensions.")
+    if not isinstance (index, (float, int)): 
+        raise ValueError("index is needed to coordinate array with "
+                         "dimension greater than 2.")
+        
+    return arr[:, int (index) ]
+
+def _is_valid_coordinate_arrays (arr, xind, yind, ptype ='train'): 
+    """ Check whether array is suitable for projecting i.e. whether 
+    x and y (both coordinates) can be retrived from `arr`.
+    
+    :param arr: ndarray (n_samples, n_features) - if nfeatures is greater than 
+        2 , indexes is needed to fetch the x, y coordinates . 
+        
+    :param xind: int, index to fetch x-coordinate in multi-dimension
+        arrays. 
+    :param yind: int, index to fetch y-coordinate in multi-dimension
+        arrays
+    :param ptype: str, default='train', specify whether the array passed is 
+        training or test sets. 
+    :returns: (x, y)- array-like of x and y coordinates. 
+    
+    """
+    xn, yn =('x', 'y') if ptype =='train' else ('xt', 'yt') 
+    if arr.ndim ==1: 
+        raise ValueError ("Expect an array of two dimensions.")
+        
+    elif arr.shape[1] ==2 : 
+        x, y = arr[:, 0], arr[:, 1]
+        
+    else :
+        msg=("The matrix of features is greater than 2; Need index to  "
+             " retrieve the {!r} coordinate array in param 'column'.")
+        
+        if xind is None: 
+            raise ValueError(msg.format(xn))
+        else : x = _validate_array_indexer(arr, xind)
+        if yind is None : 
+            raise ValueError(msg.format(yn))
+        else : y = _validate_array_indexer(arr, yind)
+        
+    return x, y         
         
         
         

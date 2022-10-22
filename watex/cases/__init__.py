@@ -14,7 +14,9 @@ evidence problem.
 """
 from .prepare import ( 
     BaseSteps, 
-    defaultPipeline
+    default_pipeline, 
+    default_preparation, 
+    base_transform 
     )
 from .processing import ( 
     Preprocessing , 
@@ -30,7 +32,9 @@ from .features import (
 
 __all__=[
     "BaseSteps", 
-    "defaultPipeline",
+    "default_pipeline",
+    "default_preparation", 
+    "base_transform" , 
     "Preprocessing" , 
     "Processing", 
     "BaseModel",

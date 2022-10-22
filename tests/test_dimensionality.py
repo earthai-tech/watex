@@ -21,8 +21,7 @@ from tests.__init__ import (
     ) 
 
 from watex.analysis.dimensionality import (
-    Reducers,
-    plot_projection, 
+    nPCA, kPCA, LLE, iPCA, 
     get_best_kPCA_params
     )
 
@@ -37,7 +36,6 @@ class TestReducers(unittest.TestCase):
     y=y
     n_components =None
     n_batches =100
-    rObj = Reducers()
     kernel = 'rbf'
     gamma= 0.01
     closest_neighbors=4
@@ -62,23 +60,17 @@ class TestReducers(unittest.TestCase):
     def test_incrementalPCA(self, **kws ): 
         """ Test incremental PCA"""
          
-        self.rObj.incrementalPCA(X=self.X, n_components=self.n_components, 
+        iPCA(X=self.X, n_components=self.n_components, 
                                 n_batches=self.n_batches, 
                                 store_in_binary_file=False, 
                                 **kws)
-        
-        pprint(self.rObj.feature_importances_)
-        
-        plot_projection(self.rObj ,self.rObj.n_components )
-        
+
     def test_kPCA(self, **kws): 
         """ Test kernel PCA """
         
-        self.rObj.kPCA(X=self.X, n_components=self.n_components, 
-                                kernel=self.kernel,reconstruct_pre_image=self.pre_image, 
-                                gamma=self.gamma, **kws)
-        
-        pprint(self.rObj.feature_importances_)
+        kPCA(X=self.X, n_components=self.n_components, 
+                    kernel=self.kernel,reconstruct_pre_image=self.pre_image, 
+                    gamma=self.gamma, **kws)
         
         #plot_projection(self.rObj ,self.rObj.n_components )
     
@@ -110,9 +102,10 @@ class TestReducers(unittest.TestCase):
                 'n_components': 4, 
                   "n_neighbors": self.closest_neighbors}
         
-        self.rObj.LLE(self.X,# n_components=4,
-                      **lle_kws)
-        pprint(self.rObj.__dict__)
+        LLE(self.X, **lle_kws)
+       
+    def test_PCA (self):
+        nPCA (self.X, n_components=self.n_components)
         
 if __name__=='__main__': 
     unittest.main()

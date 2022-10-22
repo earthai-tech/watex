@@ -557,7 +557,8 @@ def is_erp_dataframe (
     
     data : Dataframe object 
         Dataframe object. The columns dataframe should match the property 
-        ERP property object such as ``['station','resistivity', 'longitude','latitude']`` 
+        ERP property object such as ``['station','resistivity', 
+                                       'longitude','latitude']`` 
         or ``['station','resistivity', 'easting','northing']``.
             
     dipolelength: float
@@ -1564,7 +1565,7 @@ def makeCoords(
     Examples 
     --------
     >>> from watex.utils.coreutils import makeCoords 
-    >>> rlons, rlats = make_ll_coordinates('110:29:09.00', '26:03:05.00', 
+    >>> rlons, rlats = makeCoords('110:29:09.00', '26:03:05.00', 
     ...                                     nsites = 7, todms=True)
     >>> rlons
     ... array(['110:29:09.00', '110:29:35.77', '110:30:02.54', '110:30:29.30',

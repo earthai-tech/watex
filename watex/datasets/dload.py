@@ -17,6 +17,7 @@ from .._docstring import erp_doc , ves_doc
 from ._io import csv_data_loader, _to_dataframe , DMODULE 
 from ..utils.coreutils import vesSelector, erpSelector 
 from ..utils.mlutils import split_train_test_by_id 
+from ..utils.funcutils import to_numeric_dtypes 
 from ..utils.box import Boxspace
 
 __all__= [ "load_bagoue" , "load_gbalo", "load_iris", "load_semien",
@@ -211,6 +212,7 @@ def load_bagoue(
         *, return_X_y=False, as_frame=False, split_X_y=False, test_size =.3 , 
         tag=None 
  ):
+    cf = as_frame 
     data_file = "bagoue.csv"
     data, target, target_names, feature_names, fdescr = csv_data_loader(
         data_file=data_file, descr_file="bagoue.rst", include_headline= True, 
@@ -219,20 +221,25 @@ def load_bagoue(
     target_columns = [
         "flow",
     ]
+    if split_X_y: 
+        as_frame =True 
+        
     if as_frame:
         frame, data, target = _to_dataframe(
             data, feature_names = feature_names, tnames = target_columns, 
-            target=target
-                                            )
-    if split_X_y: 
-        X, Xt = split_train_test_by_id (data = frame , test_ratio= test_size )
-        y = X.flow ;  X.drop(columns =target_columns, inplace =True)
-        yt = Xt.flow , Xt.drop(columns =target_columns, inplace =True)
+            target=target)
+        frame = to_numeric_dtypes(frame)
         
-        return  (X, Xt, y, yt ) if as_frame else (
+    if split_X_y: 
+        X, Xt = split_train_test_by_id (data = frame , test_ratio= test_size, 
+                                        keep_colindex= False )
+        y = X.flow ;  X.drop(columns =target_columns, inplace =True)
+        yt = Xt.flow ; Xt.drop(columns =target_columns, inplace =True)
+        
+        return  (X, Xt, y, yt ) if cf else (
             X.values, Xt.values, y.values , yt.values )
     
-    if return_X_y:
+    if return_X_y or as_frame:
         return data, target
 
     return Boxspace(

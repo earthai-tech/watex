@@ -20,7 +20,7 @@ Here we implement some `scikit-learn`_ metrics like `precision`, `recall`
 .. _scikit_learn: https://scikit-learn.org/
 """
 from __future__ import annotations 
-
+import copy
 import warnings  
 import numpy as np 
 from sklearn import metrics 
@@ -37,39 +37,39 @@ from .typing import (
     NDArray,
     F
     )
-from .exceptions import ArgumentError 
+from .exceptions import LearningError 
 from .exlib.sklearn import ( 
     precision_recall_curve,
     precision_score,
     recall_score,
-    confusion_matrix ,
     f1_score,
     roc_curve, 
     roc_auc_score,
     cross_val_predict, 
+    confusion_matrix as cfsmx ,
     )
 
 _logger = watexlog().get_watex_logger(__name__)
 
-__all__=['precision_recall_tradeoff', 'ROC_curve', 'confusion_matrix_']
+__all__=['precision_recall_tradeoff', 'ROC_curve', 'confusion_matrix']
 
 #----add metrics docs 
 _metrics_params =dict (
-    classe_="""
-classe_: float, int 
+    label="""
+label: float, int 
     Specific class to evaluate the tradeoff of precision 
-    and recall. If `y` is already a binary classifer, `classe_` 
+    and recall. If `y` is already a binary classifer (0 & 1), `label` 
     does need to specify.     
     """, 
     method="""
 method: str
     Method to get scores from each instance in the trainset. 
-    Ciuld be ``decison_funcion`` or ``predict_proba`` so 
-    Scikit-Learn classifuier generally have one of the method. 
+    Could be a ``decison_funcion`` or ``predict_proba``. When using the  
+    scikit-Learn classifier, it generally has one of the method. 
     Default is ``decision_function``.   
     """, 
-    y_tradeoff="""
-"y_tradeoff: float
+    tradeoff="""
+tradeoff: float
     check your `precision score` and `recall score`  with a 
     specific tradeoff. Suppose  to get a precision of 90%, you 
     might specify a tradeoff and get the `precision score` and 
@@ -95,7 +95,7 @@ def get_metrics():
     """
     return tuple(metrics.SCORERS.keys())
 
-def _assert_metrics_args(y, classe_): 
+def _assert_metrics_args(y, label): 
     """ Assert metrics argument 
     
     :param y: array-like, 
@@ -103,33 +103,36 @@ def _assert_metrics_args(y, classe_):
         If `y` is composed of multilabel, specify  the `classe_` 
         argumentto binarize the label(`True` ot `False`). ``True``  
         for `classe_`and ``False`` otherwise. 
-    :param classe_:float, int 
+    :param label:float, int 
         Specific class to evaluate the tradeoff of precision 
         and recall. If `y` is already a binary classifer, `classe_` 
         does need to specify.     
     """
     # check y if value to plot is binarized ie.True of false 
+    msg = ("Precision-recall metrics are fundamentally metrics for"
+           " binary classification. ")
     y_unik = np.unique(y)
-    if len(y_unik )!=2 and classe_ is None: 
-        warnings.warn('Classe values of `y` is %s, but need 2.' 
-                      '`PrecisionRecall Tradeoff` is used for training '
-                       'binarize classifier'%len(y_unik ), UserWarning)
-        _logger.warning('Need a binary classifier(2), but %s are given'
+    if len(y_unik )!=2 and label is None: 
+        warnings.warn( msg + f"Classes values of 'y' is '{len(y_unik )}', "
+                      "while expecting '2'. Can not set the tradeoff for "
+                      " non-binarized classifier ",  UserWarning
+                       )
+        _logger.warning('Expect a binary classifier(2), but %s are given'
                               %len(y_unik ))
-        raise ValueError(f'Need binary classes but {len(y_unik )!r}'
+        raise LearningError(f'Expect a binary labels but {len(y_unik )!r}'
                          f' {"are" if len(y_unik )>1 else "is"} given')
         
-    if classe_ is not None: 
+    if label is not None: 
         try : 
-            classe_= int(classe_)
+            label= int(label)
         except ValueError: 
             raise ValueError('Need integer value; Could not convert to Float.')
         except TypeError: 
-            raise TypeError('Could not convert {type(classe_)!r}') 
+            raise TypeError(f'Could not convert {type(label).__name__!r}') 
     
-        if classe_ not in y: 
-            raise ArgumentError(
-                'Value must contain a least a binarize class label')
+    if label not in y: 
+        raise ValueError("Value '{}' must be a label of a binary target"
+                         .format(label))
   
 def precision_recall_tradeoff(
     clf:F, 
@@ -137,20 +140,28 @@ def precision_recall_tradeoff(
     y:ArrayLike,
     *,
     cv:int =7,
-    classe_: str | Optional[List[str]]=None,
-    method:str ="decision_function",
-    cross_val_pred_kws: Optional[dict]  =None,
-    y_tradeoff: Optional[float] =None,
+    label: str | Optional[List[str]]=None,
+    method:Optional[str] =None,
+    cvp_kws: Optional[dict]  =None,
+    tradeoff: Optional[float] =None,
     **prt_kws
 )-> object:
+    
+    mc= copy.deepcopy(method)
+    method = method or "decision_function"
+    method =str(method).lower().strip() 
+    if method not in ('decision_function', 'predict_proba'): 
+        raise ValueError (f"Invalid method {mc!r}.Expect 'decision_function'"
+                          " or 'predict_proba'.")
+        
     #create a object to hold attributes 
     obj = type('Metrics', (), {})
     
-    _assert_metrics_args(y, classe_)
-    y=(y==classe_) # set boolean 
+    _assert_metrics_args(y, label)
+    y=(y==label) # set boolean 
     
-    if cross_val_pred_kws is None: 
-        cross_val_pred_kws = dict()
+    if cvp_kws is None: 
+        cvp_kws = dict()
         
     obj.y_scores = cross_val_predict(
         clf,
@@ -158,17 +169,17 @@ def precision_recall_tradeoff(
          y,
          cv =cv,
         method= method,
-        **cross_val_pred_kws 
+        **cvp_kws 
     )
     y_scores = cross_val_predict(
         clf,
         X,
         y, 
         cv =cv,
-        **cross_val_pred_kws 
+        **cvp_kws 
         )
     
-    obj.confusion_matrix =confusion_matrix(y, y_scores )
+    obj.confusion_matrix =cfsmx(y, y_scores )
     
     obj.f1_score = f1_score(y,y_scores)
     obj.precision_score = precision_score(y, y_scores)
@@ -181,15 +192,15 @@ def precision_recall_tradeoff(
         # class 
         obj.y_scores =obj.y_scores [:, 1] 
         
-    if y_tradeoff is not None:
+    if tradeoff is not None:
         try : 
-            float(y_tradeoff)
+            float(tradeoff)
         except ValueError: 
-            raise ValueError(f"Could not convert {y_tradeoff!r} to float.")
+            raise ValueError(f"Could not convert {tradeoff!r} to float.")
         except TypeError: 
-            raise TypeError(f'Invalid type `{type(y_tradeoff)}`')
+            raise TypeError(f'Invalid type `{type(tradeoff)}`')
             
-        y_score_pred = (obj.y_scores > y_tradeoff) 
+        y_score_pred = (obj.y_scores > tradeoff) 
         obj.precision_score = precision_score(y, y_score_pred)
         obj.recall_score = recall_score(y, y_score_pred)
         
@@ -215,16 +226,16 @@ Parameters
 {params.core.y}
 {params.core.cv}
 
-classe_: float, int 
+label: float, int 
     Specific class to evaluate the tradeoff of precision 
     and recall. If `y` is already a binary classifer, `classe_` 
     does need to specify. 
 method: str
     Method to get scores from each instance in the trainset. 
     Ciuld be ``decison_funcion`` or ``predict_proba`` so 
-    Scikit-Learn classifuier generally have one of the method. 
+    Scikit-Learn classifier generally have one of the method. 
     Default is ``decision_function``.
-y_tradeoff: float
+tradeoff: float, optional,
     check your `precision score` and `recall score`  with a 
     specific tradeoff. Suppose  to get a precision of 90%, you 
     might specify a tradeoff and get the `precision score` and 
@@ -331,9 +342,9 @@ Parameters
 {params.core.X}
 {params.core.y}
 {params.core.cv}
-{params.metric.classe_}
+{params.metric.label}
 {params.metric.method}
-{params.metric.y_tradeoff}
+{params.metric.tradeoff}
 
 roc_kws: dict 
     roc_curve additional keywords arguments
@@ -371,7 +382,7 @@ Examples
     params =_param_docs
 )   
 
-def confusion_matrix_(
+def confusion_matrix(
     clf:F, 
     X:NDArray, 
     y:ArrayLike,
@@ -388,7 +399,7 @@ def confusion_matrix_(
     
     if obj.y_pred.ndim ==1 : 
         obj.y_pred.reshape(-1, 1)
-    obj.conf_mx = confusion_matrix(y, obj.y_pred, **conf_mx_kws)
+    obj.conf_mx = cfsmx(y, obj.y_pred, **conf_mx_kws)
 
     # statement to plot confusion matrix errors rather than values 
     row_sums = obj.conf_mx.sum(axis=1, keepdims=True)
@@ -412,7 +423,7 @@ def confusion_matrix_(
         
     return obj  
   
-confusion_matrix_.__doc__ ="""\
+confusion_matrix.__doc__ ="""\
 Evaluate the preformance of the model or classifier by counting 
 the number of the times instances of class A are classified in class B. 
 
@@ -431,9 +442,9 @@ Parameters
 {params.core.X}
 {params.core.y}
 {params.core.cv}
-{params.metric.classe_}
+{params.metric.label}
 {params.metric.method}
-{params.metric.y_tradeoff}
+{params.metric.tradeoff}
 
 plot_conf_max: bool, str 
     can be `map` or `error` to visualize the matshow of prediction 

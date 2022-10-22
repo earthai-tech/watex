@@ -551,9 +551,8 @@ class BasePlot(ABC):
     lw                  line weight of the plot, *default* is ``1.5``
     alpha               transparency number, *default* is ``0.5``  
     font_weight         weight of the font , *default* is ``bold``.        
-    marker              marker of stations *default* is :math:`\blacktriangledown`.
     ms                  size of marker in points. *default* is 5
-    marker_style        style  of marker in points. *default* is ``o``.
+    marker              style  of marker in points. *default* is ``o``.
     marker_facecolor    facecolor of the marker. *default* is ``yellow``
     marker_edgecolor    edgecolor of the marker. *default* is ``cyan``.
     marker_edgewidth    width of the marker. *default* is ``3``.
@@ -716,7 +715,7 @@ class BasePlot(ABC):
         self.rotate_ylabel=rotate_ylabel
         self.leg_kws=leg_kws
         self.plt_kws=plt_kws
-        self.s=self.fs*s
+        self.s=s 
         self.show_grid=show_grid
         self.galpha=galpha
         self.gaxis=gaxis
@@ -725,7 +724,7 @@ class BasePlot(ABC):
         self.glw=glw
         self.gwhich=gwhich
         self.tp_axis=tp_axis
-        self.tp_labelsize=self.font_size*tp_labelsize  
+        self.tp_labelsize=tp_labelsize  
         self.tp_bottom=tp_bottom
         self.tp_top=tp_top
         self.tp_labelbottom=tp_labelbottom

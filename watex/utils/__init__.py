@@ -31,6 +31,10 @@ from .exmath import (
     moving_average, 
     linkage_matrix, 
     )
+from .funcutils import ( 
+    reshape, 
+    to_numeric_dtypes 
+    )
 from .mlutils import ( 
     selectfeatures, 
     getGlobalScore, 
@@ -39,6 +43,8 @@ from .mlutils import (
     split_train_test, 
     correlatedfeatures, 
     findCatandNumFeatures,
+    evalModel, 
+    cattarget
     
     )
 from .plotutils import ( 
@@ -75,6 +81,7 @@ __all__=[
         'split_train_test', 
         'correlatedfeatures', 
         'findCatandNumFeatures',
+        'evalModel',
         'plotmlxtendheatmap', 
         'plotmlxtendmatrix', 
         'plotcostvsepochs', 
@@ -82,6 +89,10 @@ __all__=[
         'get_profile_angle', 
         'moving_average', 
         'linkage_matrix',
+        'reshape', 
+        'to_numeric_dtypes' , 
+        'cattarget'
+        
         ]
 
 HAS_GDAL = gdal_data_check(None)._gdal_data_found
