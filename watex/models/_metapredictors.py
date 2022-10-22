@@ -2,7 +2,7 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 
-from ..exlib.slearn import (
+from ..exlib.sklearn import (
     AdaBoostClassifier, 
     BaggingClassifier, 
     DecisionTreeClassifier, 

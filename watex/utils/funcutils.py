@@ -1309,77 +1309,23 @@ def read_main (csv_fn , pf , delimiter =':',
     return  df , is_missing 
     
 
-#XXX TODO : move the stats func 
-def _stats (X_, y_true,*, y_pred, # noqa
-            from_c ='geol', 
-            drop_columns =None, 
-            columns=None )  : 
-    """ Present a short static"""
-    import pandas as pd 
-    
-    if from_c not in X_.columns: 
-        raise TypeError(f"{from_c!r} not found in columns "
-                        "name ={list(X_.columns)}")
-        
-    if columns is not None:
-        if not isinstance(columns, (tuple, list, np.ndarray)): 
-            raise TypeError(f'Columns should be a list not {type(columns)}')
-        
-    is_dataframe = isinstance(X_, pd.DataFrame)
-    if is_dataframe: 
-        if drop_columns is not None: 
-            X_.drop(drop_columns, axis =1)
-            
-    if not is_dataframe : 
-        len_X = X_.shape[1]
-        if columns is not None: 
-            if len_X != len(columns):
-                raise TypeError(
-                    "Columns and test set must have the same length"
-                    f" But `{len(columns)}` and `{len_X}` were given "
-                    "respectively.")
-                
-            X_= pd.DataFrame (data = X_, columns =columns)
-            
-    # get the values counts on the array and convert into a columns 
-    if isinstance(y_pred, pd.Series): 
-        y_pred = y_pred.values 
-        # initialize array with full of zeros
-    # get the values counts of the columns to analyse 'geol' for instance
-    s=  X_[from_c].value_counts() # getarray of values 
-    #s_values = s.values 
-    # create a pseudo serie and get the values counts of each elements
-    # and get the values counts
-
-    y_actual=pd.Series(y_true, index = X_.index, name ='y_true')
-    y_predicted =pd.Series(y_pred, index =X_.index, name ='y_pred')
-    pdf = pd.concat([X_[from_c],y_actual,y_predicted ], axis=1)
- 
-    analysis_array = np.zeros((len(s.index), len(np.unique(y_true))))
-    for ii, index in enumerate(s.index): 
-        for kk, val in enumerate( np.unique(y_true)): 
-            geol = pdf.loc[(pdf[from_c]==index)]
-            geols=geol.loc[(geol['y_true']==geol['y_pred'])]
-            geolss=geols.loc[(geols['y_pred']==val)]             
-            analysis_array [ii, kk]=len(geolss)/s.loc[index]
-
-    return analysis_array
-     
-    
 def _isin (
         arr: ArrayLike | List [float] ,
-        subarr: Sub [ArrayLike] |Sub[List[float]] | float 
+        subarr: Sub [ArrayLike] |Sub[List[float]] | float, 
+        return_mask:bool=False, 
 ) -> bool : 
     """ Check whether the subset array `subcz` is in  `cz` array. 
     
     :param arr: Array-like - Array of item elements 
     :param subarr: Array-like, float - Subset array containing a subset items.
+    :param return_mask: bool, return the mask where the element is in `arr`.  
     :return: True if items in  test array `subarr` are in array `arr`. 
     
     """
     arr = np.array (arr );  subarr = np.array(subarr )
 
-    return True if True in np.isin (arr, subarr) else False 
+    return (True if True in np.isin (arr, subarr) else False
+            ) if not return_mask else np.isin (arr, subarr) 
 
 def _assert_all_types (
         obj: object , 

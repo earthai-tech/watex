@@ -44,7 +44,10 @@ from .mlutils import (
     correlatedfeatures, 
     findCatandNumFeatures,
     evalModel, 
-    cattarget
+    cattarget, 
+    labels_validator, 
+    projection_validator, 
+    rename_labels_in 
     
     )
 from .plotutils import ( 
@@ -91,7 +94,10 @@ __all__=[
         'linkage_matrix',
         'reshape', 
         'to_numeric_dtypes' , 
-        'cattarget'
+        'cattarget', 
+        'labels_validator', 
+        'projection_validator', 
+        'rename_labels_in', 
         
         ]
 

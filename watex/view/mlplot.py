@@ -12,14 +12,14 @@ scripts. However to have full control of the plot, it is recommended to write
 your own plot scripts. 
 Note that this module can not handle all the plots that can offer the
 software. 
-
+  
 """
 from __future__ import annotations 
 import re
 import warnings
 import inspect 
 from abc import ABCMeta 
-
+import copy 
 import numpy as np 
 import pandas as pd
 from scipy.cluster.hierarchy import dendrogram # set_link_color_palette 
@@ -73,7 +73,8 @@ from ..utils.mlutils import (
     selectfeatures, 
     cattarget, 
     # existfeatures, 
-    projection_validator 
+    projection_validator, 
+    # labels_validator, 
     )
 from ..utils.plotutils import  ( 
     D_COLORS, 
@@ -186,7 +187,8 @@ class EvalPlot(BasePlot):
         """ savefigure if figure properties are given. """
         if self.savefig is not None: 
             fig.savefig (self.savefig,dpi = self.fig_dpi , 
-                         bbox_inches = 'tight'
+                         bbox_inches = 'tight', 
+                         orientation=self.fig_orientation 
                          )
         plt.show() if self.savefig is None else plt.close () 
         
@@ -365,14 +367,13 @@ class EvalPlot(BasePlot):
             
         """
 
-        y =self.y.copy()  
+        y =copy.deepcopy(self.y) 
         
         if y is None : 
             warnings.warn("Expect a target array. Missing y(target)"
                           " is not allowed.")
-            raise TypeError (" NoneType y (target) can be categorized.")
+            raise TypeError (" NoneType 'y' (target) can be categorized.")
             
-        
         if objective =='flow':
             y, classes = check_flow_objectivity(y,values, classes) 
         else : 
@@ -381,8 +382,11 @@ class EvalPlot(BasePlot):
                 y = self.target_ 
             else: y = pd.Series (y, name='none')
             
+            values = values or self.label_values 
             if values is not None: 
-                y =  cattarget(y , labels = values )
+                y =  cattarget(y , labels = values, 
+                               rename_labels= classes or self.litteral_classes
+                               )
             else: 
                 y = y.astype('category').cat.codes
                 
@@ -677,13 +681,7 @@ class EvalPlot(BasePlot):
                 linewidth=self.lw/10
                 )
         
-        plt.show()
-        
-        if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
-                        orientation =self.fig_orientation
-                        )  
+        self.save(fig)
     
         return self 
 
@@ -872,12 +870,7 @@ class EvalPlot(BasePlot):
         if kind =='recall':
             ax.set_xlim (self.xlim)
 
-        plt.show()
-        
-        if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
-                        orientation =self.fig_orientation)
+        self.save(fig)
             
         return self 
     
@@ -1010,9 +1003,8 @@ class EvalPlot(BasePlot):
         # build multiples classifiers objects 
         rocObjs =[ROC_curve(
             clf=_clf,X=self.X,y=self.y, cv =self.cv, 
-            label=label, method =meth, cvp_kws=cvp_kws,**roc_kws
-            ) 
-                  for (name, _clf, meth) in clfs
+            label=label, method =meth, cvp_kws=cvp_kws,**roc_kws) 
+            for (name, _clf, meth) in clfs
                   ]
         # create figure obj 
         fig = plt.figure(figsize = self.fig_size)
@@ -1060,12 +1052,9 @@ class EvalPlot(BasePlot):
              self.leg_kws['loc']='lower right'
         ax.legend(**self.leg_kws)
         
-        plt.show()
+
+        self.save(fig)
         
-        if self.savefig is not None :
-            plt.savefig(self.savefig,
-                        dpi=self.fig_dpi,
-                        orientation =self.fig_orientation)
         return self 
 
     @docSanitizer()
@@ -1073,15 +1062,17 @@ class EvalPlot(BasePlot):
         self, 
         clf, 
         *, 
-        plottype ='map', 
+        kind='map', 
         labels=None, 
         matshow_kws=dict(), 
         **conf_mx_kws
         ): 
-        """ Plot confusion matrix for error analysis
+        """ Plot confusion matrix for error evaluation.
         
-        Look of a representation of the confusion matrix using 
-        Matplotlib matshow.
+        A representation of the confusion matrix for error visualization. If 
+        kind is set ``map``, plot will give the number of confused 
+        instances/items. However when `kind` is set to ``error``, the number 
+        of items confused is explained as a percentage. 
         
         Parameters 
         -----------
@@ -1111,37 +1102,43 @@ class EvalPlot(BasePlot):
         -------
         ``self``: `EvalPlot` instance
             ``self`` for easy method chaining.
-            
-  
+
         Examples
         --------
-        >>> from sklearn.svm import SVC 
-        >>> from watex.view.mlplot import MLPlots
-        >>> from watex.datasets import fetch_data 
-        >> X,y = fetch_data('Bagoue dataset prepared')
+        >>> from watex.datasets import fetch_data
+        >>> from watex.utils.mlutils import cattarget 
+        >>> from watex.exlib.sklearn import SVC 
+        >>> from watex.view.mlplot import EvalPlot
+        >>> X, y = fetch_data ('bagoue', return_X_y=True, as_frame =True)
+        >>> # partition the target into 4 clusters-> just for demo 
+        >>> b= EvalPlot(scale =True, label_values = 4 ) 
+        >>> b.fit_transform (X, y) 
+        >>> # prepare our estimator 
+        >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42)
+        >>> >>> matshow_kwargs ={
+                'aspect': 'auto', # 'auto'equal
+                'interpolation': None, 
+               'cmap':'jet }                   
+        >>> plot_kws ={'lw':3, 
+               'lc':(.9, 0, .8), 
+               'font_size':15., 
+                'cb_format':None,
+                'xlabel': 'Predicted classes',
+                'ylabel': 'Actual classes',
+                'font_weight':None,
+                'tp_labelbottom':False,
+                'tp_labeltop':True,
+                'tp_bottom': False
+                }
+        >>> b.plotConfusionMatrix(clf=svc_clf, 
+                                  matshow_kws = matshow_kwargs, 
+                                  **conf_mx_kws)
         >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', 
         ...                  random_state =42) 
-        >>> matshow_kwargs ={
-        ...        'aspect': 'auto', # 'auto'equal
-        ...        'interpolation': None, 
-        ...       'cmap':'gray' }                   
-        >>> plot_kws ={'lw':3, 
-        ...       'lc':(.9, 0, .8), 
-        ...       'font_size':15., 
-        ...        'cb_format':None,
-        ...        'xlabel': 'Predicted classes',
-        ...        'ylabel': 'Actual classes',
-        ...        'font_weight':None,
-        ...        'tp_labelbottom':False,
-        ...        'tp_labeltop':True,
-        ...        'tp_bottom': False
-        ...        }
-        >>> mObj =MLPlots(**plot_kws)
-        >>> mObj.confusion_matrix(svc_clf, X=X,y=y,cv=7,                                   
-        ...                        ylabel=['FR0', 'FR1', 'FR2', 'FR3'], 
-        ...                        plottype='error'
-        ...                        matshow_kws = matshow_kwargs,
-        ...                        ) 
+        >>> # replace the integer identifier with litteral string 
+        >>> b.litteral_classes = ['FR0', 'FR1', 'FR2', 'FR3']
+        >>> b.plotConfusionMatrix(svc_clf, matshow_kws=matshow_kwargs, 
+                                  kind='error', **plot_kws) 
         
         See also 
         ---------
@@ -1149,86 +1146,78 @@ class EvalPlot(BasePlot):
         for furthers details.
         
         """
+        self.inspect
+        
+        kind = str (kind).lower().strip() 
+        if kind.find ('error')>=0 or kind.find('fill diagonal')>=0 : 
+            kind ='error'
+        else: kind ='map'
+        
+        # gives a gray color to matshow
+        # if is given as matshow keywords arguments 
+        # then remove it 
         _check_cmap = 'cmap' in matshow_kws.keys()
         if not _check_cmap or len(matshow_kws)==0: 
             matshow_kws['cmap']= plt.cm.gray
         
-        labels = labels or self.litteral_classes 
-        
+        labels = labels or self.label_values 
+        y = self.y 
         if labels is not None: 
-            #check the length of y and compare to y unique 
-            cat_y = np.unique(self.y)
-            if isinstance(labels, str) or len(labels)==1: 
-                warnings.warn(
-                   f"One label is given, need {len(cat_y)!r}. Can not be"
-                    f" used to format {cat_y!r}"
-                    )
-                self._logging.debug(
-                    f"Only one label is given. Need {len(cat_y)!r}"
-                    'instead as the number of categories.')
-                ylabel =None 
-                
-            type_y= isinstance(labels, (list, tuple, np.ndarray))
-            if type_y:
-                if len(cat_y) != len(labels): 
-                    warnings.warn(
-                        f" {'are' if len(ylabel)>1 else 'is'} given."
-                        f"Need {len(cat_y)!r} instead.")
-                    self._logging.debug(
-                        f" {'are' if len(ylabel)>1 else 'is'} given."
-                        f"Need {len(cat_y)!r} instead.")
-                    ylabel =None 
-                    
+            # labels = labels_validator(self.y, labels)
+            y, labels =self._cat_codes_y(values = labels, 
+                                         ) 
+        # for plotting purpose, change the labels to hold 
+        # the string litteral class names. 
+        labels = self.litteral_classes or labels 
+
         # get yticks one it is a classification prof
         confObj =confusion_matrix(clf=clf,
                                 X=self.X,
-                                y=self.y,
+                                y=y,
                                 cv=self.cv,
-                                **conf_mx_kws
+                                # **conf_mx_kws
                                 )
-        
-        # set all attributes in the case you want to get attributes 
-        # for other purposes.
-        for key in confObj.__dict__.keys():
-            self.__setattr__(key, confObj.__dict__[key])
-            
+    
          # create figure obj 
         fig = plt.figure(figsize = self.fig_size)
         ax = fig.add_subplot(1,1,1)
         
-        if plottype in ('map', 'default') : 
+        if kind =='map' : 
             cax = ax.matshow(confObj.conf_mx,  
                         **matshow_kws)
             if self.cb_label is None: 
                 self.cb_label='Items confused'
                     
-        if plottype in( 'error', 'fill diagonal') or\
-            plottype.find('error')>=0:
+        if kind in ('error', 'fill diagonal'): 
             cax = ax.matshow(confObj.norm_conf_mx, 
                          **matshow_kws) 
-            if self.cb_label is None: 
-                self.cb_label='Error'
-                
+            self.cb_label = self.cb_label or 'Error'
+      
         cbax= fig.colorbar(cax, **self.cb_props)
+        
         
         ax.set_xlabel( self.xlabel,
               fontsize= self.font_size )
         
         if labels is not None: 
-            ax.set_xticks(np.unique(self.y))
-            ax.set_xticklabels(labels)
-            ax.set_yticks(np.unique(self.y))
-            ax.set_yticklabels(labels)
+            xticks_loc = list(ax.get_xticks())
+            yticks_loc = list(ax.get_yticks())
+            ax.xaxis.set_major_locator(mticker.FixedLocator(xticks_loc))
+            ax.xaxis.set_major_formatter(mticker.FixedFormatter(
+                [''] + list (labels)))
+            ax.yaxis.set_major_locator(mticker.FixedLocator(yticks_loc))
+            ax.yaxis.set_major_formatter(mticker.FixedFormatter(
+                [''] + list (labels)))
             
-        if self.ylabel is None:
-            self.ylabel ='Actual classes'
-        if self.xlabel is None:
-            self.xlabel = 'Predicted classes'
+        self.ylabel = self.ylabel or 'Actual classes'
+        self.xlabel = self.xlabel or 'Predicted classes'
         
         ax.set_ylabel (self.ylabel,
-                       fontsize= self.font_size )
+                       fontsize= self.font_size *3 )
+        ax.set_xlabel (self.xlabel,
+                       fontsize= self.font_size *3 )
         ax.tick_params(axis=self.tp_axis, 
-                        labelsize= self.font_size, 
+                        labelsize= self.font_size *3 , 
                         bottom=self.tp_bottom, 
                         top=self.tp_top, 
                         labelbottom=self.tp_labelbottom, 
@@ -1237,21 +1226,18 @@ class EvalPlot(BasePlot):
         if self.tp_labeltop: 
             ax.xaxis.set_label_position('top')
         
-        cbax.ax.tick_params(labelsize=self.font_size ) 
+        cbax.ax.tick_params(labelsize=self.font_size * 3 ) 
         cbax.set_label(label=self.cb_label,
-                       size=self.font_size,
+                       size=self.font_size * 3 ,
                        weight=self.font_weight)
         
         plt.xticks(rotation = self.rotate_xlabel)
         plt.yticks(rotation = self.rotate_ylabel)
-  
-        plt.show ()
-        if self.savefig is not None :
-           plt.savefig(self.savefig,
-                       dpi=self.fig_dpi,
-                       orientation =self.fig_orientation)
+
+        self.save(fig)
+        
         return self
-    
+  
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
         return repr_callable_obj  (self, skip = ('y', 'X') ) 
@@ -1278,6 +1264,25 @@ Metric and dimensionality Evaluatation Plots
 Inherited from :class:`BasePlot`. Dimensional reduction and metrics 
 plots. The class works only with numerical features. 
 
+.. admonition:: Discouraged
+    
+    Contineous target values for plotting classification metrics is 
+    discouraged. However, We encourage user to prepare its dataset 
+    before using the `~.EvalPlot` methods. This is recommended to have 
+    full control of the expected results. Indeed, the most metrics plot 
+    implemented here works with sueprvised methods especially deals 
+    with the classification problems. So, the convenient way is for  
+    users to discretize/categorize (class labels) before the `fit`. 
+    If not the case, as the examples of demonstration  under each method 
+    implementation, we first need to categorize the continue labels. 
+    The choice is twofolds: either providing individual class label 
+    as a list of integers using the method `~._cat_codes_y` or by 
+    specifying the number of clusters that the target must hold. 
+    Commonly the latter choice is usefull for a test or academic 
+    purpose. In practice into a real dataset, it is discouraged 
+    to use this kind of target partition since, it is far away of the 
+    reality and will yield unexpected misinterpretation. 
+    
 Parameters 
 -----------
 {params.core.X}
@@ -1500,8 +1505,8 @@ def plotProjection(
                      marker='o',
                      lw =3.,
                      font_size=15.,
-                     xlabel= 'east',
-                     ylabel='north' , 
+                     xlabel= 'easting (m) ',
+                     ylabel='northing (m)' , 
                      markerfacecolor ='k', 
                      markeredgecolor='r',
                      alpha =1., 
@@ -1554,8 +1559,8 @@ def plotProjection(
     fig = plt.figure(figsize = pobj.fig_size)
     ax = fig.add_subplot(1,1,1)
     
-    xname = xname or pobj.xlabel 
-    yname =yname or pobj.ylabel 
+    xname = pobj.xlabel or xname 
+    yname = pobj.ylabel or yname 
     
     if pobj.s is None: 
         pobj.s = pobj.fs *40 
@@ -1614,6 +1619,7 @@ def plotProjection(
     
     plt.show()
     
+    print(x.shape,  y.shape, xt.shape, yt.shape )
     if pobj.savefig is not None :
         plt.savefig(pobj.savefig,
                     dpi=pobj.fig_dpi,
@@ -1924,7 +1930,7 @@ def plotLearningCurve(self, clf, X, y, test_size=0.2, scoring ='mse',
             scoring = scoring.lower()
         except : 
             raise TypeError(f"Scoring ={scoring!r} should be a string"
-                            " not a {type(scoring)!} type.")
+                            f" not a {type(scoring).__name__!r} type.")
             
     if scoring in ('mean_squared_error', 'mean squared error') :
         scoring ='mse'
