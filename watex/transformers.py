@@ -829,8 +829,8 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
             
     Returns
     -------
-        X: ndarray 
-            New array with composed of data of selected `attribute_names`.
+    X: ndarray 
+        New array with composed of data of selected `attribute_names`.
             
     Examples 
     ---------
@@ -844,7 +844,6 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
     """  
     def __init__(self, attribute_names=None, select_type =None): 
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
-        
         self.attribute_names = attribute_names 
         self.select_type = select_type 
         

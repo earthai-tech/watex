@@ -268,7 +268,6 @@ def linkage_matrix(
                                optimal_ordering=optimal_ordering )
         
     if as_frame: 
-        
         row_clusters = pd.DataFrame ( row_clusters, 
                                      columns = [ 'row label 1', 
                                                 'row lable 2', 

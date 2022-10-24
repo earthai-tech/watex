@@ -1028,7 +1028,7 @@ def plotAnomaly(
     
     """
     
-    def format_thicks (value, tick_number):
+    def format_ticks (value, tick_number):
         """ Format thick parameter with 'FuncFormatter(func)'
         rather than using:: 
             
@@ -1126,9 +1126,8 @@ def plotAnomaly(
     ax.tick_params (labelrotation = 0. if rotate is None else rotate)
     ax.set_xticks(range(len(erp)),
                   )
-    
     if len(erp ) >= 14 : 
-        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))
     else : 
         
         ax.set_xticklabels(

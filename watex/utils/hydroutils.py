@@ -39,7 +39,6 @@ def transmissibility (s, d, time, ):
     aquifer's thickness (T = KM), which means it is the seepage flow under the
     condition of unit hydraulic gradient, unit time, and unit width
     
-
     """
       
 def check_flow_objectivity ( y ,/,  values, classes  ) :
@@ -78,22 +77,16 @@ def check_flow_objectivity ( y ,/,  values, classes  ) :
                       " tolerate the number of occurrence to be used."
                       "Provided the list of flow values instead.",
                       DeprecationWarning )
-                      
         raise TypeError (msg)
         
     elif values is not None: 
-        
         if isinstance(values,  (int, float)): 
-           y =  cattarget(y , labels = int(values) )
-          
+           y =  categorize_target(y , labels = int(values) )
            warnings.warn(msg.format(values, np.unique (y) ))
-
            values = np.unique (y)
         
         elif isinstance(values, (list, tuple, np.ndarray)):
-            
             y = np.unique(y) 
-            
             if len(values)!=len(y): 
                 warnings.warn("Size of unique identifier class labels"
                               " and the given values might be consistent."
@@ -108,7 +101,6 @@ def check_flow_objectivity ( y ,/,  values, classes  ) :
                              " Expect a list of integers.")
             
     classes = classes or values 
-
     return y, classes 
  
 @catmapflow2(cat_classes=['FR0', 'FR1', 'FR2', 'FR3'])#, 'FR4'] )
@@ -288,8 +280,15 @@ def savepath_ (nameOfPath):
         return
     return savepath 
          
-def cattarget(arr :ArrayLike |Series , /, func: F  = None,  labels= None) : 
-    """ Categorize array to number of labels. 
+def categorize_target(
+        arr :ArrayLike |Series , /, 
+        func: F = None,  
+        labels: int | List[int] = None, 
+        rename_labels: Optional[str] = None, 
+        coerce:bool=False,
+        order:str='strict',
+        ): 
+    """ Categorize array to hold the given identifier labels. 
     
     Classifier numerical values according to the given label values. Labels 
     are a list of integers where each integer is a group of unique identifier  
@@ -297,7 +296,6 @@ def cattarget(arr :ArrayLike |Series , /, func: F  = None,  labels= None) :
     
     Parameters 
     -----------
-    
     arr: array-like |pandas.Series 
         array or series containing numerical values. If a non-numerical values 
         is given , an errors will raises. 
@@ -309,7 +307,13 @@ def cattarget(arr :ArrayLike |Series , /, func: F  = None,  labels= None) :
         the first ten number, the labels values should be ``[0, 1, 2]``. 
         If labels are given as a list, items must be self-contain in the 
         target 'y'.
-        
+    rename_labels: list of str; 
+        list of string or values to replace the label integer identifier. 
+    coerce: bool, default =False, 
+        force the new label names passed to `rename_labels` to appear in the 
+        target including or not some integer identifier class label. If 
+        `coerce` is ``True``, the target array holds the dtype of new_array. 
+
     Return
     --------
     arr: Arraylike |pandas.Series
@@ -328,10 +332,15 @@ def cattarget(arr :ArrayLike |Series , /, func: F  = None,  labels= None) :
     >>> target = cattarget(arr, func =binfunc)
     ... array([0, 0, 0, 1, 1, 1, 1, 1, 1, 1], dtype=int64)
     >>> cattarget(arr, labels =3 )
+    ... array([0, 0, 0, 1, 1, 1, 2, 2, 2, 2])
+    >>> array([2, 2, 2, 2, 1, 1, 1, 0, 0, 0]) 
+    >>> cattarget(arr, labels =3 , order =None )
     ... array([0, 0, 0, 0, 1, 1, 1, 2, 2, 2])
-    >>> cattarget(arr, labels =[0 ,  2,  4] )
+    >>> cattarget(arr[::-1], labels =3 , order =None )
+    ... array([0, 0, 0, 1, 1, 1, 2, 2, 2, 2]) # reverse does not change
+    >>> cattarget(arr, labels =[0 , 2,  4]  )
     ... array([0, 0, 0, 2, 2, 4, 4, 4, 4, 4])
-    
+
     """
     arr = _assert_all_types(arr, np.ndarray, pd.Series) 
     is_arr =False 
@@ -352,27 +361,101 @@ def cattarget(arr :ArrayLike |Series , /, func: F  = None,  labels= None) :
     arr = arr.values 
 
     if labels is not None: 
-        arr = _cattarget (arr , labels)
+        arr = _cattarget (arr , labels, order =order)
+        if rename_labels is not None: 
+            arr = rename_labels_in( arr , rename_labels , coerce =coerce ) 
 
     return arr  if is_arr else pd.Series (arr, name =name  )
 
-def _cattarget (ar , labels ): 
+def rename_labels_in (arr, new_names, coerce = False): 
+    """ Rename label by a new names 
+    
+    :param arr: arr: array-like |pandas.Series 
+         array or series containing numerical values. If a non-numerical values 
+         is given , an errors will raises. 
+    :param new_names: list of str; 
+        list of string or values to replace the label integer identifier. 
+    :param coerce: bool, default =False, 
+        force the 'new_names' to appear in the target including or not some 
+        integer identifier class label. `coerce` is ``True``, the target array 
+        hold the dtype of new_array; coercing the label names will not yield 
+        error. Consequently can introduce an unexpected results.
+    :return: array-like, 
+        An array-like with full new label names. 
+    """
+    
+    if not is_iterable(new_names): 
+        new_names= [new_names]
+    true_labels = np.unique (arr) 
+    
+    if labels_validator(arr, new_names, return_bool= True): 
+        return arr 
+
+    if len(true_labels) != len(new_names):
+        if not coerce: 
+            raise ValueError(
+                "Can't rename labels; the new names and unique label" 
+                " identifiers size must be consistent; expect {}, got " 
+                "{} label(s).".format(len(true_labels), len(new_names))
+                             )
+        if len(true_labels) < len(new_names) : 
+            new_names = new_names [: len(new_names)]
+        else: 
+            new_names = list(new_names)  + list(
+                true_labels)[len(new_names):]
+            warnings.warn("Number of the given labels '{}' and values '{}'"
+                          " are not consistent. Be aware that this could "
+                          "yield an expected results.".format(
+                              len(new_names), len(true_labels)))
+            
+    new_names = np.array(new_names)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # hold the type of arr to operate the 
+    # element wise comparaison if not a 
+    # ValueError:' invalid literal for int() with base 10' 
+    # will appear. 
+    if not np.issubdtype(np.array(new_names).dtype, np.number): 
+        arr= arr.astype (np.array(new_names).dtype)
+        true_labels = true_labels.astype (np.array(new_names).dtype)
+
+    for el , nel in zip (true_labels, new_names ): 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # element comparison throws a future warning here 
+        # because of a disagreement between Numpy and native python 
+        # Numpy version ='1.22.4' while python version = 3.9.12
+        # this code is brittle and requires these versions above. 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # suppress element wise comparison warning locally 
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=FutureWarning)
+            arr [arr == el ] = nel 
+            
+    return arr 
+
+    
+def _cattarget (ar , labels , order=None): 
     """ A shadow function of :func:`watex.utils.funcutils.cattarget`. 
     
     :param ar: array-like of numerical values 
-    :param labels: int or list of int- the number of category to split 'ar'
-        into. 
+    :param labels: int or list of int, 
+        the number of category to split 'ar'into. 
+    :param order: str, optional, 
+        the order of label to ne categorized. If None or any other values, 
+        the categorization of labels considers only the leangth of array. 
+        For instance a reverse array and non-reverse array yield the same 
+        categorization samples. When order is set to ``strict``, the 
+        categorization  strictly consider the value of each element. 
+        
     :return: array-like of int , array of categorized values.  
     """
-    # assert labels 
-    if isinstance(labels, (list, tuple, np.ndarray)):
+    # assert labels
+    if is_iterable (labels):
         labels =[int (_assert_all_types(lab, int, float)) 
                  for lab in labels ]
         labels = np.array (labels , dtype = np.int32 ) 
         cc = labels 
         # assert whether element is on the array 
         s = set (ar).intersection(labels) 
-        
         if len(s) != len(labels): 
             mv = set(labels).difference (s) 
             
@@ -386,32 +469,56 @@ def _cattarget (ar , labels ):
                 "label value{0} {1} {2} missing in the array.".format(*fmt))
     else : 
         labels = int (_assert_all_types(labels , int, float))
-        labels = np.linspace ( min(ar), max (ar),
-                              labels + 1 ) + .00000001 
-        
+        labels = np.linspace ( min(ar), max (ar), labels + 1 ) #+ .00000001 
+        #array([ 0.,  6., 12., 18.])
         # split arr and get the range of with max bound 
-        cc = np.arange (len(labels))
+        cc = np.arange (len(labels)) #[0, 1, 3]
+        # we expect three classes [ 0, 1, 3 ] while maximum 
+        # value is 18 . we want the value value to be >= 12 which 
+        # include 18 , so remove the 18 in the list 
+        labels = labels [:-1] # remove the last items a
         # array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         # array([0, 0, 0, 0, 1, 1, 1, 2, 2, 2]) # 3 classes 
-        #  array([ 0.        ,  3.33333333,  6.66666667, 10.        ]) + 
+        #  array([ 0.        ,  3.33333333,  6.66666667, 10. ]) + 
     # to avoid the index bound error 
     # append nan value to lengthen arr 
-    
     r = np.append (labels , np.nan ) 
-        
-    l= list() 
-    for i in range (len(r)): 
-        if i == len(r) -2 : 
-            l.append (np.repeat ( cc[i], len(ar))) 
-            break 
-        ix = np.argwhere (( ar <= r [ i + 1 ]))
-        l.append (np.repeat (cc[i], len (ar[ix ])))  
-        # remove the value ready for i label 
-        # categorization 
-        ar = np.delete (ar, ix  )
-        
-    return np.hstack (l).astype (np.int32)   
+    new_arr = np.zeros_like(ar) 
+    # print(labels)
+    ar = ar.astype (np.float32)
 
+    if order =='strict': 
+        for i in range (len(r)):
+            if i == len(r) -2 : 
+                ix = np.argwhere ( (ar >= r[i]) & (ar != np.inf ))
+                new_arr[ix ]= cc[i]
+                break 
+            
+            if i ==0 : 
+                ix = np.argwhere (ar < r[i +1])
+                new_arr [ix] == cc[i] 
+                ar [ix ] = np.inf # replace by a big number than it was 
+                # rather than delete it 
+            else :
+                ix = np.argwhere( (r[i] <= ar) & (ar < r[i +1]) )
+                new_arr [ix ]= cc[i] 
+                ar [ix ] = np.inf 
+    else: 
+        l= list() 
+        for i in range (len(r)): 
+            if i == len(r) -2 : 
+                l.append (np.repeat ( cc[i], len(ar))) 
+                
+                break
+            ix = np.argwhere ( (ar < r [ i + 1 ] ))
+            l.append (np.repeat (cc[i], len (ar[ix ])))  
+            # remove the value ready for i label 
+            # categorization 
+            ar = np.delete (ar, ix  )
+            
+        new_arr= np.hstack (l).astype (np.int32)  
+        
+    return new_arr.astype (np.int32)  
 def _assert_all_types (
         obj: object , 
         *expected_objtype: type 
@@ -450,3 +557,60 @@ def smart_format(iter_obj, choice ='and'):
         str_litteral = ','.join([f"{i!r}" for i in iter_obj[:-1]])
         str_litteral += f" {choice} {iter_obj[-1]!r}"
     return str_litteral
+
+def is_iterable (y, /)->bool: 
+    """ Asserts iterable object and returns 'True' or 'False' """
+    return hasattr (y, '__iter__') 
+
+def labels_validator (t, /, labels, return_bool = False): 
+    """ Assert the validity of the label in the target  and return the label 
+    or the boolean whether all items of label are in the target. 
+    
+    :param t: array-like, target that is expected to contain the labels. 
+    :param labels: int, str or list of (str or int) that is supposed to be in 
+        the target `t`. 
+    :param return_bool: bool, default=False; returns 'True' or 'False' rather 
+        the labels if set to ``True``. 
+    :returns: bool or labels; 'True' or 'False' if `return_bool` is set to 
+        ``True`` and labels otherwise. 
+        
+    :example: 
+    >>> from watex.datasets import fetch_data 
+    >>> from watex.utils.mlutils import cattarget, labels_validator 
+    >>> _, y = fetch_data ('bagoue', return_X_y=True, as_frame=True) 
+    >>> # binarize target y into [0 , 1]
+    >>> ybin = cattarget(y, labels=2 )
+    >>> labels_validator (ybin, [0, 1])
+    ... [0, 1] # all labels exist. 
+    >>> labels_validator (y, [0, 1, 3])
+    ... ValueError: Value '3' is missing in the target.
+    >>> labels_validator (ybin, 0 )
+    ... [0]
+    >>> labels_validator (ybin, [0, 5], return_bool=True ) # no raise error
+    ... False
+        
+    """
+    
+    if not is_iterable(labels):
+        labels =[labels] 
+        
+    t = np.array(t)
+    mask = np.isin(t, labels) 
+    true_labels = np.unique (t[mask]) 
+    # set the difference to know 
+    # whether all labels are valid 
+    remainder = list(set(labels).difference (true_labels))
+    
+    isvalid = True 
+    if len(remainder)!=0 : 
+        if not return_bool: 
+            # raise error  
+            raise ValueError (
+                "Label value{0} {1} {2} missing in the target 'y'.".format ( 
+                f"{'s' if len(remainder)>1 else ''}", 
+                f"{smart_format(remainder)}",
+                f"{'are' if len(remainder)> 1 else 'is'}")
+                )
+        isvalid= False 
+        
+    return isvalid if return_bool else  labels 

@@ -8,9 +8,9 @@ from __future__ import annotations
 import os
 import datetime 
 import warnings
-
+import itertools 
 import numpy as np
-# import matplotlib as mpl 
+import matplotlib as mpl 
 # import matplotlib.cm as cm 
 import matplotlib.pyplot as plt
 
@@ -73,7 +73,8 @@ D_STYLES = [
 ]
 
 
-            
+
+    
 def plotelbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
                marker='o', savefig =None, **kwd): 
     """ Plot the optimal number of cluster, k', for a given class 
@@ -315,7 +316,94 @@ def resetting_ticks ( get_xyticks,  number_of_ticks=None ):
  
     return  new_array
         
+def make_mpl_properties(n ,prop ='color'): 
+    """ make matplotlib property ('colors', 'marker', 'line') to fit the 
+    numer of samples
+    
+    :param n: int, 
+        Number of property that is needed to create. It generates a group of 
+        property items. 
+    :param prop: str, default='color', name of property to retrieve. Accepts 
+        only 'colors', 'marker' or 'line'.
+    :return: list of property items with size equals to `n`.
+    :Example: 
+        >>> from watex.utils.plotutils import make_mpl_properties
+        >>> make_mpl_properties (10 )
+        ... ['g',
+             'gray',
+             'y',
+             'blue',
+             'orange',
+             'purple',
+             'lime',
+             'k',
+             'cyan',
+             (0.6, 0.6, 0.6)]
+        >>> make_mpl_properties(100 , prop = 'marker')
+        >>> ['o',
+             '^',
+             'x',
+             'D',
+              .
+              .
+              .
+             11,
+             'None',
+             None,
+             ' ',
+             '']
+        >>> make_mpl_properties(50 , prop = 'line')
+        ... ['-',
+             '-',
+             '--',
+             '-.',
+               .
+               .
+               . 
+             'solid',
+             'dashed',
+             'dashdot',
+             'dotted']
         
+    """ 
+
+    try: n= int(n)
+    except: raise TypeError(f"Expect a number, got {type(n).__name__!r}")
+    
+    prop = str(prop).lower().strip().replace ('s', '') 
+    if prop not in ('color', 'marker', 'line'): 
+        raise ValueError ("Property {prop!r} is not availabe yet. , Expect"
+                          " 'colors', 'marker' or 'line'.")
+    # customize plots with colors lines and styles 
+    # and create figure obj
+    if prop=='color': 
+        d_colors =  D_COLORS 
+        d_colors = mpl.colors.ListedColormap(d_colors[:n]).colors
+        if len(d_colors) == n: 
+            props= d_colors 
+        else:
+            rcolors = list(itertools.repeat(
+                d_colors , (n + len(d_colors))//len(d_colors))) 
+    
+            props  = list(itertools.chain(*rcolors))
+        
+    if prop=='marker': 
+        
+        d_markers =  D_MARKERS + list(mpl.lines.Line2D.markers.keys()) 
+        rmarkers = list(itertools.repeat(
+            d_markers , (n + len(d_markers))//len(d_markers))) 
+        
+        props  = list(itertools.chain(*rmarkers))
+    # repeat the lines to meet the number of cv_size 
+    if prop=='line': 
+        d_lines =  D_STYLES
+        rlines = list(itertools.repeat(
+            d_lines , (n + len(d_lines))//len(d_lines))) 
+        # combine all repeatlines 
+        props  = list(itertools.chain(*rlines))
+    
+    return props [: n ]
+       
 def resetting_colorbar_bound(cbmax ,
                              cbmin,
                              number_of_ticks = 5, 

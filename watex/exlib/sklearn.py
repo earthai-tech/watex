@@ -179,7 +179,11 @@ from sklearn.preprocessing import (
     LabelBinarizer,
     LabelEncoder,
 ) 
-from sklearn.svm import SVC 
+from sklearn.svm import ( 
+    SVC, 
+    LinearSVC, 
+    LinearSVR 
+    )  
 from sklearn.tree import DecisionTreeClassifier
 
 
@@ -237,6 +241,8 @@ __all__=[
     'LabelBinarizer',
     'LabelEncoder',
     'SVC', 
+    'LinearSVC', 
+    'LinearSVR', 
     'DecisionTreeClassifier',
     'RandomForestClassifier',
     'AdaBoostClassifier', 

@@ -88,10 +88,6 @@ class BaseSteps(object):
 
     Parameters
     ----------
-    data: Filepath or Dataframe or shape (M, N) from 
-        :class:`pandas.DataFrame`. Dataframe containing samples M  
-        and features N
-        
     tname: str, 
         A target name or label. In supervised learning the target name is 
         considered as the reference name of `y` or label variable.
@@ -113,7 +109,6 @@ class BaseSteps(object):
             categorizefeature_props= [
                 ('flow', ([0., 1., 3.], ['FR0', 'FR1', 'FR2', 'FR3']))
                 ]
-            
         Please refer to :doc:`watex.utils.transformers.CategorizeFeatures` 
         fot furthers details.
         
@@ -154,6 +149,22 @@ class BaseSteps(object):
         
     pipeline: callable
         Pipeline to prepare the dataset. Default is :func:`defaultPipeline`.
+        
+    test_size: float, default=.2 i.e. 20% (X, y)
+        The ratio to split the data into training (X, y)  and testing (Xt, yt) set 
+        respectively. 
+        
+    random_state : int, RandomState instance or None, default=42
+        Controls the shuffling applied to the data before applying the split.
+        Pass an int for reproducible output across multiple function calls.
+        
+    verbose: int, `default` is ``0``    
+        Control the level of verbosity. Higher value lead to more messages. 
+        
+    data: Filepath or Dataframe or shape (M, N) 
+        Data is passed here as additional keyword arguments just for making
+        under the `X` and `y` using method :neth:`~.stratifydata`. It 
+        is :class:`pandas.DataFrame` containing samples of M  and features N. 
         
     Notes
     ------
@@ -271,10 +282,25 @@ class BaseSteps(object):
         
         Parameters
         -----------
-        X: ndarray, pd.DataFrame 
-             X or dataframe X. 
-        y: array_like, 
-            ylabel or target values.
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+            
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+            
+        Return
+        -------
+        ``self``: `BaseSteps` instance 
+            returns ``self`` for easy method chaining.
+            
         """
         
         if self.verbose: 

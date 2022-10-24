@@ -42,14 +42,13 @@ _logger = watexlog().get_watex_logger(__name__)
 __all__=['_fetch_data']
 
 _BTAGS = ( 
-    'mid', 
     'semi', 
-    'preprocess', 
-    'fit',
-    'analysis', 
+    'preprocessed', 
+    'fitted',
+    'stratified', 
+    'analysed', 
     'pca',
-    'reduce', 
-    'dimension',
+    'reduced', 
     'test',
     'pipe',
     'prepared'
@@ -87,13 +86,12 @@ _BVAL= dict (
             },
         'tags': ('original', 
                  'stratified',
-                 'mid', 
                  'semi', 
-                 'preprocess', 
+                 'preprocessed', 
                  'pipe', 
-                 'analyses', 
+                 'analysed', 
                  'pca',
-                 'reduce dimension', 
+                 'dimension reduced', 
                  'test'
                  'pipe',
                  'prepared',
@@ -108,27 +106,28 @@ _BVAL= dict (
          _y0 
          ), 
     pipe= _pipeline, 
-    analysis= (
+    analysed= (
         _Xc,
         _yp 
         ), 
 )
   
 def _fetch_data(tag): 
-    r=None 
-    pm =regex.search (tag)
-    if pm is None: 
-        raise DatasetError(f"Unknow tag {tag!r}. Expect 'original',"
-                           f" {smart_format(_BTAGS, 'or')}") 
-        
-    pm= pm.group() 
+    r=None
+    tag = str(tag)
 
-    if _pca_set_checker(pm.lower()): 
-        pm = 'analysis'
+    if _tag_checker(tag.lower()): 
+        pm = 'analysed'
+    elif _tag_checker(tag.lower(), ('mid','semi', 'preprocess', 'fit')):
+        pm='semi'
+    else : 
+        pm =regex.search (tag)
+        if pm is None: 
+            raise DatasetError(f"Unknow tag {tag!r}. Expect 'original',"
+                               f" {smart_format(_BTAGS, 'or')}") 
+            
+        pm= pm.group() 
     
-    elif pm in ('mid','semi', 'preprocess', 'fit'): 
-        pm = 'semi' 
-        
     if pm =='prepared': 
         r = loadingdefaultSerializedData (
             'watex/etc/__Xy.pkl',(_Xp, _yp), dtype='training' 
@@ -168,10 +167,12 @@ def loadingdefaultSerializedData (f, d0, dtype ='test'):
 
     return X, y
 
-def _pca_set_checker (param):
-    for ix in ['analys', 'pca', 'dim','reduc']: 
-        if ix in param.lower():
-            return True 
+def _tag_checker (param, tag_id= ('analys', 'pca', 'dim','reduc') 
+                      # out = 'analysed'
+                      ):
+    for ix in tag_id: 
+        if param.lower().find(ix)>=0:
+            return True
     return False 
    
     

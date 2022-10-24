@@ -520,7 +520,7 @@ target: Array-like or :class:`pd.Series`
     model="""
 model: callable, always as a function,    
     A model estimator. An object which manages the estimation and decoding 
-    of a model. The model is estimated as a deterministic function of::
+    of a model. The model is estimated as a deterministic function of:
         * parameters provided in object construction or with set_params;
         * the global numpy.random random state if the estimator’s random_state 
             parameter is set to None; and
@@ -593,6 +593,20 @@ scoring: str,
     diverse API.  ``scoring`` may also be set to None, in which case the
     estimator's :term:`score` method is used.  See `slearn.scoring_parameter`
     in the `Scikit-learn`_ User Guide.
+    """, 
+    random_state="""
+    
+random_state : int, RandomState instance or None, default=None
+    Controls the shuffling applied to the data before applying the split.
+    Pass an int for reproducible output across multiple function calls..    
+    """,
+    test_size="""
+test_size : float or int, default=None
+    If float, should be between 0.0 and 1.0 and represent the proportion
+    of the dataset to include in the test split. If int, represents the
+    absolute number of test samples. If None, the value is set to the
+    complement of the train size. If ``train_size`` is also None, it will
+    be set to 0.25.    
     """, 
     n_jobs="""
 n_jobs: int, 

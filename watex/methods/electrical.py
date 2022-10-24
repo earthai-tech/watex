@@ -91,7 +91,6 @@ class DCProfiling(ElectricalMethods)  :
         >>> <object>.line1.sves_ ; <object>.line1.sves_resistivity_ 
         >>> <object>.line2.sves_ ; <object>.line2.sves_resistivity_ 
     
-    
     Arguments 
     ----------
     

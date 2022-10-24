@@ -1,10 +1,16 @@
 from .mlplot import ( 
+    pobj,
     biPlot, 
     EvalPlot, 
     plotLearningCurves, 
     plotSilhouette,
     plotDendrogram, 
-    plotBindDendro2Heatmap, 
+    plotDendroheat, 
+    plotProjection, 
+    plotModel, 
+    plot_reg_scoring, 
+    plot_matshow, 
+    plot_model_scores 
     )
 from .plot import ( 
     QuickPlot , 
@@ -14,6 +20,7 @@ from .plot import (
     )
 
 __all__=[
+    "pobj",
     "biPlot", 
     "EvalPlot", 
     "QuickPlot" , 
@@ -21,6 +28,11 @@ __all__=[
     "plotLearningCurves", 
     "plotSilhouette", 
     "plotDendrogram", 
-    "plotBindDendro2Heatmap", 
-    "viewtemplate"
+    "plotDendroheat", 
+    "viewtemplate", 
+    "plotProjection", 
+    "plotModel", 
+    "plot_reg_scoring", 
+    "plot_matshow", 
+    "plot_model_scores"
     ]

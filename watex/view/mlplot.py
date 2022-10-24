@@ -22,6 +22,7 @@ from abc import ABCMeta
 import copy 
 import numpy as np 
 import pandas as pd
+import seaborn as sns 
 from scipy.cluster.hierarchy import dendrogram # set_link_color_palette 
 
 import matplotlib as mpl 
@@ -48,7 +49,8 @@ from ..exlib.sklearn import  (
 from ..exceptions import ( 
     # PlotError, 
     NotFittedError , 
-    LearningError
+    LearningError, 
+    EstimatorError
     )
 from ..metrics import ( 
     precision_recall_tradeoff, 
@@ -61,12 +63,12 @@ from ..utils.hydroutils import check_flow_objectivity
 from ..utils.coreutils import _is_readable 
 from ..utils.funcutils import ( 
     # _assert_all_types,
-    # is_iterable,
+    is_iterable,
     reshape, 
     to_numeric_dtypes, 
     smart_strobj_recognition, 
     repr_callable_obj , 
-    # str2columns
+    str2columns
     )
 from ..utils.mlutils import ( 
     exporttarget , 
@@ -77,10 +79,8 @@ from ..utils.mlutils import (
     # labels_validator, 
     )
 from ..utils.plotutils import  ( 
-    D_COLORS, 
-    D_MARKERS, 
-    D_STYLES,
-    savefigure
+    savefigure, 
+    make_mpl_properties
     )
 from ..typing import ( 
     Generic,
@@ -91,8 +91,8 @@ from ..typing import (
     List,
     ArrayLike, 
     NDArray,
-    DType, 
     DataFrame, 
+    Series
     )
 _logger=watexlog.get_watex_logger(__name__)
 
@@ -120,9 +120,7 @@ _param_docs = DocstringComponents.from_nested_components(
     )
 #-------
 
-
 class EvalPlot(BasePlot): 
-
     def __init__(self, tname:str =None, 
                  encode_labels: bool=False,
                  scale: str = None, 
@@ -142,14 +140,12 @@ class EvalPlot(BasePlot):
         self.encode_labels=encode_labels 
         self.litteral_classes=litteral_classes 
         self.label_values=label_values 
-        
         # precision(p) and recall(r) 
-        # styles properties
+        # properties
         self.rs =kws.pop('rs', '--')
         self.ps =kws.pop('ps', '-')
         self.rc =kws.pop('rc', (.6, .6, .6))
         self.pc =kws.pop('pc', 'k')
-        
         # predicted properties 
         self.yp_lc =kws.pop('yp_lc', 'k') 
         self.yp_marker= kws.pop('yp_marker', 'o')
@@ -290,16 +286,8 @@ class EvalPlot(BasePlot):
         self.X = X 
         self.inspect 
         strategy = t_params.pop('strategy', 'most_frequent')
-    
-        # self.X = to_numeric_dtypes(self.X , columns = columns )
-        # self.X = selectfeatures(self.X, include ='number')
-        # if len (self.X.columns) ==0 : 
-        #     raise TypeError(
-        #         " The module {self.__class__.__name__!r } expects dataframe "
-        #         " 'X' with numerical features only. ")
-        # keep columns 
         columns = list(self.X.columns )
-        
+
         imp = SimpleImputer(strategy = strategy,  **t_params ) 
         # create new dataframe 
         X= imp.fit_transform(self.X )
@@ -409,7 +397,7 @@ class EvalPlot(BasePlot):
             pc2_label:str='Axis 2',
             plot_dict:Generic[V] = None,
             **pca_kws
-    ): 
+    )->'EvalPlot': 
         """ Plot PCA component analysis using :class:`~.sklearn.decomposition`. 
         
         PCA indentifies the axis that accounts for the largest amount of 
@@ -498,7 +486,8 @@ class EvalPlot(BasePlot):
         classes = classes or np.unique (y)
         
         if plot_dict is None: 
-            plot_dict ={'y_colors':D_COLORS, 
+            D_COLORS = make_mpl_properties(1e3)
+            plot_dict ={'y_colors': D_COLORS,
                         's':100.}
             
         if self.encode_labels: 
@@ -506,14 +495,15 @@ class EvalPlot(BasePlot):
                 self.prefix, self.label_values, self.litteral_classes, 
                 self.objective 
                 )
-        
         # go for PCA analysis 
         pca= nPCA(self.X, n_components, n_axes =n_axes, return_X= False, 
                             **pca_kws)
         feature_importances_ = pca.feature_importances_
-        X_reduced = pca.X # the components
-        n_axes = n_axes or pca.n_axes # for consistency
+        X_reduced = pca.X 
+        # for consistency
         # Get axis for plots from pca_labels
+        n_axes = n_axes or pca.n_axes 
+        
         try: 
             lbls =[int(re.findall("\d+", str_axes)[0]) 
                    for str_axes in [pc1_label, pc2_label]]
@@ -556,7 +546,8 @@ class EvalPlot(BasePlot):
         # --Plot Biplot
         if biplot: 
             
-            mpl.rcParams.update(mpl.rcParamsDefault) # reset ggplot style
+            mpl.rcParams.update(mpl.rcParamsDefault) 
+            # reset ggplot style
             # Call the biplot function for only the first 2 PCs
             cmp_= np.concatenate((pca.components_[pca1_ix, :], 
                                   pca.components_[pca2_ix, :]))
@@ -576,7 +567,8 @@ class EvalPlot(BasePlot):
                 plt.show()
             
             return  
-        # created a dataframe concatenate reduced dataframe + y_target
+        # created a dataframe and 
+        # concatenate reduced dataframe + y_target
         try: 
             df_pca =pd.concat([
                     pd.DataFrame(X_,columns =[pc1_label, pc2_label]),
@@ -596,14 +588,14 @@ class EvalPlot(BasePlot):
         # and second components
         # ranged like [('pc1',['shape', 'power',...],
         #   [-0.85927608, -0.35507183,...] ),
-                    # ('pc2', ['sfi', 'power', ...],
-                    #[ 0.50104756,  0.4565256 ,... ), ...]
+        # ('pc2', ['sfi', 'power', ...],
+        #[ 0.50104756,  0.4565256 ,... ), ...]
         # print('pc1axes =', pca1_ix, 'pc1_label=', pc1_label)
         # print('pc2axes =', pca2_ix, 'pc2_label=', pc2_label)
         pca_axis_1 = feature_importances_[pca1_ix][1][0] 
         pca_axis_2 = feature_importances_[pca2_ix][1][0]
         # Extract the name of the  values of the first 
-        # components and second components in percentage.
+        # component and second components in percentage.
         pca_axis_1_ratio = np.around(
             abs(feature_importances_[pca1_ix][2][0]),2) *1e2
         pca_axis_2_ratio = np.around(
@@ -694,7 +686,7 @@ class EvalPlot(BasePlot):
         method:Optional[str]=None,
         cvp_kws =None,
         **prt_kws
-    ): 
+    )->'EvalPlot': 
         """ 
         Precision/recall (PR) and tradeoff plots. 
         
@@ -804,7 +796,6 @@ class EvalPlot(BasePlot):
         xlabel = None 
         ylabel = None 
         if kind=='threshold': 
-            
             ax.plot(prtObj.thresholds,
                     prtObj.precisions[:-1], 
                     color = self.pc, 
@@ -825,7 +816,6 @@ class EvalPlot(BasePlot):
 
 
         elif kind =='recall': 
-            
             ax.plot(prtObj.recalls[:-1],
                     prtObj.precisions[:-1], 
                     color = self.lc, 
@@ -837,8 +827,7 @@ class EvalPlot(BasePlot):
             
             xlabel = self.xlabel or 'Recall'
             ylabel =self.ylabel or 'Precision'
-            
-                
+ 
             self.xlim =[0,1]
             
         ax.set_xlabel( xlabel,
@@ -881,7 +870,7 @@ class EvalPlot(BasePlot):
         method: Optional[str]=None,
         cvp_kws:dict=None,
         **roc_kws
-        ):
+        )-> 'EvalPlot':
         """
         Plot receiving operating characteric (ROC) classifiers. 
         
@@ -976,7 +965,7 @@ class EvalPlot(BasePlot):
                      sns_height= 4.0, sns_aspect= 0.7, verbose= 0)
         
         """
-        
+       
         # if method not given as tuple
         if not isinstance(clfs, (list, tuple)):
             try : 
@@ -1009,6 +998,9 @@ class EvalPlot(BasePlot):
         # create figure obj 
         fig = plt.figure(figsize = self.fig_size)
         ax = fig.add_subplot(1,1,1)
+        
+        D_COLORS = make_mpl_properties(len(clfs))
+        D_STYLES= make_mpl_properties(len(clfs), prop= 'line')
         D_COLORS[0] = self.lc
         D_STYLES[0]= self.ls
 
@@ -1052,7 +1044,6 @@ class EvalPlot(BasePlot):
              self.leg_kws['loc']='lower right'
         ax.legend(**self.leg_kws)
         
-
         self.save(fig)
         
         return self 
@@ -1060,13 +1051,13 @@ class EvalPlot(BasePlot):
     @docSanitizer()
     def plotConfusionMatrix(
         self, 
-        clf, 
+        clf:F, 
         *, 
-        kind='map', 
-        labels=None, 
-        matshow_kws=dict(), 
+        kind:str =None, 
+        labels:List[int]=None, 
+        matshow_kws: dict=None, 
         **conf_mx_kws
-        ): 
+        )-> 'EvalPlot': 
         """ Plot confusion matrix for error evaluation.
         
         A representation of the confusion matrix for error visualization. If 
@@ -1153,6 +1144,7 @@ class EvalPlot(BasePlot):
             kind ='error'
         else: kind ='map'
         
+        matshow_kws= matshow_kws or dict() 
         # gives a gray color to matshow
         # if is given as matshow keywords arguments 
         # then remove it 
@@ -1194,8 +1186,6 @@ class EvalPlot(BasePlot):
             self.cb_label = self.cb_label or 'Error'
       
         cbax= fig.colorbar(cax, **self.cb_props)
-        
-        
         ax.set_xlabel( self.xlabel,
               fontsize= self.font_size )
         
@@ -1208,10 +1198,8 @@ class EvalPlot(BasePlot):
             ax.yaxis.set_major_locator(mticker.FixedLocator(yticks_loc))
             ax.yaxis.set_major_formatter(mticker.FixedFormatter(
                 [''] + list (labels)))
-            
         self.ylabel = self.ylabel or 'Actual classes'
         self.xlabel = self.xlabel or 'Predicted classes'
-        
         ax.set_ylabel (self.ylabel,
                        fontsize= self.font_size *3 )
         ax.set_xlabel (self.xlabel,
@@ -1225,7 +1213,6 @@ class EvalPlot(BasePlot):
                         )
         if self.tp_labeltop: 
             ax.xaxis.set_label_position('top')
-        
         cbax.ax.tick_params(labelsize=self.font_size * 3 ) 
         cbax.set_label(label=self.cb_label,
                        size=self.font_size * 3 ,
@@ -1446,10 +1433,14 @@ chunked during the fit methods.
     returns= _core_docs["returns"],
 )
 
-# create a show class to 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# create a shadow class to 
+# hold the font and matplotlib
+# properties 
 _b= EvalPlot () 
 pobj = type ('Plot', (BasePlot, ), {**_b.__dict__} ) 
- 
+setattr(pobj, 'save', _b.save )
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def plotProjection(
     X: DataFrame | NDArray, 
     Xt: DataFrame | NDArray =None, *, 
@@ -1490,13 +1481,12 @@ def plotProjection(
         keywords arguments passed to :func:`matplotlib.plot.scatter` as test
         location font and colors properties. 
         
-    bplot_kws: dict, 
+    baseplot_kws: dict, 
         All all  the keywords arguments passed to the peroperty  
         :class:`watex.property.BasePlot` class. 
         
     Examples
     --------
-        
     >>> from watex.datasets import fetch_data 
     >>> from watex.view.mlplot import plotProjection 
     >>> X, Xt, *_ = fetch_data ('bagoue', split_X_y =True, as_frame =True) 
@@ -1521,7 +1511,6 @@ def plotProjection(
                         trainlabel='train location', 
                         testlabel='test location', **plot_kws
                        )
-
     """
     
     trainlabel =baseplot_kws.pop ('trainlabel', None )
@@ -1616,344 +1605,301 @@ def plotProjection(
     if len(pobj.leg_kws) ==0 or 'loc' not in pobj.leg_kws.keys():
          pobj.leg_kws['loc']='upper left'
     ax.legend(**pobj.leg_kws)
-    
-    plt.show()
-    
-    print(x.shape,  y.shape, xt.shape, yt.shape )
-    if pobj.savefig is not None :
-        plt.savefig(pobj.savefig,
-                    dpi=pobj.fig_dpi,
-                    orientation =pobj.fig_orientation)
+    pobj.save(fig)
 
-                
-def model(
-    self, 
-    y_, 
-    ypred=None,
+#XXX                
+def plotModel(
+    yt: ArrayLike |Series, 
+    ypred:ArrayLike |Series=None,
     *, 
-    clf=None, 
-    X_=None, 
-    predict =False, 
-    prefix=None, 
-    index =None, 
-    fill_between=False, 
-    ylabel=None 
+    clf:F=None, 
+    Xt:DataFrame|NDArray=None, 
+    predict:bool =False, 
+    prefix:Optional[bool]=None, 
+    index:List[int|str] =None, 
+    fill_between:bool=False, 
+    labels:List[str]=None, 
+    return_ypred:bool=False, 
+    **baseplot_kws 
     ): 
-    """ Plot model from test sets or using a sample of predicted test.
+    """ Plot model 'y' (true labels) versus 'ypred' (predicted) from test 
+    data.
+    
+    Plot will allow to know where estimator/classifier failed to predict 
+    correctly. 
     
     Parameters
     ----------
-    y_:array-like of test data 
-        test data or sample of label to predict 
+    yt:array-like, shape (M, ) ``M=m-samples``,
+        test target; Denotes data that may be observed at training time 
+        as the dependent variable in learning, but which is unavailable 
+        at prediction time, and is usually the target of prediction. 
         
-    y_pred:array-like 
-        predicted label 
+    ypred:array-like, shape (M, ) ``M=m-samples``
+        Array of the predicted labels. It has the same number of samples as 
+        the test data 'Xt' 
         
-    clf: callable
-        Estimator of classifier 
+    clf :callable, always as a function, classifier estimator
+        A supervised predictor with a finite set of discrete possible 
+        output values. A classifier must supports modeling some of binary, 
+        targets. It must store a classes attribute after fitting.
         
-    X_: ndarra of (n_samples, n_features)
-        Test set to predict data. If `X_` is given  turn `predict` 
-        to ``True`` to predict test data.
+    Xt: Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+        Shorthand for "test set"; data that is observed at testing and 
+        prediction time, used as independent variables in learning. The 
+        notation is uppercase to denote that it is ordinarily a matrix.
         
-    predict:bool, 
-        Make a prediction if test set `X_` is given
+    prefix: str, optional 
+        litteral string to prefix the samples/examples considered as 
+        tick labels in the abscissa. For instance:: 
+            
+            index =[0, 2, 4, 7]
+            prefix ='b' --> index =['b0', 'b2', 'b4', 'b7']
+
+    predict: bool, default=False, 
+        Expected to be 'True' when user want to predict the array 'ypred'
+        and plot at the same time. Otherwise, can be set to 'False' and use 
+        the'ypred' data already predicted. Note that, if 'True', an  
+        estimator/classifier must be provided as well as the test data 'Xt', 
+        otherwise an error will occur. 
         
-    prefix: str 
-        prefix to add to your index values. For instance::
-        
-        index =[0, 2, 4, 7]
-        prefix ='b' --> index =['b0', 'b2', 'b4', 'b7'] 
-        
-    index: array_like 
-        list of array like of indexes. it will replace the indexes of 
-        pd.Series or dataframe index if `X_` is given. 
+    index: array_like, optional
+        list integer values or string expected to be the index of 'Xt' 
+        and 'yt' turned into pandas dataframe and series respectively. Note 
+        that one of them has already and index and new index is given, the 
+        latter must be consistent. This is usefull when data are provided as
+        ndarray rathern than a dataframe. 
         
     fill_between: bool 
-        Fill a line between the actual classes `y_` (test label)
+        Fill a line between the actual classes i.e the true labels. 
         
-     ylabel: list 
-        list of labels names  to hold the name of each categories.
-        
+    labels: list of str or int, Optional
+       list of labels names  to hold the name of each category.
+       
+    return_pred: bool, 
+        return predicted 'ypred' if 'True' else nothing. 
+    
+    baseplot_kws: dict, 
+        All all  the keywords arguments passed to the peroperty  
+        :class:`watex.property.BasePlot` class. 
+ 
     Examples
     --------
-    
-    >>> from sklearn.svm import SVC 
-    >>> from watex.view.mlplot import MLPlots 
+    (1) -> Prepare our data - Use analysis data of Bagoue dataset 
+            since data is alread scaled and imputed
+            
+    >>> from watex.exlib.sklearn  import SVC 
     >>> from watex.datasets import fetch_data 
-    >>> X,y = fetch_data('Bagoue dataset prepared')
+    >>> from watex.utils.mlutils import split_train_test_by_id
+    >>> X, y = fetch_data('bagoue analysis' ) 
+    >>> _, Xtest = split_train_test_by_id(X, 
+                                          test_ratio=.3 ,  # 30% in test set 
+                                          keep_colindex= False
+                                        )
+    >>> _, ytest = split_train_test_by_id(y, .3 , keep_colindex =False) 
+    
+   (2) -> prepared our demo estimator and plot model predicted 
+   
     >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
-    >>> plot_kws ={'lw' :3.,                  # line width 
-                 'lc':(.9, 0, .8), 
-                 'ms':7.,                
-                 'yp_marker_style' :'o', 
-                 'fig_size':(12, 8),
-                'font_size':15.,
-                'xlabel': 'Test examples',
-                'ylabel':'Flow categories' ,
-                'marker_style':'o', 
-                'markeredgecolor':'k', 
-                'markerfacecolor':'b', 
-                'markeredgewidth':3, 
-                'yp_markerfacecolor' :'k', 
-                'yp_markeredgecolor':'r', 
-                'alpha' :1., 
-                'yp_markeredgewidth':2.,
-                'show_grid' :True,          
-                'galpha' :0.2,              
-                'glw':.5,                   
-                'rotate_xlabel' :90.,
-                'fs' :3.,                   
-                's' :20 ,                  
-                'rotate_xlabel':90
+    >>> base_plot_params ={
+                        'lw' :3.,                  # line width 
+                        'lc':(.9, 0, .8), 
+                        'ms':7.,                
+                        'yp_marker' :'o', 
+                        'fig_size':(12, 8),
+                        'font_size':15.,
+                        'xlabel': 'Test examples',
+                        'ylabel':'Flow categories' ,
+                        'marker':'o', 
+                        'markeredgecolor':'k', 
+                        'markerfacecolor':'b', 
+                        'markeredgewidth':3, 
+                        'yp_markerfacecolor' :'k', 
+                        'yp_markeredgecolor':'r', 
+                        'alpha' :1., 
+                        'yp_markeredgewidth':2.,
+                        'show_grid' :True,          
+                        'galpha' :0.2,              
+                        'glw':.5,                   
+                        'rotate_xlabel' :90.,
+                        'fs' :3.,                   
+                        's' :20 ,                  
+                        'rotate_xlabel':90
                    }
-    >>> modObj = MLPlots(**plot_kws)
-    >>> modObj.model(y, X_=X, clf =svc_clf, 
-                  predict= True, 
-                  prefix ='b' ,
-                  fill_between =False, 
-                  ylabel=['FR0', 'FR1', 'FR2', 'FR3']
-                  )
+    >>> plotModel(yt= ytest ,
+                   Xt=Xtest , 
+                   predict =True , # predict the result (estimator fit)
+                   clf=svc_clf ,  
+                   fill_between= False, 
+                   prefix ='b', 
+                   labels=['FR0', 'FR1', 'FR2', 'FR3'], # replace 'y' labels. 
+                   **base_plot_params 
+                   )
+    >>> plot show where the model failed to well predict the target 'yt'
+    
     """
-    
-    if index is not None:
-        #control len of index and len of y
-        try : 
-            mess ='Object `index` has no length.'+\
-                ' Could not be an index.'
-            len(index)
-        except TypeError as type_error : 
-            raise TypeError(mess) from type_error 
-         
-        len_index=  len(y_)==len(index)
+    def format_ticks (ind, tick_number):
+        """ Format thick parameter with 'FuncFormatter(func)'
+        rather than using:: 
+            
+        axi.xaxis.set_major_locator (plt.MaxNLocator(3))
         
-        if not len_index:
-            warnings.warn(
-                f"Index must have the same lenght as `y`={len(y_)!r}"
-                f" but {len(index)!r} {'are' if len(index)>1 else 'is'}"
-                " given.")
-            self._logging.debug(
-                f"Index must get the same lenght as `y`={len(y_)!r}"
-                f" but {len(index)!r} {'are' if len(index)>1 else 'is'}"
-                " given.")
-            index =None
-            
-        if len_index : 
-            if isinstance(y_, (pd.Series, pd.DataFrame)):
-                if not np.all(y_.index.isin(index)):
-                    warnings.warn('Indexes values provided are not in'
-                                  ' `y_`. Shrank index to `y`index.',
-                                  UserWarning)
-                    self._logging.debug('Index values are not in `y`. Index are'
-                                        ' shrank to hold indexes of `y`.')
-                    index =y_.index 
-                    y_=y_.values()
-    
-            # if prefix is not None: 
-            #     #add prefix to index
-            #     index =np.array([f'{prefix}' +str(item) 
-            #                      for item in index ])
-            
-            y_=pd.Series(y_, index = index )
-            
-    if predict: 
-  
-        if clf is None: 
-            warnings.warn('None estimator found! Could not predict `y` ')
-            self._logging.error('NoneType `clf` <estimator> could not'
-                                ' predict `y`.')
-            raise ValueError('None estimator detected!'
-                             ' could not predict `y`') 
-        if X_ is None: 
-            raise TypeError('NoneType can not used for prediction.'
-                            ' Need a test set `X`.')
-  
-        # check estimator as callable object or ABCMeta classes
-        if not hasattr(clf, '__call__') and  not inspect.isclass(clf)\
-            and  type(clf.__class__)!=ABCMeta: 
-  
-            raise TypeError(f"{clf.__class__.__name__!r} is not a classifier "
-                             " or an estimator. Could not use for prediction.")
-        clf.fit(X_, y_)
-        ypred = clf.predict(X_)
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
+        """
+        if ind % 7 ==0: 
+            return '{}'.format (index[ind])
+        else: None 
         
-        if isinstance(X_, (pd.DataFrame, pd.Series)):
-            if index is None:
-                index = X_.index
-            
-    if isinstance(y_, pd.Series): 
-        index = y_.index.astype('>U12')
+    #xxxxxxxxxxxxxxxx set base plot keywords arguments
+    for k  in list(baseplot_kws.keys()): 
+        setattr (pobj , k, baseplot_kws[k])
+
+    # index is used for displaying the examples label in x-abscissa  
+    # for instance index = ['b4, 'b5', 'b11',  ... ,'b425', 'b427', 'b430'] 
     
-    if index is None: 
-        # take default values if  indexes are not given 
-        index =np.array([i for i in range(len(y_))])
-        
+    Xt, yt,index, clf, ypred= _chk_predict_args (
+        Xt, yt,index, clf, ypred , predict= predict 
+        )
     if prefix is not None: 
-        index =np.array([f'{prefix}' +str(item) 
-                             for item in index ])
-    if len(y_)!=len(ypred): 
-        raise TypeError(" `y` and predicted `ypred` must have"
-                        f" the same length. But {len(y_)!r} and "
-                        f"{len(ypred)!r} wre given respectively.")
+        index =np.array([f'{prefix}' +str(item) for item in index ])        
         
-     # create figure obj 
-    fig = plt.figure(figsize = self.fig_size)
+    # create figure obj 
+    fig = plt.figure(figsize = pobj.fig_size)
     ax = fig.add_subplot(1,1,1) # create figure obj 
-    
-    # plot the predicted target
-    if self.s is None: 
-        self.s = self.fs *40 
-    ax.scatter(x= index, y =ypred ,
-              color = self.yp_lc,
-               s = self.s,
-               alpha = self.alpha, 
-               marker = self.yp_marker_style,
-               edgecolors = self.yp_marker_edgecolor,
-               linewidths = self.yp_lw,
-               linestyles = self.yp_ls,
-               facecolors = self.yp_marker_facecolor,
-               label = 'Predicted'
-               )
-    
+    # control the size of predicted items 
+    pobj.s = pobj.s or pobj.fs *30 
     # plot obverved data (test label =actual)
     ax.scatter(x= index,
-               y =y_ ,
-                color = self.lc,
-                 s = self.s/2,
-                 alpha = self.alpha, 
-                 marker = self.marker_style,
-                 edgecolors = self.marker_edgecolor,
-                 linewidths = self.lw,
-                 linestyles = self.ls,
-                 facecolors = self.marker_facecolor,
+               y =yt ,
+                color = pobj.lc,
+                 s = pobj.s*10,
+                 alpha = pobj.alpha, 
+                 marker = pobj.marker,
+                 edgecolors = pobj.marker_edgecolor,
+                 linewidths = pobj.lw,
+                 linestyles = pobj.ls,
+                 facecolors = pobj.marker_facecolor,
                  label = 'Observed'
-                   )    
-        
+                   )   
+    # plot the predicted target
+    ax.scatter(x= index, y =ypred ,
+              color = pobj.yp_lc,
+               s = pobj.s/2,
+               alpha = pobj.alpha, 
+               marker = pobj.yp_marker,
+               edgecolors = pobj.yp_marker_edgecolor,
+               linewidths = pobj.yp_lw,
+               linestyles = pobj.yp_ls,
+               facecolors = pobj.yp_marker_facecolor,
+               label = 'Predicted'
+               )
+  
     if fill_between: 
-        ax.plot(y_, 
-                c=self.lc,
-                ls=self.ls, 
-                lw=self.lw, 
-                alpha=self.alpha
+        ax.plot(yt, 
+                c=pobj.lc,
+                ls=pobj.ls, 
+                lw=pobj.lw, 
+                alpha=pobj.alpha
                 )
-    if self.ylabel is None:
-        self.ylabel ='Categories '
-    if self.xlabel is None:
-        self.xlabel = 'Test data'
+    if pobj.ylabel is None:
+        pobj.ylabel ='Categories '
+    if pobj.xlabel is None:
+        pobj.xlabel = 'Test data'
         
-    if ylabel is not None: 
-        mess =''.join([ 
-                'Label must have the same length with number of categories',
-                f" ={len(np.unique(y_))!r}, but{len(ylabel)!r} ",
-                f"{'are' if len(ylabel)>1 else 'is'} given."])
-        if len(ylabel) != len(np.unique(y_)): 
-            warnings.warn(mess
-                )
-            self._logging.debug(mess)
+    if labels is not None: 
+        if not  is_iterable(labels): 
+            labels =[labels]
+
+        if len(labels) != len(np.unique(yt)): 
+            warnings.warn(
+                "Number of categories in 'yt' and labels must be consistent."
+                f" Expected {len(np.unique(yt))}, got {len(labels)}")
         else:
-            ax.set_yticks(np.unique(y_))
-            ax.set_yticklabels(ylabel)
-    ax.set_ylabel (self.ylabel,
-                   fontsize= self.font_size )
-    ax.set_xlabel (self.xlabel,
-           fontsize= self.font_size )
+            ax.set_yticks(np.unique(yt))
+            ax.set_yticklabels(labels)
+            
+    ax.set_ylabel (pobj.ylabel,
+                   fontsize= pobj.font_size  )
+    ax.set_xlabel (pobj.xlabel,
+           fontsize= pobj.font_size  )
    
-    if self.tp_axis is None or self.tp_axis =='both': 
-        ax.tick_params(axis=self.tp_axis, 
-            labelsize= self.tp_labelsize, 
+    if pobj.tp_axis is None or pobj.tp_axis =='both': 
+        ax.tick_params(axis=pobj.tp_axis, 
+            labelsize= pobj.tp_labelsize *5 , 
             )
         
-    elif self.tp_axis =='x':
+    elif pobj.tp_axis =='x':
         param_='y'
-    elif self.tp_axis =='y': 
+    elif pobj.tp_axis =='y': 
         param_='x'
         
-    if self.tp_axis in ('x', 'y'):
-        ax.tick_params(axis=self.tp_axis, 
-                        labelsize= self.tp_labelsize, 
+    if pobj.tp_axis in ('x', 'y'):
+        ax.tick_params(axis=pobj.tp_axis, 
+                        labelsize= pobj.tp_labelsize *5 , 
                         )
         
         ax.tick_params(axis=param_, 
-                labelsize= self.font_size, 
+                labelsize= pobj.font_size, 
                 )
+    # show label every 14 samples 
+    if len(yt ) >= 14 : 
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))
+
+    plt.xticks(rotation = pobj.rotate_xlabel)
+    plt.yticks(rotation = pobj.rotate_ylabel)
     
-    plt.xticks(rotation = self.rotate_xlabel)
-    plt.yticks(rotation = self.rotate_ylabel)
-    
-    if self.show_grid is True : 
-        ax.grid(self.show_grid,
-                axis=self.gaxis,
-                which = self.gwhich, 
-                color = self.gc,
-                linestyle=self.gls,
-                linewidth=self.glw, 
-                alpha = self.galpha
+    if pobj.show_grid: 
+        ax.grid(pobj.show_grid,
+                axis=pobj.gaxis,
+                which = pobj.gwhich, 
+                color = pobj.gc,
+                linestyle=pobj.gls,
+                linewidth=pobj.glw, 
+                alpha = pobj.galpha
                 )
-        if self.gwhich =='minor': 
+        if pobj.gwhich =='minor': 
             ax.minorticks_on()
             
-    if len(self.leg_kws) ==0 or 'loc' not in self.leg_kws.keys():
-         self.leg_kws['loc']='upper left'
-    ax.legend(**self.leg_kws)
+    if len(pobj.leg_kws) ==0 or 'loc' not in pobj.leg_kws.keys():
+         pobj.leg_kws['loc']='upper left'
+    ax.legend(**pobj.leg_kws)
     
-    plt.show()
-    if self.savefig is not None :
-        plt.savefig(self.savefig,
-                    dpi=self.fig_dpi,
-                    orientation =self.fig_orientation)
-        
+    pobj.save(fig)
+    
+    return ypred if return_ypred else None   
 
-    
-def plotLearningCurve(self, clf, X, y, test_size=0.2, scoring ='mse',
-                         **split_kws) : 
-    """ Plot learning curves
-    Use cross validation to get an estimate of model's generalisation 
-    performance. 
-    
-    Parameters 
-    ----------
-    clf: callable 
-        model estimator of classifier 
-    X: ndarray(m_examples, n_features)
-        training data set 
-    y: array-like 
-        y-label for predicting purpose 
+def plot_reg_scoring(
+    reg, X, y, test_size=None, random_state =42, scoring ='mse',
+    return_errors: bool=False, **baseplot_kws
+    ) : 
+    #xxxxxxxxxxxxxxxx set base plot keywords arguments
+    for k  in list(baseplot_kws.keys()): 
+        setattr (pobj , k, baseplot_kws[k])
         
-    split_kws: dict 
-        Additional keywords arguments. Hold from scikit-learn 
-        class:`~sklearn.model_selection.train_test_split`
-    """ 
- 
+    scoring = scoring or 'mse'
+    scoring = str(scoring).lower().strip() 
+    if scoring not in ('mse', 'rme'): 
+        raise ValueError ("Acceptable scorings are'mse' are 'rmse'"
+                          f" got {scoring!r}")
+    if not hasattr(reg, '__class__') and not inspect.isclass(reg.__class__): 
+        raise TypeError("{reg!r} isn't a model estimator.")
+         
+    X_train, X_val, y_train, y_val = train_test_split(
+        X, y, test_size=test_size, random_state=random_state)
     
-    if scoring is not None:
-        try :
-            scoring = scoring.lower()
-        except : 
-            raise TypeError(f"Scoring ={scoring!r} should be a string"
-                            f" not a {type(scoring).__name__!r} type.")
-            
-    if scoring in ('mean_squared_error', 'mean squared error') :
-        scoring ='mse'
-    elif scoring in ('root_mean_squared_error', 'root mean squared error'):
-        scoring ='rmse'
-    
-    if not hasattr(clf, '__class__') and not inspect.isclass(clf.__class__): 
-        raise TypeError("{clf!r} is not a model estimator.")
-        
-    self._logging.info(
-               f"Plot learning curve with scoring ={scoring}")    
-    X_train, X_val, y_train, y_val = train_test_split(X, y, 
-                                                      test_size=test_size,
-                                                      **split_kws)
     train_errors, val_errors = [], []
     for m in range(1, len(y_train)): 
         try:
-            clf.fit(X_train[:m], y_train[:m])
-        except ValueError: 
-            #The number of classes has to be greater than one; got 1 class
+            reg.fit(X_train[:m], y_train[:m])
+        except ValueError: # value_error 
+            # raise ValueError (msg) from value_error 
+            # skip the valueError
+            # <The number of classes has to be greater 
+            # than one; got 1 class>
             continue
-        y_train_pred = clf.predict(X_train[:m])
-        y_val_pred = clf.predict(X_val)
+        
+        y_train_pred = reg.predict(X_train[:m])
+        y_val_pred = reg.predict(X_val)
         if scoring in ('mse','rmse') :
             train_errors.append(mean_squared_error(
                 y_train_pred, y_train[:m]))
@@ -1964,150 +1910,298 @@ def plotLearningCurve(self, clf, X, y, test_size=0.2, scoring ='mse',
                 y_train_pred==y_train[:m])/len(y_train_pred))
             val_errors.append(
                 sum(y_val_pred==y_val)/len(y_val_pred))
-     # create figure obj 
+            
+    # create figure obj 
      
     if scoring =='rmse': 
         train_errors= np.sqrt(train_errors)
         val_errors = np.sqrt(val_errors)
         
-    if self.ylabel is None:
-        self.ylabel = scoring.upper()
-        if scoring =='accuracy': 
-            self.ylabel ='Score'
+    if pobj.ylabel is None:
+            pobj.ylabel ='Score'
             
-    if self.xlabel is None: 
-        self.xlabel = 'Training set size'
+    if pobj.xlabel is None: 
+        pobj.xlabel = 'Training set size'
         
-    fig = plt.figure(figsize = self.fig_size)
+    fig = plt.figure(figsize = pobj.fig_size)
     ax = fig.add_subplot(1,1,1) # create figure obj 
     
     # set new attributes 
     for nv, vv in zip(('vlc', 'vls'), ('b', ':')): 
-        if not hasattr(self, nv): 
-            setattr(self, nv, vv)
+        if not hasattr(pobj, nv): 
+            setattr(pobj, nv, vv)
         
     ax.plot(train_errors,
-            color = self.lc, 
-            linewidth = self.lw,
-            linestyle = self.ls , 
+            color = pobj.lc, 
+            linewidth = pobj.lw,
+            linestyle = pobj.ls , 
             label = 'training set',
-            **self.plt_kws )
+            **pobj.plt_kws )
     ax.plot(val_errors,
-            color = self.vlc, 
-            linewidth = self.lw,
-            linestyle = self.vls , 
+            color = pobj.vlc, 
+            linewidth = pobj.lw,
+            linestyle = pobj.vls , 
             label = 'validation set',
-            **self.plt_kws )
+            **pobj.plt_kws )
     
-    appendLineParams(self, ax)
+    _remaining_plot_roperties(pobj, ax,  fig=fig )
     
-    
-def plotModelvsCV(self, clfs, scores=None, cv =None, **lcs_kws): 
-    """ Visualize model fined tuned scores vs the cross validation
-    
-    Parameters 
-    ----------
-    clfs: callable 
-        list of estimators names or a pairs estaimator and validations scores.
-        For instance:: 
-            
-            clfs =[('SVM', scores_svm), ('LogRegress', scores_logregress), ...]
-            
-    scores: array like 
-        list of scores on different validation sets. If scores are given, set 
-        differently the `clfs` like only the name of the estimators Like:: 
-            
-            clfs =['SVM', 'LogRegress', ...]
-            errors[errors_svm, errors_logregress, ...]
+    return (train_errors, val_errors) if return_errors else None 
 
-    cv: cv: float or int,    
-        A cross validation splitting strategy. It used in cross-validation based 
-        routines. cv is also available in estimators such as multioutput. 
-        ClassifierChain or calibration.CalibratedClassifierCV which use the 
-        predictions of one estimator as training data for another, to not overfit 
-        the training supervision.
-        Possible inputs for cv are usually::
-            * An integer, specifying the number of folds in K-fold cross validation. 
-                K-fold will be stratified over classes if the estimator is a classifier
-                (determined by base.is_classifier) and the targets may represent a 
-                binary or multiclass (but not multioutput) classification problem 
-                (determined by utils.multiclass.type_of_target).
-            * A cross-validation splitter instance. Refer to the User Guide for 
-                splitters available within `Scikit-learn`_
-            * An iterable yielding train/test splits.
-        With some exceptions (especially where not using cross validation at all 
-                              is an option), the default is ``4-fold``.
-        .. _Scikit-learn: https://scikit-learn.org/stable/glossary.html#glossary
-    
-    lcs_kws: dict 
-        Additional keywors to customize each fine-tuned estimators. 
-        It  composed of the line colors `lc` and line style `ls`. 
+plot_reg_scoring.__doc__ =="""
+Plot regressor learning curves with (root)mean squared error
+ '(r)mse'scorings.
+Use the hold-out [1]_ cross validation technique for score evaluation. 
 
+Parameters 
+-----------
+reg: callable, always as a function
+    A regression estimator; Estimators must provide a fit method, and 
+    should provide `set_params` and `get_params`, although these are usually 
+    provided by inheritance from `base.BaseEstimator`. The estimated model 
+    is stored in public and private attributes on the estimator instance, 
+    facilitating decoding through prediction and transformation methods. 
+    The core functionality of some estimators may also be available as 
+    a ``function``.
+     
+{params.core.X}
+{params.core.y}
+scoring: str, ['mse'|'rmse'], default ='mse'
+    kind of error to visualize on the regression learning curve. 
+{params.core.test_size}
+{params.core.random_state}
+
+return_errors: bool, default='False'
+    returns training eror and validation errors. 
+    
+baseplot_kws: dict, 
+    All all  the keywords arguments passed to the peroperty  
+    :class:`watex.property.BasePlot` class. 
+    
+Returns 
+--------
+(train_errors, val_errors): Tuple, 
+    training score and validation scores if `return_errors` is set to 
+    ``True``, otherwise returns nothing   
+    
+Examples 
+--------- 
+>>> from watex.datasets import fetch_data 
+>>> from watex.view.mlplot import plot_reg_scoring 
+>>> # Note that for the demo, we import SVC rather than LinearSVR since the 
+>>> # problem of Bagoue dataset is a classification rather than regression.
+>>> # if use regression instead, a convergence problem will occurs. 
+>>> from watex.exlib.sklearn import SVC 
+>>> X, y = fetch_data('bagoue analysed')# got the preprocessed and imputed data
+>>> svm =SVC() 
+>>> t_errors, v_errors =plot_reg_scoring(svm, X, y, return_errors=True)
+
+
+Notes  
+------
+The hold-out technique is the classic and most popular approach for 
+estimating the generalization performance of the machine learning. The 
+dataset is splitted into training and test sets. The former is used for the 
+model training whereas the latter is used for model performance evaluation. 
+However in typical machine learning we are also interessed in tuning and 
+comparing different parameter setting for futher improve the performance 
+for the name refering to the given classification or regression problem for 
+which we want the optimal values of tuning the hyperparameters. Thus, reusing 
+the same datset over and over again during the model selection is not 
+recommended since it will become a part of the training data and then the 
+model will be more likely to overfit. From this issue, the hold-out cross 
+validation is not a good learning practice. A better way to use the hold-out 
+method is to separate the data into three parts such as the traing set, the 
+the validation set and the test dataset. See more in [2]_. 
+
+References 
+------------
+.. [1] Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., 
+    Grisel, O., Blondel, M., et al. (2011) Scikit-learn: Machine learning in 
+    Python. J. Mach. Learn. Res., 12, 2825–2830.
+.. [2] Raschka, S. & Mirjalili, V. (2019) Python Machine Learning. 
+    (J. Malysiak, S. Jain, J. Lovell, C. Nelson, S. D’silva & R. Atitkar, Eds.), 
+    3rd ed., Packt.
+
+""".format(params = _param_docs)    
+
+
+def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws): 
+    """ 
+    Uses cross validation to get an estimate of model's generalisation 
+    performance. 
     """
-    
-    if clfs is None and scores is None: 
-        raise ValueError('NoneType can not be plot.')
+    #xxxxxxxxxxxxxxxx set base plot keywords arguments
+    for k  in list(baseplot_kws.keys()): 
+        setattr (pobj , k, baseplot_kws[k])
+        
+    # if scores is None: 
+    #     raise ValueError('NoneType can not be plot.')
+    if isinstance(models, str): 
+        models = str2columns (models)
+
+    if not is_iterable(models): 
+        models =[models]
         
     _ckeck_score = scores is not None 
-    
     if _ckeck_score :
-        if isinstance(clfs, str): 
-        
-            clfs =[(clfs, scores)] 
-        elif  isinstance(clfs, (list, tuple)) and \
-            isinstance(scores, (list, tuple, np.ndarray)):
-            if len(clfs) != len(scores): 
-                raise TypeError('Number of model fine-tuned and scores must have the'
-                                f" same length. {len(clfs)!r} and {len(scores)!r} "
-                                " were given respectively.")
-            clfs=[(bn, bscore) for bn, bscore in zip(clfs, scores)]
-        
-    for ii, (clf, _) in enumerate(clfs) : 
-        if clf is None:
-            if hasattr(clf, '__call__') or inspect.isclass(clf.__class__): 
-                clfs[ii] = clf.__class__.__name__
-    
-    if not isinstance(cv, (int, float) ): 
-        warnings.warn(f"type {type(cv)!r} is unacceptable type for"
-                      " cross-validation. Should be integer value. "
-                      "Value reseting to None")
-        self._logging.warning(f"Unacceptable type {type(cv)!r}. "
-                              "Value resetting to None.")
-        cv =None 
-        
-    if cv is None: 
-        cv = len(clfs[0][1])   
-        
-    if cv is not None: 
-        # shrink to the number of validation to keep 
-        clfs = [(clfname, clfval[:cv] ) for clfname, clfval in clfs]
-        
-     # create figure obj 
-                     
-    # customize plots with colors lines and 
-    if len(lcs_kws)==0:
-        lcs_kws = {'lc':[self.lc, self.pc, self.rc ] + D_COLORS, 
-                 'ls':[self.ls, self.ps, self.rs] + D_STYLES
-                 }
-
-    fig = plt.figure(figsize = self.fig_size)
-    ax = fig.add_subplot(1,1,1) # create figure obj 
-    
-    for k in range(len(clfs)): 
-        ax.plot(np.array([i for i in range(cv)])+1,
-                clfs[k][1],
-                color = lcs_kws['lc'][k], 
-                linewidth = self.lw,
-                linestyle = lcs_kws['ls'][k], 
-                label = clfs[k][0],
-                **self.plt_kws 
-                )
-    appendLineParams(self, ax, xlim=self.xlim, ylim=self.ylim)
-        
-        
-
+        if not is_iterable(scores): 
+            scores =[scores]
+        # if is_iterable(models) and is_iterable(scores): 
+        if len(models) != len(scores): 
+            raise TypeError(
+                "Fined-tuned model and scores sizes must be consistent;"
+                f" got {len(models)!r} and {len(scores)} respectively.")
             
-def plotBindDendro2Heatmap (
+    elif scores is None: 
+        # check wether scores are appended to model
+        try : 
+            scores = [score for _, score in models]
+        except: 
+            raise TypeError (
+                "Missing score(s). Scores are needed for each model.")
+        models= [model for model, _  in models ]
+    # for item assigments, use list instead. 
+    models=[[bn, bscore] for bn, bscore in zip(models, scores)]
+
+    for ii, (model, _) in enumerate(models) : 
+        model = model or 'None'
+        if not isinstance (model, str): 
+            if inspect.isclass(model.__class__): 
+                models[ii][0] = model.__name__
+            else: 
+                models[ii][0] = type(model).__name__
+                
+    # get_the minimal size from cv if not isinstance(cv, (int, float) ):
+    cv_size_min = min (
+        [ len(models[i][1]) for i in range (len(models))])
+    
+    if cv_size is None: 
+        cv_size = cv_size_min
+
+    if cv_size is not None: 
+        try : 
+            cv_size = int(cv_size)
+        except: 
+            raise ValueError(
+                f"Expect a number for 'cv', got {type(cv_size).__name__!r}.")
+            
+        if cv_size < 1 : 
+            raise ValueError (
+                f"cv must contain at least one positivevalue, got {cv_size}")
+        elif cv_size > cv_size_min : 
+            raise ValueError(f"Size for cv is too large; expect {cv_size_min}"
+                             f" as a maximum size, got {cv_size}")
+        # shrink to the number of validation to keep the same size for all 
+        # give model 
+        models = [(modelname, modelval[:cv_size] ) 
+                  for modelname, modelval in models]
+    # customize plots with colors lines and styles 
+    # and create figure obj 
+    lcs_kws = {'lc': make_mpl_properties(cv_size), 
+             'ls':make_mpl_properties(cv_size, 'line')
+             }
+    # create figure obj and change style
+    # if sns_style is passed as base_plot_params 
+    fig = plt.figure(figsize = pobj.fig_size)
+    ax = fig.add_subplot(1,1,1) 
+    if pobj.sns_style is not None: 
+       sns.set_style(pobj.sns_style)
+       
+    for k in range(len(models)): 
+        ax.plot(np.array([i for i in range(cv_size)])+1,
+                models[k][1],
+                color = lcs_kws['lc'].colors[k], 
+                linewidth = pobj.lw,
+                linestyle = lcs_kws['ls'][k], 
+                label = models[k][0],
+                )
+    # appendLineParams(pobj, ax, xlim=pobj.xlim, ylim=pobj.ylim)
+    _remaining_plot_roperties(pobj, ax, xlim=pobj.xlim, 
+                              ylim=pobj.ylim, fig=fig 
+                       )
+    pobj.save(fig)
+    
+plot_model_scores.__doc__="""\
+Visualize model fined tuned scores vs the cross validation
+
+Parameters 
+----------
+models: list of callables, always as a functions,   
+    list of estimator names can also be  a pair estimators and validations 
+    scores.For instance estimators and scores can be arranged as:: 
+        
+        models =[('SVM', scores_svm), ('LogRegress', scores_logregress), ...]
+        
+    If that arrangement is passed to `models` parameter then no need to pass 
+    the score values of each estimators in `scores`. 
+    Note that a model is an object which manages the estimation and 
+    decoding. The model is estimated as a deterministic function of:
+
+        * parameters provided in object construction or with set_params;
+        * the global numpy.random random state if the estimator’s random_state 
+            parameter is set to None; and
+        * any data or sample properties passed to the most recent call to fit, 
+            fit_transform or fit_predict, or data similarly passed in a sequence 
+            of calls to partial_fit.
+            
+    list of estimators names or a pairs estimators and validations scores.
+    For instance:: 
+        
+        clfs =[('SVM', scores_svm), ('LogRegress', scores_logregress), ...]
+        
+scores: array like 
+    list of scores on different validation sets. If scores are given, 
+    set only the name of the estimators passed to `models` like:: 
+        
+        models =['SVM', 'LogRegress', ...]
+        scores=[scores_svm, scores_logregress, ...]
+
+cv_size: float or int,
+    The number of fold used for validation. If different models have different 
+    cross validation values, the minimum size of cross validation is used and the 
+    scored of each model is resized to match the minimum size number. 
+    
+baseplot_kws: dict, 
+    All all  the keywords arguments passed to the peroperty  
+    :class:`watex.property.BasePlot` class.  
+    
+Examples 
+---------
+(1) -> Score is appended to the model 
+>>> from watex.exlib.sklearn import SVC 
+>>> from watex.view.mlplot import plot_model_scores
+>>> import numpy as np 
+>>> svc_model = SVC() 
+>>> fake_cores = np.random.permutation (np.arange (0, 1,  .05))
+>>> plot_model_scores([(svc_model, fake_scores )])
+... 
+(2) -> Use model and score separately 
+
+>>> plot_model_scores([svc_model],scores =[fake_cores] )# 
+>>> # customize plot by passing keywords properties 
+>>> base_plot_params ={
+                    'lw' :3.,                  
+                    'lc':(.9, 0, .8), 
+                    'ms':7.,                
+                    'fig_size':(12, 8),
+                    'font_size':15.,
+                    'xlabel': 'samples',
+                    'ylabel':'scores' ,
+                    'marker':'o', 
+                    'alpha' :1., 
+                    'yp_markeredgewidth':2.,
+                    'show_grid' :True,          
+                    'galpha' :0.2,              
+                    'glw':.5,                   
+                    'rotate_xlabel' :90.,
+                    'fs' :3.,                   
+                    's' :20 ,
+                    'sns_style': 'darkgrid', 
+               }
+>>> plot_model_scores([svc_model],scores =[fake_cores] , **base_plot_params ) 
+"""
+def plotDendroheat(
     df: DataFrame |NDArray, 
     columns: List[str] =None, 
     labels:Optional[List[str]] =None,
@@ -2185,16 +2279,16 @@ def plotBindDendro2Heatmap (
     >>> import numpy as np 
     >>> >>> from watex.view.mlplot import plotBindDendro2Heatmap
     >>> np.random.seed(123) 
-    >>> variable =['X', 'Y', 'Z'] ; labels =['ID_0', 'ID_1', 'ID_2',
+    >>> variables =['X', 'Y', 'Z'] ; labels =['ID_0', 'ID_1', 'ID_2',
                                              'ID_3', 'ID_4']
     >>> X= np.random.random_sample ([5,3]) *10 
-    >>> df =pd.DataFrame (X, columns =variable, index =labels)
+    >>> df =pd.DataFrame (X, columns =variables, index =labels)
     >>> plotBindDendro2Heatmap (df, )
     
     (2) -> Use Bagoue data 
     >>> from watex.datasets import load_bagoue  
     >>> X, y = load_bagoue (as_frame=True )
-    >>> X =X[['magnitude', 'power', 'sfi']].astype(float) # 
+    >>> X =X[['magnitude', 'power', 'sfi']].astype(float) # convert to float
     >>> plotBindDendro2Heatmap (X )
     
     
@@ -2243,7 +2337,6 @@ def plotBindDendro2Heatmap (
     # ticks and hiding the axis spines. Also we add a color bar and 
     # assign the feature and data record names to names x and y axis  
     # tick lables, respectively 
-    
     axd.set_xticks ([]) # set ticks invisible 
     axd.set_yticks ([])
     for i in axd.spines.values () : 
@@ -2264,10 +2357,15 @@ def plotBindDendro2Heatmap (
     plt.show () 
     
     
-def plotDendrogram (df, columns =None, labels =None,metric ='euclidean',  
-                   method ='complete', kind = 'design',
-                   return_r =False , 
-                   **kwd ): 
+def plotDendrogram (
+    df:DataFrame, 
+    columns:List[str] =None, 
+    labels:ArrayLike  =None,
+    metric:str ='euclidean',  
+    method:str ='complete', 
+    kind:str = None,
+    return_r:bool =False , 
+    **kwd ): 
     """ Visualize the linkage matrix in the results of dendogram 
     
     
@@ -2276,6 +2374,7 @@ def plotDendrogram (df, columns =None, labels =None,metric ='euclidean',
     df: dataframe or NDArray of (n_samples, n_features) 
         dataframe of Ndarray. If array is given , must specify the column names
         to much the array shape 1 
+        
     columns: list 
         list of labels to name each columns of arrays of (n_samples, n_features) 
         If dataframe is given, don't need to specify the columns. 
@@ -2358,7 +2457,7 @@ def plotDendrogram (df, columns =None, labels =None,metric ='euclidean',
     >>> plotDendrogram (X, columns =['X1', 'X2' ] ) 
 
     """
-    
+    kind:str = kind or 'design'
     row_cluster = linkage_matrix(df = df, columns = columns, metric= metric, 
                                  method =method , kind = kind ,
                                  )
@@ -2469,8 +2568,16 @@ def plotSilhouette (X, labels, metric ='euclidean', **kwds ):
     plt.show() 
     
 def plotLearningCurves(
-    model,  X,  y, axes=None, ylim=None, cv=5, n_jobs=None,
-    train_sizes=np.linspace(0.1, 1.0, 5), display_legend = True, title=None,
+    model,  
+    X,  
+    y, 
+    axes=None, 
+    ylim=None, 
+    cv=5, 
+    n_jobs=None,
+    train_sizes=None, 
+    display_legend = True, 
+    title=None,
 ):
     """Generate 3 plots: the test and training learning curve, the training
     samples vs fit times curve, the fit times vs score curve.
@@ -2538,6 +2645,8 @@ def plotLearningCurves(
     axes: Matplotlib axes 
     
     """ 
+    train_sizes = train_sizes or np.linspace(0.1, 1.0, 5)
+    
     if axes is None:
         _, axes = plt.subplots(1, 3, figsize=(20, 5))
 
@@ -2638,17 +2747,129 @@ def plotLearningCurves(
 
     return axes
 
+def plot_matshow(
+    arr, / , labelx:List[str] =None, labely:List[str]=None, 
+    matshow_kws=None, **baseplot_kws
+    ): 
+    #xxxxxxxxxxxxxxxx set base plot keywords arguments
+    for k  in list(baseplot_kws.keys()): 
+        setattr (pobj , k, baseplot_kws[k])
+        
+    matshow_kws= matshow_kws or dict()
+    fig = plt.figure(figsize = pobj.fig_size)
+    print(fig)
+    ax = fig.add_subplot(1,1,1)
+
+    cax = ax.matshow(arr, **matshow_kws) 
+    cbax= fig.colorbar(cax, **pobj.cb_props)
+    
+    if pobj.cb_label is None: 
+        pobj.cb_label=''
+    ax.set_xlabel( pobj.xlabel,
+          fontsize= pobj.font_size )
+    
+    for label in zip ([labelx, labely]): 
+        if label is not None:
+            if not is_iterable(label):
+                label = [label]
+            if len(label) !=arr.shape[1]: 
+                warnings.warn(
+                    "labels and arr dimensions must be consistent"
+                    f" Expect {arr.shape[1]}, got {len(label)}. "
+                    )
+                continue 
+            ax.set_yticks(np.arange(0, arr.shape[1]))
+            ax.set_yticklabels(label)
+ 
+    if pobj.ylabel is None:
+        pobj.ylabel =''
+    if pobj.xlabel is None:
+        pobj.xlabel = ''
+    
+    ax.set_ylabel (pobj.ylabel,
+                   fontsize= pobj.font_size )
+    ax.tick_params(axis=pobj.tp_axis, 
+                    labelsize= pobj.font_size, 
+                    bottom=pobj.tp_bottom, 
+                    top=pobj.tp_top, 
+                    labelbottom=pobj.tp_labelbottom, 
+                    labeltop=pobj.tp_labeltop
+                    )
+    if pobj.tp_labeltop: 
+        ax.xaxis.set_label_position('top')
+    
+    cbax.ax.tick_params(labelsize=pobj.font_size ) 
+    cbax.set_label(label=pobj.cb_label,
+                   size=pobj.font_size,
+                   weight=pobj.font_weight)
+    
+    plt.xticks(rotation = pobj.rotate_xlabel)
+    plt.yticks(rotation = pobj.rotate_ylabel)
+
+    pobj.save(fig)
+
+plot_matshow.__doc__ ="""\
+Quick matrix visualization using matplotlib.pyplot.matshow.
+
+Parameters
+----------
+arr: 2D ndarray, 
+    matrix of n rowns and m-columns items 
+matshow_kws: dict
+    Additional keywords arguments for :func:`matplotlib.axes.matshow`
+    
+labelx: list of str, optional 
+        list of labels names that express the name of each category on 
+        x-axis. It might be consistent with the matrix number of 
+        columns of `arr`. 
+        
+label: list of str, optional 
+        list of labels names that express the name of each category on 
+        y-axis. It might be consistent with the matrix number of 
+        row of `arr`.
+    
+Examples
+---------
+>>> import numpy as np
+>>> from watex.view.mlplot import plot_matshow 
+>>> matshow_kwargs ={
+    'aspect': 'auto',
+    'interpolation': None,
+   'cmap':'copper_r', 
+        }
+>>> baseplot_kws ={'lw':3, 
+           'lc':(.9, 0, .8), 
+           'font_size':15., 
+            'cb_format':None,
+            #'cb_label':'Rate of prediction',
+            'xlabel': 'Predicted flow classes',
+            'ylabel': 'Geological rocks',
+            'font_weight':None,
+            'tp_labelbottom':False,
+            'tp_labeltop':True,
+            'tp_bottom': False
+            }
+>>> labelx =['FR0', 'FR1', 'FR2', 'FR3', 'Rates'] 
+>>> labely =['VOLCANO-SEDIM. SCHISTS', 'GEOSYN. GRANITES', 
+             'GRANITES', '1.0', 'Rates']
+>>> array2d = np.array([(1. , .5, 1. ,1., .9286), 
+                    (.5,  .8, 1., .667, .7692),
+                    (.7, .81, .7, .5, .7442),
+                    (.667, .75, 1., .75, .82),
+                    (.9091, 0.8064, .7, .8667, .7931)])
+>>> plot_matshow(array2d, labelx, labely, matshow_kwargs,**baseplot_kws )  
+
+"""
 
 def biPlot(
-        self, 
-        score: NDArray[DType [float]],
-        coeff: ArrayLike[DType[float]],
-        y: ArrayLike,
-        classes: List | ArrayLike [str] =None,
-        markers: str | List [str]  =None, 
-        colors: str | List [str ] =None, 
-        **baseplot_kws 
-)-> None :
+    self, 
+    Xr: NDArray,
+    components:NDArray,
+    y: ArrayLike,
+    classes: ArrayLike=None,
+    markers:List [str]=None, 
+    colors: List [str ]=None, 
+ ):
     """
     The biplot is the best way to visualize all-in-one following a PCA analysis.
     There is an implementation in R but there is no standard implementation
@@ -2656,61 +2877,90 @@ def biPlot(
 
     Parameters  
     -----------
-    score: NDAarray 
-        the projected data scores 
-    
-    coeff: Array-like 
-        the eigenvectors of the PCA .
-    
+    self: :class:`watex.property.BasePlot`. 
+        Matplotlib property from `BasePlot` instances. Default `BasePlot`  
+        instance is given as a `pobj` instance and can be loaded for plotting 
+        purpose as:: 
+            
+            >>> from watex.view import pobj 
+            
+    Xr: NDArray of transformed X. 
+        the PCA projected data scores on n-given components.The reduced  
+        dimension of train set 'X' with maximum ratio as sorted eigenvectors 
+        from first to the last component. 
+    components: Array-like, 
+        the eigenvectors of the PCA. The shape in axis must much the number 
+        of component computed using PCA. It the `Xr` shape 1 must the shape 0 
+        of the component matrix, it will be transposed to fit `Xr` shape 1. 
     y: Array-like, 
         the target composing the class labels.
-    
     classes: list or int, 
         class categories or class labels 
-        
     markers: str, 
         Matplotlib list of markers for plotting  classes.
-    
     colors: str, 
         Matplotlib list of colors to customize plots 
     
+    Examples 
+    ---------
+    >>> from watex.analysis import nPCA
+    >>> from watex.datasets import fetch_data
+    >>> from watex.view import biPlot, pobj  # pobj is Baseplot instance 
+    >>> X, y = fetch_data ('bagoue pca' )  # fetch pca data 
+    >>> pca= nPCA (X, n_components= 2 , return_X= False ) # return PCA object 
+    >>> components = pca.components_ [:2, :] # for two components 
+    >>> biPlot (pobj, pca.X, components , y ) # pca.X is the reduced dim X 
+    
     References 
     -----------
-    Originally written by `Serafeim Loukas`_, serafeim.loukas@epfl.ch and 
-    edited for plot customizing. 
+    Originally written by `Serafeim Loukas`_, serafeim.loukas@epfl.ch 
+    and was edited to fit the `WATex`_ package API. 
     
     .. _Serafeim Loukas: https://towardsdatascience.com/...-python-7c274582c37e>
     
     """
-   
-    xs = score[:,0] # projection on PC1
-    ys = score[:,1] # projection on PC2
-    n = coeff.shape[0] # number of variables
+    Xr = np.array (Xr); components = np.array (components )
+    xs = Xr[:,0] # projection on PC1
+    ys = Xr[:,1] # projection on PC2
+    
+    if Xr.shape[1]==components.shape [0] :
+        # i.e components is not transposed 
+        # transposed then 
+        components = components.T 
+    n = components.shape[0] # number of variables
+    
     plt.figure(figsize=self.fig_size, #(10,8),
                dpi=self.fig_dpi #100
                )
     if classes is None: 
         classes = np.unique(y)
     if colors is None:
-        colors = D_COLORS
-        colors = [colors[c] for c in range(len(classes))]
+        # make color based on group
+        # to fit length of classes
+        colors = make_mpl_properties(
+            len(classes))
+        
+    colors = [colors[c] for c in range(len(classes))]
     if markers is None:
-        markers=D_MARKERS 
-        markers = [markers[m] for m in range(len(classes))]
+        markers= make_mpl_properties(len(classes), prop='marker')
+        
+    markers = [markers[m] for m in range(len(classes))]
+    
     for s,l in enumerate(classes):
         plt.scatter(xs[y==l],ys[y==l], 
                     c = colors[s], 
-                    marker=markers[s]) # color based on group
+                    marker=markers[s]
+                    ) 
     for i in range(n):
-        #plot as arrows the variable scores 
+        # plot as arrows the variable scores 
         # (each variable has a score for PC1 and one for PC2)
-        plt.arrow(0, 0, coeff[i,0], coeff[i,1], 
+        plt.arrow(0, 0, components[i,0], components[i,1], 
                   color = self.lc, #'k', 
                   alpha = self.alpha, #0.9,
                   linestyle = self.ls, # '-',
                   linewidth = self.lw, #1.5,
                   overhang=0.2)
-        plt.text(coeff[i,0]* 1.15, coeff[i,1] * 1.15, 
+        plt.text(components[i,0]* 1.15, components[i,1] * 1.15, 
                  "Var"+str(i+1),
                  color = 'k', 
                  ha = 'center',
@@ -2731,18 +2981,18 @@ def biPlot(
                     which='both', 
                     labelsize=self.ms* self.fs)
     
-    if self.ssavefig is not None: 
+    if self.savefig is not None: 
         savefigure (plt, self.savefig, dpi = self.fig_dpi )
     
-
-
-def appendLineParams(self, ax, xlim=None, ylim=None): 
-    """ DRY(Dont Repeat Yourself). So append  the remain lines configuration 
-    such as xlabel, grid , legend and ticks parameters holf from `MLPlots`
-    objects.
+def _remaining_plot_roperties (self, ax, xlim=None, ylim=None, fig=None ): 
+    """Append the remaining lines properties such as xlabel, grid , 
+    legend and ticks parameters. Relevant idea to not 
+    DRY(Don't Repeat Yourself). 
+    :param ax: matplotlib.pyplot.axis 
+    :param (xlim, ylim): Limit of x-axis and y-axis 
+    :param fig: Matplotlib.figure name. 
     
-    :param ax: axis to plot.
-    
+    :return: self- Plot object. 
     """
     
     if self.xlabel is None: 
@@ -2780,118 +3030,93 @@ def appendLineParams(self, ax, xlim=None, ylim=None):
     
     ax.legend(**self.leg_kws)
 
-    plt.show()
-    
-    if self.savefig is not None :
-        plt.savefig(self.savefig,
-                    dpi=self.fig_dpi,
-                    orientation =self.fig_orientation)  
+    self.save(fig)
         
     return self 
 
-def plot_matshow(self, matrix, x_label=None, y_label=None, **matshow_kws): 
-    """ Quick matrix visualization using matplotlib.pyplot.matshow.
+
+def _chk_predict_args (Xt, yt, *args,  predict =False ): 
+    """ Validate arguments passed  for model prediction 
     
-    Parameters
-    ----------
-    matrix: ndarray
-        matrix of n rowns and m-columns items 
-    matshow_kws: dict
-        Additional keywords arguments.
+    :param Xt: ndarray|DataFrame, test data 
+    :param yt: array-like, pandas serie for test label 
+    :param args: list of other keyword arguments which seems to be usefull. 
+    :param predict: bool, expect a prediction or not. 
+    :returns: Tuple (Xt, yt, index , clf ,  ypred )- tuple of : 
+        * Xt : test data 
+        * yt : test label data 
+        * index :index to fit the samples in the dataframe or the 
+            shape [0] of ndarray 
+        * clf: the predictor or estimator 
+        * ypred: the estimator predicted values 
         
-     ylabel: list 
-            list of labels names  to hold the name of each categories.
-    ylabel: list 
-       list of labels names  to hold the name of each categories.
-       
-    Examples
-    ---------
-    >>> import numpy as np
-    >>> import watex.view.mlplot as WPL 
-    >>>  matshow_kwargs ={
-        'aspect': 'auto',
-        'interpolation': None 
-       'cmap':'copper_r', 
-            }
-    >>> plot_kws ={'lw':3, 
-               'lc':(.9, 0, .8), 
-               'font_size':15., 
-                'cb_format':None,
-                #'cb_label':'Rate of prediction',
-                'xlabel': 'Predicted flow classes',
-                'ylabel': 'Geological rocks',
-                'font_weight':None,
-                'tp_labelbottom':False,
-                'tp_labeltop':True,
-                'tp_bottom': False
-                }
-    >>> xlabel =['FR0', 'FR1', 'FR2', 'FR3', 'Rates'] 
-    >>> ylabel =['VOLCANO-SEDIM. SCHISTS', 'GEOSYN. GRANITES', 
-                 'GRANITES', '1.0', 'Rates']
-    >>> array = np.array([(1. , .5, 1. ,1., .9286), 
-                        (.5,  .8, 1., .667, .7692),
-                        (.7, .81, .7, .5, .7442),
-                        (.667, .75, 1., .75, .82),
-                        (.9091, 0.8064, .7, .8667, .7931)])
-    >>> mObj =WPL.MLPlots(**plot_kws)
-    >>> WPL.plot_matshow(mObj, array, x_label=xlabel, 
-                         y_label= ylabel, **matshow_kwargs)
     """
-    # create figure obj 
-    fig = plt.figure(figsize = self.fig_size)
-    ax = fig.add_subplot(1,1,1)
-
-    cax = ax.matshow(matrix, 
-                     **matshow_kws) 
-
-    cbax= fig.colorbar(cax, **self.cb_props)
+    # index is used for displayed the examples label in x-abscissa  
+    # for instance index = ['b4, 'b5', 'b11',  ... ,'b425', 'b427', 'b430']
     
-    if self.cb_label is None: 
-        self.cb_label=''
-    ax.set_xlabel( self.xlabel,
-          fontsize= self.font_size )
-    
-
-    if y_label is not None:
-        ax.set_yticks(np.arange(0, matrix.shape[1]))
-        ax.set_yticklabels(y_label)
-    if x_label is not None: 
-        ax.set_xticks(np.arange(0, matrix.shape[1]))
-        ax.set_xticklabels(x_label)
+    index , clf ,  ypred = args 
+    if index is not None:
+        #control len of index and len of y
+        if not is_iterable (index): 
+            raise TypeError("Index is an iterable object with the same length"
+                            "as 'y', got '{type (index).__name__!r}'") 
+        len_index= len(yt)==len(index)
         
-    if self.ylabel is None:
-        self.ylabel =''
-    if self.xlabel is None:
-        self.xlabel = ''
-    
-    ax.set_ylabel (self.ylabel,
-                   fontsize= self.font_size )
-    ax.tick_params(axis=self.tp_axis, 
-                    labelsize= self.font_size, 
-                    bottom=self.tp_bottom, 
-                    top=self.tp_top, 
-                    labelbottom=self.tp_labelbottom, 
-                    labeltop=self.tp_labeltop
-                    )
-    if self.tp_labeltop: 
-        ax.xaxis.set_label_position('top')
-    
-    cbax.ax.tick_params(labelsize=self.font_size ) 
-    cbax.set_label(label=self.cb_label,
-                   size=self.font_size,
-                   weight=self.font_weight)
-    
-    plt.xticks(rotation = self.rotate_xlabel)
-    plt.yticks(rotation = self.rotate_ylabel)
+        if not len_index:
+            warnings.warn(
+                "Expect an index size be consistent with 'y' size={len(yt)},"
+                  " got'{len(index)}'. Given index can not be used."
+                  )
+            index =None
+            
+        if len_index : 
+            if isinstance(yt, (pd.Series, pd.DataFrame)):
+                if not np.all(yt.index.isin(index)):
+                    warnings.warn(
+                        "Given index values are mismatched. Note that for "
+                        "overlaying the model plot, 'Xt' indexes must be "
+                        "identical to the one in target 'yt'. The indexes"
+                        " provided are wrong and should be resetted."
+                        )
+                    index =yt.index 
+                    yt=yt.values()
+            yt= pd.Series(yt, index = index )
+            
+    if predict: 
+        if clf is None: 
+            warnings.warn("An estimator/classifier is needed for prediction."
+                          " Got Nonetype.")
+            raise EstimatorError("No estimator detected. Could not predict 'y'") 
+        if Xt is None: 
+            raise TypeError(
+                "Test data 'Xt' is need for prediction. Got nothing")
   
-    plt.show ()
-    if self.savefig is not None :
-       plt.savefig(self.savefig,
-                   dpi=self.fig_dpi,
-                   orientation =self.fig_orientation)
-    return self  
- 
+        # check estimator as callable object or ABCMeta classes
+        if not hasattr(clf, '__call__') and  not inspect.isclass(clf)\
+            and  type(clf.__class__)!=ABCMeta: 
+            raise EstimatorError(
+                f"{clf.__class__.__name__!r} is not an estimator/classifier."
+                " 'y' prediction is aborted!")
+            
+        clf.fit(Xt, yt)
+        ypred = clf.predict(Xt)
+        
+        if isinstance(Xt, (pd.DataFrame, pd.Series)):
+            if index is None:
+                index = Xt.index
+                
+    if isinstance(yt, pd.Series): 
+        index = yt.index.astype('>U12')
+    
+    if index is None: 
+        # take default values if  indexes are not given 
+        index =np.array([i for i in range(len(yt))])
 
+    if len(yt)!=len(ypred): 
+        raise TypeError("'ypred'(predicted) and 'yt'(true target) sizes must"
+                        f" be consistent. Expected {len(yt)}, got {len(ypred)}")
+        
+    return Xt, yt, index , clf ,  ypred 
 
         
         

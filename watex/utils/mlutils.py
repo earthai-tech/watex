@@ -60,7 +60,6 @@ from ..exceptions import (
 from .funcutils import (
     _assert_all_types, 
     _isin, 
-    is_iterable,
     savepath_, 
     smart_format, 
     str2columns, 
@@ -813,7 +812,7 @@ def fetchSingleTGZData(
         Name of of the new file to replace the fetched file.
     :return: Location of the fetched file
     :Example: 
-        >>> from watex.utils.ml_utils import fetchSingleTGZData
+        >>> from watex.utils.mlutils import fetchSingleTGZData
         >>> fetchSingleTGZData('data/__tar.tgz/fmain.bagciv.data.tar.gz', 
                                rename_outfile='main.bagciv.data.csv')
     """
@@ -933,12 +932,12 @@ def test_set_check_id (
     return hash(np.int64(identifier)).digest()[-1]< 256 * test_ratio
 
 def split_train_test_by_id(
-        data:DataFrame,
-        test_ratio:float,
-        id_column:Optional[List[int]]=None,
-        keep_colindex:bool=True, 
-         hash : F =hashlib.md5
-         )-> Tuple[ Sub[DataFrame[DType[T]]], Sub[DataFrame[DType[T]]]] : 
+    data:DataFrame,
+    test_ratio:float,
+    id_column:Optional[List[int]]=None,
+    keep_colindex:bool=True, 
+    hash : F =hashlib.md5
+    )-> Tuple[ Sub[DataFrame[DType[T]]], Sub[DataFrame[DType[T]]]] : 
     """
     Ensure that data will remain consistent accross multiple runs, even if 
     dataset is refreshed. 
@@ -954,6 +953,11 @@ def split_train_test_by_id(
                 :func:`~test_set_check_id`
     :returns: consistency trainset and testset 
     """
+    if isinstance(data, np.ndarray) : 
+        data = pd.DataFrame(data) 
+        if 'index' in data.columns: 
+            data.drop (columns='index', inplace=True)
+            
     if id_column is None: 
         id_column ='index' 
         data = data.reset_index() # adds an `index` columns
@@ -1163,7 +1167,7 @@ def dumpOrSerializeData (
     :Example:
         
         >>> import numpy as np
-        >>> from watex.utils.ml_utils import dumpOrSerializeData
+        >>> from watex.utils.mlutils import dumpOrSerializeData
         >>>  data=(np.array([0, 1, 3]),np.array([0.2, 4]))
         >>> dumpOrSerializeData(data, filename ='__XTyT.pkl', to='pickle', 
                                 savepath='watex/datasets')
@@ -1232,7 +1236,7 @@ def loadDumpedOrSerializedData (filename:str, verbose=0):
         
     :Example:
         
-        >>> from watex.utils.ml_utils import loadDumpedOrSerializedData
+        >>> from watex.utils.mlutils import loadDumpedOrSerializedData
         >>> loadDumpedOrSerializedData(filename ='Watex/datasets/__XTyT.pkl')
     """
     
@@ -1311,7 +1315,7 @@ def _assert_sl_target (target,  df=None, obj=None):
     
     :Example: 
         
-        >>> from watex.utils.ml_utils import _assert_sl_target
+        >>> from watex.utils.mlutils import _assert_sl_target
         >>> from watex.datasets import fetch_data
         >>> data = fetch_data('Bagoue original').get('data=df')  
         >>> _assert_sl_target (target =12, obj=prepareObj, df=data)
