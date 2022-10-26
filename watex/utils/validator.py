@@ -3,32 +3,6 @@
 # Copyright (c) 2007-2022 The scikit-learn developers.
 # All rights reserved.
 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-
-# * Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-
-# * Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-
-# * Neither the name of the copyright holder nor the names of its
-#   contributors may be used to endorse or promote products derived from
-#   this software without specific prior written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
 #Utilities for input validation
 
 from functools import wraps
@@ -37,25 +11,12 @@ import numbers
 import operator
 import numpy as np
 import scipy.sparse as sp
-from inspect import signature, isclass, Parameter
+from inspect import signature, Parameter
 
-# mypy error: Module 'numpy.core.numeric' has no attribute 'ComplexWarning'
-# from numpy.core.numeric import ComplexWarning  # type: ignore
 import joblib
-
-# from contextlib import suppress
-from ..exceptions import NotFittedError
-from ..utils._array_api import get_namespace
-from ..utils._array_api import _asarray_with_order
 
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
-
-# This function is not used anymore at this moment in the code base but we keep it in
-# case that we merge a new public function without kwarg only by mistake, which would
-# require a deprecation cycle to fix.
-
-
 
 def _deprecate_positional_args(func=None, *, version="1.3"):
     """Decorator for methods that issues warnings for positional arguments.
@@ -117,7 +78,6 @@ def _is_arraylike(x):
 def _is_arraylike_not_scalar(array):
     """Return True if array is array-like and not a scalar"""
     return _is_arraylike(array) and not np.isscalar(array)
-
 
 def _num_features(X):
     """Return the number of features in an array-like X.
@@ -286,45 +246,6 @@ def indexable(*iterables):
     return result
 
 
-
-def column_or_1d(y, *, warn=False):
-    """Ravel column or 1d numpy array, else raises an error.
-    Parameters
-    ----------
-    y : array-like
-       Input data.
-    warn : bool, default=False
-       To control display of warnings.
-    Returns
-    -------
-    y : ndarray
-       Output data.
-    Raises
-    ------
-    ValueError
-        If `y` is not a 1D array or a 2D array with a single row or column.
-    """
-    xp, _ = get_namespace(y)
-    y = xp.asarray(y)
-    shape = y.shape
-    if len(shape) == 1:
-        return _asarray_with_order(xp.reshape(y, -1), order="C", xp=xp)
-    if len(shape) == 2 and shape[1] == 1:
-        if warn:
-            warnings.warn(
-                "A column-vector y was passed when a 1d array was"
-                " expected. Please change the shape of y to "
-                "(n_samples, ), for example using ravel().",
-                DataConversionWarning,
-                stacklevel=2,
-            )
-        return _asarray_with_order(xp.reshape(y, -1), order="C", xp=xp)
-
-    raise ValueError(
-        "y should be a 1d array, got an array of shape {} instead.".format(shape)
-    )
-
-
 def check_random_state(seed):
     """Turn seed into a np.random.RandomState instance.
     Parameters
@@ -426,92 +347,6 @@ def check_symmetric(array, *, tol=1e-10, raise_warning=True, raise_exception=Fal
             array = 0.5 * (array + array.T)
 
     return array
-
-
-def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
-    """Perform is_fitted validation for estimator.
-    Checks if the estimator is fitted by verifying the presence of
-    fitted attributes (ending with a trailing underscore) and otherwise
-    raises a NotFittedError with the given message.
-    If an estimator does not set any attributes with a trailing underscore, it
-    can define a ``__sklearn_is_fitted__`` method returning a boolean to specify if the
-    estimator is fitted or not.
-    Parameters
-    ----------
-    estimator : estimator instance
-        Estimator instance for which the check is performed.
-    attributes : str, list or tuple of str, default=None
-        Attribute name(s) given as string or a list/tuple of strings
-        Eg.: ``["coef_", "estimator_", ...], "coef_"``
-        If `None`, `estimator` is considered fitted if there exist an
-        attribute that ends with a underscore and does not start with double
-        underscore.
-    msg : str, default=None
-        The default error message is, "This %(name)s instance is not fitted
-        yet. Call 'fit' with appropriate arguments before using this
-        estimator."
-        For custom messages if "%(name)s" is present in the message string,
-        it is substituted for the estimator name.
-        Eg. : "Estimator, %(name)s, must be fitted before sparsifying".
-    all_or_any : callable, {all, any}, default=all
-        Specify whether all or any of the given attributes must exist.
-    Raises
-    ------
-    TypeError
-        If the estimator is a class or not an estimator instance
-    NotFittedError
-        If the attributes are not found.
-    """
-    if isclass(estimator):
-        raise TypeError("{} is a class, not an instance.".format(estimator))
-    if msg is None:
-        msg = (
-            "This %(name)s instance is not fitted yet. Call 'fit' with "
-            "appropriate arguments before using this estimator."
-        )
-
-    if not hasattr(estimator, "fit"):
-        raise TypeError("%s is not an estimator instance." % (estimator))
-
-    if attributes is not None:
-        if not isinstance(attributes, (list, tuple)):
-            attributes = [attributes]
-        fitted = all_or_any([hasattr(estimator, attr) for attr in attributes])
-    elif hasattr(estimator, "__sklearn_is_fitted__"):
-        fitted = estimator.__sklearn_is_fitted__()
-    else:
-        fitted = [
-            v for v in vars(estimator) if v.endswith("_") and not v.startswith("__")
-        ]
-
-    if not fitted:
-        raise NotFittedError(msg % {"name": type(estimator).__name__})
-
-
-def check_non_negative(X, whom):
-    """
-    Check if there is any negative value in an array.
-    Parameters
-    ----------
-    X : {array-like, sparse matrix}
-        Input data.
-    whom : str
-        Who passed X to this function.
-    """
-    xp, _ = get_namespace(X)
-    # avoid X.min() on sparse matrix since it also sorts the indices
-    if sp.issparse(X):
-        if X.format in ["lil", "dok"]:
-            X = X.tocsr()
-        if X.data.size == 0:
-            X_min = 0
-        else:
-            X_min = X.data.min()
-    else:
-        X_min = xp.min(X)
-
-    if X_min < 0:
-        raise ValueError("Negative values in data passed to %s" % whom)
 
 
 def check_scalar(

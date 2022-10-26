@@ -24,19 +24,19 @@ from pandas.plotting import (
     parallel_coordinates
     ) 
 import seaborn as sns 
-
-from ..cases.features import FeatureInspection
 from .._docstring import ( 
     DocstringComponents,
     _core_docs,
     _baseplot_params
     )
-from ..utils.mlutils import (
-    existfeatures,
-    formatGenericObj, 
-    selectfeatures , 
-    exporttarget 
+from .._watexlog import watexlog  
+from ..cases.features import FeatureInspection
+from ..exceptions import ( 
+    PlotError, 
+    FeatureError, 
+    NotFittedError
     )
+from ..property import BasePlot
 from ..typing import (
     Any , 
     List,
@@ -47,7 +47,6 @@ from ..typing import (
     Series,
     F, 
 )
-from ..property import BasePlot
 from ..utils.coreutils import _is_readable 
 from ..utils.funcutils import ( 
     _assert_all_types , 
@@ -59,10 +58,11 @@ from ..utils.funcutils import (
     shrunkformat 
     
     )
-from ..exceptions import ( 
-    PlotError, 
-    FeatureError, 
-    NotFittedError
+from ..utils.mlutils import (
+    existfeatures,
+    formatGenericObj, 
+    selectfeatures , 
+    exporttarget 
     )
 
 try: 
@@ -78,7 +78,7 @@ try :
         )
 except: pass 
 
-from .._watexlog import watexlog    
+  
 _logger=watexlog.get_watex_logger(__name__)
 
 #+++++++++++++++++++++++ add seaborn docs +++++++++++++++++++++++++++++++++++++ 
@@ -188,7 +188,7 @@ class ExPlot (BasePlot):
                          )
         plt.show() if self.savefig is None else plt.close () 
         
-    def fit(self, data: str |DataFrame,  **kws )->'ExPlot': 
+    def fit(self, data: str |DataFrame,  **fit_params )->'ExPlot': 
         """ Fit data and populate the arguments for plotting purposes. 
         
         There is no conventional procedure for checking if a method is fitted. 
@@ -201,8 +201,9 @@ class ExPlot (BasePlot):
             :class:`pandas.DataFrame`. Dataframe containing samples M  
             and features N
 
-        kws: dict 
-            Additional keywords arguments from 
+        fit_params: dict 
+            Additional keywords arguments for reading the data is given as 
+            a path-like object passed from 
             :func:watex.utils.coreutils._is_readable`
            
         Return
@@ -212,7 +213,7 @@ class ExPlot (BasePlot):
              
         """
         if data is not None: 
-            self.data = _is_readable(data, **kws)
+            self.data = _is_readable(data, **fit_params)
         if self.tname is not None:
             self.target_, self.data  = exporttarget(
                 self.data , self.tname, self.inplace ) 

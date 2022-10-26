@@ -23,7 +23,7 @@ import copy
 import numpy as np 
 import pandas as pd
 import seaborn as sns 
-from scipy.cluster.hierarchy import dendrogram # set_link_color_palette 
+from scipy.cluster.hierarchy import dendrogram 
 
 import matplotlib as mpl 
 import matplotlib.pyplot  as plt
@@ -47,7 +47,6 @@ from ..exlib.sklearn import  (
     mean_squared_error
     ) 
 from ..exceptions import ( 
-    # PlotError, 
     NotFittedError , 
     LearningError, 
     EstimatorError
@@ -62,7 +61,6 @@ from ..utils.exmath import linkage_matrix
 from ..utils.hydroutils import check_flow_objectivity 
 from ..utils.coreutils import _is_readable 
 from ..utils.funcutils import ( 
-    # _assert_all_types,
     is_iterable,
     reshape, 
     to_numeric_dtypes, 
@@ -74,14 +72,9 @@ from ..utils.mlutils import (
     exporttarget , 
     selectfeatures, 
     cattarget, 
-    # existfeatures, 
     projection_validator, 
-    # labels_validator, 
     )
-from ..utils.plotutils import  ( 
-    savefigure, 
-    make_mpl_properties
-    )
+from ..utils.plotutils import make_mpl_properties
 from ..typing import ( 
     Generic,
     Optional, 
@@ -101,16 +94,16 @@ _logger=watexlog.get_watex_logger(__name__)
 _eval_params = dict( 
     objective="""
 objective: str, default=None, 
-    The purpose of dataset, what probem do we intend to solve ?  
+    The purpose of dataset; what probem do we intend to solve ?  
     Originally the package was designed for flow rate prediction. Thus,  
-    if the `objective`, plot will behave like the flow rate prediction 
-    purpose and in this case, some condition of target values need to  
-    be fullfilled. default is ``None``. Furthermore, if the objective 
-    is set to ``flow``, `label_values`` as well as `litteral_classes`` 
-    need to be supplied to right encoded the target according to the 
-    hydraulic system requirement during the campaign for drinking water 
-    supply. For any other purpose for the dataset, keep the objective to 
-    ``None``.     
+    if the `objective` is set to ``flow``, plot will behave like the flow 
+    rate prediction purpose and in that case, some condition of target   
+    values need to be fullfilled.  Furthermore, if the objective 
+    is set to ``flow``, `label_values`` as well as the `litteral_classes`
+    parameters need to be supplied to right encode the target according 
+    to the hydraulic system requirement during the campaign for drinking 
+    water supply. For any other purpose for the dataset, keep the objective  
+    to ``None``. Default is ``None``.    
     """
     )
 
@@ -121,7 +114,8 @@ _param_docs = DocstringComponents.from_nested_components(
 #-------
 
 class EvalPlot(BasePlot): 
-    def __init__(self, tname:str =None, 
+    def __init__(self, 
+                 tname:str =None, 
                  encode_labels: bool=False,
                  scale: str = None, 
                  cv: int =None, 
@@ -129,7 +123,8 @@ class EvalPlot(BasePlot):
                  prefix: str=None, 
                  label_values:List[int]=None, 
                  litteral_classes: List[str]=None, 
-                 **kws ): 
+                 **kws 
+                 ): 
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
         
         self.tname=tname
@@ -567,7 +562,6 @@ class EvalPlot(BasePlot):
                 plt.show()
             
             return  
-        # created a dataframe and 
         # concatenate reduced dataframe + y_target
         try: 
             df_pca =pd.concat([
@@ -586,12 +580,6 @@ class EvalPlot(BasePlot):
       
         # Extract the name of the first components 
         # and second components
-        # ranged like [('pc1',['shape', 'power',...],
-        #   [-0.85927608, -0.35507183,...] ),
-        # ('pc2', ['sfi', 'power', ...],
-        #[ 0.50104756,  0.4565256 ,... ), ...]
-        # print('pc1axes =', pca1_ix, 'pc1_label=', pc1_label)
-        # print('pc2axes =', pca2_ix, 'pc2_label=', pc2_label)
         pca_axis_1 = feature_importances_[pca1_ix][1][0] 
         pca_axis_2 = feature_importances_[pca2_ix][1][0]
         # Extract the name of the  values of the first 
@@ -758,7 +746,7 @@ class EvalPlot(BasePlot):
         
         if kind.lower().find('thres')>=0: 
             kind = 'threshold' 
-        elif kind.lower().find('vsrec')>=0: 
+        elif kind.lower().find('rec')>=0: 
             kind = 'recall'
             
         if kind not in ('threshold', 'recall'): 
@@ -1433,14 +1421,13 @@ chunked during the fit methods.
     returns= _core_docs["returns"],
 )
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# create a shadow class to 
-# hold the font and matplotlib
-# properties 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# create a shadow class to hold the font and matplotlib properties
+# from 'EvalPlot` and giving an option for saving figure
 _b= EvalPlot () 
 pobj = type ('Plot', (BasePlot, ), {**_b.__dict__} ) 
 setattr(pobj, 'save', _b.save )
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def plotProjection(
     X: DataFrame | NDArray, 
     Xt: DataFrame | NDArray =None, *, 
@@ -1607,7 +1594,7 @@ def plotProjection(
     ax.legend(**pobj.leg_kws)
     pobj.save(fig)
 
-#XXX                
+              
 def plotModel(
     yt: ArrayLike |Series, 
     ypred:ArrayLike |Series=None,
@@ -1750,7 +1737,7 @@ def plotModel(
             return '{}'.format (index[ind])
         else: None 
         
-    #xxxxxxxxxxxxxxxx set base plot keywords arguments
+    #xxxxxxxxxxxxxxxx update base plot keyword arguments xxxxxxxxxxxxxx
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
 
@@ -1872,7 +1859,7 @@ def plot_reg_scoring(
     reg, X, y, test_size=None, random_state =42, scoring ='mse',
     return_errors: bool=False, **baseplot_kws
     ) : 
-    #xxxxxxxxxxxxxxxx set base plot keywords arguments
+    #xxxxxxxxxxxxxxxx update base plot keywords arguments
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
@@ -2368,7 +2355,6 @@ def plotDendrogram (
     **kwd ): 
     """ Visualize the linkage matrix in the results of dendogram 
     
-    
     Parameters 
     -----------
     df: dataframe or NDArray of (n_samples, n_features) 
@@ -2751,7 +2737,7 @@ def plot_matshow(
     arr, / , labelx:List[str] =None, labely:List[str]=None, 
     matshow_kws=None, **baseplot_kws
     ): 
-    #xxxxxxxxxxxxxxxx set base plot keywords arguments
+    #xxxxxxxxx update base plot keyword arguments
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
@@ -2883,15 +2869,21 @@ def biPlot(
         purpose as:: 
             
             >>> from watex.view import pobj 
+        
+        To change some default plot properties like line width or style, both 
+        can be set before running the script as follow :: 
+            
+            >>> pobj.lw = 2. ; pobj.ls=':' # and so on 
             
     Xr: NDArray of transformed X. 
         the PCA projected data scores on n-given components.The reduced  
         dimension of train set 'X' with maximum ratio as sorted eigenvectors 
         from first to the last component. 
-    components: Array-like, 
+    components: NDArray, shape (n_components, n_eigenvectors ), 
         the eigenvectors of the PCA. The shape in axis must much the number 
-        of component computed using PCA. It the `Xr` shape 1 must the shape 0 
-        of the component matrix, it will be transposed to fit `Xr` shape 1. 
+        of component computed using PCA. If the `Xr` shape 1 equals to the 
+        shape 0 of the component matrix `components`, it will be transposed 
+        to fit `Xr` shape 1. 
     y: Array-like, 
         the target composing the class labels.
     classes: list or int, 
@@ -2910,6 +2902,8 @@ def biPlot(
     >>> pca= nPCA (X, n_components= 2 , return_X= False ) # return PCA object 
     >>> components = pca.components_ [:2, :] # for two components 
     >>> biPlot (pobj, pca.X, components , y ) # pca.X is the reduced dim X 
+    >>> # to change for instance line width (lw) or style (ls) 
+    >>> # just use the baseplotobject (pobj) like 
     
     References 
     -----------
@@ -2929,7 +2923,7 @@ def biPlot(
         components = components.T 
     n = components.shape[0] # number of variables
     
-    plt.figure(figsize=self.fig_size, #(10,8),
+    fig = plt.figure(figsize=self.fig_size, #(10,8),
                dpi=self.fig_dpi #100
                )
     if classes is None: 
@@ -2968,9 +2962,9 @@ def biPlot(
                  fontsize= self.ms * self.fs *.5 
                  )
 
-    plt.xlabel("PC{}".format(1),
+    plt.xlabel(self.xlabel or "PC{}".format(1),
                size=self.ms* self.fs)
-    plt.ylabel("PC{}".format(2),
+    plt.ylabel(self.ylabel or "PC{}".format(2),
                size=self.ms* self.fs)
     limx= int(xs.max()) + 1
     limy= int(ys.max()) + 1
@@ -2979,10 +2973,12 @@ def biPlot(
     plt.grid()
     plt.tick_params(axis='both',
                     which='both', 
-                    labelsize=self.ms* self.fs)
+                    labelsize=self.ms* self.fs
+                    )
     
-    if self.savefig is not None: 
-        savefigure (plt, self.savefig, dpi = self.fig_dpi )
+    self.save(fig)
+    # if self.savefig is not None: 
+    #     savefigure (plt, self.savefig, dpi = self.fig_dpi )
     
 def _remaining_plot_roperties (self, ax, xlim=None, ylim=None, fig=None ): 
     """Append the remaining lines properties such as xlabel, grid , 

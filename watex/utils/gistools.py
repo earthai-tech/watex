@@ -32,8 +32,10 @@ from ..decorators import (
 from ..exceptions import ( 
     GISError
     )
+  
 try : 
-    import HAS_GDAL, EPSG_DICT
+    from ._set_gdal import HAS_GDAL, EPSG_DICT
+    
     if HAS_GDAL:
         from osgeo import osr
         from osgeo.ogr import OGRERR_NONE

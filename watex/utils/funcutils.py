@@ -10,6 +10,7 @@ import sys
 import csv 
 import copy  
 import json
+import h5py
 import yaml
 import shutil
 import numbers 
@@ -43,7 +44,7 @@ from ..exceptions import (
     EDIError,
     ParameterNumberError, 
     )
-
+from ._dependency import import_optional_dependency
 _logger = watexlog.get_watex_logger(__name__)
 
 _msg= ''.join([
@@ -609,15 +610,14 @@ def repr_callable_obj(obj: F  , skip = None ):
                                           ).replace(':', '=') +')'
 
 
-def accept_types (*objtypes: list , 
-                  format: bool = False
-                  ) -> List[str] | str : 
+def accept_types (
+        *objtypes: list , 
+        format: bool = False
+        ) -> List[str] | str : 
     """ List the type format that can be accepted by a function. 
     
     :param objtypes: List of object types.
-    
     :param format: bool - format the list of the name of objects.
-    
     :return: list of object type names or str of object names. 
     
     :Example: 
@@ -658,11 +658,8 @@ def check_dimensionality(obj, data, z, x):
     """ Check dimensionality of data and fix it.
     
     :param obj: Object, can be a class logged or else.
-    
     :param data: 2D grid data of ndarray (z, x) dimensions.
-    
     :param z: array-like should be reduced along the row axis.
-    
     :param x: arraylike should be reduced along the columns axis.
     
     """
@@ -992,7 +989,6 @@ def stn_check_split_type(data_lines):
     :rtype: str
     
     :Example: 
-        
         >>> from watex.utils  import funcutils as func
         >>> path =  data/ K6.stn
         >>> with open (path, 'r', encoding='utf8') as f : 
@@ -1073,14 +1069,14 @@ def display_infos(infos, **kws):
     
     :param infos: Iterable object to display. 
     :param header: Change the `header` to other names. 
+    
     :Example: 
-        
-        >>> from watex.utils.funcutils import display_infos
-        >>> ipts= ['river water', 'fracture zone', 'granite', 'gravel',
-             'sedimentary rocks', 'massive sulphide', 'igneous rocks', 
-             'gravel', 'sedimentary rocks']
-        >>> display_infos('infos= ipts,header='TestAutoRocks', 
-                          size =77, inline='~')
+    >>> from watex.utils.funcutils import display_infos
+    >>> ipts= ['river water', 'fracture zone', 'granite', 'gravel',
+         'sedimentary rocks', 'massive sulphide', 'igneous rocks', 
+         'gravel', 'sedimentary rocks']
+    >>> display_infos('infos= ipts,header='TestAutoRocks', 
+                      size =77, inline='~')
     """
 
     inline =kws.pop('inline', '-')
@@ -1538,7 +1534,7 @@ def find_position_from_sa(
 def fmt_text(
         anFeatures=None, 
         title = None,
-             **kwargs) :
+        **kwargs) :
     """
     Function format text from anomaly features 
     
@@ -2217,7 +2213,7 @@ def fillNaN(arr, method ='ff'):
         method = 'bf' 
     elif method in ('forward', 'ff', 'fwd'): 
         method= 'ff' 
-    elif method in ('both', 'ffbf', 'fbwf', 'bff'): 
+    elif method in ('both', 'ffbf', 'fbwf', 'bff', 'full'): 
         method ='both'
     if method not in ('bf', 'ff', 'both'): 
         raise ValueError ("Expect a backward <'bf'>, forward <'ff'> fill "
@@ -3033,7 +3029,8 @@ def is_iterable (y, /)->bool:
 
     
 def str2columns (text, /, regex=None , pattern = None): 
-    """Split text using the non-alphanumeric makrkers using regular expression 
+    """Split text from the non-alphanumeric markers using regular expression. 
+    
     Remove all string non-alphanumeric and some operator indicators,  and 
     fetch attributes names. 
     
@@ -3043,7 +3040,7 @@ def str2columns (text, /, regex=None , pattern = None):
     text: str, 
         text litteral containing the columns the names to retrieve
         
-    regex: `re` object, default is 
+    regex: `re` object,  
         Regular expresion object. the default is:: 
             
             >>> import re 
@@ -3083,13 +3080,172 @@ def str2columns (text, /, regex=None , pattern = None):
     return text 
     
     
+def sanitize_frame_cols(d, /, func:F = None , regex=None, pattern:str = None, 
+                            fill_pattern:str =None, inplace:bool =False ):
+    """ Remove an indesirable characters and returns new columns 
     
+    Use regular expression for columns sanitizing 
     
+    Parameters 
+    -----------
     
+    d: list, columns, 
+        columns to sanitize. It might contain a list of items to 
+        to polish. if dataframe or series are given, the dataframe columns  
+        and the name respectively will be polished and returns the same 
+        dataframe.
+        
+    regex: `re` object,
+        Regular expresion object. the default is:: 
+            
+            >>> import re 
+            >>> re.compile (r'[_#&.)(*@!_,;\s-]\s*', flags=re.IGNORECASE) 
+    pattern: str, default = '[_#&.)(*@!_,;\s-]\s*'
+        The base pattern to sanitize the text in each column names. 
+        
+    fill_pattern: str, default='' 
+        pattern to replace the non-alphabetic character in each item of 
+        columns. 
+    inplace: bool, default=False, 
+        transform the dataframe of series in place. 
+
+    Returns
+    -------
+    columns | pd.Series | dataframe. 
+        return Serie or dataframe if one is given, otherwise it returns a 
+        sanitized columns. 
+        
+    Examples 
+    ---------
+    >>> from watex.utils.funcutils import sanitize_frame_cols 
+    >>> from watex.utils.coreutils import read_data 
+    >>> h502= read_data ('data/boreholes/H502.xlsx') 
+    >>> h502 = sanitize_frame_cols (h502, fill_pattern ='_' ) 
+    >>> h502.columns[:3]
+    ... Index(['depth_top', 'depth_bottom', 'strata_name'], dtype='object') 
+    >>> f = lambda r : r.replace ('_', "'s ") 
+    >>> h502_f= sanitize_frame_cols( h502, func =f )
+    >>> h502_f.columns [:3]
+    ... Index(['depth's top', 'depth's bottom', 'strata's name'], dtype='object')
+               
+    """
+    isf , iss= False , False 
+    pattern = r'[_#&.)(*@!_,;\s-]\s*'
+    fill_pattern = fill_pattern or '' 
+    fill_pattern = str(fill_pattern)
     
+    regex = regex or re.compile (pattern, flags=re.IGNORECASE)
     
+    if isinstance(d, pd.Series): 
+        c = [d.name]  
+        iss =True 
+    elif isinstance (d, pd.DataFrame ) :
+        c = list(d.columns) 
+        isf = True
+        
+    else : 
+        if not is_iterable(d) : c = [d] 
+        else : c = d 
+        
+    if inspect.isfunction(func): 
+        c = list( map (func , c ) ) 
     
+    else : c =list(map ( 
+        lambda r : regex.sub(fill_pattern, r.strip() ), c ))
+        
+    if isf : 
+        if inplace : d.columns = c
+        else : d =pd.DataFrame(d.values, columns =c )
+        
+    elif iss:
+        if inplace: d.name = c[0]
+        else : d= pd.Series (data =d.values, name =c[0] )
+        
+    else : d = c 
+
+    return d 
+
+def to_hdf5(d, /, fn= None, objname =None, close =True,  **hdf5_kws): 
+    """
+    Store a frame data in hierachical data format 5 (HDF5) 
     
+    Note that is `d` is a dataframe, make sure that the dependency 'pytables'
+    is already installed, otherwise and error raises. 
+    
+    Parameters 
+    -----------
+    d: ndarray, 
+        data to store in HDF5 format 
+    fn: str, 
+        File path to HDF5 file.
+    objname: str, 
+        name of the data to store 
+    close: bool, default =True 
+        when data is given as an array, data can still be added if 
+        close is set to ``False``, otherwise, users need to open again in 
+        read mode 'r' before pursuing the process of adding. 
+    hdf5_kws: dict of :class:`pandas.pd.HDFStore`  
+        Additional keywords arguments passed to pd.HDFStore. they could be:
+        *  mode : {'a', 'w', 'r', 'r+'}, default 'a'
+    
+             ``'r'``
+                 Read-only; no data can be modified.
+             ``'w'``
+                 Write; a new file is created (an existing file with the same
+                 name would be deleted).
+             ``'a'``
+                 Append; an existing file is opened for reading and writing,
+                 and if the file does not exist it is created.
+             ``'r+'``
+                 It is similar to ``'a'``, but the file must already exist.
+         * complevel : int, 0-9, default None
+             Specifies a compression level for data.
+             A value of 0 or None disables compression.
+         * complib : {'zlib', 'lzo', 'bzip2', 'blosc'}, default 'zlib'
+             Specifies the compression library to be used.
+             As of v0.20.2 these additional compressors for Blosc are supported
+             (default if no compressor specified: 'blosc:blosclz'):
+             {'blosc:blosclz', 'blosc:lz4', 'blosc:lz4hc', 'blosc:snappy',
+              'blosc:zlib', 'blosc:zstd'}.
+             Specifying a compression library which is not available issues
+             a ValueError.
+         * fletcher32 : bool, default False
+             If applying compression use the fletcher32 checksum.
+    Returns
+    ------- 
+    store : Dict-like IO interface for storing pandas objects.
+    
+    >>> import os 
+    >>> from watex.utils.funcutils import sanitize_frame_cols, to_hdf5 
+    >>> from watex.utils import read_data 
+    >>> data = read_data('data/boreholes/H502.xlsx') 
+    >>> store_path = os.path.join('watex/datasets/data', 'h') # 'h' is the name of the data 
+    >>> store = to_hdf5 (data, fn =store_path , objname ='h502' ) 
+    >>> store 
+    ... 
+    >>> # fetch the data 
+    >>> h502 = store ['h502'] 
+    
+    """
+    if hasattr (d, '__array__') and hasattr (d, "columns"): 
+        # assert whether pytables is installed 
+        import_optional_dependency ('pytables') 
+        store = pd.HDFStore(fn +'.h5' , **hdf5_kws)
+        objname = objname or 'data'
+        store[ str(objname) ] = d 
+        return store 
+    
+    elif not hasattr(d, '__array__'): 
+        d = np.asarray(d) 
+ 
+        store= h5py.File(f"{fn}.hdf5", "w") 
+        store.create_dataset("dataset_01", store.shape, 
+                             dtype=store.dtype,
+                             data=store
+                             )
+        if close : store.close () 
+        
+    return store 
     
     
     

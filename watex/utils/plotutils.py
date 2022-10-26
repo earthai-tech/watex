@@ -72,15 +72,72 @@ D_STYLES = [
     'dotted' 
 ]
 
-
-
+def plotclusters (n_clusters , X, ypred, cluster_centers =None ): 
+    """ Visualize the cluster that k-means identified in the datasets 
     
+    :param n_clusters: int, number of cluster to visualize 
+    :param X: NDArray, data containing the features, expect to be a two 
+        dimensional data 
+    :param ypred: array-like, array containing the predicted class labels. 
+    :param cluster_centers_: NDArray containg the coordinates of the 
+        centroids or the similar points with continous features. 
+        
+    :Example: 
+    >>> from watex.utils import read_data 
+    >>> from watex.exlib.sklearn import KMeans, MinMaxScaler
+    >>> from watex.utils.plotutils import plotclusters
+    >>> h = read_data ('data/boreholes/H502.xlsx')
+    >>> # collect two features 'resistivity' and gamma-gamma logging values
+    >>> h2 = h[['resistivity', 'gamma-gamma']] 
+    >>> km = KMeans (n_clusters =3 , init= 'random' ) 
+    >>> # scaled the data with MinMax scaler i.e. between ( 0-1) 
+    >>> h2_scaled = MinMaxScaler().fit_transform(h2)
+    >>> ykm = km.fit_predict(h2_scaled )
+    >>> plotclusters (3 , h2_scaled, y_km , km.cluster_centers_ )
+        
+    """
+    try : n_clusters = int(n_clusters )
+    except: 
+        raise TypeError (f"n_clusters argument must be a number, "
+                         f"not {type(n_clusters).__name__!r}")
+    X= np.array(X) 
+    if len(X.shape )!=2 or X.shape[1]==1: 
+        ndim = 1 if X.shape[1] ==1 else np.ndim (X )
+        raise ValueError(
+            f"X is expected to be a two dimensional data. Got {ndim}!")
+    # for consistency , convert y to array    
+    ypred = np.array(ypred)
+    
+    colors = make_mpl_properties(n_clusters)
+    markers = make_mpl_properties(n_clusters, 'markers')
+    for n in range (n_clusters):
+        plt.scatter (X[ypred ==n, 0], 
+                     X[ypred ==n , 1],  
+                     s= 50 , c= colors [n ], 
+                     marker=markers [n], 
+                     edgecolors='black', 
+                     label = f'Cluster {n +1}'
+                     ) 
+    if cluster_centers is not None: 
+        cluster_centers = np.array (cluster_centers)
+        plt.scatter (cluster_centers[:, 0 ], 
+                     cluster_centers [:, 1], 
+                     s= 250. , marker ='*', 
+                     c='red', edgecolors='black', 
+                     label='centroids' 
+                     ) 
+    plt.legend (scatterpoints =1 ) 
+    plt.grid() 
+    plt.tight_layout() 
+    plt.show()
+    
+
 def plotelbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
                marker='o', savefig =None, **kwd): 
     """ Plot the optimal number of cluster, k', for a given class 
     
     :param distorsions: list - list of values withing the ssum-squared-error 
-    (SSE) also called  inertia_` in sckit-learn. 
+    (SSE) also called  `inertia_` in sckit-learn. 
     
     :param n_clusters: number of clusters. where k starts and end. 
     
@@ -142,7 +199,7 @@ def plotcostvsepochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     Examples 
     ---------
     >>> from watex.datasets import load_iris 
-    >>> from watex.bases import AdelineGradientDescent
+    >>> from watex.base import AdelineGradientDescent
     >>> from watex.utils.plotutils import plotcostvsepochs
     >>> X, y = load_iris (return_X_y= True )
     >>> ada1 = AdelineGradientDescent (n_iter= 10 , eta= .01 ).fit(X, y) 

@@ -1895,7 +1895,48 @@ def load_serialized_data (filename, verbose=0):
     
     return data        
 
+def read_data (
+        f:str, 
+        **kws
+ ) -> DataFrame: 
+    """ Assert and read specific files and url allowed by the package
+    
+    Readable files are systematically convert to a frame.  
+    
+    :param f: Path-like object -Should be a readable files or url  
+    :param kws: Pandas readableformats additional keywords arguments. 
+    :return: dataframe - A dataframe with head contents... 
+    
+    """
+    cpObj= Config().parsers 
+    
+    if isinstance (f, pd.DataFrame): 
+        return f 
+    
+    elif not os.path.isfile :# or ('http' not in f) : 
+        try : 
+            if 'http' in f: # force pandas read html etc 
+                pass 
+        except:
+            raise TypeError (
+            f'Expected a Path-like object or url, got : {type(f).__name__!r}')
+        
+    _, ex = os.path.splitext(f) 
+    if ex.lower() not in tuple (cpObj.keys()):
+        raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
+                        )
+    try : 
+        f = cpObj[ex](f, **kws)
+        
+    except FileNotFoundError:
+        raise FileNotFoundError (
+            f"No such file in directory: {os.path.basename (f)!r}")
+    except: 
+        raise FileHandlingError (
+            f" Can not parse the file : {os.path.basename (f)!r}")
 
+    return f 
+    
 
 
 
