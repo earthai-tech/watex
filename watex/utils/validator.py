@@ -3,7 +3,12 @@
 # Copyright (c) 2007-2022 The scikit-learn developers.
 # All rights reserved.
 
-#Utilities for input validation
+# Note that this module is not the sckit-learn original file, 
+# some functions have been removed to keep only for 
+# the usefull for of watex package. Furthermore some others 
+# function have been edited and added. 
+
+# Utilities for input validation
 
 from functools import wraps
 import warnings
@@ -18,6 +23,56 @@ import joblib
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
 
+def _check_array_in(obj, /, arr_name):
+    """Return the array from the array name attribute. Note that the singleton 
+    arry is not admitted. 
+    
+    This helper function tries to return array from object attribute  where 
+    object attribute is the array name if exists. Otherwise raises an error. 
+    
+    Parameters
+    ----------
+    obj : object 
+       Object that is expect to contain the array attribute.
+    Returns
+    -------
+    X : array
+       Array fetched from its name in `obj`. 
+    """
+    
+    type_ = type(obj)
+    try : 
+        type_name = f"{obj.__module__}.{obj.__qualname__}"
+        o_= f" in {obj.__name__!r}"
+        
+    except AttributeError:
+        type_name = type_.__qualname__
+        o_=''
+    message = (f"Unable to find the name {arr_name!r}"
+               f"{o_} from {type_name!r}") 
+    
+    if not hasattr (obj , arr_name ): 
+        raise TypeError (message )
+    
+    X = getattr ( obj , f"{arr_name}") 
+
+    if not hasattr(X, "__len__") and not hasattr(X, "shape"):
+        if not hasattr(X, "__array__"):
+            raise TypeError(message)
+        # Only convert X to a numpy array if there is no cheaper, heuristic
+        # option.
+        X = np.asarray(X)
+
+    if hasattr(X, "shape"):
+        if not hasattr(X.shape, "__len__") or len(X.shape) <= 1:
+            warnings.warn ( 
+                "A singleton array %r cannot be considered a valid collection."% X)
+            message += f" with shape {X.shape}"
+            raise TypeError(message)
+        
+    return X 
+
+        
 def _deprecate_positional_args(func=None, *, version="1.3"):
     """Decorator for methods that issues warnings for positional arguments.
     Using the keyword-only argument syntax in pep 3102, arguments after the

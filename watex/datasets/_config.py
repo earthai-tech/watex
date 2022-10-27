@@ -112,7 +112,7 @@ _BVAL= dict (
         ), 
 )
   
-def _fetch_data(tag): 
+def _fetch_data(tag, data_names='' ): 
     r=None
     tag = str(tag)
 
@@ -123,8 +123,14 @@ def _fetch_data(tag):
     else : 
         pm =regex.search (tag)
         if pm is None: 
-            raise DatasetError(f"Unknow tag {tag!r}. Expect 'original',"
-                               f" {smart_format(_BTAGS, 'or')}") 
+            data_names+= _BTAGS
+            msg = (f"Unknow tag-name {tag!r}. None dataset is stored"
+                f" under the name {tag!r}. Available tags are: "
+                f"{smart_format (data_names, 'or')}"
+                )
+            raise DatasetError(msg)
+            # raise DatasetError(f"Unknow tag {tag!r}. Expect 'original',"
+            #                    f" {smart_format(_BTAGS, 'or')}") 
             
         pm= pm.group() 
     

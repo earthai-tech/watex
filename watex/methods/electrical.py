@@ -244,8 +244,7 @@ class DCProfiling(ElectricalMethods)  :
         The stations should numbered from 1 not 0 and might fit the number of 
         the survey line. Each survey line expect to hold one positionning 
         drilling. 
-        
-        
+   
         """
         self._logging.info (f" {self.__class__.__name__!r} collects the "
                             "resistivity objects ")
@@ -1525,8 +1524,6 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
                   f" {len(self.isnotvalid_)}")
             
 
-        
-    
 def _parse_dc_args(self, dcmethod: object , **kws): 
     """ parse dc arguments to  fit the number of survey lines, populate
     and sanitize the attributes accordingly.

@@ -15,7 +15,7 @@ from importlib import resources
 from collections import namedtuple
 from ..utils.box import Boxspace 
 from ..utils.coreutils import _is_readable 
-from ..utils.funcutils import random_state_validator 
+from ..utils.funcutils import random_state_validator , is_iterable
 
 DMODULE = "watex.datasets.data" ; DESCR = "watex.datasets.descr"
 
@@ -62,38 +62,50 @@ def remove_data(data=None): #clear
     
 
 def _to_dataframe(data, tnames=None , feature_names =None, target =None ): 
-    """ Validate that data is readble py pandas rearder and parse the data.
+    """ Validate that data is readable by pandas rearder and parse the data.
      then separate data from training to target. Be sure that the target 
      must be included to the dataframe columns 
      
     :param data: str, or path-like object 
-        data file to read or dataframe 
+        data file to read or dataframe
+    :param tnames: list of str 
+        name of target that might be a column of the target frame. 
+        
     :param feature_names: List of features to selects. Preferably 
         should be include in the dataframe columns 
     :params target: Ndarray or array-like, 
-        A target for supervised learning . Can be nd array -for muliclass 
+        A target for supervised learning . Can be ndarray -for muliclass 
         output and array-like for singular label 
-    :param tnames: list of str 
-        name of target that might be a column of the target frame. 
+    
     :returns: 
         dataframe combined and X, y (X= features frames, y = target frame)
     """
-    # an ndarray is given convert to dataframe 
+    # if a ndarray is given ,then convert to dataframe 
     # by adding feature names. 
+    d0, y = None , None 
     if isinstance (data, np.ndarray ):
         d0 = pd.DataFrame(data = data, columns = feature_names)
     else : 
-        df = _is_readable(data) # read with pandas config parsers 
+        # read with pandas config parsers including the target 
+        df = _is_readable(data)  
         
-    # if tnames are given convert to target frames 
-    if tnames is not None: 
+    # if tnames are given convert the array 
+    # of target  to a target frame 
+    if  ( 
+        d0 is not None 
+        and tnames is not None 
+        and target is not None
+            ) : 
+        if not is_iterable(tnames):
+            tnames = [tnames] 
         target = pd.DataFrame(data =target , columns =tnames ) 
-    
-    if target is not None: 
+        # if target is not None: 
         df = pd.concat ([d0, target], axis =1 )# stack to columns 
 
     X = df[feature_names ]  
-    y = df [tnames[0]] if len(tnames)==1 else df [tnames]
+    
+    if tnames is not None :
+        y = df [tnames[0]] if len(tnames)==1 else df [tnames]
     
     return df, X, y 
 

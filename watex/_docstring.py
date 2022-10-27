@@ -59,7 +59,7 @@ ves_doc =type ("ves_doc", (), dict(
             The path to the location of the data.
             .. versionadded:: 0.20
         .. versionadded:: 0.1.2
-    tag: None, 
+    tag, data_names: None, 
         Always None for API consistency 
     kws: dict, 
         Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 
@@ -138,7 +138,7 @@ erp_doc = type ('erp_doc', (), dict (
             The full description of the dataset.
         filename: str
             The path to the location of the data.
-    tag: None, 
+    tag, data_names: None, 
         Always None for API consistency 
     kws: dict, 
         Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 

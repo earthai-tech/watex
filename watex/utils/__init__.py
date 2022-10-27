@@ -48,10 +48,12 @@ from .mlutils import (
     
     )
 from .plotutils import ( 
-    plotmlxtendheatmap , 
-    plotmlxtendmatrix, 
-    plotcostvsepochs, 
-    plotelbow
+    plot_mlxtend_heatmap , 
+    plot_mlxtend_matrix, 
+    plot_cost_vs_epochs, 
+    plot_elbow, 
+    plot_clusters, 
+    plot_pca_components 
     )
 
 __all__=[
@@ -82,9 +84,6 @@ __all__=[
         'correlatedfeatures', 
         'findCatandNumFeatures',
         'evalModel',
-        'plotmlxtendheatmap', 
-        'plotmlxtendmatrix', 
-        'plotcostvsepochs', 
         'get_strike', 
         'get_profile_angle', 
         'moving_average', 
@@ -95,8 +94,13 @@ __all__=[
         'labels_validator', 
         'projection_validator', 
         'rename_labels_in', 
-        'plotelbow',
-        'read_data'
+        'read_data', 
+        'plot_mlxtend_heatmap' , 
+        'plot_mlxtend_matrix', 
+        'plot_cost_vs_epochs', 
+        'plot_elbow', 
+        'plot_clusters', 
+        'plot_pca_components' 
         
         ]
 

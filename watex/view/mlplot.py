@@ -2743,7 +2743,7 @@ def plot_matshow(
         
     matshow_kws= matshow_kws or dict()
     fig = plt.figure(figsize = pobj.fig_size)
-    print(fig)
+
     ax = fig.add_subplot(1,1,1)
 
     cax = ax.matshow(arr, **matshow_kws) 

@@ -12,12 +12,19 @@ import itertools
 import numpy as np
 import matplotlib as mpl 
 # import matplotlib.cm as cm 
+from scipy.cluster.hierarchy import ( 
+    dendrogram, ward 
+    )
 import matplotlib.pyplot as plt
 
 from ..exceptions import ( 
     TipError, 
     PlotError, 
     )
+
+from .funcutils import is_iterable
+from .validator import _check_array_in  
+
 is_mlxtend =False 
 try : 
     from mlxtend.Plotting import ( 
@@ -71,8 +78,154 @@ D_STYLES = [
     'dashdot',
     'dotted' 
 ]
+    
 
-def plotclusters (n_clusters , X, ypred, cluster_centers =None ): 
+def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws): 
+    """ Quick plot dendrogram using the ward clustering function from Scipy.
+    
+    :param X: ndarray of shape (n_samples, n_features) 
+        Array of features 
+    :param ybounds: int, 
+        integrer values to draw horizontal cluster lines that indicate the 
+        number of clusters. 
+    :param fig_size: tuple (width, height), default =(8,5) 
+        the matplotlib figure size given as a tuple of width and height 
+    :param kws: dict , 
+        Addditional keyword arguments passed to 
+        :func:`scipy.cluster.hierarchy.dendrogram`
+    :Examples: 
+        >>> from watex.datasets import fetch_data 
+        >>> from watex.utils.plotutils import plot_naive_dendrogram
+        >>> X, _= fetch_data('Bagoue analysed') # data is already scaled 
+        >>> # get the two features 'power' and  'magnitude'
+        >>> data = X[['power', 'magnitude']]
+        >>> plot_naive_dendrogram(data ) 
+        >>> # add the horizontal line of the cluster at ybound = (20 , 20 )
+        >>> plot_naive_dendrogram(data , 20, 20 ) 
+   
+    """
+    # assert ybounds agument if given
+    msg =(". Note that the bounds in y-axis are the y-coordinates for"
+          " horizontal lines regarding to the number of clusters that"
+          " might be cutted.")
+    try : 
+        ybounds = [ int (a) for a in ybounds ] 
+    except Exception as typerror: 
+        raise TypeError  (str(typerror) + msg)
+    else : 
+        if len(ybounds)==0 : ybounds = None 
+    # the scipy ward function returns 
+    # an array that specifies the 
+    # distance bridged when performed 
+    # agglomerate clustering
+    linkage_array = ward(X) 
+    
+    # plot the dendrogram for the linkage array 
+    # containing the distances between clusters 
+    dendrogram( linkage_array , **kws )
+    
+    # mark the cuts on the tree that signify two or three clusters
+    #change the figsize 
+    plt.rcParams["figure.figsize"] = fig_size
+    ax= plt.gca () 
+  
+    if ybounds is not None: 
+        if not is_iterable(ybounds): 
+            ybounds =[ybounds] 
+        if len(ybounds) <=1 : 
+            warnings.warn(f"axis y bound might be greater than {len(ybounds)}")
+        else : 
+            # split ybound into sublist of pair (x, y) coordinates
+            nsplits = len(ybounds)//2 
+            len_splits = [ 2 for i in range (nsplits)]
+            # compose the pir list (x,y )
+            itb = iter (ybounds)
+            ybounds = [list(itertools.islice (itb, it)) for it in len_splits]
+            bounds = ax.get_xbound () 
+            for i , ( x, y)  in enumerate (ybounds)  : 
+                ax.plot(bounds, [x, y], '--', c='k') 
+                ax.text ( bounds [1], y , f"cluster {i +1:02}",
+                         va='center', 
+                         fontdict ={'size': 15}
+                         )
+    # get xticks and format labels
+    xticks_loc = list(ax.get_xticks())
+    _get_xticks_formatage(ax, xticks_loc, space =14 )
+    
+    plt.xlabel ("Sample index ")
+    plt.ylabel ("Cluster distance")
+            
+    
+def plot_pca_components (
+        components, *, feature_names = None , cmap= 'viridis' , **kws
+        ): 
+    """ Visualize the coefficient of principal component analysis (PCA) as 
+    a heatmap  
+  
+    :param components: Ndarray, shape (n_components, n_features)or PCA object 
+        Array of the PCA compoments or object from 
+        :class:`watex.analysis.dimensionality.nPCA`. If the object is given 
+        it is not usefull to set the `feature_names`
+    :param feature_names: list or str, optional 
+        list of the feature names to locate in the map. `Feature_names` and 
+        the number of eigen vectors must be the same length. If PCA object is  
+        passed as `components` arguments, no need to set the `feature_names`. 
+        The name of features is retreived automatically. 
+    :param cmap: str, default='viridis'
+        the matplotlib color map for matshow visualization. 
+    :param kws: dict, 
+        Additional keywords arguments passed to 
+        :class:`matplotlib.pyplot.matshow`
+        
+    :Examples: 
+    (1)-> with PCA object 
+    
+    >>> from watex.datasets import fetch_data
+    >>> from watex.utils.plotutils import plot_pca_components
+    >>> from watex.analysis import nPCA 
+    >>> X, _= fetch_data('bagoue pca') 
+    >>> pca = nPCA (X, n_components=2, return_X =False)# to return object 
+    >>> plot_pca_components (pca)
+    
+    (2)-> use the components and features individually 
+    
+    >>> components = pca.components_ 
+    >>> features = pca.feature_names_in_
+    >>> plot_pca_components (components, feature_names= features, 
+                             cmap='jet_r')
+    
+    """
+    # if pca object is given , get the features name in as features 
+    if hasattr(components, "feature_names_in_"): 
+        feature_names = list (getattr (components , "feature_names_in_" ) ) 
+        
+    if not hasattr (components , "__array__"): 
+        components = _check_array_in  (components, 'components_')
+        
+    plt.matshow(components, cmap =cmap , **kws)
+    plt.yticks ([0 , 1], ['First component', 'Second component']) 
+    cb=plt.colorbar() 
+    cb.set_label('Coeff value')
+    if not is_iterable(feature_names ): 
+        feature_names = [feature_names ]
+        
+    if len(feature_names)!= components.shape [1] :
+        warnings.warn("Number of feature and eigenvectors might"
+                      " be consistent, expect {0}, got {1}". format( 
+                          components.shape[1], len(feature_names))
+                      )
+        feature_names=None 
+    if feature_names is not None: 
+        plt.xticks (range (len(feature_names)), 
+                    feature_names , rotation = 60 , ha='left' 
+                    )
+    plt.xlabel ("Feature") 
+    plt.ylabel ("Principal components") 
+    
+        
+def plot_clusters (
+        n_clusters, X, ypred, cluster_centers =None 
+        ): 
     """ Visualize the cluster that k-means identified in the datasets 
     
     :param n_clusters: int, number of cluster to visualize 
@@ -85,7 +238,7 @@ def plotclusters (n_clusters , X, ypred, cluster_centers =None ):
     :Example: 
     >>> from watex.utils import read_data 
     >>> from watex.exlib.sklearn import KMeans, MinMaxScaler
-    >>> from watex.utils.plotutils import plotclusters
+    >>> from watex.utils.plotutils import plot_clusters
     >>> h = read_data ('data/boreholes/H502.xlsx')
     >>> # collect two features 'resistivity' and gamma-gamma logging values
     >>> h2 = h[['resistivity', 'gamma-gamma']] 
@@ -93,7 +246,7 @@ def plotclusters (n_clusters , X, ypred, cluster_centers =None ):
     >>> # scaled the data with MinMax scaler i.e. between ( 0-1) 
     >>> h2_scaled = MinMaxScaler().fit_transform(h2)
     >>> ykm = km.fit_predict(h2_scaled )
-    >>> plotclusters (3 , h2_scaled, y_km , km.cluster_centers_ )
+    >>> plot_clusters (3 , h2_scaled, y_km , km.cluster_centers_ )
         
     """
     try : n_clusters = int(n_clusters )
@@ -132,12 +285,12 @@ def plotclusters (n_clusters , X, ypred, cluster_centers =None ):
     plt.show()
     
 
-def plotelbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
+def plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
                marker='o', savefig =None, **kwd): 
     """ Plot the optimal number of cluster, k', for a given class 
     
     :param distorsions: list - list of values withing the ssum-squared-error 
-    (SSE) also called  `inertia_` in sckit-learn. 
+        (SSE) also called  `inertia_` in sckit-learn. 
     
     :param n_clusters: number of clusters. where k starts and end. 
     
@@ -147,7 +300,7 @@ def plotelbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),
     >>> import numpy as np 
     >>> from sklearn.cluster import KMeans 
     >>> from watex.datasets import load_iris 
-    >>> from watex.utils.plotutils import plotelbow
+    >>> from watex.utils.plotutils import plot_elbow
     >>> d= load_iris ()
     >>> X= d.data [:, 0][:, np.newaxis] # take the first axis 
     >>> # compute distorsiosn for KMeans range 
@@ -161,7 +314,7 @@ def plotelbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),
                         )
             km.fit(X) 
             distorsions.append(km.inertia_) 
-    >>> plotelbow (distorsions, n_clusters =n_clusters)
+    >>> plot_elbow (distorsions, n_clusters =n_clusters)
         
     """
     fig, ax = plt.subplots ( nrows=1 , ncols =1 , figsize = fig_size ) 
@@ -179,7 +332,7 @@ def plotelbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),
     return ax 
 
 
-def plotcostvsepochs(regs, *,  fig_size = (10 , 4 ), marker ='o', 
+def plot_cost_vs_epochs(regs, *,  fig_size = (10 , 4 ), marker ='o', 
                      savefig =None, **kws): 
     """ Plot the cost agianst the number of epochs  for the two different 
     learnings rates 
@@ -200,11 +353,11 @@ def plotcostvsepochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     ---------
     >>> from watex.datasets import load_iris 
     >>> from watex.base import AdelineGradientDescent
-    >>> from watex.utils.plotutils import plotcostvsepochs
+    >>> from watex.utils.plotutils import plot_cost_vs_epochs
     >>> X, y = load_iris (return_X_y= True )
     >>> ada1 = AdelineGradientDescent (n_iter= 10 , eta= .01 ).fit(X, y) 
     >>> ada2 = AdelineGradientDescent (n_iter=10 , eta =.0001 ).fit(X, y)
-    >>> plotcostvsepochs (reg = [ada1, ada2] ) 
+    >>> plot_cost_vs_epochs (reg = [ada1, ada2] ) 
 
     """
     if not isinstance (regs, (list, tuple, np.array)): 
@@ -233,7 +386,7 @@ def plotcostvsepochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     return ax 
 
     
-def plotmlxtendheatmap (df, columns =None, **kws): 
+def plot_mlxtend_heatmap (df, columns =None, **kws): 
     """ Plot correlation matrix array  as a heat map 
     
     :param df: dataframe pandas  
@@ -250,7 +403,7 @@ def plotmlxtendheatmap (df, columns =None, **kws):
     
     return ax 
 
-def plotmlxtendmatrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
+def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
     """ Visualize the pair wise correlation between the different features in  
     the dataset in one place. 
     
@@ -684,8 +837,8 @@ def ploterrorbar(
     """
     convinience function to make an error bar instance
     
-    Arguments
-    ---------
+    Parameters
+    ------------
     
     ax: matplotlib.axes 
         instance axes to put error bar plot on
@@ -836,7 +989,26 @@ def get_color_palette (RGB_color_palette):
         
     return tuple(rgba)       
 
-    
+def _get_xticks_formatage ( ax,  xtick_range, space= 14 ):
+    """ Skip xticks label at every number of spaces 
+    :param ax: matplotlib axes 
+    :param xtick_range: list of the xticks values 
+    :param space: interval that the label must be shown.
+    """
+    def format_ticks (ind, x):
+        """ Format thick parameter with 'FuncFormatter(func)'
+        rather than using:: 
+            
+        axi.xaxis.set_major_locator (plt.MaxNLocator(3))
+        
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
+        """
+        if ind % 7 ==0: 
+            return '{}'.format (ind)
+        else: None 
+    # show label every 'space'samples 
+    if len(xtick_range) >= space : 
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))   
 
     
     

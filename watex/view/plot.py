@@ -403,6 +403,7 @@ class ExPlot (BasePlot):
         """ Create pairwize comparizons bteween features. 
         
         Plots shows a ['pearson'|'spearman'|'covariance'] correlation. 
+        
         Parameters 
         -----------
         corr: str, ['pearson'|'spearman'|'covariance']

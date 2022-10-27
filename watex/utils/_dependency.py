@@ -10,7 +10,7 @@ import warnings
 
 from .version import Version
 
-# manage some dependencies when updating versions!
+# manage some dependencies when updating versions
 
 VERSIONS = {
     "qtpy":"0.3", 

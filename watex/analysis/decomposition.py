@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap 
 from .._docstring import _core_docs 
 from ..exlib.sklearn import (train_test_split, StandardScaler, PCA )
-from ..utils.plotutils import (D_COLORS, D_MARKERS)
+from ..utils.plotutils import make_mpl_properties
 from ..utils.funcutils import _assert_all_types 
 # ---
 
@@ -149,7 +149,7 @@ def feature_transformation (
     # eigenvalues to capture about 60% of the variance of this datasets
     if n_components !=2 : 
         #XXX TODO: transform component > 2 
-        warn("N-component !=2 is not implemented yet.", UserWarning)
+        warn("N-component > 2 is not implemented yet.", UserWarning)
     w= np.hstack((eigen_pairs[0][1][:, np.newaxis], 
                  eigen_pairs [1][1][:, np.newaxis])
                  ) 
@@ -163,9 +163,11 @@ def feature_transformation (
     if view: 
         if y is None: 
             raise TypeError("Missing the target `y`")
-            
-        colors = D_COLORS [: len(np.unique (y))] 
-        markers = D_MARKERS [:len(np.unique (y))] #['s', 'x', 'o'] for 03
+        # markers = tuple (D_MARKERS [:len(np.unique (y))])
+        # colors = tuple (D_COLORS [:len(np.unique (y))])    
+        colors = make_mpl_properties(len(np.unique (y)))
+        markers = make_mpl_properties (
+            len(np.unique (y)), 'markers') 
         
         if positive_class not in np.unique (y): 
             raise ValueError( f"'{positive_class}' does not match any label "
@@ -220,8 +222,9 @@ Examples
 def _decision_region (X, y, clf, resolution =.02 ): 
     """ visuzalize the decision region """
     # setup marker generator and colors map 
-    markers = tuple (D_MARKERS [:len(np.unique (y))])
-    colors = tuple (D_COLORS [:len(np.unique (y))])
+    colors = tuple (make_mpl_properties(len(np.unique (y))))
+    markers = tuple (make_mpl_properties (
+        len(np.unique (y)), 'markers') )
     cmap = ListedColormap(colors[:len(np.unique(y))])
     # plot the decision surface 
     x1_min , x1_max = X[:, 0].min() -1, X[:, 0].max() +1 

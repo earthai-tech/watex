@@ -16,12 +16,13 @@ try:
         load_iris, 
         load_semien, 
         load_tankesse , 
-        load_boundiali, 
+        load_boundiali,
+        load_hlogs
         )
     
     __all__=["fetch_data", "load_bagoue" , "load_gbalo", 
              "load_iris", "load_semien", "load_tankesse", 
-             "load_boundiali"
+             "load_boundiali", "load_hlogs"
              ]
 
 except ImportError : 
@@ -39,11 +40,12 @@ except ImportError :
 def fetch_data (tag, **kws): 
     func= _fetch_data 
     funcs= (load_bagoue , load_gbalo, load_iris, load_semien, load_tankesse , 
-            load_boundiali)
+            load_boundiali, load_hlogs) 
     funcns = tuple (map(lambda f: f.__name__.replace('load_', ''), funcs))
     if tag in (funcns): 
         func = funcs[funcns.index (tag)] 
-    return func (tag=tag, **kws)
+    
+    return func (tag=tag, data_names=funcns, **kws)
 
 
 fetch_data.__doc__ ="""\

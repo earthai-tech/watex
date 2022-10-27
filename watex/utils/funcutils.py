@@ -3225,11 +3225,14 @@ def to_hdf5(d, /, fn= None, objname =None, close =True,  **hdf5_kws):
     ... 
     >>> # fetch the data 
     >>> h502 = store ['h502'] 
+    >>> h502.columns[:3] 
+    ... Index(['hole_number', 'depth_top', 'depth_bottom'], dtype='object')
+    
     
     """
     if hasattr (d, '__array__') and hasattr (d, "columns"): 
         # assert whether pytables is installed 
-        import_optional_dependency ('pytables') 
+        import_optional_dependency ('tables') 
         store = pd.HDFStore(fn +'.h5' , **hdf5_kws)
         objname = objname or 'data'
         store[ str(objname) ] = d 
@@ -3248,8 +3251,7 @@ def to_hdf5(d, /, fn= None, objname =None, close =True,  **hdf5_kws):
     return store 
     
     
-    
-    
+  
     
     
     

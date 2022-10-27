@@ -49,7 +49,7 @@ Warnings
 So once the data is  well organized, the module is able to compute all the 
 parameters and select the best location for drilling after analyzing all the 
 different point in dataset. 
-However, this way seems, too more prefect (not realistic) far from the reality 
+However, this way seems, too more perfect (not realistic) far from the reality 
 since in DC - resistivity, the low resistivity does not mean there is a water 
 in that place thereby leading to a misinsterpretationin the choice of locating 
 the drilling points. To handle this issue, we recommended to use the module 
