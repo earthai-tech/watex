@@ -49,7 +49,8 @@ from ..exlib.sklearn import  (
 from ..exceptions import ( 
     NotFittedError , 
     LearningError, 
-    EstimatorError
+    EstimatorError, 
+    PlotError
     )
 from ..metrics import ( 
     precision_recall_tradeoff, 
@@ -57,6 +58,16 @@ from ..metrics import (
     confusion_matrix
     )
 from ..property import BasePlot 
+from ..typing import ( 
+    Optional, 
+    Tuple, 
+    F,
+    List,
+    ArrayLike, 
+    NDArray,
+    DataFrame, 
+    Series
+    )
 from ..utils.exmath import linkage_matrix 
 from ..utils.hydroutils import check_flow_objectivity 
 from ..utils.coreutils import _is_readable 
@@ -75,18 +86,8 @@ from ..utils.mlutils import (
     projection_validator, 
     )
 from ..utils.plotutils import make_mpl_properties
-from ..typing import ( 
-    Generic,
-    Optional, 
-    Tuple, 
-    V, 
-    F,
-    List,
-    ArrayLike, 
-    NDArray,
-    DataFrame, 
-    Series
-    )
+from ..utils.validator import get_estimator_name 
+
 _logger=watexlog.get_watex_logger(__name__)
 
 #-----
@@ -390,7 +391,7 @@ class EvalPlot(BasePlot):
             biplot:bool =False, 
             pc1_label:str ='Axis 1',
             pc2_label:str='Axis 2',
-            plot_dict:Generic[V] = None,
+            plot_dict:dict= None,
             **pca_kws
     )->'EvalPlot': 
         """ Plot PCA component analysis using :class:`~.sklearn.decomposition`. 
@@ -2553,7 +2554,115 @@ def plotSilhouette (X, labels, metric ='euclidean', **kwds ):
 
     plt.show() 
     
-def plotLearningCurves(
+def plotLearningInspections (
+        models:List[object] , 
+        X:NDArray, y:ArrayLike,  
+        fig_size:Tuple[int] = ( 22, 18 ) , 
+        cv: int = None, 
+        savefig:Optional[str] = None, 
+        titles = None, 
+        subplot_kws =None, 
+        **kws 
+  ): 
+    """ Inspect multiple models from their learning curves. 
+    
+    Mutiples Inspection plots that generate the test and training learning 
+    curve, the training  samples vs fit times curve, the fit times 
+    vs score curve for each model.  
+    
+    Parameters
+    ----------
+    models : list of estimator instances
+        Each estimator instance implements `fit` and `predict` methods which
+        will be cloned for each validation.
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where ``n_samples`` is the number of samples and
+        ``n_features`` is the number of features.
+
+    y : array-like of shape (n_samples) or (n_samples, n_features)
+        Target relative to ``X`` for classification or regression;
+        None for unsupervised learning.
+
+    cv : int, cross-validation generator or an iterable, default=None
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+
+          - None, to use the default 5-fold cross-validation,
+          - integer, to specify the number of folds.
+          - :term:`CV splitter`,
+          - An iterable yielding (train, test) splits as arrays of indices.
+
+        For integer/None inputs, if ``y`` is binary or multiclass,
+        :class:`StratifiedKFold` used. If the estimator is not a classifier
+        or if ``y`` is neither binary nor multiclass, :class:`KFold` is used.
+
+        Refer Sckikit-learn :ref:`User Guide <cross_validation>` for the various
+        cross-validators that can be used here.
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+        
+    kws: dict, 
+        Additional keywords argument passed to :func:`~.plotLearningInspection`. 
+        
+    Returns
+    ----------
+    axes: Matplotlib axes
+    
+    See also 
+    ---------
+    :func:`~.plotLearningInspection`: for more details about the keyword 
+    arguments. 
+    
+    Examples 
+    ---------
+    >>> from watex.datasets import fetch_data
+    >>> from watex.models import p 
+    >>> from watex.view.mlplot import plotLearningInspections 
+    >>> # import sparse  matrix from Bagoue dataset 
+    >>> X, y = fetch_data ('bagoue prepared') 
+    >>> # import the two pretrained models from SVM 
+    >>> models = [p.SVM.rbf.best_estimator_ , p.SVM.poly.best_estimator_]
+    >>> plotLearningInspections (models , X, y, ylim=(0.7, 1.01) )
+    
+    """
+    if not is_iterable( models) : 
+        models =[models ] 
+    if not is_iterable (titles ): 
+        titles =[titles] 
+    if len(titles ) != len(models): 
+        titles = titles + [None for i in range (len(models)- len(titles))]
+    # set the cross-validation to 4 
+    cv = cv or 4  
+    #set figure and subplots 
+    if len(models)==1:
+        msg = ( f"{plotLearningInspection.__module__}."
+               f"{plotLearningInspection.__qualname__}"
+               ) 
+        raise PlotError ("For a single model inspection, use the"
+                         f" function {msg!r} instead."
+                         )
+        
+    fig , axes = plt.subplots (3 , len(models), figsize = fig_size )
+    subplot_kws = subplot_kws or  dict(
+        left=0.0625, right = 0.95, wspace = 0.1, hspace = .5 )
+    
+    fig.subplots_adjust(**subplot_kws)
+    
+    if not is_iterable( axes) :
+        axes =[axes ] 
+    for kk, model in enumerate ( models ) : 
+        title = titles[kk] or  get_estimator_name (model )
+        plotLearningInspection(model, X=X , y=y, axes = axes [:, kk], 
+                               title =title, 
+                               **kws)
+        
+    if savefig : 
+        fig.savefig (savefig , dpi = 300 )
+    plt.show () if savefig is None else plt.close () 
+    
+def plotLearningInspection(
     model,  
     X,  
     y, 
@@ -2565,7 +2674,9 @@ def plotLearningCurves(
     display_legend = True, 
     title=None,
 ):
-    """Generate 3 plots: the test and training learning curve, the training
+    """Inspect model from its learning curve. 
+    
+    Generate 3 plots: the test and training learning curve, the training
     samples vs fit times curve, the fit times vs score curve.
 
     Parameters
@@ -2630,13 +2741,23 @@ def plotLearningCurves(
     ----------
     axes: Matplotlib axes 
     
+    Examples 
+    ----------
+    >>> from watex.datasets import fetch_data
+    >>> from watex.models import p 
+    >>> from watex.view.mlplot import plotLearningInspection 
+    >>> # import sparse  matrix from Bagoue datasets 
+    >>> X, y = fetch_data ('bagoue prepared') 
+    >>> # import the  pretrained Radial Basic Function (RBF) from SVM 
+    >>> plotLearningInspection (p.SVM.rbf.best_estimator_  , X, y )
+    
     """ 
     train_sizes = train_sizes or np.linspace(0.1, 1.0, 5)
     
     if axes is None:
         _, axes = plt.subplots(1, 3, figsize=(20, 5))
-
-    axes[0].set_title(title)
+    
+    axes[0].set_title(title or get_estimator_name(model))
     if ylim is not None:
         axes[0].set_ylim(*ylim)
     axes[0].set_xlabel("Training examples")
@@ -2699,6 +2820,10 @@ def plotLearningCurves(
     if display_legend:
         axes[0].legend(loc="best")
 
+    # set title name
+    title_name = ( 
+        f"{'the model'if title else get_estimator_name(model)}"
+        )
     # Plot n_samples vs fit_times
     axes[1].grid()
     axes[1].plot(train_sizes, fit_times_mean, "o-")
@@ -2710,7 +2835,7 @@ def plotLearningCurves(
     )
     axes[1].set_xlabel("Training examples")
     axes[1].set_ylabel("fit_times")
-    axes[1].set_title("Scalability of the model")
+    axes[1].set_title(f"Scalability of {title_name}")
 
     # Plot fit_time vs score
     fit_time_argsort = fit_times_mean.argsort()
@@ -2729,7 +2854,7 @@ def plotLearningCurves(
     )
     axes[2].set_xlabel("fit_times")
     axes[2].set_ylabel("Score")
-    axes[2].set_title("Performance of the model")
+    axes[2].set_title(f"Performance of {title_name}")
 
     return axes
 
@@ -2846,7 +2971,7 @@ Examples
 >>> plot_matshow(array2d, labelx, labely, matshow_kwargs,**baseplot_kws )  
 
 """
-
+  
 def biPlot(
     self, 
     Xr: NDArray,

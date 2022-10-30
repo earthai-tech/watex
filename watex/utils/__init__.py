@@ -53,7 +53,11 @@ from .plotutils import (
     plot_cost_vs_epochs, 
     plot_elbow, 
     plot_clusters, 
-    plot_pca_components 
+    plot_pca_components, 
+    plot_naive_dendrogram, 
+    plot_learning_curves, 
+    plot_confusion_matrices, 
+    plot_yb_confusion_matrix, 
     )
 
 __all__=[
@@ -100,7 +104,11 @@ __all__=[
         'plot_cost_vs_epochs', 
         'plot_elbow', 
         'plot_clusters', 
-        'plot_pca_components' 
+        'plot_pca_components' , 
+        'plot_naive_dendrogram', 
+        'plot_learning_curves', 
+        'plot_confusion_matrices', 
+        'plot_yb_confusion_matrix', 
         
         ]
 

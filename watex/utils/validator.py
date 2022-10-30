@@ -23,6 +23,40 @@ import joblib
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
 
+def get_estimator_name (estimator , /): 
+    """ Get the estimator name whether it is instanciated or not  
+    
+    :param estimator: callable or instanciated object,
+        callable or instance object that has a fit method. 
+    
+    :return: str, 
+        name of the estimator. 
+    """
+    name =' '
+    if hasattr (estimator, '__qualname__') and hasattr(
+            estimator, '__name__'): 
+        name = estimator.__name__ 
+    elif hasattr(estimator, '__class__') and not hasattr (
+            estimator, '__name__'): 
+        name = estimator.__class__.__name__ 
+    return name 
+
+def _is_cross_validated (estimator ): 
+    """ Check whether the estimator has already passed the cross validation
+     procedure. 
+     
+    We assume it has the attributes 'best_params_' and 'best_estimator_' 
+    already populated.
+    
+    :param estimator: callable or instanciated object, that has a fit method. 
+    
+    :return: bool, 
+        estimator has already passed the cross-validation procedure. 
+    
+    """
+    return hasattr(estimator, 'best_estimator_') and hasattr (
+        estimator , 'best_params_')
+
 def _check_array_in(obj, /, arr_name):
     """Return the array from the array name attribute. Note that the singleton 
     arry is not admitted. 
@@ -44,10 +78,10 @@ def _check_array_in(obj, /, arr_name):
     try : 
         type_name = f"{obj.__module__}.{obj.__qualname__}"
         o_= f" in {obj.__name__!r}"
-        
     except AttributeError:
         type_name = type_.__qualname__
         o_=''
+        
     message = (f"Unable to find the name {arr_name!r}"
                f"{o_} from {type_name!r}") 
     

@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Created on Wed Jul  7 22:23:02 2022 
 
 from __future__ import annotations 
-
 import os
 import datetime 
 import warnings
 import itertools 
 import numpy as np
 import matplotlib as mpl 
-# import matplotlib.cm as cm 
+import seaborn as sns 
 from scipy.cluster.hierarchy import ( 
     dendrogram, ward 
     )
@@ -21,16 +19,34 @@ from ..exceptions import (
     TipError, 
     PlotError, 
     )
-
 from .funcutils import is_iterable
-from .validator import _check_array_in  
+from .validator import  ( 
+    _check_array_in  , 
+    _is_cross_validated,
+    get_estimator_name, 
+    )
+from ._dependency import import_optional_dependency 
+from watex.exlib.sklearn import ( 
+    learning_curve , 
+    recall_score , 
+    accuracy_score , 
+    precision_score, 
+    confusion_matrix, 
+    roc_auc_score
+    ) 
 
 is_mlxtend =False 
 try : 
     from mlxtend.Plotting import ( 
-        scatterplotmatrix , heatmap ) 
+        scatterplotmatrix , 
+        heatmap 
+        ) 
 except : pass 
 else : is_mlxtend =True 
+
+try : 
+    from yellowbrick.classifier import ConfusionMatrix # ClassBalance 
+except : pass 
 
 D_COLORS =[
     'g',
@@ -78,8 +94,385 @@ D_STYLES = [
     'dashdot',
     'dotted' 
 ]
-    
 
+def plot_confusion_matrix (yt, ypred, view =True, ax=None, annot=True, **kws ):
+    """ plot a confusion matrix for a single classifier model.
+    
+    :param yt : ndarray or Series of length n
+        An array or series of true target or class values. Preferably, 
+        the array represents the test class labels data for error evaluation.
+    
+    :param ypred: ndarray or Series of length n
+        An array or series of the predicted target. 
+    :param view: bool, default=True 
+        Option to display the matshow map. Set to ``False`` mutes the plot. 
+    :param annot: bool, default=True 
+        Annotate the number of samples (right or wrong prediction ) in the plot. 
+        Set ``False`` to mute the display.
+    param kws: dict, 
+        Additional keyword arguments passed to the function 
+        :func:`sckitlearn.metrics.confusion_matrix`. 
+    :returns: mat- confusion matrix bloc matrix 
+    
+    """
+    mat= confusion_matrix (yt, ypred, **kws)
+    if view: 
+        sns.heatmap (
+            mat.T, square =True, annot =annot,  fmt='d', cbar=False, ax=ax)
+        #xticklabels= list(np.unique(ytrue.values)), yticklabels= list(np.unique(ytrue.values)))
+        ax.set_xlabel('true labels')
+        #ax.set_ylabel ('predicted label')
+    return mat 
+
+def plot_yb_confusion_matrix (
+        clf, Xt, yt, labels = None , encoder = None, savefig =None, 
+        fig_size =(6, 6), **kws
+        ): 
+    """ Confusion matrix plot using the 'yellowbrick' package.  
+    
+    Creates a heatmap visualization of the sklearn.metrics.confusion_matrix().
+    A confusion matrix shows each combination of the true and predicted
+    classes for a test data set.
+
+    The default color map uses a yellow/orange/red color scale. The user can
+    choose between displaying values as the percent of true (cell value
+    divided by sum of row) or as direct counts. If percent of true mode is
+    selected, 100% accurate predictions are highlighted in green.
+
+    Requires a classification model.
+    
+    Be sure 'yellowbrick' is installed before using the function, otherwise an 
+    ImportError will raise. 
+    
+    Parameters 
+    -----------
+    clf : classifier estimator
+        A scikit-learn estimator that should be a classifier. If the model is
+        not a classifier, an exception is raised. If the internal model is not
+        fitted, it is fit when the visualizer is fitted, unless otherwise specified
+        by ``is_fitted``.
+        
+    Xt : ndarray or DataFrame of shape n x m
+        A matrix of n instances with m features. Preferably, matrix represents 
+        the test data for error evaluation.  
+
+    yt : ndarray or Series of length n
+        An array or series of target or class values. Preferably, the array 
+        represent the test class labels data for error evaluation.  
+
+    ax : matplotlib Axes, default: None
+        The axes to plot the figure on. If not specified the current axes will be
+        used (or generated if required).
+
+    sample_weight: array-like of shape = [n_samples], optional
+        Passed to ``confusion_matrix`` to weight the samples.
+        
+    encoder : dict or LabelEncoder, default: None
+        A mapping of classes to human readable labels. Often there is a mismatch
+        between desired class labels and those contained in the target variable
+        passed to ``fit()`` or ``score()``. The encoder disambiguates this mismatch
+        ensuring that classes are labeled correctly in the visualization.
+        
+    labels : list of str, default: None
+        The class labels to use for the legend ordered by the index of the sorted
+        classes discovered in the ``fit()`` method. Specifying classes in this
+        manner is used to change the class names to a more specific format or
+        to label encoded integer classes. Some visualizers may also use this
+        field to filter the visualization for specific classes. For more advanced
+        usage specify an encoder rather than class labels.
+        
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+          
+    Returns 
+    --------
+    cmo: :class:`yellowbrick.classifier.confusion_matrix.ConfusionMatrix`
+        return a yellowbrick confusion matrix object instance. 
+    
+    """
+    import_optional_dependency('yellowbrick')
+    
+    fig, ax = plt.subplots(figsize = fig_size )
+    cmo= ConfusionMatrix (clf, classes=labels, 
+                         label_encoder = encoder, **kws
+                         )
+    cmo.score(Xt, yt)
+    cmo.show()
+
+    if savefig is not None: 
+        fig.savefig(savefig, dpi =300)
+        
+    return cmo 
+
+def plot_confusion_matrices (
+        clfs, 
+        Xt, yt,  
+        lib=None , annot =True, verbose = 0 , 
+        fig_size = (22, 6), subplot_kws=None, 
+    ):
+    """ 
+    Plot inline multiple model confusion matrices using either the sckitlearn 
+    or 'yellowbrick'
+    
+    Parameters 
+    -----------
+    clfs : list of classifier estimators
+        A scikit-learn estimator that should be a classifier. If the model is
+        not a classifier, an exception is raised. If the internal model is not
+        fitted, it is fit when the visualizer is fitted, unless otherwise specified
+        by ``is_fitted``.
+        
+    Xt : ndarray or DataFrame of shape n x m
+        A matrix of n instances with m features. Preferably, matrix represents 
+        the test data for error evaluation.  
+
+    yt : ndarray or Series of length n
+        An array or series of target or class values. Preferably, the array 
+        represent the test class labels data for error evaluation.  
+    
+    lib: str, optional , default ='sklearn'
+        the library to handle the plot. It could be 'yellowbrick'. The basic 
+        confusion matrix is handled by the Scikit-package. 
+        
+    annot: bool, default=True 
+        Annotate the number of samples (right or wrong prediction ) in the plot. 
+        Set ``False`` to mute the display. 
+    
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+    verbose: int, default=0 , 
+        control the level of verbosity. Different to zeros output messages 
+        of the different scores. 
+        
+    Returns 
+    --------
+    scores: dict , 
+        A dictionnary to retain all the scores from metrics evaluation such as 
+        - accuracy , 
+        - recall 
+        - precision 
+        - ROC AUC ( Receiving Operating Characteric Area Under the Curve)
+
+    """
+    lib = lib or 'sklearn'
+    lib= str(lib).lower() 
+    assert lib in {"slkearn", 'yellowbrick', "yb"}, (
+        f" Accept only 'sklearn' or 'yellowbrick' packages, got {lib} ") 
+    
+    if not is_iterable( clfs): 
+        clfs =[clfs]
+    # create an empty score dict to collect the cores 
+    scores ={} 
+    model_names = [get_estimator_name(name) for name in clfs ]
+    # create a figure 
+    subplot_kws = subplot_kws or dict (left=0.0625, right = 0.95, 
+                                       wspace = 0.12)
+    fig, axes = plt.subplots(1, len(clfs), figsize =(22, 6))
+    fig.subplots_adjust(**subplot_kws)
+    if not is_iterable(axes): 
+       axes =[axes] 
+    for kk, (model , mname) in enumerate(zip(clfs, model_names )): 
+        ypred = model.predict(Xt)
+        acc_scores = accuracy_score(yt, ypred)
+        rec_scores = recall_score(yt, ypred)
+        prec_scores = precision_score(yt, ypred)
+        rocauc_scores= roc_auc_score (yt, ypred)
+
+        scores[mname] = dict ( 
+            accuracy = acc_scores , recall = rec_scores, 
+            precision= prec_scores , auc = rocauc_scores 
+            )
+        if verbose: 
+            print(f"{mname}: accuracy -score = ", acc_scores)
+            print(f"{mname}: recall -score = ", rec_scores)
+            print(f"{mname}: precision -score = ", prec_scores)
+            print(f"{mname}: ROC AUC-score = ", rocauc_scores)
+            
+        if lib=='sklearn': 
+            plot_confusion_matrix(yt, ypred, annot =annot , ax = axes[kk] )
+        elif lib in ('yellowbrick', 'yb'):
+            plot_yb_confusion_matrix(model, Xt, yt, ax=axes[kk])
+    
+    return scores  
+
+def plot_learning_curves(
+    models, 
+    X ,
+    y, 
+    *, 
+    cv =None, 
+    train_sizes= None, 
+    baseline_score =0.4,
+    convergence_line =True, 
+    fig_size=(20, 6),
+    sns_style =None, 
+    subplot_kws=None,
+    **kws
+       ): 
+    """ 
+    Horizontally visualization of multiple models learning curves. 
+    
+    Determines cross-validated training and test scores for different training
+    set sizes.
+    
+    Parameters 
+    ----------
+    models: list or estimators  
+        An estimator instance or not that implements `fit` and `predict` 
+        methods which will be cloned for each validation. 
+        
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+   
+    cv : int, cross-validation generator or an iterable, default=None
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+
+        - None, to use the default 5-fold cross validation,
+        - int, to specify the number of folds in a `(Stratified)KFold`,
+        - :term:`CV splitter`,
+        - An iterable yielding (train, test) splits as arrays of indices.
+
+        For int/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` is used. In all
+        other cases, :class:`KFold` is used. These splitters are instantiated
+        with `shuffle=False` so the splits will be the same across calls.
+
+        Refer :ref:`User Guide <cross_validation>` for the various
+        cross-validation strategies that can be used here.
+
+        ``cv`` default value if None changed from 3-fold to 4-fold.
+        
+     train_sizes : array-like of shape (n_ticks,), \
+             default=np.linspace(0.1, 1, 50)
+         Relative or absolute numbers of training examples that will be used to
+         generate the learning curve. If the dtype is float, it is regarded as a
+         fraction of the maximum size of the training set (that is determined
+         by the selected validation method), i.e. it has to be within (0, 1].
+         Otherwise it is interpreted as absolute sizes of the training sets.
+         Note that for classification the number of samples usually have to
+         be big enough to contain at least one sample from each class.
+         
+    baseline_score: floatm default=.4 
+        base score to start counting in score y-axis  (score)
+        
+    convergence_line: bool, default=True 
+        display the convergence line or not that indicate the level of bias 
+        between the training and validation curve. 
+        
+    fig_size : tuple (width, height), default =(14, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    sns_style: str, optional, 
+        the seaborn style . 
+        
+    subplot_kws: dict, default is \
+        dict(left=0.0625, right = 0.95, wspace = 0.1) 
+        the subplot keywords arguments passed to 
+        :func:`matplotlib.subplots_adjust` 
+    kws: dict, 
+        keyword arguments passed to :func:`sklearn.model_selection.learning_curve`
+        
+    Examples 
+    ---------
+    (1) -> plot via a metaestimator already cross-validated. 
+    
+    >>> from watex.models import p 
+    >>> from watex.datasets import fetch_data 
+    >>> from watex.utils.plotutils import plot_learning_curves
+    >>> X, y = fetch_data ('bagoue prepared') # yields a sparse matrix 
+    >>> # let collect 04 estimators already cross-validated from SVMs
+    >>> models = [ p.SVM.linear , p.SVM.rbf , p.SVM.sigmoid , p.SVM.poly ]
+    >>> plot_learning_curves (models, X, y, cv=4, sns_style = 'darkgrid')
+    
+    (2) -> plot with  multiples models not crossvalidated yet.
+    
+    >>> from watex.exlib.sklearn import (LogisticRegression, 
+                                         RandomForestClassifier, 
+                                         SVC , KNeighborsClassifier 
+                                         )
+    >>> models =[LogisticRegression(), RandomForestClassifier(), SVC() ,
+                 KNeighborsClassifier() ]
+    >>> >>> plot_learning_curves (models, X, y, cv=4, sns_style = 'darkgrid')
+    
+    """
+    if not is_iterable(models): 
+        models =[models]
+    
+    subplot_kws = subplot_kws or  dict(
+        left=0.0625, right = 0.95, wspace = 0.1) 
+    train_sizes = train_sizes or np.linspace(0.1, 1, 50)
+    cv = cv or 4 
+    if ( 
+        baseline_score >=1 
+        and baseline_score < 0 
+        ): 
+        raise ValueError ("Score for the base line must be less 1 and "
+                          f"greater than 0; got {baseline_score}")
+    
+    if sns_style: 
+        sns_style = sns.set_style(sns_style) 
+        
+    mnames = [get_estimator_name(n) for n in models]
+
+    fig, axes = plt.subplots(nrows=1, ncols=len(models), figsize =fig_size)
+    # for consistency, put axes on list when 
+    # a single model is provided 
+    if not is_iterable(axes): 
+        axes =[axes] 
+    fig.subplots_adjust(**subplot_kws)
+
+    for k, (model, name) in enumerate(zip(models,  mnames)):
+        cmodel = model.best_estimator_  if _is_cross_validated(
+            model ) else model 
+        ax = list(axes)[k]
+
+        N, train_lc , val_lc = learning_curve(
+            cmodel , 
+            X, 
+            y, 
+            train_sizes = np.linspace(0.1, 1, 50),
+            cv=cv, 
+            **kws
+            )
+        ax.plot(N, np.mean(train_lc, 1), 
+                   color ="blue", 
+                   label ="train score"
+                   )
+        ax.plot(N, np.mean(val_lc, 1), 
+                   color ="r", 
+                   label ="validation score"
+                   )
+        if convergence_line : 
+            ax.hlines(np.mean([train_lc[-1], 
+                                  val_lc[-1]]), 
+                                 N[0], N[-1], 
+                                 color="k", 
+                                 linestyle ="--"
+                         )
+        ax.set_ylim(baseline_score, 1)
+        #ax[k].set_xlim (N[0], N[1])
+        ax.set_xlabel("training size")
+        ax.set_title(name, size=14)
+        ax.legend(loc='best')
+    # for consistency
+    ax = list(axes)[0]
+    ax.set_ylabel("score")
+    
+        
 def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws): 
     """ Quick plot dendrogram using the ward clustering function from Scipy.
     
@@ -88,7 +481,7 @@ def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws):
     :param ybounds: int, 
         integrer values to draw horizontal cluster lines that indicate the 
         number of clusters. 
-    :param fig_size: tuple (width, height), default =(8,5) 
+    :param fig_size: tuple (width, height), default =(12,5) 
         the matplotlib figure size given as a tuple of width and height 
     :param kws: dict , 
         Addditional keyword arguments passed to 
@@ -100,7 +493,8 @@ def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws):
         >>> # get the two features 'power' and  'magnitude'
         >>> data = X[['power', 'magnitude']]
         >>> plot_naive_dendrogram(data ) 
-        >>> # add the horizontal line of the cluster at ybound = (20 , 20 )
+        >>> # add the horizontal line of the cluster at ybounds = (20 , 20 )
+        >>> # for a single cluster (cluser 1)
         >>> plot_naive_dendrogram(data , 20, 20 ) 
    
     """
@@ -125,7 +519,7 @@ def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws):
     dendrogram( linkage_array , **kws )
     
     # mark the cuts on the tree that signify two or three clusters
-    #change the figsize 
+    # change the gca figsize 
     plt.rcParams["figure.figsize"] = fig_size
     ax= plt.gca () 
   
@@ -165,7 +559,7 @@ def plot_pca_components (
     :param components: Ndarray, shape (n_components, n_features)or PCA object 
         Array of the PCA compoments or object from 
         :class:`watex.analysis.dimensionality.nPCA`. If the object is given 
-        it is not usefull to set the `feature_names`
+        it is not necessary to set the `feature_names`
     :param feature_names: list or str, optional 
         list of the feature names to locate in the map. `Feature_names` and 
         the number of eigen vectors must be the same length. If PCA object is  
@@ -195,7 +589,7 @@ def plot_pca_components (
                              cmap='jet_r')
     
     """
-    # if pca object is given , get the features name in as features 
+    # if pca object is given , get the features names
     if hasattr(components, "feature_names_in_"): 
         feature_names = list (getattr (components , "feature_names_in_" ) ) 
         
@@ -210,7 +604,7 @@ def plot_pca_components (
         feature_names = [feature_names ]
         
     if len(feature_names)!= components.shape [1] :
-        warnings.warn("Number of feature and eigenvectors might"
+        warnings.warn("Number of features and eigenvectors might"
                       " be consistent, expect {0}, got {1}". format( 
                           components.shape[1], len(feature_names))
                       )
@@ -226,7 +620,7 @@ def plot_pca_components (
 def plot_clusters (
         n_clusters, X, ypred, cluster_centers =None 
         ): 
-    """ Visualize the cluster that k-means identified in the datasets 
+    """ Visualize the cluster that k-means identified in the dataset 
     
     :param n_clusters: int, number of cluster to visualize 
     :param X: NDArray, data containing the features, expect to be a two 
@@ -385,7 +779,6 @@ def plot_cost_vs_epochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     
     return ax 
 
-    
 def plot_mlxtend_heatmap (df, columns =None, **kws): 
     """ Plot correlation matrix array  as a heat map 
     
@@ -397,6 +790,7 @@ def plot_mlxtend_heatmap (df, columns =None, **kws):
     :return: :func:`mlxtend.plotting.heatmap` axes object 
     
     """
+    import_optional_dependency('mlxtend')
     cm = np.corrcoef(df[columns]. values.T)
     ax= heatmap(cm, row_names = columns , column_names = columns, **kws )
     plt.show () 
@@ -418,8 +812,8 @@ def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
     
     """
     if not is_mlxtend: 
-        warnings.warn(" 'mlxtend' package is missing. Can plot scatter matrix."
-                      " install it mannually via 'pip' or 'conda'.")
+        warnings.warn(" 'mlxtend' package is missing. Cannot plot the scatter"
+                      "  matrix. Install it mannually via 'pip' or 'conda'.")
         return  ModuleNotFoundError("'mlextend' package is missing. Install it" 
                                     " using 'pip' or 'conda'")
     if isinstance (columns, str): 
