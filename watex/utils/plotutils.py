@@ -211,7 +211,7 @@ def plot_yb_confusion_matrix (
 def plot_confusion_matrices (
         clfs, 
         Xt, yt,  
-        lib=None , annot =True, verbose = 0 , 
+        annot =True, pkg=None, verbose = 0 , 
         fig_size = (22, 6), subplot_kws=None, 
     ):
     """ 
@@ -234,7 +234,7 @@ def plot_confusion_matrices (
         An array or series of target or class values. Preferably, the array 
         represent the test class labels data for error evaluation.  
     
-    lib: str, optional , default ='sklearn'
+    pkg: str, optional , default ='sklearn'
         the library to handle the plot. It could be 'yellowbrick'. The basic 
         confusion matrix is handled by the Scikit-package. 
         
@@ -262,10 +262,10 @@ def plot_confusion_matrices (
         - ROC AUC ( Receiving Operating Characteric Area Under the Curve)
 
     """
-    lib = lib or 'sklearn'
-    lib= str(lib).lower() 
-    assert lib in {"slkearn", 'yellowbrick', "yb"}, (
-        f" Accept only 'sklearn' or 'yellowbrick' packages, got {lib} ") 
+    pkg = pkg or 'sklearn'
+    pkg= str(pkg).lower() 
+    assert pkg in {"slkearn", 'yellowbrick', "yb"}, (
+        f" Accept only 'sklearn' or 'yellowbrick' packages, got {pkg} ") 
     
     if not is_iterable( clfs): 
         clfs =[clfs]
@@ -296,9 +296,9 @@ def plot_confusion_matrices (
             print(f"{mname}: precision -score = ", prec_scores)
             print(f"{mname}: ROC AUC-score = ", rocauc_scores)
             
-        if lib=='sklearn': 
+        if pkg=='sklearn': 
             plot_confusion_matrix(yt, ypred, annot =annot , ax = axes[kk] )
-        elif lib in ('yellowbrick', 'yb'):
+        elif pkg in ('yellowbrick', 'yb'):
             plot_yb_confusion_matrix(model, Xt, yt, ax=axes[kk])
     
     return scores  

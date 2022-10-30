@@ -1234,7 +1234,7 @@ class EvalPlot(BasePlot):
             f'{appender}{"" if rv is None else "?"}'
             )        
 
-EvalPlot.__doc__="""\
+EvalPlot.__doc__=r"""\
 Metric and dimensionality Evaluatation Plots  
 
 Inherited from :class:`BasePlot`. Dimensional reduction and metrics 
@@ -1673,7 +1673,7 @@ def plotModel(
  
     Examples
     --------
-    (1) -> Prepare our data - Use analysis data of Bagoue dataset 
+    (1)-> Prepare our data - Use analysis data of Bagoue dataset 
             since data is alread scaled and imputed
             
     >>> from watex.exlib.sklearn  import SVC 
@@ -1686,7 +1686,7 @@ def plotModel(
                                         )
     >>> _, ytest = split_train_test_by_id(y, .3 , keep_colindex =False) 
     
-   (2) -> prepared our demo estimator and plot model predicted 
+   (2)-> prepared our demo estimator and plot model predicted 
    
     >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
     >>> base_plot_params ={

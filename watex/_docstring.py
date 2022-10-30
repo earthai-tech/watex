@@ -323,7 +323,7 @@ ms: float, Optional
     """, 
     marker="""
 marker: str, Optional
-    marker of stations *default* is :math:`\blacktriangledown`.
+    marker of stations *default* is ``o``.
     """, 
     marker_facecolor="""
 marker_style: str, Optional
