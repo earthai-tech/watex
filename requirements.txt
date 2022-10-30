@@ -28,6 +28,6 @@ missingno
 pandas_profiling 
 pyjanitor 
 openpyxl
-threadpoolctl >= 2.0.0
+#threadpoolctl >= 2.0.0
 #pytables
-hdf5 
+#hdf5 
