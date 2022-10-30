@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause
+#   Licence: BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created date: Wed Oct  5 22:31:49 2022
 
@@ -12,101 +12,166 @@ __all__=[
     '_core_returns', 
     '_core_params',
     'refglossary',
-    '_core_docs', 
-    'xgboostdoc', 
-    'sklearndoc', 
+    '_core_docs',
+    'ves_doc', 
+    'erp_doc',
     ]
 
-sklearndoc = type ('sklearndoc', () , dict (
-    __doc__ ="""\ 
-    Machine Learning in Python
+ves_doc =type ("ves_doc", (), dict( 
+    __doc__="""\
+    A DC-vertical Electrical resistivity data collected from {survey_name} during
+    the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
+    `Cote d'Ivoire`_. An illustration of the data arrangement is the following: 
     
-    Scikit-learn (Sklearn) is the most useful and robust library for machine 
-    learning in Python. It provides a selection of efficient tools for machine 
-    learning and statistical modeling including classification, regression, 
-    clustering and dimensionality reduction via a consistence interface in Python. 
-    This library, which is largely written in Python, is built upon NumPy, SciPy 
-    and Matplotlib.
-    
-    It was originally called scikits.learn and was initially developed by David 
-    Cournapeau as a Google summer of code project in 2007. Later, in 2010, 
-    Fabian Pedregosa, Gael Varoquaux, Alexandre Gramfort, and Vincent Michel,
-    from FIRCA (French Institute for Research in Computer Science and Automation), 
-    took this project at another level and made the first public release 
-    (v0.1 beta) on 1st Feb. 2010. At this time, itts version history is listed above 
-
-        * May 2019: scikit-learn 0.21.0
-        * March 2019: scikit-learn 0.20.3
-        * December 2018: scikit-learn 0.20.2        
-        * November 2018: scikit-learn 0.20.1        
-        * September 2018: scikit-learn 0.20.0        
-        * July 2018: scikit-learn 0.19.2        
-        * July 2017: scikit-learn 0.19.0        
-        * September 2016. scikit-learn 0.18.0        
-        * November 2015. scikit-learn 0.17.0        
-        * March 2015. scikit-learn 0.16.0        
-        * July 2014. scikit-learn 0.15.0        
-        * August 2013. scikit-learn 0.14
-    
-    Installation
-    -------------
-    If you already installed NumPy and Scipy, following are the two easiest 
-    ways to install scikit-learn. Following command can be used to install 
-    scikit-learn via::
-        
-        * Using pip
-        
-        :code:`pip install -U scikit-learn`
-        
-        * Using conda
-        
-        :conda:`install scikit-learn`
-        
-    On the other hand, if NumPy and Scipy is not yet installed on your Python 
-    workstation then, you can install them by using either pip or conda.
-    
-    Another option to use scikit-learn is to use Python distributions like 
-    Canopy and Anaconda because they both ship the latest version of scikit-learn.
-    
-    References 
-    ----------
-    .. https://scikit-learn.org/stable/index.html
-    
-    """
-    ) 
-)
-    
-xgboostdoc = type ('xgboostdoc', (), dict (
-    __doc__= """\
-    Extreme Gradient Boosting
-    
-    XGBoost XgBoost stands for Extreme Gradient Boosting, is an open-source 
-    software library that implements optimized distributed gradient boosting 
-    machine learning algorithms under the Gradient Boosting framework.
-    
-    XgBoost, which was proposed by the researchers at the University of 
-    Washington. It is a library written in C++ which optimizes the training for 
-    Gradient  Boosting. Before understanding the XGBoost, we first need to 
-    understand the trees especially the decision tree. 
-    
-    Indeed , a Decision tree(DT) is a flowchart-like tree structure, where 
-    each internal node denotes a test on an attribute, each branch represents 
-    an outcome of the test, and each leaf node (terminal node) holds a class 
-    label. A tree can be 'learned' by splitting the source set into subsets 
-    based on an attribute value test. This process is repeated on each derived 
-    subset in a recursive manner called recursive partitioning. The recursion 
-    is completed when the subset at a node all has the same value of the target 
-    variable, or when splitting no longer adds value to the predictions.
-    
-    References 
+    =====   =======     =======     =======     =========
+    AB/2    MN/2        SE1         SE2         SE...	
+    =====   =======     =======     =======     =========
+    1       0.4	        107	        93	        75	
+    2       0.4	        97	        91	        49	
+    ...     ...         ...         ...         ...
+    100     10	        79       	96	        98	
+    110     10	        84	        104	        104	
+    =====   =======     =======     =======     ========= 
+     
+    Parameters 
     -----------
-    ..[1] https://www.geeksforgeeks.org/xgboost/
-    ..[2] https://www.nvidia.com/en-us/glossary/data-science/xgboost/
+    as_frame : bool, default=False
+        If True, the data is a pandas DataFrame including columns with
+        appropriate types (numeric). The target is
+        a panda DataFrame or Series depending on the number of target columns.
+        If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
+        dictionary-like object, with the following attributes:
+        data : {{ndarray, dataframe}} of shape {shape}
+            The data matrix. If `as_frame=True`, `data` will be a pandas
+            DataFrame.
+        resistivity: {{array-like}} of shape ({shape[0]},)
+            The resistivity of the sounding point. 
+        MN: {{array-like}} of shape ({shape[0]},)
+            The step value of potential electrodes increasing in meters  
+        AB: {{array-like}} of shape ({shape[0]},)
+            The step value of current electrodes increasing in meters  
+        feature_names: list
+            The names of the dataset columns.
+            .. versionadded:: 0.23
+        DESCR: str
+            The full description of the dataset.
+        filename: str
+            The path to the location of the data.
+            .. versionadded:: 0.20
+        .. versionadded:: 0.1.2
+    tag, data_names: None, 
+        Always None for API consistency 
+    kws: dict, 
+        Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 
+        function for parsing data. 
+        
+    Returns 
+    --------
+    data : :class:`~watex.utils.Boxspace`
+        Dictionary-like object, with the following attributes.
+        data : {{ndarray, dataframe}} 
+            The data matrix. If `as_frame=True`, `data` will be a pandas
+            DataFrame.
+    
+    Notes
+    ------
+    The array configuration is Schlumberger and the max depth investigation is 
+    {max_depth} meters for :math:`AB/2` (current electrodes). The sounding steps
+    :math:`AB` starts from {c_start} to {c_stop} meters whereas :math:`MN/2` 
+    (potential electrodes) starts from {p_start} to {p_stop} meters. 
+    The total number of sounding performers in {sounding_number} with the prefix '`SE`'.
+    AB, AB is in meters and SE are in ohm. meters as apparent resistivity values. 
+    Use the param `index_rho` to get the ranking of the sounding resistivity value. 
+    For instance ``index_rhoa=0` fetch the first array of resistivity values (SE1).
+    
+    .. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
     
     """
     )
 )
+erp_doc = type ('erp_doc', (), dict ( 
+    __doc__="""\
+    A DC-Electrical resistivity profiling data collected from {survey_name} during
+    the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
+    `Cote d'Ivoire`_  and an example of the data arrangement is the following: 
     
+    =====   =========   =========   =======     
+    pk      east        north       rho         
+    =====   =========   =========   =======    
+    0       382741	    896203	    79        	
+    10	    382743	    896193	    62
+    20	    382747   	896184	    51
+    ...     ...         ...         ...         
+    980     382705	    894887	    55
+    990     382704	    895879	    58
+    =====   =========   =========   =======    
+     
+    Parameters 
+    -----------
+    as_frame : bool, default=False
+        If True, the data is a pandas DataFrame including columns with
+        appropriate types (numeric). The target is
+        a pandas DataFrame or Series depending on the number of target columns.
+        If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
+        dictionary-like object, with the following attributes:
+        data : {{ndarray, dataframe}} of shape {shape}
+            The data matrix. If `as_frame=True`, `data` will be a pandas
+            DataFrame.
+        resistivity: {{array-like}} of shape ({shape[0]},)
+            The resistivity of the sounding point. 
+        station: {{array-like}}of shape ({shape[0]},)
+            The motion distance of each station that increasing in meters.
+            can be considered as the station point for data collection.
+        northing: {{array-like}} of shape ({shape[0]},)
+            The northing coordinates in UTM in meters at each station where 
+            the data is collected. 
+        easting: {{array-like}} of shape ({shape[0]},)
+            The easting coordinates in UTM are in meters at each station where the 
+            data is collected. 
+        latitude: {{array-like}} of shape ({shape[0]},)
+            The latitude coordinates in degree decimals or 'DD:MM.SS' at each 
+            station where the data is collected.
+        longitude: {{array-like}} of shape ({shape[0]},)
+            The longitude coordinates in degree decimals or 'DD:MM.SS' at each 
+            the station where the data is collected.
+        DESCR: str
+            The full description of the dataset.
+        filename: str
+            The path to the location of the data.
+    tag, data_names: None, 
+        Always None for API consistency 
+    kws: dict, 
+        Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 
+        function for parsing data. 
+        
+    Returns 
+    --------
+    data : :class:`~watex.utils.Boxspace`
+        Dictionary-like object, with the following attributes.
+        data : {{ndarray, dataframe}} 
+            The data matrix. If `as_frame=True`, `data` will be a pandas
+            DataFrame.
+    
+    Notes
+    ------
+    The array configuration is Schlumberger and the max depth investigation is 
+    {max_depth} meters for :math:`AB/2` (current electrodes). The  profiling step
+    :math:`AB` is fixed to {AB_distance}  meters whereas :math:`MN/2`  also fixed to
+    (potential electrodes) to {MN_distance}meters. The total number of station data 
+    collected is {profiling_number}.
+    `station`, `easting`, and `northing` are in meters and `rho` columns are 
+    in ohm. meters as apparent resistivity values.  
+    Furthermore, if the UTM coordinate (easting and northing) data is given as well 
+    as the UTM_zone, the latitude and longitude data are auto-computed and 
+    vice versa. The user does need to provide both coordinates data types
+    ( UTM or DD:MM.SS)
+    
+    .. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
+    
+    """
+    )
+)
+      
 refglossary =type ('refglossary', (), dict (
     __doc__="""\
     .. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
@@ -137,7 +202,7 @@ refglossary =type ('refglossary', (), dict (
 
     .. _pycsamt: https://github.com/WEgeophysics/pycsamt
     
-    .. |ohmS| replace:: Pseudo-area of fractured zone 
+    .. |ohmS| replace:: Pseudo-area of the fractured zone 
     .. |sfi| replace:: Pseudo-fracturing index 
     .. |VES| replace:: Vertical Electrical Sounding 
     .. |ERP| replace:: Electrical Resistivity Profiling 
@@ -258,7 +323,7 @@ ms: float, Optional
     """, 
     marker="""
 marker: str, Optional
-    marker of stations *default* is :math:`\blacktriangledown`.
+    marker of stations *default* is ``o``.
     """, 
     marker_facecolor="""
 marker_style: str, Optional
@@ -455,7 +520,7 @@ target: Array-like or :class:`pd.Series`
     model="""
 model: callable, always as a function,    
     A model estimator. An object which manages the estimation and decoding 
-    of a model. The model is estimated as a deterministic function of::
+    of a model. The model is estimated as a deterministic function of:
         * parameters provided in object construction or with set_params;
         * the global numpy.random random state if the estimator’s random_state 
             parameter is set to None; and
@@ -529,6 +594,20 @@ scoring: str,
     estimator's :term:`score` method is used.  See `slearn.scoring_parameter`
     in the `Scikit-learn`_ User Guide.
     """, 
+    random_state="""
+    
+random_state : int, RandomState instance or None, default=None
+    Controls the shuffling applied to the data before applying the split.
+    Pass an int for reproducible output across multiple function calls..    
+    """,
+    test_size="""
+test_size : float or int, default=None
+    If float, should be between 0.0 and 1.0 and represent the proportion
+    of the dataset to include in the test split. If int, represents the
+    absolute number of test samples. If None, the value is set to the
+    complement of the train size. If ``train_size`` is also None, it will
+    be set to 0.25.    
+    """, 
     n_jobs="""
 n_jobs: int, 
     is used to specify how many concurrent processes or threads should be 
@@ -540,7 +619,7 @@ n_jobs: int,
         
         * `n_jobs`=-2, all CPUs but one are used. 
         * `n_jobs` is None by default, which means unset; it will generally be 
-            interpreted as n_jobs=1, unless the current joblib.Parallel backend 
+            interpreted as n_jobs=1 unless the current joblib.Parallel backend 
             context specifies otherwise.
 
     Note that even if n_jobs=1, low-level parallelism (via Numpy and OpenMP) 
@@ -586,7 +665,6 @@ scatterplot : Plot data using points.
     lineplot="""
 lineplot : Plot data using lines.
     """,
-
     # Distribution plots
     displot="""
 displot : Figure-level interface to distribution plot functions.
@@ -617,7 +695,9 @@ violinplot : Draw an enhanced boxplot using kernel density estimation.
     pointplot="""
 pointplot : Plot point estimates and CIs using markers and lines.
     """,
-
+    boxplot="""
+boxplot : Draw an enhanced boxplot.
+     """,
     # Multiples
     jointplot="""
 jointplot : Draw a bivariate plot with univariate marginal distributions.

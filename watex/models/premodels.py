@@ -6,13 +6,13 @@
 import warnings 
 
 from .._docstring import refglossary
+from .._watexlog import watexlog 
 from ..decorators import refAppender 
-from ..tools.funcutils import (
+from ..utils.funcutils import (
     repr_callable_obj,
     smart_format,
     smart_strobj_recognition, 
     )
-
 from ..typing import (  
     Optional, 
     ArrayLike, 
@@ -22,14 +22,12 @@ from ..exceptions import (
     EstimatorError, 
     NotFittedError 
     )
-from .._watexlog import watexlog 
-from ..tools.mlutils import (
+from ..utils.mlutils import (
     controlExistingEstimator , 
     fetchModel 
     )
-from ..exlib import ( 
+from ._metapredictors import ( 
         _pMODELS 
-
     )
 
 def cloneObj (cls, attributes ): 

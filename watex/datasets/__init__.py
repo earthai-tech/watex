@@ -1,227 +1,126 @@
 # -*- coding: utf-8 -*-
-#   Created date: Wed Sep 15 11:39:43 2021 
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>.
 """ 
 Dataset 
 ==========
-Fetch data set from the local machine. It data does not exist, retrieve it 
+Fetch data from the local machine. If data does not exist, retrieve it 
 from online (repository or zenodo record ) 
 
 """
-import re
-from warnings import warn
-
-from ..property  import BagoueNotes
-from .._watexlog import watexlog
-from ..tools.funcutils import ( 
-    smart_format 
-    )
-from ..tools.mlutils import  ( 
-    loadDumpedOrSerializedData, 
-    )
-from ..exceptions import DatasetError
-
-_logger = watexlog().get_watex_logger(__name__)
-
-
 try:
-    from .config import (
-        _BAGDATA,
-        _X, 
-        _y,
-        _X0, 
-        _y0,
-        _XT,
-        _yT, 
-        _Xp, 
-        _yp,
-        _Xc,
-        _df0, 
-        _df1, 
-        _pipeline, 
+    from ._config import _fetch_data
+    from .dload import (
+        load_bagoue , 
+        load_gbalo, 
+        load_iris, 
+        load_semien, 
+        load_tankesse , 
+        load_boundiali,
+        load_hlogs
         )
-except : 
+    
+    __all__=["fetch_data", "load_bagoue" , "load_gbalo", 
+             "load_iris", "load_semien", "load_tankesse", 
+             "load_boundiali", "load_hlogs"
+             ]
+
+except ImportError : 
+    from warnings import warn 
+    from .._watexlog import watexlog
+    
     m= ("None config file detected. Auto-data preparation process is aborted."
             "Be aware, the basics examples won't be implemented. Fetch data "
-            " manually data from repository or zenodo record using the module"
-            " 'load' via < :mod:`watex.datasets.load` >"
+            " manually from remote (repository or zenodo record) using the "
+            " module 'rload' via < :mod:`watex.datasets.rload` >"
             )
-    _logger.debug(m); warn(m, UserWarning)
+    watexlog().get_watex_logger(__name__).debug(m); warn(m, UserWarning)
 
-_BTAGS = ( 
-    'mid', 
-    'semi', 
-    'preprocess', 
-    'fit',
-    'analysis', 
-    'pca',
-    'reduce', 
-    'dimension',
-    'test',
-    'pipe',
-    'prepared'
-    )
 
-_msg =dict (
-    origin = ("Can't fetch an original data <- dict contest details." ), 
-    )
-
-regex = re.compile ( r'|'.join(_BTAGS ) + '|origin' , re.IGNORECASE
-                    ) 
-for key in _BTAGS : 
-    _msg[key] = (
-        "Can't build default transformer pipeline: <-'default pipeline' "
-        )  if key =='pipe' else (
-            f"Can't fetching {key} data: <-'X' & 'y' "
-            )
-            
-_BVAL= dict (
-    origin= {
-        'COL_NAMES': _BAGDATA.columns, 
-        'DESCR':'https://doi.org/10.5281/zenodo.5571534: bagoue-original',
-        'data': _BAGDATA.values, 
-        'data=df':_BAGDATA, 
-        'data=dfy1':_df1, 
-        'data=dfy2':_df0,
-        'attrs-infos':BagoueNotes.bagattr_infos, 
-        'dataset-contest':{
-            '_documentation:':'`watex.property.BagoueNotes.__doc__`', 
-            '_area':'https://en.wikipedia.org/wiki/Ivory_Coast', 
-            '_casehistory':'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
-            '_wikipages':'https://github.com/WEgeophysics/watex/wiki',
-            '_citations': ('https://doi.org/10.1029/2021wr031623', 
-                            ' https://doi.org/10.5281/zenodo.5529368')
-            },
-        'tags': ('original', 
-                 'stratified',
-                 'mid', 
-                 'semi', 
-                 'preprocess', 
-                 'pipe', 
-                 'analyses', 
-                 'pca',
-                 'reduce dimension', 
-                 'test'
-                 'pipe',
-                 'prepared',
-                 )
-            }, 
-    stratified= (
-        _X,
-        _y
-        ),
-    semi= (
-        _X0,
-         _y0 
-         ), 
-    pipe= _pipeline, 
-    analysis= (
-        _Xc,
-        _yp 
-        ), 
-)
-  
-def fetch_data(tag): 
-    """ Fetch dataset from 'tag'. A tag correspond to each level of data 
-    processing. 
+def fetch_data (tag, **kws): 
+    func= _fetch_data 
+    funcs= (load_bagoue , load_gbalo, load_iris, load_semien, load_tankesse , 
+            load_boundiali, load_hlogs) 
+    funcns = tuple (map(lambda f: f.__name__.replace('load_', ''), funcs))
+    if tag in (funcns): 
+        func = funcs[funcns.index (tag)] 
     
-    An example of retrieving Bagoue dataset can be experimented.
+    return func (tag=tag, data_names=funcns, **kws)
 
-    Parameters 
-    ------------
-    tag: str,  
-        stage of data processing. Tthere are different options to retrieve data
-        Could be:
+
+fetch_data.__doc__ ="""\
+Fetch dataset from 'tag'. A tag corresponds to the name area of data  
+collection or each level of data processing. 
+
+An example of retrieving Bagoue dataset can experiment.
+
+Parameters 
+------------
+tag: str, ['bagoue', 'tankesse', 'semien', 'iris', 'boundiali', 'gbalo']
+    name of the area of data to fetch. For instance set the tag to ``bagoue`` 
+    will load the bagoue datasets. If the `tag` name is following by a suffix, 
+    the later specifies the stage of the data processing. As an example, 
+    `bagoue original` or `bagoue prepared` will retrieve the original data and 
+    the transformed data after applying default transformers respectively. 
+    
+    There are different options to retrieve data such as:
+        
+    * ['original'] => original or raw data -& returns a dict of details 
+        contex combine with get method to get the dataframe like::
             
-        * ['original'] => original or raw data -& returns a dict of details 
-            contex combine with get method to get the dataframe like::
-                
-                >>> fetch_data ('bagoue original').get ('data=df')
-        * ['stratified'] => stratification data
-        * ['mid' |'semi'|'preprocess'|'fit']=> data cleaned with 
-            attributes experience combinaisons.
-        * ['pipe']=>  default pipeline created during the data preparing.
-        * ['analyses'|'pca'|'reduce dimension']=> data with text attributes
-            only encoded using the ordinal encoder +  attributes  combinaisons. 
-        * ['test'] => stratified test set data
+            >>> fetch_data ('bagoue original').get ('data=df')
+            
+    * ['stratified'] => stratification data
+    * ['mid' |'semi'|'preprocess'|'fit']=> data cleaned with 
+        attributes experience combinaisons.
+    * ['pipe']=>  default pipeline created during the data preparing.
+    * ['analyses'|'pca'|'reduce dimension']=> data with text attributes
+        only encoded using the ordinal encoder +  attributes  combinaisons. 
+    * ['test'] => stratified test set data
 
-           
-    Returns
-    -------
-        `data`: Original data 
-        `X`, `y` : Stratified train set and training target 
-        `X0`, `y0`: data cleaned after dropping useless features and combined 
+Returns
+-------
+dict, X, y : frame of :class:`~watex.utils.box.Boxspace` object 
+    If tag is following by suffix in the case of 'bagoue' area, it returns:
+        - `data`: Original data 
+        - `X`, `y` : Stratified train set and training target 
+        - `X0`, `y0`: data cleaned after dropping useless features and combined 
             numerical attributes combinaisons if ``True``
-        `X_prepared`, `y_prepared`: Data prepared after applying  all the 
-           transformation via the transformer (pipeline). 
-        `XT`, `yT` : stratified test set and test label  
-        `_X`: Stratified training set for data analysis. So None sparse
-            matrix is contained. The text attributes (categorical) are converted 
-            using Ordianal Encoder.  
-        `_pipeline`: the default pipeline. 
-    """
-    r=None 
-    pm =regex.search (tag)
-    if pm is None: 
-        raise DatasetError(f"Unknow tag {tag!r}. Expect 'original',"
-                           f" {smart_format(_BTAGS, 'or')}") 
-        
-    pm= pm.group() 
+        - `X_prepared`, `y_prepared`: Data prepared after applying  all the 
+            transformation via the transformer (pipeline). 
+        - `XT`, `yT` : stratified test set and test label  
+        - `_X`: Stratified training set for data analysis. So None sparse
+            matrix is contained. The text attributes (categorical) are 
+            converted using Ordianal Encoder.  
+        - `_pipeline`: the default pipeline. 
+Examples 
+---------
+>>> from watex.datasets import fetch_data 
+>>> b = fetch_data('bagoue' ) # no prefix return 'Boxspace' object
+>>> b.tnames 
+... array(['flow'], dtype='<U4')
+>>> b.feature_names 
+... ['num',
+     'name',
+     'east',
+     'north',
+     'power',
+     'magnitude',
+     'shape',
+     'type',
+     'sfi',
+     'ohmS',
+     'lwi',
+     'geol']
+>>> X, y = fetch_data('bagoue prepared' )
+>>> X # is transformed  # ready for prediction 
+>>> X[0] 
+... <1x18 sparse matrix of type '<class 'numpy.float64'>'
+	with 8 stored elements in Compressed Sparse Row format>
+>>> y
+... array([2, 1, 2, 2, 1, 0, ... , 3, 2, 3, 3, 2], dtype=int64)
 
-    if _pca_set_checker(pm.lower()): 
-        pm = 'analysis'
-    
-    elif pm in ('mid','semi', 'preprocess', 'fit'): 
-        pm = 'semi' 
-        
-    if pm =='prepared': 
-        r = loadingdefaultSerializedData (
-            'watex/etc/__Xy.pkl',(_Xp, _yp), dtype='training' 
-                )
-    elif pm =='test': 
-        r = loadingdefaultSerializedData (
-            'watex/etc/__XTyT.pkl',(_XT, _yT), dtype='test' ),
-    else : 
-        try : 
-            r =_BVAL[pm]
-        except : 
-           _logger.error (_msg[pm])
-    return r 
-
-     
-def loadingdefaultSerializedData (f, d0, dtype ='test'): 
-    """ Retreive Bagoue data from dumped or Serialized file.
-    
-    :param f: str or Path-Like obj 
-        Dumped or Serialized default data 
-    :param d0: tuple 
-        Return default returns wich is the data from config 
-        <./datasets/config.py > 
-    :param dtype:str 
-        Type of data to retreive.
-    """
-    
-    
-    load_source ='serialized'
-    try : 
-        X, y= loadDumpedOrSerializedData(f)
-    except : 
-        _logger.error(f"Fetch data from {load_source!r} source failed. "
-                       " Use local 'config' source instead ...")
-        load_source='config'
-        X, y =d0
-
-    return X, y
-
-def _pca_set_checker (param):
-    for ix in ['analys', 'pca', 'dim','reduc']: 
-        if ix in param.lower():
-            return True 
-    return False 
-   
-     
-    
+"""    
 
 
 

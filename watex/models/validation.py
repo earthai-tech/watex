@@ -8,6 +8,18 @@ import inspect
 import warnings  
 import pickle 
 import joblib
+from abc import ABC,abstractmethod,  ABCMeta  
+from pprint import pprint 
+import pandas as pd 
+import numpy as np 
+
+from .._watexlog import watexlog
+from ..exlib.sklearn import (
+     mean_squared_error,
+     cross_val_score, 
+     GridSearchCV , 
+     RandomizedSearchCV
+)
 from ..typing import (
     Tuple,
     List,
@@ -18,22 +30,6 @@ from ..typing import (
     Dict,
     Any
     )
-from abc import (
-    ABC,
-    abstractmethod, 
-    ABCMeta  
-    )
-from pprint import pprint 
-import pandas as pd 
-import numpy as np 
-
-from ..exlib import (
-     mean_squared_error,
-     cross_val_score, 
-     GridSearchCV , 
-     RandomizedSearchCV
-)
-from .._watexlog import watexlog
 
 __logger = watexlog().get_watex_logger(__name__)
 

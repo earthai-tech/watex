@@ -47,11 +47,8 @@ class watexlog:
                 watexlog().set_logger_output()
             
         elif configfile.endswith(".yaml") or configfile.endswith(".yml") :
-            #################################################
-            #this_module_file=os.path.dirname(os.path.abspath(__file__))
-            #######################################################
             this_module_file=os.path.abspath(__file__)
-            # print('this_module_file====', this_module_file)
+
             if verbose:
                 print('yaml config file', this_module_file) 
             

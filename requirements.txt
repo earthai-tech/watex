@@ -1,12 +1,15 @@
 #sphinx>=2.4.0
 sphinx >=3.5
 sphinx_rtd_theme
+cython
 matplotlib>=3.3.0
 numpy
 scipy
 qtpy
 netcdf4
 numpydoc >=1.0.0
+Numexpr >= 2.6.2
+blosc >= 1.4.1
 pytest
 flake8
 pyyaml
@@ -24,3 +27,7 @@ click
 missingno
 pandas_profiling 
 pyjanitor 
+openpyxl
+threadpoolctl >= 2.0.0
+#pytables
+hdf5 

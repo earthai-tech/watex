@@ -14,21 +14,18 @@ import os
 import warnings
 import copy
 # import shutil 
-
 # from six.moves import urllib 
 # from pprint import pprint 
-
 import numpy as np
 # import pandas as pd 
 from pycsamt.geodrill.geocore import (
     Geodrill 
     )
-	
-from ..tools.coreutils import ( 
+from ..utils.coreutils import ( 
     serialize_data, 
     load_serialized_data, 
     )
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     smart_format, 
     # sPath,
     is_installing, 
@@ -36,7 +33,7 @@ from ..tools.funcutils import (
     parse_json, 
     parse_yaml,
     )
-from ..tools.geotools import (
+from ..utils.geotools import (
     _sanitize_db_items,
     _assert_model_type,
     assert_len_lns_tres, 
@@ -50,7 +47,6 @@ from ..tools.geotools import (
     lns_and_tres_split, 
     
     )
-
 from ..decorators import (
     gplot2d
     )
@@ -128,7 +124,7 @@ class GeoStrataModel(Geodrill, Base):
 
     Examples
     ----------
-    >>> from watex.geology.stratigraphy import Geostratigraphic 
+    >>> from watex.geology.stratigraphic import GeoStrataModel 
     >>> path=r'data/inversfiles/inver_res/K4'
     >>> inversion_files = {'model_fn':'Occam2DModel', 
     ...                   'mesh_fn': 'Occam2DMesh',
@@ -152,7 +148,6 @@ class GeoStrataModel(Geodrill, Base):
     ------
     Module inherits the `Geodrill packages` which works with occam2d  model.
     Occam2d inversion files are also acceptables for building model blocks 
-    
     
     """
     def __init__(self, crm=None, beta=5, ptol=0.1 , n_epochs=100,  **kwargs):

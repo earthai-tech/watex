@@ -1,0 +1,2212 @@
+# -*- coding: utf-8 -*-
+#   Licence:BSD 3-Clause
+#   Author: LKouadio <etanoyau@gmail.com>
+#   Create date: Sat Aug 28 16:26:04 2021
+
+from __future__ import annotations 
+import os 
+# import re
+import copy 
+import inspect 
+import hashlib 
+import tarfile 
+import warnings 
+import pickle 
+import joblib
+import datetime 
+import shutil
+from pprint import pprint  
+from six.moves import urllib 
+
+import numpy as np 
+import pandas as pd 
+
+from .._watexlog import watexlog
+from ..exlib.sklearn import ( 
+    train_test_split , 
+    StratifiedShuffleSplit, 
+    accuracy_score,
+    confusion_matrix, 
+    mean_squared_error , 
+    classification_report ,
+    f1_score,
+    precision_recall_curve, 
+    precision_score,
+    recall_score, 
+    roc_auc_score, 
+    roc_curve
+)
+from ..typing import (
+    List,
+    Tuple, 
+    Any,
+    Dict, 
+    Optional,
+    Union, 
+    Iterable ,
+    T,
+    F, 
+    ArrayLike, 
+    NDArray,
+    DType, 
+    DataFrame, 
+    Series,
+    Sub                 
+)
+from ..exceptions import ( 
+    ParameterNumberError , 
+    EstimatorError
+)
+from .funcutils import (
+    _assert_all_types, 
+    _isin, 
+    savepath_, 
+    smart_format, 
+    str2columns, 
+    is_iterable
+)
+_logger = watexlog().get_watex_logger(__name__)
+
+
+
+_scorers = { 
+    "classification_report":classification_report,
+    'precision_recall': precision_recall_curve,
+    "confusion_matrix":confusion_matrix,
+    'precision': precision_score,
+    "accuracy": accuracy_score,
+    "mse":mean_squared_error, 
+    "recall": recall_score, 
+    'auc': roc_auc_score, 
+    'roc': roc_curve, 
+    'f1':f1_score,
+    }
+
+_estimators ={
+        'dtc': ['DecisionTreeClassifier', 'dtc', 'dec', 'dt'],
+        'svc': ['SupportVectorClassifier', 'svc', 'sup', 'svm'],
+        'sdg': ['SGDClassifier','sdg', 'sd', 'sdg'],
+        'knn': ['KNeighborsClassifier','knn', 'kne', 'knr'],
+        'rdf': ['RandomForestClassifier', 'rdf', 'rf', 'rfc',],
+        'ada': ['AdaBoostClassifier','ada', 'adc', 'adboost'],
+        'vtc': ['VotingClassifier','vtc', 'vot', 'voting'],
+        'bag': ['BaggingClassifier', 'bag', 'bag', 'bagg'],
+        'stc': ['StackingClassifier','stc', 'sta', 'stack'],
+    'xgboost': ['ExtremeGradientBoosting', 'xgboost', 'gboost', 'gbdm'], 
+     'logit': ['LogisticRegression', 'logit', 'lr', 'logreg'], 
+     'extree': ['ExtraTreesClassifier', 'extree', 'xtree', 'xtr']
+        }  
+
+#------
+def evalModel(
+        model: F, 
+        X:NDArray |DataFrame, 
+        y: ArrayLike |Series, 
+        Xt:NDArray |DataFrame, 
+        yt:ArrayLike |Series=None, 
+        scorer:str | F = 'accuracy',
+        eval:bool =False,
+        **kws
+    ): 
+    """ Evaluate model and quick test the score with metric scorers. 
+    
+    Parameters
+    --------------
+    model: Callable, {'preprocessor + estimator } | estimator,
+        the preprocessor is list of step for data handling all encapsulated 
+        on the pipeline. model can also be a simple estimator with `fit`,
+        
+    X: N-d array, shape (N, M) 
+       the training set composed of N-columns and the M-samples. The 
+        feature set excludes the target `y`. 
+    y: arraylike , shape (M)
+        the target is composed of M-examples in supervised learning. 
+    
+    Xt: N-d array, shape (N, M) 
+        test set array composed of N-columns and the M-samples. The 
+        feature set excludes the target `y`. 
+    yt: arraylike , shape (M)
+        test label (or test target)  composed of M-examples in 
+        supervised learning.
+        
+    scorer: str, Callable, 
+        a scorer is a metric  function for model evaluation. If given as string 
+        it should be the prefix of the following metrics: 
+            
+            * "classification_report"     -> for classification_report,
+            * 'precision_recall'          -> for precision_recall_curve,
+            * "confusion_matrix"          -> for a confusion_matrix,
+            * 'precision'                 -> for  precision_score,
+            * "accuracy"                  -> for  accuracy_score
+            * "mse"                       -> for mean_squared_error, 
+            * "recall"                    -> for  recall_score, 
+            * 'auc'                       -> for  roc_auc_score, 
+            * 'roc'                       -> for  roc_curve 
+            * 'f1'                        -> for f1_score,
+            
+        Other string prefix values should raises an errors 
+        
+    kws: dict, 
+        Additionnal keywords arguments from scklearn metric function.
+        
+    Returns 
+    ----------
+    Tuple : (score, ypred)
+        the model score or the predicted y if `predict` is set to ``True``. 
+        
+    """
+
+    score = None 
+    if X.ndim ==1: 
+        X = X.reshape(-1, 1) 
+    if Xt.ndim ==1: 
+        Xt = Xt.reshape(-1, 1)
+        
+    model.fit(X, y)
+    # model.transform(X, y)
+    ypred = model.predict(Xt)
+    
+    if eval : 
+        if yt is None: 
+            raise TypeError(" NoneType 'yt' cannot be used for model evaluation.")
+            
+        if scorer is None: 
+           scorer =  _scorers['accuracy']
+           
+        if isinstance (scorer, str): 
+            if str(scorer) not in _scorers.keys(): 
+                raise ValueError (
+                    "Given scorer {scorer!r }is unknown. Accepts "
+                    f" only {smart_format(_scorers.keys())}") 
+                
+            scorer = _scorers.get(scorer)
+        elif not hasattr (scorer, '__call__'): 
+            raise TypeError ("scorer should be a callable object,"
+                             f" got {type(scorer).__name__!r}")
+            
+        score = scorer (yt, ypred, **kws)
+    
+    return  ypred, score  
+
+def correlatedfeatures(
+        df:DataFrame ,
+        corr:str ='pearson', 
+        threshold: float=.95 , 
+        fmt: bool= False 
+        )-> DataFrame: 
+    """Find the correlated features/columns in the dataframe. 
+    
+    Indeed, highly correlated columns don't add value and can throw off 
+    features importance and interpretation of regression coefficients. If we  
+    had correlated columns, choose to remove either the columns from  
+    level_0 or level_1 from the features data is a good choice. 
+    
+    Parameters 
+    -----------
+    df: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
+        Dataframe containing samples M  and features N
+    corr: str, ['pearson'|'spearman'|'covariance']
+        Method of correlation to perform. Note that the 'person' and 
+        'covariance' don't support string value. If such kind of data 
+        is given, turn the `corr` to `spearman`. *default* is ``pearson``
+        
+    threshold: int, default is ``0.95``
+        the value from which can be considered as a correlated data. Should not 
+        be greater than 1. 
+        
+    fmt: bool, default {``False``}
+        format the correlated dataframe values 
+        
+    Returns 
+    ---------
+    df: `pandas.DataFrame`
+        Dataframe with cilumns equals to [level_0, level_1, pearson]
+        
+    Examples
+    --------
+    >>> from watex.utils.mlutils import correlatedcolumns 
+    >>> df_corr = correlatedcolumns (data , corr='spearman',
+                                     fmt=None, threshold=.95
+                                     )
+    """
+    th= copy.deepcopy(threshold) 
+    threshold = str(threshold)  
+    try : 
+        threshold = float(threshold.replace('%', '')
+                          )/1e2  if '%' in threshold else float(threshold)
+    except: 
+        raise TypeError (
+            f"Threshold should be a float value, got: {type(th).__name__!r}")
+          
+    if threshold >= 1 or threshold <= 0 : 
+        raise ValueError (
+            f"threshold must be ranged between 0 and 1, got {th!r}")
+      
+    if corr not in ('pearson', 'covariance', 'spearman'): 
+        raise ValueError (
+            f"Expect ['pearson'|'spearman'|'covariance'], got{corr!r} ")
+    # collect numerical values and exclude cat values 
+    df = selectfeatures(df, include ='number')
+        
+    # use pipe to chain different func applied to df 
+    c_df = ( 
+        df.corr()
+        .pipe(
+            lambda df1: pd.DataFrame(
+                np.tril (df1, k=-1 ), # low triangle zeroed 
+                columns = df.columns, 
+                index =df.columns, 
+                )
+            )
+            .stack ()
+            .rename(corr)
+            .pipe(
+                lambda s: s[
+                    s.abs()> threshold 
+                    ].reset_index()
+                )
+                .query("level_0 not in level_1")
+        )
+
+    return  c_df.style.format({corr :"{:2.f}"}) if fmt else c_df 
+
+                           
+def exporttarget (df, tname, inplace = True): 
+    """ Extract target and modified data in place or not . 
+    
+    :param df: A dataframe with features including the target name `tname`
+    :param tname: A target name. It should be include in the dataframe columns 
+        otherwise an error is raised. 
+    :param inplace: modified the dataframe inplace. if ``False`` return the 
+        dataframe. the *defaut* is ``True`` 
+        
+    :returns: Tuple of the target and dataframe (modified or not)
+    
+    :example: 
+    >>> from watex.datasets import fetch_data '
+    >>> from watex.utils.mlutils import exporttarget 
+    >>> data0 = fetch_data ('bagoue original').get('data=dfy1') 
+    >>> # no modification 
+    >>> target, data_no = exporttarget (data0 , 'sfi', False )
+    >>> len(data_no.columns ) , len(data0.columns ) 
+    ... (13, 13)
+    >>> # modified in place 
+    >>> target, data= exporttarget (data0 , 'sfi')
+    >>> len(data.columns ) , len(data0.columns ) 
+    ... (12, 12)
+        
+    """
+    df = _assert_all_types(df, pd.DataFrame)
+    existfeatures(df, tname) # assert tname 
+    
+    return (df.pop(tname), df) if inplace else (df[tname], df ) 
+    
+    
+def existfeatures (df, features, error='raise'): 
+    """Control whether the features exists or not  
+    
+    :param df: a dataframe for features selections 
+    :param features: list of features to select. Lits of features must be in the 
+        dataframe otherwise an error occurs. 
+    :param error: str - raise if the features don't exist in the dataframe. 
+        *default* is ``raise`` and ``ignore`` otherwise. 
+        
+    :return: bool 
+        assert whether the features exists 
+    """
+    isf = False  
+    
+    error= 'raise' if error.lower().strip().find('raise')>= 0  else 'ignore' 
+
+    if isinstance(features, str): 
+        features =[features]
+        
+    features = _assert_all_types(features, list, tuple, np.ndarray)
+    set_f =  set (features).intersection (set(df.columns))
+    if len(set_f)!= len(features): 
+        nfeat= len(features) 
+        msg = f"Feature{'s' if nfeat >1 else ''}"
+        if len(set_f)==0:
+            if error =='raise':
+                raise ValueError (f"{msg} {smart_format(features)} "
+                                  f"{'does not' if nfeat <2 else 'dont'}"
+                                  " exist in the dataframe")
+            isf = False 
+        # get the difference 
+        diff = set (features).difference(set_f) if len(
+            features)> len(set_f) else set_f.difference (set(features))
+        nfeat= len(diff)
+        if error =='raise':
+            raise ValueError(f"{msg} {smart_format(diff)} not found in"
+                             " the dataframe.")
+        isf = False  
+    else : isf = True 
+    
+    return isf  
+    
+def selectfeatures (
+        df: DataFrame,
+        features: List[str] =None, 
+        include = None, 
+        exclude = None,
+        coerce: bool=False,
+        **kwd
+        ): 
+    """ Select features  and return new dataframe.  
+    
+    :param df: a dataframe for features selections 
+    :param features: list of features to select. Lits of features must be in the 
+        dataframe otherwise an error occurs. 
+    :param include: the type of data to retrieved in the dataframe `df`. Can  
+        be ``number``. 
+    :param exclude: type of the data to exclude in the dataframe `df`. Can be 
+        ``number`` i.e. only non-digits data will be keep in the data return.
+    :param coerce: return the whole dataframe with transforming numeric columns.
+        Be aware that no selection is done and no error is raises instead. 
+        *default* is ``False``
+    :param kwd: additional keywords arguments from `pd.astype` function 
+    
+    :ref: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.astype.html
+    """
+    
+    if features is not None: 
+        existfeatures(df, features, error ='raise')
+    # change the dataype 
+    df = df.astype (float, errors ='ignore', **kwd) 
+    # assert whether the features are in the data columns
+    if features is not None: 
+        return df [features] 
+    # raise ValueError: at least one of include or exclude must be nonempty
+    # use coerce to no raise error and return data frame instead.
+    return df if coerce else df.select_dtypes (include, exclude) 
+    
+    
+def getGlobalScore (
+        cvres : Dict[str, ArrayLike] 
+        ) -> Tuple [ Dict[str, ArrayLike] ,  Dict[str, ArrayLike]  ]: 
+    """ Retrieve the global mean and standard deviation score  from the 
+    cross validation containers. 
+    
+    :param cvres: cross validation results after training the models of number 
+        of parameters equals to N. 
+    :type cvres: dict of Array-like, Shape (N, ) """
+    return  ( cvres.get('mean_test_score').mean() ,
+             cvres.get('std_test_score').mean()) 
+    
+    
+def cfexist(features_to: List[ArrayLike], 
+            features: List[str] )-> bool:      
+    """
+    Control features existence into another list . List or array can be a 
+    dataframe columns for pratical examples.  
+    
+    :param features_to :list of array to be controlled .
+    :param features: list of whole features located on array of `pd.DataFrame.columns` 
+    
+    :returns: 
+        -``True``:If the provided list exist in the features colnames 
+        - ``False``: if not 
+
+    """
+    if isinstance(features_to, str): 
+        features_to =[features_to]
+    if isinstance(features, str): features =[features]
+    
+    if sorted(list(features_to))== sorted(list(
+            set(features_to).intersection(set(features)))): 
+        return True
+    else: return False 
+
+def formatGenericObj(generic_obj :Iterable[T])-> T: 
+    """
+    Format a generic object using the number of composed items. 
+
+    :param generic_obj: Can be a ``list``, ``dict`` or other `TypeVar` 
+        classified objects.
+    
+    :Example: 
+        
+        >>> from watex.utils.mlutils import formatGenericObj 
+        >>> formatGenericObj ({'ohmS', 'lwi', 'power', 'id', 
+        ...                         'sfi', 'magnitude'})
+        
+    """
+    
+    return ['{0}{1}{2}'.format('`{', ii, '}`') for ii in range(
+                    len(generic_obj))]
+
+
+def findIntersectionGenObject(
+        gen_obj1: Iterable[Any], 
+        gen_obj2: Iterable[Any]
+                              )-> set: 
+    """
+    Find the intersection of generic object and keep the shortest len 
+    object `type` at the be beginning 
+  
+    :param gen_obj1: Can be a ``list``, ``dict`` or other `TypeVar` 
+        classified objects.
+    :param gen_obj2: Idem for `gen_obj1`.
+    
+    :Example: 
+        
+        >>> from watex.utils.mlutils import findIntersectionGenObject
+        >>> findIntersectionGenObject(
+        ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
+        ...    {'ohmS', 'lwi', 'power'})
+        [out]:
+        ...  {'ohmS', 'lwi', 'power'}
+    
+    """
+    if len(gen_obj1) <= len(gen_obj2):
+        objType = type(gen_obj1)
+    else: objType = type(gen_obj2)
+
+    return objType(set(gen_obj1).intersection(set(gen_obj2)))
+
+def findDifferenceGenObject(gen_obj1: Iterable[Any],
+                            gen_obj2: Iterable[Any]
+                              )-> None | set: 
+    """
+    Find the difference of generic object and keep the shortest len 
+    object `type` at the be beginning: 
+ 
+    :param gen_obj1: Can be a ``list``, ``dict`` or other `TypeVar` 
+        classified objects.
+    :param gen_obj2: Idem for `gen_obj1`.
+    
+    :Example: 
+        
+        >>> from watex.utils.mlutils import findDifferenceGenObject
+        >>> findDifferenceGenObject(
+        ...    ['ohmS', 'lwi', 'power', 'id', 'sfi', 'magnitude'], 
+        ...    {'ohmS', 'lwi', 'power'})
+        [out]:
+        ...  {'ohmS', 'lwi', 'power'}
+    
+    """
+    if len(gen_obj1) < len(gen_obj2):
+        objType = type(gen_obj1)
+        return objType(set(gen_obj2).difference(set(gen_obj1)))
+    elif len(gen_obj1) > len(gen_obj2):
+        objType = type(gen_obj2)
+        return objType(set(gen_obj1).difference(set(gen_obj2)))
+    else: return 
+   
+        
+    
+    return set(gen_obj1).difference(set(gen_obj2))
+    
+def featureExistError(superv_features: Iterable[T], 
+                      features:Iterable[T]) -> None:
+    """
+    Catching feature existence errors.
+    
+    check error. If nothing occurs  then pass 
+    
+    :param superv_features: 
+        list of features presuming to be controlled or supervised
+        
+    :param features: 
+        List of all features composed of pd.core.DataFrame. 
+    
+    """
+    for ii, supff in enumerate([superv_features, features ]): 
+        if isinstance(supff, str): 
+            if ii==0 : superv_features=[superv_features]
+            if ii==1 :features =[superv_features]
+            
+    try : 
+        resH= cfexist(features_to= superv_features,
+                           features = features)
+    except TypeError: 
+        
+        print(' Features can not be a NoneType value.'
+              'Please set a right features.')
+        _logger.error('NoneType can not be a features!')
+    except :
+        raise ParameterNumberError  (
+           f'Parameters number of {features} is  not found in the '
+           ' dataframe columns ={0}'.format(list(features)))
+    
+    else: 
+        if not resH:  raise ParameterNumberError  (
+            f'Parameters number is ``{features}``. NoneType object is'
+            ' not allowed in  dataframe columns ={0}'.
+            format(list(features)))
+        
+def controlExistingEstimator(
+        estimator_name: str , raise_err =False ) -> Union [Dict[str, T], None]: 
+    """ 
+    When estimator name is provided by user , will chech the prefix 
+    corresponding
+
+    Catching estimator name and find the corresponding prefix 
+        
+    :param estimator_name: Name of given estimator 
+    
+    :Example: 
+        
+        >>> from watex.utils.mlutils import controlExistingEstimator 
+        >>> test_est =controlExistingEstimator('svm')
+        ('svc', 'SupportVectorClassifier')
+        
+    """
+    estimator_name = str(estimator_name).lower().strip() 
+    e = None ; efx = None 
+    for k, v in _estimators.items() : 
+        v_ = list(map(lambda o: str(o).lower(), v)) 
+        
+        if estimator_name in v_ : 
+            e, efx = k, v[0]
+            break 
+    ef = list(map(lambda o: o[0], _estimators.values() ))
+    
+    if e is None: 
+        _logger.error(
+            f'Default estimator `{estimator_name}` not found ! Expect:'
+            ' {}'.format(formatGenericObj(ef)).format(*ef))
+        warnings.warn(f'Default estimator `{estimator_name}` not available.'
+            ' Expect: {}'.format(formatGenericObj(ef)).format(*ef))
+        if raise_err: 
+            raise EstimatorError(f'Unsupport estimator {estimator_name!r}')
+            
+        return 
+    
+    return e, efx 
+
+    
+def formatModelScore(
+        model_score: Union [float, Dict[str, float]] = None,
+        select_estimator: str = None ) -> None   : 
+    """
+    Format the result of `model_score`
+        
+    :param model_score: Can be float or dict of float where key is 
+                        the estimator name 
+    :param select_estimator: Estimator name 
+    
+    :Example: 
+        
+        >>> from watex.utils.mlutils import formatModelScore 
+        >>>  formatModelScore({'DecisionTreeClassifier':0.26, 
+                      'BaggingClassifier':0.13}
+        )
+    """ 
+    print('-'*77)
+    if isinstance(model_score, dict): 
+        for key, val in model_score.items(): 
+            print('> {0:<30}:{1:^10}= {2:^10} %'.format( key,' Score', round(
+                val *100,3 )))
+    else : 
+        if select_estimator is None : 
+            select_estimator ='___'
+        if inspect.isclass(select_estimator): 
+            select_estimator =select_estimator.__class__.__name__
+        
+        try : 
+            _, select_estimator = controlExistingEstimator(select_estimator)
+        
+        except : 
+            if select_estimator is None :
+                select_estimator =str(select_estimator)
+            else: select_estimator = '___'
+            
+        print('> {0:<30}:{1:^10}= {2:^10} %'.format(select_estimator,
+                     ' Score', round(
+            model_score *100,3 )))
+        
+    print('-'*77)
+    
+def predict(
+        y_true: ArrayLike,
+        y_pred: ArrayLike =None,
+        *, 
+        X_: Optional [NDArray]=None, 
+        clf:Optional [F[T]]=None,
+        verbose:int =0
+) -> Tuple[float, float]: 
+    """ Make a quick statistic after prediction. 
+    
+    :param y_true: array-like 
+        y value (label) to predict
+    :param y_pred: array_like
+        y value predicted
+    :pram X: ndarray(nexamples, nfeatures)
+        Training data sets 
+    :param X_: ndarray(nexamples, nfeatures)
+        test sets 
+    :param clf: callable
+        Estimator or classifier object. 
+    :param XT_: ndarray
+    :param verbose:int, level=0 
+        Control the verbosity. More than 1 more message
+    :param from_c: str 
+        Column to visualize statistic. Be sure the colum exist into the
+        test sets. If not raise errors.
+    """
+    
+    clf_name =''
+    if y_pred is None: 
+        if clf is None: 
+            warnings.warn('None estimator found! Could not predict `y` ')
+            _logger.error('NoneType `clf` <estimator> could not'
+                                ' predict `y`.')
+            raise ValueError('None estimator detected!'
+                             ' could not predict `y`.') 
+        # check whether is 
+        is_clf = hasattr(clf, '__call__')
+        if is_clf : clf_name = clf.__name__
+        if not is_clf :
+            # try whether is ABCMeta class 
+            try : 
+                is_clf = hasattr(clf.__class__, '__call__')
+            except : 
+                raise TypeError(f"{clf!r} is not a model estimator. "
+                                 " Could not use for prediction.")
+            clf_name = clf.__class__.__name__
+            # check estimator 
+        if X_ is None: 
+            raise TypeError('NoneType can not used for prediction.'
+                            ' Need a test set `X`.')
+        clf.fit(X_, y_true)
+        y_pred = clf.predict(X_)
+        
+    if len(y_true) !=len(y_pred): 
+        raise TypeError("`y_true` and `y_pred` must have the same length." 
+                        f" {len(y_true)!r} and {len(y_pred)!r} were given"
+                        " respectively.")
+        
+    # get the model score apres prediction 
+    clf_score = round(sum(y_true ==y_pred)/len(y_true), 4)
+    dms = f"Overall model {clf_name!r} score ={clf_score *100 } % "
+
+    conf_mx =confusion_matrix(y_true, y_pred)
+    if verbose >1:
+        dms +=f"\n Confusion matrix= \n {conf_mx}"
+    mse = mean_squared_error(y_true, y_pred )
+
+    dms += f"\n MSE error = {mse }."
+    pprint(dms)
+
+    return clf_score, mse 
+
+
+
+def write_excel(
+        listOfDfs: List[DataFrame],
+        csv: bool =False , 
+        sep:str =',') -> None: 
+    """ 
+    Rewrite excell workbook with dataframe for :ref:`read_from_excelsheets`. 
+    
+    Its recover the name of the files and write the data from dataframe 
+    associated with the name of the `erp_file`. 
+    
+    :param listOfDfs: list composed of `erp_file` name at index 0 and the
+     remains dataframes. 
+    :param csv: output workbook in 'csv' format. If ``False`` will return un 
+     `excel` format. 
+    :param sep: type of data separation. 'default is ``,``.'
+    
+    """
+    site_name = listOfDfs[0]
+    listOfDfs = listOfDfs[1:]
+    for ii , df in enumerate(listOfDfs):
+        
+        if csv:
+            df.to_csv(df, sep=sep)
+        else :
+            with pd.ExcelWriter(f"z{site_name}_{ii}.xlsx") as writer: 
+                df.to_excel(writer, index=False)
+    
+
+def fetchGeoDATA (
+    data_url:str ,
+    data_path:str ,
+    tgz_filename:str 
+   ) -> None: 
+    """ Fetch data from data repository in zip of 'targz_file. 
+    
+    I will create a `datasets/data` directory in your workspace, downloading
+     the `~.tgz_file and extract the `data.csv` from this directory.
+    
+    :param data_url: url to the datafilename where `tgz` filename is located  
+    :param data_path: absolute path to the `tgz` filename 
+    :param filename: `tgz` filename. 
+    """
+    if not os.path.isdir(data_path): 
+        os.makedirs(data_path)
+
+    tgz_path = os.path.join(data_url, tgz_filename.replace('/', ''))
+    urllib.request.urlretrieve(data_url, tgz_path)
+    data_tgz = tarfile.open(tgz_path)
+    data_tgz.extractall(path = data_path )
+    data_tgz.close()
+    
+def fetchTGZDatafromURL (
+    data_url:str , 
+    data_path:str ,
+    tgz_file, 
+    file_to_retreive=None,
+    **kws
+    ) -> Union [str, None]: 
+    """ Fetch data from data repository in zip of 'targz_file. 
+    
+    I will create a `datasets/data` directory in your workspace, downloading
+     the `~.tgz_file and extract the `data.csv` from this directory.
+    
+    :param data_url: url to the datafilename where `tgz` filename is located  
+    :param data_path: absolute path to the `tgz` filename 
+    :param filename: `tgz` filename. 
+    
+    :example: 
+    >>> from watex.utils.mlutils import fetchTGZDatafromURL
+    >>> DOWNLOAD_ROOT = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/'
+    >>> # from Zenodo: 'https://zenodo.org/record/5560937#.YWQBOnzithE'
+    >>> DATA_PATH = 'data/__tar.tgz'  # 'BagoueCIV__dataset__main/__tar.tgz_files__'
+    >>> TGZ_FILENAME = '/fmain.bagciv.data.tar.gz'
+    >>> CSV_FILENAME = '/__tar.tgz_files__/___fmain.bagciv.data.csv'
+    >>> fetchTGZDatafromURL (data_url= DATA_URL,
+                            data_path=DATA_PATH,
+                            tgz_filename=TGZ_FILENAME
+                            ) 
+    """
+    f= None
+    if data_url is not None: 
+        
+        tgz_path = os.path.join(data_path, tgz_file.replace('/', ''))
+        try: 
+            urllib.request.urlretrieve(data_url, tgz_path)
+        except urllib.URLError: 
+            print("<urlopen error [WinError 10061] No connection could "
+                  "be made because the target machine actively refused it>")
+        except ConnectionError or ConnectionRefusedError: 
+            print("Connection failed!")
+        except: 
+            print(f"Unable to fetch {os.path.basename(tgz_file)!r}"
+                  f" from <{data_url}>")
+            
+        return False 
+    
+    if file_to_retreive is not None: 
+        f= fetchSingleTGZData(filename=file_to_retreive, **kws)
+        
+    return f
+
+def fetchSingleTGZData(
+        tgz_file: str , 
+        filename: str ='___fmain.bagciv.data.csv',
+        savefile: str ='data/geo_fdata',
+        rename_outfile: Optional [str]=None 
+        ) -> str :
+    """ Fetch single file from archived tar file and rename a file if possible.
+    
+    :param tgz_file: str or Path-Like obj 
+        Full path to tarfile. 
+    :param filename:str 
+        Tagert  file to fetch from the tarfile.
+    :savefile:str or Parh-like obj 
+        Destination path to save the retreived file. 
+    :param rename_outfile:str or Path-like obj
+        Name of of the new file to replace the fetched file.
+    :return: Location of the fetched file
+    :Example: 
+        >>> from watex.utils.mlutils import fetchSingleTGZData
+        >>> fetchSingleTGZData('data/__tar.tgz/fmain.bagciv.data.tar.gz', 
+                               rename_outfile='main.bagciv.data.csv')
+    """
+     # get the extension of the fetched file 
+    fetch_ex = os.path.splitext(filename)[1]
+    if not os.path.isdir(savefile):
+        os.makedirs(savefile)
+    
+    def retreive_main_member (tarObj): 
+        """ Retreive only the main member that contain the target filename."""
+        for tarmem in tarObj.getmembers():
+            if os.path.splitext(tarmem.name)[1]== fetch_ex: #'.csv': 
+                return tarmem 
+            
+    if not os.path.isfile(tgz_file):
+        raise FileNotFoundError(f"Source {tgz_file!r} is a wrong file.")
+   
+    with tarfile.open(tgz_file) as tar_ref:
+        tar_ref.extractall(members=[retreive_main_member(tar_ref)])
+        tar_name = [ name for name in tar_ref.getnames()
+                    if name.find(filename)>=0 ][0]
+        shutil.move(tar_name, savefile)
+        # for consistency ,tree to check whether the tar info is 
+        # different with the collapse file 
+        if tar_name != savefile : 
+            # print(os.path.join(os.getcwd(),os.path.dirname(tar_name)))
+            _fol = tar_name.split('/')[0]
+            shutil.rmtree(os.path.join(os.getcwd(),_fol))
+        # now rename the file to the 
+        if rename_outfile is not None: 
+            os.rename(os.path.join(savefile, filename), 
+                      os.path.join(savefile, rename_outfile))
+        if rename_outfile is None: 
+            rename_outfile =os.path.join(savefile, filename)
+            
+        print(f"---> {os.path.join(savefile, rename_outfile)!r} was "
+              f" successfully decompressed from {os.path.basename(tgz_file)!r}"
+              f"and saved to {savefile!r}")
+        
+    return os.path.join(savefile, rename_outfile)
+    
+def load_data (
+        data: str = None,
+        delimiter: str  =None ,
+        **kws
+        )-> DataFrame:
+    """ Load csv file to a frame. 
+    
+    :param data_path: path to data csv file 
+    :param delimiter: str, item for data  delimitations. 
+    :param kws: dict, additional keywords arguments passed to :class:`pandas.read_csv`
+    :return: pandas dataframe 
+    
+    """ 
+    if not os.path.isfile(data): 
+        raise TypeError("Expect a valid CSV file.")
+    if (os.path.splitext(data)[1].replace('.', '')).lower() !='csv': 
+        raise ValueError("Read only a csv file.")
+        
+    return pd.read_csv(data, delimiter=delimiter, **kws) 
+
+
+def split_train_test (
+        df:DataFrame[DType[T]],
+        test_ratio:float 
+        )-> Tuple [DataFrame[DType[T]]]: 
+    """ A naive dataset split into train and test sets from a ratio and return 
+    a shuffled train set and test set.
+        
+    :param df: a dataframe containing features 
+    :param test_ratio: a ratio for test set batch. `test_ratio` is ranged 
+        between 0 to 1. Default is 20%.
+        
+    :returns: a tuple of train set and test set. 
+    
+    """
+    if isinstance (test_ratio, str):
+        if test_ratio.lower().find('%')>=0: 
+            try: test_ratio = float(test_ratio.lower().replace('%', ''))/100.
+            except: TypeError (f"Could not convert value to float: {test_ratio!r}")
+    if test_ratio <=0: 
+        raise ValueError ("Invalid ratio. Must greater than 0.")
+    elif test_ratio >=1: 
+        raise ValueError("Invalid ratio. Must be less than 1 and greater than 0.")
+        
+    shuffled_indices =np.random.permutation(len(df)) 
+    test_set_size = int(len(df)* test_ratio)
+    test_indices = shuffled_indices [:test_set_size]
+    train_indices = shuffled_indices[test_set_size:]
+    
+    return df.iloc[train_indices], df.iloc[test_indices]
+    
+def test_set_check_id (
+        identifier:int, 
+        test_ratio: float , 
+        hash:F[T]
+        ) -> bool: 
+    """ 
+    Get the test set id and set the corresponding unique identifier. 
+    
+    Compute the a hash of each instance identifier, keep only the last byte 
+    of the hash and put the instance in the testset if this value is lower 
+    or equal to 51(~20% of 256) 
+    has.digest()` contains object in size between 0 to 255 bytes.
+    
+    :param identifier: integer unique value 
+    :param ratio: ratio to put in test set. Default is 20%. 
+    
+    :param hash:  
+        Secure hashes and message digests algorithm. Can be 
+        SHA1, SHA224, SHA256, SHA384, and SHA512 (defined in FIPS 180-2) 
+        as well as RSA’s MD5 algorithm (defined in Internet RFC 1321). 
+        
+        Please refer to :ref:`<https://docs.python.org/3/library/hashlib.html>` 
+        for futher details.
+    """
+    return hash(np.int64(identifier)).digest()[-1]< 256 * test_ratio
+
+def split_train_test_by_id(
+    data:DataFrame,
+    test_ratio:float,
+    id_column:Optional[List[int]]=None,
+    keep_colindex:bool=True, 
+    hash : F =hashlib.md5
+    )-> Tuple[ Sub[DataFrame[DType[T]]], Sub[DataFrame[DType[T]]]] : 
+    """
+    Ensure that data will remain consistent accross multiple runs, even if 
+    dataset is refreshed. 
+    
+    The new testset will contain 20%of the instance, but it will not contain 
+    any instance that was previously in the training set.
+
+    :param data: Pandas.core.DataFrame 
+    :param test_ratio: ratio of data to put in testset 
+    :param id_colum: identifier index columns. If `id_column` is None,  reset  
+                dataframe `data` index and set `id_column` equal to ``index``
+    :param hash: secures hashes algorithms. Refer to 
+                :func:`~test_set_check_id`
+    :returns: consistency trainset and testset 
+    """
+    if isinstance(data, np.ndarray) : 
+        data = pd.DataFrame(data) 
+        if 'index' in data.columns: 
+            data.drop (columns='index', inplace=True)
+            
+    if id_column is None: 
+        id_column ='index' 
+        data = data.reset_index() # adds an `index` columns
+        
+    ids = data[id_column]
+    in_test_set =ids.apply(lambda id_:test_set_check_id(id_, test_ratio, hash))
+    if not keep_colindex: 
+        data.drop (columns ='index', inplace =True )
+        
+    return data.loc[~in_test_set], data.loc[in_test_set]
+
+def discretizeCategoriesforStratification(
+        data: Union [ArrayLike, DataFrame],
+        in_cat:str =None,
+        new_cat:Optional [str] = None, 
+        **kws
+        ) -> DataFrame: 
+    """ Create a new category attribute to discretize instances. 
+    
+    A new category in data is better use to stratified the trainset and 
+    the dataset to be consistent and rounding using ceil values.
+    
+    :param in_cat: column name used for stratified dataset 
+    :param new_cat: new category name created and inset into the 
+                dataframe.
+    :return: new dataframe with new column of created category.
+    """
+    divby = kws.pop('divby', 1.5) # normalize to hold raisonable number 
+    combined_cat_into = kws.pop('higherclass', 5) # upper class bound 
+    
+    data[new_cat]= np.ceil(data[in_cat]) /divby 
+    data[new_cat].where(data[in_cat] < combined_cat_into, 
+                             float(combined_cat_into), inplace =True )
+    return data 
+
+def stratifiedUsingDiscretedCategories(
+        data: Union [ArrayLike, DataFrame],
+        cat_name:str , 
+        n_splits:int =1, 
+        test_size:float= 0.2, 
+        random_state:int = 42
+        )-> Tuple[ Sub[DataFrame[DType[T]]], Sub[DataFrame[DType[T]]]]: 
+    """ Stratified sampling based on new generated category  from 
+    :func:`~DiscretizeCategoriesforStratification`.
+    
+    :param data: dataframe holding the new column of category 
+    :param cat_name: new category name inserted into `data` 
+    :param n_splits: number of splits 
+    """
+    
+    split = StratifiedShuffleSplit(n_splits, test_size, random_state)
+    for train_index, test_index in split.split(data, data[cat_name]): 
+        strat_train_set = data.loc[train_index]
+        strat_test_set = data.loc[test_index] 
+        
+    return strat_train_set , strat_test_set 
+
+def fetch_model(
+        modelfile: str ,
+        modelpath:Optional[str] = None,
+        default:bool =True,
+        modname: Optional[str] =None,
+        verbose:int =0): 
+    """ Fetch your model saved using Python pickle module or 
+    joblib module. 
+    
+    :param modelfile: str or Path-Like object 
+        dumped model file name saved using `joblib` or Python `pickle` module.
+    :param modelpath: path-Like object , 
+        Path to model dumped file =`modelfile`
+    :default: bool, 
+        Model parameters by default are saved into a dictionary. When default 
+        is ``True``, returns a tuple of pair (the model and its best parameters)
+        . If False return all values saved from `~.MultipleGridSearch`
+       
+    :modname: str 
+        Is the name of model to retrived from dumped file. If name is given 
+        get only the model and its best parameters. 
+    :verbose: int, level=0 
+        control the verbosity.More message if greater than 0.
+    
+    :returns:
+        - `model_class_params`: if default is ``True``
+        - `pickedfname`: model dumped and all parameters if default is `False`
+        
+    :Example: 
+        >>> from watex.bases import fetch_model 
+        >>> my_model = fetch_model ('SVC__LinearSVC__LogisticRegression.pkl',
+                                    default =False,  modname='SVC')
+        >>> my_model
+    """
+    
+    try:
+        isdir =os.path.isdir( modelpath)
+    except TypeError: 
+        #stat: path should be string, bytes, os.PathLike or integer, not NoneType
+        isdir =False
+        
+    if isdir and modelfile is not None: 
+        modelfile = os.join.path(modelpath, modelfile)
+
+    isfile = os.path.isfile(modelfile)
+    if not isfile: 
+        raise FileNotFoundError (f"File {modelfile!r} not found!")
+        
+    from_joblib =False 
+    if modelfile.endswith('.pkl'): from_joblib  =True 
+    
+    if from_joblib:
+       if verbose: _logger.info(
+               f"Loading models `{os.path.basename(modelfile)}`")
+       try : 
+           pickedfname = joblib.load(modelfile)
+           # and later ....
+           # f'{pickfname}._loaded' = joblib.load(f'{pickfname}.pkl')
+           dmsg=f"Model {modelfile !r} retreived from~.externals.joblib`"
+       except : 
+           dmsg=''.join([f"Nothing to retrived. It's seems model {modelfile !r}", 
+                         " not really saved using ~external.joblib module! ", 
+                         "Please check your model filename."])
+    
+    if not from_joblib: 
+        if verbose: _logger.info(
+                f"Loading models `{os.path.basename(modelfile)}`")
+        try: 
+           # DeSerializing pickled data 
+           with open(modelfile, 'rb') as modf: 
+               pickedfname= pickle.load (modf)
+           if verbose: _logger.info(
+                   f"Model `{os.path.basename(modelfile)!r} deserialized"
+                         "  using Python pickle module.`!")
+           
+           dmsg=f'Model `{modelfile!r} deserizaled from  {modelfile}`!'
+        except: 
+            dmsg =''.join([" Unable to deserialized the "
+                           f"{os.path.basename(modelfile)!r}"])
+           
+        else: 
+            if verbose: _logger.info(dmsg)   
+
+    if verbose > 0: 
+        pprint(
+            dmsg 
+            )
+           
+    if modname is not None: 
+        keymess = f"{modname!r} not found."
+        try : 
+            if default:
+                model_class_params  =( pickedfname[modname]['best_model'], 
+                                   pickedfname[modname]['best_params_'], 
+                                   pickedfname[modname]['best_scores'],
+                                   )
+            if not default: 
+                model_class_params=pickedfname[modname]
+                
+        except KeyError as key_error: 
+            warnings.warn(
+                f"Model name {modname!r} not found in the list of dumped"
+                f" models = {list(pickedfname.keys()) !r}")
+            raise KeyError from key_error(keymess + "Shoud try the model's"
+                                          f"names ={list(pickedfname.keys())!r}")
+        
+        if verbose: 
+            pprint('Should return a tuple of `best model` and the'
+                   ' `model best parameters.')
+           
+        return model_class_params  
+            
+    if default:
+        model_class_params =list()    
+        
+        for mm in pickedfname.keys(): 
+            model_class_params.append((pickedfname[mm]['best_model'], 
+                                      pickedfname[mm]['best_params_'],
+                                      pickedfname[modname]['best_scores']))
+    
+        if verbose: 
+               pprint('Should return a list of tuple pairs:`best model`and '
+                      ' `model best parameters.')
+               
+        return model_class_params
+
+    return pickedfname 
+
+def dumpOrSerializeData (
+        data , 
+        filename=None, 
+        savepath =None, 
+        to=None, 
+        verbose=0,
+        ): 
+    """ Dump and save binary file 
+    
+    :param data: Object
+        Object to dump into a binary file. 
+    :param filename: str
+        Name of file to serialize. If 'None', should create automatically. 
+    :param savepath: str, PathLike object
+         Directory to save file. If not exists should automaticallycreate.
+    :param to: str 
+        Force your data to be written with specific module like ``joblib`` or 
+        Python ``pickle` module. Should be ``joblib`` or ``pypickle``.
+    :return: str
+        dumped or serialized filename.
+        
+    :Example:
+        
+        >>> import numpy as np
+        >>> from watex.utils.mlutils import dumpOrSerializeData
+        >>>  data=(np.array([0, 1, 3]),np.array([0.2, 4]))
+        >>> dumpOrSerializeData(data, filename ='__XTyT.pkl', to='pickle', 
+                                savepath='watex/datasets')
+    """
+    if filename is None: 
+        filename ='__mydumpedfile.{}__'.format(datetime.datetime.now())
+        filename =filename.replace(' ', '_').replace(':', '-')
+
+    if to is not None: 
+        if not isinstance(to, str): 
+            raise TypeError(f"Need to be string format not {type(to)}")
+        if to.lower().find('joblib')>=0: to ='joblib'
+        elif to.lower().find('pickle')>=0:to = 'pypickle'
+        
+        if to not in ('joblib', 'pypickle'): 
+            raise ValueError("Unknown argument `to={to}`."
+                             " Should be <joblib> or <pypickle>")
+    # remove extension if exists
+    if filename.endswith('.pkl'): 
+        filename = filename.replace('.pkl', '')
+        
+    if verbose: _logger.info(f'Dumping data to `{filename}`!')    
+    try : 
+        if to is None or to =='joblib':
+            joblib.dump(data, f'{filename}.pkl')
+            
+            filename +='.pkl'
+            _logger.info(f'Data dumped in `{filename} using '
+                          'to `~.externals.joblib`!')
+        elif to =='pypickle': 
+            # force to move pickling data  to exception and write using 
+            # Python pickle module
+            raise 
+    except : 
+        # Now try to pickle data Serializing data 
+        # Using HIGHEST_PROTOCOL is almost 2X faster and creates a file that
+        # is ~10% smaller.  Load times go down by a factor of about 3X.
+        with open(filename, 'wb') as wfile: 
+            pickle.dump( data, wfile, protocol=pickle.HIGHEST_PROTOCOL) 
+        if verbose: _logger.info( 'Data are well serialized ')
+        
+    if savepath is not None:
+        try : 
+            savepath = savepath_ (savepath)
+        except : 
+            savepath = savepath_ ('_dumpedData_')
+        try:
+            shutil.move(filename, savepath)
+        except :
+            print(f"--> It seems destination path {filename!r} already exists.")
+
+    if savepath is None:
+        savepath =os.getcwd()
+        
+    if verbose: 
+        print(f"Data {'serialization' if to=='pypickle' else 'dumping'}"
+          f" complete,  save to {savepath!r}")
+   
+def loadDumpedOrSerializedData (filename:str, verbose=0): 
+    """ Load dumped or serialized data from filename 
+    
+    :param filename: str or path-like object 
+        Name of dumped data file.
+    :return: 
+        Data loaded from dumped file.
+        
+    :Example:
+        
+        >>> from watex.utils.mlutils import loadDumpedOrSerializedData
+        >>> loadDumpedOrSerializedData(filename ='Watex/datasets/__XTyT.pkl')
+    """
+    
+    if not isinstance(filename, str): 
+        raise TypeError(f'filename should be a <str> not <{type(filename)}>')
+        
+    if not os.path.isfile(filename): 
+        raise FileExistsError(f"File {filename!r} does not exist.")
+
+    _filename = os.path.basename(filename)
+    if verbose: _logger.info(f"Loading data from `{_filename}`!")
+   
+    data =None 
+    try : 
+        data= joblib.load(filename)
+        if verbose: _logger.info(
+                ''.join([f"Data from {_filename !r} are sucessfully", 
+                      " loaded using ~.externals.joblib`!"]))
+    except : 
+        if verbose: 
+            _logger.info(
+            ''.join([f"Nothing to reload. It's seems data from {_filename!r}", 
+                      " are not really dumped using ~external.joblib module!"])
+            )
+        # Try DeSerializing using pickle module
+        with open(filename, 'rb') as tod: 
+            data= pickle.load (tod)
+        if verbose: 
+            _logger.info(f"Data from `{_filename!r} are well"
+                      " deserialized using Python pickle module.`!")
+        
+    is_none = data is None
+    if is_none: 
+        print("Unable to deserialize data. Please check your file.")
+
+    return data 
+
+def subprocess_module_installation (module, upgrade =True ): 
+    """ Install  module using subprocess.
+    :param module: str, module name 
+    :param upgrade:bool, install the lastest version.
+    """
+    import sys 
+    import subprocess 
+    #implement pip as subprocess 
+    # refer to https://pythongeeks.org/subprocess-in-python/
+    MOD_IMP=False 
+    print(f'---> Module {module!r} installation will take a while,'
+          ' please be patient...')
+    cmd = f'<pip install {module}> | <python -m pip install {module}>'
+    try: 
+
+        upgrade ='--upgrade' if upgrade else ''
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install',
+        f'{module}', f'{upgrade}'])
+        reqs = subprocess.check_output([sys.executable,'-m', 'pip',
+                                        'freeze'])
+        [r.decode().split('==')[0] for r in reqs.split()]
+        _logger.info(f"Intallation of `{module}` and dependancies"
+                     "was successfully done!") 
+        MOD_IMP=True
+     
+    except: 
+        _logger.error(f"Fail to install the module =`{module}`.")
+        print(f'---> Module {module!r} installation failed, Please use'
+           f'  the following command {cmd} to manually install it.')
+    return MOD_IMP 
+        
+                
+def _assert_sl_target (target,  df=None, obj=None): 
+    """ Check whether the target name into the dataframe for supervised 
+    learning.
+    
+    :param df: dataframe pandas
+    :param target: str or index of the supervised learning target name. 
+    
+    :Example: 
+        
+        >>> from watex.utils.mlutils import _assert_sl_target
+        >>> from watex.datasets import fetch_data
+        >>> data = fetch_data('Bagoue original').get('data=df')  
+        >>> _assert_sl_target (target =12, obj=prepareObj, df=data)
+        ... 'flow'
+    """
+    is_dataframe = isinstance(df, pd.DataFrame)
+    is_ndarray = isinstance(df, np.ndarray)
+    if is_dataframe :
+        targets = smart_format(
+            df.columns if df.columns is not None else [''])
+    else:targets =''
+    if target is None:
+        nameObj=f'{obj.__class__.__name__}'if obj is not None else 'Base class'
+        msg =''.join([
+            f"{nameObj!r} {'basically' if obj is not None else ''}"
+            " works with surpervised learning algorithms so the",
+            " input target is needed. Please specify the target", 
+            f" {'name' if is_dataframe else 'index' if is_ndarray else ''}", 
+            " to take advantage of the full functionalities."
+            ])
+        if is_dataframe:
+            msg += f" Select the target among {targets}."
+        elif is_ndarray : 
+            msg += f" Max columns size is {df.shape[1]}"
+
+        warnings.warn(msg, UserWarning)
+        _logger.warning(msg)
+        
+    if target is not None: 
+        if is_dataframe: 
+            if isinstance(target, str):
+                if not target in df.columns: 
+                    msg =''.join([
+                        f"Wrong target value {target!r}. Please select "
+                        f"the right column name: {targets}"])
+                    warnings.warn(msg, category= UserWarning)
+                    _logger.warning(msg)
+                    target =None
+            elif isinstance(target, (float, int)): 
+                is_ndarray =True 
+  
+        if is_ndarray : 
+            _len = len(df.columns) if is_dataframe else df.shape[1] 
+            m_=f"{'less than' if target >= _len  else 'greater than'}" 
+            if not isinstance(target, (float,int)): 
+                msg =''.join([f"Wrong target value `{target}`!"
+                              f" Object type is {type(df)!r}. Target columns", 
+                              "  index should be given instead."])
+                warnings.warn(msg, category= UserWarning)
+                _logger.warning(msg)
+                target=None
+            elif isinstance(target, (float,int)): 
+                target = int(target)
+                if not 0 <= target < _len: 
+                    msg =f" Wrong target index. Should be {m_} {str(_len-1)!r}."
+                    warnings.warn(msg, category= UserWarning)
+                    _logger.warning(msg) 
+                    target =None
+                    
+            if df is None: 
+                wmsg = ''.join([
+                    f"No data found! `{target}` does not fit any data set.", 
+                      "Could not fetch the target name.`df` argument is None.", 
+                      " Need at least the data `numpy.ndarray|pandas.dataFrame`",
+                      ])
+                warnings.warn(wmsg, UserWarning)
+                _logger.warning(wmsg)
+                target =None
+                
+            target = list(df.columns)[target] if is_dataframe else target
+    return target
+        
+def default_data_splitting(X, y=None, *,  test_size =0.2, target =None,
+                           random_state=42, fetch_target =False,
+                           **skws): 
+    """ Splitting data function. 
+    
+    Split data into the training set and test set. If target `y` is not
+    given and you want to consider a specific array as a target for 
+    supervised learning, just turn `fetch_target` argument to ``True`` and 
+    set the `target` argument as a numpy columns index or pandas dataframe
+    colums name. 
+    
+    :param X: np.ndarray or pd.DataFrame 
+    :param y: array_like 
+    :param test_size: If float, should be between 0.0 and 1.0 and represent
+        the proportion of the dataset to include in the test split. 
+    :param random_state: int, Controls the shuffling applied to the data
+        before applying the split. Pass an int for reproducible output across
+        multiple function calls
+    :param fetch_target: bool, use to retrieve the targetted value from 
+        the whole data `X`. 
+    :param target: int, str 
+        If int itshould be the index of the targetted value otherwise should 
+        be the columns name of pandas DataFrame.
+    :param skws: additional scikit-lean keywords arguments 
+        https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
+    
+    :returns: list, length -List containing train-test split of inputs.
+        
+    :Example: 
+        
+        >>> from watex.datasets import fetch_data 
+        >>> data = fetch_data ('Bagoue original').get('data=df')
+        >>> X, XT, y, yT= default_data_splitting(data.values,
+                                     fetch_target=True,
+                                     target =12 )
+        >>> X, XT, y, yT= default_data_splitting(data,
+                             fetch_target=True,
+                             target ='flow' )
+        >>> X0= data.copy()
+        >>> X0.drop('flow', axis =1, inplace=True)
+        >>> y0 = data ['flow']
+        >>> X, XT, y, yT= default_data_splitting(X0, y0)
+    """
+
+    if fetch_target: 
+        target = _assert_sl_target (target, df =X)
+        s='could not be ' if target is None else 'was succesffully '
+        wmsg = ''.join([
+            f"Target {'index' if isinstance(target, int) else 'value'} "
+            f"{str(target)!r} {s} used to fetch the `y` value from "
+            "the whole data set."])
+        if isinstance(target, str): 
+            y = X[target]
+            X= X.copy()
+            X.drop(target, axis =1, inplace=True)
+        if isinstance(target, (float, int)): 
+            y=X[:, target]
+            X = np.delete (X, target, axis =1)
+        warnings.warn(wmsg, category =UserWarning)
+        
+    __V= train_test_split(X, y, random_state=random_state, **skws) \
+        if y is not None else train_test_split(
+                X,random_state=random_state, **skws)
+    if y is None: X, XT , yT = *__V,  None 
+    else: X, XT, y, yT= __V
+    
+    return  X, XT, y, yT
+
+    
+def fetchModel(
+        modelfile: str,
+        modelpath: str = None,
+        default: bool = True,
+        modname: Optional[str] = None,
+        verbose: int = 0
+)-> object: 
+    """ Fetch your model saved using Python pickle module or joblib module. 
+    
+    :param modelfile: str or Path-Like object 
+        dumped model file name saved using `joblib` or Python `pickle` module.
+    :param modelpath: path-Like object , 
+        Path to model dumped file =`modelfile`
+    :default: bool, 
+        Model parameters by default are saved into a dictionary. When default 
+        is ``True``, returns a tuple of pair (the model and its best parameters).
+        If ``False`` return all values saved from `~.MultipleGridSearch`
+       
+    :modname: str 
+        Is the name of model to retreived from dumped file. If name is given 
+        get only the model and its best parameters. 
+    :verbose: int, level=0 
+        control the verbosity. More messages if greater than 0.
+    
+    :returns:
+        - `model_class_params`: if default is ``True``
+        - `pickledmodel`: model dumped and all parameters if default is `False`
+        
+    :Example: 
+        >>> from watex.bases import fetch_model 
+        >>> my_model, = fetchModel ('SVC__LinearSVC__LogisticRegression.pkl',
+                                    default =False,  modname='SVC')
+        >>> my_model
+    """
+    
+    try:
+        isdir =os.path.isdir( modelpath)
+    except TypeError: 
+        #stat: path should be string, bytes, os.PathLike or integer, not NoneType
+        isdir =False
+        
+    if isdir and modelfile is not None: 
+        modelfile = os.join.path(modelpath, modelfile)
+
+    isfile = os.path.isfile(modelfile)
+    if not isfile: 
+        raise FileNotFoundError (f"File {modelfile!r} not found!")
+        
+    from_joblib =False 
+    if modelfile.endswith('.pkl'): from_joblib  =True 
+    
+    if from_joblib:
+       _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+       try : 
+           pickledmodel = joblib.load(modelfile)
+           if len(pickledmodel)>=2 : 
+               pickledmodel = pickledmodel[0]
+           # and later ....
+           # f'{pickfname}._loaded' = joblib.load(f'{pickfname}.pkl')
+           dmsg=f"Model {modelfile !r} retreived from~.externals.joblib`!"
+       except : 
+           dmsg=''.join([f"Nothing to retreive. It's seems model {modelfile !r}", 
+                         " not really saved using ~external.joblib module! ", 
+                         "Please check your model filename."])
+    
+    if not from_joblib: 
+        _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
+        try: 
+           # DeSerializing pickled data 
+           with open(modelfile, 'rb') as modf: 
+               pickledmodel= pickle.load (modf)
+           _logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
+                         "  using Python pickle module.`!")
+           
+           dmsg=f"Model {modelfile!r} deserizaled from  {modelfile!r}!"
+        except: 
+            dmsg =''.join([" Unable to deserialized the "
+                           f"{os.path.basename(modelfile)!r}"])
+           
+        else: 
+            _logger.info(dmsg)   
+           
+    if verbose > 0: 
+        pprint(
+            dmsg 
+            )
+           
+    if modname is not None: 
+        keymess = "{modname!r} not found."
+        try : 
+            if default:
+                model_class_params  =( pickledmodel[modname]['best_model'], 
+                                   pickledmodel[modname]['best_params_'], 
+                                   pickledmodel[modname]['best_scores'],
+                                   )
+            if not default: 
+                model_class_params= pickledmodel.get(modname), 
+                
+        except KeyError as key_error: 
+            warnings.warn(
+                f"Model name {modname!r} not found in the list of dumped"
+                f" models = {list(pickledmodel.keys()) !r}")
+            raise KeyError from key_error(keymess + "Shoud try the model's"
+                                          f"names ={list(pickledmodel.keys())!r}")
+        
+        if verbose > 0: 
+            pprint('Should return a tuple of `best model` and the'
+                   ' `model best parameters.')
+           
+        return model_class_params  
+            
+    if default:
+        model_class_params =list()    
+        
+        for mm in pickledmodel.keys(): 
+            try : 
+                model_class_params.append((pickledmodel[mm]['best_model'], 
+                                          pickledmodel[mm]['best_params_'],
+                                          pickledmodel[modname]['best_scores']))
+            except KeyError as key_error : 
+                raise KeyError (f"Unable to retrieve {key_error.args[0]!r}")
+                
+        if verbose > 0: 
+               pprint('Should return a list of tuple pairs:`best model`and '
+                      ' `model best parameters.')
+               
+        return model_class_params, 
+
+    return pickledmodel,       
+        
+def findCatandNumFeatures( 
+        df: DataFrame= None, 
+        features: List[str]= None,  
+        return_frames: bool= False 
+        ) -> Tuple[List[str] | DataFrame, List[str] |DataFrame]: 
+    """ 
+    Retrieve the categorial or numerical features on whole features 
+    of dataset. 
+    
+    Parameters 
+    -----------
+    df: Dataframe 
+        Dataframe with columns composing the features
+        
+    features: list of str, 
+        list of the column names. If the dataframe is big, can set the only 
+        required features. If features are provided, frame should be shrunked 
+        to match the only given features before the numerical and categorical 
+        features search. Note that an error will raises if any of one features 
+        is missing in the dataframe. 
+        
+    return_frames: bool, 
+        if set to ``True``, it returns two separated dataframes (cat & num) 
+        otherwise, it only returns the cat and num columns names. 
+ 
+    Returns
+    ---------
+    Tuple:  `cat_features` and  `num_features` names or frames 
+       
+    Examples 
+    ----------
+    >>> from watex.datasets import fetch_data 
+    >>>> from watex.tools import findCatandNumFeatures
+    >>> data = fetch_data ('bagoue original').get('data=dfy2')
+    >>> cat, num = findCatandNumFeatures(data)
+    >>> cat, num 
+    ... (['type', 'geol', 'shape', 'name', 'flow'],
+     ['num', 'east', 'north', 'power', 'magnitude', 'sfi', 'ohmS', 'lwi'])
+    >>> cat, num = findCatandNumFeatures(
+        data, features = ['geol', 'ohmS', 'sfi'])
+    ... (['geol'], ['ohmS', 'sfi'])
+        
+    """
+    
+    if features is None: 
+        features = list(df.columns) 
+        
+    existfeatures(df, list(features))
+    df = df[features].copy() 
+    
+    # get num features 
+    num = selectfeatures(df, include = 'number')
+    catnames = findDifferenceGenObject (df.columns, num.columns ) 
+
+    return ( df[catnames], num) if return_frames else (
+        list(catnames), list(num.columns)  )
+   
+        
+def cattarget(
+        arr :ArrayLike |Series , /, 
+        func: F = None,  
+        labels: int | List[int] = None, 
+        rename_labels: Optional[str] = None, 
+        coerce:bool=False,
+        order:str='strict',
+        ): 
+    """ Categorize array to hold the given identifier labels. 
+    
+    Classifier numerical values according to the given label values. Labels 
+    are a list of integers where each integer is a group of unique identifier  
+    of a sample in the dataset. 
+    
+    Parameters 
+    -----------
+    arr: array-like |pandas.Series 
+        array or series containing numerical values. If a non-numerical values 
+        is given , an errors will raises. 
+    func: Callable, 
+        Function to categorize the target y.  
+    labels: int, list of int, 
+        if an integer value is given, it should be considered as the number 
+        of category to split 'y'. For instance ``label=3`` and applied on 
+        the first ten number, the labels values should be ``[0, 1, 2]``. 
+        If labels are given as a list, items must be self-contain in the 
+        target 'y'.
+    rename_labels: list of str; 
+        list of string or values to replace the label integer identifier. 
+    coerce: bool, default =False, 
+        force the new label names passed to `rename_labels` to appear in the 
+        target including or not some integer identifier class label. If 
+        `coerce` is ``True``, the target array holds the dtype of new_array. 
+
+    Return
+    --------
+    arr: Arraylike |pandas.Series
+        The category array with unique identifer labels 
+        
+    Examples 
+    --------
+
+    >>> from watex.utils.mlutils import cattarget 
+    >>> def binfunc(v): 
+            if v < 3 : return 0 
+            else : return 1 
+    >>> arr = np.arange (10 )
+    >>> arr 
+    ... array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    >>> target = cattarget(arr, func =binfunc)
+    ... array([0, 0, 0, 1, 1, 1, 1, 1, 1, 1], dtype=int64)
+    >>> cattarget(arr, labels =3 )
+    ... array([0, 0, 0, 1, 1, 1, 2, 2, 2, 2])
+    >>> array([2, 2, 2, 2, 1, 1, 1, 0, 0, 0]) 
+    >>> cattarget(arr, labels =3 , order =None )
+    ... array([0, 0, 0, 0, 1, 1, 1, 2, 2, 2])
+    >>> cattarget(arr[::-1], labels =3 , order =None )
+    ... array([0, 0, 0, 1, 1, 1, 2, 2, 2, 2]) # reverse does not change
+    >>> cattarget(arr, labels =[0 , 2,  4]  )
+    ... array([0, 0, 0, 2, 2, 4, 4, 4, 4, 4])
+
+    """
+    arr = _assert_all_types(arr, np.ndarray, pd.Series) 
+    is_arr =False 
+    if isinstance (arr, np.ndarray ) :
+        arr = pd.Series (arr  , name = 'none') 
+        is_arr =True 
+        
+    if func is not None: 
+        if not  inspect.isfunction (func): 
+            raise TypeError (
+                f'Expect a function but got {type(func).__name__!r}')
+            
+        arr= arr.apply (func )
+        
+        return  arr.values  if is_arr else arr   
+    
+    name = arr.name 
+    arr = arr.values 
+
+    if labels is not None: 
+        arr = _cattarget (arr , labels, order =order)
+        if rename_labels is not None: 
+            arr = rename_labels_in( arr , rename_labels , coerce =coerce ) 
+
+    return arr  if is_arr else pd.Series (arr, name =name  )
+
+def rename_labels_in (arr, new_names, coerce = False): 
+    """ Rename label by a new names 
+    
+    :param arr: arr: array-like |pandas.Series 
+         array or series containing numerical values. If a non-numerical values 
+         is given , an errors will raises. 
+    :param new_names: list of str; 
+        list of string or values to replace the label integer identifier. 
+    :param coerce: bool, default =False, 
+        force the 'new_names' to appear in the target including or not some 
+        integer identifier class label. `coerce` is ``True``, the target array 
+        hold the dtype of new_array; coercing the label names will not yield 
+        error. Consequently can introduce an unexpected results.
+    :return: array-like, 
+        An array-like with full new label names. 
+    """
+    
+    if not is_iterable(new_names): 
+        new_names= [new_names]
+    true_labels = np.unique (arr) 
+    
+    if labels_validator(arr, new_names, return_bool= True): 
+        return arr 
+
+    if len(true_labels) != len(new_names):
+        if not coerce: 
+            raise ValueError(
+                "Can't rename labels; the new names and unique label" 
+                " identifiers size must be consistent; expect {}, got " 
+                "{} label(s).".format(len(true_labels), len(new_names))
+                             )
+        if len(true_labels) < len(new_names) : 
+            new_names = new_names [: len(new_names)]
+        else: 
+            new_names = list(new_names)  + list(
+                true_labels)[len(new_names):]
+            warnings.warn("Number of the given labels '{}' and values '{}'"
+                          " are not consistent. Be aware that this could "
+                          "yield an expected results.".format(
+                              len(new_names), len(true_labels)))
+            
+    new_names = np.array(new_names)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # hold the type of arr to operate the 
+    # element wise comparaison if not a 
+    # ValueError:' invalid literal for int() with base 10' 
+    # will appear. 
+    if not np.issubdtype(np.array(new_names).dtype, np.number): 
+        arr= arr.astype (np.array(new_names).dtype)
+        true_labels = true_labels.astype (np.array(new_names).dtype)
+
+    for el , nel in zip (true_labels, new_names ): 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # element comparison throws a future warning here 
+        # because of a disagreement between Numpy and native python 
+        # Numpy version ='1.22.4' while python version = 3.9.12
+        # this code is brittle and requires these versions above. 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # suppress element wise comparison warning locally 
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=FutureWarning)
+            arr [arr == el ] = nel 
+            
+    return arr 
+
+    
+def _cattarget (ar , labels , order=None): 
+    """ A shadow function of :func:`watex.utils.funcutils.cattarget`. 
+    
+    :param ar: array-like of numerical values 
+    :param labels: int or list of int, 
+        the number of category to split 'ar'into. 
+    :param order: str, optional, 
+        the order of label to ne categorized. If None or any other values, 
+        the categorization of labels considers only the leangth of array. 
+        For instance a reverse array and non-reverse array yield the same 
+        categorization samples. When order is set to ``strict``, the 
+        categorization  strictly consider the value of each element. 
+        
+    :return: array-like of int , array of categorized values.  
+    """
+    # assert labels
+    if is_iterable (labels):
+        labels =[int (_assert_all_types(lab, int, float)) 
+                 for lab in labels ]
+        labels = np.array (labels , dtype = np.int32 ) 
+        cc = labels 
+        # assert whether element is on the array 
+        s = set (ar).intersection(labels) 
+        if len(s) != len(labels): 
+            mv = set(labels).difference (s) 
+            
+            fmt = [f"{'s' if len(mv) >1 else''} ", mv,
+                   f"{'is' if len(mv) <=1 else'are'}"]
+            warnings.warn("Label values must be array self-contain item. "
+                           "Label{0} {1} {2} missing in the array.".format(
+                               *fmt)
+                          )
+            raise ValueError (
+                "label value{0} {1} {2} missing in the array.".format(*fmt))
+    else : 
+        labels = int (_assert_all_types(labels , int, float))
+        labels = np.linspace ( min(ar), max (ar), labels + 1 ) #+ .00000001 
+        #array([ 0.,  6., 12., 18.])
+        # split arr and get the range of with max bound 
+        cc = np.arange (len(labels)) #[0, 1, 3]
+        # we expect three classes [ 0, 1, 3 ] while maximum 
+        # value is 18 . we want the value value to be >= 12 which 
+        # include 18 , so remove the 18 in the list 
+        labels = labels [:-1] # remove the last items a
+        # array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        # array([0, 0, 0, 0, 1, 1, 1, 2, 2, 2]) # 3 classes 
+        #  array([ 0.        ,  3.33333333,  6.66666667, 10. ]) + 
+    # to avoid the index bound error 
+    # append nan value to lengthen arr 
+    r = np.append (labels , np.nan ) 
+    new_arr = np.zeros_like(ar) 
+    # print(labels)
+    ar = ar.astype (np.float32)
+
+    if order =='strict': 
+        for i in range (len(r)):
+            if i == len(r) -2 : 
+                ix = np.argwhere ( (ar >= r[i]) & (ar != np.inf ))
+                new_arr[ix ]= cc[i]
+                break 
+            
+            if i ==0 : 
+                ix = np.argwhere (ar < r[i +1])
+                new_arr [ix] == cc[i] 
+                ar [ix ] = np.inf # replace by a big number than it was 
+                # rather than delete it 
+            else :
+                ix = np.argwhere( (r[i] <= ar) & (ar < r[i +1]) )
+                new_arr [ix ]= cc[i] 
+                ar [ix ] = np.inf 
+    else: 
+        l= list() 
+        for i in range (len(r)): 
+            if i == len(r) -2 : 
+                l.append (np.repeat ( cc[i], len(ar))) 
+                
+                break
+            ix = np.argwhere ( (ar < r [ i + 1 ] ))
+            l.append (np.repeat (cc[i], len (ar[ix ])))  
+            # remove the value ready for i label 
+            # categorization 
+            ar = np.delete (ar, ix  )
+            
+        new_arr= np.hstack (l).astype (np.int32)  
+        
+    return new_arr.astype (np.int32)       
+        
+def projection_validator (X, Xt=None, columns =None ):
+    """ Retrieve x, y coordinates of a datraframe ( X, Xt ) from columns 
+    names or indexes. 
+    
+    If X or Xt are given as an arrays, `columns` may hold integers from 
+    selecting the the coordinates 'x' and 'y'. 
+    
+    Parameters 
+    ---------
+    X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+        training set; Denotes data that is observed at training and prediction 
+        time, used as independent variables in learning. The notation 
+        is uppercase to denote that it is ordinarily a matrix. When a matrix, 
+        each sample may be represented by a feature vector, or a vector of 
+        precomputed (dis)similarity with each training sample. 
+
+    Xt: Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+        Shorthand for "test set"; data that is observed at testing and 
+        prediction time, used as independent variables in learning. The 
+        notation is uppercase to denote that it is ordinarily a matrix.
+    columns: list of str or index, optional 
+        columns is usefull what a dataframe is given  with a dimension size 
+        greater than 2. If such data is passed to `X` or `Xt`, columns must
+        hold the name to considered as 'easting', 'northing' when UTM 
+        coordinates are given or 'latitude' , 'longitude' when latlon are 
+        given. 
+        If dimension size is greater than 2 and columns is None , an error 
+        will raises to prevent the user to provide the index for 'y' and 'x' 
+        coordinated retrieval. 
+      
+    Returns 
+    -------
+    ( x, y, xt, yt ), (xname, yname, xtname, ytname), Tuple of coordinate 
+        arrays and coordinate labels 
+ 
+    """
+    # initialize arrays and names 
+    init_none = [None for i in range (4)]
+    x,y, xt, yt = init_none
+    xname,yname, xtname, ytname = init_none 
+    
+    m="{0} must be an iterable object, not {1!r}"
+    ms= ("{!r} is given while columns are not supplied. set the list of "
+        " feature names or indexes to fetch 'x' and 'y' coordinate arrays." )
+    
+    # args = list(args) + [None for i in range (5)]
+    # x, y, xt, yt, *_ = args 
+    X =_assert_all_types(X, np.ndarray, pd.DataFrame ) 
+    
+    if Xt is not None: 
+        Xt = _assert_all_types(Xt, np.ndarray, pd.DataFrame)
+        
+    if columns is not None: 
+        if isinstance (columns, str): 
+            columns = str2columns(columns )
+        
+        if not is_iterable(columns): 
+            raise ValueError(m.format('columns', type(columns).__name__))
+        
+        columns = list(columns) + [ None for i in range (5)]
+        xname , yname, xtname, ytname , *_= columns 
+
+    if isinstance(X, pd.DataFrame):
+      
+        x, xname, y, yname = _validate_columns(X, xname, yname)
+        
+    elif isinstance(X, np.ndarray):
+        x, y = _is_valid_coordinate_arrays (X, xname, yname )    
+        
+        
+    if isinstance (Xt, pd.DataFrame) :
+        # the test set holds the same feature names
+        # as the train set 
+        if xtname is None: 
+            xtname = xname
+        if ytname is None: 
+            ytname = yname 
+            
+        xt, xtname, yt, ytname = _validate_columns(Xt, xname, yname)
+
+    elif isinstance(Xt, np.ndarray):
+        
+        if xtname is None: 
+            xtname = xname
+        if ytname is None: 
+            ytname = yname 
+            
+        xt, yt = _is_valid_coordinate_arrays (Xt, xtname, ytname , 'test')
+        
+    if (x is None) or (y is None): 
+        raise ValueError (ms.format('X'))
+    if Xt is not None: 
+        if (xt is None) or (yt is None): 
+            warnings.warn (ms.format('Xt'))
+
+    return  (x, y , xt, yt ) , (
+        xname, yname, xtname, ytname ) 
+    
+
+def _validate_columns (df, xni, yni ): 
+    """ Validate the feature name  in the dataframe using either the 
+    string litteral name of the index position in the columns.
+    
+    :param df: pandas.DataFrame- Dataframe with feature names as columns. 
+    :param xni: str, int- feature name  or position index in the columns for 
+        x-coordinate 
+    :param yni: str, int- feature name  or position index in the columns for 
+        y-coordinate 
+    
+    :returns: (x, ni) Tuple of (pandas.Series, and names) for x and y 
+        coordinates respectively.
+    
+    """
+    def _r (ni): 
+        if isinstance(ni, str): # feature name
+            existfeatures(df, ni ) 
+            s = df[ni]  
+        elif isinstance (ni, (int, float)):# feature index
+            s= df.iloc[:, int(ni)] 
+            ni = s.name 
+        return s, ni 
+        
+    xs , ys = [None, None ]
+    if df.ndim ==1: 
+        raise ValueError ("Expect a dataframe of two dimensions, got '1'")
+        
+    elif df.shape[1]==2: 
+       warnings.warn("columns are not specify while array has dimension"
+                     "equals to 2. Expect indexes 0 and 1 for (x, y)"
+                     "coordinates respectively.")
+       xni= df.iloc[:, 0].name 
+       yni= df.iloc[:, 1].name 
+    else: 
+        ms = ("The matrix of features is greater than 2. Need column names or"
+              " indexes to  retrieve the 'x' and 'y' coordinate arrays." ) 
+        e =' Only {!r} is given.' 
+        me=''
+        if xni is not None: 
+            me =e.format(xni)
+        if yni is not None: 
+            me=e.format(yni)
+           
+        if (xni is None) or (yni is None ): 
+            raise ValueError (ms + me)
+            
+    xs, xni = _r (xni) ;  ys, yni = _r (yni)
+  
+    return xs, xni , ys, yni 
+
+
+def _validate_array_indexer (arr, index): 
+    """ Select the appropriate coordinates (x,y) arrays from indexes.  
+    
+    Index is used  to retrieve the array of (x, y) coordinates if dimension 
+    of `arr` is greater than 2. Since we expect x, y coordinate for projecting 
+    coordinates, 1-d  array `X` is not acceptable. 
+    
+    :param arr: ndarray (n_samples, n_features) - if nfeatures is greater than 
+        2 , indexes is needed to fetch the x, y coordinates . 
+    :param index: int, index to fetch x, and y coordinates in multi-dimension
+        arrays. 
+    :returns: arr- x or y coordinates arrays. 
+
+    """
+    if arr.ndim ==1: 
+        raise ValueError ("Expect an array of two dimensions.")
+    if not isinstance (index, (float, int)): 
+        raise ValueError("index is needed to coordinate array with "
+                         "dimension greater than 2.")
+        
+    return arr[:, int (index) ]
+
+def _is_valid_coordinate_arrays (arr, xind, yind, ptype ='train'): 
+    """ Check whether array is suitable for projecting i.e. whether 
+    x and y (both coordinates) can be retrived from `arr`.
+    
+    :param arr: ndarray (n_samples, n_features) - if nfeatures is greater than 
+        2 , indexes is needed to fetch the x, y coordinates . 
+        
+    :param xind: int, index to fetch x-coordinate in multi-dimension
+        arrays. 
+    :param yind: int, index to fetch y-coordinate in multi-dimension
+        arrays
+    :param ptype: str, default='train', specify whether the array passed is 
+        training or test sets. 
+    :returns: (x, y)- array-like of x and y coordinates. 
+    
+    """
+    xn, yn =('x', 'y') if ptype =='train' else ('xt', 'yt') 
+    if arr.ndim ==1: 
+        raise ValueError ("Expect an array of two dimensions.")
+        
+    elif arr.shape[1] ==2 : 
+        x, y = arr[:, 0], arr[:, 1]
+        
+    else :
+        msg=("The matrix of features is greater than 2; Need index to  "
+             " retrieve the {!r} coordinate array in param 'column'.")
+        
+        if xind is None: 
+            raise ValueError(msg.format(xn))
+        else : x = _validate_array_indexer(arr, xind)
+        if yind is None : 
+            raise ValueError(msg.format(yn))
+        else : y = _validate_array_indexer(arr, yind)
+        
+    return x, y         
+        
+        
+def labels_validator (t, /, labels, return_bool = False): 
+    """ Assert the validity of the label in the target  and return the label 
+    or the boolean whether all items of label are in the target. 
+    
+    :param t: array-like, target that is expected to contain the labels. 
+    :param labels: int, str or list of (str or int) that is supposed to be in 
+        the target `t`. 
+    :param return_bool: bool, default=False; returns 'True' or 'False' rather 
+        the labels if set to ``True``. 
+    :returns: bool or labels; 'True' or 'False' if `return_bool` is set to 
+        ``True`` and labels otherwise. 
+        
+    :example: 
+    >>> from watex.datasets import fetch_data 
+    >>> from watex.utils.mlutils import cattarget, labels_validator 
+    >>> _, y = fetch_data ('bagoue', return_X_y=True, as_frame=True) 
+    >>> # binarize target y into [0 , 1]
+    >>> ybin = cattarget(y, labels=2 )
+    >>> labels_validator (ybin, [0, 1])
+    ... [0, 1] # all labels exist. 
+    >>> labels_validator (y, [0, 1, 3])
+    ... ValueError: Value '3' is missing in the target.
+    >>> labels_validator (ybin, 0 )
+    ... [0]
+    >>> labels_validator (ybin, [0, 5], return_bool=True ) # no raise error
+    ... False
+        
+    """
+    
+    if not is_iterable(labels):
+        labels =[labels] 
+        
+    t = np.array(t)
+    mask = _isin(t, labels, return_mask=True ) 
+    true_labels = np.unique (t[mask]) 
+    # set the difference to know 
+    # whether all labels are valid 
+    remainder = list(set(labels).difference (true_labels))
+    
+    isvalid = True 
+    if len(remainder)!=0 : 
+        if not return_bool: 
+            # raise error  
+            raise ValueError (
+                "Label value{0} {1} {2} missing in the target 'y'.".format ( 
+                f"{'s' if len(remainder)>1 else ''}", 
+                f"{smart_format(remainder)}",
+                f"{'are' if len(remainder)> 1 else 'is'}")
+                )
+        isvalid= False 
+        
+    return isvalid if return_bool else  labels 
+        
+        
+#XXX TODO : move the stats func 
+def _stats (X_, y_true,*, y_pred, # noqa
+            from_c ='geol', 
+            drop_columns =None, 
+            columns=None )  : 
+    """ Present a short static"""
+
+    if from_c not in X_.columns: 
+        raise TypeError(f"{from_c!r} not found in columns "
+                        "name ={list(X_.columns)}")
+        
+    if columns is not None:
+        if not isinstance(columns, (tuple, list, np.ndarray)): 
+            raise TypeError(f'Columns should be a list not {type(columns)}')
+        
+    is_dataframe = isinstance(X_, pd.DataFrame)
+    if is_dataframe: 
+        if drop_columns is not None: 
+            X_.drop(drop_columns, axis =1)
+            
+    if not is_dataframe : 
+        len_X = X_.shape[1]
+        if columns is not None: 
+            if len_X != len(columns):
+                raise TypeError(
+                    "Columns and test set must have the same length"
+                    f" But `{len(columns)}` and `{len_X}` were given "
+                    "respectively.")
+                
+            X_= pd.DataFrame (data = X_, columns =columns)
+            
+    # get the values counts on the array and convert into a columns 
+    if isinstance(y_pred, pd.Series): 
+        y_pred = y_pred.values 
+        # initialize array with full of zeros
+    # get the values counts of the columns to analyse 'geol' for instance
+    s=  X_[from_c].value_counts() # getarray of values 
+    #s_values = s.values 
+    # create a pseudo serie and get the values counts of each elements
+    # and get the values counts
+
+    y_actual=pd.Series(y_true, index = X_.index, name ='y_true')
+    y_predicted =pd.Series(y_pred, index =X_.index, name ='y_pred')
+    pdf = pd.concat([X_[from_c],y_actual,y_predicted ], axis=1)
+ 
+    analysis_array = np.zeros((len(s.index), len(np.unique(y_true))))
+    for ii, index in enumerate(s.index): 
+        for kk, val in enumerate( np.unique(y_true)): 
+            geol = pdf.loc[(pdf[from_c]==index)]
+            geols=geol.loc[(geol['y_true']==geol['y_pred'])]
+            geolss=geols.loc[(geols['y_pred']==val)]             
+            analysis_array [ii, kk]=len(geolss)/s.loc[index]
+
+    return analysis_array     
+        
+        
+        
+        
+        
+        
+        
+        

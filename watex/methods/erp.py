@@ -49,7 +49,7 @@ Warnings
 So once the data is  well organized, the module is able to compute all the 
 parameters and select the best location for drilling after analyzing all the 
 different point in dataset. 
-However, this way seems, too more prefect (not realistic) far from the reality 
+However, this way seems, too more perfect (not realistic) far from the reality 
 since in DC - resistivity, the low resistivity does not mean there is a water 
 in that place thereby leading to a misinsterpretationin the choice of locating 
 the drilling points. To handle this issue, we recommended to use the module 
@@ -73,31 +73,28 @@ import  shutil
 
 import numpy as np 
 import pandas as pd
-from scipy.signal import argrelextrema 
 
 from .._watexlog import watexlog 
-
 from ..exceptions import ( 
     FileHandlingError,
     ERPError, 
-    
     )
-from ..tools.exmath import ( 
+from ..utils.exmath import ( 
     select_anomaly, 
     compute_anr,
     compute_sfi,
     compute_power, 
-    compute_magnitude 
-    
+    compute_magnitude, 
+    gettype, 
+    getshape 
     )
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     display_infos, 
     savepath_, 
     get_boundaries, 
     wrap_infos, 
-
     )
-from ..tools.gistools import ( 
+from ..utils.gistools import ( 
     ll_to_utm, 
     utm_to_ll, 
     project_point_ll2utm, 
@@ -1044,7 +1041,7 @@ class ERP :
     def best_type (self): 
         """ Get the select best anomaly type """
         if self._type is None: 
-            self._type = get_type(erp_array= self.df['rhoa'].to_numpy() , 
+            self._type = gettype(erp_array= self.df['rhoa'].to_numpy() , 
                                   posMinMax = np.array([float(self.posi_max),
                                                         float(self.posi_min)]), 
                                   pk= self.select_best_point_ ,
@@ -1061,7 +1058,7 @@ class ERP :
         """ Find the selected anomaly shape"""
         if self._shape is None: 
 
-            self._shape = get_shape(
+            self._shape = getshape(
                 rhoa_range=self.aBestInfos[self._best_key_point][4])
         
         wrap_infos('Select anomaly shape is = {}'.
@@ -1111,211 +1108,7 @@ class ERP :
         """
         return self.aBestInfos[self._best_key_point][4]
     
-    
-def get_type (erp_array, posMinMax, pk, pos_array, dl): 
-    """
-    Find anomaly type from app. resistivity values and positions locations 
-    
-    :param erp_array: App.resistivty values of all `erp` lines 
-    :type erp_array: array_like 
-    
-    :param posMinMax: Selected anomaly positions from startpoint and endpoint 
-    :type posMinMax: list or tuple or nd.array(1,2)
-    
-    :param pk: Position of selected anomaly in meters 
-    :type pk: float or int 
-    
-    :param pos_array: Stations locations or measurements positions 
-    :type pos_array: array_like 
-    
-    :param dl: 
-        
-        Distance between two receiver electrodes measurement. The same 
-        as dipole length in meters. 
-    
-    :returns: 
-        - ``EC`` for Extensive conductive. 
-        - ``NC`` for narrow conductive. 
-        - ``CP`` for conductive plane 
-        - ``CB2P`` for contact between two planes. 
-        
-    :Example: 
-        
-        >>> from watex.methods.erp import get_type 
-        >>> x = [60, 61, 62, 63, 68, 65, 80,  90, 100, 80, 100, 80]
-        >>> pos= np.arange(0, len(x)*10, 10)
-        >>> ano_type= get_type(erp_array= np.array(x),
-        ...            posMinMax=(10,90), pk=50, pos_array=pos, dl=10)
-        >>> ano_type
-        ...CB2P
-
-    """
-    # Get position index 
-    anom_type ='CP'
-    index_pos = int(np.where(pos_array ==pk)[0])
-    # if erp_array [:index_pos +1].mean() < np.median(erp_array) or\
-    #     erp_array[index_pos:].mean() < np.median(erp_array) : 
-    #         anom_type ='CB2P'
-    if erp_array [:index_pos+1].mean() < np.median(erp_array) and \
-        erp_array[index_pos:].mean() < np.median(erp_array) : 
-            anom_type ='CB2P'
-            
-    elif erp_array [:index_pos +1].mean() >= np.median(erp_array) and \
-        erp_array[index_pos:].mean() >= np.median(erp_array) : 
-                
-        if  dl <= (max(posMinMax)- min(posMinMax)) <= 5* dl: 
-            anom_type = 'NC'
-
-        elif (max(posMinMax)- min(posMinMax))> 5 *dl: 
-            anom_type = 'EC'
-
-    return anom_type
-
-def get_shape(rhoa_range): 
-    
-    """ 
-    Find anomaly `shape`  from apparent resistivity values framed to
-    the best points. 
- 
-    :param rhoa_range: The apparent resistivity from selected anomaly bounds
-                        :attr:`~core.erp.ERP.anom_boundaries`
-    :type rhoa_range: array_like or list 
-    
-    :returns: 
-        - V
-        - W
-        - K 
-        - C
-        - M
-        - U
-    
-    :Example: 
-        
-        >>> from watex.core.erp import get_shape 
-        >>> x = [60, 70, 65, 40, 30, 31, 34, 40, 38, 50, 61, 90]
-        >>> shape = get_shape (rhoa_range= np.array(x))
-        ...U
-    
-    """
-    shape ='V'
-    try: 
-
-        minlocals_ix, = argrelextrema(rhoa_range, np.less)
-    except : 
- 
-        minlocals_ix = argrelextrema(rhoa_range, np.less)
-    try : 
-
-        maxlocals_ix, = argrelextrema(rhoa_range, np.greater)
-    except : maxlocals_ix = argrelextrema(rhoa_range, np.greater)
-    
-    value_of_median = np.median(rhoa_range)
-    
-    coef_UH = 1.2 
-    c_=[rhoa_range[0] , rhoa_range[-1] ]
-
-    if len(minlocals_ix)==0 : 
-        if len(maxlocals_ix)==0 and\
-            (max(c_) and min(c_)) > value_of_median : 
-            return 'U'
-        
-        return 'C' 
-
-    if len(minlocals_ix) ==1 : 
-
-        if max(c_) > np.median(rhoa_range) and min(c_) <  value_of_median/2: 
-            return 'C'
-
-        elif rhoa_range[minlocals_ix] > value_of_median or \
-            rhoa_range[minlocals_ix] > max(c_): 
-            return 'M'
-    if len(minlocals_ix)>1 : 
-        if (max(c_) or min(c_))> value_of_median : 
-            shape ='W'
-            if max(c_) > value_of_median and\
-                min(c_) > value_of_median: 
-                if rhoa_range[maxlocals_ix].mean()> value_of_median : 
-                    if  coef_UH * rhoa_range[minlocals_ix].mean(): 
-                        shape ='H'
-                        
-                        coef_UH = 1.
-                        
-                        if rhoa_range[minlocals_ix].mean() <= coef_UH * \
-                            rhoa_range[maxlocals_ix].mean():
-                            shape = 'U'
-                        
-            else : shape ='K'
-            
-        elif (rhoa_range[0] and rhoa_range[-1]) < np.median(rhoa_range): 
-            shape =  'M'    
-
-        return shape 
-        
-    return shape  
-           
-def get_type2 (erp_array, posMinMax, pk, pos_array, dl=None): 
-    """
-    Find anomaly type from app. resistivity values and positions locations 
-    
-    :param erp_array: App.resistivty values of all `erp` lines 
-    :type erp_array: array_like 
-    
-    :param posMinMax: Selected anomaly positions from startpoint and endpoint 
-    :type posMinMax: list or tuple or nd.array(1,2)
-    
-    :param pk: Position of selected anomaly in meters 
-    :type pk: float or int 
-    
-    :param pos_array: Stations locations or measurements positions 
-    :type pos_array: array_like 
-    
-    :param dl: 
-        
-        Distance between two receiver electrodes measurement. The same 
-        as dipole length in meters. 
-    
-    :returns: 
-        - ``EC`` for Extensive conductive. 
-        - ``NC`` for narrow conductive. 
-        - ``CP`` for conductive plane 
-        - ``CB2P`` for contact between two planes. 
-        
-    :Example: 
-        
-        >>> from watex.core.erp import get_type 
-        >>> x = [60, 61, 62, 63, 68, 65, 80,  90, 100, 80, 100, 80]
-        >>> pos= np.arange(0, len(x)*10, 10)
-        >>> ano_type= get_type(erp_array= np.array(x),
-        ...            posMinMax=(10,90), pk=50, pos_array=pos, dl=10)
-        >>> ano_type
-        ...CB2P
-
-    """
-    if dl is None: 
-        dl = max(pos_array) - min(pos_array) / (len(pos_array)-1)
-        
-    # Get position index 
-    pos_ix = np.array(pos_array)- min(pos_array) /dl 
-    pos_ix.astype(np.int32) # get index 
-
-    anom_type ='CP'
-    index_pos = int(np.where(pos_array ==pk)[0])
-    
-    left_bound= erp_array [:index_pos+1].mean() 
-    right_bound =  erp_array[index_pos:].mean()
-    med_= np.median(erp_array) 
-
-    if  (left_bound < med_  and  right_bound >= med_) or \
-        (left_bound >= med_ and right_bound < med_) : 
-            anom_type ='CB2P'
-            
-    if left_bound > med_  and  right_bound > med_ : 
-        if  dl <= (max(posMinMax)- min(posMinMax)) <= 5* dl: 
-            anom_type = 'NC'
-        elif (max(posMinMax)- min(posMinMax))> 5 *dl: 
-            anom_type = 'EC'
-
-    return anom_type   
+      
 
 
  

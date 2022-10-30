@@ -8,9 +8,6 @@ include README.md
 include pycsamt/utils/epsg.npy
 include .travis.yml .readthedocs.yml 
 
-exclude data/Bag.main&rawds/
-exclude data/erp
-exclude data/refouts
-exclude data/ves
+exclude docs/source/ipynb
 
 global-exclude *.py[cod] __pycache__/* *.so *.dylib .coverage .coverage.* 

@@ -15,7 +15,7 @@ import pandas as pd
 from .._docstring import refglossary
 from .._watexlog import watexlog 
 from ..decorators import refAppender 
-from ..tools.funcutils import (
+from ..utils.funcutils import (
     repr_callable_obj,
     smart_format,
     smart_strobj_recognition , 
@@ -23,7 +23,7 @@ from ..tools.funcutils import (
     make_ids, 
     show_stats,
     )
-from ..tools.coreutils import (
+from ..utils.coreutils import (
     _assert_station_positions,
     defineConductiveZone, 
     fill_coordinates, 
@@ -31,7 +31,7 @@ from ..tools.coreutils import (
     vesSelector,
     parseDCArgs ,
 ) 
-from ..tools.exmath import (
+from ..utils.exmath import (
     shape, 
     type_, 
     power, 
@@ -91,7 +91,6 @@ class DCProfiling(ElectricalMethods)  :
         >>> <object>.line1.sves_ ; <object>.line1.sves_resistivity_ 
         >>> <object>.line2.sves_ ; <object>.line2.sves_resistivity_ 
     
-    
     Arguments 
     ----------
     
@@ -141,7 +140,7 @@ class DCProfiling(ElectricalMethods)  :
         `read_sheets` is set to ``True`` and the file is not in excell format, 
         a TypError will raise. 
         
-    **kws**: dict 
+    **fit_params**: dict 
          Additional |ERP| keywords arguments  
          
     Examples
@@ -217,12 +216,10 @@ class DCProfiling(ElectricalMethods)  :
         self.auto=auto 
         self.read_sheets=read_sheets 
         
-        for k in list (kws.keys()): 
-            setattr (self, k, kws[k])
         
     def fit(self, 
             data : List[str] | List [DataFrame],
-            **kws)-> object : 
+            **fit_params)-> object : 
         """ Read and fit the collections of data  
         
         Parameters 
@@ -231,8 +228,8 @@ class DCProfiling(ElectricalMethods)  :
             object. Data containing the collection of DC-resistivity values of 
             of multiple survey areas. 
                 
-        **kws**: str, 
-            Additional keyword from :func:watex.tools.coreutils.parseStations`.
+        **fit_params**: str, 
+            Additional keyword from :func:watex.utils.coreutils.parseStations`.
             It refers to the `station_delimiter` parameters. If the attribute 
             :attr:`~.ResistivityProfilings.stations` is given as a path-like 
             object. If the stations are disposed in the same line, it is 
@@ -247,8 +244,7 @@ class DCProfiling(ElectricalMethods)  :
         The stations should numbered from 1 not 0 and might fit the number of 
         the survey line. Each survey line expect to hold one positionning 
         drilling. 
-        
-        
+   
         """
         self._logging.info (f" {self.__class__.__name__!r} collects the "
                             "resistivity objects ")
@@ -261,7 +257,7 @@ class DCProfiling(ElectricalMethods)  :
         #  -> if not assume a path or file is given 
         
         if not _readfromdcObjs (self, data):
-            _readfrompath (self, data,**kws)
+            _readfrompath (self, data, **fit_params)
             
         # makeids objects 
         self.ids_ = np.array(make_ids (self.survey_names_,'line',None, True)) 
@@ -356,13 +352,13 @@ class DCSounding(ElectricalMethods) :
     Arguments 
     -----------
     
-    **fromS**: float , list of float
+    **froms**: float , list of float
         The collection of the depth in meters from which one expects to find a 
-        fracture zone outside of pollutions. Indeed, the `fromS` parameter is 
+        fracture zone outside of pollutions. Indeed, the `froms` parameter is 
         used to speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For 
         instance in `Bagoue region`_ , the average depth of water inrush 
-        is around ``45m``.So the `fromS` can be specified via the water inrush 
+        is around ``45m``.So the `froms` can be specified via the water inrush 
         average value. 
         
     **rho0**: float 
@@ -395,7 +391,7 @@ class DCSounding(ElectricalMethods) :
         the resistivity data with a  specific numbers. Commonly the number 
         are randomly chosen. It does not refer to the expected best fracture
         zone selected after the prior-interpretation. After transformation 
-        via the function :func:`~watex.tools.coreutils.vesSelector`, the header  
+        via the function :func:`~watex.utils.coreutils.vesSelector`, the header  
         of the data should hold the `resistivity`. For instance, refering to 
         the table above, the data should be:
             
@@ -440,7 +436,7 @@ class DCSounding(ElectricalMethods) :
         
     **kws**: dict 
         Additionnal keywords arguments from |VES| data operations. 
-        See :func:`watex.tools.exmath.vesDataOperator` for futher details.
+        See :func:`watex.utils.exmath.vesDataOperator` for futher details.
         
     Examples 
     --------
@@ -448,7 +444,7 @@ class DCSounding(ElectricalMethods) :
     
     >>> from watex.methods.electrical import DCSounding
     >>> dsobj = DCSounding ()  
-    >>> dsobj.fromS = 30. # start detecting the fracture zone from 30m depth.
+    >>> dsobj.froms = 30. # start detecting the fracture zone from 30m depth.
     >>> dsobj.fit('data/ves/ves_gbalo.xlsx')
     >>> dsobj.ohmic_areas_
     ...  array([523.25458506])
@@ -473,12 +469,11 @@ class DCSounding(ElectricalMethods) :
     ... 3 
     >>> dsobj.site1.ohmic_area_
     ... 523.2545850558677  # => dsobj.ohmic_areas_ -> line 1:'ves_gbalo'
-    
-    
+
     """
            
     def __init__(self,
-                 fromS:float=45.,
+                 froms:float=45.,
                  rho0:float=None, 
                  h0 :float=1., 
                  read_sheets:bool=False, 
@@ -490,7 +485,7 @@ class DCSounding(ElectricalMethods) :
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.fromS=fromS 
+        self.froms=froms 
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
@@ -502,7 +497,7 @@ class DCSounding(ElectricalMethods) :
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
             
-    def fit(self, data : List[str] | List [DataFrame], **kws): 
+    def fit(self, data : List[str] | List [DataFrame], **fit_params): 
         """ Fit the DC- electrical sounding 
         
         Fit the sounding |VES| curves and computed the ohmic-area and set  
@@ -520,10 +515,10 @@ class DCSounding(ElectricalMethods) :
             ``None``. If `AB` and `rhoa` is expected to be inputted, user must
             set the `data`  to ``None`` values for API purpose. If not an error
             will raise. Or the recommended way is to use the `vesSelector` tool
-            in :func:`watex.tools.vesSelector` to buid the |VES| data before 
+            in :func:`watex.utils.vesSelector` to buid the |VES| data before 
             feeding it to the algorithm. See the example below.
             
-        kws: dict 
+        fit_params: dict 
             additional keywords arguments, specific to the readable files. 
             Refer to :method:`watex.property.Config.parsers` . Use the key()
             to get all the readables format. 
@@ -543,7 +538,7 @@ class DCSounding(ElectricalMethods) :
         # check whether object is readable as ERP objs
         #  -> if not assume a path or file is given 
         if not _readfromdcObjs (self, data, VerticalSounding, VESError):
-            _readfrompath (self, data, VerticalSounding,  **kws)
+            _readfrompath (self, data, VerticalSounding,  **fit_params)
             
         self.ids_ = np.array(make_ids (self.survey_names_, 'site', None, True)) 
         
@@ -658,7 +653,6 @@ class ResistivityProfiling(ElectricalMethods):
     ... 30
     
     """
-    
     def __init__ (self, 
                   station: str | None = None,
                   dipole: float = 10.,
@@ -678,8 +672,7 @@ class ResistivityProfiling(ElectricalMethods):
 
             
     def fit(self, data : str | NDArray | Series | DataFrame ,
-             columns: str | List [str] = None, 
-             **kws
+             **fit_params
             ) -> object: 
         """ Fitting the :class:`~.ResistivityProfiling` 
         and populate the class attributes.
@@ -692,10 +685,10 @@ class ResistivityProfiling(ElectricalMethods):
                 
         **columns**: list, 
             Only necessary if the `data` is given as an array. No need to 
-            to explicitly defin when `data` is a dataframe or a Pathlike
+            to explicitly define it when `data` is a dataframe or a Pathlike
             object.
             
-        **kws**: dict, 
+        **fit_params**: dict, 
             Additional keyword arguments; e.g. to force the station to 
             match at least the best minimal resistivity value in the 
             whole data collected in the survey area. 
@@ -715,6 +708,7 @@ class ResistivityProfiling(ElectricalMethods):
         counting numbers rather than using the dipole position.
         
         """
+        columns = fit_params.pop('columns', None)
         
         self._logging.info(f'`Fit` method from {self.__class__.__name__!r}'
                            ' is triggered ')
@@ -782,7 +776,7 @@ class ResistivityProfiling(ElectricalMethods):
                 
         # recompute the position and dipolelength 
         self.position_, self.dipole = _assert_station_positions(
-            df = self.data_, **kws)
+            df = self.data_, **fit_params)
         self.data_['station'] = self.position_ 
         
         ############################################################
@@ -930,13 +924,13 @@ class VerticalSounding (ElectricalMethods):
     Arguments 
     -----------
     
-    **fromS**: float 
+    **froms**: float 
         The depth in meters from which one expects to find a fracture zone 
-        outside of pollutions. Indeed, the `fromS` parameter is used to  
+        outside of pollutions. Indeed, the `froms` parameter is used to  
         speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For 
         instance in `Bagoue region`_ , the average depth of water inrush 
-        is around ``45m``.So the `fromS` can be specified via the water inrush 
+        is around ``45m``.So the `froms` can be specified via the water inrush 
         average value. 
         
     **rho0**: float 
@@ -969,7 +963,7 @@ class VerticalSounding (ElectricalMethods):
         the resistivity data with a  specific numbers. Commonly the number 
         are randomly chosen. It does not refer to the expected best fracture
         zone selected after the prior-interpretation. After transformation 
-        via the function :func:`~watex.tools.coreutils.vesSelector`, the header  
+        via the function :func:`~watex.utils.coreutils.vesSelector`, the header  
         of the data should hold the `resistivity`. For instance, refering to 
         the table above, the data should be:
             
@@ -1014,7 +1008,7 @@ class VerticalSounding (ElectricalMethods):
         
     **kws**: dict 
         Additionnal keywords arguments from |VES| data operations. 
-        See :func:`watex.tools.exmath.vesDataOperator` for futher details.
+        See :func:`watex.utils.exmath.vesDataOperator` for futher details.
         
     See also 
     ---------
@@ -1035,7 +1029,7 @@ class VerticalSounding (ElectricalMethods):
     --------
     >>> from watex.methods import VerticalSounding 
     >>> from watex.tools import vesSelector 
-    >>> vobj = VerticalSounding(fromS= 45, vesorder= 3)
+    >>> vobj = VerticalSounding(froms= 45, vesorder= 3)
     >>> vobj.fit('data/ves/ves_gbalo.xlsx')
     >>> vobj.ohmic_area_ # in ohm.m^2
     ... 349.6432550517697
@@ -1060,7 +1054,7 @@ class VerticalSounding (ElectricalMethods):
     """
     
     def __init__(self,
-                 fromS: float = 45.,
+                 froms: float = 45.,
                  rho0: float = None, 
                  h0 : float = 1., 
                  strategy: str = 'HMCMC',
@@ -1071,7 +1065,7 @@ class VerticalSounding (ElectricalMethods):
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.fromS=fromS 
+        self.froms=froms 
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
@@ -1084,7 +1078,7 @@ class VerticalSounding (ElectricalMethods):
             setattr(self, key, kws[key])
             
 
-    def fit(self, data: str | DataFrame, **kwd ): 
+    def fit(self, data: str | DataFrame, **fit_params ): 
         """ Fit the sounding |VES| curves and computed the ohmic-area and set  
         all the features for demarcating fractured zone from the selected 
         anomaly. 
@@ -1100,7 +1094,7 @@ class VerticalSounding (ElectricalMethods):
             ``None``. If `AB` and `rhoa` is expected to be inputted, user must
             set the `data`  to ``None`` values for API purpose. If not an error
             will raise. Or the recommended way is to use the `vesSelector` tool
-            in :func:`watex.tools.vesSelector` to buid the |VES| data before 
+            in :func:`watex.utils.vesSelector` to buid the |VES| data before 
             feeding it to the algorithm. See the example below.
             
         AB: array-like 
@@ -1116,7 +1110,7 @@ class VerticalSounding (ElectricalMethods):
             Apparent resistivity values collected in imaging in depth. Units 
             are in Ω.m not log10(Ω.m)
         
-        kwds: dict 
+        fit_params: dict 
             additional keywords arguments, specific to the readable files. 
             Refer to :method:`watex.property.Config.parsers` . Use the key()
             to get all the readables format. 
@@ -1149,7 +1143,7 @@ class VerticalSounding (ElectricalMethods):
             print(f'Range {str(self.vesorder)!r} of resistivity data of the  '
                   'should be selected as the main sounding data. ')
         self.data_ = vesSelector(
-            data = data, index_rhoa= self.vesorder, **kwd )
+            data = data, index_rhoa= self.vesorder, **fit_params )
         self.max_depth_ = self.data_.AB.max()
         
         if self.fromlog10: 
@@ -1161,17 +1155,17 @@ class VerticalSounding (ElectricalMethods):
                       )
             self.data_['resistivity'] = self.resistivity_
             
-        if self.fromS >= self.max_depth_ : 
+        if self.froms >= self.max_depth_ : 
             raise VESError(
                 " Process of the depth monitoring is aborted! The searching"
-                f" point of param 'fromS'<{self.fromS}m> ' is expected to "
+                f" point of param 'froms'<{self.froms}m> ' is expected to "
                  f" be less than the maximum depth <{self.max_depth_}m>.")
         
         if self.verbose >= 3 : 
-            print("Pseudo-area should be computed from AB/2 ={str(self.fromS)}"
+            print("Pseudo-area should be computed from AB/2 ={str(self.froms)}"
                   f" to {self.max_depth_} meters. "
                   )
-        r = ohmicArea( data = self.data_ , sum = False, ohmSkey = self.fromS,  
+        r = ohmicArea( data = self.data_ , sum = False, ohmSkey = self.froms,  
                     objective = self.objective , typeofop = self.typeofop, 
                     )
         self._logging.info(f'Populating {self.__class__.__name__!r} property'
@@ -1226,7 +1220,7 @@ class VerticalSounding (ElectricalMethods):
         
         usefulparams = (
             'area', 'AB','MN', 'arrangememt','utm_zone', 'objective', 'rho0',
-             'h0', 'fromS', 'max_depth_', 'ohmic_area_', 'nareas_')
+             'h0', 'froms', 'max_depth_', 'ohmic_area_', 'nareas_')
         
         table_= pd.DataFrame (
             {f"{k}": getattr(self, k , np.nan )
@@ -1315,7 +1309,7 @@ class VerticalSounding (ElectricalMethods):
 def _readfromdcObjs(self, data: List[object ] ,
                      dcmethod:object=ResistivityProfiling ,  
                      exception: F = ERPError ): 
-    """ Read object metadata object. 
+    """ Read metadata DC object
     
     A set of :class:`.ResistivityProfiling` objects.
     
@@ -1337,7 +1331,7 @@ def _readfromdcObjs(self, data: List[object ] ,
     if not isinstance( data, (list, tuple, np.ndarray)): 
         data =[data]
     # assert whether each element composing the data is ERP object  
-    s = set ([ isinstance (o, dcmethod ) for o in data  ]) 
+    s = set ([ isinstance (o, dcmethod) for o in data  ]) 
     if len(s)!=1 or (len(s) ==1  and not tuple(s)[0]): 
         return False 
     
@@ -1351,6 +1345,7 @@ def _readfromdcObjs(self, data: List[object ] ,
         try: 
             if isinstance (o, dcmethod ): 
                 self.data_.append(o) 
+
         except : self.isnotvalid_.append(o) 
         
     #     pbar.update(kk) if TQDM else ''
@@ -1375,15 +1370,17 @@ def _readfromdcObjs(self, data: List[object ] ,
     if self.verbose > 3 : 
         print("Set the ids for each line e.g. line1 for the first line.")
     
-    self.survey_names_ = np.array(make_ids(self.data_, 'line', None, True))
+    name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
+    self.survey_names_ = np.array(make_ids(
+        self.data_, name , None, True))
     
     return True 
 
     
-def _readfrompath (self, data: List[str] ,
+def _readfrompath (self, data: List[str | DataFrame ] ,
                    dcmethod: object= ResistivityProfiling, 
                    **kws ): 
-    """ Read data from a file or a path-like object. 
+    """ Read data from a file,  a path-like object or dataframe. 
     
     It collects the list of |ERP| or |VES| files and create a DC -resistivity
     object from a DC -resistivity method. 
@@ -1391,7 +1388,7 @@ def _readfrompath (self, data: List[str] ,
     :param data: str or path-like object, 
     
     :param kws: Additional keyword from 
-        :func:`watex.tools.coreutils.parseStations`. It refers to the 
+        :func:`watex.utils.coreutils.parseStations`. It refers to the 
         `station_delimiter` parameters. 
         
     """
@@ -1404,64 +1401,83 @@ def _readfrompath (self, data: List[str] ,
         raise NotImplementedError(
         f"Method {dcmethod.__name__!r} is not implemented")
         
-        
+    is_df =False 
     ddict = dict() 
     regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
     
     self.survey_names_ = None  # initialize 
-    if isinstance(data, str ): 
-        if os.path.isfile (data): 
-             data =[data ]
-        elif os.path.dirname(data): 
-            data = [os.path.join( data, d ) for d in os.listdir(data)] 
-        else : raise FileNotFoundError("File not found")
-       
-    if self.read_sheets: 
-        _, ex = os.path.splitext( data[0])
-        if ex != '.xlsx': 
-            raise TypeError (" Reading multisheets expects an excel file."
-                             " extension not: {ex!r}")
-        for d in data : 
-            try: 
-                ddict.update ( **pd.read_excel (d , sheet_name =None))
-            except : pass 
-                
-            #collect stations names
-        if len(ddict)==0 : 
-            raise ERPError ("Can'find the DC-resistitivity profiling data "
-                            )
-        self.survey_names_ = list(map(
-            lambda o: regex.sub('_', o).lower(), ddict.keys()))
-
-        if self.verbose > 3: 
-            print(f"Number of the collected data from stations are"
-                  f" : {len(self.survey_names_)}")
-            
-        data = list(ddict.values ())
-        
-    # make a survey id from collection object 
-    if self.survey_names_ is None: 
-        self.survey_names_ = list(map(lambda o :regex.sub(
-            '_',  os.path.basename(o)), data ))
-        
-    # remove the extension and keep files names 
-    self.survey_names_ = list(
-        map(lambda o: o.split('.')[0], self.survey_names_)) 
     
-
-    # populate and assert stations and fromS   
+    if isinstance(data, (str, pd.DataFrame) ): 
+        data = [data ]
+       
+    if isinstance(data[0], pd.DataFrame): 
+        is_df =True 
+        
+    elif isinstance (data[0], str ):
+        if os.path.isfile (data[0]): 
+            pass 
+        elif os.path.isdir(data[0]): 
+            # if directory is given, read the file of the listdir
+            data = [os.path.join( data[0], d ) for d in os.listdir(data[0])] 
+        else : 
+            raise FileNotFoundError("File not found")
+       
+        if self.read_sheets: 
+            _, ex = os.path.splitext( data[0])
+            if ex != '.xlsx': 
+                raise TypeError (" Reading multisheets expects an excel file."
+                                 " extension not: {ex!r}")
+            for d in data : 
+                try: 
+                    ddict.update ( **pd.read_excel (d , sheet_name =None))
+                except : pass 
+                    
+                #collect stations names
+            if len(ddict)==0 : 
+                raise ERPError ("Can'find the DC-resistitivity profiling data "
+                                )
+            self.survey_names_ = list(map(
+                lambda o: regex.sub('_', o).lower(), ddict.keys()))
+    
+            if self.verbose > 3: 
+                print(f"Number of the collected data from stations are"
+                      f" : {len(self.survey_names_)}")
+                
+            data = list(ddict.values ())
+        
+        # make a survey id from collection object 
+        if self.survey_names_ is None: 
+            self.survey_names_ = list(map(lambda o :regex.sub(
+                '_',  os.path.basename(o)), data ))
+            
+        # remove the extension and keep files names 
+        self.survey_names_ = list(
+            map(lambda o: o.split('.')[0], self.survey_names_)) 
+    else : 
+        raise TypeError("Unknow data type, Expect a path-like object, "
+                        " a dataframe or a dc-object.")
+        
+    if is_df : 
+        name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
+        self.survey_names_ = np.array(make_ids(
+            data, name , None, True))
+    # populate and assert stations and froms   
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # if list of station is not given for each file 
     # note that here station is station where one expect to 
     # locate a drilling drilling i.e. sves
     _parse_dc_args(self, dcmethod,  **kws)
-  
-    # show the progress bar 
-    pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
-                 desc ="dc-erp" if dcmethod.__name__ =='ResistivityProfiling'\
-                     else'dc-ves',
-                 ncols =77)
-  
+
+    # show the progress bar
+    try: 
+        pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
+                     desc ="dc-erp" if dcmethod.__name__ =='ResistivityProfiling'\
+                         else'dc-ves',
+                     ncols =77)
+    except NameError: 
+        # force pbar to hold the data value
+        # if trouble occurs 
+        pbar =data 
     # -> read the data and make dc Objs 
     for kk,  o  in enumerate (pbar)  :
         try :
@@ -1475,10 +1491,10 @@ def _readfrompath (self, data: List[str] ,
                 self.data_.append (dcObj.fit(o).summary(
                     keeponlyparams=True))
                 self.stations[kk] = dcObj.sves_ 
-                
+                    
             elif dcmethod.__name__ =='VerticalSounding': 
                 dcObj = dcmethod(
-                    fromS=self.fromS[kk], 
+                    froms=self.froms[kk], 
                     vesorder=self.vesorder,
                     typeofop=self.typeofop,
                     objective=self.objective,
@@ -1506,14 +1522,14 @@ def _readfrompath (self, data: List[str] ,
     if self.verbose > 3: 
             print(" Number of file unsucceful read is:"
                   f" {len(self.isnotvalid_)}")
-    
-    
+            
+
 def _parse_dc_args(self, dcmethod: object , **kws): 
-    """ parse dc arguments to  fit the number of survey lines and populate
-    sanitize the attributes accordingly.
+    """ parse dc arguments to  fit the number of survey lines, populate
+    and sanitize the attributes accordingly.
     
     :param kws: Additional keyword from 
-        :func:`watex.tools.coreutils.parseDCArgs`. It refers to the 
+        :func:`watex.utils.coreutils.parseDCArgs`. It refers to the 
         `station_delimiter` parameters. 
     """  
     flag=0
@@ -1521,10 +1537,9 @@ def _parse_dc_args(self, dcmethod: object , **kws):
         sf , arg = self.stations , 'stations'
         flag=0
     elif dcmethod.__name__=='VerticalSounding': 
-        sf, arg =self.fromS , 'fromS'
+        sf, arg =self.froms , 'froms'
         flag=1
     
-        
     if sf is None: 
         sf= np.repeat ([45.], len(self.survey_names_)) if flag else np.repeat(
             [None], len(self.survey_names_)) 
@@ -1539,7 +1554,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
         
         msg =''.join([ 
                 f"### Number of {arg!r} does not fit the number of"
-                f" {'sites' if arg =='fromS' else 'stations'}. "
+                f" {'sites' if arg =='froms' else 'stations'}. "
                 "Expect {0} but {1} {2} given."
             ])
         
@@ -1562,7 +1577,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
     if not flag: 
         self.stations = sf 
     elif flag:
-        self.fromS = sf 
+        self.froms = sf 
         
         
 def _geterpattr (attr , dl ): 

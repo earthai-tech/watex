@@ -3,7 +3,6 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created on Tue May 17 11:30:51 2022
 
-
 """
 Module EM 
 ==========
@@ -44,7 +43,7 @@ from ..exceptions import (
     NotFittedError, 
     EMError, 
 ) 
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     is_installing,
     _assert_all_types, 
     make_ids, 
@@ -53,9 +52,8 @@ from ..tools.funcutils import (
     reshape, 
     smart_strobj_recognition, 
     repr_callable_obj, 
-    
     ) 
-from ..tools.exmath import ( 
+from ..utils.exmath import ( 
     scalePosition, 
     fittensor, 
     betaj, 
@@ -65,13 +63,13 @@ from ..tools.exmath import (
     z2rhoa, 
     mu0, 
     )
-from ..bases.site import Location 
-from ..tools.coreutils import ( 
+from ..utils.coreutils import ( 
     makeCoords, 
     )
 from ..property import (
     IsEdi 
     )
+from ..site import Location 
 from ..typing import ( 
     ArrayLike, 
     Optional, 
@@ -102,6 +100,8 @@ else :
     HAS_MOD=True 
     
 if HAS_MOD : 
+    #XXX TODO : prior revise the pkg structure to pycsamt.core 
+    # since ff subpackage does no longer exist in newest version
     from pycsamt.ff.core import (
         edi, 
         z as EMz 
@@ -214,7 +214,7 @@ class EM(IsEdi):
         obj: str | EDIO 
         )-> edi.Edi  : 
         """Assert that the given argument is an EDI -object from modules 
-        EDi of pyCSAMT and MTpy packages. A TypeError will occurs otherwise.
+        EDI of pycsamt and MTpy packages. A TypeError will occurs otherwise.
         
         :param obj: Full path EDI file or `pycsamt`_.
         :type obj: str or str or  pycsamt.core.edi.Edi or mtpy.core.edi.Edi 
@@ -476,7 +476,7 @@ class EM(IsEdi):
             
         kws: dict 
             Additionnal keyword arguments from `~Edi.write_edifile` and 
-            :func:`watex.tools.coreutils.make_ll_coordinates`. 
+            :func:`watex.utils.coreutils.make_ll_coordinates`. 
             
         Returns 
         --------
@@ -486,7 +486,7 @@ class EM(IsEdi):
         Examples
         ---------
         >>> from watex.methods.em import EM
-        >>> edipath = r'../data/edis'
+        >>> edipath = r'data/edis'
         >>> savepath =  r'/Users/Daniel/Desktop/ediout'
         >>> emObjs = EM().fit(edipath)
         >>> emObjs.rewrite_edis(by='id', edi_prefix ='b1',
@@ -957,7 +957,7 @@ class EM(IsEdi):
             f'{appender}{"" if rv is None else "?"}'
             )
 
-class updateZ(EM): 
+class _zupdate(EM): 
     """ A decorator for impedance tensor updating. 
     
     Update a Z object from each EDI object composing the collection objects 
@@ -1148,13 +1148,13 @@ class Processing (EM) :
                  **kws): 
         super().__init__(**kws)
         
-        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.window_size =window_size 
-        self.component = component 
-        self.mode = mode 
-        self.method = method 
-        self.out = out 
-        self.c = c
+        self._logging= watexlog.get_watex_logger(self.__class__.__name__)
+        self.window_size=window_size 
+        self.component=component 
+        self.mode=mode 
+        self.method=method 
+        self.out=out 
+        self.c=c
         
 
     def tma (self,
@@ -1602,7 +1602,7 @@ class Processing (EM) :
         return skw, mu
 
 
-    def restoreTensorZ(self,
+    def zrestore(self,
                        data: str|List[EDIO],
                        *, 
                        buffer: Tuple[float]=None, 
@@ -1709,7 +1709,7 @@ class Processing (EM) :
         >>> # One can specify the frequency buffer like the example below, However 
         >>> # it is not necessaray at least there is a a specific reason to fix the frequencies 
         >>> buffer = [1.45000e+04,1.11500e+01]
-        >>> zobjs_b =  pObjs.restoreTensorZ(pObjs.ediObjs_, buffer = buffer
+        >>> zobjs_b =  pObjs.zrestore(pObjs.ediObjs_, buffer = buffer
                                             ) # with buffer 
         
         """
@@ -2054,13 +2054,13 @@ class Processing (EM) :
         return np.around (ck, 2), new_f   if return_freq else index   
 
 
-    @updateZ(option = 'write')
+    @_zupdate(option = 'write')
     def getValidData(self, 
                      data:Optional[str|List[EDIO]]=None,
                      tol:float = .5 ,  
                      **kws 
                      )-> NDArray[DType[complex]]: 
-        """ Rewrite EDI with the valid data.  
+        """ Rewrite EDI and get the valid data.  
         
         Function analyzes the data  to keep the good ones. The goodness of the data 
         depends on the  `threshold` rate.  For instance 50% means to consider an 

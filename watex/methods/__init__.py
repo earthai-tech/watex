@@ -10,5 +10,19 @@ from .electrical import (
 from .em import ( 
     EM, 
     Processing 
-    
     )
+from .erp import ERPCollection , ERP 
+from .hydrogeology import Hydrogeology 
+
+__all__=[
+    "EM", 
+    "ResistivityProfiling" ,
+    "VerticalSounding", 
+    "DCProfiling", 
+    "DCSounding",
+    "Processing", 
+    "ERPCollection", 
+    "ERP", 
+    "Hydrogeology"
+    
+    ]

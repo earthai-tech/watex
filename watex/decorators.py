@@ -3,14 +3,12 @@
 #   Author: LKouadio alias @Daniel <etanoyau@gmail.com>
 
 from __future__ import print_function 
-
 import functools
 import inspect
 import os
 import copy 
 import shutil
 import warnings
-
 import datetime 
 import numpy as np
 import  matplotlib.pyplot as plt 
@@ -51,14 +49,14 @@ class refAppender (object):
     references as an appender to its reference docstring. So, sphinx 
     can auto-retrieve some replacing values found inline  from the 
     :doc:`watex.documentation`. 
-    
-    .. |VES| replace:: Vertical Electrical Sounding 
-    .. |ERP| replace:: Electrical Resistivity Profiling 
-    
+
     Parameters
     ----------
     docref: str 
         Reference of the documentation for appending.
+        
+    .. |VES| replace:: Vertical Electrical Sounding 
+    .. |ERP| replace:: Electrical Resistivity Profiling          
     
     Examples
     ---------
@@ -73,7 +71,7 @@ class refAppender (object):
     ... #new doctring appended and `|VES|` and `|ERP|` are replaced by 
     ... #Vertical Electrical Sounding and Electrical resistivity profiling 
     ... #during compilation in ReadTheDocs.
- 
+
     """
     
     def __init__(self, docref= None ): 
@@ -86,8 +84,6 @@ class refAppender (object):
         setattr(f , '__doc__', f.__doc__)
         return  f 
   
-    
-
 class deprecated(object):
     """
     Used to mark functions, methods and classes deprecated, and prints 
@@ -181,7 +177,7 @@ class gdal_data_check(object):
                     "Ignore GDAL as it is not working. Will use `pyproj` "
                     f"OR download the GDAL wheel from {self._gdal_wheel_resources}"
                     " and use `pip install <path-to-wheel-file.whl>` "
-                    "for GDAL installation. Get furher details via "
+                    "for GDAL installation. Get further details via "
                     f"{self._gdal_installation_guide}"
                               )
 
@@ -455,7 +451,7 @@ class writef(object):
             return func(*args, **kwargs)
         return decorated_func 
         
-@deprecated('Replaced by :class:`watex.tools.decorators.catmapflow2`')   
+@deprecated('Replaced by :class:`watex.utils.decorators.catmapflow2`')   
 def catmapflow(cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']): 
     """
     Decorator function  collected  from the `func`the `target_values` to be 
@@ -584,14 +580,10 @@ class visualize_valearn_curve :
             
             train_kws={c:'r', s:10, marker:'s', alpha :0.5}
             val_kws= {c:'blue', s:10, marker:'h', alpha :1}
-            
-    Author: @Daniel03
-    Date: 19/07/2021
+
     """
     
     def __init__(self, reason ='valcurve', turn ='off', **kwargs): 
-        self._logging=watexlog().get_watex_logger(self.__class__.__name__) 
-        
         self.reason =reason
         self.turn =turn 
         self.fig_size =kwargs.pop('fig_size', (8,6))
@@ -610,7 +602,6 @@ class visualize_valearn_curve :
                                            'fontsize': self.font_size}
                                 )
         self.savefig =kwargs.pop('savefig', None)
-        
         self.grid_kws = kwargs.pop('grid_kws', {
                        'galpha' :0.2,              # grid alpha 
                        'glw':.5,                   # grid line width 
@@ -684,7 +675,6 @@ class visualize_valearn_curve :
     
     def _plot_train_val_score (self, train_score, val_score): 
         """ loop to plot the train val score""" 
-        
         if not isinstance(train_score, dict):
             train_score={'_':train_score}
             val_score = {'_': val_score}
@@ -715,7 +705,6 @@ class visualize_valearn_curve :
                          trainval.mean(axis=1),
                          **self.train_kws
                          )
-                    
             try : 
                 if self.lineplot : 
                     plt.plot(self.k, 
@@ -776,7 +765,7 @@ class predplot:
     Date: 23/07/2021
     """
     def __init__(self, turn='off', **kws): 
-        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
+
         self.turn =turn 
         self.fig_size =kws.pop('fig_size', (16,8))
         self.yPred_kws = kws.pop('ypred_kws',{'c':'r', 's':200, 'alpha' :1,
@@ -787,7 +776,6 @@ class predplot:
                                                   'labelrotation':90})
         self.xlab = kws.pop('xlabel', {'xlabel':'Boreholes tested'})
         self.ylab= kws.pop('ylabel', {'ylabel':'Flow rates(FR) classes'})
-        
         self.obs_line=kws.pop('ObsLine', None)
         self.l_kws=kws.pop('l_', {'c':'blue', 'ls':'--', 'lw':1, 'alpha':0.5})
         self.savefig =kws.pop('savefig', None)
@@ -863,10 +851,7 @@ class pfi:
     :param dendro_kws: scipy.cluster.hierarchy.dendrogram diagram 
     
     .. see also:: `<https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.dendrogram.html>`
-    
-    Author: @Daniel03
-    Date: 23/07/2021
-
+   
     """
     def __init__(self, reason ='pfi', turn ='off', **kwargs): 
         self._logging=watexlog().get_watex_logger(self.__class__.__name__)
@@ -1013,7 +998,6 @@ class catmapflow2:
     
     def __init__(self, cat_classes: Iterable[str]=['FR0', 'FR1', 'FR2', 'FR3', 'FR4']):
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
-        
         self.cat_classes = cat_classes 
 
     def __call__(self, func): 
@@ -1054,9 +1038,9 @@ class catmapflow2:
             if len(self.cat_range_values) != len(self.cat_classes): 
             
                 self._logging.error(
-                    'Length of `cat_range_values` and `cat_classes` provided '
-                    'must be the same length not ``{0}`` and'
-                    ' ``{1}`` respectively.'.format(len(self.cat_range_values),
+                    "Length of  categorical `values` and `classes` provided"
+                    " must be consistent; '{0}' and '{1}' are given "
+                    "respectively.".format(len(self.cat_range_values),
                                                     len(self.cat_classes)))
             try : 
 
@@ -1540,10 +1524,12 @@ class gplot2d(object):
     
     **reason**: type of plot, can be `misfit` or `model`. If `` None``, 
         will plot `model`.
-    :type reason: str 
+    reason: str
+        related to the kind of plot 
     
-    :param kws: Matplotlib properties and model properties
-    :type kws: dict
+    kws: Matplotlib properties and model properties
+
+    Additional keywords attributes and descriptions
     
     ======================  ===============================================
     keywords                Description
@@ -1591,12 +1577,9 @@ class gplot2d(object):
     ======================  ===============================================
     
     """
-    def __init__(self, reason =None , **kws): 
-        
+    def __init__(self, reason =None , **kws):
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
-
         self.reason =reason 
-
         self.fs =kws.pop('fs', 0.7)
         self.fig_num = kws.pop('fig_num', 1)
         self.fig_size = kws.pop('fig_size', [7,7])
@@ -1606,41 +1589,30 @@ class gplot2d(object):
         self.aspect = kws.pop('aspect', 'auto')
         self.font_style =kws.pop('font_style', 'italic')
         self.orient=kws.pop('orientation', 'landscape')
-
         self.cb_pad = kws.pop('cb_pad', .0375)
         self.cb_orientation = kws.pop('cb_orientation', 'vertical')
         self.cb_shrink = kws.pop('cb_shrink', .75)
         self.cb_position = kws.pop('cb_position', None)
         self.climits = kws.pop('climits', (0, 4))
-
         self.station_label_rotation = kws.pop('station_label_rotation',45)
         self.imshow_interp = kws.pop('imshow_interp', 'bicubic')
         self.ms = kws.pop('ms', 2)
         self.lw =kws.pop('lw', 2)
-  
         self.fw =kws.pop('font_weight', 'bold')
- 
         self.station_font_color = kws.pop('station_font_color', 'k')
-        self.station_marker = kws.pop('station_marker',
-                                         r"$\blacktriangledown$")
+        self.station_marker = kws.pop('station_marker',r"$\blacktriangledown$")
         self.station_color = kws.pop('station_color', 'k')
-
         self.xpad = kws.pop('xpad', 1.0)
         self.ypad = kws.pop('ypad', 1.0)
-
         self.cmap = kws.pop('cmap', 'jet_r')
-    
         self.depth_scale =kws.pop('depth_scale', None)
         self.doi = kws.pop('doi', 1000)
-        
         self.savefig =kws.pop('savefig', None)
-        
         self.model_rms =kws.pop('model_rms', None)
         self.model_roughness =kws.pop('model_roughness', None)
         self.plot_style =kws.pop( 'plot_style', 'pcolormesh') 
         self.grid_alpha =kws.pop('alpha', 0.5)
         self.show_grid = kws.pop('show_grid',True)
-
         self.set_station_label=kws.pop('show_station_id', True)
         
         for keys in list(kws.keys()): 
@@ -1998,8 +1970,88 @@ class gplot2d(object):
           y=0.95 if self.reason =='model' else 0.98)
       
         return self 
-            
-###############################################################################
+
+class _M:
+    def _m(self): pass
+MethodType = type(_M()._m)
+
+class _AvailableIfDescriptor:
+    """Implements a conditional property using the descriptor protocol.
+
+    Using this class to create a decorator will raise an ``AttributeError``
+    if check(self) returns a falsey value. Note that if check raises an error
+    this will also result in hasattr returning false.
+
+    See https://docs.python.org/3/howto/descriptor.html for an explanation of
+    descriptors.
+    """
+
+    def __init__(self, fn, check, attribute_name):
+        self.fn = fn
+        self.check = check
+        self.attribute_name = attribute_name
+
+        # update the docstring of the descriptor
+        functools.update_wrapper(self, fn)
+
+    def __get__(self, obj, owner=None):
+        attr_err = AttributeError(
+            f"This {repr(owner.__name__)} has no attribute {repr(self.attribute_name)}"
+        )
+        if obj is not None:
+            # delegate only on instances, not the classes.
+            # this is to allow access to the docstrings.
+            if not self.check(obj):
+                raise attr_err
+            out = MethodType(self.fn, obj)
+
+        else:
+            # This makes it possible to use the decorated method as an unbound method,
+            # for instance when monkeypatching.
+            @functools.wraps(self.fn)
+            def out(*args, **kwargs):
+                if not self.check(args[0]):
+                    raise attr_err
+                return self.fn(*args, **kwargs)
+
+        return out
+
+def available_if(check):
+    """An attribute that is available only if check returns a truthy value
+
+    Parameters
+    ----------
+    check : callable
+        When passed the object with the decorated method, this should return
+        a truthy value if the attribute is available, and either return False
+        or raise an AttributeError if not available.
+
+    Examples
+    --------
+    >>> from sklearn.utils.metaestimators import available_if
+    >>> class HelloIfEven:
+    ...    def __init__(self, x):
+    ...        self.x = x
+    ...
+    ...    def _x_is_even(self):
+    ...        return self.x % 2 == 0
+    ...
+    ...    @available_if(_x_is_even)
+    ...    def say_hello(self):
+    ...        print("Hello")
+    ...
+    >>> obj = HelloIfEven(1)
+    >>> hasattr(obj, "say_hello")
+    False
+    >>> obj.x = 2
+    >>> hasattr(obj, "say_hello")
+    True
+    >>> obj.say_hello()
+    Hello
+    """
+    return lambda fn: _AvailableIfDescriptor(fn, check, attribute_name=fn.__name__)
+
+
 # decorators utilities 
 def rpop(listitem): 
     """ remove all blank line in the item list. 

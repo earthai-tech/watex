@@ -174,7 +174,8 @@ __svmmodels.pkl
 watex/scripts/ 
 scripts/
 
-
+# boreholes data 
+data/boreholes/h.csv 
 
 
 

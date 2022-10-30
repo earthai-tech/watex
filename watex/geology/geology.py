@@ -12,11 +12,11 @@ from .core import (
     Base, 
     get_agso_properties 
     )
-from ..tools.funcutils import ( 
+from ..utils.funcutils import ( 
     repr_callable_obj, 
     smart_strobj_recognition
     )
-from ..tools.plotutils import ( 
+from ..utils.plotutils import ( 
     get_color_palette 
     )
 from ..exceptions import ( 
@@ -29,13 +29,15 @@ _logger =watexlog().get_watex_logger(__name__)
 
 
 def setstructures(self , configfile:str =None , fillna:int =0  ): 
-    """ configure Geological structures as a property object and load attributes  
+    """ configure the geological structures as a property object and load 
+    attributes.  
     
     :param configfile: is a configure file  from 'AGS0' data 
     :param fillna: fill NaN values in the AGS0 file. The default values to 
         fill is `0` for False. 
     
-    :return: 
+    :return: ``self`` for method chaining. 
+    
     :note: Each geological strutures can be retrieved as an attribute. For 
         instance to get the code, the label and the pattern density of the 
         'amphibolite', one can use:: 
@@ -48,7 +50,7 @@ def setstructures(self , configfile:str =None , fillna:int =0  ):
             ... 'AMP'
             >>> sobj.amphibolite.pat_density_
             ... nan # not set 
-        To get all the key (attributes of the structures ), uses:: 
+            >>> # To get all the key (attributes of the structures ), uses: 
             >>> sobj.keys 
             ... 
         
@@ -58,7 +60,7 @@ def setstructures(self , configfile:str =None , fillna:int =0  ):
     # rename columns 
     df.columns = df.columns.str.lower().map (
         lambda c: 'name' if c =='__description' else c )
-    # collect name and sanitize for attributes 
+    # collect name and sanitize attributes 
     regex =re.compile (r'[ -@*#&+/]', flags=re.IGNORECASE)
     keys = df.name.str.lower().map(lambda o: regex.sub('_', o))
     for kk , nn in enumerate (keys): 
@@ -88,11 +90,7 @@ class Structures(Base):
     to secah information about structures .  If SQL is done as well ,
     program won't call this class as rescure . 
     Containers of more than  150 geological strutures.
-        
-   
-    
-    .. note:: replace in attributes param "**" by  the *name of struture*
-    
+
     ==================  ============  =========================================
     Attributes          Type           Explanation
     ==================  ============  =========================================
@@ -107,8 +105,11 @@ class Structures(Base):
     **pat_thickness     str             pttern thickess of specific structure
     **color             str             color of specific structure
     ==================  ============  =========================================
-
-    1.  To see the names of strutures , write the script below 
+    
+    .. note:: To get the attribute value, merely replace the param "**" by  the
+        *name of struture* following by dot ".". See examples: 
+    
+    1.  To get the names of different strutures, write the script below 
     
     :Example:
         
@@ -117,7 +118,7 @@ class Structures(Base):
         >>> geo_structure.names_ # get the list of all geological strutures 
         
         
-    2.  To extract color  and to get the code of structure  like amphibolite 
+    2.  To extract color  and to get the code of structure  like `tonalite` 
     
     :Example:
         
@@ -286,13 +287,13 @@ class Structural(Base) :
     More structural object can be added as the structures is known. 
     All geological structural informations are geostructral object.
                   
-    Holds the following information:
+    Holds the following informations:
         
     ==========================  ==========   ==================================
     Attributes                  Type             Explanation
     ==========================  ==========   ==================================
     boudin_axis                 geos_obj      boudin    
-    fold_axial_plane            geos_obj      axial plam of structural fold.
+    fold_axial_plane            geos_obj      axial plan of structural fold.
     banding_gneissosity         geos_obj      gneissossity of boudin plan  
     s_fabric                    geos_obj      fabric plan
     fault_plane                 geos_obj      fault plan 
