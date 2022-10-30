@@ -3080,8 +3080,10 @@ def str2columns (text, /, regex=None , pattern = None):
     return text 
     
     
-def sanitize_frame_cols(d, /, func:F = None , regex=None, pattern:str = None, 
-                            fill_pattern:str =None, inplace:bool =False ):
+def sanitize_frame_cols(
+        d, /, func:F = None , regex=None, pattern:str = None, 
+        fill_pattern:str =None, inplace:bool =False 
+        ):
     """ Remove an indesirable characters and returns new columns 
     
     Use regular expression for columns sanitizing 
