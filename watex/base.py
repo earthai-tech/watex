@@ -21,7 +21,7 @@ from .utils.funcutils import (_assert_all_types,  repr_callable_obj,
 from .exlib.sklearn import ( clone, LabelEncoder, _name_estimators , 
                             BaseEstimator, ClassifierMixin )  
 from .exceptions import NotFittedError
-from .view.plot import ExPlot
+
 
 __all__=[
     "Data", 
@@ -503,6 +503,8 @@ class Missing (Data) :
         >>> ms.plot () 
     
         """
+        from .view.plot import ExPlot
+        
         if data is not None: 
             self.data = data 
             

@@ -224,8 +224,7 @@ def load_hlogs (
     with resources.path (DMODULE , data_file) as p : 
         data_file = p 
     
-    data = pd.read_hdf(data_file, key = key)
-
+    data = pd.read_hdf(data_file, key = key, errors ='replace')
     frame = None
     feature_names = list(data.columns [:12] ) 
     target_columns = list(data.columns [12:])
