@@ -58,7 +58,7 @@ from ..utils.mlutils import (
     selectfeatures, 
     evalModel 
     )
-from ..typing import ( 
+from .._typing import ( 
     T, 
     List, 
     Generic,

@@ -16,7 +16,7 @@ import matplotlib as mpl
 import matplotlib.cm as cm 
 import matplotlib.colorbar as mplcb
 
-from .typing import (
+from ._typing import (
     Iterable,
     Optional,
     Callable,
@@ -2091,46 +2091,4 @@ def assert_doi(doi):
     
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
-
-        
-            
->>>>>>> c8240b644935065300ffbe8de45f288f404b8417
     

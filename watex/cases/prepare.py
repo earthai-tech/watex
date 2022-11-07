@@ -48,7 +48,7 @@ from ..exlib.sklearn import  (
     MinMaxScaler,
     PCA,
 ) 
-from ..typing import (
+from .._typing import (
     Tuple, 
     List, 
     Optional, 

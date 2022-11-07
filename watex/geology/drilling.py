@@ -10,7 +10,7 @@ import os
 from warnings import warn 
 import numpy as np 
 import pandas as pd 
-from ..typing import ( 
+from .._typing import ( 
     Optional , 
     ArrayLike , 
     NDArray, 

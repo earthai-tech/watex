@@ -20,7 +20,7 @@ from ..exlib.sklearn import (
      GridSearchCV , 
      RandomizedSearchCV
 )
-from ..typing import (
+from .._typing import (
     Tuple,
     List,
     Optional,

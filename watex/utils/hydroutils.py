@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd  
 from ..decorators import catmapflow2, writef  
 from ..exceptions import FileHandlingError 
-from  ..typing import (
+from  .._typing import (
     List, 
     Tuple, 
     Optional, 

@@ -14,7 +14,7 @@ from warnings import warn
 
 from ._watexlog import  watexlog
 from ._docstring import DocstringComponents, _core_docs
-from .typing import List, Optional, DataFrame 
+from ._typing import List, Optional, DataFrame 
 from .utils.coreutils import _is_readable 
 from .utils.funcutils import (
     _assert_all_types,  

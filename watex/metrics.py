@@ -30,7 +30,7 @@ from ._docstring import (
     _core_docs,
     )
 from ._watexlog import watexlog
-from .typing import ( 
+from ._typing import ( 
     List, 
     Optional, 
     ArrayLike , 

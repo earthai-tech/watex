@@ -28,7 +28,7 @@ from .._docstring import refglossary
 from .._watexlog import watexlog
 from ..decorators import refAppender, docSanitizer
 from ..property import P , Config
-from ..typing import (
+from .._typing import (
     Any, 
     List ,  
     Union, 
@@ -949,7 +949,7 @@ def plotAnomaly(
     """ Plot the whole |ERP| line and selected conductive zone. 
     
     Conductive zone can be supplied nannualy as a subset of the `erp` or by 
-    specifyting the station expected for drilling location. For instance 
+    specifying the station expected for drilling location. For instance 
     ``S07`` for the seventh station. Futhermore, for automatic detection, one 
     should set the station argument `s` to ``auto``. However, it 's recommended 
     to provide the `cz` or the `s` to have full control. The conductive zone 
@@ -1163,7 +1163,7 @@ def plotAnomaly(
 #XXX OPTIMIZE 
 def defineConductiveZone(
     erp:ArrayLike| pd.Series | List[float] ,
-    s: Optional [str ,  int] = None, 
+    s: Optional [str|int] = None, 
     p: SP = None,  
     auto: bool = False, 
     **kws,

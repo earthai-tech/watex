@@ -22,7 +22,7 @@ import zipfile
 import warnings 
 from six.moves import urllib 
 
-from ..typing import (
+from .._typing import (
     Optional, 
     )
 from ..utils.funcutils import (

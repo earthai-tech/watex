@@ -37,7 +37,7 @@ from ..exlib.sklearn import (
     roc_curve, 
     SelectFromModel 
 )
-from ..typing import (
+from .._typing import (
     List,
     Tuple, 
     Any,

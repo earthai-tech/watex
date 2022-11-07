@@ -185,9 +185,10 @@ a callable function sperated by a colon.
         
 """
 from __future__ import annotations 
+# from typing import TYPE_CHECKING
 
+# if TYPE_CHECKING:
 from typing import (
-    TypeVar, 
     List,
     Tuple,
     Sequence, 
@@ -201,11 +202,13 @@ from typing import (
     Type , 
     Mapping,
     Text,
+    TypeVar, 
+    Iterator,
+    SupportsInt,
 
 )
 
 __all__=[ 
-    "TypeVar", 
     "List",
     "Tuple",
     "Sequence", 
@@ -230,6 +233,8 @@ __all__=[
     "T", 
     "V", 
     "Series", 
+    "Iterator",
+    "SupportsInt",
     ]
 
 T = TypeVar('T')

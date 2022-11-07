@@ -70,7 +70,7 @@ from ..property import (
     IsEdi 
     )
 from ..site import Location 
-from ..typing import ( 
+from .._typing import ( 
     ArrayLike, 
     Optional, 
     List,

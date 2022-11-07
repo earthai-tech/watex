@@ -25,7 +25,7 @@ from ..exlib.sklearn import(
     KernelPCA, 
 
     )
-from ..typing import (
+from .._typing import (
     Any,
     Dict, 
     Optional, 

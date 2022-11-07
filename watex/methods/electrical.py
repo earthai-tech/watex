@@ -40,7 +40,7 @@ from ..utils.exmath import (
     ohmicArea, 
     invertVES,
     )
-from ..typing import  ( 
+from .._typing import  ( 
     List, 
     Optional, 
     NDArray, 

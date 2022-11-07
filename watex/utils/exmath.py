@@ -41,7 +41,7 @@ from ..exceptions import (
     ExtractionError,
     )
 from ..property import P
-from ..typing import (
+from .._typing import (
     T, 
     F,
     List, 

@@ -28,7 +28,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from .._watexlog import watexlog
-from ..typing import ( 
+from .._typing import ( 
     Tuple,
     Dict,
     Optional,

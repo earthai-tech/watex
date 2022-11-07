@@ -13,7 +13,7 @@ from ..utils.funcutils import (
     smart_format,
     smart_strobj_recognition, 
     )
-from ..typing import (  
+from .._typing import (  
     Optional, 
     ArrayLike, 
     NDArray, 

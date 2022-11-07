@@ -58,7 +58,7 @@ from ..metrics import (
     confusion_matrix
     )
 from ..property import BasePlot 
-from ..typing import ( 
+from .._typing import ( 
     Optional, 
     Tuple, 
     F,

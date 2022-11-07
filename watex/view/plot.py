@@ -37,7 +37,7 @@ from ..exceptions import (
     NotFittedError
     )
 from ..property import BasePlot
-from ..typing import (
+from .._typing import (
     Any , 
     List,
     Dict,
@@ -2670,25 +2670,4 @@ def viewtemplate (y, /, xlabel=None, ylabel =None,  **kws):
 # import matplotlib.gridspec as gspec        
         
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
->>>>>>> c8240b644935065300ffbe8de45f288f404b8417
         
