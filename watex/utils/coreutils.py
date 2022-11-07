@@ -1091,6 +1091,8 @@ def plotAnomaly(
             if 's' or 'pk' in s.upper(): 
                 # if provide the station. 
                 keepindex =False 
+                
+            if s.lower() =='auto': s=None  # reset s 
         cz , _ , _, ix = defineConductiveZone(
            erp, s = s , auto = auto, keepindex=keepindex 
            )
@@ -1213,7 +1215,9 @@ def defineConductiveZone(
         raise StationError("Expect a station position or trigger the 'auto'"
                         "to 'True'. NoneType is given.")
         
-    elif s is None and auto: 
+    elif  ( s is None 
+           and auto is True 
+           ): 
         s= np.argwhere (erp ==erp.min())
         s= int(s) if len(s) ==1 else int(s[0])
         # s, = np.where (erp == erp.min()) 
