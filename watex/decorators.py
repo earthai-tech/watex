@@ -173,14 +173,15 @@ class gdal_data_check(object):
                     f" {self._gdal_installation_guide}."
                                   )
             else:
-                warnings.warn(
-                    "Ignore GDAL as it is not working. Will use `pyproj` "
-                    f"OR download the GDAL wheel from {self._gdal_wheel_resources}"
-                    " and use `pip install <path-to-wheel-file.whl>` "
-                    "for GDAL installation. Get further details via "
-                    f"{self._gdal_installation_guide}"
-                              )
-
+                # warnings.warn(
+                #     "Ignore GDAL as it is not working. Will use `pyproj` "
+                #     f"OR download the GDAL wheel from {self._gdal_wheel_resources}"
+                #     " and use `pip install <path-to-wheel-file.whl>` "
+                #     "for GDAL installation. Get further details via "
+                #     f"{self._gdal_installation_guide}"
+                #               )
+                pass 
+            
     def __call__(self, *args, **kwargs):  # pragma: no cover
         return self._func(*args, **kwargs)
 
@@ -223,8 +224,8 @@ class gdal_data_check(object):
                     from osgeo import osr
                     from osgeo.ogr import OGRERR_NONE
                 except:
-                    _logger.error("Failed to load module osgeo; "
-                                     "looks like GDAL is NOT working")
+                    # _logger.error("Failed to load module osgeo; "
+                    #                  "looks like GDAL is NOT working")
                     # print ("Failed to load module osgeo !!! ")
 
                     return False
@@ -2131,4 +2132,5 @@ def assert_doi(doi):
 
         
             
+>>>>>>> c8240b644935065300ffbe8de45f288f404b8417
     

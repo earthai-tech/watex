@@ -4,7 +4,7 @@
 # All rights reserved.
 
 # Note that this module is not the sckit-learn original file, 
-# some functions have been removed to keep only for 
+# some functions have been removed to keep only  
 # the usefull for of watex package. Furthermore some others 
 # function have been edited and added. 
 
