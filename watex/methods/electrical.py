@@ -295,13 +295,13 @@ class DCProfiling(ElectricalMethods)  :
             setattr (self, f"sves_{name}s_", _geterpattr (
                 f"sves_{name}_", self.data_).astype(float))
 
-        # set the predictor parameters attributes 
+        # set the predictor parameter attributes 
         for name in  ('power', 'magnitude', 'type','sfi', 'shape'): 
             setattr (self, f"{name}s_", _geterpattr (f"{name}_", self.data_) 
-                     if name =='type' else  _geterpattr (f"{name}_", self.data_
-                                                         ).astype(float) 
+                     if name in ('type', 'shape') else  _geterpattr (
+                             f"{name}_", self.data_).astype(float) 
                      )
-
+        
         return self 
     
     def __repr__(self):
