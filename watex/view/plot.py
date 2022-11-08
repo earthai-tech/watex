@@ -833,7 +833,7 @@ class ExPlot (BasePlot):
         >>> from watex.view import ExPlot 
         >>> p = ExPlot(tname='flow').fit(data).plotscatter (
             xname ='sfi', yname='ohmS')
-        >>> p.
+        >>> p
         ...  <'ExPlot':xname='sfi', yname='ohmS' , tname='flow'>
         
         See also
@@ -1006,7 +1006,7 @@ class ExPlot (BasePlot):
     
 
     
-    def plothist(self,xname: str , *,  kind:str = 'hist', 
+    def plothist(self,xname: str = None, *,  kind:str = 'hist', 
                    **kws 
                    ): 
         """ A histogram visualization of numerica data.  

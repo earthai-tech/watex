@@ -58,6 +58,9 @@ from .plotutils import (
     plot_learning_curves, 
     plot_confusion_matrices, 
     plot_yb_confusion_matrix, 
+    plot_sbs_feature_selection, 
+    plot_regularization_path, 
+    plot_rf_feature_importances 
     )
 
 __all__=[
@@ -108,7 +111,10 @@ __all__=[
         'plot_naive_dendrogram', 
         'plot_learning_curves', 
         'plot_confusion_matrices', 
-        'plot_yb_confusion_matrix', 
+        'plot_yb_confusion_matrix',
+        'plot_sbs_feature_selection', 
+        'plot_regularization_path', 
+        'plot_rf_feature_importances' 
         
         ]
 

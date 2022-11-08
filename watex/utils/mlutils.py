@@ -34,7 +34,9 @@ from ..exlib.sklearn import (
     precision_score,
     recall_score, 
     roc_auc_score, 
-    roc_curve
+    roc_curve, 
+    RandomForestClassifier, 
+    SelectFromModel 
 )
 from ..typing import (
     List,
@@ -2203,6 +2205,113 @@ def _stats (X_, y_true,*, y_pred, # noqa
 
     return analysis_array     
         
+
+def select_feature_importances (
+        clf, X, threshold = .1 , prefit = True , verbose = 0 , **kws
+        ): 
+    """
+    Select feature importanced  based on a user-specified threshold 
+    after model fitting, which is useful if one want to use 
+    `RandomForestClassifier` as a feature selector and intermediate step in 
+    scikit-learn ``Pipeline`` object, which allows us to connect different 
+    processing steps  with an estimator. 
+  
+    Parameters 
+    ----------
+    clf : estimator object
+        The base estimator from which the transformer is built.
+        This can be both a fitted (if ``prefit`` is set to True)
+        or a non-fitted estimator. The estimator should have a
+        ``feature_importances_`` or ``coef_`` attribute after fitting.
+        Otherwise, the ``importance_getter`` parameter should be used.
+        
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+        
+    threshold : str or float, default=None
+        The threshold value to use for feature selection. Features whose
+        absolute importance value is greater or equal are kept while the others
+        are discarded. If "median" (resp. "mean"), then the ``threshold`` value
+        is the median (resp. the mean) of the feature importances. A scaling
+        factor (e.g., "1.25*mean") may also be used. If None and if the
+        estimator has a parameter penalty set to l1, either explicitly
+        or implicitly (e.g, Lasso), the threshold used is 1e-5.
+        Otherwise, "mean" is used by default.
+
+    prefit : bool, default=False
+        Whether a prefit model is expected to be passed into the constructor
+        directly or not.
+        If `True`, `estimator` must be a fitted estimator.
+        If `False`, `estimator` is fitted and updated by calling
+        `fit` and `partial_fit`, respectively.
+
+    importance_getter : str or callable, default='auto'
+        If 'auto', uses the feature importance either through a ``coef_``
+        attribute or ``feature_importances_`` attribute of estimator.
+
+        Also accepts a string that specifies an attribute name/path
+        for extracting feature importance (implemented with `attrgetter`).
+        For example, give `regressor_.coef_` in case of
+        :class:`~sklearn.compose.TransformedTargetRegressor`  or
+        `named_steps.clf.feature_importances_` in case of
+        :class:`~sklearn.pipeline.Pipeline` with its last step named `clf`.
+
+        If `callable`, overrides the default feature importance getter.
+        The callable is passed with the fitted estimator and it should
+        return importance for each feature.
+    
+    norm_order : non-zero int, inf, -inf, default=1
+        Order of the norm used to filter the vectors of coefficients below
+        ``threshold`` in the case where the ``coef_`` attribute of the
+        estimator is of dimension 2.
+
+    max_features : int, callable, default=None
+        The maximum number of features to select.
+
+        - If an integer, then it specifies the maximum number of features to
+          allow.
+        - If a callable, then it specifies how to calculate the maximum number of
+          features allowed by using the output of `max_feaures(X)`.
+        - If `None`, then all features are kept.
+
+        To only select based on ``max_features``, set ``threshold=-np.inf``.
+        
+    verbose: int, default=0 
+        display the number of feature that meet the criterion. 
+    
+    Rteurns 
+    --------
+    Xs: ndarray (n_samples, n_criterion_features)
+        Ndarray of number of samples and features that meet te criterion. 
+        
+    """
+    sfm = SelectFromModel(clf, threshold= threshold , prefit= prefit, **kws)
+    Xs = sfm.transform(X) 
+    if verbose: 
+        print("Number of features that meet this threshold criterion:" 
+              ": ", Xs.shape[1]) 
+        
+    return Xs 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
         
         

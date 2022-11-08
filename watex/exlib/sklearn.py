@@ -131,7 +131,8 @@ from sklearn.decomposition import (
 ) 
 from sklearn.feature_selection import ( 
     SelectKBest, 
-    f_classif
+    f_classif, 
+    SelectFromModel 
 ) 
 from sklearn.impute import SimpleImputer
 from sklearn.inspection import permutation_importance
@@ -204,6 +205,7 @@ __all__=[
     'KernelPCA', 
     'SelectKBest', 
     'f_classif',
+    'SelectFromModel', 
     'SimpleImputer',
     'permutation_importance',
     'LogisticRegression', 

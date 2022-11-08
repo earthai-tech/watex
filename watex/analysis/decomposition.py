@@ -32,7 +32,7 @@ def extract_pca (X):
     return eigen_vals, eigen_vecs, X
 
 extract_pca.__doc__="""\
- A naive approach to extract PCA from training set X 
+A naive approach to extract PCA from training set X 
  
 Parameters 
 ----------
@@ -100,7 +100,7 @@ def total_variance_ratio (X, view =False):
     
     return cum_var_exp 
     
-total_variance_ratio.__doc__="""\
+total_variance_ratio.__doc__=r"""\
 Ratio of an eigenvalues :math:`\lambda_j`, as simply the fraction of 
 and eigen value, :math:`\lambda_j` and the total sum of the eigen values 
 as: 
@@ -209,6 +209,7 @@ X_transf : nd-array
     X PCA training set transformed.
     
 Examples 
+---------
 >>> from watex.analysis import feature_transformation 
 >>> # Use the X, y value in the example of `extract_pca` function  
 >>> Xtransf = feature_transformation(X, y=y,  positive_class = 2 , view =True)
@@ -502,7 +503,7 @@ The main steps requiered to perform LDA are summarized below:
             
             .. math:: 
                 
-                \sum{i} & = &  \frac{1}{n_i}S_i 
+                \sum{i} & = & \frac{1}{n_i}S_i 
                 
                 \sum{i} & = & \frac{1}{n_i} \sum{x\in D_i} (x-m_i)(x-m_i)^T
                 

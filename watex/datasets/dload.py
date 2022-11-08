@@ -223,7 +223,7 @@ def load_hlogs (
     data_file ='h.h5'
     with resources.path (DMODULE , data_file) as p : 
         data_file = p 
-    
+
     data = pd.read_hdf(data_file, key = key)
 
     frame = None

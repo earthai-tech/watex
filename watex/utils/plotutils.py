@@ -4,10 +4,12 @@
 
 from __future__ import annotations 
 import os
+import re 
 import datetime 
 import warnings
 import itertools 
 import numpy as np
+import pandas as pd 
 import matplotlib as mpl 
 import seaborn as sns 
 from scipy.cluster.hierarchy import ( 
@@ -19,7 +21,11 @@ from ..exceptions import (
     TipError, 
     PlotError, 
     )
-from .funcutils import is_iterable
+from .funcutils import  ( 
+    is_iterable, 
+    _assert_all_types, 
+    to_numeric_dtypes
+    )
 from .validator import  ( 
     _check_array_in  , 
     _is_cross_validated,
@@ -32,7 +38,11 @@ from watex.exlib.sklearn import (
     accuracy_score , 
     precision_score, 
     confusion_matrix, 
-    roc_auc_score
+    roc_auc_score, 
+    RandomForestClassifier, 
+    LogisticRegression, 
+    MinMaxScaler, 
+    SimpleImputer
     ) 
 
 is_mlxtend =False 
@@ -95,6 +105,365 @@ D_STYLES = [
     'dotted' 
 ]
 
+def plot_logging_data ( 
+        X, normalize = True, x_axis = None , impute_nan=True , **kws): 
+    """ Plot logging data  """
+    
+    X = _assert_all_types(X, pd.DataFrame, pd.Series , np.ndarray ) 
+    # Exclude all categorical values and 
+    # keep only the numerical features.
+    X = to_numeric_dtypes(X, return_feature_types= False,) 
+    
+    if x_axis  is None:
+        x_axis = list(X.columns)[0]
+        
+    if x_axis not in X.columns : 
+        raise ValueError ("Axis for x must be a column label")
+    x_ser = X.iloc [:, 0]
+    
+    if normalize:
+        msc = MinMaxScaler()
+        Xsc = msc.fit_transform (X)
+        # set a new dataframe with features
+        if hasattr (msc , 'feature_names_in_'): 
+            Xsc = pd.DataFrame (Xsc , columns = list(msc.feature_names_in_ )
+                                )
+        else : Xsc = pd.DataFrame(Xsc , columns =list(X.columns )) 
+    
+        # set the x axis and delete the normalize from X 
+        # at index 0 supposed to be the x axis 
+        Xsc.iloc [:, 0 ] = x_ser 
+        X= Xsc.copy()  
+    
+    if impute_nan: 
+        # check whether there is a Nan value  in the data 
+        # impute data using mean values
+        if X.isnull().values.any(): 
+            d= SimpleImputer(strategy='mean').fit_transform(X)
+            X = pd.DataFrame(d, columns= X.columns)
+            
+    # we assume the first columns is dedicated for 
+    # x plot so the remain with be cumulative sum 
+    # x -axis cumsum data along axis = 1 
+    X =pd.concat ([
+            X[[X.columns [0]]],  
+            pd.DataFrame( data = np.cumsum (X.values[:, 1:], axis =1 ,
+                                            dtype =float ) ,
+                     columns =X.columns [1:]) ] , axis = 1 , 
+                  ) 
+    
+    
+    X.plot(x= list (X.columns )[0] , 
+           # kind = 'line',
+           **kws
+           )
+    
+    return X 
+    
+    
+def plot_sbs_feature_selection (
+        sbs_estimator,/,  X=None, y=None ,fig_size=(8, 5), 
+        sns_style =False, savefig = None, verbose=0 , **sbs_kws
+        ): 
+    """plot Sequential Backward Selection (SBS) for feature selection.  
+    
+    SBS collects the scores of the  best feature subset at each stage. 
+    
+    Parameters 
+    ------------
+    sbs_estimator : :class:`~.watex.base.SequentialBackwardSelection`\
+        estimator object
+        The Sequential Backward Selection estimator can either be fitted or 
+        not. If not fitted. Please provide the training `X` and `y`, 
+        otherwise an error will occurs.
+        
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+       
+    n_estimators : int, default=500
+        The number of trees in the forest.
+        
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+    sns_style: str, optional, 
+        the seaborn style.
+    verbose: int, default=0 
+        print the feature labels with the rate of their importances. 
+    sbs_kws: dict, 
+        Additional keyyword arguments passed to 
+        :class:`~.watex.base.SequentialBackwardSelection`
+        
+    Examples 
+    ----------
+    (1)-> Plot fitted SBS in action 
+    >>> from watex.exlib.sklearn import KNeighborsClassifier , train_test_split
+    >>> from watex.datasets import fetch_data
+    >>> from watex.base import SequentialBackwardSelection
+    >>> from watex.utils.plotutils import plot_sbs_feature_selection
+    >>> X, y = fetch_data('bagoue analysed') # data already standardized
+    >>> Xtrain, Xt, ytrain,  yt = train_test_split(X, y)
+    >>> knn = KNeighborsClassifier(n_neighbors=5)
+    >>> sbs= SequentialBackwardSelection (knn)
+    >>> sbs.fit(Xtrain, ytrain )
+    >>> plot_sbs_feature_selection(sbs, sns_style= True) 
+    
+    (2)-> Plot estimator with no prefit SBS. 
+    >>> plot_sbs_feature_selection(knn, Xtrain, ytrain) # yield the same result
+
+    """
+    from ..base import SequentialBackwardSelection as SBS 
+    if ( 
+        not hasattr (sbs_estimator, 'scores_') 
+        and not hasattr (sbs_estimator, 'k_score_')
+            ): 
+        if ( X is None or y is None ) : 
+            clfn = get_estimator_name( sbs_estimator)
+            raise TypeError (f"When {clfn} is not a fitted "
+                             "estimator, X and y are needed."
+                             )
+        sbs_estimator = SBS(estimator = sbs_estimator, **sbs_kws)
+        sbs_estimator.fit(X, y )
+        
+    k_feat = [len(k) for k in sbs_estimator.subsets_]
+    
+    if verbose: 
+        flabels =None 
+        if  ( not hasattr (X, 'columns') and X is not None ): 
+            warnings.warn("None columns name is detected."
+                          " Created using index ")
+            flabels =[f'{i:>7}' for i in range (X.shape[1])]
+            
+        elif hasattr (X, 'columns'):
+            flabels = list(X.columns)  
+        elif hasattr ( sbs_estimator , 'feature_names_in'): 
+            flabels = sbs_estimator.feature_names_in 
+            
+        if flabels is not None: 
+            k3 = list (sbs_estimator.subsets_[X.shape[1]])
+            print("Smallest feature for subset (k=3) ")
+            print(flabels [k3])
+            
+        else : print("No column labels detected. Can't print the "
+                     "smallest feature subset.")
+        
+    if sns_style: 
+        _set_sns_style (sns_style)
+        
+    plt.figure(figsize = fig_size)
+    plt.plot (k_feat , sbs_estimator.scores_, marker='o' ) 
+    plt.ylim ([min(sbs_estimator.scores_) -.25 ,
+               max(sbs_estimator.scores_) +.2 ])
+    plt.ylabel (sbs_estimator.scorer_name_ )
+    plt.xlabel ('Number of features')
+    plt.tight_layout() 
+    
+    if savefig is not None:
+        plt.savefig(savefig )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+
+def plot_regularization_path ( 
+        X, y , c_range=(-4., 6. ), fig_size=(8, 5), sns_style =False, 
+        savefig = None, **kws 
+        ): 
+    r""" Plot the regularisation path from Logit / LogisticRegression 
+    
+    Varying the  different regularization strengths and plot the  weight 
+    coefficient of the different features for different regularization 
+    strength. 
+    
+    Note that, it is recommended to standardized the data first. 
+    
+    Parameters 
+    -----------
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features. X is expected to be 
+        standardized. 
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+    c_range: list or tuple [start, stop] 
+        Regularization strength list. It is a range from the strong  
+        strong ( start) to lower (stop) regularization. Note that 'C' is 
+        the inverse of the Logistic Regression regularization parameter 
+        :math:`\lambda`. 
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+    sns_style: str, optional, 
+        the seaborn style.
+        
+    kws: dict, 
+        Additional keywords arguments passed to 
+        :class:`sklearn.linear_model.LogisticRegression`
+    
+    Examples
+    --------
+    >>> from watex.utils.plotutils import plot_regularization_path 
+    >>> from watex.datasets import fetch_data
+    >>> X, y = fetch_data ('bagoue analysed' ) # data aleardy standardized
+    >>> plot_regularization_path (X, y ) 
+
+    """
+
+    if not is_iterable(c_range): 
+        raise TypeError ("'C' regularization strength is a range of C " 
+                         " Logit parameter: (start, stop).")
+    c_range = sorted (c_range )
+    
+    if len(c_range) < 2: 
+        raise ValueError ("'C' range expects two values [start, stop]")
+        
+    if len(c_range) >2 : 
+        warnings.warn ("'C' range expects two values [start, stop]. Values"
+                       f" are shrunk to the first two values: {c_range[:2]} "
+                       )
+    weights, params = [], []    
+    for c in np.arange (*c_range): 
+        lr = LogisticRegression(penalty='l1', C= 10.**c, solver ='liblinear', 
+                                multi_class='ovr', **kws)
+        lr.fit(X,y )
+        weights.append (lr.coef_[1])
+        params.append(10**c)
+        
+    weights = np.array(weights ) 
+    colors = make_mpl_properties(weights.shape[1])
+    if not hasattr (X, 'columns'): 
+        flabels =[f'{i:>7}' for i in range (X.shape[1])] 
+    else: flabels = X.columns   
+    
+    # plot
+    fig, ax = plt.subplots(figsize = fig_size )
+    if sns_style: 
+        _set_sns_style (sns_style)
+
+    for column , color in zip( range (weights.shape [1]), colors ): 
+        plt.plot (params , weights[:, column], 
+                  label =flabels[column], 
+                  color = color 
+                  )
+
+    plt.axhline ( 0 , color ='black', ls='--', lw= 3 )
+    plt.xlim ( [ 10 ** int(c_range[0] -1), 10 ** int(c_range[1]-1) ])
+    plt.ylabel ("Weight coefficient")
+    plt.xlabel ('C')
+    plt.xscale( 'log')
+    plt.legend (loc ='upper left',)
+    ax.legend(
+            loc ='upper right', 
+            bbox_to_anchor =(1.38, 1.03 ), 
+            ncol = 1 , fancybox =True 
+    )
+    
+    plt.show() 
+    
+    
+def plot_rf_feature_importances (
+        clf, X=None, y=None, fig_size = (8, 4),savefig =None,   
+        n_estimators= 500, verbose =0 , sns_style =None,  **kws 
+        ): 
+    """
+    Plot features importance with RandomForest.  
+    
+    Parameters 
+    ----------
+    clf : estimator object
+        The base estimator from which the transformer is built.
+        This can be both a fitted (if ``prefit`` is set to True)
+        or a non-fitted estimator. The estimator should have a
+        ``feature_importances_`` or ``coef_`` attribute after fitting.
+        Otherwise, the ``importance_getter`` parameter should be used.
+        
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+       
+    n_estimators : int, default=500
+        The number of trees in the forest.
+        
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+    sns_style: str, optional, 
+        the seaborn style.
+    verbose: int, default=0 
+        print the feature labels with the rate of their importances. 
+    kws: dict, 
+        Additional keyyword arguments passed to 
+        :class:`sklearn.ensemble.RandomForestClassifier`
+        
+    Examples
+    ---------
+    >>> from watex.datasets import fetch_data
+    >>> from watex.exlib.sklearn import RandomForestClassifier 
+    >>> from watex.utils.plotutils import plot_rf_feature_importances 
+    >>> X, y = fetch_data ('bagoue analysed' ) 
+    >>> plot_rf_feature_importances (
+        RandomForestClassifier(), X=X, y=y , sns_style=True)
+
+    """
+    if not hasattr (clf, 'feature_importances_'): 
+        if ( X is None or y is None ) : 
+            clfn = get_estimator_name( clf)
+            raise TypeError (f"When {clfn} is not a fitted "
+                             "estimator, X and y are needed."
+                             )
+        clf = RandomForestClassifier(n_estimators= n_estimators , **kws)
+        clf.fit(X, y ) 
+        
+    importances = clf.feature_importances_ 
+    indices = np.argsort(importances)[::-1]
+    if hasattr( X, 'columns'): 
+        flabels = X.columns 
+    else : flabels =[f'{i:>7}' for i in range (X.shape[1])]
+    
+    if verbose : 
+        for f in range(X.shape [1]): 
+            print("%2d) %-*s %f" %(f +1 , 30 , flabels[indices[f]], 
+                                   importances[indices[f]])
+                  )
+    if sns_style: 
+        _set_sns_style (sns_style)
+
+    plt.figure(figsize = fig_size)
+    plt.title ("Feature importance")
+    plt.bar (range(X.shape[1]) , 
+             importances [indices], 
+             align='center'
+             )
+    plt.xticks (range (X.shape[1]), flabels [indices], rotation =90 , 
+                ) 
+    plt.xlim ([-1 , X.shape[1]])
+    plt.ylabel ('Importance rate')
+    plt.xlabel ('Feature labels')
+    plt.tight_layout()
+    
+    if savefig is not None:
+        plt.savefig(savefig )
+    
+        
 def plot_confusion_matrix (yt, ypred, view =True, ax=None, annot=True, **kws ):
     """ plot a confusion matrix for a single classifier model.
     
@@ -424,7 +793,7 @@ def plot_learning_curves(
                           f"greater than 0; got {baseline_score}")
     
     if sns_style: 
-        sns_style = sns.set_style(sns_style) 
+        _set_sns_style (sns_style)
         
     mnames = [get_estimator_name(n) for n in models]
 
@@ -841,7 +1210,7 @@ def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
     
 def savefigure (fig: object ,
              figname: str = None,
-             ext:str  ='.png',
+             ext:str ='.png',
              **skws ): 
     """ save figure from the given figure name  
     
@@ -1059,9 +1428,10 @@ def resetting_colorbar_bound(cbmax ,
     elif cbmax% cbmin != 0 :
         startpoint = cbmin + (mod10  - cbmin % mod10 )
         endpoint = cbmax - cbmax % mod10  
-        return np.array([round_modulo10(ii) for
-                         ii in np.linspace(startpoint, 
-                                           endpoint, number_of_ticks)])
+        return np.array(
+            [round_modulo10(ii) for ii in np.linspace(
+                             startpoint,endpoint, number_of_ticks)]
+            )
     
 
             
@@ -1405,7 +1775,13 @@ def _get_xticks_formatage ( ax,  xtick_range, space= 14 ):
         ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))   
 
     
-    
+def _set_sns_style (s, /): 
+    """ Set sns style whether boolean or string is given""" 
+    s = str(s).lower()
+    s = re.sub(r'true|none', 'darkgrid', s)
+    return sns.set_style(s) 
+
+
 
     
     
