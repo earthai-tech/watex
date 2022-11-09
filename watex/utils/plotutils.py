@@ -24,7 +24,10 @@ from ..exceptions import (
 from .funcutils import  ( 
     is_iterable, 
     _assert_all_types, 
-    to_numeric_dtypes
+    to_numeric_dtypes, 
+    find_by_regex, 
+    str2columns, 
+    is_in_if
     )
 from .validator import  ( 
     _check_array_in  , 
@@ -105,62 +108,342 @@ D_STYLES = [
     'dotted' 
 ]
 
-def plot_logging_data ( 
-        X, normalize = True, x_axis = None , impute_nan=True , **kws): 
-    """ Plot logging data  """
+def _is_depth_in (X, name, columns = None, ): 
+    """ assert wether depth exists in the columns.  If name is an 
+    integer value, it assumes to be the index in the columns of the dataframe
+    if not exist , a warming will be show to user. 
     
+    :param X: dataframe 
+        dataframe containing the data for plotting 
+        
+    :param columns: list,
+        New labels to replace the columns in the dataframe. If given , it 
+        should fit the number of colums of `X`. 
+        
+    :param name: str, int  
+        depth name in the dataframe or index to retreive the name of the depth 
+        in dataframe 
+    :return: X, depth 
+        Dataframe without the depth columns and depth values.
+    """
+    X= _assert_all_types( X, pd.DataFrame )
+    if columns is not None: 
+        columns = list(columns)
+        if not is_iterable(columns): 
+            raise TypeError("columns expects an iterable object."
+                            f" got {type (columns).__name__!r}")
+        if len(columns ) != len(X.columns): 
+            warnings.warn("Cannot rename columns with new labels. Expect "
+                          "a size to be consistent with the columns X."
+                          f" {len(columns)} and {len(X.columns)} are given."
+                          )
+        else : 
+            X.columns = columns # rename columns
+        
+    else:  columns = list(X.columns) 
+    
+    _assert_all_types(name,str, int, float )
+    
+    # if name is given as indices 
+    # collect the name at that index 
+    if isinstance (name, (int, float) )  :     
+        name = int (name )
+        if name > len(columns): 
+            warnings.warn ("Name index {name} is out of the columns range."
+                           f" Max index of columns is {len(columns)}")
+            name = None 
+        else : name = columns.pop(name)
+    
+    if isinstance (name, str): 
+        # find in columns whether a name can be 
+        # found. Note that all name does not need 
+        # to be written completely 
+        # for instance name =depth can retrieved 
+        # ['depth_top, 'depth_bottom'] , in that case 
+        # the first occurence is selected i.e. 'depth_top' 
+        n = find_by_regex( 
+            columns, pattern=fr'{name}', func=re.search)
+        if n is not None: 
+            name = n[0]
+        # for consistency , recheck all and let 
+        # a warning to user 
+        if name not in columns : 
+            warnings.warn(f"Name {name!r} does not match any column names.")
+            name =None  
+            
+    # now create a pseudo-depth 
+    # as a range of len X 
+    if name is None: 
+        depth = pd.Series ( np.arange ( len(X)), name ='depth (m)') 
+    else : 
+        # if depth name exists, 
+        # remove it from X  
+        depth = X.pop (name ) 
+        
+    return  X , depth 
+
+def _is_target_in (X, y=None, tname=None): 
+    """ Create new target name for tname if given 
+    
+    :param X: dataframe 
+        dataframe containing the data for plotting 
+    :param y: array or series
+        target data for plotting. Note that multitarget outpout is not 
+        allowed yet. Moroever, it `y` is given as a dataframe, 'tname' must 
+        be supplied to retrive y as a pandas series object, otherwise an 
+        error will raise. 
+    :param tname: str,  
+        target name. If given and `y` is ``None``, Will try to find `tname`
+        in the `X` columns. If 'tname' does not exist, plot for target is 
+        cancelled. 
+        
+    :return y: Series 
+    """
+    
+    _assert_all_types(X, pd.DataFrame)
+    
+    if y is not None: 
+        y = _assert_all_types(y , pd.Series, pd.DataFrame, np.ndarray)
+        
+        if hasattr (y, 'columns'): 
+            if tname not in (y.columns): tname = None 
+            if tname is None: 
+                raise TypeError (
+                    "'tname' must be supplied when y is a dataframe.")
+            y = y [tname ]
+        elif hasattr (y, 'name'): 
+            tname = tname or y.name 
+            # reformat inplace the name of series 
+            y.name = tname 
+            
+        elif hasattr(y, '__array__'): 
+            y = pd.Series (y, name = tname or 'target')
+            
+    elif y is None: 
+        if tname in X.columns :
+            y = X.pop(tname)
+            
+        # X= pd.concat ([ X, pd.Series (y , name = yname )])
+        
+    return X, y 
+
+def _toggle_target_in  (X , y , pos=None): 
+    """ Toggle the target in the convenient position. By default the target 
+    plot is the last subplots 
+    
+    :param X: dataframe 
+        dataframe containing the data for plotting 
+    :param y: array or series
+        the target for  plotting. 
+    :param pos: int, the position to insert y in the dataframe X 
+        By default , `y` is located at the last position 
+        
+    :return: Dataframe 
+        Dataframe containing the target 'y'
+        
+    """
+    
+    pos =  0 if pos ==0  else ( pos or X.shape [1])
+
+    pos= int ( _assert_all_types(pos, int, float ) ) 
+    ms= ("The positionning of the target is out of the bound."
+         "{} position is used instead.")
+    
+    if pos > X.shape[1] : 
+        warnings.warn(ms.format('The last'))
+        pos=X.shape[1]
+    elif pos < 0: 
+        warnings.warn(ms.format(
+            " Negative index is not allowed. The first")
+                      )
+        pos=0 
+ 
+    X.insert (pos, y.name, y )
+    
+    return X
+
+def plot_logging ( 
+        X, y=None, normalize = True, depth_column = 'depth', labels=None,
+        impute_nan=True , fig_size = (16, 7), log10=False, tname = None, 
+        columns_to_skip =None, pattern = None, fill_value = None, colors = None,  
+        posiy= None, 
+          **kws): 
+    """ Plot logging data  
+    
+    Parameters 
+    -----------
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs), optional
+        Target relative to X for classification or regression; if given, by 
+        default the target should be located at the last position. 
+    normalize: bool, default = True
+        Normalize the data  to be range between (0, 1) except the depth, 
+        
+    depth_column: str or int, default ='depth', 
+        specify the depth columns name so to hold the real depth values. 
+        if set to None, will assume that depth exists in X columns otherwise 
+        will use index as depth values. 
+        
+    """
     X = _assert_all_types(X, pd.DataFrame, pd.Series , np.ndarray ) 
     # Exclude all categorical values and 
     # keep only the numerical features.
-    X = to_numeric_dtypes(X, return_feature_types= False,) 
+    X = to_numeric_dtypes(X, return_feature_types= False) 
     
-    if x_axis  is None:
-        x_axis = list(X.columns)[0]
-        
-    if x_axis not in X.columns : 
-        raise ValueError ("Axis for x must be a column label")
-    x_ser = X.iloc [:, 0]
+    if y is not None: 
+       if isinstance (y, (list, tuple)): 
+           # in the case a lst is given 
+           y = np.array (y) 
+       if not is_iterable (y): 
+           raise TypeError ("y expects an iterable object."
+                              f" got {type(y).__name__!r}")
+       y = _assert_all_types(y, pd.Series, pd.DataFrame, np.ndarray)
+       
+       if len(y) !=len(X): 
+           raise ValueError ("y and X sizes along axis 0 must be consistent;"
+                             f"{len(y)} and {len(X)} are given.")
+    # return X and depth 
+    X, depth = _is_depth_in(X, depth_column, columns = labels 
+                            )
+    # fetch target if is given  
+    X, y   = _is_target_in(X, y = y , tname = tname )
     
+    # skip log10 columns if log 10 is set to True 
+    if log10: 
+        X = _skip_log10_columns (X, column2skip = columns_to_skip , 
+                                  pattern= pattern, inplace =False) 
+    # if normalize then  
     if normalize:
         msc = MinMaxScaler()
         Xsc = msc.fit_transform (X)
         # set a new dataframe with features
         if hasattr (msc , 'feature_names_in_'): 
-            Xsc = pd.DataFrame (Xsc , columns = list(msc.feature_names_in_ )
+            X = pd.DataFrame (Xsc , columns = list(msc.feature_names_in_ )
                                 )
-        else : Xsc = pd.DataFrame(Xsc , columns =list(X.columns )) 
+        else : X = pd.DataFrame(Xsc, columns =list(X.columns )) 
     
         # set the x axis and delete the normalize from X 
         # at index 0 supposed to be the x axis 
-        Xsc.iloc [:, 0 ] = x_ser 
-        X= Xsc.copy()  
-    
+        # Xsc.iloc [:, 0 ] = x_ser 
+        # X= Xsc.copy()  
+    # impute_nan 
     if impute_nan: 
         # check whether there is a Nan value  in the data 
         # impute data using mean values
         if X.isnull().values.any(): 
-            d= SimpleImputer(strategy='mean').fit_transform(X)
-            X = pd.DataFrame(d, columns= X.columns)
+            Xi= SimpleImputer(strategy='mean' if fill_value is None else None, 
+                             fill_value= fill_value
+                             ).fit_transform(X)
+            X = pd.DataFrame(Xi, columns= X.columns)
             
+    # toggle y 
+    if y is not None: 
+        X = _toggle_target_in(X, y, pos = posiy)
     # we assume the first columns is dedicated for 
-    # x plot so the remain with be cumulative sum 
-    # x -axis cumsum data along axis = 1 
-    X =pd.concat ([
-            X[[X.columns [0]]],  
-            pd.DataFrame( data = np.cumsum (X.values[:, 1:], axis =1 ,
-                                            dtype =float ) ,
-                     columns =X.columns [1:]) ] , axis = 1 , 
-                  ) 
+    
+    m_cs = make_mpl_properties(X.shape[1])
+    if colors is not None: 
+        if not is_iterable(colors): 
+            colors =[colors]
+        colors += m_cs 
+    else :colors = m_cs 
+    
+    fig, ax = plt.subplots (1, ncols = X.shape [1], sharey = True , 
+                            figsize = fig_size )
+    
+    for k in range (X.shape [1]): 
+        # if log10: 
+        #     ax[k].semilogx ( X.iloc[:, k+1], X.iloc[:, 0], color = colors[k])
+        ax[k].plot ( X.iloc[:, k], depth, color = colors[k])
+        ax[k].tick_params(top=True, labeltop=True, bottom=False, 
+                       labelbottom=False)
+        ax[k].set_title (X.columns [k])
+        ax[k].spines['right'].set_visible(False)
+        ax[k].spines['bottom'].set_visible(False)
+        # only show tick on the top and left 
+        #ax1.yaxis.set_ticks_position('left')
+        ax[k].xaxis.set_ticks_position('top')
+        
+    ax[0].set_ylabel ("Depth (m)")
+        # Tweak spacing between subplots to prevent labels from overlapping
+        # plt.subplots_adjust(hspace=0.5)
+    plt.gca().invert_yaxis()
     
     
-    X.plot(x= list (X.columns )[0] , 
-           # kind = 'line',
-           **kws
-           )
     
-    return X 
+def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True): 
+    """ Skip the columns that dont need to put value in logarithms.
     
+    :param X: dataframe 
+        pandas dataframe with valid columns 
+    :param column2skip: list or str , 
+        List of columns to skip. If given as string and separed by the default
+        pattern items, it should be converted to a list and make sure the 
+        columns name exist in the dataframe. Otherwise an error with 
+        raise. 
+    :param pattern: str, default = '[#&*@!,;\s]\s*'
+        The base pattern to split the text in `column2skip` into a columns
+        
+    :return X: Dataframe
+        Dataframe modified inplace with values computed in log10 
+        except the skipped columns. 
+        
+    :example: 
+       >>> from watex.datasets import load_hlogs 
+       >>> from watex.utils.plotutils import _skip_log10_columns 
+       >>> X0, _= load_hlogs (as_frame =True ) 
+       >>> # let visualize the  first3 values of `sp` and `resistivity` keys 
+       >>> X0['sp'][:3] , X0['resistivity'][:3]  
+       ... (0   -1.580000
+            1   -1.580000
+            2   -1.922632
+            Name: sp, dtype: float64,
+            0    15.919130
+            1    16.000000
+            2    24.422316
+            Name: resistivity, dtype: float64)
+       >>> column2skip = ['hole_number','depth_top', 'depth_bottom', 
+                         'strata_name', 'rock_name', 'well_diameter', 'sp']
+       >>> _skip_log10_columns (X0, column2skip)
+       >>> # now let visualize the same keys values 
+       >>> X0['sp'][:3] , X0['resistivity'][:3]
+       ... (0   -1.580000
+            1   -1.580000
+            2   -1.922632
+            Name: sp, dtype: float64,
+            0    1.201919
+            1    1.204120
+            2    1.387787
+            Name: resistivity, dtype: float64)
+      >>> # it is obvious the `resistiviy` values is log10 
+      >>> $ while `sp` stil remains the same 
+      
+    """
+    X0 = X.copy () 
+    if not is_iterable( column2skip): 
+        raise TypeError ("Columns  to skip expect an iterable object;"
+                         f" got {type(column2skip).__name__!r}")
+        
+    pattern = pattern or r'[#&*@!,;\s]\s*'
     
+    if isinstance(column2skip, str):
+        column2skip = str2columns (column2skip, pattern=pattern  )
+    #assert whether column to skip is in 
+    if column2skip:
+        column2skip = is_in_if(X.columns, column2skip, return_diff= True)
+        if len(column2skip) ==len (X.columns): 
+            warnings.warn("Value(s) to skip are not detected.")
+        if inplace : 
+            X[column2skip] = np.log10 ( X[column2skip] ) 
+            return 
+        else : 
+            X0[column2skip] = np.log10 ( X0[column2skip] ) 
+            
+    return X0
+
 def plot_sbs_feature_selection (
         sbs_estimator,/,  X=None, y=None ,fig_size=(8, 5), 
         sns_style =False, savefig = None, verbose=0 , **sbs_kws

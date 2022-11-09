@@ -3185,7 +3185,6 @@ def str2columns (text, /, regex=None , pattern = None):
     
     Parameters 
     -----------
-    
     text: str, 
         text litteral containing the columns the names to retrieve
         
@@ -3223,7 +3222,7 @@ def str2columns (text, /, regex=None , pattern = None):
          'text']
 
     """
-    pattern = r'[_#&.*@!_,;\s-]\s*'
+    pattern = pattern or  r'[_#&.*@!_,;\s-]\s*'
     regex = regex or re.compile (pattern, flags=re.IGNORECASE) 
     text= list(filter (None, regex.split(text)))
     return text 
@@ -3281,7 +3280,7 @@ def sanitize_frame_cols(
                
     """
     isf , iss= False , False 
-    pattern = r'[_#&.)(*@!_,;\s-]\s*'
+    pattern = pattern or r'[_#&.)(*@!_,;\s-]\s*'
     fill_pattern = fill_pattern or '' 
     fill_pattern = str(fill_pattern)
     
@@ -3412,4 +3411,300 @@ def to_hdf5(d, /, fn, objname =None, close =True,  **hdf5_kws):
     return store 
     
 
+def find_by_regex (o , /, pattern,  func = re.match, **kws ):
+    """ Find pattern in object whatever an "iterable" or not. 
+    
+    when we talk about iterable, a string value is not included.
+    
+    Parameters 
+    -------------
+    o: str or iterable,  
+        text litteral or an iterable object containing or not the specific 
+        object to match. 
+    pattern: str, default = '[_#&*@!_,;\s-]\s*'
+        The base pattern to split the text into a columns
+    
+    func: re callable , default=re.match
+        regular expression search function. Can be
+        [re.match, re.findall, re.search ],or any other regular expression 
+        function. 
+        
+        * ``re.match()``:  function  searches the regular expression pattern and 
+            return the first occurrence. The Python RegEx Match method checks 
+            for a match only at the beginning of the string. So, if a match is 
+            found in the first line, it returns the match object. But if a match 
+            is found in some other line, the Python RegEx Match function returns 
+            null.
+        * ``re.search()``: function will search the regular expression pattern 
+            and return the first occurrence. Unlike Python re.match(), it will 
+            check all lines of the input string. The Python re.search() function 
+            returns a match object when the pattern is found and “null” if 
+            the pattern is not found
+        * ``re.findall()`` module is used to search for 'all' occurrences that 
+            match a given pattern. In contrast, search() module will only 
+            return the first occurrence that matches the specified pattern. 
+            findall() will iterate over all the lines of the file and will 
+            return all non-overlapping matches of pattern in a single step.
+    kws: dict, 
+        Additional keywords arguments passed to functions :func:`re.match` or 
+        :func:`re.search` or :func:`re.findall`. 
+        
+    Returns 
+    -------
+    om: list 
+        matched object put is the list 
+        
+    Example
+    --------
+    >>> from watex.utils.funcutils import find_by_regex
+    >>> from watex.datasets import load_hlogs 
+    >>> X0, _= load_hlogs (as_frame =True )
+    >>> columns = X0.columns 
+    >>> str_columns =','.join (columns) 
+    >>> find_by_regex (str_columns , pattern='depth', func=re.search)
+    ... ['depth']
+    >>> find_by_regex(columns, pattern ='depth', func=re.search)
+    ... ['depth_top', 'depth_bottom']
+    
+    """
+    om = [] 
+    if isinstance (o, str): 
+        om = func ( pattern=pattern , string = o, **kws)
+        if om: 
+            om= om.group() 
+        om =[om]
+    elif is_iterable(o): 
+        o = list(o) 
+        for s in o : 
+            z = func (pattern =pattern , string = s, **kws)
+            if z : 
+                om.append (s) 
+                
+    if func.__name__=='findall': 
+        om = list(itertools.chain (*om )) 
+    # keep None is nothing 
+    # fit the corresponding pattern 
+    if len(om) ==0 or om[0] is None: 
+        om = None 
+    return  om 
+    
+def is_in_if (o: iter, /, items: str | iter, error = 'raise', 
+               return_diff =False ): 
+    """ Raise error if item is not  found in the iterable object 'o' 
+    
+    :param o: unhashable type, iterable object,  
+        object for checkin. It assumes to be an iterable from which 'items' 
+        is premused to be in. 
+    :param items: str or list, 
+        Items to assert whether it is in `o` or not. 
+    :param error: str, default='raise'
+        raise or ignore error when none item is found in `o`. 
+    :param return_diff: bool, 
+        return the difference items which is/are not included in 'items' 
+        if `return_diff` is ``True``, will put error to ``ignore`` 
+        systematically.
+    :raise: ValueError 
+        raise ValueError if `items` not in `o`. 
+    :return: list,  
+        `s` : object found in ``o` or the difference object i.e the object 
+        that is not in `items` provided that `error` is set to ``ignore``.
+        Note that if None object is found  and `error` is ``ignore`` , it 
+        will return ``None``, otherwise, a `ValueError` raises. 
+        
+    :example: 
+        >>> from watex.datasets import load_hlogs 
+        >>> from watex.utils.funcutils import is_in_if 
+        >>> X0, _= load_hlogs (as_frame =True )
+        >>> is_in_if  (X0 , items= ['depth_top', 'top']) 
+        ... ValueError: Item 'top' is missing in the object 
+        >>> is_in_if (X, ['depth_top', 'top'] , error ='ignore') 
+        ... ['depth_top']
+        >>> is_in_if (X, ['depth_top', 'top'] , error ='ignore',
+                       return_diff= True) 
+        ... ['sp',
+             'resistivity',
+             'gamma_gamma',
+             'natural_gamma',
+             'thickness',
+             'short_distance_gamma']
+    """
+    
+    if isinstance (items, str): 
+        items =[items]
+    elif not is_iterable(o): 
+        raise TypeError (f"Expect an iterable object, not {type(o).__name__!r}")
+    # find intersect object 
+    s= set (o).intersection (items) 
+    
+    miss_items = list(s.difference (items))  if len(s) > len(
+        items) else list(set(items).difference (s)) 
+    
+    if return_diff: 
+        error ='ignore'
+    
+    if len(miss_items)!=0 :
+        if error =='raise': 
+            v= smart_format(miss_items)
+            verb = f"{ ' '+ v +' is' if len(miss_items)<2 else  's '+ v + 'are'}"
+            raise ValueError (f"Item{verb} missing in the object ")
+            
+    if return_diff : 
+        # get difference 
+        s = set(o).difference (s)  
+        
+    s = None if len(s)==0 else list (s) 
+    
+    return s  
+  
+def map_specific_columns ( 
+        X: DataFrame, 
+        ufunc:F , 
+        columns_to_skip:List[str]=None,   
+        pattern:str=None, 
+        inplace:bool= False, 
+        **kws
+        ): 
+    """ Apply function to a specific columns is the dataframe. 
+    
+    It is possible to skip some columns that we want operation to not be 
+    performed.
+    
+    Parameters 
+    -----------
+    X: dataframe, 
+        pandas dataframe with valid columns 
+    ufunc: callable, 
+        Universal function that can be applying to the dataframe. 
+    columns_to_skip: list or str , 
+        List of columns to skip. If given as string and separed by the default
+        pattern items, it should be converted to a list and make sure the 
+        columns name exist in the dataframe. Otherwise an error with 
+        raise.
+        
+    pattern: str, default = '[#&*@!,;\s]\s*'
+        The base pattern to split the text in `column2skip` into a columns
+        For instance, the following string coulb be splitted to:: 
+            
+            'depth_top, thickness, sp, gamma_gamma' -> 
+            ['depth_top', 'thickness', 'sp', 'gamma_gamma']
+        
+        Refer to :func:`~.str2columns` for further details. 
+    inplace: bool, default=True 
+        Modified dataframe in place and return None, otherwise return a 
+        new dataframe 
+    kws: dict, 
+        Keywords argument passed to :func: `pandas.DataFrame.apply` function 
+        
+    Returns 
+    -------
+    X: Dataframe or None 
+        Dataframe modified inplace with values computed using the given 
+        `func`except the skipped columns, or ``None`` if `inplace` is ``True``. 
+        
+    Example 
+    ---------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.plotutils import map_specific_columns 
+    >>> X0, _= load_hlogs (as_frame =True ) 
+    >>> # let visualize the  first3 values of `sp` and `resistivity` keys 
+    >>> X0['sp'][:3] , X0['resistivity'][:3]  
+    ... (0   -1.580000
+         1   -1.580000
+         2   -1.922632
+         Name: sp, dtype: float64,
+         0    15.919130
+         1    16.000000
+         2    24.422316
+         Name: resistivity, dtype: float64)
+    >>> column2skip = ['hole_number','depth_top', 'depth_bottom', 
+                      'strata_name', 'rock_name', 'well_diameter', 'sp']
+    >>> map_specific_columns (X0, ufunc = np.log10, column2skip)
+    >>> # now let visualize the same keys values 
+    >>> X0['sp'][:3] , X0['resistivity'][:3]
+    ... (0   -1.580000
+         1   -1.580000
+         2   -1.922632
+         Name: sp, dtype: float64,
+         0    1.201919
+         1    1.204120
+         2    1.387787
+         Name: resistivity, dtype: float64)
+    >>> # it is obvious the `resistiviy` values is log10 
+    >>> $ while `sp` stil remains the same 
+      
+    """
+    X = _assert_all_types(X, pd.DataFrame)
+    if not callable(ufunc): 
+        raise TypeError ("Expect a function for `ufunc`; "
+                         f"got {type(ufunc).__name__!r}")
+        
+    pattern = pattern or r'[#&*@!,;\s]\s*'
+    if not is_iterable( columns_to_skip): 
+        raise TypeError ("Columns  to skip expect an iterable object;"
+                         f" got {type(columns_to_skip).__name__!r}")
+        
+    if isinstance(columns_to_skip, str):
+        columns_to_skip = str2columns (columns_to_skip, pattern=pattern  )
+    #assert whether column to skip is in 
+    if columns_to_skip:
+        columns_to_skip = is_in_if(X.columns, columns_to_skip, return_diff= True)
+        if len(columns_to_skip) ==len (X.columns): 
+            warnings.warn("Value(s) to skip are not detected.")
+    elif columns_to_skip is None: 
+        columns_to_skip = list(X.columns) 
+        
+    if inplace : 
+        X[columns_to_skip] = X[columns_to_skip].apply (
+            ufunc , **kws)
+        return 
+    if not inplace: 
+        X0 = X.copy() 
+        X0[columns_to_skip] = X0[columns_to_skip].apply (
+            ufunc , **kws)
+    
+        return  X0   
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
         

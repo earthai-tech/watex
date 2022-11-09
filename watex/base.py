@@ -14,7 +14,7 @@ from warnings import warn
 
 from ._watexlog import  watexlog
 from ._docstring import DocstringComponents, _core_docs
-from ._typing import List, Optional, DataFrame 
+from ._typing import List, Optional, DataFrame , Tuple 
 from .utils.coreutils import _is_readable 
 from .utils.funcutils import (
     _assert_all_types,  
@@ -319,7 +319,7 @@ class Data:
             )
         return 1 
     
-    def profilingReport (self, data: str | DataFrame = None, **kwd):
+    def profilingReport (self, data: str | DataFrame= None, **kwd):
         """Generate a report in a notebook. 
         
         It will summarize the types of the columns and allow yuou to view 
@@ -373,11 +373,11 @@ class Data:
              
         return self 
     
-    def rename_columns (self, 
-                        data: str | DataFrame= None, 
-                        columns: List[str]=None, 
-                        pattern:Optional[str] = None
-                        ): 
+    def rename (self, 
+                data: str | DataFrame= None, 
+                columns: List[str]=None, 
+                pattern:Optional[str] = None
+                ): 
         """ 
         rename columns of the dataframe with columns in lowercase and spaces 
         replaced by underscores. 
@@ -433,10 +433,15 @@ class Data:
         # try : 
         #     self.data []
         
-    __and__= __rand__ = merge 
+    # __and__= __rand__ = merge 
     
-    def drop ( self, labels: list[str |int] = None, columns: List[str]=None,  
-            inplace:bool = False, axis:int = 0 , **kws ): 
+    def drop ( 
+            self, 
+            labels: list[str |int] = None, 
+            columns: List[str]=None,  
+            inplace:bool = False, 
+            axis:int = 0 , **kws 
+            ): 
         """ Drop specified labels from rows or columns.
 
         Remove rows or columns by specifying label names and corresponding 
@@ -557,7 +562,7 @@ class Missing (Data) :
         * Impute missing values 
         * Create an indicator columns to indicator data was missing 
     
-    Arguments
+    Parameters
     ----------- 
     in_percent: bool, 
         give the statistic of missing data in percentage if ser to ``True``. 
@@ -625,7 +630,8 @@ class Missing (Data) :
         return self.isnull_
 
 
-    def plot(self, data: str | DataFrame=None , **kwd ):
+    def plot(self, data: str | DataFrame=None , 
+             figsize:Tuple [int] = None,  **kwd ):
         """
         Vizualize patterns in the missing data.
         
@@ -678,8 +684,8 @@ class Missing (Data) :
         >>> from watex.base import Missing
         >>> data ='data/geodata/main.bagciv.data.csv' 
         >>> ms= Missing().fit(data) 
-        >>> ms.plot_.fig_size = (12, 4 ) 
-        >>> ms.plot () 
+        >>> ms.plot(figsize = (12, 4 ) ) 
+
     
         """
         from .view.plot import ExPlot
@@ -687,8 +693,8 @@ class Missing (Data) :
         if data is not None: 
             self.data = data 
             
-        ExPlot().plotmissing( self.data, kind =  self.kind, 
-                sample = self.sample, **kwd )
+        ExPlot(fig_size=figsize).fit(self.data).plotmissing( 
+            kind =  self.kind, sample = self.sample, **kwd )
         return  self 
 
     @property 
@@ -2052,4 +2058,4 @@ def selectfeatures (
     # raise ValueError: at least one of include or exclude must be nonempty
     # use coerce to no raise error and return data frame instead.
     return df if coerce else df.select_dtypes (include, exclude) 
->>>>>>> c8240b644935065300ffbe8de45f288f404b8417
+
