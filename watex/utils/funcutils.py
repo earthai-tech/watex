@@ -2,8 +2,10 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 
-from __future__ import annotations 
-
+from __future__ import ( 
+    annotations , 
+    print_function 
+    )
 import os 
 import re 
 import sys
@@ -80,10 +82,13 @@ except ImportError:
     
 #-----
 
-
 def to_numeric_dtypes (
-        arr: NDArray | DataFrame, *, columns:List[str] = None, 
-        return_feature_types:bool =False , missing_values:float = np.nan, 
+        arr: NDArray | DataFrame, *, 
+        columns:List[str] = None, 
+        return_feature_types:bool =False , 
+        missing_values:float = np.nan, 
+        pop_cat_features:bool=False, 
+        verbose:bool= False, 
     )-> DataFrame : 
     """ Convert array to dataframe and coerce arguments to appropriate dtypes. 
     
@@ -98,6 +103,12 @@ def to_numeric_dtypes (
         return the list of numerical and categorial features
     missing_values: float: 
         Replace the missing or empty string if exist in the dataframe.
+    pop_cat_features:bool, default=False, 
+        remove removes the categorial features  from the DataFrame.
+        
+    verbose: bool, default=False, 
+        outputs a message by listing the categorial items dropped from 
+        the dataframe if exists. 
     Returns 
     --------
     df or (df, nf, cf): Dataframe of values casted to numeric types 
@@ -144,9 +155,75 @@ def to_numeric_dtypes (
             cf.append(serie)
             continue
         
+    if pop_cat_features: 
+        [ df.pop(item) for item in cf ] 
+        if verbose: 
+            msg ="Dataframe does not contain any categorial features."
+            endmsg = "have been successfully removed from dataFrame."
+            print(msg) if len(cf)==0 else listing_items_format (
+                cf , 'Features', endmsg ,lstyle ='.', inline=True)
+            
+        return df 
+    
     return (df, nf, cf) if return_feature_types else df 
 
-            
+def listing_items_format ( 
+        lst, /, begintext ='', endtext='' , 
+        enum =True , lstyle=None , space =3 , inline =False, 
+        ): 
+    """ Format list by enumerate them successively with carriage return
+    
+    :param lst: list,
+        object for listening 
+    begintext: str, 
+        Text to display at the beginning of listing the items in `lst`. 
+    endtext: str, 
+        Text to display at the end of the listing items in `lst`. 
+    :param enum:bool, default=True, 
+        Count the number of items in `lst` and display it 
+    :param lst: str, default ='-'
+        listing marker. 
+    :param space: int, 
+        number of space to keep before each outputted item in `lst`
+    :param inline: bool, default=False, 
+        Display all element inline rather than carriage return every times. 
+    
+    Examples
+    ---------
+    >>> from watex.utils.funcutils import listing_items_format 
+    >>> litems = ['hole_number', 'depth_top', 'depth_bottom', 'strata_name', 
+                'rock_name','thickness', 'resistivity', 'gamma_gamma', 
+                'natural_gamma', 'sp','short_distance_gamma', 'well_diameter']
+    >>> listing_items_format (litems , 'Features' , 
+                               'have been successfully drop.' , 
+                              lstyle ='.', space=3) 
+    """
+    
+    if not is_iterable(lst): 
+        lst=[lst]
+   
+    if hasattr (lst, '__array__'): 
+        if lst.ndim !=1: 
+            raise ValueError (" Can not print multidimensional array."
+                              " Expect one dimensional array.")
+    lst = list(lst)
+    begintext = str(begintext); endtext=str(endtext)
+    lstyle=  lstyle or '-'  
+    lstyle = str(lstyle)
+    b= f"{begintext +':' } "   
+    print(b, end=' ') if inline else (
+        print(b)  if  begintext!='' else None)
+    for k, item in enumerate (lst): 
+        sp = ' ' * space 
+        if ( not enum and inline ): lstyle =''
+        out = f"{sp}{str(k+1) if enum else '- ' }{lstyle} {item}"
+        print (out , end=' ') if inline else print(out)
+
+    print(', ' + endtext if inline else endtext
+          ) if endtext !='' else None 
+    
+
+    
 def parse_attrs (attr, /, regex=None ): 
     """ Parse attributes using the regular expression.
     
@@ -3546,7 +3623,8 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
         if error =='raise': 
             v= smart_format(miss_items)
             verb = f"{ ' '+ v +' is' if len(miss_items)<2 else  's '+ v + 'are'}"
-            raise ValueError (f"Item{verb} missing in the object ")
+            raise ValueError (
+                f"Item{verb} missing in the {type(o).__name__.lower()}.")
             
     if return_diff : 
         # get difference 

@@ -60,7 +60,8 @@ from .plotutils import (
     plot_yb_confusion_matrix, 
     plot_sbs_feature_selection, 
     plot_regularization_path, 
-    plot_rf_feature_importances 
+    plot_rf_feature_importances, 
+    plot_logging
     )
 
 __all__=[
@@ -114,7 +115,8 @@ __all__=[
         'plot_yb_confusion_matrix',
         'plot_sbs_feature_selection', 
         'plot_regularization_path', 
-        'plot_rf_feature_importances' 
+        'plot_rf_feature_importances', 
+        'plot_logging'
         
         ]
 

@@ -913,6 +913,25 @@ class SequentialBackwardSelection (_Base ):
     .. [2] Ferri F., Pudil F., Hatef M., and Kittler J., Comparative study of 
         the techniques for Large-scale feature selection, pages 403-413, 1994.
     
+    Attributes 
+    -----------
+    feature_names_in_ : ndarray of shape (`n_features_in_`,)
+        Names of features seen during :term:`fit`. Defined only when `X`
+        has feature names that are all strings.
+        
+    indices_: tuple of dimensionnality X
+        Collect the indices of subset of the best validated models 
+        
+    subsets_: list, 
+        list of `indices_` 
+        
+    scores_: list, 
+        Collection of the scores of the best model got during the
+        cross-validating 
+        
+    k_score_: float, 
+        The score of the desired feature. 
+        
     Examples
     --------
     >>> from watex.exlib.sklearn import KNeighborsClassifier , train_test_split
@@ -923,9 +942,7 @@ class SequentialBackwardSelection (_Base ):
     >>> knn = KNeighborsClassifier(n_neighbors=5)
     >>> sbs= SequentialBackwardSelection (knn)
     >>> sbs.fit(Xtrain, ytrain )
-    
-    
-    
+
     """
     _scorers = dict (accuracy = accuracy_score , recall = recall_score , 
                    precision = precision_score, roc_auc= roc_auc_score 

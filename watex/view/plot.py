@@ -1041,7 +1041,6 @@ class ExPlot (BasePlot):
         
         return self 
     
-    
     def plotmissing(self, *, 
                 kind: str =None, 
                 sample: float = None,  
@@ -1143,7 +1142,6 @@ class ExPlot (BasePlot):
             elif kind =='dendro': 
                 ax = msno.dendrogram(self.data, **kwd) 
         
-                
             elif kind =='corr': 
                 ax= msno.heatmap(self.data, figsize = self.fig_size)
             else : 

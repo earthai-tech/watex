@@ -13,13 +13,12 @@ parameters.
 
 """
 from __future__ import annotations 
-import os 
+import copy 
+import math
 import inspect
 import warnings 
 import numpy as np
 import pandas as pd  
-from ..decorators import catmapflow2, writef  
-from ..exceptions import FileHandlingError 
 from  .._typing import (
     List, 
     Tuple, 
@@ -30,7 +29,123 @@ from  .._typing import (
     ArrayLike, 
     F
     ) 
+from ..decorators import ( 
+    catmapflow2, 
+    writef  
+    )
+from ..exceptions import FileHandlingError 
+from .funcutils import  (
+    _assert_all_types, 
+    is_iterable,
+    is_in_if , 
+    smart_format, 
+    savepath_ 
+    
+    )
+#-----------------------
 
+def _kp (k, /,  kr= (.01 , .07 ), string = False ) :
+    """ Default permeability 'k' mapping using dict to validate the continue 
+    value 'k' 
+    :param k: float, 
+        continue value of the permeability coefficient 
+    :param kr: Tuple, 
+        range of permeability coefficient to categorize 
+    :param string: bool, str 
+        label to prefix the the categorial value. 
+    :return: float/str - new categorical value . 
+
+    """
+    d = {0: k <=0 , 1: 0 < k <= kr[0], 2: kr[0] < k <=kr[1], 3: k > kr[1] 
+         }
+    label = 'k' if str(string).lower()=='true' else str(string )
+    for v, value in d.items () :
+        if value: return v if not string else  ( 
+                label + str(v) if not math.isnan (v) else np.nan ) 
+        
+def map_kp (o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None , 
+            kname:str=None, inplace:bool =False, 
+            string:str =False, use_default_ufunc:bool=False  
+            ):
+    """ Categorize the permeability coefficient 'k'
+    
+    Map the continuous 'k' into categorial classes. 
+    
+    Parameters 
+    ----------
+    o: ndarray of pd.Series or Dataframe
+        data containing the permeability coefficient k columnns 
+    unfunc: callable 
+        Function to specifically map the permeability coefficient column 
+        in the dataframe of serie. If not given, the default function can be 
+        enabled instead from param `use_default_ufunc`. 
+    inplace: bool, default=False 
+        Modified object inplace and return None 
+    string: bool, 
+        If set to "True", categorized map from 'k'  should be prefixed by "k". 
+        However is string value is given , the prefix is changed according 
+        to this label. 
+    use_default_ufunc: bool, 
+        Default function for mapping k is setting to ``True``. Note that, this 
+        could probably not fitted your own data. So  it is recommended to 
+        provide your own function for mapping 'k'. However the default 'k' 
+        mapping is given as follow: 
+            
+        - k0 {0}: k = 0 
+        - k1 {1}: 0 < k <= .01 
+        - k2 {2}: .01 < k <= .07 
+        - k3 {3}: k> .07 
+    Returns
+    --------
+    o: None,  ndarray, Series or Dataframe 
+        return None only if dataframe is given and `inplace` is set 
+        to ``True`` i.e modified object inplace. 
+        
+    Examples 
+    --------
+    >>> import numpy as np 
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.hydroutils import map_kp 
+    >>> _, y0 = load_hlogs (as_frame =True) 
+    >>> # let visualize four nonzeros values in y0 
+    >>> y0.k.values [ ~np.isnan (y0.k ) ][:4]
+    ...  array([0.054, 0.054, 0.054, 0.054])
+    >>> map_kp (y0 , kname ='k', inplace =True, use_default_ufunc=True )
+    >>> # let see again the same four value in the dataframe 
+    >>> y0.k.values [ ~np.isnan (y0.k ) ][:4]
+    ... array([2., 2., 2., 2.]) 
+    
+    """
+    _assert_all_types(o, pd.Series, pd.DataFrame, np.ndarray)
+    
+    dfunc = lambda k : _kp (k, string = string ) # default 
+    ufunc = ufunc or   ( dfunc if use_default_ufunc else None ) 
+    if ufunc is None: 
+        raise TypeError ("'ufunc' can not be None when the default"
+                         " 'k' mapping function is not triggered.")
+        
+    oo= copy.deepcopy (o )
+    if hasattr (o, 'columns'):
+        if kname is None: 
+            raise ValueError ("kname' is not set while dataframe is given. "
+                              "Please specify the name of permeability column.")
+        is_in_if( o, kname )
+  
+        if inplace : 
+            o[kname] = o[kname].map (ufunc) 
+            return 
+        oo[kname] = oo[kname].map (ufunc) 
+        
+    elif hasattr(o, 'name'): 
+        oo= oo.map(ufunc ) 
+  
+    elif hasattr(o, '__array__'): 
+        oo = np.array (list(map (ufunc, o )))
+        
+    return oo 
+
+        
+    
 #XXXTODO compute t parameters 
 def transmissibility (s, d, time, ): 
     """Transmissibility T represents the ability of aquifer's water conductivity.
@@ -259,26 +374,7 @@ def exportdf (
 
 
 
-def savepath_ (nameOfPath): 
-    """
-    Shortcut to create a folder 
-    :param nameOfPath: Path name to save file
-    :type nameOfPath: str 
-    
-    :return: 
-        New folder created. If the `nameOfPath` exists, will return ``None``
-    :rtype:str 
-        
-    """
- 
-    try :
-        savepath = os.path.join(os.getcwd(), nameOfPath)
-        if not os.path.isdir(savepath):
-            os.mkdir(nameOfPath)#  mode =0o666)
-    except :
-        warnings.warn("The path seems to be existed !")
-        return
-    return savepath 
+
          
 def categorize_target(
         arr :ArrayLike |Series , /, 
@@ -519,48 +615,7 @@ def _cattarget (ar , labels , order=None):
         new_arr= np.hstack (l).astype (np.int32)  
         
     return new_arr.astype (np.int32)  
-def _assert_all_types (
-        obj: object , 
-        *expected_objtype: type 
- ) -> object: 
-    """ Quick assertion of object type. Raise an `TypeError` if 
-    wrong type is given."""
-    # if np.issubdtype(a1.dtype, np.integer): 
-    if not isinstance( obj, expected_objtype): 
-        raise TypeError (
-            f'Expected {smart_format(tuple (o.__name__ for o in expected_objtype))}'
-            f' type{"s" if len(expected_objtype)>1 else ""} '
-            f'but `{type(obj).__name__}` is given.')
-            
-    return obj 
 
-def smart_format(iter_obj, choice ='and'): 
-    """ Smart format iterable ob.
-    
-    :param iter_obj: iterable obj 
-    :param choice: can be 'and' or 'or' for optional.
-    
-    :Example: 
-        >>> from watex.utils.funcutils import smart_format
-        >>> smart_format(['model', 'iter', 'mesh', 'data'])
-        ... 'model','iter','mesh' and 'data'
-    """
-    str_litteral =''
-    try: 
-        iter(iter_obj) 
-    except:  return f"{iter_obj}"
-    
-    iter_obj = [str(obj) for obj in iter_obj]
-    if len(iter_obj) ==1: 
-        str_litteral= ','.join([f"{i!r}" for i in iter_obj ])
-    elif len(iter_obj)>1: 
-        str_litteral = ','.join([f"{i!r}" for i in iter_obj[:-1]])
-        str_litteral += f" {choice} {iter_obj[-1]!r}"
-    return str_litteral
-
-def is_iterable (y, /)->bool: 
-    """ Asserts iterable object and returns 'True' or 'False' """
-    return hasattr (y, '__iter__') 
 
 def labels_validator (t, /, labels, return_bool = False): 
     """ Assert the validity of the label in the target  and return the label 
