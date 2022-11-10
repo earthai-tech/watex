@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-
-
 """
 Hydrogeological utilities 
 ================================
@@ -123,7 +121,6 @@ def map_kp (o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None ,
     if ufunc is None: 
         raise TypeError ("'ufunc' can not be None when the default"
                          " 'k' mapping function is not triggered.")
-        
     oo= copy.deepcopy (o )
     if hasattr (o, 'columns'):
         if kname is None: 
@@ -145,7 +142,6 @@ def map_kp (o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None ,
     return oo 
 
         
-    
 #XXXTODO compute t parameters 
 def transmissibility (s, d, time, ): 
     """Transmissibility T represents the ability of aquifer's water conductivity.
@@ -176,7 +172,6 @@ def check_flow_objectivity ( y ,/,  values, classes  ) :
         used to specify the flow rate. For instance, it can be:: 
             
             [0, 1, 2] => [sf0, sf1, sf2]
-       
     """
     msg= ("Objective is 'flow' whereas the target value is set to {0}."
           " Target is defaultly encoded to hold integers {1}. If"
@@ -372,10 +367,6 @@ def exportdf (
         
     return df_, to,  refout, savepath, reset_index   
 
-
-
-
-         
 def categorize_target(
         arr :ArrayLike |Series , /, 
         func: F = None,  
