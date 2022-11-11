@@ -16,7 +16,11 @@ import math
 import inspect
 import warnings 
 import numpy as np
-import pandas as pd  
+import pandas as pd 
+from .._docstring import ( 
+    _core_docs, 
+    DocstringComponents 
+    )
 from  .._typing import (
     List, 
     Tuple, 
@@ -31,17 +35,245 @@ from ..decorators import (
     catmapflow2, 
     writef  
     )
-from ..exceptions import FileHandlingError 
+from ..exceptions import ( 
+    FileHandlingError, 
+    DepthError
+    )
 from .funcutils import  (
     _assert_all_types, 
     is_iterable,
     is_in_if , 
     smart_format, 
-    savepath_ 
+    savepath_ , 
+    is_depth_in, 
+    reshape 
     
     )
+from .validator import _is_arraylike_1d 
 #-----------------------
 
+_param_docs = DocstringComponents.from_nested_components(
+    core=_core_docs["params"], 
+    )
+
+
+def samples_reducing (*dfs , start=0 , stop =None, zname =None, kname = None,
+                      z=None, out = None, **kws) : 
+    """ Reduced samples and """
+    start, stop = [int (_assert_all_types(o, int )) for o in [start, stop ]]
+    
+    indexes ,sections =[] , []
+    for df in dfs : 
+        ix, sec = get_aquifer_sections(df , zname = zname , kname = kname , 
+                             z = z, return_indexes= True )
+        indexes.append(ix); sections.append(sec )
+    if stop is None: 
+        stop = -1 
+        
+    fupper = lambda s :s[start] ; flower = lambda s :s[stop] 
+    ixss, ixst =  list(map ( fupper , indexes )) , list(map ( flower , indexes )) 
+    secss, secst= list(map ( fupper, sections )) , list(map ( flower, sections )) 
+    min_ix = min(ixss) ; max_ixs = max (ixst)
+    up_sec= min(secss) ;  low_sec =max (secst)
+    
+    
+def is_valid_depth (z, /, zname =None , return_z = False): 
+    """ Assert whether depth is valid in dataframe of two-dimensional 
+    array passed to `z` argument. 
+    
+    Parameters 
+    ------------
+    z: ndarray, pandas series or dataframe 
+        If Dataframe is given, 'zname' must be supplied to fetch or assert 
+        the depth existence of the depth in `z`. 
+    zname: str,int , 
+        the name of depth column. 'name' needs to be supplied when `z` is 
+        given whereas index is needed when `z` is an ndarray with two 
+        dimensional. 
+        
+    return_X_z: bool, default =False
+        returns z series or array  if set to ``True``. 
+    
+    Returns 
+    ---------
+    z0, is_z: array /bool, 
+        An array-like 1d of `z` or 'True/False' whether z exists or not. 
+        
+    Example 
+    --------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.hydroutils import is_valid_depth 
+    >>> d= load_hlogs () 
+    >>> X= d.frame 
+    >>> is_valid_depth(X, zname='depth') # is dataframe , need to pass 'zname'
+    ... True
+    >>> is_valid_depth (X, zname = 'depth', return_z = True)
+    ... 0        0.00
+        1        2.30
+        2        8.24
+        3       22.46
+        4       44.76
+         
+        176    674.02
+        177    680.18
+        178    681.68
+        179    692.97
+        180    693.37
+        Name: depth_top, Length: 181, dtype: float64
+    """
+    is_z =True 
+    z = _assert_all_types(z, np.ndarray , pd.Series, pd.DataFrame, 
+                          objname ='Depth') 
+    zname = _assert_all_types(zname, str, objname ="'zname"
+                              ) if zname is not None else None  
+    if hasattr(z, '__array__') and hasattr (z, 'name'): 
+        zname = z.name 
+        
+    elif hasattr (z ,'columns' ): 
+        # assert whether depth 
+        # mape a copy to not corrupt X since the function 
+        # remove the depth in columns 
+        z_copy = z.copy() 
+        if zname is None: 
+            raise ValueError ("Depth name 'zname' can not be None "
+                              "when a dataframe is given.")
+        # --> deals with depth 
+        # in the case depth is given while 
+        # dataframe is given. 
+        # if z is not None: 
+        #     zname =None # set None 
+        if zname is not None : 
+            # erased the depth and name
+            try: 
+                _, z0 = is_depth_in(
+                z_copy, name = zname, error = 'raise') 
+            except Exception as err:
+                if return_z: 
+                    raise DepthError("Depth name 'zname' " + str(
+                        err).replace ('E', 'e') )
+                    
+                else: is_z= False  
+                
+        zname= z0.name 
+    elif hasattr (z, '__array__'): 
+        if not _is_arraylike_1d (z): 
+            raise ValueError ("Multidimensional 'k' array is not allowed"
+                              " Expect one-dimensional array.")
+        z0= pd.Series (z, name =zname) if zname is not None else z 
+
+    return z0 if return_z else is_z  
+
+def get_aquifer_sections (
+        arr_k, /, zname=None, kname = None,  z= None, 
+        return_indexes = False, return_sections = True 
+        ) : 
+    _assert_all_types( arr_k, pd.DataFrame, np.ndarray)
+    
+    if z is not None: 
+        ms = (f"Depth {type(z).__name__} size must be consistent with"
+             f" {type (arr_k).__name__!r};got {len(z)} and {len(arr_k)}."
+             )
+        _assert_all_types(z, np.ndarray, pd.Series)
+        
+        if not _is_arraylike_1d(z): 
+            raise DepthError ("Depth supports only one-dimensional array,"
+                             f" not {type(z).__name__!r}.")
+        if len(z)!= len(arr_k): 
+            raise DepthError (ms)
+                
+    if (z is None and zname is not None ): 
+        z = is_valid_depth ( arr_k , zname = zname , return_z = True )
+        zname = z.name 
+        
+    elif ( z is None and zname is None ): 
+           raise TypeError ("Expects an array of depth 'z' or  depth column"
+                            " name 'zname' in the dataframe.")    
+        
+    if hasattr (arr_k ,'columns' ):
+        # deal with arr_k 
+        if kname is None: 
+            raise ValueError ("Permeability coefficient 'k' name can not "
+                              "be None when a dataframe is given.") 
+        else: 
+            _assert_all_types(kname, str , int , float,  objname="'kname'") 
+            
+        if isinstance (kname , (int, float)): 
+            kname = int (kname) 
+            if kname > len(arr_k.columns): 
+                raise IndexError (f"'kname' at index {kname} is out of the "
+                                  f"dataframe column size={len(arr_k.columns)}")
+                
+            kname = arr_k.columns[kname]
+            
+        if kname not in arr_k.columns:
+            raise ValueError (f"'kname' {kname!r} not found in dataframe.")
+        
+        arr_k = arr_k[kname] 
+        arr_k= arr_k.values 
+        
+    elif hasattr (arr_k, '__array__'): 
+        if not _is_arraylike_1d (arr_k): 
+            raise ValueError ("Multidimensional 'k' array is not allowed"
+                              " Expect one-dimensional array.")
+
+    # for consistency, set all to 1d array 
+    z = reshape (z) ; arr_k = reshape (arr_k)
+
+    indexes,  = np.where (~np.isnan (arr_k)) 
+    if hasattr (indexes, '__len__'): 
+        indexes =[ indexes [0 ] , indexes [-1]]
+        
+    sections = z[indexes ]
+    
+    return ( [* indexes ], [* sections ])   if ( 
+        return_indexes and return_sections ) else  ( 
+            [*indexes ] if return_indexes else  [*sections])
+
+get_aquifer_sections.__doc__="""\
+Detect aquifer sections (upper and lower) sections 
+
+Detects the section of aquifer in depth. 
+
+Parameters 
+-----------
+arr_k: ndarray or dataframe 
+    Data that contains mainly the aquifer values. It can also contains the 
+    depth values. If the depth is included in the `arr_k`, `zname` needs to 
+    be supplied for recovering and depth. 
+    
+{params.core.zname}
+{params.core.kname}
+{params.core.z}
+
+return_indexes: bool, default =False , 
+    Returns the positions (indexes) of the upper and lower sections of the
+     aquifer found in the dataframe `arr_k`. 
+return_sections: bool, default=True, 
+    Returns the sections (upper and lower) of the aquifers. 
+
+Returns 
+--------
+up, low :list of upper and lower section values of aquifer.
+    - (upix, lowix ): Tuple of indexes of lower and upper sections  
+    - (up, low): Tuple of aquifer sections (upper and lower)  
+    - (upix, lowix), (up, low) : positions and sections values of aquifers 
+        if `return_indexes` and return_sections` are ``True``.  
+
+Example
+-------
+>>> from watex.datasets import load_hlogs 
+>>> from watex.utils.hydroutils import get_aquifer_sections 
+>>> data = load_hlogs ().frame # return all data including the 'depth' values 
+>>> get_aquifer_sections (data , zname ='depth', kname ='k')
+... [197.12, 369.71] # section starts from 197.12 -> 369.71 m 
+>>> get_aquifer_sections (data , zname ='depth', kname ='k', return_indexes=True) 
+... ([16, 29], [197.12, 369.71]) # upper and lower-> position 16 and 29.
+
+
+""".format(
+    params=_param_docs,
+    )
+    
 def _kp (k, /,  kr= (.01 , .07 ), string = False ) :
     """ Default permeability 'k' mapping using dict to validate the continue 
     value 'k' 

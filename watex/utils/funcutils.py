@@ -1404,17 +1404,21 @@ def _isin (
             ) if not return_mask else np.isin (arr, subarr) 
 
 def _assert_all_types (
-        obj: object , 
-        *expected_objtype: type 
+    obj: object , 
+    *expected_objtype: type, 
+    objname:str=None, 
  ) -> object: 
-    """ Quick assertion of object type. Raise an `TypeError` if 
-    wrong type is given."""
+    """ Quick assertion of object type. Raises a `TypeError` if wrong type 
+    is passed as an argument. For polishing the error message, one can add  
+    the object name `objname` for specifying the object that raises errors  
+    for letting the users to be aware of the reason of failure."""
     # if np.issubdtype(a1.dtype, np.integer): 
     if not isinstance( obj, expected_objtype): 
+        n=str(objname) + ' expects' if objname is not None else 'Expects'
         raise TypeError (
-            f'Expected {smart_format(tuple (o.__name__ for o in expected_objtype))}'
-            f' type{"s" if len(expected_objtype)>1 else ""} '
-            f'but `{type(obj).__name__}` is given.')
+            f"{n} type{'s' if len(expected_objtype)>1 else ''} "
+            f"{smart_format(tuple (o.__name__ for o in expected_objtype))}"
+            f" but {type(obj).__name__!r} is given.")
             
     return obj 
 
@@ -3742,8 +3746,94 @@ def map_specific_columns (
     
         return  X0   
     
+def is_depth_in (X, name, columns = None, error= 'ignore'): 
+    """ assert wether depth exists in the columns.  If name is an 
+    integer value, it assumes to be the index in the columns of the dataframe
+    if not exist , a warming will be show to user. 
     
+    :param X: dataframe 
+        dataframe containing the data for plotting 
+        
+    :param columns: list,
+        New labels to replace the columns in the dataframe. If given , it 
+        should fit the number of colums of `X`. 
+        
+    :param name: str, int  
+        depth name in the dataframe or index to retreive the name of the depth 
+        in dataframe 
+    :param error: str , default='ignore'
+        Raise or ignore when depth is not found in the dataframe. Whe error is 
+        set to ``ignore``, a pseudo-depth is created using the lenght of the 
+        the dataframe, otherwise a valueError raises.
+        
+    :return: X, depth 
+        Dataframe without the depth columns and depth values.
+    """
+    X= _assert_all_types( X, pd.DataFrame )
+    if columns is not None: 
+        columns = list(columns)
+        if not is_iterable(columns): 
+            raise TypeError("columns expects an iterable object."
+                            f" got {type (columns).__name__!r}")
+        if len(columns ) != len(X.columns): 
+            warnings.warn("Cannot rename columns with new labels. Expect "
+                          "a size to be consistent with the columns X."
+                          f" {len(columns)} and {len(X.columns)} are given."
+                          )
+        else : 
+            X.columns = columns # rename columns
+        
+    else:  columns = list(X.columns) 
     
+    _assert_all_types(name,str, int, float )
+    
+    # if name is given as indices 
+    # collect the name at that index 
+    if isinstance (name, (int, float) )  :     
+        name = int (name )
+        if name > len(columns): 
+            warnings.warn ("Name index {name} is out of the columns range."
+                           f" Max index of columns is {len(columns)}")
+            name = None 
+        else : 
+            name = columns.pop (name)
+    
+    elif isinstance (name, str): 
+        # find in columns whether a name can be 
+        # found. Note that all name does not need 
+        # to be written completely 
+        # for instance name =depth can retrieved 
+        # ['depth_top, 'depth_bottom'] , in that case 
+        # the first occurence is selected i.e. 'depth_top'
+        n = find_by_regex( 
+            columns, pattern=fr'{name}', func=re.search)
+
+        if n is not None:
+            name = n[0]
+            
+        # for consistency , recheck all and let 
+        # a warning to user 
+        if name not in columns :
+            msg = f"Name {name!r} does not match any column names."
+            if error =='raise': 
+                raise ValueError (msg)
+
+            warnings.warn(msg)
+            name =None  
+            
+    # now create a pseudo-depth 
+    # as a range of len X 
+    if name is None: 
+        if error =='raise':
+            raise ValueError ("Depth column not found in dataframe."
+                              )
+        depth = pd.Series ( np.arange ( len(X)), name ='depth (m)') 
+    else : 
+        # if depth name exists, 
+        # remove it from X  
+        depth = X.pop (name ) 
+        
+    return  X , depth     
     
     
     

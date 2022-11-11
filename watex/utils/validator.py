@@ -158,6 +158,12 @@ def _deprecate_positional_args(func=None, *, version="1.3"):
 
     return _inner_deprecate_positional_args
 
+def _is_arraylike_1d (x) :
+    """ Returns whether the input is arraylike one dimensional and not a scalar"""
+    _is_arraylike_not_scalar(x)
+
+    return _is_arraylike_not_scalar(x) and  (  len(x.shape )< 2 or ( 
+        len(x.shape ) ==2 and x.shape [1]==1 )) 
 
 def _is_arraylike(x):
     """Returns whether the input is array-like."""

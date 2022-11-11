@@ -25,9 +25,9 @@ from .funcutils import  (
     is_iterable, 
     _assert_all_types, 
     to_numeric_dtypes, 
-    find_by_regex, 
     str2columns, 
-    is_in_if
+    is_in_if, 
+    is_depth_in
     )
 from .validator import  ( 
     _check_array_in  , 
@@ -113,7 +113,7 @@ D_STYLES = [
 def plot_logging ( 
         X, 
         y=None, 
-        depth_column = 'depth', 
+        zname = None, 
         tname = None, 
         labels=None,
         impute_nan=True , 
@@ -124,7 +124,8 @@ def plot_logging (
         strategy='mean',  
         posiy= None, 
         fill_value = None,  
-        fig_size = (16, 7), 
+        fig_size = (16, 7),
+        fig_dpi = 300, 
         colors = None,  
         sns_style =False, 
         savefig = None,
@@ -155,15 +156,22 @@ def plot_logging (
         default the target plot should be located at the last position. 
         However with the argument of `posiy` , target plot can be toggled to  
         the desired position. 
-        
-    normalize: bool, default = False
-        Normalize all the data to be range between (0, 1) except the `depth`,
-        
-    depth_column: str, default='depth'
+
+    zname: str, default='depth' or 'None'
         The name of the depth column in `X`. If the name 'depth' is not  
         specified as the main depth columns, an other name in the columns 
-        that match the depth can also be indicated so the function will put 
-        aside this columm as depth columns for plot purpose.
+        that matches the depth can also be indicated so the function will put 
+        aside this columm as depth column for plot purpose. If set to ``None``, 
+        `zname` holds the name ``depth`` and assumes that depth exists in 
+        `X` columns.
+    tname: str, optional, 
+        name of the target. This can rename of the target name if given `y`
+        as a pandas series  or add the name of target if given as an array-like. 
+        If not provided, it should use the name of the target series if `y` is
+        not None. 
+        
+    normalize: bool, default = False
+        Normalize all the data to be range between (0, 1) except the `depth`,    
         
     labels: list or str, optional
         If labels afre given, they should fit the size of the number of 
@@ -186,13 +194,7 @@ def plot_logging (
         for instance, a negative data. In that case, `column_to_skip` argument
         is usefull to provide so to skip that columns when converting values 
         to log10. 
-        
-    tname: str, optional, 
-        name of the target. this can rename of the target name if given `y`
-        as a pandas series  or add the name of target if given as an array-like. 
-        If not provided, it should use the name of the target series if `y` is
-        not None. 
-        
+ 
     columns_to_skip: list or str, optional, 
         Columns to skip when performing some operation like 'log10'. These 
         columns with not be affected by the 'log10' operations. Note that 
@@ -230,12 +232,7 @@ def plot_logging (
         If left to the default, fill_value will be 0 when imputing numerical
         data and "missing_value" for strings or object data types. If not 
         given and `impute_nan` is ``True``, the mean strategy is used instead.
-        
-    depth_column: str or int, default ='depth', 
-        specify the depth columns name so to hold the real depth values. 
-        if set to None, will assume that depth exists in X columns otherwise 
-        will use index as depth values. 
-        
+
     posiy: int, optional 
         the position to place the target plot `y` . By default the target plot 
         if given is located at the last position behind the logging plots. 
@@ -251,10 +248,14 @@ def plot_logging (
     fig_size : tuple (width, height), default =(8, 6)
         the matplotlib figure size given as a tuple of width and height
         
+    fig_dpi: float or 'figure', default: rcParams["savefig.dpi"] \
+        (default: 'figure')
+        The resolution in dots per inch. If 'figure', use the figure's dpi value.
+        
     savefig: str, default =None , 
         the path to save the figure. Argument is passed to 
         :class:`matplotlib.Figure` class. 
-        
+
     sns_style: str, optional, 
         the seaborn style.
         
@@ -297,7 +298,7 @@ def plot_logging (
            raise ValueError ("y and X sizes along axis 0 must be consistent;"
                              f" {len(y)} and {len(X)} are given.")
     # return X and depth 
-    X, depth = _is_depth_in(X, depth_column, columns = labels 
+    X, depth = is_depth_in(X, zname or 'depth', columns = labels 
                             )
     # fetch target if is given  
     X, y   = _is_target_in(X, y = y , tname = tname )
@@ -400,7 +401,7 @@ def plot_logging (
     plt.gca().invert_yaxis()
     
     if savefig is not None:
-        plt.savefig(savefig, dpi = dpi )
+        plt.savefig(savefig, dpi = fig_dpi )
         
     plt.close () if savefig is not None else plt.show() 
     
@@ -2027,79 +2028,7 @@ def _set_sns_style (s, /):
     return sns.set_style(s) 
 
 
-def _is_depth_in (X, name, columns = None, ): 
-    """ assert wether depth exists in the columns.  If name is an 
-    integer value, it assumes to be the index in the columns of the dataframe
-    if not exist , a warming will be show to user. 
-    
-    :param X: dataframe 
-        dataframe containing the data for plotting 
-        
-    :param columns: list,
-        New labels to replace the columns in the dataframe. If given , it 
-        should fit the number of colums of `X`. 
-        
-    :param name: str, int  
-        depth name in the dataframe or index to retreive the name of the depth 
-        in dataframe 
-    :return: X, depth 
-        Dataframe without the depth columns and depth values.
-    """
-    X= _assert_all_types( X, pd.DataFrame )
-    if columns is not None: 
-        columns = list(columns)
-        if not is_iterable(columns): 
-            raise TypeError("columns expects an iterable object."
-                            f" got {type (columns).__name__!r}")
-        if len(columns ) != len(X.columns): 
-            warnings.warn("Cannot rename columns with new labels. Expect "
-                          "a size to be consistent with the columns X."
-                          f" {len(columns)} and {len(X.columns)} are given."
-                          )
-        else : 
-            X.columns = columns # rename columns
-        
-    else:  columns = list(X.columns) 
-    
-    _assert_all_types(name,str, int, float )
-    
-    # if name is given as indices 
-    # collect the name at that index 
-    if isinstance (name, (int, float) )  :     
-        name = int (name )
-        if name > len(columns): 
-            warnings.warn ("Name index {name} is out of the columns range."
-                           f" Max index of columns is {len(columns)}")
-            name = None 
-        else : name = columns.pop(name)
-    
-    if isinstance (name, str): 
-        # find in columns whether a name can be 
-        # found. Note that all name does not need 
-        # to be written completely 
-        # for instance name =depth can retrieved 
-        # ['depth_top, 'depth_bottom'] , in that case 
-        # the first occurence is selected i.e. 'depth_top' 
-        n = find_by_regex( 
-            columns, pattern=fr'{name}', func=re.search)
-        if n is not None: 
-            name = n[0]
-        # for consistency , recheck all and let 
-        # a warning to user 
-        if name not in columns : 
-            warnings.warn(f"Name {name!r} does not match any column names.")
-            name =None  
-            
-    # now create a pseudo-depth 
-    # as a range of len X 
-    if name is None: 
-        depth = pd.Series ( np.arange ( len(X)), name ='depth (m)') 
-    else : 
-        # if depth name exists, 
-        # remove it from X  
-        depth = X.pop (name ) 
-        
-    return  X , depth 
+
 
 def _is_target_in (X, y=None, tname=None): 
     """ Create new target name for tname if given 

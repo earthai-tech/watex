@@ -504,6 +504,38 @@ tname: str,
     A target name or label. In supervised learning the target name is considered  
     as the reference name of `y` or label variable.   
     """, 
+    z="""
+z: array-like 1d, pandas.Series 
+    Array of depth or a pandas series that contains the depth values. Two  
+    dimensional array or more is not allowed. However when `z` is given as 
+    a dataframe and `zname` is not supplied, an error raises since `zname` is 
+    used to fetch and overwritten `z` from the dataframe. 
+    """, 
+    zname="""
+zname: str, int
+    Name of depth columns. `zname` allows to retrieve the depth column in 
+    a dataframe. If integer is passed, it assumes the index of the dataframe 
+    fits the depth column. Integer value must not be out the dataframe size 
+    along axis 1. Commonly `zname`needs to be supplied when a dataframe is 
+    passed to a function argument. 
+    """, 
+    kname="""
+kname: str, int
+    Name of permeability coefficient columns. `kname` allows to retrieve the 
+    permeability coefficient 'k' in  a specific dataframe. If integer is passed, 
+    it assumes the index of the dataframe  fits the 'k' columns. Note that 
+    integer value must not be out the dataframe size along axis 1. Commonly
+   `kname` needs to be supplied when a dataframe is passed as a positional 
+    or keyword argument. 
+    """, 
+    k=""" 
+k: array-like 1d, pandas.Series 
+    Array of permeability coefficient 'k' or a pandas series that contains the 
+    'k' values. Two  dimensional array or more is not allowed. However,
+    when `k` passes as a dataframe and `kname` is not supplied, an error 
+    raises since `kname` is used to retrieve `k` values from the dataframe 
+    and overwritten it.
+    """,     
     target="""
 target: Array-like or :class:`pd.Series`
     Is the dependent variable in supervised (and semisupervised) learning, 
