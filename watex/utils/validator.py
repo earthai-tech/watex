@@ -23,6 +23,7 @@ import joblib
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
 
+
 def get_estimator_name (estimator , /): 
     """ Get the estimator name whether it is instanciated or not  
     

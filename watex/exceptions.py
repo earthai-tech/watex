@@ -17,6 +17,11 @@ class SiteError(Exception):
     pass 
 
 class DatasetError(Exception): 
+    """ Raises exception when mutiple data are passed as list of arguments 
+    where shape , columns and sizee are compared. If one aforementionned 
+    details does not fit all the data. An error raises. Furthermore, an 
+    error also raises when some items in the data are not valid according to 
+    the prescipted details beforehand."""
     pass 
 
 class EDIError(Exception):

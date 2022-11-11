@@ -13,6 +13,8 @@ parameters.
 from __future__ import annotations 
 import copy 
 import math
+import itertools
+from collections import Counter 
 import inspect
 import warnings 
 import numpy as np
@@ -37,7 +39,8 @@ from ..decorators import (
     )
 from ..exceptions import ( 
     FileHandlingError, 
-    DepthError
+    DepthError, 
+    DatasetError
     )
 from .funcutils import  (
     _assert_all_types, 
@@ -61,19 +64,114 @@ _param_docs = DocstringComponents.from_nested_components(
 #XXTODO 
 # from sections indexes , get the 
 
-
-def define_compressed_vector (d, /, start= 0 , stop = None, strategy ='most_frequent') :
+def _validate_samples (*dfs , error ='raise'): 
+    """ Validate data . 
+     check shapes and the columns items in the data.
+     
+    :param dfs: list of dataframes or array-like 
+        Dataframe must have the same size along axis 1. If error is 'ignore'
+        error is muted if the length ( along axis 0) of data does not fit 
+        each other. 
+    :param error: str, default='raise' 
+        Raise absolutely error if data has not the same shape, size and items 
+        in columns. 
+    :return: 
+        valid_dfs: List of valida data. If 'error' is 'ignore' , It still 
+        returns the list of valid data and excludes the invalid all times 
+        leaving an userwarnmimg.
+        
+    """
+    shape_init = dfs[0].shape[1]
+    [ _assert_all_types(df, np.ndarray, pd.DataFrame) for df in dfs ]
+    diff_shape , shapes  , cols = [], [],[]
     
+    col_init = dfs[0].columns if hasattr (dfs[0] , 'columns') else [] 
+    valid_dfs =[]
+    for k , df in enumerate (dfs) : 
+        if df.shape[1] != shape_init :
+            diff_shape.append(k) 
+        else: valid_dfs.append (df )
+        
+        shapes.append (df.shape)
+        if hasattr (df, 'columns'): 
+            cols.append (list(df.columns ))
+            
+    countshapes = list(Counter (shapes )) # iterable object 
+    occshapes = countshapes [0] # the most occurence shape
+    if len(diff_shape )!=0 : 
+        v=f"{'s' if len(diff_shape)>1 else ''}"
+        mess = ("Shapes for all data must be consistent; got different" 
+                f" shape{v} at the position{v} {smart_format(diff_shape)}.")
+        
+        if error =='raise': 
+            raise ValueError (mess + f" Expects {occshapes}")
+
+        warnings.warn(mess + f"The most frequent shape is {occshapes}"
+                      " Please check or reverify your data to avoid."
+                      "a misunderstanding or unpleasant data arrangement.")
+        shape1 = list(map (lambda k:k[1],  countshapes))
+        
+        if set (shape1) !=1 : 
+            raise ValueError ("shape along axis 1 must be consistent. "
+                              f"Got {smart_format (countshapes)}. Check the "
+                              f"data at position{v} {smart_format(diff_shape)} "
+                ) 
+            
+    colsset = set ( list(itertools.chain (*cols ) ) ) 
+ 
+    if len(colsset ) != len(col_init) : 
+        raise DatasetError ("Expect identical columns for all data"
+                            " Please check your data.") 
+    
+    return valid_dfs 
+
+        
+def compute_compressed_vector (d, /, start= 0 , stop = None, 
+                               strategy ='most_frequent') :
+    
+    pass 
+
 def samples_reducing (*dfs , start=0 , stop =None, zname =None, kname = None,
-                      z=None, out = None, **kws) : 
+                      z=None, add_compressed_vector =True, **kws) : 
+    
     """ Reduced samples and """
-    start, stop = [int (_assert_all_types(o, int )) for o in [start, stop ]]
+    
+    msg = ("Data position {0} passed to arguments {1} not valid."
+        " Should be discarded during the computing of aquifer sections."
+        " Please check your data and run the script again to have full"
+        "  control of the sampling compressing. Remember that data must "
+        "contain the 'depth' and aquifer  values."
+        )
+    is_valid_dfs = [] ; is_not_valid =[]
+    
+    dfs = _validate_samples( dfs )  
+    
+    #start, stop = [int (_assert_all_types(o, int )) for o in [start, stop ]]
     
     indexes ,sections =[] , []
-    for df in dfs : 
-        ix, sec = get_aquifer_sections(df , zname = zname , kname = kname , 
-                             z = z, return_indexes= True )
-        indexes.append(ix); sections.append(sec )
+    for ii, df in enumerate ( dfs) : 
+        try : 
+            ix, sec = get_aquifer_sections(
+                df , 
+                zname = zname , 
+                kname = kname , 
+                z = z, 
+                return_indexes= True 
+                )
+            is_valid_dfs .append (df )
+        except :
+            is_not_valid.append (ii)
+            
+            continue 
+        
+        indexes.append(ix); sections.append(sec ) 
+        
+    if len(is_not_valid) !=0 : 
+        warnings.warn ( msg.format(smart_format(is_not_valid)))
+        
+    #==== compte the compressed vectors . 
+        
+        
     if stop is None: 
         stop = -1 
         
