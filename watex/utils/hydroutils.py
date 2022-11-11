@@ -49,6 +49,8 @@ from .funcutils import  (
     reshape 
     
     )
+from ..exlib.sklearn import SimpleImputer 
+
 from .validator import _is_arraylike_1d 
 #-----------------------
 
@@ -56,7 +58,12 @@ _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
 
+#XXTODO 
+# from sections indexes , get the 
 
+
+def define_compressed_vector (d, /, start= 0 , stop = None, strategy ='most_frequent') :
+    
 def samples_reducing (*dfs , start=0 , stop =None, zname =None, kname = None,
                       z=None, out = None, **kws) : 
     """ Reduced samples and """
