@@ -169,7 +169,7 @@ def to_numeric_dtypes (
 
 def listing_items_format ( 
         lst, /, begintext ='', endtext='' , 
-        enum =True , lstyle=None , space =3 , inline =False, 
+        enum =True , lstyle=None , space =3 , inline =False, verbose=True
         ): 
     """ Format list by enumerate them successively with carriage return
     
@@ -187,7 +187,11 @@ def listing_items_format (
         number of space to keep before each outputted item in `lst`
     :param inline: bool, default=False, 
         Display all element inline rather than carriage return every times. 
-    
+    :param verbose: bool, 
+        Always True for print. If set to False, return list of string 
+        litteral text. 
+    :returns: None or str 
+        None or string litteral if verbose is set to ``False``.
     Examples
     ---------
     >>> from watex.utils.funcutils import listing_items_format 
@@ -198,7 +202,7 @@ def listing_items_format (
                                'have been successfully drop.' , 
                               lstyle ='.', space=3) 
     """
-    
+    out =''
     if not is_iterable(lst): 
         lst=[lst]
    
@@ -211,18 +215,24 @@ def listing_items_format (
     lstyle=  lstyle or '-'  
     lstyle = str(lstyle)
     b= f"{begintext +':' } "   
-    print(b, end=' ') if inline else (
-        print(b)  if  begintext!='' else None)
+    if verbose :
+        print(b, end=' ') if inline else (
+            print(b)  if  begintext!='' else None)
+    out += b +  ('\n' if not inline else ' ') 
     for k, item in enumerate (lst): 
         sp = ' ' * space 
         if ( not enum and inline ): lstyle =''
-        out = f"{sp}{str(k+1) if enum else '- ' }{lstyle} {item}"
-        print (out , end=' ') if inline else print(out)
-
-    print(', ' + endtext if inline else endtext
-          ) if endtext !='' else None 
+        o = f"{sp}{str(k+1) if enum else '- ' }{lstyle} {item}"
+        if verbose:
+            print (o , end=' ') if inline else print(o)
+        out += o + ('\n' if not inline else ' ') 
+       
+    en= ', ' + endtext if inline else endtext
+    if verbose: 
+        print(en) if endtext !='' else None 
+    out +=en 
     
-
+    return None if verbose else out 
     
 def parse_attrs (attr, /, regex=None ): 
     """ Parse attributes using the regular expression.

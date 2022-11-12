@@ -11,6 +11,7 @@ parameters.
 
 """
 from __future__ import annotations 
+import random
 import copy 
 import math
 import itertools
@@ -40,7 +41,8 @@ from ..decorators import (
 from ..exceptions import ( 
     FileHandlingError, 
     DepthError, 
-    DatasetError
+    DatasetError, 
+    StrataError
     )
 from .funcutils import  (
     _assert_all_types, 
@@ -49,12 +51,15 @@ from .funcutils import  (
     smart_format, 
     savepath_ , 
     is_depth_in, 
-    reshape 
+    reshape , 
+    listing_items_format, 
+    to_numeric_dtypes, 
+    _isin 
     
     )
 from ..exlib.sklearn import SimpleImputer 
 
-from .validator import _is_arraylike_1d 
+from .validator import _is_arraylike_1d
 #-----------------------
 
 _param_docs = DocstringComponents.from_nested_components(
@@ -64,7 +69,7 @@ _param_docs = DocstringComponents.from_nested_components(
 #XXTODO 
 # from sections indexes , get the 
 
-def _validate_samples (*dfs , error ='raise'): 
+def _validate_samples (*dfs , error:str ='raise'): 
     """ Validate data . 
      check shapes and the columns items in the data.
      
@@ -100,19 +105,20 @@ def _validate_samples (*dfs , error ='raise'):
     occshapes = countshapes [0] # the most occurence shape
     if len(diff_shape )!=0 : 
         v=f"{'s' if len(diff_shape)>1 else ''}"
-        mess = ("Shapes for all data must be consistent; got different" 
-                f" shape{v} at the position{v} {smart_format(diff_shape)}.")
+        mess = ("Shapes for all data must be consistent; got " 
+                f"at the position{v} {smart_format(diff_shape)}.")
         
         if error =='raise': 
             raise ValueError (mess + f" Expects {occshapes}")
 
         warnings.warn(mess + f"The most frequent shape is {occshapes}"
-                      " Please check or reverify your data to avoid."
-                      "a misunderstanding or unpleasant data arrangement.")
+                      " Please check or reverify your data. This might lead to"
+                      " breaking code or invalid results. Use at your own risk."
+                      )
         shape1 = list(map (lambda k:k[1],  countshapes))
         
         if set (shape1) !=1 : 
-            raise ValueError ("shape along axis 1 must be consistent. "
+            raise ValueError ("Shape along axis 1 must be consistent. "
                               f"Got {smart_format (countshapes)}. Check the "
                               f"data at position{v} {smart_format(diff_shape)} "
                 ) 
@@ -125,63 +131,445 @@ def _validate_samples (*dfs , error ='raise'):
     
     return valid_dfs 
 
-        
-def compute_compressed_vector (d, /, start= 0 , stop = None, 
-                               strategy ='most_frequent') :
-    
-    pass 
 
-def samples_reducing (*dfs , start=0 , stop =None, zname =None, kname = None,
-                      z=None, add_compressed_vector =True, **kws) : 
+def select_base_stratum (
+    d: Series | ArrayLike | DataFrame , 
+    /, 
+    sname:str = None, 
+    stratum:str= None,
+    return_rate:bool=False, 
+    return_counts:bool= False, 
+    ):
+    """ Select base stratum in the strata data contain. 
     
-    """ Reduced samples and """
+    Find the most recurrent stratum in the data and compute the rate of 
+    occurrence. 
     
-    msg = ("Data position {0} passed to arguments {1} not valid."
-        " Should be discarded during the computing of aquifer sections."
-        " Please check your data and run the script again to have full"
-        "  control of the sampling compressing. Remember that data must "
-        "contain the 'depth' and aquifer  values."
-        )
-    is_valid_dfs = [] ; is_not_valid =[]
+    Parameters 
+    ------------
+    d: array-like 1D , pandas.Series or DataFrame
+        Valid data containing the strata. If dataframe is passed, 'sname' is 
+        needed to fetch strata values. 
+    sname: str, optional 
+        Name of column in the dataframe that contains the strata values. 
+        Dont confuse 'sname' with 'stratum' which is the name of the valid 
+        layer/rock in the array/Series of strata. 
+    stratum: str, optional 
+        Name of the base stratum. Must be self contain as an item of the 
+        strata data. Note that if `stratum` is passed, the auto-detection of 
+        base stratum is not triggered. It returns the same stratum , however
+        it can gives the rate and occurence of this stratum if `return_rate` 
+        or `return_counts` is set to ``True``. 
+    return_rate: bool,default=False, 
+        Returns the rate of occurence of the base stratum in the data. 
+    return_counts: bool, default=False, 
+        Returns each stratum name and the occurences (count) in the data. 
     
-    dfs = _validate_samples( dfs )  
-    
-    #start, stop = [int (_assert_all_types(o, int )) for o in [start, stop ]]
-    
-    indexes ,sections =[] , []
-    for ii, df in enumerate ( dfs) : 
-        try : 
-            ix, sec = get_aquifer_sections(
-                df , 
-                zname = zname , 
-                kname = kname , 
-                z = z, 
-                return_indexes= True 
-                )
-            is_valid_dfs .append (df )
-        except :
-            is_not_valid.append (ii)
-            
-            continue 
+    Returns 
+    ---------
+    bs: str 
+        - base stratum , self contain in the data 
+    r: float 
+        rate of occurence in base stratum in the data 
+    c: tuple (str, int)
+        Tuple of each stratum whith their occurrence in the data. 
         
-        indexes.append(ix); sections.append(sec ) 
+    Example 
+    --------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.hydroutils import select_base_stratum 
+    >>> data = load_hlogs().frame # get only the frame 
+    >>> select_base_stratum(data, sname ='strata_name')
+    ... 'siltstone'
+    >>> select_base_stratum(data, sname ='strata_name', return_rate =True)
+    ... 0.287292817679558
+    >>> select_base_stratum(data, sname ='strata_name', return_counts=True)
+    ... [('siltstone', 52),
+         ('fine-grained sandstone', 40),
+         ('mudstone', 37),
+         ('coal', 24),
+         ('Coarse-grained sandstone', 15),
+         ('carbonaceous mudstone', 9),
+         ('medium-grained sandstone', 2),
+         ('topsoil', 1),
+         ('gravel layer', 1)]
+    """
+    _assert_all_types(d, pd.DataFrame, pd.Series, np.ndarray )
+    
+    if hasattr(d, 'columns'): 
+        if sname is None :
+            raise TypeError ("'sname' ( strata column name )  can not be "
+                              "None when a dataframe is passed.")
+        sn= copy.deepcopy(sname)
+        sname = _assert_all_types(sname, str, objname ='Column') 
+        sname = is_in_if(d.columns, sname, error ='ignore')
+        if sname is None: 
+            raise ValueError ( f"Name {sn!r} is not a valid column strata name."
+                              " Please, check your data.") 
+        sname =sname [0] if isinstance(sname, list) else sname 
+        sdata = d[sname ]    
+
+    elif hasattr (d, '__array__') and not hasattr (d, 'name'):
+        if not _is_arraylike_1d(d): 
+            raise StrataError("Strata data supports only one-dimensional array."
+                             )
+        sdata = d
+        
+    if stratum is not None: 
+        if not stratum in set (sdata):
+            out= listing_items_format(set(sdata), begintext = 'strata', 
+                                      verbose = False )
+            raise StrataError (f"Stratum {stratum!r} not found in the data."
+                              f" Expects {out}")
+    #compute the occurence of the stratum in the data: 
+    bs,  r , c  = _get_s_occurence(sdata , stratum )
+        
+    return ( ( r , c )  if ( return_rate and return_counts) else  ( 
+            r if return_rate else c ) if return_rate or return_counts else bs 
+            ) 
+
+def _get_s_occurence (
+        sd, /,  bs = None ) -> Tuple [str, float, List ]: 
+    """ Returns the occurence of the object in the data. 
+    :param sd: array-like 1d of  data 
+    :param bs: str - base name of the object. If 'bs' if given the auto 
+        search  will not be used. 
+    :param return_counts: return each object with their occurence 
+    :returns: bs, c, r
+        return the base object, counts or rate.
+    """
+    # sorted strata in ascending occurence 
+    s=dict ( Counter(sd ) ) 
+    sm = dict (
+        sorted (s.items () , key= lambda x:x[1], reverse =True )
+        )
+    bs = list(sm) [0]  if bs is None else bs 
+    r= sm[bs] / sum (sm.values ()) # ratio
+    c = list(zip (sm.keys(), sm.values ())) 
+    
+    return  bs,  r , c
+
+            
+def get_compressed_vector(
+    d, /, 
+    sname,  
+    stratum =None , 
+    strategy ="average", 
+    as_frame = False, 
+    random_state = None, 
+    )-> Series :
+    """ Compress base stratum data into a singular vector composes of all 
+    feature names in the targetted data `d`. 
+    
+    Parameters 
+    ------------
+    d: pandas DataFrame
+        Valid data containing the strata. If dataframe is passed, 'sname' is 
+        needed to fetch strata values. 
+    sname: str, optional 
+        Name of column in the dataframe that contains the strata values. 
+        Dont confuse 'sname' with 'stratum' which is the name of the valid 
+        layer/rock in the array/Series of strata. 
+    stratum: str, optional 
+        Name of the base stratum. Must be self contain as an item of the 
+        strata data. Note that if `stratum` is passed, the auto-detection of 
+        base stratum is not triggered. It returns the same stratum , however
+        it can gives the rate and occurence of this stratum if `return_rate` 
+        or `return_counts` is set to ``True``. 
+    
+    strategy: str , default='average' or 'mean', 
+        strategy used to select or compute the numerical data into a 
+        singular series. It can be ['naive']. In that case , a single serie 
+        if randomly picked up into the base strata data.
+    as_frame: bool, default='False'
+        Returns compressed vector into a dataframe rather that keeping in 
+        series. 
+    random_state: int, optional, 
+        State for randomly selected a compressed vector when ``naive`` is 
+        passed as strategy.
+    
+    Returns 
+    --------
+    ms: pandas series/dataframe 
+        returns a compressed vector in pandas series compose of all features. 
+        Note , the vector here does not refer as math vector compose of 
+        numerical values only. A compressed vector here is a series that is 
+        the result of averaging the numerical features of the base stratum and 
+        incluing its corresponding categorical values. Note there, the  `ms`
+        can contain categorical values and has the same number and features as 
+        the original frame `d`. 
+    
+    Example
+    -------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.hydroutils import get_compressed_vector 
+    >>> data = load_hlogs().frame # get only the frame  
+    >>> get_compressed_vector (data, sname='strata_name')[:4]
+    ... hole_number           H502
+        strata_name      siltstone
+        aquifer_group           II
+        pumping_level       ZFSAII
+        dtype: object
+    >>> get_compressed_vector (data, sname='strata_name', as_frame=True )
+    ...   hole_number strata_name aquifer_group  ...        r     rp remark
+        0        H502   siltstone            II  ...  41.7075  59.23    NaN
+        [1 rows x 23 columns]
+    >>> get_compressed_vector (data, sname='strata_name', strategy='naive')
+    ... hole_number          H502
+        depth_top          379.15
+        depth_bottom        379.7
+        strata_name     siltstone
+        Name: 39, dtype: object
+    """
+    _assert_all_types(d, pd.DataFrame, objname = "Data for samples compressing")
+    sname = _assert_all_types(sname, str , "'sname' ( strata column name )")
+    
+    assert strategy in {'mean', 'average', 'naive'}, "Supports only strategy "\
+        f"'mean', 'average' or 'naive'; got {strategy!r}"
+    if stratum is None: 
+        stratum = select_base_stratum(d, sname= sname, stratum= stratum )
+    stratum = _assert_all_types(stratum, str , objname = 'Base stratum ')
+    #group y and get only the base stratum data 
+    pieces = dict(list(d.groupby (sname))) 
+    bs_d  = pd.DataFrame( pieces [ stratum ]) 
+    # get the numerical features only before  applying operation 
+    _, numf , catf  = to_numeric_dtypes(bs_d , return_feature_types= True )
+    
+    if strategy  in ('mean', 'average') :
+        ms = bs_d[ numf ].mean() 
+        if len(catf)!=0:
+            # Impute data and fill the gap if exists
+            #  by the most frequent categorial features.
+            sim = SimpleImputer(strategy = 'most_frequent') 
+            xt = sim.fit_transform(bs_d[catf]) 
+            bs_dc = pd.DataFrame(xt , columns = sim.feature_names_in_ ) 
+            # get only single value of the first row 
+            bs_init = bs_dc .iloc [0 , : ] 
+            #ms.reset_index (inplace =True ) 
+            ms = pd.concat ( [ bs_init, ms  ], axis = 0 ) 
+    elif strategy =='naive':
+        random_state= random_state or 42 
+        # randomly pick up one index 
+        rand = np.random.RandomState (random_state )
+        # if use sample , -> return a list and must 
+        # specify the k number of sequence , 
+        # while here , only a single is is expected: like 
+        # random.sample (list(rand.permutation (X0.index )) , 1 )
+        ix = random.choice (rand.permutation (bs_d.index )) 
+        ms = bs_d.loc [ix ] 
+        
+    return  ms  if not as_frame  else pd.DataFrame(
+        dict(ms) , index = range (1))
+
+def _assert_reduce_indexes (*ixs ) : 
+    """ Assert reducing indexing and return a list of valids indexes `ixs`"""
+    ixs = list(*ixs )
+    for ii, ix in enumerate (ixs): 
+        if not is_iterable( ix) : 
+            raise IndexError ("Expects a pair tuple or list i.e.[start, stop]'"
+                              f" for reducing indexing; got {ix}") 
+        if len(ix) !=2 : 
+            raise IndexError(f"Index must be a pair [start, top]: got {ix}")
+        try:
+            ix = [int (i) for i in ix ]
+        except : 
+            raise IndexError("Index should be a pair tuple/list of integers;"
+                             f" check {ix}")
+        else: ixs[ii] = ix 
+        
+    return ixs 
+
+
+def get_xs_xr_splits (
+    df, 
+    *invalid_indexes:list , 
+    valid_section_indexes:Tuple[int, int]=None, 
+    )-> Tuple [DataFrame ]:
+    """Split data into shrinking 'ms' (unwanted data ) and reducing samples 
+    'mr' ( valid aquifer data )
+    
+    Parameters 
+    -----------
+    df: pandas dataframe 
+        Dataframe for compressing. 
+    indexes: tuple or list of int,  
+        list of a pair tuple or list of integers. It might be the startpoint 
+        and the ending point of the range of unwanted data.  For instance:
+        [ (0, 16) , ( 20, 27 ) ] 
+    section_indexes: tuple or list of int 
+        Tuple or list of integers of the valid section of the aquifer. 
+        
+    Returns
+    --------
+    - xs : list of pandas dataframe 
+        - shrinking part of data for compressing. Note that it is on list 
+        because if dataframe corresponds to the non-valid dataframe sections. 
+    - xr: pandas dataframe  
+        - valid data reflecting to the aquifer part or including the 
+        aquifer data. 
+        
+    Example
+    --------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.hydroutils import get_xs_xr_splits 
+    >>> data = load_hlogs ().frame 
+    >>> xs, xr = get_xs_xr_splits (data, (0, 16) , ( 20, 27 ) , 
+                               valid_section_indexes = (17, 20 ) )
+    """
+    xs, xr = None, None
+    indexes = _assert_reduce_indexes(invalid_indexes )
+    max_ix = max (list(itertools.chain(*indexes)))
+    
+    if  max_ix > len(df) :
+        raise IndexError(f"Wrong index! Index {max_ix} is out of range "
+                         f"of data with length = {len(df)}")
+        
+    xs = [ df.iloc[ range (* ind)] for ind in indexes]
+    
+    if valid_section_indexes is not None: 
+        section_indexes = _assert_reduce_indexes ([valid_section_indexes]) [0] 
+        
+        xr = df.iloc [range (*section_indexes)]
+    
+    return xs, xr 
+
+def _get_ix_from  (ix, /, indexes):
+    """ get the other index from the given indexes """
+    # indexes = df.index
+    fix = list ( set(indexes).difference ( list(range (*ix )) ) ) 
+    return ( fix[0], fix [-1] )
+
+    
+def samples_reducing (
+    *dfs , 
+    sname, 
+    section_indexes =None ,
+    zname =None, 
+    kname = None,
+    z=None,   
+    mode = 'soft', 
+    valid_sections  = None, 
+    invalid_sections = None, 
+    verify_integrity=False, 
+    ignore_index = False, 
+    **kws
+     ) : 
+    
+    """ Reduced samples and 
+    
+    
+    verify_integrity: bool, default=False
+        Check the new index for duplicates. Otherwise defer the check until 
+        necessary. Setting to False will improve the performance of 
+        this method.
+        if 'True', remove the duplicate rows from a DataFrame.
+        
+        subset: By default, if the rows have the same values in all the 
+        columns, they are considered duplicates. This parameter is used 
+        to specify the columns that only need to be considered for 
+        identifying duplicates.
+        keep: Determines which duplicates (if any) to keep. It takes inputs as,
+        first – Drop duplicates except for the first occurrence. 
+        This is the default behavior.
+        last – Drop duplicates except for the last occurrence.
+        False – Drop all duplicates.
+        inplace: It is used to specify whether to return a new DataFrame or 
+        update an existing one. It is a boolean flag with default False.
+        ignore_index: It is a boolean flag to indicate if row index should 
+        be reset after dropping duplicate rows. False: It keeps the original 
+        row index. True: It reset the index, and the resulting rows will be 
+        labeled 0, 1, …, n – 1.
+
+    """
+    
+    msg = ("'Soft' mode is triggered for samples reducing. "
+           "Data position {0} passed to arguments {1} not valid."
+           " Remember that data must contain the 'depth' and aquifer  values."
+           " Should be discarded during the computing of aquifer sections."
+           " This might lead to breaking code or invalid results."
+           " Use at your own risk." 
+        )
+
+    is_valid_dfs = [] ; is_not_valid =[]
+    # make a copy of frame 
+    df0 = copy.deepcopy(dfs) 
+    dfs = _validate_samples( *df0 )  
+    # reset index 
+    dfs=[df.reset_index() for df in dfs] 
+    # get the aquifer sections firts 
+    if section_indexes is None: 
+        section_indexes ,sections =[] , []
+        for ii, df in enumerate ( dfs) : 
+            try : 
+                ix, sec = get_aquifer_sections(
+                    df , 
+                    zname = zname , 
+                    kname = kname , 
+                    z = z, 
+                    return_indexes= True 
+                    )
+                is_valid_dfs .append (df )
+            except :
+                is_not_valid.append (ii)
+                
+                continue 
+            
+            section_indexes.append(ix); sections.append(sec ) 
         
     if len(is_not_valid) !=0 : 
+        if mode =='strict': 
+            raise DatasetError(
+                "Data position {0} passed to arguments {1} not valid."
+                " Please check your data."
+                )
         warnings.warn ( msg.format(smart_format(is_not_valid)))
         
-    #==== compte the compressed vectors . 
-        
-        
-    if stop is None: 
-        stop = -1 
-        
-    fupper = lambda s :s[start] ; flower = lambda s :s[stop] 
-    ixss, ixst =  list(map ( fupper , indexes )) , list(map ( flower , indexes )) 
-    secss, secst= list(map ( fupper, sections )) , list(map ( flower, sections )) 
-    min_ix = min(ixss) ; max_ixs = max (ixst)
-    up_sec= min(secss) ;  low_sec =max (secst)
+    # split data to xs (unwanted data ), xr (valid data ) 
+    xsxr = [ get_xs_xr_splits (df , section_indexes ) for df in dfs ] 
     
+    xs = list( map ( lambda x : x[0], xsxr ) ) 
+    xr = list( map (lambda x : x[1], xsxr ) ) 
+
+    # get the base stratum from xs -> list(stratum ) 
+    bases_s  = [ select_base_stratum(d[i], sname=sname )
+                for i, d in enumerate (xs) ] 
+    #==== compute the compressed vector from base base stratums. 
+
+    comp_vecs = [ get_compressed_vector(
+        d[i], sname=sname , stratum = st,  as_frame =True 
+        ) for i, (st , d)  in enumerate ( zip (bases_s , xs))  ]
+    #now convec are on list 
+    # get the way column are arrange from dfs 
+    # and arrange the cols of compress vector 
+    # befe statickg 
+    # of new compressed vector
+    #cols = list( dfs [0].columns) 
+    # concat 
+
+    d_new  =  [ pd.concat ([ vec [ df.columns ] , df ] ) 
+                for vec, df in zip ( comp_vecs , xr) ] 
     
+    if not ignore_index: 
+        d_new = [ df.drop ( columns = 'index') 
+                  if 'index' in df.columns else df 
+                  for df in d_new 
+                  ]
+    #start, stop = [int (_assert_all_types(o, int )) for o in [start, stop ]]
+    # if stop is None: 
+    #     stop = -1 
+    # fupper = lambda s :s[start] ; flower = lambda s :s[stop] 
+    # ixss, ixst =  list(map ( fupper , indexes )) , list(map ( flower , indexes )) 
+    # secss, secst= list(map ( fupper, sections )) , list(map ( flower, sections )) 
+    # min_ix = min(ixss) ; max_ixs = max (ixst)
+    # up_sec= min(secss) ;  low_sec =max (secst)
+    if verify_integrity: 
+        d_new = [  df.drop_duplicates(subset=None, keep='first',  
+            ignore_index=ignore_index ) for df in d_new ] 
+        
+    
+    return d_new 
+
+
 def is_valid_depth (z, /, zname =None , return_z = False): 
     """ Assert whether depth is valid in dataframe of two-dimensional 
     array passed to `z` argument. 

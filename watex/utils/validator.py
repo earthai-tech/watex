@@ -11,6 +11,8 @@
 # Utilities for input validation
 
 from functools import wraps
+import inspect 
+import types 
 import warnings
 import numbers
 import operator
@@ -22,6 +24,27 @@ import joblib
 
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
+
+
+def _is_buildin (o, /, mode ='soft'): 
+    """ Returns 'True' wether the module is a Python buidling function. 
+    
+    If  `mode` is ``strict`` only assert the specific predifined-functions 
+    like 'str', 'len' etc, otherwise check in the whole predifined functions
+    including the object with type equals to 'module'
+    
+    :param o: object
+        Any object for verification 
+    :param mode: str , default='soft' 
+        mode for asserting object. Can also be 'strict' for the specific 
+        predifined build-in functions. 
+    :param module: 
+    """
+    assert mode in {'strict', 'soft'}, f"Unsupports mode {mode!r}, "\
+        "expects 'strict'or 'soft'"
+    
+    return  (isinstance(o, types.BuiltinFunctionType) and inspect.isbuiltin (o)
+             ) if mode=='strict' else type (o).__module__== 'builtins' 
 
 
 def get_estimator_name (estimator , /): 
