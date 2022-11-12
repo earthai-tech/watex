@@ -177,4 +177,4 @@ scripts/
 # boreholes data 
 data/boreholes/h.csv 
 data/boreholes/h2.csv
-
+python3

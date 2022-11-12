@@ -379,11 +379,143 @@ def _assert_reduce_indexes (*ixs ) :
         
     return ixs 
 
+def get_sections_from_depth  (z, z_range, return_indexes =False ) :
+    """ Get aquifer section indexes in data 'z' from the depth range.
+    
+    This might be usefull to compute the thickness of the aquifer. 
+    
+    Parameters 
+    ----------
+    z: array-like 1d or pd.Series 
+        Array or pandas series contaning the depth values 
+    z_range: tuple (float), 
+        Section ['upper', 'lower'] of the aquifer at differnt depth.
+        The range of the depth must a pair values and  could not be
+         greater than the maximum depth of the well. 
+    return_indexes: bool, default=False 
+        returns the indexes of the sections ['upper', 'lower'] 
+        of the aquifer and non-valid sections data. 
+        
+    Returns 
+    ----------
+    sections: Tuple (float, float)
+       Real values of the  upper and lower sections of the aquifer. 
+    If ``return_indexes`` is 'True', function returns: 
+      (upix, lowix): Tuple (int, int )
+          indices of upper and lower sections in the depth array `z`
+      (invix): list of Tuple (int, int) 
+          list of indices of invalid sections
+    Example
+    --------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.hydroutils import get_sections_from_depth
+    >>> data= load_hlogs().frame  
+    >>> # get real sections from depth 16.25 to 125.83 m
+    >>> get_sections_from_depth ( data.depth_top, ( 16.25, 125.83))
+    ...  (22.46, 128.23)
+    >>> # aquifer depth from 16.25 m to the end 
+    >>> get_sections_from_depth ( data.depth_top, ( 16.25,))
+    ... (22.46, 693.37)
+    >>> get_sections_from_depth ( data.depth_top, ( 16.25, 125.83),
+                                 return_indexes =True )
+    ... ((3, 11), [(0, 3), (11, 180)])
+    >>> get_sections_from_depth ( data.depth_top, ( 16.25,), 
+                                 return_indexes =True )
+    ... ((3, 181), [(0, 3)])
+ 
+    """
+    z = _assert_all_types(z, pd.Series, np.ndarray , "Depth")
+    
+    if not _is_arraylike_1d (z) : 
+        raise DepthError( "Depth expects one-dimensional array.")
+    
+    if not is_iterable(z_range): 
+        return TypeError ("Depth range must be an iterable object,"
+                          f" not {type (z_range).__name__!r}")
+    z_range= sorted ( list(z_range ) ) 
+    if max(z_range ) > max(z): 
+        raise DepthError("Depth value can not be greater than the maximum "
+                         f"depth in the well= {max(z)}; got {max(z_range)}")
+    if len(z_range)==1: 
+        warnings.warn("Single value is passed. Remember, it may correspond "
+                      "to the depth value of the upper section thin the end.")
+        z_range = z_range + [max (z )]
+    elif len(z_range) > 2: 
+        raise DepthError( "Too many values for the depth section range."
+                         "Expects a pair values [ upper, lower] sections."
+                         )
+    # get the indices from depth 
+    upix  = np.argmin  ( np.abs ( 
+        (np.array(z) - z_range [0] ) ) ) 
+    lowix = np.argmin  ( np.abs (
+        (np.array(z) - z_range [-1] ) ) ) 
+    # for consistency , reset_zrange with 
+    # true values from depth z 
+    sections = ( z [upix ], z[lowix ] )  
+    z_range =  np.array ( ( upix , lowix ) , dtype = np.int32 ) 
 
+    # compute the difference between adjacent depths
+    diff = np.diff (z) 
+    # when depth 
+    if set (sections )==1: 
+        raise DepthError("Upper and lower sections must have different depths.")
+    
+    if ( float( np.diff (sections)) <=diff.min() ): 
+        # thickness to pass to another layers 
+        raise DepthError(f"Depth {z_range} are too close that probably "
+                         "figure out the same layer. Difference between "
+                         "adjacent depth must be greater than"
+                        f" {round ( float(diff.min()), 2) }")
+    # not get the index from non valid data
+    # +1 for Python indexing
+    invix = _get_invalid_indexes (z, z_range )
+    
+    return  sections if not  return_indexes else ( 
+        ( upix , lowix + 1 ),  invix ) 
+
+def _get_invalid_indexes  ( d, /, section_ix, in_arange =False ): 
+    """ Get non valid indexes from valid section indexes 
+    
+    :param d: array_like 1d 
+        array-like data for recover the section range indexes 
+    :param section_ix: Tuple (int, int) 
+        Index of upper and lower sections
+    :param in_arange: bool, 
+        List all index values. 
+    :returns: 
+        invix: List(Tuple(int))
+        Returns invalid indexes onto a list 
+    Example 
+    -----------
+    >>> from watex.utils.hydroutils import _get_invalid_indexes
+    >>> import numpy as np 
+    >>> idx = np.arange (50) 
+    >>> _get_invalid_indexes (idx , (3, 11 ))
+    ... [(0, 3), (12, 50)]
+    
+    """
+    
+    if in_arange : 
+        section_ix = np.array (  list( 
+            range ( * [  section_ix [0] , section_ix [-1] +1 ] )))  
+        mask = _isin(range(len(d)), section_ix, return_mask=True )
+        invix = np.arange (len(d))[~mask ]
+    else :
+        # +1 for Python indexing
+        invix =  (np.arange (len(d))[:section_ix [0] + 1 ],
+                  np.arange (len(d) + 1 )[section_ix[1]+1 : ]) 
+        invix=  [ ( min(ix) , max(ix))  for ix in invix  if  ( 
+            len(ix )!=0 and len(set(ix))>1)  ] # (181, 181 )
+    
+    return invix 
+
+    
 def get_xs_xr_splits (
     df, 
-    *invalid_indexes:list , 
-    valid_section_indexes:Tuple[int, int]=None, 
+    /,
+    z_range = None, 
+    zname = None, 
+    section_indexes:Tuple[int, int]=None, 
     )-> Tuple [DataFrame ]:
     """Split data into shrinking 'ms' (unwanted data ) and reducing samples 
     'mr' ( valid aquifer data )
@@ -396,8 +528,18 @@ def get_xs_xr_splits (
         list of a pair tuple or list of integers. It might be the startpoint 
         and the ending point of the range of unwanted data.  For instance:
         [ (0, 16) , ( 20, 27 ) ] 
+    zname: str,int , 
+        the name of depth column. 'name' needs to be supplied 
+        when `section_indexes` is not provided. 
+    z_range: tuple (float), 
+        Section ['upper', 'lower'] of the aquifer at different depth.
+        The range of the depth must a pair values and  could not be
+        greater than the maximum depth of the well.
     section_indexes: tuple or list of int 
-        Tuple or list of integers of the valid section of the aquifer. 
+        list of a pair tuple or list of integers. It is be the the valid 
+        sections( upper and lower ) indexes of  of the aquifer. If 
+        the depth range `z_range` and `zname` are supplied, `section_indexes`
+        can be None.    
         
     Returns
     --------
@@ -413,24 +555,37 @@ def get_xs_xr_splits (
     >>> from watex.datasets import load_hlogs 
     >>> from watex.utils.hydroutils import get_xs_xr_splits 
     >>> data = load_hlogs ().frame 
-    >>> xs, xr = get_xs_xr_splits (data, (0, 16) , ( 20, 27 ) , 
+    >>> xs, xr = get_xs_xr_splits (data, 3.11, 
                                valid_section_indexes = (17, 20 ) )
     """
     xs, xr = None, None
-    indexes = _assert_reduce_indexes(invalid_indexes )
-    max_ix = max (list(itertools.chain(*indexes)))
+    
+    if section_indexes is not None: 
+        section_indexes = _assert_reduce_indexes ([section_indexes]) [0] 
+        xr = df.iloc [range (*section_indexes)]
+        print(section_indexes)
+        section_indexes, invalid_indexes = _get_invalid_indexes(
+            np.arange (len(df)), section_indexes)  
+        print(invalid_indexes)
+    # valid section index of aquifer
+    elif z_range is not None : 
+        z = is_valid_depth (df, zname = zname , return_z = True)
+        section_indexes, invalid_indexes = get_sections_from_depth(
+            z, z_range, return_indexes=True )
+    # if section_indexes is not None: 
+    #     section_indexes = _assert_reduce_indexes ([section_indexes]) [0] 
+        
+    #     xr = df.iloc [range (*section_indexes)]
+    print(invalid_indexes)
+    invalid_indexes = _assert_reduce_indexes(invalid_indexes )
+    max_ix = max (list(itertools.chain(*invalid_indexes)))
     
     if  max_ix > len(df) :
         raise IndexError(f"Wrong index! Index {max_ix} is out of range "
                          f"of data with length = {len(df)}")
         
-    xs = [ df.iloc[ range (* ind)] for ind in indexes]
-    
-    if valid_section_indexes is not None: 
-        section_indexes = _assert_reduce_indexes ([valid_section_indexes]) [0] 
-        
-        xr = df.iloc [range (*section_indexes)]
-    
+    xs = [ df.iloc[ range (* ind)] for ind in invalid_indexes]
+
     return xs, xr 
 
 def _get_ix_from  (ix, /, indexes):
@@ -714,7 +869,8 @@ def get_aquifer_sections (
 
     indexes,  = np.where (~np.isnan (arr_k)) 
     if hasattr (indexes, '__len__'): 
-        indexes =[ indexes [0 ] , indexes [-1]]
+        # +1 for Python indexing
+        indexes =[ indexes [0 ] , indexes [-1]] 
         
     sections = z[indexes ]
     
