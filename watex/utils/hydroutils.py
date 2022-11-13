@@ -66,71 +66,6 @@ _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
 
-#XXTODO 
-# from sections indexes , get the 
-
-def _validate_samples (*dfs , error:str ='raise'): 
-    """ Validate data . 
-     check shapes and the columns items in the data.
-     
-    :param dfs: list of dataframes or array-like 
-        Dataframe must have the same size along axis 1. If error is 'ignore'
-        error is muted if the length ( along axis 0) of data does not fit 
-        each other. 
-    :param error: str, default='raise' 
-        Raise absolutely error if data has not the same shape, size and items 
-        in columns. 
-    :return: 
-        valid_dfs: List of valida data. If 'error' is 'ignore' , It still 
-        returns the list of valid data and excludes the invalid all times 
-        leaving an userwarnmimg.
-        
-    """
-    shape_init = dfs[0].shape[1]
-    [ _assert_all_types(df, np.ndarray, pd.DataFrame) for df in dfs ]
-    diff_shape , shapes  , cols = [], [],[]
-    
-    col_init = dfs[0].columns if hasattr (dfs[0] , 'columns') else [] 
-    valid_dfs =[]
-    for k , df in enumerate (dfs) : 
-        if df.shape[1] != shape_init :
-            diff_shape.append(k) 
-        else: valid_dfs.append (df )
-        
-        shapes.append (df.shape)
-        if hasattr (df, 'columns'): 
-            cols.append (list(df.columns ))
-            
-    countshapes = list(Counter (shapes )) # iterable object 
-    occshapes = countshapes [0] # the most occurence shape
-    if len(diff_shape )!=0 : 
-        v=f"{'s' if len(diff_shape)>1 else ''}"
-        mess = ("Shapes for all data must be consistent; got " 
-                f"at the position{v} {smart_format(diff_shape)}.")
-        
-        if error =='raise': 
-            raise ValueError (mess + f" Expects {occshapes}")
-
-        warnings.warn(mess + f"The most frequent shape is {occshapes}"
-                      " Please check or reverify your data. This might lead to"
-                      " breaking code or invalid results. Use at your own risk."
-                      )
-        shape1 = list(map (lambda k:k[1],  countshapes))
-        
-        if set (shape1) !=1 : 
-            raise ValueError ("Shape along axis 1 must be consistent. "
-                              f"Got {smart_format (countshapes)}. Check the "
-                              f"data at position{v} {smart_format(diff_shape)} "
-                ) 
-            
-    colsset = set ( list(itertools.chain (*cols ) ) ) 
- 
-    if len(colsset ) != len(col_init) : 
-        raise DatasetError ("Expect identical columns for all data"
-                            " Please check your data.") 
-    
-    return valid_dfs 
-
 
 def select_base_stratum (
     d: Series | ArrayLike | DataFrame , 
@@ -363,7 +298,7 @@ def get_compressed_vector(
 
 def _assert_reduce_indexes (*ixs ) : 
     """ Assert reducing indexing and return a list of valids indexes `ixs`"""
-    ixs = list(*ixs )
+    ixs = list(ixs )
     for ii, ix in enumerate (ixs): 
         if not is_iterable( ix) : 
             raise IndexError ("Expects a pair tuple or list i.e.[start, stop]'"
@@ -473,7 +408,196 @@ def get_sections_from_depth  (z, z_range, return_indexes =False ) :
     return  sections if not  return_indexes else ( 
         ( upix , lowix + 1 ),  invix ) 
 
-def _get_invalid_indexes  ( d, /, section_ix, in_arange =False ): 
+
+def get_unique_sections (
+        *data, zname, kname,  return_index=False, return_data =False, 
+        error='raise', **kws ) : 
+
+    sect, dat = get_aquifers_sections(*data, zname=zname, kname=kname, 
+                                 return_indexes =return_index, 
+                                 return_data= True,
+                                 error = error , **kws)
+    sect = np.array (list(itertools.chain(*sect)))
+    si = np.array ([sect.min(), sect.max()], 
+                   dtype = np.int32 if return_index else np.float32 )
+    return si if not return_data else  ( si, dat ) 
+
+get_unique_sections.__doc__="""\
+Get the section to consider unique in multiple aquifers. 
+
+The unique section 'upper' and 'lower' is the valid range of the whole 
+data to consider as a  valid data. 
+The use of the index is  necessary to shrunk the data of the whole 
+boreholes. Mosly the data from the section is consided the valid data as the 
+predictor Xr. Out of the range of aquifers ection, data can be discarded or 
+compressed to top Xr. 
+
+Returns valid section indexes if 'return_index' is set to ``True``.    
+    
+d: list of pandas dataframe 
+    Data that contains mainly the aquifer values. It needs to specify the 
+    name of the depth column `zname` as well as the name of permeabiliy 
+    `kname` column.  
+{params.core.zname}
+{params.core.kname}
+{params.core.z}
+
+return_index: bool, default =False , 
+    Returns the positions (indexes) of the upper and lower sections of the
+    shallower  and deep aquifers found in the whole  dataframes.
+return_data: bool, default=False, 
+    Return valid data. It is usefull when 'error' is set to 'ignore'
+    to collect the valid data. 
+error: str, default='raise' 
+    Raise errors if trouble occurs when computing the section of each aquifer. 
+    If 'ignore', a UserWarning is displayed when invalid data is found. Any 
+    other value of `error` will set error to `raise`. 
+kws: dict, 
+    Additional keywords arguments passed  to  
+    :func:`~watex.utils.hydroutils.get_aquifer_sections`.
+    
+Returns 
+--------
+up, low :list of upper and lower section values of aquifer.
+    - (upix, lowix ): Tuple of indexes of lower and upper sections  
+    - (up, low): Tuple of aquifer sections (upper and lower)  
+    - (upix, lowix), (up, low) : positions and sections values of aquifers 
+        if `return_indexes` and return_sections` are ``True``.  
+
+See Also 
+----------
+- compute multiple sections: :func:`~watex.utils.hydroutils.get_aquifers_sections`. 
+- compute single secion:  :func:`~watex.utils.hydroutils.get_aquifer_sections`. 
+
+Example
+-------   
+>>> from watex.datasets import load_hlogs 
+>>> data = load_hlogs ().frame 
+>>> get_unique_sections (data.copy() , zname ='depth', kname ='k', ) 
+... array([197.12, 369.71], dtype=float32)
+>>> get_unique_sections (data.copy() , zname ='depth', kname ='k', 
+                                return_index =True)
+... array([16, 29])
+
+""".format(
+    params=_param_docs,
+    )
+    
+def get_aquifers_sections (
+    *d ,  
+    zname, 
+    kname, 
+    return_indexes =False, 
+    return_data=False,
+    error = 'ignore',  
+    **kws 
+    ): 
+
+    errors = []
+    is_valid_dfs = [] ; is_not_valid =[]
+    section_indexes ,sections =[] , []
+    
+    error ='raise' if error !='ignore' else 'ignore'
+
+    for ii, df in enumerate ( d) : 
+        try : 
+            ix, sec = get_aquifer_sections(
+                df , 
+                zname = zname , 
+                kname = kname , 
+                return_indexes= True, 
+                return_sections=True, 
+                **kws
+                )
+            is_valid_dfs .append (df )
+        except Exception as err :
+            # if error =='raise':
+            #     raise err
+            errors.append(str(err))
+            is_not_valid.append (ii + 1 )
+            continue 
+        section_indexes.append(ix); sections.append(sec )
+        
+    if len(is_not_valid)!=0 : 
+        msg = "Unsupports data at position{0} {1}.".format(
+            f"{'s' if len(is_not_valid)>1 else''}", smart_format(is_not_valid))
+                     
+        if error =='raise':
+            btext = "\nReasons"
+            entext = "Sections can not be computed. Please check your data."
+            mess = msg +  listing_items_format(
+                errors, begintext=btext, endtext=entext , verbose =False )
+            raise DatasetError(mess) 
+            
+        warnings.warn(msg + " Data {} discarded.".format( 
+            "is" if len(is_not_valid)<2 else "are")
+                      )        
+    r= section_indexes if return_indexes else sections 
+    
+    return  r  if not return_data else ( r , is_valid_dfs) 
+
+get_aquifers_sections.__doc__="""\
+Get the section of each aquifer form multiple dataframes. 
+ 
+The unique section 'upper' and 'lower' is the valid range of the whole 
+data to consider as a  valid data. 
+The use of the index is  necessary to shrunk the data of the whole 
+boreholes. Mosly the data from the section is consided the valid data as the 
+predictor Xr. Out of the range of aquifers ection, data can be discarded or 
+compressed to top Xr. 
+
+Returns valid section indexes if 'return_index' is set to ``True``.    
+    
+d: list of pandas dataframe 
+    Data that contains mainly the aquifer values. It needs to specify the 
+    name of the depth column `zname` as well as the name of permeabiliy 
+    `kname` column.  
+{params.core.zname}
+{params.core.kname}
+{params.core.z}
+
+return_indexes: bool, default =False , 
+    Returns the positions (indexes) of the upper and lower sections of the
+   each aquifer found in each dataframe.
+
+error: str, default='ignore' 
+    Raise errors if trouble occurs when computing the section of each aquifer. 
+    If 'ignore', a UserWarning is displayed if invalid data is found. Any 
+    other value of `error` will set error to `raise`. 
+return_data: bool, default=False, 
+    Return valid data. It is usefull when 'error' is set to 'ignore'
+    to collect the valid data. 
+       
+kws: dict, 
+    Additional keywords arguments passed  to  
+    :func:`~watex.utils.hydroutils.get_aquifer_sections`.
+    
+Returns 
+--------
+up, low :list of upper and lower section values of aquifer.
+    - (upix, lowix ): Tuple of indexes of lower and upper sections  
+    - (up, low): Tuple of aquifer sections (upper and lower)  
+    - (upix, lowix), (up, low) : positions and sections values of aquifers 
+        if `return_indexes` and return_sections` are ``True``.  
+
+See Also 
+----------
+- compute single secion:  :func:`~watex.utils.hydroutils.get_aquifer_sections`. 
+
+Example
+-------   
+>>> from watex.datasets import load_hlogs 
+>>> data = load_hlogs ().frame 
+>>> get_aquifers_sections (data, data , zname ='depth', kname ='k' ) 
+... [[197.12, 369.71], [197.12, 369.71]]
+>>> get_aquifers_sections (data, data , zname ='depth', kname ='k' , 
+                           return_indexes =True ) 
+...  [[16, 29], [16, 29]]
+
+""".format(
+    params=_param_docs,
+    )
+def _get_invalid_indexes  ( d, /, valid_indexes, in_arange =False ): 
     """ Get non valid indexes from valid section indexes 
     
     :param d: array_like 1d 
@@ -496,14 +620,14 @@ def _get_invalid_indexes  ( d, /, section_ix, in_arange =False ):
     """
     
     if in_arange : 
-        section_ix = np.array (  list( 
-            range ( * [  section_ix [0] , section_ix [-1] +1 ] )))  
-        mask = _isin(range(len(d)), section_ix, return_mask=True )
+        valid_indexes = np.array (  list( 
+            range ( * [  valid_indexes [0] , valid_indexes [-1] +1 ] )))  
+        mask = _isin(range(len(d)), valid_indexes, return_mask=True )
         invix = np.arange (len(d))[~mask ]
     else :
         # +1 for Python indexing
-        invix =  (np.arange (len(d))[:section_ix [0] + 1 ],
-                  np.arange (len(d) + 1 )[section_ix[1]+1 : ]) 
+        invix =  (np.arange (len(d))[:valid_indexes [0] + 1 ],
+                  np.arange (len(d) + 1 )[valid_indexes[1]+1 : ]) 
         invix=  [ ( min(ix) , max(ix))  for ix in invix  if  ( 
             len(ix )!=0 and len(set(ix))>1)  ] # (181, 181 )
     
@@ -524,10 +648,6 @@ def get_xs_xr_splits (
     -----------
     df: pandas dataframe 
         Dataframe for compressing. 
-    indexes: tuple or list of int,  
-        list of a pair tuple or list of integers. It might be the startpoint 
-        and the ending point of the range of unwanted data.  For instance:
-        [ (0, 16) , ( 20, 27 ) ] 
     zname: str,int , 
         the name of depth column. 'name' needs to be supplied 
         when `section_indexes` is not provided. 
@@ -539,7 +659,9 @@ def get_xs_xr_splits (
         list of a pair tuple or list of integers. It is be the the valid 
         sections( upper and lower ) indexes of  of the aquifer. If 
         the depth range `z_range` and `zname` are supplied, `section_indexes`
-        can be None.    
+        can be None.  Note that the last indix is considered as the last 
+        position, the bottom of the section therefore, its value is 
+        included in the data.
         
     Returns
     --------
@@ -555,70 +677,171 @@ def get_xs_xr_splits (
     >>> from watex.datasets import load_hlogs 
     >>> from watex.utils.hydroutils import get_xs_xr_splits 
     >>> data = load_hlogs ().frame 
-    >>> xs, xr = get_xs_xr_splits (data, 3.11, 
-                               valid_section_indexes = (17, 20 ) )
+    >>> xs, xr = get_xs_xr_splits (data, 3.11, section_indexes = (17, 20 ) )
     """
     xs, xr = None, None
     
     if section_indexes is not None: 
-        section_indexes = _assert_reduce_indexes ([section_indexes]) [0] 
+        section_indexes = _assert_reduce_indexes (section_indexes) [0] 
         xr = df.iloc [range (*section_indexes)]
-        print(section_indexes)
-        section_indexes, invalid_indexes = _get_invalid_indexes(
+        invalid_indexes = _get_invalid_indexes(
             np.arange (len(df)), section_indexes)  
-        print(invalid_indexes)
+
     # valid section index of aquifer
     elif z_range is not None : 
         z = is_valid_depth (df, zname = zname , return_z = True)
         section_indexes, invalid_indexes = get_sections_from_depth(
             z, z_range, return_indexes=True )
-    # if section_indexes is not None: 
-    #     section_indexes = _assert_reduce_indexes ([section_indexes]) [0] 
-        
-    #     xr = df.iloc [range (*section_indexes)]
-    print(invalid_indexes)
-    invalid_indexes = _assert_reduce_indexes(invalid_indexes )
+
+    # +1 for Python index 
+    xr = df.iloc [range (*[section_indexes[0], section_indexes[-1] +1])]
+
+    invalid_indexes = _assert_reduce_indexes(*invalid_indexes )
     max_ix = max (list(itertools.chain(*invalid_indexes)))
     
     if  max_ix > len(df) :
         raise IndexError(f"Wrong index! Index {max_ix} is out of range "
                          f"of data with length = {len(df)}")
-        
+ 
     xs = [ df.iloc[ range (* ind)] for ind in invalid_indexes]
 
     return xs, xr 
 
-def _get_ix_from  (ix, /, indexes):
-    """ get the other index from the given indexes """
-    # indexes = df.index
-    fix = list ( set(indexes).difference ( list(range (*ix )) ) ) 
-    return ( fix[0], fix [-1] )
-
-    
 def samples_reducing (
-    *dfs , 
+    *data , 
     sname, 
-    section_indexes =None ,
-    zname =None, 
-    kname = None,
-    z=None,   
-    mode = 'soft', 
-    valid_sections  = None, 
-    invalid_sections = None, 
+    zname=None, 
+    kname= None,
+    section_indexes=None,  
+    error='raise', 
+    strategy= 'average',  
     verify_integrity=False, 
-    ignore_index = False, 
+    ignore_index=False, 
     **kws
-     ) : 
+    )->List[DataFrame] : 
     
-    """ Reduced samples and 
+    msg = ("'Soft' mode is triggered for samples reducing."
+           " {0} number{1} of data passed are not valid."
+           " Remember that data must contain the 'depth' and"
+           " aquifer  values. Should be discarded during the"
+           " computing of aquifer sections. This might lead to"
+           " breaking code or invalid results. Use at your own "
+           " risk." 
+        )
+
+    df0 = copy.deepcopy(data) # make a copy of frame 
+    dfs = _validate_samples( *df0 )  
     
-    
-    verify_integrity: bool, default=False
-        Check the new index for duplicates. Otherwise defer the check until 
-        necessary. Setting to False will improve the performance of 
-        this method.
-        if 'True', remove the duplicate rows from a DataFrame.
+    dfs=[df.reset_index() for df in dfs] # reset index 
+    # get the aquifer sections firts 
+    if section_indexes is None: 
+        section_indexes, dfs = get_unique_sections(
+            *dfs, zname=zname, kname=kname, error= error, 
+            return_data =True, return_index=True 
+            )
         
+        if len(df0)!=len(dfs): 
+            warnings.warn ( msg.format(len(section_indexes), 
+                        "s" if len(section_indexes)>1 else ""))
+        
+    Xs, Xr =[], []
+    for df in dfs : 
+        xs, xr = get_xs_xr_splits (df, section_indexes= section_indexes)
+        Xs.append(xs) ; Xr.append(xr)
+        
+    d_new=[]
+    for  df_xs , df_xr in zip ( Xs , Xr ): 
+        # # compute the base stratum for 
+        # each each reduce sections 
+        bases_s = [ select_base_stratum(d, sname=sname )
+                    for i, d in enumerate (df_xs) ] 
+        
+        # reduce sample for each invalid section with 
+        # missing k 
+        comp_vecs = [ get_compressed_vector( d, sname=sname , stratum = st,  
+                     as_frame =True , strategy=strategy, 
+            ) for i, (st , d)  in enumerate ( zip (bases_s , df_xs))  ]
+        # get the index to stack the compresed sample with 
+        # the valid part of aquifer data. 
+        xs_indexes = [( min( df.index), max(df.index)) for df in df_xs ]
+        # concat the compress with xr 
+        df_= _concat_compressed_xs_xr(
+            xs_indexes =xs_indexes ,xr_indexes = section_indexes, 
+                compressed_frames = comp_vecs, 
+                xr= df_xr )
+        d_new.append (df_)
+
+    if not ignore_index: 
+        # got back inial data. 
+        d_new = [ df.drop ( columns = 'index') 
+                  if 'index' in df.columns else df 
+                  for df in d_new 
+                  ]
+    if verify_integrity: 
+        d_new = [  df.drop_duplicates(subset=None, keep='first',  
+            ignore_index=ignore_index ) for df in d_new ] 
+        
+    if ignore_index : 
+        # reset the index of the new data frame
+        d_new = [df.reset_index () for df in d_new ]
+        d_new = [ df.drop (columns = 'level_0' or 'index') if
+                 ('level_0' or 'index')  in df.columns else df 
+                 for df in d_new  ]
+    
+    return d_new 
+
+samples_reducing.__doc__ ="""\
+Create a new dataframe with reducing/crompressing the non valid data. 
+
+The m-samples reduction is necessary for the dataset with a lot of 
+missing k-values. The technique of shrinking the number of k0 –values 
+(k-missing values ) seems a relevant idea. It consists to compressed the 
+values of the missing :math:`k -values from the top ( depth equals 0 ) 
+thin the upper section of the first aquifer with lower depth into 
+a single vector :math:`x_r` with dimension (1×n ) i.e. contains 
+the n-features.  
+ 
+Parameters 
+-----------
+data: list of dataframes
+    Data that contains mainly the aquifer values. It must contains the 
+    depth values refering at the column_name passed at `zname`  and 
+    the permeability coefficient `k` passed to `kname` . Both argument need 
+    t supplied when datafame as passes as positional arguments.
+    
+sname: str, optional 
+    Name of column in the dataframe that contains the strata values. 
+    Dont confuse 'sname' with 'stratum' which is the name of the valid 
+    layer/rock in the array/Series of strata. 
+
+{params.core.zname}
+{params.core.kname}
+{params.core.z}
+
+strategy: str , default='average' or 'mean', 
+    strategy used to select or compute the numerical data into a 
+    singular series. It can be ['naive']. In that case , a single serie 
+    if randomly picked up into the base strata data.
+    
+section_indexes: tuple or list of int 
+    list of a pair tuple or list of integers. It is be the the valid 
+    sections( upper and lower ) indexes of  of the aquifer. If 
+    the depth range `z_range` and `zname` are supplied, `section_indexes`
+    can be None.  Note that the last indix is considered as the last 
+    position, the bottom of the section therefore, its value is 
+    included in the data.
+        
+error: str, default='raise' 
+    Raise errors if trouble occurs when computing the section of each aquifer. 
+    If 'ignore', a UserWarning is displayed when invalid data is found. Any 
+    other value of `error` will set error to `raise`. 
+
+verify_integrity: bool, default=False
+    Check the new index for duplicates. Otherwise defer the check until 
+    necessary. Setting to False will improve the performance of 
+    this method.
+    if 'True', remove the duplicate rows from a DataFrame.
+    
         subset: By default, if the rows have the same values in all the 
         columns, they are considered duplicates. This parameter is used 
         to specify the columns that only need to be considered for 
@@ -630,101 +853,89 @@ def samples_reducing (
         False – Drop all duplicates.
         inplace: It is used to specify whether to return a new DataFrame or 
         update an existing one. It is a boolean flag with default False.
-        ignore_index: It is a boolean flag to indicate if row index should 
-        be reset after dropping duplicate rows. False: It keeps the original 
-        row index. True: It reset the index, and the resulting rows will be 
-        labeled 0, 1, …, n – 1.
+ignore_index: bool, default=False, 
+    It is a boolean flag to indicate if row index should 
+    be reset after dropping duplicate rows. False: It keeps the original 
+    row index. True: It reset the index, and the resulting rows will be 
+    labeled 0, 1, …, n – 1. 
+    
+Returns 
+----------
+df_new: List of pandas.dataframes
+    new dataframes with reducing samples. 
+    
+Example 
+--------
+>>> from watex.datasets import load_hlogs 
+>>> data = load_hlogs ().frame # get the frames 
+>>> # add explicitly the aquifer indi
+>>> dfnew= samples_reducing (data.copy(), sname='strata_name', # data, zname='depth', kname='k', 
+                      section_indexes = (16, 29 ),)
+>>> dfnew[0]
+...    hole_number               strata_name     rock_name  ...      r     rp  remark
+0         H502                  mudstone           J2z  ...    NaN    NaN     NaN
+16        H502                 siltstone           NaN  ...  35.74  59.23     NaN
+17        H502    fine-grained sandstone           NaN  ...  35.74  59.23     NaN
+18        H502                 siltstone           NaN  ...  35.74  59.23     NaN
+19        H502    fine-grained sandstone           NaN  ...  35.74  59.23     NaN
+20        H502                  mudstone           NaN  ...  35.74  59.23     NaN
+21        H502                 siltstone           NaN  ...  35.74  59.23     NaN
+22        H502    fine-grained sandstone           NaN  ...  59.61  59.23     NaN
+23        H502                 siltstone           NaN  ...  59.61  59.23     NaN
+24        H502    fine-grained sandstone           NaN  ...  59.61  59.23     NaN
+25        H502  Coarse-grained sandstone           NaN  ...  59.61  59.23     NaN
+26        H502                  mudstone           NaN  ...  82.33  59.23     NaN
+27        H502    fine-grained sandstone           NaN  ...  82.33  59.23     NaN
+28        H502  Coarse-grained sandstone           J2z  ...  82.33  59.23     NaN
+29        H502                      coal  (J2y)  2coal  ...  82.33  59.23     NaN
+0         H502                 siltstone           NaN  ...    NaN    NaN     NaN
 
+[16 rows x 23 columns]
+>>> # specify the column name and knames without section indexes 
+>>> dfnew= samples_reducing (
+    data.copy(), sname='strata_name', data, zname='depth', kname='k', 
+    ignore_index= True )[0]
+... dfnew[0].index # index is reset 
+.. RangeIndex(start=0, stop=16, step=1)
+
+""".format(
+    params=_param_docs,
+    )
+def _concat_compressed_xs_xr (
+        xs_indexes:List[int], 
+        xr_indexes: List[int], 
+        compressed_frames:List[DataFrame], 
+        xr:DataFrame  ):
+    """ Concat the compressed frames from `xs` with the valid frames.
+    
+    Use the index of different frames to merge the frame by respecting the 
+    depth positions. For instance, if the valid secion of aquifer is framed 
+    between two invalid sections composed of missing 'k' values, the both
+    sections are shrank and their compressed frames are also framed the 
+    section of valid data. This keep the position of the 
+    aquifer intact. This is usefull for prediction purpose. 
+    
+    :param xs_indexes: list of int 
+        indices of invalid sections 
+    :param xr_indexes: list of int ,
+        indices of valid section of aquifer. valid data 
+    :param compressed_frames: pandas dataframe 
+        the compressed frames from `xs`. 
+    :param xr: dataframe 
+        valid data ( contain the aquifer sections )
     """
+    pos = [ np.array(k).mean() for k in xs_indexes ]
+    dics = dict ( zip ( pos , compressed_frames))
     
-    msg = ("'Soft' mode is triggered for samples reducing. "
-           "Data position {0} passed to arguments {1} not valid."
-           " Remember that data must contain the 'depth' and aquifer  values."
-           " Should be discarded during the computing of aquifer sections."
-           " This might lead to breaking code or invalid results."
-           " Use at your own risk." 
+    dics [np.array(xr_indexes).mean()]= xr 
+    # sorted strata in ascending occurence 
+    sm = dict (
+        sorted (dics.items () , key= lambda x:x[0])
         )
+    c= list(sm.values ())
+    return  pd.concat (c )
 
-    is_valid_dfs = [] ; is_not_valid =[]
-    # make a copy of frame 
-    df0 = copy.deepcopy(dfs) 
-    dfs = _validate_samples( *df0 )  
-    # reset index 
-    dfs=[df.reset_index() for df in dfs] 
-    # get the aquifer sections firts 
-    if section_indexes is None: 
-        section_indexes ,sections =[] , []
-        for ii, df in enumerate ( dfs) : 
-            try : 
-                ix, sec = get_aquifer_sections(
-                    df , 
-                    zname = zname , 
-                    kname = kname , 
-                    z = z, 
-                    return_indexes= True 
-                    )
-                is_valid_dfs .append (df )
-            except :
-                is_not_valid.append (ii)
-                
-                continue 
-            
-            section_indexes.append(ix); sections.append(sec ) 
-        
-    if len(is_not_valid) !=0 : 
-        if mode =='strict': 
-            raise DatasetError(
-                "Data position {0} passed to arguments {1} not valid."
-                " Please check your data."
-                )
-        warnings.warn ( msg.format(smart_format(is_not_valid)))
-        
-    # split data to xs (unwanted data ), xr (valid data ) 
-    xsxr = [ get_xs_xr_splits (df , section_indexes ) for df in dfs ] 
     
-    xs = list( map ( lambda x : x[0], xsxr ) ) 
-    xr = list( map (lambda x : x[1], xsxr ) ) 
-
-    # get the base stratum from xs -> list(stratum ) 
-    bases_s  = [ select_base_stratum(d[i], sname=sname )
-                for i, d in enumerate (xs) ] 
-    #==== compute the compressed vector from base base stratums. 
-
-    comp_vecs = [ get_compressed_vector(
-        d[i], sname=sname , stratum = st,  as_frame =True 
-        ) for i, (st , d)  in enumerate ( zip (bases_s , xs))  ]
-    #now convec are on list 
-    # get the way column are arrange from dfs 
-    # and arrange the cols of compress vector 
-    # befe statickg 
-    # of new compressed vector
-    #cols = list( dfs [0].columns) 
-    # concat 
-
-    d_new  =  [ pd.concat ([ vec [ df.columns ] , df ] ) 
-                for vec, df in zip ( comp_vecs , xr) ] 
-    
-    if not ignore_index: 
-        d_new = [ df.drop ( columns = 'index') 
-                  if 'index' in df.columns else df 
-                  for df in d_new 
-                  ]
-    #start, stop = [int (_assert_all_types(o, int )) for o in [start, stop ]]
-    # if stop is None: 
-    #     stop = -1 
-    # fupper = lambda s :s[start] ; flower = lambda s :s[stop] 
-    # ixss, ixst =  list(map ( fupper , indexes )) , list(map ( flower , indexes )) 
-    # secss, secst= list(map ( fupper, sections )) , list(map ( flower, sections )) 
-    # min_ix = min(ixss) ; max_ixs = max (ixst)
-    # up_sec= min(secss) ;  low_sec =max (secst)
-    if verify_integrity: 
-        d_new = [  df.drop_duplicates(subset=None, keep='first',  
-            ignore_index=ignore_index ) for df in d_new ] 
-        
-    
-    return d_new 
-
-
 def is_valid_depth (z, /, zname =None , return_z = False): 
     """ Assert whether depth is valid in dataframe of two-dimensional 
     array passed to `z` argument. 
@@ -783,8 +994,8 @@ def is_valid_depth (z, /, zname =None , return_z = False):
         # remove the depth in columns 
         z_copy = z.copy() 
         if zname is None: 
-            raise ValueError ("Depth name 'zname' can not be None "
-                              "when a dataframe is given.")
+            raise ValueError ("'zname' ( Depth column name ) can not be None"
+                              " when a dataframe is given.")
         # --> deals with depth 
         # in the case depth is given while 
         # dataframe is given. 
@@ -942,10 +1153,11 @@ def _kp (k, /,  kr= (.01 , .07 ), string = False ) :
         if value: return v if not string else  ( 
                 label + str(v) if not math.isnan (v) else np.nan ) 
         
-def map_kp (o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None , 
-            kname:str=None, inplace:bool =False, 
-            string:str =False, use_default_ufunc:bool=False  
-            ):
+def map_k (
+        o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None , 
+        kname:str=None, inplace:bool =False, string:str =False, 
+        default_ufunc:bool=False  
+        ):
     """ Categorize the permeability coefficient 'k'
     
     Map the continuous 'k' into categorial classes. 
@@ -964,7 +1176,7 @@ def map_kp (o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None ,
         If set to "True", categorized map from 'k'  should be prefixed by "k". 
         However is string value is given , the prefix is changed according 
         to this label. 
-    use_default_ufunc: bool, 
+    default_ufunc: bool, 
         Default function for mapping k is setting to ``True``. Note that, this 
         could probably not fitted your own data. So  it is recommended to 
         provide your own function for mapping 'k'. However the default 'k' 
@@ -984,12 +1196,12 @@ def map_kp (o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None ,
     --------
     >>> import numpy as np 
     >>> from watex.datasets import load_hlogs 
-    >>> from watex.utils.hydroutils import map_kp 
+    >>> from watex.utils.hydroutils import map_k 
     >>> _, y0 = load_hlogs (as_frame =True) 
     >>> # let visualize four nonzeros values in y0 
     >>> y0.k.values [ ~np.isnan (y0.k ) ][:4]
     ...  array([0.054, 0.054, 0.054, 0.054])
-    >>> map_kp (y0 , kname ='k', inplace =True, use_default_ufunc=True )
+    >>> map_k (y0 , kname ='k', inplace =True, use_default_ufunc=True )
     >>> # let see again the same four value in the dataframe 
     >>> y0.k.values [ ~np.isnan (y0.k ) ][:4]
     ... array([2., 2., 2., 2.]) 
@@ -998,7 +1210,7 @@ def map_kp (o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None ,
     _assert_all_types(o, pd.Series, pd.DataFrame, np.ndarray)
     
     dfunc = lambda k : _kp (k, string = string ) # default 
-    ufunc = ufunc or   ( dfunc if use_default_ufunc else None ) 
+    ufunc = ufunc or   ( dfunc if default_ufunc else None ) 
     if ufunc is None: 
         raise TypeError ("'ufunc' can not be None when the default"
                          " 'k' mapping function is not triggered.")
@@ -1541,3 +1753,67 @@ def labels_validator (t, /, labels, return_bool = False):
         isvalid= False 
         
     return isvalid if return_bool else  labels 
+
+def _validate_samples (*dfs , error:str ='raise'): 
+    """ Validate data . 
+     check shapes and the columns items in the data.
+     
+    :param dfs: list of dataframes or array-like 
+        Dataframe must have the same size along axis 1. If error is 'ignore'
+        error is muted if the length ( along axis 0) of data does not fit 
+        each other. 
+    :param error: str, default='raise' 
+        Raise absolutely error if data has not the same shape, size and items 
+        in columns. 
+    :return: 
+        valid_dfs: List of valida data. If 'error' is 'ignore' , It still 
+        returns the list of valid data and excludes the invalid all times 
+        leaving an userwarnmimg.
+        
+    """
+    shape_init = dfs[0].shape[1]
+    [ _assert_all_types(df, np.ndarray, pd.DataFrame) for df in dfs ]
+    diff_shape , shapes  , cols = [], [],[]
+    
+    col_init = dfs[0].columns if hasattr (dfs[0] , 'columns') else [] 
+    valid_dfs =[]
+    for k , df in enumerate (dfs) : 
+        if df.shape[1] != shape_init :
+            diff_shape.append(k) 
+        else: valid_dfs.append (df )
+        
+        shapes.append (df.shape)
+        if hasattr (df, 'columns'): 
+            cols.append (list(df.columns ))
+            
+    countshapes = list(Counter (shapes )) # iterable object 
+    occshapes = countshapes [0] # the most occurence shape
+    if len(diff_shape )!=0 : 
+        v=f"{'s' if len(diff_shape)>1 else ''}"
+        mess = ("Shapes for all data must be consistent; got " 
+                f"at the position{v} {smart_format(diff_shape)}.")
+        
+        if error =='raise': 
+            raise ValueError (mess + f" Expects {occshapes}")
+
+        warnings.warn(mess + f"The most frequent shape is {occshapes}"
+                      " Please check or reverify your data. This might lead to"
+                      " breaking code or invalid results. Use at your own risk."
+                      )
+        shape1 = list(map (lambda k:k[1],  countshapes))
+        
+        if set (shape1) !=1 : 
+            raise ValueError ("Shape along axis 1 must be consistent. "
+                              f"Got {smart_format (countshapes)}. Check the "
+                              f"data at position{v} {smart_format(diff_shape)} "
+                ) 
+            
+    colsset = set ( list(itertools.chain (*cols ) ) ) 
+ 
+    if len(colsset ) != len(col_init) : 
+        raise DatasetError ("Expect identical columns for all data"
+                            " Please check your data.") 
+    
+    return valid_dfs 
+
+

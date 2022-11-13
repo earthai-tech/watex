@@ -32,6 +32,17 @@ from .funcutils import (
     reshape, 
     to_numeric_dtypes 
     )
+from .hydroutils import ( 
+    select_base_stratum , 
+    get_aquifer_sections , 
+    get_aquifers_sections, 
+    get_unique_sections, 
+    get_compressed_vector, 
+    get_xs_xr_splits, 
+    samples_reducing , 
+    get_sections_from_depth, 
+    check_flow_objectivity
+    )
 from .mlutils import ( 
     selectfeatures, 
     getGlobalScore, 
@@ -116,7 +127,16 @@ __all__=[
         'plot_sbs_feature_selection', 
         'plot_regularization_path', 
         'plot_rf_feature_importances', 
-        'plot_logging'
+        'plot_logging', 
+        'select_base_stratum' , 
+        'get_aquifer_sections' , 
+        'get_aquifers_sections', 
+        'get_unique_sections', 
+        'get_compressed_vector', 
+        'get_xs_xr_splits', 
+        'samples_reducing' , 
+        'get_sections_from_depth', 
+        'check_flow_objectivity'
         
         ]
 
