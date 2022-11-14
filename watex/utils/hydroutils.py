@@ -75,7 +75,7 @@ def select_base_stratum (
     return_rate:bool=False, 
     return_counts:bool= False, 
     ):
-    """ Select base stratum in the strata data contain. 
+    """ Selects base stratum from the the strata column in the logging data. 
     
     Find the most recurrent stratum in the data and compute the rate of 
     occurrence. 
@@ -193,7 +193,7 @@ def get_compressed_vector(
     as_frame = False, 
     random_state = None, 
     )-> Series :
-    """ Compress base stratum data into a singular vector composes of all 
+    """ Compresses base stratum data into a singular vector composed of all 
     feature names in the targetted data `d`. 
     
     Parameters 
@@ -315,7 +315,8 @@ def _assert_reduce_indexes (*ixs ) :
     return ixs 
 
 def get_sections_from_depth  (z, z_range, return_indexes =False ) :
-    """ Get aquifer section indexes in data 'z' from the depth range.
+    """ Gets aquifer sections ('upper', 'lower') in data 'z' from the 
+    depth range.
     
     This might be usefull to compute the thickness of the aquifer. 
     
@@ -1052,8 +1053,8 @@ def get_aquifer_sections (
     if hasattr (arr_k ,'columns' ):
         # deal with arr_k 
         if kname is None: 
-            raise ValueError ("Permeability coefficient 'k' name can not "
-                              "be None when a dataframe is given.") 
+            raise ValueError ("'kname' ( Permeability coefficient ) column name"
+                              " can not be None when a dataframe is given.") 
         else: 
             _assert_all_types(kname, str , int , float,  objname="'kname'") 
             
@@ -1091,9 +1092,9 @@ def get_aquifer_sections (
             [*indexes ] if return_indexes else  [*sections])
 
 get_aquifer_sections.__doc__="""\
-Detect aquifer sections (upper and lower) sections 
+Detect a single aquifer section (upper and lower) in depth.  
 
-Detects the section of aquifer in depth. 
+This is useful trip to compute the thickness of the aquifer.
 
 Parameters 
 -----------

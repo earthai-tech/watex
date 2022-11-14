@@ -73,13 +73,19 @@ def _is_cross_validated (estimator ):
     already populated.
     
     :param estimator: callable or instanciated object, that has a fit method. 
-    
     :return: bool, 
         estimator has already passed the cross-validation procedure. 
     
     """
     return hasattr(estimator, 'best_estimator_') and hasattr (
         estimator , 'best_params_')
+def _is_erp(d , / ): 
+    """ Returns 'True' if the given data is Electrical Resistivity Profiling"""
+    return not len(d) ==0 and  ('resistivity' and 'station') in d.columns 
+
+def _is_ves (d, /)  : 
+    """Returns 'True' if data is Vertical Electrical Sounding """
+    return not len(d) ==0 and  ('resistivity' and 'AB') in d.columns 
 
 def _check_array_in(obj, /, arr_name):
     """Return the array from the array name attribute. Note that the singleton 

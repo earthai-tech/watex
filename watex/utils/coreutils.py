@@ -25,9 +25,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
  
 from .._docstring import refglossary 
-from .._watexlog import watexlog
-from ..decorators import refAppender, docSanitizer
-from ..property import P , Config
 from .._typing import (
     Any, 
     List ,  
@@ -43,6 +40,9 @@ from .._typing import (
     Sub, 
     SP
 )
+from .._watexlog import watexlog
+from ..decorators import refAppender, docSanitizer
+from ..property import P , Config
 from ..exceptions import ( 
     StationError, 
     HeaderError, 
@@ -638,7 +638,7 @@ def is_erp_dataframe (
     data_ = data[cold] 
     data_.columns = c  
     
-    msg = ERPError("Unknow the DC-ERP data. ERP data must contain"
+    msg = ERPError("Unknown DC-ERP data. ERP data must contain"
                    f" {smft(pObj.idicttags.keys())}")
     try : 
         data_= data_.reindex (columns =pObj.idicttags.keys(), fill_value =0.
@@ -784,7 +784,7 @@ def erpSelector (
     else : 
         amsg = smft(accept_types (
             pd.Series, pd.DataFrame, np.ndarray) + ['*.xls', '*.csv'])
-        raise ValueError (f" Unacceptable data. Accept only {amsg}."
+        raise ValueError (f" Unsupports data. Expects only {amsg}."
                           )  
     if np.all(f.resistivity)==0: 
         raise ResistivityError('Resistivity values need to be supply.')
@@ -1746,7 +1746,6 @@ def parseDCArgs(fn :str ,
         sdata ).astype(float))
 
 
-        
 def read_data (
         f:str, 
         **kws

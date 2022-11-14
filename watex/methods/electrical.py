@@ -13,7 +13,16 @@ import numpy as np
 import pandas as pd
 
 from .._docstring import refglossary
+from .._typing import  ( 
+    List, 
+    Optional, 
+    NDArray, 
+    Series , 
+    DataFrame,
+    F
+    )
 from .._watexlog import watexlog 
+
 from ..decorators import refAppender 
 from ..utils.funcutils import (
     repr_callable_obj,
@@ -40,14 +49,9 @@ from ..utils.exmath import (
     ohmicArea, 
     invertVES,
     )
-from .._typing import  ( 
-    List, 
-    Optional, 
-    NDArray, 
-    Series , 
-    DataFrame,
-    F
-
+from ..utils.validator import ( 
+    _is_erp , 
+    _is_ves
     )
 from ..property import( 
     ElectricalMethods
@@ -91,8 +95,8 @@ class DCProfiling(ElectricalMethods)  :
         >>> <object>.line1.sves_ ; <object>.line1.sves_resistivity_ 
         >>> <object>.line2.sves_ ; <object>.line2.sves_resistivity_ 
     
-    Arguments 
-    ----------
+    Parameters 
+    ------------
     
     **stations**: list or str (path-like object )
         list of station name where the drilling is expected to be located. It 
@@ -219,7 +223,7 @@ class DCProfiling(ElectricalMethods)  :
         
     def fit(self, 
             data : List[str] | List [DataFrame],
-            **fit_params)-> object : 
+            **fit_params)-> "DCProfiling" : 
         """ Read and fit the collections of data  
         
         Parameters 
@@ -349,9 +353,8 @@ class DCSounding(ElectricalMethods) :
         >>> <object>.site1.fractured_zone_
         >>> <object>.site1.fractured_zone_resistivity_
     
-    Arguments 
+    Parameters 
     -----------
-    
     **froms**: float , list of float
         The collection of the depth in meters from which one expects to find a 
         fracture zone outside of pollutions. Indeed, the `froms` parameter is 
@@ -497,7 +500,9 @@ class DCSounding(ElectricalMethods) :
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
             
-    def fit(self, data : List[str] | List [DataFrame], **fit_params): 
+    def fit(self, 
+            data : List[str] | List [DataFrame], 
+            **fit_params)->'DCSounding': 
         """ Fit the DC- electrical sounding 
         
         Fit the sounding |VES| curves and computed the ohmic-area and set  
@@ -612,7 +617,7 @@ class ResistivityProfiling(ElectricalMethods):
     sounding |VES| to speculated about the layer thickesses and the existence of
     the fracture zone. 
     
-    Arguments 
+    Parameters 
     ----------
     
     **station**: str 
@@ -673,7 +678,7 @@ class ResistivityProfiling(ElectricalMethods):
             
     def fit(self, data : str | NDArray | Series | DataFrame ,
              **fit_params
-            ) -> object: 
+            ) -> 'ResistivityProfiling': 
         """ Fitting the :class:`~.ResistivityProfiling` 
         and populate the class attributes.
         
@@ -695,7 +700,7 @@ class ResistivityProfiling(ElectricalMethods):
                 
         Returns 
         -------
-            object instanciated for chaining methods. 
+           self:  object instanciated for chaining methods. 
             
         Notes
         ------
@@ -719,6 +724,10 @@ class ResistivityProfiling(ElectricalMethods):
                                  )
         
         data = erpSelector(data, columns) 
+        if not _is_erp(data): 
+            raise ERPError("Invalid ERP data. Data must contain at least"
+                           " 'resistivity' and 'station' position." )
+            
         self.data_ = copy.deepcopy(data) 
         
         self.data_, self.utm_zone = fill_coordinates(
@@ -921,7 +930,7 @@ class VerticalSounding (ElectricalMethods):
     after selecting the best conductive zone when survey is made on 
     one-dimensional. 
     
-    Arguments 
+    Parameters 
     -----------
     
     **froms**: float 
@@ -1078,7 +1087,7 @@ class VerticalSounding (ElectricalMethods):
             setattr(self, key, kws[key])
             
 
-    def fit(self, data: str | DataFrame, **fit_params ): 
+    def fit(self, data: str | DataFrame, **fit_params )-> "VerticalSounding": 
         """ Fit the sounding |VES| curves and computed the ohmic-area and set  
         all the features for demarcating fractured zone from the selected 
         anomaly. 
@@ -1144,6 +1153,9 @@ class VerticalSounding (ElectricalMethods):
                   'should be selected as the main sounding data. ')
         self.data_ = vesSelector(
             data = data, index_rhoa= self.vesorder, **fit_params )
+        if not _is_ves( self.data_): 
+            raise VESError("Invalid VES data. Data must contain at least"
+                           " 'resistivity' and 'AB/2' position." )
         self.max_depth_ = self.data_.AB.max()
         
         if self.fromlog10: 
