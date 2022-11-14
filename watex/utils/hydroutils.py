@@ -641,8 +641,8 @@ def get_xs_xr_splits (
     zname = None, 
     section_indexes:Tuple[int, int]=None, 
     )-> Tuple [DataFrame ]:
-    """Split data into shrinking 'ms' (unwanted data ) and reducing samples 
-    'mr' ( valid aquifer data )
+    """Split data into matrix :math:`X_s` with sample :math:`ms` (unwanted data ) 
+    and :math:`X_r` of samples :math:`m_r`( valid aquifer data )
     
     Parameters 
     -----------
@@ -755,7 +755,6 @@ def samples_reducing (
         # each each reduce sections 
         bases_s = [ select_base_stratum(d, sname=sname )
                     for i, d in enumerate (df_xs) ] 
-        
         # reduce sample for each invalid section with 
         # missing k 
         comp_vecs = [ get_compressed_vector( d, sname=sname , stratum = st,  
@@ -777,6 +776,8 @@ def samples_reducing (
                   if 'index' in df.columns else df 
                   for df in d_new 
                   ]
+    # verify integrity first
+    # before reset index 
     if verify_integrity: 
         d_new = [  df.drop_duplicates(subset=None, keep='first',  
             ignore_index=ignore_index ) for df in d_new ] 
