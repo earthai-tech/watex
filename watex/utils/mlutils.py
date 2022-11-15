@@ -2412,7 +2412,6 @@ def naive_imputer (
     #                 or   str(drop_features).lower()=='true' 
     #                     ) :
     #                 drop_features = 'cat' 
-                    
     #     if drop_features =='cat' :
     #         X = to_numeric_dtypes(X, pop_cat_features= True,
     #                               verbose = verbose , 
