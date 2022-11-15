@@ -1897,7 +1897,7 @@ def projection_validator (X, Xt=None, columns =None ):
     """ Retrieve x, y coordinates of a datraframe ( X, Xt ) from columns 
     names or indexes. 
     
-    If X or Xt are given as an arrays, `columns` may hold integers from 
+    If X or Xt are given as arrays, `columns` may hold integers from 
     selecting the the coordinates 'x' and 'y'. 
     
     Parameters 
@@ -1914,9 +1914,9 @@ def projection_validator (X, Xt=None, columns =None ):
         prediction time, used as independent variables in learning. The 
         notation is uppercase to denote that it is ordinarily a matrix.
     columns: list of str or index, optional 
-        columns is usefull what a dataframe is given  with a dimension size 
+        columns is usefull when a dataframe is given  with a dimension size 
         greater than 2. If such data is passed to `X` or `Xt`, columns must
-        hold the name to considered as 'easting', 'northing' when UTM 
+        hold the name to consider as 'easting', 'northing' when UTM 
         coordinates are given or 'latitude' , 'longitude' when latlon are 
         given. 
         If dimension size is greater than 2 and columns is None , an error 
@@ -2305,22 +2305,34 @@ def select_feature_importances (
     return Xs 
  
 def naive_imputer (
-        X, y=None , strategy = 'mean', verify_integrity = False , 
-        drop_features =False, 
-        missing_values= np.nan ,fill_value = 0  , verbose = False,
+        X, y=None, strategy = 'mean', drop_features =False,  kind=None, 
+        missing_values= np.nan ,fill_value = None , verbose = "deprecated",
         add_indicator = False,  copy = True,  **fit_params ) : 
-    """ Quick imput missing values and return  
+    """ Imput missing values in the data. 
+    
+    Whatever data contains categorial features, 'bi-impute' argument passed to 
+    'kind' parameters has a strategy to both impute the numerical and 
+    categorical features rather than raising an error when the 'strategy' is 
+    not set to 'most_frequent'.
     
     Parameters
     ----------
     X : {array-like, sparse matrix} of shape (n_samples, n_features)
         The data used to compute the mean and standard deviation
         used for later scaling along the features axis.
+        
     y : None
         Not used, present here for API consistency by convention.
         
     drop_features: bool or list, default =False, 
-        drop a list of features that no need for imputed and return  
+        drop a list of features in the dataframe before imputation. 
+        If ``True`` and no list of features is supplied, the categorial 
+        features are removed. 
+        
+    kind: str, [bi-impute'], default= None
+        If kind is set to 'bi-impute', it imputes the numerical and 
+        categorical features separately and returns a single imputed 
+        dataframe.
     missing_values : int, float, str, np.nan, None or pandas.NA, default=np.nan
         The placeholder for the missing values. All occurrences of
         `missing_values` will be imputed. For pandas' dataframes with
@@ -2351,11 +2363,6 @@ def naive_imputer (
     verbose : int, default=0
         Controls the verbosity of the imputer.
 
-        .. deprecated:: 1.1
-           The 'verbose' parameter was deprecated in version 1.1 and will be
-           removed in 1.3. A warning will always be raised upon the removal of
-           empty columns in the future version.
-
     copy : bool, default=True
         If True, a copy of X will be created. If False, imputation will
         be done in-place whenever possible. Note that, in the following cases,
@@ -2373,69 +2380,105 @@ def naive_imputer (
         the missing indicator even if there are missing values at
         transform/test time.
         
+    fit_params: dict, 
+        keywords arguments passed to the scikit-learn fitting parameters 
+        More details on https://scikit-learn.org/stable/ 
     Returns 
     --------
-    
+    Xi: Dataframe, array-like, sparse matrix of shape (n_samples, n_features)
+        Data imputed 
+        
+    Examples 
+    --------
+    >>> import numpy as np 
+    >>> import pandas as pd 
+    >>> from watex.utils.mlutils import naive_imputer 
+    >>> X= np.random.randn ( 7, 4 ) 
+    >>> X[3, :] =np.nan  ; X[:, 3][-4:]=np.nan 
+    >>> naive_imputer  (X)
+    ... array([[ 1.34783528,  0.53276798, -1.57704281,  0.43455785],
+               [ 0.36843174, -0.27132106, -0.38509441, -0.29371997],
+               [-1.68974996,  0.15268509, -2.54446498,  0.18939122],
+               [ 0.06013775,  0.36687602, -0.21973368,  0.11007637],
+               [-0.27129147,  1.18103398,  1.78985393,  0.11007637],
+               [ 1.09223954,  0.12924661,  0.52473794,  0.11007637],
+               [-0.48663864,  0.47684353,  0.87360825,  0.11007637]])
+    >>> frame = pd.DataFrame (X, columns =['a', 'b', 'c', 'd']  ) 
+    >>> # change [bc] types to categorical values.
+    >>> frame['b']=['pineaple', '', 'cabbage', 'watermelon', 'onion', 
+                    'cabbage', 'onion']
+    >>> frame['c']=['lion', '', 'cat', 'cat', 'dog', '', 'mouse']
+    >>> naive_imputer(frame, kind ='bi-impute')
+    ...             b      c         a         d
+        0    pineaple   lion  1.347835  0.434558
+        1     cabbage    cat  0.368432 -0.293720
+        2     cabbage    cat -1.689750  0.189391
+        3  watermelon    cat  0.060138  0.110076
+        4       onion    dog -0.271291  0.110076
+        5     cabbage    cat  1.092240  0.110076
+        6       onion  mouse -0.486639  0.110076
+        
     """
-
+    X_cat=None  
+    
+    if kind is not None: 
+        kind = str(kind).lower().strip () 
+        if kind.find ('bi')>=0: 
+            kind='bi-impute'
+            
+        assert kind in {'bi-impute'} , f"Supports 'bi-impute', not {kind!r}"
+        
     if hasattr (X, 'columns' ) :
-        data , nf, cf =   to_numeric_dtypes(X, return_feature_types= True ) 
+        X , nf, cf =   to_numeric_dtypes(X, return_feature_types= True ) 
     if drop_features :
         if not hasattr(X, 'columns'): 
-            raise ValueError ("Drop feature is supplied while X is not a dataframe.") 
+            raise ValueError ("Drop feature is possible only if  X is dataframe."
+                              f" Got {type(X).__name__!r}") 
         
         if ( str(drop_features).lower().find ('cat') >=0 
                 or  str(drop_features).lower()=='true' 
                     ) :
                 X = X [nf ] # drop cat features 
         else : 
-        # assert features
+            if not is_iterable(drop_features): 
+                raise TypeError ("Expects a list of features to drop;"
+                                 " not {type(drop_features).__name__!r}")
+        # drop_feature is a list assert features
             existfeatures(X, features = drop_features ) 
-            X = X[drop_features ]
+            X= X[drop_features ]
             
-    if verify_integrity :
+    if (kind=='bi-impute' and strategy !='most_frequent')  :
         if not hasattr (X, 'columns'): 
-            raise ValueError (" Verify integrity is only allowed  with a"
+            raise ValueError (" Bi-Imputation is only allowed  with a"
                               f"dataframe, not {type (X).__name__!r}")
-        Xcat , Xnum = X [cf] ; X[nf] 
+        X_cat , X = X [cf] ,  X[nf] 
         
-    # if drop_features : 
-    #     if is_iterable(drop_features): 
-            
-    #             existfeatures(X, features = drop_features )
-    #             new_features = is_in_if(
-    #                 X.columns, drop_features, return_diff= True )
-            
-    #             X =X[new_features]
-        
-    #         elif ( str(drop_features).lower().find ('cat') >=0 
-    #                 or   str(drop_features).lower()=='true' 
-    #                     ) :
-    #                 drop_features = 'cat' 
-    #     if drop_features =='cat' :
-    #         X = to_numeric_dtypes(X, pop_cat_features= True,
-    #                               verbose = verbose , 
-    #                               missing_values= missing_values
-    #                               )
-                
-    imp = SimpleImputer(strategy= strategy , missing_values= missing_values , 
+    imp = SimpleImputer(strategy= strategy , 
+                        missing_values= missing_values , 
                         fill_value = fill_value , 
                         verbose = "deprecated" if not verbose else verbose, 
                         add_indicator=False, 
                         copy = copy )
-    
-    if verify_integrity:
-        X_imp_num  = imp.fit_transform (X_num, y =y, **fit_params ) 
-        
-        im.strategy ='most_frequent'
-        X_cat_num = imp.fit_transform (X_cat, y =y, **fit_params ) 
-    else : 
-        X_imp = imp.fit_transform (X, y =y, **fit_params ) 
+    try : 
+        Xi = imp.fit_transform (X, y =y, **fit_params )
+    except Exception as err :
+        raise ValueError (str(err) + ". Use 'bi-impute' strategy passed to"
+                          " the parameter 'kind' to coerce the categorical"
+                          " besides the imputed numerical features.")
     
     if hasattr (imp , 'feature_names_in_'): 
-        X_imp = pd.DataFrame( X_imp , columns = imp.feature_names_in_)  
+        Xi = pd.DataFrame( Xi , columns = imp.feature_names_in_)  
+    # commonly when strategy is most frequent
+    # categorical features are also imputed.
+    # so dont need to use bin strategy
+    if  (kind=='bi-impute' and strategy !='most_frequent') :
+        imp.strategy ='most_frequent'
+        Xi_cat  = imp.fit_transform (X_cat, y =y, **fit_params ) 
         
-    return X_imp 
+        Xi_cat = pd.DataFrame( Xi_cat , columns = imp.feature_names_in_)
+        Xi = pd.concat ([Xi_cat, Xi], axis =1 )
+ 
+    return Xi
 
     
 def naive_scaler(
@@ -2490,6 +2533,10 @@ def naive_scaler(
         Set to True to clip transformed values of held-out data to
         provided `feature range`.
         
+    fit_params: dict, 
+        keywords arguments passed to the scikit-learn fitting parameters 
+        More details on https://scikit-learn.org/stable/ 
+            
     Returns
     -------
     X_sc : {ndarray, sparse matrix} or dataframe of  shape \

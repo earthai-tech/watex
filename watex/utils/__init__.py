@@ -55,7 +55,9 @@ from .mlutils import (
     cattarget, 
     labels_validator, 
     projection_validator, 
-    rename_labels_in 
+    rename_labels_in , 
+    naive_imputer, 
+    naive_scaler
     
     )
 from .plotutils import ( 
@@ -136,7 +138,9 @@ __all__=[
         'get_xs_xr_splits', 
         'samples_reducing' , 
         'get_sections_from_depth', 
-        'check_flow_objectivity'
+        'check_flow_objectivity', 
+        'naive_imputer', 
+        'naive_scaler'
         
         ]
 
