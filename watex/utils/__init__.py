@@ -57,7 +57,8 @@ from .mlutils import (
     projection_validator, 
     rename_labels_in , 
     naive_imputer, 
-    naive_scaler
+    naive_scaler, 
+    select_feature_importances
     
     )
 from .plotutils import ( 
@@ -140,7 +141,8 @@ __all__=[
         'get_sections_from_depth', 
         'check_flow_objectivity', 
         'naive_imputer', 
-        'naive_scaler'
+        'naive_scaler', 
+        'select_feature_importances',
         
         ]
 
