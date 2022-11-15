@@ -99,7 +99,7 @@ def _is_readable (
             raise TypeError (
             f'Expected a Path-like object or url, got : {type(f).__name__!r}')
         
-    _, ex = os.path.splitext(f) 
+    _, ex = os.path.splitext(f.strip()) 
     if ex.lower() not in tuple (cpObj.keys()):
         raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
                         )
@@ -1772,7 +1772,7 @@ def read_data (
             raise TypeError (
             f'Expected a Path-like object or url, got : {type(f).__name__!r}')
         
-    _, ex = os.path.splitext(f) 
+    _, ex = os.path.splitext(f.strip()) 
     if ex.lower() not in tuple (cpObj.keys()):
         raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
                         )

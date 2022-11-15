@@ -35,7 +35,11 @@ from ..exlib.sklearn import (
     recall_score, 
     roc_auc_score, 
     roc_curve, 
-    SelectFromModel 
+    SelectFromModel, 
+    StandardScaler, 
+    MinMaxScaler, 
+    Normalizer, 
+    SimpleImputer
 )
 from .._typing import (
     List,
@@ -64,8 +68,11 @@ from .funcutils import (
     savepath_, 
     smart_format, 
     str2columns, 
-    is_iterable
+    is_iterable, 
+    is_in_if, 
+    to_numeric_dtypes
 )
+from .validator import get_estimator_name 
 _logger = watexlog().get_watex_logger(__name__)
 
 
@@ -2297,9 +2304,266 @@ def select_feature_importances (
         
     return Xs 
  
+def naive_imputer (
+        X, y=None , strategy = 'mean', verify_integrity = False , 
+        drop_features =False, 
+        missing_values= np.nan ,fill_value = 0  , verbose = False,
+        add_indicator = False,  copy = True,  **fit_params ) : 
+    """ Quick imput missing values and return  
+    
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        The data used to compute the mean and standard deviation
+        used for later scaling along the features axis.
+    y : None
+        Not used, present here for API consistency by convention.
+        
+    drop_features: bool or list, default =False, 
+        drop a list of features that no need for imputed and return  
+    missing_values : int, float, str, np.nan, None or pandas.NA, default=np.nan
+        The placeholder for the missing values. All occurrences of
+        `missing_values` will be imputed. For pandas' dataframes with
+        nullable integer dtypes with missing values, `missing_values`
+        can be set to either `np.nan` or `pd.NA`.
+
+    strategy : str, default='mean'
+        The imputation strategy.
+
+        - If "mean", then replace missing values using the mean along
+          each column. Can only be used with numeric data.
+        - If "median", then replace missing values using the median along
+          each column. Can only be used with numeric data.
+        - If "most_frequent", then replace missing using the most frequent
+          value along each column. Can be used with strings or numeric data.
+          If there is more than one such value, only the smallest is returned.
+        - If "constant", then replace missing values with fill_value. Can be
+          used with strings or numeric data.
+
+           strategy="constant" for fixed value imputation.
+
+    fill_value : str or numerical value, default=None
+        When strategy == "constant", fill_value is used to replace all
+        occurrences of missing_values.
+        If left to the default, fill_value will be 0 when imputing numerical
+        data and "missing_value" for strings or object data types.
+
+    verbose : int, default=0
+        Controls the verbosity of the imputer.
+
+        .. deprecated:: 1.1
+           The 'verbose' parameter was deprecated in version 1.1 and will be
+           removed in 1.3. A warning will always be raised upon the removal of
+           empty columns in the future version.
+
+    copy : bool, default=True
+        If True, a copy of X will be created. If False, imputation will
+        be done in-place whenever possible. Note that, in the following cases,
+        a new copy will always be made, even if `copy=False`:
+
+        - If `X` is not an array of floating values;
+        - If `X` is encoded as a CSR matrix;
+        - If `add_indicator=True`.
+
+    add_indicator : bool, default=False
+        If True, a :class:`MissingIndicator` transform will stack onto output
+        of the imputer's transform. This allows a predictive estimator
+        to account for missingness despite imputation. If a feature has no
+        missing values at fit/train time, the feature won't appear on
+        the missing indicator even if there are missing values at
+        transform/test time.
+        
+    Returns 
+    --------
+    
+    """
+
+    if hasattr (X, 'columns' ) :
+        data , nf, cf =   to_numeric_dtypes(X, return_feature_types= True ) 
+    if drop_features :
+        if not hasattr(X, 'columns'): 
+            raise ValueError ("Drop feature is supplied while X is not a dataframe.") 
+        
+        if ( str(drop_features).lower().find ('cat') >=0 
+                or  str(drop_features).lower()=='true' 
+                    ) :
+                X = X [nf ] # drop cat features 
+        else : 
+        # assert features
+            existfeatures(X, features = drop_features ) 
+            X = X[drop_features ]
+            
+    if verify_integrity :
+        if not hasattr (X, 'columns'): 
+            raise ValueError (" Verify integrity is only allowed  with a"
+                              f"dataframe, not {type (X).__name__!r}")
+        Xcat , Xnum = X [cf] ; X[nf] 
+        
+    # if drop_features : 
+    #     if is_iterable(drop_features): 
+            
+    #             existfeatures(X, features = drop_features )
+    #             new_features = is_in_if(
+    #                 X.columns, drop_features, return_diff= True )
+            
+    #             X =X[new_features]
+        
+    #         elif ( str(drop_features).lower().find ('cat') >=0 
+    #                 or   str(drop_features).lower()=='true' 
+    #                     ) :
+    #                 drop_features = 'cat' 
+                    
+    #     if drop_features =='cat' :
+    #         X = to_numeric_dtypes(X, pop_cat_features= True,
+    #                               verbose = verbose , 
+    #                               missing_values= missing_values
+    #                               )
+                
+    imp = SimpleImputer(strategy= strategy , missing_values= missing_values , 
+                        fill_value = fill_value , 
+                        verbose = "deprecated" if not verbose else verbose, 
+                        add_indicator=False, 
+                        copy = copy )
+    
+    if verify_integrity:
+        X_imp_num  = imp.fit_transform (X_num, y =y, **fit_params ) 
+        
+        im.strategy ='most_frequent'
+        X_cat_num = imp.fit_transform (X_cat, y =y, **fit_params ) 
+    else : 
+        X_imp = imp.fit_transform (X, y =y, **fit_params ) 
+    
+    if hasattr (imp , 'feature_names_in_'): 
+        X_imp = pd.DataFrame( X_imp , columns = imp.feature_names_in_)  
+        
+    return X_imp 
+
+    
+def naive_scaler(
+    X,y =None, kind= StandardScaler, copy =True, with_mean = True, 
+    with_std= True , feature_range =(0 , 1), clip = False,
+    norm ='l2',  **fit_params  
+    ): 
+    """ Quick data scaling using both strategies implemented in scikit-learn 
+    with StandardScaler and MinMaxScaler. 
+    
+    Function returns scaled frame if dataframe is passed or ndarray. For other 
+    scaling, call scikit-learn instead. 
+    
+    Parameters 
+    ------------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        The data used to compute the mean and standard deviation
+        used for later scaling along the features axis.
+
+    y : None
+        Ignored.
+        
+    kind: str, default='StandardScaler' 
+        Kind of data scaling. Can also be ['MinMaxScaler', 'Normalizer']. The 
+        default is 'StandardScaler'
+    copy : bool, default=True
+        If False, try to avoid a copy and do inplace scaling instead.
+        This is not guaranteed to always work inplace; e.g. if the data is
+        not a NumPy array or scipy.sparse CSR matrix, a copy may still be
+        returned.
+
+    with_mean : bool, default=True
+        If True, center the data before scaling.
+        This does not work (and will raise an exception) when attempted on
+        sparse matrices, because centering them entails building a dense
+        matrix which in common use cases is likely to be too large to fit in
+        memory.
+
+    with_std : bool, default=True
+        If True, scale the data to unit variance (or equivalently,
+        unit standard deviation).
+        
+    feature_range : tuple (min, max), default=(0, 1)
+        Desired range of transformed data.
+
+    norm : {'l1', 'l2', 'max'}, default='l2'
+        The norm to use to normalize each non zero sample. If norm='max'
+        is used, values will be rescaled by the maximum of the absolute
+        values.
+
+    clip : bool, default=False
+        Set to True to clip transformed values of held-out data to
+        provided `feature range`.
+        
+    Returns
+    -------
+    X_sc : {ndarray, sparse matrix} or dataframe of  shape \
+        (n_samples, n_features)
+        Transformed array.
+        
+    Examples 
+    ----------
+    >>> import numpy as np  
+    >>> import pandas as pd 
+    >>> from watex.utils.mlutils import naive_scaler 
+    >>> X= np.random.randn (7 , 3 ) 
+    >>> X_std = naive_scaler (X ) 
+    ... array([[ 0.17439644,  1.55683005,  0.24115109],
+           [-0.59738672,  1.3166854 ,  1.23748004],
+           [-1.6815365 , -1.19775838,  0.71381357],
+           [-0.1518278 , -0.32063059, -0.47483155],
+           [-0.41335886,  0.13880519,  0.69258621],
+           [ 1.45221902, -1.03852015, -0.40157981],
+           [ 1.21749443, -0.45541153, -2.00861955]])
+    >>> # use dataframe 
+    >>> Xdf = pd.DataFrame (X, columns =['a', 'c', 'c'])
+    >>> naive_scaler (Xdf , kind='Normalizer') # return data frame 
+    ...           a         c         c
+        0  0.252789  0.967481 -0.008858
+        1 -0.265161  0.908862  0.321961
+        2 -0.899863 -0.416231  0.130380
+        3  0.178203  0.039443 -0.983203
+        4 -0.418487  0.800306  0.429394
+        5  0.933933 -0.309016 -0.179661
+        6  0.795234 -0.051054 -0.604150
+    """
+    msg =("Supports only the 'standardization','normalization' and  'minmax'"
+          " scaling types, not {!r}")
+    
+    kind = kind or 'standard'
+    
+    if   ( 
+            str(kind).lower().strip().find ('standard')>=0 
+            or get_estimator_name(kind) =='StandardScaler'
+            ): 
+        kind = 'standard'
+    elif ( 
+            str(kind).lower().strip().find ('minmax')>=0 
+            or get_estimator_name (kind) =='MinMaxScaler'
+            ): 
+        kind = 'minmax'
+    elif  ( 
+            str(kind).lower().strip().find ('norm')>=0  
+            or get_estimator_name(kind)=='Normalizer'
+            ):
+        kind ='norm'
+        
+    assert kind in {"standard", 'minmax', 'norm'} , msg.format(kind)
+    
+    if kind =='standard': 
+        sc = StandardScaler(
+            copy=copy, with_mean= with_mean , with_std= with_std ) 
+    elif kind == 'minmax': 
+        sc = MinMaxScaler(feature_range= feature_range, 
+                          clip = clip, copy =copy  ) 
+    elif kind=='norm': 
+        
+        sc = Normalizer(copy= copy , norm = norm ) 
+        
+    X_sc = sc.fit_transform (X, y=y, **fit_params)
+    
+    if hasattr (sc , 'feature_names_in_'): 
+        X_sc = pd.DataFrame( X_sc , columns = sc.feature_names_in_)  
+    return X_sc 
 
 
-
+    
 
 
 

@@ -314,7 +314,7 @@ def _assert_reduce_indexes (*ixs ) :
         
     return ixs 
 
-def get_sections_from_depth  (z, z_range, return_indexes =False ) :
+def get_sections_from_depth  (z, z_range, return_index =False ) :
     """ Gets aquifer sections ('upper', 'lower') in data 'z' from the 
     depth range.
     
@@ -328,19 +328,20 @@ def get_sections_from_depth  (z, z_range, return_indexes =False ) :
         Section ['upper', 'lower'] of the aquifer at differnt depth.
         The range of the depth must a pair values and  could not be
          greater than the maximum depth of the well. 
-    return_indexes: bool, default=False 
-        returns the indexes of the sections ['upper', 'lower'] 
-        of the aquifer and non-valid sections data. 
+    return_index: bool, default=False 
+        returns the indices of the sections ['upper', 'lower'] 
+        of the aquifer and non-valid sections too. 
         
     Returns 
     ----------
     sections: Tuple (float, float)
        Real values of the  upper and lower sections of the aquifer. 
-    If ``return_indexes`` is 'True', function returns: 
+    If ``return_index`` is 'True', function returns: 
       (upix, lowix): Tuple (int, int )
           indices of upper and lower sections in the depth array `z`
       (invix): list of Tuple (int, int) 
           list of indices of invalid sections
+          
     Example
     --------
     >>> from watex.datasets import load_hlogs 
@@ -353,10 +354,10 @@ def get_sections_from_depth  (z, z_range, return_indexes =False ) :
     >>> get_sections_from_depth ( data.depth_top, ( 16.25,))
     ... (22.46, 693.37)
     >>> get_sections_from_depth ( data.depth_top, ( 16.25, 125.83),
-                                 return_indexes =True )
+                                 return_index =True )
     ... ((3, 11), [(0, 3), (11, 180)])
     >>> get_sections_from_depth ( data.depth_top, ( 16.25,), 
-                                 return_indexes =True )
+                                 return_index =True )
     ... ((3, 181), [(0, 3)])
  
     """
@@ -406,7 +407,7 @@ def get_sections_from_depth  (z, z_range, return_indexes =False ) :
     # +1 for Python indexing
     invix = _get_invalid_indexes (z, z_range )
     
-    return  sections if not  return_indexes else ( 
+    return  sections if not  return_index else ( 
         ( upix , lowix + 1 ),  invix ) 
 
 
@@ -415,7 +416,7 @@ def get_unique_sections (
         error='raise', **kws ) : 
 
     sect, dat = get_aquifers_sections(*data, zname=zname, kname=kname, 
-                                 return_indexes =return_index, 
+                                 return_index =return_index, 
                                  return_data= True,
                                  error = error , **kws)
     sect = np.array (list(itertools.chain(*sect)))
@@ -463,7 +464,7 @@ up, low :list of upper and lower section values of aquifer.
     - (upix, lowix ): Tuple of indexes of lower and upper sections  
     - (up, low): Tuple of aquifer sections (upper and lower)  
     - (upix, lowix), (up, low) : positions and sections values of aquifers 
-        if `return_indexes` and return_sections` are ``True``.  
+        if `return_index` and return_sections` are ``True``.  
 
 See Also 
 ----------
@@ -485,10 +486,10 @@ Example
     )
     
 def get_aquifers_sections (
-    *d ,  
+    *data ,  
     zname, 
     kname, 
-    return_indexes =False, 
+    return_index =False, 
     return_data=False,
     error = 'ignore',  
     **kws 
@@ -500,13 +501,13 @@ def get_aquifers_sections (
     
     error ='raise' if error !='ignore' else 'ignore'
 
-    for ii, df in enumerate ( d) : 
+    for ii, df in enumerate ( data) : 
         try : 
             ix, sec = get_aquifer_sections(
                 df , 
                 zname = zname , 
                 kname = kname , 
-                return_indexes= True, 
+                return_index= True, 
                 return_sections=True, 
                 **kws
                 )
@@ -520,12 +521,16 @@ def get_aquifers_sections (
         section_indexes.append(ix); sections.append(sec )
         
     if len(is_not_valid)!=0 : 
-        msg = "Unsupports data at position{0} {1}.".format(
-            f"{'s' if len(is_not_valid)>1 else''}", smart_format(is_not_valid))
+        verb = f"{'s' if len(is_not_valid)>1 else''}"
+        msg = "Unsupports data at position{0} {1}.".format( verb, 
+             smart_format(is_not_valid))
                      
         if error =='raise':
-            btext = "\nReasons"
-            entext = "Sections can not be computed. Please check your data."
+            getr = ("Sections", "computed" 
+                      )  if not return_index else  ("Indices", "obtained" )
+            btext = "\nReason{}".format(verb)
+            entext = "{0} cannot be {1}. Please check your data.".format ( 
+                getr[0], getr[-1])
             mess = msg +  listing_items_format(
                 errors, begintext=btext, endtext=entext , verbose =False )
             raise DatasetError(mess) 
@@ -533,7 +538,7 @@ def get_aquifers_sections (
         warnings.warn(msg + " Data {} discarded.".format( 
             "is" if len(is_not_valid)<2 else "are")
                       )        
-    r= section_indexes if return_indexes else sections 
+    r= section_indexes if return_index else sections 
     
     return  r  if not return_data else ( r , is_valid_dfs) 
 
@@ -549,7 +554,7 @@ compressed to top Xr.
 
 Returns valid section indexes if 'return_index' is set to ``True``.    
     
-d: list of pandas dataframe 
+data: list of pandas dataframe 
     Data that contains mainly the aquifer values. It needs to specify the 
     name of the depth column `zname` as well as the name of permeabiliy 
     `kname` column.  
@@ -557,7 +562,7 @@ d: list of pandas dataframe
 {params.core.kname}
 {params.core.z}
 
-return_indexes: bool, default =False , 
+return_index: bool, default =False , 
     Returns the positions (indexes) of the upper and lower sections of the
    each aquifer found in each dataframe.
 
@@ -579,7 +584,7 @@ up, low :list of upper and lower section values of aquifer.
     - (upix, lowix ): Tuple of indexes of lower and upper sections  
     - (up, low): Tuple of aquifer sections (upper and lower)  
     - (upix, lowix), (up, low) : positions and sections values of aquifers 
-        if `return_indexes` and return_sections` are ``True``.  
+        if `return_index` and return_sections` are ``True``.  
 
 See Also 
 ----------
@@ -592,7 +597,7 @@ Example
 >>> get_aquifers_sections (data, data , zname ='depth', kname ='k' ) 
 ... [[197.12, 369.71], [197.12, 369.71]]
 >>> get_aquifers_sections (data, data , zname ='depth', kname ='k' , 
-                           return_indexes =True ) 
+                           return_index =True ) 
 ...  [[16, 29], [16, 29]]
 
 """.format(
@@ -636,7 +641,7 @@ def _get_invalid_indexes  ( d, /, valid_indexes, in_arange =False ):
 
     
 def get_xs_xr_splits (
-    df, 
+    data, 
     /,
     z_range = None, 
     zname = None, 
@@ -647,7 +652,7 @@ def get_xs_xr_splits (
     
     Parameters 
     -----------
-    df: pandas dataframe 
+    data: pandas dataframe 
         Dataframe for compressing. 
     zname: str,int , 
         the name of depth column. 'name' needs to be supplied 
@@ -684,27 +689,34 @@ def get_xs_xr_splits (
     
     if section_indexes is not None: 
         section_indexes = _assert_reduce_indexes (section_indexes) [0] 
-        xr = df.iloc [range (*section_indexes)]
+        if section_indexes [1] > len(data ): 
+            # if index is if wide,take the first index thin the end 
+            section_indexes = [section_indexes[0], len(data)]
         invalid_indexes = _get_invalid_indexes(
-            np.arange (len(df)), section_indexes)  
+            np.arange (len(data)), section_indexes)  
 
     # valid section index of aquifer
     elif z_range is not None : 
-        z = is_valid_depth (df, zname = zname , return_z = True)
+        z = is_valid_depth (data, zname = zname , return_z = True)
         section_indexes, invalid_indexes = get_sections_from_depth(
-            z, z_range, return_indexes=True )
+            z, z_range, return_index=True )
 
     # +1 for Python index 
-    xr = df.iloc [range (*[section_indexes[0], section_indexes[-1] +1])]
-
+    try : 
+        xr = data.iloc [range (*[section_indexes[0], section_indexes[-1] +1])]
+    except IndexError : 
+        # break +1 of Python index and take index thin the end. 
+        xr = data.iloc [range (*[section_indexes[0], section_indexes[-1]])]
+    except Exception as err :
+        raise err 
     invalid_indexes = _assert_reduce_indexes(*invalid_indexes )
     max_ix = max (list(itertools.chain(*invalid_indexes)))
     
-    if  max_ix > len(df) :
+    if  max_ix > len(data) :
         raise IndexError(f"Wrong index! Index {max_ix} is out of range "
-                         f"of data with length = {len(df)}")
+                         f"of data with length = {len(data)}")
  
-    xs = [ df.iloc[ range (* ind)] for ind in invalid_indexes]
+    xs = [ data.iloc[ range (* ind)] for ind in invalid_indexes]
 
     return xs, xr 
 
@@ -1026,7 +1038,7 @@ def is_valid_depth (z, /, zname =None , return_z = False):
 
 def get_aquifer_sections (
         arr_k, /, zname=None, kname = None,  z= None, 
-        return_indexes = False, return_sections = True 
+        return_index = False, return_sections = True 
         ) : 
     _assert_all_types( arr_k, pd.DataFrame, np.ndarray)
     
@@ -1088,8 +1100,8 @@ def get_aquifer_sections (
     sections = z[indexes ]
     
     return ( [* indexes ], [* sections ])   if ( 
-        return_indexes and return_sections ) else  ( 
-            [*indexes ] if return_indexes else  [*sections])
+        return_index and return_sections ) else  ( 
+            [*indexes ] if return_index else  [*sections])
 
 get_aquifer_sections.__doc__="""\
 Detect a single aquifer section (upper and lower) in depth.  
@@ -1107,7 +1119,7 @@ arr_k: ndarray or dataframe
 {params.core.kname}
 {params.core.z}
 
-return_indexes: bool, default =False , 
+return_index: bool, default =False , 
     Returns the positions (indexes) of the upper and lower sections of the
      aquifer found in the dataframe `arr_k`. 
 return_sections: bool, default=True, 
@@ -1119,7 +1131,7 @@ up, low :list of upper and lower section values of aquifer.
     - (upix, lowix ): Tuple of indexes of lower and upper sections  
     - (up, low): Tuple of aquifer sections (upper and lower)  
     - (upix, lowix), (up, low) : positions and sections values of aquifers 
-        if `return_indexes` and return_sections` are ``True``.  
+        if `return_index` and return_sections` are ``True``.  
 
 Example
 -------
@@ -1128,7 +1140,7 @@ Example
 >>> data = load_hlogs ().frame # return all data including the 'depth' values 
 >>> get_aquifer_sections (data , zname ='depth', kname ='k')
 ... [197.12, 369.71] # section starts from 197.12 -> 369.71 m 
->>> get_aquifer_sections (data , zname ='depth', kname ='k', return_indexes=True) 
+>>> get_aquifer_sections (data , zname ='depth', kname ='k', return_index=True) 
 ... ([16, 29], [197.12, 369.71]) # upper and lower-> position 16 and 29.
 
 

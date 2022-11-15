@@ -217,8 +217,8 @@ def load_hlogs (
     cf = as_frame 
     key = key or 'h502' 
     # assertion error if key does not exist. 
-    msg = (f"key {key!r} does not exist yet, expect 'h502'")
-    assert str(key).lower() in {"h502"}, msg
+    msg = (f"key {key!r} does not exist yet, expect 'h502' or 'h2601'")
+    assert str(key).lower() in {"h502", "h2601"}, msg
     
     data_file ='h.h5'
     with resources.path (DMODULE , data_file) as p : 

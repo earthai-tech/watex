@@ -179,6 +179,7 @@ from sklearn.preprocessing import (
     MinMaxScaler, 
     LabelBinarizer,
     LabelEncoder,
+    Normalizer
 ) 
 from sklearn.svm import ( 
     SVC, 
@@ -241,6 +242,7 @@ __all__=[
     'StandardScaler',
     'MinMaxScaler', 
     'LabelBinarizer',
+    'Normalizer',
     'LabelEncoder',
     'SVC', 
     'LinearSVC', 

@@ -1003,9 +1003,7 @@ class ExPlot (BasePlot):
         self.save(g)
   
         return self 
-    
 
-    
     def plothist(self,xname: str = None, *,  kind:str = 'hist', 
                    **kws 
                    ): 
