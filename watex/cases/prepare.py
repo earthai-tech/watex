@@ -448,7 +448,7 @@ class BaseSteps(object):
             self._logging.info('Transform the data using the `transform` method.'
                                'Applying the pipeline.')
         
-        for name, value in zip(['sparse_output','labelEncodage'],
+        for name, value in zip(['sparse_output','label_encoding'],
                                      [True,'LabelEncoder']): 
                                     
                 if not hasattr(self, name) :
@@ -459,7 +459,7 @@ class BaseSteps(object):
                 'missing_values' : self.missing_values, 
                 'strategy' : self.imputer_strategy, 
                 'sparse_output': self.sparse_output,
-                'labelEncodage': self.labelEncodage
+                'label_encoding': self.labelEncodage
                 }
         
         if X is not None: 
@@ -671,11 +671,10 @@ class BaseSteps(object):
         return self.__y 
     
 def default_pipeline(X,  num_attributes, cat_attributes, y=None,
-                    labelEncodage='LabelEncoder', **kws): 
-    """ Default pipeline use for preprocessing the`Bagoue` dataset  used'
-    for implement of this workflow. 
+                    label_encoding='LabelEncoder', **kws): 
+    """ Default pipeline use for preprocessing the`Bagoue` dataset
     
-    The pipleine can be improved  to achieve a good results. 
+    The pipeline can be improved  to achieve a good results. 
     
     Parameters
     ---------
@@ -705,9 +704,9 @@ def default_pipeline(X,  num_attributes, cat_attributes, y=None,
     pca=kws.pop('pca', False)
     
     if y is not None: 
-        if labelEncodage =='LabelEncoder': 
+        if label_encoding =='LabelEncoder': 
             encodage_Objy =LabelEncoder()
-        elif labelEncodage =='LabelBinarizer':
+        elif label_encoding =='LabelBinarizer':
             encodage_Objy =LabelBinarizer(sparse_output=sparse_output)
             
         y= encodage_Objy.fit_transform(y)
@@ -720,14 +719,14 @@ def default_pipeline(X,  num_attributes, cat_attributes, y=None,
         ])
         
     if not pca: 
-        encode__ =  ('OneHotEncoder',OneHotEncoder())
+        encode_ =  ('OneHotEncoder',OneHotEncoder())
         
     if pca : 
-        encode__=  ('OrdinalEncoder',OrdinalEncoder())
+        encode_=  ('OrdinalEncoder',OrdinalEncoder())
         
     cat_pipeline = Pipeline([
         ('selectorObj', DataFrameSelector(attribute_names= cat_attributes)),
-        encode__
+        encode_
         ])
     
     full_pipeline =FeatureUnion(transformer_list=[
@@ -900,7 +899,6 @@ def base_transform(
     attr_indexes:List[int]= None, 
     operator:str= None, 
     view: bool =False,
-    verbose:int=None, 
     **kws 
     )-> NDArray: 
 

@@ -39,7 +39,14 @@ from ..exlib.sklearn import (
     StandardScaler, 
     MinMaxScaler, 
     Normalizer, 
-    SimpleImputer
+    SimpleImputer, 
+    LabelBinarizer, 
+    LabelEncoder, 
+    OrdinalEncoder, 
+    Pipeline, 
+    FeatureUnion, 
+    OneHotEncoder, 
+    RobustScaler
 )
 from .._typing import (
     List,
@@ -363,7 +370,7 @@ def selectfeatures (
     """ Select features  and return new dataframe.  
     
     :param df: a dataframe for features selections 
-    :param features: list of features to select. Lits of features must be in the 
+    :param features: list of features to select. List of features must be in the 
         dataframe otherwise an error occurs. 
     :param include: the type of data to retrieved in the dataframe `df`. Can  
         be ``number``. 
@@ -2101,7 +2108,6 @@ def _is_valid_coordinate_arrays (arr, xind, yind, ptype ='train'):
         
     return x, y         
         
-        
 def labels_validator (t, /, labels, return_bool = False): 
     """ Assert the validity of the label in the target  and return the label 
     or the boolean whether all items of label are in the target. 
@@ -2155,7 +2161,263 @@ def labels_validator (t, /, labels, return_bool = False):
         
     return isvalid if return_bool else  labels 
         
+def bi_selector (d, /,  features =None, return_frames = False ):
+    """ Select the remaining attributes from the given attributes 
+    
+    This is usefull to select the categorial features from the numerical 
+    features and vice-versa when we are a lot of features. Enter features 
+    individually become tiedous and a mistake could probably happenned. 
+    
+    Parameters 
+    ------------
+    d: pandas dataframe 
+        Dataframe pandas 
+    features : list of str
+        List of features in the dataframe columns. Raise error is feature(s) 
+        does/do not exist in the frame. 
+        Note that if `features` is ``None``, it returns the categorical and 
+        numerical features instead. 
         
+    return_frames: bool, default =False 
+        return the difference columns (features) from the given features  
+        as a list. If set to ``True`` returns bi-frames composed of the 
+        given features and the remaining features. 
+        
+    Returns 
+    ----------
+    - Tuple ( list, list)
+        list of features and remaining features 
+    - Tuple ( pd.DataFrame, pd.DataFrame )
+        List of features and remaing features frames.  
+            
+    Example 
+    --------
+    >>> from watex.utils.mlutils import bi_selector 
+    >>> from watex.datasets import load_hlogs 
+    >>> data = load_hlogs().frame # get the frame 
+    >>> data.columns 
+    >>> Index(['hole_id', 'depth_top', 'depth_bottom', 'strata_name', 'rock_name',
+           'layer_thickness', 'resistivity', 'gamma_gamma', 'natural_gamma', 'sp',
+           'short_distance_gamma', 'well_diameter', 'aquifer_group',
+           'pumping_level', 'aquifer_thickness', 'hole_depth_before_pumping',
+           'hole_depth_after_pumping', 'hole_depth_loss', 'depth_starting_pumping',
+           'pumping_depth_at_the_end', 'pumping_depth', 'section_aperture', 'k',
+           'kp', 'r', 'rp', 'remark'],
+          dtype='object')
+    >>> num_features, cat_features = bi_selector (data)
+    >>> num_features
+    ...['gamma_gamma',
+         'depth_top',
+         'aquifer_thickness',
+         'pumping_depth_at_the_end',
+         'section_aperture',
+         'remark',
+         'depth_starting_pumping',
+         'hole_depth_before_pumping',
+         'rp',
+         'hole_depth_after_pumping',
+         'hole_depth_loss',
+         'depth_bottom',
+         'sp',
+         'pumping_depth',
+         'kp',
+         'resistivity',
+         'short_distance_gamma',
+         'r',
+         'natural_gamma',
+         'layer_thickness',
+         'k',
+         'well_diameter']
+    >>> cat_features 
+    ... ['hole_id', 'strata_name', 'rock_name', 'aquifer_group', 
+         'pumping_level']
+    """
+    _assert_all_types( d, pd.DataFrame, objname=" unfunc'bi-selector'")
+    if features is None: 
+        d, diff_features, features = to_numeric_dtypes(
+            d,  return_feature_types= True ) 
+    if features is not None: 
+        diff_features = is_in_if( d.columns, items =features, return_diff= True )
+        
+    return  ( diff_features, features ) if not return_frames else  (
+        d [diff_features] , d [features ] ) 
+
+def make_naive_pipe(
+        X, y =None, *,   num_features = None, cat_features=None, 
+        label_encoding='LabelEncoder', scaler = 'StandardScaler' , 
+        missing_values =np.nan, impute_strategy = 'median', 
+        sparse_output=True, for_pca =False, transform =False, 
+    ): 
+    """ make a pipeline to transform data at once. 
+    
+    make a naive pipeline is usefull to fast preprocess the data at once 
+    for quick prediction. 
+    
+    Work with a pandas dataframe. If `None` features is set, the numerical 
+    and categorial features are automatically retrieved. 
+    
+    Parameters
+    ---------
+    X : pandas dataframe of shape (n_samples, n_features)
+        The input samples. Use ``dtype=np.float32`` for maximum
+        efficiency. Sparse matrices are also supported, use sparse
+        ``csc_matrix`` for maximum efficiency.
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+    num_features: list or str, optional 
+        Numerical features put on the list. If `num_features` are given  
+        whereas `cat_features` are ``None``, `cat_features` are figured out 
+        automatically.
+    cat_features: list of str, optional 
+        Categorial features put on the list. If `num_features` are given 
+        whereas `num_features` are ``None``, `num_features` are figured out 
+        automatically.
+    label_encoding: callable or str, default='sklearn.preprocessing.LabelEncoder'
+        kind of encoding used to encode label. This assumes 'y' is supplied. 
+    scaler: callable or str , default='sklearn.preprocessing.StandardScaler'
+        kind of scaling used to scaled the numerical data. Note that for 
+        the categorical data encoding, 'sklearn.preprocessing.OneHotEncoder' 
+        is implemented  under the hood instead. 
+    missing_values : int, float, str, np.nan, None or pandas.NA, default=np.nan
+        The placeholder for the missing values. All occurrences of
+        `missing_values` will be imputed. For pandas' dataframes with
+        nullable integer dtypes with missing values, `missing_values`
+        can be set to either `np.nan` or `pd.NA`.
+    
+    impute_strategy : str, default='mean'
+        The imputation strategy.
+    
+        - If "mean", then replace missing values using the mean along
+          each column. Can only be used with numeric data.
+        - If "median", then replace missing values using the median along
+          each column. Can only be used with numeric data.
+        - If "most_frequent", then replace missing using the most frequent
+          value along each column. Can be used with strings or numeric data.
+          If there is more than one such value, only the smallest is returned.
+        - If "constant", then replace missing values with fill_value. Can be
+          used with strings or numeric data.
+    
+           strategy="constant" for fixed value imputation.
+           
+    sparse_output : bool, default=False
+        Is used when label `y` is given. Binarize labels in a one-vs-all 
+        fashion. If ``True``, returns array from transform is desired to 
+        be in sparse CSR format.
+        
+    for_pca:bool, default=False, 
+        Transform data for principal component ( PCA) analysis. If set to 
+        ``True``, :class:`watex.exlib.sklearn.OrdinalEncoder`` is used insted 
+        of :class:`watex.exlib.sklearn.OneHotEncoder``. 
+        
+    transform: bool, default=False, 
+        Tranform data inplace rather than returning the naive pipeline. 
+        
+    Returns
+    ---------
+    full_pipeline: :class:`watex.exlib.sklearn.FeatureUnion`
+        - Full pipeline composed of numerical and categorical pipes 
+    (X_transformed &| y_transformed):  {array-like, sparse matrix} of \
+        shape (n_samples, n_features)
+        - Transformed data. 
+        
+        
+    Examples 
+    ---------
+    >>> from watex.utils.mlutils import make_naive_pipe 
+    >>> from watex.datasets import load_hlogs 
+    
+    (1) Make a naive simple pipeline  with RobustScaler, StandardScaler 
+    >>> from watex.exlib.sklearn import RobustScaler 
+    >>> X_, y_ = load_hlogs (as_frame=True )# get all the data  
+    >>> pipe = make_naive_pipe(X_, scaler =RobustScaler ) 
+    
+    (2) Transform X in place with numerical and categorical features with 
+    StandardScaler (default). Returned CSR matrix 
+    
+    >>> make_naive_pipe(X_, transform =True )
+    ... <181x40 sparse matrix of type '<class 'numpy.float64'>'
+    	with 2172 stored elements in Compressed Sparse Row format>
+
+    """
+    
+    from ..transformers import DataFrameSelector
+    
+    sc= {"StandardScaler": StandardScaler ,"MinMaxScaler": MinMaxScaler , 
+         "Normalizer":Normalizer , "RobustScaler":RobustScaler}
+    
+    if not hasattr (X, '__array__') or not hasattr (X, 'columns'): 
+        raise TypeError(f"'make_naive_pipe' not supported {type(X).__name__!r}"
+                        " Expects X as 'pandas.core.frame.DataFrame' data object.")
+    #-> Encode y if given
+    if y is not None: 
+        if (label_encoding =='labelEncoder'  
+            or get_estimator_name(label_encoding) =='LabelEncoder'
+            ): 
+            enc =LabelEncoder()
+        elif  ( label_encoding =='LabelBinarizer' 
+                or get_estimator_name(label_encoding)=='LabelBinarizer'
+               ): 
+            enc =LabelBinarizer(sparse_output=sparse_output)
+        y= enc.fit_transform(y)
+    #set features
+    if num_features is not None: 
+        cat_features, num_features  = bi_selector(
+            X, features= num_features 
+            ) 
+    elif cat_features is not None: 
+        num_features, cat_features  = bi_selector(
+            X, features= cat_features 
+            )  
+    if ( cat_features is None 
+        and num_features is None 
+        ): 
+        num_features , cat_features = bi_selector(X ) 
+    # assert scaler value 
+    if get_estimator_name (scaler)  in sc.keys(): 
+        scaler = sc.get (get_estimator_name(scaler )) 
+    elif ( any ( [v.lower().find (str(scaler).lower()) >=0 for v in sc.keys()])):  
+        for k, v in sc.items () :
+            if k.lower().find ( str(scaler).lower() ) >=0: 
+                scaler = v ; break 
+    else : 
+        msg = ( f"Supports {smart_format( sc.keys(), 'or')} or "
+                "other scikit-learn scaling objects, got {!r}" 
+                )
+        if hasattr (scaler, '__module__'): 
+            name = getattr (scaler, '__module__')
+            if getattr (scaler, '__module__') !='sklearn.preprocessing._data':
+                raise ValueError (msg.format(name ))
+        else: 
+            name = scaler.__name__ if callable (scaler) else (
+                scaler.__class__.__name__ ) 
+            raise ValueError (msg.format(name ))
+
+    num_pipe=Pipeline([
+            ('selectorObj', DataFrameSelector(attribute_names= num_features)),
+            ('imputerObj',SimpleImputer(missing_values=missing_values , 
+                                    strategy=impute_strategy)),                
+            ('scalerObj', scaler() if callable (scaler) else scaler ), 
+            ])
+        
+    if for_pca : encoding=  ('OrdinalEncoder',OrdinalEncoder())
+    else:  encoding =  (
+        'OneHotEncoder', OneHotEncoder())
+        
+    cat_pipe = Pipeline([
+        ('selectorObj', DataFrameSelector(attribute_names= cat_features)),
+        encoding
+        ])
+    
+    full_pipeline =FeatureUnion(transformer_list=[
+        ('num_pipeline', num_pipe), 
+        ('cat_pipeline', cat_pipe)
+        ]) 
+    
+    return  ( full_pipeline.fit_transform (X) if y is None else (
+        full_pipeline.fit_transform (X), y ) 
+             ) if transform else full_pipeline
+       
 #XXX TODO : move the stats func 
 def _stats (X_, y_true,*, y_pred, # noqa
             from_c ='geol', 
@@ -2216,7 +2478,7 @@ def select_feature_importances (
         clf, X, threshold = .1 , prefit = True , verbose = 0 , **kws
         ): 
     """
-    Select feature importanced  based on a user-specified threshold 
+    Select feature importance  based on a user-specified threshold 
     after model fitting, which is useful if one want to use 
     `RandomForestClassifier` as a feature selector and intermediate step in 
     scikit-learn ``Pipeline`` object, which allows us to connect different 
@@ -2235,10 +2497,6 @@ def select_feature_importances (
         Training vector, where `n_samples` is the number of samples and
         `n_features` is the number of features.
 
-    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-        Target relative to X for classification or regression;
-        None for unsupervised learning.
-        
     threshold : str or float, default=None
         The threshold value to use for feature selection. Features whose
         absolute importance value is greater or equal are kept while the others
@@ -2288,12 +2546,14 @@ def select_feature_importances (
         To only select based on ``max_features``, set ``threshold=-np.inf``.
         
     verbose: int, default=0 
-        display the number of feature that meet the criterion. 
+        display the number of features that meet the criterion according to 
+        their importance range. 
     
     Rteurns 
     --------
     Xs: ndarray (n_samples, n_criterion_features)
-        Ndarray of number of samples and features that meet te criterion. 
+        Ndarray of number of samples and features that meet the criterion
+        according to the importance range.
         
     """
     sfm = SelectFromModel(clf, threshold= threshold , prefit= prefit, **kws)
@@ -2456,7 +2716,7 @@ def naive_imputer (
     imp = SimpleImputer(strategy= strategy , 
                         missing_values= missing_values , 
                         fill_value = fill_value , 
-                        verbose = "deprecated" if not verbose else verbose, 
+                        verbose = verbose, 
                         add_indicator=False, 
                         copy = copy )
     try : 

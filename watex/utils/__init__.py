@@ -58,7 +58,8 @@ from .mlutils import (
     rename_labels_in , 
     naive_imputer, 
     naive_scaler, 
-    select_feature_importances
+    select_feature_importances, 
+    make_naive_pipe
     
     )
 from .plotutils import ( 
@@ -143,6 +144,7 @@ __all__=[
         'naive_imputer', 
         'naive_scaler', 
         'select_feature_importances',
+        'make_naive_pipe'
         
         ]
 
