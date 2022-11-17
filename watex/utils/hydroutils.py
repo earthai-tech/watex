@@ -70,7 +70,7 @@ _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
 
-def find_similarities ( 
+def find_label_similarities ( 
         y_true, y_pred , return_counts = False, rank_k =False, 
         func: callable = None, include_label_0 = False, verbose: int=0,  
         **kwd):
@@ -150,7 +150,7 @@ def find_similarities (
         
     return label_score(y_t, y_p )
 
-def make_mxs_target (y_true, y_pred, ratio = .5 ):
+def make_mxs_target (y_true, y_pred, strategy ='one2one', ratio = .5 ):
     """Merge target to crate mixtrure strategy target (MXS) target 
     from predicted target (y_pred) and true target with the ratio of 
     similarity of each label in 'y_true' 
