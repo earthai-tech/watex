@@ -45,7 +45,9 @@ from watex.exlib.sklearn import (
     RandomForestClassifier, 
     LogisticRegression, 
     MinMaxScaler, 
-    SimpleImputer
+    SimpleImputer, 
+    KMeans, 
+    silhouette_samples
     ) 
 
 is_mlxtend =False 
@@ -406,6 +408,85 @@ def plot_logging (
     plt.close () if savefig is not None else plt.show() 
     
 
+def plot_silhouette (X, labels, metric ='euclidean', **kwds ):
+    r"""Plot quantifying the quality  of clustering silhouette 
+    
+    Parameters 
+    ---------
+    X : array-like of shape (n_samples_a, n_samples_a) if metric == \
+            "precomputed" or (n_samples_a, n_features) otherwise
+        An array of pairwise distances between samples, or a feature array.
+
+    labels : array-like of shape (n_samples,)
+        Label values for each sample.
+
+    metric : str or callable, default='euclidean'
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the distance function.
+        If using a ``scipy.spatial.distance`` metric, the parameters are still
+        metric dependent. See the scipy docs for usage examples.
+        
+        
+    See Also
+    --------
+    plotSilhouette :func:`watex.view.mlplot.plotSilhouette` 
+        Gives consistency plot as the use of `prefit` parameter which checks 
+        whether`labels` are expected to be passed into the function 
+        directly or not. 
+    
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> from watex.exlib.sklearn import KMeans 
+    >>> from watex.datasets import load_iris 
+    >>> from watex.view.mlplot import plotSilhouette
+    >>> d= load_iris ()
+    >>> X= d.data [:, 0][:, np.newaxis] # take the first axis 
+    >>> km= KMeans (n_clusters =3 , init='k-means++', n_init =10 , 
+                    max_iter = 300 , 
+                    tol=1e-4, 
+                    random_state =0 
+                    )
+    >>> y_km = km.fit_predict(X) 
+    >>> plotSilhouette (X, y_km)
+
+    """
+    cluster_labels = np.unique (labels) 
+    n_clusters = cluster_labels.shape [0] 
+    silhouette_vals = silhouette_samples(
+        X, labels= labels, metric = metric ,**kwds)
+    y_ax_lower , y_ax_upper = 0, 0 
+    yticks =[]
+    
+    for i, c  in enumerate (cluster_labels ) : 
+        c_silhouette_vals = silhouette_vals[labels ==c ] 
+        c_silhouette_vals.sort()
+        y_ax_upper += len(c_silhouette_vals)
+        color =mpl.cm.jet (float(i)/n_clusters )
+        plt.barh(range(y_ax_lower, y_ax_upper), c_silhouette_vals, 
+                 height =1.0 , 
+                 edgecolor ='none', 
+                 color =color, 
+                 )
+        yticks.append((y_ax_lower + y_ax_upper)/2.)
+        y_ax_lower += len(c_silhouette_vals)
+    silhouette_avg = np.mean(silhouette_vals) 
+    plt.axvline (silhouette_avg, 
+                 color='red', 
+                 linestyle ='--'
+                 )
+    plt.yticks(yticks, cluster_labels +1 ) 
+    plt.ylabel ("Cluster") 
+    plt.xlabel ("Silhouette coefficient")
+    plt.tight_layout()
+
+    plt.show() 
 
 def plot_sbs_feature_selection (
         sbs_estimator,/,  X=None, y=None ,fig_size=(8, 5), 
@@ -1255,7 +1336,7 @@ def plot_clusters (
     >>> # scaled the data with MinMax scaler i.e. between ( 0-1) 
     >>> h2_scaled = MinMaxScaler().fit_transform(h2)
     >>> ykm = km.fit_predict(h2_scaled )
-    >>> plot_clusters (3 , h2_scaled, y_km , km.cluster_centers_ )
+    >>> plot_clusters (3 , h2_scaled, ykm , km.cluster_centers_ )
         
     """
     try : n_clusters = int(n_clusters )
@@ -1293,8 +1374,84 @@ def plot_clusters (
     plt.tight_layout() 
     plt.show()
     
+def plot_elbow (
+        X,  n_clusters , n_init = 10 , max_iter = 300 , random_state=42 ,
+        fig_size = (10, 4 ), marker = 'o', savefig= None, 
+        **kwd): 
+    """ Plot elbow method to find the optimal number of cluster, k', 
+    for a given class. 
+    
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training instances to cluster. It must be noted that the data
+        will be converted to C ordering, which will cause a memory
+        copy if the given data is not C-contiguous.
+        If a sparse matrix is passed, a copy will be made if it's not in
+        CSR format.
 
-def plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
+    n_clusters : int, default=8
+        The number of clusters to form as well as the number of
+        centroids to generate.
+
+    n_init : int, default=10
+        Number of time the k-means algorithm will be run with different
+        centroid seeds. The final results will be the best output of
+        n_init consecutive runs in terms of inertia.
+
+    max_iter : int, default=300
+        Maximum number of iterations of the k-means algorithm for a
+        single run.
+
+    tol : float, default=1e-4
+        Relative tolerance with regards to Frobenius norm of the difference
+        in the cluster centers of two consecutive iterations to declare
+        convergence.
+
+    verbose : int, default=0
+        Verbosity mode.
+
+    random_state : int, RandomState instance or None, default=42
+        Determines random number generation for centroid initialization. Use
+        an int to make the randomness deterministic.
+        
+    savefig: str, default =None , 
+        the path to save the figure. Argument is passed to 
+        :class:`matplotlib.Figure` class. 
+    marker: str, default='o', 
+        cluster marker point. 
+        
+    kwd: dict
+        Addionnal keywords arguments passed to :func:`matplotlib.pyplot.plot`
+        
+    Returns 
+    --------
+    ax: Matplotlib.pyplot axes objects 
+    
+    Example
+    ---------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.plotutils import plot_elbow 
+    >>> # get the only resistivy and gamma-gama values for example
+    >>> res_gamma = load_hlogs ().frame[['resistivity', 'gamma_gamma']]  
+    >>> plot_elbow(res_gamma, n_clusters=11)
+    
+    """
+    distorsions =[] ; n_clusters = 11
+    for i in range (1, n_clusters ): 
+        km =KMeans (n_clusters =i , init= 'k-means++', 
+                    n_init=10 , max_iter=300, 
+                    random_state =0 
+                    )
+        km.fit(X) 
+        distorsions.append(km.inertia_) 
+            
+    ax = _plot_elbow (distorsions, n_clusters =n_clusters,fig_size = fig_size ,
+                      marker =marker , savefig =savefig, **kwd) 
+    
+    return ax 
+    
+def _plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
                marker='o', savefig =None, **kwd): 
     """ Plot the optimal number of cluster, k', for a given class 
     

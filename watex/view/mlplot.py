@@ -44,7 +44,8 @@ from ..exlib.sklearn import  (
     StandardScaler, 
     MinMaxScaler, 
     train_test_split, 
-    mean_squared_error
+    mean_squared_error, 
+    KMeans
     ) 
 from ..exceptions import ( 
     NotFittedError , 
@@ -2312,7 +2313,8 @@ def plotDendroheat(
     # 2. reorder the data in our initial dataframe according 
     # to the clustering label that can be accessed by a dendrogram 
     # which is essentially a Python dictionnary via a key leaves 
-    df_rowclust = df.iloc [r['leaves'][::-1]]
+    df_rowclust = df.iloc [r['leaves'][::-1]] if hasattr(
+        df, 'columns') else df  [r['leaves'][::-1]]
     
     # 3. construct the heatmap from the reordered dataframe and position 
     # in the next ro the dendrogram 
@@ -2334,13 +2336,17 @@ def plotDendroheat(
     xticks_loc = list(axm.get_xticks())
     yticks_loc = list(axm.get_yticks())
 
+    df_rowclust_cols = df_rowclust.columns if hasattr (
+        df_rowclust , 'columns') else [f"{i+1}" for i in range (df.shape[1])]
     axm.xaxis.set_major_locator(mticker.FixedLocator(xticks_loc))
     axm.xaxis.set_major_formatter(mticker.FixedFormatter(
-        [''] + list (df_rowclust.columns)))
+        [''] + list (df_rowclust_cols)))
     
+    df_rowclust_index = df_rowclust.index if hasattr(
+        df_rowclust , 'columns') else [f"{i}" for i in range (df.shape[0])]
     axm.yaxis.set_major_locator(mticker.FixedLocator(yticks_loc))
     axm.yaxis.set_major_formatter(mticker.FixedFormatter(
-        [''] + list (df_rowclust.index)))
+        [''] + list (df_rowclust_index)))
     
     plt.show () 
     
@@ -2460,8 +2466,151 @@ def plotDendrogram (
     
     return r if return_r else None 
 
+def plotSilhouette (
+    X:NDArray |DataFrame, 
+    labels:ArrayLike=None, 
+    prefit:bool=True, 
+    n_clusters:int =3,  
+    n_init: int=10 , 
+    max_iter:int=300 , 
+    random_state:int=None , 
+    tol:float=1e4 , 
+    metric:str='euclidean', 
+    **kwd 
+ ): 
+    """
+    Plot silhouette to quantifyg the quality  of clustering samples. 
     
-def plotSilhouette (X, labels, metric ='euclidean', **kwds ):
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training instances to cluster. It must be noted that the data
+        will be converted to C ordering, which will cause a memory
+        copy if the given data is not C-contiguous.
+        If a sparse matrix is passed, a copy will be made if it's not in
+        CSR format.
+        
+    labels : array-like of shape (n_samples,)
+        Label values for each sample.
+         
+    n_clusters : int, default=8
+        The number of clusters to form as well as the number of
+        centroids to generate.
+        
+    prefit : bool, default=False
+        Whether a prefit `labels` is expected to be passed into the function
+        directly or not.
+        If `True`, `labels` must be a fit predicted values target.
+        If `False`, `labels` is fitted and updated from `X` by calling
+        `fit_predict` methods. Any other values passed to `labels` is 
+        discarded.
+         
+    n_init : int, default=10
+        Number of time the k-means algorithm will be run with different
+        centroid seeds. The final results will be the best output of
+        n_init consecutive runs in terms of inertia.
+
+    max_iter : int, default=300
+        Maximum number of iterations of the k-means algorithm for a
+        single run.
+
+    tol : float, default=1e-4
+        Relative tolerance with regards to Frobenius norm of the difference
+        in the cluster centers of two consecutive iterations to declare
+        convergence.
+
+    verbose : int, default=0
+        Verbosity mode.
+
+    random_state : int, RandomState instance or None, default=42
+        Determines random number generation for centroid initialization. Use
+        an int to make the randomness deterministic.
+    
+    tol : float, default=1e-4
+        Relative tolerance with regards to Frobenius norm of the difference
+        in the cluster centers of two consecutive iterations to declare
+        convergence.
+        
+    metric : str or callable, default='euclidean'
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the distance function.
+        If using a ``scipy.spatial.distance`` metric, the parameters are still
+        metric dependent. See the scipy docs for usage examples.
+        
+    Note
+    -------
+    The sihouette coefficient is bound between -1 and 1 
+    
+    See More
+    ---------
+    Silhouette is used as graphical tools,  to plot a measure how tighly is  
+    grouped the examples of the clusters are.  To calculate the silhouette 
+    coefficient, three steps is allows: 
+        - calculate the **cluster cohesion**, :math:`a(i)`, as the average 
+            distance between examples, :math:`x^{(i)}`, and all the others 
+            points
+        - calculate the **cluster separation**, :math:`b^{(i)}` from the next 
+            average distance between the example , :math:`x^{(i)}` amd all 
+            the example of nearest cluster 
+        - calculate the silhouette, :math:`s^{(i)}`, as the difference between 
+            the cluster cohesion and separation divided by the greater of the 
+            two, as shown here: 
+                
+            .. math:: 
+                
+                s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
+                
+    Examples 
+    --------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.view.mlplot import plotSilhouette
+    >>> # use resistivity and gamma for this demo
+    >>> X_res_gamma = load_hlogs().frame[['resistivity', 'gamma_gamma']]  
+    
+    (1) Plot silhouette with 'prefit' set to 'False' 
+    >>> plotSilhouette (X_res_gamma, prefit =False)
+    
+    """
+    if  ( 
+        not prefit 
+        and labels is not None
+        ): 
+        warnings.warn("'labels' is given while 'prefix' is 'False'"
+                      "'prefit' will set to 'True'")
+        prefit=True 
+        
+    if labels is not None: 
+        if not hasattr (labels, '__array__'): 
+            raise TypeError( "Labels (target 'y') expects an array-like: "
+                            f"{type(labels).__name__!r}")
+        if len(labels)!=len(X): 
+            raise TypeError("X and labels must have a consistency size."
+                            f"{len(X)} and {len(labels)} respectively.")
+            
+    if prefit and labels is None: 
+        raise TypeError ("Labels can not be None, while 'prefit' is 'True'"
+                         " Turn 'prefit' to 'False' or provide the labels "
+                         "instead.")
+    if not prefit : 
+        km= KMeans (n_clusters =n_clusters , 
+                    init='k-means++', 
+                    n_init =n_init , 
+                    max_iter = max_iter , 
+                    tol=tol, 
+                    random_state =random_state
+                        ) 
+        labels = km.fit_predict(X ) 
+        
+    return _plotSilhouette(X, labels, metric = metric , **kwd)
+    
+    
+def _plotSilhouette (X, labels, metric ='euclidean', **kwds ):
     r"""Plot quantifying the quality  of clustering silhouette 
     
     Parameters 

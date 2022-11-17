@@ -169,7 +169,7 @@ def to_numeric_dtypes (
 
 
 def listing_items_format ( 
-        lst, /, begintext ='', endtext='' , 
+        lst, /, begintext ='', endtext='' , bullet='-', 
         enum =True , lstyle=None , space =3 , inline =False, verbose=True
         ): 
     """ Format list by enumerate them successively with carriage return
@@ -182,8 +182,10 @@ def listing_items_format (
         Text to display at the end of the listing items in `lst`. 
     :param enum:bool, default=True, 
         Count the number of items in `lst` and display it 
-    :param lst: str, default ='-'
+    :param lstyle: str, default =None 
         listing marker. 
+    :param bullet:str, default='-'
+        symbol that is used to introduce item if `enum` is set to False. 
     :param space: int, 
         number of space to keep before each outputted item in `lst`
     :param inline: bool, default=False, 
@@ -213,7 +215,7 @@ def listing_items_format (
                               " Expect one dimensional array.")
     lst = list(lst)
     begintext = str(begintext); endtext=str(endtext)
-    lstyle=  lstyle or '-'  
+    lstyle=  lstyle or bullet  
     lstyle = str(lstyle)
     b= f"{begintext +':' } "   
     if verbose :
@@ -223,7 +225,7 @@ def listing_items_format (
     for k, item in enumerate (lst): 
         sp = ' ' * space 
         if ( not enum and inline ): lstyle =''
-        o = f"{sp}{str(k+1) if enum else '- ' }{lstyle} {item}"
+        o = f"{sp}{str(k+1) if enum else bullet+ ' ' }{lstyle} {item}"
         if verbose:
             print (o , end=' ') if inline else print(o)
         out += o + ('\n' if not inline else ' ') 

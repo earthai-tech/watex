@@ -26,6 +26,17 @@ import joblib
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
 
 
+def _check_consistency_size (ar1, ar2 , /  , error ='raise') :
+    """ Check consistency of two arrays and raises error if both sizes 
+    are differents. 
+    Returns 'False' if sizes are not consistent and error is set to 'ignore'.
+    """
+    if error =='raise': 
+        msg =("Array sizes must be consistent: '{}' and '{}' were given.")
+        assert len(ar1)==len(ar2), msg.format(len(ar1), len(ar2))
+        
+    return len(ar1)==len(ar2) 
+
 def _is_buildin (o, /, mode ='soft'): 
     """ Returns 'True' wether the module is a Python buidling function. 
     
@@ -79,6 +90,7 @@ def _is_cross_validated (estimator ):
     """
     return hasattr(estimator, 'best_estimator_') and hasattr (
         estimator , 'best_params_')
+
 def _is_erp(d , / ): 
     """ Returns 'True' if the given data is Electrical Resistivity Profiling"""
     return not len(d) ==0 and  ('resistivity' and 'station') in d.columns 
@@ -88,8 +100,8 @@ def _is_ves (d, /)  :
     return not len(d) ==0 and  ('resistivity' and 'AB') in d.columns 
 
 def _check_array_in(obj, /, arr_name):
-    """Return the array from the array name attribute. Note that the singleton 
-    arry is not admitted. 
+    """Returns the array from the array name attribute. Note that the singleton 
+    array is not admitted. 
     
     This helper function tries to return array from object attribute  where 
     object attribute is the array name if exists. Otherwise raises an error. 

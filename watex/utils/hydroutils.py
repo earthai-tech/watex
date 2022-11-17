@@ -59,14 +59,121 @@ from .funcutils import  (
     )
 from ..exlib.sklearn import SimpleImputer 
 
-from .validator import _is_arraylike_1d
+from .validator import ( 
+    _is_arraylike_1d, 
+    _check_consistency_size
+    )
 #-----------------------
-
+from ..exlib.sklearn import accuracy_score
+    
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
 
+def find_similarities ( 
+        y_true, y_pred , return_counts = False, rank_k =False, 
+        func: callable = None, include_label_0 = False, verbose: int=0,  
+        **kwd):
+    """Find similarities between y_true and y_pred and return rate 
+    
+    Parameters 
+    -----------
+    rank_k: bool, 
+        If set to ``True``, user needs to provide a function `ufunc` to map 
+        or categorize the permeability coefficient 'k' into an integer 
+        labels. 
+        
+    include_label_0: bool, default=0
+        Force including 0 in the predicted label if  `include_label_0` is set 
+        to ``True``. Mosly label '0' refers to 'k=0' i.e. no permeability 
+        coefficient which is not True in principle, because all rocks have a 
+        permeability coefficient 'k'. Here we considered 'k=0' and undefined 
+        permeability coefficient. Therefore, 0 , can be exclude since, it can 
+        also considered as a missing 'k'-value. If predicted '0' in the target 
+        it should mean a missing 'k'-value rather than being concrete class.  
+        Therefore, to avoid any confusion, '0' is removed by default in the 'k'
+        categorization. However, when the prediction 'y_pred' is made from the 
+        the unsupervising method, the prediction '0' straigthforwardly includes
+         '0' i.e 'k=0' as a first class. So to value `+1` is used to move forward 
+        all class labels. To force include 0 in the label, set `include_label_0` 
+        to ``True``. 3
+    return_counts: bool, default=False 
+        Returns label and their values counts in the predicted labels `y_pred` 
+        where 'k' values are not missing. 
+        
+    verbose: int, default=0 , 
+        Print the rate of all label similarities if set to ``True``. 
+        
+    """
 
+    def _verbosity ( counter, text ): 
+        """ listing the rate of occurence of each label in the array 
+        """
+        tot= sum(dict(counter).values()) 
+        rates = ["{:>7}%".format( round ( (v/tot) *100, 2)) 
+            for v  in dict(counter).values ()]
+        lst =[f"{'(' + str(i)+ ')' + ' '+ '-'*8 + r_ }" for  (i, r_)  
+              in zip (dict(counter).keys(), rates) ]
+        listing_items_format(lst, text, enum=False ,lstyle =' ')
+
+    
+    [  _assert_all_types(o, pd.Series, np.ndarray, objname = lab) 
+     for lab, o  in zip (
+             ["'y_true'(true labels)", "'y_pred '( predicted labels )'"], 
+             [y_true, y_pred]) 
+    ]
+    _check_consistency_size(y_true, y_pred) 
+    if not all ([ _is_arraylike_1d(ar ) for ar in (y_true, y_pred )] ) :
+        raise TypeError ("True and predicted labels supports only "
+                         "one-dimensional array.")
+        
+    # get the indices from y_true to y_pred where 
+    # k-value is valid i.e. where k is not missing. 
+    if rank_k : 
+        #categorize k if fuc is given.
+        y_true = map_k( y_true ,  ufunc= func ,  **kwd)
+        
+    indices,  =  np.where (~np.isnan (y_true )) 
+    y_t = y_true [ indices ]
+    y_t = np.array (y_t).astype (np.int32) 
+    y_p= y_pred[indices ]  if include_label_0 else  y_pred[indices ] + 1
+    
+    # get the number of occurences of 
+    # each label (true and predicted)
+    m_occ_yp,  r_yp , c_yp = _get_s_occurence(y_p)
+    m_occ_yt,  r_yt , c_yt = _get_s_occurence(y_t)
+    
+    if verbose: 
+        # print occurences display
+        _verbosity (c_yp, "Occurrence rate of predicted labels 'y_pred'")
+        _verbosity (c_yt, "Occurrence rate of true labels 'y_true'")
+        
+    return label_score(y_t, y_p )
+
+def make_mxs_target (y_true, y_pred, ratio = .5 ):
+    """Merge target to crate mixtrure strategy target (MXS) target 
+    from predicted target (y_pred) and true target with the ratio of 
+    similarity of each label in 'y_true' 
+    
+    """
+    
+    
+
+def label_score (y_true , y_pred , metric =accuracy_score, ):
+    """ Compute the score of each true label and its similarity in the predicted 
+    label 'y_pred' 
+    
+    """
+    scores =dict ()
+    for label in list(np.unique (y_true) ): 
+        indexes, = np.where (y_true ==label ) 
+        yp = y_pred[indexes]
+        score = metric (y_true [indexes] , yp ) 
+        scores[label] = score  
+        
+    return scores 
+
+    
 def select_base_stratum (
     d: Series | ArrayLike | DataFrame , 
     /, 
@@ -164,19 +271,23 @@ def select_base_stratum (
             ) 
 
 def _get_s_occurence (
-        sd, /,  bs = None ) -> Tuple [str, float, List ]: 
+        sd, /,  bs = None , reverse= True, key = 1, 
+        ) -> Tuple [str, float, List ]: 
     """ Returns the occurence of the object in the data. 
     :param sd: array-like 1d of  data 
     :param bs: str - base name of the object. If 'bs' if given the auto 
         search  will not be used. 
-    :param return_counts: return each object with their occurence 
+    :param key: int, default=1 
+        key of ordered sorted dict. Must be either {0, 1}: `0` for key 
+        ordered searcg while `1` is for value search. 
+    :param reverse: bool, reverse ordered dictionnary
     :returns: bs, c, r
         return the base object, counts or rate.
     """
     # sorted strata in ascending occurence 
     s=dict ( Counter(sd ) ) 
     sm = dict (
-        sorted (s.items () , key= lambda x:x[1], reverse =True )
+        sorted (s.items () , key= lambda x:x[key], reverse =reverse )
         )
     bs = list(sm) [0]  if bs is None else bs 
     r= sm[bs] / sum (sm.values ()) # ratio
