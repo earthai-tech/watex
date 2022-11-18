@@ -459,7 +459,7 @@ class BaseSteps(object):
                 'missing_values' : self.missing_values, 
                 'strategy' : self.imputer_strategy, 
                 'sparse_output': self.sparse_output,
-                'label_encoding': self.labelEncodage
+                'label_encoding': self.label_encoding
                 }
         
         if X is not None: 

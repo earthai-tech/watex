@@ -39,7 +39,8 @@ from  .._typing import (
     ) 
 from ..decorators import ( 
     catmapflow2, 
-    writef  
+    writef, 
+    deprecated
     )
 from ..exceptions import ( 
     FileHandlingError, 
@@ -74,106 +75,12 @@ _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
 
-class AquiferGroup  :
-    def __init__ (self, gdict =None  , /  ): 
-        self.gdict = gdict 
-    def __repr__ (self ) :
-        
-        return  self.__class__.__name__  + "(" +  self._format ( self.gdict ) +")"
-        
-    def _format (self, dic ): 
-        """ Format representativity of Aquifer groups 
-        
-        AquiferGroup ( Label =[ '1', 
-                               Preponderance( rate = '25 %', 
-                                               [( 'Groups', {'II': 0.157, 'II ': 0.078, 'II&III': 0.00, 'III': 0.15})
-                                                ('representativity', (II  , 0.157) ),
-                                                ('best group', II  )
-                                                ])], 
-                    Label = ['2', 
-                             preponderance  ('rate') ...
-               )
-      
-        """
-        ag=[]
-        for k, (label, repr_val ) in enumerate ( dic.items() ): 
-            prep , g  = repr_val 
-            
-            ag+=["{:7} {:3} [ {:^5}, \n".format(
-                "Label" if k==0 else "{:>15}".format("Label"),
-                                               "=", label
-                                               ) 
-                ]
-            ag +=["{:>50}( rate = '{:^4} %', '\n".format("Preponderance", round (prep *100, 3 )
-                                                  )] 
-            ag += ["{:>52}'Groups', {}),\n".format("([",
-                str({ k: "{:>5}".format(round (v, 3)) for k , v in g.items()}) 
-                    )
-                ]
-            ag +=["{:>52}'Representativity', ( {}, {})),\n".format("(", 
-                 list(g)[0], round ( g.get(list(g)[0]), 2))
-                ]
-            ag += ["{:>52}'Best group', {}), \n".format("(", list(g)[0] )
-                   ]
-            ag+=['{:>40}'.format("])],\n ")] 
-        
-        ag+=["{:>7}".format(")")]
-    
-        return ''.join (ag) 
-    
-        
-def format_groups ( dic , /, name = 'Label'): 
-    """ Represent the aquifer group and true label preponderance 
-    
-    AquiferGroup ( Label =[ '1', 
-                           Preponderance( rate = '25 %', 
-                                           [( 'Groups', {'II': 0.157, 'II ': 0.078, 'II&III': 0.00, 'III': 0.15})
-                                            ('representativity', (II  , 0.157) ),
-                                            ('best group', II  )
-                                            ])], 
-                Label = ['2', 
-                         preponderance  ('rate') 
-           )
-    
-    
-    
-    """
-    ag=["{:7}".format("Label{} (".format("s" if len(dic)>1 else ''))]
-    for k, (label, repr_val ) in enumerate ( dic.items() ): 
-        prep , g  = repr_val 
-        ag += ["{0:^3}: {1:>10} -> {2:>7}{3:>3}".format (
-            label if k==0 else "{:>10}".format(label),
-            'importance', round(prep *100, 3) , "%") ]
-        
-        ag +=["{:^3}[ ( 'Aquifer group':\n".format("=")]
-        ag+=["{:>50}:{:>15},\n".format( k, round(v, 3)) 
-             for k, v in g.items() ]
-        
-        ag+='{:>40}'.format(")],\n ") 
-        
-    ag+=["{:>7}".format(")")]
-    
-    return print(''.join (ag) ) 
-
-def find_groups (
-        d, /, arr_aq=None, kname =None, aqname=None,  threshold = .5 , 
-        subjectivity =False ): 
-    """ Tied each label to the group of aquifer
-    
-    Parameters 
-    -----------
-    threshold:float, default=.5 
-        Rate of representatitivy. The ratio from which each true label can be 
-        set as an aquifer group.
-    subjsectivity: bool, default=False
-        Considers each class label as a naive group of aquifer. Subjectivity 
-        occurs when no group of aquifer is found in the data. Therefore, each 
-        class label is considered as a naive group of aquifer. It is strongly 
-        recommended to provide a group of aquifers for more pratical reason. 
-    
-    """
+def find_aqgroup_representativity (
+        arr_k, /, arr_aq=None, kname =None, aqname=None,  
+        subjectivity =False , default_arr= None
+  )->'_AquiferGroup': 
     msg = ("{} cannot be None when a dataframe is given.")
-    arr_k = copy.deepcopy(d)
+    d = copy.deepcopy(arr_k)
     if hasattr (d, '__array__') and hasattr (d, 'columns'): 
         if arr_aq is None  and aqname is None : 
             raise TypeError (msg.format("Group of aquifer column ('aqname')"))
@@ -183,22 +90,33 @@ def find_groups (
         arr_aq = d[aqname ] ; arr_k = d[kname]
         
     if arr_aq is None and not subjectivity: 
-        msg =("In principle, none aquifer array is not allowed. Turn on "
+        msg =("In principle, missing aquifer array is not allowed. Turn on "
               "'subjectivity' instead. Be aware that turning 'subjectivity'"
               " to 'True' This might lead to breaking code or invalid results."
               " Use at your own risk." )
         raise AquiferGroupError (msg)
-        
-    threshold = float( _assert_all_types(threshold, int, float, 
-                                         objname ='Threshold') )
-    if threshold <=.0 or threshold > 1. : 
-        raise ValueError (
-            "Threshold value is ranged between 0 and 1: '{threshold}'")
+    if subjectivity: 
+        if arr_aq is not None: 
+            warnings.warn ("No need to set subjectivity to 'True' while the "
+                           "array of the group of aquifer 'arra_aq' is provided.")
+        if default_arr is None: 
+            raise TypeError ("Default array 'default_arr' must not be None"
+                             "An alternatively array is used to use the"
+                             "subjectivity case. The default array is used"
+                             " to substitute the aquifer groups.")
+        arr_aq = default_arr 
         
     _check_consistency_size(arr_aq, arr_k)
-    
+    if not all ([ _is_arraylike_1d(arr_aq), _is_arraylike_1d(arr_k)]):
+        raise AquiferGroupError (
+            "Expect one-dimensional arrays for 'k' and aquifer group.")
+        
     arr_k_valid , arr_aq_valid = _get_y_from_valid_indexes(arr_k, arr_aq )
     
+    if np.nan in list(arr_aq): 
+        raise TypeError ("Missing value(s) is/are not allowed in group of "
+                         " aquifer. Please impute the data first.")
+        
     labels , counts = np.unique (arr_k_valid , return_counts= True) 
     labels_rate = counts / sum(counts )
     dict_labels_rate = { k: v for k , v in zip ( labels, labels_rate )} 
@@ -211,25 +129,133 @@ def find_groups (
         groups[label].append (dict_labels_rate.get(label))
         groups[label].append(g)
         
-    return groups 
+    return _AquiferGroup(groups)
 
-    #pgroupd, prate, occurrence = _get_s_occurence(arr_aq_valid ) 
+find_aqgroup_representativity.__doc__="""\
+Find the representative of each true label in array 'k' in the aquifer group 
+array. 
+
+The idea consists to find the corresponding aquifer group which fits the most 
+the true label 'X' in 'y_true'. 
+
+'arr_k' and 'arr_aq' must contain a class label, not continue values. 
+
+Parameters 
+-----------
+arr_k: array_like, pandas series or dataframe 
+    arraylike that contains the permeability coefficients 'k'. If a dataframe 
+    is supplied, the permeabitlity coefficient column name 'kname' must be 
+    specified. 
+arr_q: array-like , pandas series or dataframe 
+    array-like that contains the aquifer groups. If NAN values exists in the 
+    aquifer groups, it is suggested to imputed values before feediing to 
+    the algorithms. Missing values are not allowed. If dataframe is supplied,
+    the aquifer group column name 'aqname' must be specified. 
+
+ subjectivity: bool, default=False
+     Considers each class label as a naive group of aquifer. Subjectivity 
+     occurs when no group of aquifer is not found in the data. Therefore, each 
+     class label is considered as a naive group of aquifer. It is strongly 
+     recommended to provide a default group passes to parameter `default_arr` 
+     to substitute the group of aquifers for more pratical reason. For instance
+     it can be the layer collected at a specific depth like the 'strata' 
+     columns. 
     
+default_arr: array-like, pd.Series 
+   Array used as deefault for subsitutue the group of aqquifer if the latter 
+   is missing. This is an heuristic option because  it might lead to breaking 
+   code or invalid results.
+    
+Returns
+-------
+_AquiferGroup: _AquiferGroup class object 
+    Use attribute `.groups` to find the group values. 
 
-def compute_representativity ( label, arr_k , arr_aq , ):
+Examples
+----------
+(1) Use the real aquifer group collected in the area 
+
+>>> from watex.utils import naive_imputer, read_data , reshape 
+>>> from watex.datasets import load_hlogs 
+>>> from watex.utils.hydroutils import map_k, find_aqgroup_representativity 
+>>> b= load_hlogs () #just taking the target names
+>>> data = read_data ('data/boreholes/hf.csv') # read complete data
+>>> y = data [b.target_names]
+>>> # impute the missing values found in aquifer group columns
+>>> # reshape 1d array along axis 0 for imputation 
+>>> agroup_imputed = naive_imputer ( reshape (y.aquifer_group, axis =0 ) , 
+                                    strategy ='most_frequent') 
+>>> # rehape back to array_like 1d 
+>>> y.aquifer_group =reshape (agroup_imputed) 
+>>> # categorize the 'k' continous value in 'y.k' using the default 
+>>> # 'k' mapping func 
+>>> y.k = map_k (y.k , default_func =True)
+>>> # get the group obj
+>>> group_obj = find_aqgroup_representativity(y.k, y.aquifer_group,  ) 
+>>> group_obj 
+... _AquiferGroup(Label=[' 1 ', 
+                   Preponderance( rate = '53.141  %', 
+                                (['Groups', {'V': 0.32, 'IV': 0.266, 'II': 0.158, 'III': 0.158, 'II ': 0.079, 'IV&V': 0.01, 'II&III': 0.005, 'III&IV': 0.005}),
+                                 ('Representativity', ( 'V', 0.32)),
+                                 ('Similarity', 'V')])],
+             Label=[' 2 ', 
+                   Preponderance( rate = ' 19.11  %', 
+                                (['Groups', {'III': 0.274, 'V': 0.26, ' II ': 0.178, 'IV': 0.178, 'II': 0.082, 'III&IV': 0.027}),
+                                 ('Representativity', ( 'III', 0.27)),
+                                 ('Similarity', 'III')])],
+             Label=[' 3 ', 
+                   Preponderance( rate = '27.749  %', 
+                                (['Groups', {'V': 0.443, 'IV': 0.311, 'III': 0.245}),
+                                 ('Representativity', ( 'V', 0.44)),
+                                 ('Similarity', 'V')])],
+             )
+               
+(2) Use the subjectivity and set the strata columns as default array 
+
+>>> find_aqgroup_representativity(y.k, subjectivity=True, default_arr= X.strata_name ) 
+... _AquiferGroup(Label=[' 1 ', 
+                   Preponderance( rate = '53.141  %', 
+                                (['Groups', {'siltstone': 0.35, 'coal': 0.182, 'fine-grained sandstone': 0.158, 'medium-grained sandstone': 0.094, 'mudstone': 0.079, 'carbonaceous mudstone': 0.054, 'coal ': 0.044, 'coarse-grained sandstone': 0.03, 'coarse': 0.01}),
+                                 ('Representativity', ( 'siltstone', 0.35)),
+                                 ('Similarity', 'siltstone')])],
+             Label=[' 2 ', 
+                   Preponderance( rate = ' 19.11  %', 
+                                (['Groups', {'mudstone': 0.288, 'siltstone': 0.205, 'coal': 0.192, 'coarse-grained sandstone': 0.137, 'fine-grained sandstone': 0.137, 'carbonaceous mudstone': 0.027, 'medium-grained sandstone': 0.014}),
+                                 ('Representativity', ( 'mudstone', 0.29)),
+                                 ('Similarity', 'mudstone')])],
+             Label=[' 3 ', 
+                   Preponderance( rate = '27.749  %', 
+                                (['Groups', {'mudstone': 0.245, 'coal': 0.226, 'siltstone': 0.217, 'fine-grained sandstone': 0.123, 'carbonaceous mudstone': 0.066, 'medium-grained sandstone': 0.066, 'coarse-grained sandstone': 0.057}),
+                                 ('Representativity', ( 'mudstone', 0.25)),
+                                 ('Similarity', 'mudstone')])],
+             )
+"""
+def compute_representativity ( label, arr_k , arr_aq  ):
     """Compute the score for the label and its representativity in the valid 
-    array 'arr_k' """ 
+    array 'arr_k' 
     
+    :param label: int, 
+        class label from true labels of  permeability coefficient array 'k'
+    :param arr_k: array-like, 
+        True labels of true labels of  permeability coefficient array 'k'
+    :param arr_q: array_like 
+        array of aquifer group composes of group labels
+    :returns: 
+        label_dict_group_rate: dict of true label and occurences 
+        
+    """ 
     index, = np.where (arr_k ==label ) 
-    
     label_in_arr_q = arr_aq[index ] 
-    label_group , group_counts = np.unique ( label_in_arr_q, return_counts=True ) 
+    label_group , group_counts = np.unique (
+        label_in_arr_q, return_counts=True ) 
     
     label_dict_group_rate = { k: v for k , v in zip (
         label_group, group_counts/sum(group_counts ))} 
     
     label_dict_group_rate = dict( sorted (
-        label_dict_group_rate.items() , key=lambda x:x[1], reverse =True ) ) 
+        label_dict_group_rate.items() ,
+        key=lambda x:x[1], reverse =True )
+        ) 
     
     return label_dict_group_rate 
 
@@ -293,7 +319,7 @@ def find_label_similarities (
                          "one-dimensional array.")
     if rank_k : 
         #categorize k if fuc is given.
-        y_true = map_k( y_true ,  ufunc= func ,  **kwd)
+        y_true = map_k( y_true ,  func= func ,  **kwd)
         
     # get the indices from y_true to y_pred where 
     # k-value is valid i.e. where k is not missing. 
@@ -1498,9 +1524,9 @@ def _kp (k, /,  kr= (.01 , .07 ), string = False ) :
                 label + str(v) if not math.isnan (v) else np.nan ) 
         
 def map_k (
-        o:DataFrame| Series | ArrayLike, /,  ufunc: callable|F= None , 
+        o:DataFrame| Series | ArrayLike, /,  func: callable|F= None , 
         kname:str=None, inplace:bool =False, string:str =False, 
-        default_ufunc:bool=False  
+        default_func:bool=False  
         ):
     """ Categorize the permeability coefficient 'k'
     
@@ -1545,7 +1571,7 @@ def map_k (
     >>> # let visualize four nonzeros values in y0 
     >>> y0.k.values [ ~np.isnan (y0.k ) ][:4]
     ...  array([0.054, 0.054, 0.054, 0.054])
-    >>> map_k (y0 , kname ='k', inplace =True, use_default_ufunc=True )
+    >>> map_k (y0 , kname ='k', inplace =True, use_default_func=True )
     >>> # let see again the same four value in the dataframe 
     >>> y0.k.values [ ~np.isnan (y0.k ) ][:4]
     ... array([2., 2., 2., 2.]) 
@@ -1554,8 +1580,8 @@ def map_k (
     _assert_all_types(o, pd.Series, pd.DataFrame, np.ndarray)
     
     dfunc = lambda k : _kp (k, string = string ) # default 
-    ufunc = ufunc or   ( dfunc if default_ufunc else None ) 
-    if ufunc is None: 
+    func = func or   ( dfunc if default_func else None ) 
+    if func is None: 
         raise TypeError ("'ufunc' can not be None when the default"
                          " 'k' mapping function is not triggered.")
     oo= copy.deepcopy (o )
@@ -1566,15 +1592,15 @@ def map_k (
         is_in_if( o, kname )
   
         if inplace : 
-            o[kname] = o[kname].map (ufunc) 
+            o[kname] = o[kname].map (func) 
             return 
-        oo[kname] = oo[kname].map (ufunc) 
+        oo[kname] = oo[kname].map (func) 
         
     elif hasattr(o, 'name'): 
-        oo= oo.map(ufunc ) 
+        oo= oo.map(func ) 
   
     elif hasattr(o, '__array__'): 
-        oo = np.array (list(map (ufunc, o )))
+        oo = np.array (list(map (func, o )))
         
     return oo 
 
@@ -2160,4 +2186,140 @@ def _validate_samples (*dfs , error:str ='raise'):
     
     return valid_dfs 
 
+class _AquiferGroup:
+    """ Group of Aquifer is mostly related to area information after multiple 
+    boreholes collected. 
+    
+    However when predicted 'k' with a missing k-values using the Mixture 
+    Learning Strategy (MXS), we intend to solve this problem by creating 
+    a Naive Group of Aquifer (NGA) to compensate the missing k-values in the 
+    dataset. This could be a good idea to avoid introducing a lot of bias since 
+    the group of aquifer is mostly tied to the permeability coefficient 'k'. 
+    To do this, an unsupervised learning is used to predict the NGA labels then 
+    the NGA labels are used in turn to fill the missing k-values. The best 
+    strategy for operting this trick is to  seek for some importances between
+    the true k-values with their corresponding aquifer groups at each depth, 
+    and find the most representative group. Once the most representative group 
+    is found for each true label 'k', the group of aquifer can be renamed as 
+    the naive similarity with the true k-label. For instance if true k-value 
+    is the label 1 and label 1 is most representative with the group of aquifer
+    'IV', therefore this group can be replaced throughout the column 
+    with 'k1'+'IV=> i.e. 'k14'. This becomes a new label created and is used to 
+    fill the true label 'y_true' to become a MXS target ( include NGA label). 
+    Note that the true label with valid 'k-value' remained intach and unchanged.
+    The same process is done for label 2, 3 and so on. The selection of MXS 
+    label from NGA strongly depends on its preponderance or importance rate in 
+    the whole dataset. 
+    
+    The following example is the demonstration to how to compute the group 
+    representativity in datasets. 
+    
+    Parameters 
+    ----------
+    g:dict, 
+        Dictionnary compose of occurence between the true labels 
+        and the group of aquifer  as a function of occurence and
+        repesentativity 
+    Example 
+    --------
+    >>> from watex.utils import naive_imputer, read_data , reshape 
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.hydroutils import map_k, find_aqgroup_representativity 
+    >>> b= load_hlogs () #just taking the target names
+    >>> data = read_data ('data/boreholes/hf.csv') # read complete data
+    >>> y = data [b.target_names]
+    >>> # impute the missing values found in aquifer group columns
+    >>> # reshape 1d array along axis 0 for imputation 
+    >>> agroup_imputed = naive_imputer ( reshape (y.aquifer_group, axis =0 ) , 
+                                        strategy ='most_frequent') 
+    >>> # rehape back to array_like 1d 
+    >>> y.aquifer_group =reshape (agroup_imputed) 
+    >>> # categorize the 'k' continous value in 'y.k' using the default 
+    >>> # 'k' mapping func 
+    >>> y.k = map_k (y.k , default_func =True)
+    >>> # get the group obj
+    >>> group_obj = find_aqgroup_representativity(y.k, y.aquifer_group,  ) 
+    >>> group_obj 
+    ... AquiferGroup(Label=[' 1 ', 
+                       Preponderance( rate = '53.141  %', 
+                                    (['Groups', {'V': 0.32, 'IV': 0.266, 'II': 0.158, 'III': 0.158, 'II ': 0.079, 'IV&V': 0.01, 'II&III': 0.005, 'III&IV': 0.005}),
+                                     ('Representativity', ( 'V', 0.32)),
+                                     ('Similarity', 'V')])],
+                 Label=[' 2 ', 
+                       Preponderance( rate = ' 19.11  %', 
+                                    (['Groups', {'III': 0.274, 'V': 0.26, ' II ': 0.178, 'IV': 0.178, 'II': 0.082, 'III&IV': 0.027}),
+                                     ('Representativity', ( 'III', 0.27)),
+                                     ('Similarity', 'III')])],
+                 Label=[' 3 ', 
+                       Preponderance( rate = '27.749  %', 
+                                    (['Groups', {'V': 0.443, 'IV': 0.311, 'III': 0.245}),
+                                     ('Representativity', ( 'V', 0.44)),
+                                     ('Similarity', 'V')])],
+                 )
+                                      
+    """
+    def __init__ (self, g=None, /  ): 
+        self.groups_ = g
+    @property 
+    def groups (self): 
+        return self.groups_
+    
+    def __repr__ (self ) :
+        return  self.__class__.__name__  + "(" +  self._format (
+            self.groups ) + "{:>13}".format(")")
+        
+    def _format (self, gdict): 
+        """ Format representativity of Aquifer groups 
+        Parameters 
+        ----------
+        gdict: dict, 
+            Dictionnary compose of occurence of the group as a function
+            of aquifer group repesentativity 
+        """
+        ag=[]
+        for k, (label, repr_val ) in enumerate ( gdict.items() ): 
+            prep , g  = repr_val 
+            
+            ag+=["{:5}=['{:^3}', \n".format(
+                "Label" if k==0 else "{:>17}".format("Label"), label
+                                               ) 
+                ]
+            ag +=["{:>32}( rate = '{:^7} %', \n".format("Preponderance", round (prep *100, 3 )
+                                                  )] 
+            ag += ["{:>34}'Groups', {}),\n".format("([",
+                # str({ k: "{:>5}".format(round (v, 3)) for k , v in g.items()}) 
+                str({ k: round (v, 3) for k , v in g.items()}) 
+                    )
+                ]
+            ag +=["{:>34}'Representativity', ( '{}', {})),\n".format("(", 
+                 list(g)[0], round ( g.get(list(g)[0]), 2))
+                ]
+            ag += ["{:>34}'Similarity', '{}')])],\n ".format("(", list(g)[0] )
+                   ]
+            # ag+=['{:>30}'.format("])],\n ")] 
+        #ag+=["{:>7}".format(")")]
+    
+        return ''.join (ag) 
+    
+
+@deprecated ("Format is no longer used, replaced by"
+             " `_AquiferGroup._format` instead.")        
+def _format_groups ( dic , /, name = 'Label'): 
+    """ Represent the aquifer group and true labels preponderance """
+    ag=["{:7}".format("Label{} (".format("s" if len(dic)>1 else ''))]
+    for k, (label, repr_val ) in enumerate ( dic.items() ): 
+        prep , g  = repr_val 
+        ag += ["{0:^3}: {1:>10} -> {2:>7}{3:>3}".format (
+            label if k==0 else "{:>10}".format(label),
+            'importance', round(prep *100, 3) , "%") ]
+        
+        ag +=["{:^3}[ ( 'Aquifer group':\n".format("=")]
+        ag+=["{:>50}:{:>15},\n".format( k, round(v, 3)) 
+             for k, v in g.items() ]
+        
+        ag+='{:>40}'.format(")],\n ") 
+        
+    ag+=["{:>7}".format(")")]
+    
+    return print(''.join (ag) ) 
 
