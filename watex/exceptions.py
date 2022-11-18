@@ -122,9 +122,9 @@ class DepthError (Exception):
     series."""
     pass 
 
-class AquiferError (Exception):
+class AquiferGroupError (Exception):
     """ Raises exception with everything that does not relate to the aquifer 
-    line a multidimensional array. Commonly Aquifer is a one-dimensional array 
+    like a multidimensional array. Commonly Aquifer is a one-dimensional array 
     composed of categorical values expected  to be the layer/rock name where 
     the pumping is performed. Note aquifer is composed of categorical data 
     at last labels are encoded into a numerical values. If that is the 

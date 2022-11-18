@@ -188,7 +188,7 @@ class EvalPlot(BasePlot):
     def fit(self, X: NDArray |DataFrame =None, y:ArrayLike =None, 
             **fit_params ): 
         """
-        Fit data and populate the arguments for plotting purposes. 
+        Fit data and populate the attributes for plotting purposes. 
         
         There is no conventional procedure for checking if a method is fitted. 
         However, an class that is not fitted should raise 
@@ -255,7 +255,7 @@ class EvalPlot(BasePlot):
         """ Transform the data and keep only the numerical features. 
         
         It is not convenient to use `transform` if user want to keep 
-        categorical values in the Array 
+        categorical values in the array 
         
         Parameters
         ------------
@@ -397,7 +397,7 @@ class EvalPlot(BasePlot):
     )->'EvalPlot': 
         """ Plot PCA component analysis using :class:`~.sklearn.decomposition`. 
         
-        PCA indentifies the axis that accounts for the largest amount of 
+        PCA identifies the axis that accounts for the largest amount of 
         variance in the train set `X`. It also finds a second axis orthogonal 
         to the first one, that accounts for the largest amount of remaining 
         variance.
@@ -1238,7 +1238,7 @@ class EvalPlot(BasePlot):
 EvalPlot.__doc__=r"""\
 Metric and dimensionality Evaluatation Plots  
 
-Inherited from :class:`BasePlot`. Dimensional reduction and metrics 
+Inherited from :class:`BasePlot`. Dimensional reduction and metric 
 plots. The class works only with numerical features. 
 
 .. admonition:: Discouraged
@@ -1247,7 +1247,7 @@ plots. The class works only with numerical features.
     discouraged. However, We encourage user to prepare its dataset 
     before using the `~.EvalPlot` methods. This is recommended to have 
     full control of the expected results. Indeed, the most metrics plot 
-    implemented here works with sueprvised methods especially deals 
+    implemented here works with supervised methods especially deals 
     with the classification problems. So, the convenient way is for  
     users to discretize/categorize (class labels) before the `fit`. 
     If not the case, as the examples of demonstration  under each method 
@@ -1286,7 +1286,7 @@ encode_labels: bool, default=False,
                          >=y.max {{2}}]
         
     This auto-splitting could not fit the exact classification of the 
-    target so it is recommended to set the `label_values` as list of 
+    target so it is recommended to set the `label_values` as a list of 
     class labels. For instance `label_values=[0 , 1, 2]` and else. 
    
 scale: str, ['StandardScaler'|'MinMaxScaler'], default ='StandardScaler'
@@ -1440,7 +1440,7 @@ def plotProjection(
     """ Visualize dataset. 
     
     Since there is geographical information(latitude/longitude or
-    eating/northing), it is a good idea to create a scatterplot of 
+    easting/northing), it is a good idea to create a scatterplot of 
     all instances to visualize data.
     
     Parameters 
@@ -1761,14 +1761,14 @@ def plotModel(
     ax.scatter(x= index,
                y =yt ,
                 color = pobj.lc,
-                 s = pobj.s*10,
-                 alpha = pobj.alpha, 
-                 marker = pobj.marker,
-                 edgecolors = pobj.marker_edgecolor,
-                 linewidths = pobj.lw,
-                 linestyles = pobj.ls,
-                 facecolors = pobj.marker_facecolor,
-                 label = 'Observed'
+                s = pobj.s*10,
+                alpha = pobj.alpha, 
+                marker = pobj.marker,
+                edgecolors = pobj.marker_edgecolor,
+                linewidths = pobj.lw,
+                linestyles = pobj.ls,
+                facecolors = pobj.marker_facecolor,
+                label = 'Observed'
                    )   
     # plot the predicted target
     ax.scatter(x= index, y =ypred ,
@@ -1861,7 +1861,7 @@ def plot_reg_scoring(
     reg, X, y, test_size=None, random_state =42, scoring ='mse',
     return_errors: bool=False, **baseplot_kws
     ) : 
-    #xxxxxxxxxxxxxxxx update base plot keywords arguments
+    #xxxxxxxxxxxxxxxx update base plot keyword arguments
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
@@ -1871,7 +1871,7 @@ def plot_reg_scoring(
         raise ValueError ("Acceptable scorings are'mse' are 'rmse'"
                           f" got {scoring!r}")
     if not hasattr(reg, '__class__') and not inspect.isclass(reg.__class__): 
-        raise TypeError("{reg!r} isn't a model estimator.")
+        raise TypeError(f"{reg!r} isn't a model estimator.")
          
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=test_size, random_state=random_state)

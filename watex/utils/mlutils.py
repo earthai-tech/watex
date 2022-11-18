@@ -2348,7 +2348,7 @@ def make_naive_pipe(
     
     if not hasattr (X, '__array__') or not hasattr (X, 'columns'): 
         raise TypeError(f"'make_naive_pipe' not supported {type(X).__name__!r}"
-                        " Expects X as 'pandas.core.frame.DataFrame' data object.")
+                        " Expects X as 'pandas.core.frame.DataFrame' object.")
     #-> Encode y if given
     if y is not None: 
         if (label_encoding =='labelEncoder'  
@@ -2376,7 +2376,9 @@ def make_naive_pipe(
     # assert scaler value 
     if get_estimator_name (scaler)  in sc.keys(): 
         scaler = sc.get (get_estimator_name(scaler )) 
-    elif ( any ( [v.lower().find (str(scaler).lower()) >=0 for v in sc.keys()])):  
+    elif ( any ( [v.lower().find (str(scaler).lower()) >=0
+                  for v in sc.keys()])
+          ):  
         for k, v in sc.items () :
             if k.lower().find ( str(scaler).lower() ) >=0: 
                 scaler = v ; break 
