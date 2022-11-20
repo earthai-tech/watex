@@ -73,9 +73,9 @@ except :
         )
 _BVAL= dict (
     origin= {
-        'COL_NAMES':  _BAG.get('_BAGDATA').columns or _BAGDATA.columns, 
+        'COL_NAMES':  (_BAG.get('_BAGDATA') or _BAGDATA).columns, 
         'DESCR':'https://doi.org/10.5281/zenodo.5571534: bagoue-original',
-        'data': _BAG.get('_BAGDATA').values or _BAGDATA.values, 
+        'data': (_BAG.get('_BAGDATA') or _BAGDATA).values, 
         'data=df':_BAG.get('_BAGDATA') or _BAGDATA, 
         'data=dfy1':_BAG.get('_df1') or _df1, 
         'data=dfy2':_BAG.get('_df0') or _df0,

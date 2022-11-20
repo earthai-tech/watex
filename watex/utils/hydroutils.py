@@ -2533,7 +2533,7 @@ class _AquiferGroup:
             ag +=["{:>32}( rate = '{:^7} %', \n".format(
                 "Preponderance", round (prep *100, 3 )
                                                   )] 
-            ag += ["{:>34}'Groups', {}),\n".format("([",
+            ag += ["{:>34}'Groups', {}),\n".format("[(",
                 # str({ k: "{:>5}".format(round (v, 3)) for k , v in g.items()}) 
                 str({ k: round (v, 3) for k , v in g.items()}) 
                     )
