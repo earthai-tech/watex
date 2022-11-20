@@ -69,7 +69,9 @@ from .gistools import (
     project_point_utm2ll, 
     HAS_GDAL, 
     )
-
+from .validator import  (
+    _is_valid_ves 
+    )
 _logger = watexlog.get_watex_logger(__name__)
 
 
@@ -222,11 +224,13 @@ def vesSelector(
         data = _assert_all_types(data, pd.DataFrame )
   
         # sanitize the dataframe 
-
         pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
         if ncols is None:
             raise HeaderError (f"Columns {smft(pObj.icpr)} are missing in "
                                "the given dataset.")
+        if not _is_valid_ves( data): 
+            raise VESError("Invalid VES data. Data must contain at least"
+                           " 'resistivity' and 'AB/2' position." )
         data.columns = ncols 
         try : 
             rhoa= data.resistivity 
@@ -512,7 +516,6 @@ def is_erp_series (
     ... ResistivityError: Unable to detect the resistivity column: 'NAN'.
     
     """
-    
     data = _assert_all_types(data, pd.Series) 
     is_valid = False 
     for p in P().iresistivity : 
@@ -537,7 +540,8 @@ def is_erp_series (
 
 def is_erp_dataframe (
         data :DataFrame ,
-        dipolelength : Optional[float] = None 
+        dipolelength : Optional[float] = None, 
+        force:bool=False, 
         ) -> DataFrame:
     """ Ckeck whether the dataframe contains the electrical resistivity 
     profiling (ERP) index properties. 
@@ -562,6 +566,13 @@ def is_erp_dataframe (
         computed and filled the station columns using the default value 
         of the dipole. The *default* value is set to ``10 meters``. 
         
+    force: bool, default=False, 
+        If Vertical electrical (VES) is passed while expecting ERP data, 
+        force set to `True` will consider the VES data as ERP data and 
+        will use only the resistivity values in VES data. This will 
+        will an invalid results especially when parameters computation are 
+        needed.
+        
     Returns
     --------
     A new data with index properties.
@@ -585,6 +596,18 @@ def is_erp_dataframe (
     """
     
     data = _assert_all_types(data, pd.DataFrame)
+    if 'AB' in data.columns: 
+        msg = ("Unsupports VES data. Can force reading VES data as ERP"
+               " by setting 'force' to True.")
+        if force: 
+            warnings.warn("Force considering VES as ERP data might lead "
+                          "to breaking code or invalid results during "
+                          "ERP parameters computation. Use at your own risk.")
+        else:
+            raise ERPError(
+                "Unsupports Vertical Electrical Sounding data "
+                "while ERP is expected.")
+        
     datac= data.copy() 
     
     def _is_in_properties (h ):
@@ -662,6 +685,7 @@ def is_erp_dataframe (
 def erpSelector (
         f: str | NDArray | Series | DataFrame ,
         columns: str | List[str] = ..., 
+        force:bool= False, 
         **kws:Any 
 ) -> DataFrame  : 
     """ Read and sanitize the data collected from the survey. 
@@ -686,6 +710,12 @@ def erpSelector (
         the whole name of each item in 
         ``['station','resistivity' ,'longitude', 'latitude']``.
         
+    force: bool, default=False, 
+        If Vertical electrical (VES) is passed while expecting ERP data, 
+        force set to `True` will consider the VES data as ERP data and 
+        will use only the resistivity values in VES data. This will 
+        will an invalid results especially when parameters computation are 
+        needed.
     kws: dict
         Additional pandas `pd.read_csv` and `pd.read_excel` 
         methods keyword arguments. Be sure to provide the right argument. 
@@ -778,7 +808,7 @@ def erpSelector (
                     )
                 
     if isinstance(f, pd.DataFrame): 
-        f = is_erp_dataframe( f)
+        f = is_erp_dataframe( f, force = force )
     elif isinstance(f , pd.Series ): 
         f = is_erp_series(f)
     else : 

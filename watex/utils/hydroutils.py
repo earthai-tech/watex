@@ -62,7 +62,10 @@ from .funcutils import  (
     _isin 
     
     )
-from ..exlib.sklearn import SimpleImputer 
+from ..exlib.sklearn import ( 
+    SimpleImputer,
+    KMeans 
+    )
 
 from .validator import ( 
     _is_arraylike_1d, 
@@ -71,13 +74,182 @@ from .validator import (
 #-----------------------
 from ..exlib.sklearn import accuracy_score
     
+
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
 
-def find_aqgroup_representativity (
+
+def _name_mxs_labels(*s , sep ='', prefix =""): 
+    """ Name the Mixture Strategy labels from list of label and 
+    similarity group 
+    
+    Parameters 
+    -----------
+    s: list 
+        List of of pair (label, similarity ) 
+    
+    Example
+    --------
+    >>> from watex.utils.hydroutils import _name_mxs_labels 
+    >>> _name_mxs_labels ( (1, 2) , (2, 4 ), (3, 7 )) 
+    ... [12, 24, 37]
+    >>> _name_mxs_labels ( (1, 2) , (2, 4 ), (3, 7 ), prefix ='k') 
+    ... ['k12', 'k24', 'k37']
+    >>> _name_mxs_labels((1, 'groupI'), (2, 'groupII'), sep='_', prefix='k')
+    ... ['k1_groupI', 'k1_groupII']
+    
+    """
+    
+    for o in s : 
+        if not is_iterable(o):
+            raise ValueError (
+                "Wrong value. Expect a pair values (label, similar group)"
+                 " got: {o}")
+        if len(o) !=2 :
+            raise ValueError ("Expect a pair values (label, similar group_)."
+                              " not {o}")
+    mxs =list() 
+    for o in s : 
+        xs = str(prefix) + str(o[0]) + str(sep) + str(o[1])
+        try : 
+            xs = int (xs )
+        except : 
+            pass 
+        finally: mxs.append (xs )
+    return mxs 
+
+def make_MXS_labels (
+        y_true=None, y_pred =None, s= None, sep ='', prefix ='', 
+        return_y=True,  **kws): 
+    
+    if s is None: 
+        s = find_label_similarities (y_true, y_pred, **kws ) 
+    g = _name_mxs_labels(*s, sep = sep, prefix =prefix )
+   
+    if return_y : 
+        slabels = [lab for _, lab in s ] 
+        if ( y_pred is None or y_true is None ) : 
+            raise TypeError ("Missing NGA predicted labels 'y_pred' or"
+                             " true labels 'y_true' are not allowed for "
+                             " MXS labels creating.") 
+        if not all ([ l in np.unique (y_pred) for l in slabels ]): 
+            # list the invalid groups 
+            # not contain in the NGA labels 
+            msg = listing_items_format(list(np.unique (y_pred)), 
+                                 "Invalid Groups",  
+                                 "Group must be the labels in the predicted NGA.",
+                                 verbose = False , inline =True ,
+                                 )
+            raise ValueError (msg)
+            
+        _check_consistency_size(y_true, y_pred ) 
+        # save the not_nan indices to not 
+        # altered the k-valid values 
+        not_nan_indices,  = np.where ( ~np.isnan (y_true) )
+        
+        # initialize the y_ms with NaN values 
+        y_mxs = np.full (y_pred.shape , fill_value= np.nan , dtype = object)
+        
+        # loop the similarity 
+        for (tlabel , simlab), ngalab  in zip ( s, g )  : 
+            indices, = np.where(y_pred ==simlab ) 
+            y_mxs [indices ] = ngalab  
+            
+    
+        # get the nan remain values and tru to replace by 
+        # the values in the y_pred 
+        
+        nan_remain,  = np.where (np.isnan (y_mxs ) ) 
+        
+         # To not confuse the label in y_true and y_pred 
+        # ckeck whether the value of y_true label are still
+        # in the predicted labels 
+        if  any ([ l in list(np.unique (y_pred)) 
+                  for l in list(np.unique (y_true))]):
+            
+            try : 
+                max_tlabel = max(np.unique (y_true))
+            except : 
+                # where the label in y_true is not a numerica values 
+                # Do not change anything and use a trailer  '_'at the end 
+                # of the predicted label 
+                max_tlabel ='_'
+            
+            # use this nan index where is not filled yet 
+            # to replace the 
+            y_mxs [nan_remain] = y_pred [nan_remain] + max_tlabel 
+        else :
+            y_mxs [nan_remain] = y_pred [nan_remain]  
+            
+        # not altered the k-valid data 
+        y_mxs [not_nan_indices] = y_true [not_nan_indices]
+         
+        # try to convert values to integer labels 
+        try : 
+            y_mxs = y_mxs .astype (np.int32 ) 
+        except : pass 
+    
+    return y_mxs if return_y else g 
+
+    
+def predict_NGA_labels( 
+        X, / , n_clusters , random_state =0 , keep_label_0 = False,
+        **kws 
+        ): 
+    """
+    Predict the Naive Group of Aquifer (NGA) labels. 
+    
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training instances to cluster. It must be noted that the data
+        will be converted to C ordering, which will cause a memory
+        copy if the given data is not C-contiguous.
+        If a sparse matrix is passed, a copy will be made if it's not in
+        CSR format.
+    n_clusters : int, default=8
+        The number of clusters to form as well as the number of
+        centroids to generate.
+
+    random_state : int, RandomState instance or None, default=42
+        Determines random number generation for centroid initialization. Use
+        an int to make the randomness deterministic.
+   
+    keep_label_0: bool, default=False
+        The prediction already include the label 0. However, including 0 in 
+        the predicted label refers to 'k=0' i.e. no permeability coefficient 
+        equals to 0, which is not True in principle, because all rocks  have 
+        a permeability coefficient 'k'. Here we considered 'k=0' as an undefined 
+        permeability coefficient. Therefore, '0' , can be exclude since, it can 
+        also considered as a missing 'k'-value. If predicted '0' is in the target 
+        it should mean a missing 'k'-value rather than being a concrete label.  
+        Therefore, to avoid any confusion, '0' is altered to '1' so the value 
+        `+1` is used to move forward all class labels thereby excluding 
+        the '0' label. To force include 0 in the label, set `keep_label_0` 
+        to ``True``. 
+        
+     kws: dict, 
+         Additional keyword arguments passed to :class:`sklearn.clusters.KMeans`.
+         
+    Returns 
+    ---------
+    nga: array_like of  shape (n_samples, n_features)
+        predicte NGA labels. 
+        
+    """
+    nga = KMeans(n_clusters= n_clusters, random_state = random_state , 
+                  **kws).fit_predict(X)
+    if not keep_label_0:
+        if 0 in list(np.unique (nga)):
+            nga +=1 
+            
+    return nga 
+
+
+def fit_aquifer_groups (
         arr_k, /, arr_aq=None, kname =None, aqname=None,  
-        subjectivity =False , default_arr= None
+        subjectivity =False , default_arr= None, keep_label_0 = False,  
   )->'_AquiferGroup': 
     msg = ("{} cannot be None when a dataframe is given.")
     d = copy.deepcopy(arr_k)
@@ -92,7 +264,7 @@ def find_aqgroup_representativity (
     if arr_aq is None and not subjectivity: 
         msg =("In principle, missing aquifer array is not allowed. Turn on "
               "'subjectivity' instead. Be aware that turning 'subjectivity'"
-              " to 'True' This might lead to breaking code or invalid results."
+              " to 'True'. This might lead to breaking code or invalid results."
               " Use at your own risk." )
         raise AquiferGroupError (msg)
     if subjectivity: 
@@ -111,7 +283,8 @@ def find_aqgroup_representativity (
         raise AquiferGroupError (
             "Expect one-dimensional arrays for 'k' and aquifer group.")
         
-    arr_k_valid , arr_aq_valid = _get_y_from_valid_indexes(arr_k, arr_aq )
+    arr_k_valid , arr_aq_valid = _get_y_from_valid_indexes(
+        arr_k, arr_aq, include_label_0= keep_label_0  )
     
     if np.nan in list(arr_aq): 
         raise TypeError ("Missing value(s) is/are not allowed in group of "
@@ -131,9 +304,9 @@ def find_aqgroup_representativity (
         
     return _AquiferGroup(groups)
 
-find_aqgroup_representativity.__doc__="""\
-Find the representative of each true label in array 'k' in the aquifer group 
-array. 
+fit_aquifer_groups.__doc__="""\
+Fit the group of aquifer and find the representative of each true label in 
+array 'k' in the aquifer group array. 
 
 The idea consists to find the corresponding aquifer group which fits the most 
 the true label 'X' in 'y_true'. 
@@ -165,7 +338,20 @@ default_arr: array-like, pd.Series
    Array used as deefault for subsitutue the group of aqquifer if the latter 
    is missing. This is an heuristic option because it might lead to breaking 
    code or invalid results.
-    
+   
+keep_label_0: bool, default=False
+    The prediction already include the label 0. However, including 0 in 
+    the predicted label refers to 'k=0' i.e. no permeability coefficient 
+    equals to 0, which is not True in principle, because all rocks  have 
+    a permeability coefficient 'k'. Here we considered 'k=0' as an undefined 
+    permeability coefficient. Therefore, '0' , can be exclude since, it can 
+    also considered as a missing 'k'-value. If predicted '0' is in the target 
+    it should mean a missing 'k'-value rather than being a concrete label.  
+    Therefore, to avoid any confusion, '0' is altered to '1' so the value 
+    `+1` is used to move forward all class labels thereby excluding 
+    the '0' label. To force include 0 in the label, set `keep_label_0` 
+    to ``True``. 
+     
 Returns
 -------
 _AquiferGroup: _AquiferGroup class object 
@@ -177,7 +363,7 @@ Examples
 
 >>> from watex.utils import naive_imputer, read_data , reshape 
 >>> from watex.datasets import load_hlogs 
->>> from watex.utils.hydroutils import map_k, find_aqgroup_representativity 
+>>> from watex.utils.hydroutils import classify_k, fit_aquifer_groups 
 >>> b= load_hlogs () #just taking the target names
 >>> data = read_data ('data/boreholes/hf.csv') # read complete data
 >>> y = data [b.target_names]
@@ -185,47 +371,81 @@ Examples
 >>> # reshape 1d array along axis 0 for imputation 
 >>> agroup_imputed = naive_imputer ( reshape (y.aquifer_group, axis =0 ) , 
                                     strategy ='most_frequent') 
->>> # rehape back to array_like 1d 
+>>> # reshape back to array_like 1d 
 >>> y.aquifer_group =reshape (agroup_imputed) 
 >>> # categorize the 'k' continous value in 'y.k' using the default 
 >>> # 'k' mapping func 
->>> y.k = map_k (y.k , default_func =True)
+>>> y.k = classify_k (y.k , default_func =True)
 >>> # get the group obj
->>> group_obj = find_aqgroup_representativity(y.k, y.aquifer_group,  ) 
+>>> group_obj = fit_aquifer_groups(y.k, y.aquifer_group,  ) 
 >>> group_obj 
 ... _AquiferGroup(Label=[' 1 ', 
                    Preponderance( rate = '53.141  %', 
-                                (['Groups', {'V': 0.32, 'IV': 0.266, 'II': 0.158, 'III': 0.158, 'II ': 0.079, 'IV&V': 0.01, 'II&III': 0.005, 'III&IV': 0.005}),
+                                (['Groups', {'V': 0.32, 
+                                             'IV': 0.266, 
+                                             'II': 0.158, 
+                                             'III': 0.158, 
+                                             'II ': 0.079, 
+                                             'IV&V': 0.01, 
+                                             'II&III': 0.005, 
+                                             'III&IV': 0.005}),
                                  ('Representativity', ( 'V', 0.32)),
                                  ('Similarity', 'V')])],
              Label=[' 2 ', 
                    Preponderance( rate = ' 19.11  %', 
-                                (['Groups', {'III': 0.274, 'V': 0.26, ' II ': 0.178, 'IV': 0.178, 'II': 0.082, 'III&IV': 0.027}),
+                                (['Groups', {'III': 0.274, 
+                                             'V': 0.26, 
+                                             ' II ': 0.178, 
+                                             'IV': 0.178, 
+                                             'II': 0.082, 
+                                             'III&IV': 0.027}),
                                  ('Representativity', ( 'III', 0.27)),
                                  ('Similarity', 'III')])],
              Label=[' 3 ', 
                    Preponderance( rate = '27.749  %', 
-                                (['Groups', {'V': 0.443, 'IV': 0.311, 'III': 0.245}),
+                                (['Groups', {'V': 0.443, 
+                                             'IV': 0.311, 
+                                             'III': 0.245}),
                                  ('Representativity', ( 'V', 0.44)),
                                  ('Similarity', 'V')])],
              )
                
 (2) Use the subjectivity and set the strata columns as default array 
 
->>> find_aqgroup_representativity(y.k, subjectivity=True, default_arr= X.strata_name ) 
+>>> fit_aquifer_groups(y.k, subjectivity=True, default_arr= X.strata_name ) 
 ... _AquiferGroup(Label=[' 1 ', 
                    Preponderance( rate = '53.141  %', 
-                                (['Groups', {'siltstone': 0.35, 'coal': 0.182, 'fine-grained sandstone': 0.158, 'medium-grained sandstone': 0.094, 'mudstone': 0.079, 'carbonaceous mudstone': 0.054, 'coal ': 0.044, 'coarse-grained sandstone': 0.03, 'coarse': 0.01}),
+                                (['Groups', {'siltstone': 0.35, 
+                                             'coal': 0.182, 
+                                             'fine-grained sandstone': 0.158, 
+                                             'medium-grained sandstone': 0.094, 
+                                             'mudstone': 0.079, 
+                                             'carbonaceous mudstone': 0.054, 
+                                             'coal ': 0.044, 
+                                             'coarse-grained sandstone': 0.03, 
+                                             'coarse': 0.01}),
                                  ('Representativity', ( 'siltstone', 0.35)),
                                  ('Similarity', 'siltstone')])],
              Label=[' 2 ', 
                    Preponderance( rate = ' 19.11  %', 
-                                (['Groups', {'mudstone': 0.288, 'siltstone': 0.205, 'coal': 0.192, 'coarse-grained sandstone': 0.137, 'fine-grained sandstone': 0.137, 'carbonaceous mudstone': 0.027, 'medium-grained sandstone': 0.014}),
+                                (['Groups', {'mudstone': 0.288, 
+                                             'siltstone': 0.205, 
+                                             'coal': 0.192, 
+                                             'coarse-grained sandstone': 0.137, 
+                                             'fine-grained sandstone': 0.137, 
+                                             'carbonaceous mudstone': 0.027, 
+                                             'medium-grained sandstone': 0.014}),
                                  ('Representativity', ( 'mudstone', 0.29)),
                                  ('Similarity', 'mudstone')])],
              Label=[' 3 ', 
                    Preponderance( rate = '27.749  %', 
-                                (['Groups', {'mudstone': 0.245, 'coal': 0.226, 'siltstone': 0.217, 'fine-grained sandstone': 0.123, 'carbonaceous mudstone': 0.066, 'medium-grained sandstone': 0.066, 'coarse-grained sandstone': 0.057}),
+                                (['Groups', {'mudstone': 0.245, 
+                                             'coal': 0.226, 
+                                             'siltstone': 0.217, 
+                                             'fine-grained sandstone': 0.123, 
+                                             'carbonaceous mudstone': 0.066, 
+                                             'medium-grained sandstone': 0.066, 
+                                             'coarse-grained sandstone': 0.057}),
                                  ('Representativity', ( 'mudstone', 0.25)),
                                  ('Similarity', 'mudstone')])],
              )
@@ -262,19 +482,35 @@ def compute_representativity ( label, arr_k , arr_aq  ):
     
 #XXXTODO : finalize the similarities between true labels and predicted labels 
 def find_label_similarities ( 
-        y_true, y_pred , return_counts = False, rank_k =False, 
-        func: callable = None, include_label_0 = False, verbose: int=0,  
-        **kwd):
+    y_true, 
+    y_pred,  
+    *, 
+    categorize_k =False, 
+    func: callable = None, 
+    keep_label_0 :bool=False, 
+    return_groups =False, 
+    **kwd
+        ):
     """Find similarities between y_true and y_pred and return rate 
     
     Parameters 
     -----------
-    rank_k: bool, 
+    y_true: array-like 1d or pandas.Series 
+        Array containing the true labels of 'k' 
+    y_pred: array_like, or pandas.Series
+        array containing the predicted naive group of aquifers (NGA)  
+        
+    categorize_k: bool, 
         If set to ``True``, user needs to provide a function `ufunc` to map 
         or categorize the permeability coefficient 'k' into an integer 
         labels. 
         
-    include_label_0: bool, default=0
+    func: callable 
+       Function to specifically map the permeability coefficient column 
+       in the dataframe of serie. If not given, the default function can be 
+       enabled instead from param `default_func`.     
+        
+    keep_label_0: bool, default=0
         Force including 0 in the predicted label if  `include_label_0` is set 
         to ``True``. Mostly label '0' refers to 'k=0' i.e. no permeability 
         coefficient equals to 0, which is not True in principle, because all rocks  
@@ -288,53 +524,28 @@ def find_label_similarities (
          '0' i.e 'k=0' as a first class. So the value `+1` is used to move forward 
         all class labels thereby excluding the '0' label. To force include 0 
         in the label, set `include_label_0` to ``True``. 
-        
-    return_counts: bool, default=False 
-        Returns label and their values counts in the predicted labels `y_pred` 
-        where 'k' values are not missing. 
-        
-    verbose: int, default=0 , 
-        Print the rate of all label similarities if set to ``True``. 
-        
+
+    return_groups: bool, default=False 
+        Returns label groups and their values counts in the predicted 
+        labels `y_pred`  where 'k' values are not missing. 
+    
     """
-
-    def _verbosity ( counter, text ): 
-        """ listing the rate of occurence of each label in the array 
-        """
-        tot= sum(dict(counter).values()) 
-        rates = ["{:>7}%".format( round ( (v/tot) *100, 2)) 
-            for v  in dict(counter).values ()]
-        lst =[f"{'(' + str(i)+ ')' + ' '+ '-'*8 + r_ }" for  (i, r_)  
-              in zip (dict(counter).keys(), rates) ]
-        listing_items_format(lst, text, enum=False ,lstyle =' ')
-
     [  _assert_all_types(o, pd.Series, np.ndarray, objname = lab) 
-     for lab, o  in zip (
-             ["'y_true'(true labels)", "'y_pred '( predicted labels )'"], 
-             [y_true, y_pred]) 
+         for lab, o  in zip (
+                 ["'y_true'(true labels)", "'y_pred '( predicted labels )'"], 
+                 [y_true, y_pred]) 
     ]
     _check_consistency_size(y_true, y_pred) 
     if not all ([ _is_arraylike_1d(ar ) for ar in (y_true, y_pred )] ) :
         raise TypeError ("True and predicted labels supports only "
                          "one-dimensional array.")
-    if rank_k : 
-        #categorize k if fuc is given.
-        y_true = map_k( y_true ,  func= func ,  **kwd)
+    if categorize_k : 
+        #categorize k if func is given.
+        y_true = classify_k( y_true ,  func= func ,  **kwd)
         
-    # get the indices from y_true to y_pred where 
-    # k-value is valid i.e. where k is not missing. 
-    y_t, y_p = _get_y_from_valid_indexes(
-        y_true, y_pred, include_label_0= include_label_0 )
-    # get the number of occurences of each label (true and predicted)
-    m_occ_yp,  r_yp , c_yp = _get_s_occurence(y_p)
-    m_occ_yt,  r_yt , c_yt = _get_s_occurence(y_t)
-    
-    if verbose: 
-        # print occurences display
-        _verbosity (c_yp, "Occurrence rate of predicted labels 'y_pred'")
-        _verbosity (c_yt, "Occurrence rate of true labels 'y_true'")
-        
-    return label_score(y_t, y_p )
+    g = fit_aquifer_groups(y_true, arr_aq= y_pred,keep_label_0= keep_label_0 )  
+
+    return tuple ( g.similarity ) if not return_groups else tuple (g.groups )
 
 def make_mxs_target (y_true, y_pred, strategy ='one2one', ratio = .5 ):
     """Merge target to crate mixtrure strategy target (MXS) target 
@@ -1522,8 +1733,8 @@ def _kp (k, /,  kr= (.01 , .07 ), string = False ) :
     for v, value in d.items () :
         if value: return v if not string else  ( 
                 label + str(v) if not math.isnan (v) else np.nan ) 
-        
-def map_k (
+
+def classify_k (
         o:DataFrame| Series | ArrayLike, /,  func: callable|F= None , 
         kname:str=None, inplace:bool =False, string:str =False, 
         default_func:bool=False  
@@ -1535,11 +1746,13 @@ def map_k (
     Parameters 
     ----------
     o: ndarray of pd.Series or Dataframe
-        data containing the permeability coefficient k columnns 
-    unfunc: callable 
+        data containing the permeability coefficient k contineous values. 
+        If data is passsed as a pandas dataframe, the column containing the 
+        k-values `kname` needs to be specified. 
+    func: callable 
         Function to specifically map the permeability coefficient column 
         in the dataframe of serie. If not given, the default function can be 
-        enabled instead from param `use_default_ufunc`. 
+        enabled instead from param `default_func`. 
     inplace: bool, default=False 
         Modified object inplace and return None 
     string: bool, 
@@ -1566,12 +1779,12 @@ def map_k (
     --------
     >>> import numpy as np 
     >>> from watex.datasets import load_hlogs 
-    >>> from watex.utils.hydroutils import map_k 
+    >>> from watex.utils.hydroutils import classify_k 
     >>> _, y0 = load_hlogs (as_frame =True) 
     >>> # let visualize four nonzeros values in y0 
     >>> y0.k.values [ ~np.isnan (y0.k ) ][:4]
     ...  array([0.054, 0.054, 0.054, 0.054])
-    >>> map_k (y0 , kname ='k', inplace =True, use_default_func=True )
+    >>> classify_k (y0 , kname ='k', inplace =True, use_default_func=True )
     >>> # let see again the same four value in the dataframe 
     >>> y0.k.values [ ~np.isnan (y0.k ) ][:4]
     ... array([2., 2., 2., 2.]) 
@@ -1604,7 +1817,6 @@ def map_k (
         
     return oo 
 
-        
 #XXXTODO compute t parameters 
 def transmissibility (s, d, time, ): 
     """Transmissibility T represents the ability of aquifer's water conductivity.
@@ -2220,11 +2432,12 @@ class _AquiferGroup:
         Dictionnary compose of occurence between the true labels 
         and the group of aquifer  as a function of occurence and
         repesentativity 
+        
     Example 
     --------
     >>> from watex.utils import naive_imputer, read_data , reshape 
     >>> from watex.datasets import load_hlogs 
-    >>> from watex.utils.hydroutils import map_k, find_aqgroup_representativity 
+    >>> from watex.utils.hydroutils import classify_k, fit_aquifer_groups 
     >>> b= load_hlogs () #just taking the target names
     >>> data = read_data ('data/boreholes/hf.csv') # read complete data
     >>> y = data [b.target_names]
@@ -2236,38 +2449,71 @@ class _AquiferGroup:
     >>> y.aquifer_group =reshape (agroup_imputed) 
     >>> # categorize the 'k' continous value in 'y.k' using the default 
     >>> # 'k' mapping func 
-    >>> y.k = map_k (y.k , default_func =True)
+    >>> y.k = classify_k (y.k , default_func =True)
     >>> # get the group obj
-    >>> group_obj = find_aqgroup_representativity(y.k, y.aquifer_group,  ) 
+    >>> group_obj = fit_aquifer_groups(y.k, y.aquifer_group,  ) 
     >>> group_obj 
     ... AquiferGroup(Label=[' 1 ', 
                        Preponderance( rate = '53.141  %', 
-                                    (['Groups', {'V': 0.32, 'IV': 0.266, 'II': 0.158, 'III': 0.158, 'II ': 0.079, 'IV&V': 0.01, 'II&III': 0.005, 'III&IV': 0.005}),
+                                    (['Groups', {'V': 0.32,'IV': 0.266, 
+                                                 'II': 0.158, 'III': 0.158, 
+                                                 'II ': 0.079, 'IV&V': 0.01, 
+                                                 'II&III': 0.005, 'III&IV': 0.005}),
                                      ('Representativity', ( 'V', 0.32)),
                                      ('Similarity', 'V')])],
                  Label=[' 2 ', 
                        Preponderance( rate = ' 19.11  %', 
-                                    (['Groups', {'III': 0.274, 'V': 0.26, ' II ': 0.178, 'IV': 0.178, 'II': 0.082, 'III&IV': 0.027}),
+                                    (['Groups', {'III': 0.274, 'V': 0.26, 
+                                                 ' II ': 0.178, 'IV': 0.178, 
+                                                 'II': 0.082, 'III&IV': 0.027}),
                                      ('Representativity', ( 'III', 0.27)),
                                      ('Similarity', 'III')])],
                  Label=[' 3 ', 
                        Preponderance( rate = '27.749  %', 
-                                    (['Groups', {'V': 0.443, 'IV': 0.311, 'III': 0.245}),
+                                    (['Groups', {'V': 0.443, 'IV': 0.311, 
+                                                 'III': 0.245}),
                                      ('Representativity', ( 'V', 0.44)),
                                      ('Similarity', 'V')])],
                  )
                                       
     """
     def __init__ (self, g=None, /  ): 
-        self.groups_ = g
+        self.g_ = g
+        
+    @property 
+    def g(self): 
+        return self.g_
+    @property 
+    def similarity (self): 
+        """return label similarities with NGA labels  """
+        return (
+            (label, list(rep_val [1])[0] ) 
+            for label, rep_val in self.g_.items()
+                )
+    @property 
+    def preponderance (self): 
+        """ Returns label occurences in the datasets """
+        return   (
+            (label, round(rep_val [0], 3)) 
+            for label, rep_val in self.g_.items()
+             )
+    @property 
+    def representativity (self): 
+        """ Returns the representativity of each labels"""
+        return ( (label, round(rep_val[1].get(list(rep_val [1])[0]), 2))  
+                    for label, rep_val in self.g_.items()
+                     )
     @property 
     def groups (self): 
-        return self.groups_
-    
+        """Return groups for each label """
+        return ((label, {k: round (v, 3) for k, v in repr_val[1].items()}) 
+                  for label, repr_val in self.g_.items () 
+                  )
+
     def __repr__ (self ) :
         return  self.__class__.__name__  + "(" +  self._format (
-            self.groups ) + "{:>13}".format(")")
-        
+            self.g) + "{:>13}".format(")")
+
     def _format (self, gdict): 
         """ Format representativity of Aquifer groups 
         Parameters 
@@ -2284,7 +2530,8 @@ class _AquiferGroup:
                 "Label" if k==0 else "{:>17}".format("Label"), label
                                                ) 
                 ]
-            ag +=["{:>32}( rate = '{:^7} %', \n".format("Preponderance", round (prep *100, 3 )
+            ag +=["{:>32}( rate = '{:^7} %', \n".format(
+                "Preponderance", round (prep *100, 3 )
                                                   )] 
             ag += ["{:>34}'Groups', {}),\n".format("([",
                 # str({ k: "{:>5}".format(round (v, 3)) for k , v in g.items()}) 

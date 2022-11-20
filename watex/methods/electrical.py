@@ -50,8 +50,8 @@ from ..utils.exmath import (
     invertVES,
     )
 from ..utils.validator import ( 
-    _is_erp , 
-    _is_ves
+    _is_valid_erp , 
+    _is_valid_ves
     )
 from ..property import( 
     ElectricalMethods
@@ -263,6 +263,12 @@ class DCProfiling(ElectricalMethods)  :
         if not _readfromdcObjs (self, data):
             _readfrompath (self, data, **fit_params)
             
+        if self.verbose : 
+            if len(self.isnotvalid_)!=0: 
+                warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
+                
+        if len(self.data_) ==0: 
+            raise ERPError("None ERP data detected. Please check your data.")
         # makeids objects 
         self.ids_ = np.array(make_ids (self.survey_names_,'line',None, True)) 
         
@@ -545,6 +551,12 @@ class DCSounding(ElectricalMethods) :
         if not _readfromdcObjs (self, data, VerticalSounding, VESError):
             _readfrompath (self, data, VerticalSounding,  **fit_params)
             
+        if self.verbose : 
+            if len(self.isnotvalid_)!=0: 
+                warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
+                
+        if len(self.data_) ==0: 
+            raise VESError("None VES data detected. Please check your data.")
         self.ids_ = np.array(make_ids (self.survey_names_, 'site', None, True)) 
         
         # set each line as an object with attributes
@@ -724,7 +736,7 @@ class ResistivityProfiling(ElectricalMethods):
                                  )
         
         data = erpSelector(data, columns) 
-        if not _is_erp(data): 
+        if not _is_valid_erp(data): 
             raise ERPError("Invalid ERP data. Data must contain at least"
                            " 'resistivity' and 'station' position." )
             
@@ -771,7 +783,7 @@ class ResistivityProfiling(ElectricalMethods):
         
         if self.station is None: 
             if not self.auto: 
-                warnings.warn("Station number is missing! By default the " 
+                warnings.warn("Station number is missing. By default the " 
                               "automatic-detection should be triggered.")
                 self.auto = True 
 
@@ -1149,11 +1161,11 @@ class VerticalSounding (ElectricalMethods):
                            ' is triggered')
         
         if self.verbose >= 7 : 
-            print(f'Range {str(self.vesorder)!r} of resistivity data of the  '
+            print(f'Range {str(self.vesorder)!r} of resistivity data '
                   'should be selected as the main sounding data. ')
         self.data_ = vesSelector(
             data = data, index_rhoa= self.vesorder, **fit_params )
-        if not _is_ves( self.data_): 
+        if not _is_valid_ves( self.data_): 
             raise VESError("Invalid VES data. Data must contain at least"
                            " 'resistivity' and 'AB/2' position." )
         self.max_depth_ = self.data_.AB.max()
@@ -1283,7 +1295,8 @@ class VerticalSounding (ElectricalMethods):
         """
         self.data_ = getattr(self, 'data_', None)
         if self.data_ is None: 
-            raise NotFittedError(f'Fit the {self.__class__.__name__!r} object first')
+            raise NotFittedError(
+                f'Fit the {self.__class__.__name__!r} object first')
   
         # invert data 
         #XXX TODO 

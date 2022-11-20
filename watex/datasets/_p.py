@@ -110,7 +110,6 @@ _pipeline = prepareObj.pipeline
 
 _df0 = prepareObj._df0
 _df1 = prepareObj._df1
-#-------------------------------------------------------------------------    
 
 # test set stratified data. Untouchable unless the best model is found.
 _XT = prepareObj.X_
@@ -127,3 +126,57 @@ if not os.path.isfile('watex/etc/__XTyT.pkl'):
     test_data=(_XT, _yT)
     dumpOrSerializeData(test_data, filename ='__XTyT.pkl', to='joblib', 
                           savepath='watex/etc')
+    
+
+#-------------------------------------------------------------------------    
+# store files in b.pkl file  
+# b = dict() 
+# for df, name in zip ( [  _X,
+#     _y,
+#     _X0,
+#     _y0,
+#     _XT,
+#     _yT,
+#     _Xc,
+#     _Xp,
+#     _yp,
+#     _pipeline,
+#     _df0,
+#     _df1,
+#     _conf_kws, 
+#     _BAGDATA
+#     ], [
+#         '_X',
+#         '_y',
+#         '_X0',
+#         '_y0',
+#         '_XT',
+#         '_yT',
+#         '_Xc',
+#         '_Xp',
+#         '_yp',
+#         '_pipeline',
+#         '_df0',
+#         '_df1',
+#         '_conf_kws', 
+#         '_BAGDATA'
+#       ] ) : 
+    
+#     b[name] = df 
+    
+#     #df.to_hdf ( 'watex/datasets/data/b.h5', key =name,mode ='a' )
+# dumpOrSerializeData(b, filename ='b.pkl', to='joblib', 
+#                           savepath='watex/datasets/data')
+#--------------------------------------------------------------------------- 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

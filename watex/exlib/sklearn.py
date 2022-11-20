@@ -77,8 +77,8 @@ _HAS_ENSEMBLE_=False
 try : 
     from sklearn.ensemble import  RandomForestClassifier
 except: 
-    from .exceptions import ScikitLearnImportError 
-    from ..base import is_installing
+    from ..exceptions import ScikitLearnImportError 
+    from ..utils.funcutils import is_installing
     _HAS_ENSEMBLE_ = is_installing('sklearn')
     if not _HAS_ENSEMBLE_: 
         warnings.warn(

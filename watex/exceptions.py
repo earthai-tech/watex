@@ -12,8 +12,14 @@ it so.
 
 """
 class ArgumentError(Exception): 
+    """
+    Raises an Exception when values passed to the callable is not the expected 
+    one. Is deprecated and should be replaced by 'TypeError' or 'ValueError' 
+    for the next release."""
     pass 
 class SiteError(Exception): 
+    """Raises exception to everything related to the Site, Location. For 
+    instance, inappropriate coordinates values."""
     pass 
 
 class DatasetError(Exception): 

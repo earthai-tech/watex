@@ -17,11 +17,13 @@ import warnings
 import numbers
 import operator
 import numpy as np
+from contextlib import suppress
 import scipy.sparse as sp
 from inspect import signature, Parameter
 
 import joblib
 
+from ._array_api import get_namespace, _asarray_with_order
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
 
@@ -91,11 +93,11 @@ def _is_cross_validated (estimator ):
     return hasattr(estimator, 'best_estimator_') and hasattr (
         estimator , 'best_params_')
 
-def _is_erp(d , / ): 
+def _is_valid_erp(d , / ): 
     """ Returns 'True' if the given data is Electrical Resistivity Profiling"""
     return not len(d) ==0 and  ('resistivity' and 'station') in d.columns 
 
-def _is_ves (d, /)  : 
+def _is_valid_ves (d, /)  : 
     """Returns 'True' if data is Vertical Electrical Sounding """
     return not len(d) ==0 and  ('resistivity' and 'AB') in d.columns 
 
@@ -726,6 +728,260 @@ def _check_feature_names_in(estimator, input_features=None, *, generate_names=Tr
 
     return np.asarray([f"x{i}" for i in range(n_features_in_)], dtype=object)
 
+def _pandas_dtype_needs_early_conversion(pd_dtype):
+    """Return True if pandas extension pd_dtype need to be converted early."""
+    # Check these early for pandas versions without extension dtypes
+    from pandas.api.types import (
+        is_bool_dtype,
+        is_sparse,
+        is_float_dtype,
+        is_integer_dtype,
+    )
+
+    if is_bool_dtype(pd_dtype):
+        # bool and extension booleans need early converstion because __array__
+        # converts mixed dtype dataframes into object dtypes
+        return True
+
+    if is_sparse(pd_dtype):
+        # Sparse arrays will be converted later in `check_array`
+        return False
+
+    try:
+        from pandas.api.types import is_extension_array_dtype
+    except ImportError:
+        return False
+
+    if is_sparse(pd_dtype) or not is_extension_array_dtype(pd_dtype):
+        # Sparse arrays will be converted later in `check_array`
+        # Only handle extension arrays for integer and floats
+        return False
+    elif is_float_dtype(pd_dtype):
+        # Float ndarrays can normally support nans. They need to be converted
+        # first to map pd.NA to np.nan
+        return True
+    elif is_integer_dtype(pd_dtype):
+        # XXX: Warn when converting from a high integer to a float
+        return True
+
+    return False
+
+def _ensure_no_complex_data(array):
+    if (
+        hasattr(array, "dtype")
+        and array.dtype is not None
+        and hasattr(array.dtype, "kind")
+        and array.dtype.kind == "c"
+    ):
+        raise ValueError("Complex data not supported\n{}\n".format(array)) 
+        
+def check_array(
+    array,
+    *,
+    dtype="numeric",
+    order=None,
+    copy=False,
+    force_all_finite=True,
+    ensure_2d=True,
+    ensure_min_samples=1,
+    ensure_min_features=1,
+):
+
+    """Input validation on an array, list, or similar.
+    By default, the input is checked to be a non-empty 2D array containing
+    only finite values. If the dtype of the array is object, attempt
+    converting to float, raising on failure.
+
+    Parameters
+    ----------
+    array : object
+        Input object to check / convert.
+   
+    dtype : 'numeric', type, list of type or None, default='numeric'
+        Data type of result. If None, the dtype of the input is preserved.
+        If "numeric", dtype is preserved unless array.dtype is object.
+        If dtype is a list of types, conversion on the first type is only
+        performed if the dtype of the input is not in the list.
+    order : {'F', 'C'} or None, default=None
+        Whether an array will be forced to be fortran or c-style.
+        When order is None (default), then if copy=False, nothing is ensured
+        about the memory layout of the output array; otherwise (copy=True)
+        the memory layout of the returned array is kept as close as possible
+        to the original array.
+    copy : bool, default=False
+        Whether a forced copy will be triggered. If copy=False, a copy might
+        be triggered by a conversion.
+    force_all_finite : bool or 'allow-nan', default=True
+        Whether to raise an error on np.inf, np.nan, pd.NA in array. The
+        possibilities are:
+        - True: Force all values of array to be finite.
+        - False: accepts np.inf, np.nan, pd.NA in array.
+        - 'allow-nan': accepts only np.nan and pd.NA values in array. Values
+          cannot be infinite.
+          ``force_all_finite`` accepts the string ``'allow-nan'``.
+           Accepts `pd.NA` and converts it into `np.nan`
+    ensure_2d : bool, default=True
+        Whether to raise a value error if array is not 2D.
+    ensure_min_samples : int, default=1
+        Make sure that the array has a minimum number of samples in its first
+        axis (rows for a 2D array). Setting to 0 disables this check.
+    ensure_min_features : int, default=1
+        Make sure that the 2D array has some minimum number of features
+        (columns). The default value of 1 rejects empty datasets.
+        This check is only enforced when the input data has effectively 2
+        dimensions or is originally 1D and ``ensure_2d`` is True. Setting to 0
+        disables this check.
+
+    Returns
+    -------
+    array_converted : object
+        The converted and validated array.
+    """
+    if isinstance(array, np.matrix):
+        raise TypeError(
+            "np.matrix is not supported. Please convert to a numpy array with "
+            "np.asarray. For more information see: "
+            "https://numpy.org/doc/stable/reference/generated/numpy.matrix.html"
+        )
+
+    xp, is_array_api = get_namespace(array)
+
+    # reconvert to array if not a 
+    # pandas series or dataframe .
+    if  not ( hasattr (array , 'columns') or hasattr (array, 'name') ): 
+        array = np.array (array )
+         
+    # store reference to original array to check if copy is needed when
+    # function returns
+    array_orig = array
+
+    # store whether originally we wanted numeric dtype
+    dtype_numeric = isinstance(dtype, str) and dtype == "numeric"
+
+    dtype_orig = getattr(array, "dtype", None)
+    if not hasattr(dtype_orig, "kind"):
+        # not a data type (e.g. a column named dtype in a pandas DataFrame)
+        dtype_orig = None
+
+    # check if the object contains several dtypes (typically a pandas
+    # DataFrame), and store them. If not, store None.
+    dtypes_orig = None
+    pandas_requires_conversion = False
+    if hasattr(array, "dtypes") and hasattr(array.dtypes, "__array__"):
+        # throw warning if columns are sparse. If all columns are sparse, then
+        # array.sparse exists and sparsity will be preserved (later).
+        with suppress(ImportError):
+            from pandas.api.types import is_sparse
+
+            if not hasattr(array, "sparse") and array.dtypes.apply(is_sparse).any():
+                warnings.warn(
+                    "pandas.DataFrame with sparse columns found."
+                    "It will be converted to a dense numpy array."
+                )
+
+        dtypes_orig = list(array.dtypes)
+        pandas_requires_conversion = any(
+            _pandas_dtype_needs_early_conversion(i) for i in dtypes_orig
+        )
+        if all(isinstance(dtype_iter, np.dtype) for dtype_iter in dtypes_orig):
+            dtype_orig = np.result_type(*dtypes_orig)
+
+    if dtype_numeric:
+        if dtype_orig is not None and dtype_orig.kind == "O":
+            # if input is object, convert to float.
+            dtype = xp.float64
+        else:
+            dtype = None
+
+    if isinstance(dtype, (list, tuple)):
+        if dtype_orig is not None and dtype_orig in dtype:
+            # no dtype conversion required
+            dtype = None
+        else:
+            # dtype conversion required. Let's select the first element of the
+            # list of accepted types.
+            dtype = dtype[0]
+
+    if pandas_requires_conversion:
+        # pandas dataframe requires conversion earlier to handle extension dtypes with
+        # nans
+        # Use the original dtype for conversion if dtype is None
+        new_dtype = dtype_orig if dtype is None else dtype
+        array = array.astype(new_dtype)
+        # Since we converted here, we do not need to convert again later
+        dtype = None
+
+    if force_all_finite not in (True, False, "allow-nan"):
+        raise ValueError(
+            'force_all_finite should be a bool or "allow-nan". Got {!r} instead'.format(
+                force_all_finite
+            )
+        )
+        
+    if len(array) ==0: 
+        raise ValueError (
+            "Found array with 0 length while a minimum of 1 is required." )
+        
+    if ensure_2d:
+        # If input is scalar raise error
+        if  array.ndim == 0:
+            raise ValueError(
+                "Expected 2D array, got scalar array instead:\narray={}.\n"
+                "Reshape your data either using array.reshape(-1, 1) if "
+                "your data has a single feature or array.reshape(1, -1) "
+                "if it contains a single sample.".format(array)
+            )
+        # If input is 1D raise error
+        if array.ndim == 1:
+            raise ValueError(
+                "Expected 2D array, got 1D array instead. "
+                "Reshape your data either using array.reshape(-1, 1) if "
+                "your data has a single feature or array.reshape(1, -1) "
+                "if it contains a single sample."
+            )
+
+        if  ( dtype_numeric 
+             and ( array.values.dtype.kind if hasattr(array, 'columns') 
+                  else array.dtype.kind) 
+             in "USV"
+             ):
+            raise ValueError(
+                "dtype='numeric' is not compatible with arrays of bytes/strings."
+                "Convert your data to numeric values explicitly instead."
+            )
+    
+    if ensure_min_samples > 0:
+        n_samples = _num_samples(array)
+        if n_samples < ensure_min_samples:
+            raise ValueError(
+                "Found array with %d sample(s) (shape=%s) while a"
+                " minimum of %d is required."
+                % (n_samples, array.shape, ensure_min_samples)
+            )
+
+    if ensure_min_features > 0 and array.ndim == 2:
+        n_features = array.shape[1]
+        if n_features < ensure_min_features:
+            raise ValueError(
+                "Found array with %d feature(s) (shape=%s) while"
+                " a minimum of %d is required."
+                % (n_features, array.shape, ensure_min_features)
+            )
+
+    if copy:
+        if xp.__name__ in {"numpy", "numpy.array_api"}:
+            # only make a copy if `array` and `array_orig` may share memory`
+            if np.may_share_memory(array, array_orig):
+                array = _asarray_with_order(
+                    array, dtype=dtype, order=order, copy=True, xp=xp
+                )
+        else:
+            # always make a copy for non-numpy arrays
+            array = _asarray_with_order(
+                array, dtype=dtype, order=order, copy=True, xp=xp
+            )
+
+    return array 
 
 def _generate_get_feature_names_out(estimator, n_features_out, input_features=None):
     """Generate feature names out for estimator using the estimator name as the prefix.

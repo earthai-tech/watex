@@ -5,11 +5,11 @@
 Dataset 
 ==========
 Fetch data from the local machine. If data does not exist, retrieve it 
-from online (repository or zenodo record ) 
+from remote (repository or zenodo record ) 
 
 """
+from warnings import warn 
 try:
-    from ._config import _fetch_data
     from .dload import (
         load_bagoue , 
         load_gbalo, 
@@ -19,6 +19,11 @@ try:
         load_boundiali,
         load_hlogs
         )
+    try : 
+        from ._config import _fetch_data
+    except : 
+        warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
+              " instead.")
     
     __all__=["fetch_data", "load_bagoue" , "load_gbalo", 
              "load_iris", "load_semien", "load_tankesse", 
@@ -26,13 +31,12 @@ try:
              ]
 
 except ImportError : 
-    from warnings import warn 
     from .._watexlog import watexlog
     
     m= ("None config file detected. Auto-data preparation process is aborted."
-            "Be aware, the basics examples won't be implemented. Fetch data "
-            " manually from remote (repository or zenodo record) using the "
-            " module 'rload' via < :mod:`watex.datasets.rload` >"
+        "Be aware, the basics examples won't be implemented. Fetch the data"
+        " manually from remote (repository or zenodo record) using the "
+        " module 'rload' via < :class:`watex.datasets.rload.Loader` >"
             )
     watexlog().get_watex_logger(__name__).debug(m); warn(m, UserWarning)
 
