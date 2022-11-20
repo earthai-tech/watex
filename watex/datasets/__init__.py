@@ -9,6 +9,8 @@ from remote (repository or zenodo record )
 
 """
 from warnings import warn 
+
+fi=False
 try:
     from .dload import (
         load_bagoue , 
@@ -18,14 +20,13 @@ try:
         load_tankesse , 
         load_boundiali,
         load_hlogs
-        )
-    fi=False 
-    # try : 
-    from ._config import _fetch_data
-    # except : 
-    #     warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
-    #           " instead.")
-    # else: fi=True 
+        ) 
+    try : 
+        from ._config import _fetch_data
+    except : 
+        warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
+             " instead.")
+    else: fi=True 
     
     __all__=["fetch_data", "load_bagoue" , "load_gbalo", 
              "load_iris", "load_semien", "load_tankesse", 
@@ -47,7 +48,7 @@ def fetch_data (tag, **kws):
     func= _fetch_data if fi else None 
     funcs= (load_bagoue , load_gbalo, load_iris, load_semien, load_tankesse , 
             load_boundiali, load_hlogs) 
-    funcns = tuple (map(lambda f: f.__name__.replace('load_', ''), funcs))
+    funcns = list (map(lambda f: f.__name__.replace('load_', ''), funcs))
     if tag in (funcns): 
         func = funcs[funcns.index (tag)] 
     

@@ -2173,7 +2173,7 @@ def exportdf (
     savepath:Optional [str] =None,
     modname: str  ='_wexported_', 
     reset_index: bool =True
-) -> Tuple [DataFrame, Union[str], bool ]: 
+) -> Tuple [DataFrame, Union[str, str], bool ]: 
     """ 
     Export dataframe ``df``  to `refout` files. 
     

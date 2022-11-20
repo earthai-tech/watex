@@ -124,7 +124,7 @@ _BVAL= dict (
 )
 
 
-def _fetch_data(tag, data_names='' ): 
+def _fetch_data(tag, data_names=[] ): 
     r=None
     tag = str(tag)
 
@@ -135,7 +135,7 @@ def _fetch_data(tag, data_names='' ):
     else : 
         pm =regex.search (tag)
         if pm is None: 
-            data_names+= _BTAGS
+            data_names+= list(_BTAGS)
             msg = (f"Unknow tag-name {tag!r}. None dataset is stored"
                 f" under the name {tag!r}. Available tags are: "
                 f"{smart_format (data_names, 'or')}"

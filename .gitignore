@@ -182,3 +182,6 @@ python3
 data/boreholes/h502.csv
 data/boreholes/hf.csv
 demo-project.ipynb
+
+#VS code 
+.vs/
