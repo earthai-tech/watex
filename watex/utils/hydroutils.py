@@ -163,7 +163,7 @@ arr_q: array-like , pandas series or dataframe
     
 default_arr: array-like, pd.Series 
    Array used as deefault for subsitutue the group of aqquifer if the latter 
-   is missing. This is an heuristic option because  it might lead to breaking 
+   is missing. This is an heuristic option because it might lead to breaking 
    code or invalid results.
     
 Returns
