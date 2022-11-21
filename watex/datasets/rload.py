@@ -443,8 +443,6 @@ class Loader:
 
         return f0
     
-    
-    
     def _fromgithub( self, 
                     f: str=None , content_url:str=None  
                     ) -> bool | str:
@@ -548,8 +546,6 @@ class Loader:
             print( f"+++ -> Load data from {self.content_url!r} successfully done!") 
         
         return self.f 
-    
-    
     
     def _fromlocal (self, f: str = None # DATA_DIR
                     ) -> str : 
