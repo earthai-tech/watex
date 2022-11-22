@@ -69,7 +69,8 @@ from ..exlib.sklearn import (
 
 from .validator import ( 
     _is_arraylike_1d, 
-    _check_consistency_size
+    _check_consistency_size, 
+    check_array
     )
 #-----------------------
 from ..exlib.sklearn import accuracy_score
@@ -120,75 +121,123 @@ def _name_mxs_labels(*s , sep ='', prefix =""):
     return mxs 
 
 def make_MXS_labels (
-        y_true=None, y_pred =None, s= None, sep ='', prefix ='', 
+        y_true, y_pred, s= None, sep ='', prefix ='', 
         return_y=True,  **kws): 
+    #wecke array 
+    ( check_array( y ) for y in (y_true, y_pred ))
+    # ceck consistecny 
+    _check_consistency_size(y_true, y_pred ) 
     
     if s is None: 
         s = find_label_similarities (y_true, y_pred, **kws ) 
     g = _name_mxs_labels(*s, sep = sep, prefix =prefix )
    
-    if return_y : 
-        slabels = [lab for _, lab in s ] 
-        if ( y_pred is None or y_true is None ) : 
-            raise TypeError ("Missing NGA predicted labels 'y_pred' or"
-                             " true labels 'y_true' are not allowed for "
-                             " MXS labels creating.") 
-        if not all ([ l in np.unique (y_pred) for l in slabels ]): 
-            # list the invalid groups 
-            # not contain in the NGA labels 
-            msg = listing_items_format(list(np.unique (y_pred)), 
-                                 "Invalid Groups",  
-                                 "Group must be the labels in the predicted NGA.",
-                                 verbose = False , inline =True ,
-                                 )
-            raise ValueError (msg)
-            
-        _check_consistency_size(y_true, y_pred ) 
-        # save the not_nan indices to not 
-        # altered the k-valid values 
-        not_nan_indices,  = np.where ( ~np.isnan (y_true) )
+    # get the label from similarity groups: 
+    slabels = [lab for _, lab in s ] 
+    # if ( y_pred is None or y_true is None ) : 
+    #     raise TypeError ("Missing NGA predicted labels 'y_pred' or"
+    #                      " true labels 'y_true' are not allowed for "
+    #                      " MXS labels creating.") 
+    if not all ([ l in np.unique (y_pred) for l in slabels ]): 
+        # list the invalid groups 
+        # not contain in the NGA labels 
+        msg = listing_items_format(list(np.unique (y_pred)), 
+                             "Invalid Groups",  
+                             "Group must be the labels in the predicted NGA.",
+                             verbose = False , inline =True ,
+                             )
+        raise ValueError (msg)
+    # make a copy of array of ytrue 
+    # and fill it by the new NGA values and/or similarites 
+    # Finally will fill the k-valid indexes 
+    y_mxs = np.full (y_true.shape , fill_value= np.nan )
         
-        # initialize the y_ms with NaN values 
-        y_mxs = np.full (y_pred.shape , fill_value= np.nan , dtype = object)
+    # Get the index of each NGA labels
+    NGA_label_indices = {
+        label: np.where (y_pred == label )[0] for label in np.unique (y_pred )
+        }
+    for k , vindex in NGA_label_indices.items () :
+        if k in  slabels : 
+            elt = slabels [ slabels.index (k ) ] 
+        elif k not slabels : 
+            pass 
+        y_mxs [ vindex ] = elt 
         
-        # loop the similarity 
-        for (tlabel , simlab), ngalab  in zip ( s, g )  : 
-            indices, = np.where(y_pred ==simlab ) 
-            y_mxs [indices ] = ngalab  
-            
-    
-        # get the nan remain values and tru to replace by 
-        # the values in the y_pred 
         
-        nan_remain,  = np.where (np.isnan (y_mxs ) ) 
         
-         # To not confuse the label in y_true and y_pred 
-        # ckeck whether the value of y_true label are still
-        # in the predicted labels 
-        if  any ([ l in list(np.unique (y_pred)) 
-                  for l in list(np.unique (y_true))]):
-            
-            try : 
-                max_tlabel = max(np.unique (y_true))
-            except : 
-                # where the label in y_true is not a numerica values 
-                # Do not change anything and use a trailer  '_'at the end 
-                # of the predicted label 
-                max_tlabel ='_'
-            
-            # use this nan index where is not filled yet 
-            # to replace the 
-            y_mxs [nan_remain] = y_pred [nan_remain] + max_tlabel 
-        else :
-            y_mxs [nan_remain] = y_pred [nan_remain]  
-            
-        # not altered the k-valid data 
-        y_mxs [not_nan_indices] = y_true [not_nan_indices]
+     def _mixtures ( s, k =None,  mix =False ): 
          
-        # try to convert values to integer labels 
-        try : 
-            y_mxs = y_mxs .astype (np.int32 ) 
-        except : pass 
+         is_numeric_true_labels = False 
+         
+         true_labels = [ label for label, _ in s ] 
+         group_labels = [ group  for _, group in s ]
+         
+         # loop k in the group labels ( ii, iii, iV)
+         if k not in group_labels : 
+             try : 
+                 k = int (k) 
+             except : # where k is not a numeric 
+                 pass 
+             else : 
+                 if k in true_labels : 
+                    
+             
+         return ( true_labels , group_labels ) if not mix else 
+     
+     
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        # # save the not_nan indices to not 
+        # # altered the k-valid values 
+        # not_nan_indices,  = np.where ( ~np.isnan (y_true) )
+        
+        # # initialize the y_ms with NaN values 
+        # y_mxs = np.full (y_pred.shape , fill_value= np.nan , dtype = object)
+        
+        # # loop the similarity 
+        # for (tlabel , simlab), ngalab  in zip ( s, g )  : 
+        #     indices, = np.where(y_pred ==simlab ) 
+        #     y_mxs [indices ] = ngalab  
+            
+        # # get the nan remain values and tru to replace by 
+        # # the values in the y_pred 
+        
+        # nan_remain,  = np.where (np.isnan (y_mxs ) ) 
+        
+        #  # To not confuse the label in y_true and y_pred 
+        # # ckeck whether the value of y_true label are still
+        # # in the predicted labels 
+        # if  any ([ l in list(np.unique (y_pred)) 
+        #           for l in list(np.unique (y_true))]):
+            
+        #     try : 
+        #         max_tlabel = max(np.unique (y_true))
+        #     except : 
+        #         # where the label in y_true is not a numerica values 
+        #         # Do not change anything and use a trailer  '_'at the end 
+        #         # of the predicted label 
+        #         max_tlabel ='_'
+            
+        #     # use this nan index where is not filled yet 
+        #     # to replace the 
+        #     y_mxs [nan_remain] = y_pred [nan_remain] + max_tlabel 
+        # else :
+        #     y_mxs [nan_remain] = y_pred [nan_remain]  
+            
+        # # not altered the k-valid data 
+        # y_mxs [not_nan_indices] = y_true [not_nan_indices]
+         
+        # # try to convert values to integer labels 
+        # try : 
+        #     y_mxs = y_mxs .astype (np.int32 ) 
+        # except : pass 
     
     return y_mxs if return_y else g 
 
@@ -238,13 +287,13 @@ def predict_NGA_labels(
         predicte NGA labels. 
         
     """
-    nga = KMeans(n_clusters= n_clusters, random_state = random_state , 
+    NGA = KMeans(n_clusters= n_clusters, random_state = random_state , 
                   **kws).fit_predict(X)
     if not keep_label_0:
-        if 0 in list(np.unique (nga)):
-            nga +=1 
+        if 0 in list(np.unique (NGA)):
+            NGA +=1 
             
-    return nga 
+    return NGA 
 
 
 def fit_aquifer_groups (
