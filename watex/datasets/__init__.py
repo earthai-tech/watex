@@ -19,11 +19,13 @@ try:
         load_boundiali,
         load_hlogs
         )
+    fi=False 
     try : 
         from ._config import _fetch_data
     except : 
         warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
               " instead.")
+    else: fi=True 
     
     __all__=["fetch_data", "load_bagoue" , "load_gbalo", 
              "load_iris", "load_semien", "load_tankesse", 
@@ -42,7 +44,7 @@ except ImportError :
 
 
 def fetch_data (tag, **kws): 
-    func= _fetch_data 
+    func= _fetch_data if fi else None 
     funcs= (load_bagoue , load_gbalo, load_iris, load_semien, load_tankesse , 
             load_boundiali, load_hlogs) 
     funcns = tuple (map(lambda f: f.__name__.replace('load_', ''), funcs))

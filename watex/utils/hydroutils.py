@@ -385,7 +385,7 @@ arr_q: array-like , pandas series or dataframe
     
 default_arr: array-like, pd.Series 
    Array used as deefault for subsitutue the group of aqquifer if the latter 
-   is missing. This is an heuristic option because  it might lead to breaking 
+   is missing. This is an heuristic option because it might lead to breaking 
    code or invalid results.
    
 keep_label_0: bool, default=False
@@ -2582,7 +2582,7 @@ class _AquiferGroup:
             ag +=["{:>32}( rate = '{:^7} %', \n".format(
                 "Preponderance", round (prep *100, 3 )
                                                   )] 
-            ag += ["{:>34}'Groups', {}),\n".format("([",
+            ag += ["{:>34}'Groups', {}),\n".format("[(",
                 # str({ k: "{:>5}".format(round (v, 3)) for k , v in g.items()}) 
                 str({ k: round (v, 3) for k , v in g.items()}) 
                     )
