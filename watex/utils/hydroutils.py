@@ -51,6 +51,7 @@ from ..exceptions import (
     )
 from .funcutils import  (
     _assert_all_types, 
+    _isin ,
     is_iterable,
     is_in_if , 
     smart_format, 
@@ -59,23 +60,20 @@ from .funcutils import  (
     reshape , 
     listing_items_format, 
     to_numeric_dtypes, 
-    _isin 
-    
     )
 from ..exlib.sklearn import ( 
     SimpleImputer,
-    KMeans 
+    KMeans , 
+    accuracy_score
     )
 
 from .validator import ( 
-    _is_arraylike_1d, 
+    _is_arraylike_1d,
+    _is_numeric_dtype, 
     _check_consistency_size, 
-    check_array
+    check_array, 
     )
 #-----------------------
-from ..exlib.sklearn import accuracy_score
-    
-
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
@@ -121,24 +119,33 @@ def _name_mxs_labels(*s , sep ='', prefix =""):
     return mxs 
 
 def make_MXS_labels (
-        y_true, y_pred, s= None, sep ='', prefix ='', 
-        return_y=True,  **kws): 
-    #wecke array 
+        y_true, y_pred, s= None, sep ='', prefix ='', return_mxs_obj=False, 
+        **kws): 
+    
     ( check_array( y ) for y in (y_true, y_pred ))
-    # ceck consistecny 
     _check_consistency_size(y_true, y_pred ) 
+    # check whether the y_true is numerical data 
+    # if not rename y_true and keep the classes 
+    # for mapping at the end of class transformation 
+    y_true_transf, mxs_true_classes_  = _kmapping( y_true )
     
     if s is None: 
-        s = find_label_similarities (y_true, y_pred, **kws ) 
-    g = _name_mxs_labels(*s, sep = sep, prefix =prefix )
+        s = find_label_similarities (y_true_transf, y_pred, **kws ) 
+        
+    if not is_iterable(s): 
+        raise TypeError ("similarity group must be an iterable."
+                         " Got: {type(s).__name__!r}")
+        
+    sim_groups = _name_mxs_labels(*s, sep = sep, prefix =prefix )
    
     # get the label from similarity groups: 
-    slabels = [lab for _, lab in s ] 
+    true_labels = [ label for label, _ in s ] 
+    group_labels = [ group  for _, group in s ]
     # if ( y_pred is None or y_true is None ) : 
     #     raise TypeError ("Missing NGA predicted labels 'y_pred' or"
     #                      " true labels 'y_true' are not allowed for "
     #                      " MXS labels creating.") 
-    if not all ([ l in np.unique (y_pred) for l in slabels ]): 
+    if not all ([ l in np.unique (y_pred) for l in group_labels ]): 
         # list the invalid groups 
         # not contain in the NGA labels 
         msg = listing_items_format(list(np.unique (y_pred)), 
@@ -147,101 +154,113 @@ def make_MXS_labels (
                              verbose = False , inline =True ,
                              )
         raise ValueError (msg)
+    
     # make a copy of array of ytrue 
     # and fill it by the new NGA values and/or similarites 
     # Finally will fill the k-valid indexes 
-    y_mxs = np.full (y_true.shape , fill_value= np.nan )
+    y_mxs = np.full (y_true.shape , fill_value= np.nan ,dtype = object )
         
     # Get the index of each NGA labels
     NGA_label_indices = {
         label: np.where (y_pred == label )[0] for label in np.unique (y_pred )
         }
-    for k , vindex in NGA_label_indices.items () :
-        if k in  slabels : 
-            elt = slabels [ slabels.index (k ) ] 
-        elif k not slabels : 
-            pass 
-        y_mxs [ vindex ] = elt 
-        
-        
-        
-     def _mixtures ( s, k =None,  mix =False ): 
-         
-         is_numeric_true_labels = False 
-         
-         true_labels = [ label for label, _ in s ] 
-         group_labels = [ group  for _, group in s ]
-         
-         # loop k in the group labels ( ii, iii, iV)
-         if k not in group_labels : 
-             try : 
-                 k = int (k) 
-             except : # where k is not a numeric 
-                 pass 
-             else : 
-                 if k in true_labels : 
-                    
-             
-         return ( true_labels , group_labels ) if not mix else 
-     
-     
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        # # save the not_nan indices to not 
-        # # altered the k-valid values 
-        # not_nan_indices,  = np.where ( ~np.isnan (y_true) )
-        
-        # # initialize the y_ms with NaN values 
-        # y_mxs = np.full (y_pred.shape , fill_value= np.nan , dtype = object)
-        
-        # # loop the similarity 
-        # for (tlabel , simlab), ngalab  in zip ( s, g )  : 
-        #     indices, = np.where(y_pred ==simlab ) 
-        #     y_mxs [indices ] = ngalab  
+    group_classes_ = dict() 
+    for klabel , vindex in NGA_label_indices.items () :
+        if klabel in  group_labels : 
+            elt_index =  group_labels.index (klabel )  
+            y_mxs [ vindex ] = sim_groups [elt_index ] 
+            group_classes_ [klabel] = klabel 
             
-        # # get the nan remain values and tru to replace by 
-        # # the values in the y_pred 
-        
-        # nan_remain,  = np.where (np.isnan (y_mxs ) ) 
-        
-        #  # To not confuse the label in y_true and y_pred 
-        # # ckeck whether the value of y_true label are still
-        # # in the predicted labels 
-        # if  any ([ l in list(np.unique (y_pred)) 
-        #           for l in list(np.unique (y_true))]):
-            
-        #     try : 
-        #         max_tlabel = max(np.unique (y_true))
-        #     except : 
-        #         # where the label in y_true is not a numerica values 
-        #         # Do not change anything and use a trailer  '_'at the end 
-        #         # of the predicted label 
-        #         max_tlabel ='_'
-            
-        #     # use this nan index where is not filled yet 
-        #     # to replace the 
-        #     y_mxs [nan_remain] = y_pred [nan_remain] + max_tlabel 
-        # else :
-        #     y_mxs [nan_remain] = y_pred [nan_remain]  
-            
-        # # not altered the k-valid data 
-        # y_mxs [not_nan_indices] = y_true [not_nan_indices]
+        elif klabel not in group_labels : 
+           nklabel = _mixture_group_label_if (klabel, true_labels ) 
+           y_mxs [ vindex ] = nklabel 
          
-        # # try to convert values to integer labels 
-        # try : 
-        #     y_mxs = y_mxs .astype (np.int32 ) 
-        # except : pass 
+           group_classes_ [klabel] = nklabel 
+           
+    # at the end 
+    # # save the not_nan indices to not 
+    # # altered the k-valid values 
+    not_nan_indices,  = np.where ( ~np.isnan (y_true) )
+    # # not altered the k-valid data 
+    y_mxs [not_nan_indices] = y_true [not_nan_indices]
     
-    return y_mxs if return_y else g 
+    if mxs_true_classes_ is not None: 
+        y_mxs = pd.Series (y_mxs, name ='mxs').map(mxs_true_classes_ ).values 
+        
+    MXS =y_mxs .copy() 
+    
+    if return_mxs_obj : 
 
+        # create a metatype of mixture object class and 
+        # wrapp the importance attributes 
+        try : 
+            mxs_classes_ = np.unique (y_mxs) 
+        except:
+            mxs_classes_ = np.unique (y_mxs.astype (str ) )  
+        mxs_attributes =  {
+            "mxs_classes" : mxs_classes_, 
+            "mxs_labels_": y_mxs ,  
+            "mxs_true_classes_": mxs_true_classes_, 
+            "mxs_group_classes_":group_classes_ ,
+            "mxs_label_similarities_": s, 
+            "mxs_similarity_groups_": sim_groups, 
+            "mxs_true_k_classes_": true_labels, 
+            "mxs_true_group_classes_": group_labels
+            }  
+        MXS = type ('MXS', (), mxs_attributes  )
+        
+    return MXS 
+ 
+
+def _mixture_group_label_if ( label_k, t_labels ): 
+    """ Start counting remaining labels from the maximum value of 
+    label found in the """
+    # Use the max element in the true labels 
+    # and append it to the remain labels whose 
+    # are not found as similarity groups  
+    # this is possible if the simpilary group are numery datatype 
+    # However if if string , keep it in the datasets 
     
+    # The goal of this is to not be confuse with the existing
+    #  true labels with the valid k labels found in the y_true 
+    max_in_tabels = max (t_labels )
+    try : 
+        label_k = int (label_k) 
+    except : # where k is not a numeric 
+        pass 
+    else : 
+        label_k +=max_in_tabels  
+        
+    return label_k 
+
+     
+def _kmapping (arr, /): 
+    """ Check whether the true labels 'y_true' have numeric dtypes 
+    otherwise, create a integer label with integers to  substitute 
+    the true labels. For instance: 
+        
+        >>> ['k1', 'k2', 'k3'] - > [1, 2, 3]
+    :param arr: array-like 1d 
+        array of onedimensional 
+    """
+    ytransf =arr.copy() 
+    classes = None 
+    if not _is_numeric_dtype(arr , to_array =True) : 
+        if not _is_arraylike_1d(arr): 
+            raise ValueError ("Array must be one-dimensional,"
+                              " got shape: '{np.array(arr).shape}'")
+            
+        unik_labels = np.unique (arr)
+        new_labels = np.arange(1, len(unik_labels)+ 1 )  
+        for tlab, nlab  in zip (unik_labels, new_labels ) : 
+            indices, = np.where (arr ==tlab)
+            ytransf[indices ] = nlab 
+        classes = dict ( zip ( new_labels, unik_labels ) ) 
+    # try to convert to int32 
+    try : ytransf = ytransf.astype (np.int32 )
+    except: pass 
+    return ytransf, classes 
+  
 def predict_NGA_labels( 
         X, / , n_clusters , random_state =0 , keep_label_0 = False,
         **kws 

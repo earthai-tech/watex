@@ -16,18 +16,45 @@ import types
 import warnings
 import numbers
 import operator
+import joblib
 import numpy as np
 from contextlib import suppress
 import scipy.sparse as sp
 from inspect import signature, Parameter
 
-import joblib
-
 from ._array_api import get_namespace, _asarray_with_order
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
 
+def _is_numeric_dtype (o, / , to_array =False ): 
+    """ Determine whether the argument has a numeric datatype, when
+    converted to a NumPy array.
 
+    Booleans, unsigned integers, signed integers, floats and complex
+    numbers are the kinds of numeric datatype. 
+    
+    :param o: object, arraylike 
+        Object presumed to be an array 
+    :param to_array: bool, default=False 
+        If `o` is passed as non-array like list or tuple or other iterable 
+        object. Setting `to_array` to ``True`` will convert array to ``True``. 
+    :return: bool, 
+        ``True`` if `o` has a numeric dtype and ``False`` otherwise. 
+    """ 
+    _NUMERIC_KINDS = set('buifc')
+    if not hasattr (o, '__iter__'): 
+        raise TypeError ("'o' is expected to be an iterable object."
+                         f" got: {type(o).__name__!r}")
+    if to_array : 
+        o = np.array (o )
+    if not hasattr(o, '__array__'): 
+        raise ValueError (f"Expect type array, got: {type (o).__name__!r}")
+    # use NUMERICKIND rather than # pd.api.types.is_numeric_dtype(arr) 
+    # for series and dataframes
+    return ( o.values.dtype.kind   
+            if ( hasattr(o, 'columns') or hasattr (o, 'name'))
+            else o.dtype.kind ) in _NUMERIC_KINDS 
+        
 def _check_consistency_size (ar1, ar2 , /  , error ='raise') :
     """ Check consistency of two arrays and raises error if both sizes 
     are differents. 
@@ -204,8 +231,10 @@ def _deprecate_positional_args(func=None, *, version="1.3"):
 
 def _is_arraylike_1d (x) :
     """ Returns whether the input is arraylike one dimensional and not a scalar"""
+    if not hasattr (x, '__array__'): 
+        raise TypeError ("Expects a one-dimensional array, "
+                         f"got: {type(x).__name__!r}")
     _is_arraylike_not_scalar(x)
-
     return _is_arraylike_not_scalar(x) and  (  len(x.shape )< 2 or ( 
         len(x.shape ) ==2 and x.shape [1]==1 )) 
 
