@@ -69,16 +69,23 @@ except :
         _df0,
         _df1,
         _BAGDATA
-        
-        )
+        ) 
+    for k, v  in zip ( 
+                ['_X','_y','_X0','_y0','_XT','_yT','_Xc','_Xp','_yp','_pipeline',
+                 '_df0','_df1','_BAGDATA'], 
+                [ _X, _y, _X0, _y0,_XT,_yT,_Xc,_Xp, _yp, _pipeline,
+                 _df0,_df1,_BAGDATA] 
+            ) : 
+            _BAG[k] = v 
+            
 _BVAL= dict (
     origin= {
-        'COL_NAMES':  (_BAG.get('_BAGDATA') or _BAGDATA).columns, 
+        'COL_NAMES': _BAG.get ('_BAGDATA').columns, 
         'DESCR':'https://doi.org/10.5281/zenodo.5571534: bagoue-original',
-        'data': (_BAG.get('_BAGDATA') or _BAGDATA).values, 
-        'data=df':_BAG.get('_BAGDATA') or _BAGDATA, 
-        'data=dfy1':_BAG.get('_df1') or _df1, 
-        'data=dfy2':_BAG.get('_df0') or _df0,
+        'data': _BAG.get('_BAGDATA').values, 
+        'data=df':_BAG.get('_BAGDATA'), 
+        'data=dfy1':_BAG.get('_df1'), 
+        'data=dfy2':_BAG.get('_df0'),
         'attrs-infos':BagoueNotes.bagattr_infos, 
         'dataset-contest':{
             '_documentation:':'`watex.property.BagoueNotes.__doc__`', 
@@ -102,20 +109,21 @@ _BVAL= dict (
                  )
             }, 
     stratified= (
-        _BAG.get('_X') or _X, 
-        _BAG.get('_y') or _y
+        _BAG.get('_X'), 
+        _BAG.get('_y') 
         ),
     semi= (
-        _BAG.get('_X0') or _X0,
-         _BAG.get('_y0') or _y0 
+        _BAG.get('_X0'),
+         _BAG.get('_y0') 
          ), 
-    pipe= _BAG.get('_pipeline')or _pipeline, 
+    pipe= _BAG.get('_pipeline'), 
     analysed= (
-        _BAG.get('_Xc') or _Xc,
-        _BAG.get('_yp') or _yp 
+        _BAG.get('_Xc'),
+        _BAG.get('_yp') 
         ), 
 )
-  
+
+
 def _fetch_data(tag, data_names='' ): 
     r=None
     tag = str(tag)
@@ -138,12 +146,12 @@ def _fetch_data(tag, data_names='' ):
     
     if pm =='prepared': 
         r = loadingdefaultSerializedData (
-            'watex/etc/__Xy.pkl',  ((_BAG.get('_Xp'), _BAG.get('_yp')) or  (_Xp, _yp)),
+            'watex/etc/__Xy.pkl',  (_BAG.get('_Xp'), _BAG.get('_yp')),
             dtype='training' 
                 )
     elif pm =='test': 
         r, = loadingdefaultSerializedData (
-            'watex/etc/__XTyT.pkl', (( _BAG.get('_XT'),  _BAG.get('_yT')) or (_XT, _yT)), 
+            'watex/etc/__XTyT.pkl', ( _BAG.get('_XT'),  _BAG.get('_yT')), 
             dtype='test' ),
     else : 
         try : 
@@ -152,7 +160,6 @@ def _fetch_data(tag, data_names='' ):
            _logger.error (_msg[pm])
     return r 
 
-     
 def loadingdefaultSerializedData (f, d0, dtype ='test'): 
     """ Retreive Bagoue data from dumped or Serialized file.
     
@@ -227,4 +234,44 @@ Returns
     `_pipeline`: the default pipeline.    
     
 """
+
+def _import_anyway (d, / ) :
+    """ Use the default importation which compute inplace each parameter 
+    and set param to the dict """
+    from ._p import ( 
+        _X,
+        _y,
+        _X0,
+        _y0,
+        _XT,
+        _yT,
+        _Xc,
+        _Xp,
+        _yp,
+        _pipeline,
+        _df0,
+        _df1,
+        _BAGDATA
+        ) 
+    for key , value  in zip ( ['_X','_y','_X0','_y0','_XT','_yT','_Xc',
+                                '_Xp','_yp','_pipeline','_df0','_df1','_BAGDATA'], 
+                            [  _X, _y, _X0, _y0,_XT,_yT,_Xc,_Xp, _yp, _pipeline,
+                             _df0,_df1,_BAGDATA]  ) : 
+            
+            d[key] = value 
     
+    return d 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+     

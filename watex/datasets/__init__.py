@@ -20,12 +20,12 @@ try:
         load_hlogs
         )
     fi=False 
-    try : 
-        from ._config import _fetch_data
-    except : 
-        warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
-              " instead.")
-    else: fi=True 
+    # try : 
+    from ._config import _fetch_data
+    # except : 
+    #     warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
+    #           " instead.")
+    # else: fi=True 
     
     __all__=["fetch_data", "load_bagoue" , "load_gbalo", 
              "load_iris", "load_semien", "load_tankesse", 
@@ -51,7 +51,7 @@ def fetch_data (tag, **kws):
     if tag in (funcns): 
         func = funcs[funcns.index (tag)] 
     
-    return func (tag=tag, data_names=funcns, **kws)
+    return func (tag=tag, data_names=funcns, **kws) if callable (func) else None 
 
 
 fetch_data.__doc__ ="""\

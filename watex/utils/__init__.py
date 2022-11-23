@@ -34,14 +34,19 @@ from .funcutils import (
     )
 from .hydroutils import ( 
     select_base_stratum , 
-    get_aquifer_sections , 
-    get_aquifers_sections, 
-    get_unique_sections, 
+    get_aquifer_section , 
+    get_aquifer_sections, 
+    get_unique_section, 
     get_compressed_vector, 
     get_xs_xr_splits, 
-    samples_reducing , 
+    reduce_samples , 
     get_sections_from_depth, 
-    check_flow_objectivity
+    check_flow_objectivity, 
+    make_MXS_labels, 
+    predict_NGA_labels, 
+    find_aquifer_groups, 
+    find_similar_labels, 
+    classify_k, 
     )
 from .mlutils import ( 
     selectfeatures, 
@@ -76,7 +81,8 @@ from .plotutils import (
     plot_sbs_feature_selection, 
     plot_regularization_path, 
     plot_rf_feature_importances, 
-    plot_logging
+    plot_logging, 
+    plot_silhouette, 
     )
 
 __all__=[
@@ -131,21 +137,26 @@ __all__=[
         'plot_sbs_feature_selection', 
         'plot_regularization_path', 
         'plot_rf_feature_importances', 
-        'plot_logging', 
+        'plot_logging',
+        'plot_silhouette', 
         'select_base_stratum' , 
         'get_aquifer_sections' , 
-        'get_aquifers_sections', 
-        'get_unique_sections', 
+        'get_aquifer_section', 
+        'get_unique_section', 
         'get_compressed_vector', 
         'get_xs_xr_splits', 
-        'samples_reducing' , 
+        'reduce_samples' , 
         'get_sections_from_depth', 
         'check_flow_objectivity', 
         'naive_imputer', 
         'naive_scaler', 
         'select_feature_importances',
-        'make_naive_pipe'
-        
+        'make_naive_pipe', 
+        'make_MXS_labels', 
+        'predict_NGA_labels', 
+        'find_aquifer_groups', 
+        'find_similar_labels', 
+        'classify_k', 
         ]
 
 

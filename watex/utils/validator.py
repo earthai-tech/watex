@@ -229,6 +229,33 @@ def _deprecate_positional_args(func=None, *, version="1.3"):
 
     return _inner_deprecate_positional_args
 
+def to_dtype_str (arr, /, return_values = False ): 
+    """ Convert numeric or object dtype to string dtype. 
+    
+    This will avoid a particular TypeError when an array is filled by np.nan 
+    and at the same time contains string values. 
+    Converting the array to dtype str rather than keeping to 'object'
+    will pass this error. 
+    
+    :param arr: array-like
+        array with all numpy datatype or pandas dtypes
+    :param return_values: bool, default=False 
+        returns array values in string dtype. This might be usefull when a 
+        series with dtype equals to object or numeric is passed. 
+    :returns: array-like 
+        array-like with dtype str 
+        Note that if the dataframe or serie is passed, the object datatype 
+        will change only if `return_values` is set to ``True``, otherwise 
+        returns the same object. 
+    
+    """
+    if not hasattr (arr, '__array__'): 
+        raise TypeError (f"Expects an array, got: {type(arr).__name__!r}")
+    if return_values : 
+        if (hasattr(arr, 'name') or hasattr (arr,'columns')):
+            arr = arr.values 
+    return arr.astype (str ) 
+
 def _is_arraylike_1d (x) :
     """ Returns whether the input is arraylike one dimensional and not a scalar"""
     if not hasattr (x, '__array__'): 
