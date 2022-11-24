@@ -211,7 +211,7 @@ class BaseSteps(object):
     Examples
     ---------
 
-    ../datasets/config.py
+    ../datasets/_p.py
     
     """
     def __init__(

@@ -56,6 +56,9 @@ try :
     _BAG = loadDumpedOrSerializedData('watex/datasets/data/b.pkl') 
 except : 
     from ._p import ( 
+        _bagoue_data_preparer 
+        ) 
+    (
         _X,
         _y,
         _X0,
@@ -69,14 +72,23 @@ except :
         _df0,
         _df1,
         _BAGDATA
-        ) 
-    for k, v  in zip ( 
-                ['_X','_y','_X0','_y0','_XT','_yT','_Xc','_Xp','_yp','_pipeline',
-                 '_df0','_df1','_BAGDATA'], 
-                [ _X, _y, _X0, _y0,_XT,_yT,_Xc,_Xp, _yp, _pipeline,
-                 _df0,_df1,_BAGDATA] 
-            ) : 
-            _BAG[k] = v 
+    ) = list(_bagoue_data_preparer())[0]
+
+    _BAG =  {
+        '_X':_X,
+        '_y':_y,
+        '_X0':_X0,
+        '_y0':_y0,
+        '_XT':_XT,
+        '_yT':_yT,
+        '_Xc':_Xc,
+        '_Xp':_Xp,
+        '_yp':_yp,
+        '_pipeline':_pipeline,
+        '_df0':_df0,
+        '_df1':_df1,
+        '_BAGDATA':_BAGDATA
+            }
             
 _BVAL= dict (
     origin= {
@@ -167,7 +179,7 @@ def loadingdefaultSerializedData (f, d0, dtype ='test'):
         Dumped or Serialized default data 
     :param d0: tuple 
         Return default returns wich is the data from config 
-        <./datasets/config.py > 
+        <./datasets/_config.py > 
     :param dtype:str 
         Type of data to retreive.
     """
@@ -235,34 +247,6 @@ Returns
     
 """
 
-def _import_anyway (d, / ) :
-    """ Use the default importation which compute inplace each parameter 
-    and set param to the dict """
-    from ._p import ( 
-        _X,
-        _y,
-        _X0,
-        _y0,
-        _XT,
-        _yT,
-        _Xc,
-        _Xp,
-        _yp,
-        _pipeline,
-        _df0,
-        _df1,
-        _BAGDATA
-        ) 
-    for key , value  in zip ( ['_X','_y','_X0','_y0','_XT','_yT','_Xc',
-                                '_Xp','_yp','_pipeline','_df0','_df1','_BAGDATA'], 
-                            [  _X, _y, _X0, _y0,_XT,_yT,_Xc,_Xp, _yp, _pipeline,
-                             _df0,_df1,_BAGDATA]  ) : 
-            
-            d[key] = value 
-    
-    return d 
-    
-    
     
     
     

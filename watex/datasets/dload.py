@@ -14,7 +14,7 @@ Created on Thu Oct 13 16:26:47 2022
 from warnings import warn 
 from importlib import resources 
 import pandas as pd 
-from .._docstring import erp_doc , ves_doc 
+from .._docstring import erp_doc, ves_doc 
 from ._io import csv_data_loader, _to_dataframe , DMODULE 
 from ..utils.coreutils import vesSelector, erpSelector 
 from ..utils.mlutils import split_train_test_by_id , existfeatures
@@ -97,7 +97,7 @@ def load_gbalo (
     
     if kind not in ("erp", "ves"): 
         warn (f"{kind!r} is unknow! By default DC-Resistivity"
-              " profiling is returned.")
+              " profiling data is returned.")
         kind="erp"
     data_file = f"dc{kind}_gbalo.csv" 
     with resources.path (DMODULE , data_file) as p : 
@@ -204,7 +204,7 @@ The array configuration is schlumberger and the max depth investigation is
 collected is 45 while the sounding points is estimated to 33.
 `station` , `easting` and `northing` are in meters and `rho` columns are 
 in ohm.meters as apparent resistivity values. Furthermore, the total number of 
-sounding performed with the prefix '`SE`' in 4. 
+soundings performed with the prefix '`SE`' is 4. 
 
 .. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
 
@@ -212,8 +212,7 @@ sounding performed with the prefix '`SE`' in 4.
 def load_hlogs (
         *,  return_X_y=False, as_frame =False, key =None,  split_X_y=False, 
         test_size =.3 , tag =None, tnames = None , data_names=None , **kws): 
-    """ Load logging data collected from boreholes """
-    
+
     cf = as_frame 
     key = key or 'h502' 
     # assertion error if key does not exist. 
@@ -286,9 +285,11 @@ def load_hlogs (
         data_module=DMODULE,
     )
 
-load_hlogs.__doc__="""\
-Load and return the hydro-logging dataset. Dataset contained multi-target 
-than can be used for a classification or regression problem.
+load_hlogs.__doc__=r"""\
+Load and return the hydro-logging dataset.
+
+Dataset contains multi-target and can be used for a classification or 
+regression problem.
 
 Parameters
 ----------
@@ -350,7 +351,8 @@ data : :class:`~watex.utils.Boxspace`
     (n_samples,) containing the target samples.
     .. versionadded:: 0.1
 (X, Xt, y, yt): Tuple if ``split_X_y`` is True 
-    A tuple of two ndarray (X, Xt). The first containing a 2D array of::
+    A tuple of two ndarray (X, Xt). The first containing a 2D array of:
+        
         .. math:: 
             
         shape (X, y) =  1-  \text{test_ratio} * (n_{samples}, n_{features}) *100
@@ -435,7 +437,7 @@ def load_bagoue(
         data_module=DMODULE,
     )
 
-load_bagoue.__doc__="""\
+load_bagoue.__doc__=r"""\
 Load and return the Bagoue dataset (classification).
 The Bagoue dataset is a classic and very easy multi-class classification
 dataset.
@@ -445,14 +447,14 @@ Parameters
 return_X_y : bool, default=False
     If True, returns ``(data, target)`` instead of a BowlSpace object. See
     below for more information about the `data` and `target` object.
-    .. versionadded:: 0.18
+    .. versionadded:: 0.1.2
 as_frame : bool, default=False
     If True, the data is a pandas DataFrame including columns with
     appropriate dtypes (numeric). The target is
     a pandas DataFrame or Series depending on the number of target columns.
     If `return_X_y` is True, then (`data`, `target`) will be pandas
     DataFrames or Series as described below.
-    .. versionadded:: 0.23
+    .. versionadded:: 0.1.1
 split_X_y=False,
     If True, the data is splitted to hold the training set (X, y)  and the 
     testing set (Xt, yt) with the according to the test size ratio.  
@@ -481,20 +483,20 @@ data : :class:`~watex.utils.Boxspace`
     frame: DataFrame of shape (150, 5)
         Only present when `as_frame=True`. DataFrame with `data` and
         `target`.
-        .. versionadded:: 0.23
+        .. versionadded:: 0.1.2
     DESCR: str
         The full description of the dataset.
     filename: str
         The path to the location of the data.
-        .. versionadded:: 0.20
+        .. versionadded:: 0.1.2
 (data, target) : tuple if ``return_X_y`` is True
     A tuple of two ndarray. The first containing a 2D array of shape
     (n_samples, n_features) with each row representing one sample and
     each column representing the features. The second ndarray of shape
     (n_samples,) containing the target samples.
-    .. versionadded:: 0.18
+    .. versionadded:: 0.1.2
 (X, Xt, y, yt): Tuple if ``split_X_y`` is True 
-    A tuple of two ndarray (X, Xt). The first containing a 2D array of::
+    A tuple of two ndarray (X, Xt). The first containing a 2D array of:
         
         .. math:: 
             
@@ -606,7 +608,7 @@ data : :class:`~watex.utils.Boxspace`
     (n_samples, n_features) with each row representing one sample and
     each column representing the features. The second ndarray of shape
     (n_samples,) containing the target samples.
-    .. versionadded:: 0.18
+    .. versionadded:: 0.1.2
     
 Notes
 -----

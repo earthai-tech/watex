@@ -159,9 +159,11 @@ def to_numeric_dtypes (
         [ df.pop(item) for item in cf ] 
         if verbose: 
             msg ="Dataframe does not contain any categorial features."
-            endmsg = "have been successfully removed from dataFrame."
+            b= f"Feature{'s' if len(cf)>1 else ''}"
+            e = (f"{'have' if len(cf) >1 else 'has'} been successfully "
+                 "removed from dataFrame.")
             print(msg) if len(cf)==0 else listing_items_format (
-                cf , 'Features', endmsg ,lstyle ='.', inline=True)
+                cf , b, e ,lstyle ='.', inline=True)
             
         return df 
     

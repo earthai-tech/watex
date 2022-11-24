@@ -11,6 +11,17 @@ from remote (repository or zenodo record )
 from warnings import warn 
 
 fi=False
+
+_DTAGS=(
+    "bagoue" , 
+    "gbalo", 
+    "iris", 
+    "semien", 
+    "tankesse", 
+    "boundiali",
+    "hlogs"
+    )
+
 try:
     from .dload import (
         load_bagoue , 
@@ -25,14 +36,9 @@ try:
         from ._config import _fetch_data
     except : 
         warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
-             " instead.")
+              " instead.")
     else: fi=True 
     
-    __all__=["fetch_data", "load_bagoue" , "load_gbalo", 
-             "load_iris", "load_semien", "load_tankesse", 
-             "load_boundiali", "load_hlogs"
-             ]
-
 except ImportError : 
     from .._watexlog import watexlog
     
@@ -43,8 +49,20 @@ except ImportError :
             )
     watexlog().get_watex_logger(__name__).debug(m); warn(m, UserWarning)
 
+__all__=[ 
+         "load_bagoue" ,
+         "load_gbalo", 
+         "load_iris", 
+         "load_semien", 
+         "load_tankesse", 
+         "load_boundiali",
+         "load_hlogs", 
+         "fetch_data",
+         "DATASET"
+         ]
 
 def fetch_data (tag, **kws): 
+    tag = _parse_tags(tag, multi_kind_dataset='bagoue')
     func= _fetch_data if fi else None 
     funcs= (load_bagoue , load_gbalo, load_iris, load_semien, load_tankesse , 
             load_boundiali, load_hlogs) 
@@ -129,15 +147,60 @@ Examples
 
 """    
 
+def _parse_tags (tag, multi_kind_dataset ='bagoue'): 
+    """ Parse and sanitize tag to match the different type of datasets.
+    
+    In principle, only the 'Bagoue' datasets is allowed to contain a tag 
+    composed of two words i.e. 'Bagoue' + '<kind_of_data>'. For instance 
+    ``bagoue pipe`` fetchs only the pipeline used for Bagoue case study  
+    data preprocessing and so on. 
+    However , for other type of dataset, it a second word <kind_of_data> is 
+    passed, it should merely discarded. 
+    """ 
+    tag = str(tag);  t = tag.strip().split() 
+    if len(t) ==1 : 
+        if t[0] not in _DTAGS: 
+            tag = multi_kind_dataset +' ' + t[0]
+            
+            warn("Fetching data without explicitly specify the "
+                 "type of data will raise an error. In future, "
+                 f"the argument should be '{tag}' instead.", 
+                 FutureWarning 
+                 )
+    elif len(t) >1 : 
+        # only the multi kind dataset is allowed 
+        # to contain two words for fetching data 
+        if t[0] !=multi_kind_dataset: 
+            tag = t[0] # skip the second word 
+    return tag 
 
+from ..utils.funcutils import listing_items_format
 
+_l=[ "{:<7}: {:<7}()".format(s.upper() , 'load_'+s ) for s in _DTAGS ] 
+_LST = listing_items_format(
+    _l, 
+    "Fetch data using 'load_<type_of_data|area_name>'like", 
+    " or using ufunc 'fetch_data (<type_of_data|area_name>)'.",
+    inline=True , verbose= False, 
+)
 
-
+_DDOC="""\
+WATex dataset is composed of differents types for software implementation. 
+    - ERP data found in 'gbalo', 'boundiali' localities in northern part of 
+        Cote d'Ivoire <'https://en.wikipedia.org/wiki/Ivory_Coast'>'
+    - VES data collected in 'gbalo', 'semien', 'tankesse' in center and 
+        eastearn part of Cote d'Ivoire'.
+    - FLOW RATE FEATURES data computed from Bagoue ERP and VES data. 
+        Refer to paper :doi:`https://doi.org/10.1029/2021wr031623`. 
+    - COMMON MACHINE LEARNING popular data sets such IRIS. 
+"""
     
-    
-    
-    
-    
+DATASET= type ("DATASET", (), {"KIND": _DTAGS, 
+                               "HOW":_LST, 
+                               "DOC":_DDOC, 
+                               }
+)
+ 
     
     
     

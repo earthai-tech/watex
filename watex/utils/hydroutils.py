@@ -180,7 +180,7 @@ def make_MXS_labels (
             mxs_group_labels_= list of the similar groups found in the 
                 predicted NGA that have a similarity in true labels 'y_true'
                 
-    Returns 
+    Return 
     ---------
     MXS: array-like 1d or :class:`~watex.utils.box.Boxspace`
         array like of MXS labels or MXS object containing the 
@@ -245,7 +245,6 @@ def make_MXS_labels (
             prefix,  
             CONTEXT_MSG   
         )
-
     # # save the not_nan indices to not 
     # # altered the k-valid values 
     not_nan_indices,  = np.where ( ~np.isnan (y_true) )
@@ -282,7 +281,7 @@ def make_MXS_labels (
 
 def predict_NGA_labels( 
         X, / , n_clusters , random_state =0 , keep_label_0 = False,
-        **kws 
+        return_cluster_centers =False, **kws 
         ): 
     """
     Predict the Naive Group of Aquifer (NGA) labels. 
@@ -315,23 +314,29 @@ def predict_NGA_labels(
         `+1` is used to move forward all class labels thereby excluding 
         the '0' label. To force include 0 in the label, set `keep_label_0` 
         to ``True``. 
-        
-     kws: dict, 
-         Additional keyword arguments passed to :class:`sklearn.clusters.KMeans`.
+    
+    return_cluster_centers: bool, default=False, 
+        export the array of clusters centers if ``True``. 
+    kws: dict, 
+        Additional keyword arguments passed to :class:`sklearn.clusters.KMeans`.
          
     Returns 
     ---------
-    nga: array_like of  shape (n_samples, n_features)
-        predicte NGA labels. 
-        
+    NGA: array_like of  shape (n_samples, n_features)
+        Predicted NGA labels. 
+    ( NGA , cluster_centers) : Tuple of array-like, 
+       MGA and clusters centers if ``return_cluster_centers` is 
+       set to ``True``. 
     """
-    NGA = KMeans(n_clusters= n_clusters, random_state = random_state , 
-                  **kws).fit_predict(X)
+    ko= KMeans(n_clusters= n_clusters, random_state = random_state , 
+                  init="random", **kws
+                  )
+    NGA=ko.fit_predict(X)
     if not keep_label_0:
         if 0 in list(np.unique (NGA)):
             NGA +=1 
             
-    return NGA 
+    return ( NGA , ko.cluster_centers_ ) if return_cluster_centers else NGA 
 
 
 def find_aquifer_groups (
@@ -566,7 +571,6 @@ def compute_representativity ( label, arr_k , arr_aq  ):
     
     return label_dict_group_rate 
 
-
 def find_similar_labels ( 
     y_true, 
     y_pred,  
@@ -718,8 +722,7 @@ def _similarity_rules (lg,  threshold =.5 ):
     for k , g in lg:
         if g.get (list(g)[0]) >= threshold : 
             yield (k, g )
-    
-    
+      
 def _get_y_from_valid_indexes (
         y_true, y_pred =None , *,  include_label_0 = False , replace_nan = False ): 
     """From valid indices in true labels 'y_true', get the valid 
@@ -796,8 +799,7 @@ def label_score (y_true , y_pred , metric =accuracy_score, ):
         scores[label] = score  
         
     return scores 
-
-    
+ 
 def select_base_stratum (
     d: Series | ArrayLike | DataFrame , 
     /, 
@@ -1473,7 +1475,7 @@ def reduce_samples (
     msg = ("'Soft' mode is triggered for samples reducing."
            " {0} number{1} of data passed are not valid."
            " Remember that data must contain the 'depth' and"
-           " aquifer  values. Should be discarded during the"
+           " aquifer values. Should be discarded during the"
            " computing of aquifer sections. This might lead to"
            " breaking code or invalid results. Use at your own "
            " risk." 
@@ -1648,11 +1650,12 @@ Example
     data.copy(), sname='strata_name', data, zname='depth', kname='k', 
     ignore_index= True )[0]
 ... dfnew[0].index # index is reset 
-.. RangeIndex(start=0, stop=16, step=1)
+... RangeIndex(start=0, stop=16, step=1)
 
 """.format(
     params=_param_docs,
     )
+                                  
 def _concat_compressed_xs_xr (
         xs_indexes:List[int], 
         xr_indexes: List[int], 

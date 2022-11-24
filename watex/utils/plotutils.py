@@ -408,7 +408,7 @@ def plot_logging (
     plt.close () if savefig is not None else plt.show() 
     
 
-def plot_silhouette (X, labels, metric ='euclidean', **kwds ):
+def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
     r"""Plot quantifying the quality  of clustering silhouette 
     
     Parameters 
@@ -426,7 +426,11 @@ def plot_silhouette (X, labels, metric ='euclidean', **kwds ):
         allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
         If ``X`` is the distance array itself, use "precomputed" as the metric.
         Precomputed distance matrices must have 0 along the diagonal.
-
+        
+    savefig: str, default =None , 
+        the path to save the figure. Argument is passed to 
+        :class:`matplotlib.Figure` class. 
+        
     **kwds : optional keyword parameters
         Any further parameters are passed directly to the distance function.
         If using a ``scipy.spatial.distance`` metric, the parameters are still
@@ -486,7 +490,11 @@ def plot_silhouette (X, labels, metric ='euclidean', **kwds ):
     plt.xlabel ("Silhouette coefficient")
     plt.tight_layout()
 
-    plt.show() 
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
 
 def plot_sbs_feature_selection (
         sbs_estimator,/,  X=None, y=None ,fig_size=(8, 5), 
@@ -697,7 +705,10 @@ def plot_regularization_path (
             ncol = 1 , fancybox =True 
     )
     
-    plt.show() 
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
     
     
 def plot_rf_feature_importances (
@@ -789,6 +800,8 @@ def plot_rf_feature_importances (
     
     if savefig is not None:
         plt.savefig(savefig )
+
+    plt.close () if savefig is not None else plt.show() 
     
         
 def plot_confusion_matrix (yt, ypred, view =True, ax=None, annot=True, **kws ):
@@ -901,14 +914,18 @@ def plot_yb_confusion_matrix (
 
     if savefig is not None: 
         fig.savefig(savefig, dpi =300)
-        
+
+    plt.close () if savefig is not None else plt.show() 
+    
     return cmo 
 
 def plot_confusion_matrices (
         clfs, 
         Xt, yt,  
         annot =True, pkg=None, verbose = 0 , 
-        fig_size = (22, 6), subplot_kws=None, 
+        fig_size = (22, 6),
+        savefig =None, 
+        subplot_kws=None, 
     ):
     """ 
     Plot inline multiple model confusion matrices using either the sckitlearn 
@@ -997,6 +1014,11 @@ def plot_confusion_matrices (
         elif pkg in ('yellowbrick', 'yb'):
             plot_yb_confusion_matrix(model, Xt, yt, ax=axes[kk])
     
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
     return scores  
 
 def plot_learning_curves(
@@ -1010,9 +1032,10 @@ def plot_learning_curves(
     convergence_line =True, 
     fig_size=(20, 6),
     sns_style =None, 
+    savefig=None, 
     subplot_kws=None,
     **kws
-       ): 
+    ): 
     """ 
     Horizontally visualization of multiple models learning curves. 
     
@@ -1168,8 +1191,18 @@ def plot_learning_curves(
     ax = list(axes)[0]
     ax.set_ylabel("score")
     
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
         
-def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws): 
+    plt.close () if savefig is not None else plt.show() 
+        
+def plot_naive_dendrogram (
+        X, 
+        *ybounds, 
+        fig_size = (12, 5 ), 
+        savefig=None,  
+        **kws
+        ): 
     """ Quick plot dendrogram using the ward clustering function from Scipy.
     
     :param X: ndarray of shape (n_samples, n_features) 
@@ -1245,9 +1278,14 @@ def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws):
     plt.xlabel ("Sample index ")
     plt.ylabel ("Cluster distance")
             
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
     
 def plot_pca_components (
-        components, *, feature_names = None , cmap= 'viridis' , **kws
+        components, *, feature_names = None , cmap= 'viridis' , 
+        savefig=None, **kws
         ): 
     """ Visualize the coefficient of principal component analysis (PCA) as 
     a heatmap  
@@ -1312,9 +1350,14 @@ def plot_pca_components (
     plt.xlabel ("Feature") 
     plt.ylabel ("Principal components") 
     
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
         
 def plot_clusters (
-        n_clusters, X, ypred, cluster_centers =None 
+        n_clusters, X, ypred, cluster_centers =None , savefig =None, 
         ): 
     """ Visualize the cluster that k-means identified in the dataset 
     
@@ -1358,7 +1401,7 @@ def plot_clusters (
                      X[ypred ==n , 1],  
                      s= 50 , c= colors [n ], 
                      marker=markers [n], 
-                     edgecolors='black', 
+                     edgecolors=None if markers [n] =='x' else 'black', 
                      label = f'Cluster {n +1}'
                      ) 
     if cluster_centers is not None: 
@@ -1372,7 +1415,11 @@ def plot_clusters (
     plt.legend (scatterpoints =1 ) 
     plt.grid() 
     plt.tight_layout() 
-    plt.show()
+    
+    if savefig is not None:
+         savefigure(savefig, savefig )
+    plt.close () if savefig is not None else plt.show() 
+    
     
 def plot_elbow (
         X,  n_clusters , n_init = 10 , max_iter = 300 , random_state=42 ,
@@ -1448,7 +1495,7 @@ def plot_elbow (
             
     ax = _plot_elbow (distorsions, n_clusters =n_clusters,fig_size = fig_size ,
                       marker =marker , savefig =savefig, **kwd) 
-    
+
     return ax 
     
 def _plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
@@ -1551,7 +1598,7 @@ def plot_cost_vs_epochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     
     return ax 
 
-def plot_mlxtend_heatmap (df, columns =None, **kws): 
+def plot_mlxtend_heatmap (df, columns =None, savefig=None,  **kws): 
     """ Plot correlation matrix array  as a heat map 
     
     :param df: dataframe pandas  
@@ -1565,11 +1612,15 @@ def plot_mlxtend_heatmap (df, columns =None, **kws):
     import_optional_dependency('mlxtend')
     cm = np.corrcoef(df[columns]. values.T)
     ax= heatmap(cm, row_names = columns , column_names = columns, **kws )
-    plt.show () 
+    
+    if savefig is not None:
+         savefigure(savefig, savefig )
+    plt.close () if savefig is not None else plt.show() 
     
     return ax 
 
-def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
+def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ),
+                        alpha =.5, savefig=None  ):
     """ Visualize the pair wise correlation between the different features in  
     the dataset in one place. 
     
@@ -1606,7 +1657,9 @@ def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
         )
     plt.tight_layout()
 
-    plt.show () 
+    if savefig is not None:
+         savefigure(savefig, savefig )
+    plt.close () if savefig is not None else plt.show() 
     
     return ax 
 

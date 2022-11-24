@@ -70,53 +70,26 @@ from .gistools import (
     HAS_GDAL, 
     )
 from .validator import  (
-    _is_valid_ves 
+    _is_valid_ves , 
+    _is_arraylike_1d, 
+    _check_consistency_size
     )
 _logger = watexlog.get_watex_logger(__name__)
 
 
-def _is_readable (
-        f:str, 
-        **kws
- ) -> DataFrame: 
-    """ Assert and read specific files and url allowed by the package
-    
-    Readable files are systematically convert to a frame.  
-    
-    :param f: Path-like object -Should be a readable files or url  
-    :param kws: Pandas readableformats additional keywords arguments. 
-    :return: dataframe - A dataframe with head contents... 
-    
-    """
-    cpObj= Config().parsers 
-    
-    if isinstance (f, pd.DataFrame): 
-        return f 
-    
-    elif not os.path.isfile :# or ('http' not in f) : 
-        try : 
-            if 'http' in f: # force pandas read html etc 
-                pass 
-        except:
-            raise TypeError (
-            f'Expected a Path-like object or url, got : {type(f).__name__!r}')
-        
-    _, ex = os.path.splitext(f.strip()) 
-    if ex.lower() not in tuple (cpObj.keys()):
-        raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
-                        )
-    try : 
-        f = cpObj[ex](f, **kws)
-        
-    except FileNotFoundError:
-        raise FileNotFoundError (
-            f"No such file in directory: {os.path.basename (f)!r}")
-    except: 
-        raise FileHandlingError (
-            f" Can not parse the file : {os.path.basename (f)!r}")
-
-    return f 
-    
+__all__=[
+    "vesSelector", 
+    "erpSelector", 
+    "fill_coordinates", 
+    "plotAnomaly", 
+    "makeCoords", 
+    "parseDCArgs", 
+    "defineConductiveZone", 
+    "read_data", 
+    "_is_readable", 
+    "is_erp_series", 
+    "is_erp_dataframe"
+    ]
 
 @refAppender(refglossary.__doc__)
 def vesSelector( 
@@ -203,80 +176,41 @@ def vesSelector(
             1   2  0.4          582
             2   3  0.4          558
     """
+    err =VESError("Data validation aborted! Current electrodes values"
+        " are missing. Specify the deep measurement AB/2")
     
-    for arr in (AB , MN, rhoa): 
+    for arr, arr_name in zip ((AB , rhoa), ("AB", "Resistivity")): 
         if arr is not None: 
-            _assert_all_types(arr, list, tuple, np.ndarray, pd.Series) 
-            
-    try: 
-        index_rhoa =  index_rhoa if index_rhoa is None else int(index_rhoa) 
-    except: 
-        raise TypeError (
-            f'Index is an integer, not {type(index_rhoa).__name__!r}')
-        
+            if isinstance(arr, (list, tuple)): 
+                arr=np.array(arr)
+            if not _is_arraylike_1d(arr): 
+                raise VESError(
+                    f"{arr_name!r} should be a one-dimensional array.")
+                
+    index_rhoa =  0 if index_rhoa is None else index_rhoa 
+    index_rhoa = int (_assert_all_types(
+        index_rhoa, int, objname ="Resistivity column index"))
     if data is not None: 
-        if isinstance(data, (str,  pathlib.PurePath)): 
-            try : 
-                data = _is_readable(data, **kws)
-            except TypeError as typError: 
-                raise VESError (str(typError))
- 
-        data = _assert_all_types(data, pd.DataFrame )
-  
-        # sanitize the dataframe 
-        pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
-        if ncols is None:
-            raise HeaderError (f"Columns {smft(pObj.icpr)} are missing in "
-                               "the given dataset.")
-        if not _is_valid_ves( data): 
-            raise VESError("Invalid VES data. Data must contain at least"
-                           " 'resistivity' and 'AB/2' position." )
-        data.columns = ncols 
-        try : 
-            rhoa= data.resistivity 
-        except : 
-            raise ResistivityError(
-                "Data validation aborted! Missing resistivity values.")
-        else : 
-            # In the case, we got a multiple resistivity values 
-            # corresponding to the different sounding values 
-            if rhoa.ndim > 1 :
-                if index_rhoa is None: 
-                    index_rhoa = 0 
-                elif (index_rhoa  >= len(rhoa.columns)) or index_rhoa <0 : 
-                    warnings.warn(f'The index `{index_rhoa}` is out of the range' 
-                                  f'`{len(rhoa.columns)-1}` for selecting the'
-                                  ' specific resistivity data. By default, we '
-                                  'only keep the data at the index 0.'
-                        )
-                    index_rhoa= 0 
-                    
-            rhoa = rhoa.iloc[:, index_rhoa] if rhoa.ndim > 1 else rhoa 
-            
-        if 'MN' in data.columns: 
-            MN = data.MN 
-        try: 
-            AB= data.AB 
-        except: 
-            raise VESError("Data validation aborted! Current electrodes values"
-                " are missing. Specify the deep measurement!")
-            
+        rhoa, AB, MN  =_validate_ves_data_if(data, index_rhoa, err, **kws)
+    
     if rhoa is None: 
         raise ResistivityError(
             "Data validation aborted! Missing resistivity values.")
+        
     if AB is None: 
-        raise VESError("Data validation aborted! Current electrodes values"
-            " are missing. Specify the deep measurement!")
+        raise err
 
     AB = np.array(AB) ; MN = np.array(MN) ; rhoa = np.array(rhoa) 
     
-    if len(AB) !=len(rhoa): 
-        raise VESError(" Deep measurement from the current electrodes `AB` and"
-                       " the resistiviy values `rhoa` must have the same length"
-                       f'. But `{len(AB)}` and `{len(rhoa)}` were given.')
+    if not _check_consistency_size(AB, rhoa, error ='ignore'): 
+        raise VESError(
+            " Deep measurement size `AB` ( current electrodes ) "
+            " and the resistiviy values `rhoa` must be consistent."
+            f" '{len(AB)}' and '{len(rhoa)}' were given."
+                       )
         
     sdata =pd.DataFrame(
-        {'AB': AB, 'MN': MN, 'resistivity':rhoa},index =range(len(AB)))
+        {'AB': AB, 'MN': MN, 'resistivity':rhoa},index =range(len(rhoa)))
     
     return sdata
  
@@ -902,7 +836,6 @@ def _fetch_prefix_index (
                           f' `{smft(prefixs)}`.')
  
     return colIndex[0], arr 
-
 
 def _assert_station_positions(
     arr: SP = None,
@@ -1777,12 +1710,134 @@ def parseDCArgs(fn :str ,
 
 
 def read_data (
+        f:str | pathlib.PurePath, 
+        **read_kws
+ ) -> DataFrame: 
+    """ Assert and read specific files and url allowed by the package
+    
+    Readable files are systematically convert to a pandas dataframe frame.  
+    
+    Parameters 
+    -----------
+    f : str, Path-like object 
+        File path or Pathlib object. Must contain a valid file name  and 
+        should be a readable file or url    
+    read_kws: dict, 
+        Additional keywords arguments passed to pandas readable file keywords. 
+        
+    Returns 
+    -------
+    f: :class:`pandas.DataFrame` 
+        A dataframe with head contents by default.  
+    """
+    cpObj= Config().parsers 
+    
+    if isinstance (f, pd.DataFrame): 
+        return f 
+    f= _check_readable_file(f)
+    _, ex = os.path.splitext(f) 
+    if ex.lower() not in tuple (cpObj.keys()):
+        raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
+                        )
+    try : 
+        f = cpObj[ex](f, **read_kws)
+    except FileNotFoundError:
+        raise FileNotFoundError (
+            f"No such file in directory: {os.path.basename (f)!r}")
+    except: 
+        raise FileHandlingError (
+            f" Can not parse the file : {os.path.basename (f)!r}")
+
+    return f 
+    
+def _check_readable_file (f): 
+    """ Return file name from path objects """
+    msg =("Expects a Path-like object or URL, got: {type(f).__name__!r} ")
+    if not os.path.isfile (f): # force pandas read html etc 
+        if not ('http://'  in f or 'https://' in f ):  
+            raise TypeError (msg)
+    elif not isinstance (f,  (str , pathlib.PurePath)): 
+         raise TypeError (msg)
+    if isinstance(f, str): f =f.strip() # for consistency 
+    return f 
+
+def _validate_ves_data_if(data, index_rhoa , err , **kws): 
+    """ Validate VES data if data is given as a Path-like object and 
+    returns AB/2 position, MN if exists and resistivity data. 
+    
+    :param data: str, path-like object 
+        litteral path string or PathLib object 
+    :param index_rhoa: int, 
+        Index to retreive the resistivity data is the number of sounding 
+        point are greater than 1 
+    :param err: :class:`~watex.exceptions.VESError`
+        VESerror messages 
+    :returns: 
+        - rhoa: resistivity data 
+        - AB : current electodes measurement values 
+        - MN: potential electrodes measurement if exists in the data file. 
+        
+    """
+    if isinstance(data, (str,  pathlib.PurePath)): 
+        try : 
+            data = _is_readable(data, **kws)
+        except TypeError as typError: 
+            raise VESError (str(typError))
+
+    data = _assert_all_types(data, pd.DataFrame )
+
+    # sanitize the dataframe 
+    pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
+    if ncols is None:
+        raise HeaderError (f"Columns {smft(pObj.icpr)} are missing in "
+                           "the given dataset.")
+    data.columns = ncols 
+    if not _is_valid_ves( data): 
+        raise VESError("Invalid VES data. Data must contain at least"
+                       " 'resistivity' and 'AB/2' position." )
+    try : 
+        rhoa= data.resistivity 
+    except : 
+        raise ResistivityError(
+            "Data validation aborted! Missing resistivity values.")
+    else : 
+        # In the case, we got a multiple resistivity values 
+        # corresponding to the different sounding values 
+        index_rhoa = index_rhoa or 0 
+        if ( not _is_arraylike_1d( rhoa) 
+             and (
+                 index_rhoa >= rhoa.shape[1]
+                  or index_rhoa < 0 
+                  ) 
+            ): 
+            warnings.warn(f"The index {index_rhoa} is out of the range." 
+                          f" '{len(rhoa.columns)-1}' is max index for "
+                          "selecting the specific resistivity data. "
+                          "However, the resistivity data at index 0 is "
+                          " kept by default."
+                )
+            index_rhoa= 0 
+                
+        rhoa = rhoa.iloc[:, index_rhoa] if not _is_arraylike_1d(
+            rhoa) else rhoa 
+        
+    if 'MN' in data.columns: 
+        MN = data.MN 
+    try: 
+        AB= data.AB 
+    except: 
+        raise err
+    
+    return rhoa, AB, MN 
+
+
+def _is_readable (
         f:str, 
         **kws
  ) -> DataFrame: 
     """ Assert and read specific files and url allowed by the package
     
-    Readable files are systematically convert to a frame.  
+    Readable files are systematically convert to a pandas frame.  
     
     :param f: Path-like object -Should be a readable files or url  
     :param kws: Pandas readableformats additional keywords arguments. 
@@ -1793,22 +1848,13 @@ def read_data (
     
     if isinstance (f, pd.DataFrame): 
         return f 
-    
-    elif not os.path.isfile :# or ('http' not in f) : 
-        try : 
-            if 'http' in f: # force pandas read html etc 
-                pass 
-        except:
-            raise TypeError (
-            f'Expected a Path-like object or url, got : {type(f).__name__!r}')
-        
-    _, ex = os.path.splitext(f.strip()) 
+    f= _check_readable_file(f)
+    _, ex = os.path.splitext(f) 
     if ex.lower() not in tuple (cpObj.keys()):
         raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
                         )
     try : 
         f = cpObj[ex](f, **kws)
-        
     except FileNotFoundError:
         raise FileNotFoundError (
             f"No such file in directory: {os.path.basename (f)!r}")
@@ -1818,10 +1864,6 @@ def read_data (
 
     return f 
     
-
-
-
-
 
 
 
