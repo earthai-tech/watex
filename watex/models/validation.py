@@ -35,6 +35,16 @@ from .._typing import (
     DataFrame, 
     Series,
     )
+from ..exceptions import EstimatorError 
+from ..utils.funcutils import ( 
+    get_params, 
+    _assert_all_types 
+    )
+from ..utils.validator import ( 
+    check_X_y, 
+    check_consistent_length, 
+    get_estimator_name
+    )
 
 __logger = watexlog().get_watex_logger(__name__)
 
@@ -140,6 +150,13 @@ def get_best_kPCA_params(
     
     return gridObj.best_params_
 
+def get_scorers (): 
+    """ Fetch the list of available metrics from scikit-learn. This is prior 
+    necessary before  the model evaluation. 
+    """
+    from sklearn import metrics  
+    return tuple(metrics.SCORERS.keys()) 
+
 def multipleGridSearches(
         X: NDArray, 
         y:ArrayLike,
@@ -150,7 +167,7 @@ def multipleGridSearches(
         kindOfSearch:str ='GridSearchCV',
         random_state:int =42,
         save_to_joblib:bool =False,
-        get_metrics_SCORERS:bool =False, 
+        # get_metrics_SCORERS:bool =False, 
         verbose:int =0,
         **pkws
         )-> Tuple[F, F, Any]:
@@ -213,31 +230,35 @@ def multipleGridSearches(
     
     .../scripts/fine_tune_hyperparams.py
     """
-
-    if get_metrics_SCORERS: 
-        from sklearn import metrics 
-        if verbose >0: 
-            pprint(','.join([ k for k in metrics.SCORERS.keys()]))
+    err_msg = (" Each estimator must have its corresponding grip params."
+               " i.e estimators and grid param must have the same length."
+               " Please provide the appropriate arguments.")
+    # if get_metrics_SCORERS: 
+    #     from sklearn import metrics 
+    #     if verbose >0: 
+    #         pprint(','.join([ k for k in metrics.SCORERS.keys()]))
             
-        return tuple(metrics.SCORERS.keys())
+    #     return tuple(metrics.SCORERS.keys())
+    try: 
+        check_consistent_length(estimators, grid_params)
+    except ValueError as err : 
+        raise ValueError (str(err) +f". {err_msg}")
+    # if len(estimators)!=len(grid_params): 
+    #     warnings.warn('Estimators and grid parameters must have the same .'
+    #                   f'length. But {len(estimators)!r} and {len(grid_params)!r} '
+    #                   'were given.'
+    #                   )
+    #     raise ValueError('Estimator and the grid parameters for fine-tunning '
+    #                      'must have the same length. %s and %s are given.'
+    #                      %(len(estimators),len(grid_params)))
     
-    if len(estimators)!=len(grid_params): 
-        warnings.warn('Estimators and grid parameters must have the same .'
-                      f'length. But {len(estimators)!r} and {len(grid_params)!r} '
-                      'were given.'
-                      )
-        raise ValueError('Estimator and the grid parameters for fine-tunning '
-                         'must have the same length. %s and %s are given.'
-                         %(len(estimators),len(grid_params)))
-    
-    _clfs =list()
-    _dclfs=dict()
+    _clfs =list() ; _dclfs = dict() 
+    # _dclfs=dict()
     msg =''
-    pickfname= '__'.join([f'{b.__class__.__name__}' for b in estimators ])
+    pickfname= '__'.join([get_estimator_name(b) for b in estimators ])
     
-    for j , estm_ in enumerate(estimators):
-        
-        msg = f'{estm_.__class__.__name__} is evaluated.'
+    for j, estm_ in enumerate(estimators):
+        msg = f'{get_estimator_name(estm_)} is evaluated.'
         searchObj = GridSearch(base_estimator=estm_, 
                                   grid_params= grid_params[j], 
                                   cv = cv, 
@@ -389,55 +410,62 @@ class GridSearch:
     Search Grid will be able to  fiddle with the hyperparameters until to 
     find the great combination for model predictions. 
     
-    :param base_estimator: Estimator to be fined tuned hyperparameters
+    Parameters 
+    ------------
+    base_estimator: list of callable object  
+        Estimator to be fined tuned hyperparameters
     
-    :param grid_params: list of hyperparamters params  to be tuned 
+    grid_params: list of dict, 
+        list of hyperparamters params  to be fine-tuned 
     
-    :param cv: Cross validation sampling. Default is `4` 
+    cv: int, 
+        Cross validation sampling. Default is `4` 
     
-    :pram kind: Kind of search. Could be ``'GridSearchCV'`` or
+    kind: str, default ='GridSearchCV'
+        Kind of search. Could be ``'GridSearchCV'`` or
         ``RandomizedSearchCV``. Default is ``GridSearchCV``.
     
-    :param scoring: Type of score for errors evaluating. Default is 
-        ``neg_mean_squared_error``. 
-        
-    :Example: 
-        
-        >>> from pprint import pprint 
-        >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from watex.datasets import  X_prepared, y_prepared, 
-        >>> grid_params = [
-        ...        {'n_estimators':[3, 10, 30], 'max_features':[2, 4, 6, 8]}, 
-        ...        {'bootstrap':[False], 'n_estimators':[3, 10], 
-        ...                             'max_features':[2, 3, 4]}]
-        >>> forest_clf = RandomForestClassifier()
-        >>> grid_search = GridSearch(forest_clf, grid_params)
-        >>> grid_search.fit(X= X_prepared,
-        ...                    y =  y_prepared,)
-        >>> pprint(grid_search.best_params_ )
-        >>> pprint(grid_search.cv_results_)
-        
-    """
+    scoring: str, default ='neg_mean_squared_error'
+        Type of scorer for errors evaluating. 
     
-    __slots__=('_base_estimator',
-                'grid_params', 
-                'scoring',
-                'cv', 
-                '_kind', 
-                 'grid_kws',
-                'best_params_',
-                'best_estimator_',
-                'cv_results_',
-                'feature_importances_',
-                )
+    Example
+    -----------
+    >>> from pprint import pprint 
+    >>> from watex.exlib.sklearn import RandomForestClassifier
+    >>> from watex.datasets import fetch_data 
+    >>> X_prepared, y_prepared =fetch_data ('bagoue prepared')
+    >>> grid_params = [
+    ...        {'n_estimators':[3, 10, 30], 'max_features':[2, 4, 6, 8]}, 
+    ...        {'bootstrap':[False], 'n_estimators':[3, 10], 
+    ...                             'max_features':[2, 3, 4]}]
+    >>> forest_clf = RandomForestClassifier()
+    >>> grid_search = GridSearch(forest_clf, grid_params)
+    >>> grid_search.fit(X= X_prepared,y =  y_prepared,)
+    >>> pprint(grid_search.best_params_ )
+    >>> pprint(grid_search.cv_results_)
+    """
+    __slots__=(
+        '_base_estimator',
+        'grid_params', 
+        'scoring',
+        'cv', 
+        '_kind', 
+        'grid_kws', 
+        'best_params_',
+        'best_estimator_',
+        'cv_results_',
+        'feature_importances_',
+    )
                
-    def __init__(self,
-                 base_estimator:F,
-                 grid_params:Dict[str,Any],
-                 cv:int =4,
-                 kind:str ='GridSearchCV',
-                 scoring:str = 'neg_mean_squared_error',
-                 **grid_kws): 
+    def __init__(
+            self,
+            base_estimator:F,
+            grid_params:Dict[str,Any],
+            cv:int =4,
+            kind:str ='GridSearchCV',
+            scoring:str = 'neg_mean_squared_error',
+            **grid_kws
+            ): 
         
         self._base_estimator = base_estimator 
         self.grid_params = grid_params 
@@ -449,22 +477,23 @@ class GridSearch:
         self.cv_results_= None
         self.feature_importances_= None
         self.best_estimator_=None 
-    
-        if len(grid_kws)!=0: 
-            self.__setattr__('grid_kws', grid_kws)
-            
+        self.grid_kws = grid_kws 
+
     @property 
     def base_estimator (self): 
         """ Return the base estimator class"""
         return self._base_estimator 
     
     @base_estimator.setter 
-    def base_estimator (self, baseEstim): 
-        if not inspect.isclass(baseEstim) or\
-            type(self.estimator) != ABCMeta: 
-            raise TypeError(f"Expected an Estimator not {type(baseEstim)!r}")
-            
-        self._base_estimator =baseEstim 
+    def base_estimator (self, base_est): 
+        if not hasattr (base_est, 'fit'): 
+            raise EstimatorError(
+                f"Wrong estimator {get_estimator_name(base_est)!r}. Each"
+                " estimator must have a fit method. Refer to scikit-learn"
+                " https://scikit-learn.org/stable/modules/classes.html API"
+                " reference to build your own estimator.") 
+
+        self._base_estimator =base_est 
         
     @property 
     def kind(self): 
@@ -472,123 +501,74 @@ class GridSearch:
         return self._kind 
     
     @kind.setter 
-    def kind (self, typeOfsearch): 
+    def kind (self, ksearch): 
         """`kind attribute checker"""
-        if typeOfsearch ==1 or 'GridSearchCV'.lower(
-                ).find(typeOfsearch.lower())>=0: 
-            typeOfsearch = 'GridSearchCV'
+        if 'gridsearchcv1'.find( str(ksearch).lower())>=0: 
+            ksearch = 'GridSearchCV' 
+        elif 'randomizedsearchcv2'.find( str(ksearch).lower())>=0:
+            ksearch = 'RandomizedSearchCV'
             
-        if typeOfsearch ==2 or  'RandomizedSearchCV'.lower(
-                ).find(typeOfsearch.lower())>=0:
-            typeOfsearch = 'RandomizedSearchCV'
-    
-        else: 
-            raise ValueError('Expected %r or %r not %s.'
-                             %('gridSearchCV','RandomizedSearchCV', 
-                               typeOfsearch ))
-            
-        self._kind = typeOfsearch 
+        else: raise ValueError (
+            " Unkown the kind of parameter search {ksearch!r}."
+            " Supports only 'GridSearchCV' and 'RandomizedSearchCV'.")
+        self._kind = ksearch 
 
-    def fit(self,  X, y, **grid_kws): 
-        """ Fit method using base Estimator.
-        
-        Populate gridSearch attributes. 
-        
-        :param X: Train dataset 
-        :param y: Labels
-        :param grid_kws: Additional keywords arguments of Gird search.
-            keywords arguments must be the inner argunents of `GridSearchCV` or 
-            `RandomizedSearchCV`.
+    def fit(self,  X, y): 
+        """ Fit method using base Estimator and populate gridSearch 
+        attributes.
+ 
+        Parameters
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+
+        Returns
+        -------
+        ``self``: `GridSearch`
+            Returns :class:`~.GridSearchCV` 
+    
         """
-        
-        if hasattr(self, 'grid_kws'): 
-            grid_kws = getattr(self, 'grid_kws')
+        if callable (self.base_estimator): 
+            baseEstimatorObj = self.base_estimator () 
+            parameters = get_params (baseEstimatorObj.__init__)
             
-        if type(self.base_estimator) == ABCMeta :
-            
-            baseEstimatorObj = self.base_estimator()
-            # get the base estimators parameters values in case for logging 
-            # and users warnings except the `self`.
-            init_signature = inspect.signature(baseEstimatorObj.__init__)
-            
-            parameters = [p for p in init_signature.parameters.values()
-                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
-            
-            self._logging.info('%s estimator (type %s) could not be cloned. Need'
-                               ' to create an instance with default arguments '
-                               ' %r for cross validatation grid search.'
-                               %(repr(baseEstimatorObj.__class__),
-                                 repr(type(baseEstimatorObj)), parameters))
-            
-            warnings.warn('%s estimator (type %s) could not be cloned.'
-                          'Need to create an instance with default arguments '
-                          ' %r for cross validatation grid search.'
-                            %(repr(baseEstimatorObj.__class__),
-                            repr(type(baseEstimatorObj)), parameters), 
-                            UserWarning)
-        else : 
-            # suppose an instance is created before running the 
-            # `GridSearch` class. 
-            baseEstimatorObj  = self.base_estimator 
-        
+            if self.verbose >0: 
+                msg = ("Estimator {!r} is cloned with default arguments{!r}"
+                       " for cross validation search.".format(
+                           get_estimator_name (baseEstimatorObj), parameters)
+                       )
+                warnings.warn(msg)
+                
         if self.kind =='GridSearchCV': 
-            try: 
-                gridObj = GridSearchCV(baseEstimatorObj  , 
-                                        self.grid_params,
-                                        scoring = self.scoring , 
-                                        cv = self.cv,
-                                        **grid_kws)
-            except TypeError: 
-                warnings.warn('%s does not accept the param %r arguments.'
-                              %(GridSearchCV.__class__, grid_kws),
-                              RuntimeWarning)
-                __logger.error('Unacceptable params %r arguments'
-                                      % grid_kws)
+            searchMethod = GridSearchCV 
+        elif self.kind=='RandomizedSearchCV': 
+            searchMethod= RandomizedSearchCV 
             
-        elif self.kind =='RandomizedSearchCV':
-            try: 
-                gridObj = RandomizedSearchCV(baseEstimatorObj ,
-                                            self.grid_params,
-                                            scoring = self.scoring,
-                                            **grid_kws
-                                                     )
-            except TypeError:
-                warnings.warn('%s does not accept the param %r arguments.'
-                              %(RandomizedSearchCV.__class__, grid_kws),
-                              RuntimeWarning)
-                __logger.warnings('Unacceptable params %r arguments'
-                                      %self.grid_kws)
-        try : 
-            # fit gridSearchObject.
-            gridObj.fit(X,y)
-            
-        except TypeError : 
-  
-            init_signature = inspect.signature(baseEstimatorObj.__init__)
-            parameters = [p for p in init_signature.parameters.values()
-                          if p.name != 'self' ] 
-            
-            warnings.warn('sklearn.clone error. Cannot clone object %s.'
-                          'To avoid future warning, Create an instance of'
-                          'estimator and set the instance as %s arguments.' 
-                          %(repr(baseEstimatorObj ),type(baseEstimatorObj )),
-                          FutureWarning)
-            
-            __logger.warning("Trouble of clone estimator. Create an instance "
-                            " of estimator and set as %r base_estimator"
-                            " arguments before runing the {type(self)!r}"
-                            "class. Please create instance with %s params"
-                            "values."%(repr(type(baseEstimatorObj)), 
-                                       repr(parameters)))
-            
-            return self
+        gridObj = searchMethod(
+            baseEstimatorObj, 
+            self.grid_params,
+            scoring = self.scoring , 
+            cv = self.cv,
+            **self.grid_kws
+            )
+        gridObj.fit(X,y)
         
-        for param_ , param_value_ in zip(
+        for param , param_value in zip(
                 ['best_params_','best_estimator_','cv_results_'],
                 [gridObj.best_params_, gridObj.best_estimator_, 
                              gridObj.cv_results_ ]
                              ):
-            setattr(self, param_, param_value_)
+            setattr(self, param, param_value)
         try : 
             attr_value = gridObj.best_estimator_.feature_importances_
         except AttributeError: 
@@ -597,132 +577,126 @@ class GridSearch:
             setattr(self,'feature_importances_', None )
         else : 
             setattr(self,'feature_importances_', attr_value)
-            
-        #resetting the grid-kws attributes 
-        setattr(self, 'grid_kws', grid_kws)
-        
+ 
         return self
     
-class AttributeCkecker(ABC): 
-    """ Check attributes and inherits from module `abc` for Data validators. 
-    
-    Validate DataType mainly `X` train or test sets and `y` labels or
-    and any others params types.
-    
-    """
-    
-    def __set_name__(self, owner, name): 
-        try: 
-            self.private_name = '_' + name 
-        except AttributeError: 
-            warnings.warn('Object {owner!r} has not attribute {name!r}')
-            
-    def __get__(self, obj, objtype =None):
-        return getattr(obj, self.private_name) 
-    
-    def __set__(self, obj, value):
-        self.validate(value)
-        setattr(obj, self.private_name, value) 
-        
-    @abstractmethod 
-    def validate(self, value): 
-        pass 
 
-class checkData (AttributeCkecker): 
-    """ Descriptor to check data type `X` or `y` or else."""
-    def __init__(self, Xdtypes):
-        self.Xdtypes =eval(Xdtypes)
-
-    def validate(self, value) :
-        """ Validate `X` and `y` type."""
-        if not isinstance(value, self.Xdtypes):
-            raise TypeError(
-                f'Expected {value!r} to be one of {self.Xdtypes!r} type.')
-            
-class checkValueType_ (AttributeCkecker): 
-    """ Descriptor to assert parameters values. Default assertion is 
-    ``int`` or ``float``"""
-    def __init__(self, type_):
-        self.six =type_ 
-        
-    def validate(self, value):
-        """ Validate `cv`, `s_ix` parameters type"""
-        if not isinstance(value,  self.six ): 
-            raise ValueError(f'Expected {self.six} not {type(value)!r}')
-   
-class  checkClass (AttributeCkecker): 
-    def __init__(self, klass):
-        self.klass = klass 
-       
-    def validate(self, value): 
-        """ Validate the base estimator whether is a class or not. """
-        if not inspect.isclass(value): 
-            raise TypeError('Estimator might be a class object '
-                            f'not {type(value)!r}.')
-        
 class BaseEvaluation (object): 
     """ Evaluation of dataset using a base estimator.
     
     Quick evaluation after data preparing and pipeline constructions. 
     
-    :param base_estimator: obj 
-        estimator for trainset and label evaluating 
+    Parameters 
+    -----------
+    base_estimator: Callable,
+        estimator for trainset and label evaluating; something like a 
+        class that implements a fit methods. Refer to 
+        https://scikit-learn.org/stable/modules/classes.html
         
-    :param X: ndarray of dataframe of trainset data
+    X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+        Training set; Denotes data that is observed at training and 
+        prediction time, used as independent variables in learning. 
+        When a matrix, each sample may be represented by a feature vector, 
+        or a vector of precomputed (dis)similarity with each training 
+        sample. :code:`X` may also not be a matrix, and may require a 
+        feature extractor or a pairwise metric to turn it into one  before 
+        learning a model.
+    y: array-like, shape (M, ) ``M=m-samples``, 
+        train target; Denotes data that may be observed at training time 
+        as the dependent variable in learning, but which is unavailable 
+        at prediction time, and is usually the target of prediction. 
     
-    :param y: array of labels data 
-    
-    :param s_ix: int, sampling index. 
-        If given, will sample the `X` and `y`. 
-            
-    :param columns: list of columns. Use to build dataframe `X` when `X` is 
+    s_ix: int, sampling index. 
+        If given, will sample the `X` and `y`.  If ``None``, will sample the 
+        half of the data. 
+    columns: list of columns. Use to build dataframe `X` when `X` is 
         given as numpy ndarray. 
         
-    :param pipeline: callable func 
-        Tranformer data and preprocessing.
+    pipeline: callable func 
+        Transformer data and preprocessing. Refer to 
+        https://scikit-learn.org/stable/modules/classes.html#module-sklearn.pipeline
         
-    :param cv: cross validation splits. Default is ``4``.
+    cv: int, 
+        cross validation splits. Default is ``4``.
             
     """
    
-    def __init__(self, 
-                 base_estimator: F,
-                 X: NDArray, 
-                 y:ArrayLike,
-                 s_ix:int =None,
-                 cv: int =7,  
-                 pipeline: List[F]= None, 
-                 columns: List[str] =None, 
-                 pprint: bool =True, 
-                 cvs: bool =True, 
-                 scoring: str ='neg_mean_squared_error',
-                 **kwargs
-                 )-> None: 
+    def __init__(
+            self, 
+            base_estimator: F,
+            # X: NDArray, 
+            # y:ArrayLike,
+            cv: int =7,  
+            pipeline: List[F]= None, 
+            pprint: bool =True, 
+            cvs: bool =True, 
+            scoring: str ='neg_mean_squared_error',
+            random_state: int=42, 
+        ): 
         
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
-        self.base_estimator = base_estimator
-        self.X= X 
-        self.y =y 
-        self.s_ix =s_ix 
+        self._base_estimator = base_estimator
         self.cv = cv 
-        self.columns =columns 
         self.pipeline =pipeline
         self.pprint =pprint 
         self.cvs = cvs
         self.scoring = scoring
+        self.random_state=random_state
+ 
         
-        for key in list(kwargs.keys()): 
-            setattr(self, key, kwargs[key])
+        # for key in list(kwargs.keys()): 
+        #     setattr(self, key, kwargs[key])
 
-        if self.X is not None : 
-            self.quickEvaluation()
+        # if self.X is not None : 
+        #     self.quickEvaluation()
+    @property 
+    def base_estimator (self): 
+        return self._base_estimator 
+    
+    @base_estimator.setter 
+    def base_estimator (self, base_est): 
+        if not hasattr (base_est, 'fit'): 
+            raise EstimatorError(
+                f"Wrong estimator {get_estimator_name(base_est)!r}. Each"
+                " estimator must have a fit method. Refer to scikit-learn"
+                " https://scikit-learn.org/stable/modules/classes.html API"
+                " reference to build your own estimator.") 
             
-    def quickEvaluation(self, fit: str ='yes', **kws): 
+        if callable (base_est): 
+            base_est = base_est ()
+            
+        self._base_estimator =base_est 
+         
+    def fit(self, X, y,  prefit=False, sample_weight= 1. ): 
         
         """ Quick methods used to evaluate eastimator, display the 
         error results as well as the sample model_predictions.
         
+        Parameters 
+        -----------
+        base_estimator: Callable,
+            estimator for trainset and label evaluating; something like a 
+            class that implements a fit methods. Refer to 
+            https://scikit-learn.org/stable/modules/classes.html
+            
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        s_ix: int, sampling index. 
+            If given, will sample the `X` and `y`.  If ``None``, will sample the 
+            half of the data.
+            
         :param X: Dataframe  be trained.
         
         :param y: labels from trainset.
@@ -734,87 +708,70 @@ class BaseEvaluation (object):
         :param fit: Fit the method for quick estimating. Default is ``yes`` 
             
         """ 
+        X, y = check_X_y ( 
+            X,
+            y, 
+            to_frame =True, 
+            estimator= get_estimator_name(self._base_estimator)
+            )
         
-        pprint =kws.pop('pprint', True) 
-        if pprint is not None: 
-            self.pprint = pprint 
-        cvs = kws.pop('cvs', True)
-        if cvs is not None: 
-            self.cvs = cvs 
-        scoring = kws.pop('scoring', 'neg_mean_squared_error' )
-        if scoring is not None: 
-            self.scoring  = scoring 
-            
-        self._logging.info ('Quick estimation using the %r estimator with'
-                            'config %r arguments %s.'
-                            %(repr(self.base_estimator),self.__class__.__name__, 
-                            inspect.getfullargspec(self.__init__)))
+        self._logging.info (
+            'Quick estimation using the %r estimator with config %r arguments %s.'
+                %(repr(self.base_estimator),self.__class__.__name__, 
+                inspect.getfullargspec(self.__init__)))
+
+        sample_weight = float(
+            _assert_all_types(int, float, objname ="Sample weight"))
+        if sample_weight <= 0 or sample_weight >1: 
+            raise ValueError ("Sample weight must be range between 0 and 1,"
+                              f" got {sample_weight}")
         
-        if not hasattr(self, 'random_state'):
-            self.random_state =42 
-            
-            try:
-                if kws.__getitem__('random_state') is not None : 
-                    setattr(self, 'random_state', kws['random_state'])
-            except KeyError: 
-                self.random_state =42 
-  
-        if not inspect.isclass(self.base_estimator) or \
-              type(self.base_estimator) !=ABCMeta:
-                if type(self.base_estimator).__class__.__name__ !='type':
-                    raise TypeError('Estimator might be a class object '
-                                    f'not {type(self.base_estimator)!r}.')
-                
-        if type(self.base_estimator) ==ABCMeta:  
-            try: 
-                self.base_estimator  = self.base_estimator (**kws)
-            except TypeError: 
-                self.base_estimator  = self.base_estimator()
-
-        if  self.s_ix is None: 
-            self.s_ix = int(len(self.X)/2)
-
-        if self.s_ix is not None: 
-            if isinstance(self.X, pd.DataFrame): 
-                self.X= self.X.iloc[: int(self.s_ix)]
-            elif isinstance(self.X, np.ndarray): 
-                if self.columns is None:
-                    warnings.warn(
-                        f'{self.columns!r} must be a dataframe columns!'
-                          f' not {type(self.columns)}.',UserWarning)
+        n = int ( sample_weight * len(X)) 
+        if hasattr (X, 'columns'): X = X.iloc [:n] 
+        else : X=X[:n, :]
+        y = y[:n]
+        # if self.s_ix is not None: 
+        #     if isinstance(self.X, pd.DataFrame): 
+        #         self.X= self.X.iloc[: int(self.s_ix)]
+        #     elif isinstance(self.X, np.ndarray): 
+        #         if self.columns is None:
+        #             warnings.warn(
+        #                 f'{self.columns!r} must be a dataframe columns!'
+        #                   f' not {type(self.columns)}.',UserWarning)
                     
-                    if self.X.ndim ==1 :
-                        size =1 
-                    elif self.X.ndim >1: 
-                        size = self.X.shape[1]
+        #             if self.X.ndim ==1 :
+        #                 size =1 
+        #             elif self.X.ndim >1: 
+        #                 size = self.X.shape[1]
                     
-                    return TypeError(f'Expected {size!r} column name'
-                                      '{"s" if size >1 else 1} for array.')
+        #             return TypeError(f'Expected {size!r} column name'
+        #                               '{"s" if size >1 else 1} for array.')
 
-                elif self.columns is not None: 
-                    if self.X.shape[1] !=len(self.columns): 
-                        warnings.warn(f'Expected {self.X.shape[1]!r}' 
-                                      f'but {len(self.columns)} '
-                                      f'{"is" if len(self.columns) < 2 else"are"} '
-                                      f'{len(self.columns)!r}.',RuntimeWarning)
+        #         elif self.columns is not None: 
+        #             if self.X.shape[1] !=len(self.columns): 
+        #                 warnings.warn(f'Expected {self.X.shape[1]!r}' 
+        #                               f'but {len(self.columns)} '
+        #                               f'{"is" if len(self.columns) < 2 else"are"} '
+        #                               f'{len(self.columns)!r}.',RuntimeWarning)
          
-                        raise IndexError('Expected %i not %i self.columns.'
-                                          %(self.X.shape[2], 
-                                            len(self.columns)))
+        #                 raise IndexError('Expected %i not %i self.columns.'
+        #                                   %(self.X.shape[2], 
+        #                                     len(self.columns)))
                         
-                    self.X= pd.DataFrame(self.X, self.columns)
+        #             self.X= pd.DataFrame(self.X, self.columns)
                     
-                self.X= self.X.iloc[: int(self.s_ix)]
+        #         self.X= self.X.iloc[: int(self.s_ix)]
     
-            self.y= self.y[:int(self.s_ix )]  
+        #     self.y= self.y[:int(self.s_ix )]  
     
-        if isinstance(self.y, pd.Series): 
-            self.y =self.y.values 
+        # if isinstance(self.y, pd.Series): 
+        #     self.y =self.y.values 
    
-        if fit =='yes': 
-            self.fit_data(self.base_estimator , pprint= self.pprint,
-                          compute_cross=self.cvs,
-                          scoring = self.scoring)
+        if not prefit: 
+            self.fit_data(
+                self.base_estimator , pprint= self.pprint, compute_cross=self.cvs,
+                          scoring = self.scoring
+                          )
             
             
     def fit_data (self, obj , pprint=True, compute_cross=True, 
@@ -883,7 +840,61 @@ class BaseEvaluation (object):
                     self.scores = -self.scores 
                 display_scores(self.scores)   
     
-                
+class AttributeCkecker(ABC): 
+    """ Check attributes and inherits from module `abc` for Data validators. 
+    
+    Validate DataType mainly `X` train or test sets and `y` labels or
+    and any others params types.
+    
+    """
+    def __set_name__(self, owner, name): 
+        try: 
+            self.private_name = '_' + name 
+        except AttributeError: 
+            warnings.warn('Object {owner!r} has not attribute {name!r}')
+            
+    def __get__(self, obj, objtype =None):
+        return getattr(obj, self.private_name) 
+    
+    def __set__(self, obj, value):
+        self.validate(value)
+        setattr(obj, self.private_name, value) 
+        
+    @abstractmethod 
+    def validate(self, value): 
+        pass 
+
+class checkData (AttributeCkecker): 
+    """ Descriptor to check data type `X` or `y` or else."""
+    def __init__(self, Xdtypes):
+        self.Xdtypes =eval(Xdtypes)
+
+    def validate(self, value) :
+        """ Validate `X` and `y` type."""
+        if not isinstance(value, self.Xdtypes):
+            raise TypeError(
+                f'Expected {value!r} to be one of {self.Xdtypes!r} type.')
+            
+class checkValueType_ (AttributeCkecker): 
+    """ Descriptor to assert parameters values. Default assertion is 
+    ``int`` or ``float``"""
+    def __init__(self, type_):
+        self.six =type_ 
+        
+    def validate(self, value):
+        """ Validate `cv`, `s_ix` parameters type"""
+        if not isinstance(value,  self.six ): 
+            raise ValueError(f'Expected {self.six} not {type(value)!r}')
+   
+class  checkClass (AttributeCkecker): 
+    def __init__(self, klass):
+        self.klass = klass 
+       
+    def validate(self, value): 
+        """ Validate the base estimator whether is a class or not. """
+        if not inspect.isclass(value): 
+            raise TypeError('Estimator might be a class object '
+                            f'not {type(value)!r}.')                
 def quickscoring_evaluation_using_cross_validation(
         clf: F,
         X:NDArray,

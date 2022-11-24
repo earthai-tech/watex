@@ -125,6 +125,7 @@ from sklearn.decomposition import (
     KernelPCA, 
     FactorAnalysis
 ) 
+from sklearn.dummy import DummyClassifier 
 from sklearn.feature_selection import ( 
     SelectKBest, 
     f_classif, 
@@ -200,6 +201,7 @@ __all__=[
     'PCA' ,
     'IncrementalPCA',
     'KernelPCA', 
+    'DummyClassifier', 
     'SelectKBest', 
     'f_classif',
     'SelectFromModel', 

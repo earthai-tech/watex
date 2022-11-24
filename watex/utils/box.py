@@ -55,7 +55,7 @@ class Boxspace(dict):
         # ignoring the pickled __dict__
         pass
     
-class _AquiferGroup:
+class _Group:
     """ Group of Aquifer is mostly related to area information after multiple 
     boreholes collected. 
     
@@ -94,7 +94,7 @@ class _AquiferGroup:
     --------
     >>> from watex.utils import naive_imputer, read_data , reshape 
     >>> from watex.datasets import load_hlogs 
-    >>> from watex.utils.hydroutils import classify_k, fit_aquifer_groups 
+    >>> from watex.utils.hydroutils import classify_k, find_aquifer_groups 
     >>> b= load_hlogs () #just taking the target names
     >>> data = read_data ('data/boreholes/hf.csv') # read complete data
     >>> y = data [b.target_names]
@@ -102,32 +102,32 @@ class _AquiferGroup:
     >>> # reshape 1d array along axis 0 for imputation 
     >>> agroup_imputed = naive_imputer ( reshape (y.aquifer_group, axis =0 ) , 
                                         strategy ='most_frequent') 
-    >>> # rehape back to array_like 1d 
+    >>> # reshape back to array_like 1d 
     >>> y.aquifer_group =reshape (agroup_imputed) 
     >>> # categorize the 'k' continous value in 'y.k' using the default 
     >>> # 'k' mapping func 
     >>> y.k = classify_k (y.k , default_func =True)
     >>> # get the group obj
-    >>> group_obj = fit_aquifer_groups(y.k, y.aquifer_group,  ) 
+    >>> group_obj = find_aquifer_groups(y.k, y.aquifer_group,  ) 
     >>> group_obj 
-    ... AquiferGroup(Label=[' 1 ', 
+    ... _Group(Label=[' 1 ', 
                        Preponderance( rate = '53.141  %', 
-                                    (['Groups', {'V': 0.32,'IV': 0.266, 
-                                                 'II': 0.158, 'III': 0.158, 
-                                                 'II ': 0.079, 'IV&V': 0.01, 
-                                                 'II&III': 0.005, 'III&IV': 0.005}),
+                                    [('Groups', {'V': 0.32, 'IV': 0.266, 
+                                                 'II': 0.236, 'III': 0.158, 
+                                                 'IV&V': 0.01, 'II&III': 0.005, 
+                                                 'III&IV': 0.005}),
                                      ('Representativity', ( 'V', 0.32)),
                                      ('Similarity', 'V')])],
                  Label=[' 2 ', 
                        Preponderance( rate = ' 19.11  %', 
-                                    (['Groups', {'III': 0.274, 'V': 0.26, 
-                                                 ' II ': 0.178, 'IV': 0.178, 
-                                                 'II': 0.082, 'III&IV': 0.027}),
+                                    [('Groups', {'III': 0.274, 'II': 0.26, 
+                                                 'V': 0.26, 'IV': 0.178, 
+                                                 'III&IV': 0.027}),
                                      ('Representativity', ( 'III', 0.27)),
                                      ('Similarity', 'III')])],
                  Label=[' 3 ', 
                        Preponderance( rate = '27.749  %', 
-                                    (['Groups', {'V': 0.443, 'IV': 0.311, 
+                                    [('Groups', {'V': 0.443, 'IV': 0.311, 
                                                  'III': 0.245}),
                                      ('Representativity', ( 'V', 0.44)),
                                      ('Similarity', 'V')])],

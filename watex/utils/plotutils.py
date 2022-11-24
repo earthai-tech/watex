@@ -5,6 +5,7 @@
 from __future__ import annotations 
 import os
 import re 
+import copy 
 import datetime 
 import warnings
 import itertools 
@@ -1415,11 +1416,9 @@ def plot_clusters (
     >>> plot_clusters (3 , h2_scaled, ykm , km.cluster_centers_ )
         
     """
-    try : n_clusters = int(n_clusters )
-    except: 
-        raise TypeError (f"n_clusters argument must be a number, "
-                         f"not {type(n_clusters).__name__!r}")
-        
+    n_clusters = int(
+        _assert_all_types(n_clusters, int, float,  objname ="'n_clusters'" )
+        )
     X, y_pred = check_X_y(
         X, 
         y_pred, 
@@ -1525,8 +1524,8 @@ def plot_elbow (
     distorsions =[] ; n_clusters = 11
     for i in range (1, n_clusters ): 
         km =KMeans (n_clusters =i , init= 'k-means++', 
-                    n_init=10 , max_iter=300, 
-                    random_state =0 
+                    n_init=n_init , max_iter=max_iter, 
+                    random_state =random_state 
                     )
         km.fit(X) 
         distorsions.append(km.inertia_) 
@@ -1540,7 +1539,7 @@ def _plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),
                marker='o', savefig =None, **kwd): 
     """ Plot the optimal number of cluster, k', for a given class 
     
-    :param distorsions: list - list of values withing the ssum-squared-error 
+    :param distorsions: list - list of values withing the sum-squared-error 
         (SSE) also called  `inertia_` in sckit-learn. 
     
     :param n_clusters: number of clusters. where k starts and end. 
@@ -1616,9 +1615,10 @@ def plot_cost_vs_epochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     s = set ([hasattr(o, '__class__') for o in regs ])
 
     if len(s) != 1: 
-        raise ValueError(" All regression should be an estimator already fitted.")
+        raise ValueError("All regression models should be estimators"
+                         " already fitted.")
     if not list(s) [0] : 
-        raise TypeError(f" Need an estimator, got {type(s[0]).__name__!r}")
+        raise TypeError(f"Needs an estimator, got {type(s[0]).__name__!r}")
     
     fig, ax = plt.subplots ( nrows=1 , ncols =len(regs) , figsize = fig_size ) 
     
@@ -1833,10 +1833,7 @@ def make_mpl_properties(n ,prop ='color'):
              'dotted']
         
     """ 
-
-    try: n= int(n)
-    except: raise TypeError(f"Expect a number, got {type(n).__name__!r}")
-    
+    n=int(_assert_all_types(n, int, float, objname ="'n'"))
     prop = str(prop).lower().strip().replace ('s', '') 
     if prop not in ('color', 'marker', 'line'): 
         raise ValueError ("Property {prop!r} is not availabe yet. , Expect"
@@ -2275,9 +2272,6 @@ def _set_sns_style (s, /):
     s = re.sub(r'true|none', 'darkgrid', s)
     return sns.set_style(s) 
 
-
-
-
 def _is_target_in (X, y=None, tname=None): 
     """ Create new target name for tname if given 
     
@@ -2386,7 +2380,7 @@ def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True):
             1    16.000000
             2    24.422316
             Name: resistivity, dtype: float64)
-       >>> column2skip = ['hole_number','depth_top', 'depth_bottom', 
+       >>> column2skip = ['hole_id','depth_top', 'depth_bottom', 
                          'strata_name', 'rock_name', 'well_diameter', 'sp']
        >>> _skip_log10_columns (X0, column2skip)
        >>> # now let visualize the same keys values 
@@ -2400,7 +2394,7 @@ def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True):
             2    1.387787
             Name: resistivity, dtype: float64)
       >>> # it is obvious the `resistiviy` values is log10 
-      >>> $ while `sp` stil remains the same 
+      >>> # while `sp` still remains the same 
       
     """
     X0 = X.copy () 
@@ -2414,12 +2408,14 @@ def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True):
         column2skip = str2columns (column2skip, pattern=pattern  )
     #assert whether column to skip is in 
     if column2skip:
+        cskip = copy.deepcopy (column2skip) 
         column2skip = is_in_if(X.columns, column2skip, return_diff= True)
         if len(column2skip) ==len (X.columns): 
             warnings.warn("Value(s) to skip are not detected.")
         if inplace : 
             X[column2skip] = np.log10 ( X[column2skip] ) 
-            return 
+            X.drop (columns =cskip , inplace =True )
+            return  
         else : 
             X0[column2skip] = np.log10 ( X0[column2skip] ) 
             

@@ -178,9 +178,9 @@ def listing_items_format (
     
     :param lst: list,
         object for listening 
-    begintext: str, 
+    :param begintext: str, 
         Text to display at the beginning of listing the items in `lst`. 
-    endtext: str, 
+    :param endtext: str, 
         Text to display at the end of the listing items in `lst`. 
     :param enum:bool, default=True, 
         Count the number of items in `lst` and display it 
@@ -261,7 +261,7 @@ def parse_attrs (attr, /, regex=None ):
     -------
     attr: List of attributes 
     
-    Examples
+    Example
     ---------
     >>> from watex.utils.funcutils import parse_attrs 
     >>> parse_attrs('lwi_sub_ohmSmulmagnitude')
@@ -275,7 +275,7 @@ def parse_attrs (attr, /, regex=None ):
     return attr 
     
 def url_checker (url: str , install:bool = False, 
-                      raises:str ='ignore')-> bool : 
+                 raises:str ='ignore')-> bool : 
     """
     check whether the URL is reachable or not. 
     
@@ -290,7 +290,7 @@ def url_checker (url: str , install:bool = False,
         Action to install the 'requests' module if module is not install yet.
     raises: str 
         raise errors when url is not recheable rather than returning ``0``.
-        if ``raises` is ``ignore``, and module 'requests' is not installed, it 
+        if `raises` is ``ignore``, and module 'requests' is not installed, it 
         will use the django url validator. However, the latter only assert 
         whether url is right but not validate its reachability. 
               
@@ -3337,7 +3337,7 @@ def sanitize_frame_cols(
     
     d: list, columns, 
         columns to sanitize. It might contain a list of items to 
-        to polish. if dataframe or series are given, the dataframe columns  
+        to polish. If dataframe or series are given, the dataframe columns  
         and the name respectively will be polished and returns the same 
         dataframe.
         
@@ -3461,6 +3461,8 @@ def to_hdf5(d, /, fn, objname =None, close =True,  **hdf5_kws):
     ------- 
     store : Dict-like IO interface for storing pandas objects.
     
+    Examples 
+    ------------
     >>> import os 
     >>> from watex.utils.funcutils import sanitize_frame_cols, to_hdf5 
     >>> from watex.utils import read_data 
@@ -3656,7 +3658,7 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
     if return_diff : 
         # get difference 
         s = list(set(o).difference (s))  if len(o) > len( 
-            items) else list(set(items).difference (s)) 
+            s) else list(set(items).difference (s)) 
         # s = set(o).difference (s)  
     elif return_intersect: 
         s = list(set(o).intersection(s))  if len(o) > len( 
@@ -3706,12 +3708,12 @@ def map_specific_columns (
         Keywords argument passed to :func: `pandas.DataFrame.apply` function 
         
     Returns 
-    -------
+    ---------
     X: Dataframe or None 
         Dataframe modified inplace with values computed using the given 
         `func`except the skipped columns, or ``None`` if `inplace` is ``True``. 
         
-    Example 
+    Examples 
     ---------
     >>> from watex.datasets import load_hlogs 
     >>> from watex.utils.plotutils import map_specific_columns 
@@ -3726,7 +3728,7 @@ def map_specific_columns (
          1    16.000000
          2    24.422316
          Name: resistivity, dtype: float64)
-    >>> column2skip = ['hole_number','depth_top', 'depth_bottom', 
+    >>> column2skip = ['hole_id','depth_top', 'depth_bottom', 
                       'strata_name', 'rock_name', 'well_diameter', 'sp']
     >>> map_specific_columns (X0, ufunc = np.log10, column2skip)
     >>> # now let visualize the same keys values 
@@ -3740,7 +3742,7 @@ def map_specific_columns (
          2    1.387787
          Name: resistivity, dtype: float64)
     >>> # it is obvious the `resistiviy` values is log10 
-    >>> $ while `sp` stil remains the same 
+    >>> # while `sp` stil remains the same 
       
     """
     X = _assert_all_types(X, pd.DataFrame)
@@ -3757,6 +3759,7 @@ def map_specific_columns (
         columns_to_skip = str2columns (columns_to_skip, pattern=pattern  )
     #assert whether column to skip is in 
     if columns_to_skip:
+        cskip = copy.deepcopy(columns_to_skip)
         columns_to_skip = is_in_if(X.columns, columns_to_skip, return_diff= True)
         if len(columns_to_skip) ==len (X.columns): 
             warnings.warn("Value(s) to skip are not detected.")
@@ -3766,6 +3769,7 @@ def map_specific_columns (
     if inplace : 
         X[columns_to_skip] = X[columns_to_skip].apply (
             ufunc , **kws)
+        X.drop (columns = cskip , inplace =True )
         return 
     if not inplace: 
         X0 = X.copy() 

@@ -58,7 +58,7 @@ class Hydrogeology :
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
 
 
-class _AquiferGroup:
+class AquiferGroup:
     """ Group of Aquifer is mostly related to area information after multiple 
     boreholes collected. 
     

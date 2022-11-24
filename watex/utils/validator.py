@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # BSD 3-Clause License
-# Copyright (c) 2007-2022 The scikit-learn developers.
+# Copyright (c) 2007-2022 The scikit-learn and watex developers.
 # All rights reserved.
 
 # Note that this module is not the sckit-learn original file, 
@@ -1369,7 +1369,6 @@ def check_y(y,
        
     return y
 
-#XXXTODO 
 def array_to_frame(
     X, 
     *, 
