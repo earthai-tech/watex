@@ -766,8 +766,7 @@ def _check_estimator_name(estimator):
             return estimator.__class__.__name__
     return None
 
-def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X',
-                       ): 
+def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X'): 
     """ Set array back to frame reconvert the Numpy array to pandas series 
     or dataframe.
     
@@ -783,6 +782,9 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X',
         no-action is performed and return the same array.
     input_name : str, default=""
         The data name used to construct the error message. 
+    force: bool, default=False, 
+        Force columns creating using the combination ``input_name`` and 
+        columns range if `columns` is not supplied. 
     Returns 
     -------
     X, columns : Array-like 
@@ -808,8 +810,8 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X',
         and not sp.issparse (X)
         ): 
         if columns is None : 
-            raise ValueError (
-                "Name or columns must be supplied for frame conversion.")
+            raise ValueError ("Name or columns must be supplied for"
+                              " frame conversion.")
         # if not string is given as name 
         # check whether the columns contains only one 
         # value and use it as name to skip 
@@ -1155,7 +1157,7 @@ def check_array(
             )
             
     if to_frame:
-        array= convert_array_to_frame(
+        array= array_to_frame(
                 array,
                 to_frame =to_frame , 
                 columns = column_orig, 
@@ -1358,7 +1360,7 @@ def check_y(y,
         y = y.astype(np.float64)
         
     if to_frame: 
-        y = convert_array_to_frame (
+        y = array_to_frame (
             y, to_frame =to_frame , 
             columns = column_orig,
             input_name=input_name,
@@ -1368,7 +1370,7 @@ def check_y(y,
     return y
 
 #XXXTODO 
-def convert_array_to_frame(
+def array_to_frame(
     X, 
     *, 
     to_frame = False, 
@@ -1376,6 +1378,7 @@ def convert_array_to_frame(
     raise_exception =False, 
     raise_warning =True, 
     input_name ='', 
+    force:bool=False, 
   ): 
     """Isolated part of is_frame dedicated to X and y frame reconversion 
     validation.
@@ -1399,6 +1402,10 @@ def convert_array_to_frame(
     raise_exception : bool, default=False
         If True then raise an exception if array is not symmetric.
         
+    force:bool, default=False
+        Force conversion array to a frame is columns is not supplied.
+        Use the combinaison, `input_name` and `X.shape[1]` range.
+        
     Returns
     --------
     X: converted array 
@@ -1406,33 +1413,38 @@ def convert_array_to_frame(
     Example
     ---------
     >>> from watex.datasets import fetch_data  
-    >>> from watex.utils.validator import convert_array_to_frame 
+    >>> from watex.utils.validator import array_to_frame 
     >>> data = fetch_data ('hlogs').frame 
-    >>> convert_array_to_frame (data.k.values , 
-                                to_frame= True, columns =None, input_name= 'y',
-                                raise_warning="silence"
+    >>> array_to_frame (data.k.values , 
+                        to_frame= True, columns =None, input_name= 'y',
+                        raise_warning="silence"
                                 ) 
     ... array([nan, nan, nan, ..., nan, nan, nan]) # mute 
     
     """
+    
     isf = to_frame ; isf = is_frame( X) 
     
     if ( to_frame 
         and not isf 
         and columns is None 
         ): 
-        msg = (f"Array {input_name} is originally not a frame. Frame "
-               "conversion cannot be performed with no column names."
-               ) 
-        if raise_exception: 
-            raise ValueError (msg)
-        if  ( raise_warning 
-             and raise_warning not in ("silence","ignore", "mute")
-             ): 
-            warnings.warn(msg )
-            
-        isf=False 
-        
+        if force:
+            columns =[f"{input_name + str(i)}" for i in range(X.shape[1])]
+            isf =True 
+        else:
+            msg = (f"Array {input_name} is originally not a frame. Frame "
+                   "conversion cannot be performed with no column names."
+                   ) 
+            if raise_exception: 
+                raise ValueError (msg)
+            if  ( raise_warning 
+                 and raise_warning not in ("silence","ignore", "mute")
+                 ): 
+                warnings.warn(msg )
+                
+            isf=False 
+
     elif ( to_frame 
           and columns is not None
           ): 
@@ -1442,7 +1454,7 @@ def convert_array_to_frame(
         X, 
         to_frame=isf, 
         columns =columns, 
-        input_name=input_name 
+        input_name=input_name
         )
                 
     return X  

@@ -247,7 +247,13 @@ Returns
     
 """
 
-    
+# pickle bag data details:
+# Python.__version__: 3.10.6 , 
+# scikit_learn_vesion_: 1.1.3 
+# pandas_version : 1.4.4. 
+# numpy version: 1.23.3
+# scipy version:1.9.3 
+ 
     
     
     

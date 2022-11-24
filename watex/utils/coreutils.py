@@ -72,7 +72,8 @@ from .gistools import (
 from .validator import  (
     _is_valid_ves , 
     _is_arraylike_1d, 
-    _check_consistency_size
+    _check_consistency_size, 
+    array_to_frame
     )
 _logger = watexlog.get_watex_logger(__name__)
 
@@ -1730,10 +1731,10 @@ def read_data (
     f: :class:`pandas.DataFrame` 
         A dataframe with head contents by default.  
     """
-    cpObj= Config().parsers 
-    
     if isinstance (f, pd.DataFrame): 
         return f 
+    
+    cpObj= Config().parsers 
     f= _check_readable_file(f)
     _, ex = os.path.splitext(f) 
     if ex.lower() not in tuple (cpObj.keys()):
@@ -1833,21 +1834,59 @@ def _validate_ves_data_if(data, index_rhoa , err , **kws):
 
 def _is_readable (
         f:str, 
+        *, 
+        as_frame:bool=False, 
+        columns:List[str]=None,
+        input_name='f', 
         **kws
  ) -> DataFrame: 
     """ Assert and read specific files and url allowed by the package
     
     Readable files are systematically convert to a pandas frame.  
     
-    :param f: Path-like object -Should be a readable files or url  
-    :param kws: Pandas readableformats additional keywords arguments. 
-    :return: dataframe - A dataframe with head contents... 
+    Parameters 
+    -----------
+    f: Path-like object -Should be a readable files or url  
+    columns: str or list of str 
+        Series name or columns names for pandas.Series and DataFrame. 
+        
+    to_frame: str, default=False
+        If ``True`` , reconvert the array to frame using the columns orthewise 
+        no-action is performed and return the same array.
+    input_name : str, default=""
+        The data name used to construct the error message. 
+        
+    raise_warning : bool, default=True
+        If True then raise a warning if conversion is required.
+        If ``ignore``, warnings silence mode is triggered.
+    raise_exception : bool, default=False
+        If True then raise an exception if array is not symmetric.
+        
+    force:bool, default=False
+        Force conversion array to a frame is columns is not supplied.
+        Use the combinaison, `input_name` and `X.shape[1]` range.
+        
+    kws: dict, 
+        Pandas readableformats additional keywords arguments. 
+    Returns
+    ---------
+    f: pandas dataframe 
+         A dataframe with head contents... 
     
     """
+    if hasattr (f, '__array__' ) : 
+        f = array_to_frame(
+            f, 
+            to_frame= True , 
+            columns =columns, 
+            input_name=input_name , 
+            raise_exception= True, 
+            force= True, 
+            )
+        return f 
+
     cpObj= Config().parsers 
     
-    if isinstance (f, pd.DataFrame): 
-        return f 
     f= _check_readable_file(f)
     _, ex = os.path.splitext(f) 
     if ex.lower() not in tuple (cpObj.keys()):

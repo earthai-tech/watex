@@ -87,7 +87,13 @@ from ..utils.mlutils import (
     projection_validator, 
     )
 from ..utils.plotutils import make_mpl_properties
-from ..utils.validator import get_estimator_name 
+from ..utils.validator import ( 
+    get_estimator_name , 
+    array_to_frame, 
+    check_array, 
+    check_X_y, 
+    check_y,
+    )
 
 _logger=watexlog.get_watex_logger(__name__)
 
@@ -237,7 +243,9 @@ class EvalPlot(BasePlot):
             raise TypeError(
                 "X array must not be None, or pass a filepath or "
                 "dataframe object as keyword data argument to set 'X'.")
-            
+        # Create a pseudo frame"
+        # if 'X' is not a dataframe
+        X= array_to_frame(X, to_frame= True, input_name="X", force =True )
         X = to_numeric_dtypes(X , columns = columns )
         X = selectfeatures( X, include ='number')
         
@@ -1508,7 +1516,18 @@ def plotProjection(
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
-    # validate the projections. 
+    #check array
+    X=check_array (
+        X, 
+        input_name="X", 
+        to_frame =True, 
+        )
+    Xt =check_array (
+        Xt, 
+        input_name="Xt", 
+        to_frame =True, 
+        )
+    # validate the projections.
     xy , xynames = projection_validator(X, Xt, columns )
     x, y , xt, yt =xy 
     xname, yname, xtname, yname=xynames 
@@ -2282,6 +2301,12 @@ def plotDendroheat(
     
     
     """
+ 
+    df=check_array (
+        df, 
+        input_name="Data 'df' ", 
+        to_frame =True, 
+        )
     if columns is not None: 
         if isinstance (columns , str):
             columns = [columns]
@@ -2450,6 +2475,12 @@ def plotDendrogram (
     >>> plotDendrogram (X, columns =['X1', 'X2' ] ) 
 
     """
+    df=check_array (
+        df, 
+        input_name="Data 'df' ", 
+        to_frame =True, 
+        )
+    
     kind:str = kind or 'design'
     row_cluster = linkage_matrix(df = df, columns = columns, metric= metric, 
                                  method =method , kind = kind ,
@@ -2490,7 +2521,7 @@ def plotSilhouette (
         If a sparse matrix is passed, a copy will be made if it's not in
         CSR format.
         
-    labels : array-like of shape (n_samples,)
+    labels : array-like 1d of shape (n_samples,)
         Label values for each sample.
          
     n_clusters : int, default=8
@@ -2589,6 +2620,10 @@ def plotSilhouette (
         if not hasattr (labels, '__array__'): 
             raise TypeError( "Labels (target 'y') expects an array-like: "
                             f"{type(labels).__name__!r}")
+        labels=check_y (
+            labels, 
+            to_frame =True, 
+            )
         if len(labels)!=len(X): 
             raise TypeError("X and labels must have a consistency size."
                             f"{len(X)} and {len(labels)} respectively.")
@@ -2903,6 +2938,8 @@ def plotLearningInspection(
     """ 
     train_sizes = train_sizes or np.linspace(0.1, 1.0, 5)
     
+    X, y = check_X_y(X, y, to_frame =True )
+    
     if axes is None:
         _, axes = plt.subplots(1, 3, figsize=(20, 5))
     
@@ -3015,11 +3052,17 @@ def plot_matshow(
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
+    arr= check_array(
+        arr, 
+        to_frame =True, 
+        dtype=object,  
+        input_name="Array 'arr'"
+        )
     matshow_kws= matshow_kws or dict()
     fig = plt.figure(figsize = pobj.fig_size)
 
     ax = fig.add_subplot(1,1,1)
-
+    
     cax = ax.matshow(arr, **matshow_kws) 
     cbax= fig.colorbar(cax, **pobj.cb_props)
     
@@ -3187,6 +3230,16 @@ def biPlot(
     .. _Serafeim Loukas: https://towardsdatascience.com/...-python-7c274582c37e>
     
     """
+    Xr = check_array(
+        Xr, 
+        to_frame= False, 
+        input_name="X reduced 'Xr'"
+        )
+    components = check_array(
+        components, 
+        to_frame =False ,
+        input_name="PCA components"
+        )
     Xr = np.array (Xr); components = np.array (components )
     xs = Xr[:,0] # projection on PC1
     ys = Xr[:,1] # projection on PC2
@@ -3359,7 +3412,7 @@ def _chk_predict_args (Xt, yt, *args,  predict =False ):
             raise EstimatorError("No estimator detected. Could not predict 'y'") 
         if Xt is None: 
             raise TypeError(
-                "Test data 'Xt' is need for prediction. Got nothing")
+                "Test data 'Xt' is needed for prediction. Got nothing")
   
         # check estimator as callable object or ABCMeta classes
         if not hasattr(clf, '__call__') and  not inspect.isclass(clf)\
