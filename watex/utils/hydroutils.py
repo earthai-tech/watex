@@ -192,8 +192,8 @@ def make_MXS_labels (
     >>> from watex.datasets import load_hlogs
     >>> from watex.utils.hydroutils import classify_k, make_MXS_labels
     >>> data = load_hlogs ().frame 
-    >>> # map y.k to cateorize k values 
-    >>> ymap = classify_k(y.k , default_func =True) 
+    >>> # map data.k to categorize k values 
+    >>> ymap = classify_k(data.k , default_func =True) 
     >>> y_mxs = make_MXS_labels (ymap, data.aquifer_group)
     ...
     >>> mxs_obj = make_MXS_labels (ymap, data.aquifer_group, return_obj=True )
@@ -253,7 +253,6 @@ def make_MXS_labels (
         y_mxs, group_classes_, group_labels, sim_groups = _MXS_if_yes(
             CONTEXT , 
             similar_labels, 
-            y_true_transf, 
             y_pred, 
             sep , 
             prefix,  
@@ -262,8 +261,14 @@ def make_MXS_labels (
     # # save the not_nan indices to not 
     # # altered the k-valid values 
     not_nan_indices,  = np.where ( ~np.isnan (y_true) )
-    # # not altered the k-valid data 
-    y_mxs [not_nan_indices] = y_true [not_nan_indices]
+    # # not altered the k-valid data
+    try: 
+        # try to reconvert class labels to integer
+        # if class are numeric values, otherwise  
+        # keep the values as they were.
+        y_mxs [not_nan_indices] = y_true [not_nan_indices].astype(np.int32)
+    except :  
+        y_mxs [not_nan_indices] = y_true [not_nan_indices]
     
     if mxs_map_classes_ is not None: 
         y_mxs = pd.Series (y_mxs, name ='mxs').map(
@@ -398,6 +403,10 @@ def find_aquifer_groups (
         input_name="Array of Permeability coefficient 'k'",
         )  
 
+    if np.nan in list(arr_aq): 
+        raise TypeError ("Missing value(s) is/are not allowed in group of "
+                         " aquifer. Please impute the data first.")
+    # for consistency check 
     arr_aq = check_y (
         arr_aq, 
         to_frame = True, 
@@ -408,10 +417,6 @@ def find_aquifer_groups (
     arr_k_valid , arr_aq_valid = _get_y_from_valid_indexes(
         arr_k, arr_aq, include_label_0= keep_label_0  )
     
-    if np.nan in list(arr_aq): 
-        raise TypeError ("Missing value(s) is/are not allowed in group of "
-                         " aquifer. Please impute the data first.")
-        
     labels , counts = np.unique (arr_k_valid , return_counts= True) 
     labels_rate = counts / sum(counts )
     dict_labels_rate = { k: v for k , v in zip ( labels, labels_rate )} 
@@ -717,7 +722,7 @@ def find_similar_labels (
     if not all ([ _is_arraylike_1d(ar ) for ar in (y_true, y_pred )] ) :
         raise TypeError ("True and predicted labels supports only "
                          "one-dimensional array.")
-    # check arrays 
+    # check arrays for consistency
     y_true = check_y (
         y_true, 
         allow_nan= True, 
@@ -735,10 +740,16 @@ def find_similar_labels (
     if categorize_k : 
         #categorize k if func is given.
         y_true = classify_k( y_true ,  func= func ,  **kwd)
-    g = find_aquifer_groups(y_true, arr_aq= y_pred,keep_label_0= keep_label_0 )  
-    similarities = _similarity_rules ( list(g.groups), threshold = threshold ) 
+    g = find_aquifer_groups(y_true, arr_aq= y_pred,keep_label_0= keep_label_0
+                            ) 
     
-    return tuple (similarities ) if not return_groups else tuple (g.groups )
+    # Fetch similarity according to the  threshold 
+    simg = tuple (_similarity_rules ( list(g.groups), threshold = threshold )
+                  ) 
+    similarities = [] if len(simg)==0 else [
+        (label, list(value)[0]) for label, value  in simg ]
+
+    return similarities  if not return_groups else tuple (g.groups )
 
 def _similarity_rules (lg,  threshold =.5 ):
     """ Considers two label similar from the threshold value. 
@@ -757,9 +768,9 @@ def _similarity_rules (lg,  threshold =.5 ):
        'IV&V': 0.01,'II&III': 0.005,'III&IV': 0.005}),
      (2, {'III': 0.274, 'II': 0.26, 'V': 0.26, 'IV': 0.178, 'III&IV': 0.027}),
      (3, {'V': 0.443, 'IV': 0.311, 'III': 0.245}))
-    >>> _similarity_rules (group , threshold = .4 )
+    >>> _similarity_rules (groups , threshold = .4 )
     ...  <generator object _similarity_rules.<locals>.<genexpr> at 0x00000255448B4BA0>
-    >>> tuple (_similarity_rules (group , threshold = .4 ))
+    >>> tuple (_similarity_rules (groups , threshold = .4 ))
     ... ((3, {'V': 0.443, 'IV': 0.311, 'III': 0.245}),)
         
     """
@@ -929,7 +940,7 @@ def select_base_stratum (
             raise TypeError ("'sname' ( strata column name )  can not be "
                               "None when a dataframe is passed.")
         sn= copy.deepcopy(sname)
-        sname = _assert_all_types(sname, str, objname ='Column') 
+        sname = _assert_all_types(sname, str, objname ='Name of stratum column') 
         sname = is_in_if(d.columns, sname, error ='ignore')
         if sname is None: 
             raise ValueError ( f"Name {sn!r} is not a valid column strata name."
@@ -1181,7 +1192,7 @@ def get_sections_from_depth  (z, z_range, return_index =False ) :
                           f" not {type (z_range).__name__!r}")
     z_range= sorted ( list(z_range ) ) 
     if max(z_range ) > max(z): 
-        raise DepthError("Depth value can not be greater than the maximum "
+        raise DepthError("Depth value cannot be greater than the maximum "
                          f"depth in the well= {max(z)}; got {max(z_range)}")
     if len(z_range)==1: 
         warnings.warn("Single value is passed. Remember, it may correspond "
@@ -1211,7 +1222,7 @@ def get_sections_from_depth  (z, z_range, return_index =False ) :
         # thickness to pass to another layers 
         raise DepthError(f"Depth {z_range} are too close that probably "
                          "figure out the same layer. Difference between "
-                         "adjacent depth must be greater than"
+                         "adjacent depths must be greater than"
                         f" {round ( float(diff.min()), 2) }")
     # not get the index from non valid data
     # +1 for Python indexing
@@ -1436,7 +1447,6 @@ def _get_invalid_indexes  ( d, /, valid_indexes, in_arange =False ):
     ... [(0, 3), (12, 50)]
     
     """
-    
     if in_arange : 
         valid_indexes = np.array (  list( 
             range ( * [  valid_indexes [0] , valid_indexes [-1] +1 ] )))  
@@ -1894,7 +1904,7 @@ def get_aquifer_section (
         # deal with arr_k 
         if kname is None: 
             raise ValueError ("'kname' ( Permeability coefficient ) column name"
-                              " can not be None when a dataframe is given.") 
+                              " cannot be None when a dataframe is given.") 
         else: 
             _assert_all_types(kname, str , int , float,  objname="'kname'") 
             
@@ -2777,14 +2787,11 @@ def _MXS_if_no(context,  /,  y_true , y_pred , cmsg =''):
 
     return y_mxs , group_classes_ , group_labels , sim_groups 
 
-def _MXS_if_yes (context , /, slg , y_true, y_pred,  sep=None,  prefix= None, 
+def _MXS_if_yes (context , /, slg , y_pred,  sep=None,  prefix= None, 
                  cmsg=''  ): 
     """ Make MXS target when similarity is found between a label in 'y_true' and 
     label in the predicted NGA. 
-    
-     
-    :param y_true: array-like 1d 
-        array_like containing the true labels 
+
     :param y_pred: array_like 1d 
         array of the NGA predicted labels. 
     :param context: str , {'similarity exists'}
@@ -2812,13 +2819,15 @@ def _MXS_if_yes (context , /, slg , y_true, y_pred,  sep=None,  prefix= None,
                          " Got: {type(s).__name__!r}")
         
     sim_groups = _name_mxs_labels(*slg, sep = sep, prefix =prefix )
-    
+
     # get the label from similarity groups: 
     true_labels = [ label for label, _ in slg ] 
     group_labels = [ group  for _, group in slg ]
 
     if not _is_numeric_dtype(y_pred): 
         tempy = to_dtype_str(y_pred, return_values = True )
+    else : tempy = y_pred.copy()
+    
     if not all ([ str(l) in np.unique (tempy) for l in group_labels ]): 
         # list the invalid groups 
         # not contain in the NGA labels 
@@ -2832,7 +2841,7 @@ def _MXS_if_yes (context , /, slg , y_true, y_pred,  sep=None,  prefix= None,
     # make a copy of array of ytrue 
     # and fill it by the new NGA values and/or similarites 
     # Finally will fill the k-valid indexes 
-    y_mxs = np.full (y_true.shape , fill_value= np.nan ,dtype = object )
+    y_mxs = np.full (y_pred.shape , fill_value= np.nan ,dtype = object )
         
     # Get the index of each NGA labels
     NGA_label_indices = {

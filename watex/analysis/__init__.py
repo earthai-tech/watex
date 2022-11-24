@@ -1,6 +1,5 @@
 
-from .dimensionality import (  
-    get_best_kPCA_params, 
+from .dimensionality import (   
     get_component_with_most_variance,
     plot_projection, 
     find_features_importances, 
@@ -29,7 +28,6 @@ __all__= [
     "kPCA", 
     "LLE", 
     "iPCA",  
-    "get_best_kPCA_params", 
     "get_component_with_most_variance",
     "plot_projection", 
     "find_features_importances", 

@@ -67,7 +67,8 @@ from .._typing import (
 )
 from ..exceptions import ( 
     ParameterNumberError , 
-    EstimatorError
+    EstimatorError, 
+    DatasetError
 )
 from .funcutils import (
     _assert_all_types, 
@@ -79,7 +80,10 @@ from .funcutils import (
     is_in_if, 
     to_numeric_dtypes
 )
-from .validator import get_estimator_name 
+from .validator import ( 
+    get_estimator_name , 
+    check_array 
+    )
 _logger = watexlog().get_watex_logger(__name__)
 
 
@@ -1463,144 +1467,101 @@ def default_data_splitting(X, y=None, *,  test_size =0.2, target =None,
             X = np.delete (X, target, axis =1)
         warnings.warn(wmsg, category =UserWarning)
         
-    __V= train_test_split(X, y, random_state=random_state, **skws) \
+    V= train_test_split(X, y, random_state=random_state, **skws) \
         if y is not None else train_test_split(
                 X,random_state=random_state, **skws)
-    if y is None: X, XT , yT = *__V,  None 
-    else: X, XT, y, yT= __V
+    if y is None: 
+        X, XT , yT = *V,  None 
+    else: 
+        X, XT, y, yT= V
     
     return  X, XT, y, yT
 
-    
+#XXX FIX IT
 def fetchModel(
-        modelfile: str,
-        modelpath: str = None,
-        default: bool = True,
-        modname: Optional[str] = None,
-        verbose: int = 0
+    file: str,
+    *, 
+    default: bool = True,
+    name: Optional[str] = None,
+    storage='joblib', 
 )-> object: 
-    """ Fetch your model saved using Python pickle module or joblib module. 
+    """ Fetch your data/model saved using Python pickle or joblib module. 
     
-    :param modelfile: str or Path-Like object 
+    Parameters 
+    ------------
+    file: str or Path-Like object 
         dumped model file name saved using `joblib` or Python `pickle` module.
-    :param modelpath: path-Like object , 
+    path: path-Like object , 
         Path to model dumped file =`modelfile`
-    :default: bool, 
+    default: bool, 
         Model parameters by default are saved into a dictionary. When default 
         is ``True``, returns a tuple of pair (the model and its best parameters).
         If ``False`` return all values saved from `~.MultipleGridSearch`
-       
-    :modname: str 
+    storage: str, default='joblib'
+        kind of module use to pickling the data
+    name: str 
         Is the name of model to retreived from dumped file. If name is given 
         get only the model and its best parameters. 
-    :verbose: int, level=0 
-        control the verbosity. More messages if greater than 0.
-    
-    :returns:
-        - `model_class_params`: if default is ``True``
-        - `pickledmodel`: model dumped and all parameters if default is `False`
         
-    :Example: 
+    Returns
+    --------
+    - `data`: Tuple (Dict, )
+        data composed of models, classes and params for 'best_model', 
+        'best_params_' and 'best_scores' if default is ``True``,
+        and model dumped and all parameters otherwise.
+
+    Example
+    ---------
         >>> from watex.bases import fetch_model 
         >>> my_model, = fetchModel ('SVC__LinearSVC__LogisticRegression.pkl',
                                     default =False,  modname='SVC')
         >>> my_model
     """
     
-    try:
-        isdir =os.path.isdir( modelpath)
-    except TypeError: 
-        #stat: path should be string, bytes, os.PathLike or integer, not NoneType
-        isdir =False
-        
-    if isdir and modelfile is not None: 
-        modelfile = os.join.path(modelpath, modelfile)
-
-    isfile = os.path.isfile(modelfile)
-    if not isfile: 
-        raise FileNotFoundError (f"File {modelfile!r} not found!")
-        
-    from_joblib =False 
-    if modelfile.endswith('.pkl'): from_joblib  =True 
+    if not os.path.isfile (file): 
+        raise FileNotFoundError (f"File {file!r} not found. Please check"
+                                 " your filename.")
+    st= storage
+    storage = str(storage).lower().strip() 
+    assert storage not in {"joblib", "pickle"}, (
+        "Data pickling supports only the Python's built-in persistence"
+        f" model'pickle' or 'joblib' as replacement of pickle: got{st!r}"
+        )
+    _logger.info(f"Loading models {os.path.basename(file)}")
     
-    if from_joblib:
-       _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
-       try : 
-           pickledmodel = joblib.load(modelfile)
-           if len(pickledmodel)>=2 : 
-               pickledmodel = pickledmodel[0]
-           # and later ....
-           # f'{pickfname}._loaded' = joblib.load(f'{pickfname}.pkl')
-           dmsg=f"Model {modelfile !r} retreived from~.externals.joblib`!"
-       except : 
-           dmsg=''.join([f"Nothing to retreive. It's seems model {modelfile !r}", 
-                         " not really saved using ~external.joblib module! ", 
-                         "Please check your model filename."])
-    
-    if not from_joblib: 
-        _logger.info(f"Loading models `{os.path.basename(modelfile)}`!")
-        try: 
-           # DeSerializing pickled data 
-           with open(modelfile, 'rb') as modf: 
-               pickledmodel= pickle.load (modf)
-           _logger.info(f"Model `{os.path.basename(modelfile)!r} deserialized"
-                         "  using Python pickle module.`!")
-           
-           dmsg=f"Model {modelfile!r} deserizaled from  {modelfile!r}!"
-        except: 
-            dmsg =''.join([" Unable to deserialized the "
-                           f"{os.path.basename(modelfile)!r}"])
-           
-        else: 
-            _logger.info(dmsg)   
-           
-    if verbose > 0: 
-        pprint(
-            dmsg 
-            )
-           
-    if modname is not None: 
-        keymess = "{modname!r} not found."
-        try : 
-            if default:
-                model_class_params  =( pickledmodel[modname]['best_model'], 
-                                   pickledmodel[modname]['best_params_'], 
-                                   pickledmodel[modname]['best_scores'],
-                                   )
-            if not default: 
-                model_class_params= pickledmodel.get(modname), 
-                
-        except KeyError as key_error: 
-            warnings.warn(
-                f"Model name {modname!r} not found in the list of dumped"
-                f" models = {list(pickledmodel.keys()) !r}")
-            raise KeyError from key_error(keymess + "Shoud try the model's"
-                                          f"names ={list(pickledmodel.keys())!r}")
-        
-        if verbose > 0: 
-            pprint('Should return a tuple of `best model` and the'
-                   ' `model best parameters.')
-           
-        return model_class_params  
+    if storage =='joblib':
+        pickledmodel = joblib.load(file)
+        if len(pickledmodel)>=2 : 
+            pickledmodel = pickledmodel[0]
+    elif storage =='pickle': 
+        with open(file, 'rb') as modf: 
+            pickledmodel= pickle.load (modf)
             
-    if default:
-        model_class_params =list()    
+    data= copy.deepcopy(pickledmodel)
+    if name is not None: 
+        name =_assert_all_types(name, str, objname="Model to pickle ")
+        if name not in pickledmodel.keys(): 
+            raise KeyError(
+                f"Model {name!r} is missing in the dumped models."
+                f" Available pickled models: {list(pickledmodel.keys())}"
+                         )
+        if default: 
+            data =[pickledmodel[name][k] for k in (
+                "best_model", "best_params_", "best_scores")
+                ]
+        else:
+            # When using storage as joblib
+            # trying to unpickle estimator directly other
+            # format than dict from version 1.1.1 
+            # might lead to breaking code or invalid results. 
+            # Use at your own risk. For more info please refer to:
+            # https://scikit-learn.org/stable/modules/model_persistence.html#security-maintainability-limitations
+            
+            # pickling all data
+            data= pickledmodel.get(name)
         
-        for mm in pickledmodel.keys(): 
-            try : 
-                model_class_params.append((pickledmodel[mm]['best_model'], 
-                                          pickledmodel[mm]['best_params_'],
-                                          pickledmodel[modname]['best_scores']))
-            except KeyError as key_error : 
-                raise KeyError (f"Unable to retrieve {key_error.args[0]!r}")
-                
-        if verbose > 0: 
-               pprint('Should return a list of tuple pairs:`best model`and '
-                      ' `model best parameters.')
-               
-        return model_class_params, 
+    return data,       
 
-    return pickledmodel,       
         
 def findCatandNumFeatures( 
         df: DataFrame= None, 
@@ -2238,7 +2199,7 @@ def bi_selector (d, /,  features =None, return_frames = False ):
             d,  return_feature_types= True ) 
     if features is not None: 
         diff_features = is_in_if( d.columns, items =features, return_diff= True )
-        
+        if diff_features is None: diff_features =[]
     return  ( diff_features, features ) if not return_frames else  (
         d [diff_features] , d [features ] ) 
 
@@ -2345,10 +2306,23 @@ def make_naive_pipe(
     
     sc= {"StandardScaler": StandardScaler ,"MinMaxScaler": MinMaxScaler , 
          "Normalizer":Normalizer , "RobustScaler":RobustScaler}
-    
-    if not hasattr (X, '__array__') or not hasattr (X, 'columns'): 
-        raise TypeError(f"'make_naive_pipe' not supported {type(X).__name__!r}"
+
+    if not hasattr (X, '__array__'):
+        raise TypeError(f"'make_naive_pipe' not supported {type(X).__name__!r}."
                         " Expects X as 'pandas.core.frame.DataFrame' object.")
+    X = check_array (
+        X, 
+        dtype=object, 
+        force_all_finite="allow-nan", 
+        to_frame=True, 
+        input_name="Array for transforming X or making naive pipeline"
+        )
+    if not hasattr (X, "columns"):
+        # create naive column for 
+        # Dataframe selector 
+        X = pd.DataFrame (
+            X, columns = [f"naive_{i}" for i in range (X.shape[1])]
+            )
     #-> Encode y if given
     if y is not None: 
         if (label_encoding =='labelEncoder'  
@@ -2394,37 +2368,61 @@ def make_naive_pipe(
             name = scaler.__name__ if callable (scaler) else (
                 scaler.__class__.__name__ ) 
             raise ValueError (msg.format(name ))
-
-    num_pipe=Pipeline([
-            ('selectorObj', DataFrameSelector(attribute_names= num_features)),
+    # make pipe 
+    npipe = [
             ('imputerObj',SimpleImputer(missing_values=missing_values , 
                                     strategy=impute_strategy)),                
             ('scalerObj', scaler() if callable (scaler) else scaler ), 
-            ])
-        
+            ]
+    
+    if len(num_features)!=0 : 
+       npipe.insert (
+            0,  ('selectorObj', DataFrameSelector(attribute_names= num_features))
+            )
+
+    num_pipe=Pipeline(npipe)
+    
     if for_pca : encoding=  ('OrdinalEncoder',OrdinalEncoder())
     else:  encoding =  (
         'OneHotEncoder', OneHotEncoder())
         
-    cat_pipe = Pipeline([
-        ('selectorObj', DataFrameSelector(attribute_names= cat_features)),
+    cpipe = [
         encoding
-        ])
-    
-    full_pipeline =FeatureUnion(transformer_list=[
-        ('num_pipeline', num_pipe), 
-        ('cat_pipeline', cat_pipe)
-        ]) 
+        ]
+    if len(cat_features)!=0: 
+        cpipe.insert (
+            0, ('selectorObj', DataFrameSelector(attribute_names= cat_features))
+            )
+
+    cat_pipe = Pipeline(cpipe)
+    # make transformer_list 
+    transformer_list = [
+        ('num_pipeline', num_pipe),
+        ('cat_pipeline', cat_pipe), 
+        ]
+
+    #remove num of cat pipe if one of them is 
+    # missing in the data 
+    if len(cat_features)==0: 
+        transformer_list.pop(1) 
+    if len(num_features )==0: 
+        transformer_list.pop(0)
+        
+    full_pipeline =FeatureUnion(transformer_list=transformer_list) 
     
     return  ( full_pipeline.fit_transform (X) if y is None else (
         full_pipeline.fit_transform (X), y ) 
              ) if transform else full_pipeline
        
-#XXX TODO : move the stats func 
-def _stats (X_, y_true,*, y_pred, # noqa
-            from_c ='geol', 
-            drop_columns =None, 
-            columns=None )  : 
+#XXX TODO: terminate func move to the metric module
+def _stats (
+    X_, 
+    y_true,*, 
+    y_pred, # noqa
+    from_c ='geol', 
+    drop_columns =None, 
+    columns=None 
+    )  : 
     """ Present a short static"""
 
     if from_c not in X_.columns: 
@@ -2477,8 +2475,15 @@ def _stats (X_, y_true,*, y_pred, # noqa
         
 
 def select_feature_importances (
-        clf, X, threshold = .1 , prefit = True , verbose = 0 , **kws
-        ): 
+    clf, 
+    X, 
+    y=None, *,  
+    threshold = .1 , 
+    prefit = True , 
+    verbose = 0 ,
+    return_selector =False, 
+    **kws
+    ): 
     """
     Select feature importance  based on a user-specified threshold 
     after model fitting, which is useful if one want to use 
@@ -2498,6 +2503,12 @@ def select_feature_importances (
     X : array-like of shape (n_samples, n_features)
         Training vector, where `n_samples` is the number of samples and
         `n_features` is the number of features.
+        
+    y: array-like of shape (n_samples, ) 
+        Target vector where `n_samples` is the number of samples. If given, 
+        set `prefit=False` for estimator to fit and transform the data for 
+        feature importance selecting. If estimator is already fitted  i.e.
+        `prefit=True`, 'y' is not needed.
 
     threshold : str or float, default=None
         The threshold value to use for feature selection. Features whose
@@ -2547,29 +2558,113 @@ def select_feature_importances (
 
         To only select based on ``max_features``, set ``threshold=-np.inf``.
         
+    return_selector: bool, default=False, 
+        Returns selector object if ``True``., otherwise returns the transformed
+        `X`. 
+        
     verbose: int, default=0 
         display the number of features that meet the criterion according to 
         their importance range. 
     
-    Rteurns 
+    Returns 
     --------
-    Xs: ndarray (n_samples, n_criterion_features)
+    Xs or selector : ndarray (n_samples, n_criterion_features), or \
+        :class:`sklearn.feature_selection.SelectFromModel`
         Ndarray of number of samples and features that meet the criterion
-        according to the importance range.
+        according to the importance range or selector object 
         
+        
+    Examples
+    --------
+    >>> from watex.utils.mlutils import select_feature_importances
+    >>> from watex.exlib.sklearn import LogisticRegression
+    >>> X0 = [[ 0.87, -1.34,  0.31 ],
+    ...      [-2.79, -0.02, -0.85 ],
+    ...      [-1.34, -0.48, -2.55 ],
+    ...      [ 1.92,  1.48,  0.65 ]]
+    >>> y0 = [0, 1, 0, 1]
+    
+    (1) use prefit =True and get the Xs importance features 
+    >>> Xs = select_feature_importances (
+        LogisticRegression().fit(X0, y0), 
+        X0 , prefit =True )
+    >>> Xs 
+    array([[ 0.87, -1.34,  0.31],
+           [-2.79, -0.02, -0.85],
+           [-1.34, -0.48, -2.55],
+           [ 1.92,  1.48,  0.65]])
+    
+    (2) Set off prefix  and return selector obj 
+    
+    >>> selector= select_feature_importances (
+        LogisticRegression(), X= X0 , 
+        y =y0  ,
+        prefit =False , return_selector= True 
+        )
+    >>> selector.estimator_.coef_
+    array([[-0.3252302 ,  0.83462377,  0.49750423]])
+    >>> selector.threshold_
+    0.1
+    >>> selector.get_support()
+    array([ True,  True,  True])
+    
+    >>> selector = SelectFromModel(estimator=LogisticRegression()).fit(X, y)
+    >>> selector.estimator_.coef_
+    array([[-0.3252302 ,  0.83462377,  0.49750423]])
+    >>> selector.threshold_
+    0.55245...
+    >>> selector.get_support()
+    array([False,  True, False])
+    >>> selector.transform (X0) 
+    array([[ 0.87, -1.34,  0.31],
+           [-2.79, -0.02, -0.85],
+           [-1.34, -0.48, -2.55],
+           [ 1.92,  1.48,  0.65]])
+    
     """
-    sfm = SelectFromModel(clf, threshold= threshold , prefit= prefit, **kws)
-    Xs = sfm.transform(X) 
-    if verbose: 
-        print("Number of features that meet this threshold criterion:" 
-              ": ", Xs.shape[1]) 
+    if ( hasattr (clf, 'feature_names_in_') 
+        or hasattr(clf, "feature_importances_")
+        or hasattr (clf, 'coef_')
+        ): 
+        if not prefit: 
+            warnings.warn(f"It seems the estimator {get_estimator_name (clf)!r}"
+                          "is fitted. 'prefit' is set to 'True' to call "
+                          "transform directly.")
+            prefit =True 
+            
+    selector = SelectFromModel(
+        clf, 
+        threshold= threshold , 
+        prefit= prefit, 
+        **kws
+        )
+    
+    if prefit:
+        Xs = selector.transform(X) 
+    else:
+        Xs = selector.fit_transform(X, y =y)
         
-    return Xs 
+    if verbose: 
+        print(f"Number of features that meet the 'threshold={threshold}'" 
+              " criterion: ", Xs.shape[1]
+              ) 
+        
+    return selector if return_selector else Xs 
+
  
 def naive_imputer (
-        X, y=None, strategy = 'mean', drop_features =False,  kind=None, 
-        missing_values= np.nan ,fill_value = None , verbose = "deprecated",
-        add_indicator = False,  copy = True,  **fit_params ) : 
+    X, 
+    y=None, 
+    strategy = 'mean', 
+    mode=None,  
+    drop_features =False,  
+    missing_values= np.nan ,
+    fill_value = None , 
+    verbose = "deprecated",
+    add_indicator = False,  
+    copy = True,  
+    **fit_params 
+ ): 
     """ Imput missing values in the data. 
     
     Whatever data contains categorial features, 'bi-impute' argument passed to 
@@ -2586,35 +2681,38 @@ def naive_imputer (
     y : None
         Not used, present here for API consistency by convention.
         
+    strategy : str, default='mean'
+       The imputation strategy.
+
+       - If "mean", then replace missing values using the mean along
+         each column. Can only be used with numeric data.
+       - If "median", then replace missing values using the median along
+         each column. Can only be used with numeric data.
+       - If "most_frequent", then replace missing using the most frequent
+         value along each column. Can be used with strings or numeric data.
+         If there is more than one such value, only the smallest is returned.
+       - If "constant", then replace missing values with fill_value. Can be
+         used with strings or numeric data.
+
+          strategy="constant" for fixed value imputation.
+        
+    mode: str, [bi-impute'], default= None
+        If mode is set to 'bi-impute', it imputes the both numerical and 
+        categorical features and returns a single imputed 
+        dataframe.
+        
     drop_features: bool or list, default =False, 
         drop a list of features in the dataframe before imputation. 
         If ``True`` and no list of features is supplied, the categorial 
-        features are removed. 
+        features are dropped. 
         
-    kind: str, [bi-impute'], default= None
-        If kind is set to 'bi-impute', it imputes the numerical and 
-        categorical features separately and returns a single imputed 
-        dataframe.
     missing_values : int, float, str, np.nan, None or pandas.NA, default=np.nan
         The placeholder for the missing values. All occurrences of
         `missing_values` will be imputed. For pandas' dataframes with
         nullable integer dtypes with missing values, `missing_values`
         can be set to either `np.nan` or `pd.NA`.
 
-    strategy : str, default='mean'
-        The imputation strategy.
-
-        - If "mean", then replace missing values using the mean along
-          each column. Can only be used with numeric data.
-        - If "median", then replace missing values using the median along
-          each column. Can only be used with numeric data.
-        - If "most_frequent", then replace missing using the most frequent
-          value along each column. Can be used with strings or numeric data.
-          If there is more than one such value, only the smallest is returned.
-        - If "constant", then replace missing values with fill_value. Can be
-          used with strings or numeric data.
-
-           strategy="constant" for fixed value imputation.
+   
 
     fill_value : str or numerical value, default=None
         When strategy == "constant", fill_value is used to replace all
@@ -2681,40 +2779,90 @@ def naive_imputer (
         6       onion  mouse -0.486639  0.110076
         
     """
-    X_cat=None  
+    X_cat, _isframe =None , True  
     
-    if kind is not None: 
-        kind = str(kind).lower().strip () 
-        if kind.find ('bi')>=0: 
-            kind='bi-impute'
-            
-        assert kind in {'bi-impute'} , f"Supports 'bi-impute', not {kind!r}"
-        
-    if hasattr (X, 'columns' ) :
-        X , nf, cf =   to_numeric_dtypes(X, return_feature_types= True ) 
+    X = check_array (
+        X, 
+        dtype=object, 
+        force_all_finite="allow-nan", 
+        to_frame=True, 
+        input_name="X"
+        )
+ 
     if drop_features :
         if not hasattr(X, 'columns'): 
-            raise ValueError ("Drop feature is possible only if  X is dataframe."
-                              f" Got {type(X).__name__!r}") 
+            raise ValueError ("Drop feature is possible only if  X is a"
+                              f" dataframe. Got {type(X).__name__!r}") 
         
         if ( str(drop_features).lower().find ('cat') >=0 
                 or  str(drop_features).lower()=='true' 
                     ) :
-                X = X [nf ] # drop cat features 
+            # drop cat features
+            X= to_numeric_dtypes(X, pop_cat_features=True, verbose =True )
+
         else : 
             if not is_iterable(drop_features): 
                 raise TypeError ("Expects a list of features to drop;"
                                  " not {type(drop_features).__name__!r}")
-        # drop_feature is a list assert features
+        # drop_feature is a list assert whether features exist in X
             existfeatures(X, features = drop_features ) 
-            X= X[drop_features ]
+            diff_features = is_in_if(X.columns, drop_features, return_diff= True
+                                     )
+            if diff_features is None:
+                raise DatasetError(
+                    "It seems all features in X have been dropped. "
+                    "Cannot impute a dataset with no features."
+                    f" Drop features: '{drop_features}'")
+                
+            X= X[diff_features ]
             
-    if (kind=='bi-impute' and strategy !='most_frequent')  :
+    # ====> implement bi-impute strategy.  
+    # strategy expects at the same time 
+    # categorical  and num features 
+    err_msg =(". Use 'bi-impute' strategy passed to"
+              " the parameter 'mode' to coerce the categorical"
+              " besides the numerical features."
+    )
+    if strategy =="most_frequent": 
+       # altered the bi-impute strategy 
+       # since most_frequent imputes at 
+       # the same time num and cat features 
+       
+       mode =None 
+    if mode is not None: 
+        mode = str(mode).lower().strip () 
+        if mode.find ('bi')>=0: 
+            mode='bi-impute'
+            
+        assert mode in {'bi-impute'} , (
+            f"Strategy passed to 'mode' supports only 'bi-impute', not {mode!r}")
+
+    if mode=='bi-impute':
         if not hasattr (X, 'columns'): 
-            raise ValueError (" Bi-Imputation is only allowed  with a"
-                              f"dataframe, not {type (X).__name__!r}")
-        X_cat , X = X [cf] ,  X[nf] 
-        
+            # "In pratice, the bi-Imputation is only allowed"
+            # " with adataframe so create naive columns rather"
+            # than raise error
+            X= pd.DataFrame(X, columns =[f"bi_{i}" for i in range(X.shape[1])]
+                            )
+            _isframe =False 
+            
+        # recompute the num and cat features
+        # since drop features can remove the
+        # the cat features 
+        X , nf, cf = to_numeric_dtypes(X, return_feature_types= True ) 
+        if (len(nf) and len(cf) ) !=0 :
+            # keep strategy to bi-impute 
+            mode='bi-impute'
+            X_cat , X = X [cf] ,  X[nf] 
+            
+        elif len(nf) ==0 and len(cf)!=0: 
+            strategy ='most_frequent'
+            mode =None # reset the kind method 
+            X = X [cf]
+        else: # if numeric 
+            mode =None 
+            
+    # <==== end bi-impute strategy
     imp = SimpleImputer(strategy= strategy , 
                         missing_values= missing_values , 
                         fill_value = fill_value , 
@@ -2724,29 +2872,37 @@ def naive_imputer (
     try : 
         Xi = imp.fit_transform (X, y =y, **fit_params )
     except Exception as err :
-        raise ValueError (str(err) + ". Use 'bi-impute' strategy passed to"
-                          " the parameter 'kind' to coerce the categorical"
-                          " besides the imputed numerical features.")
+        #improve error msg 
+        raise ValueError (str(err) + err_msg)
     
     if hasattr (imp , 'feature_names_in_'): 
         Xi = pd.DataFrame( Xi , columns = imp.feature_names_in_)  
     # commonly when strategy is most frequent
     # categorical features are also imputed.
-    # so dont need to use bin strategy
-    if  (kind=='bi-impute' and strategy !='most_frequent') :
+    # so dont need to use bi-impute strategy
+    if  mode=='bi-impute':
         imp.strategy ='most_frequent'
         Xi_cat  = imp.fit_transform (X_cat, y =y, **fit_params ) 
-        
         Xi_cat = pd.DataFrame( Xi_cat , columns = imp.feature_names_in_)
         Xi = pd.concat ([Xi_cat, Xi], axis =1 )
- 
+        
+        if not _isframe : 
+            Xi = Xi.values 
+            
     return Xi
 
     
 def naive_scaler(
-    X,y =None, kind= StandardScaler, copy =True, with_mean = True, 
-    with_std= True , feature_range =(0 , 1), clip = False,
-    norm ='l2',  **fit_params  
+    X,
+    y =None, *, 
+    kind= StandardScaler, 
+    copy =True, 
+    with_mean = True, 
+    with_std= True , 
+    feature_range =(0 , 1), 
+    clip = False,
+    norm ='l2',  
+    **fit_params  
     ): 
     """ Quick data scaling using both strategies implemented in scikit-learn 
     with StandardScaler and MinMaxScaler. 

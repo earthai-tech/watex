@@ -112,7 +112,7 @@ dict, X, y : frame of :class:`~watex.utils.box.Boxspace` object
 Examples 
 ---------
 >>> from watex.datasets import fetch_data 
->>> b = fetch_data('bagoue' ) # no prefix return 'Boxspace' object
+>>> b = fetch_data('bagoue' ) # no suffix returns 'Boxspace' object
 >>> b.tnames 
 ... array(['flow'], dtype='<U4')
 >>> b.feature_names 
@@ -153,9 +153,10 @@ def _parse_tags (tag, multi_kind_dataset ='bagoue'):
         if t[0] not in _DTAGS: 
             tag = multi_kind_dataset +' ' + t[0]
             
-            warn("Fetching data without explicitly specify the "
-                 "type of data will raise an error. In future, "
-                 f"the argument should be '{tag}' instead.", 
+            warn(f"Fetching {multi_kind_dataset.title()!r} data without"
+                 " explicitly prefixing the kind of data with the area"
+                 " name will raise an error in future. Henceforth, "
+                f" the argument should be '{tag}' instead.", 
                  FutureWarning 
                  )
     elif len(t) >1 : 
@@ -176,7 +177,7 @@ _LST = listing_items_format(
 )
 
 _DDOC="""\
-WATex dataset is composed of differents types for software implementation. 
+WATex dataset is composed of different kind of data for software implementation. 
     - ERP data found in 'gbalo', 'boundiali' localities in northern part of 
         Cote d'Ivoire <'https://en.wikipedia.org/wiki/Ivory_Coast'>'
     - VES data collected in 'gbalo', 'semien', 'tankesse' in center and 

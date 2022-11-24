@@ -30,6 +30,8 @@ from ._metapredictors import (
         _pMODELS 
     )
 
+__all__=["p", "pModels"]
+
 def cloneObj (cls, attributes ): 
     """ Clone object and update attributes """
     obj = cls.__new__(cls) 
@@ -50,8 +52,8 @@ class pModels :
     Each model called is considered as a class object and attributes compose 
     the training parameters from cross-validation results. 
     
-    Arguments 
-    --------- 
+    Parameters
+    ----------- 
     model: str 
         Name of the pretrained model. Note that the pretrained SVMs is composed 
         of 04 kernels such as the ``rbf`` for radial basis function , the 
@@ -69,36 +71,39 @@ class pModels :
     kernel: str 
         kernel refers to SVM machines kernels. It can be ``rbf`` for radial basis
         function , the ``poly`` for polynomial , ``sig`` for sigmoid and
-        ``lin`` for linear. No use to provide since it can be retrieved as an 
+        ``lin`` for linear. No need to provide since it can be retrieved as an 
         attribute of the SVM model like:: 
             
             >>> pModels(model='svm').fit().SVM.rbf # is an object instance 
-            >>> # to retrived the rbf values use atribute `best_estimator_ 
+            >>> # to retreive the rbf values use attribute `best_estimator_ 
             >>> pModels(model='svm').fit().SVM.rbf.best_estimator_ 
             ...  SVC(C=2.0, coef0=0, degree=1, gamma=0.125)
             
     target: str 
-        Two type of classification is predicted. The binary classification ``bin``
+        Two types of classification is predicted. The binary classification ``bin``
         and the multiclass classification ``multi``. default is ``bin``. When  
         turning target to ``multi``, be aware that only the SVMs are trained 
         for multilabels predictions. Futhernore, the `bin` consisted to predict 
         the flow rate (FR) with label {0} and {1} where {0} means the 
         :math:`FR <=1 m^3/hr` and {1} for :math:`FR> 1m^3/hr`. About `multi`, 
-        four classes are predicted such as:: 
+        four classes are predicted such as: 
             
-            .. math:: 
-                
-                FR0 & = & FR = 0 
-                FR1 & = & 0 < FR <=1 m^3/hr
-                FR2 & = & 1< FR <=3 m^3/hr 
-                FR3 & = & FR> 3 m^3/hr 
+        .. math:: 
+            
+            FR0 & = & FR = 0 
+            FR1 & = & 0 < FR <=1 m^3/hr
+            FR2 & = & 1< FR <=3 m^3/hr 
+            FR3 & = & FR> 3 m^3/hr 
             
     oob_score: bool, 
-        Out-of-bag. Setting `oob` to ``true``, you will retrieve some 
+        Out-of-bag. Setting `oob_score` to ``true``, you will retrieve some 
         pretrained model with ``obb_score`` set to true when training. The  
         pretrained models with fine-tuned model with `oob_score` set to true 
         are 'RandomForest' and  'Extratrees'. 
         
+    objective: str, default='fr'
+        Is the prediction aim goal, the reason for storing the pretrained 
+        models. the default `objective` is 'fr' i.e. for flow rate prediction. 
         
     Examples: 
     ----------
@@ -121,7 +126,7 @@ class pModels :
     ...                                                     max_depth=7)),
     ...                             ('pSVM',
     ...                              SVC(C=2.0, coef0=0, degree=1, gamma=0.125))])
-    >>> p2 = pModels(model='extree', oob= True ).fit()
+    >>> p2 = pModels(model='extree', oob_score= True ).fit()
     >>> p2.ExtraTrees.best_estimator_ 
     ... ExtraTreesClassifier(bootstrap=True, criterion='entropy', max_depth=18,
                          max_features='auto', n_estimators=300, oob_score=True)
@@ -132,13 +137,15 @@ class pModels :
                 ['xgboost', 'svm', 'dtc', 'stc', 'bag', 'logit', 'vtc',
                  'rfc', 'ada', 'extree', 'knn']))
     
-    def __init__(self, 
-                 model:str  ='svm',  
-                 target:str  = 'bin', 
-                 kernel:Optional[str]  =None , 
-                 oob_score:bool  =False, 
-                 objective: str  = 'fr',
-                 **kws): 
+    def __init__(
+        self, 
+        model:str='svm',  
+        target:str='bin', 
+        kernel:Optional[str]=None , 
+        oob_score:bool=False, 
+        objective: str='fr',
+        **kws
+        ): 
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         
         self.model = model 
@@ -153,9 +160,9 @@ class pModels :
         attributes. 
         
         :param X: NoneType 
-            X does nothing , it is used for API purpose 
+            X does nothing, it is used for API consistency 
         :param y: NoneType 
-            y does nothing, it is used for API purpose 
+            y does nothing, it is used for API consistency
             
         :example: 
         >>> from watex.models.premodels import pModels 
@@ -166,10 +173,18 @@ class pModels :
         ... AdaBoostClassifier(base_estimator=LogisticRegression(), learning_rate=0.09,
                            n_estimators=500)
         """
-        
         if self.model is None: 
             raise TypeError( "NoneType can't be a model.")
+        self.objective = str(self.objective).lower() 
         
+        assert self.objective =='fr',(
+            f"Pretrained objective is for flow rate prediction 'fr' passed to"
+            f" parameter 'objective'; not {self.objective}"
+            ) 
+        assert self.target not in ("bin", "multi"), (
+            "Two types of learning targets are expected: the multiclass"
+            "'multi' and binary 'bin'. Got {self.target!r}"
+            )
         self.model, self.name_ = controlExistingEstimator(
             self.model , raise_err = True )
         # change the name of SVC to easy
@@ -183,11 +198,11 @@ class pModels :
         if self.model not in list(map(lambda d: d[0], self.pdefaults_)): 
             pl = list(map(lambda d: str(d[0]) + ' -> ' + str(d[1]),
                           self.pdefaults_))
-            raise EstimatorError( f"Unsupport model : {self.model}"
-                                 f" Expect {smart_format(pl, 'or')}")
+            raise EstimatorError( f"Unsupport model : {self.model}."
+                                 f" Expects {smart_format(pl, 'or')}")
         try : 
             data_= _pDATA # fetch data from module 
-            # this will force to fectch default 
+            # this will force to fetch default 
             # values in exceptions
             if data_ is None: raise 
             
@@ -198,6 +213,12 @@ class pModels :
         if self.oob_score: 
             if self.model in ('svc', 'extree', 'rdf'): 
                 self.name_ +='_'
+            else :
+                raise EstimatorError(
+                    "Pretrained model for 'oob_score=True' is only available"
+                    " for RandomForest <'rdf'> and Extratrees <'extree'>',"
+                   f" not {self.model!r}"
+                   )
         obj = type (self.name_, (), {})
 
         try: 
@@ -276,10 +297,11 @@ class pModels :
   
 
 class _objectview(object):
-    """ View object of a superclass created from each subclasss of dict elements.
+    """ View object of a superclass created from each subclasss of dict 
+    elements.
     
-    Is a container of dict element resulting  from model instance element. Thus,
-     each element can be retrieved as its own attribute. For instance:: 
+    Is a container of dict element resulting  from model instance element. 
+    Thus, each element can be retrieved as its own attribute. For instance:: 
         
         >>> from watex.models.premodels import p 
         >>> p.SVM.poly.best_estimator_
@@ -307,8 +329,8 @@ p = _objectview(_pMODELS)
   
 p.__doc__= """\
 p Object is a supclass that contains all the pretrained models. 
-each pretraines model compose its own class object with dict element as 
-an atributes. 
+each pretrained model composes its own class object with dict element as 
+attributes. 
 
 Each pretrained model can fetched  as an attribute. For instance:: 
     

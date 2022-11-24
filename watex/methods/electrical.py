@@ -51,7 +51,7 @@ from ..utils.exmath import (
     )
 from ..utils.validator import ( 
     _is_valid_erp , 
-    _is_valid_ves
+    _is_valid_ves, 
     )
 from ..property import( 
     ElectricalMethods

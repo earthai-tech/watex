@@ -4,14 +4,16 @@ Created on Wed Oct 12 14:27:57 2022
 
 @author: Daniel
 """
+
 from warnings import warn 
-from ..base import is_installing 
+from ..utils._dependency import import_optional_dependency 
+
 
 xgboostdoc = type ('xgboostdoc', (), dict (
     __doc__= """\
     Extreme Gradient Boosting
     
-    XGBoost XgBoost stands for Extreme Gradient Boosting, is an open-source 
+    XGBoost stands for Extreme Gradient Boosting, is an open-source 
     software library that implements optimized distributed gradient boosting 
     machine learning algorithms under the Gradient Boosting framework.
     
@@ -38,19 +40,20 @@ xgboostdoc = type ('xgboostdoc', (), dict (
     )
 )
     
-IS_GBM = False 
+IS_GBM = False
+#XXX TODO replace the doi by the hydrology paper doi
+extra =("'xgboost' is one the pretrained models stored in the watex package"
+        " especially for flow rate (FR) prediction by implementing a new"
+        " paradigm for boosting the FR. It is needed to fetch the package"
+        " premodels. Refer to :doi:`https://doi.org/10.1029/2021wr031623`"
+        " for further details."
+        )
+import_optional_dependency ("xgboost", extra=extra, min_version="1.2.0" ) 
 try : 
     import xgboost 
-except : 
-    warn("Gradient Boosting Machine is installing."
-                  " Please wait... ")
-    print('!-> Please wait for Gradient Boosting Machines to be installed...')
-    IS_GBM = is_installing('xgboost')
-    if IS_GBM : 
-        print("!---> 'xgboost' installation is complete")
-    else : 
-        warn ("'xgoost' installation failed.")
-        print("Fail to install 'xgboost', please install it mannualy.")
+except ( ImportError, ModuleNotFoundError ): 
+    warn("Missing Gradient Boosting Machine <'xgboost'> module"
+         "Use pip or conda for its installation.")
 else :IS_GBM =True 
  
 if IS_GBM: 

@@ -160,8 +160,8 @@ def to_numeric_dtypes (
         if verbose: 
             msg ="Dataframe does not contain any categorial features."
             b= f"Feature{'s' if len(cf)>1 else ''}"
-            e = (f"{'have' if len(cf) >1 else 'has'} been successfully "
-                 "removed from dataFrame.")
+            e = (f"{'have' if len(cf) >1 else 'has'} been dropped"
+                 " from the dataframe.")
             print(msg) if len(cf)==0 else listing_items_format (
                 cf , b, e ,lstyle ='.', inline=True)
             
@@ -615,7 +615,7 @@ def smart_strobj_recognition(
         try:
             ix = container_.index (name)
         except ValueError: 
-            raise AttributeError("{name!r} attribute is not defined")
+            raise AttributeError(f"{name!r} attribute is not defined")
         
     if deep and ix is None:
         # go deeper in the search... 
@@ -2474,7 +2474,7 @@ def fillNaN(arr, method ='ff'):
     
     
 def get_params (obj: object 
-                ) -> Dict: 
+               ) -> Dict: 
     """
     Get object parameters. 
     

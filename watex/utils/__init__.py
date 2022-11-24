@@ -51,8 +51,6 @@ from .hydroutils import (
 from .mlutils import ( 
     selectfeatures, 
     getGlobalScore, 
-    discretizeCategoriesforStratification,
-    stratifiedUsingDiscretedCategories, 
     split_train_test, 
     correlatedfeatures, 
     findCatandNumFeatures,
@@ -64,7 +62,8 @@ from .mlutils import (
     naive_imputer, 
     naive_scaler, 
     select_feature_importances, 
-    make_naive_pipe
+    make_naive_pipe, 
+    bi_selector, 
     
     )
 from .plotutils import ( 
@@ -106,9 +105,7 @@ __all__=[
         'scaley', 
         'fittensor', 
         'selectfeatures', 
-        'getGlobalScore', 
-        'discretizeCategoriesforStratification',
-        'stratifiedUsingDiscretedCategories', 
+        'getGlobalScore',  
         'split_train_test', 
         'correlatedfeatures', 
         'findCatandNumFeatures',
@@ -151,7 +148,8 @@ __all__=[
         'naive_imputer', 
         'naive_scaler', 
         'select_feature_importances',
-        'make_naive_pipe', 
+        'make_naive_pipe',
+        'bi_selector',
         'make_MXS_labels', 
         'predict_NGA_labels', 
         'find_aquifer_groups', 
