@@ -52,7 +52,7 @@ def load_boundiali (
     data_file ="boundiali_ves.csv"
     with resources.path (DMODULE , data_file) as p : 
         data_file = p 
-    df =  vesSelector(f = data_file  ,index_rhoa = index_rhoa)
+    df =  vesSelector(data= data_file  ,index_rhoa = index_rhoa)
     return df if as_frame else Boxspace(
             data = df.values, 
             resistivity = df.resistivity,  
