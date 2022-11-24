@@ -118,6 +118,7 @@ def make_MXS_labels (
     sep =None, 
     prefix =None, 
     method='naive', 
+    trailer="*",
     return_obj=False,  
     **kws
    ): 
@@ -173,6 +174,23 @@ def make_MXS_labels (
             This can give a suitable anaylse results if the data is not 
             unbalanced for each labels in `y_pred`.
             
+    trailer: str, default='*'
+        The Mixture strategy marker to differentiate the existing class label  
+        in 'y_true' with the predicted labels 'y_pred' especially when  
+        the the same class labels are also present the true label with the 
+        same label-identifier name. This usefull  to avoid any confusion  for
+        both labels  in `y_true` and `y_pred` for better demarcation and 
+        distinction. Note that if the `trailer`is set to ``None`` and both 
+        `y_true` and `y_pred` are numeric data, the labels in `y_pred` are 
+        systematically renamed to be distinct with the ones in the 'y_true'. 
+        For instance :: 
+            
+            >>> true_labels=[1, 2, 3] ; NGA_labels =[0, 1, 2]
+            >>> # with trailer , MXS labels should be 
+            >>>  MXS_labels= ['0', '1*', '2*', '3'] # 1 and 2 are in true_labels 
+            >>> # with no trailer 
+            >>> MXS_labels= [0, 4, 5, 3] # 1 and 2 have been changed to [4, 5]
+            
     return_obj: :class:`watex.utils.box.Boxspace`
         If ``True``, returns a MXS object with usefull attributes such as: 
             - mxs_classes_ = the MXS class labels 
@@ -206,19 +224,36 @@ def make_MXS_labels (
         array like of MXS labels or MXS object containing the 
         usefull attributes. 
     
-    Example
+    Examples
     ---------
     >>> from watex.datasets import load_hlogs
+    >>> from watex.utils import read_data 
     >>> from watex.utils.hydroutils import classify_k, make_MXS_labels
     >>> data = load_hlogs ().frame 
     >>> # map data.k to categorize k values 
     >>> ymap = classify_k(data.k , default_func =True) 
     >>> y_mxs = make_MXS_labels (ymap, data.aquifer_group)
-    ...
+    >>> y_mxs[14:24] 
+    ...  array(['I', 'I', 2, 2, 2, 2, 2, 2, 2, 2], dtype=object)
     >>> mxs_obj = make_MXS_labels (ymap, data.aquifer_group, return_obj=True )
-    >>> mxs_obj.mxs_labels_
-    ... 
-    
+    >>> mxs_obj.mxs_labels_[14: 24]
+    ... array(['I', 'I', 2, 2, 2, 2, 2, 2, 2, 2], dtype=object)
+    >>> # now we did the same task using the private data 'hf.csv'
+    >>> # composed of 11 boreholes. For default we alternatively uses 
+    >>> # the aquifer groups like a fake NGA 
+    >>> data = read_data ('data/boreholes/hf.csv') 
+    >>> ymap =  classify_k(data.k , default_func =True)  
+    >>> y_mxs= make_MXS_labels (ymap, data.aquifer_group)
+    >>> np.unique (y_mxs)
+    ... array(['1', '1V', '2', '2III', '3', 'I', 'II', 'III&IV', 'IV'],
+          dtype='<U6')
+    >>> # *comments: 
+        # label '1V' means the group V (expected to be a cluster) 
+        # and label 1 (true labels) have a similarity 
+        # the same of label '2III' while the remain label 3 does not  
+        #  any similarity in the other labels  in the 'y_pred' expected 
+        # to be NGA labels. 
+        
     """
     CONTEXT_MSG = (
         "Can only process unfunc {0!r} if and only if {1} similarity"
@@ -226,10 +261,9 @@ def make_MXS_labels (
         " labels in 'y_pred'."
         )
     
-    sep = sep or '' ; prefix = prefix or '' 
+    sep = sep or '' 
+    prefix = prefix or '' 
     # for consistency
-    sep =str(sep) ; prefix =str(prefix)  
-    
     # check arrays 
     y_true = check_y (
         y_true, 
@@ -249,11 +283,11 @@ def make_MXS_labels (
     # check whether the y_true is numerical data 
     # if not rename y_true and keep the classes 
     # for mapping at the end of class transformation 
-    y_true_transf, mxs_map_classes_  = _kmapping( y_true )
+    #y_true_transf, mxs_map_classes_  = _kmapping( y_true )
     
     if similar_labels is None: 
         similar_labels = find_similar_labels (
-            y_true_transf, 
+            y_true, 
             y_pred, 
             threshold= threshold, 
             method=method, 
@@ -261,23 +295,25 @@ def make_MXS_labels (
             ) 
         
     CONTEXT = 'no' if len(similar_labels)==0  else 'similarity is found' 
-    
+
     if CONTEXT =='no' : 
         y_mxs, group_classes_, group_labels, sim_groups = _MXS_if_no(
             CONTEXT, 
-            y_true_transf, 
+            y_true, 
             y_pred, 
-            CONTEXT_MSG 
+            cmsg=CONTEXT_MSG , 
+            trailer=trailer 
             )
     else : 
         y_mxs, group_classes_, group_labels, sim_groups = _MXS_if_yes(
             CONTEXT , 
             similar_labels, 
             y_pred, 
-            y_true_transf, 
-            sep , 
-            prefix,  
-            CONTEXT_MSG   
+            y_true, 
+            sep =sep,
+            prefix= prefix, 
+            cmsg= CONTEXT_MSG, 
+            trailer= trailer 
         )
     # # save the not_nan indices to not 
     # # altered the k-valid values 
@@ -291,10 +327,15 @@ def make_MXS_labels (
     except :  
         y_mxs [not_nan_indices] = y_true [not_nan_indices]
     
-    if mxs_map_classes_ is not None: 
-        y_mxs = pd.Series (y_mxs, name ='mxs').map(
-            mxs_map_classes_ ).values 
-        
+    #let pandas to find the best dtype since 
+    # string value in y_mxs object remain a string 
+    # object in data
+    y_mxs = pd.Series (y_mxs, name ='mxs').values 
+
+    try : 
+        y_mxs = y_mxs .astype (int) 
+    except : y_mxs= y_mxs.astype(str )
+    
     MXS =y_mxs .copy() 
     
     if return_obj : 
@@ -308,9 +349,9 @@ def make_MXS_labels (
         MXS_attributes = dict (
             mxs_classes_ = mxs_classes_, 
             mxs_labels_= y_mxs ,  
-            mxs_map_classes_= mxs_map_classes_, 
+            # mxs_map_classes_= mxs_map_classes_, 
             mxs_group_classes_=group_classes_ ,
-            mxs_similar_labels= similar_labels, 
+            mxs_similar_labels_= similar_labels, 
             mxs_similarity_= sim_groups,  
             mxs_group_labels_= group_labels
             )  
@@ -2878,7 +2919,7 @@ def _name_mxs_labels(*s , sep ='', prefix =""):
         finally: mxs.append (xs )
     return mxs 
  
-def _MXS_if_no(context,  /,  y_true , y_pred , cmsg =''): 
+def _MXS_if_no(context,  /,  y_true , y_pred , cmsg ='', trailer = "*"): 
     """ Make MXS according to the context whether a similarity 
      between the true labels in 'y_true' and NGA labels is found or not. 
      
@@ -2900,60 +2941,228 @@ def _MXS_if_no(context,  /,  y_true , y_pred , cmsg =''):
             'y_true' and NGA labels. 
         - sim_groups: groups  of pair composed of the similar label and 
             and the label in the predicted NGA. 
-
+            
+    :example: 
+        >>> import numpy as np 
+        >>> from watex.utils.hydroutils import _MXS_if_no
+        >>> y_true = np.arange (5) 
+        >>> y_pred = np.arange (1, 6) 
+        >>> _, d, *_= _MXS_if_no ('no', y_true =y_true , y_pred =y_pred )
+        >>> d 
+        ... {1: '1*', 2: '2*', 3: '3*', 4: '4*', 5: '5'}
+        >>> _, d, *_= _MXS_if_no ('no', y_true =y_true , y_pred =y_pred, 
+                                  trailer =None)
+        >>> d
+        ... {1: 5, 2: 6, 3: 7, 4: 8, 5: 9} # rename labels 
+        
     """
     assert str(context).lower() in {'no', 'no similarity', 
         'similarity does not exist', 'False','similarity not found'
         }, cmsg.format (_MXS_if_yes.__name__, 'at least ONE')
-       
-    sim_groups =None # similarity groups in pair (true label , similar group )  
+    
+    # similarity groups in pair (true label , similar group )     
+    sim_groups =None 
     group_labels =None # NGA similar groups 
     y_mxs = y_pred.copy().astype ( object )
-        
-    #if context =='no': 
+
     # get the label from similarity groups: 
     true_labels = np.unique (y_true ) 
     #  group_labels = [ group  for _, group in s ]
     NGA_labels = np.unique ( y_pred ) 
-    
-    
-    # if one of the NGA label is found in true labels 
-    # rename them using +1 for numeric and 'string + trailer
+    # Rename the NGA labels using the trailer or 
+    # add constant; 
     group_classes_ = dict() 
     if any([ l in true_labels for l in NGA_labels ]): 
-        # if NGA and true labels are numeric
-        # add max int value of true labels to NGA for renaming 
+        pseudo_NGA_labels = _create_mxs_pseudo_labels (
+            y_true=y_true , y_pred=y_pred , group_labels= None, 
+            trailer =trailer)
         for klabel in NGA_labels : 
-            if klabel in true_labels: 
-                nklabel = _mixture_group_label_if (klabel, true_labels ) 
-                klabel_ix,  = np.where (y_pred ==klabel)
-                y_mxs [klabel_ix ] = nklabel
-                # keep it into the modified 
-                # group classes 
-                group_classes_ [klabel] = nklabel 
+            nklabel = pseudo_NGA_labels.get(klabel) 
+            klabel_ix,  = np.where (y_pred ==klabel)
+            y_mxs [klabel_ix ] = nklabel
+            # keep it into the modified group classes 
+            group_classes_ [klabel] = nklabel 
 
     return y_mxs , group_classes_ , group_labels , sim_groups 
 
-def _mixture_renamer ( true_labels, labels_not_in_goups, gclasses =None , trailer ='_'): 
+def _create_mxs_pseudo_labels(
+        y_true, y_pred, group_labels = None , trailer ='*'): 
+    """ create pseudo MXS labels  and save it in pseudo-dict. 
     
-    items =is_in_if(true_labels, labels_not_in_goups, 
-                    return_intersect= True )
-    if _is_numeric_dtype( true_labels, to_array= True) and \
-        _is_numeric_dtype(labels_not_in_goups, to_array=True ): 
-        if items is not None: 
-            if 0 in items: 
-                pseudo_items = np.array(items ) + max(true_labels) + 1 # add one
-            else: pseudo_items  = np.array(items ) + max(true_labels)
+    if labels not in the group is found in the class labels of the 'y_true', 
+    rename it using the MXS trailer '*' as a special class label. 
+    otherwise skipped. 
+    
+    If the group label is not found in the class labels of the 'y_true', it 
+    does not need to rename it. Keep it intact , however because, the dtype has 
+    change to string, the class label should no longer be an integer. 
+    
+    :param y_true: array-like 1d , 
+        array of the class label in 'y_true'  
+    :param y_pred: array-like 1d, 
+        array of the predicted class (Mixture array) that contains 
+        the NGA labels. 
+    :param group_labels: list, 
+        list of the label from 'y_pred' that similarity has been found in 
+        the 'y_true'. For this reason, since its similarities have a special 
+        class label nomenclatures, it will be discraded from the 'y_pred' i.e 
+        the predicted NGA labels. Thus only the NGA labels except the  
+        `group_labels` are used for renaming.
+    :param trailer: str, default='*'
+        The Mixture strategy marker to differentiate the existing class label  
+        in 'y_true' with the predicted labels 'y_pred' especially when  
+        the the same class labels are also present the true label with the 
+        same label-identifier name. This usefull  to avoid any confusion  for
+        both labels  in `y_true` and `y_pred` for better demarcation and 
+        distinction. Note that if the `trailer`is set to ``None`` and both 
+        `y_true` and `y_pred` are numeric data, the labels in `y_pred` are 
+        systematically renamed to be distinct with the ones in the 'y_true'. 
         
-        for k, v in zip (items, pseudo_items): 
-            gclasses [k]=v 
+    :returns: 
+        pseudo_dict: dict, 
+            dictionnary composed of the NGA labels that are not in `group_labels`
+            and whose their labels have been renamed. 
+    :example: 
+        >>> from watex.utils.hydroutils import _create_mxs_pseudo_labels 
+        >>> import numpy as np 
+        >>> y_true = np.arange (5) 
+        >>> y_pred = np.arange (1, 6) 
+        >>> group_labels =[2, 3] # only 2 and 3 that have similarity 
+        >>> _create_mxs_pseudo_labels (y_true, y_pred, group_labels )
+        ... {1: '1*', 4: '4*', 5: '5*'}
+        >>> # create a pseudo MXS labels when  group is None
+        >>> _create_mxs_pseudo_labels (y_true, y_pred, None )
+        ... {'1': '1*', '2': '2*', '3': '3*', '4': '4*', '5': '5'}
+        >>> # *comments 
+            # the above results demarcated the label in y_pred that 
+            # exist in y_true using the default trailer '*'
+        >>> #  because the bith y_true and y_pred are numeric , let set 
+        >>> # the trailer to None 
+        >>> _create_mxs_pseudo_labels (y_true, y_pred, None , trailer = None)
+        ... {1: 5, 2: 6, 3: 7, 4: 8, 5: 9}
+        >>> # * comments: 
+            # Gives the differents map changes . Thus label 1 in y_pred 
+            # become label 5, label 2 become label 6 and so on. 
+            # this is performed to avoid confusing the label in y_true 
+            # where 1, 2, 3, 4 are also presents. 
+        >>> # let create a map where y_true and y_pred are different and 
+        >>> # not numeric values 
+        >>> y_true_no = np.array (['k1', 'k2', 'k3']) 
+        >>> y_pred_no = np.array(['c1', 'c2', 'c3'])
+        >>> _create_mxs_pseudo_labels (y_true_no, y_pred_no, None )
         
-    else : 
+    """ 
+    group_labels = group_labels or  []
+    if not hasattr (group_labels, '__len__'): 
+        raise ValueError ("Group label can't be None and must be an iterable"
+                           f" object. Got: {type(group_labels).__name__!r}"
+                           )
+    if not (_is_arraylike_1d(y_pred ) and _is_arraylike_1d(y_true)): 
+        raise TypeError ("'y' expects to be an array-like 1d ") 
         
-                
-#XXX FIX IT               
+    _check_consistency_size(y_true, y_pred) 
+    
+    true_labels_orig = np.unique (y_true) 
+    NGA_labels = np.unique (y_pred)
+    pseudo_dict = {} 
+    # compute the labels not 
+    # in the group 
+    labels_not_in_goups = is_in_if(NGA_labels, group_labels , 
+                           return_diff= True)
+    if labels_not_in_goups is None:
+        return  pseudo_dict 
+    
+    pseudo_labels = np.array(labels_not_in_goups) 
+    
+    # check whether both data are given as numeric data
+    # so the numeric label can be rename by topping the max value 
+    # got from the true_labels to the predicted label 
+    # provided that trailer is None.
+    is_numeric = False 
+    if (_is_numeric_dtype(true_labels_orig) 
+        and _is_numeric_dtype(labels_not_in_goups, to_array=True)
+        ): is_numeric = True 
+    
+    # manage trailer 
+    trailer = None if trailer in ('', None) else str(trailer) 
+    if trailer is None:
+        # -> improve the warning message 
+        nlabs= is_in_if(NGA_labels, true_labels_orig, 
+                               return_intersect=True)
+        warn_msg = (
+            "Note that {0} label{1} in 'y_pred' {2} also availabe in "
+            "'y_true' with the same label-identifier and are not renamed."
+            )
+         
+        warn_msg = warn_msg.format (
+            len(nlabs), "s" if len(nlabs) > 1 else '', "are" if len(
+                nlabs)>1 else 'is') if nlabs is not None else ""
+        
+        if len(group_labels) ==0: 
+            if not is_numeric: 
+                msg = ("Trailer is empty while one or both y_true and the"
+                        " predicted 'y_pred' arrays are not a numeric data."
+                        " {} This might lead to unexpected results by confusing"
+                        " the predicted labels in 'y_pred' with the true"
+                        " labels in 'y_pred'. Use at your own risk."
+                        )
+
+                if nlabs: warnings.warn(msg.format(warn_msg))
+                trailer =''
+            if is_numeric and trailer is None: 
+                pseudo_labels = _mixture_num_label_if_0_in (
+                    true_labels_orig, labels_not_in_goups )
+            
+        elif len(group_labels)!=0 : 
+            warnings.warn(
+                "Be aware! the trailer is empty. You may probably confuse"
+                " the true labels in 'y_true' to the predicted labels."
+                " This will create unexpected results when both arrays labels"
+                " are confused. {} In pratice, this behavior is not tolerable."
+                " Be sure, you know what you are doing. Use at your own risk."
+                          )
+            warnings.warn(msg.format(warn_msg))
+            trailer ='' 
+            
+    if trailer is not None:
+        pseudo_labels = list(pseudo_labels) 
+        # [0 , 2 , 3 ]
+    if not is_numeric or trailer is not None: 
+        # Put the true labels origin into a list of string 
+        # to perform element wise comparison  
+        for k , items in enumerate (labels_not_in_goups): 
+            if items in list(true_labels_orig): 
+                pseudo_labels[k] = str(items) + trailer
+            else:  pseudo_labels[k] = items
+        # Numpy format the string labels 
+        pseudo_labels = np.array(pseudo_labels ) 
+        
+    pseudo_dict = dict(zip (labels_not_in_goups, pseudo_labels )) 
+
+    return  pseudo_dict 
+
+def _mixture_num_label_if_0_in (true_labels, labels_to_rename) :
+    """ Isolated part of _create_mxs_pseudo_labels """
+    new_labels = np.array (labels_to_rename ) 
+    if 0 in labels_to_rename: 
+        new_labels += max(true_labels) + 1 # skip the 0 
+        # true_labels =[0 , 1, 2]
+        # NGA_labels =[ 0, 1, 2 ] 
+        # both 
+        # NGA_labels = 2+1 + NGA_labels = [3, 4, 5]
+        # 0 in true_labels only i.e NGA labels [1, 2]
+        # NGA lavels = 2 + [1, 2]-> [3, 4] != true_labels 
+        # 0 n NGA labels only 
+    else: 
+        # true_labels =[1, 2]
+        # NGA_labels =[0, 1, 2 ] 
+        # NGA_labels = 2 + NGA_labels = [2, 3, 4]
+        new_labels += max(true_labels)
+    # reconvert to integer 
+    return  new_labels.astype (np.int32 ) 
+                 
 def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None, 
-                 cmsg=''  ): 
+                 cmsg='' , trailer = "*" ): 
     """ Make MXS target when similarity is found between a label in 'y_true' and 
     label in the predicted NGA. 
 
@@ -2982,28 +3191,16 @@ def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None,
     if not is_iterable(slg): 
         raise TypeError ("similarity group must be an iterable."
                          " Got: {type(s).__name__!r}")
-        
-    # A copy of true labels originally from 
-    # y_true is necessaray in the case 
-    # all labels are not found in similarity 
-    # if the given threshold is higher 
-    true_labels_orig = np.unique (y_true)
-    
-    # slg = [(1, 4), (2, 4), (3, 2)]
+ 
     sim_groups = _name_mxs_labels(*slg, sep = sep, prefix =prefix )
-    # sim_groups = [14, 24, 32] 
-    # get the label from similarity groups: 
-    # true_labels = [ label for label, _ in slg ] # [1, 2, 3]
-    # group_labels = [ group  for _, group in slg ] # [ 4, 4, 2 ]
     true_labels , group_labels = zip (*slg )
-    
     if not _is_numeric_dtype(y_pred): 
         tempy = to_dtype_str(y_pred, return_values = True )
     else : tempy = y_pred.copy()
-   # temp =[ array([0, 1, 2, 3, 4]) ] 
+
     if not all ([ l in np.unique (tempy) for l in group_labels ]): 
         # list the invalid groups 
-        # not contain in the NGA labels 
+        # not in the NGA labels 
         msg = listing_items_format(group_labels, 
                              "Invalid similar groups",  
                              "Group must be the labels in the predicted NGA.",
@@ -3011,21 +3208,15 @@ def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None,
                              )
         raise AquiferGroupError (msg)
     
-   
-    # and fill it by the new NGA values and/or similarites 
-    # Finally will fill the k-valid indexes 
-    y_mxs = np.full (y_pred.shape , fill_value= np.nan ,dtype = object )
-        
+    y_mxs = np.full (y_pred.shape , fill_value= np.nan , dtype = object )
+
     # Get the index of each NGA labels
-    
-    NGA_label_indices = {  # for label in [0, 1, 2, 3, 4]) 
+    NGA_label_indices = { 
         label: np.where (y_pred == label )[0] for label in np.unique (y_pred )
         }
-    # { 0 : 0_indix , 1: 1_indices, 2:2_indices etc ... }
-    #NGA labels not in groups 
-    NGA_labels_NotInGroups = is_in_if(np.unique (y_pred ), group_labels , 
-                           return_diff= True)
-    
+    # create a dict of pseudolabels not in group_labels  
+    pseudo_NGA_labels = _create_mxs_pseudo_labels (
+        y_true, y_pred, group_labels, trailer =trailer )
     group_classes_ = dict() 
     for klabel , vindex in NGA_label_indices.items () :
         if klabel in  group_labels : # [ 4, 4, 2 ]
@@ -3034,27 +3225,23 @@ def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None,
             # same k duplicate in groups labels, index will alway the 
             # first occurence, wich seems heuristic  
             elt_index =  group_labels.index (klabel )  
-            y_mxs [ vindex ] = sim_groups [elt_index ] 
-            group_classes_ [klabel] = sim_groups [elt_index ] # rather and klabel 
+            nklabel = sim_groups [elt_index ] 
+            # print(klabel, nklabel)
+            y_mxs [ vindex ] = nklabel
+            group_classes_ [klabel] = nklabel
             # # --------------------------------------------------
-            # for elt_index , klabel in enumerate (group_labels): 
-            #     # elt_index =  group_labels.index (klabel )  
-            #     y_mxs [ vindex ] = sim_groups [elt_index ] 
-            #     group_classes_ [sim_groups [elt_index ]] = klabel 
-                
         elif klabel not in group_labels : 
-           # i.e not in similarity groups 
-           # check wheter it exist in the true labels 
-           nklabel = _mixture_group_label_if (klabel, true_labels ) 
-           y_mxs [ vindex ] = nklabel 
-         
-           group_classes_ [klabel] = nklabel 
-           
+            nklabel = pseudo_NGA_labels.get(klabel) 
+            y_mxs [ vindex ] = nklabel 
+            group_classes_ [klabel] = nklabel 
+    
     return y_mxs , group_classes_ , group_labels , sim_groups 
 
-    
-def _mixture_group_label_if ( label_k, t_labels, y_true=None, y_pred =None, 
-                             label_not_in_group = None ): 
+@deprecated("Function is henceforth deprecated. Note use anymore in"
+            " MXS strategy implementation. It has been replaced by"
+            " :func:`~._mixture_num_label_if_0_in` more stable."
+            " It should be removed soon in a future realease. ")
+def _mixture_group_label_if ( label_k, t_labels): 
     """ Start counting remaining labels from the maximum value of 
     label found in the 't_labels' """
     # Use the max element in the true labels 
@@ -3062,19 +3249,19 @@ def _mixture_group_label_if ( label_k, t_labels, y_true=None, y_pred =None,
     # are not found as similarity groups  
     # this is possible if the simpilary group are numery datatype 
     # However if if string , keep it in the datasets 
-    
     # The goal of this is to not be confuse with the existing
     #  true labels with the valid k labels found in the y_true
     
     # find the group label which exists in the t_labels and 
     # create pseudo group 
-    labels_in = 
+    # labels_in = 
     if _is_numeric_dtype(t_labels , to_array=True) :
         max_in_t_labels = max (t_labels )  
     try : 
         label_k = int (label_k) 
     except : # where k is not a numeric 
-        if label_k in t_labels: 
+        # if label_k in t_labels: 
+        pass 
     else : 
         label_k += max_in_t_labels  
         
@@ -3082,7 +3269,7 @@ def _mixture_group_label_if ( label_k, t_labels, y_true=None, y_pred =None,
 
 def _kmapping (arr, /): 
     """ Check whether the true labels 'y_true' have numeric dtypes 
-    otherwise, create a integer label with integers to  substitute 
+    otherwise, create a integer labels to  substitute 
     the true labels. For instance: 
         
         >>> ['k1', 'k2', 'k3'] - > [1, 2, 3]
