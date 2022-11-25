@@ -842,7 +842,7 @@ def _check_estimator_name(estimator):
             return estimator.__class__.__name__
     return None
 
-def _set_back_to_frame (X, *,  current_step=None, columns = None, input_name ='X',
+def _set_back_to_frame (X, *,  to_frame=False, columns = None, input_name ='X',
                        # type_X=None 
                        ): 
     """ If pandas dataframe passed previously is converted to Numpy array 
@@ -855,15 +855,22 @@ def _set_back_to_frame (X, *,  current_step=None, columns = None, input_name ='X
         Array to convert to frame. 
     current_step: str, default=None
         The stage of data.
-        - {'in', 'enter'} is used to collect the name or columns of the
-            the pandas series and dataframe 
-        - {'out', 'back', 'convert'} is used to convert the array back to 
-            series or dataframe if 
+        - {'out', 'back', 'convert'} is used to reconvert the array back to 
+            series or dataframe from the given columns. 
+        - None, no-action is performed and return the same array.
+        
+    input_name : str, default=""
+        The data name used to construct the error message. 
+    Returns 
+    -------
+    X, columns : Array-like 
+        columns if `X` is dataframe and  name if Series. Otherwwise returns None.  
+        
     """
-
+    # set_back =('out', 'back','reconvert', 'to_frame', 
+    #            'export', 'step back')
     import pandas as pd 
-    type_col_name = type (columns).__name_
-    
+    type_col_name = type (columns).__name__
     if not hasattr (X, '__array__'): 
         raise TypeError (f"Only supports array, got: {type (X).__name__!r}")
         
@@ -874,11 +881,10 @@ def _set_back_to_frame (X, *,  current_step=None, columns = None, input_name ='X
         # keep the columns 
         columns = X.columns 
         
-    if str(current_step).lower().strip()  in {'in', 'enter'}: 
-        # Get the attribute return X and columns
-        return X, columns #, type (X).__name__ 
-    
-    if str(current_step).lower().strip() in {'out', 'back'}: 
+    # if str(current_step).lower().strip()  in {'in', 'enter'}: 
+    #     # Get the attribute return X and columns
+    #     return X, columns #, type (X).__name__ 
+    if to_frame: 
         # if not string is given as name 
         # check whether the columns contains only one 
         # value and use it as name to skip 
@@ -892,7 +898,7 @@ def _set_back_to_frame (X, *,  current_step=None, columns = None, input_name ='X
                          f" hashable type: got {type_col_name!r}")
                 columns = columns [0]
                 
-                X= pd.Series (X, name =columns )
+            X= pd.Series (X, name =columns )
             
         else: 
             # columns is str , reconvert to a list 
@@ -912,8 +918,8 @@ def _set_back_to_frame (X, *,  current_step=None, columns = None, input_name ='X
                 
             X= pd.DataFrame (X, columns = columns )
         
-    return X , (X.name if hasattr (X, 'name') else X.columns ) if ( 
-        hasattr(X, "name") or hasattr (X, "columns") ) else None 
+    return X , columns 
+ 
 
 
 
