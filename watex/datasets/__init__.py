@@ -22,7 +22,7 @@ _DTAGS=(
     "hlogs"
     )
 
-# try:
+
 from .dload import (
     load_bagoue , 
     load_gbalo, 
@@ -32,22 +32,13 @@ from .dload import (
     load_boundiali,
     load_hlogs
     ) 
-    # try : 
-from ._config import _fetch_data
-    # except : 
-    #     warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
-    #           " instead.")
-    # else: fi=True 
+try : 
+    from ._config import _fetch_data
+except ImportError: 
+    warn ("'fetch_data' seems not respond. Use 'load_<area name>'"
+          " instead.")
+else: fi=True 
     
-# except ImportError : 
-#     from .._watexlog import watexlog
-    
-#     m= ("None config file detected. Auto-data preparation process is aborted."
-#         "Be aware, the basics examples won't be implemented. Fetch the data"
-#         " manually from remote (repository or zenodo record) using the "
-#         " module 'rload' via < :class:`watex.datasets.rload.Loader` >"
-#             )
-#     watexlog().get_watex_logger(__name__).debug(m); warn(m, UserWarning)
 
 __all__=[ 
          "load_bagoue" ,
