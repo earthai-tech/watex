@@ -842,23 +842,21 @@ def _check_estimator_name(estimator):
             return estimator.__class__.__name__
     return None
 
-def _set_back_to_frame (X, *,  to_frame=False, columns = None, input_name ='X',
-                       # type_X=None 
+def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X',
                        ): 
-    """ If pandas dataframe passed previously is converted to Numpy array 
-    after operations, the use of the columns recreates a new dataframe. 
-    
+    """ Set array back to frame reconvert the Numpy array to pandas series 
+    or dataframe.
     
     Parameters 
     ----------
     X: Array-like 
         Array to convert to frame. 
-    current_step: str, default=None
-        The stage of data.
-        - {'out', 'back', 'convert'} is used to reconvert the array back to 
-            series or dataframe from the given columns. 
-        - None, no-action is performed and return the same array.
+    columns: str or list of str 
+        Series name or columns names for pandas.Series and DataFrame. 
         
+    to: str, default=False
+        If ``True`` , reconvert the array to frame using the columns orthewise 
+        no-action is performed and return the same array.
     input_name : str, default=""
         The data name used to construct the error message. 
     Returns 
@@ -871,7 +869,8 @@ def _set_back_to_frame (X, *,  to_frame=False, columns = None, input_name ='X',
     #            'export', 'step back')
     import pandas as pd 
     type_col_name = type (columns).__name__
-    if not hasattr (X, '__array__'): 
+    
+    if not  (hasattr (X, '__array__') or sp.issparse (X)): 
         raise TypeError (f"Only supports array, got: {type (X).__name__!r}")
         
     if hasattr (X, 'name') :
@@ -880,11 +879,12 @@ def _set_back_to_frame (X, *,  to_frame=False, columns = None, input_name ='X',
     elif hasattr (X, 'columns'): 
         # keep the columns 
         columns = X.columns 
-        
-    # if str(current_step).lower().strip()  in {'in', 'enter'}: 
-    #     # Get the attribute return X and columns
-    #     return X, columns #, type (X).__name__ 
-    if to_frame: 
+
+    if (to_frame 
+        and not sp.issparse (X)
+        ): 
+        if columns is None : 
+            raise ValueError ("Columns must be supplied for frame conversion.")
         # if not string is given as name 
         # check whether the columns contains only one 
         # value and use it as name to skip 
@@ -918,11 +918,8 @@ def _set_back_to_frame (X, *,  to_frame=False, columns = None, input_name ='X',
                 
             X= pd.DataFrame (X, columns = columns )
         
-    return X , columns 
+    return X, columns 
  
-
-
-
 def check_array(
     array,
     *,
@@ -938,6 +935,7 @@ def check_array(
     ensure_min_features=1,
     estimator=None,
     input_name="",
+    to_frame=True,
 ):
 
     """Input validation on an array, list, or similar.
@@ -949,7 +947,18 @@ def check_array(
     ----------
     array : object
         Input object to check / convert.
-   
+        
+    accept_sparse : str, bool or list/tuple of str, default=False
+        String[s] representing allowed sparse matrix formats, such as 'csc',
+        'csr', etc. If the input is sparse but not in the allowed format,
+        it will be converted to the first listed format. True allows the input
+        to be any format. False means that a sparse matrix input will
+        raise an error.
+    accept_large_sparse : bool, default=True
+        If a CSR, CSC, COO or BSR sparse matrix is supplied and accepted by
+        accept_sparse, accept_large_sparse=False will cause it to be accepted
+        only if its indices are stored with a 32-bit dtype.
+
     dtype : 'numeric', type, list of type or None, default='numeric'
         Data type of result. If None, the dtype of the input is preserved.
         If "numeric", dtype is preserved unless array.dtype is object.
@@ -992,6 +1001,10 @@ def check_array(
         allow_nan is False, the error message will link to the imputer
         documentation.
         
+    to_frame: bool, default=False
+        Reconvert array back to pd.Series or pd.DataFrame if 
+        the original array is pd.Series or pd.DataFrame.
+        
     Returns
     -------
     array_converted : object
@@ -1005,10 +1018,10 @@ def check_array(
         )
     xp, is_array_api = get_namespace(array)
 
-    # reconvert to array if not a 
-    # pandas series or dataframe .
-    if  not ( hasattr (array , 'columns') or hasattr (array, 'name') ): 
-        array = np.array (array )
+    # collect the name or seires if 
+    # data is pandas series or dataframe .
+    
+    array, column_orig = set_array_back(array)
          
     # store reference to original array to check if copy is needed when
     # function returns
@@ -1079,7 +1092,7 @@ def check_array(
             )
         )
     estimator_name = _check_estimator_name(estimator)
-    context = " by %s" % estimator_name if estimator is not None else ""
+    #context = " by %s" % estimator_name if estimator is not None else ""
     
     if sp.issparse(array):
         _ensure_no_complex_data(array)
@@ -1191,7 +1204,8 @@ def check_array(
                 " a minimum of %d is required."
                 % (n_features, array.shape, ensure_min_features)
             )
-                
+              
+    
     if copy:
         if xp.__name__ in {"numpy", "numpy.array_api"}:
             # only make a copy if `array` and `array_orig` may share memory`
@@ -1205,6 +1219,14 @@ def check_array(
                 array, dtype=dtype, order=order, copy=True, xp=xp
             )
             
+    if to_frame:
+        array, _ = set_array_back(
+            array,
+            to_frame =True , 
+            columns = column_orig, 
+            input_name= input_name  
+            ) 
+    
     return array 
 
 
