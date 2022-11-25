@@ -18,6 +18,8 @@ import numbers
 import operator
 import joblib
 import numpy as np
+# mypy error: Module 'numpy.core.numeric' has no attribute 'ComplexWarning'
+from numpy.core.numeric import ComplexWarning  # type: ignore
 from contextlib import suppress
 import scipy.sparse as sp
 from inspect import signature, Parameter
@@ -830,17 +832,106 @@ def _ensure_no_complex_data(array):
         and array.dtype.kind == "c"
     ):
         raise ValueError("Complex data not supported\n{}\n".format(array)) 
+ 
+    
+def _check_estimator_name(estimator):
+    if estimator is not None:
+        if isinstance(estimator, str):
+            return estimator
+        else:
+            return estimator.__class__.__name__
+    return None
+
+def _set_back_to_frame (X, *,  current_step=None, columns = None, input_name ='X',
+                       # type_X=None 
+                       ): 
+    """ If pandas dataframe passed previously is converted to Numpy array 
+    after operations, the use of the columns recreates a new dataframe. 
+    
+    
+    Parameters 
+    ----------
+    X: Array-like 
+        Array to convert to frame. 
+    current_step: str, default=None
+        The stage of data.
+        - {'in', 'enter'} is used to collect the name or columns of the
+            the pandas series and dataframe 
+        - {'out', 'back', 'convert'} is used to convert the array back to 
+            series or dataframe if 
+    """
+
+    import pandas as pd 
+    type_col_name = type (columns).__name_
+    
+    if not hasattr (X, '__array__'): 
+        raise TypeError (f"Only supports array, got: {type (X).__name__!r}")
         
+    if hasattr (X, 'name') :
+        # keep the name of series 
+        columns = X.name 
+    elif hasattr (X, 'columns'): 
+        # keep the columns 
+        columns = X.columns 
+        
+    if str(current_step).lower().strip()  in {'in', 'enter'}: 
+        # Get the attribute return X and columns
+        return X, columns #, type (X).__name__ 
+    
+    if str(current_step).lower().strip() in {'out', 'back'}: 
+        # if not string is given as name 
+        # check whether the columns contains only one 
+        # value and use it as name to skip 
+        # TypeError: Series.name must be a hashable type 
+        if _is_arraylike_1d(X) : 
+            if not isinstance (columns, str ) and hasattr (columns, '__len__') : 
+                if len(columns ) > 1: 
+                    raise ValueError (
+                        f"{input_name} is 1d-array, only pandas.Series "
+                        "conversion can be performed while name must be a"
+                         f" hashable type: got {type_col_name!r}")
+                columns = columns [0]
+                
+                X= pd.Series (X, name =columns )
+            
+        else: 
+            # columns is str , reconvert to a list 
+            # and check whether the columns match 
+            # the shape [1]
+            if isinstance (columns, str ): 
+                columns = [columns ]
+            if not hasattr (columns, '__len__'):
+                raise TypeError (" Columns for {input_name!r} must passed "
+                                  f"as a list or tuple. Got {type_col_name!r}")
+            if X.shape [1] != len(columns):
+                raise ValueError (
+                    f"Shape of passed values for {input_name} is"
+                    f" {X.shape}. Columns indices imply {X.shape[1]},"
+                    f"got {len(columns)}"
+                                  ) 
+                
+            X= pd.DataFrame (X, columns = columns )
+        
+    return X , (X.name if hasattr (X, 'name') else X.columns ) if ( 
+        hasattr(X, "name") or hasattr (X, "columns") ) else None 
+
+
+
 def check_array(
     array,
     *,
+    accept_large_sparse=True,
     dtype="numeric",
+    accept_sparse=False, 
     order=None,
     copy=False,
     force_all_finite=True,
     ensure_2d=True,
+    allow_nd=False,
     ensure_min_samples=1,
     ensure_min_features=1,
+    estimator=None,
+    input_name="",
 ):
 
     """Input validation on an array, list, or similar.
@@ -887,7 +978,14 @@ def check_array(
         This check is only enforced when the input data has effectively 2
         dimensions or is originally 1D and ``ensure_2d`` is True. Setting to 0
         disables this check.
-
+    estimator : str or estimator instance, default=None
+        If passed, include the name of the estimator in warning messages.
+    input_name : str, default=""
+        The data name used to construct the error message. In particular
+        if `input_name` is "X" and the data has NaN values and
+        allow_nan is False, the error message will link to the imputer
+        documentation.
+        
     Returns
     -------
     array_converted : object
@@ -899,7 +997,6 @@ def check_array(
             "np.asarray. For more information see: "
             "https://numpy.org/doc/stable/reference/generated/numpy.matrix.html"
         )
-
     xp, is_array_api = get_namespace(array)
 
     # reconvert to array if not a 
@@ -923,6 +1020,8 @@ def check_array(
     # DataFrame), and store them. If not, store None.
     dtypes_orig = None
     pandas_requires_conversion = False
+    
+    #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if hasattr(array, "dtypes") and hasattr(array.dtypes, "__array__"):
         # throw warning if columns are sparse. If all columns are sparse, then
         # array.sparse exists and sparsity will be preserved (later).
@@ -941,7 +1040,7 @@ def check_array(
         )
         if all(isinstance(dtype_iter, np.dtype) for dtype_iter in dtypes_orig):
             dtype_orig = np.result_type(*dtypes_orig)
-
+    #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if dtype_numeric:
         if dtype_orig is not None and dtype_orig.kind == "O":
             # if input is object, convert to float.
@@ -973,29 +1072,80 @@ def check_array(
                 force_all_finite
             )
         )
+    estimator_name = _check_estimator_name(estimator)
+    context = " by %s" % estimator_name if estimator is not None else ""
+    
+    if sp.issparse(array):
+        _ensure_no_complex_data(array)
+        array = _ensure_sparse_format(
+           array,
+           accept_sparse=accept_sparse,
+           dtype=dtype,
+           copy=copy,
+           force_all_finite=force_all_finite,
+           accept_large_sparse=accept_large_sparse,
+           estimator_name=estimator_name,
+           input_name=input_name,
+       )
+       
+    else:
+        # If np.array(..) gives ComplexWarning, then we convert the warning
+        # to an error. This is needed because specifying a non complex
+        # dtype to the function converts complex to real dtype,
+        # thereby passing the test made in the lines following the scope
+        # of warnings context manager.
+        with warnings.catch_warnings():
+            try:
+                warnings.simplefilter("error", ComplexWarning)
+                if dtype is not None and np.dtype(dtype).kind in "iu":
+                    # Conversion float -> int should not contain NaN or
+                    # inf (numpy#14412). We cannot use casting='safe' because
+                    # then conversion float -> int would be disallowed.
+                    array = _asarray_with_order(array, order=order, xp=xp)
+                    if array.dtype.kind == "f":
+                        _assert_all_finite(
+                            array,
+                            allow_nan=False,
+                            msg_dtype=dtype,
+                            estimator_name=estimator_name,
+                            input_name=input_name,
+                        )
+                    array = xp.astype(array, dtype, copy=False)
+                else:
+                    array = _asarray_with_order(array, order=order, dtype=dtype, xp=xp)
+            except ComplexWarning as complex_warning:
+                raise ValueError(
+                    "Complex data not supported\n{}\n".format(array)
+                ) from complex_warning
+    
+        # It is possible that the np.array(..) gave no warning. This happens
+        # when no dtype conversion happened, for example dtype = None. The
+        # result is that np.array(..) produces an array of complex dtype
+        # and we need to catch and raise exception for such cases.
+        _ensure_no_complex_data(array)
+    
         
-    if len(array) ==0: 
-        raise ValueError (
-            "Found array with 0 length while a minimum of 1 is required." )
-        
-    if ensure_2d:
-        # If input is scalar raise error
-        if  array.ndim == 0:
-            raise ValueError(
-                "Expected 2D array, got scalar array instead:\narray={}.\n"
-                "Reshape your data either using array.reshape(-1, 1) if "
-                "your data has a single feature or array.reshape(1, -1) "
-                "if it contains a single sample.".format(array)
-            )
-        # If input is 1D raise error
-        if array.ndim == 1:
-            raise ValueError(
-                "Expected 2D array, got 1D array instead. "
-                "Reshape your data either using array.reshape(-1, 1) if "
-                "your data has a single feature or array.reshape(1, -1) "
-                "if it contains a single sample."
-            )
-
+        if len(array) ==0: 
+           raise ValueError (
+               "Found array with 0 length while a minimum of 1 is required." )
+        if ensure_2d:
+            # If input is scalar raise error
+            if  array.ndim == 0:
+                raise ValueError(
+                    "Expected 2D array, got scalar array instead:\narray={}.\n"
+                    "Reshape your data either using array.reshape(-1, 1) if "
+                    "your data has a single feature or array.reshape(1, -1) "
+                    "if it contains a single sample.".format(array)
+                )
+            # If input is 1D raise error
+            if array.ndim == 1:
+                raise ValueError(
+                    "Expected 2D array, got 1D array instead. "
+                    "Reshape your data either using array.reshape(-1, 1) if "
+                    "your data has a single feature or array.reshape(1, -1) "
+                    "if it contains a single sample."
+                )
+    
         if  ( dtype_numeric 
              and ( array.values.dtype.kind if hasattr(array, 'columns') 
                   else array.dtype.kind) 
@@ -1005,7 +1155,19 @@ def check_array(
                 "dtype='numeric' is not compatible with arrays of bytes/strings."
                 "Convert your data to numeric values explicitly instead."
             )
-    
+        if not allow_nd and array.ndim >= 3:
+            raise ValueError(
+                "Found array with dim %d. %s expected <= 2."
+                % (array.ndim, estimator_name)
+            )
+        if force_all_finite:
+            _assert_all_finite(
+                array,
+                input_name=input_name,
+                estimator_name=estimator_name,
+                allow_nan=force_all_finite == "allow-nan",
+            )
+        
     if ensure_min_samples > 0:
         n_samples = _num_samples(array)
         if n_samples < ensure_min_samples:
@@ -1023,7 +1185,7 @@ def check_array(
                 " a minimum of %d is required."
                 % (n_features, array.shape, ensure_min_features)
             )
-
+                
     if copy:
         if xp.__name__ in {"numpy", "numpy.array_api"}:
             # only make a copy if `array` and `array_orig` may share memory`
@@ -1036,8 +1198,235 @@ def check_array(
             array = _asarray_with_order(
                 array, dtype=dtype, order=order, copy=True, xp=xp
             )
-
+            
     return array 
+
+
+def _check_large_sparse(X, accept_large_sparse=False):
+    """Raise a ValueError if X has 64bit indices and accept_large_sparse=False"""
+    if not accept_large_sparse:
+        supported_indices = ["int32"]
+        if X.getformat() == "coo":
+            index_keys = ["col", "row"]
+        elif X.getformat() in ["csr", "csc", "bsr"]:
+            index_keys = ["indices", "indptr"]
+        else:
+            return
+        for key in index_keys:
+            indices_datatype = getattr(X, key).dtype
+            if indices_datatype not in supported_indices:
+                raise ValueError(
+                    "Only sparse matrices with 32-bit integer"
+                    " indices are accepted. Got %s indices." % indices_datatype
+                )
+def _ensure_sparse_format(
+    spmatrix,
+    accept_sparse,
+    dtype,
+    copy,
+    force_all_finite,
+    accept_large_sparse,
+    estimator_name=None,
+    input_name="",
+):
+    """Convert a sparse matrix to a given format.
+    Checks the sparse format of spmatrix and converts if necessary.
+    Parameters
+    ----------
+    spmatrix : sparse matrix
+        Input to validate and convert.
+    accept_sparse : str, bool or list/tuple of str
+        String[s] representing allowed sparse matrix formats ('csc',
+        'csr', 'coo', 'dok', 'bsr', 'lil', 'dia'). If the input is sparse but
+        not in the allowed format, it will be converted to the first listed
+        format. True allows the input to be any format. False means
+        that a sparse matrix input will raise an error.
+    dtype : str, type or None
+        Data type of result. If None, the dtype of the input is preserved.
+    copy : bool
+        Whether a forced copy will be triggered. If copy=False, a copy might
+        be triggered by a conversion.
+    force_all_finite : bool or 'allow-nan'
+        Whether to raise an error on np.inf, np.nan, pd.NA in X. The
+        possibilities are:
+        - True: Force all values of X to be finite.
+        - False: accepts np.inf, np.nan, pd.NA in X.
+        - 'allow-nan': accepts only np.nan and pd.NA values in X. Values cannot
+          be infinite.
+        .. versionadded:: 0.20
+           ``force_all_finite`` accepts the string ``'allow-nan'``.
+        .. versionchanged:: 0.23
+           Accepts `pd.NA` and converts it into `np.nan`
+    estimator_name : str, default=None
+        The estimator name, used to construct the error message.
+    input_name : str, default=""
+        The data name used to construct the error message. In particular
+        if `input_name` is "X" and the data has NaN values and
+        allow_nan is False, the error message will link to the imputer
+        documentation.
+    Returns
+    -------
+    spmatrix_converted : sparse matrix.
+        Matrix that is ensured to have an allowed type.
+    """
+    if dtype is None:
+        dtype = spmatrix.dtype
+
+    changed_format = False
+
+    if isinstance(accept_sparse, str):
+        accept_sparse = [accept_sparse]
+
+    # Indices dtype validation
+    _check_large_sparse(spmatrix, accept_large_sparse)
+
+    if accept_sparse is False:
+        raise TypeError(
+            "A sparse matrix was passed, but dense "
+            "data is required. Use X.toarray() to "
+            "convert to a dense numpy array."
+        )
+    elif isinstance(accept_sparse, (list, tuple)):
+        if len(accept_sparse) == 0:
+            raise ValueError(
+                "When providing 'accept_sparse' "
+                "as a tuple or list, it must contain at "
+                "least one string value."
+            )
+        # ensure correct sparse format
+        if spmatrix.format not in accept_sparse:
+            # create new with correct sparse
+            spmatrix = spmatrix.asformat(accept_sparse[0])
+            changed_format = True
+    elif accept_sparse is not True:
+        # any other type
+        raise ValueError(
+            "Parameter 'accept_sparse' should be a string, "
+            "boolean or list of strings. You provided "
+            "'accept_sparse={}'.".format(accept_sparse)
+        )
+
+    if dtype != spmatrix.dtype:
+        # convert dtype
+        spmatrix = spmatrix.astype(dtype)
+    elif copy and not changed_format:
+        # force copy
+        spmatrix = spmatrix.copy()
+
+    if force_all_finite:
+        if not hasattr(spmatrix, "data"):
+            warnings.warn(
+                "Can't check %s sparse matrix for nan or inf." % spmatrix.format,
+                stacklevel=2,
+            )
+        else:
+            _assert_all_finite(
+                spmatrix.data,
+                allow_nan=force_all_finite == "allow-nan",
+                estimator_name=estimator_name,
+                input_name=input_name,
+            )
+        
+    return spmatrix
+
+def _object_dtype_isnan(X):
+    return X != X
+
+def _assert_all_finite(
+    X, allow_nan=False, msg_dtype=None, estimator_name=None, input_name=""
+):
+    """Like assert_all_finite, but only for ndarray."""
+
+    xp, _ = get_namespace(X)
+
+    # if _get_config()["assume_finite"]:
+    #     return
+
+    X = xp.asarray(X)
+
+    # for object dtype data, we only check for NaNs (GH-13254)
+    if X.dtype == np.dtype("object") and not allow_nan:
+        if _object_dtype_isnan(X).any():
+            raise ValueError("Input contains NaN")
+
+    # We need only consider float arrays, hence can early return for all else.
+    if X.dtype.kind not in "fc":
+        return
+
+    # First try an O(n) time, O(1) space solution for the common case that
+    # everything is finite; fall back to O(n) space `np.isinf/isnan` or custom
+    # Cython implementation to prevent false positives and provide a detailed
+    # error message.
+    with np.errstate(over="ignore"):
+        first_pass_isfinite = xp.isfinite(xp.sum(X))
+    if first_pass_isfinite:
+        return
+    # Cython implementation doesn't support FP16 or complex numbers
+    # use_cython = (
+    #     xp is np and X.data.contiguous and X.dtype.type in {np.float32, np.float64}
+    # )
+    # if use_cython:
+    #     out = cy_isfinite(X.reshape(-1), allow_nan=allow_nan)
+    #     has_nan_error = False if allow_nan else out == FiniteStatus.has_nan
+    #     has_inf = out == FiniteStatus.has_infinite
+    # else:
+    has_inf = np.isinf(X).any()
+    has_nan_error = False if allow_nan else xp.isnan(X).any()
+    if has_inf or has_nan_error:
+        if has_nan_error:
+            type_err = "NaN"
+        else:
+            msg_dtype = msg_dtype if msg_dtype is not None else X.dtype
+            type_err = f"infinity or a value too large for {msg_dtype!r}"
+        padded_input_name = input_name + " " if input_name else ""
+        msg_err = f"Input {padded_input_name}contains {type_err}."
+        # if estimator_name and input_name == "X" and has_nan_error:
+        #     # Improve the error message on how to handle missing values in
+        #     # scikit-learn.
+        #     msg_err += (
+        #         f"\n{estimator_name} does not accept missing values"
+        #         " encoded as NaN natively. For supervised learning, you might want"
+        #         " to consider sklearn.ensemble.HistGradientBoostingClassifier and"
+        #         " Regressor which accept missing values encoded as NaNs natively."
+        #         " Alternatively, it is possible to preprocess the data, for"
+        #         " instance by using an imputer transformer in a pipeline or drop"
+        #         " samples with missing values. See"
+        #         " https://scikit-learn.org/stable/modules/impute.html"
+        #         " You can find a list of all estimators that handle NaN values"
+        #         " at the following page:"
+        #         " https://scikit-learn.org/stable/modules/impute.html"
+        #         "#estimators-that-handle-nan-values"
+        #     )
+        raise ValueError(msg_err)
+        
+def assert_all_finite(
+    X,
+    *,
+    allow_nan=False,
+    estimator_name=None,
+    input_name="",
+):
+    """Throw a ValueError if X contains NaN or infinity.
+    Parameters
+    ----------
+    X : {ndarray, sparse matrix}
+        The input data.
+    allow_nan : bool, default=False
+        If True, do not throw error when `X` contains NaN.
+    estimator_name : str, default=None
+        The estimator name, used to construct the error message.
+    input_name : str, default=""
+        The data name used to construct the error message. In particular
+        if `input_name` is "X" and the data has NaN values and
+        allow_nan is False, the error message will link to the imputer
+        documentation.
+    """
+    _assert_all_finite(
+        X.data if sp.issparse(X) else X,
+        allow_nan=allow_nan,
+        estimator_name=estimator_name,
+        input_name=input_name,
+    )
 
 def _generate_get_feature_names_out(estimator, n_features_out, input_features=None):
     """Generate feature names out for estimator using the estimator name as the prefix.
