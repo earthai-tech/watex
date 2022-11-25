@@ -15,6 +15,7 @@ import seaborn as sns
 from scipy.cluster.hierarchy import ( 
     dendrogram, ward 
     )
+import scipy.sparse as sp
 import matplotlib.pyplot as plt
 
 from ..exceptions import ( 
@@ -32,7 +33,11 @@ from .funcutils import  (
 from .validator import  ( 
     _check_array_in  , 
     _is_cross_validated,
-    get_estimator_name, 
+    get_estimator_name,
+    check_array, 
+    check_X_y,
+    check_y,
+    check_consistent_length
     )
 from ._dependency import import_optional_dependency 
 from watex.exlib.sklearn import ( 
@@ -283,6 +288,13 @@ def plot_logging (
     >>> plot_logging (X0 , y= y.kp, draw_spines =(0, 700) )
     """
     X = _assert_all_types(X, pd.DataFrame, pd.Series , np.ndarray ) 
+    X= check_array (
+        X, 
+        dtype =object, 
+        force_all_finite="allow-nan", 
+        input_name ="Logging dataset",
+        to_frame =True  
+        )
     # Discard all categorical values and 
     # keep only the numerical features.
     X = to_numeric_dtypes(X, pop_cat_features=True, verbose = verbose ) 
@@ -295,6 +307,12 @@ def plot_logging (
            raise TypeError ("y expects an iterable object."
                               f" got {type(y).__name__!r}")
        y = _assert_all_types(y, pd.Series, pd.DataFrame, np.ndarray)
+       
+       y=check_y (
+            y, 
+            to_frame =True, 
+            allow_nan= True,
+            )
        
        if len(y) !=len(X): 
            raise ValueError ("y and X sizes along axis 0 must be consistent;"
@@ -461,6 +479,11 @@ def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
     >>> plotSilhouette (X, y_km)
 
     """
+    X, labels = check_X_y(
+        X, 
+        labels, 
+        to_frame= True, 
+        )
     cluster_labels = np.unique (labels) 
     n_clusters = cluster_labels.shape [0] 
     silhouette_vals = silhouette_samples(
@@ -655,7 +678,12 @@ def plot_regularization_path (
     >>> plot_regularization_path (X, y ) 
 
     """
-
+    X, y = check_X_y(
+        X, 
+        y, 
+        to_frame= True, 
+        )
+    
     if not is_iterable(c_range): 
         raise TypeError ("'C' regularization strength is a range of C " 
                          " Logit parameter: (start, stop).")
@@ -804,14 +832,14 @@ def plot_rf_feature_importances (
     plt.close () if savefig is not None else plt.show() 
     
         
-def plot_confusion_matrix (yt, ypred, view =True, ax=None, annot=True, **kws ):
+def plot_confusion_matrix (yt, y_pred, view =True, ax=None, annot=True, **kws ):
     """ plot a confusion matrix for a single classifier model.
     
     :param yt : ndarray or Series of length n
         An array or series of true target or class values. Preferably, 
         the array represents the test class labels data for error evaluation.
     
-    :param ypred: ndarray or Series of length n
+    :param y_pred: ndarray or Series of length n
         An array or series of the predicted target. 
     :param view: bool, default=True 
         Option to display the matshow map. Set to ``False`` mutes the plot. 
@@ -824,7 +852,8 @@ def plot_confusion_matrix (yt, ypred, view =True, ax=None, annot=True, **kws ):
     :returns: mat- confusion matrix bloc matrix 
     
     """
-    mat= confusion_matrix (yt, ypred, **kws)
+    check_consistent_length (yt, y_pred)
+    mat= confusion_matrix (yt, y_pred, **kws)
     if view: 
         sns.heatmap (
             mat.T, square =True, annot =annot,  fmt='d', cbar=False, ax=ax)
@@ -1323,6 +1352,10 @@ def plot_pca_components (
                              cmap='jet_r')
     
     """
+    if sp.issparse (components): 
+        raise TypeError ("Sparse array is not supported for PCA "
+                         "components visualization."
+                         )
     # if pca object is given , get the features names
     if hasattr(components, "feature_names_in_"): 
         feature_names = list (getattr (components , "feature_names_in_" ) ) 
@@ -1357,14 +1390,14 @@ def plot_pca_components (
     
         
 def plot_clusters (
-        n_clusters, X, ypred, cluster_centers =None , savefig =None, 
+        n_clusters, X, y_pred, cluster_centers =None , savefig =None, 
         ): 
     """ Visualize the cluster that k-means identified in the dataset 
     
     :param n_clusters: int, number of cluster to visualize 
     :param X: NDArray, data containing the features, expect to be a two 
         dimensional data 
-    :param ypred: array-like, array containing the predicted class labels. 
+    :param y_pred: array-like, array containing the predicted class labels. 
     :param cluster_centers_: NDArray containg the coordinates of the 
         centroids or the similar points with continous features. 
         
@@ -1386,19 +1419,24 @@ def plot_clusters (
     except: 
         raise TypeError (f"n_clusters argument must be a number, "
                          f"not {type(n_clusters).__name__!r}")
-    X= np.array(X) 
+        
+    X, y_pred = check_X_y(
+        X, 
+        y_pred, 
+        )
+
     if len(X.shape )!=2 or X.shape[1]==1: 
         ndim = 1 if X.shape[1] ==1 else np.ndim (X )
         raise ValueError(
             f"X is expected to be a two dimensional data. Got {ndim}!")
     # for consistency , convert y to array    
-    ypred = np.array(ypred)
+    y_pred = np.array(y_pred)
     
     colors = make_mpl_properties(n_clusters)
     markers = make_mpl_properties(n_clusters, 'markers')
     for n in range (n_clusters):
-        plt.scatter (X[ypred ==n, 0], 
-                     X[ypred ==n , 1],  
+        plt.scatter (X[y_pred ==n, 0], 
+                     X[y_pred ==n , 1],  
                      s= 50 , c= colors [n ], 
                      marker=markers [n], 
                      edgecolors=None if markers [n] =='x' else 'black', 

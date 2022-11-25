@@ -74,7 +74,8 @@ from .validator import (
     _is_arraylike_1d,
     _is_numeric_dtype, 
     _check_consistency_size, 
-    to_dtype_str, 
+    to_dtype_str,
+    check_y, 
     check_array, 
     )
 
@@ -210,9 +211,22 @@ def make_MXS_labels (
     # for consistency
     sep =str(sep) ; prefix =str(prefix)  
     
-    ( check_array( y ) for y in (y_true, y_pred ))
-    _check_consistency_size(y_true, y_pred ) 
+    # check arrays 
+    y_true = check_y (
+        y_true, 
+        allow_nan= True, 
+        to_frame =True, 
+        input_name="y_true",
+        )  
 
+    y_pred = check_y (
+        y_pred, 
+        to_frame = True, 
+        allow_nan= False, 
+        input_name ="NGA labels"
+        )
+
+    _check_consistency_size(y_true, y_pred ) 
     # check whether the y_true is numerical data 
     # if not rename y_true and keep the classes 
     # for mapping at the end of class transformation 
@@ -370,11 +384,27 @@ def find_aquifer_groups (
                              " to substitute the aquifer groups.")
         arr_aq = default_arr 
         
+    # check array consistency 
     _check_consistency_size(arr_aq, arr_k)
     if not all ([ _is_arraylike_1d(arr_aq), _is_arraylike_1d(arr_k)]):
         raise AquiferGroupError (
             "Expects one-dimensional arrays for 'k' and aquifer group.")
-        
+    
+    # check arrays 
+    arr_k = check_y (
+        arr_k, 
+        allow_nan= True, 
+        to_frame =True, 
+        input_name="Array of Permeability coefficient 'k'",
+        )  
+
+    arr_aq = check_y (
+        arr_aq, 
+        to_frame = True, 
+        allow_nan= False, 
+        input_name ="Array of aquifer group 'arr_aq'"
+        )
+    
     arr_k_valid , arr_aq_valid = _get_y_from_valid_indexes(
         arr_k, arr_aq, include_label_0= keep_label_0  )
     
@@ -556,6 +586,20 @@ def compute_representativity ( label, arr_k , arr_aq  ):
         label_dict_group_rate: dict of true label and occurences 
         
     """ 
+    # check arrays 
+    arr_k = check_y (
+        arr_k, 
+        allow_nan= True, 
+        to_frame =True, 
+        input_name="Array of Permeability coefficient 'k'",
+        )  
+
+    arr_aq = check_y(
+        arr_aq, 
+        to_frame =True, 
+        input_name="Array of aquifer group 'arr_aq' ", 
+        )
+    
     index, = np.where (arr_k ==label ) 
     label_in_arr_q = arr_aq[index ] 
     label_group , group_counts = np.unique (
@@ -668,11 +712,26 @@ def find_similar_labels (
                  ["'y_true'(true labels)", "'y_pred '( predicted labels )'"], 
                  [y_true, y_pred]) 
     ]
+
     _check_consistency_size(y_true, y_pred) 
     if not all ([ _is_arraylike_1d(ar ) for ar in (y_true, y_pred )] ) :
         raise TypeError ("True and predicted labels supports only "
                          "one-dimensional array.")
-    
+    # check arrays 
+    y_true = check_y (
+        y_true, 
+        allow_nan= True, 
+        to_frame =True, 
+        input_name="y_true",
+        )  
+
+    y_pred = check_y (
+        y_pred, 
+        to_frame = True, 
+        allow_nan= False, 
+        input_name ="NGA labels"
+        )
+        
     if categorize_k : 
         #categorize k if func is given.
         y_true = classify_k( y_true ,  func= func ,  **kwd)
@@ -760,8 +819,9 @@ def _get_y_from_valid_indexes (
     
     if not _is_arraylike_1d(y_true) : 
         raise TypeError (msg.format ("True labels 'y_true'"))
+    
     if y_pred is not None: 
-        _check_consistency_size(y_true, y_pred)  
+        _check_consistency_size(y_true, y_pred) 
         if not _is_arraylike_1d(y_pred) :
             raise TypeError (msg.format("Predicted labels 'y_pred'"))
             
@@ -994,6 +1054,14 @@ def get_compressed_vector(
         Name: 39, dtype: object
     """
     _assert_all_types(d, pd.DataFrame, objname = "Data for samples compressing")
+
+    d= check_array(
+        d, 
+        force_all_finite="allow-nan", 
+        dtype =object, 
+        input_name="Data for squeezing",
+        to_frame =True, 
+        )
     sname = _assert_all_types(sname, str , "'sname' ( strata column name )")
     
     assert strategy in {'mean', 'average', 'naive'}, "Supports only strategy "\
@@ -1425,6 +1493,14 @@ def get_xs_xr_splits (
     >>> xs, xr = get_xs_xr_splits (data, 3.11, section_indexes = (17, 20 ) )
     """
     xs, xr = None, None
+    
+    data= check_array(
+        data, 
+        force_all_finite="allow-nan", 
+        dtype =object, 
+        input_name="Data for squeezing",
+        to_frame =True, 
+    )
     
     if section_indexes is not None: 
         section_indexes = _assert_reduce_indexes (section_indexes) [0] 

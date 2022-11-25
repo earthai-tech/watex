@@ -404,45 +404,6 @@ def check_consistent_length(*arrays):
         )
 
 
-def _make_indexable(iterable):
-    """Ensure iterable supports indexing or convert to an indexable variant.
-    Convert sparse matrices to csr and other non-indexable iterable to arrays.
-    Let `None` and indexable objects (e.g. pandas dataframes) pass unchanged.
-    Parameters
-    ----------
-    iterable : {list, dataframe, ndarray, sparse matrix} or None
-        Object to be converted to an indexable iterable.
-    """
-    if sp.issparse(iterable):
-        return iterable.tocsr()
-    elif hasattr(iterable, "__getitem__") or hasattr(iterable, "iloc"):
-        return iterable
-    elif iterable is None:
-        return iterable
-    return np.array(iterable)
-
-
-def indexable(*iterables):
-    """Make arrays indexable for cross-validation.
-    Checks consistent length, passes through None, and ensures that everything
-    can be indexed by converting sparse matrices to csr and converting
-    non-interable objects to arrays.
-    Parameters
-    ----------
-    *iterables : {lists, dataframes, ndarrays, sparse matrices}
-        List of objects to ensure sliceability.
-    Returns
-    -------
-    result : list of {ndarray, sparse matrix, dataframe} or None
-        Returns a list containing indexable arrays (i.e. NumPy array,
-        sparse matrix, or dataframe) or `None`.
-    """
-
-    result = [_make_indexable(X) for X in iterables]
-    check_consistent_length(*result)
-    return result
-
-
 def check_random_state(seed):
     """Turn seed into a np.random.RandomState instance.
     Parameters
@@ -466,7 +427,6 @@ def check_random_state(seed):
     raise ValueError(
         "%r cannot be used to seed a numpy.random.RandomState instance" % seed
     )
-
 
 def has_fit_parameter(estimator, parameter):
     """Check whether the estimator's fit method supports the given parameter.
@@ -658,42 +618,6 @@ def check_scalar(
     return x
 
 
-def _check_fit_params(X, fit_params, indices=None):
-    """Check and validate the parameters passed during `fit`.
-    Parameters
-    ----------
-    X : array-like of shape (n_samples, n_features)
-        Data array.
-    fit_params : dict
-        Dictionary containing the parameters passed at fit.
-    indices : array-like of shape (n_samples,), default=None
-        Indices to be selected if the parameter has the same size as `X`.
-    Returns
-    -------
-    fit_params_validated : dict
-        Validated parameters. We ensure that the values support indexing.
-    """
-    from . import _safe_indexing
-
-    fit_params_validated = {}
-    for param_key, param_value in fit_params.items():
-        if not _is_arraylike(param_value) or _num_samples(param_value) != _num_samples(
-            X
-        ):
-            # Non-indexable pass-through (for now for backward-compatibility).
-            # https://github.com/scikit-learn/scikit-learn/issues/15805
-            fit_params_validated[param_key] = param_value
-        else:
-            # Any other fit_params should support indexing
-            # (e.g. for cross-validation).
-            fit_params_validated[param_key] = _make_indexable(param_value)
-            fit_params_validated[param_key] = _safe_indexing(
-                fit_params_validated[param_key], indices
-            )
-
-    return fit_params_validated
-
-
 def _get_feature_names(X):
     """Get feature names from X.
     Support for other array containers should place its implementation here.
@@ -854,7 +778,7 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X',
     columns: str or list of str 
         Series name or columns names for pandas.Series and DataFrame. 
         
-    to: str, default=False
+    to_frame: str, default=False
         If ``True`` , reconvert the array to frame using the columns orthewise 
         no-action is performed and return the same array.
     input_name : str, default=""
@@ -884,7 +808,8 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X',
         and not sp.issparse (X)
         ): 
         if columns is None : 
-            raise ValueError ("Columns must be supplied for frame conversion.")
+            raise ValueError (
+                "Name or columns must be supplied for frame conversion.")
         # if not string is given as name 
         # check whether the columns contains only one 
         # value and use it as name to skip 
@@ -907,8 +832,8 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X',
             if isinstance (columns, str ): 
                 columns = [columns ]
             if not hasattr (columns, '__len__'):
-                raise TypeError (" Columns for {input_name!r} must passed "
-                                  f"as a list or tuple. Got {type_col_name!r}")
+                raise TypeError (" Columns for {input_name!r} expects "
+                                  f"a list or tuple. Got {type_col_name!r}")
             if X.shape [1] != len(columns):
                 raise ValueError (
                     f"Shape of passed values for {input_name} is"
@@ -920,6 +845,15 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X',
         
     return X, columns 
  
+def is_frame (arr, /): 
+    """ Return bool wether array is a frame ( pd.Series or pd.DataFrame )
+    
+    Isolated part of :func:`~.array2frame` dedicated to X and y frame
+    reconversion validation.
+    """
+    return hasattr (arr, '__array__') and (
+        hasattr (arr, 'name') or hasattr (arr, 'columns') )
+
 def check_array(
     array,
     *,
@@ -1018,11 +952,12 @@ def check_array(
         )
     xp, is_array_api = get_namespace(array)
 
-    # collect the name or seires if 
-    # data is pandas series or dataframe .
-    
+    # collect the name or series if 
+    # data is pandas series or dataframe.
+    # and reconvert by to series or dataframe 
+    # array is series or dataframe. 
     array, column_orig = set_array_back(array)
-         
+    
     # store reference to original array to check if copy is needed when
     # function returns
     array_orig = array
@@ -1184,7 +1119,7 @@ def check_array(
                 array,
                 input_name=input_name,
                 estimator_name=estimator_name,
-                allow_nan=force_all_finite == "allow-nan",
+                allow_nan= force_all_finite == "allow-nan",
             )
         
     if ensure_min_samples > 0:
@@ -1220,15 +1155,335 @@ def check_array(
             )
             
     if to_frame:
-        array, _ = set_array_back(
-            array,
-            to_frame =True , 
-            columns = column_orig, 
-            input_name= input_name  
+        array= convert_array_to_frame(
+                array,
+                to_frame =to_frame , 
+                columns = column_orig, 
+                input_name= input_name, 
+                raise_warning="silence", 
             ) 
     
     return array 
 
+def check_X_y(
+    X,
+    y,
+    accept_sparse=False,
+    *,
+    accept_large_sparse=True,
+    dtype="numeric",
+    order=None,
+    copy=False,
+    force_all_finite=True,
+    ensure_2d=True,
+    allow_nd=False,
+    multi_output=False,
+    ensure_min_samples=1,
+    ensure_min_features=1,
+    y_numeric=False,
+    estimator=None,
+    to_frame= False, 
+):
+    """Input validation for standard estimators.
+    Checks X and y for consistent length, enforces X to be 2D and y 1D. By
+    default, X is checked to be non-empty and containing only finite values.
+    Standard input checks are also applied to y, such as checking that y
+    does not have np.nan or np.inf targets. For multi-label y, set
+    multi_output=True to allow 2D and sparse y. If the dtype of X is
+    object, attempt converting to float, raising on failure.
+    Parameters
+    ----------
+    X : {ndarray, list, sparse matrix}
+        Input data.
+    y : {ndarray, list, sparse matrix}
+        Labels.
+    accept_sparse : str, bool or list of str, default=False
+        String[s] representing allowed sparse matrix formats, such as 'csc',
+        'csr', etc. If the input is sparse but not in the allowed format,
+        it will be converted to the first listed format. True allows the input
+        to be any format. False means that a sparse matrix input will
+        raise an error.
+    accept_large_sparse : bool, default=True
+        If a CSR, CSC, COO or BSR sparse matrix is supplied and accepted by
+        accept_sparse, accept_large_sparse will cause it to be accepted only
+        if its indices are stored with a 32-bit dtype.
+        .. versionadded:: 0.20
+    dtype : 'numeric', type, list of type or None, default='numeric'
+        Data type of result. If None, the dtype of the input is preserved.
+        If "numeric", dtype is preserved unless array.dtype is object.
+        If dtype is a list of types, conversion on the first type is only
+        performed if the dtype of the input is not in the list.
+    order : {'F', 'C'}, default=None
+        Whether an array will be forced to be fortran or c-style.
+    copy : bool, default=False
+        Whether a forced copy will be triggered. If copy=False, a copy might
+        be triggered by a conversion.
+    force_all_finite : bool or 'allow-nan', default=True
+        Whether to raise an error on np.inf, np.nan, pd.NA in X. This parameter
+        does not influence whether y can have np.inf, np.nan, pd.NA values.
+        The possibilities are:
+        - True: Force all values of X to be finite.
+        - False: accepts np.inf, np.nan, pd.NA in X.
+        - 'allow-nan': accepts only np.nan or pd.NA values in X. Values cannot
+          be infinite.
+        .. versionadded:: 0.20
+           ``force_all_finite`` accepts the string ``'allow-nan'``.
+        .. versionchanged:: 0.23
+           Accepts `pd.NA` and converts it into `np.nan`
+    ensure_2d : bool, default=True
+        Whether to raise a value error if X is not 2D.
+    allow_nd : bool, default=False
+        Whether to allow X.ndim > 2.
+    multi_output : bool, default=False
+        Whether to allow 2D y (array or sparse matrix). If false, y will be
+        validated as a vector. y cannot have np.nan or np.inf values if
+        multi_output=True.
+    ensure_min_samples : int, default=1
+        Make sure that X has a minimum number of samples in its first
+        axis (rows for a 2D array).
+    ensure_min_features : int, default=1
+        Make sure that the 2D array has some minimum number of features
+        (columns). The default value of 1 rejects empty datasets.
+        This check is only enforced when X has effectively 2 dimensions or
+        is originally 1D and ``ensure_2d`` is True. Setting to 0 disables
+        this check.
+    y_numeric : bool, default=False
+        Whether to ensure that y has a numeric type. If dtype of y is object,
+        it is converted to float64. Should only be used for regression
+        algorithms.
+    estimator : str or estimator instance, default=None
+        If passed, include the name of the estimator in warning messages.
+    Returns
+    -------
+    X_converted : object
+        The converted and validated X.
+    y_converted : object
+        The converted and validated y.
+    """
+    if y is None:
+        if estimator is None:
+            estimator_name = "estimator"
+        else:
+            estimator_name = _check_estimator_name(estimator)
+        raise ValueError(
+            f"{estimator_name} requires y to be passed, but the target y is None"
+        )
+
+    X = check_array(
+        X,
+        accept_sparse=accept_sparse,
+        accept_large_sparse=accept_large_sparse,
+        dtype=dtype,
+        order=order,
+        copy=copy,
+        force_all_finite=force_all_finite,
+        ensure_2d=ensure_2d,
+        allow_nd=allow_nd,
+        ensure_min_samples=ensure_min_samples,
+        ensure_min_features=ensure_min_features,
+        estimator=estimator,
+        input_name="X",
+        to_frame=to_frame 
+    )
+
+    y = check_y(
+        y, 
+        multi_output=multi_output, 
+        y_numeric=y_numeric, 
+        estimator=estimator
+        )
+
+    check_consistent_length(X, y)
+
+    return X, y
+
+
+def check_y(y, 
+    multi_output=False, 
+    y_numeric=False, 
+    input_name ="y", 
+    estimator=None, 
+    to_frame=False,
+    allow_nan= False, 
+            ):
+    """
+    
+    Parameters 
+    -----------
+    multi_output : bool, default=False
+        Whether to allow 2D y (array or sparse matrix). If false, y will be
+        validated as a vector. y cannot have np.nan or np.inf values if
+        multi_output=True.
+    y_numeric : bool, default=False
+        Whether to ensure that y has a numeric type. If dtype of y is object,
+        it is converted to float64. Should only be used for regression
+        algorithms.
+    input_name : str, default="y"
+       The data name used to construct the error message. In particular
+       if `input_name` is "y".    
+    estimator : str or estimator instance, default=None
+        If passed, include the name of the estimator in warning messages.
+    allow_nan : bool, default=False
+       If True, do not throw error when `y` contains NaN.
+    to_frame:bool, default=False, 
+        reconvert array to its initial type if it is given as pd.Series or
+        pd.DataFrame. 
+    Returns
+    --------
+    y: array-like, 
+    y_converted : object
+        The converted and validated y.
+        
+    """
+    y , column_orig = set_array_back(y)
+    if multi_output:
+        y = check_array(
+            y,
+            accept_sparse="csr",
+            force_all_finite= True if not allow_nan else "allow-nan",
+            ensure_2d=False,
+            dtype=None,
+            input_name=input_name,
+            estimator=estimator,
+        )
+    else:
+        estimator_name = _check_estimator_name(estimator)
+        y = _check_y_1d(y, warn=True)
+        _assert_all_finite(y, input_name=input_name, 
+                           estimator_name=estimator_name, 
+                           allow_nan=allow_nan , 
+                           )
+        _ensure_no_complex_data(y)
+    if y_numeric and y.dtype.kind == "O":
+        y = y.astype(np.float64)
+        
+    if to_frame: 
+        y = convert_array_to_frame (
+            y, to_frame =to_frame , 
+            columns = column_orig,
+            input_name=input_name,
+            raise_warning="mute", 
+            )
+       
+    return y
+
+#XXXTODO 
+def convert_array_to_frame(
+    X, 
+    *, 
+    to_frame = False, 
+    columns = None, 
+    raise_exception =False, 
+    raise_warning =True, 
+    input_name ='', 
+  ): 
+    """Isolated part of is_frame dedicated to X and y frame reconversion 
+    validation.
+    
+    Parameters 
+    ------------
+    X: Array-like 
+        Array to convert to frame. 
+    columns: str or list of str 
+        Series name or columns names for pandas.Series and DataFrame. 
+        
+    to_frame: str, default=False
+        If ``True`` , reconvert the array to frame using the columns orthewise 
+        no-action is performed and return the same array.
+    input_name : str, default=""
+        The data name used to construct the error message. 
+        
+    raise_warning : bool, default=True
+        If True then raise a warning if conversion is required.
+        If ``ignore``, warnings silence mode is triggered.
+    raise_exception : bool, default=False
+        If True then raise an exception if array is not symmetric.
+        
+    Returns
+    --------
+    X: converted array 
+    
+    Example
+    ---------
+    >>> from watex.datasets import fetch_data  
+    >>> from watex.utils.validator import convert_array_to_frame 
+    >>> data = fetch_data ('hlogs').frame 
+    >>> convert_array_to_frame (data.k.values , 
+                                to_frame= True, columns =None, input_name= 'y',
+                                raise_warning="silence"
+                                ) 
+    ... array([nan, nan, nan, ..., nan, nan, nan]) # mute 
+    
+    """
+    isf = to_frame ; isf = is_frame( X) 
+    
+    if ( to_frame 
+        and not isf 
+        and columns is None 
+        ): 
+        msg = (f"Array {input_name} is originally not a frame. Frame "
+               "conversion cannot be performed with no column names."
+               ) 
+        if raise_exception: 
+            raise ValueError (msg)
+        if  ( raise_warning 
+             and raise_warning not in ("silence","ignore", "mute")
+             ): 
+            warnings.warn(msg )
+            
+        isf=False 
+        
+    elif ( to_frame 
+          and columns is not None
+          ): 
+        isf =True 
+ 
+    X, _= set_array_back(
+        X, 
+        to_frame=isf, 
+        columns =columns, 
+        input_name=input_name 
+        )
+                
+    return X  
+    
+def _check_y_1d(y, *, warn=False):
+    """Ravel column or 1d numpy array, else raises an error.
+    and Isolated part of check_X_y dedicated to y validation
+    Parameters
+    ----------
+    y : array-like
+       Input data.
+    warn : bool, default=False
+       To control display of warnings.
+    Returns
+    -------
+    y : ndarray
+       Output data.
+    Raises
+    ------
+    ValueError
+        If `y` is not a 1D array or a 2D array with a single row or column.
+    """
+    xp, _ = get_namespace(y)
+    y = xp.asarray(y)
+    shape = y.shape
+    if len(shape) == 1:
+        return _asarray_with_order(xp.reshape(y, -1), order="C", xp=xp)
+    if len(shape) == 2 and shape[1] == 1:
+        if warn:
+            warnings.warn(
+                "A column-vector y was passed when a 1d array was"
+                " expected. Please change the shape of y to "
+                "(n_samples, ), for example using ravel().",
+                DataConversionWarning,
+                stacklevel=2,
+            )
+        return _asarray_with_order(xp.reshape(y, -1), order="C", xp=xp)
+    
+    raise ValueError(
+        "y should be a 1d array, got an array of shape {} instead.".format(shape)
+    )
 
 def _check_large_sparse(X, accept_large_sparse=False):
     """Raise a ValueError if X has 64bit indices and accept_large_sparse=False"""
@@ -1365,17 +1620,23 @@ def _assert_all_finite(
 ):
     """Like assert_all_finite, but only for ndarray."""
 
+    err_msg=(
+        f"{input_name} does not accept missing values encoded as NaN"
+        " natively. Alternatively, it is possible to preprocess the data,"
+        " for instance by using the imputer transformer like the ufunc"
+        " 'naive_imputer' in 'watex.utils.mlutils.naive_imputer'."
+        )
+    
     xp, _ = get_namespace(X)
 
     # if _get_config()["assume_finite"]:
     #     return
-
     X = xp.asarray(X)
 
     # for object dtype data, we only check for NaNs (GH-13254)
     if X.dtype == np.dtype("object") and not allow_nan:
         if _object_dtype_isnan(X).any():
-            raise ValueError("Input contains NaN")
+            raise ValueError("Input contains NaN. " + err_msg)
 
     # We need only consider float arrays, hence can early return for all else.
     if X.dtype.kind not in "fc":
@@ -1408,23 +1669,26 @@ def _assert_all_finite(
             type_err = f"infinity or a value too large for {msg_dtype!r}"
         padded_input_name = input_name + " " if input_name else ""
         msg_err = f"Input {padded_input_name}contains {type_err}."
-        # if estimator_name and input_name == "X" and has_nan_error:
-        #     # Improve the error message on how to handle missing values in
-        #     # scikit-learn.
-        #     msg_err += (
-        #         f"\n{estimator_name} does not accept missing values"
-        #         " encoded as NaN natively. For supervised learning, you might want"
-        #         " to consider sklearn.ensemble.HistGradientBoostingClassifier and"
-        #         " Regressor which accept missing values encoded as NaNs natively."
-        #         " Alternatively, it is possible to preprocess the data, for"
-        #         " instance by using an imputer transformer in a pipeline or drop"
-        #         " samples with missing values. See"
-        #         " https://scikit-learn.org/stable/modules/impute.html"
-        #         " You can find a list of all estimators that handle NaN values"
-        #         " at the following page:"
-        #         " https://scikit-learn.org/stable/modules/impute.html"
-        #         "#estimators-that-handle-nan-values"
-        #     )
+        if estimator_name and input_name == "X" and has_nan_error:
+            # Improve the error message on how to handle missing values in
+            # scikit-learn.
+            msg_err += (
+                f"\n{estimator_name} does not accept missing values"
+                " encoded as NaN natively. For supervised learning, you might want"
+                " to consider sklearn.ensemble.HistGradientBoostingClassifier and"
+                " Regressor which accept missing values encoded as NaNs natively."
+                " Alternatively, it is possible to preprocess the data, for"
+                " instance by using an imputer transformer in a pipeline or drop"
+                " samples with missing values. See"
+                " https://scikit-learn.org/stable/modules/impute.html"
+                " You can find a list of all estimators that handle NaN values"
+                " at the following page:"
+                " https://scikit-learn.org/stable/modules/impute.html"
+                "#estimators-that-handle-nan-values"
+            )
+        elif estimator_name is None and has_nan_error: 
+            msg_err += f"\n{err_msg}"
+            
         raise ValueError(msg_err)
         
 def assert_all_finite(
