@@ -1167,10 +1167,15 @@ def get_sections_from_depth  (z, z_range, return_index =False ) :
  
     """
     z = _assert_all_types(z, pd.Series, np.ndarray , "Depth")
-    
     if not _is_arraylike_1d (z) : 
         raise DepthError( "Depth expects one-dimensional array.")
-    
+        
+    # check depth z array 
+    z= check_y (
+        z, 
+        input_name= "Array of depth 'z'", 
+        to_frame =True, 
+        )
     if not is_iterable(z_range): 
         return TypeError ("Depth range must be an iterable object,"
                           f" not {type (z_range).__name__!r}")
@@ -1868,7 +1873,13 @@ def get_aquifer_section (
         if not _is_arraylike_1d(z): 
             raise DepthError ("Depth supports only one-dimensional array,"
                              f" not {type(z).__name__!r}.")
-        if len(z)!= len(arr_k): 
+            # check depth z array 
+        z= check_y (
+            z, 
+            input_name= "Array of depth 'z'", 
+            to_frame =True, 
+            )
+        if not _check_consistency_size(z, arr_k, error ='ignore'): 
             raise DepthError (ms)
                 
     if (z is None and zname is not None ): 
