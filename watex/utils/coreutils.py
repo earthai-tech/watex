@@ -4,7 +4,7 @@
 #   Created date: Fri Apr 15 10:46:56 2022
 
 """
-core utilities 
+Core utilities 
 ========================
 
 Encompasses the main functionalities for class and methods to sucessfully 

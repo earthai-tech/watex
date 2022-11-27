@@ -144,7 +144,11 @@ def import_optional_dependency(
 
     package_name = INSTALL_MAPPING.get(name)
     install_name = package_name if package_name is not None else name
-
+    
+    exception = ImportError  if exception is None else exception 
+    if not callable (exception):
+        exception = ImportError 
+    
     msg = (
         f"Missing optional dependency '{install_name}'. {extra} "
         f"Use pip or conda to install {install_name}."
@@ -153,8 +157,6 @@ def import_optional_dependency(
         module = importlib.import_module(name)
     except ImportError:
         if errors == "raise":
-            exception = ImportError  if exception is None else exception 
-            if not callable (exception): exception = ImportError 
             raise exception (msg )
         else:
             return None
@@ -178,6 +180,6 @@ def import_optional_dependency(
                 warnings.warn(msg, UserWarning)
                 return None
             elif errors == "raise":
-                raise ImportError(msg)
+                raise exception(msg)
 
     return module

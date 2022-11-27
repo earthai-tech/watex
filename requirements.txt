@@ -3,7 +3,7 @@ sphinx >=3.5
 sphinx_rtd_theme
 cython
 matplotlib>=3.3.0
-numpy
+numpy>=1.23.3
 scipy
 qtpy
 netcdf4
@@ -12,11 +12,12 @@ Numexpr >= 2.6.2
 blosc >= 1.4.1
 pytest
 flake8
+flask
 pyyaml
 pyproj>=1.9.6
-pandas
+pandas >=1.1.4
 python-coveralls
-sklearn
+sklearn >=1.1 
 joblib
 seaborn
 tqdm
