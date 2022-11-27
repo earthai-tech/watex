@@ -7,7 +7,6 @@ from .dimensionality import (
     kPCA, 
     LLE, 
     iPCA, 
-    
     )
 from .decomposition import ( 
     extract_pca, 
@@ -23,6 +22,7 @@ from .factor import (
     compare_pca_and_fa_analysis, 
     make_data, 
     )
+
 __all__= [ 
     "nPCA", 
     "kPCA", 
@@ -30,10 +30,7 @@ __all__= [
     "iPCA",  
     "get_component_with_most_variance",
     "plot_projection", 
-    "find_features_importances", 
-    "prepareDataForPCA", 
-    "find_features_importances", 
-    "pcaVarianceRatio", 
+    "find_features_importances",  
     "extract_pca", 
     "decision_region", 
     "feature_transformation", 

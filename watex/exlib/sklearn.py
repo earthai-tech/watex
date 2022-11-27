@@ -70,23 +70,19 @@ sklearndoc = type ('sklearndoc', () , dict (
     ) 
 )
     
-import warnings 
+from ..utils._dependency import import_optional_dependency
 
 _HAS_ENSEMBLE_=False
 
+msg= ("Sckit-learn <'sklearn'> is used throughout the watex package especially"
+      " for the prediction modules. It is recommended to install it.")
 try : 
     from sklearn.ensemble import  RandomForestClassifier
 except: 
     from ..exceptions import ScikitLearnImportError 
-    from ..utils.funcutils import is_installing
-    _HAS_ENSEMBLE_ = is_installing('sklearn')
-    if not _HAS_ENSEMBLE_: 
-        warnings.warn(
-            'Auto-installation of `Ensemble` methods from '
-            ':mod:`sklearn.ensemble` failed. Try to install it '
-            'manually.', ImportWarning)
-        raise ScikitLearnImportError('Module importation error.')
-
+    
+    import_optional_dependency (
+        "sklearn", extra = msg , min_version="1.1", exception= ScikitLearnImportError )
 else :
     _HAS_ENSEMBLE_=True
     

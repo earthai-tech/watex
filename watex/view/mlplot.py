@@ -33,7 +33,8 @@ from matplotlib import cm
 from .._watexlog import watexlog
 from .._docstring import ( 
     _core_docs, 
-    DocstringComponents
+    _baseplot_params, 
+    DocstringComponents, 
     )
 from ..analysis.dimensionality import nPCA
 from ..decorators import  docSanitizer 
@@ -98,7 +99,8 @@ from ..utils.validator import (
 _logger=watexlog.get_watex_logger(__name__)
 
 #-----
-# Add specific params to docs 
+# Add specific params to Evaldocs 
+
 _eval_params = dict( 
     objective="""
 objective: str, default=None, 
@@ -112,12 +114,57 @@ objective: str, default=None,
     to the hydraulic system requirement during the campaign for drinking 
     water supply. For any other purpose for the dataset, keep the objective  
     to ``None``. Default is ``None``.    
+    """, 
+    yp_ls="""
+yp_ls: str, default='-', 
+    Line style of `Predicted` label. Can be [ '-' | '.' | ':' ] 
+    """, 
+    yp_lw="""
+yp_lw: str, default= 3
+    Line weight of the `Predicted` plot
+    """,
+    yp_lc ="""
+yp_lc: str or :func:`matplotlib.cm`, default= 'k'
+    Line color of the `Prediction` plot. *default* is ``k``
+    """, 
+    yp_marker="""
+yp_marker: str or :func:`matplotlib.markers`, default ='o'
+    Style of marker in  of `Prediction` points. 
+    """, 
+    yp_markerfacecolor="""
+yp_markerfacecolor: str or :func:`matplotlib.cm`, default='k'
+    Facecolor of the `Predicted` label marker.
+    """, 
+    yp_markeredgecolor="""
+yp_markeredgecolor: stror :func:`matplotlib.cm`,  default= 'r' 
+    Edgecolor of the `Predicted` label marker.
+    """, 
+    yp_markeredgewidth="""
+yp_markeredgewidth: int, default=2
+    Width of the `Predicted`label marker.
+    """, 
+    rs="""
+rs: str, default='--'
+    Line style of `Recall` metric 
+    """, 
+    ps="""
+ps: str, default='-'
+    Line style of `Precision `metric
+    """, 
+    rc="""
+rc: str, default=(.6,.6,.6)
+    Recall metric colors 
+    """, 
+    pc="""
+pc: str or :func:`matplotlib.cm`, default='k'
+    Precision colors from Matplotlib colormaps. 
     """
     )
 
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
-    base=DocstringComponents(_eval_params), 
+    base=DocstringComponents(_baseplot_params), 
+    evdoc=DocstringComponents(_eval_params), 
     )
 #-------
 
@@ -1273,7 +1320,7 @@ Parameters
 {params.core.X}
 {params.core.y}
 {params.core.tname}
-{params.base.objective}
+{params.evdoc.objective}
     
 encode_labels: bool, default=False,  
     label encoding works with `label_values` parameter. 
@@ -1320,105 +1367,69 @@ Litteral_classes: list or str, optional
             label_values =[0, 1, 3, 6]
             Litteral_classes = ['rate0', 'rate1', 'rate2', 'rate3']
 
-Returns 
----------
-{returns.self}
-
-
 Attributes 
------------ 
+------------
+{params.evdoc.yp_ls}
+{params.evdoc.yp_lw}
+{params.evdoc.yp_lc}
+{params.evdoc.rs}
+{params.evdoc.ps}
+{params.evdoc.rc}
+{params.evdoc.pc}
+{params.evdoc.yp_marker}
+{params.evdoc.yp_markerfacecolor}
+{params.evdoc.yp_markeredgecolor}
+{params.evdoc.yp_markeredgewidth}
+{params.base.savefig}
+{params.base.fig_dpi}
+{params.base.fig_num}
+{params.base.fig_size}
+{params.base.fig_orientation}
+{params.base.fig_title}
+{params.base.fs}
+{params.base.ls}
+{params.base.lc}
+{params.base.lw}
+{params.base.alpha}
+{params.base.font_weight}
+{params.base.font_style}
+{params.base.font_size}
+{params.base.ms}
+{params.base.marker}
+{params.base.marker_facecolor}
+{params.base.marker_edgecolor}
+{params.base.marker_edgewidth}
+{params.base.xminorticks}
+{params.base.yminorticks}
+{params.base.bins}
+{params.base.xlim}
+{params.base.ylim}
+{params.base.xlabel}
+{params.base.ylabel}
+{params.base.rotate_xlabel}
+{params.base.rotate_ylabel}
+{params.base.leg_kws}
+{params.base.plt_kws}
+{params.base.glc}
+{params.base.glw}
+{params.base.galpha}
+{params.base.gaxis}
+{params.base.gwhich}
+{params.base.tp_axis}
+{params.base.tp_labelsize}
+{params.base.tp_bottom}
+{params.base.tp_labelbottom}
+{params.base.tp_labeltop}
+{params.base.cb_orientation}
+{params.base.cb_aspect}
+{params.base.cb_shrink}
+{params.base.cb_pad}
+{params.base.cb_anchor}
+{params.base.cb_panchor}
+{params.base.cb_label}
+{params.base.cb_spacing}
+{params.base.cb_drawedges} 
 
-Hold others optional attributes as: 
-    
-==================  =======================================================
-Key Words           Description        
-==================  =======================================================
-fig_dpi             dots-per-inch resolution of the figure
-                    *default* is 300
-fig_num             number of the figure instance
-                    *default* is 'Mesh'
-fig_size            size of figure in inches (width, height)
-                    *default* is [5, 5]
-savefig             savefigure's name, *default* is ``None``
-fig_orientation     figure orientation. *default* is ``landscape``
-fig_title           figure title. *default* is ``None``
-fs                  size of font of axis tick labels, axis labels are
-                    fs+2. *default* is 6 
-ls                  [ '-' | '.' | ':' ] line style of mesh lines
-                    *default* is '-'
-lc                  line color of the plot, *default* is ``k``
-lw                  line weight of the plot, *default* is ``1.5``
-alpha               transparency number, *default* is ``0.5``  
-font_weight         weight of the font , *default* is ``bold``.        
-marker              marker of stations 
-                    *default* is r"$\blacktriangledown$".
-ms                  size of marker in points. *default* is 5
-marker_style        style  of marker in points. *default* is ``o``.
-markerfacecolor     facecolor of the marker. *default* is ``yellow``
-markeredgecolor     edgecolor of the marker. *default* is ``cyan``.
-markeredgewidth     width of the marker. *default* is ``3``.
-x_minorticks        minortick according to x-axis size and *default* is 1.
-y_minorticks        minortick according to y-axis size and *default* is 1.
-font_size           size of font in inches (width, height)
-                    *default* is 3.
-font_style          style of font. *default* is ``italic``
-bins                histograms element separation between two bar. 
-                     *default* is ``10``. 
-xlim                limit of x-axis in plot. *default* is None 
-ylim                limit of y-axis in plot. *default* is None 
-xlabel              label name of x-axis in plot. *default* is None 
-ylabel              label name  of y-axis in plot. *default* is None 
-rotate_xlabel       angle to rotate `xlabel` in plot. *default* is None 
-rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
-leg_kws             keyword arguments of legend. *default* is empty dict.
-plt_kws             keyword arguments of plot. *default* is empty dict
-rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
-                    *default* is '--'
-ps                  [ '-' | '.' | ':' ] line style of `Precision `metric
-                    *default* is '-'
-rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
-pc                  line color of `Precision` metric *default* is ``k``
-s                   size of items in scattering plots. default is ``fs*40.``
-gls                 [ '-' | '.' | ':' ] line style of grid  
-                    *default* is '--'.
-glc                 line color of the grid plot, *default* is ``k``
-glw                 line weight of the grid plot, *default* is ``2``
-galpha              transparency number of grid, *default* is ``0.5``  
-gaxis               axis to plot grid.*default* is ``'both'``
-gwhich              type of grid to plot. *default* is ``major``
-tp_axis             axis  to apply ticks params. default is ``both``
-tp_labelsize        labelsize of ticks params. *default* is ``italic``
-tp_bottom           position at bottom of ticks params. *default*
-                    is ``True``.
-tp_top              position at the top  of ticks params. *default*
-                    is ``True``.
-tp_labelbottom      see label on the bottom of the ticks. *default* 
-                    is ``False``
-tp_labeltop         see the label on the top of ticks. *default* is ``True``
-cb_orientation      orientation of the colorbar. *default* is ``vertical``
-cb_aspect           aspect of the colorbar. *default* is 20.
-cb_shrink           shrink size of the colorbar. *default* is ``1.0``
-cb_pad              pad of the colorbar of plot. *default* is ``.05``
-cb_anchor           anchor of the colorbar. *default* is ``(0.0, 0.5)``
-cb_panchor          proportionality anchor of the colorbar. *default* is 
-                    `` (1.0, 0.5)``.
-cb_label            label of the colorbar. *default* is ``None``.      
-cb_spacing          spacing of the colorbar. *default* is ``uniform``
-cb_drawedges        draw edges inside of the colorbar. *default* is ``False``
-cb_format           format of the colorbar values. *default* is ``None``.
-yp_ls               [ '-' | '.' | ':' ] line style of `Predicted` label.  
-                    *default* is '-'
-yp_lc               line color of the `Prediction` plot. *default* is ``k``
-yp_lw               line weight of the `Predicted` plot. *default* is ``3``
-yp_marker           style  of marker in  of `Prediction` points. 
-                        *default* is ``o``.
-yp_markerfacecolor  facecolor of the `Predicted` label marker. 
-                    *default* is ``k``
-yp_markeredgecolor  edgecolor of the `Predicted` label marker. 
-                    *default* is ``r``.
-yp_markeredgewidth  width of the `Predicted`label marker. *default* is ``2``.  
-==================  =======================================================
-   
 Notes 
 --------
 This module works with numerical data  i.e if the data must contains the 
@@ -1428,7 +1439,6 @@ chunked during the fit methods.
 
 """.format(
     params=_param_docs,
-    returns= _core_docs["returns"],
 )
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2509,7 +2519,7 @@ def plotSilhouette (
     metric:str='euclidean', 
     **kwd 
  ): 
-    """
+    r"""
     Plot silhouette to quantifyg the quality  of clustering samples. 
     
     Parameters

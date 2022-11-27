@@ -103,18 +103,18 @@ else:
 
     # import required subpackages  
 
-    __all__ = [
-        "analysis", 
-        "datasets", 
-        "etc", 
-        "exlib", 
-        "utils", 
-        "externals",
-        "geology", 
-        "models", 
-        "methods", 
-        "view",
-    ]
+    # __all__ = [
+    #     "analysis", 
+    #     "datasets", 
+    #     "etc", 
+    #     "exlib", 
+    #     "utils", 
+    #     "externals",
+    #     "geology", 
+    #     "models", 
+    #     "methods", 
+    #     "view",
+    # ]
 
 
 def setup_module(module):
