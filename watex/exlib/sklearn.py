@@ -77,6 +77,7 @@ _HAS_ENSEMBLE_=False
 msg= ("Sckit-learn <'sklearn'> is used throughout the watex package especially"
       " for the prediction modules. It is recommended to install it.")
 try : 
+    import sklearn
     from sklearn.ensemble import RandomForestClassifier
 except: 
     from ..exceptions import ScikitLearnImportError 
