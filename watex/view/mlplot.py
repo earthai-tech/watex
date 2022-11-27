@@ -2714,7 +2714,7 @@ def _plotSilhouette (X, labels, metric ='euclidean', **kwds ):
                 
                 s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
     
-        Note that the sihouette coefficient is bound between -1 and 1 
+    Note that the sihouette coefficient is bound between -1 and 1 
     
     """
     cluster_labels = np.unique (labels) 

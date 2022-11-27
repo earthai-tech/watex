@@ -77,12 +77,12 @@ _HAS_ENSEMBLE_=False
 msg= ("Sckit-learn <'sklearn'> is used throughout the watex package especially"
       " for the prediction modules. It is recommended to install it.")
 try : 
-    from sklearn.ensemble import  RandomForestClassifier
+    from sklearn.ensemble import RandomForestClassifier
 except: 
     from ..exceptions import ScikitLearnImportError 
-    
-    import_optional_dependency (
-        "sklearn", extra = msg , min_version="1.1", exception= ScikitLearnImportError )
+    import_optional_dependency ("sklearn", extra = msg , min_version="1.1", 
+                                exception= ScikitLearnImportError 
+                                )
 else :
     _HAS_ENSEMBLE_=True
     
