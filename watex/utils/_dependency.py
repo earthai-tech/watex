@@ -101,6 +101,7 @@ def import_optional_dependency(
     extra: str = "",
     errors: str = "raise",
     min_version: str | None = None,
+    exception:Exception=None 
 ):
     """
     Import an optional dependency.
@@ -128,6 +129,8 @@ def import_optional_dependency(
     min_version : str, default None
         Specify a minimum version that is different from the global pandas
         minimum version required.
+    exception: callable, BaseException
+        Can be your own package exception rather than ImportError 
     Returns
     -------
     maybe_module : Optional[ModuleType]
@@ -150,7 +153,9 @@ def import_optional_dependency(
         module = importlib.import_module(name)
     except ImportError:
         if errors == "raise":
-            raise ImportError(msg)
+            exception = ImportError  if exception is None else exception 
+            if not callable (exception): exception = ImportError 
+            raise exception (msg )
         else:
             return None
 

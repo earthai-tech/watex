@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Create date: Sat Aug 28 16:26:04 2021
 
 from __future__ import annotations 
 import os 
-# import re
 import copy 
 import inspect 
 import hashlib 
@@ -22,6 +20,28 @@ import numpy as np
 import pandas as pd 
 
 from .._watexlog import watexlog
+from .._typing import (
+    List,
+    Tuple, 
+    Any,
+    Dict, 
+    Optional,
+    Union, 
+    Iterable ,
+    T,
+    F, 
+    ArrayLike, 
+    NDArray,
+    DType, 
+    DataFrame, 
+    Series,
+    Sub                 
+)
+from ..exceptions import ( 
+    ParameterNumberError , 
+    EstimatorError, 
+    DatasetError
+)
 from ..exlib.sklearn import ( 
     train_test_split , 
     StratifiedShuffleSplit, 
@@ -48,28 +68,6 @@ from ..exlib.sklearn import (
     OneHotEncoder, 
     RobustScaler
 )
-from .._typing import (
-    List,
-    Tuple, 
-    Any,
-    Dict, 
-    Optional,
-    Union, 
-    Iterable ,
-    T,
-    F, 
-    ArrayLike, 
-    NDArray,
-    DType, 
-    DataFrame, 
-    Series,
-    Sub                 
-)
-from ..exceptions import ( 
-    ParameterNumberError , 
-    EstimatorError, 
-    DatasetError
-)
 from .funcutils import (
     _assert_all_types, 
     _isin, 
@@ -86,6 +84,41 @@ from .validator import (
     )
 _logger = watexlog().get_watex_logger(__name__)
 
+__all__=[ 
+    "evalModel",
+    "selectfeatures", 
+    "getGlobalScore", 
+    "split_train_test", 
+    "correlatedfeatures", 
+    "findCatandNumFeatures",
+    "evalModel", 
+    "cattarget", 
+    "labels_validator", 
+    "projection_validator", 
+    "rename_labels_in" , 
+    "naive_imputer", 
+    "naive_scaler", 
+    "select_feature_importances", 
+    "make_naive_pipe", 
+    "bi_selector", 
+    "correlatedfeatures", 
+    "exporttarget", 
+    'getGlobalScore', 
+    "predict", 
+    "fetchGeoDATA", 
+    "fetchModel", 
+    "fetch_model", 
+    "load_data", 
+    "split_train_test_by_id", 
+    "split_train_test", 
+    "discretizeCategoriesforStratification", 
+    "stratifiedUsingDiscretedCategories", 
+    "dumpOrSerializeData", 
+    "loadDumpedOrSerializedData", 
+    "default_data_splitting", 
+    "findCatandNumFeatures", 
+    
+    ]
 
 
 _scorers = { 
@@ -115,7 +148,6 @@ _estimators ={
      'logit': ['LogisticRegression', 'logit', 'lr', 'logreg'], 
      'extree': ['ExtraTreesClassifier', 'extree', 'xtree', 'xtr']
         }  
-
 #------
 def evalModel(
         model: F, 

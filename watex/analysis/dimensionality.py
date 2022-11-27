@@ -47,7 +47,6 @@ __all__ = [
     'get_component_with_most_variance',
     'plot_projection', 
     'find_features_importances', 
-    'find_features_importances', 
 ]
   
 def nPCA(

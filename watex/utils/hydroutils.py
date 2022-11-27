@@ -49,11 +49,7 @@ from ..exceptions import (
     StrataError, 
     AquiferGroupError
     )
-from ..exlib.sklearn import ( 
-    SimpleImputer,
-    KMeans , 
-    accuracy_score
-    )
+
 from .box import ( 
     _AquiferGroup, 
     Boxspace
@@ -347,6 +343,8 @@ def predict_NGA_labels(
        MGA and clusters centers if ``return_cluster_centers` is 
        set to ``True``. 
     """
+    from ..exlib.sklearn import KMeans 
+    #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ko= KMeans(n_clusters= n_clusters, random_state = random_state , 
                   init="random", **kws
                   )
@@ -858,7 +856,8 @@ def _get_y_from_valid_indexes (
   
 #XXXTODO terminate the label score 
 # computation and move it in metric module    
-def label_score (y_true , y_pred , metric =accuracy_score, ):
+
+def label_score (y_true , y_pred , metric ="accuracy_score" ):
     """ Compute the score of each true label and its similarity in 
     the predicted label 'y_pred' 
     """
@@ -1087,6 +1086,9 @@ def get_compressed_vector(
     _, numf , catf  = to_numeric_dtypes(bs_d , return_feature_types= True )
     
     if strategy  in ('mean', 'average') :
+        #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        from ..exlib.sklearn import SimpleImputer 
+        #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         ms = bs_d[ numf ].mean() 
         if len(catf)!=0:
             # Impute data and fill the gap if exists
@@ -1258,6 +1260,8 @@ compressed to top Xr.
 
 Returns valid section indexes if 'return_index' is set to ``True``.    
     
+Parameters
+-----------
 d: list of pandas dataframe 
     Data that contains mainly the aquifer values. It needs to specify the 
     name of the depth column `zname` as well as the name of permeabiliy 
@@ -1375,7 +1379,9 @@ predictor Xr. Out of the range of aquifers ection, data can be discarded or
 compressed to top Xr. 
 
 Returns valid section indexes if 'return_index' is set to ``True``.    
-    
+   
+Parameters 
+------------ 
 data: list of pandas dataframe 
     Data that contains mainly the aquifer values. It needs to specify the 
     name of the depth column `zname` as well as the name of permeabiliy 

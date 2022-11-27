@@ -39,6 +39,14 @@ from ..exlib.sklearn import (
     GridSearchCV 
     )
 
+__all__=[ 
+    "lw_score", 
+    "shrunk_cov_score", 
+    "compute_scores", 
+    "compare_pca_and_fa_analysis", 
+    "make_data", 
+    ]
+
 def compute_scores(X, n_features , n_components = 5):
     n_components = np.arange(0, n_features, n_components)
     pca = PCA(svd_solver='full')
