@@ -80,7 +80,7 @@ try :
     from sklearn.ensemble import RandomForestClassifier
 except: 
     from ..exceptions import ScikitLearnImportError 
-    import_optional_dependency ("sklearn", extra = msg , # min_version="1.1", 
+    import_optional_dependency ("sklearn", extra = msg ,  min_version="1.1", 
                                 exception= ScikitLearnImportError 
                                 )
 else :
