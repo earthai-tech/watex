@@ -12,7 +12,7 @@ import warnings
 import numpy as np 
 import pandas as pd 
 
-from ..typing import ( 
+from .._typing import ( 
     T, 
     Generic,
     Iterable , 

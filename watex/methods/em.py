@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Created on Tue May 17 11:30:51 2022
 
 """
 Module EM 
@@ -30,7 +29,6 @@ such as:
 """
 from __future__ import annotations 
 
-import warnings 
 import os
 import re
 import functools 
@@ -44,7 +42,6 @@ from ..exceptions import (
     EMError, 
 ) 
 from ..utils.funcutils import ( 
-    is_installing,
     _assert_all_types, 
     make_ids, 
     show_stats, 
@@ -70,7 +67,7 @@ from ..property import (
     IsEdi 
     )
 from ..site import Location 
-from ..typing import ( 
+from .._typing import ( 
     ArrayLike, 
     Optional, 
     List,
@@ -83,25 +80,22 @@ from ..typing import (
     F, 
     )
 
-HAS_MOD=False 
+from ..utils._dependency import import_optional_dependency 
 
+HAS_MOD=False 
 try : 
-    import pycsamt 
+    import_optional_dependency ("pycsamt")
 except ImportError: 
-    HAS_MOD=is_installing (
-            'pycsamt'
-            )
-    if not HAS_MOD: 
-        warnings.warn(" Package 'pycsamt' not found. Please install it"
-                      " mannually") 
-        raise TopModuleError( "Module Not found. Prior install the module"
-                             "`pycsamt` instead.")
+    raise TopModuleError(
+        "Missing module 'pycsamt' built on top for base EM method "
+        "implementation. Use 'pip' to install 'pycsamt'."
+        )
 else : 
     HAS_MOD=True 
     
 if HAS_MOD : 
     #XXX TODO : prior revise the pkg structure to pycsamt.core 
-    # since ff subpackage does no longer exist in newest version
+    # since ff subpackage does no longer exist in pycsamt newest version
     from pycsamt.ff.core import (
         edi, 
         z as EMz 
@@ -156,14 +150,12 @@ class EM(IsEdi):
     
         self.survey_name =survey_name
         self.Location_= Location()
-      
         self._latitude = None
         self._longitude=None
         self._elevation= None 
         self.ediObjs_ = None 
         self.data_= None 
-
-
+        
     @property 
     def latitude(self): 
         return self._latitude 
@@ -251,7 +243,7 @@ class EM(IsEdi):
         
     def fit (self, 
              data: str|List[EDIO]
-             ):
+             )->"EM":
         """
         Assert and make EM object from a collection EDIs. 
         
@@ -392,23 +384,24 @@ class EM(IsEdi):
         
         return self 
     
-    def rewrite (self, 
-                 data:str|List[EDIO] =None,
-                 *,  
-                 by: str  = 'name', 
-                 prefix: Optional[str]  = None, 
-                 dataid: Optional[List[str]] =None, 
-                 savepath: Optional[str] = None, 
-                 how: str ='py', 
-                 correct_ll: bool =True, 
-                 make_coords: bool =False, 
-                 reflong: Optional[str | float] =None, 
-                 reflat: Optional[str | float]=None, 
-                 step: str  ='1km',
-                 edi_prefix: Optional[str] =None, 
-                 export: bool =True, 
-                 **kws
-                 )-> object: 
+    def rewrite (
+        self, 
+        data:str|List[EDIO] =None,
+        *,  
+        by: str  = 'name', 
+        prefix: Optional[str]  = None, 
+        dataid: Optional[List[str]] =None, 
+        savepath: Optional[str] = None, 
+        how: str ='py', 
+        correct_ll: bool =True, 
+        make_coords: bool =False, 
+        reflong: Optional[str | float] =None, 
+        reflat: Optional[str | float]=None, 
+        step: str  ='1km',
+        edi_prefix: Optional[str] =None, 
+        export: bool =True, 
+        **kws
+        )-> "EM": 
         
         """ Rewrite Edis, correct station coordinates and dipole length. 
         
@@ -616,10 +609,11 @@ class EM(IsEdi):
         
         return self 
 
-    def getfullfrequency  (self, 
-                            data: Optional[str|List[EDIO]] = None,
-                            to_log10:bool  =False 
-                            )-> ArrayLike[DType[float]]: 
+    def getfullfrequency  (
+            self, 
+            data: Optional[str|List[EDIO]] = None,
+            to_log10:bool  =False 
+        )-> ArrayLike[DType[float]]: 
         """ Get the frequency with clean data. 
         
         The full or plain frequency is array frequency with no missing  data during 
@@ -670,13 +664,14 @@ class EM(IsEdi):
         
         return np.log10(f) if to_log10 else f 
     
-    def make2d (self,
-                data: Optional[str|List[EDIO]] =None , 
-                out:str = 'resxy',
-                *, 
-                kind:str = 'complex' , 
-                **kws 
-                )-> NDArray[DType[float]]: 
+    def make2d (
+        self,
+        data: Optional[str|List[EDIO]] =None , 
+        out:str = 'resxy',
+        *, 
+        kind:str = 'complex' , 
+        **kws 
+        )-> NDArray[DType[float]]: 
         """ Out 2D resistivity, phase (error) and tensor matrix from EDI-collection
         objects. Matrix for number of frequency x number of sites. 
         
@@ -845,10 +840,11 @@ class EM(IsEdi):
         
         return mat2d 
     
-    def getreferencefrequency (self,
-                                data: Optional[str|List[EDIO]] = None,
-                                to_log10: bool =False
-                                ): 
+    def getreferencefrequency (
+        self,
+        data: Optional[str|List[EDIO]] = None,
+        to_log10: bool =False
+        ): 
         """ Get the reference frequency from collection Edis objects.
         
         The highest frequency with clean data should be selected as the  
@@ -904,11 +900,13 @@ class EM(IsEdi):
         return  self.freqs_ [mask].max() if not to_log10 else np.log10(
             self.freqs_ [mask].max())
     
-    def export2newedis (self, 
-                        ediObj: EDIO , 
-                        new_Z: NDArray[DType[complex]], 
-                        savepath:str =None, 
-                        **kws)-> object :
+    def export2newedis (
+        self, 
+        ediObj: EDIO , 
+        new_Z: NDArray[DType[complex]], 
+        savepath:str =None, 
+        **kws
+        )-> "EDIO" :
         """ Export new EDI files from the former object with  a given new  
         impedance tensors. 
         
@@ -1001,12 +999,13 @@ class _zupdate(EM):
           
         return new_func 
     
-    def _make_zObj (self, 
-                    kk: int ,
-                    *, 
-                    freq: ArrayLike[DType[float]], 
-                    z_dict: Dict[str, NDArray[DType[complex]]]
-                    )-> NDArray[DType[complex]]: 
+    def _make_zObj (
+        self, 
+        kk: int ,
+        *, 
+        freq: ArrayLike[DType[float]], 
+        z_dict: Dict[str, NDArray[DType[complex]]]
+        )-> NDArray[DType[complex]]: 
         """ Make new Z object from frequency and dict tensor component Z. 
         
         :param kk: int 
@@ -1062,7 +1061,6 @@ class Processing (EM) :
     
     Fast process EMAP and AMT data. Tools are used for data sanitizing, 
     removing noises and filtering. 
-    
     
     Parameters 
     ----------
@@ -1138,14 +1136,16 @@ class Processing (EM) :
         
     """
     
-    def __init__(self,
-                 window_size:int =5, 
-                 component:str ='xy', 
-                 mode: str ='same', 
-                 method:str ='slinear', 
-                 out:str  ='srho', 
-                 c: str =2, 
-                 **kws): 
+    def __init__(
+        self,
+        window_size:int =5, 
+        component:str ='xy', 
+        mode: str ='same', 
+        method:str ='slinear', 
+        out:str  ='srho', 
+        c: str =2, 
+        **kws
+        ): 
         super().__init__(**kws)
         
         self._logging= watexlog.get_watex_logger(self.__class__.__name__)
@@ -1157,8 +1157,9 @@ class Processing (EM) :
         self.c=c
         
 
-    def tma (self,
-             data:str|List[EDIO]
+    def tma (
+        self,
+        data:str|List[EDIO]
     )-> NDArray[DType[float]] :
         
         """ A trimmed-moving-average filter to estimate average apparent
@@ -1264,9 +1265,10 @@ class Processing (EM) :
 
         return   cf if self.out =='sf' else rc   
       
-    def _make2dblobs (self, 
-                      data :Optional[str|List[EDIO]] = None 
-                      ): 
+    def _make2dblobs (
+        self, 
+        data :Optional[str|List[EDIO]] = None 
+        ): 
         """ Asserts argument of |EMAP| filter and returns useful arguments.
         
         data: path-like object or list  of  pycsamt.core.edi.Edi 
@@ -1327,8 +1329,9 @@ class Processing (EM) :
         return (self.res2d_ , self.phs2d_ , self.freqs_, self.c,
                 self.window_size, self.component, self.out) 
     
-    def ama (self, data:str|List[EDIO]
-             )-> NDArray[DType[float]] :
+    def ama (
+        self, data:str|List[EDIO]
+        )-> NDArray[DType[float]] :
         """ 
         Use an adaptive-moving-average filter to estimate average apparent 
         resistivities at a single static-correction-reference frequency.. 
@@ -1408,8 +1411,9 @@ class Processing (EM) :
         
         return zjc if self.out =='z' else rc 
 
-    def flma (self, 
-              data:str|List[EDIO]
+    def flma (
+        self, 
+        data:str|List[EDIO]
         )-> NDArray[DType[float]] :
         """ Use a fixed-length-moving-average filter to estimate average apparent
         resistivities at a single static-correction-reference frequency. 
@@ -1475,10 +1479,11 @@ class Processing (EM) :
         
         return zjc if self.out =='z' else rc 
     
-    def skew(self,
-             data :Optional[str|List[EDIO]] = None, 
-             method:str ='swift'
-             )-> NDArray[DType[float]]: 
+    def skew(
+        self,
+        data :Optional[str|List[EDIO]] = None, 
+        method:str ='swift'
+        )-> NDArray[DType[float]]: 
         r"""
         The conventional asymmetry parameter based on the Z magnitude. 
         
@@ -1601,14 +1606,14 @@ class Processing (EM) :
             
         return skw, mu
 
-
-    def zrestore(self,
-                       data: str|List[EDIO],
-                       *, 
-                       buffer: Tuple[float]=None, 
-                       method:str ='pd',
-                       **kws 
-                       ): 
+    def zrestore(
+        self,
+        data: str|List[EDIO],
+        *, 
+        buffer: Tuple[float]=None, 
+        method:str ='pd',
+        **kws 
+        ): 
         """ Fix the weak and missing signal at the 'dead-band`- and recover the 
         missing impedance tensor values. 
         
@@ -1762,14 +1767,15 @@ class Processing (EM) :
             
         return new_zObjs 
 
-    def _tfuncZtransformer (self,  
-                            ediObj: EDIO , 
-                            new_Z: NDArray [DType[complex]], 
-                            tfunc: F, 
-                            cfreq: ArrayLike, slice_: slice =None, 
-                            ix_s: int = 0 , 
-                            ix_end: int  = -1, 
-                            )-> NDArray [DType[complex]]: 
+    def _tfuncZtransformer (
+        self,  
+        ediObj: EDIO , 
+        new_Z: NDArray [DType[complex]], 
+        tfunc: F, 
+        cfreq: ArrayLike, slice_: slice =None, 
+        ix_s: int = 0 , 
+        ix_end: int  = -1, 
+        )-> NDArray [DType[complex]]: 
         """ Loop and transform the previous tensor to a new tensor from a 
         transform function `tfunc`. 
         
@@ -1826,11 +1832,11 @@ class Processing (EM) :
     
     @staticmethod 
     def freqInterpolation (
-            y:ArrayLike[DType[T]] ,
-            /, 
-            buffer:Optional[Tuple[float]] = None ,  
-            kind: str  ='freq' 
-            )-> ArrayLike[DType[T]]: 
+        y:ArrayLike[DType[T]] ,
+        /, 
+        buffer:Optional[Tuple[float]] = None ,  
+        kind: str  ='freq' 
+        )-> ArrayLike[DType[T]]: 
         """ Interpolate frequency in frequeny buffer range.  
         
         :param y: array-like, shape(N, ) - Can be a frequency array or periods
@@ -1885,9 +1891,9 @@ class Processing (EM) :
     
     @staticmethod 
     def controlFrequencyBuffer (
-            freq: ArrayLike[DType[T]], 
-            buffer:Optional[Tuple[float]] = None 
-            )-> ArrayLike[DType[T]] :
+        freq: ArrayLike[DType[T]], 
+        buffer:Optional[Tuple[float]] = None 
+        )-> ArrayLike[DType[T]] :
         """ Assert the frequency buffer and find the nearest value if the 
         value of the buffer is not in frequency ranges .
         
@@ -1954,12 +1960,13 @@ class Processing (EM) :
         return buffer 
 
 
-    def qc (self, 
-            data: Optional [str|List[EDIO]]=None ,
-            * ,  
-            tol: float = .5 , 
-            return_freq: bool =False 
-            )->Tuple[float, ArrayLike]: 
+    def qc (
+        self, 
+        data: Optional [str|List[EDIO]]=None ,
+        * ,  
+        tol: float = .5 , 
+        return_freq: bool =False 
+        )->Tuple[float, ArrayLike]: 
         """ Check the quality control of the collected EDIs. 
         
         Analyse the data in the EDI collection and return the quality control value.
@@ -2003,17 +2010,19 @@ class Processing (EM) :
             tol = float (tol)
         except TypeError : 
             raise TypeError (f"Unable to convert {type(tol).__name__!r} "
-                             "to float.")
+                             f"to float: {tol}")
         except ValueError: 
-            raise ValueError(f"Expect 'float' not {type(tol).__name__!r}: "
+            raise ValueError(f"Expects 'float' not {type(tol).__name__!r}: "
                              f"{(tol)!r}")
         if tol ==0.: 
-            raise ValueError ("Expect a value  greater than '0' and less than '1.'")
+            raise ValueError ("Expects a tolerance value  greater than "
+                              f"'0' and less than '1, got: {tol}'")
             
         if 1 < tol <=100: 
             tol /= 100. 
         if tol > 100: 
-            raise ValueError ("Value should be greater than '0' and less than '1'")
+            raise ValueError ("Tolerance value should be greater than"
+                              f" '0' and less than '1', got: {tol}")
             
         if data is not None: 
             self.data_ = data 
@@ -2055,14 +2064,15 @@ class Processing (EM) :
 
 
     @_zupdate(option = 'write')
-    def getValidData(self, 
-                     data:Optional[str|List[EDIO]]=None,
-                     tol:float = .5 ,  
-                     **kws 
-                     )-> NDArray[DType[complex]]: 
+    def getValidData(
+        self, 
+        data:Optional[str|List[EDIO]]=None,
+        tol:float = .5 ,  
+        **kws 
+        )-> NDArray[DType[complex]]: 
         """ Rewrite EDI and get the valid data.  
         
-        Function analyzes the data  to keep the good ones. The goodness of the data 
+        Function analyzes the data and keep the good ones. The goodness of the data 
         depends on the  `threshold` rate.  For instance 50% means to consider an 
         impedance tensor 'z'  valid if the quality control shows at least that score 
         at each frequency of all stations.  

@@ -37,7 +37,7 @@ from ..exceptions import (
     NotFittedError
     )
 from ..property import BasePlot
-from ..typing import (
+from .._typing import (
     Any , 
     List,
     Dict,
@@ -833,7 +833,7 @@ class ExPlot (BasePlot):
         >>> from watex.view import ExPlot 
         >>> p = ExPlot(tname='flow').fit(data).plotscatter (
             xname ='sfi', yname='ohmS')
-        >>> p.
+        >>> p
         ...  <'ExPlot':xname='sfi', yname='ohmS' , tname='flow'>
         
         See also
@@ -1003,10 +1003,8 @@ class ExPlot (BasePlot):
         self.save(g)
   
         return self 
-    
 
-    
-    def plothist(self,xname: str , *,  kind:str = 'hist', 
+    def plothist(self,xname: str = None, *,  kind:str = 'hist', 
                    **kws 
                    ): 
         """ A histogram visualization of numerica data.  
@@ -1040,7 +1038,6 @@ class ExPlot (BasePlot):
         self.save(fig)
         
         return self 
-    
     
     def plotmissing(self, *, 
                 kind: str =None, 
@@ -1143,7 +1140,6 @@ class ExPlot (BasePlot):
             elif kind =='dendro': 
                 ax = msno.dendrogram(self.data, **kwd) 
         
-                
             elif kind =='corr': 
                 ax= msno.heatmap(self.data, figsize = self.fig_size)
             else : 
@@ -2668,26 +2664,6 @@ def viewtemplate (y, /, xlabel=None, ylabel =None,  **kws):
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 # from matplotlib.ticker import MultipleLocator, NullLocator
 # import matplotlib.gridspec as gspec        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         
         
         

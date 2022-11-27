@@ -77,8 +77,8 @@ _HAS_ENSEMBLE_=False
 try : 
     from sklearn.ensemble import  RandomForestClassifier
 except: 
-    from .exceptions import ScikitLearnImportError 
-    from ..base import is_installing
+    from ..exceptions import ScikitLearnImportError 
+    from ..utils.funcutils import is_installing
     _HAS_ENSEMBLE_ = is_installing('sklearn')
     if not _HAS_ENSEMBLE_: 
         warnings.warn(
@@ -131,7 +131,8 @@ from sklearn.decomposition import (
 ) 
 from sklearn.feature_selection import ( 
     SelectKBest, 
-    f_classif
+    f_classif, 
+    SelectFromModel 
 ) 
 from sklearn.impute import SimpleImputer
 from sklearn.inspection import permutation_importance
@@ -178,6 +179,7 @@ from sklearn.preprocessing import (
     MinMaxScaler, 
     LabelBinarizer,
     LabelEncoder,
+    Normalizer
 ) 
 from sklearn.svm import ( 
     SVC, 
@@ -204,6 +206,7 @@ __all__=[
     'KernelPCA', 
     'SelectKBest', 
     'f_classif',
+    'SelectFromModel', 
     'SimpleImputer',
     'permutation_importance',
     'LogisticRegression', 
@@ -239,6 +242,7 @@ __all__=[
     'StandardScaler',
     'MinMaxScaler', 
     'LabelBinarizer',
+    'Normalizer',
     'LabelEncoder',
     'SVC', 
     'LinearSVC', 
@@ -254,8 +258,5 @@ __all__=[
     'sklearndoc', 
     '_HAS_ENSEMBLE_'
     ]
-
-
-
 
 

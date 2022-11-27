@@ -14,7 +14,7 @@ from ..exlib.sklearn import (
     SVC, 
     VotingClassifier, 
     )
-from ..exlib.more import XGBClassifier 
+from ..exlib.optional import XGBClassifier 
 from ..utils.funcutils import get_params 
 
 __all__=['_pMODELS']

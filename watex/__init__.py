@@ -99,19 +99,18 @@ else:
     # it and importing it first would fail if the OpenMP dll cannot be found.
     from . import _distributor_init  # noqa: F401
     from . import _build  # noqa: F401
-    from .utils._show_versions import show_versions
+    #from .utils._show_versions import show_versions
 
     # import required subpackages  
-        
+
     __all__ = [
         "analysis", 
         "datasets", 
         "etc", 
         "exlib", 
-        "tools", 
+        "utils", 
         "externals",
         "geology", 
-        "show_versions", 
         "models", 
         "methods", 
         "view",

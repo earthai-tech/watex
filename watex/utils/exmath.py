@@ -41,7 +41,7 @@ from ..exceptions import (
     ExtractionError,
     )
 from ..property import P
-from ..typing import (
+from .._typing import (
     T, 
     F,
     List, 
@@ -264,7 +264,8 @@ def linkage_matrix(
         row_clusters = linkage (pdist(df, metric =metric), method =method
                                 )
     if kind =='design': 
-        row_clusters = linkage(df.values, method = method, 
+        row_clusters = linkage(df.values if hasattr (df, 'columns') else df, 
+                               method = method, 
                                optimal_ordering=optimal_ordering )
         
     if as_frame: 

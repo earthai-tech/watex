@@ -4,26 +4,40 @@
 
 from __future__ import annotations 
 import os
+import re 
 import datetime 
 import warnings
 import itertools 
 import numpy as np
+import pandas as pd 
 import matplotlib as mpl 
 import seaborn as sns 
 from scipy.cluster.hierarchy import ( 
     dendrogram, ward 
     )
+import scipy.sparse as sp
 import matplotlib.pyplot as plt
 
 from ..exceptions import ( 
     TipError, 
     PlotError, 
     )
-from .funcutils import is_iterable
+from .funcutils import  ( 
+    is_iterable, 
+    _assert_all_types, 
+    to_numeric_dtypes, 
+    str2columns, 
+    is_in_if, 
+    is_depth_in
+    )
 from .validator import  ( 
     _check_array_in  , 
     _is_cross_validated,
-    get_estimator_name, 
+    get_estimator_name,
+    check_array, 
+    check_X_y,
+    check_y,
+    check_consistent_length
     )
 from ._dependency import import_optional_dependency 
 from watex.exlib.sklearn import ( 
@@ -32,7 +46,13 @@ from watex.exlib.sklearn import (
     accuracy_score , 
     precision_score, 
     confusion_matrix, 
-    roc_auc_score
+    roc_auc_score, 
+    RandomForestClassifier, 
+    LogisticRegression, 
+    MinMaxScaler, 
+    SimpleImputer, 
+    KMeans, 
+    silhouette_samples
     ) 
 
 is_mlxtend =False 
@@ -94,15 +114,732 @@ D_STYLES = [
     'dashdot',
     'dotted' 
 ]
+#----
 
-def plot_confusion_matrix (yt, ypred, view =True, ax=None, annot=True, **kws ):
+
+def plot_logging ( 
+        X, 
+        y=None, 
+        zname = None, 
+        tname = None, 
+        labels=None,
+        impute_nan=True , 
+        normalize = False, 
+        log10=False, 
+        columns_to_skip =None, 
+        pattern = None, 
+        strategy='mean',  
+        posiy= None, 
+        fill_value = None,  
+        fig_size = (16, 7),
+        fig_dpi = 300, 
+        colors = None,  
+        sns_style =False, 
+        savefig = None,
+        draw_spines=False, 
+        verbose=0, 
+        **kws
+          ): 
+    """ Plot logging data  
+    
+    Plot expects a collection of logging data. Each logging data composes a 
+    column of data collected on the field.Note that can also plot anykind of 
+    data related that it contains numerical values. The function does not 
+    accept categorical data.   If categorical data are given, they should be 
+    discarded. 
+    
+    Parameters 
+    -----------
+    X : Dataframe of shape (n_samples, n_features)
+         where `n_samples` is the number of data, expected to be the data 
+         collected at different depths and `n_features` is the number of 
+         columns (features) that supposed to be plot. 
+         Note that `X` must include the ``depth`` columns. If not given a 
+         relative depth should be created according to the number of sample 
+         that composes `X`.
+ 
+    y : array-like or series of shape (n_samples,), optional
+        Target relative to X for classification or regression; If given, by 
+        default the target plot should be located at the last position. 
+        However with the argument of `posiy` , target plot can be toggled to  
+        the desired position. 
+
+    zname: str, default='depth' or 'None'
+        The name of the depth column in `X`. If the name 'depth' is not  
+        specified as the main depth columns, an other name in the columns 
+        that matches the depth can also be indicated so the function will put 
+        aside this columm as depth column for plot purpose. If set to ``None``, 
+        `zname` holds the name ``depth`` and assumes that depth exists in 
+        `X` columns.
+    tname: str, optional, 
+        name of the target. This can rename of the target name if given `y`
+        as a pandas series  or add the name of target if given as an array-like. 
+        If not provided, it should use the name of the target series if `y` is
+        not None. 
+        
+    normalize: bool, default = False
+        Normalize all the data to be range between (0, 1) except the `depth`,    
+        
+    labels: list or str, optional
+        If labels afre given, they should fit the size of the number of 
+        columns. The given labels should replace the old columns in `X` and 
+        should figue out in the plot. This is usefull to change the columns 
+        labels in the dataframe to a new labels that describe the best the 
+        plot ; for instance by inluding the units in the new labels. Note that 
+        if the labels do not match the size of the old columns in `X` a warning 
+        should be let to the user and none operation will be performed. 
+        
+    impute_nan: bool, default=True, 
+        Replace the NaN values in the dataframe. Note that the default 
+        behaviour for replacing NaN is the ``mean``. However if the argument 
+        of `fill_value` is provided,the latter should be used to replace 'NaN' 
+        in `X`. 
+        
+    log10: bool, default=False
+        Convert values to log10. This can be usefull when using the logarithm 
+        data. However, it seems not all the data can be used this operation, 
+        for instance, a negative data. In that case, `column_to_skip` argument
+        is usefull to provide so to skip that columns when converting values 
+        to log10. 
+ 
+    columns_to_skip: list or str, optional, 
+        Columns to skip when performing some operation like 'log10'. These 
+        columns with not be affected by the 'log10' operations. Note that 
+       `columns_to_skip` can also gives as litteral string. In that case, the 
+       `pattern` is need to parse the columns into a list of string. 
+       
+    pattern: str, default = '[#&*@!,;\s]\s*'
+        Regex pattern to parse the `columns_to_skip` into a list of string 
+        where each item is a column name especially when the latter is given 
+        as litteral text string. For instance:: 
+            
+            columns_to_skip='depth_top, thickness, sp, gamma_gamma'  
+            -> ['depth_top', 'thickness', 'sp', 'gamma_gamma']
+            
+        by using the default pattern. To have full control of columns splitted
+        it is recommended to provided your own pattern to avoid wrong parsing 
+        and can lead to an error. 
+        
+    strategy : str, default='mean'
+        The imputation strategy.
+
+        - If "mean", then replace missing values using the mean along
+          each column. Can only be used with numeric data.
+        - If "median", then replace missing values using the median along
+          each column. Can only be used with numeric data.
+        - If "most_frequent", then replace missing using the most frequent
+          value along each column. Can be used with strings or numeric data.
+          If there is more than one such value, only the smallest is returned.
+        - If "constant", then replace missing values with fill_value. Can be
+          used with strings or numeric data.
+
+    fill_value : str or numerical value, optional
+        When strategy == "constant", fill_value is used to replace all
+        occurrences of missing_values.
+        If left to the default, fill_value will be 0 when imputing numerical
+        data and "missing_value" for strings or object data types. If not 
+        given and `impute_nan` is ``True``, the mean strategy is used instead.
+
+    posiy: int, optional 
+        the position to place the target plot `y` . By default the target plot 
+        if given is located at the last position behind the logging plots. 
+    
+    colors: list of Matplotlib.colors map, optional 
+        The colors for plotting each columns of `X` except the depth. If not
+        given, default colors is generated. 
+  
+    draw_spines: bool, tuple (-lim, +lim), default= False, 
+        Only draw spine between the y-ticks. ``-lim`` and ``+lim`` are lower 
+        and upper bound i.e. a range to draw the spines in y-axis. 
+        
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    fig_dpi: float or 'figure', default: rcParams["savefig.dpi"] \
+        (default: 'figure')
+        The resolution in dots per inch. If 'figure', use the figure's dpi value.
+        
+    savefig: str, default =None , 
+        the path to save the figure. Argument is passed to 
+        :class:`matplotlib.Figure` class. 
+
+    sns_style: str, optional, 
+        the seaborn style.
+        
+    verbose: int, default=0 
+        Output the number of categorial features dropped in the dataframe.  
+        
+    kws: dict, 
+        Additional keyword arguments passed to :func:`matplotlib.axes.plot`
+        
+    Examples
+    ---------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.plotutils import plot_logging
+    >>> X0, y = load_hlogs (as_frame =True) # get the frames rathen than object 
+    >>> # plot the default logging with Normalize =True 
+    >>> plot_logging (X0, normalize =True) 
+    >>> # Include the target in the plot 
+    >>> plot_logging ( X0,  y = y.kp , posiy = 0, 
+                      columns_to_skip=['thickness', 'sp'], 
+                      log10 =True, 
+                      )
+    >>> # draw spines and limit plot from (0, 700) m depth 
+    >>> plot_logging (X0 , y= y.kp, draw_spines =(0, 700) )
+    """
+    X = _assert_all_types(X, pd.DataFrame, pd.Series , np.ndarray ) 
+    X= check_array (
+        X, 
+        dtype =object, 
+        force_all_finite="allow-nan", 
+        input_name ="Logging dataset",
+        to_frame =True  
+        )
+    # Discard all categorical values and 
+    # keep only the numerical features.
+    X = to_numeric_dtypes(X, pop_cat_features=True, verbose = verbose ) 
+    
+    if y is not None: 
+       if isinstance (y, (list, tuple)): 
+           # in the case a lst is given 
+           y = np.array (y) 
+       if not is_iterable (y): 
+           raise TypeError ("y expects an iterable object."
+                              f" got {type(y).__name__!r}")
+       y = _assert_all_types(y, pd.Series, pd.DataFrame, np.ndarray)
+       
+       y=check_y (
+            y, 
+            to_frame =True, 
+            allow_nan= True,
+            )
+       
+       if len(y) !=len(X): 
+           raise ValueError ("y and X sizes along axis 0 must be consistent;"
+                             f" {len(y)} and {len(X)} are given.")
+    # return X and depth 
+    X, depth = is_depth_in(X, zname or 'depth', columns = labels 
+                            )
+    # fetch target if is given  
+    X, y   = _is_target_in(X, y = y , tname = tname )
+    
+    # skip log10 columns if log 10 is set to True 
+    if log10: 
+        X = _skip_log10_columns (X, column2skip = columns_to_skip , 
+                                  pattern= pattern, inplace =False) 
+    # if normalize then  
+    if normalize:
+        msc = MinMaxScaler()
+        Xsc = msc.fit_transform (X)
+        # set a new dataframe with features
+        if hasattr (msc , 'feature_names_in_'): 
+            X = pd.DataFrame (Xsc , columns = list(msc.feature_names_in_ )
+                                )
+        else : X = pd.DataFrame(Xsc, columns =list(X.columns )) 
+        # set the x axis and delete the normalize from X 
+        # at index 0 supposed to be the x axis 
+        # Xsc.iloc [:, 0 ] = x_ser 
+        # X= Xsc.copy()  
+    # impute_nan 
+    if impute_nan: 
+        # check whether there is a Nan value  in the data 
+        # impute data using mean values
+        if X.isnull().values.any(): 
+            Xi= SimpleImputer(strategy= strategy if not fill_value else None, 
+                             fill_value= fill_value
+                             ).fit_transform(X)
+            X = pd.DataFrame(Xi, columns= X.columns)
+            
+    # toggle y 
+    if y is not None: 
+        X = _toggle_target_in(X, y, pos = posiy)
+    # we assume the first columns is dedicated for 
+    
+    m_cs = make_mpl_properties(X.shape[1])
+    if colors is not None: 
+        if not is_iterable(colors): 
+            colors =[colors]
+        colors += m_cs 
+    else :colors = m_cs 
+    
+    fig, ax = plt.subplots (1, ncols = X.shape [1], sharey = True , 
+                            figsize = fig_size )
+    
+    # customize bound and set spines 
+    for k in range (X.shape [1]): 
+     
+        ax[k].plot ( X.iloc[:, k], 
+                    depth, 
+                    color = colors[k], 
+                    **kws
+                    )
+        ax[k].tick_params(top=True, 
+                          labeltop=True, 
+                          bottom=False, 
+                          labelbottom=False
+                       )
+        ax[k].set_title (X.columns [k])
+        ax[k].spines['right'].set_visible(False)
+        ax[k].spines['bottom'].set_visible(False)
+        # only show tick on the top and left 
+        ax[k].xaxis.set_ticks_position('top')
+        if y is not None: 
+            # make X axis of the target to red 
+            # for differenciation from features. 
+            if X.columns [k] ==y.name: 
+                ax[k].spines['top'].set_color('red')  
+         
+        if draw_spines: 
+            # Only draw spine between the y-ticks
+            if is_iterable(draw_spines): 
+                # for consistency check whether values 
+                # are numeric
+                draw_spines = sorted (
+                    list(map (lambda x: float (x) , draw_spines[:2])) 
+                    ) 
+                if len(draw_spines) <2: 
+                    warnings.warn(
+                        "Spine bounds is a tuple of (startpoint, endpoint)"
+                         " Single limit value is not allowed."
+                         )
+            else: 
+                # in case only True is given 
+                # use the default plot
+                ytv= ax[0].get_yticks () 
+                spacing = (ytv[-1] - ytv[0] )/(len(ytv)-1) 
+                # commonly matplotlib axis extrapoled the limit so 
+                # start with the first and last index 
+                draw_spines=  (ytv[0] + spacing/2 , ytv[-1] - spacing/2 ) 
+                
+            ax[k].spines['left'].set_bounds(*draw_spines )
+     
+    # set labels
+    ax[0].set_ylabel ("Depth (m)")
+        # Tweak spacing between subplots to prevent labels 
+        # from overlapping 
+        # plt.subplots_adjust(hspace=0.5)-> removed
+    plt.gca().invert_yaxis()
+    
+    if savefig is not None:
+        plt.savefig(savefig, dpi = fig_dpi )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+
+def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
+    r"""Plot quantifying the quality  of clustering silhouette 
+    
+    Parameters 
+    ---------
+    X : array-like of shape (n_samples_a, n_samples_a) if metric == \
+            "precomputed" or (n_samples_a, n_features) otherwise
+        An array of pairwise distances between samples, or a feature array.
+
+    labels : array-like of shape (n_samples,)
+        Label values for each sample.
+
+    metric : str or callable, default='euclidean'
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+        
+    savefig: str, default =None , 
+        the path to save the figure. Argument is passed to 
+        :class:`matplotlib.Figure` class. 
+        
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the distance function.
+        If using a ``scipy.spatial.distance`` metric, the parameters are still
+        metric dependent. See the scipy docs for usage examples.
+        
+        
+    See Also
+    --------
+    plotSilhouette :func:`watex.view.mlplot.plotSilhouette` 
+        Gives consistency plot as the use of `prefit` parameter which checks 
+        whether`labels` are expected to be passed into the function 
+        directly or not. 
+    
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> from watex.exlib.sklearn import KMeans 
+    >>> from watex.datasets import load_iris 
+    >>> from watex.view.mlplot import plotSilhouette
+    >>> d= load_iris ()
+    >>> X= d.data [:, 0][:, np.newaxis] # take the first axis 
+    >>> km= KMeans (n_clusters =3 , init='k-means++', n_init =10 , 
+                    max_iter = 300 , 
+                    tol=1e-4, 
+                    random_state =0 
+                    )
+    >>> y_km = km.fit_predict(X) 
+    >>> plotSilhouette (X, y_km)
+
+    """
+    X, labels = check_X_y(
+        X, 
+        labels, 
+        to_frame= True, 
+        )
+    cluster_labels = np.unique (labels) 
+    n_clusters = cluster_labels.shape [0] 
+    silhouette_vals = silhouette_samples(
+        X, labels= labels, metric = metric ,**kwds)
+    y_ax_lower , y_ax_upper = 0, 0 
+    yticks =[]
+    
+    for i, c  in enumerate (cluster_labels ) : 
+        c_silhouette_vals = silhouette_vals[labels ==c ] 
+        c_silhouette_vals.sort()
+        y_ax_upper += len(c_silhouette_vals)
+        color =mpl.cm.jet (float(i)/n_clusters )
+        plt.barh(range(y_ax_lower, y_ax_upper), c_silhouette_vals, 
+                 height =1.0 , 
+                 edgecolor ='none', 
+                 color =color, 
+                 )
+        yticks.append((y_ax_lower + y_ax_upper)/2.)
+        y_ax_lower += len(c_silhouette_vals)
+    silhouette_avg = np.mean(silhouette_vals) 
+    plt.axvline (silhouette_avg, 
+                 color='red', 
+                 linestyle ='--'
+                 )
+    plt.yticks(yticks, cluster_labels +1 ) 
+    plt.ylabel ("Cluster") 
+    plt.xlabel ("Silhouette coefficient")
+    plt.tight_layout()
+
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+
+def plot_sbs_feature_selection (
+        sbs_estimator,/,  X=None, y=None ,fig_size=(8, 5), 
+        sns_style =False, savefig = None, verbose=0 , **sbs_kws
+        ): 
+    """plot Sequential Backward Selection (SBS) for feature selection.  
+    
+    SBS collects the scores of the  best feature subset at each stage. 
+    
+    Parameters 
+    ------------
+    sbs_estimator : :class:`~.watex.base.SequentialBackwardSelection`\
+        estimator object
+        The Sequential Backward Selection estimator can either be fitted or 
+        not. If not fitted. Please provide the training `X` and `y`, 
+        otherwise an error will occurs.
+        
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+       
+    n_estimators : int, default=500
+        The number of trees in the forest.
+        
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+    sns_style: str, optional, 
+        the seaborn style.
+    verbose: int, default=0 
+        print the feature labels with the rate of their importances. 
+    sbs_kws: dict, 
+        Additional keyyword arguments passed to 
+        :class:`~.watex.base.SequentialBackwardSelection`
+        
+    Examples 
+    ----------
+    (1)-> Plot fitted SBS in action 
+    >>> from watex.exlib.sklearn import KNeighborsClassifier , train_test_split
+    >>> from watex.datasets import fetch_data
+    >>> from watex.base import SequentialBackwardSelection
+    >>> from watex.utils.plotutils import plot_sbs_feature_selection
+    >>> X, y = fetch_data('bagoue analysed') # data already standardized
+    >>> Xtrain, Xt, ytrain,  yt = train_test_split(X, y)
+    >>> knn = KNeighborsClassifier(n_neighbors=5)
+    >>> sbs= SequentialBackwardSelection (knn)
+    >>> sbs.fit(Xtrain, ytrain )
+    >>> plot_sbs_feature_selection(sbs, sns_style= True) 
+    
+    (2)-> Plot estimator with no prefit SBS. 
+    >>> plot_sbs_feature_selection(knn, Xtrain, ytrain) # yield the same result
+
+    """
+    from ..base import SequentialBackwardSelection as SBS 
+    if ( 
+        not hasattr (sbs_estimator, 'scores_') 
+        and not hasattr (sbs_estimator, 'k_score_')
+            ): 
+        if ( X is None or y is None ) : 
+            clfn = get_estimator_name( sbs_estimator)
+            raise TypeError (f"When {clfn} is not a fitted "
+                             "estimator, X and y are needed."
+                             )
+        sbs_estimator = SBS(estimator = sbs_estimator, **sbs_kws)
+        sbs_estimator.fit(X, y )
+        
+    k_feat = [len(k) for k in sbs_estimator.subsets_]
+    
+    if verbose: 
+        flabels =None 
+        if  ( not hasattr (X, 'columns') and X is not None ): 
+            warnings.warn("None columns name is detected."
+                          " Created using index ")
+            flabels =[f'{i:>7}' for i in range (X.shape[1])]
+            
+        elif hasattr (X, 'columns'):
+            flabels = list(X.columns)  
+        elif hasattr ( sbs_estimator , 'feature_names_in'): 
+            flabels = sbs_estimator.feature_names_in 
+            
+        if flabels is not None: 
+            k3 = list (sbs_estimator.subsets_[X.shape[1]])
+            print("Smallest feature for subset (k=3) ")
+            print(flabels [k3])
+            
+        else : print("No column labels detected. Can't print the "
+                     "smallest feature subset.")
+        
+    if sns_style: 
+        _set_sns_style (sns_style)
+        
+    plt.figure(figsize = fig_size)
+    plt.plot (k_feat , sbs_estimator.scores_, marker='o' ) 
+    plt.ylim ([min(sbs_estimator.scores_) -.25 ,
+               max(sbs_estimator.scores_) +.2 ])
+    plt.ylabel (sbs_estimator.scorer_name_ )
+    plt.xlabel ('Number of features')
+    plt.tight_layout() 
+    
+    if savefig is not None:
+        plt.savefig(savefig )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+
+def plot_regularization_path ( 
+        X, y , c_range=(-4., 6. ), fig_size=(8, 5), sns_style =False, 
+        savefig = None, **kws 
+        ): 
+    r""" Plot the regularisation path from Logit / LogisticRegression 
+    
+    Varying the  different regularization strengths and plot the  weight 
+    coefficient of the different features for different regularization 
+    strength. 
+    
+    Note that, it is recommended to standardized the data first. 
+    
+    Parameters 
+    -----------
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features. X is expected to be 
+        standardized. 
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+    c_range: list or tuple [start, stop] 
+        Regularization strength list. It is a range from the strong  
+        strong ( start) to lower (stop) regularization. Note that 'C' is 
+        the inverse of the Logistic Regression regularization parameter 
+        :math:`\lambda`. 
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+    sns_style: str, optional, 
+        the seaborn style.
+        
+    kws: dict, 
+        Additional keywords arguments passed to 
+        :class:`sklearn.linear_model.LogisticRegression`
+    
+    Examples
+    --------
+    >>> from watex.utils.plotutils import plot_regularization_path 
+    >>> from watex.datasets import fetch_data
+    >>> X, y = fetch_data ('bagoue analysed' ) # data aleardy standardized
+    >>> plot_regularization_path (X, y ) 
+
+    """
+    X, y = check_X_y(
+        X, 
+        y, 
+        to_frame= True, 
+        )
+    
+    if not is_iterable(c_range): 
+        raise TypeError ("'C' regularization strength is a range of C " 
+                         " Logit parameter: (start, stop).")
+    c_range = sorted (c_range )
+    
+    if len(c_range) < 2: 
+        raise ValueError ("'C' range expects two values [start, stop]")
+        
+    if len(c_range) >2 : 
+        warnings.warn ("'C' range expects two values [start, stop]. Values"
+                       f" are shrunk to the first two values: {c_range[:2]} "
+                       )
+    weights, params = [], []    
+    for c in np.arange (*c_range): 
+        lr = LogisticRegression(penalty='l1', C= 10.**c, solver ='liblinear', 
+                                multi_class='ovr', **kws)
+        lr.fit(X,y )
+        weights.append (lr.coef_[1])
+        params.append(10**c)
+        
+    weights = np.array(weights ) 
+    colors = make_mpl_properties(weights.shape[1])
+    if not hasattr (X, 'columns'): 
+        flabels =[f'{i:>7}' for i in range (X.shape[1])] 
+    else: flabels = X.columns   
+    
+    # plot
+    fig, ax = plt.subplots(figsize = fig_size )
+    if sns_style: 
+        _set_sns_style (sns_style)
+
+    for column , color in zip( range (weights.shape [1]), colors ): 
+        plt.plot (params , weights[:, column], 
+                  label =flabels[column], 
+                  color = color 
+                  )
+
+    plt.axhline ( 0 , color ='black', ls='--', lw= 3 )
+    plt.xlim ( [ 10 ** int(c_range[0] -1), 10 ** int(c_range[1]-1) ])
+    plt.ylabel ("Weight coefficient")
+    plt.xlabel ('C')
+    plt.xscale( 'log')
+    plt.legend (loc ='upper left',)
+    ax.legend(
+            loc ='upper right', 
+            bbox_to_anchor =(1.38, 1.03 ), 
+            ncol = 1 , fancybox =True 
+    )
+    
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+    
+def plot_rf_feature_importances (
+        clf, X=None, y=None, fig_size = (8, 4),savefig =None,   
+        n_estimators= 500, verbose =0 , sns_style =None,  **kws 
+        ): 
+    """
+    Plot features importance with RandomForest.  
+    
+    Parameters 
+    ----------
+    clf : estimator object
+        The base estimator from which the transformer is built.
+        This can be both a fitted (if ``prefit`` is set to True)
+        or a non-fitted estimator. The estimator should have a
+        ``feature_importances_`` or ``coef_`` attribute after fitting.
+        Otherwise, the ``importance_getter`` parameter should be used.
+        
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+       
+    n_estimators : int, default=500
+        The number of trees in the forest.
+        
+    fig_size : tuple (width, height), default =(8, 6)
+        the matplotlib figure size given as a tuple of width and height
+        
+    savefig: str, default =None , 
+        the path to save the figures. Argument is passed to matplotlib.Figure 
+        class. 
+    sns_style: str, optional, 
+        the seaborn style.
+    verbose: int, default=0 
+        print the feature labels with the rate of their importances. 
+    kws: dict, 
+        Additional keyyword arguments passed to 
+        :class:`sklearn.ensemble.RandomForestClassifier`
+        
+    Examples
+    ---------
+    >>> from watex.datasets import fetch_data
+    >>> from watex.exlib.sklearn import RandomForestClassifier 
+    >>> from watex.utils.plotutils import plot_rf_feature_importances 
+    >>> X, y = fetch_data ('bagoue analysed' ) 
+    >>> plot_rf_feature_importances (
+        RandomForestClassifier(), X=X, y=y , sns_style=True)
+
+    """
+    if not hasattr (clf, 'feature_importances_'): 
+        if ( X is None or y is None ) : 
+            clfn = get_estimator_name( clf)
+            raise TypeError (f"When {clfn} is not a fitted "
+                             "estimator, X and y are needed."
+                             )
+        clf = RandomForestClassifier(n_estimators= n_estimators , **kws)
+        clf.fit(X, y ) 
+        
+    importances = clf.feature_importances_ 
+    indices = np.argsort(importances)[::-1]
+    if hasattr( X, 'columns'): 
+        flabels = X.columns 
+    else : flabels =[f'{i:>7}' for i in range (X.shape[1])]
+    
+    if verbose : 
+        for f in range(X.shape [1]): 
+            print("%2d) %-*s %f" %(f +1 , 30 , flabels[indices[f]], 
+                                   importances[indices[f]])
+                  )
+    if sns_style: 
+        _set_sns_style (sns_style)
+
+    plt.figure(figsize = fig_size)
+    plt.title ("Feature importance")
+    plt.bar (range(X.shape[1]) , 
+             importances [indices], 
+             align='center'
+             )
+    plt.xticks (range (X.shape[1]), flabels [indices], rotation =90 , 
+                ) 
+    plt.xlim ([-1 , X.shape[1]])
+    plt.ylabel ('Importance rate')
+    plt.xlabel ('Feature labels')
+    plt.tight_layout()
+    
+    if savefig is not None:
+        plt.savefig(savefig )
+
+    plt.close () if savefig is not None else plt.show() 
+    
+        
+def plot_confusion_matrix (yt, y_pred, view =True, ax=None, annot=True, **kws ):
     """ plot a confusion matrix for a single classifier model.
     
     :param yt : ndarray or Series of length n
         An array or series of true target or class values. Preferably, 
         the array represents the test class labels data for error evaluation.
     
-    :param ypred: ndarray or Series of length n
+    :param y_pred: ndarray or Series of length n
         An array or series of the predicted target. 
     :param view: bool, default=True 
         Option to display the matshow map. Set to ``False`` mutes the plot. 
@@ -115,7 +852,8 @@ def plot_confusion_matrix (yt, ypred, view =True, ax=None, annot=True, **kws ):
     :returns: mat- confusion matrix bloc matrix 
     
     """
-    mat= confusion_matrix (yt, ypred, **kws)
+    check_consistent_length (yt, y_pred)
+    mat= confusion_matrix (yt, y_pred, **kws)
     if view: 
         sns.heatmap (
             mat.T, square =True, annot =annot,  fmt='d', cbar=False, ax=ax)
@@ -205,14 +943,18 @@ def plot_yb_confusion_matrix (
 
     if savefig is not None: 
         fig.savefig(savefig, dpi =300)
-        
+
+    plt.close () if savefig is not None else plt.show() 
+    
     return cmo 
 
 def plot_confusion_matrices (
         clfs, 
         Xt, yt,  
         annot =True, pkg=None, verbose = 0 , 
-        fig_size = (22, 6), subplot_kws=None, 
+        fig_size = (22, 6),
+        savefig =None, 
+        subplot_kws=None, 
     ):
     """ 
     Plot inline multiple model confusion matrices using either the sckitlearn 
@@ -301,6 +1043,11 @@ def plot_confusion_matrices (
         elif pkg in ('yellowbrick', 'yb'):
             plot_yb_confusion_matrix(model, Xt, yt, ax=axes[kk])
     
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
     return scores  
 
 def plot_learning_curves(
@@ -314,9 +1061,10 @@ def plot_learning_curves(
     convergence_line =True, 
     fig_size=(20, 6),
     sns_style =None, 
+    savefig=None, 
     subplot_kws=None,
     **kws
-       ): 
+    ): 
     """ 
     Horizontally visualization of multiple models learning curves. 
     
@@ -424,7 +1172,7 @@ def plot_learning_curves(
                           f"greater than 0; got {baseline_score}")
     
     if sns_style: 
-        sns_style = sns.set_style(sns_style) 
+        _set_sns_style (sns_style)
         
     mnames = [get_estimator_name(n) for n in models]
 
@@ -472,8 +1220,18 @@ def plot_learning_curves(
     ax = list(axes)[0]
     ax.set_ylabel("score")
     
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
         
-def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws): 
+    plt.close () if savefig is not None else plt.show() 
+        
+def plot_naive_dendrogram (
+        X, 
+        *ybounds, 
+        fig_size = (12, 5 ), 
+        savefig=None,  
+        **kws
+        ): 
     """ Quick plot dendrogram using the ward clustering function from Scipy.
     
     :param X: ndarray of shape (n_samples, n_features) 
@@ -549,9 +1307,14 @@ def plot_naive_dendrogram (X, *ybounds, fig_size = (12, 5 ),  **kws):
     plt.xlabel ("Sample index ")
     plt.ylabel ("Cluster distance")
             
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
     
 def plot_pca_components (
-        components, *, feature_names = None , cmap= 'viridis' , **kws
+        components, *, feature_names = None , cmap= 'viridis' , 
+        savefig=None, **kws
         ): 
     """ Visualize the coefficient of principal component analysis (PCA) as 
     a heatmap  
@@ -589,6 +1352,10 @@ def plot_pca_components (
                              cmap='jet_r')
     
     """
+    if sp.issparse (components): 
+        raise TypeError ("Sparse array is not supported for PCA "
+                         "components visualization."
+                         )
     # if pca object is given , get the features names
     if hasattr(components, "feature_names_in_"): 
         feature_names = list (getattr (components , "feature_names_in_" ) ) 
@@ -616,16 +1383,21 @@ def plot_pca_components (
     plt.xlabel ("Feature") 
     plt.ylabel ("Principal components") 
     
+    if savefig is not None:
+        plt.savefig(savefig, dpi = 300 )
+        
+    plt.close () if savefig is not None else plt.show() 
+    
         
 def plot_clusters (
-        n_clusters, X, ypred, cluster_centers =None 
+        n_clusters, X, y_pred, cluster_centers =None , savefig =None, 
         ): 
     """ Visualize the cluster that k-means identified in the dataset 
     
     :param n_clusters: int, number of cluster to visualize 
     :param X: NDArray, data containing the features, expect to be a two 
         dimensional data 
-    :param ypred: array-like, array containing the predicted class labels. 
+    :param y_pred: array-like, array containing the predicted class labels. 
     :param cluster_centers_: NDArray containg the coordinates of the 
         centroids or the similar points with continous features. 
         
@@ -640,29 +1412,34 @@ def plot_clusters (
     >>> # scaled the data with MinMax scaler i.e. between ( 0-1) 
     >>> h2_scaled = MinMaxScaler().fit_transform(h2)
     >>> ykm = km.fit_predict(h2_scaled )
-    >>> plot_clusters (3 , h2_scaled, y_km , km.cluster_centers_ )
+    >>> plot_clusters (3 , h2_scaled, ykm , km.cluster_centers_ )
         
     """
     try : n_clusters = int(n_clusters )
     except: 
         raise TypeError (f"n_clusters argument must be a number, "
                          f"not {type(n_clusters).__name__!r}")
-    X= np.array(X) 
+        
+    X, y_pred = check_X_y(
+        X, 
+        y_pred, 
+        )
+
     if len(X.shape )!=2 or X.shape[1]==1: 
         ndim = 1 if X.shape[1] ==1 else np.ndim (X )
         raise ValueError(
             f"X is expected to be a two dimensional data. Got {ndim}!")
     # for consistency , convert y to array    
-    ypred = np.array(ypred)
+    y_pred = np.array(y_pred)
     
     colors = make_mpl_properties(n_clusters)
     markers = make_mpl_properties(n_clusters, 'markers')
     for n in range (n_clusters):
-        plt.scatter (X[ypred ==n, 0], 
-                     X[ypred ==n , 1],  
+        plt.scatter (X[y_pred ==n, 0], 
+                     X[y_pred ==n , 1],  
                      s= 50 , c= colors [n ], 
                      marker=markers [n], 
-                     edgecolors='black', 
+                     edgecolors=None if markers [n] =='x' else 'black', 
                      label = f'Cluster {n +1}'
                      ) 
     if cluster_centers is not None: 
@@ -676,10 +1453,90 @@ def plot_clusters (
     plt.legend (scatterpoints =1 ) 
     plt.grid() 
     plt.tight_layout() 
-    plt.show()
     
+    if savefig is not None:
+         savefigure(savefig, savefig )
+    plt.close () if savefig is not None else plt.show() 
+    
+    
+def plot_elbow (
+        X,  n_clusters , n_init = 10 , max_iter = 300 , random_state=42 ,
+        fig_size = (10, 4 ), marker = 'o', savefig= None, 
+        **kwd): 
+    """ Plot elbow method to find the optimal number of cluster, k', 
+    for a given class. 
+    
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training instances to cluster. It must be noted that the data
+        will be converted to C ordering, which will cause a memory
+        copy if the given data is not C-contiguous.
+        If a sparse matrix is passed, a copy will be made if it's not in
+        CSR format.
 
-def plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
+    n_clusters : int, default=8
+        The number of clusters to form as well as the number of
+        centroids to generate.
+
+    n_init : int, default=10
+        Number of time the k-means algorithm will be run with different
+        centroid seeds. The final results will be the best output of
+        n_init consecutive runs in terms of inertia.
+
+    max_iter : int, default=300
+        Maximum number of iterations of the k-means algorithm for a
+        single run.
+
+    tol : float, default=1e-4
+        Relative tolerance with regards to Frobenius norm of the difference
+        in the cluster centers of two consecutive iterations to declare
+        convergence.
+
+    verbose : int, default=0
+        Verbosity mode.
+
+    random_state : int, RandomState instance or None, default=42
+        Determines random number generation for centroid initialization. Use
+        an int to make the randomness deterministic.
+        
+    savefig: str, default =None , 
+        the path to save the figure. Argument is passed to 
+        :class:`matplotlib.Figure` class. 
+    marker: str, default='o', 
+        cluster marker point. 
+        
+    kwd: dict
+        Addionnal keywords arguments passed to :func:`matplotlib.pyplot.plot`
+        
+    Returns 
+    --------
+    ax: Matplotlib.pyplot axes objects 
+    
+    Example
+    ---------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.plotutils import plot_elbow 
+    >>> # get the only resistivy and gamma-gama values for example
+    >>> res_gamma = load_hlogs ().frame[['resistivity', 'gamma_gamma']]  
+    >>> plot_elbow(res_gamma, n_clusters=11)
+    
+    """
+    distorsions =[] ; n_clusters = 11
+    for i in range (1, n_clusters ): 
+        km =KMeans (n_clusters =i , init= 'k-means++', 
+                    n_init=10 , max_iter=300, 
+                    random_state =0 
+                    )
+        km.fit(X) 
+        distorsions.append(km.inertia_) 
+            
+    ax = _plot_elbow (distorsions, n_clusters =n_clusters,fig_size = fig_size ,
+                      marker =marker , savefig =savefig, **kwd) 
+
+    return ax 
+    
+def _plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),  
                marker='o', savefig =None, **kwd): 
     """ Plot the optimal number of cluster, k', for a given class 
     
@@ -779,7 +1636,7 @@ def plot_cost_vs_epochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     
     return ax 
 
-def plot_mlxtend_heatmap (df, columns =None, **kws): 
+def plot_mlxtend_heatmap (df, columns =None, savefig=None,  **kws): 
     """ Plot correlation matrix array  as a heat map 
     
     :param df: dataframe pandas  
@@ -793,11 +1650,15 @@ def plot_mlxtend_heatmap (df, columns =None, **kws):
     import_optional_dependency('mlxtend')
     cm = np.corrcoef(df[columns]. values.T)
     ax= heatmap(cm, row_names = columns , column_names = columns, **kws )
-    plt.show () 
+    
+    if savefig is not None:
+         savefigure(savefig, savefig )
+    plt.close () if savefig is not None else plt.show() 
     
     return ax 
 
-def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
+def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ),
+                        alpha =.5, savefig=None  ):
     """ Visualize the pair wise correlation between the different features in  
     the dataset in one place. 
     
@@ -834,14 +1695,16 @@ def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ), alpha =.5 ):
         )
     plt.tight_layout()
 
-    plt.show () 
+    if savefig is not None:
+         savefigure(savefig, savefig )
+    plt.close () if savefig is not None else plt.show() 
     
     return ax 
 
     
 def savefigure (fig: object ,
              figname: str = None,
-             ext:str  ='.png',
+             ext:str ='.png',
              **skws ): 
     """ save figure from the given figure name  
     
@@ -1059,9 +1922,10 @@ def resetting_colorbar_bound(cbmax ,
     elif cbmax% cbmin != 0 :
         startpoint = cbmin + (mod10  - cbmin % mod10 )
         endpoint = cbmax - cbmax % mod10  
-        return np.array([round_modulo10(ii) for
-                         ii in np.linspace(startpoint, 
-                                           endpoint, number_of_ticks)])
+        return np.array(
+            [round_modulo10(ii) for ii in np.linspace(
+                             startpoint,endpoint, number_of_ticks)]
+            )
     
 
             
@@ -1212,7 +2076,7 @@ def plotvec2(a,b):
     plt.ylim(-2, 2)
     plt.xlim(-2, 2)  
 
-def ploterrorbar(
+def plot_errorbar(
         ax,
         x_array,
         y_array,
@@ -1405,9 +2269,162 @@ def _get_xticks_formatage ( ax,  xtick_range, space= 14 ):
         ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))   
 
     
+def _set_sns_style (s, /): 
+    """ Set sns style whether boolean or string is given""" 
+    s = str(s).lower()
+    s = re.sub(r'true|none', 'darkgrid', s)
+    return sns.set_style(s) 
+
+
+
+
+def _is_target_in (X, y=None, tname=None): 
+    """ Create new target name for tname if given 
+    
+    :param X: dataframe 
+        dataframe containing the data for plotting 
+    :param y: array or series
+        target data for plotting. Note that multitarget outpout is not 
+        allowed yet. Moroever, it `y` is given as a dataframe, 'tname' must 
+        be supplied to retrive y as a pandas series object, otherwise an 
+        error will raise. 
+    :param tname: str,  
+        target name. If given and `y` is ``None``, Will try to find `tname`
+        in the `X` columns. If 'tname' does not exist, plot for target is 
+        cancelled. 
+        
+    :return y: Series 
+    """
+    _assert_all_types(X, pd.DataFrame)
+    
+    if y is not None: 
+        y = _assert_all_types(y , pd.Series, pd.DataFrame, np.ndarray)
+        
+        if hasattr (y, 'columns'): 
+            if tname not in (y.columns): tname = None 
+            if tname is None: 
+                raise TypeError (
+                    "'tname' must be supplied when y is a dataframe.")
+            y = y [tname ]
+        elif hasattr (y, 'name'): 
+            tname = tname or y.name 
+            # reformat inplace the name of series 
+            y.name = tname 
+            
+        elif hasattr(y, '__array__'): 
+            y = pd.Series (y, name = tname or 'target')
+            
+    elif y is None: 
+        if tname in X.columns :
+            y = X.pop(tname)
+
+    return X, y 
+
+def _toggle_target_in  (X , y , pos=None): 
+    """ Toggle the target in the convenient position. By default the target 
+    plot is the last subplots 
+    
+    :param X: dataframe 
+        dataframe containing the data for plotting 
+    :param y: array or series
+        the target for  plotting. 
+    :param pos: int, the position to insert y in the dataframe X 
+        By default , `y` is located at the last position 
+        
+    :return: Dataframe 
+        Dataframe containing the target 'y'
+        
+    """
+    
+    pos =  0 if pos ==0  else ( pos or X.shape [1])
+
+    pos= int ( _assert_all_types(pos, int, float ) ) 
+    ms= ("The positionning of the target is out of the bound."
+         "{} position is used instead.")
+    
+    if pos > X.shape[1] : 
+        warnings.warn(ms.format('The last'))
+        pos=X.shape[1]
+    elif pos < 0: 
+        warnings.warn(ms.format(
+            " Negative index is not allowed. The first")
+                      )
+        pos=0 
+ 
+    X.insert (pos, y.name, y )
+    
+    return X
+    
+def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True): 
+    """ Skip the columns that dont need to put value in logarithms.
+    
+    :param X: dataframe 
+        pandas dataframe with valid columns 
+    :param column2skip: list or str , 
+        List of columns to skip. If given as string and separed by the default
+        pattern items, it should be converted to a list and make sure the 
+        columns name exist in the dataframe. Otherwise an error with 
+        raise. 
+    :param pattern: str, default = '[#&*@!,;\s]\s*'
+        The base pattern to split the text in `column2skip` into a columns
+        
+    :return X: Dataframe
+        Dataframe modified inplace with values computed in log10 
+        except the skipped columns. 
+        
+    :example: 
+       >>> from watex.datasets import load_hlogs 
+       >>> from watex.utils.plotutils import _skip_log10_columns 
+       >>> X0, _= load_hlogs (as_frame =True ) 
+       >>> # let visualize the  first3 values of `sp` and `resistivity` keys 
+       >>> X0['sp'][:3] , X0['resistivity'][:3]  
+       ... (0   -1.580000
+            1   -1.580000
+            2   -1.922632
+            Name: sp, dtype: float64,
+            0    15.919130
+            1    16.000000
+            2    24.422316
+            Name: resistivity, dtype: float64)
+       >>> column2skip = ['hole_number','depth_top', 'depth_bottom', 
+                         'strata_name', 'rock_name', 'well_diameter', 'sp']
+       >>> _skip_log10_columns (X0, column2skip)
+       >>> # now let visualize the same keys values 
+       >>> X0['sp'][:3] , X0['resistivity'][:3]
+       ... (0   -1.580000
+            1   -1.580000
+            2   -1.922632
+            Name: sp, dtype: float64,
+            0    1.201919
+            1    1.204120
+            2    1.387787
+            Name: resistivity, dtype: float64)
+      >>> # it is obvious the `resistiviy` values is log10 
+      >>> $ while `sp` stil remains the same 
+      
+    """
+    X0 = X.copy () 
+    if not is_iterable( column2skip): 
+        raise TypeError ("Columns  to skip expect an iterable object;"
+                         f" got {type(column2skip).__name__!r}")
+        
+    pattern = pattern or r'[#&*@!,;\s]\s*'
+    
+    if isinstance(column2skip, str):
+        column2skip = str2columns (column2skip, pattern=pattern  )
+    #assert whether column to skip is in 
+    if column2skip:
+        column2skip = is_in_if(X.columns, column2skip, return_diff= True)
+        if len(column2skip) ==len (X.columns): 
+            warnings.warn("Value(s) to skip are not detected.")
+        if inplace : 
+            X[column2skip] = np.log10 ( X[column2skip] ) 
+            return 
+        else : 
+            X0[column2skip] = np.log10 ( X0[column2skip] ) 
+            
+    return X0
+    
     
 
-    
-    
-    
     

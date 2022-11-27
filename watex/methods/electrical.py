@@ -13,7 +13,16 @@ import numpy as np
 import pandas as pd
 
 from .._docstring import refglossary
+from .._typing import  ( 
+    List, 
+    Optional, 
+    NDArray, 
+    Series , 
+    DataFrame,
+    F
+    )
 from .._watexlog import watexlog 
+
 from ..decorators import refAppender 
 from ..utils.funcutils import (
     repr_callable_obj,
@@ -40,14 +49,9 @@ from ..utils.exmath import (
     ohmicArea, 
     invertVES,
     )
-from ..typing import  ( 
-    List, 
-    Optional, 
-    NDArray, 
-    Series , 
-    DataFrame,
-    F
-
+from ..utils.validator import ( 
+    _is_valid_erp , 
+    _is_valid_ves, 
     )
 from ..property import( 
     ElectricalMethods
@@ -91,8 +95,8 @@ class DCProfiling(ElectricalMethods)  :
         >>> <object>.line1.sves_ ; <object>.line1.sves_resistivity_ 
         >>> <object>.line2.sves_ ; <object>.line2.sves_resistivity_ 
     
-    Arguments 
-    ----------
+    Parameters 
+    ------------
     
     **stations**: list or str (path-like object )
         list of station name where the drilling is expected to be located. It 
@@ -219,7 +223,7 @@ class DCProfiling(ElectricalMethods)  :
         
     def fit(self, 
             data : List[str] | List [DataFrame],
-            **fit_params)-> object : 
+            **fit_params)-> "DCProfiling" : 
         """ Read and fit the collections of data  
         
         Parameters 
@@ -259,6 +263,12 @@ class DCProfiling(ElectricalMethods)  :
         if not _readfromdcObjs (self, data):
             _readfrompath (self, data, **fit_params)
             
+        if self.verbose : 
+            if len(self.isnotvalid_)!=0: 
+                warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
+                
+        if len(self.data_) ==0: 
+            raise ERPError("None ERP data detected. Please check your data.")
         # makeids objects 
         self.ids_ = np.array(make_ids (self.survey_names_,'line',None, True)) 
         
@@ -295,13 +305,13 @@ class DCProfiling(ElectricalMethods)  :
             setattr (self, f"sves_{name}s_", _geterpattr (
                 f"sves_{name}_", self.data_).astype(float))
 
-        # set the predictor parameters attributes 
-        for name in  ('power', 'magnitude', 'type','sfi'): 
+        # set the predictor parameter attributes 
+        for name in  ('power', 'magnitude', 'type','sfi', 'shape'): 
             setattr (self, f"{name}s_", _geterpattr (f"{name}_", self.data_) 
-                     if name =='type' else  _geterpattr (f"{name}_", self.data_
-                                                         ).astype(float) 
+                     if name in ('type', 'shape') else  _geterpattr (
+                             f"{name}_", self.data_).astype(float) 
                      )
-
+        
         return self 
     
     def __repr__(self):
@@ -349,9 +359,8 @@ class DCSounding(ElectricalMethods) :
         >>> <object>.site1.fractured_zone_
         >>> <object>.site1.fractured_zone_resistivity_
     
-    Arguments 
+    Parameters 
     -----------
-    
     **froms**: float , list of float
         The collection of the depth in meters from which one expects to find a 
         fracture zone outside of pollutions. Indeed, the `froms` parameter is 
@@ -497,7 +506,9 @@ class DCSounding(ElectricalMethods) :
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
             
-    def fit(self, data : List[str] | List [DataFrame], **fit_params): 
+    def fit(self, 
+            data : List[str] | List [DataFrame], 
+            **fit_params)->'DCSounding': 
         """ Fit the DC- electrical sounding 
         
         Fit the sounding |VES| curves and computed the ohmic-area and set  
@@ -540,6 +551,12 @@ class DCSounding(ElectricalMethods) :
         if not _readfromdcObjs (self, data, VerticalSounding, VESError):
             _readfrompath (self, data, VerticalSounding,  **fit_params)
             
+        if self.verbose : 
+            if len(self.isnotvalid_)!=0: 
+                warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
+                
+        if len(self.data_) ==0: 
+            raise VESError("None VES data detected. Please check your data.")
         self.ids_ = np.array(make_ids (self.survey_names_, 'site', None, True)) 
         
         # set each line as an object with attributes
@@ -612,7 +629,7 @@ class ResistivityProfiling(ElectricalMethods):
     sounding |VES| to speculated about the layer thickesses and the existence of
     the fracture zone. 
     
-    Arguments 
+    Parameters 
     ----------
     
     **station**: str 
@@ -673,7 +690,7 @@ class ResistivityProfiling(ElectricalMethods):
             
     def fit(self, data : str | NDArray | Series | DataFrame ,
              **fit_params
-            ) -> object: 
+            ) -> 'ResistivityProfiling': 
         """ Fitting the :class:`~.ResistivityProfiling` 
         and populate the class attributes.
         
@@ -695,7 +712,7 @@ class ResistivityProfiling(ElectricalMethods):
                 
         Returns 
         -------
-            object instanciated for chaining methods. 
+           self:  object instanciated for chaining methods. 
             
         Notes
         ------
@@ -719,6 +736,10 @@ class ResistivityProfiling(ElectricalMethods):
                                  )
         
         data = erpSelector(data, columns) 
+        if not _is_valid_erp(data): 
+            raise ERPError("Invalid ERP data. Data must contain at least"
+                           " 'resistivity' and 'station' position." )
+            
         self.data_ = copy.deepcopy(data) 
         
         self.data_, self.utm_zone = fill_coordinates(
@@ -762,7 +783,7 @@ class ResistivityProfiling(ElectricalMethods):
         
         if self.station is None: 
             if not self.auto: 
-                warnings.warn("Station number is missing! By default the " 
+                warnings.warn("Station number is missing. By default the " 
                               "automatic-detection should be triggered.")
                 self.auto = True 
 
@@ -921,7 +942,7 @@ class VerticalSounding (ElectricalMethods):
     after selecting the best conductive zone when survey is made on 
     one-dimensional. 
     
-    Arguments 
+    Parameters 
     -----------
     
     **froms**: float 
@@ -1078,7 +1099,7 @@ class VerticalSounding (ElectricalMethods):
             setattr(self, key, kws[key])
             
 
-    def fit(self, data: str | DataFrame, **fit_params ): 
+    def fit(self, data: str | DataFrame, **fit_params )-> "VerticalSounding": 
         """ Fit the sounding |VES| curves and computed the ohmic-area and set  
         all the features for demarcating fractured zone from the selected 
         anomaly. 
@@ -1140,10 +1161,13 @@ class VerticalSounding (ElectricalMethods):
                            ' is triggered')
         
         if self.verbose >= 7 : 
-            print(f'Range {str(self.vesorder)!r} of resistivity data of the  '
+            print(f'Range {str(self.vesorder)!r} of resistivity data '
                   'should be selected as the main sounding data. ')
         self.data_ = vesSelector(
             data = data, index_rhoa= self.vesorder, **fit_params )
+        if not _is_valid_ves( self.data_): 
+            raise VESError("Invalid VES data. Data must contain at least"
+                           " 'resistivity' and 'AB/2' position." )
         self.max_depth_ = self.data_.AB.max()
         
         if self.fromlog10: 
@@ -1271,7 +1295,8 @@ class VerticalSounding (ElectricalMethods):
         """
         self.data_ = getattr(self, 'data_', None)
         if self.data_ is None: 
-            raise NotFittedError(f'Fit the {self.__class__.__name__!r} object first')
+            raise NotFittedError(
+                f'Fit the {self.__class__.__name__!r} object first')
   
         # invert data 
         #XXX TODO 

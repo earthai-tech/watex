@@ -30,4 +30,5 @@ pyjanitor
 openpyxl
 #threadpoolctl >= 2.0.0
 #pytables
-h5py >=3.2.0 
+h5py >=3.2.0
+

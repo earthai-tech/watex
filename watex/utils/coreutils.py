@@ -18,21 +18,14 @@ import re
 import pathlib
 import warnings 
 import copy 
-import shutil 
 import itertools  
-import datetime
-import pickle 
-import joblib
 
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt
  
 from .._docstring import refglossary 
-from .._watexlog import watexlog
-from ..decorators import refAppender, docSanitizer
-from ..property import P , Config
-from ..typing import (
+from .._typing import (
     Any, 
     List ,  
     Union, 
@@ -47,6 +40,9 @@ from ..typing import (
     Sub, 
     SP
 )
+from .._watexlog import watexlog
+from ..decorators import refAppender, docSanitizer
+from ..property import P , Config
 from ..exceptions import ( 
     StationError, 
     HeaderError, 
@@ -61,8 +57,7 @@ from .funcutils import (
     _assert_all_types,
     accept_types,
     read_from_excelsheets,
-    reshape,
-    sPath
+    reshape
     ) 
 from .gistools import (
     assert_lat_value,
@@ -74,52 +69,28 @@ from .gistools import (
     project_point_utm2ll, 
     HAS_GDAL, 
     )
-
+from .validator import  (
+    _is_valid_ves , 
+    _is_arraylike_1d, 
+    _check_consistency_size, 
+    array_to_frame
+    )
 _logger = watexlog.get_watex_logger(__name__)
 
 
-def _is_readable (
-        f:str, 
-        **kws
- ) -> DataFrame: 
-    """ Assert and read specific files and url allowed by the package
-    
-    Readable files are systematically convert to a frame.  
-    
-    :param f: Path-like object -Should be a readable files or url  
-    :param kws: Pandas readableformats additional keywords arguments. 
-    :return: dataframe - A dataframe with head contents... 
-    
-    """
-    cpObj= Config().parsers 
-    
-    if isinstance (f, pd.DataFrame): 
-        return f 
-    
-    elif not os.path.isfile :# or ('http' not in f) : 
-        try : 
-            if 'http' in f: # force pandas read html etc 
-                pass 
-        except:
-            raise TypeError (
-            f'Expected a Path-like object or url, got : {type(f).__name__!r}')
-        
-    _, ex = os.path.splitext(f) 
-    if ex.lower() not in tuple (cpObj.keys()):
-        raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
-                        )
-    try : 
-        f = cpObj[ex](f, **kws)
-        
-    except FileNotFoundError:
-        raise FileNotFoundError (
-            f"No such file in directory: {os.path.basename (f)!r}")
-    except: 
-        raise FileHandlingError (
-            f" Can not parse the file : {os.path.basename (f)!r}")
-
-    return f 
-    
+__all__=[
+    "vesSelector", 
+    "erpSelector", 
+    "fill_coordinates", 
+    "plotAnomaly", 
+    "makeCoords", 
+    "parseDCArgs", 
+    "defineConductiveZone", 
+    "read_data", 
+    "_is_readable", 
+    "is_erp_series", 
+    "is_erp_dataframe"
+    ]
 
 @refAppender(refglossary.__doc__)
 def vesSelector( 
@@ -206,78 +177,41 @@ def vesSelector(
             1   2  0.4          582
             2   3  0.4          558
     """
+    err =VESError("Data validation aborted! Current electrodes values"
+        " are missing. Specify the deep measurement AB/2")
     
-    for arr in (AB , MN, rhoa): 
+    for arr, arr_name in zip ((AB , rhoa), ("AB", "Resistivity")): 
         if arr is not None: 
-            _assert_all_types(arr, list, tuple, np.ndarray, pd.Series) 
-            
-    try: 
-        index_rhoa =  index_rhoa if index_rhoa is None else int(index_rhoa) 
-    except: 
-        raise TypeError (
-            f'Index is an integer, not {type(index_rhoa).__name__!r}')
-        
+            if isinstance(arr, (list, tuple)): 
+                arr=np.array(arr)
+            if not _is_arraylike_1d(arr): 
+                raise VESError(
+                    f"{arr_name!r} should be a one-dimensional array.")
+                
+    index_rhoa =  0 if index_rhoa is None else index_rhoa 
+    index_rhoa = int (_assert_all_types(
+        index_rhoa, int, objname ="Resistivity column index"))
     if data is not None: 
-        if isinstance(data, (str,  pathlib.PurePath)): 
-            try : 
-                data = _is_readable(data, **kws)
-            except TypeError as typError: 
-                raise VESError (str(typError))
- 
-        data = _assert_all_types(data, pd.DataFrame )
-  
-        # sanitize the dataframe 
-
-        pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
-        if ncols is None:
-            raise HeaderError (f"Columns {smft(pObj.icpr)} are missing in "
-                               "the given dataset.")
-        data.columns = ncols 
-        try : 
-            rhoa= data.resistivity 
-        except : 
-            raise ResistivityError(
-                "Data validation aborted! Missing resistivity values.")
-        else : 
-            # In the case, we got a multiple resistivity values 
-            # corresponding to the different sounding values 
-            if rhoa.ndim > 1 :
-                if index_rhoa is None: 
-                    index_rhoa = 0 
-                elif (index_rhoa  >= len(rhoa.columns)) or index_rhoa <0 : 
-                    warnings.warn(f'The index `{index_rhoa}` is out of the range' 
-                                  f'`{len(rhoa.columns)-1}` for selecting the'
-                                  ' specific resistivity data. By default, we '
-                                  'only keep the data at the index 0.'
-                        )
-                    index_rhoa= 0 
-                    
-            rhoa = rhoa.iloc[:, index_rhoa] if rhoa.ndim > 1 else rhoa 
-            
-        if 'MN' in data.columns: 
-            MN = data.MN 
-        try: 
-            AB= data.AB 
-        except: 
-            raise VESError("Data validation aborted! Current electrodes values"
-                " are missing. Specify the deep measurement!")
-            
+        rhoa, AB, MN  =_validate_ves_data_if(data, index_rhoa, err, **kws)
+    
     if rhoa is None: 
         raise ResistivityError(
             "Data validation aborted! Missing resistivity values.")
+        
     if AB is None: 
-        raise VESError("Data validation aborted! Current electrodes values"
-            " are missing. Specify the deep measurement!")
+        raise err
 
     AB = np.array(AB) ; MN = np.array(MN) ; rhoa = np.array(rhoa) 
     
-    if len(AB) !=len(rhoa): 
-        raise VESError(" Deep measurement from the current electrodes `AB` and"
-                       " the resistiviy values `rhoa` must have the same length"
-                       f'. But `{len(AB)}` and `{len(rhoa)}` were given.')
+    if not _check_consistency_size(AB, rhoa, error ='ignore'): 
+        raise VESError(
+            " Deep measurement size `AB` ( current electrodes ) "
+            " and the resistiviy values `rhoa` must be consistent."
+            f" '{len(AB)}' and '{len(rhoa)}' were given."
+                       )
         
     sdata =pd.DataFrame(
-        {'AB': AB, 'MN': MN, 'resistivity':rhoa},index =range(len(AB)))
+        {'AB': AB, 'MN': MN, 'resistivity':rhoa},index =range(len(rhoa)))
     
     return sdata
  
@@ -517,7 +451,6 @@ def is_erp_series (
     ... ResistivityError: Unable to detect the resistivity column: 'NAN'.
     
     """
-    
     data = _assert_all_types(data, pd.Series) 
     is_valid = False 
     for p in P().iresistivity : 
@@ -542,7 +475,8 @@ def is_erp_series (
 
 def is_erp_dataframe (
         data :DataFrame ,
-        dipolelength : Optional[float] = None 
+        dipolelength : Optional[float] = None, 
+        force:bool=False, 
         ) -> DataFrame:
     """ Ckeck whether the dataframe contains the electrical resistivity 
     profiling (ERP) index properties. 
@@ -567,6 +501,13 @@ def is_erp_dataframe (
         computed and filled the station columns using the default value 
         of the dipole. The *default* value is set to ``10 meters``. 
         
+    force: bool, default=False, 
+        If Vertical electrical (VES) is passed while expecting ERP data, 
+        force set to `True` will consider the VES data as ERP data and 
+        will use only the resistivity values in VES data. This will 
+        will an invalid results especially when parameters computation are 
+        needed.
+        
     Returns
     --------
     A new data with index properties.
@@ -590,6 +531,18 @@ def is_erp_dataframe (
     """
     
     data = _assert_all_types(data, pd.DataFrame)
+    if 'AB' in data.columns: 
+        msg = ("Unsupports VES data. Can force reading VES data as ERP"
+               " by setting 'force' to True.")
+        if force: 
+            warnings.warn("Force considering VES as ERP data might lead "
+                          "to breaking code or invalid results during "
+                          "ERP parameters computation. Use at your own risk.")
+        else:
+            raise ERPError(
+                "Unsupports Vertical Electrical Sounding data "
+                "while ERP is expected.")
+        
     datac= data.copy() 
     
     def _is_in_properties (h ):
@@ -643,7 +596,7 @@ def is_erp_dataframe (
     data_ = data[cold] 
     data_.columns = c  
     
-    msg = ERPError("Unknow the DC-ERP data. ERP data must contain"
+    msg = ERPError("Unknown DC-ERP data. ERP data must contain"
                    f" {smft(pObj.idicttags.keys())}")
     try : 
         data_= data_.reindex (columns =pObj.idicttags.keys(), fill_value =0.
@@ -667,6 +620,7 @@ def is_erp_dataframe (
 def erpSelector (
         f: str | NDArray | Series | DataFrame ,
         columns: str | List[str] = ..., 
+        force:bool= False, 
         **kws:Any 
 ) -> DataFrame  : 
     """ Read and sanitize the data collected from the survey. 
@@ -691,6 +645,12 @@ def erpSelector (
         the whole name of each item in 
         ``['station','resistivity' ,'longitude', 'latitude']``.
         
+    force: bool, default=False, 
+        If Vertical electrical (VES) is passed while expecting ERP data, 
+        force set to `True` will consider the VES data as ERP data and 
+        will use only the resistivity values in VES data. This will 
+        will an invalid results especially when parameters computation are 
+        needed.
     kws: dict
         Additional pandas `pd.read_csv` and `pd.read_excel` 
         methods keyword arguments. Be sure to provide the right argument. 
@@ -783,13 +743,13 @@ def erpSelector (
                     )
                 
     if isinstance(f, pd.DataFrame): 
-        f = is_erp_dataframe( f)
+        f = is_erp_dataframe( f, force = force )
     elif isinstance(f , pd.Series ): 
         f = is_erp_series(f)
     else : 
         amsg = smft(accept_types (
             pd.Series, pd.DataFrame, np.ndarray) + ['*.xls', '*.csv'])
-        raise ValueError (f" Unacceptable data. Accept only {amsg}."
+        raise ValueError (f" Unsupports data. Expects only {amsg}."
                           )  
     if np.all(f.resistivity)==0: 
         raise ResistivityError('Resistivity values need to be supply.')
@@ -878,7 +838,6 @@ def _fetch_prefix_index (
  
     return colIndex[0], arr 
 
-
 def _assert_station_positions(
     arr: SP = None,
     prefixs: List [str] =...,
@@ -954,7 +913,7 @@ def plotAnomaly(
     """ Plot the whole |ERP| line and selected conductive zone. 
     
     Conductive zone can be supplied nannualy as a subset of the `erp` or by 
-    specifyting the station expected for drilling location. For instance 
+    specifying the station expected for drilling location. For instance 
     ``S07`` for the seventh station. Futhermore, for automatic detection, one 
     should set the station argument `s` to ``auto``. However, it 's recommended 
     to provide the `cz` or the `s` to have full control. The conductive zone 
@@ -1096,6 +1055,8 @@ def plotAnomaly(
             if 's' or 'pk' in s.upper(): 
                 # if provide the station. 
                 keepindex =False 
+                
+            if s.lower() =='auto': s=None  # reset s 
         cz , _ , _, ix = defineConductiveZone(
            erp, s = s , auto = auto, keepindex=keepindex 
            )
@@ -1168,7 +1129,7 @@ def plotAnomaly(
 #XXX OPTIMIZE 
 def defineConductiveZone(
     erp:ArrayLike| pd.Series | List[float] ,
-    s: Optional [str ,  int] = None, 
+    s: Optional [str|int] = None, 
     p: SP = None,  
     auto: bool = False, 
     **kws,
@@ -1218,7 +1179,9 @@ def defineConductiveZone(
         raise StationError("Expect a station position or trigger the 'auto'"
                         "to 'True'. NoneType is given.")
         
-    elif s is None and auto: 
+    elif  ( s is None 
+           and auto is True 
+           ): 
         s= np.argwhere (erp ==erp.min())
         s= int(s) if len(s) ==1 else int(s[0])
         # s, = np.where (erp == erp.min()) 
@@ -1747,187 +1710,190 @@ def parseDCArgs(fn :str ,
         sdata ).astype(float))
 
 
-def serialize_data(
-        data, 
-        filename=None, 
-        force=True, 
-        savepath=None,
-        verbose:int =0
-     ): 
-    """ Store a data into a binary file 
-    
-    :param data: Object
-        Object to store into a binary file. 
-    :param filename: str
-        Name of file to serialize. If 'None', should create automatically. 
-    :param savepath: str, PathLike object
-         Directory to save file. If not exists should automaticallycreate.
-    :param force: bool
-        If ``True``, remove the old file if it exists, otherwise will 
-        create a new incremenmted file.
-    :param verbose: int, get more message.
-    :return: dumped or serialized filename.
-        
-    :Example:
-        
-        >>> import numpy as np
-        >>> import watex.utils.coreutils import serialize_data
-        >>> data = np.arange(15)
-        >>> file = serialize_data(data, filename=None,  force=True, 
-        ...                          savepath =None, verbose =3)
-        >>> file
-    """
-    
-    def _cif(filename, force): 
-        """ Control the file. If `force` is ``True`` then remove the old file, 
-        Otherwise create a new file with datetime infos."""
-        f = copy.deepcopy(filename)
-        if force : 
-            os.remove(filename)
-            if verbose >2: print(f" File {os.path.basename(filename)!r} "
-                      "has been removed. ")
-            return None   
-        else :
-            # that change the name in the realpath 
-            f= os.path.basename(f).replace('.pkl','') + \
-                f'{datetime.datetime.now()}'.replace(':', '_')+'.pkl' 
-            return f
-
-    if filename is not None: 
-        file_exist =  os.path.isfile(filename)
-        if file_exist: 
-            filename = _cif (filename, force)
-    if filename is None: 
-        filename ='__mymemoryfile.{}__'.format(datetime.datetime.now())
-        filename =filename.replace(' ', '_').replace(':', '-')
-    if not isinstance(filename, str): 
-        raise TypeError(f"Filename needs to be a string not {type(filename)}")
-    if filename.endswith('.pkl'): 
-        filename = filename.replace('.pkl', '')
- 
-    _logger.info (
-        f"Save data to {'memory' if filename.find('memo')>=0 else filename}.")    
-    try : 
-        joblib.dump(data, f'{filename}.pkl')
-        filename +='.pkl'
-        if verbose > 2:
-            print(f'Data dumped in `{filename} using to `~.externals.joblib`!')
-    except : 
-        # Now try to pickle data Serializing data 
-        with open(filename, 'wb') as wfile: 
-            pickle.dump( data, wfile)
-        if verbose >2:
-            print( 'Data are well serialized using Python pickle module.`')
-    # take the real path of the filename
-    filename = os.path.realpath(filename)
-
-    if savepath is  None:
-        dirname ='_memory_'
-        try : savepath = sPath(dirname)
-        except :
-            # for consistency
-            savepath = os.getcwd() 
-    if savepath is not None: 
-        try:
-            shutil.move(filename, savepath)
-        except :
-            file = _cif (os.path.join(savepath,
-                                      os.path.basename(filename)), force)
-            if not force: 
-                os.rename(filename, os.path.join(savepath, file) )
-            if file is None: 
-                #take the file  in current word 
-                file = os.path.join(os.getcwd(), filename)
-                shutil.move(filename, savepath)
-            filename = os.path.join(savepath, file)
-                
-    if verbose > 0: 
-            print(f"Data are well stored in {savepath!r} directory.")
-            
-    return os.path.join(savepath, filename) 
-    
-def load_serialized_data (filename, verbose=0): 
-    """ Load data from dumped file.
-    :param filename: str or path-like object 
-        Name of dumped data file.
-    :return: Data reloaded from dumped file.
-
-    :Example:
-        
-        >>> from watex.utils.functils import load_serialized_data
-        >>> data = load_serialized_data(
-        ...    filename = '_memory_/__mymemoryfile.2021-10-29_14-49-35.647295__.pkl', 
-        ...    verbose =3)
-
-    """
-    if not isinstance(filename, str): 
-        raise TypeError(f'filename should be a <str> not <{type(filename)}>')
-        
-    if not os.path.isfile(filename): 
-        raise FileExistsError(f"File {filename!r} does not exist.")
-
-    _filename = os.path.basename(filename)
-    _logger.info(
-        f"Loading data from {'memory' if _filename.find('memo')>=0 else _filename}.")
-   
-    data =None 
-    try : 
-        data= joblib.load(filename)
-        if verbose >2:
-            (f"Data from {_filename !r} are sucessfully"
-             " reloaded using ~.externals.joblib`!")
-    except : 
-        if verbose >2:
-            print(f"Nothing to reload. It's seems data from {_filename!r}" 
-                      " are not dumped using ~external.joblib module!")
-        
-        with open(filename, 'rb') as tod: 
-            data= pickle.load (tod)
-            
-        if verbose >2: print(f"Data from `{_filename!r} are well"
-                      " deserialized using Python pickle module.`!")
-        
-    is_none = data is None
-    if verbose > 0:
-        if is_none :
-            print("Unable to deserialize data. Please check your file.")
-        else : print(f"Data from {_filename} have been sucessfully reloaded.")
-    
-    return data        
-
 def read_data (
+        f:str | pathlib.PurePath, 
+        **read_kws
+ ) -> DataFrame: 
+    """ Assert and read specific files and url allowed by the package
+    
+    Readable files are systematically convert to a pandas dataframe frame.  
+    
+    Parameters 
+    -----------
+    f : str, Path-like object 
+        File path or Pathlib object. Must contain a valid file name  and 
+        should be a readable file or url    
+    read_kws: dict, 
+        Additional keywords arguments passed to pandas readable file keywords. 
+        
+    Returns 
+    -------
+    f: :class:`pandas.DataFrame` 
+        A dataframe with head contents by default.  
+    """
+    if isinstance (f, pd.DataFrame): 
+        return f 
+    
+    cpObj= Config().parsers 
+    f= _check_readable_file(f)
+    _, ex = os.path.splitext(f) 
+    if ex.lower() not in tuple (cpObj.keys()):
+        raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
+                        )
+    try : 
+        f = cpObj[ex](f, **read_kws)
+    except FileNotFoundError:
+        raise FileNotFoundError (
+            f"No such file in directory: {os.path.basename (f)!r}")
+    except: 
+        raise FileHandlingError (
+            f" Can not parse the file : {os.path.basename (f)!r}")
+
+    return f 
+    
+def _check_readable_file (f): 
+    """ Return file name from path objects """
+    msg =("Expects a Path-like object or URL, got: {type(f).__name__!r} ")
+    if not os.path.isfile (f): # force pandas read html etc 
+        if not ('http://'  in f or 'https://' in f ):  
+            raise TypeError (msg)
+    elif not isinstance (f,  (str , pathlib.PurePath)): 
+         raise TypeError (msg)
+    if isinstance(f, str): f =f.strip() # for consistency 
+    return f 
+
+def _validate_ves_data_if(data, index_rhoa , err , **kws): 
+    """ Validate VES data if data is given as a Path-like object and 
+    returns AB/2 position, MN if exists and resistivity data. 
+    
+    :param data: str, path-like object 
+        litteral path string or PathLib object 
+    :param index_rhoa: int, 
+        Index to retreive the resistivity data is the number of sounding 
+        point are greater than 1 
+    :param err: :class:`~watex.exceptions.VESError`
+        VESerror messages 
+    :returns: 
+        - rhoa: resistivity data 
+        - AB : current electodes measurement values 
+        - MN: potential electrodes measurement if exists in the data file. 
+        
+    """
+    if isinstance(data, (str,  pathlib.PurePath)): 
+        try : 
+            data = _is_readable(data, **kws)
+        except TypeError as typError: 
+            raise VESError (str(typError))
+
+    data = _assert_all_types(data, pd.DataFrame )
+
+    # sanitize the dataframe 
+    pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
+    if ncols is None:
+        raise HeaderError (f"Columns {smft(pObj.icpr)} are missing in "
+                           "the given dataset.")
+    data.columns = ncols 
+    if not _is_valid_ves( data): 
+        raise VESError("Invalid VES data. Data must contain at least"
+                       " 'resistivity' and 'AB/2' position." )
+    try : 
+        rhoa= data.resistivity 
+    except : 
+        raise ResistivityError(
+            "Data validation aborted! Missing resistivity values.")
+    else : 
+        # In the case, we got a multiple resistivity values 
+        # corresponding to the different sounding values 
+        index_rhoa = index_rhoa or 0 
+        if ( not _is_arraylike_1d( rhoa) 
+             and (
+                 index_rhoa >= rhoa.shape[1]
+                  or index_rhoa < 0 
+                  ) 
+            ): 
+            warnings.warn(f"The index {index_rhoa} is out of the range." 
+                          f" '{len(rhoa.columns)-1}' is max index for "
+                          "selecting the specific resistivity data. "
+                          "However, the resistivity data at index 0 is "
+                          " kept by default."
+                )
+            index_rhoa= 0 
+                
+        rhoa = rhoa.iloc[:, index_rhoa] if not _is_arraylike_1d(
+            rhoa) else rhoa 
+        
+    if 'MN' in data.columns: 
+        MN = data.MN 
+    try: 
+        AB= data.AB 
+    except: 
+        raise err
+    
+    return rhoa, AB, MN 
+
+
+def _is_readable (
         f:str, 
+        *, 
+        as_frame:bool=False, 
+        columns:List[str]=None,
+        input_name='f', 
         **kws
  ) -> DataFrame: 
     """ Assert and read specific files and url allowed by the package
     
-    Readable files are systematically convert to a frame.  
+    Readable files are systematically convert to a pandas frame.  
     
-    :param f: Path-like object -Should be a readable files or url  
-    :param kws: Pandas readableformats additional keywords arguments. 
-    :return: dataframe - A dataframe with head contents... 
+    Parameters 
+    -----------
+    f: Path-like object -Should be a readable files or url  
+    columns: str or list of str 
+        Series name or columns names for pandas.Series and DataFrame. 
+        
+    to_frame: str, default=False
+        If ``True`` , reconvert the array to frame using the columns orthewise 
+        no-action is performed and return the same array.
+    input_name : str, default=""
+        The data name used to construct the error message. 
+        
+    raise_warning : bool, default=True
+        If True then raise a warning if conversion is required.
+        If ``ignore``, warnings silence mode is triggered.
+    raise_exception : bool, default=False
+        If True then raise an exception if array is not symmetric.
+        
+    force:bool, default=False
+        Force conversion array to a frame is columns is not supplied.
+        Use the combinaison, `input_name` and `X.shape[1]` range.
+        
+    kws: dict, 
+        Pandas readableformats additional keywords arguments. 
+    Returns
+    ---------
+    f: pandas dataframe 
+         A dataframe with head contents... 
     
     """
+    if hasattr (f, '__array__' ) : 
+        f = array_to_frame(
+            f, 
+            to_frame= True , 
+            columns =columns, 
+            input_name=input_name , 
+            raise_exception= True, 
+            force= True, 
+            )
+        return f 
+
     cpObj= Config().parsers 
     
-    if isinstance (f, pd.DataFrame): 
-        return f 
-    
-    elif not os.path.isfile :# or ('http' not in f) : 
-        try : 
-            if 'http' in f: # force pandas read html etc 
-                pass 
-        except:
-            raise TypeError (
-            f'Expected a Path-like object or url, got : {type(f).__name__!r}')
-        
+    f= _check_readable_file(f)
     _, ex = os.path.splitext(f) 
     if ex.lower() not in tuple (cpObj.keys()):
         raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
                         )
     try : 
         f = cpObj[ex](f, **kws)
-        
     except FileNotFoundError:
         raise FileNotFoundError (
             f"No such file in directory: {os.path.basename (f)!r}")
@@ -1953,18 +1919,4 @@ def read_data (
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
         

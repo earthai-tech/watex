@@ -3,18 +3,14 @@ from .validation import (
     BaseEvaluation, 
     GridSearch, 
     multipleGridSearches, 
+    get_best_kPCA_params
 
-    )
-from .premodels import ( 
-    p, 
-    pModels 
     )
 
 __all__=[
     "BaseEvaluation", 
     "GridSearch", 
     "multipleGridSearches", 
-    "p", 
-    "pModels", 
+    "get_best_kPCA_params"
     
     ]

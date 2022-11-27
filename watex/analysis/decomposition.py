@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap 
 from .._docstring import _core_docs 
 from ..exlib.sklearn import (train_test_split, StandardScaler, PCA )
-from ..utils.plotutils import make_mpl_properties
 from ..utils.funcutils import _assert_all_types 
 # ---
 
@@ -32,7 +31,7 @@ def extract_pca (X):
     return eigen_vals, eigen_vecs, X
 
 extract_pca.__doc__="""\
- A naive approach to extract PCA from training set X 
+A naive approach to extract PCA from training set X 
  
 Parameters 
 ----------
@@ -100,7 +99,7 @@ def total_variance_ratio (X, view =False):
     
     return cum_var_exp 
     
-total_variance_ratio.__doc__="""\
+total_variance_ratio.__doc__=r"""\
 Ratio of an eigenvalues :math:`\lambda_j`, as simply the fraction of 
 and eigen value, :math:`\lambda_j` and the total sum of the eigen values 
 as: 
@@ -137,6 +136,7 @@ Examples
 
 def feature_transformation (
         X, y=None, n_components =2, positive_class=1, view =False):
+    from ..utils.plotutils import make_mpl_properties
     # select k vectors which correspond to the k largest 
     # eigenvalues , where k is the dimesionality of the new  
     # subspace (k<=d) 
@@ -209,6 +209,7 @@ X_transf : nd-array
     X PCA training set transformed.
     
 Examples 
+---------
 >>> from watex.analysis import feature_transformation 
 >>> # Use the X, y value in the example of `extract_pca` function  
 >>> Xtransf = feature_transformation(X, y=y,  positive_class = 2 , view =True)
@@ -221,6 +222,7 @@ Examples
 
 def _decision_region (X, y, clf, resolution =.02 ): 
     """ visuzalize the decision region """
+    from ..utils.plotutils import make_mpl_properties
     # setup marker generator and colors map 
     colors = tuple (make_mpl_properties(len(np.unique (y))))
     markers = tuple (make_mpl_properties (
@@ -502,7 +504,7 @@ The main steps requiered to perform LDA are summarized below:
             
             .. math:: 
                 
-                \sum{i} & = &  \frac{1}{n_i}S_i 
+                \sum{i} & = & \frac{1}{n_i}S_i 
                 
                 \sum{i} & = & \frac{1}{n_i} \sum{x\in D_i} (x-m_i)(x-m_i)^T
                 
@@ -570,76 +572,6 @@ Examples
 >>> X = SimpleImputer().fit_transform(X)
 >>> Xtr= linear_discriminant_analysis (X, y , view =True)
 """
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

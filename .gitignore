@@ -176,6 +176,15 @@ scripts/
 
 # boreholes data 
 data/boreholes/h.csv 
+data/boreholes/h2.csv
+python3
 
+data/boreholes/h502.csv
+data/boreholes/hf.csv
+demo-project.ipynb
 
+#VS code 
+.vs/
 
+#scripts remove 
+scripts/

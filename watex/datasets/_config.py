@@ -19,22 +19,6 @@ from ..utils.mlutils import  (
     )
 from ..exceptions import DatasetError
 from .._watexlog import watexlog
-from ._p import ( 
-    _X,
-    _y,
-    _X0,
-    _y0,
-    _XT,
-    _yT,
-    _Xc,
-    _Xp,
-    _yp,
-    _pipeline,
-    _df0,
-    _df1,
-    _BAGDATA
-    
-    )
 
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -66,15 +50,54 @@ for key in _BTAGS :
         )  if key =='pipe' else (
             f"Can't fetching {key} data: <-'X' & 'y' "
             )
+          
+_BAG=dict()
+try : 
+    _BAG = loadDumpedOrSerializedData('watex/datasets/data/b.pkl') 
+except : 
+    from ._p import ( 
+        _bagoue_data_preparer 
+        ) 
+    (
+        _X,
+        _y,
+        _X0,
+        _y0,
+        _XT,
+        _yT,
+        _Xc,
+        _Xp,
+        _yp,
+        _pipeline,
+        _df0,
+        _df1,
+        _BAGDATA
+    ) = list(_bagoue_data_preparer())[0]
+
+    _BAG =  {
+        '_X':_X,
+        '_y':_y,
+        '_X0':_X0,
+        '_y0':_y0,
+        '_XT':_XT,
+        '_yT':_yT,
+        '_Xc':_Xc,
+        '_Xp':_Xp,
+        '_yp':_yp,
+        '_pipeline':_pipeline,
+        '_df0':_df0,
+        '_df1':_df1,
+        '_BAGDATA':_BAGDATA
+            }
             
 _BVAL= dict (
     origin= {
-        'COL_NAMES': _BAGDATA.columns, 
+        'COL_NAMES': _BAG.get ('_BAGDATA').columns, 
         'DESCR':'https://doi.org/10.5281/zenodo.5571534: bagoue-original',
-        'data': _BAGDATA.values, 
-        'data=df':_BAGDATA, 
-        'data=dfy1':_df1, 
-        'data=dfy2':_df0,
+        'data': _BAG.get('_BAGDATA').values, 
+        'data=df':_BAG.get('_BAGDATA'), 
+        'data=dfy1':_BAG.get('_df1'), 
+        'data=dfy2':_BAG.get('_df0'),
         'attrs-infos':BagoueNotes.bagattr_infos, 
         'dataset-contest':{
             '_documentation:':'`watex.property.BagoueNotes.__doc__`', 
@@ -98,21 +121,22 @@ _BVAL= dict (
                  )
             }, 
     stratified= (
-        _X,
-        _y
+        _BAG.get('_X'), 
+        _BAG.get('_y') 
         ),
     semi= (
-        _X0,
-         _y0 
+        _BAG.get('_X0'),
+         _BAG.get('_y0') 
          ), 
-    pipe= _pipeline, 
+    pipe= _BAG.get('_pipeline'), 
     analysed= (
-        _Xc,
-        _yp 
+        _BAG.get('_Xc'),
+        _BAG.get('_yp') 
         ), 
 )
-  
-def _fetch_data(tag, data_names='' ): 
+
+
+def _fetch_data(tag, data_names=[] ): 
     r=None
     tag = str(tag)
 
@@ -123,24 +147,24 @@ def _fetch_data(tag, data_names='' ):
     else : 
         pm =regex.search (tag)
         if pm is None: 
-            data_names+= _BTAGS
+            data_names+= list(_BTAGS)
             msg = (f"Unknow tag-name {tag!r}. None dataset is stored"
                 f" under the name {tag!r}. Available tags are: "
                 f"{smart_format (data_names, 'or')}"
                 )
             raise DatasetError(msg)
-            # raise DatasetError(f"Unknow tag {tag!r}. Expect 'original',"
-            #                    f" {smart_format(_BTAGS, 'or')}") 
-            
+
         pm= pm.group() 
     
     if pm =='prepared': 
         r = loadingdefaultSerializedData (
-            'watex/etc/__Xy.pkl',(_Xp, _yp), dtype='training' 
+            'watex/etc/__Xy.pkl',  (_BAG.get('_Xp'), _BAG.get('_yp')),
+            dtype='training' 
                 )
     elif pm =='test': 
         r, = loadingdefaultSerializedData (
-            'watex/etc/__XTyT.pkl',(_XT, _yT), dtype='test' ),
+            'watex/etc/__XTyT.pkl', ( _BAG.get('_XT'),  _BAG.get('_yT')), 
+            dtype='test' ),
     else : 
         try : 
             r =_BVAL[pm]
@@ -148,7 +172,6 @@ def _fetch_data(tag, data_names='' ):
            _logger.error (_msg[pm])
     return r 
 
-     
 def loadingdefaultSerializedData (f, d0, dtype ='test'): 
     """ Retreive Bagoue data from dumped or Serialized file.
     
@@ -156,7 +179,7 @@ def loadingdefaultSerializedData (f, d0, dtype ='test'):
         Dumped or Serialized default data 
     :param d0: tuple 
         Return default returns wich is the data from config 
-        <./datasets/config.py > 
+        <./datasets/_config.py > 
     :param dtype:str 
         Type of data to retreive.
     """
@@ -223,4 +246,22 @@ Returns
     `_pipeline`: the default pipeline.    
     
 """
+
+# pickle bag data details:
+# Python.__version__: 3.10.6 , 
+# scikit_learn_vesion_: 1.1.3 
+# pandas_version : 1.4.4. 
+# numpy version: 1.23.3
+# scipy version:1.9.3 
+ 
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+     

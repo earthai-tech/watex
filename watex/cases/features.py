@@ -18,7 +18,7 @@ from ..utils.funcutils import  (
     savepath_ , 
     sanitize_fdataset, 
     )   
-from ..typing import ( 
+from .._typing import ( 
     List,
     Optional, 
     DataFrame,

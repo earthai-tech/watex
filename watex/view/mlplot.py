@@ -44,7 +44,8 @@ from ..exlib.sklearn import  (
     StandardScaler, 
     MinMaxScaler, 
     train_test_split, 
-    mean_squared_error
+    mean_squared_error, 
+    KMeans
     ) 
 from ..exceptions import ( 
     NotFittedError , 
@@ -58,7 +59,7 @@ from ..metrics import (
     confusion_matrix
     )
 from ..property import BasePlot 
-from ..typing import ( 
+from .._typing import ( 
     Optional, 
     Tuple, 
     F,
@@ -86,7 +87,13 @@ from ..utils.mlutils import (
     projection_validator, 
     )
 from ..utils.plotutils import make_mpl_properties
-from ..utils.validator import get_estimator_name 
+from ..utils.validator import ( 
+    get_estimator_name , 
+    array_to_frame, 
+    check_array, 
+    check_X_y, 
+    check_y,
+    )
 
 _logger=watexlog.get_watex_logger(__name__)
 
@@ -187,7 +194,7 @@ class EvalPlot(BasePlot):
     def fit(self, X: NDArray |DataFrame =None, y:ArrayLike =None, 
             **fit_params ): 
         """
-        Fit data and populate the arguments for plotting purposes. 
+        Fit data and populate the attributes for plotting purposes. 
         
         There is no conventional procedure for checking if a method is fitted. 
         However, an class that is not fitted should raise 
@@ -236,7 +243,9 @@ class EvalPlot(BasePlot):
             raise TypeError(
                 "X array must not be None, or pass a filepath or "
                 "dataframe object as keyword data argument to set 'X'.")
-            
+        # Create a pseudo frame"
+        # if 'X' is not a dataframe
+        X= array_to_frame(X, to_frame= True, input_name="X", force =True )
         X = to_numeric_dtypes(X , columns = columns )
         X = selectfeatures( X, include ='number')
         
@@ -254,7 +263,7 @@ class EvalPlot(BasePlot):
         """ Transform the data and keep only the numerical features. 
         
         It is not convenient to use `transform` if user want to keep 
-        categorical values in the Array 
+        categorical values in the array 
         
         Parameters
         ------------
@@ -396,7 +405,7 @@ class EvalPlot(BasePlot):
     )->'EvalPlot': 
         """ Plot PCA component analysis using :class:`~.sklearn.decomposition`. 
         
-        PCA indentifies the axis that accounts for the largest amount of 
+        PCA identifies the axis that accounts for the largest amount of 
         variance in the train set `X`. It also finds a second axis orthogonal 
         to the first one, that accounts for the largest amount of remaining 
         variance.
@@ -1237,7 +1246,7 @@ class EvalPlot(BasePlot):
 EvalPlot.__doc__=r"""\
 Metric and dimensionality Evaluatation Plots  
 
-Inherited from :class:`BasePlot`. Dimensional reduction and metrics 
+Inherited from :class:`BasePlot`. Dimensional reduction and metric 
 plots. The class works only with numerical features. 
 
 .. admonition:: Discouraged
@@ -1246,7 +1255,7 @@ plots. The class works only with numerical features.
     discouraged. However, We encourage user to prepare its dataset 
     before using the `~.EvalPlot` methods. This is recommended to have 
     full control of the expected results. Indeed, the most metrics plot 
-    implemented here works with sueprvised methods especially deals 
+    implemented here works with supervised methods especially deals 
     with the classification problems. So, the convenient way is for  
     users to discretize/categorize (class labels) before the `fit`. 
     If not the case, as the examples of demonstration  under each method 
@@ -1285,7 +1294,7 @@ encode_labels: bool, default=False,
                          >=y.max {{2}}]
         
     This auto-splitting could not fit the exact classification of the 
-    target so it is recommended to set the `label_values` as list of 
+    target so it is recommended to set the `label_values` as a list of 
     class labels. For instance `label_values=[0 , 1, 2]` and else. 
    
 scale: str, ['StandardScaler'|'MinMaxScaler'], default ='StandardScaler'
@@ -1439,7 +1448,7 @@ def plotProjection(
     """ Visualize dataset. 
     
     Since there is geographical information(latitude/longitude or
-    eating/northing), it is a good idea to create a scatterplot of 
+    easting/northing), it is a good idea to create a scatterplot of 
     all instances to visualize data.
     
     Parameters 
@@ -1507,7 +1516,18 @@ def plotProjection(
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
-    # validate the projections. 
+    #check array
+    X=check_array (
+        X, 
+        input_name="X", 
+        to_frame =True, 
+        )
+    Xt =check_array (
+        Xt, 
+        input_name="Xt", 
+        to_frame =True, 
+        )
+    # validate the projections.
     xy , xynames = projection_validator(X, Xt, columns )
     x, y , xt, yt =xy 
     xname, yname, xtname, yname=xynames 
@@ -1760,14 +1780,14 @@ def plotModel(
     ax.scatter(x= index,
                y =yt ,
                 color = pobj.lc,
-                 s = pobj.s*10,
-                 alpha = pobj.alpha, 
-                 marker = pobj.marker,
-                 edgecolors = pobj.marker_edgecolor,
-                 linewidths = pobj.lw,
-                 linestyles = pobj.ls,
-                 facecolors = pobj.marker_facecolor,
-                 label = 'Observed'
+                s = pobj.s*10,
+                alpha = pobj.alpha, 
+                marker = pobj.marker,
+                edgecolors = pobj.marker_edgecolor,
+                linewidths = pobj.lw,
+                linestyles = pobj.ls,
+                facecolors = pobj.marker_facecolor,
+                label = 'Observed'
                    )   
     # plot the predicted target
     ax.scatter(x= index, y =ypred ,
@@ -1860,7 +1880,7 @@ def plot_reg_scoring(
     reg, X, y, test_size=None, random_state =42, scoring ='mse',
     return_errors: bool=False, **baseplot_kws
     ) : 
-    #xxxxxxxxxxxxxxxx update base plot keywords arguments
+    #xxxxxxxxxxxxxxxx update base plot keyword arguments
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
@@ -1870,7 +1890,7 @@ def plot_reg_scoring(
         raise ValueError ("Acceptable scorings are'mse' are 'rmse'"
                           f" got {scoring!r}")
     if not hasattr(reg, '__class__') and not inspect.isclass(reg.__class__): 
-        raise TypeError("{reg!r} isn't a model estimator.")
+        raise TypeError(f"{reg!r} isn't a model estimator.")
          
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=test_size, random_state=random_state)
@@ -2281,6 +2301,12 @@ def plotDendroheat(
     
     
     """
+ 
+    df=check_array (
+        df, 
+        input_name="Data 'df' ", 
+        to_frame =True, 
+        )
     if columns is not None: 
         if isinstance (columns , str):
             columns = [columns]
@@ -2312,7 +2338,8 @@ def plotDendroheat(
     # 2. reorder the data in our initial dataframe according 
     # to the clustering label that can be accessed by a dendrogram 
     # which is essentially a Python dictionnary via a key leaves 
-    df_rowclust = df.iloc [r['leaves'][::-1]]
+    df_rowclust = df.iloc [r['leaves'][::-1]] if hasattr(
+        df, 'columns') else df  [r['leaves'][::-1]]
     
     # 3. construct the heatmap from the reordered dataframe and position 
     # in the next ro the dendrogram 
@@ -2334,13 +2361,17 @@ def plotDendroheat(
     xticks_loc = list(axm.get_xticks())
     yticks_loc = list(axm.get_yticks())
 
+    df_rowclust_cols = df_rowclust.columns if hasattr (
+        df_rowclust , 'columns') else [f"{i+1}" for i in range (df.shape[1])]
     axm.xaxis.set_major_locator(mticker.FixedLocator(xticks_loc))
     axm.xaxis.set_major_formatter(mticker.FixedFormatter(
-        [''] + list (df_rowclust.columns)))
+        [''] + list (df_rowclust_cols)))
     
+    df_rowclust_index = df_rowclust.index if hasattr(
+        df_rowclust , 'columns') else [f"{i}" for i in range (df.shape[0])]
     axm.yaxis.set_major_locator(mticker.FixedLocator(yticks_loc))
     axm.yaxis.set_major_formatter(mticker.FixedFormatter(
-        [''] + list (df_rowclust.index)))
+        [''] + list (df_rowclust_index)))
     
     plt.show () 
     
@@ -2444,6 +2475,12 @@ def plotDendrogram (
     >>> plotDendrogram (X, columns =['X1', 'X2' ] ) 
 
     """
+    df=check_array (
+        df, 
+        input_name="Data 'df' ", 
+        to_frame =True, 
+        )
+    
     kind:str = kind or 'design'
     row_cluster = linkage_matrix(df = df, columns = columns, metric= metric, 
                                  method =method , kind = kind ,
@@ -2460,8 +2497,155 @@ def plotDendrogram (
     
     return r if return_r else None 
 
+def plotSilhouette (
+    X:NDArray |DataFrame, 
+    labels:ArrayLike=None, 
+    prefit:bool=True, 
+    n_clusters:int =3,  
+    n_init: int=10 , 
+    max_iter:int=300 , 
+    random_state:int=None , 
+    tol:float=1e4 , 
+    metric:str='euclidean', 
+    **kwd 
+ ): 
+    """
+    Plot silhouette to quantifyg the quality  of clustering samples. 
     
-def plotSilhouette (X, labels, metric ='euclidean', **kwds ):
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training instances to cluster. It must be noted that the data
+        will be converted to C ordering, which will cause a memory
+        copy if the given data is not C-contiguous.
+        If a sparse matrix is passed, a copy will be made if it's not in
+        CSR format.
+        
+    labels : array-like 1d of shape (n_samples,)
+        Label values for each sample.
+         
+    n_clusters : int, default=8
+        The number of clusters to form as well as the number of
+        centroids to generate.
+        
+    prefit : bool, default=False
+        Whether a prefit `labels` is expected to be passed into the function
+        directly or not.
+        If `True`, `labels` must be a fit predicted values target.
+        If `False`, `labels` is fitted and updated from `X` by calling
+        `fit_predict` methods. Any other values passed to `labels` is 
+        discarded.
+         
+    n_init : int, default=10
+        Number of time the k-means algorithm will be run with different
+        centroid seeds. The final results will be the best output of
+        n_init consecutive runs in terms of inertia.
+
+    max_iter : int, default=300
+        Maximum number of iterations of the k-means algorithm for a
+        single run.
+
+    tol : float, default=1e-4
+        Relative tolerance with regards to Frobenius norm of the difference
+        in the cluster centers of two consecutive iterations to declare
+        convergence.
+
+    verbose : int, default=0
+        Verbosity mode.
+
+    random_state : int, RandomState instance or None, default=42
+        Determines random number generation for centroid initialization. Use
+        an int to make the randomness deterministic.
+    
+    tol : float, default=1e-4
+        Relative tolerance with regards to Frobenius norm of the difference
+        in the cluster centers of two consecutive iterations to declare
+        convergence.
+        
+    metric : str or callable, default='euclidean'
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the distance function.
+        If using a ``scipy.spatial.distance`` metric, the parameters are still
+        metric dependent. See the scipy docs for usage examples.
+        
+    Note
+    -------
+    The sihouette coefficient is bound between -1 and 1 
+    
+    See More
+    ---------
+    Silhouette is used as graphical tools,  to plot a measure how tighly is  
+    grouped the examples of the clusters are.  To calculate the silhouette 
+    coefficient, three steps is allows: 
+        - calculate the **cluster cohesion**, :math:`a(i)`, as the average 
+            distance between examples, :math:`x^{(i)}`, and all the others 
+            points
+        - calculate the **cluster separation**, :math:`b^{(i)}` from the next 
+            average distance between the example , :math:`x^{(i)}` amd all 
+            the example of nearest cluster 
+        - calculate the silhouette, :math:`s^{(i)}`, as the difference between 
+            the cluster cohesion and separation divided by the greater of the 
+            two, as shown here: 
+                
+            .. math:: 
+                
+                s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
+                
+    Examples 
+    --------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.view.mlplot import plotSilhouette
+    >>> # use resistivity and gamma for this demo
+    >>> X_res_gamma = load_hlogs().frame[['resistivity', 'gamma_gamma']]  
+    
+    (1) Plot silhouette with 'prefit' set to 'False' 
+    >>> plotSilhouette (X_res_gamma, prefit =False)
+    
+    """
+    if  ( 
+        not prefit 
+        and labels is not None
+        ): 
+        warnings.warn("'labels' is given while 'prefix' is 'False'"
+                      "'prefit' will set to 'True'")
+        prefit=True 
+        
+    if labels is not None: 
+        if not hasattr (labels, '__array__'): 
+            raise TypeError( "Labels (target 'y') expects an array-like: "
+                            f"{type(labels).__name__!r}")
+        labels=check_y (
+            labels, 
+            to_frame =True, 
+            )
+        if len(labels)!=len(X): 
+            raise TypeError("X and labels must have a consistency size."
+                            f"{len(X)} and {len(labels)} respectively.")
+            
+    if prefit and labels is None: 
+        raise TypeError ("Labels can not be None, while 'prefit' is 'True'"
+                         " Turn 'prefit' to 'False' or provide the labels "
+                         "instead.")
+    if not prefit : 
+        km= KMeans (n_clusters =n_clusters , 
+                    init='k-means++', 
+                    n_init =n_init , 
+                    max_iter = max_iter , 
+                    tol=tol, 
+                    random_state =random_state
+                        ) 
+        labels = km.fit_predict(X ) 
+        
+    return _plotSilhouette(X, labels, metric = metric , **kwd)
+    
+    
+def _plotSilhouette (X, labels, metric ='euclidean', **kwds ):
     r"""Plot quantifying the quality  of clustering silhouette 
     
     Parameters 
@@ -2754,6 +2938,8 @@ def plotLearningInspection(
     """ 
     train_sizes = train_sizes or np.linspace(0.1, 1.0, 5)
     
+    X, y = check_X_y(X, y, to_frame =True )
+    
     if axes is None:
         _, axes = plt.subplots(1, 3, figsize=(20, 5))
     
@@ -2866,11 +3052,17 @@ def plot_matshow(
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
+    arr= check_array(
+        arr, 
+        to_frame =True, 
+        dtype=object,  
+        input_name="Array 'arr'"
+        )
     matshow_kws= matshow_kws or dict()
     fig = plt.figure(figsize = pobj.fig_size)
 
     ax = fig.add_subplot(1,1,1)
-
+    
     cax = ax.matshow(arr, **matshow_kws) 
     cbax= fig.colorbar(cax, **pobj.cb_props)
     
@@ -3038,6 +3230,16 @@ def biPlot(
     .. _Serafeim Loukas: https://towardsdatascience.com/...-python-7c274582c37e>
     
     """
+    Xr = check_array(
+        Xr, 
+        to_frame= False, 
+        input_name="X reduced 'Xr'"
+        )
+    components = check_array(
+        components, 
+        to_frame =False ,
+        input_name="PCA components"
+        )
     Xr = np.array (Xr); components = np.array (components )
     xs = Xr[:,0] # projection on PC1
     ys = Xr[:,1] # projection on PC2
@@ -3210,7 +3412,7 @@ def _chk_predict_args (Xt, yt, *args,  predict =False ):
             raise EstimatorError("No estimator detected. Could not predict 'y'") 
         if Xt is None: 
             raise TypeError(
-                "Test data 'Xt' is need for prediction. Got nothing")
+                "Test data 'Xt' is needed for prediction. Got nothing")
   
         # check estimator as callable object or ABCMeta classes
         if not hasattr(clf, '__call__') and  not inspect.isclass(clf)\
