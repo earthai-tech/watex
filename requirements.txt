@@ -20,7 +20,8 @@ pyproj>=1.9.6
 pandas
 python-coveralls
 # sklearn >=1.1 
-sklearn  
+sklearn 
+scikit-learn
 joblib
 seaborn
 tqdm
