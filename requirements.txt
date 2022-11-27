@@ -3,7 +3,8 @@ sphinx >=3.5
 sphinx_rtd_theme
 cython
 matplotlib>=3.3.0
-numpy>=1.23.3
+# numpy>=1.23.3
+numpy
 scipy
 qtpy
 netcdf4
@@ -15,9 +16,11 @@ flake8
 flask
 pyyaml
 pyproj>=1.9.6
-pandas >=1.1.4
+# pandas >=1.1.4
+pandas
 python-coveralls
-sklearn >=1.1 
+# sklearn >=1.1 
+sklearn  
 joblib
 seaborn
 tqdm
