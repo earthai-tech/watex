@@ -79,20 +79,3 @@ If you use the software in any published work, I will much appreciate to cite th
 * Developer: [1](https://en.csu.edu.cn/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) - [_LKouadio_](etanoyau@gmail.com) <<etanoyau@gmail.com>>
 
 
-
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
