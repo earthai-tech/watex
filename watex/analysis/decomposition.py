@@ -16,8 +16,10 @@ from warnings import warn
 import numpy as np 
 import matplotlib.pyplot as plt 
 from matplotlib.colors import ListedColormap 
+from sklearn.preprocessing import StandardScaler 
+from sklearn.model_selection import train_test_split 
+from sklearn.decomposition import PCA 
 from .._docstring import _core_docs 
-from ..exlib.sklearn import (train_test_split, StandardScaler, PCA )
 from ..utils.funcutils import _assert_all_types 
 # ---
 __all__=[

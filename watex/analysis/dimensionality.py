@@ -18,12 +18,10 @@ import os
 import warnings
 import numpy as np
 import pandas as pd 
-
-from ..exlib.sklearn import(
+from sklearn.decomposition import (
     PCA, 
     IncrementalPCA, 
-    KernelPCA, 
-
+    KernelPCA
     )
 from .._typing import (
     Any,

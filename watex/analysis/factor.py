@@ -29,15 +29,10 @@ edited by LKouadio on Tue Oct 11 16:54:26 2022
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import linalg
-from .._docstring import _core_docs 
-from ..exlib.sklearn import ( 
-    PCA, 
-    FactorAnalysis, 
-    ShrunkCovariance, 
-    LedoitWolf , 
-    cross_val_score, 
-    GridSearchCV 
-    )
+from sklearn.decomposition import PCA, FactorAnalysis 
+from sklearn.covariance import  ShrunkCovariance, LedoitWolf 
+from sklearn.model_selection import GridSearchCV, cross_val_score
+from .._docstring import _core_docs
 
 __all__=[ 
     "lw_score", 
