@@ -24,7 +24,7 @@ def run_apidoc(_):
     import os
     import shutil
     cur_dir = os.path.dirname(__file__)
-    module = os.path.join(cur_dir, '../../watex') #'../../watex'
+    module = os.path.join(cur_dir, '../watex') #'../../watex'
     output_path = os.path.join(cur_dir, 'api')
     shutil.rmtree(output_path, ignore_errors=True)
     main(['--separate',
