@@ -39,7 +39,7 @@ def _is_numeric_dtype (o, / , to_array =False ):
         Object presumed to be an array 
     :param to_array: bool, default=False 
         If `o` is passed as non-array like list or tuple or other iterable 
-        object. Setting `to_array` to ``True`` will convert array to ``True``. 
+        object. Setting `to_array` to ``True`` will convert `o` to array. 
     :return: bool, 
         ``True`` if `o` has a numeric dtype and ``False`` otherwise. 
     """ 

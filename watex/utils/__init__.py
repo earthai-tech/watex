@@ -47,6 +47,7 @@ from .hydroutils import (
     find_aquifer_groups, 
     find_similar_labels, 
     classify_k, 
+    label_importance
     )
 from .mlutils import ( 
     selectfeatures, 
@@ -153,7 +154,8 @@ __all__=[
         'predict_NGA_labels', 
         'find_aquifer_groups', 
         'find_similar_labels', 
-        'classify_k', 
+        'classify_k',
+        'label_importance'
         ]
 
 

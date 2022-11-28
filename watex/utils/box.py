@@ -151,7 +151,7 @@ class _AquiferGroup:
     def preponderance (self): 
         """ Returns label occurences in the datasets """
         return   (
-            (label, round(rep_val [0], 3)) 
+            (label, rep_val[0]) 
             for label, rep_val in self.g_.items()
              )
     @property 
@@ -163,7 +163,7 @@ class _AquiferGroup:
     @property 
     def groups (self): 
         """Return groups for each label """
-        return ((label, {k: round (v, 3) for k, v in repr_val[1].items()}) 
+        return ((label, {k: v for k, v in repr_val[1].items()}) 
                   for label, repr_val in self.g_.items () 
                   )
 

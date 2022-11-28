@@ -3613,16 +3613,21 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
         >>> X0, _= load_hlogs (as_frame =True )
         >>> is_in_if  (X0 , items= ['depth_top', 'top']) 
         ... ValueError: Item 'top' is missing in the object 
-        >>> is_in_if (X, ['depth_top', 'top'] , error ='ignore') 
+        >>> is_in_if (X0, ['depth_top', 'top'] , error ='ignore') 
         ... ['depth_top']
-        >>> is_in_if (X, ['depth_top', 'top'] , error ='ignore',
+        >>> is_in_if (X0, ['depth_top', 'top'] , error ='ignore',
                        return_diff= True) 
         ... ['sp',
-             'resistivity',
-             'gamma_gamma',
-             'natural_gamma',
-             'thickness',
-             'short_distance_gamma']
+         'well_diameter',
+         'layer_thickness',
+         'natural_gamma',
+         'short_distance_gamma',
+         'strata_name',
+         'gamma_gamma',
+         'depth_bottom',
+         'rock_name',
+         'resistivity',
+         'hole_id']
     """
     
     if isinstance (items, str): 
@@ -3632,9 +3637,9 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
     # find intersect object 
     s= set (o).intersection (items) 
     
-    miss_items = list(s.difference (items))  if len(s) > len(
+    miss_items = list(s.difference (o)) if len(s) > len(
         items) else list(set(items).difference (s)) 
-    
+
     if return_diff: 
         error ='ignore'
     
@@ -3647,8 +3652,10 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
             
     if return_diff : 
         # get difference 
-        s = set(o).difference (s)  
-        
+        s = list(set(o).difference (s))  if len(o) > len( 
+            items) else list(set(items).difference (s)) 
+        # s = set(o).difference (s)  
+
     s = None if len(s)==0 else list (s) 
     
     return s  
