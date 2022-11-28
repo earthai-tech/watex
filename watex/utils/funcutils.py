@@ -3585,7 +3585,7 @@ def find_by_regex (o , /, pattern,  func = re.match, **kws ):
     return  om 
     
 def is_in_if (o: iter, /, items: str | iter, error = 'raise', 
-               return_diff =False ): 
+               return_diff =False, return_intersect = False): 
     """ Raise error if item is not  found in the iterable object 'o' 
     
     :param o: unhashable type, iterable object,  
@@ -3596,9 +3596,11 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
     :param error: str, default='raise'
         raise or ignore error when none item is found in `o`. 
     :param return_diff: bool, 
-        return the difference items which is/are not included in 'items' 
+        returns the difference items which is/are not included in 'items' 
         if `return_diff` is ``True``, will put error to ``ignore`` 
         systematically.
+    :param return_intersect:bool,default=False
+        returns items as the intersection between `o` and `items`.
     :raise: ValueError 
         raise ValueError if `items` not in `o`. 
     :return: list,  
@@ -3640,7 +3642,7 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
     miss_items = list(s.difference (o)) if len(s) > len(
         items) else list(set(items).difference (s)) 
 
-    if return_diff: 
+    if return_diff or return_intersect: 
         error ='ignore'
     
     if len(miss_items)!=0 :
@@ -3650,12 +3652,16 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
             raise ValueError (
                 f"Item{verb} missing in the {type(o).__name__.lower()}.")
             
+       
     if return_diff : 
         # get difference 
         s = list(set(o).difference (s))  if len(o) > len( 
             items) else list(set(items).difference (s)) 
         # s = set(o).difference (s)  
-
+    elif return_intersect: 
+        s = list(set(o).intersection(s))  if len(o) > len( 
+            items) else list(set(items).intersection (s))     
+    
     s = None if len(s)==0 else list (s) 
     
     return s  

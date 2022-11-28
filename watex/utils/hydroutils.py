@@ -274,6 +274,7 @@ def make_MXS_labels (
             CONTEXT , 
             similar_labels, 
             y_pred, 
+            y_true_transf, 
             sep , 
             prefix,  
             CONTEXT_MSG   
@@ -2933,18 +2934,25 @@ def _MXS_if_no(context,  /,  y_true , y_pred , cmsg =''):
 
     return y_mxs , group_classes_ , group_labels , sim_groups 
 
-def _mixture_replacer ( true_labels, NGA_labels , group_labels ,  sim_groups): 
+def _mixture_renamer ( true_labels, labels_not_in_goups, gclasses =None , trailer ='_'): 
     
-    
-    for k in NGA_labels: 
-        if k in true_labels : 
-            # check in sim_groups if
-            # the labels has similarity 
-            if k in group_labels: 
-                # find it index in the group and replace it 
-                index = list(group_labels).index (k)
+    items =is_in_if(true_labels, labels_not_in_goups, 
+                    return_intersect= True )
+    if _is_numeric_dtype( true_labels, to_array= True) and \
+        _is_numeric_dtype(labels_not_in_goups, to_array=True ): 
+        if items is not None: 
+            if 0 in items: 
+                pseudo_items = np.array(items ) + max(true_labels) + 1 # add one
+            else: pseudo_items  = np.array(items ) + max(true_labels)
+        
+        for k, v in zip (items, pseudo_items): 
+            gclasses [k]=v 
+        
+    else : 
+        
+                
 #XXX FIX IT               
-def _MXS_if_yes (context , /, slg , y_pred,  sep=None,  prefix= None, 
+def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None, 
                  cmsg=''  ): 
     """ Make MXS target when similarity is found between a label in 'y_true' and 
     label in the predicted NGA. 
@@ -2974,6 +2982,13 @@ def _MXS_if_yes (context , /, slg , y_pred,  sep=None,  prefix= None,
     if not is_iterable(slg): 
         raise TypeError ("similarity group must be an iterable."
                          " Got: {type(s).__name__!r}")
+        
+    # A copy of true labels originally from 
+    # y_true is necessaray in the case 
+    # all labels are not found in similarity 
+    # if the given threshold is higher 
+    true_labels_orig = np.unique (y_true)
+    
     # slg = [(1, 4), (2, 4), (3, 2)]
     sim_groups = _name_mxs_labels(*slg, sep = sep, prefix =prefix )
     # sim_groups = [14, 24, 32] 
@@ -2996,7 +3011,7 @@ def _MXS_if_yes (context , /, slg , y_pred,  sep=None,  prefix= None,
                              )
         raise AquiferGroupError (msg)
     
-    # make a copy of array of ytrue 
+   
     # and fill it by the new NGA values and/or similarites 
     # Finally will fill the k-valid indexes 
     y_mxs = np.full (y_pred.shape , fill_value= np.nan ,dtype = object )
