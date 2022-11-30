@@ -42,8 +42,7 @@ from ..utils.funcutils import (
     save_job, 
     listing_items_format, 
     pretty_printer, 
-    make_introspection
-    
+
     )
 from ..utils.validator import ( 
     check_X_y, 
@@ -58,13 +57,17 @@ __all__=[
     "GridSearch", 
     "GridSearchMultiple", 
     "get_best_kPCA_params", 
-    "get_scorers"
+    "get_scorers", 
+    "getGlobalScores", 
+    "getSplitBestScores", 
+    "displayCVTables", 
+    "displayFineTunedResults", 
+    "displayModelMaxDetails"
     ]
-#-----------------------
+
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
-#------------------------
 
 class GridSearch: 
     __slots__=(
@@ -131,7 +134,6 @@ class GridSearch:
             ksearch = 'GridSearchCV' 
         elif 'randomizedsearchcv2'.find( str(ksearch).lower())>=0:
             ksearch = 'RandomizedSearchCV'
-            
         else: raise ValueError (
             " Unkown the kind of parameter search {ksearch!r}."
             " Supports only 'GridSearchCV' and 'RandomizedSearchCV'.")
@@ -143,7 +145,7 @@ class GridSearch:
  
         Parameters
         ----------
-        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+        X:  Ndarray ( M x N) matrix where ``M=m-samples``, & ``N=n-features``)
             Training set; Denotes data that is observed at training and 
             prediction time, used as independent variables in learning. 
             When a matrix, each sample may be represented by a feature vector, 
@@ -159,7 +161,7 @@ class GridSearch:
         Returns
         ----------
         ``self``: `GridSearch`
-            Returns :class:`~.GridSearchCV` 
+            Returns :class:`~.GridSearch` 
     
         """
         if callable (self.base_estimator): 
@@ -172,6 +174,8 @@ class GridSearch:
                            get_estimator_name (self.base_estimator), parameters)
                        )
                 warnings.warn(msg)
+        
+        self.kind =self._kind 
         
         if self.kind =='GridSearchCV': 
             searchGridMethod = GridSearchCV 
@@ -209,7 +213,7 @@ class GridSearch:
         return self
     
 GridSearch.__doc__="""\
-Fine tune hyperparameters using grid search methods. 
+Fine-tune hyperparameters using grid search methods. 
 
 Search Grid will be able to  fiddle with the hyperparameters until to 
       
@@ -237,11 +241,13 @@ prefit: bool, default=False,
     again and ``True`` otherwise.
 {params.core.cv}
     The default is ``4``.
-    
+kind:str, default='GridSearchCV' or '1'
+    Kind of grid parameter searches. Can be ``1`` for ``GridSearchCV`` or
+    ``2`` for ``RandomizedSearchCV``. 
 {params.core.scoring} 
 {params.core.random_state}
 
-Example
+Examples
 -----------
 >>> from pprint import pprint 
 >>> from watex.datasets import fetch_data 
@@ -257,6 +263,7 @@ Example
 >>> grid_search = GridSearch(forest_clf, grid_params)
 >>> grid_search.fit(X= X_prepared,y =  y_prepared,)
 >>> pprint(grid_search.best_params_ )
+{{'max_features': 8, 'n_estimators': 30}}
 >>> pprint(grid_search.cv_results_)
 """.format (params=_param_docs,
 )
@@ -267,7 +274,7 @@ class GridSearchMultiple :
             scoring,  
             grid_params: Dict[str, Any],
             *, 
-            grid_method:str ='GridSearchCV', 
+            kind:str ='GridSearchCV', 
             cv: int =7, 
             random_state:int =42,
             savejob:bool =False,
@@ -278,7 +285,7 @@ class GridSearchMultiple :
         self.estimators = estimators 
         self.scoring=scoring 
         self.grid_params=grid_params
-        self.grid_method=grid_method 
+        self.kind=kind 
         self.cv=cv
         self.savejob=savejob
         self.filename=filename 
@@ -323,11 +330,11 @@ class GridSearchMultiple :
         
         for j, estm in enumerate(self.estimators):
             estm_name = get_estimator_name(estm)
-            msg = f'{estm_name} is evaluated with {self.grid_method}.'
+            msg = f'{estm_name} is evaluated with {self.kind}.'
             searchObj = GridSearch(base_estimator=estm, 
                                     grid_params= self.grid_params[j], 
                                     cv = self.cv, 
-                                    kind=self.grid_method, 
+                                    kind=self.kind, 
                                     scoring=self.scoring, 
                                     **self.grid_kws
                                       )
@@ -336,9 +343,9 @@ class GridSearchMultiple :
             
             if self.verbose > 7 :
                 msg += ( 
-                    f"\End {self.grid_method} search. Set estimator {estm_name!r}"
+                    f"\End {self.kind} search. Set estimator {estm_name!r}"
                     " best parameters, cv_results and other importances" 
-                    "attributes\n'"
+                    " attributes\n'"
                  )
             self.data_[estm_name]= {
                                 'best_model':searchObj.best_estimator_ ,
@@ -352,7 +359,6 @@ class GridSearchMultiple :
             msg += ( f"Cross-evaluatation the {estm_name} best model."
                     f" with KFold ={self.cv}"
                    )
-    
             bestim_best_scores, _ = quickscoring_cv_evaluation(
                 best_model_clf, 
                 X,
@@ -373,7 +379,6 @@ class GridSearchMultiple :
                     f' scoring ={self.scoring!r}')
             pretty_printer(clfs=self.best_estimators_, scoring =self.scoring, 
                           clf_scores= None)
-    
         if self.savejob:
             msg += ('\Serialize the dict of fine-tuned '
                     f'parameters to `{self.filename}`.')
@@ -423,9 +428,9 @@ grid_params: list
 
 {params.core.scoring}
    
-grid_method:str
-    Kinf of grid search. Can be ``GridSearchCV`` or ``RandomizedSearchCV``. 
-    Default is ``GridSearchCV``.
+kind:str, default='GridSearchCV' or '1'
+    Kind of grid parameter searches. Can be ``1`` for ``GridSearchCV`` or
+    ``2`` for ``RandomizedSearchCV``. 
     
 {params.core.random_state} 
 
@@ -546,7 +551,7 @@ class BaseEvaluation:
             self.scoring = "neg_mean_squared_error" if self.scoring in (
                 None, 'nmse') else self.scoring 
             
-            self.mse, self.rmse , self.scores = self._fit(
+            self.mse_, self.rmse_ , self.scores_ = self._fit(
                         X, 
                         y, 
                         self.base_estimator , 
@@ -767,14 +772,16 @@ Examples
    
 def getGlobalScores (
         cvres : Dict[str, ArrayLike] 
-        ) -> Tuple [ Dict[str, ArrayLike] ,  Dict[str, ArrayLike]  ]: 
+        ) -> Tuple [float]: 
     """ Retrieve the global mean and standard deviation score  from the 
     cross validation containers. 
     
     Parameters
     ------------
-    cvres: cross validation results after training the models of number 
-        of parameters equals to N. 
+    cvres: dict of (str, Array-like) 
+        cross validation results after training the models of number 
+        of parameters equals to N. The `str` fits the each parameter stored 
+        during the cross-validation while the value is stored in Numpy array.
     
     Returns 
     ---------
@@ -785,9 +792,30 @@ def getGlobalScores (
     return  ( cvres.get('mean_test_score').mean() ,
              cvres.get('std_test_score').mean()) 
 
-def getSplitBestScores(cvres, split=1): 
+def getSplitBestScores(cvres:Dict[str, ArrayLike], 
+                       split:int=1)->Dict[str, float]: 
+    """ Get the best score at each split from cross-validation results
+    
+    Parameters 
+    -----------
+    cvres: dict of (str, Array-like) 
+        cross validation results after training the models of number 
+        of parameters equals to N. The `str` fits the each parameter stored 
+        during the cross-validation while the value is stored in Numpy array.
+    split: int, default=1 
+        The number of split to fetch parameters. 
+        The number of split must be the number of split  is the number 
+        of cross-validation (cv) 
+    Returns
+    -------
+    bests: Dict, 
+        Dictionnary of the best parameters at the corresponding `split` 
+        in the cross-validation. 
+        
+    """
     if split ==0: split =1 
-    split_score = cvres[f'split{split-1}_test_score'] # get the split score 
+    # get the split score 
+    split_score = cvres[f'split{split-1}_test_score'] 
     # take the max score of the split 
     max_sc = split_score.max() 
     ix_max = split_score.argmax()
@@ -799,10 +827,21 @@ def getSplitBestScores(cvres, split=1):
         f"CV{split}_score": max_sc , 
         f"CV{split}_mean_score": mean_score,
         }
-
     return bests 
 
-def displayModelMaxDetails(cvres , cv=4):
+def displayModelMaxDetails(cvres:Dict[str, ArrayLike], cv:int =4):
+    """ Display the max details of each stored model from cross-validation.
+    
+    Parameters 
+    -----------
+    cvres: dict of (str, Array-like) 
+        cross validation results after training the models of number 
+        of parameters equals to N. The `str` fits the each parameter stored 
+        during the cross-validation while the value is stored in Numpy array.
+    cv: int, default=1 
+        The number of KFlod during the fine-tuning models parameters. 
+
+    """
     for k in range(cv):
         print(f'split =CV{k+1}:')
         b= getSplitBestScores(cvres, split =k)
@@ -812,18 +851,41 @@ def displayModelMaxDetails(cvres , cv=4):
     print("Global split scores:")
     print('mean=', globalmeansc , 'std=',globalstdsc)
 
-# print base learners fine tunes results 
-def displayFineTunedResults (meta , cvmodels ): 
+
+def displayFineTunedResults ( cvmodels: list[F] ): 
+    """Display fined -tuning results 
+    
+    Parameters 
+    -----------
+    cvmnodels: list
+        list of fined-tuned models.
+    """
     bsi_bestestimators = [model.best_estimator_ for model in cvmodels ]
+    mnames = ( get_estimator_name(n) for n in bsi_bestestimators)
     bsi_bestparams = [model.best_params_ for model in cvmodels]
 
-    for nam, param , estimator in zip(meta, bsi_bestparams, bsi_bestestimators): 
-        print("MODEL NAME =", nam.__name__)
+    for nam, param , estimator in zip(mnames, bsi_bestparams, 
+                                      bsi_bestestimators): 
+        print("MODEL NAME =", nam)
         print('BEST PARAM =', param)
         print('BEST ESTIMATOR =', estimator)
         print()
 
-def displayCVTables(modelnames :list, cvres :dict, cvmodels:list ): 
+def displayCVTables(cvres:Dict[str, ArrayLike],  cvmodels:list[F] ): 
+    """ Display allla the cross-validation results from all models at each 
+    k-fold. 
+    
+    Parameters 
+    -----------
+    cvres: dict of (str, Array-like) 
+        cross validation results after training the models of number 
+        of parameters equals to N. The `str` fits the each parameter stored 
+        during the cross-validation while the value is stored in Numpy array.
+    cvmnodels: list
+        list of fined-tuned models.
+    """
+    modelnames = (get_estimator_name(model.best_estimator_ ) 
+                  for model in cvmodels  )
     for name,  mdetail, model in zip(modelnames, cvres, cvmodels): 
         print(name, ':')
         displayModelMaxDetails(cvres=mdetail)
@@ -831,8 +893,8 @@ def displayCVTables(modelnames :list, cvres :dict, cvmodels:list ):
         print("Best scores:", model.best_score_)
         print()
         
-      
-def get_scorers (*, scorer =None, check_scorer =False, error='ignore'): 
+def get_scorers (*, scorer:str=None, check_scorer:bool=False, 
+                 error:str='ignore')-> Tuple[str] | bool: 
     """ Fetch the list of available metrics from scikit-learn or verify 
     whether the scorer exist in that list of metrics. 
     This is prior necessary before  the model evaluation. 

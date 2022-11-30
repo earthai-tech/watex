@@ -4,7 +4,12 @@ from .validation import (
     GridSearch, 
     GridSearchMultiple,
     get_best_kPCA_params, 
-    get_scorers
+    get_scorers, 
+    getGlobalScores, 
+    getSplitBestScores, 
+    displayCVTables, 
+    displayFineTunedResults, 
+    displayModelMaxDetails
 
     )
 
@@ -13,6 +18,10 @@ __all__=[
     "GridSearch", 
     "GridSearchMultiple", 
     "get_best_kPCA_params", 
-    "get_scorers"
-    
+    "get_scorers", 
+    "getGlobalScores", 
+    "getSplitBestScores", 
+    "displayCVTables", 
+    "displayFineTunedResults", 
+    "displayModelMaxDetails"
     ]

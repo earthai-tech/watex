@@ -4,23 +4,22 @@
 #   Created on Tue May 17 11:30:51 2022
 
 import warnings 
-
 from .._docstring import refglossary
 from .._watexlog import watexlog 
-from ..decorators import refAppender 
-from ..utils.funcutils import (
-    repr_callable_obj,
-    smart_format,
-    smart_strobj_recognition, 
-    )
 from .._typing import (  
     Optional, 
     ArrayLike, 
     NDArray, 
     )
+from ..decorators import refAppender 
 from ..exceptions import (
     EstimatorError, 
     NotFittedError 
+    )
+from ..utils.funcutils import (
+    repr_callable_obj,
+    smart_format,
+    smart_strobj_recognition, 
     )
 from ..utils.mlutils import (
     controlExistingEstimator , 
@@ -43,13 +42,13 @@ def cloneObj (cls, attributes ):
 class pModels : 
     """ Pretrained Models class. 
     
-    The pretrained model class is composed of previous estimators already 
+    The pretrained model class is composed of  estimators already 
     trained in a case study region in West -Africa `Bagoue region`_. Refer 
     to `Kouadio et al`_, 2022 for furher details. It is a set of ``support 
-    vector machines``, `decision tree``, ``k-nereast neighbors``, ``Extreme
+    vector machines``, `decision tree``, ``k-nearest neighbors``, ``Extreme
     ``gradient boosting machines``, benchmart ``voting classifier``, and ``
     ``bagging classifier``. 
-    Each model called is considered as a class object and attributes compose 
+    Each retrained model is considered as a class object and attributes compose 
     the training parameters from cross-validation results. 
     
     Parameters
@@ -105,7 +104,7 @@ class pModels :
         Is the prediction aim goal, the reason for storing the pretrained 
         models. the default `objective` is 'fr' i.e. for flow rate prediction. 
         
-    Examples: 
+    Examples 
     ----------
     >>> from watex.models.premodels import pModels 
     >>> # fetch the  the pretrained Adaboost model 
@@ -144,15 +143,13 @@ class pModels :
         kernel:Optional[str]=None , 
         oob_score:bool=False, 
         objective: str='fr',
-        **kws
         ): 
-        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        
-        self.model = model 
-        self.target = target 
-        self.objective = objective 
-        self.oob_score= oob_score
-        self.kernel = kernel 
+        self._logging=watexlog.get_watex_logger(self.__class__.__name__)
+        self.model=model 
+        self.target=target 
+        self.objective=objective 
+        self.oob_score=oob_score
+        self.kernel=kernel 
         
         
     def fit (self, X:NDArray = None , y: ArrayLike = None ): 
@@ -183,11 +180,11 @@ class pModels :
             ) 
         assert self.target not in ("bin", "multi"), (
             "Two types of learning targets are expected: the multiclass"
-            "'multi' and binary 'bin'. Got {self.target!r}"
+            f"'multi' and binary 'bin'. Got {self.target!r}"
             )
         self.model, self.name_ = controlExistingEstimator(
             self.model , raise_err = True )
-        # change the name of SVC to easy
+        # change the name of SVC 
         if self.name_ =='SupportVectorClassifier' : 
             self.name_ = 'SVM' 
         else: self. name_ = self.name_.replace('Classifier', '')
@@ -201,13 +198,12 @@ class pModels :
             raise EstimatorError( f"Unsupport model : {self.model}."
                                  f" Expects {smart_format(pl, 'or')}")
         try : 
-            data_= _pDATA # fetch data from module 
-            # this will force to fetch default 
+            data_= _pDATA 
+            # fetch data from module 
+            # force to fetch default 
             # values in exceptions
             if data_ is None: raise 
-            
         except : 
-            #print('passs okkk ')
             data_ = _pMODELS 
           
         if self.oob_score: 
@@ -267,9 +263,9 @@ class pModels :
         try:
              getattr(self, 'estimator_')
         except NotFittedError:
-            raise NotFittedError(
-                "Can't call the method 'predict'. Use 'fit' method to"
-                f" fit {self.__class__.__name__!r} object first.")
+            raise NotFittedError("Can't call the method 'predict'. Call"
+                                 f" {self.__class__.__name__!r} 'fit' method"
+                                 " first.")
             
         return self.estimator_.predict (X)
     
@@ -365,7 +361,7 @@ Each pretrained model can fetched  as an attribute. For instance::
     
 Note
 ------
-To fetched the pretrained model with parameter (out-of-bag ), need to use the 
+To fetch the pretrained model with parameter (out-of-bag ), need to use the 
 '_' at the end of the model name like 'ExtraTrees_'. 
 However the pretrained model of Support Vector Machines  with underscore means 
 the fine tuned multiclassification targets not 'out-of-bag' parameters. 
