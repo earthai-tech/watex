@@ -57,7 +57,7 @@ from ..exceptions import (
     )
 
 from .box import ( 
-    _AquiferGroup, 
+    _Group, 
     Boxspace
     )
 from .funcutils import  (
@@ -425,7 +425,7 @@ def predict_NGA_labels(
 def find_aquifer_groups (
         arr_k, /, arr_aq=None, kname =None, aqname=None, subjectivity =False,  
          default_arr= None, keep_label_0 = False,  method ='naive', 
-  )->'_AquiferGroup': 
+  )->'_Group': 
     msg = ("{} cannot be None when a dataframe is given.")
     d = copy.deepcopy(arr_k)
     if hasattr (d, '__array__') and hasattr (d, 'columns'): 
@@ -438,9 +438,9 @@ def find_aquifer_groups (
         
     if arr_aq is None and not subjectivity: 
         msg =("In principle, missing aquifer array is not allowed. Turn on "
-              "'subjectivity' instead. Be aware that turning 'subjectivity'"
-              " to 'True'. This might lead to breaking code or invalid results."
-              " Use at your own risk." )
+              "'subjectivity' instead. Make sure, you know what you intend to"
+              " solve when turning 'subjectivity' to 'True'. This might lead"
+              " to breaking code or unexpected results. Use at your own risk." )
         raise AquiferGroupError (msg)
     if subjectivity: 
         if arr_aq is not None: 
@@ -453,7 +453,7 @@ def find_aquifer_groups (
                              " to substitute the aquifer groups.")
         arr_aq = default_arr 
         
-    # check array consistency 
+    # check consistency 
     _check_consistency_size(arr_aq, arr_k)
     if not all ([ _is_arraylike_1d(arr_aq), _is_arraylike_1d(arr_k)]):
         raise AquiferGroupError (
@@ -470,7 +470,7 @@ def find_aquifer_groups (
     if np.nan in list(arr_aq): 
         raise TypeError ("Missing value(s) is/are not allowed in group of "
                          " aquifer. Please impute the data first.")
-    # for consistency check 
+    # for consistency recheck 
     arr_aq = check_y (
         arr_aq, 
         to_frame = True, 
@@ -492,7 +492,7 @@ def find_aquifer_groups (
         groups[label].append (dict_labels_rate.get(label))
         groups[label].append(g)
         
-    return _AquiferGroup(groups)
+    return _Group(groups)
 
 find_aquifer_groups.__doc__="""\
 Fit the group of aquifer and find the representative of each true label in 
@@ -515,14 +515,14 @@ arr_q: array-like , pandas series or dataframe
     the algorithms. Missing values are not allowed. If dataframe is supplied,
     the aquifer group column name 'aqname' must be specified. 
 
- subjectivity: bool, default=False
-     Considers each class label as a naive group of aquifer. Subjectivity 
-     occurs when no group of aquifer is not found in the data. Therefore, each 
-     class label is considered as a naive group of aquifer. It is strongly 
-     recommended to provide a default group passes to parameter `default_arr` 
-     to substitute the group of aquifers for more pratical reason. For instance
-     it can be the layer collected at a specific depth like the 'strata' 
-     columns. 
+subjectivity: bool, default=False
+    Considers each class label as a naive group of aquifer. Subjectivity 
+    occurs when no group of aquifer is not found in the data. Therefore, each 
+    class label is considered as a naive group of aquifer. It is strongly 
+    recommended to provide a default group passes to parameter `default_arr` 
+    to substitute the group of aquifers for more pratical reason. For instance
+    it can be the layer collected at a specific depth like the 'strata' 
+    columns. 
     
 default_arr: array-like, pd.Series 
    Array used as deefault for subsitutue the group of aqquifer if the latter 
@@ -565,7 +565,7 @@ Examples
 ----------
 (1) Use the real aquifer group collected in the area 
 
->>> from watex.utils import naive_imputer, read_data , reshape 
+>>> from watex.utils import naive_imputer, read_data, reshape 
 >>> from watex.datasets import load_hlogs 
 >>> from watex.utils.hydroutils import classify_k, find_aquifer_groups 
 >>> b= load_hlogs () #just taking the target names
@@ -583,59 +583,59 @@ Examples
 >>> # get the group obj
 >>> group_obj = find_aquifer_groups(y.k, y.aquifer_group) 
 >>> group_obj 
-_AquiferGroup(Label=[' 1 ', 
-                   Preponderance( rate = '53.141  %', 
-                                [('Groups', {'V': 0.32, 'IV': 0.266, 'II': 0.236, 
-                                             'III': 0.158, 'IV&V': 0.01, 
-                                             'II&III': 0.005, 'III&IV': 0.005}),
-                                 ('Representativity', ( 'V', 0.32)),
-                                 ('Similarity', 'V')])],
-             Label=[' 2 ', 
-                   Preponderance( rate = ' 19.11  %', 
-                                [('Groups', {'III': 0.274, 'II': 0.26, 'V': 0.26, 
-                                             'IV': 0.178, 'III&IV': 0.027}),
-                                 ('Representativity', ( 'III', 0.27)),
-                                 ('Similarity', 'III')])],
-             Label=[' 3 ', 
-                   Preponderance( rate = '27.749  %', 
-                                [('Groups', {'V': 0.443, 'IV': 0.311, 'III': 0.245}),
-                                 ('Representativity', ( 'V', 0.44)),
-                                 ('Similarity', 'V')])],
+_Group(Label=[' 1 ', 
+             Preponderance( rate = '53.141  %', 
+                           [('Groups', {'V': 0.32, 'IV': 0.266, 'II': 0.236, 
+                                        'III': 0.158, 'IV&V': 0.01, 
+                                        'II&III': 0.005, 'III&IV': 0.005}),
+                            ('Representativity', ( 'V', 0.32)),
+                            ('Similarity', 'V')])],
+        Label=[' 2 ', 
+              Preponderance( rate = ' 19.11  %', 
+                           [('Groups', {'III': 0.274, 'II': 0.26, 'V': 0.26, 
+                                        'IV': 0.178, 'III&IV': 0.027}),
+                            ('Representativity', ( 'III', 0.27)),
+                            ('Similarity', 'III')])],
+        Label=[' 3 ', 
+              Preponderance( rate = '27.749  %', 
+                           [('Groups', {'V': 0.443, 'IV': 0.311, 'III': 0.245}),
+                            ('Representativity', ( 'V', 0.44)),
+                            ('Similarity', 'V')])],
              )
 (2) Use the subjectivity and set the strata columns as default array 
 
 >>> find_aquifer_groups(y.k, subjectivity=True, default_arr= X.strata_name ) 
-_AquiferGroup(Label=[' 1 ', 
-                   Preponderance( rate = '53.141  %', 
-                                [('Groups', {'siltstone': 0.35, 'coal': 0.227, 
-                                             'fine-grained sandstone': 0.158, 
-                                             'medium-grained sandstone': 0.094, 
-                                             'mudstone': 0.079, 
-                                             'carbonaceous mudstone': 0.054, 
-                                             'coarse-grained sandstone': 0.03, 
-                                             'coarse': 0.01}),
-                                 ('Representativity', ( 'siltstone', 0.35)),
-                                 ('Similarity', 'siltstone')])],
-             Label=[' 2 ', 
-                   Preponderance( rate = ' 19.11  %', 
-                                [('Groups', {'mudstone': 0.288, 'siltstone': 0.205, 
-                                             'coal': 0.192, 
-                                             'coarse-grained sandstone': 0.137, 
-                                             'fine-grained sandstone': 0.137, 
-                                             'carbonaceous mudstone': 0.027, 
-                                             'medium-grained sandstone': 0.014}),
-                                 ('Representativity', ( 'mudstone', 0.29)),
-                                 ('Similarity', 'mudstone')])],
-             Label=[' 3 ', 
-                   Preponderance( rate = '27.749  %', 
-                                [('Groups', {'mudstone': 0.245, 'coal': 0.226, 
-                                             'siltstone': 0.217, 
-                                             'fine-grained sandstone': 0.123, 
-                                             'carbonaceous mudstone': 0.066, 
-                                             'medium-grained sandstone': 0.066, 
-                                             'coarse-grained sandstone': 0.057}),
-                                 ('Representativity', ( 'mudstone', 0.24)),
-                                 ('Similarity', 'mudstone')])],
+_Group(Label=[' 1 ', 
+             Preponderance( rate = '53.141  %', 
+                           [('Groups', {'siltstone': 0.35, 'coal': 0.227, 
+                                        'fine-grained sandstone': 0.158, 
+                                        'medium-grained sandstone': 0.094, 
+                                        'mudstone': 0.079, 
+                                        'carbonaceous mudstone': 0.054, 
+                                        'coarse-grained sandstone': 0.03, 
+                                        'coarse': 0.01}),
+                            ('Representativity', ( 'siltstone', 0.35)),
+                            ('Similarity', 'siltstone')])],
+        Label=[' 2 ', 
+              Preponderance( rate = ' 19.11  %', 
+                           [('Groups', {'mudstone': 0.288, 'siltstone': 0.205, 
+                                        'coal': 0.192, 
+                                        'coarse-grained sandstone': 0.137, 
+                                        'fine-grained sandstone': 0.137, 
+                                        'carbonaceous mudstone': 0.027, 
+                                        'medium-grained sandstone': 0.014}),
+                            ('Representativity', ( 'mudstone', 0.29)),
+                            ('Similarity', 'mudstone')])],
+        Label=[' 3 ', 
+              Preponderance( rate = '27.749  %', 
+                           [('Groups', {'mudstone': 0.245, 'coal': 0.226, 
+                                        'siltstone': 0.217, 
+                                        'fine-grained sandstone': 0.123, 
+                                        'carbonaceous mudstone': 0.066, 
+                                        'medium-grained sandstone': 0.066, 
+                                        'coarse-grained sandstone': 0.057}),
+                            ('Representativity', ( 'mudstone', 0.24)),
+                            ('Similarity', 'mudstone')])],
              )
 """
 def label_importance (
@@ -757,7 +757,7 @@ def label_importance (
         arr_aq = to_dtype_str( arr_aq , return_values= True ) 
         label =str (label) # for consistency 
         # this is usefull when using np.unique since 
-        # numeric data cannot coerce numerical value with string dtype 
+        # numeric data cannot be coerced  with string dtype 
     if label not in (np.unique (arr_k)): 
         raise ValueError (f"Missing '{label}' in array. {label!r} must be"
                           " a label included in 'arr_k'. Valid labels are:"
@@ -2284,6 +2284,7 @@ def transmissibility (s, d, time, ):
     condition of unit hydraulic gradient, unit time, and unit width
     
     """
+    ... 
       
 def check_flow_objectivity ( y ,/,  values, classes  ) :
     """ Function checks the flow rate objectivity
@@ -2301,10 +2302,14 @@ def check_flow_objectivity ( y ,/,  values, classes  ) :
             
             [0, 1, 2] => [FR0, FR1, FR2]
             
-    :classes: list of classes names to replace the default `FR` that is 
+    :param classes: list of classes names to replace the default `FR` that is 
         used to specify the flow rate. For instance, it can be:: 
             
             [0, 1, 2] => [sf0, sf1, sf2]
+    :returns:
+        (y, classes): Tuple, 
+        - y: array-like 1d  of categorized  `y` 
+        - classes: list of flow rate classes. 
     """
     msg= ("Objective is 'flow' whereas the target value is set to {0}."
           " Target is defaultly encoded to hold integers {1}. If"
@@ -2312,13 +2317,18 @@ def check_flow_objectivity ( y ,/,  values, classes  ) :
           " of flow ranges, please set the range of the real flow values"
           " via param `values` or `label_values`."
           ) 
+    y=check_y( 
+        y, 
+        input_name=" Flow array 'y'", 
+        to_frame=True
+        )
     if values is None:
         msg = ("Missing values for categorizing 'y'; the number of"
                 " occurence in the target is henceforth not allowed."
                 )
         warnings.warn("Values are not set. The new version does not" 
                       " tolerate the number of occurrence to be used."
-                      "Provided the list of flow values instead.",
+                      " Provide the list of flow values instead.",
                       DeprecationWarning )
         raise TypeError (msg)
         
@@ -3222,8 +3232,8 @@ def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None,
         if klabel in  group_labels : # [ 4, 4, 2 ]
             # --------------------------------------------------------
             # we can simply get h from indices, however it there is the 
-            # same k duplicate in groups labels, index will alway the 
-            # first occurence, wich seems heuristic  
+            # same k duplicate in groups labels, index will always be 
+            # fetched from first occurence, which seems heuristic  
             elt_index =  group_labels.index (klabel )  
             nklabel = sim_groups [elt_index ] 
             # print(klabel, nklabel)

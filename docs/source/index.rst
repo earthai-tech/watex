@@ -20,7 +20,7 @@ logging and hydrogeology methods. The modules are written to intend solving real
 grow in the future release as the new methods are discovered especially in the GWE field.   
 
 .. _WATex: https://github.com/WEgeophysics/watex/
-
+.. _scikit-learn: http://scikit-learn.org/stable/
 
 `WATex's` development 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -33,24 +33,34 @@ grow in the future release as the new methods are discovered especially in the G
     * `Neighbors: KNN`
     * `Trees: Decision Tree (DTC), Extratrees` 
     * `Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking)`
-    * `Apriori`
-    * `Kernel Principal Component Analysis k-PCA`
+    * `Apriori, KMeans and Hierachical Agglomerative Trees`
+    * `Kernel -Incremental- Principal Component Analysis k-PCA, i-PCA, nPCA`
     * `t-distributed Stochastic Neighbor Embedding t-SNE`
     * `Randomized PCA`
     * `Locally Linear Embedding (LLE)`
-
+    * `more...`
+    
+    Furthermore, :code:`watex` implements an additional learning methods which are not implement in `scikit-learn`_ yet. These 
+    are: 
+    
+        * `SequentialBackwardSelection`
+        * `MajorityVoteClassifier`
+        * `AdelineStochasticGradientDescent`
+        * `AdelineGradientDescent`
+        * `Perceptron`
+        
 * geophysical:
 
     * `DC- Electrical Resistivity Profiling`
     * `DC- Vertical Electrical Sounding`
-    * `Audio-frequency Magnetotellurics`
+    * `Base Electromagnetic short-period methods such as Audio-frequency Magnetotellurics`
     * `Logging`
     
 * hydrogeology: 
 
     * `geology structures` 
     * `geostrata model conception`  
-    * `borehole, drill & Hydro-parameters calculation (in progress)`
+    * `borehole, drill & Hydro-parameters calculation`
 
 `WATex's` benefits
 ^^^^^^^^^^^^^^^^^^^^
