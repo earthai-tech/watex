@@ -2,13 +2,17 @@
 from .validation import ( 
     BaseEvaluation, 
     GridSearch, 
-    multipleGridSearches, 
+    GridSearchMultiple,
+    get_best_kPCA_params, 
+    get_scorers
 
     )
 
 __all__=[
     "BaseEvaluation", 
     "GridSearch", 
-    "multipleGridSearches", 
+    "GridSearchMultiple", 
+    "get_best_kPCA_params", 
+    "get_scorers"
     
     ]

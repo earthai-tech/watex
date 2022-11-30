@@ -182,9 +182,11 @@ python3
 data/boreholes/h502.csv
 data/boreholes/hf.csv
 demo-project.ipynb
-
+hlogs_project.ipynb
+_svms_xgboost_.pkl
 #VS code 
 .vs/
 
 #scripts remove 
 scripts/
+

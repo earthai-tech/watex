@@ -580,6 +580,8 @@ class ExPlot (BasePlot):
         kwd: dict, 
             Other keyword arguments are passed down to `seaborn.boxplot` .
             
+        Returns 
+        -----------
         {returns.self}
         
         Example

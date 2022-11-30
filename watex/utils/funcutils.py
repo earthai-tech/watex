@@ -1675,7 +1675,88 @@ def load_serialized_data (filename, verbose=0):
         else : print(f"Data from {_filename} have been sucessfully reloaded.")
     
     return data
-       
+
+def save_job(job , savefile ,* ,  protocol =None,  append_versions=True , 
+             fix_imports= True, buffer_callback = None,   **job_kws): 
+    """ Quick save your job using 'joblib' or persistent Python pickle module
+    
+    Parameters 
+    -----------
+    job: Any 
+        Anything to save, preferabaly a models in dict 
+    savefile: str, or path-like object 
+         name of file to store the model
+         The *file* argument must have a write() method that accepts a
+         single bytes argument. It can thus be a file object opened for
+         binary writing, an io.BytesIO instance, or any other custom
+         object that meets this interface.
+    append_versions: bool, default =True 
+        Append the version of Joblib module or Python Pickle module following 
+        by the scikit-learn, numpy and also pandas versions. This is useful 
+        to have idea about previous versions for loading file when system or 
+        modules have been upgraded. This could avoid bottleneck when data 
+        have been stored for long times and user has forgotten the date and 
+        versions at the time the file was saved. 
+    
+    protocol: int, optional 
+        The optional *protocol* argument tells the pickler to use the
+        given protocol; supported protocols are 0, 1, 2, 3, 4 and 5.
+        The default protocol is 4. It was introduced in Python 3.4, and
+        is incompatible with previous versions.
+    
+        Specifying a negative protocol version selects the highest
+        protocol version supported.  The higher the protocol used, the
+        more recent the version of Python needed to read the pickle
+        produced.
+        
+    fix_imports: bool, default=True, 
+        If *fix_imports* is True and *protocol* is less than 3, pickle
+        will try to map the new Python 3 names to the old module names
+        used in Python 2, so that the pickle data stream is readable
+        with Python 2.
+        
+    buffer_call_back: int, optional 
+        If *buffer_callback* is None (the default), buffer views are
+        serialized into *file* as part of the pickle stream.
+    
+        If *buffer_callback* is not None, then it can be called any number
+        of times with a buffer view.  If the callback returns a false value
+        (such as None), the given buffer is out-of-band; otherwise the
+        buffer is serialized in-band, i.e. inside the pickle stream.
+    
+        It is an error if *buffer_callback* is not None and *protocol*
+        is None or smaller than 5.
+        
+    job_kws: dict, 
+        Additional keywords arguments passed to :func:`joblib.dump`. 
+        
+    Returns
+    --------
+    savefile: str, 
+        returns the filename
+    """
+    import sklearn 
+    
+    versions = 'sklearn_v{0}.numpy_v{1}.pandas_v{2}'.format( 
+        sklearn.__version__, np.__version__, pd.__version__) 
+    date = datetime.datetime.now() 
+    
+    savefile +=".{}".format(date) 
+    if append_versions : 
+        savefile += ".{}"+ versions 
+    try : 
+        savefile= savefile.format(".joblib_v{}.".format(joblib.__version__))
+        joblib.dump(job, f'{savefile}.joblib', **job_kws)
+        
+    except :  
+        savefile= savefile.format(".pickle_v{}.pkl".format(pickle.__version__))
+        with open(savefile, 'wb') as wfile: 
+            pickle.dump( job, wfile, protocol= protocol, 
+                        fix_imports=fix_imports , 
+                        buffer_callback=buffer_callback )
+
+    return savefile 
+
 def find_position_from_sa(
         an_res_range, 
         pos=None,
@@ -3196,8 +3277,61 @@ def get_config_fname_from_varname(data,
             f'.{config}', '').replace(f'.{config}', '').replace('.yaml', '')
     
     return config_fname
-    
 
+def pretty_printer(
+        clfs: List[F],  
+        clf_score:List[float]=None, 
+        scoring: Optional[str] =None,
+        **kws
+ )->None: 
+    """ Format and pretty print messages after gridSearch using multiples
+    estimators.
+    
+    Display for each estimator, its name, it best params with higher score 
+    and the mean scores. 
+    
+    Parameters
+    ----------
+    clfs:Callables 
+        classifiers or estimators 
+    
+    clf_scores: array-like
+        for single classifier, usefull to provided the 
+        cross validation score.
+    
+    scoring: str 
+        Scoring used for grid search.
+    """
+    empty =kws.pop('empty', ' ')
+    e_pad =kws.pop('e_pad', 2)
+    p=list()
+
+    if not isinstance(clfs, (list,tuple)): 
+        clfs =(clfs, clf_score)
+
+    for ii, (clf, clf_be, clf_bp, clf_sc) in enumerate(clfs): 
+        s_=[e_pad* empty + '{:<20}:'.format(
+            clf.__class__.__name__) + '{:<20}:'.format(
+                'Best-estimator <{}>'.format(ii+1)) +'{}'.format(clf_be),
+         e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'Best paramaters') + '{}'.format(clf_bp),
+         e_pad* empty  +'{:<20}:'.format(' ') + '{:<20}:'.format(
+            'scores<`{}`>'.format(scoring)) +'{}'.format(clf_sc)]
+        try : 
+            s0= [e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'scores mean')+ '{}'.format(clf_sc.mean())]
+        except AttributeError:
+            s0= [e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'scores mean')+ 'None']
+            s_ +=s0
+        else :
+            s_ +=s0
+
+        p.extend(s_)
+    
+    for i in p: 
+        print(i)
+ 
 def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
     """ Move file to its savepath and output message. 
     If path does not exist, should create one to save data.
