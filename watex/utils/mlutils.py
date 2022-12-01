@@ -103,7 +103,6 @@ __all__=[
     "bi_selector", 
     "correlatedfeatures", 
     "exporttarget", 
-    'getGlobalScore', 
     "predict", 
     "fetchGeoDATA", 
     "fetchModel", 
@@ -431,7 +430,6 @@ def selectfeatures (
     # use coerce to no raise error and return data frame instead.
     return df if coerce else df.select_dtypes (include, exclude) 
     
-    
 def getGlobalScore (
         cvres : Dict[str, ArrayLike] 
         ) -> Tuple [ Dict[str, ArrayLike] ,  Dict[str, ArrayLike]  ]: 
@@ -440,11 +438,14 @@ def getGlobalScore (
     
     :param cvres: cross validation results after training the models of number 
         of parameters equals to N. 
-    :type cvres: dict of Array-like, Shape (N, ) """
+    :type cvres: dict of Array-like, Shape (N, ) 
+    :returns: tuple 
+        ( mean_test_scores', 'std_test_scores') 
+         scores on test_dcore and standard deviation scores 
+        
+    """
     return  ( cvres.get('mean_test_score').mean() ,
-             cvres.get('std_test_score').mean()) 
-    
-    
+             cvres.get('std_test_score').mean())  
 def cfexist(features_to: List[ArrayLike], 
             features: List[str] )-> bool:      
     """
