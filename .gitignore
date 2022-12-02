@@ -184,6 +184,8 @@ data/boreholes/hf.csv
 demo-project.ipynb
 hlogs_project.ipynb
 _svms_xgboost_.pkl
+_svms_xgboost_.joblib
+data.joblib
 #VS code 
 .vs/
 

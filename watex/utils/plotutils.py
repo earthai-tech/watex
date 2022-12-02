@@ -951,11 +951,14 @@ def plot_yb_confusion_matrix (
 
 def plot_confusion_matrices (
         clfs, 
-        Xt, yt,  
-        annot =True, pkg=None, verbose = 0 , 
+        Xt, 
+        yt,  
+        annot =True, 
+        pkg=None, 
         fig_size = (22, 6),
         savefig =None, 
-        subplot_kws=None, 
+        subplot_kws=None,
+        verbose = 0 , 
     ):
     """ 
     Plot inline multiple model confusion matrices using either the sckitlearn 
@@ -969,11 +972,11 @@ def plot_confusion_matrices (
         fitted, it is fit when the visualizer is fitted, unless otherwise specified
         by ``is_fitted``.
         
-    Xt : ndarray or DataFrame of shape n x m
+    Xt : ndarray or DataFrame of shape (M X N)
         A matrix of n instances with m features. Preferably, matrix represents 
         the test data for error evaluation.  
 
-    yt : ndarray or Series of length n
+    yt : ndarray of shape (M, ) or Series oF length (M, )
         An array or series of target or class values. Preferably, the array 
         represent the test class labels data for error evaluation.  
     
@@ -1007,8 +1010,8 @@ def plot_confusion_matrices (
     """
     pkg = pkg or 'sklearn'
     pkg= str(pkg).lower() 
-    assert pkg in {"slkearn", 'yellowbrick', "yb"}, (
-        f" Accept only 'sklearn' or 'yellowbrick' packages, got {pkg} ") 
+    assert pkg in {"sklearn", 'yellowbrick', "yb"}, (
+        f" Accept only 'sklearn' or 'yellowbrick' packages, got {pkg!r}") 
     
     if not is_iterable( clfs): 
         clfs =[clfs]
@@ -1063,7 +1066,9 @@ def plot_learning_curves(
     fig_size=(20, 6),
     sns_style =None, 
     savefig=None, 
+    set_legend=True, 
     subplot_kws=None,
+   
     **kws
     ): 
     """ 
@@ -1127,6 +1132,10 @@ def plot_learning_curves(
         
     sns_style: str, optional, 
         the seaborn style . 
+        
+    set_legend: bool, default=True 
+        display legend in each figure. Note the default location of the 
+        legend is 'best' from :func:`~matplotlib.Axes.legend`
         
     subplot_kws: dict, default is \
         dict(left=0.0625, right = 0.95, wspace = 0.1) 
@@ -1216,7 +1225,8 @@ def plot_learning_curves(
         #ax[k].set_xlim (N[0], N[1])
         ax.set_xlabel("training size")
         ax.set_title(name, size=14)
-        ax.legend(loc='best')
+        if set_legend: 
+            ax.legend(loc='best')
     # for consistency
     ax = list(axes)[0]
     ax.set_ylabel("score")

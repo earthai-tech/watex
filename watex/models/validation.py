@@ -267,6 +267,7 @@ Examples
 >>> pprint(grid_search.cv_results_)
 """.format (params=_param_docs,
 )
+    
 class GridSearchMultiple :
     def __init__ (
             self, 
