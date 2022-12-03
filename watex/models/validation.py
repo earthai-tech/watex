@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Created on Sat Sep 25 10:10:31 2021
+#   Created on Sat Sep 25 10:10:31 2022
 
 from __future__ import annotations 
 
@@ -17,7 +17,7 @@ from .._docstring import (
 from .._watexlog import watexlog
 from ..exlib.sklearn import (
      mean_squared_error,
-     cross_val_score, 
+     cross_val_score,
      GridSearchCV , 
      RandomizedSearchCV, 
      LogisticRegression, 
@@ -270,19 +270,19 @@ Examples
     
 class GridSearchMultiple :
     def __init__ (
-            self, 
-            estimators: F, 
-            scoring,  
-            grid_params: Dict[str, Any],
-            *, 
-            kind:str ='GridSearchCV', 
-            cv: int =7, 
-            random_state:int =42,
-            savejob:bool =False,
-            filename: str=None, 
-            verbose:int =0,
-            **grid_kws, 
-            ):
+        self, 
+        estimators: F, 
+        scoring,  
+        grid_params: Dict[str, Any],
+        *, 
+        kind:str ='GridSearchCV', 
+        cv: int =7, 
+        random_state:int =42,
+        savejob:bool =False,
+        filename: str=None, 
+        verbose:int =0,
+        **grid_kws, 
+        ):
         self.estimators = estimators 
         self.scoring=scoring 
         self.grid_params=grid_params
@@ -566,6 +566,7 @@ class BaseEvaluation:
                 scoring ='neg_mean_squared_error' 
                 ): 
         """ Fit data once verified and compute the ``rmse`` scores.
+        
         Parameters 
         ----------
         X: array-like of shape (n_samples, n_features) 
@@ -675,6 +676,7 @@ prefit: bool, default=False,
         
 """.format (params=_param_docs,
 )
+
 def get_best_kPCA_params(
     X:NDArray | DataFrame,
     n_components: float | int =2,

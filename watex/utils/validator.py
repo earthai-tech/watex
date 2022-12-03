@@ -90,7 +90,7 @@ def _is_buildin (o, /, mode ='soft'):
 
 
 def get_estimator_name (estimator , /): 
-    """ Get the estimator name whether it is instanciated or not  
+    """ Get the estimator name whatever it is an instanciated object or not  
     
     :param estimator: callable or instanciated object,
         callable or instance object that has a fit method. 
@@ -767,7 +767,7 @@ def _check_estimator_name(estimator):
     return None
 
 def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X'): 
-    """ Set array back to frame reconvert the Numpy array to pandas series 
+    """ Set array back to frame, reconvert the Numpy array to pandas series 
     or dataframe.
     
     Parameters 
@@ -850,7 +850,7 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X'):
 def is_frame (arr, /): 
     """ Return bool wether array is a frame ( pd.Series or pd.DataFrame )
     
-    Isolated part of :func:`~.array2frame` dedicated to X and y frame
+    Isolated part of :func:`~.array_to_frame` dedicated to X and y frame
     reconversion validation.
     """
     return hasattr (arr, '__array__') and (
@@ -1379,7 +1379,7 @@ def array_to_frame(
     input_name ='', 
     force:bool=False, 
   ): 
-    """Isolated part of is_frame dedicated to X and y frame reconversion 
+    """Added part of `is_frame` dedicated to X and y frame reconversion 
     validation.
     
     Parameters 

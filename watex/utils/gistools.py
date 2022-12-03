@@ -75,20 +75,20 @@ def convert_position_str2float(position_str):
     """
     Convert a position string in the format of DD:MM:SS to decimal degrees
     
-    Arguments
+    Parameters
     -------------
-        **position_str** : string ('DD:MM:SS.ms')
-                           degrees of latitude or longitude
+    **position_str** : string ('DD:MM:SS.ms')
+                       degrees of latitude or longitude
                        
     Returns
     --------------
-        **position** : float
-                       latitude or longitude in decimal degrees
+    **position** : float
+                   latitude or longitude in decimal degrees
                           
     Example
     -------------
-        >>> import mtpy.utils.gis_tools as gis_tools
-        >>> gis_tools.convert_position_str2float('-118:34:56.3')
+    >>> import watex.utils.gis_tools as gis_tools
+    >>> gis_tools.convert_position_str2float('-118:34:56.3')
     """
     
     if position_str in [None, 'None']:
@@ -177,20 +177,20 @@ def convert_position_float2str(position):
     """
     convert position float to a string in the format of DD:MM:SS
     
-    Arguments
+    Parameters
     -------------
-        **position** : float
-                       decimal degrees of latitude or longitude
+    **position** : float
+                   decimal degrees of latitude or longitude
                        
     Returns
     --------------
-        **position_str** : string
-                          latitude or longitude in format of DD:MM:SS.ms
+    **position_str** : string
+                      latitude or longitude in format of DD:MM:SS.ms
                           
     Example
     -------------
-        >>> import mtpy.utils.gis_tools as gis_tools
-        >>> gis_tools.convert_position_float2str(-118.34563)
+    >>> import watex.utils.gis_tools as gis_tools
+    >>> gis_tools.convert_position_float2str(-118.34563)
         
     """
 
@@ -281,29 +281,29 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
     Project a point that is in Lat, Lon (will be converted to decimal degrees)
     into UTM coordinates.
 
-    Arguments:
+    Parameters
     ---------------
-        **lat** : float or string (DD:MM:SS.ms)
-                  latitude of point
+    **lat** : float or string (DD:MM:SS.ms)
+              latitude of point
 
-        **lon** : float or string (DD:MM:SS.ms)
-                  longitude of point
+    **lon** : float or string (DD:MM:SS.ms)
+              longitude of point
 
-        **datum** : string
-                    well known datum ex. WGS84, NAD27, NAD83, etc.
+    **datum** : string
+                well known datum ex. WGS84, NAD27, NAD83, etc.
 
-        **utm_zone** : string
-                       zone number and 'S' or 'N' e.g. '55S'
+    **utm_zone** : string
+                   zone number and 'S' or 'N' e.g. '55S'
 
-        **epsg** : int
-                   epsg number defining projection (see
-                   http://spatialreference.org/ref/ for moreinfo)
-                   Overrides utm_zone if both are provided
+    **epsg** : int
+               epsg number defining projection (see
+               http://spatialreference.org/ref/ for moreinfo)
+               Overrides utm_zone if both are provided
 
-    Returns:
+    Returns
     --------------
-        **proj_point**: tuple(easting, northing, zone)
-                        projected point in UTM in Datum
+    **proj_point**: tuple(easting, northing, zone)
+                    projected point in UTM in Datum
 
     """
     if lat is None or lon is None:
@@ -408,26 +408,26 @@ def project_point_utm2ll(easting, northing, utm_zone, datum='WGS84', epsg=None):
     Project a point that is in Lat, Lon (will be converted to decimal degrees)
     into UTM coordinates.
     
-    Arguments:
+    Parameters
     ---------------
-        **easting** : float
-                    easting coordinate in meters
+    **easting** : float
+                easting coordinate in meters
+                
+    **northing** : float
+                northing coordinate in meters
+    
+    **utm_zone** : string (##N or ##S)
+                  utm zone in the form of number and North or South
+                  hemisphere, 10S or 03N
+    
+    **datum** : string
+                well known datum ex. WGS84, NAD27, etc.
                     
-        **northing** : float
-                    northing coordinate in meters
-        
-        **utm_zone** : string (##N or ##S)
-                      utm zone in the form of number and North or South
-                      hemisphere, 10S or 03N
-        
-        **datum** : string
-                    well known datum ex. WGS84, NAD27, etc.
-                    
-    Returns:
+    Returns
     --------------
-        **proj_point**: tuple(lat, lon)
-                        projected point in lat and lon in Datum, as decimal
-                        degrees.
+    **proj_point**: tuple(lat, lon)
+                    projected point in lat and lon in Datum, as decimal
+                    degrees.
                     
     """
     try:
@@ -503,30 +503,30 @@ def project_points_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
     Project a list of points that is in Lat, Lon (will be converted to decimal 
     degrees) into UTM coordinates.
     
-    Arguments:
+    Parameters
     ---------------
-        **lat** : float or string (DD:MM:SS.ms)
-                  latitude of point
-                  
-        **lon** : float or string (DD:MM:SS.ms)
-                  longitude of point
-        
-        **datum** : string
-                    well known datum ex. WGS84, NAD27, NAD83, etc.
+    **lat** : float or string (DD:MM:SS.ms)
+              latitude of point
+              
+    **lon** : float or string (DD:MM:SS.ms)
+              longitude of point
+    
+    **datum** : string
+                well known datum ex. WGS84, NAD27, NAD83, etc.
 
-        **utm_zone** : string
-                       zone number and 'S' or 'N' e.g. '55S'. Defaults to the
-                       centre point of the provided points
-                       
-        **epsg** : int
-                   epsg number defining projection (see 
-                   http://spatialreference.org/ref/ for moreinfo)
-                   Overrides utm_zone if both are provided
+    **utm_zone** : string
+                   zone number and 'S' or 'N' e.g. '55S'. Defaults to the
+                   centre point of the provided points
+                   
+    **epsg** : int
+               epsg number defining projection (see 
+               http://spatialreference.org/ref/ for moreinfo)
+               Overrides utm_zone if both are provided
 
-    Returns:
+    Returns
     --------------
-        **proj_point**: tuple(easting, northing, zone)
-                        projected point in UTM in Datum
+    **proj_point**: tuple(easting, northing, zone)
+                    projected point in UTM in Datum
                     
     """
 
