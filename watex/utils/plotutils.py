@@ -951,7 +951,7 @@ def plot_confusion_matrices (
     yt,  
     annot =True, 
     pkg=None, 
-    normalize=True, 
+    normalize='true', 
     sample_weight=None,
     encoder=None, 
     fig_size = (22, 6),
@@ -983,9 +983,10 @@ def plot_confusion_matrices (
         the library to handle the plot. It could be 'yellowbrick'. The basic 
         confusion matrix is handled by the scikit-learn package. 
 
-    normalize : bool, default=True
-        If ``False``, return the number of correctly classified samples.
-        Otherwise, return the fraction of correctly classified samples.
+    normalize : {'true', 'pred', 'all'}, default=None
+        Normalizes confusion matrix over the true (rows), predicted (columns)
+        conditions or all the population. If None, confusion matrix will not be
+        normalized.
 
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
@@ -1054,7 +1055,6 @@ def plot_learning_curves(
     savefig=None, 
     set_legend=True, 
     subplot_kws=None,
-   
     **kws
     ): 
     """ 
@@ -2413,6 +2413,54 @@ def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True):
             
     return X0
     
-    
+def plot_bar(x, y, wh= .8,  kind ='v', fig_size =(8, 6), savefig=None,
+             xlabel =None, ylabel=None, fig_title=None, **bar_kws): 
+    """
+    Make a vertical or horizontal bar plot.
 
+    The bars are positioned at x or y with the given alignment. Their dimensions 
+    are given by width and height. The horizontal baseline is left (default 0)
+    while the vertical baseline is bottom (default=0)
+    
+    Many parameters can take either a single value applying to all bars or a 
+    sequence of values, one for each bar.
+    
+    Parameters 
+    -----------
+    x: float or array-like
+        The x coordinates of the bars. is 'x' for vertical bar plot as `kind` 
+        is set to ``v``(default) or `y` for horizontal bar plot as `kind` is 
+        set to``h``. 
+        See also align for the alignment of the bars to the coordinates.
+    y: float or array-like
+        The height(s) for vertical and width(s) for horizonatal of the bars.
+    
+    wh: float or array-like, default: 0.8
+        The width(s) for vertical or height(s) for horizaontal of the bars.
+        
+    kind: str, ['vertical', 'horizontal'], default='vertical'
+        The kind of bar plot. Can be the horizontal or vertical bar plots. 
+    bar_kws: dict, 
+        Additional keywords arguments passed to : 
+            :func:`~matplotlib.pyplot.bar` or :func:`~matplotlib.pyplot.barh`. 
+    """
+    
+    assert str(kind).lower().strip() in ("vertical", 'v',"horizontal", "h"), (
+        "Support only the horizontal 'h' and vertical 'v' bar plots."
+        " Got {kind!r}")
+    kind =str(kind).lower().strip()
+    
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize =fig_size)
+    if kind in ("vertical", "v"): 
+        ax.bar (x, height= y, width =  wh , **bar_kws)
+    elif kind in ("horizontal", "h"): 
+        ax.barh (x , width =y , height =wh, **bar_kws)
+        
+    ax.set_xlabel (xlabel )
+    ax.set_ylabel(ylabel) 
+    ax.set_title (fig_title)
+    if savefig is not  None: 
+        savefigure (fig, savefig, dpi = 300)
+        
+    plt.close () if savefig is not None else plt.show() 
     
