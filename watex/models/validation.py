@@ -894,6 +894,7 @@ def displayCVTables(cvres:Dict[str, ArrayLike],  cvmodels:list[F] ):
         print("Best scores:", model.best_score_)
         print()
         
+        
 def get_scorers (*, scorer:str=None, check_scorer:bool=False, 
                  error:str='ignore')-> Tuple[str] | bool: 
     """ Fetch the list of available metrics from scikit-learn or verify 
