@@ -318,8 +318,7 @@ class redirect_cls_or_func(object) :
             return cls_or_func(*args, **kwargs)
         return self._new_func_or_cls
         
-
-class writef(object): 
+class writef2(object): 
     """
     Used to redirected functions or classes. Deprecated functions  or class can
     call others use functions or classes.
@@ -334,7 +333,7 @@ class writef(object):
         
     :param from_: 
         Can be ``df`` or ``regular``. If ``df``, `func` is called and collect 
-        its input argguments and write to appropriate extension. If `from_`is 
+        its input arguments and write to appropriate extension. If `from_`is 
         ``regular``, Can be a simple data put on list of string ready 
         to output file into other format. 
     :type from_: str ``df`` or ``regular`` 
@@ -351,8 +350,14 @@ class writef(object):
         
     """
     
-    def __init__(self, reason:Optional[str]=None,  from_:Optional[str]=None,
-                 to:Optional[str]=None, savepath:Optional[str] =None, **kws): 
+    def __init__(
+        self, 
+        reason:Optional[str]=None,  
+        from_:Optional[str]=None,
+        to:Optional[str]=None, 
+        savepath:Optional[str] =None, 
+        **kws
+        ): 
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
         self.reason = reason 
@@ -396,7 +401,7 @@ class writef(object):
                
             if self.reason is None : 
                 print('--> No reason is set. What do you want to do?'
-                      ' `write` file or `convert` file into other format?.')
+                      ' `write` file or `convert` file into other format?')
                 return func(*args, **kwargs)
             
             if self.reason is not None : 
@@ -408,7 +413,146 @@ class writef(object):
                         fromdf =True
                         self.writedfIndex = windex
                          
-            if fromdf is True and cfw ==1 : 
+            if fromdf  and cfw ==1 : 
+                if to_ is not None : 
+                    self.to= '.'+ to_.replace('.','')
+     
+                else: 
+                    self.to = '.csv'
+                if refout_ is not None : 
+                    self.refout =refout_
+            
+                self.refout = self.refout.replace(':','-') + self.to
+                
+                if savepath_ is not None: 
+                    self.savepath =savepath_
+                if self.to =='.csv': 
+                    self.df.to_csv(self.refout, header=True,
+                          index =self.writedfIndex)
+                elif self.to =='.xlsx':
+    
+                    self.df.to_excel(self.refout , sheet_name='{0}'.format(
+                        self.refout[: int(len(self.refout)/2)]),
+                            index=self.writedfIndex) 
+                             
+                         
+            # savepath 
+            generatedfile = '_watex{}_'.format(
+                    datetime.datetime.now().time()).replace(':', '.')
+            if self.savepath is None :
+                self.savepath = savepath_(generatedfile)
+            if self.savepath is not None :
+                if not os.path.isdir(self.savepath): 
+                    self.savepath = savepath_(generatedfile)
+                try : 
+                    shutil.move(os.path.join(os.getcwd(),self.refout) ,
+                            os.path.join(self.savepath , self.refout))
+                except : 
+                    self.logging.debug("We don't find any path to save file.")
+                else: 
+                    print(
+                    '--> reference output  file <{0}> is well exported to {1}'.
+                          format(self.refout, self.savepath))
+                    
+            return func(*args, **kwargs)
+        return decorated_func 
+        
+class writef(object): 
+    """
+    Used to redirected functions or classes. Deprecated functions  or class can
+    call others use functions or classes.
+             
+    Decorate function or class to replace old function method or class with 
+    multiple parameters and export files into many other format. `.xlsx` ,
+    `.csv` or regular format. Decorator mainly focus to export data to other
+    files. Exported file can `regular` file or excel sheets. 
+    
+    :param reason: 
+        Explain the "What to do?". Can be `write` or `convert`.
+        
+    :param from_: 
+        Can be ``df`` or ``regular``. If ``df``, `func` is called and collect 
+        its input argguments and write to appropriate extension. If `from_`is 
+        ``regular``, Can be a simple data put on list of string ready 
+        to output file into other format. 
+    :type from_: str ``df`` or ``regular`` 
+    
+    :param to_: 
+        Exported file extension. Can be excel sheeet (`.xlsx`, `csv`)
+        or other kind of format. 
+            
+    :param savepath: 
+        Give the path to save the new file written.
+        
+    *Author: LKouadio ~ @Daniel03*
+    *Date: 09/07/2021*
+        
+    """
+    
+    def __init__(
+        self, 
+        reason:Optional[str]=None,  
+        from_:Optional[str]=None,
+        to:Optional[str]=None, 
+        savepath:Optional[str] =None, 
+        **kws
+        ): 
+        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
+        
+        self.reason = reason 
+        self.from_=from_ 
+        self.to= to
+        
+        self.refout =kws.pop('refout', None)
+        self.writedfIndex =kws.pop('writeindex', False)
+        
+        self.savepath =savepath 
+        
+        
+        for key in list(kws.keys()): 
+            setattr(self, key, kws[key])
+
+    def __call__(self, func):
+        """ Call function and return new function decorated"""
+        
+        @functools.wraps(func)
+        def decorated_func(*args, **kwargs): 
+            """
+            New decorated function and holds `func` args and kwargs arguments.
+            :params args: positional arguments of `func`
+            :param kwargs: keywords arguments of `func`. 
+            
+            """
+            self._logging.info('Func <{}> decorated !'.format(func.__name__))
+            
+            cfw = 0     # write file type 
+            
+            for addf in ['savepath', 'filename']: 
+                if not hasattr(self, addf): 
+                    setattr(self, addf, None)
+                    
+            erp_time = '{0}_{1}'.format(datetime.datetime.now().date(), 
+                            datetime.datetime.now().time())
+            
+            if self.refout is None : 
+               self.refout = 'w-{0}'.format(
+                   erp_time )
+               
+            if self.reason is None : 
+                print('--> No reason is set. What do you want to do?'
+                      ' `write` file or `convert` file into other format?')
+                return func(*args, **kwargs)
+            
+            if self.reason is not None : 
+                if self.reason.lower().find('write')>=0 : 
+                    cfw = 1 
+                    if self.from_=='df': 
+                        self.df , to_, refout_, savepath_, windex = func(*args,
+                                                                 **kwargs)
+                        fromdf =True
+                        self.writedfIndex = windex
+                         
+            if fromdf  and cfw ==1 : 
                 if to_ is not None : 
                     self.to= '.'+ to_.replace('.','')
      

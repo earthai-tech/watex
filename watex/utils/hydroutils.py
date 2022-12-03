@@ -509,7 +509,7 @@ arr_k: array_like, pandas series or dataframe
     arraylike that contains the permeability coefficients 'k'. If a dataframe 
     is supplied, the permeabitlity coefficient column name 'kname' must be 
     specified. 
-arr_q: array-like , pandas series or dataframe 
+arr_aq: array-like , pandas series or dataframe 
     array-like that contains the aquifer groups. If NAN values exists in the 
     aquifer groups, it is suggested to imputed values before feediing to 
     the algorithms. Missing values are not allowed. If dataframe is supplied,
@@ -558,7 +558,7 @@ method: str ['naive', 'strict'], default='naive'
         
 Returns
 -------
-_AquiferGroup: _AquiferGroup class object 
+_Group: :class:`~.box._Group` class object 
     Use attribute `.groups` to find the group values. 
 
 Examples
@@ -659,7 +659,7 @@ def label_importance (
     arr_k: array-like 1d 
         True labels of array containing the permeability coefficient 'k'.
 
-    arr_q: array_like 1d 
+    arr_aq: array_like 1d 
         True labels of the groups of aquifers or predicted naive group of 
          aquifer (NGA labels). See :func:`~.predict_NGA_labels`.
          
@@ -728,8 +728,8 @@ def label_importance (
         # the most dominate labels are k=1 and k=3 with 53.14% and 27.74 % 
         # respectively in the dataset. 
         # If threshold of representativity is set to 50% , none of the true 
-        # label k will fit and aquifer group since the max representativity 
-        # score is 17% and it the group V for k=1. 
+        # label k will fit any aquifer group since the max representativity 
+        # score is 17% and is for the group V especially for k=1. 
     """ 
     arr_k = check_y (
         arr_k, 
@@ -964,7 +964,8 @@ def _similarity_rules (lg,  threshold =.5 ):
             raise TypeError ("Threshold must be a number between 0 and "
                              f"1, got: {type(threshold).__name__!r}")
     # the gdict is already sorted 
-    threshold = float(_assert_all_types(threshold, int, float, objname="Threshold" ))
+    threshold = float(
+        _assert_all_types(threshold, int, float, objname="Threshold" ))
     
     if threshold < 0. or threshold > 1: 
         raise ValueError ("Threshold expects a value ranged between 0 and 1,"
@@ -974,7 +975,8 @@ def _similarity_rules (lg,  threshold =.5 ):
             yield (k, g )
       
 def _get_y_from_valid_indexes (
-        y_true, y_pred =None , *,  include_label_0 = False , replace_nan = False ): 
+        y_true, y_pred =None , *,  include_label_0 = False , replace_nan = False 
+        ): 
     """From valid indices in true labels 'y_true', get the valid 
     valid y array as as possible the value at the valid indices from 'y_true' 
     in predicted labels' 

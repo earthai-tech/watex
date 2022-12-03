@@ -7,14 +7,14 @@ Module EM
 ==========
 
 The EM module is related for a few meter exploration in the case of groundwater 
-exploration. Module provides some basics processing step for EMAP data fitering
+exploration. Module provides some basics processing steps for EMAP data filtering
 and remove noises. Commonly the methods mostly used in the groundwater 
-exploration is the audio-magnetoteluric because iof the shortest frequency 
-and rapid executions. Furthermore, we can also listed some other advantages 
+exploration is the audio-magnetoteluric because of the shortest frequency 
+and rapid executions. Furthermore, we can also list some other advantages 
 such as: 
     
     * is useful for imaging both deep geologic structure and near-surface 
-        geology and can provide significant details.(ii) 
+        geology and can provide significant details. 
     *  includes a backpack portable system that allows for use in difficult 
         terrain. 
     * the technique requires no high-voltage electrodes, and logistics 
@@ -113,8 +113,8 @@ class EM(IsEdi):
     Tipper and Spectra  is not completed. Use  other MT softwares for a long 
     periods data. 
     
-    Arguments 
-    ---------
+    Parameters 
+    -------------
     survey_name: str 
         location name where the date where collected . If surveyname is None  
         can chech on edifiles. 
@@ -250,7 +250,7 @@ class EM(IsEdi):
         Parameters 
         ----------- 
         data : str, or list or :class:`pycsamt.core.edi.Edi` object 
-            Edi or collection of Edis or EDI-objects 
+            Full path to EDI files or collection of EDI-objects 
             
         Returns
         -------- 
