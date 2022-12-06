@@ -240,7 +240,7 @@ def plot_logging (
     
     colors: list of Matplotlib.colors map, optional 
         The colors for plotting each columns of `X` except the depth. If not
-        given, default colors is generated. 
+        given, default colors are auto-generated. 
   
     draw_spines: bool, tuple (-lim, +lim), default= False, 
         Only draw spine between the y-ticks. ``-lim`` and ``+lim`` are lower 
@@ -270,7 +270,7 @@ def plot_logging (
     ---------
     >>> from watex.datasets import load_hlogs 
     >>> from watex.utils.plotutils import plot_logging
-    >>> X0, y = load_hlogs (as_frame =True) # get the frames rathen than object 
+    >>> X0, y = load_hlogs (as_frame =True) # get the frames rather than object 
     >>> # plot the default logging with Normalize =True 
     >>> plot_logging (X0, normalize =True) 
     >>> # Include the target in the plot 

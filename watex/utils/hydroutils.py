@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
+
 """
 Hydrogeological utilities 
 ================================
@@ -55,7 +56,6 @@ from ..exceptions import (
     StrataError, 
     AquiferGroupError
     )
-
 from .box import ( 
     _Group, 
     Boxspace
