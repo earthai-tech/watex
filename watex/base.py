@@ -882,8 +882,8 @@ class SequentialBackwardSelection (_Base ):
     r"""
     Sequential Backward Selecttion (SBS) is a feature selection algorithm which 
     aims to reduce dimensionality of the initial feature subspace with a 
-    minimum decay  in the performance of the classifier to imporve upon 
-    computationan efficiency. In certains cases, SBS can even imporve the 
+    minimum decay  in the performance of the classifier to improve upon 
+    computationan efficiency. In certains cases, SBS can even improve the 
     predictive power of the model if a model suffers from overfitting. 
     
     The idea behind the SBS is simple: it sequentially removes features 
