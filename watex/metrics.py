@@ -109,7 +109,7 @@ def get_eval_scores (
     verbose = False, 
     **scorer_kws, 
     ): 
-    ypred = model.predict(Xt)
+    ypred = model.predict(Xt) 
     acc_scores = accuracy_score(yt, ypred, normalize=normalize, 
                                 sample_weight= sample_weight) 
     rec_scores = recall_score(
@@ -118,9 +118,16 @@ def get_eval_scores (
     prec_scores = precision_score(
         yt, ypred, average =average,sample_weight = sample_weight, 
         **scorer_kws)
-    rocauc_scores= roc_auc_score (
-        yt, ypred, average=average, multi_class=multi_class, 
-        sample_weight = sample_weight, **scorer_kws)
+    try:
+        #compute y_score when predict_proba is available 
+        # or  when  probability=True
+        ypred = model.predict_proba(Xt) if multi_class !='raise'\
+            else model.predict(Xt) 
+    except: rocauc_scores=None 
+    else :
+        rocauc_scores= roc_auc_score (
+            yt, ypred, average=average, multi_class=multi_class, 
+            sample_weight = sample_weight, **scorer_kws)
 
     scores= dict ( 
         accuracy = acc_scores , recall = rec_scores, 
@@ -217,6 +224,35 @@ scores: dict ,
     - precision 
     - ROC AUC ( Receiving Operating Characteric Area Under the Curve)
     
+Notes 
+-------
+Note that if `yt` is given, it computes `y_score` known as array-like of 
+shape (n_samples,) or (n_samples, n_classes)Target scores following the 
+scheme below: 
+
+    * In the binary case, it corresponds to an array of shape
+      `(n_samples,)`. Both probability estimates and non-thresholded
+      decision values can be provided. The probability estimates correspond
+      to the **probability of the class with the greater label**,
+      i.e. `estimator.classes_[1]` and thus
+      `estimator.predict_proba(X, y)[:, 1]`. The decision values
+      corresponds to the output of `estimator.decision_function(X, y)`.
+      See more information in the :ref:`User guide <roc_auc_binary>`;
+    * In the multiclass case, it corresponds to an array of shape
+      `(n_samples, n_classes)` of probability estimates provided by the
+      `predict_proba` method. The probability estimates **must**
+      sum to 1 across the possible classes. In addition, the order of the
+      class scores must correspond to the order of ``labels``,
+      if provided, or else to the numerical or lexicographical order of
+      the labels in ``y_true``. See more information in the
+      :ref:`User guide <roc_auc_multiclass>`;
+    * In the multilabel case, it corresponds to an array of shape
+      `(n_samples, n_classes)`. Probability estimates are provided by the
+      `predict_proba` method and the non-thresholded decision values by
+      the `decision_function` method. The probability estimates correspond
+      to the **probability of the class with the greater label for each
+      output** of the classifier. See more information in the
+      :ref:`User guide <roc_auc_multilabel>`.
 References
 ----------
 
@@ -240,6 +276,47 @@ RocCurveDisplay.from_estimator : Plot Receiver Operating Characteristic
     (ROC) curve given an estimator and some data.
 RocCurveDisplay.from_predictions : Plot Receiver Operating Characteristic
     (ROC) curve given the true and predicted values.
+    
+Examples
+--------
+Binary case:
+
+>>> from sklearn.datasets import load_breast_cancer
+>>> from sklearn.linear_model import LogisticRegression
+>>> from sklearn.metrics import roc_auc_score
+>>> X, y = load_breast_cancer(return_X_y=True)
+>>> clf = LogisticRegression(solver="liblinear", random_state=0).fit(X, y)
+>>> roc_auc_score(y, clf.predict_proba(X)[:, 1])
+0.99...
+>>> roc_auc_score(y, clf.decision_function(X))
+0.99...
+
+Multiclass case:
+
+>>> from sklearn.datasets import load_iris
+>>> X, y = load_iris(return_X_y=True)
+>>> clf = LogisticRegression(solver="liblinear").fit(X, y)
+>>> roc_auc_score(y, clf.predict_proba(X), multi_class='ovr')
+0.99...
+
+Multilabel case:
+
+>>> import numpy as np
+>>> from sklearn.datasets import make_multilabel_classification
+>>> from sklearn.multioutput import MultiOutputClassifier
+>>> X, y = make_multilabel_classification(random_state=0)
+>>> clf = MultiOutputClassifier(clf).fit(X, y)
+>>> # get a list of n_output containing probability arrays of shape
+>>> # (n_samples, n_classes)
+>>> y_pred = clf.predict_proba(X)
+>>> # extract the positive columns for each output
+>>> y_pred = np.transpose([pred[:, 1] for pred in y_pred])
+>>> roc_auc_score(y, y_pred, average=None)
+array([0.82..., 0.86..., 0.94..., 0.85... , 0.94...])
+>>> from sklearn.linear_model import RidgeClassifierCV
+>>> clf = RidgeClassifierCV().fit(X, y)
+>>> roc_auc_score(y, clf.decision_function(X), average=None)
+array([0.81..., 0.84... , 0.93..., 0.87..., 0.94...])
 """.format(params =_param_docs
 )
     
