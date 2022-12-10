@@ -193,4 +193,5 @@ data0.joblib
 
 #scripts remove 
 scripts/
-
+# git certificate 
+git-mycompany-com.pem

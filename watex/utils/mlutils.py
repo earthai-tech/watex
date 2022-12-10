@@ -738,7 +738,7 @@ def predict(
         dms +=f"\n Confusion matrix= \n {conf_mx}"
     mse = mean_squared_error(y_true, y_pred )
 
-    dms += f"\n MSE error = {mse }."
+    dms += f"\n MSE error = {mse}."
     pprint(dms)
 
     return clf_score, mse 

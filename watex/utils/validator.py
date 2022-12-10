@@ -1307,7 +1307,7 @@ def check_y(y,
     estimator=None, 
     to_frame=False,
     allow_nan= False, 
-            ):
+    ):
     """
     
     Parameters 

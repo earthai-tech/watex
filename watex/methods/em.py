@@ -128,6 +128,8 @@ class EM(IsEdi):
     elevation: array-like, shape (N,) 
         Elevation coordinates collected from EDIs 
 
+    Attributes 
+    -----------
     res_xy|res_yx :dict
          {stn: res_xy|res_yx} ndarray value of resivities from 2 comps xy|yx 
          where 'stn' is station name. 
