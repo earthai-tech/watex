@@ -574,7 +574,7 @@ Examples
 >>> # impute the missing values found in aquifer group columns
 >>> # reshape 1d array along axis 0 for imputation 
 >>> agroup_imputed = naive_imputer ( reshape (y.aquifer_group, axis =0 ) , 
-                                    strategy ='most_frequent') 
+...                                    strategy ='most_frequent') 
 >>> # reshape back to array_like 1d 
 >>> y.aquifer_group =reshape (agroup_imputed) 
 >>> # categorize the 'k' continous value in 'y.k' using the default 
@@ -692,7 +692,7 @@ def label_importance (
     >>> # categorize k_labels using default categorization 
     >>> array_k = classify_k (array_k, default_func =True )
     >>> # for the demo, we used the group of aquifers however in 
-    >>> # pratice, NGA should  be a prediced labels instead. 
+    >>> # pratice, NGA should  be prediced labels instead. 
     >>> array_aq = load_hlogs().frame.aquifer_group  
     >>> # get the labels except NaN 
     >>> np.unique (array_k) # give the k label in data; here only k=2 is available
@@ -932,7 +932,7 @@ def find_similar_labels (
     return similarities  if not return_groups else tuple (g.groups )
 
 def _similarity_rules (lg,  threshold =.5 ):
-    """ Considers two label similar from the threshold value. 
+    """ Considers two labels similar from the threshold value. 
     
     :param lg: dict, 
         dictionnary of  tuple pair (true_label, dict of group occurence) 
@@ -1160,8 +1160,8 @@ def _get_s_occurence (
         key of ordered sorted dict. Must be either {0, 1}: `0` for key 
         ordered searcg while `1` is for value search. 
     :param reverse: bool, reverse ordered dictionnary
-    :returns: bs, c, r
-        return the base object, counts or rate.
+    :returns: bs, r, c
+        return the base object, rate or counts.
     """
     # sorted strata in ascending occurence 
     s=dict ( Counter(sd ) ) 

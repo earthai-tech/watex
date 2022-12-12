@@ -11,11 +11,11 @@ class Boxspace(dict):
     
     BowlSpace objects are sometimes used as an output for functions and methods.
     They extend dictionaries by enabling values to be accessed by key,
-    `bunch["value_key"]`, or by an attribute, `bunch.value_key`.
+    `Boxspace["value_key"]`, or by an attribute, `Boxspace.value_key`.
     Another option is to use Namespace of collection modules as: 
         
         >>> from collections import namedtuple
-        >>> Boxspace = namedtuple ('Boxspace', [< attaributes names >] )
+        >>> Boxspace = namedtuple ('Boxspace', [< attribute names >] )
         
     However the explicit class that inhers from build-in dict is easy to 
     handle attributes and to avoid multiple error where the given name 
@@ -23,7 +23,7 @@ class Boxspace(dict):
     
     Examples
     --------
-    >>> from watex.utils.import Boxspace 
+    >>> from watex.utils.box import Boxspace 
     >>> bs = Boxspace(pkg='watex',  objective ='give water', version ='0.1.dev')
     >>> bs['pkg']
     ... 'watex'
