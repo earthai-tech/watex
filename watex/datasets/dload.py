@@ -18,7 +18,11 @@ from .._docstring import erp_doc, ves_doc
 from ._io import csv_data_loader, _to_dataframe , DMODULE 
 from ..utils.coreutils import vesSelector, erpSelector 
 from ..utils.mlutils import split_train_test_by_id , existfeatures
-from ..utils.funcutils import to_numeric_dtypes , smart_format
+from ..utils.funcutils import ( 
+    to_numeric_dtypes , 
+    smart_format, str2columns, 
+    is_in_if
+    )
 from ..utils.box import Boxspace
 
 __all__= [ "load_bagoue" , "load_gbalo", "load_iris", "load_semien",
@@ -320,7 +324,9 @@ tnames: str, optional
     `tag` and `data_names` do nothing. just for API purpose and to allow 
     fetching the same data uing the func:`~watex.data.fetch_data` since the 
     latter already holds `tag` and `data_names` as parameters. 
-
+key: str, default='h502'
+    Kind of logging data to fetch. Can also be the borehole ["h2601"]
+    
 Returns
 -------
 data : :class:`~watex.utils.Boxspace`
@@ -628,11 +634,123 @@ array([0, 0, 1])
 ['setosa', 'versicolor', 'virginica']
 """    
     
+def load_edis (
+        *,  return_data=False, as_frame =False, key =None, tag =None, 
+        samples =None,  data_names =None, **kws): 
+    valid_keys ={"edi", "longitude", "latitude", "site", "*"} 
+    key = key or "edi" 
     
+    # assertion error if key does not exist. 
+    msg = (f"Invalid key {key!r}. Expects {tuple ( valid_keys)}")
+
+    try: 
+        feature_names = is_in_if(valid_keys, [str(k).lower() 
+                                              for k in str2columns( key )]
+                           )
+    except ValueError as e: 
+        raise ValueError (str(e) + f" {msg}")
+        
+    data_file ='e.h5'
+    with resources.path (DMODULE , data_file) as p : 
+        data_file = p 
     
+    data = pd.read_hdf(data_file, key = "data")
+
+    if key =='*': 
+        feature_names = list(valid_keys)[:-1]
+        
+    data = data [feature_names ]
+    samples = samples or len(data ) 
     
+    try : 
+        samples = int (samples)
+    except TypeError  as e : 
+        raise TypeError (
+            f"Expect integer for samples. Got {samples}. {str(e)}")
+    finally: 
+        if samples > len(data) :
+            samples = len(data) 
     
+    data = data.iloc [:samples, :] 
     
+    if return_data or as_frame : 
+        return data.values if return_data else data 
+
+    return Boxspace(
+        data=data.values,
+        frame=data,
+        #XXX Add description 
+        DESCR= '', # fdescr,
+        feature_names=feature_names,
+        filename=data_file,
+        data_module=DMODULE,
+    )
+      
+load_edis.__doc__="""\
+Load SEG-Electrical Data Interchange (EDI) object 
+
+EDI data is a sample of data collected in Huayuan county in China. 
+
+Parameters 
+------------
+return_data : bool, default=False
+    If True, returns ``data`` in array-like 1D instead of a Boxspace object.
+    Note that the data is only a  collection of EDI-objects from 
+    :class:`pycsamt.ff.core.edi.Edi`
+
+as_frame : bool, default=False
+    If True, the data is a pandas DataFrame including columns with
+    appropriate dtypes (numeric). 
+    
+samples: int, default=None 
+    The sample of data to retrieve.  
+    
+(tag, data_names): None
+    `tag` and `data_names` do nothing. just for API purpose and to allow 
+    fetching the same data uing the func:`~watex.data.fetch_data` since the 
+    latter already holds `tag` and `data_names` as parameters.     
+  
+key: str, {'site', 'edi', 'latitude', '*', 'longitude'},  default='edi'
+    Kind of EDI-data to fetch. If the star is given, fetch all the data on a 
+    single frame 
+    
+Returns
+-------
+data : :class:`~watex.utils.Boxspace`
+    Dictionary-like object, with the following attributes.
+    data : {ndarray, dataframe} of shape (50, 4)
+        The data matrix. If `as_frame=True`, `data` will be a pandas
+        DataFrame.
+    feature_names: list
+        The names of the dataset columns.
+
+    frame: DataFrame of shape (50, 4)
+        Only present when `as_frame=True`. DataFrame with `data` and
+        `target`.
+        .. versionadded:: 0.1.2
+    DESCR: str
+        The full description of the dataset.
+    filename: str
+        The path to the location of the data.
+        .. versionadded:: 0.1.2
+Examples 
+----------
+>>> from watex.datasets.dload import load_edis 
+>>> load_edis ().frame [:3]
+                                                 edi
+0  <pycsamt.ff.core.edi.Edi object at 0x000001C80...
+1  <pycsamt.ff.core.edi.Edi object at 0x000001C80...
+2  <pycsamt.ff.core.edi.Edi object at 0x000001C80...
+>>> load_edis (as_frame =True, key='longitude latitude', samples = 7) 
+    latitude   longitude
+0  26.051390  110.485833
+1  26.051794  110.486153
+2  26.052198  110.486473
+3  26.052602  110.486793
+4  26.053006  110.487113
+5  26.053410  110.487433
+6  26.053815  110.487753
+""" 
     
     
     

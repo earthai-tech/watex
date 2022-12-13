@@ -293,12 +293,12 @@ def d_hanning_window(
     :param x: variable point along the window width
     :param xk: Center of the window `W`. It presumes to host the most weigth.   
     :param W: int, window-size; preferably set to odd number. It must be less than
-         the dipole length. 
+          the dipole length. 
     :return: Anonymous function (x,xk, W)
     """
-    return lambda x, xk, W: 1/W * (1 + np.cos (
+    return  1/W * (1 + np.cos (
         2 * np.pi * (x-xk) /W)) if np.abs(x-xk) <= W/2 else  0.
-     
+    
 def betaj (
         xj: int ,
         L: int , 

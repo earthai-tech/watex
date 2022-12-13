@@ -1321,7 +1321,7 @@ class Config:
                  ".csv" : pd.read_csv, 
                  ".xlsx": pd.read_excel,
                  ".json": pd.read_json,
-                 ".html": pd.read_json,
+                 ".html": pd.read_html,
                  ".sql" : pd.read_sql, 
                  ".xml" : pd.read_xml , 
                  ".fwf" : pd.read_fwf, 

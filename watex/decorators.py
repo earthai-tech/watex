@@ -2115,6 +2115,7 @@ class gplot2d(object):
           y=0.95 if self.reason =='model' else 0.98)
       
         return self 
+    
 
 class _M:
     def _m(self): pass

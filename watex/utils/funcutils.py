@@ -2781,7 +2781,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
         considered the given station as a index. so it remove all the letter and
         keep digit as index of each stations. 
         
-    :param how: :param how: Mode to index the station. Default is 
+    :param how: Mode to index the station. Default is 
         'Python indexing' i.e.the counting starts by 0. Any other mode will 
         start the counting by 1. Note that if `is_index` is ``True`` and the 
         param `how` is set to it default value ``py``, the station index should 
@@ -3786,7 +3786,7 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
             v= smart_format(miss_items)
             verb = f"{ ' '+ v +' is' if len(miss_items)<2 else  's '+ v + 'are'}"
             raise ValueError (
-                f"Item{verb} missing in the {type(o).__name__.lower()}.")
+                f"Item{verb} missing in the {type(o).__name__.lower()} {o}.")
             
        
     if return_diff : 

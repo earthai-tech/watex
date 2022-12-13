@@ -39,7 +39,7 @@ from ..exceptions import (
     EDIError, 
     TopModuleError, 
     NotFittedError, 
-    EMError, 
+    EMError,
 ) 
 from ..utils.funcutils import ( 
     _assert_all_types, 
@@ -48,7 +48,7 @@ from ..utils.funcutils import (
     fit_by_ll, 
     reshape, 
     smart_strobj_recognition, 
-    repr_callable_obj, 
+    repr_callable_obj,
     ) 
 from ..utils.exmath import ( 
     scalePosition, 
@@ -64,7 +64,7 @@ from ..utils.coreutils import (
     makeCoords, 
     )
 from ..property import (
-    IsEdi 
+    IsEdi
     )
 from ..site import Location 
 from .._typing import ( 
@@ -108,10 +108,10 @@ class EM(IsEdi):
     Create EM object as a collection of EDI-file. 
     
     Collect edifiles and create an EM object. It sets  the properties from 
-    audio magnetotelluric,two(2) components XY and YX will be set and calculated.
-    Can read MT data instead, However the full handling transfer function like 
-    Tipper and Spectra  is not completed. Use  other MT softwares for a long 
-    periods data. 
+    audio-magnetotelluric. The two(2) components XY and YX will be set and 
+    calculated.Can read MT data instead, however the full handling transfer 
+    function like Tipper and Spectra  is not completed. Use  other MT 
+    softwares for a long periods data. 
     
     Parameters 
     -------------
@@ -119,6 +119,26 @@ class EM(IsEdi):
         location name where the date where collected . If surveyname is None  
         can chech on edifiles. 
 
+    Attributes 
+    -----------
+    ediObjs_: Array-like of shape (N,) 
+        array of the collection of edifiles read_sucessfully  
+    data_: Array-like of shape (N, ) 
+        array of all edifiles feed in the `EM` modules whatever sucessuffuly 
+        read or not. 
+    edinames_: array-like of shape (N,) 
+        array of all edi-names sucessfully read 
+    edifiles_: array of shape (N, ) 
+        array of all edifiles if given. 
+    freqs_: array-like of shape (N, ) 
+        Array of the frequency range from EDIs 
+    refreq_: float, 
+        Reference refrequency for data correction. Note the reference frequency
+        is the highest frequency with clean data. 
+        
+    Properties 
+    ------------
+    
     longitude: array-like, shape (N,) 
         longitude coordinate values  collected from EDIs 
         
@@ -127,24 +147,7 @@ class EM(IsEdi):
         
     elevation: array-like, shape (N,) 
         Elevation coordinates collected from EDIs 
-
-    Attributes 
-    -----------
-    res_xy|res_yx :dict
-         {stn: res_xy|res_yx} ndarray value of resivities from 2 comps xy|yx 
-         where 'stn' is station name. 
-         
-    phs_xy|phs_yx: dict 
-         dict <{stn: res_phs|phs_yx}>  ndarray value of phase from 2  comps xy|yx 
-         
-    z_xy|res_yx:dict
-        dict < {stn: z_xy|z_yx}>  (in degree) ndarray value of impedance from 
-        2 comps xy|yx 
         
-    XX_err_xy|XX_err_yx:  dict, 
-           dict  of error values {stn: XX_err_xy|XX_err_yx} ndarray value of 
-           impedance from 2 comps xy|yx XX : res|phs|z  stn : name of site eg
-           stn :S00, S01 , .., Snn
     """
 
     def __init__(self, survey_name:str  =None ): 
@@ -242,6 +245,19 @@ class EM(IsEdi):
             locprop = p ; s[i] = locprop 
         setattr(self, f'_{name}', s )
         
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'data_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
         
     def fit (self, 
              data: str|List[EDIO]
@@ -349,7 +365,7 @@ class EM(IsEdi):
         # ---> get impednaces, phase tensor and
         # resistivities values form ediobject
         self._logging.info('Setting impedances and phases tensors and'
-                           'resisvitivity values from a collection ediobj.')
+                           'resistivity values from a collection ediobj.')
         zz= [edi_obj.Z.z for edi_obj in self.ediObjs_]
         zz_err= [edi_obj.Z.z_err for edi_obj in self.ediObjs_]
 
@@ -656,10 +672,9 @@ class EM(IsEdi):
                    1.12500e+01, 9.37500e+00, 8.12500e+00, 6.87500e+00, 5.62500e+00])
             
         """
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
+        if data is None: 
             self.fit(self.data_)
+        self.inspect 
         
         lenfs = np.array([len(ediObj.Z._freq) for ediObj in self.ediObjs_ ] ) 
         ix_fm = np.argmax (lenfs) ; f= self.ediObjs_ [ix_fm].Z._freq 
@@ -938,7 +953,7 @@ class EM(IsEdi):
    
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
-        return repr_callable_obj  (self)
+        return repr_callable_obj  (self, skip =('edifiles', 'freq_array', 'id'))
        
     
     def __getattr__(self, name):
@@ -1161,7 +1176,7 @@ class Processing (EM) :
 
     def tma (
         self,
-        data:str|List[EDIO]
+        data:str|List[EDIO]=None,
     )-> NDArray[DType[float]] :
         
         """ A trimmed-moving-average filter to estimate average apparent
@@ -1189,9 +1204,9 @@ class Processing (EM) :
         
         """
         if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+            self.fit(data)
+
+        self.inspect 
         # assert filter arguments 
         self.res2d_ , self.phs2d_ , self.freqs_, self.c, self.window_size, \
             self.component, self.out = self._make2dblobs ()
@@ -1332,7 +1347,7 @@ class Processing (EM) :
                 self.window_size, self.component, self.out) 
     
     def ama (
-        self, data:str|List[EDIO]
+        self, data:str|List[EDIO]=None
         )-> NDArray[DType[float]] :
         """ 
         Use an adaptive-moving-average filter to estimate average apparent 
@@ -1363,10 +1378,10 @@ class Processing (EM) :
             
         """
         if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
-            
+            self.fit(data)
+
+        self.inspect 
+
         # assert filter arguments 
         self.res2d_ , self.phs2d_ , self.freqs_, self.c, self.window_size, \
             self.component, self.out = self._make2dblobs ()
@@ -1415,7 +1430,7 @@ class Processing (EM) :
 
     def flma (
         self, 
-        data:str|List[EDIO]
+        data:str|List[EDIO]=None, 
         )-> NDArray[DType[float]] :
         """ Use a fixed-length-moving-average filter to estimate average apparent
         resistivities at a single static-correction-reference frequency. 
@@ -1443,9 +1458,9 @@ class Processing (EM) :
         
         """
         if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+            self.fit(data)
+
+        self.inspect 
     
         # assert filter arguments 
         self.res2d_ , self.phs2d_ , self.freqs_, self.c, self.window_size, \
@@ -1582,9 +1597,9 @@ class Processing (EM) :
            
         """
         if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+            self.fit(data)
+
+        self.inspect 
             
         self.method = method 
         if self.method not in ('swift', 'bahr'): 
@@ -1610,7 +1625,7 @@ class Processing (EM) :
 
     def zrestore(
         self,
-        data: str|List[EDIO],
+        data: str|List[EDIO]=None,
         *, 
         buffer: Tuple[float]=None, 
         method:str ='pd',
@@ -1729,9 +1744,9 @@ class Processing (EM) :
             return z [slice_] 
             
         if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+            self.fit(data)
+
+        self.inspect 
             
         self.method = method 
         
@@ -2027,9 +2042,9 @@ class Processing (EM) :
                               f" '0' and less than '1', got: {tol}")
             
         if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+            self.fit(data)
+
+        self.inspect 
         
         f=self.freqs_.copy() 
      
@@ -2123,9 +2138,9 @@ class Processing (EM) :
             return np.zeros ((len(f), len(objs)), dtype = np.float32)
         
         if data is not None: 
-            self.data_= data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+            self.fit(data)
+
+        self.inspect 
         # ediObjs = get_ediObjs(ediObjs) 
         _, no_ix = self.qc(self.ediObjs_ , tol= tol  ) 
         f = self.freqs_.copy() 
@@ -2135,7 +2150,6 @@ class Processing (EM) :
         new_f  = Processing.freqInterpolation (reshape (ff)) 
         
         # gather the 2D z objects
-        
         # -XX--
         try : 
             zxx = delete_useless_tensor(
@@ -2194,7 +2208,6 @@ class Processing (EM) :
             } 
         
         return (self.ediObjs_, new_f , z_dict ), kws
-
 
 
        

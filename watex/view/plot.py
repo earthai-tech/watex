@@ -14,6 +14,7 @@ from __future__ import annotations
 import re 
 import copy
 import warnings
+import itertools
 
 import numpy as np 
 import  matplotlib.pyplot  as plt
@@ -46,8 +47,10 @@ from .._typing import (
     DataFrame, 
     Series,
     F, 
+    EDIO
 )
-from ..utils.coreutils import _is_readable 
+from ..utils.coreutils import _is_readable
+from ..utils.exmath import moving_average 
 from ..utils.funcutils import ( 
     _assert_all_types , 
     _isin, 
@@ -55,8 +58,9 @@ from ..utils.funcutils import (
     smart_strobj_recognition, 
     smart_format,
     reshape, 
-    shrunkformat 
-    
+    shrunkformat, 
+    is_iterable, 
+    station_id, 
     )
 from ..utils.mlutils import (
     existfeatures,
@@ -64,7 +68,9 @@ from ..utils.mlutils import (
     selectfeatures , 
     exporttarget 
     )
-
+from ..utils.plotutils import make_mpl_properties
+from ..utils._dependency import ( 
+    import_optional_dependency )
 try: 
     import missingno as msno 
 except : pass 
@@ -77,6 +83,10 @@ try :
         ParallelCoordinates,
         )
 except: pass 
+
+try : 
+    from ..methods.em import Processing 
+except : pass 
 
   
 _logger=watexlog.get_watex_logger(__name__)
@@ -150,7 +160,454 @@ _param_docs = DocstringComponents.from_nested_components(
     qdoc= DocstringComponents(_qkp_params)
     )
 #++++++++++++++++++++++++++++++++++ end +++++++++++++++++++++++++++++++++++++++
+class TPlot (BasePlot): 
+    
+    def __init__ (
+            self, 
+            survey_area =None , 
+            window_size:int =5, 
+            component:str ='xy', 
+            mode: str ='same', 
+            method:str ='slinear', 
+            out:str  ='srho', 
+            c: str =2,
+            **kws
+            ): 
+        super().__init__(**kws)
+        
+        self.survey_area=survey_area 
+        self.window_size=window_size
+        self.component=component 
+        self.mode=mode
+        self.method=method
+        self.out=out
+        self.c=c 
+        
+    
+    def fit (self, data: Optional [str|List[EDIO]] ): 
+        """
+        """
+        
+        msg =(" Can't use the basic plots of module 'TPlot'. Missing"
+              " of the module 'pycsamt' built on top of EM method."
+              )
+        import_optional_dependency ('pycsamt', extra= msg )
+        
+        p = Processing(
+            window_size = self.window_size ,  
+            component= self.component, 
+            mode= self.mode, 
+            method= self.method, 
+            out=self.out, 
+            c=self.c 
+            ) 
+        p.fit(data)
+        
+        setattr (self, "p_", p )
 
+        return self
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'p_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
+    
+    def __repr__(self): 
+        """ Represent the output class format """
+        outm =("<{0!r}:survey_area={1!r}, window_size={2!r}, component={3!r},"
+              " mode={4!r}, method={5!r}, out={6!r}, c={7!r}>"
+              )
+        return  outm.format(
+            self.__class__.__name__, self.survey_area, self.window_size ,  
+             self.component, self.mode, self.method, self.out, self.c  
+            )
+    def plot_recovery(
+            self,  
+            sites:str |List[str | int], 
+            colors: List[str] = None, 
+            **kws
+            ): 
+        
+        """ 
+        Plot sites station with signal recovery. 
+        
+        Parameters 
+        -----------
+        sites: list 
+            list of sites to visualize. Can also be the index of the sites 
+        colors: list of str
+            matplotlib colors to customize the raw signal and recovery signal
+     
+        Returns 
+        ----------
+        ax: Matplotlib suplot axes 
+        
+        Examples
+        --------
+        >>> from watex.wiew import TPlot 
+        >>> from watex.datasets import load_edis 
+        >>> 
+        """
+        _c= {
+              'xx': [slice (None, len(self.p_.freqs_)), 0 , 0] , 
+              'xy': [slice (None, len(self.p_.freqs_)), 0 , 1], 
+              'yx': [slice (None, len(self.p_.freqs_)), 1 , 0], 
+              'yy': [slice (None, len(self.p_.freqs_)), 1,  1] 
+        }
+        self.inspect 
+        
+        if isinstance (sites, str): 
+            sites =[sites ] 
+        if not is_iterable(sites): 
+            sites =[sites] 
+       
+        site_index = station_id(sites) 
+        for i, s in enumerate (site_index): 
+            if s > len(self.p_.ediObjs_): 
+                raise PlotError(f"Site {sites[i]} is out of the number of"
+                                f" the expected sites ={len(self.ediObjs_)}"
+                                )
+        # read the component XY 
+        res2d_r = self.p_.make2d (self.p_.ediObjs_, f'res{self.component}') 
+        z_xy_rest = self.p_.zrestore() # no buffered data 
+        # extracted the station at index 12, 27 for instance.
+        zs = [ z_xy_rest[s].resistivity[
+            tuple (_c.get(self.component))] for s in site_index ]
+
+        ma = [ moving_average ( res2d_r[:,  s_ix  ]) for s_ix in site_index ]
+
+        f= self.p_.getfullfrequency()
+        #>>> # ---> make a plot and color 
+        # colors = make_mpl_properties(2*len(ma))
+        if colors is None: 
+            colors =[]
+        if isinstance (colors, str): 
+            colors =[colors]
+        colors +=  make_mpl_properties(2*len(ma))
+        
+        fs = [f for i in range(len(ma))] # repeat frequency 
+        z_norm_args = list( zip (fs, zs, colors[: len(ma)] )) 
+        args  = list(itertools.chain(*z_norm_args))
+        # >>> #  make a fitting args 
+        colors = ['c-.'] + colors[len(ma):]
+        z_cor_objs = list( zip (fs, ma, ['c-.'] + colors[len(ma):] )) 
+        fit_args = list(itertools.chain(*z_cor_objs))
+        
+        return self._plot_recovery (
+            *args,fit_args= fit_args, **kws )
+        
+    
+    def _plot_recovery (self,*args,  fit_args = None, leg= None,  **kws ): 
+        """" Template to plot two station with signal recovery 
+        
+        Parameters 
+        -----------
+        *args : args : list 
+            Matplotlib logs funtions plot arguments 
+            
+        fit_args : list or tuple 
+            Matplotlib logs funtions plot arguments put on list. It used to 
+            visualize the fitting curve after apply anay correction to the data.
+            
+            X-coordinates. It should have the length M, the same of the ``arr2d``; 
+            the columns of the 2D dimensional array.  Note that if `x` is 
+            given, the `distance is not needed. 
+            
+        leg: list 
+            legend labels put into a list. It must fit the number of given 
+            plots. 
+             
+        kws : dict 
+            Additional keywords arguments of Matplotlib subsplots function  
+            :func:`plt.loglog` or :func:`plt.semilog`
+        
+        Returns 
+        ------- 
+        ax: Matplotlib.pyplot <AxesSubplot>  
+        
+        Examples
+        --------
+        >>> from pycsamt.view import Plot1d 
+        >>> from pycsamt.core import get_ediObjs 
+        >>> from pycsamt.processing import (restoreZ, moving_average , 
+                                            get_full_frequency, make2d )
+        >>> rawpath  = r'F:\\repositories\\edis' 
+        >>> ediobj_r = get_ediObjs (rawpath)
+        >>> res2d_r = make2d (ediobj_r, 'resxy') # read the component XY 
+        >>> z_xy_rest = restoreZ(ediobj_r) # no buffered data 
+        >>> # extracted the station at index 12, 27 for instance. 
+        >>> z12 = zobjs[12].resistivity[:, 0, 1]
+        >>> z27 = zobjs[27].resistivity[:, 0, 1]
+        >>> # generate a fiting curve with moving average 
+        >>> ma12 = moving_average (res2d_r[:, 12])
+        >>> ma27 = moving_average (res2d_r[:, 27])
+        >>> # get the complete frequency for the survey 
+        >>> f= get_full_frequency(ediobj_r)
+        >>> # ---> make a plot and color 
+        >>> #  make a fitting args 
+        >>> fitargs = [f, ma12, 'c-.', f,ma27, 'c-.']
+        >>> # make a legend 
+        >>> leg = ['restored data' , 'raw data ', 'recovery trend ']
+        >>> p1d=Plot1d (fig_size =(5, 3))
+        >>> p1d.plotrecovery(f, z12,  'ob--', f, res2d_r[:, 12], 'ok', 
+                             f, z27,  'ob--', f, res2d_r[:, 27], 'ok',
+                             fit_args = fitargs, leg =leg)
+        ... 
+        
+        """
+        fig, ax = plt.subplots(1,figsize = self.fig_size, num = self.fig_num,
+                                dpi = self.fig_dpi , 
+                    )
+        p1,*_ = ax.loglog(*args,  
+                  markersize = self.ms ,
+                  linewidth = self.lw ,
+                  **kws 
+                  )
+            
+        if fit_args  is not None: 
+            fit_args  = _assert_all_types(fit_args , list, tuple)  
+            p2,*_ = ax.loglog(*fit_args,
+                      markersize = self.ms ,
+                      linewidth = self.lw 
+                      )
+
+
+        ax.set_xlabel (self.xlabel or '$Frequency [H_z]$',
+                    fontsize =1.5 * self.font_size ) 
+        ax.set_ylabel(self.ylabel or '$ App.resistivity \quad xy \quad [ \Omega.m]$',
+                   fontsize =1.5*self.font_size)
+        
+        ax.legend (handles = [p1, p1,  p2] ,
+                   labels= ['restored data' , 'raw data ', 'recovery trend '] 
+                   if leg is  None else leg,
+                   loc ='best', 
+                   ncol =len(args)//3 if fit_args  is None else (
+                        len(args)+len(fit_args ))//3  ,
+                    fontsize =self.font_size
+                    )
+        plt.title (self.fig_title or  'Recovered tensor $|Z_{xy}|$',
+                   fontsize =1.5*self.font_size)
+        
+        if self.show_grid :
+            ax.grid (visible =True , alpha =self.galpha,
+                     which =self.gwhich, color =self.gc)
+            
+        if self.savefig is not None: 
+             plt.savefig(self.savefig , dpi = self.fig_dpi)
+             plt.close (fig =fig ) 
+
+        return ax
+    
+    def plottemp2d (self,  y=None,  x =None, style =None, 
+                distance = 50., stnlist =None, prefix ='S', how= 'py',
+                **kws): 
+        """ 2D templates for quick visualization. 
+        
+        Parameters 
+        -----------
+        arr2d : ndarray , shape (N, M) 
+            2D array for plotting. For instance, it can be a 2D resistivity 
+            collected at all stations (N) and all frequency (M) 
+        y: array-like 
+            Y-coordinates. It should have the length N, the same of the ``arr2d``.
+            the rows of the ``arr2d``.
+        x: array-like 
+            X-coordinates. It should have the length M, the same of the ``arr2d``; 
+            the columns of the 2D dimensional array.  Note that if `x` is 
+            given, the `distance is not needed. 
+            
+        style: str 
+            matplotlib plot style.  It could be ``imshow`` or ``pcolormesh``. The 
+            default is ``pcolormesh``. 
+            
+        distance: float 
+            The step between two stations. If given, it creates an array of  
+            position for plotting purpose. Default value is ``50`` meters. 
+            
+        stnlist: list of str 
+            List of stations names. If given,  it should have the same length of 
+            the columns M, of `arr2d`` 
+       
+        prefix: str 
+            string value to add as prefix of given id. Prefix can be the site 
+            name. Default is ``S``. 
+            
+        how: str 
+            Mode to index the station. Default is 'Python indexing' i.e. 
+            the counting of stations would starts by 0. Any other mode will 
+            start the counting by 1.
+            
+        kws : dict 
+            Additional keywords arguments of Matplotlib subsplots function  
+            :func:`plt.subplots`
+            
+        Returns 
+        -------
+        axe: <AxesSubplot> object 
+        
+        Examples 
+        -------- 
+        >>> import numpy as np
+        >>> from pycsamt.processing import make2d ,interpolate2d 
+        >>> from pycsamt.core import get_ediObjs 
+        >>> from pycsamt.processing import get_full_frequency 
+        >>> from pycsamt.view import Plot2d 
+        >>> # create a 2d grid of resistivity data from edipath 
+        >>> edipath = 'data/3edis'
+        >>> ediObjs = get_ediObjs (edipath)
+        >>> res2d_xy = make2d (ediObjs, 'resxy')
+        >>> # interpolate to fix the missing data 
+        >>> # get the full frequency of survey area in the whole collection data 
+        >>> freqs = get_full_frequency(ediObjs) # plot station vs frequency 
+        >>> res2d_xy = interpolate2d (res2d_xy )
+        >>> # create a 2D plot objects 
+        >>> p2d = Plot2d(figsize =(6, 3), xlabel= '$Distance(m)$',
+                       ylabel = '$Log_{10}Frequency [Hz]$', 
+                       clabel = '$Log_{10}Rhoa[\Omega.m$')
+        >>> # we want to plotlog10 and log10 resistivity 
+        >>> res2d_xy = np.log10(res2d_xy); freqs = np.log10(freqs)
+        >>> p2d.plottemp2d (res2d_xy, y = freqs, distance = 50 ) # distance =50 m
+        
+        """
+        fig, axe = plt.subplots(1, figsize = self.fig_size, num = self.fig_num,
+                                dpi = self.fig_dpi , **kws 
+                    )
+         
+        from .utils.funcutils import make_ids
+        style = style or self.plot_style  
+        sc = copy.deepcopy(style)
+        style = str (style).lower().strip() 
+        if style not in ('pcolormesh', 'imshow'): 
+            raise ValueError("Plot can be either 'pcolormesh' or "
+                             f"'imshow' not {sc!r} ")
+        
+        try : 
+            distance = float(distance) 
+        except : 
+            raise TypeError (f'Expect a float value not {type(distance).__name__!r}')
+            
+        if y is not None: 
+            if len(y) != arr2d.shape [0]: 
+                raise ValueError (" 'y' array must have an identical number " 
+                                  f" of row of 2D array: {arr2d.shape[0]}")
+                
+        if x is not None: 
+            if len(x) != arr2d.shape[1]: 
+                raise ValueError (" 'x' array must have the same number " 
+                                  f" of columns of 2D array: {arr2d.shape[1]}")
+    
+        d= distance or 1. 
+        y = np.arange(arr2d.shape [0]) if y is None else y 
+        x= x  or np.arange(arr2d.shape[1])  * d 
+        if stnlist is not None: 
+            if hasattr(stnlist, "__len__"): 
+                raise TypeError("Stations list must be an iterable object." 
+                                f" got {type(stnlist).__name__!r}"
+                                )
+            if len(stnlist)!= len(x):
+                raise ValueError("Expect  the length of the list of station names"
+                                 f" to be the same like to position {len(x)}")
+                
+        stn = stnlist or make_ids ( x , prefix , how = how) 
+        
+        cmap = plt.get_cmap( self.cmap)
+        
+        if style =='pcolormesh': 
+            
+            X, Y = np.meshgrid (x, y)
+            axr = axe.pcolormesh ( X, Y, arr2d,
+                            # for consistency check whether array does not 
+                            # contain any NaN values 
+                            vmax = arr2d[ ~np.isnan(arr2d)].max(), 
+                            vmin = arr2d[ ~np.isnan(arr2d)].min(), 
+                            shading= 'gouraud', 
+                            cmap =cmap, 
+                                  )
+    
+        if style =='imshow': 
+    
+            axr= axe.imshow (arr2d,
+                            interpolation = self.imshow_interp, 
+                            cmap =cmap,
+                            aspect = self.fig_aspect ,
+                            origin= 'upper', 
+                            extent=( x[~np.isnan(x)].min(),
+                                      x[~np.isnan(x)].max(), 
+                                      y[~np.isnan(y)].min(), 
+                                      y[~np.isnan(y)].max())
+                                              )
+            axe.set_ylim(y[~np.isnan(y)].min(), y[~np.isnan(y)].max())
+        
+    
+        axe.set_xlabel(self.xlabel or 'Distance(m)', 
+                     fontdict ={
+       
+                      'size': 1.5* self.font_size ,
+                      'weight': self.fw}
+                                            )
+      
+        axe.set_ylabel(self.ylabel or 'log10(Frequency)[Hz]',
+                 fontdict ={
+                         #'style': self.font_style, 
+                                  'size': 1.5* self.font_size ,
+                                  'weight': self.fw})
+        if self.show_grid is True : 
+            axe.minorticks_on()
+            axe.grid(color='k', ls=':', lw =0.25, alpha=0.7, 
+                         which ='major')
+     
+        labex , cf = self.clabel or '$log10(App.Res)[Ω.m]$', axr
+    
+        cb = fig.colorbar(cf , ax= axe)
+        cb.ax.yaxis.tick_left()
+        cb.ax.tick_params(axis='y', direction='in', pad=2.)
+        
+        cb.set_label(labex,fontdict={'size': 1.5* self.font_size ,
+                                  'style':self.font_style})
+        #--> set second axis 
+        axe2 = axe.twiny() 
+        axe2.set_xticks(ticks= x,
+                    minor=False )
+        axe2.set_xticklabels(stn, 
+                         rotation=self.station_label_rotation)
+     
+        axe2.set_xlabel('Stations', 
+                        fontdict ={'style': self.font_style, 
+                                   'size': 1.5* self.font_size ,
+                                   'weight': self.fw}, )
+      
+    
+        fig.suptitle(self.fig_title,
+                     ha='left',
+                     fontsize= 15* self.fs, 
+                     verticalalignment='center', 
+                    style =self.font_style,
+                    bbox =dict(boxstyle='round',
+                               facecolor ='moccasin'))
+       
+        #plt.tight_layout(h_pad =1.8, w_pad =2*1.08)
+    
+        plt.tight_layout()  
+        
+        if self.savefig is not None :
+            fig.savefig(self.savefig, dpi = self.fig_dpi,
+                        orientation =self.orient)
+            #plt.close(fig =fig ) 
+        plt.show() if self.savefig is None else plt.close(fig=fig) 
+        
+        
+        return axe 
+    
+    
 class ExPlot (BasePlot): 
     
     msg = ( "{expobj.__class__.__name__} instance is not fitted yet."
