@@ -15,7 +15,6 @@ import re
 import copy
 import warnings
 import itertools
-
 import numpy as np 
 import  matplotlib.pyplot  as plt
 import matplotlib.ticker as mticker
@@ -31,6 +30,7 @@ from .._docstring import (
     _baseplot_params
     )
 from .._watexlog import watexlog  
+from ..decorators import temp2d 
 from ..cases.features import FeatureInspection
 from ..exceptions import ( 
     PlotError, 
@@ -49,8 +49,11 @@ from .._typing import (
     F, 
     EDIO
 )
+from ..utils._dependency import ( 
+    import_optional_dependency )
 from ..utils.coreutils import _is_readable
-from ..utils.exmath import moving_average 
+from ..utils.exmath import ( 
+    moving_average , fittensor)
 from ..utils.funcutils import ( 
     _assert_all_types , 
     _isin, 
@@ -61,6 +64,7 @@ from ..utils.funcutils import (
     shrunkformat, 
     is_iterable, 
     station_id, 
+    make_ids
     )
 from ..utils.mlutils import (
     existfeatures,
@@ -69,8 +73,6 @@ from ..utils.mlutils import (
     exporttarget 
     )
 from ..utils.plotutils import make_mpl_properties
-from ..utils._dependency import ( 
-    import_optional_dependency )
 try: 
     import missingno as msno 
 except : pass 
@@ -160,35 +162,66 @@ _param_docs = DocstringComponents.from_nested_components(
     qdoc= DocstringComponents(_qkp_params)
     )
 #++++++++++++++++++++++++++++++++++ end +++++++++++++++++++++++++++++++++++++++
+
 class TPlot (BasePlot): 
+
+    _t= (
+        "survey_area",
+        "distance",
+        "prefix",
+        "window_size",
+        "component",
+        "mode",
+        "method",
+        "out",
+        "how",
+        "c" 
+        )
     
     def __init__ (
-            self, 
-            survey_area =None , 
-            window_size:int =5, 
-            component:str ='xy', 
-            mode: str ='same', 
-            method:str ='slinear', 
-            out:str  ='srho', 
-            c: str =2,
-            **kws
-            ): 
+        self, 
+        survey_area =None , 
+        distance = 50., 
+        prefix ='S', 
+        how= 'py',
+        window_size:int =5, 
+        component:str ='xy', 
+        mode: str ='same', 
+        method:str ='slinear', 
+        out:str  ='srho', 
+        c: str =2,
+        **kws
+        ): 
         super().__init__(**kws)
         
         self.survey_area=survey_area 
+        self.distance=distance 
+        self.prefix=prefix
         self.window_size=window_size
         self.component=component 
         self.mode=mode
         self.method=method
         self.out=out
+        self.how=how
         self.c=c 
         
-    
-    def fit (self, data: Optional [str|List[EDIO]] ): 
+    def fit (self, data: Optional [str|List[EDIO]]): 
         """
+        Fit data and populate attributes. 
+        
+        Parameters 
+        ----------- 
+        data : str, or list or :class:`pycsamt.core.edi.Edi` object 
+            Full path to EDI files or collection of EDI-objects 
+   
+        Returns
+        -------- 
+        ``self``: :class:`watex.view.plot.TPlot` instanciated object
+            returns ``self`` for chaining methods.
+        
         """
         
-        msg =(" Can't use the basic plots of module 'TPlot'. Missing"
+        msg =("Can't use the basic plots of module 'TPlot'. Missing"
               " of the module 'pycsamt' built on top of EM method."
               )
         import_optional_dependency ('pycsamt', extra= msg )
@@ -222,14 +255,12 @@ class TPlot (BasePlot):
         return 1 
     
     def __repr__(self): 
-        """ Represent the output class format """
-        outm =("<{0!r}:survey_area={1!r}, window_size={2!r}, component={3!r},"
-              " mode={4!r}, method={5!r}, out={6!r}, c={7!r}>"
-              )
-        return  outm.format(
-            self.__class__.__name__, self.survey_area, self.window_size ,  
-             self.component, self.mode, self.method, self.out, self.c  
-            )
+        """ Represents the output class format """
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={getattr(self, k)!r}" for k in self._t]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+    
     def plot_recovery(
             self,  
             sites:str |List[str | int], 
@@ -253,9 +284,15 @@ class TPlot (BasePlot):
         
         Examples
         --------
-        >>> from watex.wiew import TPlot 
+        >>> from watex.view.plot import TPlot 
         >>> from watex.datasets import load_edis 
-        >>> 
+        >>> # takes the 03 samples of EDIs 
+        >>> edi_data = load_edis (return_data= True, samples =3 ) 
+        >>> TPlot(fig_size =(5, 3)).fit(edi_data).plot_recovery (
+            sites =['S00'], colors =['o', 'ok--'])
+        <AxesSubplot:title={'center':'Recovered tensor $|Z_{xy}|$'}, 
+        xlabel='$Frequency [H_z]$', ylabel='$ App.resistivity \\quad xy \\quad [ \\Omega.m]$'>
+        
         """
         _c= {
               'xx': [slice (None, len(self.p_.freqs_)), 0 , 0] , 
@@ -273,11 +310,11 @@ class TPlot (BasePlot):
         site_index = station_id(sites) 
         for i, s in enumerate (site_index): 
             if s > len(self.p_.ediObjs_): 
-                raise PlotError(f"Site {sites[i]} is out of the number of"
-                                f" the expected sites ={len(self.ediObjs_)}"
+                raise PlotError(f"Site {sites[i]!r} is out of the expected"
+                                f" sites number: {len(self.p_.ediObjs_)}"
                                 )
         # read the component XY 
-        res2d_r = self.p_.make2d (self.p_.ediObjs_, f'res{self.component}') 
+        res2d_r = self.p_.make2d (out=f'res{self.component}') 
         z_xy_rest = self.p_.zrestore() # no buffered data 
         # extracted the station at index 12, 27 for instance.
         zs = [ z_xy_rest[s].resistivity[
@@ -304,8 +341,7 @@ class TPlot (BasePlot):
         
         return self._plot_recovery (
             *args,fit_args= fit_args, **kws )
-        
-    
+
     def _plot_recovery (self,*args,  fit_args = None, leg= None,  **kws ): 
         """" Template to plot two station with signal recovery 
         
@@ -345,8 +381,8 @@ class TPlot (BasePlot):
         >>> res2d_r = make2d (ediobj_r, 'resxy') # read the component XY 
         >>> z_xy_rest = restoreZ(ediobj_r) # no buffered data 
         >>> # extracted the station at index 12, 27 for instance. 
-        >>> z12 = zobjs[12].resistivity[:, 0, 1]
-        >>> z27 = zobjs[27].resistivity[:, 0, 1]
+        >>> z12 = z_xy_rest[12].resistivity[:, 0, 1]
+        >>> z27 = z_xy_rest[27].resistivity[:, 0, 1]
         >>> # generate a fiting curve with moving average 
         >>> ma12 = moving_average (res2d_r[:, 12])
         >>> ma27 = moving_average (res2d_r[:, 27])
@@ -364,9 +400,11 @@ class TPlot (BasePlot):
         ... 
         
         """
-        fig, ax = plt.subplots(1,figsize = self.fig_size, num = self.fig_num,
-                                dpi = self.fig_dpi , 
-                    )
+        fig, ax = plt.subplots(
+            1,figsize = self.fig_size, 
+            num = self.fig_num,
+            dpi = self.fig_dpi, 
+             )
         p1,*_ = ax.loglog(*args,  
                   markersize = self.ms ,
                   linewidth = self.lw ,
@@ -407,207 +445,295 @@ class TPlot (BasePlot):
 
         return ax
     
-    def plottemp2d (self,  y=None,  x =None, style =None, 
-                distance = 50., stnlist =None, prefix ='S', how= 'py',
-                **kws): 
-        """ 2D templates for quick visualization. 
+    @temp2d("Base template for 2D recovery tensors plot.")
+    def plot_tensor2d (
+        self,    
+        tensor='res', 
+        sites =None, 
+        to_log10=False, 
+        ): 
+        """ Plot two dimensional array. 
         
         Parameters 
         -----------
-        arr2d : ndarray , shape (N, M) 
-            2D array for plotting. For instance, it can be a 2D resistivity 
-            collected at all stations (N) and all frequency (M) 
-        y: array-like 
-            Y-coordinates. It should have the length N, the same of the ``arr2d``.
-            the rows of the ``arr2d``.
-        x: array-like 
-            X-coordinates. It should have the length M, the same of the ``arr2d``; 
-            the columns of the 2D dimensional array.  Note that if `x` is 
-            given, the `distance is not needed. 
+        freqs: array-like 
+            y-coordinates. It should have the length N, the same of the ``arr2d``.
+            the rows of the ``arr2d``.Frequency array. It should be the 
+            complete frequency used during the survey area. 
+
+        tensor: str , ['res','phase', 'z'], default='res'
+            kind of tensor to plot. Can be resistivity or phase. If `phase`, 
+            customize your plot to not fit the default 'res' behaviour. 
+        to_log10: bool, defaut=False, 
+            Convert the resistivity data and frequeny in log10.  
             
-        style: str 
-            matplotlib plot style.  It could be ``imshow`` or ``pcolormesh``. The 
-            default is ``pcolormesh``. 
+        sites: list of str, optional 
+            List of stations/sites names. If given, it must have the same 
+            length of the positions in of the EDI data. Must fit the number 
+            of 'EDI' succesffully read. 
+
+        Returns 
+        -------
+        ( arr2d , freqs, positions , sites , base_plot_kws): 
+            - arr2d: 2D resistivity array from the tensor `component` 
+            - freqs: array-like 1d of frequency in the survey.
+            - positions: Sites/stations positions. It is equals to the distance
+                between stations times the number of sites 
+            - sites: list of the names of the station/sites 
+            - base_plot_kws: plot keywords arguments inherits from 
+                :class:`watex.property.BasePlot`. It composes the last 
+                parameters for customizing plot as decorated return function. 
+    
+        Examples 
+        -------- 
+        >>> from watex.view.plot import TPlot 
+        >>> from watex.datasets import load_edis 
+        >>> # get some 3 samples of EDI for demo 
+        >>> edi_data = load_edis (return_data =True, samples =3 )
+        >>> # customize plot by adding plot_kws 
+        >>> plot_kws = dict( ylabel = '$Log_{10}Frequency [Hz]$', 
+                            xlabel = '$Distance(m)$', 
+                            cb_label = '$Log_{10}Rhoa[\Omega.m$]', 
+                            fig_size =(6, 3), 
+                            font_size =7. 
+                            ) 
+        >>> t= TPlot(**plot_kws ).fit(edi_data)
+        >>> # plot recovery2d using the log10 resistivity 
+        >>> t.plot_tensor2d (to_log10=True)
+        <AxesSubplot:xlabel='$Distance(m)$', ylabel='$Log_{10}Frequency [Hz]$'>
+ 
+        """
+        
+        self.inspect 
+        
+        assert  str(tensor).lower() in {"res", 'phase'}, (
+            "Expect either a resistivity 'res' or 'phase'. Got {tensor!r}")
+        tensor =str(tensor).lower() 
+        
+        arr2d = self.p_.make2d (out = f'{tensor}{self.component}') 
+
+        return self._make_tensor_utils (arr2d, sites , to_log10)  
+    
+    @temp2d("Base template for 2D filtered tensors plot.")
+    def plot_ctensor2d  (
+            self, 
+            tensor ='res' , 
+            ffilter ='tma', 
+            sites = None, 
+            to_log10=False
+            ): 
+        """ Plot filtered tensors 
+        
+        Parameters 
+        -----------
+        tensor: str , ['res','phase', 'z'], default='res'
+            kind of tensor to plot. Can be resistivity or phase. If `phase`, 
+            customize your plot to not fit the default 'res' behaviour.
             
-        distance: float 
-            The step between two stations. If given, it creates an array of  
-            position for plotting purpose. Default value is ``50`` meters. 
+        ffilter: str ['ama', 'flma', 'tma'], default='tma'
+            kind of appropriate filter to corrected tensor data. 
             
-        stnlist: list of str 
-            List of stations names. If given,  it should have the same length of 
-            the columns M, of `arr2d`` 
-       
-        prefix: str 
-            string value to add as prefix of given id. Prefix can be the site 
-            name. Default is ``S``. 
+        to_log10: bool, defaut=False, 
+            Convert the resistivity data and frequeny in log10.  
             
-        how: str 
-            Mode to index the station. Default is 'Python indexing' i.e. 
-            the counting of stations would starts by 0. Any other mode will 
-            start the counting by 1.
-            
-        kws : dict 
-            Additional keywords arguments of Matplotlib subsplots function  
-            :func:`plt.subplots`
+        sites: list of str, optional 
+            List of stations/sites names. If given, it must have the same 
+            length of the positions in of the EDI data. Must fit the number 
+            of 'EDI' succesffully read. 
             
         Returns 
         -------
-        axe: <AxesSubplot> object 
-        
+        ( arr2d , freqs, positions , sites , base_plot_kws): 
+            - arr2d: 2D filtered tensor array from the `component` 
+            - freqs: array-like 1d of frequency in the survey.
+            - positions: Sites/stations positions. It is equals to the distance
+                between stations times the number of sites 
+            - sites: list of the names of the station/sites 
+            - base_plot_kws: plot keywords arguments inherits from 
+                :class:`watex.property.BasePlot`. It composes the last 
+                parameters for customizing plot as decorated return function.
+                
         Examples 
         -------- 
-        >>> import numpy as np
-        >>> from pycsamt.processing import make2d ,interpolate2d 
-        >>> from pycsamt.core import get_ediObjs 
-        >>> from pycsamt.processing import get_full_frequency 
-        >>> from pycsamt.view import Plot2d 
-        >>> # create a 2d grid of resistivity data from edipath 
-        >>> edipath = 'data/3edis'
-        >>> ediObjs = get_ediObjs (edipath)
-        >>> res2d_xy = make2d (ediObjs, 'resxy')
-        >>> # interpolate to fix the missing data 
-        >>> # get the full frequency of survey area in the whole collection data 
-        >>> freqs = get_full_frequency(ediObjs) # plot station vs frequency 
-        >>> res2d_xy = interpolate2d (res2d_xy )
-        >>> # create a 2D plot objects 
-        >>> p2d = Plot2d(figsize =(6, 3), xlabel= '$Distance(m)$',
-                       ylabel = '$Log_{10}Frequency [Hz]$', 
-                       clabel = '$Log_{10}Rhoa[\Omega.m$')
-        >>> # we want to plotlog10 and log10 resistivity 
-        >>> res2d_xy = np.log10(res2d_xy); freqs = np.log10(freqs)
-        >>> p2d.plottemp2d (res2d_xy, y = freqs, distance = 50 ) # distance =50 m
+        >>> from watex.view.plot import TPlot 
+        >>> from watex.datasets import load_edis 
+        >>> # get some 3 samples of EDI for demo 
+        >>> edi_data = load_edis (return_data =True, samples =3 )
+        >>> # customize plot by adding plot_kws 
+        >>> plot_kws = dict( ylabel = '$Log_{10}Frequency [Hz]$', 
+                            xlabel = '$Distance(m)$', 
+                            cb_label = '$Log_{10}Rhoa[\Omega.m$]', 
+                            fig_size =(6, 3), 
+                            font_size =7. 
+                            ) 
+        >>> t= TPlot(**plot_kws ).fit(edi_data)
+        >>> # plot filtered tensor using the log10 resistivity 
+        >>> t.plot_ctensor2d (to_log10=True)
+        <AxesSubplot:xlabel='$Distance(m)$', ylabel='$Log_{10}Frequency [Hz]$'>
+  
+        """
+        self.inspect 
+        fd = {"tma": self.p_.tma , "flma":self.p_.flma, "ama":self.p_.ama }
+
+        assert str(ffilter).lower() in fd.keys(), (
+            "Supports only base filters {tuple (fd.keys())}. Got {ffilter!r}"
+            " To apply a simple filter like 'moving average' to a tensor, refer"
+            " to <watex.utils.exmath.moving_average>. For other filters like"
+            " 'Savitzky Golay1d/2d', 'remove distorsion' or 'remove outliers'"
+            " and else, use the package 'pycsamt' instead. "
+            ) 
+        ffilter= str (ffilter).lower().strip()         
+        arr2d = fd.get(ffilter)()
+        
+        return self._make_tensor_utils (arr2d, sites, to_log10 ) 
+    
+    
+    def _make_tensor_utils (self, arr2d, sites, to_log10= False ): 
+        """ Make utilities for plotting tensors   
+        
+        Parameters 
+        ------------
+        arr2d: arraylike of shape (n_freq, n_sites): 
+            Array of the tensor composed of number of frequency and number 
+            of sites that fit the number of EDI correctly read.
+        
+        sites: list of str, optional 
+            List of stations/sites names. If given, it must have the same 
+            length of the positions in of the EDI data. Must fit the number 
+            of 'EDI' succesffully read. 
+        to_log10: bool, defaut=False, 
+            Convert the resistivity data and frequeny in log10.
+            
+        Returns 
+        -------
+        ( arr2d , freqs, positions , sites , base_plot_kws): 
+            - arr2d: 2D filtered tensor array from the `component` 
+            - freqs: array-like 1d of frequency in the survey.
+            - positions: Sites/stations positions. It is equals to the distance
+                between stations times the number of sites 
+            - sites: list of the names of the station/sites 
+            - base_plot_kws: plot keywords arguments inherits from 
+                :class:`watex.property.BasePlot`. It composes the last 
+                parameters for customizing plot as decorated return function.
+                
+        """
+        try : 
+            distance = float(self.distance) 
+        except : 
+            raise TypeError (
+                f'Expect a float value not {type(self.distance).__name__!r}')
+
+        freqs = self.p_.freqs_ 
+
+        positions = np.arange(arr2d.shape[1])  * distance
+            
+        sites = sites or make_ids (
+            positions , self.prefix , how = self.how)  
+        
+        if isinstance(sites, str): 
+            sites =[sites] 
+        if not is_iterable(sites): 
+            raise TypeError("Sites collection must be an iterable" 
+                            f" object. Got {type(sites).__name__!r}"
+                    )
+        if len(sites)!= len(positions): 
+            raise TypeError (f"Sites={len(sites)} length must be consistent."
+                             "  Expects positions={len(positions)}.")
+        if to_log10: 
+            arr2d = np.log10 (arr2d) ; freqs = np.log10 (freqs)
+            
+        base_plot_kws = {
+            k: v for k, v in self.__dict__.items () 
+            if k not in list(self._t ) +['p_']
+            }  
+        
+        return arr2d, freqs, positions ,sites , base_plot_kws  
+
+    def plot_site_recovery(self, site = 'S00'): 
+        """ visualize the restored tensor per site.
+        
+        Parameters 
+        ------------
+        site: str, int, default ="S00"
+            Site/station name for 
+        
+        Returns
+        -------- 
+        ``self``: :class:`watex.view.plot.TPlot` instanciated object
+            returns ``self`` for chaining methods.
+            
+        Examples 
+        --------
+        >>> plot_kws = dict( ylabel = '$Log_{10}Frequency [Hz]$', 
+                    xlabel = '$Distance(m)$', 
+                    cb_label = '$Log_{10}Rhoa[\Omega.m$]', 
+                    fig_size =(6, 3), 
+                    font_size =7. 
+                    ) 
+        >>> t= TPlot(**plot_kws ).fit(edi_data)
+        >>> # plot recovery of site 'S01'
+        >>> t.plot_site_recovery ('S01')  
+        ... <'TPlot':survey_area=None, distance=50.0, prefix='S',
+        window_size=5, component='xy', mode='same', method='slinear', 
+        out='srho', how='py', c=2> 
         
         """
-        fig, axe = plt.subplots(1, figsize = self.fig_size, num = self.fig_num,
-                                dpi = self.fig_dpi , **kws 
-                    )
-         
-        from .utils.funcutils import make_ids
-        style = style or self.plot_style  
-        sc = copy.deepcopy(style)
-        style = str (style).lower().strip() 
-        if style not in ('pcolormesh', 'imshow'): 
-            raise ValueError("Plot can be either 'pcolormesh' or "
-                             f"'imshow' not {sc!r} ")
         
-        try : 
-            distance = float(distance) 
-        except : 
-            raise TypeError (f'Expect a float value not {type(distance).__name__!r}')
-            
-        if y is not None: 
-            if len(y) != arr2d.shape [0]: 
-                raise ValueError (" 'y' array must have an identical number " 
-                                  f" of row of 2D array: {arr2d.shape[0]}")
-                
-        if x is not None: 
-            if len(x) != arr2d.shape[1]: 
-                raise ValueError (" 'x' array must have the same number " 
-                                  f" of columns of 2D array: {arr2d.shape[1]}")
-    
-        d= distance or 1. 
-        y = np.arange(arr2d.shape [0]) if y is None else y 
-        x= x  or np.arange(arr2d.shape[1])  * d 
-        if stnlist is not None: 
-            if hasattr(stnlist, "__len__"): 
-                raise TypeError("Stations list must be an iterable object." 
-                                f" got {type(stnlist).__name__!r}"
-                                )
-            if len(stnlist)!= len(x):
-                raise ValueError("Expect  the length of the list of station names"
-                                 f" to be the same like to position {len(x)}")
-                
-        stn = stnlist or make_ids ( x , prefix , how = how) 
+        _c= {
+              'xx': [slice (None, len(self.p_.freqs_)), 0 , 0] , 
+              'xy': [slice (None, len(self.p_.freqs_)), 0 , 1], 
+              'yx': [slice (None, len(self.p_.freqs_)), 1 , 0], 
+              'yy': [slice (None, len(self.p_.freqs_)), 1,  1] 
+        }
+        self.inspect 
+        if isinstance(site, str): 
+            site =[site]
+        site_index = station_id(site) 
         
-        cmap = plt.get_cmap( self.cmap)
+        site_index = site_index [0] if isinstance (
+            site_index, tuple ) else site_index 
+ 
+        if site_index  > len(self.p_.ediObjs_): 
+            raise PlotError(f"Site {site!r} is out of the expected"
+                            f" sites number: {len(self.p_.ediObjs_)}"
+                            )
+    
+        ediObjs = self.p_.ediObjs_ 
         
-        if style =='pcolormesh': 
-            
-            X, Y = np.meshgrid (x, y)
-            axr = axe.pcolormesh ( X, Y, arr2d,
-                            # for consistency check whether array does not 
-                            # contain any NaN values 
-                            vmax = arr2d[ ~np.isnan(arr2d)].max(), 
-                            vmin = arr2d[ ~np.isnan(arr2d)].min(), 
-                            shading= 'gouraud', 
-                            cmap =cmap, 
-                                  )
+        # >>> zobjs_b = restoreZ(ediObjs, buffer = buffer) # with buffer 
+        zobjs = self.p_.zrestore() # with no buffer 
     
-        if style =='imshow': 
-    
-            axr= axe.imshow (arr2d,
-                            interpolation = self.imshow_interp, 
-                            cmap =cmap,
-                            aspect = self.fig_aspect ,
-                            origin= 'upper', 
-                            extent=( x[~np.isnan(x)].min(),
-                                      x[~np.isnan(x)].max(), 
-                                      y[~np.isnan(y)].min(), 
-                                      y[~np.isnan(y)].max())
-                                              )
-            axe.set_ylim(y[~np.isnan(y)].min(), y[~np.isnan(y)].max())
+        zxy_restored = np.abs (zobjs[site_index].z [
+            tuple (_c.get(self.component))])#[:, 0, 1]) 
+        # Export the first raw object with missing Z at 
+        # the dead dand in ediObjs collection
+        z1 = np.abs(ediObjs[site_index].Z.z) 
+        z1freq= ediObjs[site_index].Z._freq # the frequency of the first z obj 
+        # get the frequency of the clean data knonw as reference frequency
+        indice_reffreq = np.argmax (list (map(lambda o: len(o.Z._freq), ediObjs)))
+        reffreq = ediObjs [indice_reffreq].Z._freq 
+        # >>> # use the real part of component xy for the test 
+        zxy = np.abs (z1[tuple (_c.get(self.component))])  #[:, 0, 1])  
+        # fit zxy to get the missing data in the dead band 
+        zfit = fittensor(refreq= reffreq, compfreq= z1freq, z=zxy)
+
+        # not necessary, one can corrected z to get a 
+        # smooth resistivity distribution 
+        zcorrected = moving_average (zxy_restored)                     
+        # plot the two figures 
+        plt.figure(figsize =self.fig_size) #(10, 5)
+        plt.loglog(reffreq, zfit, '^r', reffreq, zxy_restored, 'ok--')
+        plt.loglog( reffreq, zcorrected, '1-.')
+        plt.legend (['Fit data', 'Restored', 'Corrected data' ], loc ='best')
+        plt.xlabel ('$Frequency [H_z]$') 
+        plt.ylabel('$ Resistivity_{xy} [ \Omega.m]$')
+        plt.title ('Recovered tensor $|Z_{xy}|$')
+        plt.grid (visible =True , alpha =0.8, which ='both', color ='k')
+        plt.tight_layout()
         
+        return self 
     
-        axe.set_xlabel(self.xlabel or 'Distance(m)', 
-                     fontdict ={
-       
-                      'size': 1.5* self.font_size ,
-                      'weight': self.fw}
-                                            )
-      
-        axe.set_ylabel(self.ylabel or 'log10(Frequency)[Hz]',
-                 fontdict ={
-                         #'style': self.font_style, 
-                                  'size': 1.5* self.font_size ,
-                                  'weight': self.fw})
-        if self.show_grid is True : 
-            axe.minorticks_on()
-            axe.grid(color='k', ls=':', lw =0.25, alpha=0.7, 
-                         which ='major')
-     
-        labex , cf = self.clabel or '$log10(App.Res)[Ω.m]$', axr
-    
-        cb = fig.colorbar(cf , ax= axe)
-        cb.ax.yaxis.tick_left()
-        cb.ax.tick_params(axis='y', direction='in', pad=2.)
         
-        cb.set_label(labex,fontdict={'size': 1.5* self.font_size ,
-                                  'style':self.font_style})
-        #--> set second axis 
-        axe2 = axe.twiny() 
-        axe2.set_xticks(ticks= x,
-                    minor=False )
-        axe2.set_xticklabels(stn, 
-                         rotation=self.station_label_rotation)
-     
-        axe2.set_xlabel('Stations', 
-                        fontdict ={'style': self.font_style, 
-                                   'size': 1.5* self.font_size ,
-                                   'weight': self.fw}, )
-      
-    
-        fig.suptitle(self.fig_title,
-                     ha='left',
-                     fontsize= 15* self.fs, 
-                     verticalalignment='center', 
-                    style =self.font_style,
-                    bbox =dict(boxstyle='round',
-                               facecolor ='moccasin'))
-       
-        #plt.tight_layout(h_pad =1.8, w_pad =2*1.08)
-    
-        plt.tight_layout()  
-        
-        if self.savefig is not None :
-            fig.savefig(self.savefig, dpi = self.fig_dpi,
-                        orientation =self.orient)
-            #plt.close(fig =fig ) 
-        plt.show() if self.savefig is None else plt.close(fig=fig) 
-        
-        
-        return axe 
-    
-    
 class ExPlot (BasePlot): 
     
     msg = ( "{expobj.__class__.__name__} instance is not fitted yet."
@@ -3048,7 +3174,148 @@ Examples
     params=_param_docs,
     returns= _core_docs["returns"],
 )
-      
+    
+TPlot .__doc__=r"""\
+Tensor plot from EM processing data  
+
+`TPlot` is a Tensor (Impedances , resistivity and phases ) plot class. 
+Explore SEG ( Society of Exploration Geophysicist ) class data.  Plot recovery 
+tensors. `TPlot` methods returns an instancied object that inherits 
+from :class:`watex.property.Baseplots` ABC (Abstract Base Class) for 
+visualization.
+    
+Parameters 
+------------
+
+window_size : int
+    the length of the window. Must be greater than 1 and preferably
+    an odd integer number. Default is ``5``
+    
+component: str 
+   field tensors direction. It can be ``xx``, ``xy``,``yx``, ``yy``. If 
+   `arr2d`` is provided, no need to give an argument. It become useful 
+   when a collection of EDI-objects is provided. If don't specify, the 
+   resistivity and phase value at component `xy` should be fetched for 
+   correction by default. Change the component value to get the appropriate 
+   data for correction. Default is ``xy``.
+   
+mode: str , ['valid', 'same'], default='same'
+    mode of the border trimming. Should be 'valid' or 'same'.'valid' is used 
+    for regular trimimg whereas the 'same' is used for appending the first
+    and last value of resistivity. Any other argument except 'valid' should 
+    be considered as 'same' argument. Default is ``same``.     
+   
+method: str, default ``slinear``
+    Interpolation technique to use. Can be ``nearest``or ``pad``. Refer to 
+    the documentation of :doc:`~.interpolate2d`. 
+    
+out : str 
+    Value to export. Can be ``sfactor``, ``tensor`` for corrections factor 
+    and impedance tensor. Any other values will export the static corrected  
+    resistivity ``srho``. 
+    
+c : int, 
+    A window-width expansion factor that must be input to the filter 
+    adaptation process to control the roll-off characteristics
+    of the applied Hanning window. It is recommended to select `c` between 
+    ``1``  and ``4``.  Default is ``2``.
+    
+distance: float 
+    The step between two stations/sites. If given, it creates an array of  
+    position for plotting purpose. Default value is ``50`` meters. 
+ 
+prefix: str 
+    string value to add as prefix of given id. Prefix can be the site 
+    name. Default is ``S``. 
+    
+how: str 
+    Mode to index the station. Default is 'Python indexing' i.e. 
+    the counting of stations would starts by 0. Any other mode will 
+    start the counting by 1.
+     
+{params.base.savefig}
+{params.base.fig_dpi}
+{params.base.fig_num}
+{params.base.fig_size}
+{params.base.fig_orientation}
+{params.base.fig_title}
+{params.base.fs}
+{params.base.ls}
+{params.base.lc}
+{params.base.lw}
+{params.base.alpha}
+{params.base.font_weight}
+{params.base.font_style}
+{params.base.font_size}
+{params.base.ms}
+{params.base.marker}
+{params.base.marker_facecolor}
+{params.base.marker_edgecolor}
+{params.base.marker_edgewidth}
+{params.base.xminorticks}
+{params.base.yminorticks}
+{params.base.bins}
+{params.base.xlim}
+{params.base.ylim}
+{params.base.xlabel}
+{params.base.ylabel}
+{params.base.rotate_xlabel}
+{params.base.rotate_ylabel}
+{params.base.leg_kws}
+{params.base.plt_kws}
+{params.base.glc}
+{params.base.glw}
+{params.base.galpha}
+{params.base.gaxis}
+{params.base.gwhich}
+{params.base.tp_axis}
+{params.base.tp_labelsize}
+{params.base.tp_bottom}
+{params.base.tp_labelbottom}
+{params.base.tp_labeltop}
+{params.base.cb_orientation}
+{params.base.cb_aspect}
+{params.base.cb_shrink}
+{params.base.cb_pad}
+{params.base.cb_anchor}
+{params.base.cb_panchor}
+{params.base.cb_label}
+{params.base.cb_spacing}
+{params.base.cb_drawedges} 
+{params.sns.sns_orient}
+{params.sns.sns_style}
+{params.sns.sns_palette}
+{params.sns.sns_height}
+{params.sns.sns_aspect}
+
+Returns
+--------
+{returns.self}
+
+Examples
+---------
+>>> from watex.view.plot import TPlot 
+>>> from watex.datasets import load_edis 
+>>> plot_kws = dict( ylabel = '$Log_{{10}}Frequency [Hz]$', 
+                    xlabel = '$Distance(m)$', 
+                    cb_label = '$Log_{{10}}Rhoa[\Omega.m$]', 
+                    fig_size =(6, 3), 
+                    font_size =7., 
+                    rotate_xlabel=45, 
+                    imshow_interp='bicubic', 
+                    ) 
+>>> edi_data =load_edis (return_data= True, samples=7 ) 
+>>> t= TPlot(**plot_kws ).fit(edi_data)
+>>> t.fit(edi_data ).plot_tensor2d (to_log10=True )
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+|Data collected =  7      |EDI success. read=  7      |Rate     =  100.0  %|
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Out[150]: <AxesSubplot:xlabel='$Distance(m)$', ylabel='$Log_{{10}}Frequency [Hz]$'>
+""".format(
+    params=_param_docs,
+    returns= _core_docs["returns"],
+)
+         
 def viewtemplate (y, /, xlabel=None, ylabel =None,  **kws):
     """
     Quick view template

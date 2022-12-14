@@ -21,7 +21,8 @@ from ..utils.mlutils import split_train_test_by_id , existfeatures
 from ..utils.funcutils import ( 
     to_numeric_dtypes , 
     smart_format, str2columns, 
-    is_in_if
+    is_in_if, 
+    reshape 
     )
 from ..utils.box import Boxspace
 
@@ -674,7 +675,8 @@ def load_edis (
     data = data.iloc [:samples, :] 
     
     if return_data or as_frame : 
-        return data.values if return_data else data 
+        return ( data.values if data.shape[1] !=1 else reshape (data.values) 
+                ) if return_data else data 
 
     return Boxspace(
         data=data.values,

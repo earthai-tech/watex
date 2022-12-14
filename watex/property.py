@@ -101,6 +101,7 @@
 .. _WATex: https://github.com/WEgeophysics/watex/
 .. |ERP| replace:: Electrical resistivity profiling 
 .. |VES| replace:: Vertical Electrical Sounding 
+.. _interpol_imshow: https://matplotlib.org/stable/gallery/images_contours_and_fields/interpolation_methods.html
 
 """
 # import warnings 
@@ -536,8 +537,9 @@ class BasePlot(ABC):
     ==================  =======================================================
     fig_dpi             dots-per-inch resolution of the figure
                         *default* is 300
-    fig_num             number of the figure instance
-                        *default* is 'Mesh'
+    fig_num             number of the figure instance. *default* is ``1``
+    fig_aspect          ['equal'| 'auto'] or float, figure aspect. Can be 
+                        rcParams["image.aspect"]. *default* is ``auto``.
     fig_size            size of figure in inches (width, height)
                         *default* is [5, 5]
     savefig             savefigure's name, *default* is ``None``
@@ -571,6 +573,11 @@ class BasePlot(ABC):
     rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
     leg_kws             keyword arguments of legend. *default* is empty dict.
     plt_kws             keyword arguments of plot. *default* is empty dict
+    plt_style           keyword argument of 2d style. *default* is ``pcolormesh``
+    imshow_interp       ['bicubic'|'nearest'|'bilinear'|'quadractic' ] kind of 
+                        interpolation for 'imshow' plot. Click `interpol_imshow`_ 
+                        to get furher details about the interpolation method. 
+                        *default* is ``None``.
     rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
                         *default* is '--'
     ps                  [ '-' | '.' | ':' ] line style of `Precision `metric
@@ -578,6 +585,7 @@ class BasePlot(ABC):
     rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
     pc                  line color of `Precision` metric *default* is ``k``
     s                   size of items in scattering plots. default is ``fs*40.``
+    cmap                matplotlib colormap. *default* is `jet_r`
     gls                 [ '-' | '.' | ':' ] line style of grid  
                         *default* is '--'.
     glc                 line color of the grid plot, *default* is ``k``
@@ -616,6 +624,7 @@ class BasePlot(ABC):
     verbose             control the verbosity. Higher value, more messages.
                         *default* is ``0``.
     ==================  =======================================================
+    
     """
     
     @abstractmethod 
@@ -623,10 +632,11 @@ class BasePlot(ABC):
                  savefig: str = None,
                  fig_num: int =  1,
                  fig_size: tuple =  (12, 8),
-                 fig_dpi:int = 300,
+                 fig_dpi:int = 300, 
                  fig_legend: str =  None,
                  fig_orientation: str ='landscape',
                  fig_title:str = None,
+                 fig_aspect:str='auto',
                  font_size: float =3.,
                  font_style: str ='italic',
                  font_weight: str = 'bold',
@@ -651,7 +661,10 @@ class BasePlot(ABC):
                  rotate_ylabel: int =None ,
                  leg_kws: dict = dict(),
                  plt_kws: dict = dict(), 
+                 plt_style:str="pcolormesh",
+                 imshow_interp:str =None,
                  s: float=  40.,
+                 cmap:str='jet_r',
                  show_grid: bool = False,
                  galpha: float = .5,
                  gaxis: str = 'both',
@@ -691,6 +704,7 @@ class BasePlot(ABC):
         self.fig_legend=fig_legend
         self.fig_orientation=fig_orientation
         self.fig_title=fig_title
+        self.fig_aspect=fig_aspect
         self.font_size=font_size
         self.font_style=font_style
         self.font_weight=font_weight
@@ -715,7 +729,10 @@ class BasePlot(ABC):
         self.rotate_ylabel=rotate_ylabel
         self.leg_kws=leg_kws
         self.plt_kws=plt_kws
+        self.plt_style=plt_style
+        self.imshow_interp=imshow_interp
         self.s=s 
+        self.cmap=cmap
         self.show_grid=show_grid
         self.galpha=galpha
         self.gaxis=gaxis
