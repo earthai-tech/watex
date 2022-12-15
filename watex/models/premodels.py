@@ -178,7 +178,7 @@ class pModels :
             f"Pretrained objective is for flow rate prediction 'fr' passed to"
             f" parameter 'objective'; not {self.objective}"
             ) 
-        assert self.target not in ("bin", "multi"), (
+        assert self.target in ("bin", "multi"), (
             "Two types of learning targets are expected: the multiclass"
             f"'multi' and binary 'bin'. Got {self.target!r}"
             )
