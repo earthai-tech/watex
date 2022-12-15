@@ -6,7 +6,7 @@
 """
 Core geology 
 =====================
-The core module deals with  geological data, the geological structural infos 
+The core module deals with  geological data, the structural infos 
 and borehole data.
 
 """
@@ -17,26 +17,23 @@ import shutil
 from six.moves import urllib 
 from pprint import pprint 
 
-# import numpy as np
-# import pandas as pd 
-
 from ..utils.funcutils import ( 
     smart_format, 
     sPath,
-    is_installing, 
     )
+from ..utils._dependency import ( 
+    import_optional_dependency )
 from ..property import (
     Config 
     )
 from ..exceptions import ( 
     GeoPropertyError, 
     )
-
 from .._watexlog import watexlog 
 _logger = watexlog().get_watex_logger(__name__ )
 
 
-class Base (object): 
+class Base: 
     """
     Base class of container of geological informations  for stratigraphy model  
     log creation of exploration area.
@@ -75,7 +72,6 @@ class Base (object):
     
     def __init__(self, **kwargs):
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        
         
 #++++ configure the geological rocks from files:AGSO & AGSO.STCODES +++++++++++
 __agso_properties =dict(
@@ -167,13 +163,9 @@ def fetching_data_from_repo(repo_file, savepath =None ):
     git_repo = __agso_properties['GIT_REPO']
     git_root = __agso_properties['GIT_ROOT']
     
-    IMP_TQDM =False 
-    try : 
-        from tqdm.notebook  import trange 
-    except:# Install bar progression
-        IMP_TQDM= is_installing('tqdm')
-        if IMP_TQDM: 
-            from tqdm.notebook  import trange 
+    # Install bar progression
+    import_optional_dependency ("tqdm")
+    from tqdm.notebook  import trange 
     # max attempts =3 :  
     print("---> Please wait while fetching"
           f" {repo_file!r} from {git_repo!r}...")

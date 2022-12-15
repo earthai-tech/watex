@@ -28,19 +28,20 @@ such as:
     
 """
 from __future__ import annotations 
-
 import os
 import re
 import functools 
 import numpy as np 
 
 from .._watexlog import watexlog
+from ..edi import Edi 
 from ..exceptions import ( 
     EDIError, 
     TopModuleError, 
     NotFittedError, 
     EMError,
 ) 
+from ..externals.z import Z as EMz 
 from ..utils.funcutils import ( 
     _assert_all_types, 
     make_ids, 
@@ -79,27 +80,10 @@ from .._typing import (
     T,
     F, 
     )
+from ..utils._dependency import ( 
+    import_optional_dependency
+    )
 
-from ..utils._dependency import import_optional_dependency 
-
-HAS_MOD=False 
-try : 
-    import_optional_dependency ("pycsamt")
-except ImportError: 
-    raise TopModuleError(
-        "Missing module 'pycsamt' built on top for base EM method "
-        "implementation. Use 'pip' to install 'pycsamt'."
-        )
-else : 
-    HAS_MOD=True 
-    
-if HAS_MOD : 
-    #XXX TODO : prior revise the pkg structure to pycsamt.core 
-    # since ff subpackage does no longer exist in pycsamt newest version
-    from pycsamt.ff.core import (
-        edi, 
-        z as EMz 
-        ) 
 
 _logger = watexlog.get_watex_logger(__name__)
 
@@ -158,9 +142,7 @@ class EM(IsEdi):
         self._latitude = None
         self._longitude=None
         self._elevation= None 
-        # self.ediObjs_ = None 
-        # self.data_= None 
-        
+
     @property 
     def latitude(self): 
         return self._latitude 
@@ -209,24 +191,58 @@ class EM(IsEdi):
     
     def is_valid (self, 
         obj: str | EDIO 
-        )-> edi.Edi  : 
+        )-> Edi  : 
         """Assert that the given argument is an EDI -object from modules 
-        EDI of pycsamt and MTpy packages. A TypeError will occurs otherwise.
+        EDI or EDI from pycsamt and MTpy packages. 
+        A TypeError will occurs otherwise.
         
-        :param obj: Full path EDI file or `pycsamt`_.
-        :type obj: str or str or  pycsamt.core.edi.Edi or mtpy.core.edi.Edi 
-        
-        :return: Identical object after asserting.
+        Parameters 
+        ------------
+        obj: str, :class:`pycsamt.core.edi.Edi` or :class:`mtpy.core.edi.Edi` 
+            Full path EDI file or `pycsamt`_ or `MTpy`_ objects.
+       
+        Return
+        -------
+        obj:str, :class:`pycsamt.core.edi.Edi` or :class:`mtpy.core.edi.Edi`
+            Identical object after asserting.
         
         """
-        IsEdi.register (edi.Edi)
+        emsg=("{0!r} object detected while the package is not installed"
+              " yet. To pass ['pycsamt' | 'mtpy'] EDI-object to 'EM'"
+              " class for basic implementation,prior install the {0!r}"
+              " first. Use 'pip' or 'conda' for installation."
+             )
+        IsEdi.register (Edi)
         if isinstance(obj, str):
-            obj = edi.Edi(obj) 
+            obj = Edi().fit(obj) 
+   
+        if "pycsamt" in str(obj):   
+            try : 
+                import_optional_dependency ("pycsamt")
+            except ImportError: 
+                raise TopModuleError(emsg.format("pycsamt"))
+            else : 
+                #XXX TODO : prior revising the pkg structure 
+                # to pycsamt.core since ff subpackage does
+                # no longer exist in pycsamt newest version
+                from pycsamt.ff.core import edi 
+                IsEdi.register (edi.Edi )
+                
+        elif "mtpy" in str(obj): 
+            try : 
+                import_optional_dependency ("mtpy")
+            except ImportError: 
+                raise TopModuleError(emsg.format("mtpy"))
+            else : 
+                from mtpy.core import edi
+                IsEdi.register (edi.Edi)
+                
         try : 
-            obj = _assert_all_types (obj, IsEdi)
+            obj = _assert_all_types (
+                obj, IsEdi, objname="Wrong Edi-Objects or EDI-path, ")
         except AttributeError: 
             # force checking instead
-            obj = _assert_all_types (obj, edi.Edi)
+            obj = _assert_all_types (obj, Edi, objname="EDI")
             
         return  obj 
               
@@ -999,7 +1015,7 @@ class _zupdate(EM):
             dictionnary of all tensor component. 
 
         """
-        Z = EMz.Z(
+        Z = EMz(
             z_array=np.zeros((len(freq ), 2, 2),dtype='complex'),
             z_err_array=np.zeros((len(freq), 2, 2)),
             freq=freq 
@@ -1709,7 +1725,7 @@ class Processing (EM) :
         new_zObjs =np.zeros_like (zObjs, dtype =object )
         # loop to correct the Z impedance object values 
         for kk, ediObj in enumerate (self.ediObjs_):
-            new_Z = EMz.Z(z_array=np.zeros((len(s_cfreq), 2, 2),
+            new_Z = EMz(z_array=np.zeros((len(s_cfreq), 2, 2),
                                            dtype='complex'),
                         z_err_array=np.zeros((len(s_cfreq), 2, 2)),
                         freq=s_cfreq)

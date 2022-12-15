@@ -638,7 +638,7 @@ array([0, 0, 1])
 def load_edis (
         *,  return_data=False, as_frame =False, key =None, tag =None, 
         samples =None,  data_names =None, **kws): 
-    valid_keys ={"edi", "longitude", "latitude", "site", "*"} 
+    valid_keys ={"edi", "longitude", "latitude", "site","id", "name", "*"} 
     key = key or "edi" 
     
     # assertion error if key does not exist. 

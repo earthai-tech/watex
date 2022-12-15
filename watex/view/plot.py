@@ -205,7 +205,10 @@ class TPlot (BasePlot):
         self.how=how
         self.c=c 
         
-    def fit (self, data: Optional [str|List[EDIO]]): 
+    def fit (
+        self, 
+        data: Optional [str|List[EDIO]]
+        ): 
         """
         Fit data and populate attributes. 
         
@@ -235,7 +238,8 @@ class TPlot (BasePlot):
             c=self.c 
             ) 
         p.fit(data)
-        
+        # set EM processing moule 
+        # as an attr
         setattr (self, "p_", p )
 
         return self
@@ -261,7 +265,7 @@ class TPlot (BasePlot):
             ) 
         return  outm.format(self.__class__.__name__)
     
-    def plot_recovery(
+    def plot_multi_recovery(
             self,  
             sites:str |List[str | int], 
             colors: List[str] = None, 
@@ -269,7 +273,7 @@ class TPlot (BasePlot):
             ): 
         
         """ 
-        Plot sites station with signal recovery. 
+        Plot mutiple site/stations with signal recovery. 
         
         Parameters 
         -----------
@@ -288,7 +292,7 @@ class TPlot (BasePlot):
         >>> from watex.datasets import load_edis 
         >>> # takes the 03 samples of EDIs 
         >>> edi_data = load_edis (return_data= True, samples =3 ) 
-        >>> TPlot(fig_size =(5, 3)).fit(edi_data).plot_recovery (
+        >>> TPlot(fig_size =(5, 3)).fit(edi_data).plot_multi_recovery (
             sites =['S00'], colors =['o', 'ok--'])
         <AxesSubplot:title={'center':'Recovered tensor $|Z_{xy}|$'}, 
         xlabel='$Frequency [H_z]$', ylabel='$ App.resistivity \\quad xy \\quad [ \\Omega.m]$'>
@@ -342,8 +346,16 @@ class TPlot (BasePlot):
         return self._plot_recovery (
             *args,fit_args= fit_args, **kws )
 
-    def _plot_recovery (self,*args,  fit_args = None, leg= None,  **kws ): 
-        """" Template to plot two station with signal recovery 
+    def _plot_recovery (
+            self,
+            *args,  
+            fit_args = None, 
+            leg= None,  
+            **kws
+            ): 
+        """" Template to plot two stations with signal recovery 
+        
+        Isolated part of :meth:`~.TPlot.plot_multi_recovery`. 
         
         Parameters 
         -----------
@@ -369,36 +381,7 @@ class TPlot (BasePlot):
         Returns 
         ------- 
         ax: Matplotlib.pyplot <AxesSubplot>  
-        
-        Examples
-        --------
-        >>> from pycsamt.view import Plot1d 
-        >>> from pycsamt.core import get_ediObjs 
-        >>> from pycsamt.processing import (restoreZ, moving_average , 
-                                            get_full_frequency, make2d )
-        >>> rawpath  = r'F:\\repositories\\edis' 
-        >>> ediobj_r = get_ediObjs (rawpath)
-        >>> res2d_r = make2d (ediobj_r, 'resxy') # read the component XY 
-        >>> z_xy_rest = restoreZ(ediobj_r) # no buffered data 
-        >>> # extracted the station at index 12, 27 for instance. 
-        >>> z12 = z_xy_rest[12].resistivity[:, 0, 1]
-        >>> z27 = z_xy_rest[27].resistivity[:, 0, 1]
-        >>> # generate a fiting curve with moving average 
-        >>> ma12 = moving_average (res2d_r[:, 12])
-        >>> ma27 = moving_average (res2d_r[:, 27])
-        >>> # get the complete frequency for the survey 
-        >>> f= get_full_frequency(ediobj_r)
-        >>> # ---> make a plot and color 
-        >>> #  make a fitting args 
-        >>> fitargs = [f, ma12, 'c-.', f,ma27, 'c-.']
-        >>> # make a legend 
-        >>> leg = ['restored data' , 'raw data ', 'recovery trend ']
-        >>> p1d=Plot1d (fig_size =(5, 3))
-        >>> p1d.plotrecovery(f, z12,  'ob--', f, res2d_r[:, 12], 'ok', 
-                             f, z27,  'ob--', f, res2d_r[:, 27], 'ok',
-                             fit_args = fitargs, leg =leg)
-        ... 
-        
+
         """
         fig, ax = plt.subplots(
             1,figsize = self.fig_size, 
@@ -412,12 +395,12 @@ class TPlot (BasePlot):
                   )
             
         if fit_args  is not None: 
-            fit_args  = _assert_all_types(fit_args , list, tuple)  
+            fit_args  = _assert_all_types(
+                fit_args , list, tuple, objname="Fit arguments")  
             p2,*_ = ax.loglog(*fit_args,
                       markersize = self.ms ,
                       linewidth = self.lw 
                       )
-
 
         ax.set_xlabel (self.xlabel or '$Frequency [H_z]$',
                     fontsize =1.5 * self.font_size ) 
@@ -649,7 +632,7 @@ class TPlot (BasePlot):
         
         return arr2d, freqs, positions ,sites , base_plot_kws  
 
-    def plot_site_recovery(self, site = 'S00'): 
+    def plot_recovery(self, site = 'S00'): 
         """ visualize the restored tensor per site.
         
         Parameters 
@@ -672,7 +655,7 @@ class TPlot (BasePlot):
                     ) 
         >>> t= TPlot(**plot_kws ).fit(edi_data)
         >>> # plot recovery of site 'S01'
-        >>> t.plot_site_recovery ('S01')  
+        >>> t.plot_recovery ('S01')  
         ... <'TPlot':survey_area=None, distance=50.0, prefix='S',
         window_size=5, component='xy', mode='same', method='slinear', 
         out='srho', how='py', c=2> 
@@ -724,7 +707,7 @@ class TPlot (BasePlot):
         plt.figure(figsize =self.fig_size) #(10, 5)
         plt.loglog(reffreq, zfit, '^r', reffreq, zxy_restored, 'ok--')
         plt.loglog( reffreq, zcorrected, '1-.')
-        plt.legend (['Fit data', 'Restored', 'Corrected data' ], loc ='best')
+        plt.legend (['data', 'restored', 'corrected' ], loc ='best')
         plt.xlabel ('$Frequency [H_z]$') 
         plt.ylabel('$ Resistivity_{xy} [ \Omega.m]$')
         plt.title ('Recovered tensor $|Z_{xy}|$')

@@ -129,7 +129,13 @@ __all__ = [
     "IsEdi",
     "Config", 
     "UTM_DESIGNATOR", 
-    
+    "_EDI", 
+    "_ZRP_COMPS", 
+    "_TIP_COMPS", 
+    "Software", 
+    "Copyright", 
+    "References", 
+    "Person", 
 ]
 
   
@@ -157,8 +163,6 @@ UTM_DESIGNATOR ={
     'Z':[-80,84]
 }
     
-# XXX EDI-
-
 _EDI =[
     #Head=Infos-Frequency-Rhorot
     # Zrot and end blocks
@@ -257,6 +261,41 @@ _EDI =[
     '>FILWIDTH','>FILANGLE',
     '>EQUIVLEN' , '>END'
 ] 
+#
+_ZRP_COMPS =[
+    #z
+    [
+         ['zxxr', 'zxxi', 'zxx.var'],
+         ['zxyr', 'zxyi', 'zxy.var'],
+         ['zyxr', 'zyxi', 'zyx.var'],
+         ['zyyr', 'zyyi', 'zyy.var']
+    ],
+    #Rho
+    [
+         ['rhoxx', 'rhoxx.var','rhoxx.err', 'rhoxx.fit'],
+         ['rhoxy','rhoxy.var','rhoxy.err', 'rhoxy.fit']
+    ],
+                                    
+    [
+         ['phxx','phsxx.var', 'phsxx.err', 'phsxx.fit'],
+         ['phxy','phsxy.var', 'phsxy.err', 'phsxy.fit']
+    ], 
+    # filtered 
+    [
+         ['frhoxx','frhoxx.var','frhoxx.err', 'frhoxx.fit'],
+         ['frhoxy','frhoxy.var', 'frhoxy.err', 'frhoxy.fit']
+    ],
+                                         
+    [
+         ['fphsxx','fphsxx.var', 'fphsxx.err', 'fphsxx.fit'],
+         ['fphsxy','fphsxy.var', 'fphsxy.err', 'fphsxy.fit']
+     ],
+ ]
+                                                    
+_TIP_COMPS =[
+    ['txr.exp', 'txi.exp', 'txvar.exp'],
+    ['tyr.exp', 'tyi.exp', 'tyvar.exp']
+    ]
 
 @refAppender(refglossary.__doc__) 
 class Water (ABC): 
@@ -899,26 +938,38 @@ class IsEdi(ABC):
         """ Assert whether EDI is valid."""
         pass 
         
-    def _assert_edi (self, 
-                     file: str ,
+    @staticmethod 
+    def _assert_edi (file: str ,
                      deep: bool  =True
                      )-> bool : 
         """ Assert EDI- file .  
         :param file: str - path-like object 
         :param deep: bool - Open the file and assert whether it is a valid EDI
             if ``False``, just control the EDI extension . """
+        msg = (" Unrecognized SEG EDI-file. Follow the paper of"
+               " [Wight, D.E., Drive, B., 1988.]"
+               " <https://www.mtnet.info/docs/seg_mt_emap_1987.pdf>"
+               " to build a correct EDI- file."
+                )
         flag = False 
         if file  is None : 
             raise  FileHandlingError("NoneType can not be checked. Please"
                                      " provide the right file.") 
+        if not os.path.isfile(file): 
+            raise FileNotFoundError(f"{file!r} is not file. Expect a Path-like"
+                                    " object to EDI-file.")
         if isinstance(file  , str): 
             flag = os.path.splitext(file )[-1].replace('.', '')
             
-        if flag =='edi' and not deep : 
-            return True 
+        if not deep: 
+            if flag =='edi': 
+                return True 
             # Open the file now 
-        elif flag !='edi': 
-            raise EDIError('')
+            if flag !='edi': 
+                raise EDIError("Commonly SEG-EDI file must have extension *.edi."
+                               f" Got {flag!r}. Set 'deep=True' to check whether"
+                               " the file contents match an expected EDI contents."
+                               )
         try :
             with open (file, 'r', encoding ='utf8') as f : 
                     edi_data =f.readlines()
@@ -933,11 +984,10 @@ class IsEdi(ABC):
             if (_EDI[0] not in  edi_data[0]) or  (
                     _EDI[-1] not in  edi_data[-1]): 
                 
-                raise EDIError(" Unrecognized SEG- EDI-file. Follow the "
-                               "[Wight, D.E., Drive, B., 1988.] to build a"
-                               " correct EDI- file.")
+                raise EDIError(msg)
             flag =True 
-            
+        else : raise EDIError(msg)
+        
         return flag 
      
 class P:
@@ -1447,8 +1497,193 @@ class Config:
              
              }
     
+
+class References:
+    """
+    References information for a citation.
+
+    Holds the following information:
+        
+    ================  ==========  =============================================
+    Attributes         Type        Explanation
+    ================  ==========  =============================================
+    author            string      Author names
+    title             string      Title of article, or publication
+    journal           string      Name of journal
+    doi               string      DOI number 
+    year              int         year published
+    ================  ==========  =============================================
+
+    More attributes can be added by inputing a key word dictionary
     
+    Examples
+    ---------
+    >>> from watex.property import References
+    >>> refobj = References(
+        **{'volume':18, 'pages':'234--214', 
+        'title':'watex :A machine learning research for hydrogeophysic' ,
+        'journal':'Computers and Geosciences', 
+        'year':'2021', 'author':'DMaryE'}
+        )
+    >>> refobj.journal
+    Out[21]: 'Computers and Geosciences'
+    """
+    def __init__(
+        self, 
+        author=None, 
+        title=None, 
+        journal=None, 
+        volume=None, 
+        doi=None, 
+        year=None,  
+        **kws
+        ):
+        self.author=author 
+        self.title=title 
+        self.journal=journal 
+        self.volume=volume 
+        self.doi=doi 
+        self.year=year 
+   
+        for key in list(kws.keys()):
+            setattr(self, key, kws[key])
+
+
+class Copyright:
+    """
+    Information of copyright, mainly about the use of data can use
+    the data. Be sure to read over the conditions_of_use.
+
+    Holds the following informations:
+
+    =================  ===========  ===========================================
+    Attributes         Type         Explanation
+    =================  ===========  ===========================================
+    References          References  citation of published work using these data
+    conditions_of_use   string      conditions of use of data used for testing 
+                                    program
+    release_status      string      release status [ open | public |proprietary]
+    =================  ===========  ===========================================
+
+    More attributes can be added by inputing a key word dictionary
     
+   Examples
+   ----------
+    >>> from watex.property import Copyright 
+    >>> copbj =Copyright(**{'owner':'University of AI applications',
+    ...             'contact':'WATER4ALL'})
+    >>> copbj.contact 
+    Out[20]: 'WATER4ALL
+    
+    """
+    cuse =( 
+        "All Data used for software demonstration mostly located in "
+        " data directory <data/> cannot be used for commercial and " 
+        " distributive purposes. They can not be distributed to a third"
+        " party. However, they can be used for understanding the program."
+        " Some available ERP and VES raw data can be found on the record"
+        " <'10.5281/zenodo.5571534'>. Whereas EDI-data e.g. EMAP/MT data,"
+        " can be collected at http://ds.iris.edu/ds/tags/magnetotelluric-data/."
+        " The metadata from both sites are available free of charge and may"
+        " be copied freely, duplicated and further distributed provided"
+        " these data are cited as the reference."
+        )
+    def __init__(
+        self, 
+        release_status=None, 
+        additional_info=None, 
+        conditions_of_use=None, 
+        **kws
+        ):
+        self.release_status=release_status
+        self.additional_info=additional_info
+        self.conditions_of_use=conditions_of_use or self.cuse 
+        self.References=References()
+        for key in list(kws.keys()):
+            setattr(self, key, kws[key])
+
+
+class Person:
+    """
+    Information for a person
+
+    ================  ==========  =============================================
+    Attributes         Type        Explanation
+    ================  ==========  =============================================
+    email             string      email of person
+    name              string      name of person
+    organization      string      name of person's organization
+    organization_url  string      organizations web address
+    ================  ==========  =============================================
+
+    More attributes can be added by inputing a key word dictionary
+    
+    Examples 
+    ----------
+    >>> from watex.property import Person
+    >>> person =Person(**{'name':'ABA', 'email':'aba@water4all.ai.org',
+    ...                  'phone':'00225-0769980706', 
+    ...          'organization':'WATER4ALL'})
+    >>> person.name
+    Out[23]: 'ABA
+    >>> person.organization
+    Out[25]: 'WATER4ALL'
+    """
+
+    def __init__(
+        self, 
+        email=None, 
+        name=None, 
+        organization=None, 
+        organization_url=None, 
+        **kws
+        ):
+        self.email=email 
+        self.name=name 
+        self.organization=organization
+        self.organization_url=organization_url
+
+        for key in list(kws.keys()):
+            setattr(self, key, kws[key])
+
+
+class Software:
+    """
+    software info 
+
+    ================= =========== =============================================
+    Attributes         Type        Explanation
+    ================= =========== =============================================
+    name                string      name of software 
+    version             string      version of sotware 
+    Author              string      Author of software
+    release             string      latest version release
+    ================= =========== =============================================
+    
+    More attributes can be added by inputing a key word dictionary
+
+    Examples 
+    ----------
+    >>> from watex.property import Software
+    >>> Software(**{'release':'0.11.23'})
+
+    """
+    def __init__(
+        self,
+        name=None, 
+        version=None, 
+        release=None, 
+        **kws
+        ):
+        self.name=name 
+        self.version=version 
+        self.release=release 
+        self.Author=Person()
+        
+        for key in kws:
+            setattr(self, key, kws[key]) 
+            
+                
     
     
     

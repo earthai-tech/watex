@@ -2867,7 +2867,61 @@ def assert_doi(doi):
                        "not: {str(type(doi).__name__!r)}")
     return doi
     
+def strip_item(item_to_clean, item=None, multi_space=12):
+    """
+    Function to strip item around string values.  if the item to clean is None or 
+    item-to clean is "''", function will return None value
+
+    Parameters
+    ----------
+        * item_to_clean : list or np.ndarray of string 
+                 List to strip item.
+        * cleaner : str , optional
+                item to clean , it may change according the use. The default is ''.
+        * multi_space : int, optional
+                degree of repetition may find around the item. The default is 12.
+    Returns
+    -------
+        list or ndarray
+            item_to_clean , cleaned item 
+            
+    :Example: 
+        
+     >>> import numpy as np
+     >>> new_data=_strip_item (item_to_clean=np.array(['      ss_data','    pati   ']))
+     >>>  print(np.array(['      ss_data','    pati   ']))
+     ... print(new_data)
+
+    """
+    if item==None :
+        item = ' '
     
+    cleaner =[(''+ ii*'{0}'.format(item)) for ii in range(multi_space)]
+    
+    if isinstance (item_to_clean, str) : 
+        item_to_clean=[item_to_clean] 
+        
+    # if type(item_to_clean ) != list :#or type(item_to_clean ) !=np.ndarray:
+    #     if type(item_to_clean ) !=np.ndarray:
+    #         item_to_clean=[item_to_clean]
+    
+    if item_to_clean in cleaner or item_to_clean ==['']:
+        warnings.warn ('No data found for sanitization; returns None.')
+        return None 
+    try : 
+        multi_space=int(multi_space)
+    except : 
+        raise TypeError('argument <multplier> must be'\
+                        ' an integer not {0}'.format(type(multi_space)))
+    
+    for jj, ss in enumerate(item_to_clean) : 
+        for space in cleaner:
+            if space in ss :
+                new_ss=ss.strip(space)
+                item_to_clean[jj]=new_ss
+    
+    return item_to_clean  
+ 
 def parse_json(json_fn =None,
                data=None, 
                todo='load',
