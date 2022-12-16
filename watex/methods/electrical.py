@@ -24,11 +24,12 @@ from .._typing import  (
 from .._watexlog import watexlog 
 
 from ..decorators import refAppender 
+from ..utils._dependency import ( 
+    import_optional_dependency )
 from ..utils.funcutils import (
     repr_callable_obj,
     smart_format,
     smart_strobj_recognition , 
-    is_installing,
     make_ids, 
     show_stats,
     )
@@ -39,6 +40,7 @@ from ..utils.coreutils import (
     erpSelector, 
     vesSelector,
     parseDCArgs ,
+    plotAnomaly
 ) 
 from ..utils.exmath import (
     shape, 
@@ -48,6 +50,7 @@ from ..utils.exmath import (
     sfi,
     ohmicArea, 
     invertVES,
+    plotOhmicArea
     )
 from ..utils.validator import ( 
     _is_valid_erp , 
@@ -62,21 +65,13 @@ from ..exceptions import (
     ERPError,
     StationError, 
     )
-_logger = watexlog().get_watex_logger(__name__ )
 
 TQDM= False 
 try : 
     import tqdm 
 except ImportError: 
-    is_success = is_installing('tqdm'
-                               )
-    if not is_success: 
-        warnings.warn("'Auto-install tqdm' failed. Could be installed it manually"
-                      " Can get 'tqdm' here <https://pypi.org/project/tqdm/> ")
-        _logger.info ("Failed to install automatically 'tqdm'. Can get the " 
-                      "package via  https://pypi.org/project/tqdm/")
-    else : TQDM = True 
-    
+    warnings.warn("'tqdm' package is missing. Some DC methods expect 'tqdm'"
+                  " to be installed. Use pip or conda to install it.")
 else: TQDM = True 
 
 __all__=['DCProfiling', 'DCSounding',
@@ -222,7 +217,7 @@ class DCProfiling(ElectricalMethods)  :
         
         
     def fit(self, 
-            data : List[str] | List [DataFrame],
+            *data : List[str] | List [DataFrame],
             **fit_params)-> "DCProfiling" : 
         """ Read and fit the collections of data  
         
@@ -252,6 +247,10 @@ class DCProfiling(ElectricalMethods)  :
         """
         self._logging.info (f" {self.__class__.__name__!r} collects the "
                             "resistivity objects ")
+        
+        ex=(f"{self.__class__.__name__!r} expects 'tqdm' to be installed."
+            " Can get 'tqdm' at <https://pypi.org/project/tqdm/>. ")
+        import_optional_dependency ('tqdm', extra= ex ) 
         
         #-> Initialize collection objects 
         # - collected the unreadable data; readable data  
@@ -361,13 +360,13 @@ class DCSounding(ElectricalMethods) :
     
     Parameters 
     -----------
-    **froms**: float , list of float
+    **search**: float , list of float
         The collection of the depth in meters from which one expects to find a 
-        fracture zone outside of pollutions. Indeed, the `froms` parameter is 
+        fracture zone outside of pollutions. Indeed, the `search` parameter is 
         used to speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For 
         instance in `Bagoue region`_ , the average depth of water inrush 
-        is around ``45m``.So the `froms` can be specified via the water inrush 
+        is around ``45m``.So the `search` can be specified via the water inrush 
         average value. 
         
     **rho0**: float 
@@ -453,7 +452,7 @@ class DCSounding(ElectricalMethods) :
     
     >>> from watex.methods.electrical import DCSounding
     >>> dsobj = DCSounding ()  
-    >>> dsobj.froms = 30. # start detecting the fracture zone from 30m depth.
+    >>> dsobj.search = 30. # start detecting the fracture zone from 30m depth.
     >>> dsobj.fit('data/ves/ves_gbalo.xlsx')
     >>> dsobj.ohmic_areas_
     ...  array([523.25458506])
@@ -482,7 +481,7 @@ class DCSounding(ElectricalMethods) :
     """
            
     def __init__(self,
-                 froms:float=45.,
+                 search:float=45.,
                  rho0:float=None, 
                  h0 :float=1., 
                  read_sheets:bool=False, 
@@ -494,7 +493,7 @@ class DCSounding(ElectricalMethods) :
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.froms=froms 
+        self.search=search 
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
@@ -507,7 +506,7 @@ class DCSounding(ElectricalMethods) :
             setattr(self, key, kws[key])
             
     def fit(self, 
-            data : List[str] | List [DataFrame], 
+            *data : List[str] | List [DataFrame], 
             **fit_params)->'DCSounding': 
         """ Fit the DC- electrical sounding 
         
@@ -541,6 +540,10 @@ class DCSounding(ElectricalMethods) :
         """
         self._logging.info (f" {self.__class__.__name__!r} collects the "
                             "resistivity objects ")
+        
+        ex=(f"{self.__class__.__name__!r} expects 'tqdm' to be installed."
+            " Can get 'tqdm' at <https://pypi.org/project/tqdm/>. ")
+        import_optional_dependency ('tqdm', extra= ex ) 
         
         #-> Initialize collection objects 
         # - collected the unreadable data ; readable data  
@@ -809,7 +812,7 @@ class ResistivityProfiling(ElectricalMethods):
         self.conductive_zone_, self.position_zone_, ix, pos,  =\
             defineConductiveZone(
                         self.resistivity_,
-                        s= self.station, 
+                        station= self.station, 
                         auto = self.auto,
                         #keep Python numbering index (from 0 ->...),
                         keepindex = True, 
@@ -819,7 +822,7 @@ class ResistivityProfiling(ElectricalMethods):
                         # station is given
                         # dipole =self.dipole if self.station is None else None,
                         
-                        p = self.position_
+                        position = self.position_
             )
 
         if self.verbose >7 : 
@@ -862,23 +865,27 @@ class ResistivityProfiling(ElectricalMethods):
         return self 
 
     def summary(self,
-                keeponlyparams: bool = False, 
+                keep_params: bool = False, 
                 return_table: bool =False, 
                 ) -> object | DataFrame : 
         """ Summarize the most import parameters for prediction purpose.
         
-        If `keeponlyparams` is set to ``True``. Method should output only 
-        the main important params for prediction purpose...
+        Parameters 
+        -------------
+        keep_params: bool, default=False, 
+            If `keep_params` is set to ``True``. Method should output only 
+            the main important params for prediction purpose. Otherwise, 
+            returns all main DC-resistivity attributes 
+        return_tables: bool, default=False, 
+            Returns atributes in a pandas dataframe. 
+        Returns 
+        --------
+        self or table_: :class:`~.ResistivityProfiling` or class:`pd.DataFrame` 
+            Returns DC- profiling object or dataframe. 
         
         """
-        
-        try:
-             getattr(self, 'type_'); getattr(self, 'sfi_')
-        except NotFittedError:
-            raise NotFittedError(
-                "Can't call the method 'summary' without fitting the"
-                f" {self.__class__.__name__!r} object first.")
-        
+        self.inspect
+       
         usefulparams = (
             'station','dipole',  'sves_lon_', 'sves_lat_','sves_east_', 
             'sves_north_', 'sves_resistivity_', 'power_', 'magnitude_',
@@ -893,7 +900,7 @@ class ResistivityProfiling(ElectricalMethods):
         table_.rename (columns= {'sves_lat':'latitude', 'sves_lon':'longitude',
                         'sves_east':'easting', 'sves_north':'northing'},
                        inplace =True)
-        if keeponlyparams: 
+        if keep_params: 
             table_.reset_index(inplace =True )
             table_.drop(
                 ['station', 'dipole', 'sves_resistivity', 
@@ -903,33 +910,59 @@ class ResistivityProfiling(ElectricalMethods):
     
         self.table_ = table_ 
             
-        return table_ if return_table else self  
+        return self.table_ if return_table else self  
         
-            
+    #XXX TODO DEFINED CONDUCTIVE 
+    def plotAnomaly (self, **plot_kws): 
+        """ Plot the best conductive zone found in the |ERP|
+        
+        :param plot_kws: dict, additional keyword arguments passed to 
+            :func:~.watex.utils.coreutils.plotAnomaly`. 
+
+        """ 
+        self.inspect 
+        
+        return plotAnomaly(self.resistivity_, cz = self.conductive_zone_, 
+                           station= self.sves_, **plot_kws)  
+    
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
         return repr_callable_obj  (self)
        
     
     def __getattr__(self, name):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in ('data_', 'resistivity_', 'lat_', 'lon_', 
-                            'easting_', 'northing_', 'sves_lon_', 'sves_lat_',
-                            'sves_east_', 'sves_north_', 'sves_resistivity_',
-                            'power_', 'magnitude_','shape_','type_','sfi_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
+        if not name.endswith ('__') and name.endswith ('_'): 
+            raise NotFittedError (
+                f"{self.__class__.__name__!r} instance is not fitted yet."
+                " Call 'fit' method with appropriate arguments before"
+               f" retreiving the attribute {name!r} value."
+                )
+
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
+        if name =='table_': 
+            err_msg =(". Call 'summary' method to fetch attribute 'table_'")
+        else: err_msg =  f'{appender}{"" if rv is None else "?"}' 
+        
         raise AttributeError (
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
-            f'{appender}{"" if rv is None else "?"}'
+            f'{err_msg}'
             )
 
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'sfi_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
     
 @refAppender(refglossary.__doc__)    
 class VerticalSounding (ElectricalMethods): 
@@ -945,13 +978,13 @@ class VerticalSounding (ElectricalMethods):
     Parameters 
     -----------
     
-    **froms**: float 
+    **search**: float 
         The depth in meters from which one expects to find a fracture zone 
-        outside of pollutions. Indeed, the `froms` parameter is used to  
+        outside of pollutions. Indeed, the `search` parameter is used to  
         speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For 
         instance in `Bagoue region`_ , the average depth of water inrush 
-        is around ``45m``.So the `froms` can be specified via the water inrush 
+        is around ``45m``.So the `search` can be specified via the water inrush 
         average value. 
         
     **rho0**: float 
@@ -1050,7 +1083,7 @@ class VerticalSounding (ElectricalMethods):
     --------
     >>> from watex.methods import VerticalSounding 
     >>> from watex.tools import vesSelector 
-    >>> vobj = VerticalSounding(froms= 45, vesorder= 3)
+    >>> vobj = VerticalSounding(search= 45, vesorder= 3)
     >>> vobj.fit('data/ves/ves_gbalo.xlsx')
     >>> vobj.ohmic_area_ # in ohm.m^2
     ... 349.6432550517697
@@ -1075,7 +1108,7 @@ class VerticalSounding (ElectricalMethods):
     """
     
     def __init__(self,
-                 froms: float = 45.,
+                 search: float = 45.,
                  rho0: float = None, 
                  h0 : float = 1., 
                  strategy: str = 'HMCMC',
@@ -1086,20 +1119,23 @@ class VerticalSounding (ElectricalMethods):
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        self.froms=froms 
+        self.search=search 
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
         self.rho0=rho0, 
         self.h0=h0
         self.strategy = strategy
-        self.table_= None 
+        # self.table_= None 
         
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
             
 
-    def fit(self, data: str | DataFrame, **fit_params )-> "VerticalSounding": 
+    def fit(self, 
+            data: str | DataFrame, 
+            **fit_params
+            )-> "VerticalSounding": 
         """ Fit the sounding |VES| curves and computed the ohmic-area and set  
         all the features for demarcating fractured zone from the selected 
         anomaly. 
@@ -1179,17 +1215,17 @@ class VerticalSounding (ElectricalMethods):
                       )
             self.data_['resistivity'] = self.resistivity_
             
-        if self.froms >= self.max_depth_ : 
+        if self.search >= self.max_depth_ : 
             raise VESError(
                 " Process of the depth monitoring is aborted! The searching"
-                f" point of param 'froms'<{self.froms}m> ' is expected to "
+                f" point of param 'search'<{self.search}m> ' is expected to "
                  f" be less than the maximum depth <{self.max_depth_}m>.")
         
         if self.verbose >= 3 : 
-            print("Pseudo-area should be computed from AB/2 ={str(self.froms)}"
+            print("Pseudo-area should be computed from AB/2 ={str(self.search)}"
                   f" to {self.max_depth_} meters. "
                   )
-        r = ohmicArea( data = self.data_ , sum = False, ohmSkey = self.froms,  
+        r = ohmicArea( data = self.data_ , sum = False, search = self.search,  
                     objective = self.objective , typeofop = self.typeofop, 
                     )
         self._logging.info(f'Populating {self.__class__.__name__!r} property'
@@ -1211,7 +1247,7 @@ class VerticalSounding (ElectricalMethods):
 
         self.ohmic_area_= sum(ohmS) # sum the different spaces 
         
-        self.XY_ , _, self.XYarea_ = list(gc) 
+        self.XY_ , self.XYfit_, self.XYarea_ = list(gc) 
         self.AB_ = self.XY_[:, 0] 
         self.resistivity_ = self.XY_[:, 1] 
         self.fractured_zone_= self.XYarea_[:, 0] 
@@ -1222,29 +1258,31 @@ class VerticalSounding (ElectricalMethods):
         return self 
     
     def summary(self,
-                keeponlyparams: bool = False, 
+                keep_params: bool = False, 
                 return_table: bool =False, 
                 ) -> DataFrame | object : 
         """ Summarize the most import features for prediction purpose.
         
-        :param keeponlyparams: bool, 
-            If `keeponlyparams` is set to ``True``. Method should output only 
-            the main important params for prediction purpose. 
-        :param return_table: bool, 
-            if ``True``, returns only the summarized table. 
-            
+         Parameters 
+         -------------
+         keep_params: bool, default=False, 
+             If `keep_params` is set to ``True``. Method should output only 
+             the main important params for prediction purpose. Otherwise, 
+             returns all main DC-resistivity attributes 
+         return_tables: bool, default=False, 
+             if ``True``, returns only the summarized table
+             
+         Returns 
+         --------
+         self or table_: :class:`~.VerticalSounding` or class:`pd.DataFrame` 
+             Returns DC- Sounding object or dataframe. 
         """
         
-        try:
-             getattr(self, 'ohmic_area_'); getattr(self, 'fractured_zone_')
-        except NotFittedError:
-            raise NotFittedError(
-                "Can't call the method 'summary' without fitting the"
-                f" {self.__class__.__name__!r} object first.")
-        
+        self.inspect
+
         usefulparams = (
             'area', 'AB','MN', 'arrangememt','utm_zone', 'objective', 'rho0',
-             'h0', 'froms', 'max_depth_', 'ohmic_area_', 'nareas_')
+             'h0', 'search', 'max_depth_', 'ohmic_area_', 'nareas_')
         
         table_= pd.DataFrame (
             {f"{k}": getattr(self, k , np.nan )
@@ -1258,7 +1296,7 @@ class VerticalSounding (ElectricalMethods):
             'nareas_':'nareas'
                             },
                            inplace =True)
-        if keeponlyparams: 
+        if keep_params: 
             table_.reset_index(inplace =True )
             table_.drop( 
                 [ el for el in list(table_.columns) if el !='ohmic_area'],
@@ -1269,35 +1307,53 @@ class VerticalSounding (ElectricalMethods):
             
         return table_ if return_table else self  
         
+    def plotOhmicArea (self, fbtw= False, **plot_kws ) : 
+        """ Plot the ohmic-area from selected fractured zone.
+        
+        :param fbtw: bool, default=False, 
+            If ``True``, filled the computed fractured zone.
+        :param plot_kws: dict, 
+            Additional keywords arguments passed to 
+            :func:`~watex.utils.exmath.plotOhmicArea`. 
+        """
+        self.inspect 
+        
+        return plotOhmicArea( 
+            xy= self.XY_, xyf = self.XYfit_ , xyarea= self.XYarea_, 
+            data = None , pre_computed = True, fbtw = fbtw , 
+            **plot_kws 
+            )
+    
     def invert( self, data: str | DataFrame , strategy=None, **kwd): 
         """ Invert1D the |VES| data collected in the exporation area.
         
-        :param data: Dataframe pandas - contains the depth measurement AB from 
-            current electrodes, the potentials electrodes MN and the collected 
-            apparents resistivities. 
+        Parameters 
+        ------------
+        data: Dataframe pandas 
+            contains the depth measurement AB from current electrodes, the 
+            potentials electrodes MN and the collected apparent resistivities. 
         
-        :param rho0: float - Value of the starting resistivity model. If ``None``, 
-            `rho0` should be the half minumm value of the apparent resistivity  
+        rho0: float -
+            Value of the starting resistivity model. If ``None``, `rho0` 
+            should be the half minumm value of the apparent resistivity  
             collected. Units is in Ω.m not log10(Ω.m)
-        :param h0: float -  Thickness  in meter of the first layers in meters.
-             If ``None``, it should be the minimum thickess as possible ``1.``m. 
+        h0: float -  Thickness  in meter of the first layers in meters.
+             If ``None``, it should be the minimum thickess as possible
+             ``1.``m. 
         
-        :param strategy: str - Type of inversion scheme. The defaut is Hybrid Monte 
-            Carlo (HMC) known as ``HMCMC``. Another scheme is Bayesian neural network
-            approach (``BNN``). 
+        strategy: str - Type of inversion scheme. The defaut is Hybrid Monte 
+            Carlo (HMC) known as ``HMCMC``. Another scheme is Bayesian neural
+            network approach (``BNN``). 
         
-        :param kwd: dict - Additionnal keywords arguments from |VES| data  
-            operations. See :doc:`watex.utils.exmath.vesDataOperator` for futher
-            details.
+        kwd: dict - Additionnal keywords arguments from |VES| data  
+            operations. See :doc:`watex.utils.exmath.vesDataOperator` for 
+            futherdetails.
         
         .. |VES| replace: Vertical Electrical Sounding 
         
         """
-        self.data_ = getattr(self, 'data_', None)
-        if self.data_ is None: 
-            raise NotFittedError(
-                f'Fit the {self.__class__.__name__!r} object first')
   
+        self.inspect 
         # invert data 
         #XXX TODO 
         if strategy is not None: 
@@ -1309,27 +1365,42 @@ class VerticalSounding (ElectricalMethods):
         return self 
     
     def __repr__(self):
-        """ Pretty format for programmer following the API... """
+        """ Pretty format for developers following the API... """
         return repr_callable_obj(self)
        
     def __getattr__(self, name):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in ('data_', 'resistivity_', 'ohmic_area_', 'err_', 
-                            'roots_', 'XY_', 'XYarea_', 'AB_','resistivity_',
-                            'fractured_zone_', 'fractured_zone__resistivity_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
+        if not name.endswith ('__') and name.endswith ('_'): 
+            raise NotFittedError (
+                f"{self.__class__.__name__!r} instance is not fitted yet."
+                " Call 'fit' method with appropriate arguments before"
+               f" retreiving the attribute {name!r} value."
+                )
+
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
+        if name =='table_': 
+            err_msg =(". Call 'summary' method to fetch attribute 'table_'")
+        else: err_msg =  f'{appender}{"" if rv is None else "?"}' 
+        
         raise AttributeError (
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
-            f'{appender}{"" if rv is None else "?"}'
+            f'{err_msg}'
             )
 
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'ohmic_area_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
     
 def _readfromdcObjs(self, data: List[object ] ,
                      dcmethod:object=ResistivityProfiling ,  
@@ -1486,7 +1557,7 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
         name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
         self.survey_names_ = np.array(make_ids(
             data, name , None, True))
-    # populate and assert stations and froms   
+    # populate and assert stations and search   
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # if list of station is not given for each file 
     # note that here station is station where one expect to 
@@ -1514,12 +1585,12 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
                     utm_zone = self.utm_zone, 
                     )
                 self.data_.append (dcObj.fit(o).summary(
-                    keeponlyparams=True))
+                    keep_params=True))
                 self.stations[kk] = dcObj.sves_ 
                     
             elif dcmethod.__name__ =='VerticalSounding': 
                 dcObj = dcmethod(
-                    froms=self.froms[kk], 
+                    search=self.search[kk], 
                     vesorder=self.vesorder,
                     typeofop=self.typeofop,
                     objective=self.objective,
@@ -1528,7 +1599,7 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
                     strategy=self.strategy
                     )
                 self.data_.append (dcObj.fit(o).summary(
-                    keeponlyparams=True))
+                    keep_params=True))
    
         except : 
             self.isnotvalid_.append(o)
@@ -1562,7 +1633,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
         sf , arg = self.stations , 'stations'
         flag=0
     elif dcmethod.__name__=='VerticalSounding': 
-        sf, arg =self.froms , 'froms'
+        sf, arg =self.search , 'search'
         flag=1
     
     if sf is None: 
@@ -1579,7 +1650,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
         
         msg =''.join([ 
                 f"### Number of {arg!r} does not fit the number of"
-                f" {'sites' if arg =='froms' else 'stations'}. "
+                f" {'sites' if arg =='search' else 'stations'}. "
                 "Expect {0} but {1} {2} given."
             ])
         
@@ -1602,7 +1673,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
     if not flag: 
         self.stations = sf 
     elif flag:
-        self.froms = sf 
+        self.search = sf 
         
         
 def _geterpattr (attr , dl ): 

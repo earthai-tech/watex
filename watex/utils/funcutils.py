@@ -2453,6 +2453,115 @@ def ismissing(refarr, arr, fill_value = np.nan, return_index =False):
     #refarr[refarr ==arr] if return_index else arr 
     return  ref , miss_val_or_ix   
 
+def make_arr_consistent (
+        refarr, arr, fill_value = np.nan, return_index = False, 
+        method='naive'): 
+    """
+    Make `arr` to be consistent with the reference array `refarr`. Fill the 
+    missing value with param `fill_value`. 
+    
+    Note that it does care of the position of the value in the array. Use 
+    Numpy digitize to compute the bins. The array caveat here is the bins 
+    must be monotonically decreasing or increasing.
+    
+    If the values in `arr` are present in `refarr`, the position of `arr` 
+    in new consistent array should be located decreasing or increasing order. 
+    
+    Parameters 
+    ------------
+    arr: array-like 1d, 
+        Array to extended with fill value. It should be  shorter than the 
+        `refarr`.
+        
+    refarr: array-like- the reference array. It should have a greater 
+        length than the array `arr`.  
+    fill_value: float, 
+        Value to fill the `arr` to match the length of the `refarr`. 
+    return_index: bool or str, default=True 
+         index of the position of the  elements in `refarr`.
+         Default is ``False``. If ``mask`` should  return the 
+        mask of existing element in reference array
+    method: str, default="naive"
+        Is the method used to find the right position of items in `arr`
+        based on the reference array. 
+        - ``naive``, considers the length of ``arr`` must fit the number of 
+            items that should be visible in the consistent array. This method 
+            erases the remaining bins values out of length of `arr`. 
+        - ``strict` did the same but rather than considering the length, 
+            it considers the maximum values in the `arr`. It assumes that `arr`
+            is sorted in ascending order. This methods is usefull for plotting 
+            a specific stations since the station loactions are sorted in 
+            ascending order. 
+        
+    Returns 
+    ---------
+    non_zero_index , mask or t  
+        index: indices of the position of `arr` items in ``refarr``. 
+        mask: bool of the position `arr` items in ``refarr``
+        t: new consistent array with the same length as ``refarr``
+    
+    Examples 
+    ----------
+    >>> import numpy as np 
+    >>> from watex.utils.funcutils import make_arr_consistent
+    >>> refarr = np.arange (12) 
+    >>> arr = np.arange (7, 10) 
+    >>> make_arr_consistent (refarr, arr ) 
+    Out[84]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., nan, nan])
+    >>> make_arr_consistent (refarr, arr , return_index =True )
+    Out[104]: array([7, 8, 9], dtype=int64)
+    >>> make_arr_consistent (refarr, arr , return_index ="mask" )
+    Out[105]: 
+    array([False, False, False, False, False, False, False,  True,  True,
+            True, False, False])
+    >>> a = np.arange ( 12 ); b = np.linspace (7, 10 , 7) 
+    >>> make_arr_consistent (a, b ) 
+    Out[112]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., 10., 11.])
+    >>> make_arr_consistent (a, b ,method='strict') 
+    Out[114]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., 10., nan])
+    """
+    try : 
+        refarr = reshape( refarr).shape[1] 
+        arr= reshape( arr).shape[1] 
+    except :pass 
+    else: raise TypeError ("Expects one-dimensional arrays for both arrays.")
+
+    t = np.full_like( refarr, fill_value = np.nan, dtype =float )
+    temp_arr = np.digitize( refarr, arr) 
+    non_zero_index = reshape (np.argwhere (temp_arr!=0 ) ) 
+    t[non_zero_index] = refarr [non_zero_index] 
+    # force value to keep only 
+    # value in array 
+    if method=='strict':
+        index = reshape ( np.argwhere (  (max( arr)  - t) < 0 ) ) 
+        t [index ]= np.nan 
+    else: 
+        if len (t[~np.isnan (t)]) > len(arr): 
+            t [ - (len(t[~np.isnan (t)])-len(arr)):]= np.nan 
+    # update the non_zeros index 
+    non_zero_index= reshape ( np.argwhere (~np.isnan (t)))
+    # now replace all NaN value by filled value 
+    t [np.isnan(t)] = fill_value 
+
+    return  refarr == t  if return_index =='mask' else (
+        non_zero_index if return_index else t )
+
+def find_close_position (refarr, arr): 
+    """ Get the close item from `arr` in the reference array `refarr`. 
+    
+    :param arr: array-like 1d, 
+        Array to extended with fill value. It should be  shorter than the 
+        `refarr`.
+        
+    :param refarr: array-like- 
+        the reference array. It should have a greater length than the
+        array `arr`.  
+    :return: generator of index of the closest position in  `refarr`.  
+    """
+    for item in arr : 
+        ix = np.argmin (np.abs (refarr - item)) 
+        yield ix 
+    
 
 def fillNaN(arr, method ='ff'): 
     """ Most efficient way to back/forward-fill NaN values in numpy array. 
@@ -2611,8 +2720,7 @@ def get_params (obj: object
     
     return PARAMS_VALUES
 
-    
-    
+
 def fit_by_ll(ediObjs): 
     """ Fit edi by location and reorganize EDI (sort EDI) according to the site  
     longitude and latitude coordinates. 
@@ -2622,9 +2730,9 @@ def fit_by_ll(ediObjs):
     according to the location(longitude and latitude) is usefull for distance 
     betwen site computing with a right position at each site.  
     
-    :param ediObjs: list of EDI object , composed of a collection of 
-        pycsamt.core.edi.Edi object 
-    :type ediObjs: pycsamt.core.edi.Edi_Collection 
+    :param ediObjs: list of EDI object, composed of a collection of 
+        watex.edi.Edi or pycsamt.core.edi.Edi or mtpy.core.edi objects 
+    :type ediObjs: watex.edi.Edi_Collection 
 
     
     :returns: array splitted into ediObjs and Edifiles basenames 
@@ -2657,7 +2765,7 @@ def make_ids(arr, prefix =None, how ='py', skip=False):
     
     :param arr: Iterable object to generate an id site . For instance it can be 
         the array-like or list of EDI object that composed a collection of 
-        pycsamt.core.edi.Edi object. 
+        watex.edi.Edi object. 
     :type ediObjs: array-like, list or tuple 
 
     :param prefix: string value to add as prefix of given id. Prefix can be 
@@ -2791,7 +2899,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
     
     :return: station index. If the list `id_` is given will return the tuple.
     
-    :example:
+    :Example:
         
     >>> from watex.utils.funcutils import station_id 
     >>> dat1 = ['S13', 's02', 's85', 'pk20', 'posix1256']

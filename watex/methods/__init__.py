@@ -12,7 +12,7 @@ from .em import (
     Processing 
     )
 from .erp import ERPCollection , ERP 
-from .hydrogeology import Hydrogeology 
+from .hydro import Hydrogeology 
 
 __all__=[
     "EM", 

@@ -27,6 +27,7 @@ from .exmath import (
     get_profile_angle, 
     moving_average, 
     linkage_matrix, 
+    plotOhmicArea
     )
 from .funcutils import ( 
     reshape, 
@@ -114,6 +115,7 @@ __all__=[
         'get_profile_angle', 
         'moving_average', 
         'linkage_matrix',
+        'plotOhmicArea', 
         'reshape', 
         'to_numeric_dtypes' , 
         'cattarget', 

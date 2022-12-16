@@ -64,11 +64,13 @@ from .funcutils import (
     fmt_text, 
     find_position_from_sa , 
     find_feature_positions,
+    find_close_position,
     smart_format,
     reshape,
     ismissing,
     fillNaN, 
-    spi                   
+    spi, 
+                      
 )
 try: import scipy.stats as spstats
 except: pass 
@@ -855,7 +857,7 @@ def invertVES (data: DataFrame[DType[float|int]] = None,
 @refAppender(refglossary.__doc__)    
 def ohmicArea(
         data: DataFrame[DType[float|int]] = None, 
-        ohmSkey: float = 45., 
+        search: float = 45., 
         sum : bool = False, 
         objective: str = 'ohmS',
         **kws
@@ -869,12 +871,12 @@ def ohmicArea(
         electrodes, the potentials electrodes MN and the collected apparents 
         resistivities. 
     
-    * ohmSkey: float - The depth in meters from which one expects to find a 
-        fracture zone outside of pollutions. Indeed, the `ohmSkey` parameter is 
+    * search: float - The depth in meters from which one expects to find a 
+        fracture zone outside of pollutions. Indeed, the `search` parameter is 
         used to  speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For instance 
         in `Bagoue region`_ , the average depth of water inrush
-        is around ``45m``. So the `ohmSkey` can be specified via the water inrush 
+        is around ``45m``. So the `search` can be specified via the water inrush 
         average value. 
         
     * objective: str - Type operation to outputs. By default, the function 
@@ -909,7 +911,7 @@ def ohmicArea(
     Raises
     -------
     VESError 
-        If the `ohmSkey` is greater or equal to the maximum investigation 
+        If the `search` is greater or equal to the maximum investigation 
         depth in meters. 
     
     Examples 
@@ -917,11 +919,11 @@ def ohmicArea(
     >>> from watex.utils.exmath import ohmicArea 
     >>> from watex.utils.coreutils import vesSelector 
     >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx') 
-    >>> (ohmS, err, roots), *_ = ohmicArea(data = data, ohmSkey =45, sum =True ) 
+    >>> (ohmS, err, roots), *_ = ohmicArea(data = data, search =45, sum =True ) 
     ... (13.46012197818152, array([5.8131967e-12]), array([45.        , 98.07307307]))
     # pseudo-area is computed between the spacing point AB =[45, 98] depth. 
     >>> _, (XY.shape, XYfit.shape, XYohms_area.shape) = ohmicArea(
-                    AB= data.AB, rhoa =data.resistivity, ohmSkey =45, 
+                    AB= data.AB, rhoa =data.resistivity, search =45, 
                     objective ='plot') 
     ... ((26, 2), (1000, 2), (8, 2))    
     
@@ -1016,15 +1018,15 @@ def ohmicArea(
     X, Y = vesDataOperator(data =data, **kws)
     
     try : 
-       ohmSkey = str(ohmSkey).lower().replace('m', '')
-       if ohmSkey.find('none')>=0 : 
-           ohmSkey = X.max()/2 
-       ohmSkey = float(ohmSkey)
+       search = str(search).lower().replace('m', '')
+       if search.find('none')>=0 : 
+           search = X.max()/2 
+       search = float(search)
     except: 
-        raise ValueError (f'Could not convert value {ohmSkey!r} to float')
+        raise ValueError (f'Could not convert value {search!r} to float')
         
-    if ohmSkey >= X.max(): 
-        raise VESError(f"The startpoint 'ohmSkey={ohmSkey}m'is expected "
+    if search >= X.max(): 
+        raise VESError(f"The startpoint 'search={search}m'is expected "
                            f"to be less than the 'maxdepth={X.max()}m'.")
 
     #-------> construct the fitting curves for 1000 points 
@@ -1035,11 +1037,11 @@ def ohmicArea(
     # Finding the intercepts between the fitting curve and the dummy 
     # basement curves 
     #--> e. g. start from 20m (oix) --> ... searching  and find the index 
-    oIx = np.argmin (np.abs(X - ohmSkey)) 
+    oIx = np.argmin (np.abs(X - search)) 
     # from this index (oIx) , read the remain depth. 
     oB = X[int(oIx):] # from O-> end [OB]
-    #--< construct the basement curve from the index of ohmSkey
-    f_brl, beta = dummy_basement_curve( f_rhotl,  ohmSkey)
+    #--< construct the basement curve from the index of search
+    f_brl, beta = dummy_basement_curve( f_rhotl,  search)
     # 1000 points from OB (xx)
     xx = np.linspace(oB.min(), oB.max(), 1000)
     b45_projected= f_brl(xx)
@@ -1627,7 +1629,7 @@ def sfi (
         p: Sub[SP[ArrayLike, DType [int]]] | List [int] = None, 
         s: Optional [str] =None, 
         dipolelength: Optional [float] = None, 
-        plot: bool = False,
+        view: bool = False,
         raw : bool = False,
         **plotkws
 ) -> float: 
@@ -1656,7 +1658,7 @@ def sfi (
     :param dipolelength: float. If `p` is not given, it will be set 
         automatically using the default value to match the ``cz`` size. 
         The **default** value is ``10.``.
-    :param plot: bool. Visualize the fitting curve. *Default* is ``False``. 
+    :param view: bool. Visualize the fitting curve. *Default* is ``False``. 
     :param raw: bool. Overlaining the fitting curve with the raw curve from `cz`. 
     :param plotkws: dict. `Matplotlib plot`_ keyword arguments. 
     
@@ -1757,12 +1759,110 @@ def sfi (
         if sfi == np.inf : 
             sfi = np.sqrt ( (pw/pw_star)**2 + (ma / ma_star )**2 ) % np.sqrt(2)
  
-    if plot: 
+    if view: 
         plot_(p,cz,'-ok', xn, yn, raw = raw , **plotkws)
   
     
     return sfi 
 
+def plotOhmicArea (
+    data: DataFrame= None, 
+    search: float = 45., 
+    pre_computed =False, 
+    xy=None, 
+    xyf=None, 
+    xyarea=None, 
+    colors = None, 
+    fbtw=False, 
+    **plot_kws, 
+)->'plot_': 
+    """ 
+    Plot the |VES| data ohmic -area 
+    
+    Parameters 
+    -----------
+    * data: Dataframe pandas 
+        contains the depth measurement AB from current  electrodes, 
+        the potentials electrodes MN and the collected apparent 
+        resistivities. 
+    
+    * search: float, default=45 
+        The depth in meters from which one expects to find a fracture zone 
+        outside of pollutions. Indeed, the `search` parameter is 
+        used to  speculate about the expected groundwater in the fractured rocks 
+        under the average level of water inrush in a specific area. For instance 
+        in `Bagoue region`_ , the average depth of water inrush
+        is around ``45m``. So the `search` can be specified via the water inrush 
+        average value. 
+        
+    pre_computed:bool, default=False,
+        If ``True`` computed the `ohmic_area` parameters. If ``False``, the 
+        ohmic area arguments must be passed to `xy`, `xyf` and `xyarea`, 
+        otherwise an errors will raise. 
+    xy: array-like of shape (n_AB, 2)
+        Arraylike of the sanitized depth measurement AB from current. 
+        electrodes `n_AB`. See :func:`~.vesDataOperator`. 
+    xyf: array-like of shape (n_fit_samples, 2)
+        Array-like of the fitted samples i.e the number of points for 
+        fitting the sounding resistivity values from the surface thin the 
+        total depth. The fitted `rhoa` showns a smooth curves. The default 
+        point is ``1000``. 
+    xyarea: array-like of shape (n_area, 2)
+        Arraylike of the resistivity positions of the depth measurment AB 
+        where the fractured zone is found. 
+        
+    fbtw: bool, default=False, 
+        If ``True``, filled the computed fractured zone using the parameters 
+        computed from `xyf` and `xyarea`.  
+         
+    kws: dict - Additionnal keywords arguments from |VES| data operations. 
+        See :func:`watex.utils.exmath.vesDataOperator` for futher details. 
+    
+    Notes  
+    --------
+    The first and second columns of `xy`, `xyfit` and `xyarea` are 
+    the position AB/2 and  their corresponding resistivity values. 
+    
+    Examples 
+    ----------
+    >>> from watex.datasets import load_semien 
+    >>> from watex.utils.exmath import plotOhmicArea 
+    >>> ves_data = load_gbalo () 
+    >>> plotOhmicArea (ves_data) 
+    """ 
+
+    if not pre_computed: 
+        _ , (xy, xyf, xyarea) = ohmicArea( 
+                data = data , search =search, objective ='plot', sum=False 
+                        ) 
+    if  ( pre_computed 
+         and (xy is None 
+              or xyf is None 
+              or xyarea is None 
+              )
+         ): 
+        raise VESError("'pre_computed'is 'True' while ohmic-area parameters"
+                       " are not computed yet. Set 'pre_computed=False' and "
+                       " provide the appropriate arguments.")
+        
+    c = _manage_colors(colors ) 
+
+    args = [ * xy.T ] + [c[0]] + [*xyf.T ] +[c[1]] + [*xyarea.T] +[c[2]]
+    
+    legs =['raw app.res', 'fitted app.res ', 'ohmic-area']
+    return plot_(*args , dtype ='ves', raw= True, kind='semilogy', fbtw=fbtw, 
+                 leg =legs, **plot_kws) 
+
+def _manage_colors (c, default = ['ok', 'ob-', 'r-']): 
+    """ Manage the ohmic-area plot colors """
+    c = c or default 
+    if isinstance(c, str): 
+        c= [c] 
+    c = list(c) +  default 
+    
+    return c [:3] # return 3colors 
+
+        
 @refAppender(refglossary.__doc__)
 def plot_ (
     *args : List [Union [str, ArrayLike, ...]],
@@ -1771,13 +1871,14 @@ def plot_ (
     style : str = 'seaborn',   
     dtype: str  ='erp',
     kind: Optional[str] = None , 
+    fbtw:bool=False, 
     **kws
     ) -> None : 
     """ Quick visualization for fitting model, |ERP| and |VES| curves.
     
     :param x: array-like - array of data for x-axis representation 
     :param y: array-like - array of data for plot y-axis  representation
-    :param figsize: tuple - Mtplotlib (MPL) figure size; should be a tuple 
+    :param figsize: tuple - Matplotlib (MPL) figure size; should be a tuple 
          value of integers e.g. `figsize =(10, 5)`.
     :param raw: bool- Originally the `plot_` function is intended for the 
         fitting |ERP| model i.e. the correct value of |ERP| data. However, 
@@ -1787,7 +1888,7 @@ def plot_ (
     :param style: str - Pyplot style. Default is ``seaborn``
     :param dtype: str - Kind of data provided. Can be |ERP| data or |VES| data. 
         When the |ERP| data are provided, the common plot is sufficient to 
-        visualize all the data insignt i.e. the default value of `kind` is kept 
+        visualize all the data insight i.e. the default value of `kind` is kept 
         to ``None``. However, when the data collected is |VES| data, the 
         convenient plot for visualization is the ``loglog`` for parameter
         `kind``  while the `dtype` can be set to `VES` to specify the labels 
@@ -1798,6 +1899,11 @@ def plot_ (
         i.e. its keep the normal plots. It can be ``loglog``, ``semilogx`` and 
         ``semilogy``.
         
+    :param fbtw: bool, default=False, 
+        Mostly used for |VES| data. If ``True``, filled the computed 
+        fractured zone using the parameters computed from 
+        :func:`~.watex.utils.exmath.ohmicArea`. 
+
     :param kws: dict - Additional `Matplotlib plot`_ keyword arguments. To cus-
         tomize the plot, one can provide a dictionnary of MPL keyword 
         additional arguments like the example below.
@@ -1822,6 +1928,8 @@ def plot_ (
         del kws['ylabel']
     if (rotate:= kws.get ('rotate')) is not None: 
         del kws ['rotate']
+    if (leg:= kws.get ('leg')) is not None: 
+        del kws ['leg']
         
     if (title:= kws.get ('title')) is not None: 
         del kws ['title']
@@ -1843,7 +1951,6 @@ def plot_ (
                       label =rlabel, 
                       )
         elif kind =='loglog': 
-            print('yes')
             plt.loglog (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
@@ -1853,6 +1960,18 @@ def plot_ (
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
+            
+        if fbtw and dtype=='ves': 
+            # remove colors 
+            args = [ag for ag in args if not isinstance (ag, str)] 
+            if len(args ) <4 : 
+                raise VESError ("'Fill_between' expects four arguments:"
+                                " (x0, y0) for fitting plot and (x1, y1)"
+                                " for ohmic area. Got {len(args)}")
+            xf, yf , xo, yo,*_ = args  
+            # find the index position in xf 
+            ixp = list ( find_close_position (xf, xo ) ) 
+            plt.fill_between(xo, yf[ixp], y2=yo  )
             
     dtype = dtype.lower() if isinstance(dtype, str) else dtype
     
@@ -1881,7 +2000,7 @@ def plot_ (
         
     plt.tight_layout()
     fig.suptitle(**fig_title_kws)
-    plt.legend ()
+    plt.legend (leg, loc ='upper right') if leg  else plt.legend ()
     plt.show ()
         
     
