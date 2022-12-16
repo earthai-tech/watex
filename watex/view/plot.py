@@ -223,12 +223,7 @@ class TPlot (BasePlot):
             returns ``self`` for chaining methods.
         
         """
-        
-        msg =("Can't use the basic plots of module 'TPlot'. Missing"
-              " of the module 'pycsamt' built on top of EM method."
-              )
-        import_optional_dependency ('pycsamt', extra= msg )
-        
+
         p = Processing(
             window_size = self.window_size ,  
             component= self.component, 
