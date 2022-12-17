@@ -957,7 +957,7 @@ class _zupdate(EM):
     """ A decorator for impedance tensor updating. 
     
     Update a Z object from each EDI object composing the collection objects 
-    and output a new EDI-files is `option` is set to ``write``. 
+    and output a new EDI-files if `option` is set to ``write``. 
     
     :param option: str - kind of action to perform with new Z collection.
         When `option` is set to ``write``. The new EDI -files are exported.
@@ -1141,7 +1141,7 @@ class Processing (EM) :
         mode: str ='same', 
         method:str ='slinear', 
         out:str  ='srho', 
-        c: str =2, 
+        c: int =2, 
         **kws
         ): 
         super().__init__(**kws)
@@ -2058,7 +2058,7 @@ class Processing (EM) :
             
         Returns 
         -------
-        Zc:class:`pycsamt.core.z.Z` impedance tensor objects.
+        Zc:class:`watex.external.z.Z` impedance tensor objects.
             
         Examples 
         --------

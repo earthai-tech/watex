@@ -49,8 +49,6 @@ from .._typing import (
     F, 
     EDIO
 )
-from ..utils._dependency import ( 
-    import_optional_dependency )
 from ..utils.coreutils import _is_readable
 from ..utils.exmath import ( 
     moving_average , fittensor)
@@ -73,6 +71,7 @@ from ..utils.mlutils import (
     exporttarget 
     )
 from ..utils.plotutils import make_mpl_properties
+from ..utils.validator import check_X_y 
 try: 
     import missingno as msno 
 except : pass 
@@ -88,7 +87,7 @@ except: pass
 
 try : 
     from ..methods.em import Processing 
-except : pass 
+except: pass 
 
   
 _logger=watexlog.get_watex_logger(__name__)
@@ -189,7 +188,7 @@ class TPlot (BasePlot):
         mode: str ='same', 
         method:str ='slinear', 
         out:str  ='srho', 
-        c: str =2,
+        c: int =2,
         **kws
         ): 
         super().__init__(**kws)
@@ -656,6 +655,7 @@ class TPlot (BasePlot):
         out='srho', how='py', c=2> 
         
         """
+        self.inspect 
         
         _c= {
               'xx': [slice (None, len(self.p_.freqs_)), 0 , 0] , 
@@ -663,7 +663,7 @@ class TPlot (BasePlot):
               'yx': [slice (None, len(self.p_.freqs_)), 1 , 0], 
               'yy': [slice (None, len(self.p_.freqs_)), 1,  1] 
         }
-        self.inspect 
+
         if isinstance(site, str): 
             site =[site]
         site_index = station_id(site) 
@@ -719,7 +719,12 @@ class ExPlot (BasePlot):
            " this method"
            )
     
-    def __init__(self, tname:str = None, inplace:bool = False, **kws):
+    def __init__(
+        self, 
+        tname:str = None, 
+        inplace:bool = False, 
+        **kws
+        ):
         super().__init__(**kws)
         
         self.tname= tname
@@ -1725,23 +1730,21 @@ class ExPlot (BasePlot):
 
 
                        
-class QuickPlot (BasePlot)  : 
-    def __init__(self,  classes = None, tname= None,  **kws): 
-        
-        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
-        self.classes = kws.pop('classes', None)
-        self.tname= kws.pop('tname', None)
-        self.mapflow= kws.pop('mapflow', False)
-        
+class QuickPlot (BasePlot): 
+    def __init__(
+        self,  
+        classes = None, 
+        tname= None, 
+        mapflow=False, 
+        **kws
+        ): 
         super().__init__(**kws)
         
-        self.data_ =None 
-        self.y = None 
+        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
+        self.classes=classes
+        self.tname=tname
+        self.mapflow=mapflow
         
-        for key in kws.keys(): 
-            setattr(self, key, kws[key])
-
-
     @property 
     def data(self): 
         return self.data_ 
@@ -1754,7 +1757,9 @@ class QuickPlot (BasePlot)  :
         calling :class:`watex.bases.features.FeatureInspection`  to populate 
         convenient attributes especially when the target name is specified as 
         `flow`. Be sure to set other name if you dont want to consider flow 
-        features inspection."""
+        features inspection.
+        
+        """
           
         if str(self.tname).lower() =='flow':
             # default inspection for DC -flow rate prediction
@@ -1764,11 +1769,10 @@ class QuickPlot (BasePlot)  :
                 mapflow= self.mapflow 
                            ).fit(data=data)
            self.data_= fobj.data  
-        elif isinstance(data, str) :
-            self.data_ = _is_readable(data )
-        elif isinstance(data, pd.DataFrame): 
-            self.data_ = data
-            
+           
+        self.data_ = _is_readable(
+            data , input_name="'data'")
+        
         if str(self.tname).lower() in self.data_.columns.str.lower(): 
             ix = list(self.data.columns.str.lower()).index (
                 self.tname.lower() )
@@ -1777,53 +1781,63 @@ class QuickPlot (BasePlot)  :
             self.X_ = self.data_.drop(columns =self.data_.columns[ix] , 
                                          )
             
-    def fit(self,
-            data: str | DataFrame, 
-            y: Optional[Series| ArrayLike]=None
-            )-> object : 
-        """ Fit data and populate the attributes for plotting purposes. 
+    def fit(
+        self,
+        data: str | DataFrame, 
+        y: Optional[Series| ArrayLike]=None
+    )-> "QuickPlot" : 
+        """ 
+        Fit data and populate the attributes for plotting purposes. 
         
         Parameters 
         ----------
-        data: str or pd.core.DataFrame, 
-            Path -like object or Dataframe. If data is given as path-like object,
-            `QuickPlot` calls  the module from :mod:`watex.bases.features`
-            for data reading and sanitizing data before plotting. Be aware in this
-            case to provide the target name and possible the `classes` of for 
-            data analysis. Both str or dataframe need to provide the name of target. 
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target.  
         
         y: array-like, optional 
-            array of the target. Must be the same length as the data. If `y` is 
-            provided and `data` is given as ``str`` or ``DataFrame``, all the data 
-            should be considered as the X data for analysis. 
-          
+            array of the target. Must be the same length as the data. If `y` 
+            is provided and `data` is given as ``str`` or ``DataFrame``, 
+            all the data should be considered as the X data for analysis. 
+  
          Returns
          -------
-         :class:`QuickPlot` instance
+         self: :class:`QuickPlot` instance
              Returns ``self`` for easy method chaining.
              
         Examples 
         --------
-
+        >>> from watex.datasets import load_bagoue
+        >>> data = load_bagoue ().frame
         >>> from watex.view.plot import QuickPlot
         >>> qplotObj= QuickPlot(xlabel = 'Flow classes in m3/h',
                                 ylabel='Number of  occurence (%)')
         >>> qplotObj.tname= None # eith nameof target set to None 
         >>> qplotObj.fit(data)
         >>> qplotObj.data.iloc[1:2, :]
-        ...  num name    east      north  ...         ohmS        lwi      geol flow
-            1    2   b2  791227  1159566.0  ...  1135.551531  21.406531  GRANITES  0.8
+        ...     num name      east      north  ...         ohmS        lwi      geol flow
+            1  2.0   b2  791227.0  1159566.0  ...  1135.551531  21.406531  GRANITES  0.0
         >>> qplotObj.tname= 'flow'
         >>> qplotObj.mapflow= True # map the flow from num. values to categ. values
         >>> qplotObj.fit(data)
         >>> qplotObj.data.iloc[1:2, :]
-        ... num  power  magnitude shape  ...         ohmS        lwi      geol  flow
-        id                               ...                                        
-        b2    2   70.0      142.0     V  ...  1135.551531  21.406531  GRANITES   FR1
+        ...    num name      east      north  ...         ohmS        lwi      geol flow
+            1  2.0   b2  791227.0  1159566.0  ...  1135.551531  21.406531  GRANITES  FR0
          
         """
         self.data = data 
         if y is not None: 
+            _, y = check_X_y(
+                self.data, y, 
+                force_all_finite="allow-nan", 
+                dtype =object, 
+                to_frame = True 
+                )
             y = _assert_all_types(y, np.ndarray, list, tuple, pd.Series)
             if len(y)!= len(self.data) :
                 raise ValueError(
@@ -1834,44 +1848,19 @@ class QuickPlot (BasePlot)  :
             # for consistency get the name of target 
             self.tname = self.y.name 
             
-            
         return self 
     
-    def __repr__(self):
-        """ Pretty format for programmer guidance following the API... """
-        return repr_callable_obj  (self, skip ='y') 
-       
-    def __getattr__(self, name):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in ('data_', 'X_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
-        rv = smart_strobj_recognition(name, self.__dict__, deep =True)
-        appender  = "" if rv is None else f'. Do you mean {rv!r}'
-        
-        raise AttributeError (
-            f'{self.__class__.__name__!r} object has no attribute {name!r}'
-            f'{appender}{"" if rv is None else "?"}'
-            )        
-       
-    def histcatdist(self, data:  str | DataFrame = None, 
-                               stacked: bool = False,  **kws): 
+    def histcatdist(
+        self, 
+        stacked: bool = False,  
+        **kws
+        ): 
         """
         Quick plot a distributions of categorized classes according to the 
         percentage of occurence. 
         
         Parameters 
         -----------
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Both are the sequence of data. If 
-            data is given as path-like object,`QuickPlot` reads and sanitizes 
-            data before plotting. Be aware in this case to provide the target 
-            name and possible the `classes` of for data inspection. Both str or
-            dataframe need to provide the name of target. 
-            
         stacked: bool 
             Pill bins one to another as a cummulative values. *default* is 
             ``False``. 
@@ -1913,31 +1902,49 @@ class QuickPlot (BasePlot)  :
             an optional parameter and it contains the boolean values. It uses 
             the density keyword argument instead.
           
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+            
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
-             
+            
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
+        
         Examples 
         ---------
-        >>> from watex.view.plot import QuickPlot 
-        >>> qplotObj= QuickPlot(xlabel = 'Flow classes in m3/h',
-                                ylabel='Number of  occurence (%)'
-                                lc='b')
-        >>> qplotObj.histcatdist()
+        >>> from watex.view.plot import QuickPlot
+        >>> from watex.datasets import load_bagoue 
+        >>> data = load_bagoue ().frame
+        >>> qplotObj= QuickPlot(xlabel = 'Flow classes',
+                                ylabel='Number of  occurence (%)',
+                                lc='b', tname='flow')
+        >>> qplotObj.sns_style = 'darkgrid'
+        >>> qplotObj.fit(data)
+        >>> qplotObj. histcatdist()
         
         """
         self._logging.info('Quick plot of categorized classes distributions.'
                            f' the target name: {self.tname!r}')
         
-        if self.data_ is None: 
-            self.fit(data)
-            
-        if self.data is None: 
-            raise PlotError( "Can plot histogram with NoneType value!")
-
+        self.inspect 
+    
         if self.tname is None and self.y is None: 
-            raise FeatureError("Please specify the name of the target. ")
+            raise FeatureError(
+                "Please specify 'tname' as the name of the target")
 
         # reset index 
         df_= self.data_.copy()  #make a copy for safety 
@@ -1958,24 +1965,17 @@ class QuickPlot (BasePlot)  :
         
         return self 
     
-    def barcatdist(self,
-                           data: str | DataFrame =None, 
-                           basic_plot: bool = True,
-                           groupby: List[str] | Dict [str, float] =None,
-                           **kws):
+    def barcatdist(
+        self,
+        basic_plot: bool = True,
+        groupby: List[str] | Dict [str, float] =None,
+        **kws):
         """
         Bar plot distribution. Can plot a distribution according to 
         the occurence of the `target` in the data and other parameters 
         
         Parameters 
         -----------
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Both are the sequence of data. If 
-            data is given as path-like object,`QuickPlot` reads and sanitizes 
-            data before plotting. Be aware in this case to provide the target 
-            name and possible the `classes` of for data inspection. Both str or
-            dataframe need to provide the name of target. 
-            
         basic_pot: bool, 
             Plot only the occurence of targetted columns from 
             `matplotlib.pyplot.bar` function. 
@@ -1994,31 +1994,44 @@ class QuickPlot (BasePlot)  :
         kws: dict, 
             Additional keywords arguments from `seaborn.countplot`
           
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+            
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
-              
+            
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
+        
         Examples
         ----------
-            >>> from watex.view.plot import QuickPlot
-            >>> data = '../data/geodata/main.bagciv.data.csv'
-            >>> qplotObj= QuickPlot(xlabel = 'Anomaly type',
-                                    ylabel='Number of  occurence (%)',
-                                    lc='b', tname='flow')
-            >>> qplotObj.sns_style = 'darkgrid'
-            >>> qplotObj.fit(data)
-            >>> qplotObj. barcatdist(basic_plot =False, 
-            ...                                groupby=['shape' ])
+        >>> from watex.view.plot import QuickPlot
+        >>> from watex.datasets import load_bagoue 
+        >>> data = load_bagoue ().frame
+        >>> qplotObj= QuickPlot(xlabel = 'Anomaly type',
+                                ylabel='Number of  occurence (%)',
+                                lc='b', tname='flow')
+        >>> qplotObj.sns_style = 'darkgrid'
+        >>> qplotObj.fit(data)
+        >>> qplotObj. barcatdist(basic_plot =False, 
+        ...                      groupby=['shape' ])
    
         """
+        self.inspect 
         
-        if data is not None: 
-            self.data= data 
-            
-        if self.data_ is None: 
-            raise PlotError ("NoneType can not be plotted!")
-
         fig, ax = plt.subplots(figsize = self.fig_size)
         
         df_= self.data.copy(deep=True)  #make a copy for safety 
@@ -2072,17 +2085,17 @@ class QuickPlot (BasePlot)  :
         return self 
     
     
-    def multicatdist(self, 
-                    data : str | DataFrame = None, 
-                    *, 
-                    x =None, 
-                    col=None, 
-                    hue =None, 
-                    targets: List[str]=None,
-                    x_features:List[str]=None ,
-                    y_features: List[str]=None, 
-                    kind:str='count',
-                    **kws): 
+    def multicatdist(
+        self, 
+        *, 
+        x =None, 
+        col=None, 
+        hue =None, 
+        targets: List[str]=None,
+        x_features:List[str]=None ,
+        y_features: List[str]=None, 
+        kind:str='count',
+        **kws): 
         """
         Figure-level interface for drawing multiple categorical distributions
         plots onto a FacetGrid.
@@ -2091,15 +2104,6 @@ class QuickPlot (BasePlot)  :
         
         Parameters 
         -----------
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Long-form (tidy) dataset for 
-            plotting. Each column should correspond to a variable,  and each 
-            row should correspond to an observation. If data is given as 
-            path-like object,`QuickPlot` reads and sanitizes data before 
-            plotting. Be aware in this case to provide the target name and 
-            possible the `classes` of for data inspection. Both str or dataframe
-            need to provide the name of target. 
-            
         x, y, hue: list , Optional, 
             names of variables in data. Inputs for plotting long-form data. 
             See examples for interpretation. Here it can correspond to  
@@ -2209,15 +2213,33 @@ class QuickPlot (BasePlot)  :
             Other keyword arguments are passed through to the underlying 
             plotting function.
             
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+            
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
-             
+            
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
+        
         Examples
         ---------
         >>> from watex.view.plot import QuickPlot 
-        >>> data = 'data/geodata/main.bagciv.data.csv'
+        >>> from watex.datasets import load_bagoue 
+        >>> data = load_bagoue ().frame
         >>> qplotObj= QuickPlot(lc='b', tname='flow')
         >>> qplotObj.sns_style = 'darkgrid'
         >>> qplotObj.mapflow=True # to categorize the flow rate 
@@ -2230,11 +2252,7 @@ class QuickPlot (BasePlot)  :
         >>> qplotObj.multicatdist(**fdict)
             
         """
-        if data is not None: 
-            self.data= data 
-            
-        if self.data_ is None: 
-            raise PlotError ("NoneType can not be plotted!")
+        self.inspect 
             
         # set 
         if x is None :
@@ -2285,13 +2303,13 @@ class QuickPlot (BasePlot)  :
         
         return self 
     
-    def corrmatrix(self,
-                        data: str | DataFrame =None, 
-                        cortype:str ='num',
-                        features: Optional[List[str]] = None, 
-                        method: str ='pearson',
-                        min_periods: int=1, 
-                        **sns_kws): 
+    def corrmatrix(
+        self,
+        cortype:str ='num',
+        features: Optional[List[str]] = None, 
+        method: str ='pearson',
+        min_periods: int=1, 
+        **sns_kws): 
         """
         Method to quick plot the numerical and categorical features. 
         
@@ -2303,15 +2321,6 @@ class QuickPlot (BasePlot)  :
 
         Parameters 
         -----------
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Long-form (tidy) dataset for 
-            plotting. Each column should correspond to a variable,  and each 
-            row should correspond to an observation. If data is given as 
-            path-like object,`QuickPlot` reads and sanitizes data before 
-            plotting. Be aware in this case to provide the target name and 
-            possible the `classes` of for data inspection. Both str or dataframe
-            need to provide the name of target. 
-
         cortype: str, 
             The typle of parameters to cisualize their coreletions. Can be 
             ``num`` for numerical features and ``cat`` for categorical features. 
@@ -2336,24 +2345,44 @@ class QuickPlot (BasePlot)  :
         sns_kws: Other seabon heatmap arguments. Refer to 
                 https://seaborn.pydata.org/generated/seaborn.heatmap.html
                 
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+            
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
+            
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
              
            
         Example 
         ---------
         >>> from watex.view.plot import QuickPlot 
-        >>> qplotObj = QuickPlot().fit('../data/geodata/main.bagciv.data.csv')
+        >>> from watex.datasets import load_bagoue 
+        >>> data = load_bagoue ().frame
+        >>> qplotObj = QuickPlot().fit(data)
         >>> sns_kwargs ={'annot': False, 
         ...            'linewidth': .5, 
         ...            'center':0 , 
         ...            # 'cmap':'jet_r', 
         ...            'cbar':True}
-        >>> qplotObj.corrmatrix(cortype='cat', **sns_kwargs) 
+        >>> qplotObj.corrmatrix(cortype='cat', **sns_kwargs)
             
         """
+        self.inspect 
         corc = str(copy.deepcopy(cortype))
         cortype= str(cortype).lower().strip() 
         if cortype.find('num')>=0 or cortype in (
@@ -2365,10 +2394,7 @@ class QuickPlot (BasePlot)  :
         if cortype not in ('num', 'cat'): 
             return ValueError ("Expect 'num' or 'cat' for numerical and"
                                f" categorical features, not : {corc!r}")
-        
-        if data is not None : 
-            self.data = data
-        
+       
         df_= self.data.copy(deep=True)
         # df_.reset_index(inplace=True )
         
@@ -2409,26 +2435,18 @@ class QuickPlot (BasePlot)  :
         return self 
     
               
-    def numfeatures(self, 
-                    data: str | DataFrame =None ,
-                    features=None, 
-                    coerce: bool= False,  
-                    map_lower_kws=None, **sns_kws): 
+    def numfeatures(
+        self, 
+        features=None, 
+        coerce: bool= False,  
+        map_lower_kws=None,
+        **sns_kws): 
         """
         Plot qualitative features distribution using correlative aspect. Be 
         sure to provided numerical features arguments. 
         
         Parameters 
         -----------
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Long-form (tidy) dataset for 
-            plotting. Each column should correspond to a variable,  and each 
-            row should correspond to an observation. If data is given as 
-            path-like object,`QuickPlot` reads and sanitizes data before 
-            plotting. Be aware in this case to provide the target name and 
-            possible the `classes` for data inspection. Both str or dataframe
-            need to provide the name of target. 
-            
         features: list
             List of numerical features to plot for correlating analyses. 
             will raise an error if features does not exist in the data 
@@ -2450,34 +2468,51 @@ class QuickPlot (BasePlot)  :
             http://seaborn.pydata.org/generated/seaborn.pairplot.html for 
             further details.             
                      
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+            
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
             
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
+            
               
         Examples
         ---------
-            
-            >>> from watex.view.plot import QuickPlot 
-            >>> data = '../data/geodata/main.bagciv.data.csv'
-            >>> qkObj = QuickPlot(mapflow =True, tname='flow'
-                                      ).fit(data)
-            >>> qkObj.sns_style ='darkgrid', 
-            >>> qkObj.fig_title='Quantitative features correlation'
-            >>> sns_pkws={'aspect':2 , 
-            ...          "height": 2, 
-            ...          'markers':['o', 'x', 'D', 'H', 's'], 
-            ...          'diag_kind':'kde', 
-            ...          'corner':False,
-            ...          }
-            >>> marklow = {'level':4, 
-            ...          'color':".2"}
-            >>> qkObj.numfeatures(coerce=True, map_lower_kws=marklow, **sns_pkws)
+        >>> from watex.view.plot import QuickPlot 
+        >>> from watex.datasets import load_bagoue 
+        >>> data = load_bagoue ().frame
+        >>> qkObj = QuickPlot(mapflow =False, tname='flow'
+                                  ).fit(data)
+        >>> qkObj.sns_style ='darkgrid', 
+        >>> qkObj.fig_title='Quantitative features correlation'
+        >>> sns_pkws={'aspect':2 , 
+        ...          "height": 2, 
+        # ...          'markers':['o', 'x', 'D', 'H', 's',
+        #                         '^', '+', 'S'],
+        ...          'diag_kind':'kde', 
+        ...          'corner':False,
+        ...          }
+        >>> marklow = {'level':4, 
+        ...          'color':".2"}
+        >>> qkObj.numfeatures(coerce=True, map_lower_kws=marklow, **sns_pkws)
                                                 
         """
-        if data is not None : 
-            self.data = data
+        self.inspect 
             
         df_= self.data.copy(deep=True)
         
@@ -2491,9 +2526,8 @@ class QuickPlot (BasePlot)  :
                               " the numerical features.")
                 raise ValueError (msg + "; set 'coerce'to 'True' to keep the"
                                   " the numerical insights")
-   
+
         df_= selectfeatures(df_, include ='number')
-        
         ax =sns.pairplot(data =df_, hue=self.tname,**sns_kws)
         
         if map_lower_kws is not None : 
@@ -2517,10 +2551,11 @@ class QuickPlot (BasePlot)  :
         
         return self 
     
-    def joint2features(self,features: List [str], *,
-                       data: str | DataFrame=None, 
-                       join_kws=None, marginals_kws=None, 
-                       **sns_kws):
+    def joint2features(
+        self,
+        features: List [str], *,
+        join_kws=None, marginals_kws=None, 
+        **sns_kws):
         """
         Joint methods allow to visualize correlation of two features. 
         
@@ -2531,15 +2566,6 @@ class QuickPlot (BasePlot)  :
         features: list
             List of numerical features to plot for correlating analyses. 
             will raise an error if features does not exist in the data 
-        
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Long-form (tidy) dataset for 
-            plotting. Each column should correspond to a variable,  and each 
-            row should correspond to an observation. If data is given as 
-            path-like object,`QuickPlot` reads and sanitizes data before 
-            plotting. Be aware in this case to provide the target name and 
-            possible the `classes` for data inspection. Both str or dataframe
-            need to provide the name of target. 
 
         join_kws:dict, optional 
             Additional keyword arguments are passed to the function used 
@@ -2555,16 +2581,34 @@ class QuickPlot (BasePlot)  :
             :ref:`<http://seaborn.pydata.org/generated/seaborn.jointplot.html>` 
             for more details about usefull kwargs to customize plots. 
           
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+            
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
+            
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
               
              
-        Example
-        --------
+        Examples
+        ----------
         >>> from watex.view.plot import QuickPlot 
-        >>> data = r'../data/geodata/main.bagciv.data.csv'
+        >>> from watex.datasets import load_bagoue 
+        >>> data = load_bagoue ().frame
         >>> qkObj = QuickPlot( lc='b', sns_style ='darkgrid', 
         ...             fig_title='Quantitative features correlation'
         ...             ).fit(data)  
@@ -2578,10 +2622,9 @@ class QuickPlot (BasePlot)  :
         >>> qkObj.joint2features(features=['ohmS', 'lwi'], 
         ...            join_kws=joinpl_kws, marginals_kws=plmarg_kws, 
         ...            **sns_pkws, 
-        ...            ) 
+        ...            )
         """
-        if data is not None : 
-            self.data = data
+        self.inspect 
   
         df_= self.data.copy(deep=True)
         
@@ -2621,10 +2664,10 @@ class QuickPlot (BasePlot)  :
             
         return self 
           
-    def scatteringfeatures(self,features: List [str], *,
-                           data: str | DataFrame=None,
-                           relplot_kws= None, 
-                           **sns_kws ): 
+    def scatteringfeatures(
+        self,features: List [str], *,
+        relplot_kws= None, 
+        **sns_kws ): 
         """
         Draw a scatter plot with possibility of several semantic features 
         groupings.
@@ -2641,16 +2684,7 @@ class QuickPlot (BasePlot)  :
         features: list
             List of numerical features to plot for correlating analyses. 
             will raise an error if features does not exist in the data 
-        
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Long-form (tidy) dataset for 
-            plotting. Each column should correspond to a variable,  and each 
-            row should correspond to an observation. If data is given as 
-            path-like object,`QuickPlot` reads and sanitizes data before 
-            plotting. Be aware in this case to provide the target name and 
-            possible the `classes` for data inspection. Both str or dataframe
-            need to provide the name of target. 
-
+            
         relplot_kws: dict, optional 
             Extra keyword arguments to show the relationship between 
             two features with semantic mappings of subsets.
@@ -2662,7 +2696,28 @@ class QuickPlot (BasePlot)  :
             to identify the different subsets. For more details, please consult
             :ref:`<http://seaborn.pydata.org/generated/seaborn.scatterplot.html>`. 
             
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
             
+        Returns
+        -------
+        :class:`QuickPlot` instance
+            Returns ``self`` for easy method chaining.
+            
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
+        
         Returns
         -------
         :class:`QuickPlot` instance
@@ -2671,7 +2726,8 @@ class QuickPlot (BasePlot)  :
         Examples
         ----------
         >>> from watex.view.plot import  QuickPlot 
-        >>> data = r'../data/geodata/main.bagciv.data.csv'
+        >>> from watex.datasets import load_bagoue 
+        >>> data = load_bagoue ().frame
         >>> qkObj = QuickPlot(lc='b', sns_style ='darkgrid', 
         ...             fig_title='geol vs lewel of water inflow',
         ...             xlabel='Level of water inflow (lwi)', 
@@ -2702,11 +2758,10 @@ class QuickPlot (BasePlot)  :
         >>> qkObj.scatteringfeatures(features=['lwi', 'flow'],
         ...                         relplot_kws=regpl_kws,
         ...                         **sns_pkws, 
-        ...                    ) 
+        ...                    )
             
         """
-        if data is not None : 
-            self.data = data
+        self.inspect 
             
         df_= self.data.copy(deep=True)
         
@@ -2745,11 +2800,11 @@ class QuickPlot (BasePlot)  :
         
         return self 
        
-    def discussingfeatures(self, features, *, 
-                           data: str | DataFrame= None,
-                           map_kws: Optional[dict]=None, 
-                           map_func: Optional[F] = None, 
-                           **sns_kws)-> None: 
+    def discussingfeatures(
+        self, features, *, 
+        map_kws: Optional[dict]=None, 
+        map_func: Optional[F] = None, 
+        **sns_kws)-> None: 
         """
         Provides the features names at least 04 and discuss with 
         their distribution. 
@@ -2775,14 +2830,7 @@ class QuickPlot (BasePlot)  :
             
             If 03 `features` are given, the latter is considered as a `target`
         
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Long-form (tidy) dataset for 
-            plotting. Each column should correspond to a variable,  and each 
-            row should correspond to an observation. If data is given as 
-            path-like object,`QuickPlot` reads and sanitizes data before 
-            plotting. Be aware in this case to provide the target name and 
-            possible the `classes` for data inspection. Both str or dataframe
-            need to provide the name of target. 
+       
 
         map_kws:dict, optional 
             Extra keyword arguments for mapping plot.
@@ -2795,14 +2843,31 @@ class QuickPlot (BasePlot)  :
         sns_kwargs: dict, optional
            kwywords arguments to control what visual semantics are used 
            to identify the different subsets. For more details, please consult
-           :ref:`<http://seaborn.pydata.org/generated/seaborn.FacetGrid.html>`. 
-        
+           :ref:`<http://seaborn.pydata.org/generated/seaborn.FacetGrid.html>`.
+           
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
+            
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
+            
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
 
-        Example
+        Examples
         --------
         >>> from watex.view.plot import  QuickPlot 
         >>> data = 'data/geodata/main.bagciv.data.csv'
@@ -2820,8 +2885,7 @@ class QuickPlot (BasePlot)  :
         ...                           map_kws=map_kws,  **sns_pkws
         ...                         )   
         """
-        if data is not None : 
-            self.data = data
+        self.inspect 
 
         df_= self.data.copy(deep=True)
         
@@ -2893,25 +2957,20 @@ class QuickPlot (BasePlot)  :
          
         return self 
          
-    def naiveviz(self,
-                data: str | DataFrame= None, 
-                x:str =None, y:str =None, kind:str ='scatter',
-                s_col ='lwi', leg_kws:dict ={}, **pd_kws
-                ):
+    def naiveviz(
+        self,
+        x:str =None, 
+        y:str =None, 
+        kind:str ='scatter',
+        s_col ='lwi', 
+        leg_kws:dict ={}, 
+        **pd_kws
+        ):
         """ Create a plot to visualize the data using `x` and `y` 
         considered as dataframe features. 
         
         Parameters 
         -----------
-        data: str or pd.core.DataFrame
-            Path -like object or Dataframe. Long-form (tidy) dataset for 
-            plotting. Each column should correspond to a variable,  and each 
-            row should correspond to an observation. If data is given as 
-            path-like object,`QuickPlot` reads and sanitizes data before 
-            plotting. Be aware in this case to provide the target name and 
-            possible the `classes` for data inspection. Both str or dataframe
-            need to provide the name of target. 
-
         x: str , 
             Column name to hold the x-axis values 
         y: str, 
@@ -2924,19 +2983,36 @@ class QuickPlot (BasePlot)  :
             
         leg_kws:dict, kws 
             Matplotlib legend keywords arguments 
+           
+        data: str or pd.core.DataFrame
+            Path -like object or Dataframe. Long-form (tidy) dataset for 
+            plotting. Each column should correspond to a variable,  and each 
+            row should correspond to an observation. If data is given as 
+            path-like object,`QuickPlot` reads and sanitizes data before 
+            plotting. Be aware in this case to provide the target name and 
+            possible the `classes` for data inspection. Both str or dataframe
+            need to provide the name of target. 
             
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
             
-        Example
+        Notes 
+        -------
+        The argument for  `data` must be passed to `fit` method. `data` 
+        parameter is not allowed in other `QuickPlot` method. The description 
+        of the parameter `data` is to give a synopsis of the kind of data 
+        the plot expected. An error will raise if force to pass `data` 
+        argument as a keyword arguments. 
+        
+        Examples
         --------- 
         >>> import watex.utils.mlutils as mfunc
-        >>> from watex.bases.transformers import StratifiedWithCategoryAdder
+        >>> from watex.transformers import StratifiedWithCategoryAdder
         >>> from watex.view.plot import QuickPlot
-        >>> data = r'../data/geodata/main.bagciv.data.csv'
-        >>> df = mfunc.load_data(data)
+        >>> from watex.datasets import load_bagoue 
+        >>> df = load_bagoue ().frame
         >>> stratifiedNumObj= StratifiedWithCategoryAdder('flow')
         >>> strat_train_set , *_= \
         ...    stratifiedNumObj.fit_transform(X=df) 
@@ -2950,11 +3026,7 @@ class QuickPlot (BasePlot)  :
         >>> qkObj.naiveviz( x= 'east', y='north', **pd_kws)
     
         """
-        if data is not None : 
-            self.data = data
-            
-        if self.data is None: 
-            raise NotFittedError("Fit the {self.__class__.__name__!r} instance.")
+        self.inspect
             
         df_= self.data.copy(deep=True)
         
@@ -2976,6 +3048,40 @@ class QuickPlot (BasePlot)  :
         
         return self 
     
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        return repr_callable_obj  (self, skip ='y') 
+    
+       
+    def __getattr__(self, name):
+        if not name.endswith ('__') and name.endswith ('_'): 
+            raise NotFittedError (
+                f"{self.__class__.__name__!r} instance is not fitted yet."
+                " Call 'fit' method with appropriate arguments before"
+               f" retreiving the attribute {name!r} value."
+                )
+        rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+        appender  = "" if rv is None else f'. Do you mean {rv!r}'
+        
+        raise AttributeError (
+            f'{self.__class__.__name__!r} object has no attribute {name!r}'
+            f'{appender}{"" if rv is None else "?"}'
+            )      
+       
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'data_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1
+     
 ExPlot .__doc__=r"""\
 Exploratory plot for data analysis 
 

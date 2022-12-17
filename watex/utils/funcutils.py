@@ -2394,7 +2394,7 @@ def ismissing(refarr, arr, fill_value = np.nan, return_index =False):
     The function makes sense especially for frequency interpollation in the 
     'attenuation band' when using the audio-frequency magnetotelluric methods. 
     
-    :param arr: array-like- Array to extended with fill value. It should be  
+    :param arr: array-like- Array to be extended with fill value. It should be  
         shorter than the `refarr`. Otherwise it returns the same array `arr` 
     :param refarr: array-like- the reference array. It should have a greater 
         length than the array 

@@ -70,9 +70,9 @@ from .gistools import (
     HAS_GDAL, 
     )
 from .validator import  (
-    _is_valid_ves , 
     _is_arraylike_1d, 
     _check_consistency_size, 
+    is_valid_dc_data, 
     array_to_frame
     )
 _logger = watexlog.get_watex_logger(__name__)
@@ -529,20 +529,28 @@ def is_erp_dataframe (
     ... Index(['station', 'easting', 'northing', 'resistivity'], dtype='object')
     
     """
+    err_msg = ("ERP data must contain 'the resistivity' and the station"
+             " position measurement. A sample of ERP data can be found" 
+             " in `watex.datasets`. For e.g. 'watex.datasets.load_tankesse'"
+             " fetches a 'tankesse' locality dataset and its docstring"
+             " `~.load_tankesse.__doc__` can give a furher details about"
+             " the ERP data arrangement. {fmsg}"
+             )
     
-    data = _assert_all_types(data, pd.DataFrame)
-    if 'AB' in data.columns: 
-        msg = ("Unsupports VES data. Can force reading VES data as ERP"
-               " by setting 'force' to True.")
-        if force: 
-            warnings.warn("Force considering VES as ERP data might lead "
-                          "to breaking code or invalid results during "
-                          "ERP parameters computation. Use at your own risk.")
-        else:
-            raise ERPError(
-                "Unsupports Vertical Electrical Sounding data "
-                "while ERP is expected.")
-        
+    force_msg= "" if force else (
+        "To force reading unsafety data as ERP, set 'force' to ``True``.") 
+    
+    if force: 
+        warnings.warn("Force considering unsafety data as ERP data might"
+                      " lead to breaking code or invalid results during"
+                      " ERP parameters computation. Use at your own risk."
+                      )
+        data = _assert_all_types(data, pd.DataFrame, 
+                 objname="ERP 'resistivity' and station measurement data" )
+    else:
+        data = is_valid_dc_data( data, exception =ERPError, 
+                                extra = err_msg.format(fmsg = force_msg))
+     
     datac= data.copy() 
     
     def _is_in_properties (h ):
@@ -1336,20 +1344,20 @@ def _parse_args (
             apparent resistivity values. 
             
     :Example: 
-        >>> import numpy as np 
-        >>> from watex.utils.coreutils import _parse_args
-        >>> a, b = np.arange (1, 10 , 0.5), np.random.randn(9).reshape(3, 3)
-        >>> _parse_args ([a, 'data/erp/l2_gbalo.xlsx', b])
-        ... array([[1.1010000e+03, 0.0000000e+00, 7.9075200e+05, 1.0927500e+06],
-                   [1.1470000e+03, 1.0000000e+01, 7.9074700e+05, 1.0927580e+06],
-                   [1.3450000e+03, 2.0000000e+01, 7.9074300e+05, 1.0927630e+06],
-                   [1.3690000e+03, 3.0000000e+01, 7.9073800e+05, 1.0927700e+06],
-                   [1.4060000e+03, 4.0000000e+01, 7.9073300e+05, 1.0927765e+06],
-                   [1.5430000e+03, 5.0000000e+01, 7.9072900e+05, 1.0927830e+06],
-                   [1.4800000e+03, 6.0000000e+01, 7.9072400e+05, 1.0927895e+06],
-                   [1.5170000e+03, 7.0000000e+01, 7.9072000e+05, 1.0927960e+06],
-                   [1.7540000e+03, 8.0000000e+01, 7.9071500e+05, 1.0928025e+06],
-                   [1.5910000e+03, 9.0000000e+01, 7.9071100e+05, 1.0928090e+06]])
+    >>> import numpy as np 
+    >>> from watex.utils.coreutils import _parse_args
+    >>> a, b = np.arange (1, 10 , 0.5), np.random.randn(9).reshape(3, 3)
+    >>> _parse_args ([a, 'data/erp/l2_gbalo.xlsx', b])
+    ... array([[1.1010000e+03, 0.0000000e+00, 7.9075200e+05, 1.0927500e+06],
+               [1.1470000e+03, 1.0000000e+01, 7.9074700e+05, 1.0927580e+06],
+               [1.3450000e+03, 2.0000000e+01, 7.9074300e+05, 1.0927630e+06],
+               [1.3690000e+03, 3.0000000e+01, 7.9073800e+05, 1.0927700e+06],
+               [1.4060000e+03, 4.0000000e+01, 7.9073300e+05, 1.0927765e+06],
+               [1.5430000e+03, 5.0000000e+01, 7.9072900e+05, 1.0927830e+06],
+               [1.4800000e+03, 6.0000000e+01, 7.9072400e+05, 1.0927895e+06],
+               [1.5170000e+03, 7.0000000e+01, 7.9072000e+05, 1.0927960e+06],
+               [1.7540000e+03, 8.0000000e+01, 7.9071500e+05, 1.0928025e+06],
+               [1.5910000e+03, 9.0000000e+01, 7.9071100e+05, 1.0928090e+06]])
     
     """
     
@@ -1787,16 +1795,23 @@ def _validate_ves_data_if(data, index_rhoa , err , **kws):
             raise VESError (str(typError))
 
     data = _assert_all_types(data, pd.DataFrame )
-
     # sanitize the dataframe 
     pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
     if ncols is None:
         raise HeaderError (f"Columns {smft(pObj.icpr)} are missing in "
                            "the given dataset.")
-    data.columns = ncols 
-    if not _is_valid_ves( data): 
-        raise VESError("Invalid VES data. Data must contain at least"
-                       " 'resistivity' and 'AB/2' position." )
+    err_msg = ("VES data must contain 'the resistivity' and the depth"
+             " measurement 'AB/2'. A sample of VES data can be found" 
+             " in `watex.datasets`. For e.g. 'watex.datasets.load_semien'"
+             " fetches a 'semien' locality dataset and its docstring"
+             " `~.load_semien.__doc__` can give a furher details about"
+             " the VES data arrangement."
+             )
+    try:data.columns = ncols
+    except : pass 
+    data = is_valid_dc_data(data, method ="ves", exception =VESError, 
+                            extra = err_msg)
+     
     try : 
         rhoa= data.resistivity 
     except : 

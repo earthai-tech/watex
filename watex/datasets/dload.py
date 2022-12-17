@@ -27,7 +27,7 @@ from ..utils.funcutils import (
 from ..utils.box import Boxspace
 
 __all__= [ "load_bagoue" , "load_gbalo", "load_iris", "load_semien",
-          "load_tankesse",  "load_boundiali", "load_hlogs"]
+          "load_tankesse",  "load_boundiali", "load_hlogs","load_edis"]
 
 def load_tankesse (
         *, as_frame =True, tag=None,data_names=None, **kws 
@@ -419,7 +419,7 @@ def load_bagoue(
             data, feature_names = feature_names, tnames = target_columns, 
             target=target)
         frame = to_numeric_dtypes(frame)
-        
+
     if split_X_y: 
         X, Xt = split_train_test_by_id (data = frame , test_ratio= test_size, 
                                         keep_colindex= False )
@@ -430,8 +430,12 @@ def load_bagoue(
             X.values, Xt.values, y.values , yt.values )
     
     if return_X_y or as_frame:
-        return data, target
-
+        return to_numeric_dtypes(data) if as_frame else data , target
+    
+    frame = to_numeric_dtypes (
+        pd.concat ([pd.DataFrame (data, columns =feature_names),
+            pd.DataFrame(target, columns= target_names)],axis=1))
+    
     return Boxspace(
         data=data,
         target=target,
@@ -739,10 +743,10 @@ Examples
 ----------
 >>> from watex.datasets.dload import load_edis 
 >>> load_edis ().frame [:3]
-                                                 edi
-0  <pycsamt.ff.core.edi.Edi object at 0x000001C80...
-1  <pycsamt.ff.core.edi.Edi object at 0x000001C80...
-2  <pycsamt.ff.core.edi.Edi object at 0x000001C80...
+                edi
+0  Edi( verbose=0 )
+1  Edi( verbose=0 )
+2  Edi( verbose=0 )
 >>> load_edis (as_frame =True, key='longitude latitude', samples = 7) 
     latitude   longitude
 0  26.051390  110.485833

@@ -122,12 +122,131 @@ def _is_cross_validated (estimator ):
     return hasattr(estimator, 'best_estimator_') and hasattr (
         estimator , 'best_params_')
 
+def _validate_ves_operator (
+        AB=None, rhoa=None, data=None, exception = TypeError, 
+        ensure_2d =False, as_frame =False ): 
+    """ Validate whether Vertical Electrical Sounding data  is valid 
+    and return AB and rhoa arrays
+    
+    Parameters 
+    ----------
+    AB: array-like 1d, 
+        Spacing of the current electrodes when exploring in deeper. 
+        Is the depth measurement (AB/2) using the current electrodes AB.
+        Units are in meters. 
+    
+    rhoa: array-like 1d
+        Apparent resistivity values collected by imaging in depth. 
+        Units are in :math:`\Omega {.m}` not :math:`log10(\Omega {.m})`
+    
+    data: DataFrame, 
+        It is composed of spacing values `AB` and  the apparent resistivity 
+        values `rhoa`. If `data` is given, params `AB` and `rhoa` should be 
+        kept to ``None``.
+    ensure_2d: bool, default=False, 
+        If ``True`` return array-like of two dimensional where the first and 
+        second cimunns are AB and rhoa respectively. 
+    as_frame: bool, default=False
+        If ``True``, returns a pd.dataframe of AB and rhoa columns. 
+        
+    Returns 
+    --------
+    (AB, rhoa): Tuple of arraylike (1d ) 
+        returns 2D matrix of shape (n_measurement, 2) if `ensure_2d` is ``True``.
+        returns pd.dataframe of shape (n_measurement, 2) if `as_frame` is set 
+        to ``True``. Here AB and rhoa are the columns. 
+        
+    """
+    import pandas as pd 
+    
+    if data is not None: 
+        data = check_array (
+            data, to_frame = True, input_name = "VES data "
+                            )
+        if not _is_valid_ves(data): 
+            raise exception( 
+                "Wrong VES data. Unable to find [AB|resistivity] in the "
+                " ghiven data. Refer to :class:`~.watex._docstring.ves_doc`"
+                " to see how to construct a proper VES data.")
+        rhoa = np.array(data.resistivity )
+        AB= np.array(data.AB) 
+    
+    AB= check_y (AB, input_name ="Depth measurement from current electrodes 'AB'") 
+    rhoa = check_y( rhoa, input_name= "Resistivity data 'rhoa'")
+   
+    if len(AB)!= len(rhoa): 
+        raise exception(
+            'Deep measurement `AB` must have the same size with '
+            ' the collected apparent resistivity `rhoa`.'
+            f' {len(AB)} and {len(rhoa)} were given.')
+
+    return pd.DataFrame( {"AB":AB, "resistivity":rhoa}) if as_frame  else (
+        np.c_[AB, rhoa] if ensure_2d else (AB, rhoa) ) 
+
+
+def is_valid_dc_data (d, /, method= "erp" , 
+                      exception = TypeError, extra=""): 
+    """ Detect the kind of DC data passed  and raise error if data is not 
+    the appropriate DC data expected.
+    
+    Data must be Vertical Electrical Sounding (VES) or Electrical Resistivity 
+    Profiling (ERP).
+    
+    Parameters 
+    -----------
+    d: pd.dataframe 
+        DC -resistivity data. Must be ERP or VES data
+    dc: str, default='erp'
+        kind of DC-resistivity methods.
+    exception: :class:`BaseException`, ['VESError' |'ERPError'], default=TypeError
+        Kind of error to raise. 
+    extra: str, 
+        Extra message to imporve the error. 
+    Return 
+    ------
+    d: pd.dataframe 
+        DC-resistiviy frame. 
+        
+    """
+    method =str(method).lower().strip() 
+    rep= ('erp' if _is_valid_erp (d) else (
+        'ves' if _is_valid_ves (d) else "Invalid {} data")
+        )
+    d_="{}Data must contain at least 'resistivity' and {!r}"
+    err_msg =(f"{rep.upper()} data is detected while "
+              f"{method.upper()} data is expected. {extra}")
+    
+    if rep not in ("erp", "ves"): 
+        raise exception (rep.format(method.upper())+ ". {}".format(d_.format(
+            extra +' ' if extra !="" else extra , # push the next sentence
+            "depth measurement AB/2" if method=='ves' else "station position.")
+           )
+        )
+    if (method =='erp' 
+        and rep =='ves'
+        ): raise exception (err_msg)
+    if (method=='ves' 
+        and rep=='erp'
+        ): 
+        raise exception(err_msg) 
+   
+    return d
+
 def _is_valid_erp(d , / ): 
     """ Returns 'True' if the given data is Electrical Resistivity Profiling"""
+    if not hasattr(d, "columns"): 
+        raise TypeError (
+            "ERP 'resistivity' and station measurement data expect"
+            f" to be arranged in a dataframe. Got {type (d).__name__!r}"
+            )
     return not len(d) ==0 and  ('resistivity' and 'station') in d.columns 
 
 def _is_valid_ves (d, /)  : 
     """Returns 'True' if data is Vertical Electrical Sounding """
+    if not hasattr(d, "columns"): 
+        raise TypeError ("VES 'resistivity' and sounding measurement 'AB' data"
+                         " from current electrodes AB/2 expect to be arranged"
+                         f" in a dataframe. Got {type (d).__name__!r}")
     return not len(d) ==0 and  ('resistivity' and 'AB') in d.columns 
 
 def _check_array_in(obj, /, arr_name):
@@ -791,20 +910,21 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X'):
         columns if `X` is dataframe and  name if Series. Otherwwise returns None.  
         
     """
+    import pandas as pd 
     # set_back =('out', 'back','reconvert', 'to_frame', 
     #            'export', 'step back')
-    import pandas as pd 
     type_col_name = type (columns).__name__
     
     if not  (hasattr (X, '__array__') or sp.issparse (X)): 
-        raise TypeError (f"Only supports array, got: {type (X).__name__!r}")
-        
-    if hasattr (X, 'name') :
-        # keep the name of series 
-        columns = X.name 
-    elif hasattr (X, 'columns'): 
+        raise TypeError (f"{input_name + ' o' if input_name!='' else 'O'}nly "
+                        f"supports array, got: {type (X).__name__!r}")
+         
+    if hasattr (X, 'columns'): 
         # keep the columns 
         columns = X.columns 
+    elif hasattr (X, 'name') :
+        # keep the name of series 
+        columns = X.name
 
     if (to_frame 
         and not sp.issparse (X)
@@ -840,7 +960,7 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X'):
                 raise ValueError (
                     f"Shape of passed values for {input_name} is"
                     f" {X.shape}. Columns indices imply {X.shape[1]},"
-                    f"got {len(columns)}"
+                    f" got {len(columns)}"
                                   ) 
                 
             X= pd.DataFrame (X, columns = columns )
@@ -1337,7 +1457,7 @@ def check_y(y,
         The converted and validated y.
         
     """
-    y , column_orig = set_array_back(y)
+    y , column_orig = set_array_back(y, input_name= input_name ) 
     if multi_output:
         y = check_array(
             y,
@@ -1350,7 +1470,7 @@ def check_y(y,
         )
     else:
         estimator_name = _check_estimator_name(estimator)
-        y = _check_y_1d(y, warn=True)
+        y = _check_y_1d(y, warn=True, input_name=input_name)
         _assert_all_finite(y, input_name=input_name, 
                            estimator_name=estimator_name, 
                            allow_nan=allow_nan , 
@@ -1447,8 +1567,8 @@ def array_to_frame(
     elif ( to_frame 
           and columns is not None
           ): 
-        isf =True 
- 
+        isf =True
+        
     X, _= set_array_back(
         X, 
         to_frame=isf, 
@@ -1458,7 +1578,7 @@ def array_to_frame(
                 
     return X  
     
-def _check_y_1d(y, *, warn=False):
+def _check_y_1d(y, *, warn=False, input_name ='y'):
     """Ravel column or 1d numpy array, else raises an error.
     and Isolated part of check_X_y dedicated to y validation
     Parameters
@@ -1492,9 +1612,8 @@ def _check_y_1d(y, *, warn=False):
             )
         return _asarray_with_order(xp.reshape(y, -1), order="C", xp=xp)
     
-    raise ValueError(
-        "y should be a 1d array, got an array of shape {} instead.".format(shape)
-    )
+    raise ValueError(f"{input_name} should be a 1d array, got"
+                     f" an array of shape {shape} instead.")
 
 def _check_large_sparse(X, accept_large_sparse=False):
     """Raise a ValueError if X has 64bit indices and accept_large_sparse=False"""

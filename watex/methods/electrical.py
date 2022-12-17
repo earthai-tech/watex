@@ -199,13 +199,14 @@ class DCProfiling(ElectricalMethods)  :
     
     """
     
-    def __init__(self, 
-                 stations: Optional[List[str]]= None,
-                 dipole: float = 10.,
-                 auto: bool = False, 
-                 read_sheets:bool=False, 
-                 **kws
-                 ):
+    def __init__(
+        self, 
+        stations: List[str]= None,
+        dipole: float = 10.,
+        auto: bool = False, 
+        read_sheets:bool=False, 
+        **kws
+        ):
         super().__init__(**kws)
         
         self._logging=watexlog.get_watex_logger(self.__class__.__name__)
@@ -480,16 +481,18 @@ class DCSounding(ElectricalMethods) :
 
     """
            
-    def __init__(self,
-                 search:float=45.,
-                 rho0:float=None, 
-                 h0 :float=1., 
-                 read_sheets:bool=False, 
-                 strategy:str='HMCMC',
-                 vesorder:int=None, 
-                 typeofop:str='mean',
-                 objective: Optional[str] = 'coverall',
-                 **kws) -> None : 
+    def __init__(
+        self,
+        search:float=45.,
+        rho0:float=None, 
+        h0 :float=1., 
+        read_sheets:bool=False, 
+        strategy:str='HMCMC',
+        vesorder:int=None, 
+        typeofop:str='mean',
+        objective: Optional[str] = 'coverall',
+        **kws
+        ): 
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
@@ -673,24 +676,22 @@ class ResistivityProfiling(ElectricalMethods):
     ... 30
     
     """
-    def __init__ (self, 
-                  station: str | None = None,
-                  dipole: float = 10.,
-                  auto: bool = False, 
-                  **kws): 
+    def __init__ (
+        self, 
+        station: str = None,
+        dipole: float = 10.,
+        auto: bool = False, 
+        **kws): 
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         self.dipole=dipole
         self.station=station
         self.auto=auto 
-        self.table_= None 
-        
+
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
-            
-
-            
+     
     def fit(self, data : str | NDArray | Series | DataFrame ,
              **fit_params
             ) -> 'ResistivityProfiling': 
@@ -1107,15 +1108,17 @@ class VerticalSounding (ElectricalMethods):
     
     """
     
-    def __init__(self,
-                 search: float = 45.,
-                 rho0: float = None, 
-                 h0 : float = 1., 
-                 strategy: str = 'HMCMC',
-                 vesorder: int = None, 
-                 typeofop: str = 'mean',
-                 objective: Optional[str] = 'coverall',
-                 **kws) -> None : 
+    def __init__(
+        self,
+        search: float = 45.,
+        rho0: float = None, 
+        h0 : float = 1., 
+        strategy: str = 'HMCMC',
+        vesorder: int = None, 
+        typeofop: str = 'mean',
+        objective: Optional[str] = 'coverall',
+        **kws
+        ): 
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
