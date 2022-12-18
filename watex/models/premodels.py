@@ -21,6 +21,10 @@ from ..utils.funcutils import (
     smart_format,
     smart_strobj_recognition, 
     )
+from ..utils.validator import ( 
+    check_X_y, 
+    check_array
+    )
 from ..utils.mlutils import (
     controlExistingEstimator , 
     fetchModel 
@@ -58,10 +62,10 @@ class pModels :
         of 04 kernels such as the ``rbf`` for radial basis function , the 
         ``poly`` for polynomial , ``sig`` for sigmoid and ``lin`` for linear. 
         Default is ``rbf``. Each kernel is a model attributes of SVM class. 
-        For instance to retreived the pretrained model with kernel = 'poly', we 
+        For instance to retrieve the pretrained model with kernel = 'poly', we 
         must use after fitting :class:`.pModels` class:: 
             
-            >>> pModels(model='svm').fit().SVM.poly.best_estimator_ 
+            >>> pModels(model='svm', kernel='poly').fit().SVM.poly.best_estimator_ 
             ... SVC(C=128.0, coef0=7, degree=5, gamma=0.00048828125, kernel='poly', tol=0.01)
             >>> # or 
             >>> pModels(model='svm', kernel='poly').fit().estimator_
@@ -82,7 +86,7 @@ class pModels :
         Two types of classification is predicted. The binary classification ``bin``
         and the multiclass classification ``multi``. default is ``bin``. When  
         turning target to ``multi``, be aware that only the SVMs are trained 
-        for multilabels predictions. Futhernore, the `bin` consisted to predict 
+        for multiclass prediction. Futhernore, the `bin` consisted to predict 
         the flow rate (FR) with label {0} and {1} where {0} means the 
         :math:`FR <=1 m^3/hr` and {1} for :math:`FR> 1m^3/hr`. About `multi`, 
         four classes are predicted such as: 
@@ -102,7 +106,9 @@ class pModels :
         
     objective: str, default='fr'
         Is the prediction aim goal, the reason for storing the pretrained 
-        models. the default `objective` is 'fr' i.e. for flow rate prediction. 
+        models. The default `objective` is 'fr' i.e. for flow rate prediction.
+        Other objectives will be added as new engineering problems are solved 
+        and published. 
         
     Examples 
     ----------
@@ -151,8 +157,64 @@ class pModels :
         self.oob_score=oob_score
         self.kernel=kernel 
         
+
+    def  fit (
+        self, 
+        X:NDArray = None , 
+        y: ArrayLike = None , 
+        **fit_params 
+        ):
+        """ Fit X and y with the pretrained models. 
         
-    def fit (self, X:NDArray = None , y: ArrayLike = None ): 
+        Note that to retrieve only the pretrained model, don't pass anything 
+        in  `fit` method. For instance to fetch the best SVM estimator with 
+        `kernel = 'sigmoid'`, one just needs to fit:class:`.pModels` class 
+        as follow:: 
+            
+            >>> pModels(model='svm', kernel='sigmoid').fit().estimator_
+            Out[24]: SVC(C=512.0, coef0=0, degree=1, gamma=0.001953125, kernel='sigmoid', tol=1.0)
+            
+        If `model='svm'` and none `kernel` is passed, the ``rbf`` is used 
+        instead as default. 
+        
+        Parameters 
+        ----------
+        X:  Ndarray of shape ( M x N), :math:`M=m-samples x N=n-features`
+            training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            The notation is uppercase to denote that it is ordinarily a matrix. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity  with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one 
+            before learning a model.
+    
+        y: array-like of shape (M, ) `:math:`M=m-samples` 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable at 
+            prediction time, and is usually the target of prediction. 
+            
+        Returns
+        --------
+        :class:`pModels` instance
+            Returns ``self`` for easy method chaining.
+        """
+        self._fit(X, y ) 
+        
+        if X:
+            X, y =check_X_y (
+                X, 
+                y, 
+                accept_sparse=True, 
+                to_frame =True, 
+                estimator= self.name_
+                )
+            self.estimator_.fit(X, y, **fit_params )
+        
+        return self 
+    
+    
+    def _fit (self, X:NDArray = None , y: ArrayLike = None ): 
         """ Fit the pretrained model data and populate its corresponding 
         attributes. 
         
@@ -201,7 +263,7 @@ class pModels :
             data_= _pDATA 
             # fetch data from module 
             # force to fetch default 
-            # values in exceptions
+            # values in exception
             if data_ is None: raise 
         except : 
             data_ = _pMODELS 
@@ -237,14 +299,12 @@ class pModels :
             
         except AttributeError : 
             # collect some data for quick access 
-            if self.kernel is None: 
-                self._logging.info("Default kernel 'rbf' is used "
-                                   "as default estimator")
-                warnings.warn("Default kernel 'rbf' is used "
-                              "as default estimator")
-                
-                self.estimator_ = getattr(self, self.name_).poly.best_estimator_ 
-                self.params_  = getattr(self, self.name_).poly.best_params_ 
+            if self.kernel is None:
+                m=("Kernel is None. Default kernel 'rbf' is used instead.")
+                self._logging.info(m);warnings.warn(m)
+    
+                self.estimator_ = getattr(self, self.name_).rbf.best_estimator_ 
+                self.params_  = getattr(self, self.name_).rbf.best_params_ 
             else : 
                 self.estimator_ = getattr ( 
                     getattr(self, self.name_), self.kernel) .best_estimator_ 
@@ -256,39 +316,66 @@ class pModels :
     def predict(self, X: NDArray ) : 
         """ Predict object from the pretrained model 
         
-        :param X: Ndarray , shape (M, N) where 'M' is the number of examples 
-            and 'N' the number of features. 
-        :returns: Array-like, shape (M, ) of the predicted values. 
-        """
-        try:
-             getattr(self, 'estimator_')
-        except NotFittedError:
-            raise NotFittedError("Can't call the method 'predict'. Call"
-                                 f" {self.__class__.__name__!r} 'fit' method"
-                                 " first.")
+        Parameters 
+        ----------
+        X:  Ndarray of shape ( M x N), :math:`M=m-samples x N=n-features`
+            training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            The notation is uppercase to denote that it is ordinarily a matrix. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity  with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one 
+            before learning a model.
             
+        Returns
+        --------
+        y_pred: Array-like, shape (M, )
+            the predicted target values from `X`.  
+        """
+        self.inspect 
+        X= check_array(
+            X, 
+            accept_sparse=True, 
+            estimator=self.name_, 
+            input_name ="X",
+            to_frame=True, 
+        )
+        
         return self.estimator_.predict (X)
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'estimator_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1
     
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
         return repr_callable_obj  (self)
-       
-    
-    def __getattr__(self, name:str ):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in ('name_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
+      
+    def __getattr__(self, name):
+        if not name.endswith ('__') and name.endswith ('_'): 
+            raise NotFittedError (
+                f"{self.__class__.__name__!r} instance is not fitted yet."
+                " Call 'fit' method with appropriate arguments before"
+               f" retreiving the attribute {name!r} value."
+                )
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
         raise AttributeError (
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
             f'{appender}{"" if rv is None else "?"}'
-            )
+            )      
 
   
 

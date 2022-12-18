@@ -292,13 +292,13 @@ class TPlot (BasePlot):
         xlabel='$Frequency [H_z]$', ylabel='$ App.resistivity \\quad xy \\quad [ \\Omega.m]$'>
         
         """
+        self.inspect 
         _c= {
               'xx': [slice (None, len(self.p_.freqs_)), 0 , 0] , 
               'xy': [slice (None, len(self.p_.freqs_)), 0 , 1], 
               'yx': [slice (None, len(self.p_.freqs_)), 1 , 0], 
               'yy': [slice (None, len(self.p_.freqs_)), 1,  1] 
         }
-        self.inspect 
         
         if isinstance (sites, str): 
             sites =[sites ] 
@@ -1655,7 +1655,7 @@ class ExPlot (BasePlot):
     
         Return
         -------
-        ``self``: `{self.__class__.__name__}` instance 
+        ``self``: `ExPlot` instance 
             returns ``self`` for easy method chaining.
             
         Example

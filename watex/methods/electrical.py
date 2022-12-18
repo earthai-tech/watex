@@ -4,7 +4,6 @@
 #   Created date: Thu Apr 14 17:45:55 2022
 
 from __future__ import annotations 
-
 import os 
 import re 
 import copy
@@ -93,7 +92,7 @@ class DCProfiling(ElectricalMethods)  :
     Parameters 
     ------------
     
-    **stations**: list or str (path-like object )
+    stations: list or str (path-like object )
         list of station name where the drilling is expected to be located. It 
         strongly linked to the name of used to specify the center position of 
         each dipole when the survey data is collected. Each survey can have its 
@@ -119,7 +118,7 @@ class DCProfiling(ElectricalMethods)  :
             * `stations` can also be arrange in a single to be parsed which 
                 refer to the string arguments. 
             
-    **dipole**: float 
+    dipole: float 
         The dipole length used during the exploration area. If `dipole` value 
         is set as keyword argument,i.e. the station name is overwritten and 
         is henceforth named according to the  value of the dipole. For instance
@@ -128,18 +127,23 @@ class DCProfiling(ElectricalMethods)  :
         recommend to name the station using counting numbers rather than using 
         the dipole  position.
         
-    **auto**: bool 
+    auto: bool 
         Auto dectect the best conductive zone. If ``True``, the station 
         position should be  the  `station` of the lower resistivity value 
         in |ERP|. 
-    
-    **read_sheets**: bool, 
+        
+    keep_params: bool, default=False, 
+        If ``True`` , keeps only the predicted parameters in the summary table, 
+        otherwise, returns the usefull details of the line like geographical 
+        coordinates where the DC predicted parameters are computed. 
+        
+    read_sheets: bool, 
         Read the data in sheets. Here its assumes the data  of each survey 
         lines are arrange in a single excell worksheets. Note that if 
         `read_sheets` is set to ``True`` and the file is not in excell format, 
         a TypError will raise. 
         
-    **fit_params**: dict 
+    fit_params: dict 
          Additional |ERP| keywords arguments  
          
     Examples
@@ -203,7 +207,8 @@ class DCProfiling(ElectricalMethods)  :
         self, 
         stations: List[str]= None,
         dipole: float = 10.,
-        auto: bool = False, 
+        auto: bool = False,
+        keep_params:bool=False, 
         read_sheets:bool=False, 
         **kws
         ):
@@ -214,7 +219,9 @@ class DCProfiling(ElectricalMethods)  :
         self.stations=stations 
         self.dipole=dipole 
         self.auto=auto 
-        self.read_sheets=read_sheets 
+        self.keep_params=keep_params
+        self.read_sheets=read_sheets
+        
         
         
     def fit(self, 
@@ -314,31 +321,51 @@ class DCProfiling(ElectricalMethods)  :
         
         return self 
     
+    def summary (self, return_table = True): 
+        """ Agregate the DC-Profiling parameters to compose a param-table 
+        
+        :param return_table: bool, default=True
+            returns table of DC parameters at all sites if ``True`` and 
+            'DCProfiling' instanciated object otherwise. 
+        :returns: 
+            - table if `return_table` is ``True`` and `DCProfiling` 
+            instanciated object otherwise.
+        """
+        
+        self.inspect 
+        return _summary(self, return_table = return_table  )
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'sves_resistivities_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
+    
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
         return repr_callable_obj  (self, 'line')
        
     
     def __getattr__(self, name):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in (
-                        'data_', 'resistivities_', 'sves_lons_', 'sves_lats_',
-                        'sves_easts_', 'sves_norths_', 'sves_resistivities_',
-                        'powers_', 'magnitudes_','shapes_','types_','sfis_'
-                        'lines_', 'nlines_', 'ids_', 'survey_names_', 
-                        'isnotvalid_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
+        if name =='table_': 
+            err_msg =(". Call 'summary' method to fetch attribute 'table_'")
+        else: err_msg =  f'{appender}{"" if rv is None else "?"}' 
+        
         raise AttributeError (
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
-            f'{appender}{"" if rv is None else "?"}'
-            )        
+            f'{err_msg}'
+            )
 
 @refAppender(refglossary.__doc__)
 class DCSounding(ElectricalMethods) : 
@@ -361,7 +388,7 @@ class DCSounding(ElectricalMethods) :
     
     Parameters 
     -----------
-    **search**: float , list of float
+    search: float , list of float
         The collection of the depth in meters from which one expects to find a 
         fracture zone outside of pollutions. Indeed, the `search` parameter is 
         used to speculate about the expected groundwater in the fractured rocks 
@@ -370,20 +397,20 @@ class DCSounding(ElectricalMethods) :
         is around ``45m``.So the `search` can be specified via the water inrush 
         average value. 
         
-    **rho0**: float 
+    rho0: float 
         Value of the starting resistivity model. If ``None``, `rho0` should be
         the half minumm value of the apparent resistivity  collected. Units is
         in Ω.m not log10(Ω.m)
         
-    **h0**: float 
+    h0: float 
         Thickness  in meter of the first layers in meters.If ``None``, it 
         should be the minimum thickess as possible ``1.m`` . 
     
-    **strategy**: str 
+    strategy: str 
         Type of inversion scheme. The defaut is Hybrid Monte Carlo (HMC) known
         as ``HMCMC``. Another scheme is Bayesian neural network approach (``BNN``). 
         
-    **vesorder**: int 
+    vesorder: int 
         The index to retrieve the resistivity data of a specific sounding point.
         Sometimes the sounding data are composed of the different sounding 
         values collected in the same survey area into different |ERP| line.
@@ -421,7 +448,7 @@ class DCSounding(ElectricalMethods) :
         than one, by default the first sounding curve is selected ie 
         `rhoaIndex` equals to ``0``
         
-    **typeofop**: str 
+    typeofop: str 
         Type of operation to apply  to the resistivity 
         values `rhoa` of the duplicated spacing points `AB`. The *default* 
         operation is ``mean``. Sometimes at the potential electrodes ( `MN` ),the 
@@ -435,7 +462,7 @@ class DCSounding(ElectricalMethods) :
         `AB`. Note that for the ``LeaveOneOut``, the selected 
         resistivity value is randomly chosen.
         
-    **objective**: str 
+    objective: str 
         Type operation to output. By default, the function outputs the value
         of pseudo-area in :math:`$ohm.m^2$`. However, for plotting purpose by
         setting the argument to ``view``, its gives an alternatively outputs of
@@ -443,7 +470,12 @@ class DCSounding(ElectricalMethods) :
         expected fractured zone. Where X is the AB dipole spacing when imaging 
         to the depth and Y is the apparent resistivity computed.
         
-    **kws**: dict 
+    keep_params: bool, default=False, 
+        If ``True`` , keeps only the predicted parameters in the summary table, 
+        otherwise, returns the usefull details of the site like the depth 
+        AB/2 where the DC predicted area parameter is computed. 
+         
+    kws: dict 
         Additionnal keywords arguments from |VES| data operations. 
         See :func:`watex.utils.exmath.vesDataOperator` for futher details.
         
@@ -491,6 +523,7 @@ class DCSounding(ElectricalMethods) :
         vesorder:int=None, 
         typeofop:str='mean',
         objective: Optional[str] = 'coverall',
+        keep_params:bool=False, 
         **kws
         ): 
         super().__init__(**kws) 
@@ -502,7 +535,8 @@ class DCSounding(ElectricalMethods) :
         self.objective=objective 
         self.rho0=rho0, 
         self.h0=h0
-        self.strategy = strategy, 
+        self.strategy=strategy 
+        self.keep_params=keep_params
         self.read_sheets= read_sheets
         
         for key in list( kws.keys()): 
@@ -602,27 +636,51 @@ class DCSounding(ElectricalMethods) :
             
         return self 
 
+    def summary (self, return_table = True): 
+        """ Agregate the DC-Sounding parameters to compose a param-table 
+        
+        :param return_table: bool, default=True
+            returns table of DC parameters at all sites if ``True`` and 
+            'DCSounding' instanciated object otherwise. 
+        :returns: 
+            - table if `return_table` is ``True`` and `DCSounding` instanciated 
+            object otherwise.
+        """
+        
+        self.inspect 
+        return _summary(self, return_table = return_table  )
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'nareas_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
+            
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
         return repr_callable_obj  (self, 'line')
        
     
     def __getattr__(self, name):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in ('data_','n_areas_', 'ohmic_areas_', 'isnotvalid_'
-                            'nlines_', 'survey_names_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
+        if name =='table_': 
+            err_msg =(". Call 'summary' method to fetch attribute 'table_'")
+        else: err_msg =  f'{appender}{"" if rv is None else "?"}' 
+        
         raise AttributeError (
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
-            f'{appender}{"" if rv is None else "?"}'
-            )        
+            f'{err_msg}'
+            )
         
 @refAppender(refglossary.__doc__)
 class ResistivityProfiling(ElectricalMethods): 
@@ -932,12 +990,6 @@ class ResistivityProfiling(ElectricalMethods):
        
     
     def __getattr__(self, name):
-        if not name.endswith ('__') and name.endswith ('_'): 
-            raise NotFittedError (
-                f"{self.__class__.__name__!r} instance is not fitted yet."
-                " Call 'fit' method with appropriate arguments before"
-               f" retreiving the attribute {name!r} value."
-                )
 
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
@@ -1128,8 +1180,7 @@ class VerticalSounding (ElectricalMethods):
         self.objective=objective 
         self.rho0=rho0, 
         self.h0=h0
-        self.strategy = strategy
-        # self.table_= None 
+        self.strategy=strategy
         
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
@@ -1372,13 +1423,6 @@ class VerticalSounding (ElectricalMethods):
         return repr_callable_obj(self)
        
     def __getattr__(self, name):
-        if not name.endswith ('__') and name.endswith ('_'): 
-            raise NotFittedError (
-                f"{self.__class__.__name__!r} instance is not fitted yet."
-                " Call 'fit' method with appropriate arguments before"
-               f" retreiving the attribute {name!r} value."
-                )
-
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
@@ -1588,7 +1632,7 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
                     utm_zone = self.utm_zone, 
                     )
                 self.data_.append (dcObj.fit(o).summary(
-                    keep_params=True))
+                    keep_params=self.keep_params))
                 self.stations[kk] = dcObj.sves_ 
                     
             elif dcmethod.__name__ =='VerticalSounding': 
@@ -1602,7 +1646,7 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
                     strategy=self.strategy
                     )
                 self.data_.append (dcObj.fit(o).summary(
-                    keep_params=True))
+                    keep_params=self.keep_params))
    
         except : 
             self.isnotvalid_.append(o)
@@ -1678,6 +1722,29 @@ def _parse_dc_args(self, dcmethod: object , **kws):
     elif flag:
         self.search = sf 
         
+        
+def _summary (self, return_table = True): 
+    """ Isolated part of `summary` method of DC-resistivity method. 
+    
+    Agregate the DC-Resistivity method parameters
+    
+    :param return_table: bool, default=True
+        returns table of DC parameters at all sites if ``True`` and 
+        'DC-Resistivity method' instanciated object otherwise. 
+    :returns: 
+        - table if `return_table` is ``True`` and `DC-Resistivity method` 
+        instanciated object otherwise.
+    
+    """
+    tables =[]
+    for sl in self.ids_: 
+        tables.append ( getattr( getattr(self, sl), "table_") ) 
+
+    self.table_ =  pd.concat( tables , axis =0 )
+    self.table_.index = self.ids_ 
+    
+    return self.table_ if return_table else self  
+
         
 def _geterpattr (attr , dl ): 
     """ Get attribute from the each DC-resistivity object and 

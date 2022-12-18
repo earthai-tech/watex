@@ -1078,7 +1078,7 @@ def check_array(
     # data is pandas series or dataframe.
     # and reconvert by to series or dataframe 
     # array is series or dataframe. 
-    array, column_orig = set_array_back(array)
+    array, column_orig = set_array_back(array, input_name=input_name)
     
     # store reference to original array to check if copy is needed when
     # function returns

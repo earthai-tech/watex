@@ -272,7 +272,7 @@ class GridSearchMultiple :
     def __init__ (
         self, 
         estimators: F, 
-        scoring,  
+        scoring:str,  
         grid_params: Dict[str, Any],
         *, 
         kind:str ='GridSearchCV', 

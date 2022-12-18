@@ -50,23 +50,7 @@ from .hydroutils import (
     classify_k, 
     label_importance
     )
-from .mlutils import ( 
-    selectfeatures, 
-    getGlobalScore, 
-    split_train_test, 
-    correlatedfeatures, 
-    findCatandNumFeatures,
-    evalModel, 
-    cattarget, 
-    labels_validator, 
-    projection_validator, 
-    rename_labels_in , 
-    naive_imputer, 
-    naive_scaler, 
-    select_feature_importances, 
-    make_naive_pipe, 
-    bi_selector, 
-    )
+
 from .plotutils import ( 
     plot_mlxtend_heatmap , 
     plot_mlxtend_matrix, 
@@ -84,6 +68,27 @@ from .plotutils import (
     plot_logging, 
     plot_silhouette, 
     )
+# to fix circular 
+# import
+try : 
+    from .mlutils import ( 
+        selectfeatures, 
+        getGlobalScore, 
+        split_train_test, 
+        correlatedfeatures, 
+        findCatandNumFeatures,
+        evalModel, 
+        cattarget, 
+        labels_validator, 
+        projection_validator, 
+        rename_labels_in , 
+        naive_imputer, 
+        naive_scaler, 
+        select_feature_importances, 
+        make_naive_pipe, 
+        bi_selector, 
+        )
+except ImportError :pass 
 
 __all__=[
         'plotAnomaly', 

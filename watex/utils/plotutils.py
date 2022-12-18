@@ -175,7 +175,7 @@ def plot_logging (
         Normalize all the data to be range between (0, 1) except the `depth`,    
         
     labels: list or str, optional
-        If labels afre given, they should fit the size of the number of 
+        If labels are given, they should fit the size of the number of 
         columns. The given labels should replace the old columns in `X` and 
         should figue out in the plot. This is usefull to change the columns 
         labels in the dataframe to a new labels that describe the best the 

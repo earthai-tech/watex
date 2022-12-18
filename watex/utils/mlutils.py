@@ -2237,10 +2237,17 @@ def bi_selector (d, /,  features =None, return_frames = False ):
         d [diff_features] , d [features ] ) 
 
 def make_naive_pipe(
-        X, y =None, *,   num_features = None, cat_features=None, 
-        label_encoding='LabelEncoder', scaler = 'StandardScaler' , 
-        missing_values =np.nan, impute_strategy = 'median', 
-        sparse_output=True, for_pca =False, transform =False, 
+    X, 
+    y =None, *,   
+    num_features = None, 
+    cat_features=None, 
+    label_encoding='LabelEncoder', 
+    scaler = 'StandardScaler' , 
+    missing_values =np.nan, 
+    impute_strategy = 'median', 
+    sparse_output=True, 
+    for_pca =False, 
+    transform =False, 
     ): 
     """ make a pipeline to transform data at once. 
     

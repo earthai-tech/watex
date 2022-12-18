@@ -831,39 +831,6 @@ def vesDataOperator(
     return (X, Y) if not outdf else pd.DataFrame (
         {'AB': X,'resistivity':Y}, index =range(len(X)))
 
-# def _validate_ves_operator (data, AB, rhoa, exception = TypeError): 
-#     """ Validate whether data is valid and return AB and rhoa """
-    
-#     if data is not None: 
-#         data = check_array (
-#             data, to_frame = True, input_name = "VES data "
-#                             )
-#         if not _is_valid_ves(data): 
-#             raise exception( 
-#                 "Wrong VES data. Unable to find [AB|resistivity] in the "
-#                 " ghiven data. Refer to :class:`~.watex._docstring.ves_doc`"
-#                 " to see how to construct a proper VES data.")
-#         rhoa = np.array(data.resistivity )
-#         AB= np.array(data.AB) 
-    
-#     AB= np.array( _assert_all_types(
-#         AB, np.ndarray, list, tuple, pd.Series,
-#         objname=" Depth measurement from current electrodes AB")) 
-#     rhoa = np.array( _assert_all_types(
-#         rhoa, np.ndarray, list, tuple, pd.Series, objname= "Resistivity data")
-#         )
-    
-#     if len(AB)!= len(rhoa): 
-#         raise exception(
-#             'Deep measurement `AB` must have the same size with '
-#             ' the collected apparent resistivity `rhoa`.'
-#             f' {len(AB)} and {len(rhoa)} were given.')
-    
-#     for i, ar in enumerate (AB, rhoa): 
-#         if not _is_arraylike_1d( ar): 
-#             raise TypeError (f"{'AB' if i ==0 else 'Apparent resistivy rhoa'}"
-#                              " must be one-dimensional array.")
-#     return AB, rhoa 
 
 # XXXTODO 
 def invertVES (data: DataFrame[DType[float|int]] = None, 
@@ -1893,7 +1860,7 @@ def plotOhmicArea (
     ----------
     >>> from watex.datasets import load_semien 
     >>> from watex.utils.exmath import plotOhmicArea 
-    >>> ves_data = load_gbalo () 
+    >>> ves_data = load_semien () 
     >>> plotOhmicArea (ves_data) 
     """ 
 
@@ -2059,7 +2026,8 @@ def plot_ (
                     rotation = 0. if rotate is None else rotate 
                     )
         
-    plt.xlabel ('Stations') if xlabel is  None  else plt.xlabel (xlabel)
+    plt.xlabel ('AB/2 (m)' if dtype=='ves' else "Stations"
+                ) if xlabel is  None  else plt.xlabel (xlabel)
     plt.ylabel ('Resistivity (Ω.m)'
                 ) if ylabel is None else plt.ylabel (ylabel)
     

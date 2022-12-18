@@ -515,6 +515,14 @@ arr_aq: array-like , pandas series or dataframe
     the algorithms. Missing values are not allowed. If dataframe is supplied,
     the aquifer group column name 'aqname' must be specified. 
 
+{params.core.kname}
+
+aqname: str, optional, 
+    Name of aquifer group columns. `aqname` allows to retrieve the 
+    aquifer group `arr_aq` value in  a specific dataframe. Commonly
+   `aqname` needs to be supplied when a dataframe is passed as a positional 
+    or keyword argument. 
+    
 subjectivity: bool, default=False
     Considers each class label as a naive group of aquifer. Subjectivity 
     occurs when no group of aquifer is not found in the data. Therefore, each 
@@ -585,20 +593,20 @@ Examples
 >>> group_obj 
 _Group(Label=[' 1 ', 
              Preponderance( rate = '53.141  %', 
-                           [('Groups', {'V': 0.32, 'IV': 0.266, 'II': 0.236, 
+                           [('Groups', {{'V': 0.32, 'IV': 0.266, 'II': 0.236, 
                                         'III': 0.158, 'IV&V': 0.01, 
-                                        'II&III': 0.005, 'III&IV': 0.005}),
+                                        'II&III': 0.005, 'III&IV': 0.005}}),
                             ('Representativity', ( 'V', 0.32)),
                             ('Similarity', 'V')])],
         Label=[' 2 ', 
               Preponderance( rate = ' 19.11  %', 
-                           [('Groups', {'III': 0.274, 'II': 0.26, 'V': 0.26, 
-                                        'IV': 0.178, 'III&IV': 0.027}),
+                           [('Groups', {{'III': 0.274, 'II': 0.26, 'V': 0.26, 
+                                        'IV': 0.178, 'III&IV': 0.027}}),
                             ('Representativity', ( 'III', 0.27)),
                             ('Similarity', 'III')])],
         Label=[' 3 ', 
               Preponderance( rate = '27.749  %', 
-                           [('Groups', {'V': 0.443, 'IV': 0.311, 'III': 0.245}),
+                           [('Groups', {{'V': 0.443, 'IV': 0.311, 'III': 0.245}}),
                             ('Representativity', ( 'V', 0.44)),
                             ('Similarity', 'V')])],
              )
@@ -607,37 +615,39 @@ _Group(Label=[' 1 ',
 >>> find_aquifer_groups(y.k, subjectivity=True, default_arr= X.strata_name ) 
 _Group(Label=[' 1 ', 
              Preponderance( rate = '53.141  %', 
-                           [('Groups', {'siltstone': 0.35, 'coal': 0.227, 
+                           [('Groups', {{'siltstone': 0.35, 'coal': 0.227, 
                                         'fine-grained sandstone': 0.158, 
                                         'medium-grained sandstone': 0.094, 
                                         'mudstone': 0.079, 
                                         'carbonaceous mudstone': 0.054, 
                                         'coarse-grained sandstone': 0.03, 
-                                        'coarse': 0.01}),
+                                        'coarse': 0.01}}),
                             ('Representativity', ( 'siltstone', 0.35)),
                             ('Similarity', 'siltstone')])],
         Label=[' 2 ', 
               Preponderance( rate = ' 19.11  %', 
-                           [('Groups', {'mudstone': 0.288, 'siltstone': 0.205, 
+                           [('Groups', {{'mudstone': 0.288, 'siltstone': 0.205, 
                                         'coal': 0.192, 
                                         'coarse-grained sandstone': 0.137, 
                                         'fine-grained sandstone': 0.137, 
                                         'carbonaceous mudstone': 0.027, 
-                                        'medium-grained sandstone': 0.014}),
+                                        'medium-grained sandstone': 0.014}}),
                             ('Representativity', ( 'mudstone', 0.29)),
                             ('Similarity', 'mudstone')])],
         Label=[' 3 ', 
               Preponderance( rate = '27.749  %', 
-                           [('Groups', {'mudstone': 0.245, 'coal': 0.226, 
+                           [('Groups', {{'mudstone': 0.245, 'coal': 0.226, 
                                         'siltstone': 0.217, 
                                         'fine-grained sandstone': 0.123, 
                                         'carbonaceous mudstone': 0.066, 
                                         'medium-grained sandstone': 0.066, 
-                                        'coarse-grained sandstone': 0.057}),
+                                        'coarse-grained sandstone': 0.057}}),
                             ('Representativity', ( 'mudstone', 0.24)),
                             ('Similarity', 'mudstone')])],
              )
-"""
+""".format(params=_param_docs
+)
+    
 def label_importance (
     label: int, 
     arr_k: ArrayLike , 
@@ -1436,8 +1446,8 @@ Get the section to consider unique in multiple aquifers.
 The unique section 'upper' and 'lower' is the valid range of the whole 
 sections of each aquifers. It is  considered as  the main valid section 
 from which data can not be compressed and not altered. For instance,  
-the use of the its index is  necessary to shrunk the data except this valid 
-section. Mosly the data from the section is consided the valid data as the 
+the use of indexes is  necessary to shrunk the data except this valid 
+section. Mosly the data from the section is considered the valid data as the 
 predictor Xr. Out of the range of aquifers ection, data can be discarded or 
 compressed to top Xr. 
 
