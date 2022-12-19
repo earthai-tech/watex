@@ -27,14 +27,14 @@ from .._docstring import (
     )
 from ..exceptions import ( 
     NotFittedError, 
-    StrataError
+    StrataError, 
+    kError, 
+    AquiferGroupError
     )
-from ..utils.hydroutils import ( 
+from ..utils.hydroutils import (
     find_aquifer_groups, 
     find_similar_labels, 
-    get_aquifer_section, 
     get_aquifer_sections, 
-    # get_compressed_vector, 
     reduce_samples, 
     select_base_stratum,
     make_MXS_labels, 
@@ -46,12 +46,18 @@ from ..utils.funcutils import (
     to_numeric_dtypes, 
     smart_strobj_recognition, 
     repr_callable_obj, 
-    is_in_if
+    is_in_if, 
     )
 from ..utils.validator import check_array 
 
 from .._watexlog import watexlog 
 
+__all__=["Hydrogeology", 
+         "AqSection", 
+         "AqGroup", 
+         "MXS", 
+         "Logging"
+         ]
 #-----------------------
 
 _base_params = dict( 
@@ -77,47 +83,9 @@ _param_docs = DocstringComponents.from_nested_components(
     base= DocstringComponents(_base_params)
     )
 #------------------------
-class HGeol(ABC):
-    """ 
-    A branch of geology concerned with the occurrence, use, and functions of 
-    surface water and groundwater. 
-    
-    Hydrogeology is the study of groundwater – it is sometimes referred to as
-    geohydrology or groundwater hydrology. Hydrogeology deals with how water 
-    gets into the ground (recharge), how it flows in the subsurface 
-    (through aquifers) and how groundwater interacts with the surrounding soil 
-    and rock (the geology).
-    
-    
-    see also
-    ---------
 
-    Hydrogeologists apply this knowledge to many practical uses. They might:
-        
-        * Design and construct water wells for drinking water supply, irrigation 
-            schemes and other purposes;
-        * Try to discover how much water is available to sustain water supplies 
-            so that these do not adversely affect the environment – for example, 
-            by depleting natural baseflows to rivers and important wetland 
-            ecosystems;
-        * Investigate the quality of the water to ensure that it is fit for its 
-            intended use; 
-        * Where the groundwater is polluted, they design schemes to try and 
-            clean up this pollution;
-            Design construction dewatering schemes and deal with groundwater 
-            problems associated with mining; Help to harness geothermal energy
-            through groundwater-based heat pumps.
-    """
+class HData(ABC):
     @abstractclassmethod 
-    def __init__(
-        self, 
-        **kwd
-        ): 
-        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-
-
-class HData: 
-
     def __init__(
         self,
         kname=None, 
@@ -164,11 +132,7 @@ class HData:
         fit_params: dict, 
             Additional keyword arguments passed to 
             :func:`~.watex.utils.funcutils.to_numeric_dtypes`. 
-               
-       Returns 
-       -------
-          self:  `HData` object instanciated for chaining methods. 
-            
+      
         """
         data = check_array (
             data, 
@@ -256,14 +220,29 @@ class HData:
             )[0]
         return sqdat 
     
-    def get_base_stratum (self ): 
-        """ Select the base stratum """
+    def get_base_stratum (self , stratum=None ): 
+        """ Select the base stratum 
+        
+        Parameters
+        -----------
+        stratum: str, optional 
+            Name of the base stratum. Must be self contain as an item of the 
+            strata data. Note that if `stratum` is passed, the auto-detection of 
+            base stratum is not triggered. It returns the same stratum.
+        
+        Returns
+        ---------
+        base_stratum : str
+            the most recurrent stratum in the data and compute the rate of 
+            occurrence. 
+            
+        """
         self.inspect 
         
         self.base_stratum_ = select_base_stratum(
             self.data_,
             sname = self.sname , 
-            stratum = None, 
+            stratum =stratum, 
             return_counts=False, 
             return_rate=False, 
             )
@@ -297,7 +276,7 @@ class HData:
         _getattr_(self, name)
            
 HData.__doc__="""\
-Hydro-Log data 
+Hydro-Log data , Abstract Base class and can't be instanciated. 
 
 Hydro-log data is a mixed data composed of logging data, borehole data 
 and geological data. To only used the logging data, it recommended to use 
@@ -311,13 +290,6 @@ Parameters
 {params.base.aqname}
 {params.base.sname}
 
-Examples 
-----------
->>> from watex.datasets import load_hlogs 
->>> hd=HData (kname ='k', zname='depth_top', sname='strata_name', 
-              aqname='aquifer_group', verbose =True ) 
->>> hd.fit(load_hlogs().frame)
->>> 
 """.format (params =_param_docs , 
 )     
     
@@ -337,7 +309,11 @@ class AqSection (HData):
             **kws
             )
     
-    def findSection(self, z= None, depth_unit ="m"): 
+    def findSection(
+        self, 
+        z= None, 
+        depth_unit ="m"
+        ): 
         """ Find aquifer valid section (upper and lower section ) 
         
         Parameters 
@@ -359,7 +335,7 @@ class AqSection (HData):
         self.inspect 
         
         self.section_ = get_aquifer_sections(
-            self.data , 
+            self.data_ , 
             zname=self.zname, 
             kname= self.kname, 
             return_data= False, 
@@ -372,26 +348,96 @@ class AqSection (HData):
                           depth_unit)
                   )
         return self.section_ 
-    
-    
+
+AqSection.__doc__="""\
+Aquifer section class 
+
+Get the section of each aquifer from dataframe. 
+
+The unique section 'upper' and 'lower' is the valid range of the whole 
+data to consider as a  valid data. Indeed, the aquifer section computing 
+is  necessary to shrunk the data of the whole boreholes. Mosly the data 
+from the section is consided the valid data as the predictor Xr. Out of the
+range of aquifers ection, data can be discarded or compressed to top Xr. 
+
+Parameters 
+------------
+{params.base.aqname}
+{params.core.kname}
+{params.core.zname}
+
+""".format(params =_param_docs )    
+
 class MXS (HData): 
     def __init__(
         self, 
         kname=None, 
-        aqname=None, 
+        aqname=None,
+        threshold:float=None,
+        method:str="naive", 
+        trailer:str="*", 
+        keep_label_0:bool=False,
+        random_state:int=42,
+        n_groups:int=3, 
+        sep:str=None, 
+        prefix=None,
         **kws
         ): 
-        super().__init__(kname =kname, aqname =aqname, **kws)
-
+        super().__init__(
+        kname =kname, 
+        aqname =aqname, 
+        **kws
+            )
+        
+        self.threshold=threshold 
+        self.method=method
+        self.n_groups=n_groups
+        self.trailer=trailer
+        self.keep_label_0=keep_label_0 
+        self.random_state=random_state 
+        self.sep=sep 
+        self.prefix=prefix 
+        
     def predictNGA (
-            self,
-            n_components =2 ,  
-            n_clusters = 3 , 
-            random_state = 42, 
-            keep_label_0 =False, 
-            **npca_kws
-            ): 
-        """ Predict Naive Group of aquifer """
+        self,
+        n_components:int=2 ,  
+        return_label=False, 
+        **NGA_kws
+        ): 
+        """ Predicts Naive Group of Aquifer from Hydro-Log data. 
+        
+        Parameters
+        ------------
+        n_components: int, default=2 
+            Number of dimension to preserve. If`n_components` is ranged 
+            between float 0. to 1., it indicates the number of variance 
+            ratio to preserve. If ``None`` as default value the number of 
+            variance to preserve is ``95%``.
+        return_label: bool,default=False
+            If `True`, return the NGA label predicted, otherwise return 
+            :class:`~.MXS` instanciated object. if ``False``, NGA label 
+            can be fetch using the attribute 
+            :attr:`watex.hydro.MXS.yNGA_`
+            
+        NGA_kws: dict, 
+            keyword argument passed to :func:`watex.utils.predict_NGA_labels`
+        Returns 
+        --------
+        yNGA_ or self : arraylike-1d of naive group of aquifer or 
+            :class:`~.MXS` instanciated object.
+        
+        Example 
+        --------
+        >>> from watex.datasets import load_hlogs 
+        >>> from watex.methods.hydro import MXS 
+        >>> hdata = load_hlogs ().frame 
+        >>> # drop the 'remark' columns since there is no valid data 
+        >>> hdata.drop (columns ='remark', inplace=True) 
+        >>> mxs =MXS (kname ='k').fit(hdata) # specify the 'k' column  
+        >>> y_pred = mxs.predictNGA(return_label=True )
+        >>> y_pred [-12:] 
+        Out[52]: array([1, 3, 1, 3, 3, 3, 3, 1, 3, 3, 3, 3])
+        """
         self.inspect 
         
         from ..analysis.dimensionality import nPCA 
@@ -401,29 +447,348 @@ class MXS (HData):
         )
         
         X= to_numeric_dtypes(
-            self.data_, pop_cat_features= True , verbose =self.verbose 
+            self.data_, 
+            pop_cat_features= True , 
+            verbose =self.verbose 
             )
-        X= nPCA(naive_scaler (naive_imputer(X, mode = 'bi-impute' )), 
+        X= nPCA(naive_scaler (naive_imputer(X)), 
                 n_components= n_components , 
-                random_state=random_state ,
+                random_state=self.random_state,
                 view=False, 
-                **npca_kws
+                return_X=True,
+                plot_kws=dict(), 
+               
                 )
         self.yNGA_, self.cluster_centers_= predict_NGA_labels(
-            X, n_clusters= n_clusters, 
+            X, n_clusters= self.n_groups, 
             return_cluster_centers= True, 
-            keep_label_0= keep_label_0 ,  
-            verbose = self.verbose, 
-            
+            keep_label_0= self.keep_label_0 ,  
+            random_state= self.random_state,
+            **NGA_kws
             )
-        return self.yNGA_
+        return self.yNGA_ if return_label else self 
     
     
+    def makeyMXS (
+        self, 
+        y_pred=None, 
+        func:callable=None,
+        categorize_k= False, 
+        default_func= False,  
+        **mxs_kws
+        ): 
+        r""" Construct the MXS target :math:`y*`
         
+        Parameters 
+        -----------
+        y_pred: Array-like 1d, pandas.Series
+            Array composing the valid NGA labels. Note that NGA labels is  a 
+            predicted labels mostly using the unsupervising learning. 
+            See also: :func:`~predict_NGA_labels` for further details. 
         
+        func: callable 
+            Function to specifically map the permeability coefficient column 
+            in the dataframe of serie. If not given, the default function can be 
+            enabled instead from param `default_func`. 
+
+        string: bool, 
+            If set to "True", categorized map from 'k'  should be prefixed by "k". 
+            However is string value is given , the prefix is changed according 
+            to this label. 
+            
+        default_ufunc: bool, 
+            Default function for mapping k is setting to ``True``. Note that, this 
+            could probably not fitted your own data. So  it is recommended to 
+            provide your own function for mapping 'k'. However the default 'k' 
+            mapping is given as follow: 
+                
+            - k0 {0}: k = 0 
+            - k1 {1}: 0 < k <= .01 
+            - k2 {2}: .01 < k <= .07 
+            - k3 {3}: k> .07 
+            
+         mxs_kws:dict, 
+             Additional keyword arguments passed to 
+             :func:`~.watex.utils.make_MXS_labels`. 
+             
+        Returns 
+        --------
+        MXS.mxs_labels_: array-like 1d `
+             array like of MXS labels 
+             
+        Example 
+        --------
+        >>> from watex.datasets import load_hlogs 
+        >>> from watex.methods.hydro import MXS 
+        >>> hdata = load_hlogs ().frame 
+        >>> # drop the 'remark' columns since there is no valid data 
+        >>> hdata.drop (columns ='remark', inplace=True) 
+        >>> mxs =MXS (kname ='k').fit(hdata) # specify the 'k'columns 
+        >>> # we can predict the NGA labels and yMXS with single line 
+        >>> # of code snippet using the default 'k' classification.
+        >>> ymxs = mxs.predictNGA().makeyMXS(categorize_k=True, default_func=True)
+        >>> mxs.yNGA_[:7] 
+        ... array([2, 2, 2, 2, 2, 2, 2])
+        >>> ymxs[:7]
+        Out[40]: array([22, 22, 22, 22, 22, 22, 22])
+        >>> mxs.mxs_group_classes_
+        Out[56]: {1: 1, 2: 22, 3: 3} # transform classes 
+        >>> mxs.mxs_group_labels_ 
+        Out[57]: (2,)
+        >>> # **comment: 
+            # # only the label '2' is tranformed to '22' since 
+            # it is the only one that has similariry with the true label 2 
+        """
+        self.inspect 
+        
+        if self.k_ is None: 
+            raise kError ("'k' data for permeability coefficient cannot"
+                        " be None. Specify the name of the column 'kname'"
+                        " that fits the permeability coefficient values"
+                        " in the hydro-log dataset."
+            )
+
+        if ( 
+            not hasattr (self, 'yNGA_') 
+            and y_pred is None
+            ) : 
+            raise AquiferGroupError (
+                "y_pred for Naive Group of Aquifer (NGA) cannot be "
+                " None. Use :meth:`~predictNGA` method or"
+                " :func:~.watex.utils.predict_NGA_labels` to"
+                " predict NGA labels first."
+                 )
+        
+        elif ( 
+            hasattr (self, "yNGA_") 
+            and y_pred is None 
+            ): 
+            y_pred = self.yNGA_ 
+            
+        MXS = make_MXS_labels(
+            self.k_, 
+            y_pred, 
+            threshold= self.threshold, 
+            trailer=self.trailer, 
+            method=self.method, 
+            return_groups=False, 
+            return_obj= True, 
+            kname=self.kname, 
+            keep_label_0=self.keep_label_0,
+            sep=self.sep, 
+            prefix=self.prefix,
+            inplace=False, 
+            categorize_k=categorize_k, 
+            default_func=default_func, 
+            func=func, 
+            **mxs_kws
+            )
+        for key in MXS.keys (): 
+            setattr(self, key, MXS[key])
+        return  MXS.mxs_labels_
+
+    def labelSimilarity(
+        self, 
+        func:callable=None,
+        categorize_k= False, 
+        default_func= False, 
+        **sm_kws
+        ):
+        """Find label similarities
+        
+        Parameters 
+        -----------
+
+        func: callable 
+            Function to specifically map the permeability coefficient column 
+            in the dataframe of serie. If not given, the default function can be 
+            enabled instead from param `default_func`. 
+
+        string: bool, 
+            If set to "True", categorized map from 'k'  should be prefixed by "k". 
+            However is string value is given , the prefix is changed according 
+            to this label. 
+            
+        default_ufunc: bool, 
+            Default function for mapping k is setting to ``True``. Note that, this 
+            could probably not fitted your own data. So  it is recommended to 
+            provide your own function for mapping 'k'. However the default 'k' 
+            mapping is given as follow: 
+                
+            - k0 {0}: k = 0 
+            - k1 {1}: 0 < k <= .01 
+            - k2 {2}: .01 < k <= .07 
+            - k3 {3}: k> .07 
+        sm_kws:dict, 
+            Additional keyword arguments passed to 
+            :func:`~.watex.utils.find_similar_labels`.
+            
+        """
+        
+        self.inspect
+        
+        msg =("{0!r} data for {1} cannot be None. Specify the name of the "
+              "column {2!r} that fits the {1} values in the hydro-log dataset."
+              )
+        if self.k_ is None: 
+            raise kError (msg.format("k","permeability coefficient", "kname" ))
+        if self.aq_ is None: 
+            raise AquiferGroupError(msg.format(
+                "aq", "aquifer groups", "aqname")
+            )
+
+        similar_labels= find_similar_labels(
+            self.k_, 
+            self.aq_, 
+            threshold=self.threshold, 
+            keep_label_0=self.keep_label_0, 
+            method=self.method, 
+            return_groups=False, 
+            **sm_kws
+            )
+        return  similar_labels
+    
+MXS.__doc__="""\
+Mixture Learning Strategy (MXS)    
+
+The use of machine learning for k-parameter prediction seems an alternative
+way to reduce the cost of data collection thereby saving money. However, 
+the borehole data comes with a lot of missing k  since the parameter is 
+strongly tied to the aquifer after the pumping test. In other words, the 
+k-parameter collection is feasible if the layer in the well is an aquifer. 
+Unfortunately, predicting some samples of k in a large set of missing data 
+remains an issue using the classical supervised learning methods. We, 
+therefore propose an alternative approach called a mixture learning 
+strategy (MXS) to solve these double issues. It entails predicting upstream 
+a naïve group of aquifers (NGA) combined with the real values k to 
+counterbalance the missing values and yield an optimal prediction score. 
+The method, first, implies the K-Means and Hierarchical Agglomerative 
+Clustering (HAC) algorithms. K-Means and HAC are used for NGA label 
+predicting necessary the MXS label merging. 
+
+
+Parameters 
+-----------
+
+{params.core.kname} 
+{params.base.aqname}
+
+threshold: float, default=None 
+    The threshold from which, label in 'k' array can be considered  
+    similar than the one in NGA labels 'y_pred'. The default is 'None' which 
+    means none rule is considered and the high preponderence or occurence 
+    in the data compared to other labels is considered as the most 
+    representative  and similar. Setting the rule instead by fixing 
+    the threshold is recommended especially in a huge dataset.
+
+n_groups : int, default=3
+    The number of aquifer n_groups to form as well as the number of
+    centroids to generate. If a idea about the number of aquifer group
+    in the areas, it should be used instead. Hiwever, it is recommended
+    to validate this number using the 'elbow plot' or the 'silhouette
+    plot' or the Hierachical Agglomerative Clustering dendrogram. 
+    Refer to :func:`~watex.utils.plot_elbow` or 
+    :func:`~.watex.view.plotSilhouette` 
+    or :func:~.watex.view.plotDendrogram` for plotting purpose. 
+            
+keep_label_0: bool, default=False
+    The prediction already include the label 0. However, including 0 in 
+    the predicted label refers to 'k=0' i.e. no permeability coefficient 
+    equals to 0, which is not True in principle, because all rocks  have 
+    a permeability coefficient 'k'. Here we considered 'k=0' as an undefined 
+    permeability coefficient. Therefore, '0' , can be exclude since, it can 
+    also considered as a missing 'k'-value. If predicted '0' is in the target 
+    it should mean a missing 'k'-value rather than being a concrete label.  
+    Therefore, to avoid any confusion, '0' is altered to '1' so the value 
+    `+1` is used to move forward all class labels thereby excluding 
+    the '0' label. To force include 0 in the label, set `keep_label_0` 
+    to ``True``.
+    
+ sep: str, default'' 
+     Separator between the true labels 'y_true' and predicted NGA labels.
+     Sep is used to rewrite the MXS labels. Mostly the MXS labels is a 
+     combinaison with the true label of permeability coefficient 'k' and 
+     the label of NGA to compose new similarity labels. For instance 
+     
+     >>> true_labels=['k1', 'k2', 'k3'] ; NGA_labels =['II', 'I', 'UV']
+     >>> # gives 
+     >>> MXS_labels= ['k1_II', 'k2_I', 'k3_UV']
+ 
+     where the seperator `sep` is set to ``_``. This happens especially 
+     when one of the label (NGA or true_labels) is not a numeric datatype 
+     and a similariy is found between 'k1' and 'II', 'k2' and 'I' and so on.
+     
+ prefix: str, default=''
+     prefix is used to rename the true_labels i.e the true valid-k. For
+     instance::
+         >>> k_valid =[1, 2, ..] -> k_new = [k1, k2, ...]
+     where 'k' is the prefix. 
+     
+ method: str ['naive', 'strict'], default='naive'
+     The kind of strategy to compute the representativity of a label 
+     in the predicted array 'y_pred'. It can also be 'strict'. Indeed:
+     
+     - ``naive`` computes the importance of the label by the number of its
+         occurence for this specific label in the array 'y_true'. It does not 
+         take into account of the occurence of other existing labels. This 
+         is usefull for unbalanced class labels in `y_true`.
+     - ``strict`` computes the importance of the label by the number of 
+         occurence in the whole valid `y_true` i.e. under the total of 
+         occurence of all the labels that exist in the whole 'arra_aq'. 
+         This can give a suitable anaylse results if the data is not 
+         unbalanced for each labels in `y_pred`.
+         
+ trailer: str, default='*'
+     The Mixture strategy marker to differentiate the existing class label  
+     in 'y_true' with the predicted labels 'y_pred' especially when  
+     the the same class labels are also present the true label with the 
+     same label-identifier name. This usefull  to avoid any confusion  for
+     both labels  in `y_true` and `y_pred` for better demarcation and 
+     distinction. Note that if the `trailer`is set to ``None`` and both 
+     `y_true` and `y_pred` are numeric data, the labels in `y_pred` are 
+     systematically renamed to be distinct with the ones in the 'y_true'. 
+     For instance :: 
+         
+         >>> true_labels=[1, 2, 3] ; NGA_labels =[0, 1, 2]
+         >>> # with trailer , MXS labels should be 
+         >>>  MXS_labels= ['0', '1*', '2*', '3'] # 1 and 2 are in true_labels 
+         >>> # with no trailer 
+         >>> MXS_labels= [0, 4, 5, 3] # 1 and 2 have been changed to [4, 5]
+         
+{params.core.verbose}
+
+Examples 
+---------
+>>> from watex.datasets import load_hlogs 
+>>> from watex.methods.hydro import MXS 
+>>> hdata= load_hlogs (as_frame =True) 
+>>> # drop the 'remark' columns since there is no valid data 
+>>> hdata.drop (columns ='remark', inplace =True)
+>>> mxs = MXS (kname ='k').fit(hdata)
+>>> # predict the default NGA 
+>>> mxs.predictNGA() # default prediction with n_groups =3 
+>>> # make MXS labels using the default 'k' categorization 
+>>> ymxs=mxs.makeyMXS(categorize_k=True, default_func=True)
+>>> mxs.yNGA_ [62:74] 
+Out[43]: array([1, 2, 2, 2, 3, 1, 2, 1, 2, 2, 1, 2])
+>>> ymxs[62:74] 
+Out[44]: array([ 1, 22, 22, 22,  3,  1, 22,  1, 22, 22,  1, 22]) 
+>>> # to get the label similariry , need to provide the 
+>>> # the column name of aquifer group and fit again like 
+>>> mxs = MXS (kname ='k', aqname ='aquifer_group').fit(hdata)
+>>> sim = mxs.labelSimilarity() 
+>>> sim 
+Out[47]: [(0, 'II')] # group II and label 0 are very similar 
+""" .format(
+params =_param_docs 
+)   
+
 class Logging :
     """
-    Logging class 
+    Logging class
+    
+    Only deal with numerical values. If categorical values are find in the 
+    logging dataset, they should be discarded. 
     
     Parameters 
     -----------
@@ -443,6 +808,45 @@ class Logging :
        `kname` needs to be supplied when a dataframe is passed as a positional 
         or keyword argument. 
         
+    Examples 
+    ----------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.methods.hydro import Logging 
+    >>> # get the logging data 
+    >>> h = load_hlogs ()
+    >>> h.feature_names
+    Out[29]: 
+    ['hole_id',
+     'depth_top',
+     'depth_bottom',
+     'strata_name',
+     'rock_name',
+     'layer_thickness',
+     'resistivity',
+     'gamma_gamma',
+     'natural_gamma',
+     'sp',
+     'short_distance_gamma',
+     'well_diameter']
+    >>> # we can fit to collect the valid logging data
+    >>> log= Logging(kname ='k', zname='depth_top' ).fit(h.frame[h.feature_names])
+    >>> log.feature_names_in_ # categorical features should be discarded.
+    Out[33]: 
+    ['depth_top',
+     'depth_bottom',
+     'layer_thickness',
+     'resistivity',
+     'gamma_gamma',
+     'natural_gamma',
+     'sp',
+     'short_distance_gamma',
+     'well_diameter']
+    >>> log.plot ()
+    Out[34]: Logging(zname= depth_top, kname= k, verbose= 0)
+    >>> # plot log including the target y 
+    >>> log.plot (y = h.frame.k , posiy =0 )# first position 
+    Logging(zname= depth_top, kname= k, verbose= 0)
+    
     """
     def __init__(
         self, 
@@ -456,7 +860,12 @@ class Logging :
         self.kname=kname
         self.verbose=verbose 
         
-    def fit(self, data , **fit_params): 
+        
+    def fit(
+        self, 
+        data, 
+        **fit_params
+        )->"Logging": 
         """
         Fit logging data and populate attributes 
         
@@ -489,7 +898,8 @@ class Logging :
             to_frame= True, 
             )
         self.data_= to_numeric_dtypes( 
-            data , pop_cat_features= True, verbose =self.verbose, 
+            data , pop_cat_features= True, 
+            verbose =self.verbose, 
             **fit_params 
             )
         self.feature_names_in_ = list(self.data_ ) 
@@ -510,7 +920,6 @@ class Logging :
         Parameters
         -----------
         
-            
         normalize: bool, default = False
             Normalize all the data to be range between (0, 1) except the `depth`,    
 
@@ -579,25 +988,92 @@ class Logging :
             )
         return 1 
     
-    
-class AquiferGroup (HData):
-
+class AqGroup (HData):
     def __init__ (
             self, 
             kname =None, 
-            aqname =None, 
+            aqname =None,
+            method="naive", 
+            keep_label_0=False, 
             **kws
             ): 
         super().__init__(
             kname =kname,
             aqname=aqname, 
-            **kws)
-        self.kname =kname 
-        self.aqname =aqname 
+            **kws
+            )
+        self.method=method
+        self.keep_label_0=keep_label_0 
         
-    
+    def findGroups (
+        self , 
+        method="naive", 
+        default_arr = None, 
+        **g_kws 
+        ):
+        """ Find the existing group between the permeability coefficient `k` 
+        and the group of aquifer. 
+        
+        It computes the occurence between the true labels 
+        and the group of aquifer  as a function of occurence and
+        repesentativity.
+        
+        Parameters 
+        ----------
+        keep_label_0: bool, default=False
+            The prediction already include the label 0. However, including 0 in 
+            the predicted label refers to 'k=0' i.e. no permeability coefficient 
+            equals to 0, which is not True in principle, because all rocks  have 
+            a permeability coefficient 'k'. Here we considered 'k=0' as an undefined 
+            permeability coefficient. Therefore, '0' , can be exclude since, it can 
+            also considered as a missing 'k'-value. If predicted '0' is in the target 
+            it should mean a missing 'k'-value rather than being a concrete label.  
+            Therefore, to avoid any confusion, '0' is altered to '1' so the value 
+            `+1` is used to move forward all class labels thereby excluding 
+            the '0' label. To force include 0 in the label, set `keep_label_0` 
+            to ``True``.
+        
+        method: str ['naive', 'strict'], default='naive'
+            The kind of strategy to compute the representativity of a label 
+            in the predicted array 'y_pred'. It can also be 'strict'. Indeed:
+            
+            - ``naive`` computes the importance of the label by the number of its
+                occurence for this specific label in the array 'y_true'. It does not 
+                take into account of the occurence of other existing labels. This 
+                is usefull for unbalanced class labels in `y_true`.
+            - ``strict`` computes the importance of the label by the number of 
+                occurence in the whole valid `y_true` i.e. under the total of 
+                occurence of all the labels that exist in the whole 'arra_aq'. 
+                This can give a suitable anaylse results if the data is not 
+                unbalanced for each labels in `y_pred`.
+        Returns
+        --------
+        g: _Group: :class:`~.box._Group` class object 
+            Use attribute `.groups` to find the group values. 
+                 
+        """
+        self.inspect
+        
+        msg =("{0!r} data for {1} cannot be None. Specify the name of the "
+              "column {2!r} that fits the {1} values in the hydro-log dataset."
+              )
+        if self.k_ is None: 
+            raise kError (msg.format("k","permeability coefficient", "kname" ))
+        if self.aq_ is None: 
+            raise AquiferGroupError(msg.format(
+                "aq", "aquifer groups", "aqname")
+            )
 
-AquiferGroup.__doc__="""\
+        g= find_aquifer_groups(
+            self.k_, self.aq_,
+            kname=self.kname , 
+            aqname = self.aqname,
+            method=method, 
+            **g_kws
+            )
+        return g 
+    
+AqGroup.__doc__="""\
 Group of Aquifer is mostly related to area information after multiple 
 boreholes collected. 
 
@@ -617,7 +1093,7 @@ is the label 1 and label 1 is most representative with the group of aquifer
 'IV', therefore this group can be replaced throughout the column 
 with 'k1'+'IV=> i.e. 'k14'. This becomes a new label created and is used to 
 fill the true label 'y_true' to become a MXS target ( include NGA label). 
-Note that the true label with valid 'k-value' remained intach and unchanged.
+Note that the true label with valid 'k-value' remained intact and unchanged.
 The same process is done for label 2, 3 and so on. The selection of MXS 
 label from NGA strongly depends on its preponderance or importance rate in 
 the whole dataset. 
@@ -627,94 +1103,74 @@ representativity in datasets.
 
 Parameters 
 ----------
+{params.core.kname}
+{params.base.aqname}
+
 g:dict, 
     Dictionnary compose of occurence between the true labels 
     and the group of aquifer  as a function of occurence and
     repesentativity 
 Example 
 --------
->>> from watex.utils import naive_imputer, read_data, reshape 
->>> from watex.datasets import load_hlogs 
->>> from watex.utils.hydroutils import classify_k, find_aquifer_groups 
->>> b= load_hlogs () #just taking the target names
->>> data = read_data ('data/boreholes/hf.csv') # read complete data
->>> y = data [b.target_names]
->>> # impute the missing values found in aquifer group columns
->>> # reshape 1d array along axis 0 for imputation 
->>> agroup_imputed = naive_imputer ( reshape (y.aquifer_group, axis =0 ) , 
-...                                    strategy ='most_frequent') 
->>> # reshape back to array_like 1d 
->>> y.aquifer_group =reshape (agroup_imputed) 
->>> # categorize the 'k' continous value in 'y.k' using the default 
->>> # 'k' mapping func 
->>> y.k = classify_k (y.k , default_func =True)
->>> # get the group obj
->>> group_obj = find_aquifer_groups(y.k, y.aquifer_group) 
->>> group_obj 
-_Group(Label=[' 1 ', 
-             Preponderance( rate = '53.141  %', 
-                           [('Groups', {'V': 0.32, 'IV': 0.266, 'II': 0.236, 
-                                        'III': 0.158, 'IV&V': 0.01, 
-                                        'II&III': 0.005, 'III&IV': 0.005}),
-                            ('Representativity', ( 'V', 0.32)),
-                            ('Similarity', 'V')])],
-        Label=[' 2 ', 
-              Preponderance( rate = ' 19.11  %', 
-                           [('Groups', {'III': 0.274, 'II': 0.26, 'V': 0.26, 
-                                        'IV': 0.178, 'III&IV': 0.027}),
-                            ('Representativity', ( 'III', 0.27)),
-                            ('Similarity', 'III')])],
-        Label=[' 3 ', 
-              Preponderance( rate = '27.749  %', 
-                           [('Groups', {'V': 0.443, 'IV': 0.311, 'III': 0.245}),
-                            ('Representativity', ( 'V', 0.44)),
-                            ('Similarity', 'V')])],
-             )
-(2) Use the subjectivity and set the strata columns as default array 
+>>> from watex.methods.hydro import AqGroup 
+>>> hg = AqGroup (kname ='k', aqname='aquifer_group').fit(hdata ) 
+>>> hg.findGroups () 
+Out[25]: 
+ _Group(Label=[' 0 ', 
+                   Preponderance( rate = ' 100.0  %', 
+                                [('Groups', {{'II': 1.0}}),
+                                 ('Representativity', ( 'II', 1.0)),
+                                 ('Similarity', 'II')])],
+             )                 
+""".format(params = _param_docs)
 
->>> find_aquifer_groups(y.k, subjectivity=True, default_arr= X.strata_name ) 
-_Group(Label=[' 1 ', 
-             Preponderance( rate = '53.141  %', 
-                           [('Groups', {'siltstone': 0.35, 'coal': 0.227, 
-                                        'fine-grained sandstone': 0.158, 
-                                        'medium-grained sandstone': 0.094, 
-                                        'mudstone': 0.079, 
-                                        'carbonaceous mudstone': 0.054, 
-                                        'coarse-grained sandstone': 0.03, 
-                                        'coarse': 0.01}),
-                            ('Representativity', ( 'siltstone', 0.35)),
-                            ('Similarity', 'siltstone')])],
-        Label=[' 2 ', 
-              Preponderance( rate = ' 19.11  %', 
-                           [('Groups', {'mudstone': 0.288, 'siltstone': 0.205, 
-                                        'coal': 0.192, 
-                                        'coarse-grained sandstone': 0.137, 
-                                        'fine-grained sandstone': 0.137, 
-                                        'carbonaceous mudstone': 0.027, 
-                                        'medium-grained sandstone': 0.014}),
-                            ('Representativity', ( 'mudstone', 0.29)),
-                            ('Similarity', 'mudstone')])],
-        Label=[' 3 ', 
-              Preponderance( rate = '27.749  %', 
-                           [('Groups', {'mudstone': 0.245, 'coal': 0.226, 
-                                        'siltstone': 0.217, 
-                                        'fine-grained sandstone': 0.123, 
-                                        'carbonaceous mudstone': 0.066, 
-                                        'medium-grained sandstone': 0.066, 
-                                        'coarse-grained sandstone': 0.057}),
-                            ('Representativity', ( 'mudstone', 0.24)),
-                            ('Similarity', 'mudstone')])],
-             )                  
-"""
+#XXX TODO 
+class Hydrogeology(ABC):
+    """ 
+    A branch of geology concerned with the occurrence, use, and functions of 
+    surface water and groundwater. 
+    
+    Hydrogeology is the study of groundwater – it is sometimes referred to as
+    geohydrology or groundwater hydrology. Hydrogeology deals with how water 
+    gets into the ground (recharge), how it flows in the subsurface 
+    (through aquifers) and how groundwater interacts with the surrounding soil 
+    and rock (the geology).
+    
+    
+    see also
+    ---------
 
-
+    Hydrogeologists apply this knowledge to many practical uses. They might:
+        
+        * Design and construct water wells for drinking water supply, irrigation 
+            schemes and other purposes;
+        * Try to discover how much water is available to sustain water supplies 
+            so that these do not adversely affect the environment – for example, 
+            by depleting natural baseflows to rivers and important wetland 
+            ecosystems;
+        * Investigate the quality of the water to ensure that it is fit for its 
+            intended use; 
+        * Where the groundwater is polluted, they design schemes to try and 
+            clean up this pollution;
+            Design construction dewatering schemes and deal with groundwater 
+            problems associated with mining; Help to harness geothermal energy
+            through groundwater-based heat pumps.
+    """
+    @abstractclassmethod 
+    def __init__(
+        self, 
+        **kwd
+        ): 
+        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
+        
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def _getattr_(self, name):
     """ Isolated part of __getattr__ to reformat the attribute getter. """
     rv = smart_strobj_recognition(name, self.__dict__, deep =True)
     appender  = "" if rv is None else f'. Do you mean {rv!r}'
     
-    if name =='table_': 
-        err_msg =(". Call 'summary' method to fetch attribute 'table_'")
+    if name =='yNGA_': 
+        err_msg =(". Call 'predictNGA' method to fetch attribute 'yNGA_'")
     else: err_msg =  f'{appender}{"" if rv is None else "?"}' 
     
     raise AttributeError (

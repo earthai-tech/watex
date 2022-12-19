@@ -2914,7 +2914,7 @@ def naive_imputer (
     except Exception as err :
         #improve error msg 
         raise ValueError (str(err) + err_msg)
-    
+
     if hasattr (imp , 'feature_names_in_'): 
         Xi = pd.DataFrame( Xi , columns = imp.feature_names_in_)  
     # commonly when strategy is most frequent

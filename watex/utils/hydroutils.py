@@ -134,6 +134,14 @@ def make_MXS_labels (
         Array composing the valid NGA labels. Note that NGA labels is  a 
         predicted labels mostly using the unsupervising learning. 
         See also: :func:`~predict_NGA_labels` for further details. 
+       
+    threshold: float, default=None 
+        The threshold from which, label in 'y_true' can be considered  
+        similar than the one in NGA labels 'y_pred'. The default is 'None' which 
+        means none rule is considered and the high preponderence or occurence 
+        in the data compared to other labels is considered as the most 
+        representative  and similar. Setting the rule instead by fixing 
+        the threshold is recommended especially in a huge dataset.
         
     similar_labels: list of tuple, optional   
         list of tuple in pair (label and similar group). If given, the similar 
@@ -2265,7 +2273,7 @@ def classify_k (
     dfunc = lambda k : _kp (k, string = string ) # default 
     func = func or   ( dfunc if default_func else None ) 
     if func is None: 
-        raise TypeError ("'ufunc' can not be None when the default"
+        raise TypeError ("'ufunc' cannot be None when the default"
                          " 'k' mapping function is not triggered.")
     oo= copy.deepcopy (o )
     if hasattr (o, 'columns'):

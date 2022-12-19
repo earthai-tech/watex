@@ -11,8 +11,17 @@ from .em import (
     EM, 
     Processing 
     )
-from .erp import ERPCollection , ERP 
-from .hydro import Hydrogeology 
+from .erp import ( 
+    ERPCollection ,
+    ERP 
+    )
+from .hydro import ( 
+    Hydrogeology, 
+    AqGroup, 
+    AqSection, 
+    MXS, 
+    Logging, 
+    )
 
 __all__=[
     "EM", 
@@ -23,6 +32,9 @@ __all__=[
     "Processing", 
     "ERPCollection", 
     "ERP", 
-    "Hydrogeology"
-    
+    "Hydrogeology", 
+    "AqGroup", 
+    "AqSection", 
+    "MXS", 
+    "Logging", 
     ]
