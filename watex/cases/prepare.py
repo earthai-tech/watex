@@ -795,12 +795,14 @@ def default_preparation(
     Returns
     --------
     X: NDArray | Dataframe
-     Notes
-     -----
-     `num_indexes` and `cat_indexes` are mainly used when type of data `x` is 
-     np.ndarray(m, nf) where `m` is number of instances or examples and 
-     `nf` if number of attributes or features. `selector_` is used  for 
-     dataframe preprocessing.
+    
+    Notes
+    -----
+    `num_indexes` and `cat_indexes` are mainly used when type of data `x` is 
+    np.ndarray(m, nf) where `m` is number of instances or examples and 
+    `nf` if number of attributes or features. `selector_` is used  for 
+    dataframe preprocessing.
+    
     """
     
     imputer_strategy = imputer_strategy or 'most_frequent'

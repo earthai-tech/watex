@@ -4164,9 +4164,53 @@ def is_depth_in (X, name, columns = None, error= 'ignore'):
     return  X , depth     
     
     
-  
+def count_func (path , verbose = 0 ): 
+    """ Count function and method using 'ast' modules """
     
+    cobj ={}
+    import_optional_dependency('ast')
+    import ast 
+    class CountFunc (ast.NodeVisitor): 
+        func_count=0 
+        # def visit_FunctionDef(self, node): 
+        #     self.func_count +=1 
+        # def visit_Lambda(self, node): 
+        #     self.func_count +=1 
+        def visit_ClassDef(self, node): 
+            self.func_count +=1 
+        # def visit_Module(self, node): 
+        #     self.func_count +=1 
+        # def visit_Call(self, node): 
+        #     self.func_count +=1 
+     
+    if os.path.isdir (path): 
+        pyfiles = [ os.path.join (path , f) 
+                   for f in os.listdir (path) if f.endswith ('.py') ] 
+    elif os.path.isfile (path) : 
+        pyfiles = [ path ] 
+    else : 
+        raise TypeError (f"Expects a path-like object, got {path!r}") 
+        
+    val=0
     
+    if verbose : 
+        print("module = {:^12}".format(os.path.dirname (pyfiles[0])))
+    for mod in pyfiles : 
+
+        p=ast.parse (open(mod, encoding='utf-8').read())
+        f= CountFunc()
+        f.visit(p)
+        cobj[os.path.basename (mod)]= f.func_count 
+        val += f.func_count 
+        if verbose: 
+            print("### {:^7}{:<17} ={:>7}".format (' ', os.path.basename (mod), 
+                                              f.func_count ))
+            
+    print(">>>Total = {:>24}".format(val )) if verbose else print() 
+ 
+    return cobj if not verbose else None 
+
+
     
     
     

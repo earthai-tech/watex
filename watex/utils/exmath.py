@@ -707,7 +707,7 @@ def fitfunc(
     """
     for ar, n in  zip ((x, y),("x", "y")): 
         if not _is_arraylike_1d(ar): 
-            raise TypeError ("{n!r} only supports 1d array.")
+            raise TypeError (f"{n!r} only supports 1d array.")
     # generate a sample of values to cover the fit function 
     # thus compute ynew (yn) from the poly function f
     minl, = argrelextrema(y, np.less) 
@@ -1056,47 +1056,55 @@ def ohmicArea(
     f_brl, beta = dummy_basement_curve( f_rhotl,  search)
     # 1000 points from OB (xx)
     xx = np.linspace(oB.min(), oB.max(), 1000)
-    b45_projected= f_brl(xx)
+    #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # b45_projected= f_brl(xx)
     
     # create a fit function for b45 and find the limits 
     # find the intersection between the b45_projected values and 
     # fpartial projected values are the solution of equations f45 -fpartials 
-    diff_arr = b45_projected - f_rhotl(xx) #ypartial_projected 
+    # diff_arr = b45_projected - f_rhotl(xx) #ypartial_projected 
 
     # # if f-y < 0 => f< y so fitting curve is under the basement curve 
-    # # we keep the limit indexes for integral computation 
-    # # we want to keep the 
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # make basement func f45 from oB
+    f45, *_ = fitfunc(oB, Y[oIx:])
+    ff = f45 - f_rhotl  # f(x) -g(x)
+
+    diff_arr= ff (xx)  # get the relative position f/g from oB
+    # mask negative values where g is up to f 
     array_masked = np.ma.masked_where (diff_arr < 0 , diff_arr , copy =True)
-    # get indexes of valid values 
+    # get indexes of valid positions 
     indexes, = array_masked.nonzero() 
- 
+    
+    # find integration bounds 
     try : 
         ib_indexes = find_bound_for_integration(indexes, b0=bound0)
     except : 
-        bound0=[] #initialize the bounds lists 
+        bound0=[] # initialize the bounds lists 
         ib_indexes =find_limit_for_integration(indexes, b0= bound0) 
-    
+        
+    # get the roots of integration inf and sup pairs 
     roots = xx[ib_indexes] 
-    f45, *_ = fitfunc(oB, Y[oIx:])
-    ff = f45 - f_rhotl 
+
     pairwise_r = np.split(roots, len(roots)//2 ) if len(
         roots) > 2 else [np.array(roots)]
     ohmS = np.zeros((len(pairwise_r,)))
     err_ohmS = np.zeros((len(pairwise_r,)))
+
     for ii, (inf, sup) in enumerate(pairwise_r): 
         values, err = integrate.quad(ff, a = inf, b = sup)
         ohmS[ii] = np.zeros((1,)) if values < 0 else values 
         err_ohmS[ii] = err
         
-
+    # sum area if True
     if sum: 
         ohmS = ohmS.sum()  
-    
+
     rv =[
         (ohmS, err_ohmS, roots),
          ( np.hstack((X[:, np.newaxis], Y[:, np.newaxis]) ), 
              np.hstack((x_new[:, np.newaxis], y_projected[:, np.newaxis])), 
-             np.hstack((oB[:, np.newaxis], f_brl(oB)[:, np.newaxis]) )
+             np.hstack((oB[:, np.newaxis], f45(oB)[:, np.newaxis]) )
          ) 
         ]    
         
@@ -1886,7 +1894,7 @@ def plotOhmicArea (
 
     args = [ * xy.T ] + [c[0]] + [*xyf.T ] +[c[1]] + [*xyarea.T] +[c[2]]
     
-    legs =['raw app.res', 'fitted app.res ', 'ohmic-area']
+    legs =['raw app.res', 'fitted app.res ', 'search zone']
     return plot_(*args , dtype ='ves', raw= True, kind='semilogy', fbtw=fbtw, 
                  leg =legs, **plot_kws) 
 
@@ -2038,7 +2046,7 @@ def plot_ (
         
     plt.tight_layout()
     fig.suptitle(**fig_title_kws)
-    plt.legend (leg, loc ='upper right') if leg  else plt.legend ()
+    plt.legend (leg, loc ='best') if leg  else plt.legend ()
     plt.show ()
         
     

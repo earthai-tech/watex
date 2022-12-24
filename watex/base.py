@@ -58,7 +58,7 @@ __all__=[
     "AdelineStochasticGradientDescent",
     "SequentialBackwardSelection",
     "MajorityVoteClassifier", 
-    "Perceptron", 
+    "GreedyPerceptron", 
     "existfeatures", 
     "selectfeatures" , 
     "get_params" 
@@ -1128,7 +1128,7 @@ class SequentialBackwardSelection (_Base ):
         
         return self.__class__.__name__ + str(tup).replace("'", "") 
     
-class Perceptron (_Base): 
+class GreedyPerceptron (_Base): 
     r""" Object oriented perceptron API class. Perceptron classifier 
     
     Inspired from Rosenblatt concept of perceptron rules. Indeed, Rosenblatt 
@@ -1574,7 +1574,7 @@ class AdelineStochasticGradientDescent (_Base) :
     r""" Adaptative Linear Neuron Classifier  with batch  (stochastic) 
     gradient descent 
     
-    A stochastic gradient descent is apopular alternative wich is sometimes 
+    A stochastic gradient descent is a popular alternative wich is sometimes 
     also cal iterative or online gradient descent. Instead of updating the 
     weights based on the sum of accumulated erros over all training examples 
     :math:`x^{(i)}`: 
