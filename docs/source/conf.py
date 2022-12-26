@@ -65,7 +65,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
     'sphinx.ext.coverage',
-    #'sphinx.ext.imgmath',
+    'sphinx.ext.pngmath',
     # 'numpydoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
