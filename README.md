@@ -27,7 +27,7 @@
 * [API](https://watex.readthedocs.io/en/latest/)
 * [Installation](https://watex.readthedocs.io/en/latest/installation.html)
 * [Case history using _WATex_](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
-* [Code snippets] (https://watex.readthedocs.io/en/latest/demo/tutorials.html)
+* [Code snippets](https://watex.readthedocs.io/en/latest/demo/tutorials.html)
 
          
 ## Licence 
