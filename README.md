@@ -25,9 +25,9 @@
 ## Documentation 
 
 * [API](https://watex.readthedocs.io/en/latest/)
-* [Installation](https://github.com/WEgeophysics/watex/wiki)
+* [Installation](https://watex.readthedocs.io/en/latest/installation.html)
 * [Case history using _WATex_](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
-* [User Guide ] ()
+* [Code snippets] (https://watex.readthedocs.io/en/latest/demo/tutorials.html)
 
          
 ## Licence 
