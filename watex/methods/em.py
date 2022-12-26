@@ -651,10 +651,11 @@ class EM(IsEdi):
 
         :example: 
             >>> from watex.methods.em import EM
-            >>> from pycsamt.core.edi import Edi_collection 
-            >>> edipath = 'data/edis' 
+            >>> from watex.datasets import load_edis 
+            >>> edi_data = load_edis (return_data =True, samples =12)
             >>> cObjs = Edi_collection (edipath) # object from Edi_collection 
-            >>> ref = EM().getfullfrequency (cObjs.ediObjs)  
+            >>> emObjs = EM().fit(edi_data )  
+            >>> ref = emObjs.getfullfrequency (cObjs.ediObjs)  
             >>> ref
             ... array([7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04, 3.50000e+04,
                    2.94000e+04, 2.47000e+04, 2.08000e+04, 1.75000e+04, 1.47000e+04,
@@ -663,7 +664,6 @@ class EM(IsEdi):
             >>> len(ref)
             ... 55 
             >>> # however full frequency can just be fetched using the attribute `freqs_` 
-            >>> emObj = EM().fit(edipath)       # object from EM 
             >>> emObjs.freqs_ 
             ... array([7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04, 3.50000e+04,
                    2.94000e+04, 2.47000e+04, 2.08000e+04, 1.75000e+04, 1.47000e+04,
@@ -1125,8 +1125,8 @@ class Processing (EM) :
             394.2727092 ,  679.71542811,  953.2796567 , 1212.42883944,
             ...
             164.58282866,   96.60082159,   17.03888414])
-    >>> plt.semilogy (np.arange (self.res2d_.shape[1] ), self.res2d_[3, :], '--',
-                      np.arange (self.res2d_.shape[1] ), rc[3, :], 'ok--')
+    >>> plt.semilogy (np.arange (p.res2d_.shape[1] ), p.res2d_[3, :], '--',
+                      np.arange (p.res2d_.shape[1] ), rc[3, :], 'ok--')
  
     References 
     -----------
@@ -1563,10 +1563,10 @@ class Processing (EM) :
             raise ValueError(
                 f'Expected argument ``swift`` or ``bahr`` not: {self.method!r}')
             
-        Zxx= self.make2d(self.ediObjs_,'zxx')
-        Zxy = self.make2d(self.ediObjs_,'zxy')
-        Zyx = self.make2d(self.ediObjs_,'zyx')
-        Zyy= self.make2d(self.ediObjs_,'zyy')
+        Zxx= self.make2d('zxx')
+        Zxy = self.make2d('zxy')
+        Zyx = self.make2d('zyx')
+        Zyy= self.make2d('zyy')
         
         S1 =Zxx + Zyy; S2 = Zxy + Zyx; D1 =Zxx-Zyy ;  D2= Zxy-Zyx 
         D1S2 = (S2 * np.conj(D1)).imag ; S1D2 = (D2 * np.conj(S1)).imag 
@@ -1687,7 +1687,7 @@ class Processing (EM) :
         >>> # One can specify the frequency buffer like the example below, However 
         >>> # it is not necessaray at least there is a a specific reason to fix the frequencies 
         >>> buffer = [1.45000e+04,1.11500e+01]
-        >>> zobjs_b =  pObjs.zrestore(pObjs.ediObjs_, buffer = buffer
+        >>> zobjs_b =  pObjs.zrestore(buffer = buffer
                                             ) # with buffer 
         
         """
@@ -1958,17 +1958,15 @@ class Processing (EM) :
 
             >>> from watex.methods.em import Processing
             >>> pobj = Processing().fit('data/edis')
-            >>> f = pobj.getfullfrequency (pobj.ediObjs_)
-            >>> len(f)
-            ... 55 # 55 frequencies 
-            >>> c, = pobj.qc (pobj.ediObjs_, tol = .6 ) # mean 60% to consider the data as
+            >>> f = pobj.getfullfrequency ()
+            >>> # len(f)
+            >>> # ... 55 # 55 frequencies 
+            >>> c,_ = pobj.qc ( tol = .6 ) # mean 60% to consider the data as
             >>> # representatives 
             >>> c  # the representative rate in the whole EDI- collection
-            ... 0.95 # the whole data at all stations is safe to 95%. 
+            >>> # ... 0.95 # the whole data at all stations is safe to 95%. 
             >>> # now check the interpolated frequency 
-            >>> c, freq_new,  = pobj.qc (pobj.ediObjs_, tol=.6 , return_freq =True)
-            >>> len(freq_new)
-            ... 53  # delete two frequencies 
+            >>> c, freq_new  = pobj.qc ( tol=.6 , return_freq =True)
             
         """
         if isinstance (tol, str): 
@@ -1999,11 +1997,11 @@ class Processing (EM) :
             # take a sample of collected edi 
             # and make two day array
             # all frequency at all stations 
-            ar = self.make2d (self.ediObjs_, 'freq') 
+            ar = self.make2d ('freq') 
         except : 
             try : 
-                ar = self.make2d(self.ediObjs_, 'zxy')
-            except: ar = self.make2d (self.ediObjs_, 'zyx')
+                ar = self.make2d( 'zxy')
+            except: ar = self.make2d ('zyx')
         # compute the ratio of NaN in axis =0 
         
         nan_sum  =np.nansum(np.isnan(ar), axis =1) 

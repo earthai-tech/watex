@@ -304,7 +304,7 @@ def d_hanning_window(
           the dipole length. 
     :return: Anonymous function (x,xk, W) value 
     """
-    x =check_y (x, input_name ='x') 
+    # x =check_y (x, input_name ='x') 
     return  1/W * (1 + np.cos (
         2 * np.pi * (x-xk) /W)) if np.abs(x-xk) <= W/2 else  0.
     

@@ -201,7 +201,7 @@ class pModels :
         """
         self._fit(X, y ) 
         
-        if X:
+        if X is not None:
             X, y =check_X_y (
                 X, 
                 y, 

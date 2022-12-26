@@ -23,7 +23,7 @@
  
 ## Methods Implemented
 
-Until now, the methods implemented are mainly adressed to a particular problem in water exploration field. These are:
+The methods implemented are mainly adressed to a particular problem in water exploration field. These are:
 
 - **Learning** 
  

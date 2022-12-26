@@ -83,8 +83,8 @@ using the DC-resistivity method (Resistivity Profiling and vertical sounding) an
    
    installation
    getting_started
-   tutorials
-   script
+   demo/tutorials	
+   scripts
 
 
 `WATex` API

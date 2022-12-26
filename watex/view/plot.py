@@ -49,6 +49,8 @@ from .._typing import (
     F, 
     EDIO
 )
+from ..utils._dependency import ( 
+    import_optional_dependency )
 from ..utils.coreutils import _is_readable
 from ..utils.exmath import ( 
     moving_average , fittensor)
@@ -846,6 +848,10 @@ class ExPlot (BasePlot):
         df = selectfeatures(df, include ='number')
         
         if pkg =='yb': 
+            import_optional_dependency('yellowbrick', (
+                "Cannot plot 'parallelcoordinates' with missing"
+                " 'yellowbrick'package.")
+                )
             pc =ParallelCoordinates(ax =ax , 
                                     features = df.columns, 
                                     classes =classes , 
@@ -995,7 +1001,7 @@ class ExPlot (BasePlot):
         >>> from watex.view import ExPlot 
         >>> data = fetch_data ('bagoue original').get('data=dfy1') 
         >>> p= ExPlot(tname='flow').fit(data)
-        >>> p.plotPairwiseComparison(fmt='.2f', corr='spearman', pkg ='yb'
+        >>> p.plotpairwisecomparison(fmt='.2f', corr='spearman', pkg ='yb',
                                      annot=True, 
                                      cmap='RdBu_r', 
                                      vmin=-1, 
@@ -2672,7 +2678,7 @@ class QuickPlot (BasePlot):
         Draw a scatter plot with possibility of several semantic features 
         groupings.
         
-        Indeed `scatteringFeatures` analysis is a process of understanding 
+        Indeed `scatteringfeatures` analysis is a process of understanding 
         how features in a dataset relate to each other and how those
         relationships depend on other features. Visualization can be a core 
         component of this process because, when data are visualized properly,
@@ -2870,7 +2876,8 @@ class QuickPlot (BasePlot):
         Examples
         --------
         >>> from watex.view.plot import  QuickPlot 
-        >>> data = 'data/geodata/main.bagciv.data.csv'
+        >>> from watex.datasets import load_bagoue 
+        >>> data = load_bagoue ().frame 
         >>> qkObj = QuickPlot(  leg_kws={'loc':'upper right'},
         ...          fig_title = '`sfi` vs`ohmS|`geol`',
         ...            ) 
@@ -3008,7 +3015,6 @@ class QuickPlot (BasePlot):
         
         Examples
         --------- 
-        >>> import watex.utils.mlutils as mfunc
         >>> from watex.transformers import StratifiedWithCategoryAdder
         >>> from watex.view.plot import QuickPlot
         >>> from watex.datasets import load_bagoue 
