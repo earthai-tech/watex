@@ -24,10 +24,172 @@ from ._typing import (
     F
 )
 from ._watexlog import watexlog
-
 _logger = watexlog.get_watex_logger(__name__)
 
 __docformat__='restructuredtext'
+
+class temp2d: 
+    """ Two dimensional plot template 
+    
+    Parameters 
+    ----------
+    reason: str, Any 
+        Does nothing. But if supplied, it should be the purpose of the 
+        plot. 
+    
+    Note
+    ------
+    For customizing the plot, `_temp2d` uses at the last parameter of 
+    the function to be decorated, the plotting arguments from 
+    :class:`watex.property.BasePlot` parameters. If not given, an 
+    atttribute errors will raise.
+
+    """
+    def __init__(self, reason =None, **kws):
+        self.reason=reason 
+    def __call__(self, func) : 
+        self._func =func 
+        
+        @functools.wraps(self._func ) 
+        def new_func (*args, **kwargs ):
+            
+            _args = self. _func (*args, **kwargs) 
+            base_plot_kws = _args[-1]
+            for key in base_plot_kws.keys () :
+                setattr (self, key , base_plot_kws[key] )
+            return self.plot2d(*_args[:-1] )
+        
+        return new_func  
+    
+    def __getattr__(self, name): 
+        msg = ("{0!r} has no attribute {1!r}. Note that {0!r} uses the"
+               " plot arguments from `watex.property.BasePlot`. Plot arguments"
+               " must be supplied as a keyword argument at the last parameters"
+               " i.e the last value of return (output) of the function to be"
+               " decorated."
+               )
+        raise AttributeError (msg.format(self.__class__.__name__, name))
+        
+    def plot2d (self, arr2d, y=None , x=None,posix =None) :
+        """ Template for 2D plot. Basically if use the stations and positions 
+        as `xlabel` and `positions` i explicitly both are not supplied. 
+        
+        Parameters 
+        ------------
+        arr2d : ndarray , shape (N, M) 
+            2D array for plotting. For instance, it can be a 2D resistivity 
+            collected at all stations (N) and all frequency (M) 
+        y: array-like 
+            Y-coordinates. It should have the length N, the same of the ``arr2d``.
+            the rows of the ``arr2d``.
+        x: array-like 
+            X-coordinates. It should have the length M, the same of the ``arr2d``; 
+            the columns of the 2D dimensional array.  Note that if `x` is 
+            given, the `distance is not needed. 
+            
+        posix: list of str 
+            List of stations names. If given,  it should have the same length of 
+            the columns M, of `arr2d`` 
+        
+        Returns 
+        -------
+        axe: Matplotllib axis 
+        
+        """
+        fig, axe = plt.subplots(
+            1, 
+            figsize = self.fig_size, 
+            num = self.fig_num,
+            dpi = self.fig_dpi, 
+                    )
+        cmap = plt.get_cmap( self.cmap)
+        
+        if self.plt_style =='pcolormesh': 
+            X, Y = np.meshgrid (x, y)
+            axr = axe.pcolormesh ( X, Y, arr2d,
+                            # for consistency check whether array does not 
+                            # contain any NaN values 
+                            vmax = arr2d[ ~np.isnan(arr2d)].max(), 
+                            vmin = arr2d[ ~np.isnan(arr2d)].min(), 
+                            shading= 'gouraud', 
+                            cmap =cmap, 
+                                  )
+
+        if  self.plt_style =='imshow': 
+            axr= axe.imshow (arr2d,
+                            interpolation = self.imshow_interp, 
+                            cmap =cmap,
+                            aspect = self.fig_aspect ,
+                            origin= 'upper', 
+                            extent=( x[~np.isnan(x)].min(),
+                                      x[~np.isnan(x)].max(), 
+                                      y[~np.isnan(y)].min(), 
+                                      y[~np.isnan(y)].max())
+                                              )
+            axe.set_ylim(y[~np.isnan(y)].min(), y[~np.isnan(y)].max())
+        
+        axe.set_xlabel(self.xlabel or 'Distance(m)', 
+                     fontdict ={
+                      'size': self.font_size ,
+                      'weight': self.font_weight} )
+      
+        axe.set_ylabel(self.ylabel or 'log10(Frequency)[Hz]',
+                 fontdict ={'size': self.font_size ,
+                                  'weight': self.font_weight})
+
+        axe.tick_params (axis ='both', labelsize = self.font_size 
+                         )
+        
+        if self.show_grid: 
+            axe.minorticks_on()
+            # axe.grid(color='k', ls=':', lw =0.25, alpha=0.7, 
+            #              which ='major')
+            axe.grid(
+                color= self.gc, 
+                ls=self.gls, 
+                lw =self.glw, 
+                alpha=self.galpha,  
+                which =self.gwhich
+          )
+            
+        labex , cf = self.cb_label or '$log10(App.Res)[Ω.m]$', axr
+    
+        cb = fig.colorbar(cf , ax= axe)
+        cb.ax.yaxis.tick_left()
+        cb.ax.tick_params(axis='y', direction='in', pad=2.,
+                          labelsize = self.font_size 
+                          )
+        
+        cb.set_label(labex,fontdict={'size': 1.5 * self.font_size ,
+                                  'style':self.font_style})
+        #--> set second axis 
+        axe2 = axe.twiny() 
+        axe2.set_xticks(ticks= x, minor=False, 
+                        fontsize = self.font_size 
+                        )
+        axe2.set_xticklabels(posix, rotation=self.rotate_xlabel, 
+                             fontsize = self.font_size )
+     
+        axe2.set_xlabel('Stations', 
+                        fontdict ={'style': self.font_style, 
+                                   'size': 1.5 * self.font_size ,
+                                   'weight': self.font_weight},
+                        )
+        fig.suptitle(self.fig_title,
+                     ha='left',
+                     fontsize= 15* self.fs, 
+                     verticalalignment='center', 
+                    style =self.font_style,
+                    bbox =dict(boxstyle='round',
+                               facecolor ='moccasin'))
+
+        plt.tight_layout()  
+        if self.savefig is not None :
+            fig.savefig(self.savefig, dpi = self.fig_dpi,
+                        orientation =self.orient)
+        plt.show() if self.savefig is None else plt.close(fig=fig) 
+        
+        return axe 
 
 
 class donothing : 
@@ -173,13 +335,6 @@ class gdal_data_check(object):
                     f" {self._gdal_installation_guide}."
                                   )
             else:
-                # warnings.warn(
-                #     "Ignore GDAL as it is not working. Will use `pyproj` "
-                #     f"OR download the GDAL wheel from {self._gdal_wheel_resources}"
-                #     " and use `pip install <path-to-wheel-file.whl>` "
-                #     "for GDAL installation. Get further details via "
-                #     f"{self._gdal_installation_guide}"
-                #               )
                 pass 
             
     def __call__(self, *args, **kwargs):  # pragma: no cover
@@ -221,16 +376,12 @@ class gdal_data_check(object):
                                       format(os.environ['GDAL_DATA']))
 
                 try:
-                    from osgeo import osr
-                    from osgeo.ogr import OGRERR_NONE
-                except:
-                    # _logger.error("Failed to load module osgeo; "
-                    #                  "looks like GDAL is NOT working")
-                    # print ("Failed to load module osgeo !!! ")
-
+                    from .utils._dependency import import_optional_dependency
+                    import_optional_dependency ('osgeo')
+                    # from osgeo import osr
+                    # from osgeo.ogr import OGRERR_NONE
+                except: # if failed to import GDAl 
                     return False
-                # end try
-
                 return True
             else:
                 if self.verbose: _logger.error("GDAL_DATA is set to: {},"
@@ -318,8 +469,7 @@ class redirect_cls_or_func(object) :
             return cls_or_func(*args, **kwargs)
         return self._new_func_or_cls
         
-
-class writef(object): 
+class writef2(object): 
     """
     Used to redirected functions or classes. Deprecated functions  or class can
     call others use functions or classes.
@@ -334,7 +484,7 @@ class writef(object):
         
     :param from_: 
         Can be ``df`` or ``regular``. If ``df``, `func` is called and collect 
-        its input argguments and write to appropriate extension. If `from_`is 
+        its input arguments and write to appropriate extension. If `from_`is 
         ``regular``, Can be a simple data put on list of string ready 
         to output file into other format. 
     :type from_: str ``df`` or ``regular`` 
@@ -351,8 +501,14 @@ class writef(object):
         
     """
     
-    def __init__(self, reason:Optional[str]=None,  from_:Optional[str]=None,
-                 to:Optional[str]=None, savepath:Optional[str] =None, **kws): 
+    def __init__(
+        self, 
+        reason:Optional[str]=None,  
+        from_:Optional[str]=None,
+        to:Optional[str]=None, 
+        savepath:Optional[str] =None, 
+        **kws
+        ): 
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
         self.reason = reason 
@@ -396,7 +552,7 @@ class writef(object):
                
             if self.reason is None : 
                 print('--> No reason is set. What do you want to do?'
-                      ' `write` file or `convert` file into other format?.')
+                      ' `write` file or `convert` file into other format?')
                 return func(*args, **kwargs)
             
             if self.reason is not None : 
@@ -408,7 +564,146 @@ class writef(object):
                         fromdf =True
                         self.writedfIndex = windex
                          
-            if fromdf is True and cfw ==1 : 
+            if fromdf  and cfw ==1 : 
+                if to_ is not None : 
+                    self.to= '.'+ to_.replace('.','')
+     
+                else: 
+                    self.to = '.csv'
+                if refout_ is not None : 
+                    self.refout =refout_
+            
+                self.refout = self.refout.replace(':','-') + self.to
+                
+                if savepath_ is not None: 
+                    self.savepath =savepath_
+                if self.to =='.csv': 
+                    self.df.to_csv(self.refout, header=True,
+                          index =self.writedfIndex)
+                elif self.to =='.xlsx':
+    
+                    self.df.to_excel(self.refout , sheet_name='{0}'.format(
+                        self.refout[: int(len(self.refout)/2)]),
+                            index=self.writedfIndex) 
+                             
+                         
+            # savepath 
+            generatedfile = '_watex{}_'.format(
+                    datetime.datetime.now().time()).replace(':', '.')
+            if self.savepath is None :
+                self.savepath = savepath_(generatedfile)
+            if self.savepath is not None :
+                if not os.path.isdir(self.savepath): 
+                    self.savepath = savepath_(generatedfile)
+                try : 
+                    shutil.move(os.path.join(os.getcwd(),self.refout) ,
+                            os.path.join(self.savepath , self.refout))
+                except : 
+                    self.logging.debug("We don't find any path to save file.")
+                else: 
+                    print(
+                    '--> reference output  file <{0}> is well exported to {1}'.
+                          format(self.refout, self.savepath))
+                    
+            return func(*args, **kwargs)
+        return decorated_func 
+        
+class writef(object): 
+    """
+    Used to redirected functions or classes. Deprecated functions  or class can
+    call others use functions or classes.
+             
+    Decorate function or class to replace old function method or class with 
+    multiple parameters and export files into many other format. `.xlsx` ,
+    `.csv` or regular format. Decorator mainly focus to export data to other
+    files. Exported file can `regular` file or excel sheets. 
+    
+    :param reason: 
+        Explain the "What to do?". Can be `write` or `convert`.
+        
+    :param from_: 
+        Can be ``df`` or ``regular``. If ``df``, `func` is called and collect 
+        its input argguments and write to appropriate extension. If `from_`is 
+        ``regular``, Can be a simple data put on list of string ready 
+        to output file into other format. 
+    :type from_: str ``df`` or ``regular`` 
+    
+    :param to_: 
+        Exported file extension. Can be excel sheeet (`.xlsx`, `csv`)
+        or other kind of format. 
+            
+    :param savepath: 
+        Give the path to save the new file written.
+        
+    *Author: LKouadio ~ @Daniel03*
+    *Date: 09/07/2021*
+        
+    """
+    
+    def __init__(
+        self, 
+        reason:Optional[str]=None,  
+        from_:Optional[str]=None,
+        to:Optional[str]=None, 
+        savepath:Optional[str] =None, 
+        **kws
+        ): 
+        self._logging =watexlog().get_watex_logger(self.__class__.__name__)
+        
+        self.reason = reason 
+        self.from_=from_ 
+        self.to= to
+        
+        self.refout =kws.pop('refout', None)
+        self.writedfIndex =kws.pop('writeindex', False)
+        
+        self.savepath =savepath 
+        
+        
+        for key in list(kws.keys()): 
+            setattr(self, key, kws[key])
+
+    def __call__(self, func):
+        """ Call function and return new function decorated"""
+        
+        @functools.wraps(func)
+        def decorated_func(*args, **kwargs): 
+            """
+            New decorated function and holds `func` args and kwargs arguments.
+            :params args: positional arguments of `func`
+            :param kwargs: keywords arguments of `func`. 
+            
+            """
+            self._logging.info('Func <{}> decorated !'.format(func.__name__))
+            
+            cfw = 0     # write file type 
+            
+            for addf in ['savepath', 'filename']: 
+                if not hasattr(self, addf): 
+                    setattr(self, addf, None)
+                    
+            erp_time = '{0}_{1}'.format(datetime.datetime.now().date(), 
+                            datetime.datetime.now().time())
+            
+            if self.refout is None : 
+               self.refout = 'w-{0}'.format(
+                   erp_time )
+               
+            if self.reason is None : 
+                print('--> No reason is set. What do you want to do?'
+                      ' `write` file or `convert` file into other format?')
+                return func(*args, **kwargs)
+            
+            if self.reason is not None : 
+                if self.reason.lower().find('write')>=0 : 
+                    cfw = 1 
+                    if self.from_=='df': 
+                        self.df , to_, refout_, savepath_, windex = func(*args,
+                                                                 **kwargs)
+                        fromdf =True
+                        self.writedfIndex = windex
+                         
+            if fromdf  and cfw ==1 : 
                 if to_ is not None : 
                     self.to= '.'+ to_.replace('.','')
      
@@ -1971,6 +2266,7 @@ class gplot2d(object):
           y=0.95 if self.reason =='model' else 0.98)
       
         return self 
+    
 
 class _M:
     def _m(self): pass

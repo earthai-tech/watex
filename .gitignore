@@ -182,9 +182,16 @@ python3
 data/boreholes/h502.csv
 data/boreholes/hf.csv
 demo-project.ipynb
-
+hlogs_project.ipynb
+_svms_xgboost_.pkl
+_svms_xgboost_.joblib
+_svms_xgboost_k0.joblib
+data.joblib
+data0.joblib
 #VS code 
 .vs/
 
 #scripts remove 
 scripts/
+# git certificate 
+git-mycompany-com.pem

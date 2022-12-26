@@ -103,7 +103,6 @@ __all__=[
     "bi_selector", 
     "correlatedfeatures", 
     "exporttarget", 
-    'getGlobalScore', 
     "predict", 
     "fetchGeoDATA", 
     "fetchModel", 
@@ -431,7 +430,6 @@ def selectfeatures (
     # use coerce to no raise error and return data frame instead.
     return df if coerce else df.select_dtypes (include, exclude) 
     
-    
 def getGlobalScore (
         cvres : Dict[str, ArrayLike] 
         ) -> Tuple [ Dict[str, ArrayLike] ,  Dict[str, ArrayLike]  ]: 
@@ -440,11 +438,14 @@ def getGlobalScore (
     
     :param cvres: cross validation results after training the models of number 
         of parameters equals to N. 
-    :type cvres: dict of Array-like, Shape (N, ) """
+    :type cvres: dict of Array-like, Shape (N, ) 
+    :returns: tuple 
+        ( mean_test_scores', 'std_test_scores') 
+         scores on test_dcore and standard deviation scores 
+        
+    """
     return  ( cvres.get('mean_test_score').mean() ,
-             cvres.get('std_test_score').mean()) 
-    
-    
+             cvres.get('std_test_score').mean())  
 def cfexist(features_to: List[ArrayLike], 
             features: List[str] )-> bool:      
     """
@@ -737,7 +738,7 @@ def predict(
         dms +=f"\n Confusion matrix= \n {conf_mx}"
     mse = mean_squared_error(y_true, y_pred )
 
-    dms += f"\n MSE error = {mse }."
+    dms += f"\n MSE error = {mse}."
     pprint(dms)
 
     return clf_score, mse 
@@ -2236,10 +2237,17 @@ def bi_selector (d, /,  features =None, return_frames = False ):
         d [diff_features] , d [features ] ) 
 
 def make_naive_pipe(
-        X, y =None, *,   num_features = None, cat_features=None, 
-        label_encoding='LabelEncoder', scaler = 'StandardScaler' , 
-        missing_values =np.nan, impute_strategy = 'median', 
-        sparse_output=True, for_pca =False, transform =False, 
+    X, 
+    y =None, *,   
+    num_features = None, 
+    cat_features=None, 
+    label_encoding='LabelEncoder', 
+    scaler = 'StandardScaler' , 
+    missing_values =np.nan, 
+    impute_strategy = 'median', 
+    sparse_output=True, 
+    for_pca =False, 
+    transform =False, 
     ): 
     """ make a pipeline to transform data at once. 
     
@@ -2906,7 +2914,7 @@ def naive_imputer (
     except Exception as err :
         #improve error msg 
         raise ValueError (str(err) + err_msg)
-    
+
     if hasattr (imp , 'feature_names_in_'): 
         Xi = pd.DataFrame( Xi , columns = imp.feature_names_in_)  
     # commonly when strategy is most frequent

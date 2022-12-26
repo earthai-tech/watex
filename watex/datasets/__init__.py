@@ -30,7 +30,8 @@ from .dload import (
     load_semien, 
     load_tankesse , 
     load_boundiali,
-    load_hlogs
+    load_hlogs,
+    load_edis
     ) 
 try : 
     from ._config import _fetch_data
@@ -49,6 +50,7 @@ __all__=[
          "load_boundiali",
          "load_hlogs", 
          "fetch_data",
+         "load_edis",
          "DATASET"
          ]
 

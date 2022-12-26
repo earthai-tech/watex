@@ -5,6 +5,7 @@
 from __future__ import annotations 
 import os
 import re 
+import copy 
 import datetime 
 import warnings
 import itertools 
@@ -41,12 +42,8 @@ from .validator import  (
     )
 from ._dependency import import_optional_dependency 
 from watex.exlib.sklearn import ( 
-    learning_curve , 
-    recall_score , 
-    accuracy_score , 
-    precision_score, 
+    learning_curve ,   
     confusion_matrix, 
-    roc_auc_score, 
     RandomForestClassifier, 
     LogisticRegression, 
     MinMaxScaler, 
@@ -55,18 +52,15 @@ from watex.exlib.sklearn import (
     silhouette_samples
     ) 
 
-is_mlxtend =False 
 try : 
     from mlxtend.Plotting import ( 
-        scatterplotmatrix , 
+        scatterplotmatrix, 
         heatmap 
         ) 
-except : pass 
-else : is_mlxtend =True 
-
+except: pass 
 try : 
-    from yellowbrick.classifier import ConfusionMatrix # ClassBalance 
-except : pass 
+    from yellowbrick.classifier import ConfusionMatrix 
+except: pass 
 
 D_COLORS =[
     'g',
@@ -118,28 +112,28 @@ D_STYLES = [
 
 
 def plot_logging ( 
-        X, 
-        y=None, 
-        zname = None, 
-        tname = None, 
-        labels=None,
-        impute_nan=True , 
-        normalize = False, 
-        log10=False, 
-        columns_to_skip =None, 
-        pattern = None, 
-        strategy='mean',  
-        posiy= None, 
-        fill_value = None,  
-        fig_size = (16, 7),
-        fig_dpi = 300, 
-        colors = None,  
-        sns_style =False, 
-        savefig = None,
-        draw_spines=False, 
-        verbose=0, 
-        **kws
-          ): 
+    X, 
+    y=None, 
+    zname = None, 
+    tname = None, 
+    labels=None,
+    impute_nan=True , 
+    normalize = False, 
+    log10=False, 
+    columns_to_skip =None, 
+    pattern = None, 
+    strategy='mean',  
+    posiy= None, 
+    fill_value = None,  
+    fig_size = (16, 7),
+    fig_dpi = 300, 
+    colors = None,  
+    sns_style =False, 
+    savefig = None,
+    draw_spines=False, 
+    verbose=0, 
+    **kws
+    ): 
     """ Plot logging data  
     
     Plot expects a collection of logging data. Each logging data composes a 
@@ -181,7 +175,7 @@ def plot_logging (
         Normalize all the data to be range between (0, 1) except the `depth`,    
         
     labels: list or str, optional
-        If labels afre given, they should fit the size of the number of 
+        If labels are given, they should fit the size of the number of 
         columns. The given labels should replace the old columns in `X` and 
         should figue out in the plot. This is usefull to change the columns 
         labels in the dataframe to a new labels that describe the best the 
@@ -246,7 +240,7 @@ def plot_logging (
     
     colors: list of Matplotlib.colors map, optional 
         The colors for plotting each columns of `X` except the depth. If not
-        given, default colors is generated. 
+        given, default colors are auto-generated. 
   
     draw_spines: bool, tuple (-lim, +lim), default= False, 
         Only draw spine between the y-ticks. ``-lim`` and ``+lim`` are lower 
@@ -276,7 +270,7 @@ def plot_logging (
     ---------
     >>> from watex.datasets import load_hlogs 
     >>> from watex.utils.plotutils import plot_logging
-    >>> X0, y = load_hlogs (as_frame =True) # get the frames rathen than object 
+    >>> X0, y = load_hlogs (as_frame =True) # get the frames rather than object 
     >>> # plot the default logging with Normalize =True 
     >>> plot_logging (X0, normalize =True) 
     >>> # Include the target in the plot 
@@ -640,7 +634,7 @@ def plot_regularization_path (
     coefficient of the different features for different regularization 
     strength. 
     
-    Note that, it is recommended to standardized the data first. 
+    Note that, it is recommended to standardize the data first. 
     
     Parameters 
     -----------
@@ -737,7 +731,6 @@ def plot_regularization_path (
         plt.savefig(savefig, dpi = 300 )
         
     plt.close () if savefig is not None else plt.show() 
-    
     
 def plot_rf_feature_importances (
         clf, X=None, y=None, fig_size = (8, 4),savefig =None,   
@@ -857,7 +850,8 @@ def plot_confusion_matrix (yt, y_pred, view =True, ax=None, annot=True, **kws ):
     if view: 
         sns.heatmap (
             mat.T, square =True, annot =annot,  fmt='d', cbar=False, ax=ax)
-        #xticklabels= list(np.unique(ytrue.values)), yticklabels= list(np.unique(ytrue.values)))
+        # xticklabels= list(np.unique(ytrue.values)), 
+        # yticklabels= list(np.unique(ytrue.values)))
         ax.set_xlabel('true labels')
         #ax.set_ylabel ('predicted label')
     return mat 
@@ -932,8 +926,11 @@ def plot_yb_confusion_matrix (
         return a yellowbrick confusion matrix object instance. 
     
     """
-    import_optional_dependency('yellowbrick')
-    
+    import_optional_dependency('yellowbrick', (
+        "Cannot plot the confusion matrix via 'yellowbrick' package."
+        " Alternatively, you may use ufunc `~.plot_confusion_matrix`,"
+        " otherwise install it mannually.")
+        )
     fig, ax = plt.subplots(figsize = fig_size )
     cmo= ConfusionMatrix (clf, classes=labels, 
                          label_encoder = encoder, **kws
@@ -949,12 +946,18 @@ def plot_yb_confusion_matrix (
     return cmo 
 
 def plot_confusion_matrices (
-        clfs, 
-        Xt, yt,  
-        annot =True, pkg=None, verbose = 0 , 
-        fig_size = (22, 6),
-        savefig =None, 
-        subplot_kws=None, 
+    clfs, 
+    Xt, 
+    yt,  
+    annot =True, 
+    pkg=None, 
+    normalize='true', 
+    sample_weight=None,
+    encoder=None, 
+    fig_size = (22, 6),
+    savefig =None, 
+    subplot_kws=None,
+    **scorer_kws
     ):
     """ 
     Plot inline multiple model confusion matrices using either the sckitlearn 
@@ -968,17 +971,35 @@ def plot_confusion_matrices (
         fitted, it is fit when the visualizer is fitted, unless otherwise specified
         by ``is_fitted``.
         
-    Xt : ndarray or DataFrame of shape n x m
+    Xt : ndarray or DataFrame of shape (M X N)
         A matrix of n instances with m features. Preferably, matrix represents 
         the test data for error evaluation.  
 
-    yt : ndarray or Series of length n
+    yt : ndarray of shape (M, ) or Series oF length (M, )
         An array or series of target or class values. Preferably, the array 
         represent the test class labels data for error evaluation.  
     
     pkg: str, optional , default ='sklearn'
         the library to handle the plot. It could be 'yellowbrick'. The basic 
-        confusion matrix is handled by the Scikit-package. 
+        confusion matrix is handled by the scikit-learn package. 
+
+    normalize : {'true', 'pred', 'all'}, default=None
+        Normalizes confusion matrix over the true (rows), predicted (columns)
+        conditions or all the population. If None, confusion matrix will not be
+        normalized.
+
+    sample_weight : array-like of shape (n_samples,), default=None
+        Sample weights.
+        
+    encoder : dict or LabelEncoder, default: None
+        A mapping of classes to human readable labels. Often there is a mismatch
+        between desired class labels and those contained in the target variable
+        passed to ``fit()`` or ``score()``. The encoder disambiguates this mismatch
+        ensuring that classes are labeled correctly in the visualization.
+        
+    return_scores: bool, defaut=True, 
+        Returns a dictionnary of `accuracy`, `precision`, `recall` and `AUC`
+        scores. 
         
     annot: bool, default=True 
         Annotate the number of samples (right or wrong prediction ) in the plot. 
@@ -990,29 +1011,15 @@ def plot_confusion_matrices (
     savefig: str, default =None , 
         the path to save the figures. Argument is passed to matplotlib.Figure 
         class. 
-    verbose: int, default=0 , 
-        control the level of verbosity. Different to zeros output messages 
-        of the different scores. 
-        
-    Returns 
-    --------
-    scores: dict , 
-        A dictionnary to retain all the scores from metrics evaluation such as 
-        - accuracy , 
-        - recall 
-        - precision 
-        - ROC AUC ( Receiving Operating Characteric Area Under the Curve)
-
     """
     pkg = pkg or 'sklearn'
     pkg= str(pkg).lower() 
-    assert pkg in {"slkearn", 'yellowbrick', "yb"}, (
-        f" Accept only 'sklearn' or 'yellowbrick' packages, got {pkg} ") 
+    assert pkg in {"sklearn", "scikit-learn", 'yellowbrick', "yb"}, (
+        f" Accepts only 'sklearn' or 'yellowbrick' packages, got {pkg!r}") 
     
     if not is_iterable( clfs): 
         clfs =[clfs]
-    # create an empty score dict to collect the cores 
-    scores ={} 
+
     model_names = [get_estimator_name(name) for name in clfs ]
     # create a figure 
     subplot_kws = subplot_kws or dict (left=0.0625, right = 0.95, 
@@ -1023,33 +1030,17 @@ def plot_confusion_matrices (
        axes =[axes] 
     for kk, (model , mname) in enumerate(zip(clfs, model_names )): 
         ypred = model.predict(Xt)
-        acc_scores = accuracy_score(yt, ypred)
-        rec_scores = recall_score(yt, ypred)
-        prec_scores = precision_score(yt, ypred)
-        rocauc_scores= roc_auc_score (yt, ypred)
-
-        scores[mname] = dict ( 
-            accuracy = acc_scores , recall = rec_scores, 
-            precision= prec_scores , auc = rocauc_scores 
-            )
-        if verbose: 
-            print(f"{mname}: accuracy -score = ", acc_scores)
-            print(f"{mname}: recall -score = ", rec_scores)
-            print(f"{mname}: precision -score = ", prec_scores)
-            print(f"{mname}: ROC AUC-score = ", rocauc_scores)
-            
-        if pkg=='sklearn': 
-            plot_confusion_matrix(yt, ypred, annot =annot , ax = axes[kk] )
+        if pkg in ('sklearn', 'scikit-learn'): 
+            plot_confusion_matrix(yt, ypred, annot =annot , ax = axes[kk], 
+                normalize= normalize , sample_weight= sample_weight ) 
         elif pkg in ('yellowbrick', 'yb'):
-            plot_yb_confusion_matrix(model, Xt, yt, ax=axes[kk])
-    
+            plot_yb_confusion_matrix(
+                model, Xt, yt, ax=axes[kk], encoder =encoder )
     if savefig is not None:
         plt.savefig(savefig, dpi = 300 )
         
     plt.close () if savefig is not None else plt.show() 
     
-    return scores  
-
 def plot_learning_curves(
     models, 
     X ,
@@ -1062,6 +1053,7 @@ def plot_learning_curves(
     fig_size=(20, 6),
     sns_style =None, 
     savefig=None, 
+    set_legend=True, 
     subplot_kws=None,
     **kws
     ): 
@@ -1126,6 +1118,10 @@ def plot_learning_curves(
         
     sns_style: str, optional, 
         the seaborn style . 
+        
+    set_legend: bool, default=True 
+        display legend in each figure. Note the default location of the 
+        legend is 'best' from :func:`~matplotlib.Axes.legend`
         
     subplot_kws: dict, default is \
         dict(left=0.0625, right = 0.95, wspace = 0.1) 
@@ -1215,7 +1211,8 @@ def plot_learning_curves(
         #ax[k].set_xlim (N[0], N[1])
         ax.set_xlabel("training size")
         ax.set_title(name, size=14)
-        ax.legend(loc='best')
+        if set_legend: 
+            ax.legend(loc='best')
     # for consistency
     ax = list(axes)[0]
     ax.set_ylabel("score")
@@ -1313,7 +1310,7 @@ def plot_naive_dendrogram (
     plt.close () if savefig is not None else plt.show() 
     
 def plot_pca_components (
-        components, *, feature_names = None , cmap= 'viridis' , 
+        components, *, feature_names = None , cmap= 'viridis', 
         savefig=None, **kws
         ): 
     """ Visualize the coefficient of principal component analysis (PCA) as 
@@ -1415,11 +1412,9 @@ def plot_clusters (
     >>> plot_clusters (3 , h2_scaled, ykm , km.cluster_centers_ )
         
     """
-    try : n_clusters = int(n_clusters )
-    except: 
-        raise TypeError (f"n_clusters argument must be a number, "
-                         f"not {type(n_clusters).__name__!r}")
-        
+    n_clusters = int(
+        _assert_all_types(n_clusters, int, float,  objname ="'n_clusters'" )
+        )
     X, y_pred = check_X_y(
         X, 
         y_pred, 
@@ -1525,8 +1520,8 @@ def plot_elbow (
     distorsions =[] ; n_clusters = 11
     for i in range (1, n_clusters ): 
         km =KMeans (n_clusters =i , init= 'k-means++', 
-                    n_init=10 , max_iter=300, 
-                    random_state =0 
+                    n_init=n_init , max_iter=max_iter, 
+                    random_state =random_state 
                     )
         km.fit(X) 
         distorsions.append(km.inertia_) 
@@ -1540,7 +1535,7 @@ def _plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),
                marker='o', savefig =None, **kwd): 
     """ Plot the optimal number of cluster, k', for a given class 
     
-    :param distorsions: list - list of values withing the ssum-squared-error 
+    :param distorsions: list - list of values withing the sum-squared-error 
         (SSE) also called  `inertia_` in sckit-learn. 
     
     :param n_clusters: number of clusters. where k starts and end. 
@@ -1616,9 +1611,10 @@ def plot_cost_vs_epochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     s = set ([hasattr(o, '__class__') for o in regs ])
 
     if len(s) != 1: 
-        raise ValueError(" All regression should be an estimator already fitted.")
+        raise ValueError("All regression models should be estimators"
+                         " already fitted.")
     if not list(s) [0] : 
-        raise TypeError(f" Need an estimator, got {type(s[0]).__name__!r}")
+        raise TypeError(f"Needs an estimator, got {type(s[0]).__name__!r}")
     
     fig, ax = plt.subplots ( nrows=1 , ncols =len(regs) , figsize = fig_size ) 
     
@@ -1647,7 +1643,8 @@ def plot_mlxtend_heatmap (df, columns =None, savefig=None,  **kws):
     :return: :func:`mlxtend.plotting.heatmap` axes object 
     
     """
-    import_optional_dependency('mlxtend')
+    import_optional_dependency('mlxtend', extra=(
+        "Can't plot heatmap using 'mlxtend' package."))
     cm = np.corrcoef(df[columns]. values.T)
     ax= heatmap(cm, row_names = columns , column_names = columns, **kws )
     
@@ -1672,11 +1669,9 @@ def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ),
     :return: :func:`mlxtend.plotting.scatterplotmatrix` axes object 
     
     """
-    if not is_mlxtend: 
-        warnings.warn(" 'mlxtend' package is missing. Cannot plot the scatter"
-                      "  matrix. Install it mannually via 'pip' or 'conda'.")
-        return  ModuleNotFoundError("'mlextend' package is missing. Install it" 
-                                    " using 'pip' or 'conda'")
+    import_optional_dependency("mlxtend", extra = (
+        "Can't plot the scatter matrix using 'mlxtend' package.") 
+                               )
     if isinstance (columns, str): 
         columns = [columns ] 
     try: 
@@ -1833,10 +1828,7 @@ def make_mpl_properties(n ,prop ='color'):
              'dotted']
         
     """ 
-
-    try: n= int(n)
-    except: raise TypeError(f"Expect a number, got {type(n).__name__!r}")
-    
+    n=int(_assert_all_types(n, int, float, objname ="'n'"))
     prop = str(prop).lower().strip().replace ('s', '') 
     if prop not in ('color', 'marker', 'line'): 
         raise ValueError ("Property {prop!r} is not availabe yet. , Expect"
@@ -2015,9 +2007,6 @@ def fmt_text (data_text, fmt='~', leftspace = 3, return_to_line =77) :
 
     return text 
 
-
-# Plotting functions
-
 def plotvec1(u, z, v):
     """
     Plot tips function with  three vectors. 
@@ -2091,7 +2080,7 @@ def plot_errorbar(
         e_capthick=.5,
         picker=None,
         **kws
- )-> object:
+ ):
     """
     convinience function to make an error bar instance
     
@@ -2275,9 +2264,6 @@ def _set_sns_style (s, /):
     s = re.sub(r'true|none', 'darkgrid', s)
     return sns.set_style(s) 
 
-
-
-
 def _is_target_in (X, y=None, tname=None): 
     """ Create new target name for tname if given 
     
@@ -2386,7 +2372,7 @@ def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True):
             1    16.000000
             2    24.422316
             Name: resistivity, dtype: float64)
-       >>> column2skip = ['hole_number','depth_top', 'depth_bottom', 
+       >>> column2skip = ['hole_id','depth_top', 'depth_bottom', 
                          'strata_name', 'rock_name', 'well_diameter', 'sp']
        >>> _skip_log10_columns (X0, column2skip)
        >>> # now let visualize the same keys values 
@@ -2400,7 +2386,7 @@ def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True):
             2    1.387787
             Name: resistivity, dtype: float64)
       >>> # it is obvious the `resistiviy` values is log10 
-      >>> $ while `sp` stil remains the same 
+      >>> # while `sp` still remains the same 
       
     """
     X0 = X.copy () 
@@ -2414,17 +2400,67 @@ def _skip_log10_columns ( X, column2skip, pattern =None , inplace =True):
         column2skip = str2columns (column2skip, pattern=pattern  )
     #assert whether column to skip is in 
     if column2skip:
+        cskip = copy.deepcopy (column2skip) 
         column2skip = is_in_if(X.columns, column2skip, return_diff= True)
         if len(column2skip) ==len (X.columns): 
             warnings.warn("Value(s) to skip are not detected.")
         if inplace : 
             X[column2skip] = np.log10 ( X[column2skip] ) 
-            return 
+            X.drop (columns =cskip , inplace =True )
+            return  
         else : 
             X0[column2skip] = np.log10 ( X0[column2skip] ) 
             
     return X0
     
-    
+def plot_bar(x, y, wh= .8,  kind ='v', fig_size =(8, 6), savefig=None,
+             xlabel =None, ylabel=None, fig_title=None, **bar_kws): 
+    """
+    Make a vertical or horizontal bar plot.
 
+    The bars are positioned at x or y with the given alignment. Their dimensions 
+    are given by width and height. The horizontal baseline is left (default 0)
+    while the vertical baseline is bottom (default=0)
+    
+    Many parameters can take either a single value applying to all bars or a 
+    sequence of values, one for each bar.
+    
+    Parameters 
+    -----------
+    x: float or array-like
+        The x coordinates of the bars. is 'x' for vertical bar plot as `kind` 
+        is set to ``v``(default) or `y` for horizontal bar plot as `kind` is 
+        set to``h``. 
+        See also align for the alignment of the bars to the coordinates.
+    y: float or array-like
+        The height(s) for vertical and width(s) for horizonatal of the bars.
+    
+    wh: float or array-like, default: 0.8
+        The width(s) for vertical or height(s) for horizaontal of the bars.
+        
+    kind: str, ['vertical', 'horizontal'], default='vertical'
+        The kind of bar plot. Can be the horizontal or vertical bar plots. 
+    bar_kws: dict, 
+        Additional keywords arguments passed to : 
+            :func:`~matplotlib.pyplot.bar` or :func:`~matplotlib.pyplot.barh`. 
+    """
+    
+    assert str(kind).lower().strip() in ("vertical", 'v',"horizontal", "h"), (
+        "Support only the horizontal 'h' and vertical 'v' bar plots."
+        " Got {kind!r}")
+    kind =str(kind).lower().strip()
+    
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize =fig_size)
+    if kind in ("vertical", "v"): 
+        ax.bar (x, height= y, width =  wh , **bar_kws)
+    elif kind in ("horizontal", "h"): 
+        ax.barh (x , width =y , height =wh, **bar_kws)
+        
+    ax.set_xlabel (xlabel )
+    ax.set_ylabel(ylabel) 
+    ax.set_title (fig_title)
+    if savefig is not  None: 
+        savefigure (fig, savefig, dpi = 300)
+        
+    plt.close () if savefig is not None else plt.show() 
     

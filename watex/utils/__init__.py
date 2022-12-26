@@ -27,6 +27,7 @@ from .exmath import (
     get_profile_angle, 
     moving_average, 
     linkage_matrix, 
+    plotOhmicArea
     )
 from .funcutils import ( 
     reshape, 
@@ -47,24 +48,9 @@ from .hydroutils import (
     find_aquifer_groups, 
     find_similar_labels, 
     classify_k, 
+    label_importance
     )
-from .mlutils import ( 
-    selectfeatures, 
-    getGlobalScore, 
-    split_train_test, 
-    correlatedfeatures, 
-    findCatandNumFeatures,
-    evalModel, 
-    cattarget, 
-    labels_validator, 
-    projection_validator, 
-    rename_labels_in , 
-    naive_imputer, 
-    naive_scaler, 
-    select_feature_importances, 
-    make_naive_pipe, 
-    bi_selector, 
-    )
+
 from .plotutils import ( 
     plot_mlxtend_heatmap , 
     plot_mlxtend_matrix, 
@@ -82,6 +68,27 @@ from .plotutils import (
     plot_logging, 
     plot_silhouette, 
     )
+# to fix circular 
+# import
+try : 
+    from .mlutils import ( 
+        selectfeatures, 
+        getGlobalScore, 
+        split_train_test, 
+        correlatedfeatures, 
+        findCatandNumFeatures,
+        evalModel, 
+        cattarget, 
+        labels_validator, 
+        projection_validator, 
+        rename_labels_in , 
+        naive_imputer, 
+        naive_scaler, 
+        select_feature_importances, 
+        make_naive_pipe, 
+        bi_selector, 
+        )
+except ImportError :pass 
 
 __all__=[
         'plotAnomaly', 
@@ -113,6 +120,7 @@ __all__=[
         'get_profile_angle', 
         'moving_average', 
         'linkage_matrix',
+        'plotOhmicArea', 
         'reshape', 
         'to_numeric_dtypes' , 
         'cattarget', 
@@ -153,7 +161,8 @@ __all__=[
         'predict_NGA_labels', 
         'find_aquifer_groups', 
         'find_similar_labels', 
-        'classify_k', 
+        'classify_k',
+        'label_importance'
         ]
 
 

@@ -7,21 +7,20 @@ import re
 import sys 
 import inspect 
 import itertools
-# import operator 
 import numpy as np
 from collections import defaultdict
 from warnings import warn
 
 from ._watexlog import  watexlog
-from ._docstring import DocstringComponents, _core_docs
-from ._typing import List, Optional, DataFrame , Tuple 
-from .utils.coreutils import _is_readable 
-from .utils.funcutils import (
-    _assert_all_types,  
-    repr_callable_obj, 
-    smart_strobj_recognition, 
-    smart_format ,
-    is_installing
+from ._docstring import ( 
+    DocstringComponents,
+    _core_docs
+    )
+from ._typing import ( 
+    List, 
+    Optional, 
+    DataFrame , 
+    Tuple 
     )
 from .exlib.sklearn import ( 
     clone, 
@@ -36,6 +35,21 @@ from .exlib.sklearn import (
     train_test_split
     )  
 from .exceptions import NotFittedError
+from .utils.coreutils import _is_readable 
+from .utils.funcutils import (
+    _assert_all_types,  
+    repr_callable_obj, 
+    smart_strobj_recognition, 
+    smart_format ,
+    sanitize_frame_cols
+    )
+from .utils._dependency import import_optional_dependency
+from .utils.validator import ( 
+    array_to_frame, 
+    check_array, 
+    check_X_y, 
+    get_estimator_name
+    )
 
 __all__=[
     "Data", 
@@ -44,14 +58,13 @@ __all__=[
     "AdelineStochasticGradientDescent",
     "SequentialBackwardSelection",
     "MajorityVoteClassifier", 
-    "Perceptron", 
+    "GreedyPerceptron", 
     "existfeatures", 
     "selectfeatures" , 
     "get_params" 
     ]
 
 # +++ add base documentations +++
-
 _base_params = dict ( 
     axis="""
 axis: {0 or 'index', 1 or 'columns'}, default 0
@@ -253,7 +266,7 @@ class Data:
         return self.data.describe() 
     
     def fit(self, data: str | DataFrame=None):
-        """ Read, assert and fit the data 
+        """ Read, assert and fit the data.
         
         Parameters 
         ------------
@@ -266,9 +279,23 @@ class Data:
             Returns ``self`` for easy method chaining.
             
         """ 
-
+        
         if data is not None: 
             self.data = data 
+        check_array(
+            data, 
+            force_all_finite='allow-nan', 
+            dtype =object , 
+            input_name='Data', 
+            to_frame =True 
+            )
+        # for consistency if not a frame, set to aframe 
+        self.data = array_to_frame (
+            data, to_frame = True , input_name= 'col_', force =True 
+            ) 
+        data= sanitize_frame_cols (self.data, fill_pattern='_' ) 
+        for col in data.columns :
+            setattr (self, col, data[col]) 
             
         return self 
     
@@ -308,14 +335,14 @@ class Data:
         """ Inspect data and trigger plot after checking the data entry. 
         Raises `NotFittedError` if `ExPlot` is not fitted yet."""
         
-        msg = ( "{expobj.__class__.__name__} instance is not fitted yet."
+        msg = ( "{dobj.__class__.__name__} instance is not fitted yet."
                " Call 'fit' with appropriate arguments before using"
                " this method"
                )
         
         if self.data_ is None: 
             raise NotFittedError(msg.format(
-                expobj=self)
+                dobj=self)
             )
         return 1 
     
@@ -342,34 +369,24 @@ class Data:
         >>> Data().fit(data).profilingReport()
         
         """
-        
         if data is not None: 
             self.data = data 
- 
+            
+        extra_msg =("'Data.profilingReport' method uses 'pandas_profiling'"
+                    " as a dependency.")
+        import_optional_dependency("pandas_profiling", extra=extra_msg ) 
         try : 
            import pandas_profiling 
-           
         except ImportError:
-            warn("Missing 'pandas_profiling` library."
-                 " auto-installation is triggered. please wait ... ")
-            if self.verbose: 
-                
-                print("### -> Libray 'pandas_profiling is missing."
-                      " subprocess installation is triggered. Please wait ...")
             
-            is_success = is_installing('pandas_profiling', DEVNULL=True, 
-                                       verbose = self.verbose )
-            if not is_success : 
-                warn ("'pandas_profiling' auto-installation failed. "
-                       " Try a mannual installation.")
-            if self.verbose: 
-                print("+++ -> Installation complete!") if is_success else print(
-                    "--- > Auto-installation failed. Try the mannual way.")
-                
-        if 'pandas_profiling' in sys.modules: 
-            
-            self.inspect 
-            pandas_profiling.ProfilingReport( self.data , **kwd)
+            msg=(f"Missing of 'pandas_profiling package. {extra_msg}"
+                  " Cannot plot profiling report. Install it using pip"
+                  " or conda.")
+            warn(msg)
+            raise ImportError (msg)
+
+        self.inspect 
+        pandas_profiling.ProfilingReport( self.data , **kwd)
              
         return self 
     
@@ -509,11 +526,11 @@ Numpy arrays work as well.
 
 For supervised Learning for instance, suc as regression or clasification, our 
 intent is to have a function that transforms features into a label. If we 
-were to write this as an algebra formula, it would be look like:: 
+were to write this as an algebra formula, it would be look like:
     
-    .. math::
-        
-        y = f(X)
+.. math::
+    
+    y = f(X)
 
 :code:`X` is a matrix. Each row represent a `sample` of data or information 
 about individual. Every columns in :code:`X` is a `feature`.The output of 
@@ -548,7 +565,7 @@ Examples
 )
  
 class Missing (Data) : 
-    """ Deal with missing in Data 
+    """ Deal with missing values in Data 
     
     Most algorithms will not work with missing data. Notable exceptions are the 
     recent boosting libraries such as the XGBoost 
@@ -693,6 +710,8 @@ class Missing (Data) :
         if data is not None: 
             self.data = data 
             
+        self.inspect 
+        
         ExPlot(fig_size=figsize).fit(self.data).plotmissing( 
             kind =  self.kind, sample = self.sample, **kwd )
         return  self 
@@ -755,6 +774,8 @@ class Missing (Data) :
         """
         if data is not None: 
             self.data = data 
+            
+        self.inspect 
         if columns is not None: 
             self.drop_columns = columns 
             
@@ -827,6 +848,8 @@ class Missing (Data) :
         
         if data is not None: 
             self.data = data 
+            
+        self.inspect 
         existfeatures(self.data , columns )
         
         if return_non_null : 
@@ -857,10 +880,10 @@ class Missing (Data) :
     
 class SequentialBackwardSelection (_Base ):
     r"""
-    Sequential Backward Selecttion (SBS) is a feature selection algorithm which 
+    Sequential Backward Selection (SBS) is a feature selection algorithm which 
     aims to reduce dimensionality of the initial feature subspace with a 
-    minimum decay  in the performance of the classifier to imporve upon 
-    computationan efficiency. In certains cases, SBS can even imporve the 
+    minimum decay  in the performance of the classifier to improve upon 
+    computationan efficiency. In certains cases, SBS can even improve the 
     predictive power of the model if a model suffers from overfitting. 
     
     The idea behind the SBS is simple: it sequentially removes features 
@@ -987,6 +1010,12 @@ class SequentialBackwardSelection (_Base ):
             returns ``self`` for easy method chaining.
         
         """
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self ), 
+            to_frame= True, 
+            )
         
         self._check_sbs_args(X)
         
@@ -1042,6 +1071,11 @@ class SequentialBackwardSelection (_Base ):
             New transformed training set with selected features columns 
         
         """
+        if not hasattr (self, 'indices_'): 
+            raise NotFittedError(
+                "Can't call transform with estimator not fitted yet."
+                " Fit estimator by calling the 'fit' method with appropriate"
+                " arguments.")
         return X[:, self.indices_]
     
     def _compute_score (self, Xtr, Xt,  ytr, yt, indices):
@@ -1054,6 +1088,7 @@ class SequentialBackwardSelection (_Base ):
 
     def _check_sbs_args (self, X): 
         """ Assert SBS main arguments  """
+        
         if not hasattr(self.estimator, 'fit'): 
             raise TypeError ("Estimator must have a 'fit' method.")
         try : 
@@ -1093,7 +1128,7 @@ class SequentialBackwardSelection (_Base ):
         
         return self.__class__.__name__ + str(tup).replace("'", "") 
     
-class Perceptron (_Base): 
+class GreedyPerceptron (_Base): 
     r""" Object oriented perceptron API class. Perceptron classifier 
     
     Inspired from Rosenblatt concept of perceptron rules. Indeed, Rosenblatt 
@@ -1112,10 +1147,11 @@ class Perceptron (_Base):
         - For each training examples, :math:`x^{(i)}`:
             - Compute the output value :math:`\hat{y}`. 
             - update the weighs. 
-    the weights :math:`w` vector can be fromally written as: 
-        .. math:: 
-            
-            w := w_j + \delta w_j
+    the weights :math:`w` vector can be fromally written as:
+        
+    .. math:: 
+        
+        w := w_j + \delta w_j
             
     Parameters 
     -----------
@@ -1173,6 +1209,13 @@ class Perceptron (_Base):
         self: `Perceptron` instance 
             returns ``self`` for easy method chaining.
         """
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self ), 
+            to_frame= True, 
+            )
+        
         rgen = np.random.RandomState(self.random_state)
         
         self.w_ = rgen.normal(loc=0. , scale =.01 , size = 1 + X.shape[1]
@@ -1212,7 +1255,11 @@ class Perceptron (_Base):
         -------
         ypred: predicted class label after the unit step  (1, or -1)
 
-        """             
+        """      
+        if not hasattr (self, 'w_'): 
+            raise NotFittedError("Can't call 'predict' method with estimator"
+                                 " not fitted yet. Fit estimator by calling"
+                                 " the 'fit' method first.")
         return np.where (self.net_input(X) >=.0 , 1 , -1 )
     
     def __repr__(self): 
@@ -1225,7 +1272,7 @@ class Perceptron (_Base):
     
 
 class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ): 
-    """
+    r"""
     A majority vote Ensemble classifier 
     
     Combine different classification algorithms associate with individual 
@@ -1234,9 +1281,9 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
     datasets. In more precise in mathematical terms, the weighs majority 
     vote can be expressed as follow: 
         
-        .. math:: 
-            
-            \hat{y} = arg \max{i} \sum {j=1}^{m} w_j\chi_A (C_j(x)=1)
+    .. math:: 
+        
+        \hat{y} = arg \max{i} \sum {j=1}^{m} w_j\chi_A (C_j(x)=1)
     
     where :math:`w_j` is a weight associated with a base classifier, C_j; 
     :math:`\hat{y}` is the predicted class label of the ensemble. :math:`A` is 
@@ -1245,9 +1292,9 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
     the jth clasifier matches i (C_j(x)=1). For equal weights, the equation 
     is simplified as follow: 
         
-        .. math:: 
-            
-            \hat{y} = mode {{C_1(x), C_2(x), ... , C_m(x)}}
+    .. math:: 
+        
+        \hat{y} = mode {{C_1(x), C_2(x), ... , C_m(x)}}
             
     Parameters 
     ------------
@@ -1361,7 +1408,13 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
         self: `MajorityVoteClassifier` instance 
             returns ``self`` for easy method chaining.
         """
-
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self ), 
+            to_frame= True, 
+            )
+        
         self._check_clfs_vote_and_weights ()
         
         # use label encoder to ensure that class start by 0 
@@ -1376,6 +1429,20 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
             self.classifiers_.append (fitted_clf ) 
             
         return self 
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'classifiers_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
     
     def predict(self, X):
         """
@@ -1397,9 +1464,9 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
         -------
         maj_vote:{array_like}, shape (n_examples, )
             Predicted class label array 
-            
-
         """
+        self.inspect 
+        
         if self.vote =='proba': 
             maj_vote = np.argmax (self.predict_proba(X), axis =1 )
         if self.vote =='label': 
@@ -1440,6 +1507,7 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
             weights average probabilities for each class per example. 
 
         """
+        self.inspect 
         probas = np.asarray (
             [ clf.predict_proba(X) for clf in self.classifiers_ ])
         avg_proba = np.average (probas , axis = 0 , weights = self.weights ) 
@@ -1506,7 +1574,7 @@ class AdelineStochasticGradientDescent (_Base) :
     r""" Adaptative Linear Neuron Classifier  with batch  (stochastic) 
     gradient descent 
     
-    A stochastic gradient descent is apopular alternative wich is sometimes 
+    A stochastic gradient descent is a popular alternative wich is sometimes 
     also cal iterative or online gradient descent. Instead of updating the 
     weights based on the sum of accumulated erros over all training examples 
     :math:`x^{(i)}`: 
@@ -1583,7 +1651,13 @@ class AdelineStochasticGradientDescent (_Base) :
         --------
         self: `Perceptron` instance 
             returns ``self`` for easy method chaining.
-        """   
+        """  
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self), 
+            )
+    
         self._init_weights (X.shape[1])
         self.cost_=list() 
         for i in range(self.n_iter ): 
@@ -1596,6 +1670,20 @@ class AdelineStochasticGradientDescent (_Base) :
             self.cost_.append(avg_cost) 
         
         return self 
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'w_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
     
     def partial_fit(self, X, y):
         """
@@ -1622,6 +1710,12 @@ class AdelineStochasticGradientDescent (_Base) :
             returns ``self`` for easy method chaining.
 
         """
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self),  
+            )
+        
         if not self.w_initialized : 
            self._init_weights (X.shape[1])
           
@@ -1715,9 +1809,10 @@ class AdelineStochasticGradientDescent (_Base) :
 
         Returns
         -------
-       weight net inputs 
+        weight net inputs 
 
         """
+        self.inspect 
         return np.dot (X, self.w_[1:]) + self.w_[0] 
 
     def activation (self, X):
@@ -1850,6 +1945,12 @@ class AdelineGradientDescent (_Base):
         self: `Perceptron` instance 
             returns ``self`` for easy method chaining.
         """
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self), 
+            )
+        
         rgen = np.random.RandomState(self.random_state)
         
         self.w_ = rgen.normal(loc=0. , scale =.01 , size = 1 + X.shape[1]
@@ -1866,6 +1967,20 @@ class AdelineGradientDescent (_Base):
             self.cost_.append(cost) 
         
         return self 
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'w_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
     
     def net_input (self, X):
         """
@@ -1887,6 +2002,7 @@ class AdelineGradientDescent (_Base):
        weight net inputs 
 
         """
+        self.inspect 
         return np.dot (X, self.w_[1:]) + self.w_[0] 
 
     def activation (self, X):

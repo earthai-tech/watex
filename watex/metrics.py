@@ -46,8 +46,10 @@ from .exlib.sklearn import (
     roc_curve, 
     roc_auc_score,
     cross_val_predict, 
+    accuracy_score, 
     confusion_matrix as cfsmx ,
     )
+from .utils.validator import get_estimator_name 
 
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -95,6 +97,229 @@ def get_metrics():
     """
     return tuple(metrics.SCORERS.keys())
 
+def get_eval_scores (
+    model, 
+    Xt, 
+    yt, 
+    *, 
+    multi_class="raise", 
+    average="binary", 
+    normalize=True, 
+    sample_weight=None,
+    verbose = False, 
+    **scorer_kws, 
+    ): 
+    ypred = model.predict(Xt) 
+    acc_scores = accuracy_score(yt, ypred, normalize=normalize, 
+                                sample_weight= sample_weight) 
+    rec_scores = recall_score(
+        yt, ypred, average =average, sample_weight = sample_weight, 
+        **scorer_kws)
+    prec_scores = precision_score(
+        yt, ypred, average =average,sample_weight = sample_weight, 
+        **scorer_kws)
+    try:
+        #compute y_score when predict_proba is available 
+        # or  when  probability=True
+        ypred = model.predict_proba(Xt) if multi_class !='raise'\
+            else model.predict(Xt) 
+    except: rocauc_scores=None 
+    else :
+        rocauc_scores= roc_auc_score (
+            yt, ypred, average=average, multi_class=multi_class, 
+            sample_weight = sample_weight, **scorer_kws)
+
+    scores= dict ( 
+        accuracy = acc_scores , recall = rec_scores, 
+        precision= prec_scores, auc = rocauc_scores 
+        )
+    if verbose: 
+        mname=get_estimator_name(model)
+        print(f"{mname}:\n")
+        print("accuracy -score = ", acc_scores)
+        print("recall -score = ", rec_scores)
+        print("precision -score = ", prec_scores)
+        print("ROC AUC-score = ", rocauc_scores)
+    return scores 
+
+get_eval_scores.__doc__ ="""\
+Compute the`accuracy`, `precision`, `recall` and `AUC`
+scores.
+
+Parameters 
+------------
+{params.core.model}
+{params.core.Xt} 
+{params.core.yt}
+
+average : {{'micro', 'macro', 'samples', 'weighted', 'binary'}} or None, \
+        default='binary'
+    This parameter is required for multiclass/multilabel targets.
+    If ``None``, the scores for each class are returned. Otherwise, this
+    determines the type of averaging performed on the data:
+
+    ``'binary'``:
+        Only report results for the class specified by ``pos_label``.
+        This is applicable only if targets (``y_{{true,pred}}``) are binary.
+    ``'micro'``:
+        Calculate metrics globally by counting the total true positives,
+        false negatives and false positives.
+    ``'macro'``:
+        Calculate metrics for each label, and find their unweighted
+        mean.  This does not take label imbalance into account.
+    ``'weighted'``:
+        Calculate metrics for each label, and find their average weighted
+        by support (the number of true instances for each label). This
+        alters 'macro' to account for label imbalance; it can result in an
+        F-score that is not between precision and recall. Weighted recall
+        is equal to accuracy.
+    ``'samples'``:
+        Calculate metrics for each instance, and find their average (only
+        meaningful for multilabel classification where this differs from
+        :func:`accuracy_score`).
+        Will be ignored when ``y_true`` is binary.
+        Note: multiclass ROC AUC currently only handles the 'macro' and
+        'weighted' averages.
+        
+multi_class : {{'raise', 'ovr', 'ovo'}}, default='raise'
+    Only used for multiclass targets. Determines the type of configuration
+    to use. The default value raises an error, so either
+    ``'ovr'`` or ``'ovo'`` must be passed explicitly.
+
+    ``'ovr'``:
+        Stands for One-vs-rest. Computes the AUC of each class
+        against the rest [1]_ [2]_. This
+        treats the multiclass case in the same way as the multilabel case.
+        Sensitive to class imbalance even when ``average == 'macro'``,
+        because class imbalance affects the composition of each of the
+        'rest' groupings.
+    ``'ovo'``:
+        Stands for One-vs-one. Computes the average AUC of all
+        possible pairwise combinations of classes [3]_.
+        Insensitive to class imbalance when
+        ``average == 'macro'``.
+        
+normalize : bool, default=True
+    If ``False``, return the number of correctly classified samples.
+    Otherwise, return the fraction of correctly classified samples.
+
+sample_weight : array-like of shape (n_samples,), default=None
+    Sample weights.
+    
+{params.core.verbose}
+
+scorer_kws: dict, 
+    Additional keyword arguments passed to the scorer metrics: 
+    :func:`~sklearn.metrics.accuracy_score`, 
+    :func:`~sklearn.metrics.precision_score`, 
+    :func:`~sklearn.metrics.recall_score`, 
+    :func:`~sklearn.metrics.roc_auc_score`
+    
+Returns 
+--------
+scores: dict , 
+    A dictionnary to retain all the scores from metrics evaluation such as 
+    - accuracy , 
+    - recall 
+    - precision 
+    - ROC AUC ( Receiving Operating Characteric Area Under the Curve)
+    
+Notes 
+-------
+Note that if `yt` is given, it computes `y_score` known as array-like of 
+shape (n_samples,) or (n_samples, n_classes)Target scores following the 
+scheme below: 
+
+    * In the binary case, it corresponds to an array of shape
+      `(n_samples,)`. Both probability estimates and non-thresholded
+      decision values can be provided. The probability estimates correspond
+      to the **probability of the class with the greater label**,
+      i.e. `estimator.classes_[1]` and thus
+      `estimator.predict_proba(X, y)[:, 1]`. The decision values
+      corresponds to the output of `estimator.decision_function(X, y)`.
+      See more information in the :ref:`User guide <roc_auc_binary>`;
+    * In the multiclass case, it corresponds to an array of shape
+      `(n_samples, n_classes)` of probability estimates provided by the
+      `predict_proba` method. The probability estimates **must**
+      sum to 1 across the possible classes. In addition, the order of the
+      class scores must correspond to the order of ``labels``,
+      if provided, or else to the numerical or lexicographical order of
+      the labels in ``y_true``. See more information in the
+      :ref:`User guide <roc_auc_multiclass>`;
+    * In the multilabel case, it corresponds to an array of shape
+      `(n_samples, n_classes)`. Probability estimates are provided by the
+      `predict_proba` method and the non-thresholded decision values by
+      the `decision_function` method. The probability estimates correspond
+      to the **probability of the class with the greater label for each
+      output** of the classifier. See more information in the
+      :ref:`User guide <roc_auc_multilabel>`.
+References
+----------
+
+.. [1] Provost, F., Domingos, P. (2000). Well-trained PETs: Improving
+       probability estimation trees (Section 6.2), CeDER Working Paper
+       #IS-00-04, Stern School of Business, New York University.
+
+.. [2] `Fawcett, T. (2006). An introduction to ROC analysis. Pattern
+        Recognition Letters, 27(8), 861-874.
+        <https://www.sciencedirect.com/science/article/pii/S016786550500303X>`_
+         
+.. [3] `Hand, D.J., Till, R.J. (2001). A Simple Generalisation of the Area
+        Under the ROC Curve for Multiple Class Classification Problems.
+        Machine Learning, 45(2), 171-186.
+        <http://link.springer.com/article/10.1023/A:1010920819831>`_
+See Also
+--------
+average_precision_score : Area under the precision-recall curve.
+roc_curve : Compute Receiver operating characteristic (ROC) curve.
+RocCurveDisplay.from_estimator : Plot Receiver Operating Characteristic
+    (ROC) curve given an estimator and some data.
+RocCurveDisplay.from_predictions : Plot Receiver Operating Characteristic
+    (ROC) curve given the true and predicted values.
+    
+Examples
+--------
+Binary case:
+
+>>> from sklearn.datasets import load_breast_cancer
+>>> from sklearn.linear_model import LogisticRegression
+>>> from sklearn.metrics import roc_auc_score
+>>> X, y = load_breast_cancer(return_X_y=True)
+>>> clf = LogisticRegression(solver="liblinear", random_state=0).fit(X, y)
+>>> roc_auc_score(y, clf.predict_proba(X)[:, 1])
+0.99...
+>>> roc_auc_score(y, clf.decision_function(X))
+0.99...
+
+Multiclass case:
+
+>>> from sklearn.datasets import load_iris
+>>> X, y = load_iris(return_X_y=True)
+>>> clf = LogisticRegression(solver="liblinear").fit(X, y)
+>>> roc_auc_score(y, clf.predict_proba(X), multi_class='ovr')
+0.99...
+
+Multilabel case:
+
+>>> import numpy as np
+>>> from sklearn.datasets import make_multilabel_classification
+>>> from sklearn.multioutput import MultiOutputClassifier
+>>> X, y = make_multilabel_classification(random_state=0)
+>>> clf = MultiOutputClassifier(clf).fit(X, y)
+>>> # get a list of n_output containing probability arrays of shape
+>>> # (n_samples, n_classes)
+>>> y_pred = clf.predict_proba(X)
+>>> # extract the positive columns for each output
+>>> y_pred = np.transpose([pred[:, 1] for pred in y_pred])
+>>> roc_auc_score(y, y_pred, average=None)
+array([0.82..., 0.86..., 0.94..., 0.85... , 0.94...])
+>>> from sklearn.linear_model import RidgeClassifierCV
+>>> clf = RidgeClassifierCV().fit(X, y)
+>>> roc_auc_score(y, clf.decision_function(X), average=None)
+array([0.81..., 0.84... , 0.93..., 0.87..., 0.94...])
+""".format(params =_param_docs
+)
+    
 def _assert_metrics_args(y, label): 
     """ Assert metrics argument 
     

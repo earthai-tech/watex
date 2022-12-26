@@ -70,9 +70,9 @@ from .gistools import (
     HAS_GDAL, 
     )
 from .validator import  (
-    _is_valid_ves , 
     _is_arraylike_1d, 
     _check_consistency_size, 
+    is_valid_dc_data, 
     array_to_frame
     )
 _logger = watexlog.get_watex_logger(__name__)
@@ -529,20 +529,28 @@ def is_erp_dataframe (
     ... Index(['station', 'easting', 'northing', 'resistivity'], dtype='object')
     
     """
+    err_msg = ("ERP data must contain 'the resistivity' and the station"
+             " position measurement. A sample of ERP data can be found" 
+             " in `watex.datasets`. For e.g. 'watex.datasets.load_tankesse'"
+             " fetches a 'tankesse' locality dataset and its docstring"
+             " `~.load_tankesse.__doc__` can give a furher details about"
+             " the ERP data arrangement. {fmsg}"
+             )
     
-    data = _assert_all_types(data, pd.DataFrame)
-    if 'AB' in data.columns: 
-        msg = ("Unsupports VES data. Can force reading VES data as ERP"
-               " by setting 'force' to True.")
-        if force: 
-            warnings.warn("Force considering VES as ERP data might lead "
-                          "to breaking code or invalid results during "
-                          "ERP parameters computation. Use at your own risk.")
-        else:
-            raise ERPError(
-                "Unsupports Vertical Electrical Sounding data "
-                "while ERP is expected.")
-        
+    force_msg= "" if force else (
+        "To force reading unsafety data as ERP, set 'force' to ``True``.") 
+    
+    if force: 
+        warnings.warn("Force considering unsafety data as ERP data might"
+                      " lead to breaking code or invalid results during"
+                      " ERP parameters computation. Use at your own risk."
+                      )
+        data = _assert_all_types(data, pd.DataFrame, 
+                 objname="ERP 'resistivity' and station measurement data" )
+    else:
+        data = is_valid_dc_data( data, exception =ERPError, 
+                                extra = err_msg.format(fmsg = force_msg))
+     
     datac= data.copy() 
     
     def _is_in_properties (h ):
@@ -898,7 +906,7 @@ def _assert_station_positions(
 def plotAnomaly(
     erp: ArrayLike | List[float],
     cz: Optional [Sub[ArrayLike], List[float]] = None, 
-    s: Optional [str] = None, 
+    station: Optional [str] = None, 
     figsize: Tuple [int, int] = (10, 4),
     fig_dpi: int = 300 ,
     savefig: str | None = None, 
@@ -1047,21 +1055,21 @@ def plotAnomaly(
                   )
     leg.append(zl)
     
-    if s =='' : s= None  # for consistency 
-    if s is not None:
+    if station =='' : station= None  # for consistency 
+    if station is not None:
         auto =False ; keepindex =True 
-        if isinstance (s , str): 
-            auto = True if s.lower()=='auto' else s 
-            if 's' or 'pk' in s.upper(): 
+        if isinstance (station , str): 
+            auto = True if station.lower()=='auto' else station 
+            if 's' or 'pk' in station.upper(): 
                 # if provide the station. 
                 keepindex =False 
                 
-            if s.lower() =='auto': s=None  # reset s 
+            if station.lower() =='auto': station=None  # reset s 
         cz , _ , _, ix = defineConductiveZone(
-           erp, s = s , auto = auto, keepindex=keepindex 
+           erp, station = station , auto = auto, keepindex=keepindex 
            )
         
-        s = "S{:02}".format(ix +1) if s is not None else s 
+        station = "S{:02}".format(ix +1) if station is not None else station 
 
     if cz is not None: 
         # construct a mask array with np.isin to check whether
@@ -1108,11 +1116,11 @@ def plotAnomaly(
     
 
     if show_fig_title: 
-        title = 'Plot ERP line with SVES = {0}'.format(s if s is not None else '')
+        title = 'Plot ERP: SVES = {0}'.format(station if station is not None else '')
         if fig_title_kws is ( None or ...): 
             fig_title_kws = dict (
-                t = title if s is not None else title.replace (
-                    'with SVES =', ''), 
+                t = title if station is not None else title.replace (
+                    ': SVES =', ''), 
                 style ='italic', 
                 bbox =dict(boxstyle='round',facecolor ='lightgrey'))
             
@@ -1129,22 +1137,23 @@ def plotAnomaly(
 #XXX OPTIMIZE 
 def defineConductiveZone(
     erp:ArrayLike| pd.Series | List[float] ,
-    s: Optional [str|int] = None, 
-    p: SP = None,  
+    station: Optional [str|int] = None, 
+    position: SP = None,  
     auto: bool = False, 
     **kws,
 ) -> Tuple [ArrayLike, int] :
     """ Define conductive zone as subset of the erp line.
     
     Indeed the conductive zone is a specific zone expected to hold the 
-    drilling location `s`. If drilling location is not provided, it would be 
-    by default the very low resistivity values found in the `erp` line. 
+    drilling location `station`. If drilling location is not provided,  
+    it would be by default the very low resistivity values found in the 
+    `erp` line. 
     
     Parameters 
     -----------
     erp : array_like,
         the array contains the apparent resistivity values 
-    s: str or int, 
+    station: str or int, 
         is the station position. 
     auto: bool
         If ``True``, the station position should be the position of the lower 
@@ -1175,18 +1184,18 @@ def defineConductiveZone(
     # conductive zone positioning
     pcz : Optional [ArrayLike]  = None  
     
-    if s is None and auto is False: 
+    if station is None and auto is False: 
         raise StationError("Expect a station position or trigger the 'auto'"
                         "to 'True'. NoneType is given.")
         
-    elif  ( s is None 
+    elif  ( station is None 
            and auto is True 
            ): 
-        s= np.argwhere (erp ==erp.min())
-        s= int(s) if len(s) ==1 else int(s[0])
-        # s, = np.where (erp == erp.min()) 
-        # s=int(s)
-    s, pos = _assert_stations(s, **kws )
+        station= np.argwhere (erp ==erp.min())
+        station= int(station) if len(station) ==1 else int(station[0])
+        # station, = np.where (erp == erp.min()) 
+        # station=int(station)
+    station, pos = _assert_stations(station, **kws )
     
     # takes the last position if the position is outside 
     # the number of stations. 
@@ -1195,13 +1204,13 @@ def defineConductiveZone(
     ir = erp[:pos][-3:] ;  il = erp[pos:pos +3 +1 ]
     cz = np.concatenate((ir, il))
 
-    if p is not None: 
-        if len(p) != len(erp): 
+    if position is not None: 
+        if len(position) != len(erp): 
             raise StationError (
                 'Array of position and conductive zone must have the same '
-                f'length: `{len(p)}` and `{len(cz)}` were given.')
+                f'length: `{len(position)}` and `{len(cz)}` were given.')
             
-        sr = p[:pos][-3:] ;  sl = p[pos:pos +3 +1 ]
+        sr = position[:pos][-3:] ;  sl = position[pos:pos +3 +1 ]
         pcz = np.concatenate((sr, sl))
         
     # Get the new position in the selected conductive zone 
@@ -1213,7 +1222,7 @@ def defineConductiveZone(
 
 #XXX OPTIMIZE 
 def _assert_stations(
-    s:Any , 
+    station:Any , 
     dipole:Any = None,
     keepindex:bool = False
 ) -> Tuple[str, int]:
@@ -1222,8 +1231,8 @@ def _assert_stations(
     ``pk`` and ``S`` can be used as prefix to define the station `s`. For 
     instance ``S01`` and ``PK01`` means the first station. 
     
-    :param s: Station name
-    :type s: str, int 
+    :param station: Station name
+    :type station: str, int 
     
     :param dipole: dipole_length in meters.  
     :type dipole: float 
@@ -1267,37 +1276,37 @@ def _assert_stations(
     # in the case s is string: eg. "00", "pk01", "S001"
     ix = 0
     stnl =P().istation 
-    s = _assert_all_types(s, str, int, float)
+    station = _assert_all_types(station, str, int, float)
 
-    s = str(s).strip() 
+    station = str(station).strip() 
     regex = re.compile (r'\d+', flags= re.IGNORECASE)
-    s = regex.findall (s)
-    if len(s)==0: 
-        raise StationError (f"Wrong station name {s!r}. Station must be "
+    station = regex.findall (station)
+    if len(station)==0: 
+        raise StationError (f"Wrong station name {station!r}. Station must be "
                             f"prefixed by {smft(stnl +['S'], 'or')} e.g. "
                             "'S00' for the first station")
-    else : s = int(s[0])
+    else : station = int(station[0])
     
-    if s ==0 : 
+    if station ==0 : 
         # set index to 0 , is station `S00` is found for instance.
         keepindex =True 
 
-    st = copy.deepcopy(s)
+    st = copy.deepcopy(station)
     
-    if isinstance(s, int):  
+    if isinstance(station, int):  
         msg = 'Station numbering must start'\
             ' from {0!r} or set `keepindex` argument to {1!r}.'
         msg = msg.format('0', 'False') if keepindex else msg.format(
             '1', 'True')
         if not keepindex: # station starts from 1
-            if s <=0: 
+            if station <=0: 
                 raise ValueError (msg )
-            s , ix  = "S{:02}".format(s), s - 1
+            station , ix  = "S{:02}".format(station), station - 1
         
         elif keepindex: 
             
-            if s < 0: raise ValueError (msg) # for consistency
-            s, ix =  "S{:02}".format(s ), s  
+            if station < 0: raise ValueError (msg) # for consistency
+            station, ix =  "S{:02}".format(station ), station  
     # Recompute the station position if the dipole value are given
     if dipole is not None: 
         if isinstance(dipole, str): #'10m'
@@ -1312,9 +1321,9 @@ def _assert_stations(
                 raise StationError(f'Invalid literal value for dipole: {dipole!r}')
         # since the renamed from dipole starts at 0 
         # e.g. 0(S1)---10(S2)---20(S3) ---30(S4)etc ..
-        ix = int(st//dipole)  ; s= "S{:02}".format(ix +1)
+        ix = int(st//dipole)  ; station= "S{:02}".format(ix +1)
     
-    return s, ix 
+    return station, ix 
 
 def _parse_args (
     args:Union[List | str ]
@@ -1335,20 +1344,20 @@ def _parse_args (
             apparent resistivity values. 
             
     :Example: 
-        >>> import numpy as np 
-        >>> from watex.utils.coreutils import _parse_args
-        >>> a, b = np.arange (1, 10 , 0.5), np.random.randn(9).reshape(3, 3)
-        >>> _parse_args ([a, 'data/erp/l2_gbalo.xlsx', b])
-        ... array([[1.1010000e+03, 0.0000000e+00, 7.9075200e+05, 1.0927500e+06],
-                   [1.1470000e+03, 1.0000000e+01, 7.9074700e+05, 1.0927580e+06],
-                   [1.3450000e+03, 2.0000000e+01, 7.9074300e+05, 1.0927630e+06],
-                   [1.3690000e+03, 3.0000000e+01, 7.9073800e+05, 1.0927700e+06],
-                   [1.4060000e+03, 4.0000000e+01, 7.9073300e+05, 1.0927765e+06],
-                   [1.5430000e+03, 5.0000000e+01, 7.9072900e+05, 1.0927830e+06],
-                   [1.4800000e+03, 6.0000000e+01, 7.9072400e+05, 1.0927895e+06],
-                   [1.5170000e+03, 7.0000000e+01, 7.9072000e+05, 1.0927960e+06],
-                   [1.7540000e+03, 8.0000000e+01, 7.9071500e+05, 1.0928025e+06],
-                   [1.5910000e+03, 9.0000000e+01, 7.9071100e+05, 1.0928090e+06]])
+    >>> import numpy as np 
+    >>> from watex.utils.coreutils import _parse_args
+    >>> a, b = np.arange (1, 10 , 0.5), np.random.randn(9).reshape(3, 3)
+    >>> _parse_args ([a, 'data/erp/l2_gbalo.xlsx', b])
+    ... array([[1.1010000e+03, 0.0000000e+00, 7.9075200e+05, 1.0927500e+06],
+               [1.1470000e+03, 1.0000000e+01, 7.9074700e+05, 1.0927580e+06],
+               [1.3450000e+03, 2.0000000e+01, 7.9074300e+05, 1.0927630e+06],
+               [1.3690000e+03, 3.0000000e+01, 7.9073800e+05, 1.0927700e+06],
+               [1.4060000e+03, 4.0000000e+01, 7.9073300e+05, 1.0927765e+06],
+               [1.5430000e+03, 5.0000000e+01, 7.9072900e+05, 1.0927830e+06],
+               [1.4800000e+03, 6.0000000e+01, 7.9072400e+05, 1.0927895e+06],
+               [1.5170000e+03, 7.0000000e+01, 7.9072000e+05, 1.0927960e+06],
+               [1.7540000e+03, 8.0000000e+01, 7.9071500e+05, 1.0928025e+06],
+               [1.5910000e+03, 9.0000000e+01, 7.9071100e+05, 1.0928090e+06]])
     
     """
     
@@ -1753,7 +1762,7 @@ def read_data (
     
 def _check_readable_file (f): 
     """ Return file name from path objects """
-    msg =("Expects a Path-like object or URL, got: {type(f).__name__!r} ")
+    msg =(f"Expects a Path-like object or URL, got: {type(f).__name__!r} ")
     if not os.path.isfile (f): # force pandas read html etc 
         if not ('http://'  in f or 'https://' in f ):  
             raise TypeError (msg)
@@ -1786,16 +1795,23 @@ def _validate_ves_data_if(data, index_rhoa , err , **kws):
             raise VESError (str(typError))
 
     data = _assert_all_types(data, pd.DataFrame )
-
     # sanitize the dataframe 
     pObj =P() ; ncols = pObj(hl = list(data.columns), kind ='ves')
     if ncols is None:
         raise HeaderError (f"Columns {smft(pObj.icpr)} are missing in "
                            "the given dataset.")
-    data.columns = ncols 
-    if not _is_valid_ves( data): 
-        raise VESError("Invalid VES data. Data must contain at least"
-                       " 'resistivity' and 'AB/2' position." )
+    err_msg = ("VES data must contain 'the resistivity' and the depth"
+             " measurement 'AB/2'. A sample of VES data can be found" 
+             " in `watex.datasets`. For e.g. 'watex.datasets.load_semien'"
+             " fetches a 'semien' locality dataset and its docstring"
+             " `~.load_semien.__doc__` can give a furher details about"
+             " the VES data arrangement."
+             )
+    try:data.columns = ncols
+    except : pass 
+    data = is_valid_dc_data(data, method ="ves", exception =VESError, 
+                            extra = err_msg)
+     
     try : 
         rhoa= data.resistivity 
     except : 

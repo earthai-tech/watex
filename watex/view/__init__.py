@@ -16,6 +16,7 @@ from .mlplot import (
 from .plot import ( 
     QuickPlot , 
     ExPlot,
+    TPlot, 
     viewtemplate, 
 
     )
@@ -26,6 +27,7 @@ __all__=[
     "EvalPlot", 
     "QuickPlot" , 
     "ExPlot",
+    "TPlot",
     "plotLearningInspection", 
     "plotLearningInspections", 
     "plotSilhouette", 

@@ -1367,8 +1367,6 @@ Litteral_classes: list or str, optional
             label_values =[0, 1, 3, 6]
             Litteral_classes = ['rate0', 'rate1', 'rate2', 'rate3']
 
-Attributes 
-------------
 {params.evdoc.yp_ls}
 {params.evdoc.yp_lw}
 {params.evdoc.yp_lc}
@@ -2942,13 +2940,18 @@ def plotLearningInspection(
     >>> from watex.view.mlplot import plotLearningInspection 
     >>> # import sparse  matrix from Bagoue datasets 
     >>> X, y = fetch_data ('bagoue prepared') 
-    >>> # import the  pretrained Radial Basic Function (RBF) from SVM 
+    >>> # import the  pretrained Radial Basis Function (RBF) from SVM 
     >>> plotLearningInspection (p.SVM.rbf.best_estimator_  , X, y )
     
     """ 
     train_sizes = train_sizes or np.linspace(0.1, 1.0, 5)
     
-    X, y = check_X_y(X, y, to_frame =True )
+    X, y = check_X_y(
+        X, 
+        y, 
+        accept_sparse= True,
+        to_frame =True 
+        )
     
     if axes is None:
         _, axes = plt.subplots(1, 3, figsize=(20, 5))

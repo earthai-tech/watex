@@ -70,10 +70,17 @@ extensions = [
     'sphinx.ext.autosummary',
     # "sphinx_rtd_theme",
     'sphinx.ext.githubpages', 
-    # 'nbsphinx',
+    # "nbsphinx",
     #'autoapi.sphinx',
+     "myst_nb",
 ]
+# nbsphinx_custom_formats = {
+#     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
+# }
 
+nb_custom_formats = {
+     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
+}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 # The suffix(es) of source filenames.

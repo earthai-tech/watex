@@ -178,9 +178,9 @@ def listing_items_format (
     
     :param lst: list,
         object for listening 
-    begintext: str, 
+    :param begintext: str, 
         Text to display at the beginning of listing the items in `lst`. 
-    endtext: str, 
+    :param endtext: str, 
         Text to display at the end of the listing items in `lst`. 
     :param enum:bool, default=True, 
         Count the number of items in `lst` and display it 
@@ -261,7 +261,7 @@ def parse_attrs (attr, /, regex=None ):
     -------
     attr: List of attributes 
     
-    Examples
+    Example
     ---------
     >>> from watex.utils.funcutils import parse_attrs 
     >>> parse_attrs('lwi_sub_ohmSmulmagnitude')
@@ -275,7 +275,7 @@ def parse_attrs (attr, /, regex=None ):
     return attr 
     
 def url_checker (url: str , install:bool = False, 
-                      raises:str ='ignore')-> bool : 
+                 raises:str ='ignore')-> bool : 
     """
     check whether the URL is reachable or not. 
     
@@ -290,7 +290,7 @@ def url_checker (url: str , install:bool = False,
         Action to install the 'requests' module if module is not install yet.
     raises: str 
         raise errors when url is not recheable rather than returning ``0``.
-        if ``raises` is ``ignore``, and module 'requests' is not installed, it 
+        if `raises` is ``ignore``, and module 'requests' is not installed, it 
         will use the django url validator. However, the latter only assert 
         whether url is right but not validate its reachability. 
               
@@ -1675,7 +1675,88 @@ def load_serialized_data (filename, verbose=0):
         else : print(f"Data from {_filename} have been sucessfully reloaded.")
     
     return data
-       
+
+def save_job(job , savefile ,* ,  protocol =None,  append_versions=True , 
+             fix_imports= True, buffer_callback = None,   **job_kws): 
+    """ Quick save your job using 'joblib' or persistent Python pickle module
+    
+    Parameters 
+    -----------
+    job: Any 
+        Anything to save, preferabaly a models in dict 
+    savefile: str, or path-like object 
+         name of file to store the model
+         The *file* argument must have a write() method that accepts a
+         single bytes argument. It can thus be a file object opened for
+         binary writing, an io.BytesIO instance, or any other custom
+         object that meets this interface.
+    append_versions: bool, default =True 
+        Append the version of Joblib module or Python Pickle module following 
+        by the scikit-learn, numpy and also pandas versions. This is useful 
+        to have idea about previous versions for loading file when system or 
+        modules have been upgraded. This could avoid bottleneck when data 
+        have been stored for long times and user has forgotten the date and 
+        versions at the time the file was saved. 
+    
+    protocol: int, optional 
+        The optional *protocol* argument tells the pickler to use the
+        given protocol; supported protocols are 0, 1, 2, 3, 4 and 5.
+        The default protocol is 4. It was introduced in Python 3.4, and
+        is incompatible with previous versions.
+    
+        Specifying a negative protocol version selects the highest
+        protocol version supported.  The higher the protocol used, the
+        more recent the version of Python needed to read the pickle
+        produced.
+        
+    fix_imports: bool, default=True, 
+        If *fix_imports* is True and *protocol* is less than 3, pickle
+        will try to map the new Python 3 names to the old module names
+        used in Python 2, so that the pickle data stream is readable
+        with Python 2.
+        
+    buffer_call_back: int, optional 
+        If *buffer_callback* is None (the default), buffer views are
+        serialized into *file* as part of the pickle stream.
+    
+        If *buffer_callback* is not None, then it can be called any number
+        of times with a buffer view.  If the callback returns a false value
+        (such as None), the given buffer is out-of-band; otherwise the
+        buffer is serialized in-band, i.e. inside the pickle stream.
+    
+        It is an error if *buffer_callback* is not None and *protocol*
+        is None or smaller than 5.
+        
+    job_kws: dict, 
+        Additional keywords arguments passed to :func:`joblib.dump`. 
+        
+    Returns
+    --------
+    savefile: str, 
+        returns the filename
+    """
+    import sklearn 
+    
+    versions = 'sklearn_v{0}.numpy_v{1}.pandas_v{2}'.format( 
+        sklearn.__version__, np.__version__, pd.__version__) 
+    date = datetime.datetime.now() 
+    
+    savefile +=".{}".format(date) 
+    if append_versions : 
+        savefile += ".{}"+ versions 
+    try : 
+        savefile= savefile.format(".joblib_v{}.".format(joblib.__version__))
+        joblib.dump(job, f'{savefile}.joblib', **job_kws)
+        
+    except :  
+        savefile= savefile.format(".pickle_v{}.pkl".format(pickle.__version__))
+        with open(savefile, 'wb') as wfile: 
+            pickle.dump( job, wfile, protocol= protocol, 
+                        fix_imports=fix_imports , 
+                        buffer_callback=buffer_callback )
+
+    return savefile 
+
 def find_position_from_sa(
         an_res_range, 
         pos=None,
@@ -2313,7 +2394,7 @@ def ismissing(refarr, arr, fill_value = np.nan, return_index =False):
     The function makes sense especially for frequency interpollation in the 
     'attenuation band' when using the audio-frequency magnetotelluric methods. 
     
-    :param arr: array-like- Array to extended with fill value. It should be  
+    :param arr: array-like- Array to be extended with fill value. It should be  
         shorter than the `refarr`. Otherwise it returns the same array `arr` 
     :param refarr: array-like- the reference array. It should have a greater 
         length than the array 
@@ -2372,6 +2453,115 @@ def ismissing(refarr, arr, fill_value = np.nan, return_index =False):
     #refarr[refarr ==arr] if return_index else arr 
     return  ref , miss_val_or_ix   
 
+def make_arr_consistent (
+        refarr, arr, fill_value = np.nan, return_index = False, 
+        method='naive'): 
+    """
+    Make `arr` to be consistent with the reference array `refarr`. Fill the 
+    missing value with param `fill_value`. 
+    
+    Note that it does care of the position of the value in the array. Use 
+    Numpy digitize to compute the bins. The array caveat here is the bins 
+    must be monotonically decreasing or increasing.
+    
+    If the values in `arr` are present in `refarr`, the position of `arr` 
+    in new consistent array should be located decreasing or increasing order. 
+    
+    Parameters 
+    ------------
+    arr: array-like 1d, 
+        Array to extended with fill value. It should be  shorter than the 
+        `refarr`.
+        
+    refarr: array-like- the reference array. It should have a greater 
+        length than the array `arr`.  
+    fill_value: float, 
+        Value to fill the `arr` to match the length of the `refarr`. 
+    return_index: bool or str, default=True 
+         index of the position of the  elements in `refarr`.
+         Default is ``False``. If ``mask`` should  return the 
+        mask of existing element in reference array
+    method: str, default="naive"
+        Is the method used to find the right position of items in `arr`
+        based on the reference array. 
+        - ``naive``, considers the length of ``arr`` must fit the number of 
+            items that should be visible in the consistent array. This method 
+            erases the remaining bins values out of length of `arr`. 
+        - ``strict` did the same but rather than considering the length, 
+            it considers the maximum values in the `arr`. It assumes that `arr`
+            is sorted in ascending order. This methods is usefull for plotting 
+            a specific stations since the station loactions are sorted in 
+            ascending order. 
+        
+    Returns 
+    ---------
+    non_zero_index , mask or t  
+        index: indices of the position of `arr` items in ``refarr``. 
+        mask: bool of the position `arr` items in ``refarr``
+        t: new consistent array with the same length as ``refarr``
+    
+    Examples 
+    ----------
+    >>> import numpy as np 
+    >>> from watex.utils.funcutils import make_arr_consistent
+    >>> refarr = np.arange (12) 
+    >>> arr = np.arange (7, 10) 
+    >>> make_arr_consistent (refarr, arr ) 
+    Out[84]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., nan, nan])
+    >>> make_arr_consistent (refarr, arr , return_index =True )
+    Out[104]: array([7, 8, 9], dtype=int64)
+    >>> make_arr_consistent (refarr, arr , return_index ="mask" )
+    Out[105]: 
+    array([False, False, False, False, False, False, False,  True,  True,
+            True, False, False])
+    >>> a = np.arange ( 12 ); b = np.linspace (7, 10 , 7) 
+    >>> make_arr_consistent (a, b ) 
+    Out[112]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., 10., 11.])
+    >>> make_arr_consistent (a, b ,method='strict') 
+    Out[114]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., 10., nan])
+    """
+    try : 
+        refarr = reshape( refarr).shape[1] 
+        arr= reshape( arr).shape[1] 
+    except :pass 
+    else: raise TypeError ("Expects one-dimensional arrays for both arrays.")
+
+    t = np.full_like( refarr, fill_value = np.nan, dtype =float )
+    temp_arr = np.digitize( refarr, arr) 
+    non_zero_index = reshape (np.argwhere (temp_arr!=0 ) ) 
+    t[non_zero_index] = refarr [non_zero_index] 
+    # force value to keep only 
+    # value in array 
+    if method=='strict':
+        index = reshape ( np.argwhere (  (max( arr)  - t) < 0 ) ) 
+        t [index ]= np.nan 
+    else: 
+        if len (t[~np.isnan (t)]) > len(arr): 
+            t [ - (len(t[~np.isnan (t)])-len(arr)):]= np.nan 
+    # update the non_zeros index 
+    non_zero_index= reshape ( np.argwhere (~np.isnan (t)))
+    # now replace all NaN value by filled value 
+    t [np.isnan(t)] = fill_value 
+
+    return  refarr == t  if return_index =='mask' else (
+        non_zero_index if return_index else t )
+
+def find_close_position (refarr, arr): 
+    """ Get the close item from `arr` in the reference array `refarr`. 
+    
+    :param arr: array-like 1d, 
+        Array to extended with fill value. It should be  shorter than the 
+        `refarr`.
+        
+    :param refarr: array-like- 
+        the reference array. It should have a greater length than the
+        array `arr`.  
+    :return: generator of index of the closest position in  `refarr`.  
+    """
+    for item in arr : 
+        ix = np.argmin (np.abs (refarr - item)) 
+        yield ix 
+    
 
 def fillNaN(arr, method ='ff'): 
     """ Most efficient way to back/forward-fill NaN values in numpy array. 
@@ -2530,8 +2720,7 @@ def get_params (obj: object
     
     return PARAMS_VALUES
 
-    
-    
+
 def fit_by_ll(ediObjs): 
     """ Fit edi by location and reorganize EDI (sort EDI) according to the site  
     longitude and latitude coordinates. 
@@ -2541,9 +2730,9 @@ def fit_by_ll(ediObjs):
     according to the location(longitude and latitude) is usefull for distance 
     betwen site computing with a right position at each site.  
     
-    :param ediObjs: list of EDI object , composed of a collection of 
-        pycsamt.core.edi.Edi object 
-    :type ediObjs: pycsamt.core.edi.Edi_Collection 
+    :param ediObjs: list of EDI object, composed of a collection of 
+        watex.edi.Edi or pycsamt.core.edi.Edi or mtpy.core.edi objects 
+    :type ediObjs: watex.edi.Edi_Collection 
 
     
     :returns: array splitted into ediObjs and Edifiles basenames 
@@ -2576,7 +2765,7 @@ def make_ids(arr, prefix =None, how ='py', skip=False):
     
     :param arr: Iterable object to generate an id site . For instance it can be 
         the array-like or list of EDI object that composed a collection of 
-        pycsamt.core.edi.Edi object. 
+        watex.edi.Edi object. 
     :type ediObjs: array-like, list or tuple 
 
     :param prefix: string value to add as prefix of given id. Prefix can be 
@@ -2700,7 +2889,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
         considered the given station as a index. so it remove all the letter and
         keep digit as index of each stations. 
         
-    :param how: :param how: Mode to index the station. Default is 
+    :param how: Mode to index the station. Default is 
         'Python indexing' i.e.the counting starts by 0. Any other mode will 
         start the counting by 1. Note that if `is_index` is ``True`` and the 
         param `how` is set to it default value ``py``, the station index should 
@@ -2710,7 +2899,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
     
     :return: station index. If the list `id_` is given will return the tuple.
     
-    :example:
+    :Example:
         
     >>> from watex.utils.funcutils import station_id 
     >>> dat1 = ['S13', 's02', 's85', 'pk20', 'posix1256']
@@ -2786,7 +2975,61 @@ def assert_doi(doi):
                        "not: {str(type(doi).__name__!r)}")
     return doi
     
+def strip_item(item_to_clean, item=None, multi_space=12):
+    """
+    Function to strip item around string values.  if the item to clean is None or 
+    item-to clean is "''", function will return None value
+
+    Parameters
+    ----------
+        * item_to_clean : list or np.ndarray of string 
+                 List to strip item.
+        * cleaner : str , optional
+                item to clean , it may change according the use. The default is ''.
+        * multi_space : int, optional
+                degree of repetition may find around the item. The default is 12.
+    Returns
+    -------
+        list or ndarray
+            item_to_clean , cleaned item 
+            
+    :Example: 
+        
+     >>> import numpy as np
+     >>> new_data=_strip_item (item_to_clean=np.array(['      ss_data','    pati   ']))
+     >>>  print(np.array(['      ss_data','    pati   ']))
+     ... print(new_data)
+
+    """
+    if item==None :
+        item = ' '
     
+    cleaner =[(''+ ii*'{0}'.format(item)) for ii in range(multi_space)]
+    
+    if isinstance (item_to_clean, str) : 
+        item_to_clean=[item_to_clean] 
+        
+    # if type(item_to_clean ) != list :#or type(item_to_clean ) !=np.ndarray:
+    #     if type(item_to_clean ) !=np.ndarray:
+    #         item_to_clean=[item_to_clean]
+    
+    if item_to_clean in cleaner or item_to_clean ==['']:
+        warnings.warn ('No data found for sanitization; returns None.')
+        return None 
+    try : 
+        multi_space=int(multi_space)
+    except : 
+        raise TypeError('argument <multplier> must be'\
+                        ' an integer not {0}'.format(type(multi_space)))
+    
+    for jj, ss in enumerate(item_to_clean) : 
+        for space in cleaner:
+            if space in ss :
+                new_ss=ss.strip(space)
+                item_to_clean[jj]=new_ss
+    
+    return item_to_clean  
+ 
 def parse_json(json_fn =None,
                data=None, 
                todo='load',
@@ -3196,8 +3439,61 @@ def get_config_fname_from_varname(data,
             f'.{config}', '').replace(f'.{config}', '').replace('.yaml', '')
     
     return config_fname
-    
 
+def pretty_printer(
+        clfs: List[F],  
+        clf_score:List[float]=None, 
+        scoring: Optional[str] =None,
+        **kws
+ )->None: 
+    """ Format and pretty print messages after gridSearch using multiples
+    estimators.
+    
+    Display for each estimator, its name, it best params with higher score 
+    and the mean scores. 
+    
+    Parameters
+    ----------
+    clfs:Callables 
+        classifiers or estimators 
+    
+    clf_scores: array-like
+        for single classifier, usefull to provided the 
+        cross validation score.
+    
+    scoring: str 
+        Scoring used for grid search.
+    """
+    empty =kws.pop('empty', ' ')
+    e_pad =kws.pop('e_pad', 2)
+    p=list()
+
+    if not isinstance(clfs, (list,tuple)): 
+        clfs =(clfs, clf_score)
+
+    for ii, (clf, clf_be, clf_bp, clf_sc) in enumerate(clfs): 
+        s_=[e_pad* empty + '{:<20}:'.format(
+            clf.__class__.__name__) + '{:<20}:'.format(
+                'Best-estimator <{}>'.format(ii+1)) +'{}'.format(clf_be),
+         e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'Best paramaters') + '{}'.format(clf_bp),
+         e_pad* empty  +'{:<20}:'.format(' ') + '{:<20}:'.format(
+            'scores<`{}`>'.format(scoring)) +'{}'.format(clf_sc)]
+        try : 
+            s0= [e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'scores mean')+ '{}'.format(clf_sc.mean())]
+        except AttributeError:
+            s0= [e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'scores mean')+ 'None']
+            s_ +=s0
+        else :
+            s_ +=s0
+
+        p.extend(s_)
+    
+    for i in p: 
+        print(i)
+ 
 def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
     """ Move file to its savepath and output message. 
     If path does not exist, should create one to save data.
@@ -3337,7 +3633,7 @@ def sanitize_frame_cols(
     
     d: list, columns, 
         columns to sanitize. It might contain a list of items to 
-        to polish. if dataframe or series are given, the dataframe columns  
+        to polish. If dataframe or series are given, the dataframe columns  
         and the name respectively will be polished and returns the same 
         dataframe.
         
@@ -3461,6 +3757,8 @@ def to_hdf5(d, /, fn, objname =None, close =True,  **hdf5_kws):
     ------- 
     store : Dict-like IO interface for storing pandas objects.
     
+    Examples 
+    ------------
     >>> import os 
     >>> from watex.utils.funcutils import sanitize_frame_cols, to_hdf5 
     >>> from watex.utils import read_data 
@@ -3585,7 +3883,7 @@ def find_by_regex (o , /, pattern,  func = re.match, **kws ):
     return  om 
     
 def is_in_if (o: iter, /, items: str | iter, error = 'raise', 
-               return_diff =False ): 
+               return_diff =False, return_intersect = False): 
     """ Raise error if item is not  found in the iterable object 'o' 
     
     :param o: unhashable type, iterable object,  
@@ -3596,9 +3894,11 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
     :param error: str, default='raise'
         raise or ignore error when none item is found in `o`. 
     :param return_diff: bool, 
-        return the difference items which is/are not included in 'items' 
+        returns the difference items which is/are not included in 'items' 
         if `return_diff` is ``True``, will put error to ``ignore`` 
         systematically.
+    :param return_intersect:bool,default=False
+        returns items as the intersection between `o` and `items`.
     :raise: ValueError 
         raise ValueError if `items` not in `o`. 
     :return: list,  
@@ -3613,16 +3913,21 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
         >>> X0, _= load_hlogs (as_frame =True )
         >>> is_in_if  (X0 , items= ['depth_top', 'top']) 
         ... ValueError: Item 'top' is missing in the object 
-        >>> is_in_if (X, ['depth_top', 'top'] , error ='ignore') 
+        >>> is_in_if (X0, ['depth_top', 'top'] , error ='ignore') 
         ... ['depth_top']
-        >>> is_in_if (X, ['depth_top', 'top'] , error ='ignore',
+        >>> is_in_if (X0, ['depth_top', 'top'] , error ='ignore',
                        return_diff= True) 
         ... ['sp',
-             'resistivity',
-             'gamma_gamma',
-             'natural_gamma',
-             'thickness',
-             'short_distance_gamma']
+         'well_diameter',
+         'layer_thickness',
+         'natural_gamma',
+         'short_distance_gamma',
+         'strata_name',
+         'gamma_gamma',
+         'depth_bottom',
+         'rock_name',
+         'resistivity',
+         'hole_id']
     """
     
     if isinstance (items, str): 
@@ -3632,10 +3937,10 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
     # find intersect object 
     s= set (o).intersection (items) 
     
-    miss_items = list(s.difference (items))  if len(s) > len(
+    miss_items = list(s.difference (o)) if len(s) > len(
         items) else list(set(items).difference (s)) 
-    
-    if return_diff: 
+
+    if return_diff or return_intersect: 
         error ='ignore'
     
     if len(miss_items)!=0 :
@@ -3643,12 +3948,18 @@ def is_in_if (o: iter, /, items: str | iter, error = 'raise',
             v= smart_format(miss_items)
             verb = f"{ ' '+ v +' is' if len(miss_items)<2 else  's '+ v + 'are'}"
             raise ValueError (
-                f"Item{verb} missing in the {type(o).__name__.lower()}.")
+                f"Item{verb} missing in the {type(o).__name__.lower()} {o}.")
             
+       
     if return_diff : 
         # get difference 
-        s = set(o).difference (s)  
-        
+        s = list(set(o).difference (s))  if len(o) > len( 
+            s) else list(set(items).difference (s)) 
+        # s = set(o).difference (s)  
+    elif return_intersect: 
+        s = list(set(o).intersection(s))  if len(o) > len( 
+            items) else list(set(items).intersection (s))     
+    
     s = None if len(s)==0 else list (s) 
     
     return s  
@@ -3693,12 +4004,12 @@ def map_specific_columns (
         Keywords argument passed to :func: `pandas.DataFrame.apply` function 
         
     Returns 
-    -------
+    ---------
     X: Dataframe or None 
         Dataframe modified inplace with values computed using the given 
         `func`except the skipped columns, or ``None`` if `inplace` is ``True``. 
         
-    Example 
+    Examples 
     ---------
     >>> from watex.datasets import load_hlogs 
     >>> from watex.utils.plotutils import map_specific_columns 
@@ -3713,7 +4024,7 @@ def map_specific_columns (
          1    16.000000
          2    24.422316
          Name: resistivity, dtype: float64)
-    >>> column2skip = ['hole_number','depth_top', 'depth_bottom', 
+    >>> column2skip = ['hole_id','depth_top', 'depth_bottom', 
                       'strata_name', 'rock_name', 'well_diameter', 'sp']
     >>> map_specific_columns (X0, ufunc = np.log10, column2skip)
     >>> # now let visualize the same keys values 
@@ -3727,7 +4038,7 @@ def map_specific_columns (
          2    1.387787
          Name: resistivity, dtype: float64)
     >>> # it is obvious the `resistiviy` values is log10 
-    >>> $ while `sp` stil remains the same 
+    >>> # while `sp` stil remains the same 
       
     """
     X = _assert_all_types(X, pd.DataFrame)
@@ -3744,6 +4055,7 @@ def map_specific_columns (
         columns_to_skip = str2columns (columns_to_skip, pattern=pattern  )
     #assert whether column to skip is in 
     if columns_to_skip:
+        cskip = copy.deepcopy(columns_to_skip)
         columns_to_skip = is_in_if(X.columns, columns_to_skip, return_diff= True)
         if len(columns_to_skip) ==len (X.columns): 
             warnings.warn("Value(s) to skip are not detected.")
@@ -3753,6 +4065,7 @@ def map_specific_columns (
     if inplace : 
         X[columns_to_skip] = X[columns_to_skip].apply (
             ufunc , **kws)
+        X.drop (columns = cskip , inplace =True )
         return 
     if not inplace: 
         X0 = X.copy() 
@@ -3851,9 +4164,53 @@ def is_depth_in (X, name, columns = None, error= 'ignore'):
     return  X , depth     
     
     
-  
+def count_func (path , verbose = 0 ): 
+    """ Count function and method using 'ast' modules """
     
+    cobj ={}
+    import_optional_dependency('ast')
+    import ast 
+    class CountFunc (ast.NodeVisitor): 
+        func_count=0 
+        # def visit_FunctionDef(self, node): 
+        #     self.func_count +=1 
+        # def visit_Lambda(self, node): 
+        #     self.func_count +=1 
+        def visit_ClassDef(self, node): 
+            self.func_count +=1 
+        # def visit_Module(self, node): 
+        #     self.func_count +=1 
+        # def visit_Call(self, node): 
+        #     self.func_count +=1 
+     
+    if os.path.isdir (path): 
+        pyfiles = [ os.path.join (path , f) 
+                   for f in os.listdir (path) if f.endswith ('.py') ] 
+    elif os.path.isfile (path) : 
+        pyfiles = [ path ] 
+    else : 
+        raise TypeError (f"Expects a path-like object, got {path!r}") 
+        
+    val=0
     
+    if verbose : 
+        print("module = {:^12}".format(os.path.dirname (pyfiles[0])))
+    for mod in pyfiles : 
+
+        p=ast.parse (open(mod, encoding='utf-8').read())
+        f= CountFunc()
+        f.visit(p)
+        cobj[os.path.basename (mod)]= f.func_count 
+        val += f.func_count 
+        if verbose: 
+            print("### {:^7}{:<17} ={:>7}".format (' ', os.path.basename (mod), 
+                                              f.func_count ))
+            
+    print(">>>Total = {:>24}".format(val )) if verbose else print() 
+ 
+    return cobj if not verbose else None 
+
+
     
     
     

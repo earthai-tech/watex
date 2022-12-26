@@ -11,11 +11,11 @@ class Boxspace(dict):
     
     BowlSpace objects are sometimes used as an output for functions and methods.
     They extend dictionaries by enabling values to be accessed by key,
-    `bunch["value_key"]`, or by an attribute, `bunch.value_key`.
+    `Boxspace["value_key"]`, or by an attribute, `Boxspace.value_key`.
     Another option is to use Namespace of collection modules as: 
         
         >>> from collections import namedtuple
-        >>> Boxspace = namedtuple ('Boxspace', [< attaributes names >] )
+        >>> Boxspace = namedtuple ('Boxspace', [< attribute names >] )
         
     However the explicit class that inhers from build-in dict is easy to 
     handle attributes and to avoid multiple error where the given name 
@@ -23,7 +23,7 @@ class Boxspace(dict):
     
     Examples
     --------
-    >>> from watex.utils.import Boxspace 
+    >>> from watex.utils.box import Boxspace 
     >>> bs = Boxspace(pkg='watex',  objective ='give water', version ='0.1.dev')
     >>> bs['pkg']
     ... 'watex'
@@ -55,7 +55,7 @@ class Boxspace(dict):
         # ignoring the pickled __dict__
         pass
     
-class _AquiferGroup:
+class _Group:
     """ Group of Aquifer is mostly related to area information after multiple 
     boreholes collected. 
     
@@ -94,7 +94,7 @@ class _AquiferGroup:
     --------
     >>> from watex.utils import naive_imputer, read_data , reshape 
     >>> from watex.datasets import load_hlogs 
-    >>> from watex.utils.hydroutils import classify_k, fit_aquifer_groups 
+    >>> from watex.utils.hydroutils import classify_k, find_aquifer_groups 
     >>> b= load_hlogs () #just taking the target names
     >>> data = read_data ('data/boreholes/hf.csv') # read complete data
     >>> y = data [b.target_names]
@@ -102,32 +102,32 @@ class _AquiferGroup:
     >>> # reshape 1d array along axis 0 for imputation 
     >>> agroup_imputed = naive_imputer ( reshape (y.aquifer_group, axis =0 ) , 
                                         strategy ='most_frequent') 
-    >>> # rehape back to array_like 1d 
+    >>> # reshape back to array_like 1d 
     >>> y.aquifer_group =reshape (agroup_imputed) 
     >>> # categorize the 'k' continous value in 'y.k' using the default 
     >>> # 'k' mapping func 
     >>> y.k = classify_k (y.k , default_func =True)
     >>> # get the group obj
-    >>> group_obj = fit_aquifer_groups(y.k, y.aquifer_group,  ) 
+    >>> group_obj = find_aquifer_groups(y.k, y.aquifer_group,  ) 
     >>> group_obj 
-    ... AquiferGroup(Label=[' 1 ', 
+    ... _Group(Label=[' 1 ', 
                        Preponderance( rate = '53.141  %', 
-                                    (['Groups', {'V': 0.32,'IV': 0.266, 
-                                                 'II': 0.158, 'III': 0.158, 
-                                                 'II ': 0.079, 'IV&V': 0.01, 
-                                                 'II&III': 0.005, 'III&IV': 0.005}),
+                                    [('Groups', {'V': 0.32, 'IV': 0.266, 
+                                                 'II': 0.236, 'III': 0.158, 
+                                                 'IV&V': 0.01, 'II&III': 0.005, 
+                                                 'III&IV': 0.005}),
                                      ('Representativity', ( 'V', 0.32)),
                                      ('Similarity', 'V')])],
                  Label=[' 2 ', 
                        Preponderance( rate = ' 19.11  %', 
-                                    (['Groups', {'III': 0.274, 'V': 0.26, 
-                                                 ' II ': 0.178, 'IV': 0.178, 
-                                                 'II': 0.082, 'III&IV': 0.027}),
+                                    [('Groups', {'III': 0.274, 'II': 0.26, 
+                                                 'V': 0.26, 'IV': 0.178, 
+                                                 'III&IV': 0.027}),
                                      ('Representativity', ( 'III', 0.27)),
                                      ('Similarity', 'III')])],
                  Label=[' 3 ', 
                        Preponderance( rate = '27.749  %', 
-                                    (['Groups', {'V': 0.443, 'IV': 0.311, 
+                                    [('Groups', {'V': 0.443, 'IV': 0.311, 
                                                  'III': 0.245}),
                                      ('Representativity', ( 'V', 0.44)),
                                      ('Similarity', 'V')])],
@@ -151,7 +151,7 @@ class _AquiferGroup:
     def preponderance (self): 
         """ Returns label occurences in the datasets """
         return   (
-            (label, round(rep_val [0], 3)) 
+            (label, rep_val[0]) 
             for label, rep_val in self.g_.items()
              )
     @property 
@@ -163,7 +163,7 @@ class _AquiferGroup:
     @property 
     def groups (self): 
         """Return groups for each label """
-        return ((label, {k: round (v, 3) for k, v in repr_val[1].items()}) 
+        return ((label, {k: v for k, v in repr_val[1].items()}) 
                   for label, repr_val in self.g_.items () 
                   )
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
+
 """
 Hydrogeological utilities 
 ================================
@@ -8,6 +9,12 @@ Hydrogeological parameters of aquifer are the essential and crucial basic data
 in the designing and construction progress of geotechnical engineering and 
 groundwater dewatering, which are directly related to the reliability of these 
 parameters.
+
+.. note::
+    For strong and clear demonstration as examples in many scripts, we use 
+    the data 'hf.csv'. This data is a confident data so it is not available 
+    in the package. The idea consists to show how scripts will works if 
+    many boreholes data are available. 
 
 """
 from __future__ import annotations 
@@ -49,9 +56,8 @@ from ..exceptions import (
     StrataError, 
     AquiferGroupError
     )
-
 from .box import ( 
-    _AquiferGroup, 
+    _Group, 
     Boxspace
     )
 from .funcutils import  (
@@ -91,7 +97,7 @@ __all__=[
     "find_similar_labels", 
     "classify_k", 
     "is_valid_depth", 
-    "compute_representativity", 
+    "label_importance", 
     "validate_labels", 
     "rename_labels_in", 
     "transmissibility", 
@@ -111,6 +117,8 @@ def make_MXS_labels (
     similar_labels= None, 
     sep =None, 
     prefix =None, 
+    method='naive', 
+    trailer="*",
     return_obj=False,  
     **kws
    ): 
@@ -126,6 +134,14 @@ def make_MXS_labels (
         Array composing the valid NGA labels. Note that NGA labels is  a 
         predicted labels mostly using the unsupervising learning. 
         See also: :func:`~predict_NGA_labels` for further details. 
+       
+    threshold: float, default=None 
+        The threshold from which, label in 'y_true' can be considered  
+        similar than the one in NGA labels 'y_pred'. The default is 'None' which 
+        means none rule is considered and the high preponderence or occurence 
+        in the data compared to other labels is considered as the most 
+        representative  and similar. Setting the rule instead by fixing 
+        the threshold is recommended especially in a huge dataset.
         
     similar_labels: list of tuple, optional   
         list of tuple in pair (label and similar group). If given, the similar 
@@ -145,12 +161,45 @@ def make_MXS_labels (
         where the seperator `sep` is set to ``_``. This happens especially 
         when one of the label (NGA or true_labels) is not a numeric datatype 
         and a similariy is found between 'k1' and 'II', 'k2' and 'I' and so on.
+        
     prefix: str, default=''
         prefix is used to rename the true_labels i.e the true valid-k. For
         instance::
             >>> k_valid =[1, 2, ..] -> k_new = [k1, k2, ...]
         where 'k' is the prefix. 
-    return_mxs_obj: :class:`watex.utils.box.Boxspace`
+        
+    method: str ['naive', 'strict'], default='naive'
+        The kind of strategy to compute the representativity of a label 
+        in the predicted array 'y_pred'. It can also be 'strict'. Indeed:
+        
+        - ``naive`` computes the importance of the label by the number of its
+            occurence for this specific label in the array 'y_true'. It does not 
+            take into account of the occurence of other existing labels. This 
+            is usefull for unbalanced class labels in `y_true`.
+        - ``strict`` computes the importance of the label by the number of 
+            occurence in the whole valid `y_true` i.e. under the total of 
+            occurence of all the labels that exist in the whole 'arra_aq'. 
+            This can give a suitable anaylse results if the data is not 
+            unbalanced for each labels in `y_pred`.
+            
+    trailer: str, default='*'
+        The Mixture strategy marker to differentiate the existing class label  
+        in 'y_true' with the predicted labels 'y_pred' especially when  
+        the the same class labels are also present the true label with the 
+        same label-identifier name. This usefull  to avoid any confusion  for
+        both labels  in `y_true` and `y_pred` for better demarcation and 
+        distinction. Note that if the `trailer`is set to ``None`` and both 
+        `y_true` and `y_pred` are numeric data, the labels in `y_pred` are 
+        systematically renamed to be distinct with the ones in the 'y_true'. 
+        For instance :: 
+            
+            >>> true_labels=[1, 2, 3] ; NGA_labels =[0, 1, 2]
+            >>> # with trailer , MXS labels should be 
+            >>>  MXS_labels= ['0', '1*', '2*', '3'] # 1 and 2 are in true_labels 
+            >>> # with no trailer 
+            >>> MXS_labels= [0, 4, 5, 3] # 1 and 2 have been changed to [4, 5]
+            
+    return_obj: :class:`watex.utils.box.Boxspace`
         If ``True``, returns a MXS object with usefull attributes such as: 
             - mxs_classes_ = the MXS class labels 
             - mxs_labels_=  the array-like of MXS labels. It also includes some
@@ -176,26 +225,43 @@ def make_MXS_labels (
                 existing between the label class in y_true and NGA. 
             mxs_group_labels_= list of the similar groups found in the 
                 predicted NGA that have a similarity in true labels 'y_true'
-                
-    Return 
+        
+    Returns 
     ---------
     MXS: array-like 1d or :class:`~watex.utils.box.Boxspace`
         array like of MXS labels or MXS object containing the 
         usefull attributes. 
     
-    Example
+    Examples
     ---------
     >>> from watex.datasets import load_hlogs
+    >>> from watex.utils import read_data 
     >>> from watex.utils.hydroutils import classify_k, make_MXS_labels
     >>> data = load_hlogs ().frame 
     >>> # map data.k to categorize k values 
     >>> ymap = classify_k(data.k , default_func =True) 
     >>> y_mxs = make_MXS_labels (ymap, data.aquifer_group)
-    ...
+    >>> y_mxs[14:24] 
+    ...  array(['I', 'I', 2, 2, 2, 2, 2, 2, 2, 2], dtype=object)
     >>> mxs_obj = make_MXS_labels (ymap, data.aquifer_group, return_obj=True )
-    >>> mxs_obj.mxs_labels_
-    ... 
-    
+    >>> mxs_obj.mxs_labels_[14: 24]
+    ... array(['I', 'I', 2, 2, 2, 2, 2, 2, 2, 2], dtype=object)
+    >>> # now we did the same task using the private data 'hf.csv'
+    >>> # composed of 11 boreholes. For default we alternatively uses 
+    >>> # the aquifer groups like a fake NGA 
+    >>> data = read_data ('data/boreholes/hf.csv') 
+    >>> ymap =  classify_k(data.k , default_func =True)  
+    >>> y_mxs= make_MXS_labels (ymap, data.aquifer_group)
+    >>> np.unique (y_mxs)
+    ... array(['1', '1V', '2', '2III', '3', 'I', 'II', 'III&IV', 'IV'],
+          dtype='<U6')
+    >>> # *comments: 
+        # label '1V' means the group V (expected to be a cluster) 
+        # and label 1 (true labels) have a similarity 
+        # the same of label '2III' while the remain label 3 does not  
+        #  any similarity in the other labels  in the 'y_pred' expected 
+        # to be NGA labels. 
+        
     """
     CONTEXT_MSG = (
         "Can only process unfunc {0!r} if and only if {1} similarity"
@@ -203,10 +269,9 @@ def make_MXS_labels (
         " labels in 'y_pred'."
         )
     
-    sep = sep or '' ; prefix = prefix or '' 
+    sep = sep or '' 
+    prefix = prefix or '' 
     # for consistency
-    sep =str(sep) ; prefix =str(prefix)  
-    
     # check arrays 
     y_true = check_y (
         y_true, 
@@ -226,33 +291,37 @@ def make_MXS_labels (
     # check whether the y_true is numerical data 
     # if not rename y_true and keep the classes 
     # for mapping at the end of class transformation 
-    y_true_transf, mxs_map_classes_  = _kmapping( y_true )
+    #y_true_transf, mxs_map_classes_  = _kmapping( y_true )
     
     if similar_labels is None: 
         similar_labels = find_similar_labels (
-            y_true_transf, 
+            y_true, 
             y_pred, 
-            threshold= threshold,  
+            threshold= threshold, 
+            method=method, 
             **kws 
             ) 
         
     CONTEXT = 'no' if len(similar_labels)==0  else 'similarity is found' 
-    
+
     if CONTEXT =='no' : 
         y_mxs, group_classes_, group_labels, sim_groups = _MXS_if_no(
             CONTEXT, 
-            y_true_transf, 
+            y_true, 
             y_pred, 
-            CONTEXT_MSG 
+            cmsg=CONTEXT_MSG , 
+            trailer=trailer 
             )
     else : 
         y_mxs, group_classes_, group_labels, sim_groups = _MXS_if_yes(
             CONTEXT , 
             similar_labels, 
             y_pred, 
-            sep , 
-            prefix,  
-            CONTEXT_MSG   
+            y_true, 
+            sep =sep,
+            prefix= prefix, 
+            cmsg= CONTEXT_MSG, 
+            trailer= trailer 
         )
     # # save the not_nan indices to not 
     # # altered the k-valid values 
@@ -266,10 +335,15 @@ def make_MXS_labels (
     except :  
         y_mxs [not_nan_indices] = y_true [not_nan_indices]
     
-    if mxs_map_classes_ is not None: 
-        y_mxs = pd.Series (y_mxs, name ='mxs').map(
-            mxs_map_classes_ ).values 
-        
+    #let pandas to find the best dtype since 
+    # string value in y_mxs object remain a string 
+    # object in data
+    y_mxs = pd.Series (y_mxs, name ='mxs').values 
+
+    try : 
+        y_mxs = y_mxs .astype (int) 
+    except : y_mxs= y_mxs.astype(str )
+    
     MXS =y_mxs .copy() 
     
     if return_obj : 
@@ -283,9 +357,9 @@ def make_MXS_labels (
         MXS_attributes = dict (
             mxs_classes_ = mxs_classes_, 
             mxs_labels_= y_mxs ,  
-            mxs_map_classes_= mxs_map_classes_, 
+            # mxs_map_classes_= mxs_map_classes_, 
             mxs_group_classes_=group_classes_ ,
-            mxs_similar_labels= similar_labels, 
+            mxs_similar_labels_= similar_labels, 
             mxs_similarity_= sim_groups,  
             mxs_group_labels_= group_labels
             )  
@@ -329,7 +403,7 @@ def predict_NGA_labels(
         `+1` is used to move forward all class labels thereby excluding 
         the '0' label. To force include 0 in the label, set `keep_label_0` 
         to ``True``. 
-    
+
     return_cluster_centers: bool, default=False, 
         export the array of clusters centers if ``True``. 
     kws: dict, 
@@ -357,9 +431,9 @@ def predict_NGA_labels(
 
 
 def find_aquifer_groups (
-        arr_k, /, arr_aq=None, kname =None, aqname=None,  
-        subjectivity =False , default_arr= None, keep_label_0 = False,  
-  )->'_AquiferGroup': 
+        arr_k, /, arr_aq=None, kname =None, aqname=None, subjectivity =False,  
+         default_arr= None, keep_label_0 = False,  method ='naive', 
+  )->'_Group': 
     msg = ("{} cannot be None when a dataframe is given.")
     d = copy.deepcopy(arr_k)
     if hasattr (d, '__array__') and hasattr (d, 'columns'): 
@@ -372,9 +446,9 @@ def find_aquifer_groups (
         
     if arr_aq is None and not subjectivity: 
         msg =("In principle, missing aquifer array is not allowed. Turn on "
-              "'subjectivity' instead. Be aware that turning 'subjectivity'"
-              " to 'True'. This might lead to breaking code or invalid results."
-              " Use at your own risk." )
+              "'subjectivity' instead. Make sure, you know what you intend to"
+              " solve when turning 'subjectivity' to 'True'. This might lead"
+              " to breaking code or unexpected results. Use at your own risk." )
         raise AquiferGroupError (msg)
     if subjectivity: 
         if arr_aq is not None: 
@@ -387,7 +461,7 @@ def find_aquifer_groups (
                              " to substitute the aquifer groups.")
         arr_aq = default_arr 
         
-    # check array consistency 
+    # check consistency 
     _check_consistency_size(arr_aq, arr_k)
     if not all ([ _is_arraylike_1d(arr_aq), _is_arraylike_1d(arr_k)]):
         raise AquiferGroupError (
@@ -404,7 +478,7 @@ def find_aquifer_groups (
     if np.nan in list(arr_aq): 
         raise TypeError ("Missing value(s) is/are not allowed in group of "
                          " aquifer. Please impute the data first.")
-    # for consistency check 
+    # for consistency recheck 
     arr_aq = check_y (
         arr_aq, 
         to_frame = True, 
@@ -419,15 +493,14 @@ def find_aquifer_groups (
     labels_rate = counts / sum(counts )
     dict_labels_rate = { k: v for k , v in zip ( labels, labels_rate )} 
     
-    
     groups = defaultdict(list)  
     for label in sorted (labels) : 
-        g = compute_representativity(
-            label, arr_k=arr_k_valid , arr_aq= arr_aq_valid)
+        g = label_importance(
+            label, arr_k=arr_k_valid , arr_aq= arr_aq_valid, method =method )
         groups[label].append (dict_labels_rate.get(label))
         groups[label].append(g)
         
-    return _AquiferGroup(groups)
+    return _Group(groups)
 
 find_aquifer_groups.__doc__="""\
 Fit the group of aquifer and find the representative of each true label in 
@@ -444,20 +517,28 @@ arr_k: array_like, pandas series or dataframe
     arraylike that contains the permeability coefficients 'k'. If a dataframe 
     is supplied, the permeabitlity coefficient column name 'kname' must be 
     specified. 
-arr_q: array-like , pandas series or dataframe 
+arr_aq: array-like , pandas series or dataframe 
     array-like that contains the aquifer groups. If NAN values exists in the 
     aquifer groups, it is suggested to imputed values before feediing to 
     the algorithms. Missing values are not allowed. If dataframe is supplied,
     the aquifer group column name 'aqname' must be specified. 
 
- subjectivity: bool, default=False
-     Considers each class label as a naive group of aquifer. Subjectivity 
-     occurs when no group of aquifer is not found in the data. Therefore, each 
-     class label is considered as a naive group of aquifer. It is strongly 
-     recommended to provide a default group passes to parameter `default_arr` 
-     to substitute the group of aquifers for more pratical reason. For instance
-     it can be the layer collected at a specific depth like the 'strata' 
-     columns. 
+{params.core.kname}
+
+aqname: str, optional, 
+    Name of aquifer group columns. `aqname` allows to retrieve the 
+    aquifer group `arr_aq` value in  a specific dataframe. Commonly
+   `aqname` needs to be supplied when a dataframe is passed as a positional 
+    or keyword argument. 
+    
+subjectivity: bool, default=False
+    Considers each class label as a naive group of aquifer. Subjectivity 
+    occurs when no group of aquifer is not found in the data. Therefore, each 
+    class label is considered as a naive group of aquifer. It is strongly 
+    recommended to provide a default group passes to parameter `default_arr` 
+    to substitute the group of aquifers for more pratical reason. For instance
+    it can be the layer collected at a specific depth like the 'strata' 
+    columns. 
     
 default_arr: array-like, pd.Series 
    Array used as deefault for subsitutue the group of aqquifer if the latter 
@@ -476,17 +557,31 @@ keep_label_0: bool, default=False
     `+1` is used to move forward all class labels thereby excluding 
     the '0' label. To force include 0 in the label, set `keep_label_0` 
     to ``True``. 
-     
+        
+method: str ['naive', 'strict'], default='naive'
+    The kind of strategy to compute the representativity of a label 
+    in the predicted array 'array_aq'. It can also be 'strict'. Indeed:
+    
+    - ``naive`` computes the importance of the label by the number of its
+        occurence for this specific label in the array 'k'. It does not 
+        take into account of the occurence of other existing labels. This 
+        is usefull for unbalanced class labels in `arr_k`.
+    - ``strict`` computes the importance of the label by the number of 
+        occurence in the whole valid `arr_k` i.e. under the total of 
+        occurence of all the labels that exist in the whole 'arra_aq'. 
+        This can give a suitable anaylse results if the data is not 
+        unbalanced for each labels in `arr_k`.
+        
 Returns
 -------
-_AquiferGroup: _AquiferGroup class object 
+_Group: :class:`~.box._Group` class object 
     Use attribute `.groups` to find the group values. 
 
 Examples
 ----------
 (1) Use the real aquifer group collected in the area 
 
->>> from watex.utils import naive_imputer, read_data , reshape 
+>>> from watex.utils import naive_imputer, read_data, reshape 
 >>> from watex.datasets import load_hlogs 
 >>> from watex.utils.hydroutils import classify_k, find_aquifer_groups 
 >>> b= load_hlogs () #just taking the target names
@@ -495,128 +590,218 @@ Examples
 >>> # impute the missing values found in aquifer group columns
 >>> # reshape 1d array along axis 0 for imputation 
 >>> agroup_imputed = naive_imputer ( reshape (y.aquifer_group, axis =0 ) , 
-                                    strategy ='most_frequent') 
+...                                    strategy ='most_frequent') 
 >>> # reshape back to array_like 1d 
 >>> y.aquifer_group =reshape (agroup_imputed) 
 >>> # categorize the 'k' continous value in 'y.k' using the default 
 >>> # 'k' mapping func 
 >>> y.k = classify_k (y.k , default_func =True)
 >>> # get the group obj
->>> group_obj = find_aquifer_groups(y.k, y.aquifer_group,  ) 
+>>> group_obj = find_aquifer_groups(y.k, y.aquifer_group) 
 >>> group_obj 
-... _AquiferGroup(Label=[' 1 ', 
-                   Preponderance( rate = '53.141  %', 
-                                (['Groups', {'V': 0.32, 
-                                             'IV': 0.266, 
-                                             'II': 0.158, 
-                                             'III': 0.158, 
-                                             'II ': 0.079, 
-                                             'IV&V': 0.01, 
-                                             'II&III': 0.005, 
-                                             'III&IV': 0.005}),
-                                 ('Representativity', ( 'V', 0.32)),
-                                 ('Similarity', 'V')])],
-             Label=[' 2 ', 
-                   Preponderance( rate = ' 19.11  %', 
-                                (['Groups', {'III': 0.274, 
-                                             'V': 0.26, 
-                                             ' II ': 0.178, 
-                                             'IV': 0.178, 
-                                             'II': 0.082, 
-                                             'III&IV': 0.027}),
-                                 ('Representativity', ( 'III', 0.27)),
-                                 ('Similarity', 'III')])],
-             Label=[' 3 ', 
-                   Preponderance( rate = '27.749  %', 
-                                (['Groups', {'V': 0.443, 
-                                             'IV': 0.311, 
-                                             'III': 0.245}),
-                                 ('Representativity', ( 'V', 0.44)),
-                                 ('Similarity', 'V')])],
+_Group(Label=[' 1 ', 
+             Preponderance( rate = '53.141  %', 
+                           [('Groups', {{'V': 0.32, 'IV': 0.266, 'II': 0.236, 
+                                        'III': 0.158, 'IV&V': 0.01, 
+                                        'II&III': 0.005, 'III&IV': 0.005}}),
+                            ('Representativity', ( 'V', 0.32)),
+                            ('Similarity', 'V')])],
+        Label=[' 2 ', 
+              Preponderance( rate = ' 19.11  %', 
+                           [('Groups', {{'III': 0.274, 'II': 0.26, 'V': 0.26, 
+                                        'IV': 0.178, 'III&IV': 0.027}}),
+                            ('Representativity', ( 'III', 0.27)),
+                            ('Similarity', 'III')])],
+        Label=[' 3 ', 
+              Preponderance( rate = '27.749  %', 
+                           [('Groups', {{'V': 0.443, 'IV': 0.311, 'III': 0.245}}),
+                            ('Representativity', ( 'V', 0.44)),
+                            ('Similarity', 'V')])],
              )
-               
 (2) Use the subjectivity and set the strata columns as default array 
 
 >>> find_aquifer_groups(y.k, subjectivity=True, default_arr= X.strata_name ) 
-... _AquiferGroup(Label=[' 1 ', 
-                   Preponderance( rate = '53.141  %', 
-                                (['Groups', {'siltstone': 0.35, 
-                                             'coal': 0.182, 
-                                             'fine-grained sandstone': 0.158, 
-                                             'medium-grained sandstone': 0.094, 
-                                             'mudstone': 0.079, 
-                                             'carbonaceous mudstone': 0.054, 
-                                             'coal ': 0.044, 
-                                             'coarse-grained sandstone': 0.03, 
-                                             'coarse': 0.01}),
-                                 ('Representativity', ( 'siltstone', 0.35)),
-                                 ('Similarity', 'siltstone')])],
-             Label=[' 2 ', 
-                   Preponderance( rate = ' 19.11  %', 
-                                (['Groups', {'mudstone': 0.288, 
-                                             'siltstone': 0.205, 
-                                             'coal': 0.192, 
-                                             'coarse-grained sandstone': 0.137, 
-                                             'fine-grained sandstone': 0.137, 
-                                             'carbonaceous mudstone': 0.027, 
-                                             'medium-grained sandstone': 0.014}),
-                                 ('Representativity', ( 'mudstone', 0.29)),
-                                 ('Similarity', 'mudstone')])],
-             Label=[' 3 ', 
-                   Preponderance( rate = '27.749  %', 
-                                (['Groups', {'mudstone': 0.245, 
-                                             'coal': 0.226, 
-                                             'siltstone': 0.217, 
-                                             'fine-grained sandstone': 0.123, 
-                                             'carbonaceous mudstone': 0.066, 
-                                             'medium-grained sandstone': 0.066, 
-                                             'coarse-grained sandstone': 0.057}),
-                                 ('Representativity', ( 'mudstone', 0.25)),
-                                 ('Similarity', 'mudstone')])],
+_Group(Label=[' 1 ', 
+             Preponderance( rate = '53.141  %', 
+                           [('Groups', {{'siltstone': 0.35, 'coal': 0.227, 
+                                        'fine-grained sandstone': 0.158, 
+                                        'medium-grained sandstone': 0.094, 
+                                        'mudstone': 0.079, 
+                                        'carbonaceous mudstone': 0.054, 
+                                        'coarse-grained sandstone': 0.03, 
+                                        'coarse': 0.01}}),
+                            ('Representativity', ( 'siltstone', 0.35)),
+                            ('Similarity', 'siltstone')])],
+        Label=[' 2 ', 
+              Preponderance( rate = ' 19.11  %', 
+                           [('Groups', {{'mudstone': 0.288, 'siltstone': 0.205, 
+                                        'coal': 0.192, 
+                                        'coarse-grained sandstone': 0.137, 
+                                        'fine-grained sandstone': 0.137, 
+                                        'carbonaceous mudstone': 0.027, 
+                                        'medium-grained sandstone': 0.014}}),
+                            ('Representativity', ( 'mudstone', 0.29)),
+                            ('Similarity', 'mudstone')])],
+        Label=[' 3 ', 
+              Preponderance( rate = '27.749  %', 
+                           [('Groups', {{'mudstone': 0.245, 'coal': 0.226, 
+                                        'siltstone': 0.217, 
+                                        'fine-grained sandstone': 0.123, 
+                                        'carbonaceous mudstone': 0.066, 
+                                        'medium-grained sandstone': 0.066, 
+                                        'coarse-grained sandstone': 0.057}}),
+                            ('Representativity', ( 'mudstone', 0.24)),
+                            ('Similarity', 'mudstone')])],
              )
-"""
-def compute_representativity ( label, arr_k , arr_aq  ):
+""".format(params=_param_docs
+)
+    
+def label_importance (
+    label: int, 
+    arr_k: ArrayLike , 
+    arr_aq:ArrayLike, 
+    *, 
+    method:str='naive' 
+    )->dict:
     """Compute the score for the label and its representativity in the valid 
     array 'arr_k' 
     
-    :param label: int, 
-        class label from true labels of  permeability coefficient array 'k'
-    :param arr_k: array-like, 
-        True labels of true labels of  permeability coefficient array 'k'
-    :param arr_q: array_like 
-        array of aquifer group composes of group labels
-    :returns: 
-        label_dict_group_rate: dict of true label and occurences 
+    Parameters 
+    -------------
+    label: int, or string  
+        class label from the true labels array of  permeability coefficient 'k'.
+        If string, be sure to convert the array to hold the dtype str. It is 
+        recommnended to provide data with no NaN to have full control the 
+        occurence results. 
+
+    arr_k: array-like 1d 
+        True labels of array containing the permeability coefficient 'k'.
+
+    arr_aq: array_like 1d 
+        True labels of the groups of aquifers or predicted naive group of 
+         aquifer (NGA labels). See :func:`~.predict_NGA_labels`.
+         
+    method: str ['naive', 'strict'], default='naive'
+        The kind of strategy to compute the representativity of a label 
+        in the predicted array 'array_aq'. It can also be 'strict'. Indeed:
         
+        - 'naive' computes the importance of the label by the number of its
+            occurence for this specific label in the array 'k'. It does not 
+            take into account of the occurence of other existing labels. This 
+            is usefull for unbalanced class labels in 'arr_k'
+        - 'strict' computes the importance of the label by the number of 
+            occurence in the whole valid 'arr_k' i.e. under the total of 
+            occurence of all the labels that exist in the whole 'arra_aq'. 
+            This can give a suitable anaylse results if the data is not 
+            unbalanced for each labels in 'arr_k'.
+        
+    Returns 
+    -----------
+    label_dict_group_rate: dict, 
+        Dictionnary of the label and its  rate of occurence in the `arr_aq`. 
+        Thus each group in `arr_aq` has its rate of representativity of the 
+        label in `arr_k`.
+        
+    Examples 
+    -----------
+    >>> from watex.datasets import load_hlogs
+    >>> from watex.utils.hydroutils import label_importance, classify_k 
+    >>> array_k = load_hlogs().frame.k 
+    >>> # categorize k_labels using default categorization 
+    >>> array_k = classify_k (array_k, default_func =True )
+    >>> # for the demo, we used the group of aquifers however in 
+    >>> # pratice, NGA should  be prediced labels instead. 
+    >>> array_aq = load_hlogs().frame.aquifer_group  
+    >>> # get the labels except NaN 
+    >>> np.unique (array_k) # give the k label in data; here only k=2 is available
+    array([ 2., nan])
+    >>> # compute the representativity of label ='2' ( for k=1) 
+    >>> label_importance(label = 2, arr_k= array_k, arr_aq= array_aq )
+    {' II ': 1.0}
+    >>> # let take the example of 11 boreholes, note that the 'hf.csv'
+    >>> # data use for demo is not  not avaibale in the package for confidency 
+    >>> # just use for demonstration 
+    >>> from watex.utils import read_data 
+    >>> cdata = read_data ('data/boreholes/hf.csv') 
+    >>> array_k = cdata.k ; array_aq= cdata.aquifer_group 
+    >>> np.unique (array_k) # give the labels in k
+    array([ 1.,  2.,  3., nan])
+    >>> array_k = classify_k(array_k, default_func =True)
+    >>> # will compute the representativity of each label  using the 
+    >>> # the method 'strict'
+    >>> for label in [1, 2, 3]: 
+            r=label_importance(label , array_k, array_aq , 
+                                       method ='strict') 
+            print("label k =", label, ':\n' , r)
+    label k = 1 :
+     {'V': 0.17, 'IV': 0.141, 'II': 0.126, 'III': 0.084, 'IV&V': 0.005, 
+      'II&III': 0.003, 'III&IV': 0.003}
+    label k = 2 :
+     {'III': 0.052, 'II': 0.05, 'V': 0.05, 'IV': 0.034, 'III&IV': 0.005}
+    label k = 3 :
+     {'V': 0.123, 'IV': 0.086, 'III': 0.068}
+    >>> # **comments: 
+        # label k=1 is 17% importance for group V, 12.3% for group II whereas
+        # label k=2 has a weak rate in the whole dataset ~=0.19% for all groups
+        # the most dominate labels are k=1 and k=3 with 53.14% and 27.74 % 
+        # respectively in the dataset. 
+        # If threshold of representativity is set to 50% , none of the true 
+        # label k will fit any aquifer group since the max representativity 
+        # score is 17% and is for the group V especially for k=1. 
     """ 
-    # check arrays 
     arr_k = check_y (
         arr_k, 
-        allow_nan= True, 
-        to_frame =True, 
-        input_name="Array of Permeability coefficient 'k'",
+        allow_nan=True , 
+        input_name="Array 'arr_k'",
         )  
-
     arr_aq = check_y(
         arr_aq, 
-        to_frame =True, 
-        input_name="Array of aquifer group 'arr_aq' ", 
+        input_name="Array 'arr_aq'", 
         )
     
-    index, = np.where (arr_k ==label ) 
-    label_in_arr_q = arr_aq[index ] 
+    _check_consistency_size(arr_k, arr_aq)
+
+    assert str(method).lower().strip()  in {"naive", "strict"}, (
+        f"Supports only 'naive' or 'strict'. Got {method!r}")
+    method =str(method).lower().strip() 
+    # if NaN exists get the non_valid k 
+    if np.isnan(arr_k).any() : 
+        not_nan_indices , = np.where (~np.isnan(arr_k))
+        arr_aq = arr_aq[not_nan_indices] 
+        arr_k = arr_k [not_nan_indices] 
+        
+    if not _is_numeric_dtype(arr_k):
+        # therefore convert array_aq too to dtype string 
+        arr_aq = to_dtype_str( arr_aq , return_values= True ) 
+        label =str (label) # for consistency 
+        # this is usefull when using np.unique since 
+        # numeric data cannot be coerced  with string dtype 
+    if label not in (np.unique (arr_k)): 
+        raise ValueError (f"Missing '{label}' in array. {label!r} must be"
+                          " a label included in 'arr_k'. Valid labels are:"
+                          f" {list(np.unique (arr_k))}"
+                          )
+    # indices where label k exists in arr_k 
+    index, = np.where (arr_k ==label )
+    # find its corresponding value from indices in groups arr_aq
+    label_in_arr_q = arr_aq[index ]
+    # count the labels that fits label k in arr_k
     label_group , group_counts = np.unique (
         label_in_arr_q, return_counts=True ) 
-    
-    label_dict_group_rate = { k: v for k , v in zip (
-        label_group, group_counts/sum(group_counts ))} 
-    
+    # compute ratio, compare to its importance 
+    # in the whole valid array_K
+    tot = sum(group_counts) if method =='naive' else len(arr_k) 
+    label_dict_group_rate = { k: round (v, 3) for k , v in zip (
+        label_group, group_counts/tot)
+        } 
+    # sort
     label_dict_group_rate = dict( sorted (
         label_dict_group_rate.items() ,
         key=lambda x:x[1], reverse =True )
         ) 
     
-    return label_dict_group_rate 
+    return label_dict_group_rate
+ 
 
 def find_similar_labels ( 
     y_true, 
@@ -626,6 +811,7 @@ def find_similar_labels (
     threshold: float=None, 
     func: callable=None, 
     keep_label_0 :bool=False, 
+    method:str='naive', 
     return_groups:bool=False, 
     **kwd
         ):
@@ -670,7 +856,21 @@ def find_similar_labels (
          '0' i.e 'k=0' as a first class. So the value `+1` is used to move forward 
         all class labels thereby excluding the '0' label. To force include 0 
         in the label, set `include_label_0` to ``True``. 
-
+        
+    method: str ['naive', 'strict'], default='naive'
+        The kind of strategy to compute the representativity of a label 
+        in the predicted array 'y_pred'. It can also be 'strict'. Indeed:
+        
+        - ``naive`` computes the importance of the label by the number of its
+            occurence for this specific label in the array 'y_true'. It does not 
+            take into account of the occurence of other existing labels. This 
+            is usefull for unbalanced class labels in `y_true`.
+        - ``strict`` computes the importance of the label by the number of 
+            occurence in the whole valid `y_true` i.e. under the total of 
+            occurence of all the labels that exist in the whole 'arra_aq'. 
+            This can give a suitable anaylse results if the data is not 
+            unbalanced for each labels in `y_pred`.
+            
     return_groups: bool, default=False 
         Returns label groups and their values counts in the predicted 
         labels `y_pred`  where 'k' values are not missing. 
@@ -696,18 +896,18 @@ def find_similar_labels (
     >>> group= find_similar_labels(ymap, data.aquifer_group, return_groups=True) 
     >>> group 
     ... ((1,
-      {'V': 0.32,
-       'IV': 0.266,
-       'II': 0.236,
-       'III': 0.158,
-       'IV&V': 0.01,
-       'II&III': 0.005,
-       'III&IV': 0.005}),
-     (2, {'III': 0.274, 'II': 0.26, 'V': 0.26, 'IV': 0.178, 'III&IV': 0.027}),
-     (3, {'V': 0.443, 'IV': 0.311, 'III': 0.245}))
+      {'V': 0.17,
+       'IV': 0.141,
+       'II': 0.126,
+       'III': 0.084,
+       'IV&V': 0.005,
+       'II&III': 0.003,
+       'III&IV': 0.003}),
+     (2, {'III': 0.052, 'II': 0.05, 'V': 0.05, 'IV': 0.034, 'III&IV': 0.005}),
+     (3, {'V': 0.123, 'IV': 0.086, 'III': 0.068}))
     >>> find_similar_labels(y_true= ymap, y_pred=data.aquifer_group,
-                                  threshold = 0.4 ) 
-    ... ((3, {'V': 0.443, 'IV': 0.311, 'III': 0.245}),)
+                                  threshold = 0.15) 
+    ... [(1, 'V')]
     
     """
     [  _assert_all_types(o, pd.Series, np.ndarray, objname = lab) 
@@ -738,9 +938,9 @@ def find_similar_labels (
     if categorize_k : 
         #categorize k if func is given.
         y_true = classify_k( y_true ,  func= func ,  **kwd)
-    g = find_aquifer_groups(y_true, arr_aq= y_pred,keep_label_0= keep_label_0
+    g = find_aquifer_groups(y_true, arr_aq= y_pred,keep_label_0= keep_label_0,
+                            method= method, 
                             ) 
-    
     # Fetch similarity according to the  threshold 
     simg = tuple (_similarity_rules ( list(g.groups), threshold = threshold )
                   ) 
@@ -750,11 +950,11 @@ def find_similar_labels (
     return similarities  if not return_groups else tuple (g.groups )
 
 def _similarity_rules (lg,  threshold =.5 ):
-    """ Considers two label similar from the threshold value. 
+    """ Considers two labels similar from the threshold value. 
     
     :param lg: dict, 
         dictionnary of  tuple pair (true_label, dict of group occurence) 
-    :param threshold: float, default =.5 
+    :param threshold: float, default =.25 
         The threshold to consider two label similar from the rate of 
         their occurences. 
     :return: 
@@ -773,7 +973,7 @@ def _similarity_rules (lg,  threshold =.5 ):
         
     """
    
-    threshold = threshold or .0 
+    threshold = threshold or .0
     if isinstance (threshold, str): 
         try : 
             threshold = float(threshold.replace("%", '')
@@ -782,7 +982,8 @@ def _similarity_rules (lg,  threshold =.5 ):
             raise TypeError ("Threshold must be a number between 0 and "
                              f"1, got: {type(threshold).__name__!r}")
     # the gdict is already sorted 
-    threshold = float(_assert_all_types(threshold, int, float, objname="Threshold" ))
+    threshold = float(
+        _assert_all_types(threshold, int, float, objname="Threshold" ))
     
     if threshold < 0. or threshold > 1: 
         raise ValueError ("Threshold expects a value ranged between 0 and 1,"
@@ -792,7 +993,8 @@ def _similarity_rules (lg,  threshold =.5 ):
             yield (k, g )
       
 def _get_y_from_valid_indexes (
-        y_true, y_pred =None , *,  include_label_0 = False , replace_nan = False ): 
+        y_true, y_pred =None , *,  include_label_0 = False , replace_nan = False 
+        ): 
     """From valid indices in true labels 'y_true', get the valid 
     valid y array as as possible the value at the valid indices from 'y_true' 
     in predicted labels' 
@@ -856,7 +1058,6 @@ def _get_y_from_valid_indexes (
   
 #XXXTODO terminate the label score 
 # computation and move it in metric module    
-
 def label_score (y_true , y_pred , metric ="accuracy_score" ):
     """ Compute the score of each true label and its similarity in 
     the predicted label 'y_pred' 
@@ -977,8 +1178,8 @@ def _get_s_occurence (
         key of ordered sorted dict. Must be either {0, 1}: `0` for key 
         ordered searcg while `1` is for value search. 
     :param reverse: bool, reverse ordered dictionnary
-    :returns: bs, c, r
-        return the base object, counts or rate.
+    :returns: bs, r, c
+        return the base object, rate or counts.
     """
     # sorted strata in ascending occurence 
     s=dict ( Counter(sd ) ) 
@@ -1253,8 +1454,8 @@ Get the section to consider unique in multiple aquifers.
 The unique section 'upper' and 'lower' is the valid range of the whole 
 sections of each aquifers. It is  considered as  the main valid section 
 from which data can not be compressed and not altered. For instance,  
-the use of the its index is  necessary to shrunk the data except this valid 
-section. Mosly the data from the section is consided the valid data as the 
+the use of indexes is  necessary to shrunk the data except this valid 
+section. Mosly the data from the section is considered the valid data as the 
 predictor Xr. Out of the range of aquifers ection, data can be discarded or 
 compressed to top Xr. 
 
@@ -2072,7 +2273,7 @@ def classify_k (
     dfunc = lambda k : _kp (k, string = string ) # default 
     func = func or   ( dfunc if default_func else None ) 
     if func is None: 
-        raise TypeError ("'ufunc' can not be None when the default"
+        raise TypeError ("'ufunc' cannot be None when the default"
                          " 'k' mapping function is not triggered.")
     oo= copy.deepcopy (o )
     if hasattr (o, 'columns'):
@@ -2103,6 +2304,7 @@ def transmissibility (s, d, time, ):
     condition of unit hydraulic gradient, unit time, and unit width
     
     """
+    ... 
       
 def check_flow_objectivity ( y ,/,  values, classes  ) :
     """ Function checks the flow rate objectivity
@@ -2120,10 +2322,14 @@ def check_flow_objectivity ( y ,/,  values, classes  ) :
             
             [0, 1, 2] => [FR0, FR1, FR2]
             
-    :classes: list of classes names to replace the default `FR` that is 
+    :param classes: list of classes names to replace the default `FR` that is 
         used to specify the flow rate. For instance, it can be:: 
             
             [0, 1, 2] => [sf0, sf1, sf2]
+    :returns:
+        (y, classes): Tuple, 
+        - y: array-like 1d  of categorized  `y` 
+        - classes: list of flow rate classes. 
     """
     msg= ("Objective is 'flow' whereas the target value is set to {0}."
           " Target is defaultly encoded to hold integers {1}. If"
@@ -2131,13 +2337,18 @@ def check_flow_objectivity ( y ,/,  values, classes  ) :
           " of flow ranges, please set the range of the real flow values"
           " via param `values` or `label_values`."
           ) 
+    y=check_y( 
+        y, 
+        input_name=" Flow array 'y'", 
+        to_frame=True
+        )
     if values is None:
         msg = ("Missing values for categorizing 'y'; the number of"
                 " occurence in the target is henceforth not allowed."
                 )
         warnings.warn("Values are not set. The new version does not" 
                       " tolerate the number of occurrence to be used."
-                      "Provided the list of flow values instead.",
+                      " Provide the list of flow values instead.",
                       DeprecationWarning )
         raise TypeError (msg)
         
@@ -2738,7 +2949,7 @@ def _name_mxs_labels(*s , sep ='', prefix =""):
         finally: mxs.append (xs )
     return mxs 
  
-def _MXS_if_no(context,  /,  y_true , y_pred , cmsg =''): 
+def _MXS_if_no(context,  /,  y_true , y_pred , cmsg ='', trailer = "*"): 
     """ Make MXS according to the context whether a similarity 
      between the true labels in 'y_true' and NGA labels is found or not. 
      
@@ -2760,41 +2971,228 @@ def _MXS_if_no(context,  /,  y_true , y_pred , cmsg =''):
             'y_true' and NGA labels. 
         - sim_groups: groups  of pair composed of the similar label and 
             and the label in the predicted NGA. 
-
+            
+    :example: 
+        >>> import numpy as np 
+        >>> from watex.utils.hydroutils import _MXS_if_no
+        >>> y_true = np.arange (5) 
+        >>> y_pred = np.arange (1, 6) 
+        >>> _, d, *_= _MXS_if_no ('no', y_true =y_true , y_pred =y_pred )
+        >>> d 
+        ... {1: '1*', 2: '2*', 3: '3*', 4: '4*', 5: '5'}
+        >>> _, d, *_= _MXS_if_no ('no', y_true =y_true , y_pred =y_pred, 
+                                  trailer =None)
+        >>> d
+        ... {1: 5, 2: 6, 3: 7, 4: 8, 5: 9} # rename labels 
+        
     """
     assert str(context).lower() in {'no', 'no similarity', 
         'similarity does not exist', 'False','similarity not found'
         }, cmsg.format (_MXS_if_yes.__name__, 'at least ONE')
-       
-    sim_groups =None # similarity groups in pair (true label , similar group )  
+    
+    # similarity groups in pair (true label , similar group )     
+    sim_groups =None 
     group_labels =None # NGA similar groups 
     y_mxs = y_pred.copy().astype ( object )
-        
-    if context =='no': 
-        # get the label from similarity groups: 
-        true_labels = np.unique (y_true ) 
-        #  group_labels = [ group  for _, group in s ]
-        NGA_labels = np.unique ( y_pred ) 
-        
-        # if one of the NGA label is found in true labels 
-        # rename them using +1 for numeric and 'string + trailer
-        group_classes_ = dict() 
-        if any([ l in true_labels for l in NGA_labels ]): 
-            # if NGA and true labels are numeric
-            # add max int value of true labels to NGA for renaming 
-            for klabel in NGA_labels : 
-                if klabel in true_labels: 
-                    nklabel = _mixture_group_label_if (klabel, true_labels ) 
-                    klabel_ix,  = np.where (y_pred ==klabel)
-                    y_mxs [klabel_ix ] = nklabel
-                    # keep it into the modified 
-                    # group classes 
-                    group_classes_ [klabel] = nklabel 
+
+    # get the label from similarity groups: 
+    true_labels = np.unique (y_true ) 
+    #  group_labels = [ group  for _, group in s ]
+    NGA_labels = np.unique ( y_pred ) 
+    # Rename the NGA labels using the trailer or 
+    # add constant; 
+    group_classes_ = dict() 
+    if any([ l in true_labels for l in NGA_labels ]): 
+        pseudo_NGA_labels = _create_mxs_pseudo_labels (
+            y_true=y_true , y_pred=y_pred , group_labels= None, 
+            trailer =trailer)
+        for klabel in NGA_labels : 
+            nklabel = pseudo_NGA_labels.get(klabel) 
+            klabel_ix,  = np.where (y_pred ==klabel)
+            y_mxs [klabel_ix ] = nklabel
+            # keep it into the modified group classes 
+            group_classes_ [klabel] = nklabel 
 
     return y_mxs , group_classes_ , group_labels , sim_groups 
 
-def _MXS_if_yes (context , /, slg , y_pred,  sep=None,  prefix= None, 
-                 cmsg=''  ): 
+def _create_mxs_pseudo_labels(
+        y_true, y_pred, group_labels = None , trailer ='*'): 
+    """ create pseudo MXS labels  and save it in pseudo-dict. 
+    
+    if labels not in the group is found in the class labels of the 'y_true', 
+    rename it using the MXS trailer '*' as a special class label. 
+    otherwise skipped. 
+    
+    If the group label is not found in the class labels of the 'y_true', it 
+    does not need to rename it. Keep it intact , however because, the dtype has 
+    change to string, the class label should no longer be an integer. 
+    
+    :param y_true: array-like 1d , 
+        array of the class label in 'y_true'  
+    :param y_pred: array-like 1d, 
+        array of the predicted class (Mixture array) that contains 
+        the NGA labels. 
+    :param group_labels: list, 
+        list of the label from 'y_pred' that similarity has been found in 
+        the 'y_true'. For this reason, since its similarities have a special 
+        class label nomenclatures, it will be discraded from the 'y_pred' i.e 
+        the predicted NGA labels. Thus only the NGA labels except the  
+        `group_labels` are used for renaming.
+    :param trailer: str, default='*'
+        The Mixture strategy marker to differentiate the existing class label  
+        in 'y_true' with the predicted labels 'y_pred' especially when  
+        the the same class labels are also present the true label with the 
+        same label-identifier name. This usefull  to avoid any confusion  for
+        both labels  in `y_true` and `y_pred` for better demarcation and 
+        distinction. Note that if the `trailer`is set to ``None`` and both 
+        `y_true` and `y_pred` are numeric data, the labels in `y_pred` are 
+        systematically renamed to be distinct with the ones in the 'y_true'. 
+        
+    :returns: 
+        pseudo_dict: dict, 
+            dictionnary composed of the NGA labels that are not in `group_labels`
+            and whose their labels have been renamed. 
+    :example: 
+        >>> from watex.utils.hydroutils import _create_mxs_pseudo_labels 
+        >>> import numpy as np 
+        >>> y_true = np.arange (5) 
+        >>> y_pred = np.arange (1, 6) 
+        >>> group_labels =[2, 3] # only 2 and 3 that have similarity 
+        >>> _create_mxs_pseudo_labels (y_true, y_pred, group_labels )
+        ... {1: '1*', 4: '4*', 5: '5*'}
+        >>> # create a pseudo MXS labels when  group is None
+        >>> _create_mxs_pseudo_labels (y_true, y_pred, None )
+        ... {'1': '1*', '2': '2*', '3': '3*', '4': '4*', '5': '5'}
+        >>> # *comments 
+            # the above results demarcated the label in y_pred that 
+            # exist in y_true using the default trailer '*'
+        >>> #  because the bith y_true and y_pred are numeric , let set 
+        >>> # the trailer to None 
+        >>> _create_mxs_pseudo_labels (y_true, y_pred, None , trailer = None)
+        ... {1: 5, 2: 6, 3: 7, 4: 8, 5: 9}
+        >>> # * comments: 
+            # Gives the differents map changes . Thus label 1 in y_pred 
+            # become label 5, label 2 become label 6 and so on. 
+            # this is performed to avoid confusing the label in y_true 
+            # where 1, 2, 3, 4 are also presents. 
+        >>> # let create a map where y_true and y_pred are different and 
+        >>> # not numeric values 
+        >>> y_true_no = np.array (['k1', 'k2', 'k3']) 
+        >>> y_pred_no = np.array(['c1', 'c2', 'c3'])
+        >>> _create_mxs_pseudo_labels (y_true_no, y_pred_no, None )
+        
+    """ 
+    group_labels = group_labels or  []
+    if not hasattr (group_labels, '__len__'): 
+        raise ValueError ("Group label can't be None and must be an iterable"
+                           f" object. Got: {type(group_labels).__name__!r}"
+                           )
+    if not (_is_arraylike_1d(y_pred ) and _is_arraylike_1d(y_true)): 
+        raise TypeError ("'y' expects to be an array-like 1d ") 
+        
+    _check_consistency_size(y_true, y_pred) 
+    
+    true_labels_orig = np.unique (y_true) 
+    NGA_labels = np.unique (y_pred)
+    pseudo_dict = {} 
+    # compute the labels not 
+    # in the group 
+    labels_not_in_goups = is_in_if(NGA_labels, group_labels , 
+                           return_diff= True)
+    if labels_not_in_goups is None:
+        return  pseudo_dict 
+    
+    pseudo_labels = np.array(labels_not_in_goups) 
+    
+    # check whether both data are given as numeric data
+    # so the numeric label can be rename by topping the max value 
+    # got from the true_labels to the predicted label 
+    # provided that trailer is None.
+    is_numeric = False 
+    if (_is_numeric_dtype(true_labels_orig) 
+        and _is_numeric_dtype(labels_not_in_goups, to_array=True)
+        ): is_numeric = True 
+    
+    # manage trailer 
+    trailer = None if trailer in ('', None) else str(trailer) 
+    if trailer is None:
+        # -> improve the warning message 
+        nlabs= is_in_if(NGA_labels, true_labels_orig, 
+                               return_intersect=True)
+        warn_msg = (
+            "Note that {0} label{1} in 'y_pred' {2} also availabe in "
+            "'y_true' with the same label-identifier and are not renamed."
+            )
+         
+        warn_msg = warn_msg.format (
+            len(nlabs), "s" if len(nlabs) > 1 else '', "are" if len(
+                nlabs)>1 else 'is') if nlabs is not None else ""
+        
+        if len(group_labels) ==0: 
+            if not is_numeric: 
+                msg = ("Trailer is empty while one or both y_true and the"
+                        " predicted 'y_pred' arrays are not a numeric data."
+                        " {} This might lead to unexpected results by confusing"
+                        " the predicted labels in 'y_pred' with the true"
+                        " labels in 'y_pred'. Use at your own risk."
+                        )
+
+                if nlabs: warnings.warn(msg.format(warn_msg))
+                trailer =''
+            if is_numeric and trailer is None: 
+                pseudo_labels = _mixture_num_label_if_0_in (
+                    true_labels_orig, labels_not_in_goups )
+            
+        elif len(group_labels)!=0 : 
+            warnings.warn(
+                "Be aware! the trailer is empty. You may probably confuse"
+                " the true labels in 'y_true' to the predicted labels."
+                " This will create unexpected results when both arrays labels"
+                " are confused. {} In pratice, this behavior is not tolerable."
+                " Be sure, you know what you are doing. Use at your own risk."
+                          )
+            warnings.warn(msg.format(warn_msg))
+            trailer ='' 
+            
+    if trailer is not None:
+        pseudo_labels = list(pseudo_labels) 
+        # [0 , 2 , 3 ]
+    if not is_numeric or trailer is not None: 
+        # Put the true labels origin into a list of string 
+        # to perform element wise comparison  
+        for k , items in enumerate (labels_not_in_goups): 
+            if items in list(true_labels_orig): 
+                pseudo_labels[k] = str(items) + trailer
+            else:  pseudo_labels[k] = items
+        # Numpy format the string labels 
+        pseudo_labels = np.array(pseudo_labels ) 
+        
+    pseudo_dict = dict(zip (labels_not_in_goups, pseudo_labels )) 
+
+    return  pseudo_dict 
+
+def _mixture_num_label_if_0_in (true_labels, labels_to_rename) :
+    """ Isolated part of _create_mxs_pseudo_labels """
+    new_labels = np.array (labels_to_rename ) 
+    if 0 in labels_to_rename: 
+        new_labels += max(true_labels) + 1 # skip the 0 
+        # true_labels =[0 , 1, 2]
+        # NGA_labels =[ 0, 1, 2 ] 
+        # both 
+        # NGA_labels = 2+1 + NGA_labels = [3, 4, 5]
+        # 0 in true_labels only i.e NGA labels [1, 2]
+        # NGA lavels = 2 + [1, 2]-> [3, 4] != true_labels 
+        # 0 n NGA labels only 
+    else: 
+        # true_labels =[1, 2]
+        # NGA_labels =[0, 1, 2 ] 
+        # NGA_labels = 2 + NGA_labels = [2, 3, 4]
+        new_labels += max(true_labels)
+    # reconvert to integer 
+    return  new_labels.astype (np.int32 ) 
+                 
+def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None, 
+                 cmsg='' , trailer = "*" ): 
     """ Make MXS target when similarity is found between a label in 'y_true' and 
     label in the predicted NGA. 
 
@@ -2823,20 +3221,16 @@ def _MXS_if_yes (context , /, slg , y_pred,  sep=None,  prefix= None,
     if not is_iterable(slg): 
         raise TypeError ("similarity group must be an iterable."
                          " Got: {type(s).__name__!r}")
-        
+ 
     sim_groups = _name_mxs_labels(*slg, sep = sep, prefix =prefix )
-
-    # get the label from similarity groups: 
-    true_labels = [ label for label, _ in slg ] 
-    group_labels = [ group  for _, group in slg ]
-
+    true_labels , group_labels = zip (*slg )
     if not _is_numeric_dtype(y_pred): 
         tempy = to_dtype_str(y_pred, return_values = True )
     else : tempy = y_pred.copy()
-    
-    if not all ([ str(l) in np.unique (tempy) for l in group_labels ]): 
+
+    if not all ([ l in np.unique (tempy) for l in group_labels ]): 
         # list the invalid groups 
-        # not contain in the NGA labels 
+        # not in the NGA labels 
         msg = listing_items_format(group_labels, 
                              "Invalid similar groups",  
                              "Group must be the labels in the predicted NGA.",
@@ -2844,32 +3238,40 @@ def _MXS_if_yes (context , /, slg , y_pred,  sep=None,  prefix= None,
                              )
         raise AquiferGroupError (msg)
     
-    # make a copy of array of ytrue 
-    # and fill it by the new NGA values and/or similarites 
-    # Finally will fill the k-valid indexes 
-    y_mxs = np.full (y_pred.shape , fill_value= np.nan ,dtype = object )
-        
+    y_mxs = np.full (y_pred.shape , fill_value= np.nan , dtype = object )
+
     # Get the index of each NGA labels
-    NGA_label_indices = {
+    NGA_label_indices = { 
         label: np.where (y_pred == label )[0] for label in np.unique (y_pred )
         }
+    # create a dict of pseudolabels not in group_labels  
+    pseudo_NGA_labels = _create_mxs_pseudo_labels (
+        y_true, y_pred, group_labels, trailer =trailer )
     group_classes_ = dict() 
     for klabel , vindex in NGA_label_indices.items () :
-        if klabel in  group_labels : 
+        if klabel in  group_labels : # [ 4, 4, 2 ]
+            # --------------------------------------------------------
+            # we can simply get h from indices, however it there is the 
+            # same k duplicate in groups labels, index will always be 
+            # fetched from first occurence, which seems heuristic  
             elt_index =  group_labels.index (klabel )  
-            y_mxs [ vindex ] = sim_groups [elt_index ] 
-            group_classes_ [klabel] = klabel 
-            
+            nklabel = sim_groups [elt_index ] 
+            # print(klabel, nklabel)
+            y_mxs [ vindex ] = nklabel
+            group_classes_ [klabel] = nklabel
+            # # --------------------------------------------------
         elif klabel not in group_labels : 
-           nklabel = _mixture_group_label_if (klabel, true_labels ) 
-           y_mxs [ vindex ] = nklabel 
-         
-           group_classes_ [klabel] = nklabel 
-           
+            nklabel = pseudo_NGA_labels.get(klabel) 
+            y_mxs [ vindex ] = nklabel 
+            group_classes_ [klabel] = nklabel 
+    
     return y_mxs , group_classes_ , group_labels , sim_groups 
 
-    
-def _mixture_group_label_if ( label_k, t_labels ): 
+@deprecated("Function is henceforth deprecated. Note use anymore in"
+            " MXS strategy implementation. It has been replaced by"
+            " :func:`~._mixture_num_label_if_0_in` more stable."
+            " It should be removed soon in a future realease. ")
+def _mixture_group_label_if ( label_k, t_labels): 
     """ Start counting remaining labels from the maximum value of 
     label found in the 't_labels' """
     # Use the max element in the true labels 
@@ -2877,22 +3279,27 @@ def _mixture_group_label_if ( label_k, t_labels ):
     # are not found as similarity groups  
     # this is possible if the simpilary group are numery datatype 
     # However if if string , keep it in the datasets 
-    
     # The goal of this is to not be confuse with the existing
-    #  true labels with the valid k labels found in the y_true 
-    max_in_tabels = max (t_labels )
+    #  true labels with the valid k labels found in the y_true
+    
+    # find the group label which exists in the t_labels and 
+    # create pseudo group 
+    # labels_in = 
+    if _is_numeric_dtype(t_labels , to_array=True) :
+        max_in_t_labels = max (t_labels )  
     try : 
         label_k = int (label_k) 
     except : # where k is not a numeric 
+        # if label_k in t_labels: 
         pass 
     else : 
-        label_k +=max_in_tabels  
+        label_k += max_in_t_labels  
         
     return label_k 
 
 def _kmapping (arr, /): 
     """ Check whether the true labels 'y_true' have numeric dtypes 
-    otherwise, create a integer label with integers to  substitute 
+    otherwise, create a integer labels to  substitute 
     the true labels. For instance: 
         
         >>> ['k1', 'k2', 'k3'] - > [1, 2, 3]

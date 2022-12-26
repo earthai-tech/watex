@@ -19,201 +19,201 @@ __all__=[
 
 ves_doc =type ("ves_doc", (), dict( 
     __doc__="""\
-    A DC-vertical Electrical resistivity data collected from {survey_name} during
-    the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
-    `Cote d'Ivoire`_. An illustration of the data arrangement is the following: 
+A DC-vertical Electrical resistivity data collected from {survey_name} during
+the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
+`Cote d'Ivoire`_. An illustration of the data arrangement is the following: 
+
+=====   =======     =======     =======     =========
+AB/2    MN/2        SE1         SE2         SE...	
+=====   =======     =======     =======     =========
+1       0.4	        107	        93	        75	
+2       0.4	        97	        91	        49	
+...     ...         ...         ...         ...
+100     10	        79       	96	        98	
+110     10	        84	        104	        104	
+=====   =======     =======     =======     ========= 
+ 
+Parameters 
+-----------
+as_frame : bool, default=False
+    If True, the data is a pandas DataFrame including columns with
+    appropriate types (numeric). The target is
+    a panda DataFrame or Series depending on the number of target columns.
+    If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
+    dictionary-like object, with the following attributes:
+    - data : {{ndarray, dataframe}} of shape {shape}
+        The data matrix. If `as_frame=True`, `data` will be a pandas
+        DataFrame.
+    - resistivity: {{array-like}} of shape ({shape[0]},)
+        The resistivity of the sounding point. 
+    - MN: {{array-like}} of shape ({shape[0]},)
+        The step value of potential electrodes increasing in meters  
+    - AB: {{array-like}} of shape ({shape[0]},)
+        The step value of current electrodes increasing in meters  
+    - feature_names: list
+        The names of the dataset columns.
+        .. versionadded:: 0.23
+    - DESCR: str
+        The full description of the dataset.
+    - filename: str
+        The path to the location of the data.
+        .. versionadded:: 0.20
+    .. versionadded:: 0.1.2
+tag, data_names: None, 
+    Always None for API consistency 
+kws: dict, 
+    Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 
+    function for parsing data. 
     
-    =====   =======     =======     =======     =========
-    AB/2    MN/2        SE1         SE2         SE...	
-    =====   =======     =======     =======     =========
-    1       0.4	        107	        93	        75	
-    2       0.4	        97	        91	        49	
-    ...     ...         ...         ...         ...
-    100     10	        79       	96	        98	
-    110     10	        84	        104	        104	
-    =====   =======     =======     =======     ========= 
-     
-    Parameters 
-    -----------
-    as_frame : bool, default=False
-        If True, the data is a pandas DataFrame including columns with
-        appropriate types (numeric). The target is
-        a panda DataFrame or Series depending on the number of target columns.
-        If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
-        dictionary-like object, with the following attributes:
-        data : {{ndarray, dataframe}} of shape {shape}
-            The data matrix. If `as_frame=True`, `data` will be a pandas
-            DataFrame.
-        resistivity: {{array-like}} of shape ({shape[0]},)
-            The resistivity of the sounding point. 
-        MN: {{array-like}} of shape ({shape[0]},)
-            The step value of potential electrodes increasing in meters  
-        AB: {{array-like}} of shape ({shape[0]},)
-            The step value of current electrodes increasing in meters  
-        feature_names: list
-            The names of the dataset columns.
-            .. versionadded:: 0.23
-        DESCR: str
-            The full description of the dataset.
-        filename: str
-            The path to the location of the data.
-            .. versionadded:: 0.20
-        .. versionadded:: 0.1.2
-    tag, data_names: None, 
-        Always None for API consistency 
-    kws: dict, 
-        Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 
-        function for parsing data. 
-        
-    Returns 
-    --------
-    data : :class:`~watex.utils.Boxspace`
-        Dictionary-like object, with the following attributes.
-        data : {{ndarray, dataframe}} 
-            The data matrix. If `as_frame=True`, `data` will be a pandas
-            DataFrame.
-    
-    Notes
-    ------
-    The array configuration is Schlumberger and the max depth investigation is 
-    {max_depth} meters for :math:`AB/2` (current electrodes). The sounding steps
-    :math:`AB` starts from {c_start} to {c_stop} meters whereas :math:`MN/2` 
-    (potential electrodes) starts from {p_start} to {p_stop} meters. 
-    The total number of sounding performers in {sounding_number} with the prefix '`SE`'.
-    AB, AB is in meters and SE are in ohm. meters as apparent resistivity values. 
-    Use the param `index_rho` to get the ranking of the sounding resistivity value. 
-    For instance ``index_rhoa=0` fetch the first array of resistivity values (SE1).
-    
-    .. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
-    
-    """
+Returns 
+--------
+data : :class:`~watex.utils.Boxspace`
+    Dictionary-like object, with the following attributes.
+    data : {{ndarray, dataframe}} 
+        The data matrix. If `as_frame=True`, `data` will be a pandas
+        DataFrame.
+
+Notes
+------
+The array configuration is Schlumberger and the max depth investigation is 
+{max_depth} meters for :math:`AB/2` (current electrodes). The sounding steps
+:math:`AB` starts from {c_start} to {c_stop} meters whereas :math:`MN/2` 
+(potential electrodes) starts from {p_start} to {p_stop} meters. 
+The total number of sounding performers in {sounding_number} with the prefix '`SE`'.
+AB, AB is in meters and SE are in ohm. meters as apparent resistivity values. 
+Use the param `index_rho` to get the ranking of the sounding resistivity value. 
+For instance ``index_rhoa=0` fetch the first array of resistivity values (SE1).
+
+.. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
+
+"""
     )
 )
 erp_doc = type ('erp_doc', (), dict ( 
     __doc__="""\
-    A DC-Electrical resistivity profiling data collected from {survey_name} during
-    the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
-    `Cote d'Ivoire`_  and an example of the data arrangement is the following: 
+A DC-Electrical resistivity profiling data collected from {survey_name} during
+the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
+`Cote d'Ivoire`_  and an example of the data arrangement is the following: 
+
+=====   =========   =========   =======     
+pk      east        north       rho         
+=====   =========   =========   =======    
+0       382741	    896203	    79        	
+10	    382743	    896193	    62
+20	    382747   	896184	    51
+...     ...         ...         ...         
+980     382705	    894887	    55
+990     382704	    895879	    58
+=====   =========   =========   =======    
+ 
+Parameters 
+-----------
+as_frame : bool, default=False
+    If True, the data is a pandas DataFrame including columns with
+    appropriate types (numeric). The target is
+    a pandas DataFrame or Series depending on the number of target columns.
+    If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
+    dictionary-like object, with the following attributes:
+    - data : {{ndarray, dataframe}} of shape {shape}
+        The data matrix. If `as_frame=True`, `data` will be a pandas
+        DataFrame.
+    - resistivity: {{array-like}} of shape ({shape[0]},)
+        The resistivity of the sounding point. 
+    - station: {{array-like}}of shape ({shape[0]},)
+        The motion distance of each station that increasing in meters.
+        can be considered as the station point for data collection.
+    - northing: {{array-like}} of shape ({shape[0]},)
+        The northing coordinates in UTM in meters at each station where 
+        the data is collected. 
+    - easting: {{array-like}} of shape ({shape[0]},)
+        The easting coordinates in UTM are in meters at each station where the 
+        data is collected. 
+    - latitude: {{array-like}} of shape ({shape[0]},)
+        The latitude coordinates in degree decimals or 'DD:MM.SS' at each 
+        station where the data is collected.
+    - longitude: {{array-like}} of shape ({shape[0]},)
+        The longitude coordinates in degree decimals or 'DD:MM.SS' at each 
+        the station where the data is collected.
+    - DESCR: str
+        The full description of the dataset.
+    - filename: str
+        The path to the location of the data.
+tag, data_names: None, 
+    Always None for API consistency 
+kws: dict, 
+    Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 
+    function for parsing data. 
     
-    =====   =========   =========   =======     
-    pk      east        north       rho         
-    =====   =========   =========   =======    
-    0       382741	    896203	    79        	
-    10	    382743	    896193	    62
-    20	    382747   	896184	    51
-    ...     ...         ...         ...         
-    980     382705	    894887	    55
-    990     382704	    895879	    58
-    =====   =========   =========   =======    
-     
-    Parameters 
-    -----------
-    as_frame : bool, default=False
-        If True, the data is a pandas DataFrame including columns with
-        appropriate types (numeric). The target is
-        a pandas DataFrame or Series depending on the number of target columns.
-        If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
-        dictionary-like object, with the following attributes:
-        data : {{ndarray, dataframe}} of shape {shape}
-            The data matrix. If `as_frame=True`, `data` will be a pandas
-            DataFrame.
-        resistivity: {{array-like}} of shape ({shape[0]},)
-            The resistivity of the sounding point. 
-        station: {{array-like}}of shape ({shape[0]},)
-            The motion distance of each station that increasing in meters.
-            can be considered as the station point for data collection.
-        northing: {{array-like}} of shape ({shape[0]},)
-            The northing coordinates in UTM in meters at each station where 
-            the data is collected. 
-        easting: {{array-like}} of shape ({shape[0]},)
-            The easting coordinates in UTM are in meters at each station where the 
-            data is collected. 
-        latitude: {{array-like}} of shape ({shape[0]},)
-            The latitude coordinates in degree decimals or 'DD:MM.SS' at each 
-            station where the data is collected.
-        longitude: {{array-like}} of shape ({shape[0]},)
-            The longitude coordinates in degree decimals or 'DD:MM.SS' at each 
-            the station where the data is collected.
-        DESCR: str
-            The full description of the dataset.
-        filename: str
-            The path to the location of the data.
-    tag, data_names: None, 
-        Always None for API consistency 
-    kws: dict, 
-        Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 
-        function for parsing data. 
-        
-    Returns 
-    --------
-    data : :class:`~watex.utils.Boxspace`
-        Dictionary-like object, with the following attributes.
-        data : {{ndarray, dataframe}} 
-            The data matrix. If `as_frame=True`, `data` will be a pandas
-            DataFrame.
-    
-    Notes
-    ------
-    The array configuration is Schlumberger and the max depth investigation is 
-    {max_depth} meters for :math:`AB/2` (current electrodes). The  profiling step
-    :math:`AB` is fixed to {AB_distance}  meters whereas :math:`MN/2`  also fixed to
-    (potential electrodes) to {MN_distance}meters. The total number of station data 
-    collected is {profiling_number}.
-    `station`, `easting`, and `northing` are in meters and `rho` columns are 
-    in ohm. meters as apparent resistivity values.  
-    Furthermore, if the UTM coordinate (easting and northing) data is given as well 
-    as the UTM_zone, the latitude and longitude data are auto-computed and 
-    vice versa. The user does need to provide both coordinates data types
-    ( UTM or DD:MM.SS)
-    
-    .. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
-    
-    """
+Returns 
+--------
+data : :class:`~watex.utils.Boxspace`
+    Dictionary-like object, with the following attributes.
+    data : {{ndarray, dataframe}} 
+        The data matrix. If `as_frame=True`, `data` will be a pandas
+        DataFrame.
+
+Notes
+------
+The array configuration is Schlumberger and the max depth investigation is 
+{max_depth} meters for :math:`AB/2` (current electrodes). The  profiling step
+:math:`AB` is fixed to {AB_distance}  meters whereas :math:`MN/2`  also fixed to
+(potential electrodes) to {MN_distance}meters. The total number of station data 
+collected is {profiling_number}.
+`station`, `easting`, and `northing` are in meters and `rho` columns are 
+in ohm. meters as apparent resistivity values.  
+Furthermore, if the UTM coordinate (easting and northing) data is given as well 
+as the UTM_zone, the latitude and longitude data are auto-computed and 
+vice versa. The user does need to provide both coordinates data types
+( UTM or DD:MM.SS)
+
+.. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
+
+"""
     )
 )
       
 refglossary =type ('refglossary', (), dict (
     __doc__="""\
-    .. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
+.. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
 
-    .. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
-    .. _Kouadio et al: https://doi.org/10.1029/2021WR031623
-    .. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
+.. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
+.. _Kouadio et al: https://doi.org/10.1029/2021WR031623
+.. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
 
-    .. _GeekforGeeks: https://www.geeksforgeeks.org/style-plots-using-matplotlib/#:~:text=Matplotlib%20is%20the%20most%20popular,without%20using%20any%20other%20GUIs
+.. _GeekforGeeks: https://www.geeksforgeeks.org/style-plots-using-matplotlib/#:~:text=Matplotlib%20is%20the%20most%20popular,without%20using%20any%20other%20GUIs
 
-    .. _IUPAC nommenclature: https://en.wikipedia.org/wiki/IUPAC_nomenclature_of_inorganic_chemistry
+.. _IUPAC nommenclature: https://en.wikipedia.org/wiki/IUPAC_nomenclature_of_inorganic_chemistry
 
-    .. _Matplotlib scatter: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.scatter.html
-    .. _Matplotlib plot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
-    .. _Matplotlib pyplot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
-    .. _Matplotlib figure: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.figure.html
-    .. _Matplotlib figsuptitle: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.suptitle.html
+.. _Matplotlib scatter: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.scatter.html
+.. _Matplotlib plot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
+.. _Matplotlib pyplot: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.plot.html
+.. _Matplotlib figure: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.figure.html
+.. _Matplotlib figsuptitle: https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.suptitle.html
 
-    .. _Properties of water: https://en.wikipedia.org/wiki/Properties_of_water#Electrical_conductivity 
-    .. _pandas DataFrame: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
-    .. _pandas Series: https://pandas.pydata.org/docs/reference/api/pandas.Series.html
+.. _Properties of water: https://en.wikipedia.org/wiki/Properties_of_water#Electrical_conductivity 
+.. _pandas DataFrame: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
+.. _pandas Series: https://pandas.pydata.org/docs/reference/api/pandas.Series.html
 
-    .. _scipy.optimize.curve_fit: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
+.. _scipy.optimize.curve_fit: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
 
-    .. _Water concept: https://en.wikipedia.org/wiki/Water
-    .. _Water triple point: https://en.wikipedia.org/wiki/Properties_of_water#/media/File:Phase_diagram_of_water.svg
-    .. _WATex: https://github.com/WEgeophysics/watex/
+.. _Water concept: https://en.wikipedia.org/wiki/Water
+.. _Water triple point: https://en.wikipedia.org/wiki/Properties_of_water#/media/File:Phase_diagram_of_water.svg
+.. _WATex: https://github.com/WEgeophysics/watex/
 
-    .. _pycsamt: https://github.com/WEgeophysics/pycsamt
-    
-    .. |ohmS| replace:: Pseudo-area of the fractured zone 
-    .. |sfi| replace:: Pseudo-fracturing index 
-    .. |VES| replace:: Vertical Electrical Sounding 
-    .. |ERP| replace:: Electrical Resistivity Profiling 
-    .. |MT| replace:: Magnetetolluric 
-    .. |AMT| replace:: Audio-Magnetotellurics 
-    .. |CSAMT| replace:: Controlled Source |AMT| 
-    .. |NSAMT| replace:: Natural Source |AMT| 
-    .. |EM| replace:: electromagnetic
-    .. |EMAP| replace:: |EM| array profiling
+.. _pycsamt: https://github.com/WEgeophysics/pycsamt
 
-    """
+.. |ohmS| replace:: Pseudo-area of the fractured zone 
+.. |sfi| replace:: Pseudo-fracturing index 
+.. |VES| replace:: Vertical Electrical Sounding 
+.. |ERP| replace:: Electrical Resistivity Profiling 
+.. |MT| replace:: Magnetetolluric 
+.. |AMT| replace:: Audio-Magnetotellurics 
+.. |CSAMT| replace:: Controlled Source |AMT| 
+.. |NSAMT| replace:: Natural Source |AMT| 
+.. |EM| replace:: electromagnetic
+.. |EMAP| replace:: |EM| array profiling
+
+"""
     ) 
 )
 
@@ -472,7 +472,7 @@ data: str, filepath_or_buffer or :class:`pandas.core.DataFrame`
     `open` function or `StringIO`.
     """, 
     X= """
-X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+X:  Ndarray of shape ( M x N), :math:`M=m-samples` & :math:`N=n-features`
     training set; Denotes data that is observed at training and prediction time, 
     used as independent variables in learning. The notation is uppercase to denote 
     that it is ordinarily a matrix. When a matrix, each sample may be 
@@ -482,7 +482,7 @@ X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
     before learning a model.
     """, 
     y ="""
-y: array-like, shape (M, ) ``M=m-samples``, 
+y: array-like of shape (M, ) `:math:`M=m-samples` 
     train target; Denotes data that may be observed at training time as the 
     dependent variable in learning, but which is unavailable at prediction time, 
     and is usually the target of prediction. 
@@ -627,7 +627,6 @@ scoring: str,
     in the `Scikit-learn`_ User Guide.
     """, 
     random_state="""
-    
 random_state : int, RandomState instance or None, default=None
     Controls the shuffling applied to the data before applying the split.
     Pass an int for reproducible output across multiple function calls..    

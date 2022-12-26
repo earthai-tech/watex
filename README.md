@@ -21,35 +21,13 @@
    drilling operations and also to predict the water content in the well. This will minimize the risk of unsucessfull drillings and the hugely reduce the cost 
    of the hydrogeology parameter collections.  
  
-## Methods Implemented
-
-Until now, the methods implemented are mainly adressed to a particular problem in water exploration field. These are:
-
-- **Learning** 
- 
-    -  [Support vector machines](https://www.csie.ntu.edu.tw/~cjlin/libsvm/); Neighbors: **KNN** ; Trees: **DTC**; 
-    -  Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking);  Apriori;
-    -  Kernel Principal Component Analysis **k-PCA**; t-distributed Stochastic Neighbor Embedding **t-SNE**; Randomized PCA; Locally Linear Embedding (**LLE**)
-    -  Clusterings algorithms: KMeans, Hierachical clusters 
-     
-- **Geophysical** 
-
-    - Electrical (DC- Resistivity Profiling;  DC- Electrical Sounding ) 
-    - Electromagnetic ( Audio-frequency Magnetotelluric )
-    - Logging 
-    
-- **HydroGeology** 
-
-    - 2D stratigraphic layer modeling  
-    - Hydrogeology parameter calculations 
-    - Drillings operations and boreholes ( in progress)
-
 
 ## Documentation 
 
 * [API](https://watex.readthedocs.io/en/latest/)
-* [Home page](https://github.com/WEgeophysics/watex/wiki)
+* [Installation](https://github.com/WEgeophysics/watex/wiki)
 * [Case history using _WATex_](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
+* [User Guide ] ()
 
          
 ## Licence 
@@ -68,7 +46,7 @@ If you use the software in any published work, I will much appreciate to cite th
 
 
 ## System requirements
-* Python 3.8+ 
+* Python 3.9+ 
 
 ## Contributors
   
