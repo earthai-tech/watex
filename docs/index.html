@@ -4,22 +4,24 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
     <title>💧 WATex’s documentation &#8212; WATex 0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/copybutton.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation" href="installation.html" /> 
+    <link rel="next" title="WATex Installation" href="installation.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -31,7 +33,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="installation.html" title="Installation"
+          <a href="installation.html" title="WATex Installation"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">WATex 0.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">💧 <cite>WATex’s</cite> documentation</a></li> 
@@ -55,9 +57,6 @@ the hydrogeological parameters(e.g. the permeabilty coefficient related to the w
 Indeed, the package deals with the geophysical (DC resistivity profiling &amp; sounding, Electromagnetic for short-periods (Audio-freqency magnetotellurics)),
 logging and hydrogeology methods. The modules are written to intend solving real-engineering problems and will
 grow in the future release as the new methods are discovered especially in the GWE field.</p>
-</section>
-<section id="watex-s-development">
-<h2><cite>WATex’s</cite> development<a class="headerlink" href="#watex-s-development" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">watex</span></code> works with methods enumerated below:</p>
 <ul>
 <li><p>learning:</p>
@@ -67,12 +66,24 @@ grow in the future release as the new methods are discovered especially in the G
 <li><p><cite>Neighbors: KNN</cite></p></li>
 <li><p><cite>Trees: Decision Tree (DTC), Extratrees</cite></p></li>
 <li><p><cite>Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking)</cite></p></li>
-<li><p><cite>Apriori</cite></p></li>
-<li><p><cite>Kernel Principal Component Analysis k-PCA</cite></p></li>
+<li><p><cite>Apriori, KMeans and Hierachical Agglomerative Trees</cite></p></li>
+<li><p><cite>Kernel -Incremental- Principal Component Analysis k-PCA, i-PCA, nPCA</cite></p></li>
 <li><p><cite>t-distributed Stochastic Neighbor Embedding t-SNE</cite></p></li>
 <li><p><cite>Randomized PCA</cite></p></li>
 <li><p><cite>Locally Linear Embedding (LLE)</cite></p></li>
+<li><p><cite>more…</cite></p></li>
 </ul>
+<p>Furthermore, <code class="code docutils literal notranslate"><span class="pre">watex</span></code> implements an additional learning methods which are not implement in <a class="reference external" href="http://scikit-learn.org/stable/">scikit-learn</a> yet. These
+are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><cite>SequentialBackwardSelection</cite></p></li>
+<li><p><cite>MajorityVoteClassifier</cite></p></li>
+<li><p><cite>AdelineStochasticGradientDescent</cite></p></li>
+<li><p><cite>AdelineGradientDescent</cite></p></li>
+<li><p><cite>Perceptron</cite></p></li>
+</ul>
+</div></blockquote>
 </div></blockquote>
 </li>
 <li><p>geophysical:</p>
@@ -80,7 +91,7 @@ grow in the future release as the new methods are discovered especially in the G
 <div><ul class="simple">
 <li><p><cite>DC- Electrical Resistivity Profiling</cite></p></li>
 <li><p><cite>DC- Vertical Electrical Sounding</cite></p></li>
-<li><p><cite>Audio-frequency Magnetotellurics</cite></p></li>
+<li><p><cite>Base Electromagnetic short-period methods such as Natural Source Audio-frequency Magnetotellurics</cite></p></li>
 <li><p><cite>Logging</cite></p></li>
 </ul>
 </div></blockquote>
@@ -90,11 +101,55 @@ grow in the future release as the new methods are discovered especially in the G
 <div><ul class="simple">
 <li><p><cite>geology structures</cite></p></li>
 <li><p><cite>geostrata model conception</cite></p></li>
-<li><p><cite>borehole, drill &amp; Hydro-parameters calculation (in progress)</cite></p></li>
+<li><p><cite>borehole, drill &amp; Hydro-parameters calculation</cite></p></li>
 </ul>
 </div></blockquote>
 </li>
 </ul>
+</section>
+<section id="watex-user-guide">
+<h2><cite>WATex</cite> User Guide<a class="headerlink" href="#watex-user-guide" title="Permalink to this heading">¶</a></h2>
+<p>The user guide is composed of the <cite>installation-guide</cite> and the codes snippets implementations. Note that <code class="code docutils literal notranslate"><span class="pre">watex</span></code>
+is not available on PyPI or conda-forge yet. For installation , use the repo installation instead. The code snippets
+for pratical examples are not exhaustive. It is just made as field guide for users. Throughout the design of
+<code class="code docutils literal notranslate"><span class="pre">watex</span></code>, many examples support all functions, methods and classes in docstrings.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html"><cite>WATex</cite> Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#system-requirement">System requirement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#dependencies">Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="demo/tutorials.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="demo/qdemo.html">Quick View</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demo/edemo.html">DC-parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demo/hdemo.html">k-prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demo/hdemo.html#prediction-of-nga-labels">Prediction of NGA labels</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="watex-api">
+<h2><cite>WATex</cite> API<a class="headerlink" href="#watex-api" title="Permalink to this heading">¶</a></h2>
+<p>The package follows the modular approach of existing software like <a class="reference external" href="http://scikit-learn.org/stable/">scikit-learn</a> and a bit more GMT (Wessel and Smith, 1998).  It mostly uses scikit-learn  classes as a top-level module for the predictions. The <code class="code docutils literal notranslate"><span class="pre">watex</span></code> API follows the scheme below:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>choose the class of model by importing the appropriate module, class estimator, or assessor. The assessor is the class of the module designed for solving a specific task.</p></li>
+<li><p>choose model hyperparameters by instantiating this class with desired values.</p></li>
+<li><p>arrange data into a feature matrix and target vector following the discussion from before.</p></li>
+<li><p>fit the model to your data by calling the <cite>fit()</cite> method of the instantiated model even the plotting modules.</p></li>
+<li><p>apply the method to a new data. For supervising learning, often labels are predicted for unknown data using the prediction methods whereas for unsupervised learning, the data are often transformed or inferred properties using the <cite>transform ()</cite> of <cite>predict ()</cite> methods.</p></li>
+</ul>
+</div></blockquote>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Reference API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/watex.html">watex package</a></li>
+</ul>
+</div>
 </section>
 <section id="watex-s-benefits">
 <h2><cite>WATex’s</cite> benefits<a class="headerlink" href="#watex-s-benefits" title="Permalink to this heading">¶</a></h2>
@@ -103,31 +158,6 @@ during the campaigns for drinking water supply. It aims computing some geoelectr
 using the DC-resistivity method (Resistivity Profiling and vertical sounding) and used the
 <cite>Support vector machines</cite> for the FR prediction with a success rate greater than 77% . The case history is published in
 <a class="reference external" href="https://doi.org/10.1029/2021wr031623">Water Resources Research</a> journal known as one of the most popular journal in the GWE field research.</p>
-</section>
-<section id="watex-user-guide">
-<h2><cite>WATex</cite> User Guide<a class="headerlink" href="#watex-user-guide" title="Permalink to this heading">¶</a></h2>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html"><strong>Installation</strong></a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html"><strong>Getting started</strong></a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials.html"><strong>Tutorials</strong></a></li>
-<li class="toctree-l1"><a class="reference internal" href="script.html"><strong>Command line interface</strong></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="script.html#watex-commands-in-progress-not-available-yet"><code class="code docutils literal notranslate"><span class="pre">watex</span></code> commands (<cite>in progress- not available yet</cite>)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="script.html#extending-the-command-line-interface">Extending the command line interface</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</section>
-<section id="watex-api">
-<h2><cite>WATex</cite> API<a class="headerlink" href="#watex-api" title="Permalink to this heading">¶</a></h2>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Reference API</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="api/watex.html">watex package</a></li>
-</ul>
-</div>
 </section>
 </section>
 <section id="indices-and-tables">
@@ -151,10 +181,9 @@ using the DC-resistivity method (Resistivity Profiling and vertical sounding) an
     <ul>
 <li><a class="reference internal" href="#">💧 <cite>WATex’s</cite> documentation</a><ul>
 <li><a class="reference internal" href="#a-machine-learning-research-for-hydrogeophysic"><cite>A machine learning research for hydrogeophysic</cite></a></li>
-<li><a class="reference internal" href="#watex-s-development"><cite>WATex’s</cite> development</a></li>
-<li><a class="reference internal" href="#watex-s-benefits"><cite>WATex’s</cite> benefits</a></li>
 <li><a class="reference internal" href="#watex-user-guide"><cite>WATex</cite> User Guide</a></li>
 <li><a class="reference internal" href="#watex-api"><cite>WATex</cite> API</a></li>
+<li><a class="reference internal" href="#watex-s-benefits"><cite>WATex’s</cite> benefits</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
@@ -164,7 +193,7 @@ using the DC-resistivity method (Resistivity Profiling and vertical sounding) an
   <div>
     <h4>Next topic</h4>
     <p class="topless"><a href="installation.html"
-                          title="next chapter"><strong>Installation</strong></a></p>
+                          title="next chapter"><cite>WATex</cite> Installation</a></p>
   </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -197,7 +226,7 @@ using the DC-resistivity method (Resistivity Profiling and vertical sounding) an
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="installation.html" title="Installation"
+          <a href="installation.html" title="WATex Installation"
              >next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">WATex 0.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">💧 <cite>WATex’s</cite> documentation</a></li> 
@@ -205,7 +234,7 @@ using the DC-resistivity method (Resistivity Profiling and vertical sounding) an
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2022, LKouadio.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
     </div>
   </body>
 </html>

@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-💧 `WATex's` documentation 
+💧 `WATex's` documentation
 ==============================
 
 `A machine learning research for hydrogeophysic` 
@@ -18,12 +18,6 @@ the hydrogeological parameters(e.g. the permeabilty coefficient related to the w
 Indeed, the package deals with the geophysical (DC resistivity profiling & sounding, Electromagnetic for short-periods (Audio-freqency magnetotellurics)), 
 logging and hydrogeology methods. The modules are written to intend solving real-engineering problems and will 
 grow in the future release as the new methods are discovered especially in the GWE field.   
-
-.. _WATex: https://github.com/WEgeophysics/watex/
-.. _scikit-learn: http://scikit-learn.org/stable/
-
-`WATex's` development 
-^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :code:`watex` works with methods enumerated below: 
 
@@ -53,7 +47,7 @@ grow in the future release as the new methods are discovered especially in the G
 
     * `DC- Electrical Resistivity Profiling`
     * `DC- Vertical Electrical Sounding`
-    * `Base Electromagnetic short-period methods such as Audio-frequency Magnetotellurics`
+    * `Base Electromagnetic short-period methods such as Natural Source Audio-frequency Magnetotellurics`
     * `Logging`
     
 * hydrogeology: 
@@ -61,7 +55,44 @@ grow in the future release as the new methods are discovered especially in the G
     * `geology structures` 
     * `geostrata model conception`  
     * `borehole, drill & Hydro-parameters calculation`
+	
 
+.. _WATex: https://github.com/WEgeophysics/watex/
+.. _scikit-learn: http://scikit-learn.org/stable/
+
+
+`WATex` User Guide 
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user guide is composed of the `installation-guide` and the codes snippets implementations. Note that :code:`watex`
+is not available on PyPI or conda-forge yet. For installation , use the repo installation instead. The code snippets 
+for pratical examples are not exhaustive. It is just made as field guide for users. Throughout the design of 
+:code:`watex`, many examples support all functions, methods and classes in docstrings.  
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+   
+   installation
+   demo/tutorials	
+
+`WATex` API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The package follows the modular approach of existing software like `scikit-learn`_ and a bit more GMT (Wessel and Smith, 1998).  It mostly uses scikit-learn  classes as a top-level module for the predictions. The :code:`watex` API follows the scheme below: 
+	
+	* choose the class of model by importing the appropriate module, class estimator, or assessor. The assessor is the class of the module designed for solving a specific task. 
+	* choose model hyperparameters by instantiating this class with desired values. 
+	* arrange data into a feature matrix and target vector following the discussion from before. 
+	* fit the model to your data by calling the `fit()` method of the instantiated model even the plotting modules. 
+	* apply the method to a new data. For supervising learning, often labels are predicted for unknown data using the prediction methods whereas for unsupervised learning, the data are often transformed or inferred properties using the `transform ()` of `predict ()` methods. 
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference API
+
+   api/watex
+   
 `WATex's` benefits
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -74,28 +105,6 @@ using the DC-resistivity method (Resistivity Profiling and vertical sounding) an
 .. _Water Resources Research: https://doi.org/10.1029/2021wr031623
 
 
-`WATex` User Guide 
-^^^^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-   
-   installation
-   getting_started
-   demo/tutorials	
-   scripts
-
-
-`WATex` API
-^^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Reference API
-
-   api/watex
-   
 Indices and tables
 ==================
 
