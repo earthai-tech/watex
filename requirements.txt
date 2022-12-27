@@ -40,4 +40,5 @@ openpyxl
 h5py >=3.2.0
 nbsphinx 
 myst_nb
+python-latex
 
