@@ -1,8 +1,8 @@
 .. _api_ref:
 
-=============
-Home
-=============
+================
+API Reference
+================
 
 This is the class and function reference of watex. Please refer to
 the :ref:`full user guide <user_guide>` for further details, as the class and
