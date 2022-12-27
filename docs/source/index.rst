@@ -74,6 +74,7 @@ for pratical examples are not exhaustive. It is just made as field guide for use
    :caption: Contents:
    
    installation
+   api_references
    demo/tutorials	
 
 `WATex` API

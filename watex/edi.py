@@ -3,9 +3,6 @@
 # @author: Daniel
 #  Licence: BS3-clause 
 """
-Module EDI 
-===========
-
 EDI stands for Electrical Data Interchange module can read and write an *.edi 
 file as the 'standard ' proposed by [1]_. Each section of the .edi 
 file belongs to a class object, thus the elements of each section are attributes 
@@ -990,6 +987,14 @@ class Edi :
         return edi_fn
     
 Edi.__doc__="""\
+EDI stands for Electrical Data Interchange module can read and write an *.edi 
+file as the 'standard ' proposed by [1]_.
+
+Each section of the .edi file belongs to a class object, thus the elements of 
+each section are attributes for easy access. Edi is outputted  following 
+the SEG documentation and rules  of EMAP (Electromagnetic  Array Profiling) 
+and MT sections. 
+
 Ediclass  is for especialy dedicated to .edi files, mainly reading 
 and writingwhich are meant to follow the archaic EDI format put forward 
 by SEG. Can read impedance, Tipper but not spectra. To read spectra format
@@ -1038,7 +1043,11 @@ _phs_comps:list
 Notes
 ------
 Frequency and components are ordered from highest to lowest frequency.
-    
+ 
+References 
+----------
+.. [1] Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 1rt ed.
+     Society of Exploration Geophysicists, Texas 7831, USA. 
 
 Examples 
 ------------

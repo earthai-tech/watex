@@ -56,7 +56,7 @@ def compute_scores(X, n_features , n_components = 5):
     return pca_scores, fa_scores
 
 compute_scores.__doc__ ="""\
-Compute PCA score and Factor Analysis scores from training X 
+Compute PCA score and Factor Analysis scores from training X. 
   
 Parameters 
 -----------
@@ -78,7 +78,8 @@ def shrunk_cov_score(X):
     return np.mean(cross_val_score(cv.fit(X).best_estimator_, X))
 
 shrunk_cov_score.__doc__="""\
-shrunk the covariance scores 
+shrunk the covariance scores.
+ 
 Parameters 
 -----------
 {params.X} 
@@ -156,7 +157,7 @@ def compare_pca_and_fa_analysis (
     
 compare_pca_and_fa_analysis.__doc__="""\
 Compute PCA score and Factor Analysis scores from training X and compare  
-probabilistic PCA and Factor Analysis  models
+probabilistic PCA and Factor Analysis  models.
   
 Parameters 
 -----------

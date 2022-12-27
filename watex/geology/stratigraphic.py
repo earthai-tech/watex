@@ -30,11 +30,9 @@ from .core import (
 from .database import ( 
     GeoDataBase,
     )
-from ..utils.coreutils import ( 
-    serialize_data, 
-    load_serialized_data, 
-    )
 from ..utils.funcutils import ( 
+    serialize_data, 
+    load_serialized_data,
     smart_format, 
     concat_array_from_list,
     parse_json, 
@@ -67,6 +65,8 @@ else:
     import tqdm 
     TQDM = True 
 _logger = watexlog().get_watex_logger(__name__ )
+
+__all__=["GeoStrataModel"]
 
 #XXXTODO: add MODEM construction block  in progress 
 class GeoStrataModel(Base):

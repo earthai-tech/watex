@@ -50,6 +50,7 @@ from ..exceptions import (
 
 _logger =watexlog().get_watex_logger(__name__)
 
+__all__=["BaseModel"] 
 
 class BaseModel: 
     """

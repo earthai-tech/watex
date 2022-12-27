@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 27 15:59:14 2022
-
-@author: Daniel
-"""
 
 import pathlib
 import os

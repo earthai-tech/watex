@@ -4,8 +4,6 @@
 #   Created on Tue Oct  5 15:09:46 2021
 
 """
-Metrics
-==========
 
 Metrics are measures of quantitative assessment commonly used for 
 assessing, comparing, and tracking performance or production. Generally,

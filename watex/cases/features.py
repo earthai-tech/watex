@@ -39,10 +39,11 @@ from ..utils.gistools import (
 from ..utils.coreutils import _is_readable 
 from watex._watexlog import watexlog 
 
+__all__=['GeoFeatures', 'FeatureInspection'] 
+
+__docformat__='restructuredtext' 
 _logger =watexlog().get_watex_logger(__name__)
 
-
-__docformat__='restructuredtext'
 
 class GeoFeatures: 
     """

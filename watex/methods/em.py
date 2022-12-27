@@ -1477,17 +1477,17 @@ class Processing (EM) :
             the structures is 3D. 
         
         Returns 
-        ------- 
+        --------- 
         skw, mu : Tuple of ndarray-like , shape (N, M )
             - Array of skew at each frequency 
             - rotational invariant ``mu`` at each frequency. 
             
+            
         See also 
-        -------- 
-        
-        The |EM| signal is influenced by several factors such as the dimensionality
+        ----------- 
+        The EM signal is influenced by several factors such as the dimensionality
         of the propagation medium and the physical anomalies, which can distort the
-        |EM| field both locally and regionally. The distortion of Z was determined 
+        EM field both locally and regionally. The distortion of Z was determined 
         from the quantification of its asymmetry and the deviation from the conditions 
         that define its dimensionality. The parameters used for this purpose are all 
         rotational invariant because the Z components involved in its definition are
@@ -1495,7 +1495,9 @@ class Processing (EM) :
         parameter based on the Z magnitude is the skew defined by Swift (1967) as
         follows:
         
-        .. math:: skew_{swift}= |\frac{Z_{xx} + Z_{yy}}{ Z_{xy} - Z_{yx}}| 
+        .. math:: 
+        
+            skew_{swift}= |\frac{Z_{xx} + Z_{yy}}{ Z_{xy} - Z_{yx}}| 
             
         When the :math:`skew_{swift}`  is close to ``0.``, we assume a 1D or 2D model
         when the :math:`skew_{swift}` is greater than ``>=0.2``, we assume 3D local 
