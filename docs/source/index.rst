@@ -91,8 +91,8 @@ The package follows the modular approach of existing software like `scikit-learn
    :maxdepth: 1
    :caption: Reference API
 
-   api_references
    api/watex
+   api_references
    
 `WATex's` benefits
 ^^^^^^^^^^^^^^^^^^^^
