@@ -74,7 +74,6 @@ for pratical examples are not exhaustive. It is just made as field guide for use
    :caption: Contents:
    
    installation
-   api_references
    demo/tutorials	
 
 `WATex` API
@@ -92,6 +91,7 @@ The package follows the modular approach of existing software like `scikit-learn
    :maxdepth: 1
    :caption: Reference API
 
+   api_references
    api/watex
    
 `WATex's` benefits
