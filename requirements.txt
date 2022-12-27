@@ -1,6 +1,7 @@
 #sphinx>=2.4.0
 sphinx >=3.5
 sphinx_rtd_theme
+sphinxcontrib-jsmath 
 cython
 matplotlib>=3.3.0
 #numpy>=1.23.3
