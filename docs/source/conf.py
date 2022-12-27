@@ -61,7 +61,7 @@ release = '0.1'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
-    'sphinx.ext.jsmath',
+    #'sphinx.ext.jsmath',
     'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
     'sphinx.ext.coverage',
