@@ -136,6 +136,7 @@ load_gbalo.__doc__ ="""\
 A DC-Electrical resistivity profiling (ERP) and Vertical sounding  (VES) data
 collected from a Gbalo locality during the National Drinking Water Supply 
 Program (PNAEP) occurs in 2012-2014 in `Cote d'Ivoire`_.
+
 Refer to :doc:`~watex._docstring.erp_doc.__doc__` and 
 :doc:`~watex._docstring.ves_doc.__doc__` for illustrating the data arrangement 
 is following: 
@@ -450,6 +451,7 @@ def load_bagoue(
 
 load_bagoue.__doc__=r"""\
 Load and return the Bagoue dataset (classification).
+
 The Bagoue dataset is a classic and very easy multi-class classification
 dataset.
 

@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """ 
-Exceptions 
-=============
-
-Each exception is related to its modules following py the suffix `Error`. It 
-inherits from top BaseExceptiom of Python build-in functions. To drop or change 
-any exception here, after any change, move to its reference  module to change 
-it so.  
+:code:`watex` Exceptions 
 
 
 """

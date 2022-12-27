@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Cases: Pratical cases 
-=======================
 the 'cases' subpackage implements function and modules already validated and 
 used to solve real engineering problems like the FR predictions and boosting 
 using the bases learners , SVC  and  ensembles paradigms. 
@@ -12,6 +10,7 @@ is look like. This can figure out the next processing steps for solving the
 evidence problem. 
 
 """
+
 from .prepare import ( 
     BaseSteps, 
     default_pipeline, 
@@ -25,9 +24,10 @@ from .processing import (
 from .modeling import ( 
     BaseModel 
     )
+    
 from .features import ( 
     GeoFeatures,
-    FeatureInspection, 
+    FeatureInspection
 )
 
 __all__=[

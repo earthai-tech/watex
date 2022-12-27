@@ -3,6 +3,7 @@
 # Copyright (c) 2007-2022 The scikit-learn developers.
 # All rights reserved.
 """Tools to support array_api."""
+
 import numpy
 
 class _ArrayAPIWrapper:

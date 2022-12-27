@@ -3,107 +3,17 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created date: Fri Apr 15 10:46:56 2022
 
-"""
-`WATex`_ property objects 
-=========================
+"""\
 
-**Water**: Base class module. It contains all the water properties usefull 
-    for pure hydrogeological module writting. Instanciated the class should 
-    raise an error, however, its special attributes can be used by the child 
-    class object. 
-    
-**BasePlot**: The base class of all plots. It can be the parent class of all 
-    other plotting classes. The module :mod:`~.view.plot` uses the `BasePlot`
-    class for `Matplotlib plot`_.
-    
-**P**: Is a property class that handles the |ERP| and |VES| attributes. Along 
-    the :mod:`~.methods.electrical`, it deals with the electrical dipole 
-    arrangements, the data classsification and assert whether it is able to 
-    be read by the scripts. It is a lind of "asserter". Accept data or reject 
-    data provided by the used indicated the way to sanitize it before feeding 
-    to the algorithm:: 
-        
-        >>> from watex.property import P 
-        >>> pObj = P() 
-        >>> P.idictags 
-        ... <property at 0x15b2248a450>
-        >>> pObj.idicttags 
-        ... {'station': ['pk', 'sta', 'pos'],
-        ...     'resistivity': ['rho', 'app', 'res', 'se', 'sounding.values'],
-        ...     'longitude': ['long', 'lon'],
-        ...     'latitude': ['lat'],
-        ...     'easting': ['east', 'x'],
-        ...     'northing': ['north', 'y']}
-        >>> rphead = ['res', 'x', 'y', '']
-        >>> pObj (rphead) # sanitize the given resistivity profiling head data.
-        ... ['resistivity', 'easting', 'northing']
-        >>> rphead = ['lat', 'x', 'rho', '']
-        ... ['latitude', 'easting', 'resistivity']
-        >>> rphead= ['pos', 'x', 'lon', 'north', 'latitud', 'app.res' ]
-        >>> pObj (rphead)
-        ... ['station', 'easting', 'longitude', 'northing', 'latitude', 'resistivity'] 
-        >>> # --> for sounding head assertion 
-        >>> vshead=['ab', 's', 'rho', 'potential']
-        >>> pObj (vshead, kind ='ves')
-        ... ['AB', 'resistivity'] # in the list of vshead, 
-        ... # only 'AB' and 'resistivity' columns are recognized. 
-        
-**BagoueNotes**: Give some details about the test dataset used throughout the 
-    `WATex`_ packages. It is a guidance for the user to get anay details about
-    the data preprocessed in order to wuick implement or testing the method.
-    Some examples to fetching infos and data are illustrated below:: 
-        
-        >>> from watex.datasets import fetch_data
-        >>> bag_records = fetch_data('original').get('DESCR')
-        ... 'https://doi.org/10.5281/zenodo.5571534: bagoue-original'
-        >>> data_contests =fetch_data('original').get('dataset-contest') 
-        ... {'__documentation:': '`watex.property.BagoueNotes.__doc__`',
-        ...     '__area': 'https://en.wikipedia.org/wiki/Ivory_Coast',
-        ...     '__casehistory': 'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
-        ...     '__wikipages': 'https://github.com/WEgeophysics/watex/wiki',
-        ...     '__citations': ('https://doi.org/10.1029/2021wr031623',
-        ...      ' https://doi.org/10.5281/zenodo.5529368')}
-        >>> #-->  fetching X, y dat
-        >>> # get the list of tags before 
-        >>> tags=fetch_data('original').get('tags')
-        ... ('Bagoue original', ...,'Bagoue prepared sets', 'Bagoue untouched test sets')
-        >>> len(tags)
-        ... 11 
-        >>> --> fetch the preprocessing sets of data 
-        >>> X, y = fetch_data('preprocessing')
-        >>> X.shape , y.shape 
-        ... ((344, 8), (344,)) 
-        >>> list(X.columns) 
-        ... ['power', 'magnitude', 'sfi', 'ohmS', 'lwi', 'shape', 'type', 'geol']
-        >>> X, y = fetch_data('prepared') # data are vectorized and onehotencoded 
-        ... ((344, 18), (344,))
-        >>> X, y = fetch_data('test sets')
-        >>> X.shape , y.shape
-        ... ((87, 12), (87,))
-        
-**ElectricalMethods**: Is another Base class of :mod:`~.methods.electrical` 
-    especially the :class:`~.methods.electrical.ResistivityProfiling` and 
-    :class:`~.methods.electrical.VerticalSounding`. It is composed of the 
-    details of geolocalisation of the survey area and the array configuration. 
-    It expects to hold other attributes as the development is still ongoing.
-     
-**IsEdi**: Is an abstract Base class for control the valid EDI. It is also 
-    used to ckeck whether object is an instance of EDI object. For instance:: 
-    
-        >>> import pycsamt
-        >>> from watex.property import IsEdi 
-        >>> from watex.methods.em import EM
-        >>> IsEdi.register (pycsamt.core.edi.Edi )
-        >>> ediObj= EM().fit(r'data/edis').ediObjs_ [0] # one edi-file for assertion 
-        >>> isinstance (ediObj, IsEdi)
-        ... True 
+:code:`watex` property objects 
 
 .. _WATex: https://github.com/WEgeophysics/watex/
 .. |ERP| replace:: Electrical resistivity profiling 
 .. |VES| replace:: Vertical Electrical Sounding 
 .. _interpol_imshow: https://matplotlib.org/stable/gallery/images_contours_and_fields/interpolation_methods.html
 
-"""
+"""   
+
 # import warnings 
 from __future__ import annotations 
 import os 
@@ -138,7 +48,7 @@ __all__ = [
     "Person", 
 ]
 
-  
+
 UTM_DESIGNATOR ={
     'X':[72,84], 
     'W':[64,72], 
@@ -300,7 +210,9 @@ _TIP_COMPS =[
 @refAppender(refglossary.__doc__) 
 class Water (ABC): 
     r""" Should be a SuperClass for methods classes which deals with water 
-    properties and components. Instanciate the class shoud raise an error. 
+    properties and components. 
+    
+    Instanciate the class shoud raise an error.  
     
     Water (H2O) is a polar inorganic compound that is at room temperature a 
     tasteless and odorless liquid, which is nearly colorless apart from an 
@@ -831,7 +743,10 @@ class ElectricalMethods (ABC) :
     
     The :class:`watex.methods.electrical.ElectricalMethods` compose the base 
     class of all the geophysical methods that images the underground using 
-    the resistivity values. 
+    the resistivity values. Is another Base class of :mod:`~.methods.electrical` 
+    especially the :class:`~.methods.electrical.ResistivityProfiling` and 
+    :class:`~.methods.electrical.VerticalSounding`. It is composed of the 
+    details of geolocalisation of the survey area and the array configuration. 
     
     Holds on others optionals infos in ``kws`` arguments: 
        
@@ -922,13 +837,28 @@ class ElectricalMethods (ABC) :
 class IsEdi(ABC): 
     """ Assert SEG MT/EMAP Data Interchange Standard EDI-file .
     
+    Is an abstract Base class for control the valid EDI [1]_. It is also 
+    used to ckeck whether object is an instance of EDI object.
+    
     EDI stands for Electrical Data Interchange module can read and write an *.edi 
     file as the 'standard ' format of magnetotellurics. Each section of the .edi 
     file belongs to a class object, thus the elements of each section are attributes 
     for easy access. Edi is outputted  following the SEG documentation and rules  
     of EMAP (Electromagnetic  Array Profiling) and MT sections. 
     
-    * [1]  Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 
+    Examples 
+    --------
+    >>> import pycsamt
+    >>> from watex.property import IsEdi 
+    >>> from watex.methods.em import EM
+    >>> IsEdi.register (pycsamt.core.edi.Edi )
+    >>> ediObj= EM().fit(r'data/edis').ediObjs_ [0] # one edi-file for assertion 
+    >>> isinstance (ediObj, IsEdi)
+    ... True 
+    
+    References 
+    ------------
+    .. [1]  Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 
     1rt ed. Society of Exploration Geophysicists, Texas 7831, USA.
     
     """
@@ -995,6 +925,13 @@ class P:
     Data properties are values that are hidden to avoid modifications alongside 
     the packages. Its was used for assertion, comparison etceteara. These are 
     enumerated below into a property objects.
+    
+    Is a property class that handles the |ERP| and |VES| attributes. Along 
+    the :mod:`~.methods.electrical`, it deals with the electrical dipole 
+    arrangements, the data classsification and assert whether it is able to 
+    be read by the scripts. It is a lind of "asserter". Accept data or reject 
+    data provided by the used indicated the way to sanitize it before feeding 
+    to the algorithm.
 
     .. |ERP| replace:: Electrical resistivity profiling 
     
@@ -1057,7 +994,30 @@ class P:
          'isenr': <property at 0x1ec1f2c3db0>}
     >>> P().isrll 
     ... ['station','resistivity','longitude','latitude']
-
+    >>> from watex.property import P 
+    >>> pObj = P() 
+    >>> P.idictags 
+    ... <property at 0x15b2248a450>
+    >>> pObj.idicttags 
+    ... {'station': ['pk', 'sta', 'pos'],
+    ...     'resistivity': ['rho', 'app', 'res', 'se', 'sounding.values'],
+    ...     'longitude': ['long', 'lon'],
+    ...     'latitude': ['lat'],
+    ...     'easting': ['east', 'x'],
+    ...     'northing': ['north', 'y']}
+    >>> rphead = ['res', 'x', 'y', '']
+    >>> pObj (rphead) # sanitize the given resistivity profiling head data.
+    ... ['resistivity', 'easting', 'northing']
+    >>> rphead = ['lat', 'x', 'rho', '']
+    ... ['latitude', 'easting', 'resistivity']
+    >>> rphead= ['pos', 'x', 'lon', 'north', 'latitud', 'app.res' ]
+    >>> pObj (rphead)
+    ... ['station', 'easting', 'longitude', 'northing', 'latitude', 'resistivity'] 
+    >>> # --> for sounding head assertion 
+    >>> vshead=['ab', 's', 'rho', 'potential']
+    >>> pObj (vshead, kind ='ves')
+    ... ['AB', 'resistivity'] # in the list of vshead, 
+    ... # only 'AB' and 'resistivity' columns are recognized. 
     """
     
     station_prefix   = [
@@ -1299,11 +1259,43 @@ class BagoueNotes:
     The configuration used during the ERP is Schlumberger with distance of
     :math:`AB = 200m \quad \text{and} \quad  MN =20m`.
     
-    Refer to `FlowRatePredictionUsingSVMs`_ for further details. 
+    Examples 
+    -----------
+    Give some details about the test dataset used throughout the 
+    `WATex`_ packages. It is a guidance for the user to get anay details about
+    the data preprocessed in order to wuick implement or testing the method.
+    Some examples to fetching infos and data are illustrated below:: 
+        
+    >>> from watex.datasets import fetch_data
+    >>> bag_records = fetch_data('original').get('DESCR')
+    ... 'https://doi.org/10.5281/zenodo.5571534: bagoue-original'
+    >>> data_contests =fetch_data('original').get('dataset-contest') 
+    ... {'__documentation:': '`watex.property.BagoueNotes.__doc__`',
+    ...     '__area': 'https://en.wikipedia.org/wiki/Ivory_Coast',
+    ...     '__casehistory': 'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
+    ...     '__wikipages': 'https://github.com/WEgeophysics/watex/wiki',
+    ...     '__citations': ('https://doi.org/10.1029/2021wr031623',
+    ...      ' https://doi.org/10.5281/zenodo.5529368')}
+    >>> #-->  fetching X, y dat
+    >>> # get the list of tags before 
+    >>> tags=fetch_data('original').get('tags')
+    ... ('Bagoue original', ...,'Bagoue prepared sets', 'Bagoue untouched test sets')
+    >>> len(tags)
+    ... 11 
+    >>> --> fetch the preprocessing sets of data 
+    >>> X, y = fetch_data('preprocessing')
+    >>> X.shape , y.shape 
+    ... ((344, 8), (344,)) 
+    >>> list(X.columns) 
+    ... ['power', 'magnitude', 'sfi', 'ohmS', 'lwi', 'shape', 'type', 'geol']
+    >>> X, y = fetch_data('prepared') # data are vectorized and onehotencoded 
+    ... ((344, 18), (344,))
+    >>> X, y = fetch_data('test sets')
+    >>> X.shape , y.shape
+    ... ((87, 12), (87,))
+        
     
     .. _repository docs: https://github.com/WEgeophysics/watex#documentation>
-    
-    .. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
     
     """
     bagkeys = ('num',
@@ -1684,8 +1676,7 @@ class Software:
             setattr(self, key, kws[key]) 
             
                 
-    
-    
+
     
     
     
