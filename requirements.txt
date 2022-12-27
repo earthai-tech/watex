@@ -7,7 +7,7 @@ matplotlib>=3.3.0
 numpy
 scipy
 scikit-learn
-sklearn 
+#sklearn 
 qtpy
 netcdf4
 numpydoc >=1.0.0
@@ -38,6 +38,8 @@ openpyxl
 h5py >=3.2.0
 nbsphinx 
 myst_nb
+jupytext
 python-latex
 sphinxcontrib-jsmath 
+
 
