@@ -1,12 +1,13 @@
 #sphinx>=2.4.0
 sphinx >=3.5
 sphinx_rtd_theme
-sphinxcontrib-jsmath 
 cython
 matplotlib>=3.3.0
 # numpy>=1.23.3
 numpy
 scipy
+scikit-learn
+sklearn 
 qtpy
 netcdf4
 numpydoc >=1.0.0
@@ -21,7 +22,6 @@ pyproj>=1.9.6
 pandas
 python-coveralls
 # sklearn >=1.1 
-sklearn 
 joblib
 seaborn
 tqdm
@@ -39,4 +39,5 @@ h5py >=3.2.0
 nbsphinx 
 myst_nb
 python-latex
+sphinxcontrib-jsmath 
 
