@@ -12,14 +12,13 @@
 
 ##  Goals and Missions 
 
-**_WATex_** is entirely written in Python with supplemental materials implemented in Jupyter notebook.
-  The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** 
-   and secondly to participate in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) achievement.
-   It encompasses different methods: from geophysical (Electrical to Electromagnetic) to hydrogeology (drilling and parameters calculation) methods 
-   mainly focusing on the field of groundwater explorations. The use of machine learning methods in the hydrogeophysic parameter predictions 
-   such as the DC-elctrical and hydrogeology parameters will allow to right locate the place for the
-   drilling operations and also to predict the water content in the well. This will minimize the risk of unsucessfull drillings and the hugely reduce the cost 
-   of the hydrogeology parameter collections.  
+**_WATex_** is a Python  library for reducing numerous losses during the hydro-geophysical exploration projects (HGEP).
+  The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** such 
+   as participating in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/)and [Africa Agenda 2063 N1](https://au.int/en/agenda2063/flagship-projects#)  achievements.
+   It encompasses different methods: DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short-periods EM, geology and hydrogeology parameters calculation methods. 
+   It is mainly focused on the field of groundwater exploration. The use of machine learning methods using the hydro-geophysics parameter for predictions 
+   such as the DC and hydrogeology parameters will first allow to right locate the place for the
+   drilling operations and also to predict the water content in the well such the collection of the permeability coefficient (k) which are very costly in HGEP. Henceforth, `watex` should be an alternative package for minimizing  the numerous unsucessfull drillings, k-data collection, etc. This is beneficial for funders, state governements, geophysical and drilling ventures. 
  
 
 ## Documentation 
@@ -28,9 +27,9 @@
 * [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
 * [Installation](https://watex.readthedocs.io/en/latest/installation.html)
 * [Code snippets](https://watex.readthedocs.io/en/latest/demo/tutorials.html)
-  * *Example of DC & EM parameters computation [--->](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/edemo.ipynb)*
-  * *Example of Naive Aquifer predicting usefull for k-prediction [--->](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/hdemo.ipynb)*
-  * *Example of Exploratory and feature analyses plots [--->](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/qdemo.ipynb)*
+  * *Example of DC & EM parameters computation useful for [FR prediction](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/edemo.ipynb)*
+  * *Example of Naive Aquifer predicting useful for [k-prediction](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/hdemo.ipynb)*
+  * *Example of exploratory and feature analyses [visualization](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/qdemo.ipynb)*
 * [Case history using _WATex_](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
 
          
