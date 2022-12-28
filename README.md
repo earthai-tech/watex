@@ -6,7 +6,7 @@
  [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
  ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
   ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/WEgeophysics/watex?logo=appveyor) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6657013.svg)](https://doi.org/10.5281/zenodo.6657013)
-  ![GitHub release (latest by date)](https://img.shields.io/github/v/release/WEgeophysics/watex) 
+  ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/WEgeophysics/watex?logo=python)
   ![GitHub issues](https://img.shields.io/github/issues/WEgeophysics/watex)
 
 
