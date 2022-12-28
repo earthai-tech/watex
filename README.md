@@ -31,6 +31,7 @@
   * *Example of Naive Aquifer predicting useful for [k-prediction](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/hdemo.ipynb)*
   * *Example of exploratory and feature analyses [visualization](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/qdemo.ipynb)*
 * [Case history using _WATex_](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
+* [wiki page](https://github.com/WEgeophysics/watex/wiki) 
 
          
 ## Licence 
