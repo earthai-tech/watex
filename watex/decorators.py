@@ -948,14 +948,15 @@ class visualize_valearn_curve :
 
             if switch  is not None :
                 self.turn =switch 
-            if param_range is not None :
-                self.k= param_range 
+                
+            # if param_range is not None :
+            #     k= param_range 
                 
             plt.figure(figsize=self.fig_size)
 
             if self.turn in ['on', 1, True]: 
                 # if not isinstance(param_range, bool): 
-                self._plot_train_val_score(train_score, val_score)
+                self._plot_train_val_score(train_score, val_score, k=param_range )
       
                 if self.savefig is not None: 
                     if isinstance(self.savefig, dict):
@@ -969,7 +970,7 @@ class visualize_valearn_curve :
         
         return viz_val_decorated
     
-    def _plot_train_val_score (self, train_score, val_score): 
+    def _plot_train_val_score (self, train_score, val_score, k): 
         """ loop to plot the train val score""" 
         if not isinstance(train_score, dict):
             train_score={'_':train_score}
@@ -981,44 +982,43 @@ class visualize_valearn_curve :
                 val_score[trainkey] *=100 
             try: 
                 if self.scatterplot: 
-                    plt.scatter(self.k,
+                    plt.scatter(k,
                                 val_score[trainkey].mean(axis=1),
                                 **self.val_kws 
                                 )
-                    plt.scatter(self.k,
+                    plt.scatter(k,
                                 trainval.mean(axis=1) ,
                                 **self.train_kws
                            )
             except : 
                 # if exception occurs maybe from matplotlib properties 
                 # then run the line plot 
-                plt.plot(self.k, 
+                plt.plot(k, 
                          val_score[trainkey].mean(axis=1),
                          **self.val_kws
                          )
 
-                plt.plot(self.k,
+                plt.plot(k,
                          trainval.mean(axis=1),
                          **self.train_kws
                          )
             try : 
                 if self.lineplot : 
-                    plt.plot(self.k, 
+                    plt.plot(k, 
                              val_score[trainkey].mean(axis=1),
                              **self.val_kws
                              )
 
-                    plt.plot(self.k, 
+                    plt.plot(k, 
                              trainval.mean(axis=1),
                              **self.train_kws
                              )
             except : 
             
-                plt.scatter(self.k, 
-                            val_score[trainkey].mean(axis=1),
+                plt.scatter(k, val_score[trainkey].mean(axis=1),
                             **self.val_kws 
                             )
-                plt.scatter(self.k,
+                plt.scatter(k,
                             trainval.mean(axis=1) ,
                        **self.train_kws
                        )

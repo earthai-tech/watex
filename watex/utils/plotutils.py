@@ -41,16 +41,19 @@ from .validator import  (
     check_consistent_length
     )
 from ._dependency import import_optional_dependency 
-from watex.exlib.sklearn import ( 
-    learning_curve ,   
-    confusion_matrix, 
-    RandomForestClassifier, 
-    LogisticRegression, 
-    MinMaxScaler, 
-    SimpleImputer, 
-    KMeans, 
-    silhouette_samples
-    ) 
+
+try: 
+    from ..exlib.sklearn import ( 
+        learning_curve ,   
+        confusion_matrix, 
+        RandomForestClassifier, 
+        LogisticRegression, 
+        MinMaxScaler, 
+        SimpleImputer, 
+        KMeans, 
+        silhouette_samples
+        ) 
+except : pass 
 
 try : 
     from mlxtend.Plotting import ( 
@@ -281,6 +284,7 @@ def plot_logging (
     >>> # draw spines and limit plot from (0, 700) m depth 
     >>> plot_logging (X0 , y= y.kp, draw_spines =(0, 700) )
     """
+    
     X = _assert_all_types(X, pd.DataFrame, pd.Series , np.ndarray ) 
     X= check_array (
         X, 

@@ -700,9 +700,9 @@ class EM(IsEdi):
             the attribute from the collection object. Except the `error` and 
             frequency attribute, the missing component to the attribute will 
             raise an error. for instance ``resxy`` for xy component. Default is 
-            ``zxy``. 
+            ``resxy``. 
         kind : bool or str 
-            focus on the tensor output. Note that the tensor is a complex number 
+            focuses on the tensor output. Note that the tensor is a complex number 
             of ndarray (nfreq, 2,2 ). If set to``modulus`, the modulus of the complex 
             tensor should be outputted. If ``real`` or``imag``, it returns only
             the specific one. Default is ``complex``.
@@ -721,7 +721,7 @@ class EM(IsEdi):
         >>> from watex.methods.em import EM 
         >>> edipath ='data/edis'
         >>> emObjs= EM().fit(edipath)
-        >>> phyx = EM().make2d (emObjs.ediObjs_, 'phaseyx')
+        >>> phyx = EM().make2d ('phaseyx')
         >>> phyx 
         ... array([[ 26.42546593,  32.71066454,  30.9222746 ],
                [ 44.25990541,  40.77911136,  41.0339148 ],
@@ -738,7 +738,7 @@ class EM(IsEdi):
                [   90.7099,   119.505 ,   122.343 ],
                [       nan,        nan,    88.0624]])
         >>> # get the resistivity error of component 'xy'
-        >>> resxy_err = EM.make2d (emObjs.ediObjs_, 'resxy_err')
+        >>> resxy_err = EM.make2d ('resxy_err')
         >>> resxy_err 
         ... array([[0.01329037, 0.02942557, 0.0176034 ],
                [0.0335909 , 0.05238863, 0.03111475],
@@ -1941,7 +1941,7 @@ class Processing (EM) :
         """ Check the quality control of the collected EDIs. 
         
         Analyse the data in the EDI collection and return the quality control value.
-        It indicate how percentage are the data to be representative.
+        It indicates how percentage are the data to be representative.
        
         :param tol: float, 
             the tolerance parameter. The value indicates the rate from which the 
@@ -2067,8 +2067,7 @@ class Processing (EM) :
         >>> f= pObj.freqs_
         >>> len(f) 
         ... 55
-        >>> zObjs_soft = pObj.getValidData (ediObjs, tol= 0.3, 
-                                         option='None' ) # None doesn't export EDI-file
+        >>> zObjs_soft = pObj.getValidData (tol= 0.3, option='None' ) # None doesn't export EDI-file
         >>> len(zObjs_soft[0]._freq) # suppress 3 tensor data 
         ... 52 
         >>> zObjs_hard  = pObj.getValidData(p.ediObjs_, tol = 0.6 )

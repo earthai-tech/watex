@@ -19,7 +19,8 @@ _DTAGS=(
     "semien", 
     "tankesse", 
     "boundiali",
-    "hlogs"
+    "hlogs", 
+    "edis"
     )
 
 
@@ -33,6 +34,10 @@ from .dload import (
     load_hlogs,
     load_edis
     ) 
+from .gdata import ( 
+    make_erp , 
+    make_ves 
+    )
 try : 
     from ._config import _fetch_data
 except ImportError: 
@@ -51,6 +56,8 @@ __all__=[
          "load_hlogs", 
          "fetch_data",
          "load_edis",
+         "make_erp" , 
+         "make_ves", 
          "DATASET"
          ]
 
@@ -58,7 +65,7 @@ def fetch_data (tag, **kws):
     tag = _parse_tags(tag, multi_kind_dataset='bagoue')
     func= _fetch_data if fi else None 
     funcs= (load_bagoue , load_gbalo, load_iris, load_semien, load_tankesse , 
-            load_boundiali, load_hlogs) 
+            load_boundiali, load_hlogs, load_edis ) 
     funcns = list (map(lambda f: f.__name__.replace('load_', ''), funcs))
     if tag in (funcns): 
         func = funcs[funcns.index (tag)] 
@@ -151,8 +158,9 @@ def _parse_tags (tag, multi_kind_dataset ='bagoue'):
     passed, it should merely discarded. 
     """ 
     tag = str(tag);  t = tag.strip().split() 
+    
     if len(t) ==1 : 
-        if t[0] not in _DTAGS: 
+        if t[0].lower() not in _DTAGS: 
             tag = multi_kind_dataset +' ' + t[0]
             
             warn(f"Fetching {multi_kind_dataset.title()!r} data without"
@@ -164,8 +172,8 @@ def _parse_tags (tag, multi_kind_dataset ='bagoue'):
     elif len(t) >1 : 
         # only the multi kind dataset is allowed 
         # to contain two words for fetching data 
-        if t[0] !=multi_kind_dataset: 
-            tag = t[0] # skip the second word 
+        if t[0].lower() !=multi_kind_dataset: 
+            tag = t[0].lower() # skip the second word 
     return tag 
 
 from ..utils.funcutils import listing_items_format

@@ -19,8 +19,8 @@ from .factor import (
     lw_score, 
     shrunk_cov_score, 
     compute_scores, 
-    compare_pca_and_fa_analysis, 
-    make_data, 
+    pcavsfa, 
+    make_scedastic_data, 
     )
 
 __all__= [ 
@@ -39,7 +39,7 @@ __all__= [
     "lw_score", 
     "shrunk_cov_score", 
     "compute_scores", 
-    "compare_pca_and_fa_analysis", 
-    "make_data", 
+    "pcavsfa", 
+    "make_scedastic_data", 
     ]
 

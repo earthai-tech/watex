@@ -525,11 +525,11 @@ Examples
 --------
 Let's say you are interested in the samples 10, 25, and 50, and want to
 know their class name.
->>> from watex.datasets import load_iris
+>>> from watex.datasets import load_bagoue
 >>> d = load_bagoue () 
 >>> d.target[[10, 25, 50]]
 ... array([0, 2, 0])
->>> list(data.target_names)
+>>> list(d.target_names)
 ... ['flow']   
   
 """
@@ -664,8 +664,9 @@ def load_edis (
     data = pd.read_hdf(data_file, key = "data")
 
     if key =='*': 
-        feature_names = list(valid_keys)[:-1]
-        
+        feature_names = list(valid_keys)
+        feature_names.remove (key)
+
     data = data [feature_names ]
     samples = samples or len(data ) 
     

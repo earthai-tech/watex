@@ -38,8 +38,8 @@ __all__=[
     "lw_score", 
     "shrunk_cov_score", 
     "compute_scores", 
-    "compare_pca_and_fa_analysis", 
-    "make_data", 
+    "pcavsfa", 
+    "make_scedastic_data", 
     ]
 
 def compute_scores(X, n_features , n_components = 5):
@@ -95,17 +95,21 @@ def lw_score(X):
     """ low rank models score. Most likely than shrinkage models"""
     return np.mean(cross_val_score(LedoitWolf(), X))
 
-def compare_pca_and_fa_analysis (
-        X, n_samples, n_features, rank =10 , sigma =1. , n_components =5, 
-        random_state = 42 , verbose =0 
+def pcavsfa (
+        X,
+        #n_samples, n_features, 
+        rank =10 , sigma =1. , n_components =5, 
+        random_state = 42 , verbose =0 , view =False, 
   ):
     # options for n_components
+    n_samples, n_features = len(X),  X.shape[1]
     n_components = np.arange(0, n_features, n_components) 
     
     rng = np.random.RandomState(random_state)
     U, _, _ = linalg.svd(rng.randn(n_features, n_features))
-    X = np.dot(rng.randn(n_samples, rank), U[:, :rank].T)
-
+    
+    #X = np.dot(rng.randn(n_samples, rank), U[:, :rank].T)
+    X = np.dot(rng.randn(n_samples, n_features), U[:, :rank].T)
     # Adding homoscedastic noise
     X_homo = X + sigma * rng.randn(n_samples, n_features)
 
@@ -116,7 +120,7 @@ def compare_pca_and_fa_analysis (
 
     for X, title in [(X_homo, 'Homoscedastic Noise'),
                      (X_hetero, 'Heteroscedastic Noise')]:
-        pca_scores, fa_scores = compute_scores(X)
+        pca_scores, fa_scores = compute_scores(X, n_features)
         n_components_pca = n_components[np.argmax(pca_scores)]
         n_components_fa = n_components[np.argmax(fa_scores)]
     
@@ -129,6 +133,7 @@ def compare_pca_and_fa_analysis (
             print("best n_components by FactorAnalysis CV = %d" % n_components_fa)
             print("best n_components by PCA MLE = %d" % n_components_pca_mle)
     
+        
         plt.figure()
         plt.plot(n_components, pca_scores, 'b', label='PCA scores')
         plt.plot(n_components, fa_scores, 'r', label='FA scores')
@@ -155,7 +160,7 @@ def compare_pca_and_fa_analysis (
     plt.show()
     return pca_scores, fa_scores
     
-compare_pca_and_fa_analysis.__doc__="""\
+pcavsfa.__doc__="""\
 Compute PCA score and Factor Analysis scores from training X and compare  
 probabilistic PCA and Factor Analysis  models.
   
@@ -186,7 +191,7 @@ Tuple (pca_scores, fa_scores):
 )    
     
     
-def make_data (
+def make_scedastic_data (
         n_samples= 1000, n_features=50, rank =  10, sigma=1., 
         random_state =42
    ): 
