@@ -180,8 +180,8 @@ If the raw arrangement (above ) is given, it is better to reverify the arrangeme
 	`resistivity` columns are in :math:`\Omega.m` as apparent resistivity values.  
 	
 	
-`Learning Dataset` 
-------------------
+Learning Dataset
+===================
 
 The learning datasets are the data ready for predictions where the features are already precomputed.  An example is 
 the most popular dataset :func:`~watex.datasets.iris`. The fameous example of :code:`watex` datasets in the 
@@ -229,8 +229,8 @@ and logging data. Refer to :func:`~watex.datasets.dload.load_hlogs` for paramete
 	['pumping_level', 'aquifer_thickness'] 
 	
 	
-`EDI dataset` 
----------------
+EDI dataset 
+===============
 
 SEG-EDI datasets is a collection of edi-objects from :class:`~watex.edi.Edi`. Data can be restored using the 
 :func:`~watex.datasets.dload.load_edis`. Refer to the function (:func:`~watex.datasets.dload.load_edis`.) parameters 
@@ -257,8 +257,8 @@ explanation for further details.
 	6  26.053815  110.487753
 	
 	
-`Boilerplate function`: :func:`~watex.datasets.fetch_data`
------------------------------------------------------------- 
+Boilerplate function : :func:`~watex.datasets.fetch_data`
+=========================================================== 
 
 The boilerplate function :func:`~watex.datasets.fetch_data` accepts as `tag` argument the area name of 
 all sampling datasets implemented in :mod:`~watex.datasets` and returns the return values of each datasets. 
@@ -333,8 +333,8 @@ demonstration below to fetch some processing stage of `Bagoue datasets`.
                                                  OneHotEncoder())]))])
 												 
 
-`Generate ERP or VES data` 
-------------------------------
+Generate ERP or VES data 
+============================
 
 ERP and VES data can be generated using the function :func:`~watex.datasets.gdata.make_erp` and :func:`~watex.datasets.gdata.make_ves` 
 respectively. Check the function parameters for further details. The following code snippets gives an example of generating 
