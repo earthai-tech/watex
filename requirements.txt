@@ -3,6 +3,7 @@ sphinx >=3.5
 sphinx_rtd_theme
 sphinxcontrib-jsmath 
 sphinx-mathjax-offline
+jupytext
 nbsphinx 
 myst_nb
 cython
@@ -10,6 +11,8 @@ matplotlib>=3.3.0
 # numpy>=1.23.3
 numpy
 scipy
+scikit-learn
+#sklearn 
 qtpy
 netcdf4
 numpydoc >=1.0.0
@@ -24,7 +27,6 @@ pyproj>=1.9.6
 pandas
 python-coveralls
 # sklearn >=1.1 
-sklearn 
 joblib
 seaborn
 tqdm
@@ -40,4 +42,6 @@ openpyxl
 #pytables
 h5py >=3.2.0
 python-latex
+sphinxcontrib-jsmath 
+
 

@@ -80,7 +80,7 @@ for pratical examples are not exhaustive. It is just made as field guide for use
 `WATex` API
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The package follows the modular approach of existing software like `scikit-learn`_ and a bit more GMT (Wessel and Smith, 1998).  It mostly uses scikit-learn  classes as a top-level module for the predictions. The :code:`watex` API follows the scheme below: 
+The package follows the modular approach of existing software like `scikit-learn`_ and a bit more `GMT`_.  It mostly uses scikit-learn  classes as a top-level module for the predictions. The :code:`watex` API follows the scheme below: 
 	
 	* choose the class of model by importing the appropriate module, class estimator, or assessor. The assessor is the class of the module designed for solving a specific task. 
 	* choose model hyperparameters by instantiating this class with desired values. 
@@ -96,7 +96,6 @@ The package follows the modular approach of existing software like `scikit-learn
    api_references 
    structure
    
-   
 `WATex's` benefits
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -107,7 +106,7 @@ using the DC-resistivity method (Resistivity Profiling and vertical sounding) an
 `Water Resources Research`_ journal known as one of the most popular journal in the GWE field research.  
 
 .. _Water Resources Research: https://doi.org/10.1029/2021wr031623
-
+.. _GMT: https://www.generic-mapping-tools.org/
 
 Indices and tables
 ==================
