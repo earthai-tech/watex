@@ -53,21 +53,17 @@ from ..utils.funcutils import (
     )
 from ..utils.mlutils import (
     formatModelScore, 
-    controlExistingEstimator,
     findCatandNumFeatures,
     selectfeatures, 
     evalModel 
     )
 from .._typing import ( 
-    T, 
     List, 
-    Generic,
     Callable, 
     NDArray, 
     ArrayLike,
     F
     ) 
-
 _logger =watexlog().get_watex_logger(__name__)
 d_estimators_={'dtc':DecisionTreeClassifier, 
                 'svc':SVC, 
@@ -277,13 +273,14 @@ class Preprocessing :
                 expobj=self)
             )
         return 1
+    
      
     def makeModel( self, pipe: F=None, estimator:F=None, 
                      )-> Callable[..., F]:
         """
         Assemble pipes and estimator to create the model 
         
-        the model is composed of the transformers and estimator, If one is set 
+        The model is composed of the transformers and estimator, If one is set 
         to None, it uses the default pipe and estimator which might be not the 
         one expected. Therefore providing a pipe and estimator is suggested.
         
@@ -528,20 +525,32 @@ class Preprocessing :
         ... 0.47126436781609193
         
         (2) -> multiples estimators 
-        >>> from sklearn.ensemble import RandomForestClassifier 
-        >>> from sklearn.linear_model import SGDClassifier
-        >>> from slearn.imputer import SimpleImputer 
+        >>> from watex.exlib.sklearn import RandomForestClassifier , SGDClassifier, SimpleImputer 
         >>> estimators={'RandomForestClassifier':RandomForestClassifier
-                        (n_estimators=200, random_state=0), 
-                        'SDGC':SGDClassifier(random_state=0)}
+        		(n_estimators=200, random_state=0), 
+        		'SDGC':SGDClassifier(random_state=0)}
         >>> pc.X= SimpleImputer().fit_transform(pc.X)
         >>> pc.Xt= SimpleImputer().fit_transform(pc.Xt) # remove NaN values 
-        >>> pc.BaseEvaluation(estimator={
-        ...    'RandomForestClassifier':RandomForestClassifier(
-        ...        n_estimators=200, random_state=0), 
-        ...    'SDGC':SGDClassifier(random_state=0)}, eval_metric =True)
-        >>> pc.score
-        ... 
+        >>> pc.baseEvaluation(model={
+        'RandomForestClassifier':RandomForestClassifier(
+          n_estimators=200, random_state=0), 
+        'SDGC':SGDClassifier(random_state=0)}, eval_metric =True)
+        >>> pc.ypred_
+        Out[128]: 
+        {'RandomForestClassifier': array([2, 1, 2, 2, 2, 2, 0, 1, 1, 2, 3, 1, 0, 0, 1, 1, 1, 2, 2, 3, 2, 3,
+                1, 2, 1, 2, 0, 2, 2, 3, 2, 2, 1, 1, 3, 3, 0, 2, 3, 3, 2, 1, 0, 2,
+                1, 1, 2, 2, 2, 2, 1, 1, 0, 2, 0, 2, 1, 2, 1, 1, 2, 0, 1, 2, 0, 2,
+                2, 3, 2, 2, 3, 0, 1, 2, 2, 3, 1, 1, 0, 1, 1, 2, 0, 0, 2, 0, 1],
+               dtype=int8),
+         'SGDClassifier': array([3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+               dtype=int8)} 
+        >>> pc.base_score_ 
+        Out[130]: 
+        {'RandomForestClassifier': 0.7816091954022989,
+         'SGDClassifier': 0.14942528735632185}
         
         """
         self.inspect 
@@ -572,10 +581,10 @@ class Preprocessing :
                     eval= eval_metric, **kws)
                 self.model_results_  [f'{est.__class__.__name__}'] =  (psc, msc)
                 
-            self.base_score_ ={
+            self.ypred_ ={
                 k: s for k, (s, _) in self.model_results_.items() 
                               }  
-            self.ypred_ ={
+            self.base_score_ ={
                 k: s for k, (_, s) in self.model_results_.items() 
                               }  
                                     
@@ -624,13 +633,6 @@ class Preprocessing :
        return repr_callable_obj  (self, skip = ('data', 'y', 'X', 'Xt', 'yt') )
        
     def __getattr__(self, name):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in ('data_', 'X_', 'y_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
@@ -720,24 +722,19 @@ Examples
 class Processing (Preprocessing) : 
     def __init__(self, 
                  pipeline:F=None, 
-                 estimator:F= None, 
-                 auto:bool = False,  
+                 estimator:F= None,  
                  **kws
                  ):
         super().__init__(**kws)
         
         self.pipeline=pipeline 
-        self.auto_= auto
         self.estimator_=estimator
         self.model_score_=None 
         self.model_prediction_=None 
         self.estimator_name_=None 
         self.processing_model_=None
-        
-        if self.auto_:
-            self.auto = True 
             
-  
+    
     @property 
     def auto (self): 
         """ Trigger the composite pipeline building and greate 
@@ -750,6 +747,8 @@ class Processing (Preprocessing) :
         default pipeline."""
         if not auto: return 
     
+        self.auto_= auto 
+        
         format_notes(text= ''.join(
             [f'Automatic Option is set to ``{self.auto_}``.Composite',
             '  estimator building is auto-triggered with default ',
@@ -766,10 +765,13 @@ class Processing (Preprocessing) :
             'construction. The default estimation score should be '
             ' displayed.')
         
+        self.inspect 
+        
         self.model_score_ = self.baseEvaluation(eval_metric=True)
         self.preprocessor_ = self.pipe_ 
         formatModelScore(self.model_score_, self.default_estimator)
         self.model_prediction_ = self.ypred_
+        
     
     @property 
     def processing_model(self): 
@@ -892,130 +894,143 @@ class Processing (Preprocessing) :
         return self.model_prediction_ 
         
     @visualize_valearn_curve(reason ='valcurve', turn='off', 
-               k= np.arange(1,210,10),plot_style='line',savefig=None)               
-    def get_validation_curve(self, estimator=None, X=None, 
-                         y=None, val_curve_kws:Generic[T]=None, 
-                         **kws):
+               k= np.arange(1,210,10), plot_style='line',savefig=None)               
+    def get_validation_curve(
+            self, 
+            val_params:dict=None, 
+            switch_plot:str= 'off', 
+            preprocess_step:bool= False, 
+            train_pkws: dict=None,
+            val_pkws:dict =None, 
+            **kws
+            ):
         """ Compute the validation score and plot the validation curve if 
-        the argument `turn` of decorator is switched to ``on``. If 
-        validation keywords arguments `val_curve_kws` does not contain a 
+        the argument `turn` of decorator is switched to ``on``. 
+        
+        If validation keywords arguments `val_curve_kws` does not contain a 
         `param_range` key, the default param_range should be the one of 
             decorator.
-        
-        :param model: The creating model. If ``None``.
-        
-        :param X: pd.core.frame.DataFrame  of selected trainset.
-        
-        :param Xt:  pd.DataFrame of  selected Data for testset.
-        
-        :param y: array_like of selected data for evaluation set. 
-        
-        :param yt: array_like of selected data for model test 
-        
-        :param val_curve_kws:
+            
+        Parameters 
+        -----------
+        val_params:
             `validation_curve` keywords arguments.  if none the *default* 
             should be::
                 
-                val_curve_kws = {"param_name":'C', 
+                val_params = {"param_name":'C', 
                              "param_range": np.arange(1,210,10), 
                              "cv":4}
-        :returns: 
+        switch_plot: str, default ='on' 
+            visualize the validation plot
+        
+        preprocess_step: bool, default=False 
+            Trigger the default step of preprocessing. 
+            
+        train_pkws: dict, 
+            keywords arguments passed to matplotlib.line/scatter plots for 
+            training curve 
+        val_pkws: dict , 
+        keyword arguments passed to matplotlib.line/scatter plot for 
+            validation curve. 
+            
+        Returns 
+        ---------
             - `train_score`: float|dict of trainset score 
             - `val_score` : float/dict of valisation score 
             - `switch`: Turn ``on`` or ``off`` the validation_plot.
             - `kk`: the validation `param_range` for plot.
         
-        :Example: 
+        Examples 
+        -------------
             
         >>> from watex.cases.processing  import Processing 
-        >>> processObj = Processing(
-            data = 'data/geo_fdata/BagoueDataset2.xlsx')
+        >>> from watex.datasets import fetch_data 
+        >>> data = fetch_data ('bagoue original').get('data=dfy2')
+        >>> processObj= Processing (tname = 'flow', 
+                                    drop_features =['lwi', 'name', 'num'])  
+        >>> processObj.fit(data=data )
         >>> processObj.get_validation_curve(
             switch_plot='on', preprocess_step=True)
         """
+        dvalp = {"param_range": np.arange(1,210,10), 
+                   "param_name": "C", 
+                   "cv":4, 
+                   "scoring": 'accuracy'
+        }
         
-        preprocess_step =kws.pop('preprocess_step', False)
-        switch = kws.pop('switch_plot', 'off')
-        val_kws = kws.pop('val_kws', None)
-        train_kws = kws.pop('train_kws', None)
+        self.inspect 
         
-        if X is not None:
-            self.X =X
-        if y is not None:
-            self.y =y 
-        
-        if val_curve_kws is None:
-            val_curve_kws = {"param_name":'C', 
-                             "param_range": np.arange(1,210,10), 
-                             "cv":4}
-            self._logging.debug(
-                f'Use default `SVM` params configurations <{val_curve_kws}>.')
-            
-            if inspect.isfunction(self.get_validation_curve): 
-                _code = self.get_validation_curve.__code__
-                filename = _code.co_filename
-                lineno = _code.co_firstlineno + 1
-            else: 
-               filename = self.get_validation_curve.__module__
-               lineno = 1
-    
-            warnings.warn_explicit(
-                'Use default `SVM` params configurations <{val_curve_kws}>.',
-                                   category=DeprecationWarning, 
-                                   filename =filename, lineno= lineno)
-        # get the param range 
-        try: 
-            kk= val_curve_kws['param_range']
-        except : kk=None 
-        
-        
-        if estimator is None: 
+        if not hasattr(self, "estimator_"): 
             if preprocess_step : 
                 if self.verbose :
-                    print('---> Preprocessing step is enabled !')
+                    print('---> Preprocessing step is enabled.')
                     self._logging.info(
                         'By default, the`preprocessing_step` is activated.')
                 self.auto =True 
-            else: 
-                warnings.warn("Expect one 'estimator' at least")
-                self._logging.error("Expect one 'estimator' at least")
-                raise ProcessingError( "'Estimator' not found. Expect one "
-                                      "'estimator' at least")
-    
-        if estimator is not None :
-            self.estimator_= estimator
-    
-            if not isinstance(self.estimator_, dict) : 
-                self.model_dict={'___':self.estimator_ }
-            else : 
-                self.model_dict = self.estimator_
+            else:
+                 warnings.warn("Expect one 'estimator' at least")
+                 self._logging.error("Expect one 'estimator' at least")
+                 raise ProcessingError( "'Estimator' not found. Expect one "
+                                   "'estimator' at least or set `auto=True`")
+                 
+        if val_params is None:
+            if str(self.default_estimator).lower().strip()=='svc': 
+                val_params = dvalp
                 
+                self._logging.debug(
+                    f'Use default `SVM` params configurations <{val_params}>.')
+                
+                if inspect.isfunction(self.get_validation_curve): 
+                    _code = self.get_validation_curve.__code__
+                    filename = _code.co_filename
+                    lineno = _code.co_firstlineno + 1
+                else: 
+                   filename = self.get_validation_curve.__module__
+                   lineno = 1
+    
+                warnings.warn_explicit(
+                    'Use default `SVM` params configurations <{val_params}>.',
+                                       category=DeprecationWarning, 
+                                       filename =filename, lineno= lineno)
+            else : 
+                raise ProcessingError( 
+                    "None parameters are detected. Need validation parameters "
+                    f" passed to kws 'val_params' for {self.estimator_}. Check the"
+                    " list of available parameters with `estimator.get_params().keys()`."
+                    " e.g for SVC , the ``val_params` arguments should be "
+                    f" `val_params={dvalp}`"
+                    )
+
+        if not isinstance(self.estimator_, dict) : 
+            self.model_dict={'___':self.estimator_ }
+        else : 
+            self.model_dict = self.estimator_
+        
         for mkey , mvalue in self.model_dict.items(): 
             if len(self.model_dict) ==1:
                 self.train_score, self.val_score = validation_curve(
-                                        self.estimator_,
+                                        mvalue,
                                         self.X, self.y,
-                                        **val_curve_kws)
+                                        **val_params
+                                        )
                 
             elif len(self.model_dict) > 1 :
                 trainScore, valScore = validation_curve(mvalue,
                                        self.X, self.y,
-                                       **val_curve_kws)
+                                       **val_params)
                 self.train_score [mkey] = trainScore
                 self.val_score[mkey] = valScore 
-        try:
-            pname = val_curve_kws['param_name']
-        except KeyError: 
-            pname =''
-        except : 
-            pname =''
+
+        kk = val_params['param_range']
+
+        pname = val_params["param_name"]
         
-        return (self.train_score, self.val_score, switch ,
-                kk , pname,  val_kws, train_kws)     
+        return (self.train_score, self.val_score, switch_plot ,
+                kk , pname,  val_pkws, train_pkws)     
     
         
-    def quick_estimation(self, estimator: Callable[...,T] = None, 
-                         random_state:float = None, **kws): 
+    def quick_estimation(self,  estimator_name =None,
+                         default_estimator :bool =False ): 
         """ Quick run the model without any processing.  If none estimator 
         is provided ``SVC`` estimator is used.
         
@@ -1034,42 +1049,30 @@ class Processing (Preprocessing) :
         >>> processObj.model_prediction
         
         """
+        self.inspect 
         
-        X =kws.pop('X', None )
-        if X is not None : self.X =X 
-        
-        y =kws.pop('y', None)
-        if y is not None : self.y =y 
-        
-        Xt =kws.pop('Xt', None)
-        if Xt is not None: self.Xt = Xt 
-        
-        yt = kws.pop('yt', None)
-        if yt is not None : self.yt 
-        
-        if random_state is not None: self.random_state = random_state 
-        
-        if estimator is not None: 
-            quick_estimator = estimator 
-        elif estimator is None : 
-            quick_estimator = SVC(self.random_state)
-            
-        try : 
-            self.estimator_name_ = quick_estimator.__class__.__name__
-        except : pass 
-        else : 
-            try : 
-                estim_names = controlExistingEstimator(
-                    self.estimator_name_)
-            except: 
-                self.estimator_name_ = '___'
-            else : 
-                if estim_names is not None :
-                    self.estimator_name_ = estim_names[1]
+        if not hasattr (self, "Xt") or not hasattr (self, 'yt'): 
+            raise ProcessingError(
+                "Missing of test data Xt and yt. Cannot estimate" 
+                " the prediction score. 'refit' the data by turning the"
+                " parameter `split_X_y=True`.")
     
-        self.estimator_= quick_estimator
-     
-        self.model_dict= {f'{self.estimator_name_}':self.estimator_ }
+        if not hasattr(self, "estimator_"): 
+            if estimator_name is not None: 
+                self.default_estimator= estimator_name 
+            
+            if default_estimator: 
+                des= copy.deepcopy(self.default_estimator)
+                self.default_estimator = str(self.default_estimator).lower().strip() 
+                
+                if self.default_estimator not in d_estimators_.keys(): 
+                    raise ValueError (f"Unknow default estimator :{des!r}")
+                    
+                self.estimator_ = self._getdestimators()[self.default_estimator] 
+                
+            else:
+                raise ProcessingError("Missing estimator. It should not be None.") 
+            
         
         self.estimator_.fit(self.X, self.y)
         
@@ -1087,8 +1090,10 @@ class Processing (Preprocessing) :
         return self.model_score_ , self.model_prediction_
                 
 Processing.__doc__="""\
-Processing class for managing baseline model evaluation and learning and 
-validation curves after fiddling a little bit an estimator hyperparameters. 
+Processing class for managing baseline model evaluation and learning. 
+
+Manages the validation curves after fiddling a little bit an estimator 
+hyperparameters. 
 
 Processing is usefull before modeling step. To process data, a default 
 implementation is given for  data `preprocessor` build. It consists of creating 
@@ -1181,9 +1186,12 @@ See also
 
 Examples 
 ---------
+
 >>> from watex.cases.processing  import Processing
->>> from sklearn.preprocessing import StandardScaler
->>> from sklearn.ensemble import RandomForestClassifier 
+>>> from watex.exlib.sklearn import (StandardScaler,RandomForestClassifier, 
+                                     make_column_selector, PolynomialFeatures, 
+                                     SelectKBest, f_classif)  
+>>> data = fetch_data ('bagoue original').get('data=dfy2')
 >>> my_own_pipeline= {{'num_column_selector_': 
 ...                       make_column_selector(dtype_include=np.number),
 ...                'cat_column_selector_': 
@@ -1197,14 +1205,11 @@ Examples
 ...    'RandomForestClassifier':RandomForestClassifier(
 ...    n_estimators=200, random_state=0)
 ...    }}
->>> processObj = Processing(
-...                    data ='data/geo_fdata/BagoueDataset2.xlsx', 
-...                    pipeline= my_own_pipeline,
-...                    estimator=my_estimator)
->>> print(processObj.preprocessor_)
->>> print(processObj.estimator_)
->>> print(processObj.model_score_)
->>> print(processObj.model_prediction_)
+>>> processObj= Processing (tname = 'flow', drop_features =['lwi', 'name', 'num'],
+                            pipeline= my_own_pipeline, estimator=my_estimator)  
+>>> processObj.fit(data=data )
+>>> processObj.baseEvaluation (eval_metric=True ) 
+... 0.4942528735632184 # score is an ensemble score for both model 
     
 """.format(
     params=_param_docs,

@@ -30,7 +30,7 @@ To install from source, clone the project with git:
 
 .. code-block:: bash 
 
-   git clone https://github.com/WEgeophysics/watex.git 
+   $ git clone https://github.com/WEgeophysics/watex.git 
   
 Or download the latest version from the project webpage: https://github.com/WEgeophysics/watex 
 

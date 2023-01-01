@@ -61,27 +61,27 @@ release = '0.1'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
-    #'sphinx.ext.jsmath',
+    'sphinx-mathjax-offline', 
     'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
     'sphinx.ext.coverage',
-    #'sphinx.ext.pngmath',
+    #'sphinx.ext.imgmath',
     # 'numpydoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
     # "sphinx_rtd_theme",
     'sphinx.ext.githubpages', 
-    # "nbsphinx",
+    "nbsphinx",
     #'autoapi.sphinx',
-     "myst_nb",
+     #"myst_nb",
 ]
-# nbsphinx_custom_formats = {
-#     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
-# }
-
-nb_custom_formats = {
+nbsphinx_custom_formats = {
      ".md": ["jupytext.reads", {"fmt": "mystnb"}],
 }
+
+#nb_custom_formats = {
+#     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
+#}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 # The suffix(es) of source filenames.

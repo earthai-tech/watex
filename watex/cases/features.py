@@ -103,16 +103,20 @@ class GeoFeatures:
 
     Examples
     ---------
-    >>> from watex.bases.features import GeoFeatures 
-    >>> featurefn ='data/geo_fdata/BagoueDataset2.xlsx' 
-    >>> featObj =Features(features_fn= featurefn)
-    >>> featObj.site_ids
-    >>> featObj.site_names
-    >>> featObj.df
+    >>> from watex.cases.features import GeoFeatures 
+    >>> data ='data/geodata/main.bagciv.data.csv' 
+    >>> featObj =GeoFeatures().fit(data )
+    >>> featObj.id_
+    Out[114]: 
+    array(['e0000001', 'e0000002', 'e0000003', 'e0000004', 'e0000005',
+           'e0000006', 'e0000007'], dtype='<U8')
+    >>> featObj.site_names_
+    >>> featObj.site_names_[:7] 
+    Out[115]: array(['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'], dtype=object)
      
     """
     
-    featureLabels = [
+    featureLabels_ = [
                     'id', 
                     'east',
                     "north",
@@ -130,8 +134,6 @@ class GeoFeatures:
     def __init__(self, **kws):
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
-        
-        self.data_ =None 
 
         for key in list(kws.keys()):
             setattr(self, key, kws[key])
@@ -141,7 +143,7 @@ class GeoFeatures:
     def data  (self): 
         """ Control the Feature-file extension provide. Usefull to select 
         pd.DataFrame construction."""
-        return self._fn 
+        return self.data_
     
     @data.setter 
     def data(self, data ) :
@@ -166,72 +168,71 @@ class GeoFeatures:
         if data is not None: 
             self.data = data 
             
-        
         fimp, objsCoun =0,0 
         for nname, vval in zip(['data' , 'erpObj' , 'vesObj',
                  'geoObj', 'borehObj'],[data , erpObj , vesObj,
                  geoObj, boreholeObj]): 
             if vval is not None: 
                 setattr(self,nname, vval )
-                if nname !='features_fn':
+                if nname !='data':
                     objsCoun +=1
         # call object
         for fObjs in ['ErpColObjs' , 'vesObjs',
                 'geoObjs', 'borehObjs']: 
-            if getattr(self, fObjs) is None : 
+            if getattr(self, fObjs, None) is None : 
                 fimp =1        
                 
-        if self.features_fn is None and fimp ==1:
+        if self.data is None and fimp ==1:
             raise FeatureError (
                 'Features file is not given. Please provide specific'
                 ' objects from`erp`, `ves`, `geology` and `borehole` data'
                 'Call each specific collection class to build each'
                 ' collection features.')
-        elif self.features_fn is not None : 
-            self.fn = self.features_fn 
+        elif self.data is not None : 
+            #self.fn = self.features_fn 
             self.sanitize_fdataset()
             try : 
-                self.site_names =np.copy(self.df['id'].to_numpy())
+                self.site_names_ =np.copy(self.df_['id'].to_numpy())
             except KeyError: 
                  # force to set id 
-                self.df=self.df.rename(columns = {'name':'id'})
-                self.site_names =np.copy(self.df['id'].to_numpy())
+                self.df_=self.df_.rename(columns = {'name':'id'})
+                self.site_names_ =np.copy(self.df_['id'].to_numpy())
                 # self._index_col_id ='id'
             
-            if self.utm_flag ==0 :
+            if self.utm_flag_ ==0 :
                 # convert lat and lon to utm 
 
-                self._easting = np.zeros_like(self.df['lat'].to_numpy())
-                self._northing =np.zeros_like (self._easting)
-                for ii in range(len(self._northing)):
+                self.easting_ = np.zeros_like(self.df_['lat'].to_numpy())
+                self.northing_ =np.zeros_like (self._easting)
+                for ii in range(len(self.northing_)):
                     try : 
-                        self.utm_zone, utm_easting, utm_northing = ll_to_utm(
+                        self.utm_zone_, utm_easting, utm_northing = ll_to_utm(
                                         reference_ellipsoid=23, 
-                                        lat=self.df['lon'].to_numpy()[ii],
-                                        lon = self.df['lat'].to_numpy()[ii])
+                                        lat=self.df_['lon'].to_numpy()[ii],
+                                        lon = self.df_['lat'].to_numpy()[ii])
                     except : 
                         utm_easting, utm_northing, \
                             self.utm_zone= project_point_ll2utm(
-                            lat=self.df['lat'].to_numpy()[ii],
-                            lon = self.df['lon'].to_numpy()[ii])
+                            lat=self.df_['lat'].to_numpy()[ii],
+                            lon = self.df_['lon'].to_numpy()[ii])
                         
-                    self._easting[ii] = utm_easting
-                    self._northing [ii] = utm_northing
+                    self.easting_[ii] = utm_easting
+                    self.northing_ [ii] = utm_northing
             
-                self.df.insert(loc=1, column ='east', value = self._easting)
-                self.df.insert(loc=2, column='north', value=self._northing)
+                self.df_.insert(loc=1, column ='east', value = self.easting_)
+                self.df_.insert(loc=2, column='north', value=self.northing_)
                 
                 try : 
-                    del self.df['lat']
-                    del self.df['lon']
+                    del self.df_['lat']
+                    del self.df_['lon']
                 except : 
                     try : 
-                        self.df = self.df.drop(['lat'], axis=1)
-                        self.df = self.df.drop(['lon'], axis=1)
+                        self.df_ = self.df_.drop(['lat'], axis=1)
+                        self.df_ = self.df_.drop(['lon'], axis=1)
                     except : 
                         try: 
-                            self.df.pop('lat')
-                            self.df.pop('lon')
+                            self.df_.pop('lat')
+                            self.df_.pop('lon')
                         except: 
                            self._logging.debug(
                                'No way to remove `lat` and `lon` in features '
@@ -239,16 +240,16 @@ class GeoFeatures:
                                " pd.series in your dataFrame.") 
             
             #Keep location names 
-            self.df['id']=np.array(['e{0}'.format(id(name.lower())) 
-                                  for name in self.df['id']])
+            self.df_['id']=np.array(['e{0}'.format(id(name.lower())) 
+                                  for name in self.df_['id']])
     
-            self.id =np.copy(self.df['id'].to_numpy())
+            self.id =np.copy(self.df_['id'].to_numpy())
             self.id_ = np.array(['e{0:07}'.format(ii+1) 
-                                     for ii in range(len(self.df['id']))])
+                                     for ii in range(len(self.df_['id']))])
             # rebuild the dataframe from main features
-            self.df = pd.concat({
-                featkey: self.df[featkey] 
-                for featkey in self.featureLabels}, axis =1)
+            self.df_ = pd.concat({
+                featkey: self.df_[featkey] 
+                for featkey in self.featureLabels_}, axis =1)
 
 
         if objsCoun ==4 : 
@@ -267,9 +268,9 @@ class GeoFeatures:
                     '{3} respectively.'.format(*temlen))
                 
             
-            self.df =pd.DataFrame(data = np.array((len(self.ErpColObjs.fnames), 
-                                                   len(self.featureLabels))), 
-                                  columns = self.featureLabels)
+            self.df_ =pd.DataFrame(data = np.array((len(self.ErpColObjs.fnames), 
+                                                   len(self.featureLabels_))), 
+                                  columns = self.featureLabels_)
             
             self.id_= self.controlObjId(
                               erpObjID=self.ErpColObjs.erpdf['id'], 
@@ -278,7 +279,7 @@ class GeoFeatures:
                               vesObjsID= self.vesObjs.vesdf['id']
                               )
             
-            self.df =self.merge(self.ErpColObjs.erpdf, #.drop(['id'], axis=1),
+            self.df_ =self.merge(self.ErpColObjs.erpdf, #.drop(['id'], axis=1),
                                 self.vesObjs.vesdf['ohmS'],
                                 self.geoObjs.geoldf['geol'], 
                                 self.borehObjs.borehdf[['lwi', 'flow']], 
@@ -288,8 +289,8 @@ class GeoFeatures:
             #self.df.insert(loc=0, column ='id', value = newID)
             self.id =self.ErpColObjs.erpdf['id'].to_numpy()
             
-        self.df.set_index('id', inplace =True)
-        self.df =self.df.astype({'east':np.float, 
+        self.df_.set_index('id', inplace =True)
+        self.df_ =self.df_.astype({'east':np.float, 
                       'north':np.float, 
                       'power':np.float, 
                       'magnitude':np.float, 
@@ -300,12 +301,12 @@ class GeoFeatures:
                       })
             
         # populate site names attributes 
-        for attr_ in self.site_names: 
+        for attr_ in self.site_names_: 
             if not hasattr(self, attr_): 
                 setattr(self, attr_, ID()._findFeaturePerSite_(
                                         _givenATTR=attr_, 
-                                        sns=self.site_names,
-                                        df_=self.df,
+                                        sns=self.site_names_,
+                                        df_=self.df_,
                                         id_=self.id, 
                                         id_cache= self.id_))
             
@@ -316,7 +317,7 @@ class GeoFeatures:
         by the users and resset according to the features labels disposals
         :attr:`~.GeoFeatures.featureLabels`."""
         
-        self.utm_flag =0
+        self.utm_flag_ =0
         OptsList, paramsList =[['bore', 'for'], 
                                 ['x','east'], 
                                 ['y', 'north'], 
@@ -376,7 +377,7 @@ class GeoFeatures:
                          if re.match(r'^{0}+'.format(option), celemnt):
                              columns[ii]=param
                              if columns[ii] =='east': 
-                                 self.utm_flag=1
+                                 self.utm_flag_=1
                              break
 
     
@@ -384,8 +385,8 @@ class GeoFeatures:
             return columns
 
         new_df_columns= getandReplace(optionsList=OptsList, params=paramsList,
-                                      df= self._df)
-        self.df = pd.DataFrame(data=self._df.to_numpy(), 
+                                      df= self.data)
+        self.df_= pd.DataFrame(data=self.data.to_numpy(), 
                                columns= new_df_columns)
         
  
@@ -455,13 +456,13 @@ class GeoFeatures:
         
         """
         if data_fn is not None : 
-            self.erp_data =data_fn 
+            self.data_fn_ =data_fn 
         
-        if not os.path.isfile(self.erp_data): 
+        if not os.path.isfile(self.data_fn_): 
             raise FileHandlingError(
                 '{} is not a file. Please provide a '
-                'right file !'.format(self.erp_data))
-        ex_file = os.path.splitext(self.erp_data)[1] 
+                'right file !'.format(self.data_fn_))
+        ex_file = os.path.splitext(self.data_fn_)[1] 
         if not ex_file in self.dataType.keys(): 
             pass 
     
@@ -646,9 +647,10 @@ class ID:
                     
 class FeatureInspection: 
     """ 
-    This class summarizes flow features inspection. It deals with
-    data features categorization, when numericall values is provided standard 
-    `qualitative` or `quantitative`  analysis ios performed. 
+    Summarizes the flow features. 
+    
+    It deals with data features categorization. When numericall values are 
+    provided standard `qualitative` or `quantitative`  analysis is performed.
     
     Parameters  
     -----------
@@ -705,12 +707,13 @@ class FeatureInspection:
  
     Examples
     --------
-    >>> from watex.bases.features import FeatureInspection
-    >>> data = r'data/geodata/main.bagciv.data.csv'
+    >>> from watex.cases.features import FeatureInspection
+    >>> data = 'data/geodata/main.bagciv.data.csv'
     >>> fobj = FeatureInspection().fit(data) 
-    >>> fobj.data_.columns  
-    ... Index(['num', 'name', 'power', 'magnitude', 'shape', 'type', 'sfi', 'ohmS',
-           'lwi', 'geol', 'flow'],
+    >>> fobj.data_.columns
+    Out[117]: 
+    Index(['num', 'name', 'east', 'north', 'power', 'magnitude', 'shape', 'type',
+           'sfi', 'ohmS', 'lwi', 'geol', 'flow'],
           dtype='object')
     """
     

@@ -54,8 +54,8 @@ from .utils.validator import (
 __all__=[
     "Data", 
     "Missing", 
-    "AdelineGradientDescent", 
-    "AdelineStochasticGradientDescent",
+    "AdalineGradientDescent", 
+    "AdalineStochasticGradientDescent",
     "SequentialBackwardSelection",
     "MajorityVoteClassifier", 
     "GreedyPerceptron", 
@@ -283,7 +283,7 @@ class Data:
         if data is not None: 
             self.data = data 
         check_array(
-            data, 
+            self.data, 
             force_all_finite='allow-nan', 
             dtype =object , 
             input_name='Data', 
@@ -291,7 +291,7 @@ class Data:
             )
         # for consistency if not a frame, set to aframe 
         self.data = array_to_frame (
-            data, to_frame = True , input_name= 'col_', force =True 
+            self.data, to_frame = True , input_name= 'col_', force =True 
             ) 
         data= sanitize_frame_cols (self.data, fill_pattern='_' ) 
         for col in data.columns :
@@ -299,7 +299,7 @@ class Data:
             
         return self 
     
-    def skrunk (self, 
+    def shrunk (self, 
                 columns: list[str], 
                 data: str | DataFrame = None, 
                 **kwd 
@@ -406,7 +406,7 @@ class Data:
         
         columns: str or list of str, Optional 
             the  specific columns in dataframe to renames. However all columns 
-            is put in lowecase. if columns not in dataframe, error raises.  
+            is put in lowercase. If columns not in dataframe, error raises.  
             
         pattern: str, Optional, 
             Regular expression pattern to strip the data. By default, the 
@@ -647,8 +647,7 @@ class Missing (Data) :
         return self.isnull_
 
 
-    def plot(self, data: str | DataFrame=None , 
-             figsize:Tuple [int] = None,  **kwd ):
+    def plot(self, figsize:Tuple [int] = None,  **kwd ):
         """
         Vizualize patterns in the missing data.
         
@@ -705,15 +704,12 @@ class Missing (Data) :
 
     
         """
-        from .view.plot import ExPlot
-    
-        if data is not None: 
-            self.data = data 
-            
         self.inspect 
+        from .view.plot import ExPlot
+
         
         ExPlot(fig_size=figsize).fit(self.data).plotmissing( 
-            kind =  self.kind, sample = self.sample, **kwd )
+            kind =  self.kind, sample = self.sample,**kwd )
         return  self 
 
     @property 
@@ -1129,7 +1125,7 @@ class SequentialBackwardSelection (_Base ):
         return self.__class__.__name__ + str(tup).replace("'", "") 
     
 class GreedyPerceptron (_Base): 
-    r""" Object oriented perceptron API class. Perceptron classifier 
+    r""" Perceptron classifier 
     
     Inspired from Rosenblatt concept of perceptron rules. Indeed, Rosenblatt 
     published the first concept of perceptron learning rule based on the MCP 
@@ -1220,7 +1216,7 @@ class GreedyPerceptron (_Base):
         
         self.w_ = rgen.normal(loc=0. , scale =.01 , size = 1 + X.shape[1]
                               )
-        self.erros_ =list() 
+        self.errors_ =list() 
         for _ in range (self.n_iter):
             errors =0 
             for xi, target in zip(X, y):
@@ -1289,7 +1285,7 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
     :math:`\hat{y}` is the predicted class label of the ensemble. :math:`A` is 
     the set of the unique class label; :math:`\chi_A` is the characteristic 
     function or indicator function which returns 1 if the predicted class of 
-    the jth clasifier matches i (C_j(x)=1). For equal weights, the equation 
+    the jth clasifier matches i(C_j(x)=1). For equal weights, the equation 
     is simplified as follow: 
         
     .. math:: 
@@ -1570,7 +1566,7 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
                             )
             
         
-class AdelineStochasticGradientDescent (_Base) :
+class AdalineStochasticGradientDescent (_Base) :
     r""" Adaptative Linear Neuron Classifier  with batch  (stochastic) 
     gradient descent 
     
@@ -1866,7 +1862,7 @@ class AdelineStochasticGradientDescent (_Base) :
         
         return self.__class__.__name__ + str(tup).replace("'", "") 
     
-class AdelineGradientDescent (_Base): 
+class AdalineGradientDescent (_Base): 
     r"""Adaptative Linear Neuron Classifier 
     
     ADAptative LInear NEuron (Adaline) was published by Bernard Widrow and 

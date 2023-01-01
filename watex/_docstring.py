@@ -59,6 +59,13 @@ as_frame : bool, default=False
         The path to the location of the data.
         .. versionadded:: 0.20
     .. versionadded:: 0.1.2
+    
+index_rhoa: int, default=0 
+    index of the resistivy columns to retrieve. Note that this is useful in the 
+    cases many sounding values are collected in the same survey area. 
+    `index_rhoa=0` fetches the first sounding values in the collection of all
+     values. 
+    
 tag, data_names: None, 
     Always None for API consistency 
 kws: dict, 

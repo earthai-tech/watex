@@ -1703,7 +1703,7 @@ class ExPlot (BasePlot):
                 msno 
             except : 
                 raise ModuleNotFoundError(
-                    "Missing 'missingno' package. Can not plot {kind!r}")
+                    f"Missing 'missingno' package. Can not plot {kind!r}")
                 
             if kind =='mbar': 
                 ax = msno.bar(

@@ -1,6 +1,11 @@
 #sphinx>=2.4.0
 sphinx >=3.5
 sphinx_rtd_theme
+sphinxcontrib-jsmath 
+sphinx-mathjax-offline
+jupytext
+nbsphinx 
+myst_nb
 cython
 matplotlib>=3.3.0
 # numpy>=1.23.3
@@ -36,9 +41,6 @@ openpyxl
 #threadpoolctl >= 2.0.0
 #pytables
 h5py >=3.2.0
-nbsphinx 
-myst_nb
-jupytext
 python-latex
 sphinxcontrib-jsmath 
 

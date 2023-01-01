@@ -788,7 +788,7 @@ class ResistivityProfiling(ElectricalMethods):
         
         """
         columns = fit_params.pop('columns', None)
-        
+        force =fit_params.pop("force", False)
         self._logging.info(f'`Fit` method from {self.__class__.__name__!r}'
                            ' is triggered ')
         if isinstance(data, str): 
@@ -797,7 +797,7 @@ class ResistivityProfiling(ElectricalMethods):
                                  f' got {type(data).__name__!r}'
                                  )
         
-        data = erpSelector(data, columns) 
+        data = erpSelector(data, columns, force=force ) 
         if not _is_valid_erp(data): 
             raise ERPError("Invalid ERP data. Data must contain at least"
                            " 'resistivity' and 'station' position." )
@@ -1522,6 +1522,7 @@ def _readfromdcObjs(self, data: List[object ] ,
     
 def _readfrompath (self, data: List[str | DataFrame ] ,
                    dcmethod: object= ResistivityProfiling, 
+                   force:bool=False, 
                    **kws ): 
     """ Read data from a file,  a path-like object or dataframe. 
     
@@ -1568,8 +1569,8 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
         if self.read_sheets: 
             _, ex = os.path.splitext( data[0])
             if ex != '.xlsx': 
-                raise TypeError (" Reading multisheets expects an excel file."
-                                 " extension not: {ex!r}")
+                raise TypeError ("Read multisheets expects an excel file "
+                                 f" extension <'.xlsx'> not: {ex!r}")
             for d in data : 
                 try: 
                     ddict.update ( **pd.read_excel (d , sheet_name =None))
@@ -1631,7 +1632,7 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
                     auto=True if self.stations[kk] is None else self.auto, 
                     utm_zone = self.utm_zone, 
                     )
-                self.data_.append (dcObj.fit(o).summary(
+                self.data_.append (dcObj.fit(o, force = force).summary(
                     keep_params=self.keep_params))
                 self.stations[kk] = dcObj.sves_ 
                     
@@ -1737,11 +1738,24 @@ def _summary (self, return_table = True):
     
     """
     tables =[]
+    vids_ =[]
     for sl in self.ids_: 
-        tables.append ( getattr( getattr(self, sl), "table_") ) 
+        try:
+            t= getattr( getattr(self, sl), "table_")
+        except AttributeError as er: 
+            msg =(
+                "This probably occurs because {sl!r} has no parameters computed."
+                f" It seems the data for {sl!r} seems invalid. Use attribute"
+                " 'isnotvalid_' to check whether the site is valid or not."
+                  )
+            warnings.warn(str (er) + '.' + msg)  
+            
+            continue 
+        tables.append (t ) 
+        vids_.append(sl)
 
     self.table_ =  pd.concat( tables , axis =0 )
-    self.table_.index = self.ids_ 
+    self.table_.index = vids_
     
     return self.table_ if return_table else self  
 

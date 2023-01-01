@@ -114,7 +114,7 @@ and eigen value, :math:`\lambda_j` and the total sum of the eigen values
 as: 
  
 .. math:: 
-    explained variance ration = \fract{\lambda_j}{\sum{j=1}^{d} \lambda_j}
+    explained_variance_ratio = \fract{\lambda_j}{\sum{j=1}^{d} \lambda_j}
     
 Using numpy cumsum function,we can then calculate the cumulative sum of 
 explained variance which can be plot if `plot` is set to ``True`` via 
@@ -355,7 +355,7 @@ Examples
 >>> from watex.datasets import fetch_data 
 >>> from watex.exlib.sklearn import SimpleImputer, LogisticRegression  
 >>> from watex.analysis.decomposition import decision_region 
->>> >>> data= fetch_data("bagoue original").get('data=dfy1') # encoded flow categories 
+>>> data= fetch_data("bagoue original").get('data=dfy1') # encoded flow categories 
 >>> y = data.flow ; X= data.drop(columns='flow') 
 >>> # select the numerical features 
 >>> X =selectfeatures(X, include ='number')

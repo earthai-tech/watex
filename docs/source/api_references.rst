@@ -1,8 +1,8 @@
 .. _api_ref:
 
-================
+===============
 API Reference
-================
+===============
 
 This is the class and function reference of watex. Please refer to
 the :ref:`full user guide <user_guide>` for further details, as the class and
@@ -29,8 +29,8 @@ For reference on concepts repeated across the API, see :ref:`glossary`.
 
    base.Data
    base.Missing
-   base.AdelineStochasticGradientDescent
-   base.AdelineGradientDescent
+   base.AdalineStochasticGradientDescent
+   base.AdalineGradientDescent
    base.GreedyPerceptron
    base.MajorityVoteClassifier
    base.SequentialBackwardSelection
@@ -136,7 +136,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :template: function.rst
 
 	analysis.LLE
-	analysis.compare_pca_and_fa_analysis
+	analysis.pcavsfa
 	analysis.compute_scores
 	analysis.decision_region
 	analysis.extract_pca
@@ -147,7 +147,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
 	analysis.kPCA
 	analysis.linear_discriminant_analysis
 	analysis.lw_score
-	analysis.make_data
+	analysis.make_scedastic_data
 	analysis.nPCA
 	analysis.plot_projection
 	analysis.shrunk_cov_score
@@ -217,6 +217,8 @@ The module is a set of feature extraction and selection, matrices decomposition 
 	datasets.load_iris
 	datasets.load_semien
 	datasets.load_tankesse
+	datasets.make_erp 
+	datasets.make_ves 
 
 
 .. _externals_ref:
@@ -715,3 +717,4 @@ Plotting
 	view.plot_reg_scoring
 	view.pobj
 	view.viewtemplate
+

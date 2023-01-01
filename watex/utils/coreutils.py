@@ -1460,6 +1460,7 @@ def makeCoords(
         order: str = '+', 
         todms: bool =False, 
         is_utm: bool  =False,
+        raise_warning: bool=True, 
         **kws
   )-> Tuple[ArrayLike[DType[float]]]: 
     """ Generate multiples stations coordinates (longitudes, latitudes)
@@ -1514,6 +1515,9 @@ def makeCoords(
     todms: bool 
         Convert the degree decimal values into the DD:MM:SS. Default is ``False``. 
         
+    raise_warning: bool, default=True, 
+        Raises warnings if GDAL is not set or the coordinates accurately status.
+    
     kws: dict, 
         Additional keywords of :func:`.gistools.project_point_utm2ll`. 
         
@@ -1621,12 +1625,14 @@ def makeCoords(
                     23, northing=la, easting=lo, zone=utm_zone)
                 
         if not HAS_GDAL : 
-            warnings.warn("It seems GDAL is not set! will use the equations"
-                          "from USGS Bulletin 1532. Be aware, the positionning" 
-                          " is less accurate than using GDAL.")
-            
-        warnings.warn("By default 'easting' and 'northing' are presumed to match"
-                      " the first and second argument respectively.") 
+            if raise_warning:
+                warnings.warn("It seems GDAL is not set! will use the equations"
+                              " from USGS Bulletin 1532. Be aware, the positionning" 
+                              " is less accurate than using GDAL.")
+        
+        if raise_warning:
+            warnings.warn("By default 'easting' and 'northing' are presumed to match"
+                          " the first and second argument respectively.") 
         
         reflat_ar, reflon_ar = lat , lon 
     
@@ -1907,7 +1913,7 @@ def _is_readable (
     _, ex = os.path.splitext(f) 
     if ex.lower() not in tuple (cpObj.keys()):
         raise TypeError(f"Can only parse the {smft(cpObj.keys(), 'or')} files"
-                        )
+                        f" not {ex!r}.")
     try : 
         f = cpObj[ex](f, **kws)
     except FileNotFoundError:

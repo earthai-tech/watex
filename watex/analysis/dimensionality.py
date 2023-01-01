@@ -106,7 +106,7 @@ def nPCA(
     ---------
     >>> from watex.analysis.dimensionality import nPCA
     >>> from watex.datasets import fetch_data
-    >>> X, _= fetch_data('Bagoue analysis dataset')
+    >>> X, _= fetch_data('Bagoue analysed dataset')
     >>> pca = nPCA(X, 0.95, n_axes =3, return_X=False)
     >>> pca.components_
     >>> pca.feature_importances_
@@ -263,7 +263,7 @@ def iPCA(
     ---------
     >>> from watex.analysis.dimensionality import iPCA
     >>> from watex.datasets import fetch_data 
-    >>> X, _=fetch_data('Bagoue analysis data')
+    >>> X, _=fetch_data('Bagoue analysed data')
     >>> Xtransf = iPCA(X,n_components=None,n_batches=100, view=True)
     
     """
@@ -487,7 +487,7 @@ def LLE(
     -------
     >>> from watex.analysis.dimensionality import LLE
     >>> from watex.datasets import fetch_data 
-    >>> X, _=fetch_data('Bagoue analysis data')
+    >>> X, _=fetch_data('Bagoue analysed data')
     >>> lle_kws ={
     ...    'n_components': 4, 
     ...    "n_neighbors": 5}

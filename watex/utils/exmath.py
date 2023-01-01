@@ -158,7 +158,7 @@ def linkage_matrix(
       * method='single' assigns
 
         .. math::
-           d(u,v) = \\min(dist(u[i],v[j]))
+           d(u,v) = \min(dist(u[i],v[j]))
 
         for all points :math:`i` in cluster :math:`u` and
         :math:`j` in cluster :math:`v`. This is also known as the
@@ -167,7 +167,7 @@ def linkage_matrix(
       * method='complete' assigns
 
         .. math::
-           d(u, v) = \\max(dist(u[i],v[j]))
+           d(u, v) = \max(dist(u[i],v[j]))
 
         for all points :math:`i` in cluster u and :math:`j` in
         cluster :math:`v`. This is also known by the Farthest Point
@@ -176,8 +176,7 @@ def linkage_matrix(
       * method='average' assigns
 
         .. math::
-           d(u,v) = \\sum_{ij} \\frac{d(u[i], v[j])}
-                                   {(|u|*|v|)}
+           d(u,v) = \sum_{ij} \\frac{d(u[i], v[j])}{(|u|*|v|)}
 
         for all points :math:`i` and :math:`j` where :math:`|u|`
         and :math:`|v|` are the cardinalities of clusters :math:`u`
@@ -218,12 +217,9 @@ def linkage_matrix(
 
         .. math::
 
-           d(u,v) = \\sqrt{\\frac{|v|+|s|}
-                               {T}d(v,s)^2
-                        + \\frac{|v|+|t|}
-                               {T}d(v,t)^2
-                        - \\frac{|v|}
-                               {T}d(s,t)^2}
+           d(u,v) = \sqrt{\frac{|v|+|s|}{T}d(v,s)^2 \\
+                        + \frac{|v|+|t|}{T}d(v,t)^2 \\
+                        - \frac{|v|}{T}d(s,t)^2}
 
         where :math:`u` is the newly joined cluster consisting of
         clusters :math:`s` and :math:`t`, :math:`v` is an unused
@@ -896,7 +892,7 @@ def ohmicArea(
         average value. 
         
     * objective: str - Type operation to outputs. By default, the function 
-        outputs the value of pseudo-area in :math:`$ \Omega .m^2 $`. However, for 
+        outputs the value of pseudo-area in :math:`\Omega .m^2`. However, for 
         plotting purpose by setting the argument to ``view``, its gives an 
         alternatively outputs of X and Y, recomputed and projected as weel as 
         the X and Y values of the expected fractured zone. Where X is the AB dipole 
@@ -956,17 +952,17 @@ def ohmicArea(
     presumed fractured rock contains water inside. However, we assume that 
     the fracture zone could exist and should contain groundwater. Mathematically,
     based on the VES1D model proposed by `Koefoed, O. (1976)`_ , we consider
-    a function :math:`$ \rho_T(l)$`, a set of reducing resistivity transform 
+    a function :math:`\rho_T(l)`, a set of reducing resistivity transform 
     function to lower the boundary plane at half the current electrode  
-    spacing :math:`$(l)$`. From the sounding curve :math:`$\rho_T(l)$`,  
-    curve an imaginary basement rock :math:`$b_r (l)$` of slope equal to ``45°`` 
-    with the horizontal :math:`$h(l)$` was created. A pseudo-area :math:`$S(l)$`
-    should be defined by extending from :math:`$h(l)$` the :math:`$b_r (l)$` 
-    curve when the sounding curve :math:`$\rho_T(l)$`  is below :math:`$b_r(l)$`,
-    otherwise :math:`$S(l)$` is equal to null. The computed area is called the 
-    ohmic-area :math:`$ohmS$` expressed in :math:`$\Omega .m^2$` and constitutes
-    the expected *fractured zone*. Thus :math:`$ohmS$` ≠ :math:`0` confirms the 
-    existence of the fracture zone while of :math:`$Ohms=0$` raises doubts. 
+    spacing :math:`(l)`. From the sounding curve :math:`\rho_T(l)`,  
+    curve an imaginary basement rock :math:`b_r (l)` of slope equal to ``45°`` 
+    with the horizontal :math:`h(l)` was created. A pseudo-area :math:`S(l)`
+    should be defined by extending from :math:`h(l)` the :math:`b_r (l)` 
+    curve when the sounding curve :math:`\rho_T(l)`  is below :math:`b_r(l)`,
+    otherwise :math:`S(l)` is equal to null. The computed area is called the 
+    ohmic-area :math:`ohmS` expressed in :math:`\Omega .m^2` and constitutes
+    the expected *fractured zone*. Thus :math:`ohmS` ≠ :math:`0` confirms the 
+    existence of the fracture zone while of :math:`Ohms=0` raises doubts. 
     The equation to determine the parameter is given as:
     
     .. math::
@@ -981,13 +977,13 @@ def ohmicArea(
         \rho_T(l) & = & l^2 \int_{0}^{\infty} T_i( \lambda ) h_1( \lambda l) \lambda d\lambda 
        
     where :math:`l_i \quad \text{and} \quad l_{i+1}` solve the equation 
-    :math:`S(l=0)`; :math:`$l$` is half the current electrode spacing :math:`$AB/2$`,
-    and :math:`$h_1$` denotes the first-order of the Bessel function of the first 
-    kind, :math:`$ \beta $` is the coordinate value on y-axis direction of the
-    intercept term of the :math:`$b_r(l)$` and :math:`$h(l)$`, :math:`$T_i(\lambda )$`
-    resistivity transform function,  :math:`$lamda$` denotes the integral variable,
-    where n denotes the number of layers, :math:`$rho_i$` and :math:`$h_i$` are 
-    the resistivity and thickness of the :math:`$i-th$` layer, respectively.
+    :math:`S(l=0)`; :math:`l` is half the current electrode spacing :math:`AB/2`,
+    and :math:`h_1` denotes the first-order of the Bessel function of the first 
+    kind, :math:`\beta` is the coordinate value on y-axis direction of the
+    intercept term of the :math:`b_r(l)` and :math:`h(l)`, :math:`T_i(\lambda )`
+    resistivity transform function,  :math:`lamda` denotes the integral variable,
+    where n denotes the number of layers, :math:`rho_i` and :math:`h_i` are 
+    the resistivity and thickness of the :math:`i-th` layer, respectively.
     Get more explanations and cleareance of formula  in the paper of 
     `Kouadio et al 2022`_. 
         
@@ -1280,8 +1276,8 @@ def shape (
         **"V"**, **"U"**, **"W"**, **"M"**, **"K"**, **"C"**, and **"H"**
     
     The `shape` consists to feed the algorithm with the |ERP| resistivity 
-    values by specifying the station :math:`$(S_{VES})$`. Indeed, 
-    mostly, :math:`$S_{VES}$` is the station with a very low resistivity value
+    values by specifying the station :math:`(S_{VES})`. Indeed, 
+    mostly, :math:`S_{VES}` is the station with a very low resistivity value
     expected to be the drilling location. 
     
     :param cz: array-like -  Conductive zone resistivity values 
@@ -1672,7 +1668,7 @@ def sfi (
     dispersion ratio around the cumulated sum of the  resistivity values of 
     the selected anomaly. It uses a similar approach of  IF parameter proposed 
     by `Dieng et al`_ (2004).  Furthermore, its threshold is set to
-    :math:`$sqrt{2}$`  for symmetrical anomaly characterized by a perfect 
+    :math:`sqrt{2}`  for symmetrical anomaly characterized by a perfect 
     distribution of resistivity in a homogenous medium. The formula is
     given by:
     
@@ -1680,8 +1676,8 @@ def sfi (
         
         sfi=\sqrt{(P_a^{*}/P_a )^2+(M_a^{*}/M_a )^2}
     
-    where :math:`$P_a$` and :math:`$M_a$` are the anomaly power and the magnitude 
-    respectively. :math:`$P_a^{*}$`  is and :math:`$M_a^{*}$` are the projected 
+    where :math:`P_a` and :math:`M_a` are the anomaly power and the magnitude 
+    respectively. :math:`P_a^{*}`  is and :math:`M_a^{*}` are the projected 
     power and magnitude of the lower point of the selected anomaly.
     
     Parameters 
@@ -2088,7 +2084,7 @@ def power (p:Sub[SP[ArrayLike, DType [int]]] | List[int] ) -> float :
     
     The power parameter implicitly defines the width of the conductive zone
     and is evaluated from the difference between the abscissa 
-    :math:`$X_{LB}$` and the end :math:`$X_{UB}$` points of 
+    :math:`X_{LB}` and the end :math:`X_{UB}` points of 
     the selected anomaly:
     
     .. math::
@@ -2474,7 +2470,7 @@ def compute_anr (
             \rho_{a_i} - \bar \rho_a}{\sigma_{\rho_a}} |
        
 
-    where :math:`$\sigma_{rho_a}$`  and :math:`\bar \rho_a` are the standard 
+    where :math:`\sigma_{rho_a}`  and :math:`\bar \rho_a` are the standard 
     deviation  and the mean of the resistivity values composing the selected
     anomaly. 
     

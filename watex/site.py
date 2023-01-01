@@ -80,7 +80,8 @@ class Location (object):
         self.reference_ellipsoid = kwds.pop('reference_ellipsoid', 23)
         self._utm_zone =kwds.pop('utm_zone', None) 
         self._elev = kwds.pop('elev', None)
-    
+        self._east= None 
+        self._north =None 
     @property 
     def utm_zone (self): 
         return self._utm_zone
