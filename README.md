@@ -26,6 +26,7 @@
 * [Home](https://watex.readthedocs.io/en/latest/)
 * [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
 * [Installation](https://watex.readthedocs.io/en/latest/installation.html)
+* [User guide](https://watex.readthedocs.io/en/latest/user_guide.html)
 * [Code snippets](https://watex.readthedocs.io/en/latest/demo/tutorials.html)
   * *Example of DC & EM parameters computation useful for [FR prediction](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/edemo.ipynb)*
   * *Example of Naive Aquifer predicting useful for [k-prediction](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/hdemo.ipynb)*
