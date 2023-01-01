@@ -8,14 +8,13 @@
 GeoDataBase
 ============
 Special class to manage outputs-input requests from-into SQL  database 
-Editing this module presume that you are aware of what you  
-are doing. The module is a core of Geodrill subpackages. However the the way 
-the dataBase is arranged can be enhanced  and adapted for better convenient or
-other suitable purposes.
+Editing this module presume that you are aware of what you  are doing. 
+The module is a core of Stratigraphic and drilling subpackages. 
+However the the way the dataBase is arranged can be enhanced  and adapted 
+for better convenient or other suitable purposes.
 
 @author: LKouadio a.k.a @Daniel
 """
-
 
 import os
 import sys
@@ -24,9 +23,8 @@ import pandas as pd
 import warnings
 import datetime
 import shutil 
-# from pg8000 import DBAPI
 import sqlite3 as sq3 
-
+# from pg8000 import DBAPI
 from ..exceptions import ( 
     GeoDatabaseError, 
     SQLError, 
@@ -39,7 +37,7 @@ from .._watexlog import watexlog
 _logger = watexlog().get_watex_logger(__name__ )
 
 # let set the systeme path find memory dataBase
-for p in ('.', '..', '../..', 'pycsamt/geodrill/_geomemo'): 
+for p in ('.', '..', '../..', 'watex/etc'): 
     # for consistency, force system to find the database path.
     sys.path.insert(0, os.path.abspath(p))  
 
@@ -72,13 +70,13 @@ class GeoDataBase (object):
     #                'geodrill', '_geomemo', 'memory.sq3') 
     # locate the geodataBase
     geoDataBase = os.path.join(
-        os.path.abspath('watex/etc/_geomemo'),'memory.sq3')
+        os.path.abspath('watex/etc'),'memory.sq3')
  
     # :memory: is faster but we chose the static option :~.sq3 
     #in sql_DB contains drill holes and wells Tables 
     # will develop in the future extensions 
 
-    def __init__(self, geo_structure_name=None) :
+    def __init__(self, geo_structure_name=None):
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         self.geo_structure_name = geo_structure_name
         self.dateTime= datetime.datetime.now().utcnow()   # Get the date time now  

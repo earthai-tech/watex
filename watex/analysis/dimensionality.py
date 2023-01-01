@@ -18,27 +18,22 @@ import os
 import warnings
 import numpy as np
 import pandas as pd 
-
-from ..exlib.sklearn import(
+from sklearn.decomposition import (
     PCA, 
     IncrementalPCA, 
-    KernelPCA, 
-
+    KernelPCA
     )
-from ..typing import (
+from .._typing import (
     Any,
     Dict, 
     Optional, 
-    F, 
     ArrayLike, 
     NDArray, 
     DataFrame,
-    Series, 
     Sub
     )
 
 from .._watexlog import watexlog
-from ..models.validation import GridSearch
 
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -47,10 +42,8 @@ __all__ = [
     'kPCA', 
     'LLE', 
     'iPCA', 
-    'get_best_kPCA_params', 
     'get_component_with_most_variance',
     'plot_projection', 
-    'find_features_importances', 
     'find_features_importances', 
 ]
   
@@ -514,112 +507,7 @@ def LLE(
     make_introspection(obj, lleObj)
     # set axes and features importances
     return X if return_X else obj            
-
-
-# @docstring(GridSearch, start='Parameters', end='Examples')
-def get_best_kPCA_params(
-        X:NDArray | DataFrame,
-        n_components: float | int =2,
-        *,
-        y: ArrayLike | Series=None,
-        param_grid: Dict[str, Any] =None, 
-        clf: F =None,
-        cv: int =7,
-        **grid_kws
-        )-> Dict[str, Any]: 
-    """ Select the Kernel and hyperparameters using GridSearchCV that lead 
-    to the best performance.
-    
-    As kPCA( unsupervised learning algorithm), there is obvious performance
-    measure to help selecting the best kernel and hyperparameters values. 
-    However dimensionality reduction is often a preparation step for a 
-    supervised task(e.g. classification). So we can use grid search to select
-    the kernel and hyperparameters that lead the best performance on that 
-    task. By default implementation we create two steps pipeline. First reducing 
-    dimensionality to two dimension using kPCA, then applying the 
-    `LogisticRegression` for classification. AFter use Grid searchCV to find 
-    the best ``kernel`` and ``gamma`` value for kPCA in oder to get the best 
-    clasification accuracy at the end of the pipeline.
-    
-    Parameters
-    ----------
-   X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
-       Training set; Denotes data that is observed at training and 
-       prediction time, used as independent variables in learning. 
-       When a matrix, each sample may be represented by a feature vector, 
-       or a vector of precomputed (dis)similarity with each training 
-       sample. :code:`X` may also not be a matrix, and may require a 
-       feature extractor or a pairwise metric to turn it into one  before 
-       learning a model.
-       
-    n_components: Number of dimension to preserve. If`n_components` 
-            is ranged between float 0. to 1., it indicated the number of 
-            variance ratio to preserve. 
-            
-    y: array_like 
-        label validation for supervised learning 
-        
-    param_grid: list 
-        list of parameters Grids. For instance::
-            
-            param_grid=[{
-                "kpca__gamma":np.linspace(0.03, 0.05, 10),
-                "kpca__kernel":["rbf", "sigmoid"]
-                }]
-            
-    clf: callable, 
-        Can be base estimator or a composite estimor with pipeline. For 
-        instance::
-            
-            clf =Pipeline([
-            ('kpca', KernelPCA(n_components=n_components))
-            ('log_reg', LogisticRegression())
-            ])
-            
-    cv: int 
-        number of K-Fold to cross validate the training set.
-        
-    grid_kws:dict
-        Additional keywords arguments. Refer to 
-        :class:`~watex.modeling.validation.GridSearch`
-    
-    Example
-    -------
-    >>> from watex.analysis.dimensionality import get_best_kPCA_params
-    >>> from watex.datasets import fetch_data 
-    >>> X, y=fetch_data('Bagoue analysis data')
-    >>> param_grid=[{
-        "kpca__gamma":np.linspace(0.03, 0.05, 10),
-        "kpca__kernel":["rbf", "sigmoid"]
-        }]
-    >>> kpca_best_params =get_best_kPCA_params(
-                    X,y=y,scoring = 'accuracy',
-                    n_components= 2, clf=clf, 
-                    param_grid=param_grid)
-    >>> kpca_best_params
-    ... {'kpca__gamma': 0.03, 'kpca__kernel': 'rbf'}
-    
-    """
-
-    if n_components is None: 
-        n_components= get_component_with_most_variance(X)
-    if clf is None: 
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.pipeline import Pipeline 
-        
-        clf =Pipeline([
-            ('kpca', KernelPCA(n_components=n_components)),
-            ('log_reg', LogisticRegression())
-            ])
-    gridObj =GridSearch(base_estimator= clf,
-                        grid_params= param_grid, cv=cv,
-                        **grid_kws
-                        ) 
-    gridObj.fit(X, y)
-    
-    return gridObj.best_params_
-    
-    
+ 
 def make_introspection(
         Obj: object ,
         subObj: Sub[object]

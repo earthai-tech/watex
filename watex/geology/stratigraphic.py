@@ -8,27 +8,32 @@ Stratigraphic
 ==============
 Construct layers model from given layers properties such as density , porosity 
 permeability, transmissivity, resistivity , patches and so on ... 
+Build Statigraphic model from Inversion models blocks. This should be used to 
+predict the log under each station as well as the thicknesses from the collected 
+true boreholes and well resistivity data in the survey area. 
 
 """
 import os
 import warnings
 import copy
-# import shutil 
-# from six.moves import urllib 
-# from pprint import pprint 
 import numpy as np
-# import pandas as pd 
-from pycsamt.geodrill.geocore import (
-    Geodrill 
+
+from .._typing import NDArray 
+from .._watexlog import watexlog 
+from ..decorators import (
+    gplot2d
     )
-from ..utils.coreutils import ( 
-    serialize_data, 
-    load_serialized_data, 
+from ..exceptions import NotFittedError
+from .core import (
+    Base 
+    )
+from .database import ( 
+    GeoDataBase,
     )
 from ..utils.funcutils import ( 
+    serialize_data, 
+    load_serialized_data,
     smart_format, 
-    # sPath,
-    is_installing, 
     concat_array_from_list,
     parse_json, 
     parse_yaml,
@@ -47,122 +52,47 @@ from ..utils.geotools import (
     lns_and_tres_split, 
     
     )
-from ..decorators import (
-    gplot2d
+from ..utils._dependency import ( 
+    import_optional_dependency
     )
-from .._watexlog import watexlog 
-from .core import (
-    Base 
-    )
-from .database import ( 
-    GeoDataBase,
-    )
-_logger = watexlog().get_watex_logger(__name__ )
 
 TQDM= False 
 try : 
-    import tqdm 
+    import_optional_dependency("tqdm")
 except ImportError: 
-    is_success = is_installing('tqdm'
-                               )
-    if not is_success: 
-        warnings.warn("'Auto-install tqdm' failed. Could be installed it manually"
-                      " Can get 'tqdm' here <https://pypi.org/project/tqdm/> ")
-        _logger.info ("Failed to install automatically 'tqdm'. Can get the " 
-                      "package via  https://pypi.org/project/tqdm/")
-    else : TQDM = True 
-    
-else: TQDM = True 
+    pass 
+else: 
+    import tqdm 
+    TQDM = True 
+_logger = watexlog().get_watex_logger(__name__ )
 
-class GeoStrataModel(Geodrill, Base):
-    """
-    Inherit the :class:`pycsamt.geodrill.geocore.Geodrill` to create new model 
-    NM using the model get from occam 2D inversion results. 
-    
-    The challenge of this class  is firstly to delineate with much 
-    accuracy the existing layer boundary (top and bottom) and secondly,
-    to predict the stratigraphy log before the drilling operations at each 
-    station. Moreover, it’s a better way to select the right drilling location
-    and also to estimate the thickness of existing layer such as water table 
-    layer as well as to figure out the water reservoir rock in the case of 
-    groundwater exploration. 
-    
-    Arguments
-    ----------
-    **crm** : str,  
-                full path to Occam model file.                             
-    **beta** :  int,                
-            Value to  divide into the CRM blocks to improve 
-            the computation times. default is`5`                               
-    **n_epochs** :  int,  
-            Number of iterations. default is `100`
-    **tres** :  array_like, 
-            Truth values of resistivities. Refer to 
-            :class:`~.geodrill.Geodrill` for more details
-    **ptols**: float,   
-            Existing tolerance error between the `tres` values given and 
-            the calculated resistivity in `crm` 
-    **input_layers** : list or array_like  
-            True input_layers names : geological 
-            informations of collected in the area.
-                
-    **kind**: str         
-        Kind of model function to compute the best fit model to replace the
-        value in `crm` . Can be 'linear' or 'polynomial'. if `polynomial` is 
-        set, specify the `degree. Default is 'linear'. 
-        
-    **alpha**: float , 
-        Learning rate for gradient descent computing.  *Default* is ``1e+4`` 
-        for linear. If `kind` is  set to `polynomial` the default value should 
-        be `1e-8`. 
-    **degree**: int,
-         Polynomial function degree to implement gradient descent algorithm. 
-         If `kind` is set to `Polynomial` the default `degree` is ``3.`` and 
-         details sequences 
-    **nm**:  ndarray     
-        The NM matrix with the same dimension with `crm` model blocks. 
+__all__=["GeoStrataModel"]
 
-    Examples
-    ----------
-    >>> from watex.geology.stratigraphic import GeoStrataModel 
-    >>> path=r'data/inversfiles/inver_res/K4'
-    >>> inversion_files = {'model_fn':'Occam2DModel', 
-    ...                   'mesh_fn': 'Occam2DMesh',
-    ...                    "iter_fn":'ITER27.iter',
-    ...                   'data_fn':'OccamDataFile.dat'
-    ...                    }
-    >>> input_resistivity_values =[10, 66, 70, 180, 1000, 2000, 
-    ...                           3000, 50, 7] 
-    >>> input_resistivity_values =[10, 66, 70, 180, 1000, 2000, 
-    ...                               3000, 7000, 15000 ] 
-    >>> input_layer_names =['river water', 'fracture zone', 'granite']
-    >>> inversion_files = {key:os.path.join(path, vv) for key,
-                    vv in inversion_files.items()}
-    >>> geosObj = GeoStratigraphy(**inversion_files, 
-                         input_resistivities=input_resistivity_values)
-    >>> zmodel = geosObj._zmodel
-    >>> geosObj._createNM(ptol =0.1)
-    >>> geosObj.nm 
+#XXXTODO: add MODEM construction block  in progress 
+class GeoStrataModel(Base):
 
-    Notes
-    ------
-    Module inherits the `Geodrill packages` which works with occam2d  model.
-    Occam2d inversion files are also acceptables for building model blocks 
-    
-    """
-    def __init__(self, crm=None, beta=5, ptol=0.1 , n_epochs=100,  **kwargs):
+    def __init__(
+        self, 
+        beta=5, 
+        ptol=0.1 , 
+        n_epochs=100, 
+        tres=None,
+        eta=1e-4, 
+        kind='linear', 
+        degree=1, 
+        build=False, 
+        **kwargs
+        ):
         super().__init__( **kwargs)
-        
-        self.crm =crm 
+
         self._beta =beta 
         self._ptol =ptol 
         self._n_epochs = n_epochs
-        
-        self._tres = kwargs.pop('tres', None)
-        self._eta = kwargs.pop('eta', 1e-4)
-        self._kind =kwargs.pop('kind', 'linear')
-        self._degree = kwargs.pop('degree', 1)
-        self._b = kwargs.pop('build', False)
+        self._tres = tres
+        self._eta = eta
+        self._kind =kind
+        self._degree = degree
+        self._b = build
         
         self.s0 =None 
         self._zmodel =None
@@ -170,24 +100,73 @@ class GeoStrataModel(Geodrill, Base):
         self.z =None
         self.nmSites=None
         self.crmSites=None 
-        
-        if self.model_res is not None : 
-            self.crm = self.model_res 
-            self.s0= np.zeros_like(self.model_res)
 
         for key in list(kwargs.keys()): 
             setattr(self, key, kwargs[key])
             
-        if self.input_resistivities is not None: 
-            self.tres = self.input_resistivities
-     
+    def fit(self, crm: NDArray =None, beta =5 , ptol= 0.1, **kws): 
+        """ 
+        Fit, populate attributes and construct the new stratigraphic 
+        model (NM)
+        
+        Parameters 
+        ------------
+        crm : ndarray of shape(n_vertical_nodes, n_horizontal_nodes ),  
+            Array-like of inversion two dimensional model blocks. Note that 
+            the `n_vertical_nodes` is the node from the surface to the depth 
+            while `n_horizontal_nodes` must include the station location 
+            (sites/stations) 
+            
+        beta:  int,                
+                Value to  divide into the CRM blocks to improve 
+                the computation times. default is`5`                               
+        n_epochs:  int,  
+                Number of iterations. default is `100`
+        ptols: float,   
+                Existing tolerance error between the `tres` values given and 
+                the calculated resistivity in `crm` 
+        Return 
+        --------
+        ``self``: :class:`watex.geology.stratigraphic.GeoStrataModel`. 
+            return `self` for methods chaining. 
+        
+        """
+        for key in list(kws.keys()): 
+            setattr(self, key, kws[key])
+            
+        if crm is not None: 
+            self.crm=crm 
+        # expect the bock is build from 
+        # external modeling softwares 
+        if hasattr (self, "input_resistivities"):  
+            if self.input_resistivities: 
+                self.tres = self.input_resistivities
+        if hasattr (self, 'model_res'): 
+            if self.model_res is not None : 
+                self.crm = self.model_res 
+                self.s0= np.zeros_like(self.model_res)
+            
         if self.crm is not None: 
             self._makeBlock()
             
         self.build 
-
- 
-     
+        
+        return self
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'crm'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
+    
     @property 
     def n_epochs(self): 
         """ Iteration numbers"""
@@ -292,9 +271,8 @@ class GeoStrataModel(Geodrill, Base):
         if self._b: 
             self._createNM()
         
-        #return self._b
    
-        
+ 
     def _createNM(self, crm =None, beta =5 , ptol= 0.1, **kws): 
         """ Create NM through the differents steps of NM creatings. 
         
@@ -481,7 +459,7 @@ class GeoStrataModel(Geodrill, Base):
         :Example: 
             
             >>> from watex.geology.stratigraphic import GeoStratigraphy
-            >>> geosObj = GeoStratigraphy(**inversion_files, 
+            >>> geosObj = GeoStratigraphy().fit(**inversion_files, 
                               input_resistivities=input_resistivity_values) 
             >>> ss0, error = geosObj._hardMinError(subblocks=geosObj.subblocks[0],
                                      s0=geosObj.s0[0])
@@ -885,7 +863,7 @@ class GeoStrataModel(Geodrill, Base):
         :Example: 
             
             >>> from watex.geology.stratigraphic import GeostrataModel
-            >>> geosObj = GeostrataModel(**inversion_files,
+            >>> geosObj = GeostrataModel().fit(**inversion_files,
                                   input_resistivities=input_resistivity_values, 
                                   input_layers=input_layer_names)
             >>> geosObj.strataModel(kind='nm', misfit_G =False)
@@ -960,7 +938,7 @@ class GeoStrataModel(Geodrill, Base):
         --------
             >>> from watex.geology.stratigraphic import GeoStrataModel 
             >>> import pycsamt.utils.geo_utils as GU 
-            >>> geosObj = GeoStrataModel( input_resistivities=TRES, 
+            >>> geosObj = GeoStrataModel().fit( input_resistivities=TRES, 
             ...              input_layers=LNS,**INVERS_KWS)
             >>> geosObj._strataPropertiesOfSite(geosObj,station= 'S05')
         """
@@ -1433,52 +1411,156 @@ def quick_read_geomodel(lns=None, tres=None):
     
     return geosObj 
 
-def assert_len_layers_with_resistivities(
-        real_layer_names:str or list, real_layer_resistivities: float or list ): 
-    """
-    Assert the length of of the real resistivites with their
-    corresponding layers. If the length of resistivities is larger than 
-    the layer's names list of array, the best the remained resistivities
-    should be topped up to match the same length. Otherwise if the length 
-    of layers is larger than the resistivities array or list, layer'length
-    should be reduced to fit the length of the given resistivities.
+GeoStrataModel.__doc__="""\
+Create a stratigraphic model from inversion models blocks. 
+
+The Inversion model block is two dimensional array of shape 
+(n_vertical_nodes, n_horizontal_nodes ). Can use external packages 
+to build blocks and provide the 2Dblock into `crm` parameter. 
+
+The challenge of this class  is firstly to delineate with much 
+accuracy the existing layer boundary (top and bottom) and secondly,
+to predict the stratigraphy log before the drilling operations at each 
+station. Moreover, it’s a better way to select the right drilling location
+and also to estimate the thickness of existing layer such as water table 
+layer as well as to figure out the water reservoir rock in the case of 
+groundwater exploration. 
+
+Note that if the model blocks is build from externam softwares. You may as  
+in the keywordsr argumments of `GeoStrataModel` the following attributes: 
     
-    Parameters
-    ----------
-        * real_layer_names: array_like, list 
-                    list of input layer names as real 
-                    layers names encountered in area 
-                    
-        * real_layer_resistivities :array_like , list 
-                    list of resistivities get on survey area
-                
-    Returns 
-    --------
-        list 
-            real_layer_names,  new list of input layers 
-    """
-    # for consistency put on string if user provide a digit
-    real_layer_names =[str(ly) for ly in real_layer_names]      
-    
-    if len(real_layer_resistivities) ==len(real_layer_names): 
-        return real_layer_names
-    
-    elif len(real_layer_resistivities) > len(real_layer_names): 
-         # get the last value of resistivities  to match the structures
-         # names and its resistivities 
-        sec_res = real_layer_resistivities[len(real_layer_names):]        
-       # fetch the name of structure 
-        geos =Geodrill.get_structure(resistivities_range=sec_res) 
-        if len(geos)>1 : tm = 's'
-        else :tm =''
-        print(f"---> Temporar{'ies' if tm=='s' else 'y'} "
-              f"{len(geos)} geological struture{tm}."
-              f" {'were' if tm =='s' else 'was'} added."
-              " Uncertained layers should be ignored.")
+    - model_res : 2D resitivity model of (n_vertical_nodes, n_horizontal_nodes)
+        If `crm` is given , no need to provided it. 
+    - geo_depth: Is the depth the surface to the bottom of each layer that 
+        composed the pseudo-boreholes. Note the N-vertical nodes values 
+    - input_resistivities: list of input resistivities. If the `tres` is passed 
+        not need to given. 
         
-        real_layer_names.extend(geos)       
-        return real_layer_names 
-    elif len(real_layer_names) > len(real_layer_resistivities): 
-        real_layer_names = real_layer_names[:len(real_layer_resistivities)]        
-        return real_layer_names
+Parameters 
+----------
+crm : ndarray of shape(n_vertical_nodes, n_horizontal_nodes ),  
+    Array-like of inversion two dimensional model blocks. Note that 
+    the `n_vertical_nodes` is the node from the surface to the depth 
+    while `n_horizontal_nodes` must include the station location 
+    (sites/stations) 
+    
+beta:  int,                
+        Value to  divide into the CRM blocks to improve 
+        the computation times. default is`5`                               
+n_epochs:  int,  
+        Number of iterations. default is `100`
+tres:  array_like, 
+        Truth values of resistivities. Refer to 
+        :class:`~.geodrill.Geodrill` for more details
+ptols: float,   
+        Existing tolerance error between the `tres` values given and 
+        the calculated resistivity in `crm` 
+input_layers: list or array_like  
+        True input_layers names : geological 
+        informations of collected in the area.
+            
+kind: str         
+    Kind of model function to compute the best fit model to replace the
+    value in `crm` . Can be 'linear' or 'polynomial'. if `polynomial` is 
+    set, specify the `degree. Default is 'linear'. 
+    
+alpha: float , 
+    Learning rate for gradient descent computing.  *Default* is ``1e+4`` 
+    for linear. If `kind` is  set to `polynomial` the default value should 
+    be `1e-8`. 
+degree: int,
+     Polynomial function degree to implement gradient descent algorithm. 
+     If `kind` is set to `Polynomial` the default `degree` is ``3.`` and 
+     details sequences 
+**nm**:  ndarray     
+    The NM matrix with the same dimension with `crm` model blocks. 
+
+
+Examples
+----------
+>>> from watex.geology.stratigraphic import GeoStrataModel 
+>>> # Works with occam2d inversion files if 'pycsamt' or 'mtpy' is installed
+>>> # will call the module Geodrill from pycsamt to make blocks occam2d 
+>>> # for our demo. It presumes pycsamt is installed. 
+>>> from pycsamt.geodrill.geocore import Geodrill 
+>>> path=r'data/inversfiles/inver_res/K4'
+>>> inversion_files = {'model_fn':'Occam2DModel', 
+...                   'mesh_fn': 'Occam2DMesh',
+...                    "iter_fn":'ITER27.iter',
+...                   'data_fn':'OccamDataFile.dat'
+...                    }
+>>> input_resistivity_values =[10, 66, 70, 180, 1000, 2000, 
+...                           3000, 50, 7] 
+>>> input_resistivity_values =[10, 66, 70, 180, 1000, 2000, 
+...                               3000, 7000, 15000 ] 
+>>> input_layer_names =['river water', 'fracture zone', 'granite']
+>>> inversion_files = {key:os.path.join(path, vv) for key,
+                vv in inversion_files.items()}
+>>> gdrill= Geodrill (**inversion_files, 
+                     input_resistivities=input_resistivity_values
+                     )
+>>> # we can collect the 'model_res' and 'geo_depth_attributes' 
+>>> # passed to 'GeoStratigraphy' fit method 
+>>> geosObj = GeoStratigraphy(ptol =0.1).fit(crm = model_res , 
+                     input_resistivities=gdrill.input_resistivity_values
+                     geo_depth= gdrill.geo_depth )
+>>> zmodel = geosObj._zmodel
+>>> geosObj.nm 
+
+Notes
+------
+Modules works properly with occam2d inversion files if 'pycsamt' or 'mtpy' is 
+installed and  inherits the `Base package` which works with occam2d  model.
+Occam2d inversion files are also acceptables for building model blocks. 
+However the MODEM resistivity files is still ongoing 
+
+"""
+# def assert_len_layers_with_resistivities(
+#         real_layer_names:str or list, real_layer_resistivities: float or list ): 
+#     """
+#     Assert the length of of the real resistivites with their
+#     corresponding layers. If the length of resistivities is larger than 
+#     the layer's names list of array, the best the remained resistivities
+#     should be topped up to match the same length. Otherwise if the length 
+#     of layers is larger than the resistivities array or list, layer'length
+#     should be reduced to fit the length of the given resistivities.
+    
+#     Parameters
+#     ----------
+#         * real_layer_names: array_like, list 
+#                     list of input layer names as real 
+#                     layers names encountered in area 
+                    
+#         * real_layer_resistivities :array_like , list 
+#                     list of resistivities get on survey area
+                
+#     Returns 
+#     --------
+#         list 
+#             real_layer_names,  new list of input layers 
+#     """
+#     # for consistency put on string if user provide a digit
+#     real_layer_names =[str(ly) for ly in real_layer_names]      
+    
+#     if len(real_layer_resistivities) ==len(real_layer_names): 
+#         return real_layer_names
+    
+#     elif len(real_layer_resistivities) > len(real_layer_names): 
+#          # get the last value of resistivities  to match the structures
+#          # names and its resistivities 
+#         sec_res = real_layer_resistivities[len(real_layer_names):]        
+#        # fetch the name of structure 
+#         geos =Geodrill.get_structure(resistivities_range=sec_res) 
+#         if len(geos)>1 : tm = 's'
+#         else :tm =''
+#         print(f"---> Temporar{'ies' if tm=='s' else 'y'} "
+#               f"{len(geos)} geological struture{tm}."
+#               f" {'were' if tm =='s' else 'was'} added."
+#               " Uncertained layers should be ignored.")
+        
+#         real_layer_names.extend(geos)       
+#         return real_layer_names 
+#     elif len(real_layer_names) > len(real_layer_resistivities): 
+#         real_layer_names = real_layer_names[:len(real_layer_resistivities)]        
+#         return real_layer_names
     

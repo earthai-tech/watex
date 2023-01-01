@@ -29,15 +29,18 @@ edited by LKouadio on Tue Oct 11 16:54:26 2022
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import linalg
-from .._docstring import _core_docs 
-from ..exlib.sklearn import ( 
-    PCA, 
-    FactorAnalysis, 
-    ShrunkCovariance, 
-    LedoitWolf , 
-    cross_val_score, 
-    GridSearchCV 
-    )
+from sklearn.decomposition import PCA, FactorAnalysis 
+from sklearn.covariance import  ShrunkCovariance, LedoitWolf 
+from sklearn.model_selection import GridSearchCV, cross_val_score
+from .._docstring import _core_docs
+
+__all__=[ 
+    "lw_score", 
+    "shrunk_cov_score", 
+    "compute_scores", 
+    "compare_pca_and_fa_analysis", 
+    "make_data", 
+    ]
 
 def compute_scores(X, n_features , n_components = 5):
     n_components = np.arange(0, n_features, n_components)
@@ -53,7 +56,7 @@ def compute_scores(X, n_features , n_components = 5):
     return pca_scores, fa_scores
 
 compute_scores.__doc__ ="""\
-Compute PCA score and Factor Analysis scores from training X 
+Compute PCA score and Factor Analysis scores from training X. 
   
 Parameters 
 -----------
@@ -75,7 +78,8 @@ def shrunk_cov_score(X):
     return np.mean(cross_val_score(cv.fit(X).best_estimator_, X))
 
 shrunk_cov_score.__doc__="""\
-shrunk the covariance scores 
+shrunk the covariance scores.
+ 
 Parameters 
 -----------
 {params.X} 
@@ -153,7 +157,7 @@ def compare_pca_and_fa_analysis (
     
 compare_pca_and_fa_analysis.__doc__="""\
 Compute PCA score and Factor Analysis scores from training X and compare  
-probabilistic PCA and Factor Analysis  models
+probabilistic PCA and Factor Analysis  models.
   
 Parameters 
 -----------

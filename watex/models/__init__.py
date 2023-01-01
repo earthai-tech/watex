@@ -2,19 +2,28 @@
 from .validation import ( 
     BaseEvaluation, 
     GridSearch, 
-    multipleGridSearches, 
+    GridSearchMultiple,
+    get_best_kPCA_params, 
+    get_scorers, 
+    getGlobalScores, 
+    getSplitBestScores, 
+    displayCVTables, 
+    displayFineTunedResults, 
+    displayModelMaxDetails
 
     )
-from .premodels import ( 
-    p, 
-    pModels 
-    )
+from .premodels import pModels 
 
 __all__=[
     "BaseEvaluation", 
     "GridSearch", 
-    "multipleGridSearches", 
-    "p", 
-    "pModels", 
-    
+    "GridSearchMultiple", 
+    "get_best_kPCA_params", 
+    "get_scorers", 
+    "getGlobalScores", 
+    "getSplitBestScores", 
+    "displayCVTables", 
+    "displayFineTunedResults", 
+    "displayModelMaxDetails", 
+    "pModels"
     ]

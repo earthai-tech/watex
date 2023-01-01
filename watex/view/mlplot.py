@@ -33,7 +33,8 @@ from matplotlib import cm
 from .._watexlog import watexlog
 from .._docstring import ( 
     _core_docs, 
-    DocstringComponents
+    _baseplot_params, 
+    DocstringComponents, 
     )
 from ..analysis.dimensionality import nPCA
 from ..decorators import  docSanitizer 
@@ -44,7 +45,8 @@ from ..exlib.sklearn import  (
     StandardScaler, 
     MinMaxScaler, 
     train_test_split, 
-    mean_squared_error
+    mean_squared_error, 
+    KMeans
     ) 
 from ..exceptions import ( 
     NotFittedError , 
@@ -58,7 +60,7 @@ from ..metrics import (
     confusion_matrix
     )
 from ..property import BasePlot 
-from ..typing import ( 
+from .._typing import ( 
     Optional, 
     Tuple, 
     F,
@@ -86,12 +88,19 @@ from ..utils.mlutils import (
     projection_validator, 
     )
 from ..utils.plotutils import make_mpl_properties
-from ..utils.validator import get_estimator_name 
+from ..utils.validator import ( 
+    get_estimator_name , 
+    array_to_frame, 
+    check_array, 
+    check_X_y, 
+    check_y,
+    )
 
 _logger=watexlog.get_watex_logger(__name__)
 
 #-----
-# Add specific params to docs 
+# Add specific params to Evaldocs 
+
 _eval_params = dict( 
     objective="""
 objective: str, default=None, 
@@ -105,12 +114,57 @@ objective: str, default=None,
     to the hydraulic system requirement during the campaign for drinking 
     water supply. For any other purpose for the dataset, keep the objective  
     to ``None``. Default is ``None``.    
+    """, 
+    yp_ls="""
+yp_ls: str, default='-', 
+    Line style of `Predicted` label. Can be [ '-' | '.' | ':' ] 
+    """, 
+    yp_lw="""
+yp_lw: str, default= 3
+    Line weight of the `Predicted` plot
+    """,
+    yp_lc ="""
+yp_lc: str or :func:`matplotlib.cm`, default= 'k'
+    Line color of the `Prediction` plot. *default* is ``k``
+    """, 
+    yp_marker="""
+yp_marker: str or :func:`matplotlib.markers`, default ='o'
+    Style of marker in  of `Prediction` points. 
+    """, 
+    yp_markerfacecolor="""
+yp_markerfacecolor: str or :func:`matplotlib.cm`, default='k'
+    Facecolor of the `Predicted` label marker.
+    """, 
+    yp_markeredgecolor="""
+yp_markeredgecolor: stror :func:`matplotlib.cm`,  default= 'r' 
+    Edgecolor of the `Predicted` label marker.
+    """, 
+    yp_markeredgewidth="""
+yp_markeredgewidth: int, default=2
+    Width of the `Predicted`label marker.
+    """, 
+    rs="""
+rs: str, default='--'
+    Line style of `Recall` metric 
+    """, 
+    ps="""
+ps: str, default='-'
+    Line style of `Precision `metric
+    """, 
+    rc="""
+rc: str, default=(.6,.6,.6)
+    Recall metric colors 
+    """, 
+    pc="""
+pc: str or :func:`matplotlib.cm`, default='k'
+    Precision colors from Matplotlib colormaps. 
     """
     )
 
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
-    base=DocstringComponents(_eval_params), 
+    base=DocstringComponents(_baseplot_params), 
+    evdoc=DocstringComponents(_eval_params), 
     )
 #-------
 
@@ -187,7 +241,7 @@ class EvalPlot(BasePlot):
     def fit(self, X: NDArray |DataFrame =None, y:ArrayLike =None, 
             **fit_params ): 
         """
-        Fit data and populate the arguments for plotting purposes. 
+        Fit data and populate the attributes for plotting purposes. 
         
         There is no conventional procedure for checking if a method is fitted. 
         However, an class that is not fitted should raise 
@@ -236,7 +290,9 @@ class EvalPlot(BasePlot):
             raise TypeError(
                 "X array must not be None, or pass a filepath or "
                 "dataframe object as keyword data argument to set 'X'.")
-            
+        # Create a pseudo frame"
+        # if 'X' is not a dataframe
+        X= array_to_frame(X, to_frame= True, input_name="X", force =True )
         X = to_numeric_dtypes(X , columns = columns )
         X = selectfeatures( X, include ='number')
         
@@ -254,7 +310,7 @@ class EvalPlot(BasePlot):
         """ Transform the data and keep only the numerical features. 
         
         It is not convenient to use `transform` if user want to keep 
-        categorical values in the Array 
+        categorical values in the array 
         
         Parameters
         ------------
@@ -396,7 +452,7 @@ class EvalPlot(BasePlot):
     )->'EvalPlot': 
         """ Plot PCA component analysis using :class:`~.sklearn.decomposition`. 
         
-        PCA indentifies the axis that accounts for the largest amount of 
+        PCA identifies the axis that accounts for the largest amount of 
         variance in the train set `X`. It also finds a second axis orthogonal 
         to the first one, that accounts for the largest amount of remaining 
         variance.
@@ -1237,7 +1293,7 @@ class EvalPlot(BasePlot):
 EvalPlot.__doc__=r"""\
 Metric and dimensionality Evaluatation Plots  
 
-Inherited from :class:`BasePlot`. Dimensional reduction and metrics 
+Inherited from :class:`BasePlot`. Dimensional reduction and metric 
 plots. The class works only with numerical features. 
 
 .. admonition:: Discouraged
@@ -1246,7 +1302,7 @@ plots. The class works only with numerical features.
     discouraged. However, We encourage user to prepare its dataset 
     before using the `~.EvalPlot` methods. This is recommended to have 
     full control of the expected results. Indeed, the most metrics plot 
-    implemented here works with sueprvised methods especially deals 
+    implemented here works with supervised methods especially deals 
     with the classification problems. So, the convenient way is for  
     users to discretize/categorize (class labels) before the `fit`. 
     If not the case, as the examples of demonstration  under each method 
@@ -1264,7 +1320,7 @@ Parameters
 {params.core.X}
 {params.core.y}
 {params.core.tname}
-{params.base.objective}
+{params.evdoc.objective}
     
 encode_labels: bool, default=False,  
     label encoding works with `label_values` parameter. 
@@ -1285,7 +1341,7 @@ encode_labels: bool, default=False,
                          >=y.max {{2}}]
         
     This auto-splitting could not fit the exact classification of the 
-    target so it is recommended to set the `label_values` as list of 
+    target so it is recommended to set the `label_values` as a list of 
     class labels. For instance `label_values=[0 , 1, 2]` and else. 
    
 scale: str, ['StandardScaler'|'MinMaxScaler'], default ='StandardScaler'
@@ -1311,105 +1367,67 @@ Litteral_classes: list or str, optional
             label_values =[0, 1, 3, 6]
             Litteral_classes = ['rate0', 'rate1', 'rate2', 'rate3']
 
-Returns 
----------
-{returns.self}
+{params.evdoc.yp_ls}
+{params.evdoc.yp_lw}
+{params.evdoc.yp_lc}
+{params.evdoc.rs}
+{params.evdoc.ps}
+{params.evdoc.rc}
+{params.evdoc.pc}
+{params.evdoc.yp_marker}
+{params.evdoc.yp_markerfacecolor}
+{params.evdoc.yp_markeredgecolor}
+{params.evdoc.yp_markeredgewidth}
+{params.base.savefig}
+{params.base.fig_dpi}
+{params.base.fig_num}
+{params.base.fig_size}
+{params.base.fig_orientation}
+{params.base.fig_title}
+{params.base.fs}
+{params.base.ls}
+{params.base.lc}
+{params.base.lw}
+{params.base.alpha}
+{params.base.font_weight}
+{params.base.font_style}
+{params.base.font_size}
+{params.base.ms}
+{params.base.marker}
+{params.base.marker_facecolor}
+{params.base.marker_edgecolor}
+{params.base.marker_edgewidth}
+{params.base.xminorticks}
+{params.base.yminorticks}
+{params.base.bins}
+{params.base.xlim}
+{params.base.ylim}
+{params.base.xlabel}
+{params.base.ylabel}
+{params.base.rotate_xlabel}
+{params.base.rotate_ylabel}
+{params.base.leg_kws}
+{params.base.plt_kws}
+{params.base.glc}
+{params.base.glw}
+{params.base.galpha}
+{params.base.gaxis}
+{params.base.gwhich}
+{params.base.tp_axis}
+{params.base.tp_labelsize}
+{params.base.tp_bottom}
+{params.base.tp_labelbottom}
+{params.base.tp_labeltop}
+{params.base.cb_orientation}
+{params.base.cb_aspect}
+{params.base.cb_shrink}
+{params.base.cb_pad}
+{params.base.cb_anchor}
+{params.base.cb_panchor}
+{params.base.cb_label}
+{params.base.cb_spacing}
+{params.base.cb_drawedges} 
 
-
-Attributes 
------------ 
-
-Hold others optional attributes as: 
-    
-==================  =======================================================
-Key Words           Description        
-==================  =======================================================
-fig_dpi             dots-per-inch resolution of the figure
-                    *default* is 300
-fig_num             number of the figure instance
-                    *default* is 'Mesh'
-fig_size            size of figure in inches (width, height)
-                    *default* is [5, 5]
-savefig             savefigure's name, *default* is ``None``
-fig_orientation     figure orientation. *default* is ``landscape``
-fig_title           figure title. *default* is ``None``
-fs                  size of font of axis tick labels, axis labels are
-                    fs+2. *default* is 6 
-ls                  [ '-' | '.' | ':' ] line style of mesh lines
-                    *default* is '-'
-lc                  line color of the plot, *default* is ``k``
-lw                  line weight of the plot, *default* is ``1.5``
-alpha               transparency number, *default* is ``0.5``  
-font_weight         weight of the font , *default* is ``bold``.        
-marker              marker of stations 
-                    *default* is r"$\blacktriangledown$".
-ms                  size of marker in points. *default* is 5
-marker_style        style  of marker in points. *default* is ``o``.
-markerfacecolor     facecolor of the marker. *default* is ``yellow``
-markeredgecolor     edgecolor of the marker. *default* is ``cyan``.
-markeredgewidth     width of the marker. *default* is ``3``.
-x_minorticks        minortick according to x-axis size and *default* is 1.
-y_minorticks        minortick according to y-axis size and *default* is 1.
-font_size           size of font in inches (width, height)
-                    *default* is 3.
-font_style          style of font. *default* is ``italic``
-bins                histograms element separation between two bar. 
-                     *default* is ``10``. 
-xlim                limit of x-axis in plot. *default* is None 
-ylim                limit of y-axis in plot. *default* is None 
-xlabel              label name of x-axis in plot. *default* is None 
-ylabel              label name  of y-axis in plot. *default* is None 
-rotate_xlabel       angle to rotate `xlabel` in plot. *default* is None 
-rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
-leg_kws             keyword arguments of legend. *default* is empty dict.
-plt_kws             keyword arguments of plot. *default* is empty dict
-rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
-                    *default* is '--'
-ps                  [ '-' | '.' | ':' ] line style of `Precision `metric
-                    *default* is '-'
-rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
-pc                  line color of `Precision` metric *default* is ``k``
-s                   size of items in scattering plots. default is ``fs*40.``
-gls                 [ '-' | '.' | ':' ] line style of grid  
-                    *default* is '--'.
-glc                 line color of the grid plot, *default* is ``k``
-glw                 line weight of the grid plot, *default* is ``2``
-galpha              transparency number of grid, *default* is ``0.5``  
-gaxis               axis to plot grid.*default* is ``'both'``
-gwhich              type of grid to plot. *default* is ``major``
-tp_axis             axis  to apply ticks params. default is ``both``
-tp_labelsize        labelsize of ticks params. *default* is ``italic``
-tp_bottom           position at bottom of ticks params. *default*
-                    is ``True``.
-tp_top              position at the top  of ticks params. *default*
-                    is ``True``.
-tp_labelbottom      see label on the bottom of the ticks. *default* 
-                    is ``False``
-tp_labeltop         see the label on the top of ticks. *default* is ``True``
-cb_orientation      orientation of the colorbar. *default* is ``vertical``
-cb_aspect           aspect of the colorbar. *default* is 20.
-cb_shrink           shrink size of the colorbar. *default* is ``1.0``
-cb_pad              pad of the colorbar of plot. *default* is ``.05``
-cb_anchor           anchor of the colorbar. *default* is ``(0.0, 0.5)``
-cb_panchor          proportionality anchor of the colorbar. *default* is 
-                    `` (1.0, 0.5)``.
-cb_label            label of the colorbar. *default* is ``None``.      
-cb_spacing          spacing of the colorbar. *default* is ``uniform``
-cb_drawedges        draw edges inside of the colorbar. *default* is ``False``
-cb_format           format of the colorbar values. *default* is ``None``.
-yp_ls               [ '-' | '.' | ':' ] line style of `Predicted` label.  
-                    *default* is '-'
-yp_lc               line color of the `Prediction` plot. *default* is ``k``
-yp_lw               line weight of the `Predicted` plot. *default* is ``3``
-yp_marker           style  of marker in  of `Prediction` points. 
-                        *default* is ``o``.
-yp_markerfacecolor  facecolor of the `Predicted` label marker. 
-                    *default* is ``k``
-yp_markeredgecolor  edgecolor of the `Predicted` label marker. 
-                    *default* is ``r``.
-yp_markeredgewidth  width of the `Predicted`label marker. *default* is ``2``.  
-==================  =======================================================
-   
 Notes 
 --------
 This module works with numerical data  i.e if the data must contains the 
@@ -1419,7 +1437,6 @@ chunked during the fit methods.
 
 """.format(
     params=_param_docs,
-    returns= _core_docs["returns"],
 )
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1439,7 +1456,7 @@ def plotProjection(
     """ Visualize dataset. 
     
     Since there is geographical information(latitude/longitude or
-    eating/northing), it is a good idea to create a scatterplot of 
+    easting/northing), it is a good idea to create a scatterplot of 
     all instances to visualize data.
     
     Parameters 
@@ -1507,7 +1524,18 @@ def plotProjection(
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
-    # validate the projections. 
+    #check array
+    X=check_array (
+        X, 
+        input_name="X", 
+        to_frame =True, 
+        )
+    Xt =check_array (
+        Xt, 
+        input_name="Xt", 
+        to_frame =True, 
+        )
+    # validate the projections.
     xy , xynames = projection_validator(X, Xt, columns )
     x, y , xt, yt =xy 
     xname, yname, xtname, yname=xynames 
@@ -1760,14 +1788,14 @@ def plotModel(
     ax.scatter(x= index,
                y =yt ,
                 color = pobj.lc,
-                 s = pobj.s*10,
-                 alpha = pobj.alpha, 
-                 marker = pobj.marker,
-                 edgecolors = pobj.marker_edgecolor,
-                 linewidths = pobj.lw,
-                 linestyles = pobj.ls,
-                 facecolors = pobj.marker_facecolor,
-                 label = 'Observed'
+                s = pobj.s*10,
+                alpha = pobj.alpha, 
+                marker = pobj.marker,
+                edgecolors = pobj.marker_edgecolor,
+                linewidths = pobj.lw,
+                linestyles = pobj.ls,
+                facecolors = pobj.marker_facecolor,
+                label = 'Observed'
                    )   
     # plot the predicted target
     ax.scatter(x= index, y =ypred ,
@@ -1860,7 +1888,7 @@ def plot_reg_scoring(
     reg, X, y, test_size=None, random_state =42, scoring ='mse',
     return_errors: bool=False, **baseplot_kws
     ) : 
-    #xxxxxxxxxxxxxxxx update base plot keywords arguments
+    #xxxxxxxxxxxxxxxx update base plot keyword arguments
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
@@ -1870,7 +1898,7 @@ def plot_reg_scoring(
         raise ValueError ("Acceptable scorings are'mse' are 'rmse'"
                           f" got {scoring!r}")
     if not hasattr(reg, '__class__') and not inspect.isclass(reg.__class__): 
-        raise TypeError("{reg!r} isn't a model estimator.")
+        raise TypeError(f"{reg!r} isn't a model estimator.")
          
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=test_size, random_state=random_state)
@@ -2281,6 +2309,12 @@ def plotDendroheat(
     
     
     """
+ 
+    df=check_array (
+        df, 
+        input_name="Data 'df' ", 
+        to_frame =True, 
+        )
     if columns is not None: 
         if isinstance (columns , str):
             columns = [columns]
@@ -2312,7 +2346,8 @@ def plotDendroheat(
     # 2. reorder the data in our initial dataframe according 
     # to the clustering label that can be accessed by a dendrogram 
     # which is essentially a Python dictionnary via a key leaves 
-    df_rowclust = df.iloc [r['leaves'][::-1]]
+    df_rowclust = df.iloc [r['leaves'][::-1]] if hasattr(
+        df, 'columns') else df  [r['leaves'][::-1]]
     
     # 3. construct the heatmap from the reordered dataframe and position 
     # in the next ro the dendrogram 
@@ -2334,13 +2369,17 @@ def plotDendroheat(
     xticks_loc = list(axm.get_xticks())
     yticks_loc = list(axm.get_yticks())
 
+    df_rowclust_cols = df_rowclust.columns if hasattr (
+        df_rowclust , 'columns') else [f"{i+1}" for i in range (df.shape[1])]
     axm.xaxis.set_major_locator(mticker.FixedLocator(xticks_loc))
     axm.xaxis.set_major_formatter(mticker.FixedFormatter(
-        [''] + list (df_rowclust.columns)))
+        [''] + list (df_rowclust_cols)))
     
+    df_rowclust_index = df_rowclust.index if hasattr(
+        df_rowclust , 'columns') else [f"{i}" for i in range (df.shape[0])]
     axm.yaxis.set_major_locator(mticker.FixedLocator(yticks_loc))
     axm.yaxis.set_major_formatter(mticker.FixedFormatter(
-        [''] + list (df_rowclust.index)))
+        [''] + list (df_rowclust_index)))
     
     plt.show () 
     
@@ -2444,6 +2483,12 @@ def plotDendrogram (
     >>> plotDendrogram (X, columns =['X1', 'X2' ] ) 
 
     """
+    df=check_array (
+        df, 
+        input_name="Data 'df' ", 
+        to_frame =True, 
+        )
+    
     kind:str = kind or 'design'
     row_cluster = linkage_matrix(df = df, columns = columns, metric= metric, 
                                  method =method , kind = kind ,
@@ -2460,8 +2505,155 @@ def plotDendrogram (
     
     return r if return_r else None 
 
+def plotSilhouette (
+    X:NDArray |DataFrame, 
+    labels:ArrayLike=None, 
+    prefit:bool=True, 
+    n_clusters:int =3,  
+    n_init: int=10 , 
+    max_iter:int=300 , 
+    random_state:int=None , 
+    tol:float=1e4 , 
+    metric:str='euclidean', 
+    **kwd 
+ ): 
+    r"""
+    Plot silhouette to quantifyg the quality  of clustering samples. 
     
-def plotSilhouette (X, labels, metric ='euclidean', **kwds ):
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training instances to cluster. It must be noted that the data
+        will be converted to C ordering, which will cause a memory
+        copy if the given data is not C-contiguous.
+        If a sparse matrix is passed, a copy will be made if it's not in
+        CSR format.
+        
+    labels : array-like 1d of shape (n_samples,)
+        Label values for each sample.
+         
+    n_clusters : int, default=8
+        The number of clusters to form as well as the number of
+        centroids to generate.
+        
+    prefit : bool, default=False
+        Whether a prefit `labels` is expected to be passed into the function
+        directly or not.
+        If `True`, `labels` must be a fit predicted values target.
+        If `False`, `labels` is fitted and updated from `X` by calling
+        `fit_predict` methods. Any other values passed to `labels` is 
+        discarded.
+         
+    n_init : int, default=10
+        Number of time the k-means algorithm will be run with different
+        centroid seeds. The final results will be the best output of
+        n_init consecutive runs in terms of inertia.
+
+    max_iter : int, default=300
+        Maximum number of iterations of the k-means algorithm for a
+        single run.
+
+    tol : float, default=1e-4
+        Relative tolerance with regards to Frobenius norm of the difference
+        in the cluster centers of two consecutive iterations to declare
+        convergence.
+
+    verbose : int, default=0
+        Verbosity mode.
+
+    random_state : int, RandomState instance or None, default=42
+        Determines random number generation for centroid initialization. Use
+        an int to make the randomness deterministic.
+    
+    tol : float, default=1e-4
+        Relative tolerance with regards to Frobenius norm of the difference
+        in the cluster centers of two consecutive iterations to declare
+        convergence.
+        
+    metric : str or callable, default='euclidean'
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by :func:`sklearn.metrics.pairwise.pairwise_distances`.
+        If ``X`` is the distance array itself, use "precomputed" as the metric.
+        Precomputed distance matrices must have 0 along the diagonal.
+
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the distance function.
+        If using a ``scipy.spatial.distance`` metric, the parameters are still
+        metric dependent. See the scipy docs for usage examples.
+        
+    Note
+    -------
+    The sihouette coefficient is bound between -1 and 1 
+    
+    See More
+    ---------
+    Silhouette is used as graphical tools,  to plot a measure how tighly is  
+    grouped the examples of the clusters are.  To calculate the silhouette 
+    coefficient, three steps is allows: 
+        - calculate the **cluster cohesion**, :math:`a(i)`, as the average 
+            distance between examples, :math:`x^{(i)}`, and all the others 
+            points
+        - calculate the **cluster separation**, :math:`b^{(i)}` from the next 
+            average distance between the example , :math:`x^{(i)}` amd all 
+            the example of nearest cluster 
+        - calculate the silhouette, :math:`s^{(i)}`, as the difference between 
+            the cluster cohesion and separation divided by the greater of the 
+            two, as shown here: 
+                
+            .. math:: 
+                
+                s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
+                
+    Examples 
+    --------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.view.mlplot import plotSilhouette
+    >>> # use resistivity and gamma for this demo
+    >>> X_res_gamma = load_hlogs().frame[['resistivity', 'gamma_gamma']]  
+    
+    (1) Plot silhouette with 'prefit' set to 'False' 
+    >>> plotSilhouette (X_res_gamma, prefit =False)
+    
+    """
+    if  ( 
+        not prefit 
+        and labels is not None
+        ): 
+        warnings.warn("'labels' is given while 'prefix' is 'False'"
+                      "'prefit' will set to 'True'")
+        prefit=True 
+        
+    if labels is not None: 
+        if not hasattr (labels, '__array__'): 
+            raise TypeError( "Labels (target 'y') expects an array-like: "
+                            f"{type(labels).__name__!r}")
+        labels=check_y (
+            labels, 
+            to_frame =True, 
+            )
+        if len(labels)!=len(X): 
+            raise TypeError("X and labels must have a consistency size."
+                            f"{len(X)} and {len(labels)} respectively.")
+            
+    if prefit and labels is None: 
+        raise TypeError ("Labels can not be None, while 'prefit' is 'True'"
+                         " Turn 'prefit' to 'False' or provide the labels "
+                         "instead.")
+    if not prefit : 
+        km= KMeans (n_clusters =n_clusters , 
+                    init='k-means++', 
+                    n_init =n_init , 
+                    max_iter = max_iter , 
+                    tol=tol, 
+                    random_state =random_state
+                        ) 
+        labels = km.fit_predict(X ) 
+        
+    return _plotSilhouette(X, labels, metric = metric , **kwd)
+    
+    
+def _plotSilhouette (X, labels, metric ='euclidean', **kwds ):
     r"""Plot quantifying the quality  of clustering silhouette 
     
     Parameters 
@@ -2520,7 +2712,7 @@ def plotSilhouette (X, labels, metric ='euclidean', **kwds ):
                 
                 s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
     
-        Note that the sihouette coefficient is bound between -1 and 1 
+    Note that the sihouette coefficient is bound between -1 and 1 
     
     """
     cluster_labels = np.unique (labels) 
@@ -2748,11 +2940,18 @@ def plotLearningInspection(
     >>> from watex.view.mlplot import plotLearningInspection 
     >>> # import sparse  matrix from Bagoue datasets 
     >>> X, y = fetch_data ('bagoue prepared') 
-    >>> # import the  pretrained Radial Basic Function (RBF) from SVM 
+    >>> # import the  pretrained Radial Basis Function (RBF) from SVM 
     >>> plotLearningInspection (p.SVM.rbf.best_estimator_  , X, y )
     
     """ 
     train_sizes = train_sizes or np.linspace(0.1, 1.0, 5)
+    
+    X, y = check_X_y(
+        X, 
+        y, 
+        accept_sparse= True,
+        to_frame =True 
+        )
     
     if axes is None:
         _, axes = plt.subplots(1, 3, figsize=(20, 5))
@@ -2866,11 +3065,17 @@ def plot_matshow(
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
+    arr= check_array(
+        arr, 
+        to_frame =True, 
+        dtype=object,  
+        input_name="Array 'arr'"
+        )
     matshow_kws= matshow_kws or dict()
     fig = plt.figure(figsize = pobj.fig_size)
 
     ax = fig.add_subplot(1,1,1)
-
+    
     cax = ax.matshow(arr, **matshow_kws) 
     cbax= fig.colorbar(cax, **pobj.cb_props)
     
@@ -3038,6 +3243,16 @@ def biPlot(
     .. _Serafeim Loukas: https://towardsdatascience.com/...-python-7c274582c37e>
     
     """
+    Xr = check_array(
+        Xr, 
+        to_frame= False, 
+        input_name="X reduced 'Xr'"
+        )
+    components = check_array(
+        components, 
+        to_frame =False ,
+        input_name="PCA components"
+        )
     Xr = np.array (Xr); components = np.array (components )
     xs = Xr[:,0] # projection on PC1
     ys = Xr[:,1] # projection on PC2
@@ -3210,7 +3425,7 @@ def _chk_predict_args (Xt, yt, *args,  predict =False ):
             raise EstimatorError("No estimator detected. Could not predict 'y'") 
         if Xt is None: 
             raise TypeError(
-                "Test data 'Xt' is need for prediction. Got nothing")
+                "Test data 'Xt' is needed for prediction. Got nothing")
   
         # check estimator as callable object or ABCMeta classes
         if not hasattr(clf, '__call__') and  not inspect.isclass(clf)\

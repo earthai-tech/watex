@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Created on Tue May 17 11:30:51 2022
 
 """
 Module EM 
 ==========
 
 The EM module is related for a few meter exploration in the case of groundwater 
-exploration. Module provides some basics processing step for EMAP data fitering
+exploration. Module provides some basics processing steps for EMAP data filtering
 and remove noises. Commonly the methods mostly used in the groundwater 
-exploration is the audio-magnetoteluric because iof the shortest frequency 
-and rapid executions. Furthermore, we can also listed some other advantages 
+exploration is the audio-magnetoteluric because of the shortest frequency 
+and rapid executions. Furthermore, we can also list some other advantages 
 such as: 
     
     * is useful for imaging both deep geologic structure and near-surface 
-        geology and can provide significant details.(ii) 
+        geology and can provide significant details. 
     *  includes a backpack portable system that allows for use in difficult 
         terrain. 
     * the technique requires no high-voltage electrodes, and logistics 
@@ -29,29 +28,28 @@ such as:
     
 """
 from __future__ import annotations 
-
-import warnings 
 import os
 import re
 import functools 
 import numpy as np 
 
 from .._watexlog import watexlog
+from ..edi import Edi 
 from ..exceptions import ( 
     EDIError, 
     TopModuleError, 
     NotFittedError, 
-    EMError, 
+    EMError,
 ) 
+from ..externals.z import Z as EMz 
 from ..utils.funcutils import ( 
-    is_installing,
     _assert_all_types, 
     make_ids, 
     show_stats, 
     fit_by_ll, 
     reshape, 
     smart_strobj_recognition, 
-    repr_callable_obj, 
+    repr_callable_obj,
     ) 
 from ..utils.exmath import ( 
     scalePosition, 
@@ -67,10 +65,10 @@ from ..utils.coreutils import (
     makeCoords, 
     )
 from ..property import (
-    IsEdi 
+    IsEdi
     )
 from ..site import Location 
-from ..typing import ( 
+from .._typing import ( 
     ArrayLike, 
     Optional, 
     List,
@@ -82,30 +80,10 @@ from ..typing import (
     T,
     F, 
     )
+from ..utils._dependency import ( 
+    import_optional_dependency
+    )
 
-HAS_MOD=False 
-
-try : 
-    import pycsamt 
-except ImportError: 
-    HAS_MOD=is_installing (
-            'pycsamt'
-            )
-    if not HAS_MOD: 
-        warnings.warn(" Package 'pycsamt' not found. Please install it"
-                      " mannually") 
-        raise TopModuleError( "Module Not found. Prior install the module"
-                             "`pycsamt` instead.")
-else : 
-    HAS_MOD=True 
-    
-if HAS_MOD : 
-    #XXX TODO : prior revise the pkg structure to pycsamt.core 
-    # since ff subpackage does no longer exist in newest version
-    from pycsamt.ff.core import (
-        edi, 
-        z as EMz 
-        ) 
 
 _logger = watexlog.get_watex_logger(__name__)
 
@@ -114,17 +92,37 @@ class EM(IsEdi):
     Create EM object as a collection of EDI-file. 
     
     Collect edifiles and create an EM object. It sets  the properties from 
-    audio magnetotelluric,two(2) components XY and YX will be set and calculated.
-    Can read MT data instead, However the full handling transfer function like 
-    Tipper and Spectra  is not completed. Use  other MT softwares for a long 
-    periods data. 
+    audio-magnetotelluric. The two(2) components XY and YX will be set and 
+    calculated.Can read MT data instead, however the full handling transfer 
+    function like Tipper and Spectra  is not completed. Use  other MT 
+    softwares for a long periods data. 
     
-    Arguments 
-    ---------
+    Parameters 
+    -------------
     survey_name: str 
         location name where the date where collected . If surveyname is None  
         can chech on edifiles. 
 
+    Attributes 
+    -----------
+    ediObjs_: Array-like of shape (N,) 
+        array of the collection of edifiles read_sucessfully  
+    data_: Array-like of shape (N, ) 
+        array of all edifiles feed in the `EM` modules whatever sucessuffuly 
+        read or not. 
+    edinames_: array-like of shape (N,) 
+        array of all edi-names sucessfully read 
+    edifiles_: array of shape (N, ) 
+        array of all edifiles if given. 
+    freqs_: array-like of shape (N, ) 
+        Array of the frequency range from EDIs 
+    refreq_: float, 
+        Reference refrequency for data correction. Note the reference frequency
+        is the highest frequency with clean data. 
+        
+    Properties 
+    ------------
+    
     longitude: array-like, shape (N,) 
         longitude coordinate values  collected from EDIs 
         
@@ -133,22 +131,7 @@ class EM(IsEdi):
         
     elevation: array-like, shape (N,) 
         Elevation coordinates collected from EDIs 
-
-    res_xy|res_yx :dict
-         {stn: res_xy|res_yx} ndarray value of resivities from 2 comps xy|yx 
-         where 'stn' is station name. 
-         
-    phs_xy|phs_yx: dict 
-         dict <{stn: res_phs|phs_yx}>  ndarray value of phase from 2  comps xy|yx 
-         
-    z_xy|res_yx:dict
-        dict < {stn: z_xy|z_yx}>  (in degree) ndarray value of impedance from 
-        2 comps xy|yx 
         
-    XX_err_xy|XX_err_yx:  dict, 
-           dict  of error values {stn: XX_err_xy|XX_err_yx} ndarray value of 
-           impedance from 2 comps xy|yx XX : res|phs|z  stn : name of site eg
-           stn :S00, S01 , .., Snn
     """
 
     def __init__(self, survey_name:str  =None ): 
@@ -156,13 +139,9 @@ class EM(IsEdi):
     
         self.survey_name =survey_name
         self.Location_= Location()
-      
         self._latitude = None
         self._longitude=None
         self._elevation= None 
-        self.ediObjs_ = None 
-        self.data_= None 
-
 
     @property 
     def latitude(self): 
@@ -212,24 +191,58 @@ class EM(IsEdi):
     
     def is_valid (self, 
         obj: str | EDIO 
-        )-> edi.Edi  : 
+        )-> Edi  : 
         """Assert that the given argument is an EDI -object from modules 
-        EDI of pycsamt and MTpy packages. A TypeError will occurs otherwise.
+        EDI or EDI from pycsamt and MTpy packages. 
+        A TypeError will occurs otherwise.
         
-        :param obj: Full path EDI file or `pycsamt`_.
-        :type obj: str or str or  pycsamt.core.edi.Edi or mtpy.core.edi.Edi 
-        
-        :return: Identical object after asserting.
+        Parameters 
+        ------------
+        obj: str, :class:`pycsamt.core.edi.Edi` or :class:`mtpy.core.edi.Edi` 
+            Full path EDI file or `pycsamt`_ or `MTpy`_ objects.
+       
+        Return
+        -------
+        obj:str, :class:`pycsamt.core.edi.Edi` or :class:`mtpy.core.edi.Edi`
+            Identical object after asserting.
         
         """
-        IsEdi.register (edi.Edi)
+        emsg=("{0!r} object detected while the package is not installed"
+              " yet. To pass ['pycsamt' | 'mtpy'] EDI-object to 'EM'"
+              " class for basic implementation,prior install the {0!r}"
+              " first. Use 'pip' or 'conda' for installation."
+             )
+        IsEdi.register (Edi)
         if isinstance(obj, str):
-            obj = edi.Edi(obj) 
+            obj = Edi().fit(obj) 
+   
+        if "pycsamt" in str(obj):   
+            try : 
+                import_optional_dependency ("pycsamt")
+            except ImportError: 
+                raise TopModuleError(emsg.format("pycsamt"))
+            else : 
+                #XXX TODO : prior revising the pkg structure 
+                # to pycsamt.core since ff subpackage does
+                # no longer exist in pycsamt newest version
+                from pycsamt.ff.core import edi 
+                IsEdi.register (edi.Edi )
+                
+        elif "mtpy" in str(obj): 
+            try : 
+                import_optional_dependency ("mtpy")
+            except ImportError: 
+                raise TopModuleError(emsg.format("mtpy"))
+            else : 
+                from mtpy.core import edi
+                IsEdi.register (edi.Edi)
+                
         try : 
-            obj = _assert_all_types (obj, IsEdi)
+            obj = _assert_all_types (
+                obj, IsEdi, objname="Wrong Edi-Objects or EDI-path, ")
         except AttributeError: 
             # force checking instead
-            obj = _assert_all_types (obj, edi.Edi)
+            obj = _assert_all_types (obj, Edi, objname="EDI")
             
         return  obj 
               
@@ -248,17 +261,30 @@ class EM(IsEdi):
             locprop = p ; s[i] = locprop 
         setattr(self, f'_{name}', s )
         
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'ediObjs_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
         
     def fit (self, 
              data: str|List[EDIO]
-             ):
+             )->"EM":
         """
         Assert and make EM object from a collection EDIs. 
         
         Parameters 
         ----------- 
         data : str, or list or :class:`pycsamt.core.edi.Edi` object 
-            Edi or collection of Edis or EDI-objects 
+            Full path to EDI files or collection of EDI-objects 
             
         Returns
         -------- 
@@ -280,13 +306,9 @@ class EM(IsEdi):
             'Read, collect EDI-objects from <%s>'% self.__class__.__name__)
         
         rfiles =[] # count number of reading files.
-        
-
         self.data_ = data
-        
         # if ediObjs is not None: 
         #     self.ediObjs_ = ediObjs 
-            
         if isinstance(self.data_, str): 
             # single edi and get the path 
             if os.path.isfile (self.data_): 
@@ -307,7 +329,7 @@ class EM(IsEdi):
                     for edi in rfiles if edi.endswith ('.edi')])  
      
             else : 
-                raise EDIError (f"Object {self.data_!r} is not an EDI object!")
+                raise EDIError (f"Object {self.data_!r} is not an EDI object.")
 
         elif isinstance(self.data_, (tuple, list)): 
             self.data_= sorted(self.data_)
@@ -355,7 +377,7 @@ class EM(IsEdi):
         # ---> get impednaces, phase tensor and
         # resistivities values form ediobject
         self._logging.info('Setting impedances and phases tensors and'
-                           'resisvitivity values from a collection ediobj.')
+                           'resistivity values from a collection ediobj.')
         zz= [edi_obj.Z.z for edi_obj in self.ediObjs_]
         zz_err= [edi_obj.Z.z_err for edi_obj in self.ediObjs_]
 
@@ -387,28 +409,28 @@ class EM(IsEdi):
         
         self.stnames = self.edinames 
         
-        self.freqs_ = self.getfullfrequency (self.ediObjs_)
-        self.refreq_ = self.getreferencefrequency(self.ediObjs_)
+        self.freqs_ = self.getfullfrequency ()
+        self.refreq_ = self.getreferencefrequency()
         
         return self 
     
-    def rewrite (self, 
-                 data:str|List[EDIO] =None,
-                 *,  
-                 by: str  = 'name', 
-                 prefix: Optional[str]  = None, 
-                 dataid: Optional[List[str]] =None, 
-                 savepath: Optional[str] = None, 
-                 how: str ='py', 
-                 correct_ll: bool =True, 
-                 make_coords: bool =False, 
-                 reflong: Optional[str | float] =None, 
-                 reflat: Optional[str | float]=None, 
-                 step: str  ='1km',
-                 edi_prefix: Optional[str] =None, 
-                 export: bool =True, 
-                 **kws
-                 )-> object: 
+    def rewrite (
+        self, 
+        *,  
+        by: str  = 'name', 
+        prefix: Optional[str]  = None, 
+        dataid: Optional[List[str]] =None, 
+        savepath: Optional[str] = None, 
+        how: str ='py', 
+        correct_ll: bool =True, 
+        make_coords: bool =False, 
+        reflong: Optional[str | float] =None, 
+        reflat: Optional[str | float]=None, 
+        step: str  ='1km',
+        edi_prefix: Optional[str] =None, 
+        export: bool =True, 
+        **kws
+        )-> "EM": 
         
         """ Rewrite Edis, correct station coordinates and dipole length. 
         
@@ -417,9 +439,6 @@ class EM(IsEdi):
         
         Parameters 
         ------------
-  
-        data: Path-like object for  list of pycsamt.core.edi.Edi objects
-            Collection of edi object from pycsamt.core.edi.Edi 
         dataid: list 
             list of ids to  rename the existing EDI-dataid from  
             :class:`Head.dataid`. If given, it should match the length of 
@@ -521,13 +540,9 @@ class EM(IsEdi):
             by ='name'
         
         prefix = str(prefix) 
+
+        self.inspect 
         
-        if data is not None:
-           self.data_ = data
-           
-        if self.ediObjs_ is None: 
-           self.fit(self.data_)
-           
         self.id = make_ids(self.ediObjs_, prefix='S', how= how )
            
         if how !='py': 
@@ -616,21 +631,17 @@ class EM(IsEdi):
         
         return self 
 
-    def getfullfrequency  (self, 
-                            data: Optional[str|List[EDIO]] = None,
-                            to_log10:bool  =False 
-                            )-> ArrayLike[DType[float]]: 
+    def getfullfrequency  (
+            self, 
+            to_log10:bool  =False 
+        )-> ArrayLike[DType[float]]: 
         """ Get the frequency with clean data. 
         
         The full or plain frequency is array frequency with no missing  data during 
         the data collection. Note that when using |NSAMT|, some data are missing 
         due to the weak of missing frequency at certain band especially in the 
         attenuation band. 
-        
-        :param data: full path to EDI files or collection of  `pycsamt`_ 
-            package Edi-objects 
-        :type data: path-like object or list of pycsamt.core.edi objects 
-        
+
         :param to_log10: export frequency to base 10 logarithm 
         :type to_log10: bool, 
         
@@ -640,10 +651,11 @@ class EM(IsEdi):
 
         :example: 
             >>> from watex.methods.em import EM
-            >>> from pycsamt.core.edi import Edi_collection 
-            >>> edipath = 'data/edis' 
+            >>> from watex.datasets import load_edis 
+            >>> edi_data = load_edis (return_data =True, samples =12)
             >>> cObjs = Edi_collection (edipath) # object from Edi_collection 
-            >>> ref = EM().getfullfrequency (cObjs.ediObjs)  
+            >>> emObjs = EM().fit(edi_data )  
+            >>> ref = emObjs.getfullfrequency (cObjs.ediObjs)  
             >>> ref
             ... array([7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04, 3.50000e+04,
                    2.94000e+04, 2.47000e+04, 2.08000e+04, 1.75000e+04, 1.47000e+04,
@@ -652,7 +664,6 @@ class EM(IsEdi):
             >>> len(ref)
             ... 55 
             >>> # however full frequency can just be fetched using the attribute `freqs_` 
-            >>> emObj = EM().fit(edipath)       # object from EM 
             >>> emObjs.freqs_ 
             ... array([7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04, 3.50000e+04,
                    2.94000e+04, 2.47000e+04, 2.08000e+04, 1.75000e+04, 1.47000e+04,
@@ -660,23 +671,20 @@ class EM(IsEdi):
                    1.12500e+01, 9.37500e+00, 8.12500e+00, 6.87500e+00, 5.62500e+00])
             
         """
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+        self.inspect 
         
         lenfs = np.array([len(ediObj.Z._freq) for ediObj in self.ediObjs_ ] ) 
         ix_fm = np.argmax (lenfs) ; f= self.ediObjs_ [ix_fm].Z._freq 
         
         return np.log10(f) if to_log10 else f 
     
-    def make2d (self,
-                data: Optional[str|List[EDIO]] =None , 
-                out:str = 'resxy',
-                *, 
-                kind:str = 'complex' , 
-                **kws 
-                )-> NDArray[DType[float]]: 
+    def make2d (
+        self,
+        out:str = 'resxy',
+        *, 
+        kind:str = 'complex' , 
+        **kws 
+        )-> NDArray[DType[float]]: 
         """ Out 2D resistivity, phase (error) and tensor matrix from EDI-collection
         objects. Matrix for number of frequency x number of sites. 
         
@@ -819,11 +827,8 @@ class EM(IsEdi):
         if m3 =='err':
             m3 ='_err'
         # read/assert edis and get the complete frequency 
-        if data is not None: 
-            self.data_= data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_ )
-
+        self.inspect 
+    
         #=> slice index for component retreiving purpose 
         _c= {
               'xx': [slice (None, len(self.freqs_)), 0 , 0] , 
@@ -845,10 +850,10 @@ class EM(IsEdi):
         
         return mat2d 
     
-    def getreferencefrequency (self,
-                                data: Optional[str|List[EDIO]] = None,
-                                to_log10: bool =False
-                                ): 
+    def getreferencefrequency (
+        self,
+        to_log10: bool =False
+        ): 
         """ Get the reference frequency from collection Edis objects.
         
         The highest frequency with clean data should be selected as the  
@@ -880,12 +885,8 @@ class EM(IsEdi):
         http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
         
         """
-        if data is not None: 
-            self.data_= data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
-            
-        self.freqs_= self.getfullfrequency (self.ediObjs_)
+        self.inspect 
+        self.freqs_= self.getfullfrequency ()
         # fit z and find all missing data from complete frequency f 
         # we take only the componet xy for fitting.
 
@@ -904,11 +905,13 @@ class EM(IsEdi):
         return  self.freqs_ [mask].max() if not to_log10 else np.log10(
             self.freqs_ [mask].max())
     
-    def export2newedis (self, 
-                        ediObj: EDIO , 
-                        new_Z: NDArray[DType[complex]], 
-                        savepath:str =None, 
-                        **kws)-> object :
+    def exportedis (
+        self, 
+        ediObj: EDIO, 
+        new_Z: NDArray[DType[complex]], 
+        savepath:str =None, 
+        **kws
+        )-> "EDIO" :
         """ Export new EDI files from the former object with  a given new  
         impedance tensors. 
         
@@ -938,17 +941,10 @@ class EM(IsEdi):
    
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
-        return repr_callable_obj  (self)
+        return repr_callable_obj  (self, skip =('edifiles', 'freq_array', 'id'))
        
     
     def __getattr__(self, name):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in ('data_', 'ediObjs_', 'freqs_', 'refreq_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
         
@@ -961,7 +957,7 @@ class _zupdate(EM):
     """ A decorator for impedance tensor updating. 
     
     Update a Z object from each EDI object composing the collection objects 
-    and output a new EDI-files is `option` is set to ``write``. 
+    and output a new EDI-files if `option` is set to ``write``. 
     
     :param option: str - kind of action to perform with new Z collection.
         When `option` is set to ``write``. The new EDI -files are exported.
@@ -1001,12 +997,13 @@ class _zupdate(EM):
           
         return new_func 
     
-    def _make_zObj (self, 
-                    kk: int ,
-                    *, 
-                    freq: ArrayLike[DType[float]], 
-                    z_dict: Dict[str, NDArray[DType[complex]]]
-                    )-> NDArray[DType[complex]]: 
+    def _make_zObj (
+        self, 
+        kk: int ,
+        *, 
+        freq: ArrayLike[DType[float]], 
+        z_dict: Dict[str, NDArray[DType[complex]]]
+        )-> NDArray[DType[complex]]: 
         """ Make new Z object from frequency and dict tensor component Z. 
         
         :param kk: int 
@@ -1018,7 +1015,7 @@ class _zupdate(EM):
             dictionnary of all tensor component. 
 
         """
-        Z = EMz.Z(
+        Z = EMz(
             z_array=np.zeros((len(freq ), 2, 2),dtype='complex'),
             z_err_array=np.zeros((len(freq), 2, 2)),
             freq=freq 
@@ -1062,7 +1059,6 @@ class Processing (EM) :
     
     Fast process EMAP and AMT data. Tools are used for data sanitizing, 
     removing noises and filtering. 
-    
     
     Parameters 
     ----------
@@ -1129,8 +1125,8 @@ class Processing (EM) :
             394.2727092 ,  679.71542811,  953.2796567 , 1212.42883944,
             ...
             164.58282866,   96.60082159,   17.03888414])
-    >>> plt.semilogy (np.arange (self.res2d_.shape[1] ), self.res2d_[3, :], '--',
-                      np.arange (self.res2d_.shape[1] ), rc[3, :], 'ok--')
+    >>> plt.semilogy (np.arange (p.res2d_.shape[1] ), p.res2d_[3, :], '--',
+                      np.arange (p.res2d_.shape[1] ), rc[3, :], 'ok--')
  
     References 
     -----------
@@ -1138,14 +1134,16 @@ class Processing (EM) :
         
     """
     
-    def __init__(self,
-                 window_size:int =5, 
-                 component:str ='xy', 
-                 mode: str ='same', 
-                 method:str ='slinear', 
-                 out:str  ='srho', 
-                 c: str =2, 
-                 **kws): 
+    def __init__(
+        self,
+        window_size:int =5, 
+        component:str ='xy', 
+        mode: str ='same', 
+        method:str ='slinear', 
+        out:str  ='srho', 
+        c: int =2, 
+        **kws
+        ): 
         super().__init__(**kws)
         
         self._logging= watexlog.get_watex_logger(self.__class__.__name__)
@@ -1157,8 +1155,8 @@ class Processing (EM) :
         self.c=c
         
 
-    def tma (self,
-             data:str|List[EDIO]
+    def tma (
+        self,
     )-> NDArray[DType[float]] :
         
         """ A trimmed-moving-average filter to estimate average apparent
@@ -1185,10 +1183,7 @@ class Processing (EM) :
         .. [1] http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
         
         """
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+        self.inspect
         # assert filter arguments 
         self.res2d_ , self.phs2d_ , self.freqs_, self.c, self.window_size, \
             self.component, self.out = self._make2dblobs ()
@@ -1263,27 +1258,21 @@ class Processing (EM) :
             rc = rhoa2z(rc, self.phs2d_, self.freq_s)
 
         return   cf if self.out =='sf' else rc   
-      
-    def _make2dblobs (self, 
-                      data :Optional[str|List[EDIO]] = None 
-                      ): 
+     
+
+    def _make2dblobs (
+        self, 
+        ): 
         """ Asserts argument of |EMAP| filter and returns useful arguments.
-        
-        data: path-like object or list  of  pycsamt.core.edi.Edi 
-            Collections of EDI-objects from `pycsamt`_ 
-            
+ 
         :note: created to collect argument of EMAP filters. Refer to functions 
         :func:`~.tma`, :func:`~.flma` and :func:`~.ama` documentation. 
             
         """
+
         self.component= str(self.component).lower().strip() 
         self.out= str(self.out).lower().strip() 
         
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
-            
         try : 
             self.c = int (self.c) 
         except : 
@@ -1298,10 +1287,8 @@ class Processing (EM) :
             raise ValueError(f"Unacceptable component {self.component!r}. "
                              "Expect 'xx', 'xy', 'yx' or 'yy'")
         
-        self.res2d_= self.make2d(self.ediObjs_, 
-                                 out=f'res{self.component}')
-        self.phs2d_ = self.make2d(self.ediObjs_, 
-                                  out=f'phase{self.component}')
+        self.res2d_= self.make2d(out=f'res{self.component}')
+        self.phs2d_ = self.make2d(out=f'phase{self.component}')
         
             
         if len(self.res2d_) != len(self.freqs_): 
@@ -1327,8 +1314,9 @@ class Processing (EM) :
         return (self.res2d_ , self.phs2d_ , self.freqs_, self.c,
                 self.window_size, self.component, self.out) 
     
-    def ama (self, data:str|List[EDIO]
-             )-> NDArray[DType[float]] :
+    def ama (
+        self, 
+        )-> NDArray[DType[float]] :
         """ 
         Use an adaptive-moving-average filter to estimate average apparent 
         resistivities at a single static-correction-reference frequency.. 
@@ -1357,11 +1345,8 @@ class Processing (EM) :
             (EMAP), Geophysics, v57, p603-622.https://doi.org/10.1190/1.2400625
             
         """
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
-            
+        self.inspect 
+
         # assert filter arguments 
         self.res2d_ , self.phs2d_ , self.freqs_, self.c, self.window_size, \
             self.component, self.out = self._make2dblobs ()
@@ -1408,8 +1393,8 @@ class Processing (EM) :
         
         return zjc if self.out =='z' else rc 
 
-    def flma (self, 
-              data:str|List[EDIO]
+    def flma (
+        self, 
         )-> NDArray[DType[float]] :
         """ Use a fixed-length-moving-average filter to estimate average apparent
         resistivities at a single static-correction-reference frequency. 
@@ -1436,10 +1421,7 @@ class Processing (EM) :
         .. [1] http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
         
         """
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+        self.inspect 
     
         # assert filter arguments 
         self.res2d_ , self.phs2d_ , self.freqs_, self.c, self.window_size, \
@@ -1475,10 +1457,10 @@ class Processing (EM) :
         
         return zjc if self.out =='z' else rc 
     
-    def skew(self,
-             data :Optional[str|List[EDIO]] = None, 
-             method:str ='swift'
-             )-> NDArray[DType[float]]: 
+    def skew(
+        self,
+        method:str ='swift'
+        )-> NDArray[DType[float]]: 
         r"""
         The conventional asymmetry parameter based on the Z magnitude. 
         
@@ -1495,17 +1477,17 @@ class Processing (EM) :
             the structures is 3D. 
         
         Returns 
-        ------- 
+        --------- 
         skw, mu : Tuple of ndarray-like , shape (N, M )
             - Array of skew at each frequency 
             - rotational invariant ``mu`` at each frequency. 
             
+            
         See also 
-        -------- 
-        
-        The |EM| signal is influenced by several factors such as the dimensionality
+        ----------- 
+        The EM signal is influenced by several factors such as the dimensionality
         of the propagation medium and the physical anomalies, which can distort the
-        |EM| field both locally and regionally. The distortion of Z was determined 
+        EM field both locally and regionally. The distortion of Z was determined 
         from the quantification of its asymmetry and the deviation from the conditions 
         that define its dimensionality. The parameters used for this purpose are all 
         rotational invariant because the Z components involved in its definition are
@@ -1513,7 +1495,9 @@ class Processing (EM) :
         parameter based on the Z magnitude is the skew defined by Swift (1967) as
         follows:
         
-        .. math:: skew_{swift}= |\frac{Z_{xx} + Z_{yy}}{ Z_{xy} - Z_{yx}}| 
+        .. math:: 
+        
+            skew_{swift}= |\frac{Z_{xx} + Z_{yy}}{ Z_{xy} - Z_{yx}}| 
             
         When the :math:`skew_{swift}`  is close to ``0.``, we assume a 1D or 2D model
         when the :math:`skew_{swift}` is greater than ``>=0.2``, we assume 3D local 
@@ -1574,20 +1558,17 @@ class Processing (EM) :
            
            
         """
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+        self.inspect 
             
         self.method = method 
         if self.method not in ('swift', 'bahr'): 
             raise ValueError(
                 f'Expected argument ``swift`` or ``bahr`` not: {self.method!r}')
             
-        Zxx= self.make2d(self.ediObjs_,'zxx')
-        Zxy = self.make2d(self.ediObjs_,'zxy')
-        Zyx = self.make2d(self.ediObjs_,'zyx')
-        Zyy= self.make2d(self.ediObjs_,'zyy')
+        Zxx= self.make2d('zxx')
+        Zxy = self.make2d('zxy')
+        Zyx = self.make2d('zyx')
+        Zyy= self.make2d('zyy')
         
         S1 =Zxx + Zyy; S2 = Zxy + Zyx; D1 =Zxx-Zyy ;  D2= Zxy-Zyx 
         D1S2 = (S2 * np.conj(D1)).imag ; S1D2 = (D2 * np.conj(S1)).imag 
@@ -1601,14 +1582,13 @@ class Processing (EM) :
             
         return skw, mu
 
-
-    def zrestore(self,
-                       data: str|List[EDIO],
-                       *, 
-                       buffer: Tuple[float]=None, 
-                       method:str ='pd',
-                       **kws 
-                       ): 
+    def zrestore(
+        self,
+        *, 
+        buffer: Tuple[float]=None, 
+        method:str ='pd',
+        **kws 
+        ): 
         """ Fix the weak and missing signal at the 'dead-band`- and recover the 
         missing impedance tensor values. 
         
@@ -1709,7 +1689,7 @@ class Processing (EM) :
         >>> # One can specify the frequency buffer like the example below, However 
         >>> # it is not necessaray at least there is a a specific reason to fix the frequencies 
         >>> buffer = [1.45000e+04,1.11500e+01]
-        >>> zobjs_b =  pObjs.zrestore(pObjs.ediObjs_, buffer = buffer
+        >>> zobjs_b =  pObjs.zrestore(buffer = buffer
                                             ) # with buffer 
         
         """
@@ -1721,10 +1701,7 @@ class Processing (EM) :
                 z = interpolate1d(arr=z , method = self.method, **kws )
             return z [slice_] 
             
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+        self.inspect 
             
         self.method = method 
         
@@ -1750,7 +1727,7 @@ class Processing (EM) :
         new_zObjs =np.zeros_like (zObjs, dtype =object )
         # loop to correct the Z impedance object values 
         for kk, ediObj in enumerate (self.ediObjs_):
-            new_Z = EMz.Z(z_array=np.zeros((len(s_cfreq), 2, 2),
+            new_Z = EMz(z_array=np.zeros((len(s_cfreq), 2, 2),
                                            dtype='complex'),
                         z_err_array=np.zeros((len(s_cfreq), 2, 2)),
                         freq=s_cfreq)
@@ -1762,14 +1739,15 @@ class Processing (EM) :
             
         return new_zObjs 
 
-    def _tfuncZtransformer (self,  
-                            ediObj: EDIO , 
-                            new_Z: NDArray [DType[complex]], 
-                            tfunc: F, 
-                            cfreq: ArrayLike, slice_: slice =None, 
-                            ix_s: int = 0 , 
-                            ix_end: int  = -1, 
-                            )-> NDArray [DType[complex]]: 
+    def _tfuncZtransformer (
+        self,  
+        ediObj: EDIO , 
+        new_Z: NDArray [DType[complex]], 
+        tfunc: F, 
+        cfreq: ArrayLike, slice_: slice =None, 
+        ix_s: int = 0 , 
+        ix_end: int  = -1, 
+        )-> NDArray [DType[complex]]: 
         """ Loop and transform the previous tensor to a new tensor from a 
         transform function `tfunc`. 
         
@@ -1826,11 +1804,11 @@ class Processing (EM) :
     
     @staticmethod 
     def freqInterpolation (
-            y:ArrayLike[DType[T]] ,
-            /, 
-            buffer:Optional[Tuple[float]] = None ,  
-            kind: str  ='freq' 
-            )-> ArrayLike[DType[T]]: 
+        y:ArrayLike[DType[T]] ,
+        /, 
+        buffer:Optional[Tuple[float]] = None ,  
+        kind: str  ='freq' 
+        )-> ArrayLike[DType[T]]: 
         """ Interpolate frequency in frequeny buffer range.  
         
         :param y: array-like, shape(N, ) - Can be a frequency array or periods
@@ -1885,9 +1863,9 @@ class Processing (EM) :
     
     @staticmethod 
     def controlFrequencyBuffer (
-            freq: ArrayLike[DType[T]], 
-            buffer:Optional[Tuple[float]] = None 
-            )-> ArrayLike[DType[T]] :
+        freq: ArrayLike[DType[T]], 
+        buffer:Optional[Tuple[float]] = None 
+        )-> ArrayLike[DType[T]] :
         """ Assert the frequency buffer and find the nearest value if the 
         value of the buffer is not in frequency ranges .
         
@@ -1954,19 +1932,17 @@ class Processing (EM) :
         return buffer 
 
 
-    def qc (self, 
-            data: Optional [str|List[EDIO]]=None ,
-            * ,  
-            tol: float = .5 , 
-            return_freq: bool =False 
-            )->Tuple[float, ArrayLike]: 
+    def qc (
+        self, 
+        * ,  
+        tol: float = .5 , 
+        return_freq: bool =False 
+        )->Tuple[float, ArrayLike]: 
         """ Check the quality control of the collected EDIs. 
         
         Analyse the data in the EDI collection and return the quality control value.
         It indicate how percentage are the data to be representative.
        
-        :param data: Path-like object or list  of  pycsamt.core.edi.Edi objects 
-                Collections of EDI-objects from `pycsamt`_
         :param tol: float, 
             the tolerance parameter. The value indicates the rate from which the 
             data can be consider as meaningful. Preferably it should be less than
@@ -1984,17 +1960,15 @@ class Processing (EM) :
 
             >>> from watex.methods.em import Processing
             >>> pobj = Processing().fit('data/edis')
-            >>> f = pobj.getfullfrequency (pobj.ediObjs_)
-            >>> len(f)
-            ... 55 # 55 frequencies 
-            >>> c, = pobj.qc (pobj.ediObjs_, tol = .6 ) # mean 60% to consider the data as
+            >>> f = pobj.getfullfrequency ()
+            >>> # len(f)
+            >>> # ... 55 # 55 frequencies 
+            >>> c,_ = pobj.qc ( tol = .6 ) # mean 60% to consider the data as
             >>> # representatives 
             >>> c  # the representative rate in the whole EDI- collection
-            ... 0.95 # the whole data at all stations is safe to 95%. 
+            >>> # ... 0.95 # the whole data at all stations is safe to 95%. 
             >>> # now check the interpolated frequency 
-            >>> c, freq_new,  = pobj.qc (pobj.ediObjs_, tol=.6 , return_freq =True)
-            >>> len(freq_new)
-            ... 53  # delete two frequencies 
+            >>> c, freq_new  = pobj.qc ( tol=.6 , return_freq =True)
             
         """
         if isinstance (tol, str): 
@@ -2003,22 +1977,21 @@ class Processing (EM) :
             tol = float (tol)
         except TypeError : 
             raise TypeError (f"Unable to convert {type(tol).__name__!r} "
-                             "to float.")
+                             f"to float: {tol}")
         except ValueError: 
-            raise ValueError(f"Expect 'float' not {type(tol).__name__!r}: "
+            raise ValueError(f"Expects 'float' not {type(tol).__name__!r}: "
                              f"{(tol)!r}")
         if tol ==0.: 
-            raise ValueError ("Expect a value  greater than '0' and less than '1.'")
+            raise ValueError ("Expects a tolerance value  greater than "
+                              f"'0' and less than '1, got: {tol}'")
             
         if 1 < tol <=100: 
             tol /= 100. 
         if tol > 100: 
-            raise ValueError ("Value should be greater than '0' and less than '1'")
-            
-        if data is not None: 
-            self.data_ = data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+            raise ValueError ("Tolerance value should be greater than"
+                              f" '0' and less than '1', got: {tol}")
+
+        self.inspect 
         
         f=self.freqs_.copy() 
      
@@ -2026,11 +1999,11 @@ class Processing (EM) :
             # take a sample of collected edi 
             # and make two day array
             # all frequency at all stations 
-            ar = self.make2d (self.ediObjs_, 'freq') 
+            ar = self.make2d ('freq') 
         except : 
             try : 
-                ar = self.make2d(self.ediObjs_, 'zxy')
-            except: ar = self.make2d (self.ediObjs_, 'zyx')
+                ar = self.make2d( 'zxy')
+            except: ar = self.make2d ('zyx')
         # compute the ratio of NaN in axis =0 
         
         nan_sum  =np.nansum(np.isnan(ar), axis =1) 
@@ -2055,14 +2028,14 @@ class Processing (EM) :
 
 
     @_zupdate(option = 'write')
-    def getValidData(self, 
-                     data:Optional[str|List[EDIO]]=None,
-                     tol:float = .5 ,  
-                     **kws 
-                     )-> NDArray[DType[complex]]: 
+    def getValidData(
+        self, 
+        tol:float = .5 ,  
+        **kws 
+        )-> NDArray[DType[complex]]: 
         """ Rewrite EDI and get the valid data.  
         
-        Function analyzes the data  to keep the good ones. The goodness of the data 
+        Function analyzes the data and keep the good ones. The goodness of the data 
         depends on the  `threshold` rate.  For instance 50% means to consider an 
         impedance tensor 'z'  valid if the quality control shows at least that score 
         at each frequency of all stations.  
@@ -2070,7 +2043,8 @@ class Processing (EM) :
         Parameters 
         ----------
         data: Path-like object or list of  :class:`pycsamt.core.edi.Edi`  
-            collections of EDI-objects from `pycsamt`_ 
+            collections of EDI-objects from `pycsamt`_ . `data` params is 
+            passed to :meth:`~.Processing.fit` method. 
                 
         tol : float, 
             tolerance parameter. The value indicates the rate from which the data 
@@ -2084,7 +2058,7 @@ class Processing (EM) :
             
         Returns 
         -------
-        Zc:class:`pycsamt.core.z.Z` impedance tensor objects.
+        Zc:class:`watex.external.z.Z` impedance tensor objects.
             
         Examples 
         --------
@@ -2110,10 +2084,7 @@ class Processing (EM) :
             """Set null in the case the component doesn't exist"""
             return np.zeros ((len(f), len(objs)), dtype = np.float32)
         
-        if data is not None: 
-            self.data_= data 
-        if self.ediObjs_ is None: 
-            self.fit(self.data_)
+        self.inspect 
         # ediObjs = get_ediObjs(ediObjs) 
         _, no_ix = self.qc(self.ediObjs_ , tol= tol  ) 
         f = self.freqs_.copy() 
@@ -2123,7 +2094,6 @@ class Processing (EM) :
         new_f  = Processing.freqInterpolation (reshape (ff)) 
         
         # gather the 2D z objects
-        
         # -XX--
         try : 
             zxx = delete_useless_tensor(
@@ -2182,7 +2152,6 @@ class Processing (EM) :
             } 
         
         return (self.ediObjs_, new_f , z_dict ), kws
-
 
 
        

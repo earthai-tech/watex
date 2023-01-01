@@ -3,8 +3,11 @@ sphinx >=3.5
 sphinx_rtd_theme
 cython
 matplotlib>=3.3.0
+# numpy>=1.23.3
 numpy
 scipy
+scikit-learn
+#sklearn 
 qtpy
 netcdf4
 numpydoc >=1.0.0
@@ -12,11 +15,13 @@ Numexpr >= 2.6.2
 blosc >= 1.4.1
 pytest
 flake8
+flask
 pyyaml
 pyproj>=1.9.6
+# pandas >=1.1.4
 pandas
 python-coveralls
-sklearn
+# sklearn >=1.1 
 joblib
 seaborn
 tqdm
@@ -30,4 +35,11 @@ pyjanitor
 openpyxl
 #threadpoolctl >= 2.0.0
 #pytables
-h5py >=3.2.0 
+h5py >=3.2.0
+nbsphinx 
+myst_nb
+jupytext
+python-latex
+sphinxcontrib-jsmath 
+
+

@@ -10,31 +10,21 @@ import os
 from warnings import warn 
 import numpy as np 
 import pandas as pd 
-from ..typing import ( 
-    Optional , 
-    ArrayLike , 
+from .._typing import ( 
     NDArray, 
     DataFrame, 
-    Series 
 )
 from .geology import ( 
     Geology 
     )
-from ..base import (
-     is_installing
-    
-    )
+
 from .core import (
     get_agso_properties 
     )
-try:
-    import openpyxl
-except ImportError: 
-    success = is_installing('openpyxl')
-    if not success : 
-        warn("Fail to install'openpyxl' automatically. Install it nannually")
-    
-#XXX TODO link Borehole to Geology 
+from ..utils._dependency import import_optional_dependency 
+
+#XXX TODO module is in progress 
+# not finish yet link Borehole to Geology 
 class Borehole(Geology): 
     """
     Focused on Wells and `Borehole` offered to the population. To use the data
@@ -43,19 +33,21 @@ class Borehole(Geology):
     file. 
     
     """
-    def __init__(self,
-                 lat:float = None, 
-                 lon:float = None, 
-                 area:str = None, 
-                 status:str =None, 
-                 depth:float = None, 
-                 base_depth:float =None, 
-                 geol:str=None, 
-                 staticlevel:float =None, 
-                 airlift:float =None, 
-                 id=None, 
-                 qmax =None, 
-                 **kwds) : 
+    def __init__(
+        self,
+        lat:float = None, 
+        lon:float = None, 
+        area:str = None, 
+        status:str =None, 
+        depth:float = None, 
+        base_depth:float =None, 
+        geol:str=None, 
+        staticlevel:float =None, 
+        airlift:float =None, 
+        id=None, 
+        qmax =None, 
+        **kwds
+        ): 
        super().__init__(**kwds)
         
        self.lat=lat 
@@ -81,30 +73,7 @@ class Borehole(Geology):
         
         self._logging.info ("fit {self.__class__.__name__!r} for corresponding"
                             "attributes. ")
-        
-        # self._easting =easting 
-        # self._northing = northing 
-        
-        # self.boreh_fn =boreh_fn 
-        # self.flow = flow
-        
-        # self.dptm = kwargs.pop('department', None)
-        # self.sp= kwargs.pop('s/p', None)
-        # self.nameOflocation =kwargs.pop('nameOflocation', None)
-        # self._latitude = kwargs.pop('latitude', None) 
-        # self._longitude = kwargs.pop('longitude ', None)
-        
-        # self.borehStatus = kwargs.pop('borehStatus',None  )
-        # self.depth = kwargs.pop('borehDepth', None)
-        # self.basementdepth =kwargs.pop('basementDepth', None)
-        # self.geol = kwargs.pop('geology', None) 
-        # self.staticLevel =kwargs.pop('staticLevel', None)
-        # self.airLiftflow =kwargs.pop('AirliftFlow', None)
-        # self.wellID =kwargs.pop('wellID', None)
-        # self.qmax=kwargs.pop('Qmax', None) 
-        
-        # for key in list(kwargs.keys()): 
-        #     setattr(self, key, kwargs[key])
+    
             
         return self
     
@@ -159,21 +128,21 @@ class Drill(Geology):
         
     :Example: 
         
-        >>> from watex.geoloy.drill import Drill 
-        >>> parser_file ='nbleDH.csv'
-        >>> drill_obj=Drill(well_filename=os.path.join(os.environ['pyCSAMT'],
-        ...                  'data', 'drill_example_files',parser_file),
-        ...      build_manually_welldata=False)
-        >>>  scollar=drill._collar(DH_Top=None)
-        >>> sgeo=drill.dhGeology()
-        >>> ssam=drill.dhSample()
-        >>> selevaz=drill.dhSurveyElevAz( add_elevation=None, 
-        ...                             add_azimuth=None)
-        >>> swrite=drill.writeDHData(data2write ="*",
-                                 savepath =None)
+    >>> from watex.geoloy.drill import Drill 
+    >>> parser_file ='nbleDH.csv'
+    >>> drill_obj=Drill(well_filename=os.path.join(os.environ['pyCSAMT'],
+    ...                  'data', 'drill_example_files',parser_file),
+    ...      build_manually_welldata=False)
+    >>>  scollar=drill._collar(DH_Top=None)
+    >>> sgeo=drill.dhGeology()
+    >>> ssam=drill.dhSample()
+    >>> selevaz=drill.dhSurveyElevAz( add_elevation=None, 
+    ...                             add_azimuth=None)
+    >>> swrite=drill.writeDHData(data2write ="*",
+                             savepath =None)
     """
-   
-        
+
+    import_optional_dependency ("openpyxl")   
     def __init__(self, well_filename=None , auto=True, **kwargs):
         
         self.wfilename=well_filename

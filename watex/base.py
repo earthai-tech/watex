@@ -6,38 +6,65 @@ from __future__ import annotations
 import re 
 import sys 
 import inspect 
-import subprocess
-# import operator 
+import itertools
 import numpy as np
 from collections import defaultdict
 from warnings import warn
 
 from ._watexlog import  watexlog
-from ._docstring import DocstringComponents, _core_docs
-from .typing import List, Optional, DataFrame 
-from .utils.coreutils import _is_readable 
-from .utils.funcutils import (_assert_all_types,  repr_callable_obj, 
-                              smart_strobj_recognition, smart_format )
-from .exlib.sklearn import ( clone, LabelEncoder, _name_estimators , 
-                            BaseEstimator, ClassifierMixin )  
+from ._docstring import ( 
+    DocstringComponents,
+    _core_docs
+    )
+from ._typing import ( 
+    List, 
+    Optional, 
+    DataFrame , 
+    Tuple 
+    )
+from .exlib.sklearn import ( 
+    clone, 
+    LabelEncoder, 
+    _name_estimators , 
+    BaseEstimator, 
+    ClassifierMixin, 
+    accuracy_score, 
+    recall_score, 
+    precision_score, 
+    roc_auc_score,
+    train_test_split
+    )  
 from .exceptions import NotFittedError
-from .view.plot import ExPlot
+from .utils.coreutils import _is_readable 
+from .utils.funcutils import (
+    _assert_all_types,  
+    repr_callable_obj, 
+    smart_strobj_recognition, 
+    smart_format ,
+    sanitize_frame_cols
+    )
+from .utils._dependency import import_optional_dependency
+from .utils.validator import ( 
+    array_to_frame, 
+    check_array, 
+    check_X_y, 
+    get_estimator_name
+    )
 
 __all__=[
     "Data", 
     "Missing", 
     "AdelineGradientDescent", 
-    "AdelineStochasticGradientDescent", 
+    "AdelineStochasticGradientDescent",
+    "SequentialBackwardSelection",
     "MajorityVoteClassifier", 
-    "Perceptron", 
+    "GreedyPerceptron", 
     "existfeatures", 
-    "is_installing", 
     "selectfeatures" , 
     "get_params" 
     ]
 
 # +++ add base documentations +++
-
 _base_params = dict ( 
     axis="""
 axis: {0 or 'index', 1 or 'columns'}, default 0
@@ -104,570 +131,6 @@ _param_docs = DocstringComponents.from_nested_components(
 
 _logger = watexlog().get_watex_logger(__name__)
 
-class Data: 
-    def __init__ (self, verbose: int =0): 
-        self._logging= watexlog().get_watex_logger(self.__class__.__name__)
-        self.verbose=verbose 
-        self.data_=None 
-        
-    @property 
-    def data (self ):
-        """ return verified data """
-        return self.data_ 
-    @data.setter 
-    def data (self, d):
-        """ Read and parse the data"""
-        self.data_ = _is_readable (d) 
-        
-    @property 
-    def describe (self): 
-        """ Get summary stats  as well as see the cound of non-null data.
-        Here is the default behaviour of the method i.e. it is to only report  
-        on numeric columns. To have have full control, do it manually by 
-        yourself. 
-        
-        """
-        return self.data.describe() 
-    
-    def fit(self, data: str | DataFrame=None):
-        """ Read, assert and fit the data 
-        
-        Parameters 
-        ------------
-        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        
-        Returns 
-        ---------
-        :class:`Data` instance
-            Returns ``self`` for easy method chaining.
-            
-        """ 
-
-        if data is not None: 
-            self.data = data 
-
-        return self 
-    
-    def skrunk (self, 
-                columns: list[str], 
-                data: str | DataFrame = None, 
-                **kwd 
-                ):
-        """ Reduce the data with importance features
-        
-        Parameters 
-        ------------
-        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        
-        columns: str or list of str 
-            Columns or features to keep in the datasets
-
-        kwd: dict, 
-        additional keywords arguments from :func:`watex.utils.mlutils.selectfeatures`
- 
-        Returns 
-        ---------
-        :class:`Data` instance
-            Returns ``self`` for easy method chaining.
-        
-        """ 
-        if data is not None: 
-            self.data = data 
-        self.data = selectfeatures(
-            self.data , features = columns, **kwd)
-  
-        return self 
-    
-
-    def profilingReport (self, data: str | DataFrame = None, **kwd):
-        """Generate a report in a notebook. 
-        
-        It will summarize the types of the columns and allow yuou to view 
-        details of quatiles statistics, a histogram, common values and extreme 
-        values. 
-        
-        Parameters 
-        ------------
-        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        
-        Returns 
-        ---------
-        :class:`Data` instance
-            Returns ``self`` for easy method chaining.
-        
-        Examples 
-        ---------
-        >>> from watex.bases.base import Data 
-        >>> Data().fit(data).profilingReport()
-        
-        """
-        
-        if data is not None: 
-            self.data = data 
- 
-        try : 
-           import pandas_profiling 
-           
-        except ImportError:
-            warn("Missing 'pandas_profiling` library."
-                 " auto-installation is triggered. please wait ... ")
-            if self.verbose: 
-                
-                print("### -> Libray 'pandas_profiling is missing."
-                      " subprocess installation is triggered. Please wait ...")
-            
-            is_success = is_installing('pandas_profiling', DEVNULL=True, 
-                                       verbose = self.verbose )
-            if not is_success : 
-                warn ("'pandas_profiling' auto-installation failed. "
-                       " Try a mannual installation.")
-            if self.verbose: 
-                print("+++ -> Installation complete!") if is_success else print(
-                    "--- > Auto-installation failed. Try the mannual way.")
-                
-        if 'pandas_profiling' in sys.modules: 
-            
-            pandas_profiling.ProfilingReport( self.data , **kwd)
-             
-        return self 
-    
-    def rename_columns (self, 
-                        data: str | DataFrame= None, 
-                        columns: List[str]=None, 
-                        pattern:Optional[str] = None
-                        ): 
-        """ 
-        rename columns of the dataframe with columns in lowercase and spaces 
-        replaced by underscores. 
-        
-        Parameters 
-        -----------
-        data: Dataframe of shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        
-        columns: str or list of str, Optional 
-            the  specific columns in dataframe to renames. However all columns 
-            is put in lowecase. if columns not in dataframe, error raises.  
-            
-        pattern: str, Optional, 
-            Regular expression pattern to strip the data. By default, the 
-            pattern is ``'[ -@*#&+/]'``.
-        
-        Return
-        -------
-        ``self``: :class:`watex.bases.base.Data` instance 
-            returns ``self`` for easy method chaining.
-        
-        """
-        pattern = str (pattern)
-        
-        if pattern =='None': 
-            pattern =  r'[ -@*#&+/]'
-        regex =re.compile (pattern, flags=re.IGNORECASE)
-        
-        if data is not None: 
-            self.data = data 
-            
-        self.data.columns= self.data.columns.str.strip() 
-        if columns is not None: 
-            existfeatures(self.data, columns, 'raise')
-            
-        if columns is not None: 
-            self.data[columns].columns = self.data[columns].columns.str.lower(
-                ).map(lambda o: regex.sub('_', o))
-        if columns is None: 
-            self.data.columns = self.data.columns.str.lower().map(
-                lambda o: regex.sub('_', o))
-        
-        return self 
-    
-    #XXX TODO # use logical and to quick merge two frames 
-    def merge (self) : 
-        """ Merge two series whatever the type with operator `&&`. 
-        
-        When series as dtype object as non numeric values, dtypes should be 
-        change into a object 
-        """
-        # try : 
-        #     self.data []
-        
-    __and__= __rand__ = merge 
-    
-    def __repr__(self):
-        """ Pretty format for programmer guidance following the API... """
-        return repr_callable_obj  (self, skip ='y') 
-       
-    def __getattr__(self, name):
-        if name.endswith ('_'): 
-            if name not in self.__dict__.keys(): 
-                if name in ('data_', 'X_'): 
-                    raise NotFittedError (
-                        f'Fit the {self.__class__.__name__!r} object first'
-                        )
-                
-        rv = smart_strobj_recognition(name, self.__dict__, deep =True)
-        appender  = "" if rv is None else f'. Do you mean {rv!r}'
-        
-        raise AttributeError (
-            f'{self.__class__.__name__!r} object has no attribute {name!r}'
-            f'{appender}{"" if rv is None else "?"}'
-            ) 
-        
-Data.__doc__="""\
-Data base class
-
-Typically, we train a model with a matrix of data. Note that pandas Dataframe 
-is the most used because it is very nice to have columns lables even though 
-Numpy arrays work as well. 
-
-For supervised Learning for instance, suc as regression or clasification, our 
-intent is to have a function that transforms features into a label. If we 
-were to write this as an algebra formula, it would be look like:: 
-    
-    .. math::
-        
-        y = f(X)
-
-:code:`X` is a matrix. Each row represent a `sample` of data or information 
-about individual. Every columns in :code:`X` is a `feature`.The output of 
-our function, :code:`y`, is a vector that contains labels (for classification)
-or values (for regression). 
-
-In Python, by convention, we use the variable name :code:`X` to hold the 
-sample data even though the capitalization of variable is a violation of  
-standard naming convention (see PEP8). 
-
-Parameters 
------------
-{params.core.data}
-{params.base.columns}
-{params.base.axis}
-{params.base.sample}
-{params.base.kind}
-{params.base.inplace}
-{params.core.verbose}
-
-Returns
--------
-{returns.self}
-   
-Examples
---------
-.. include:: ../docs/data.rst
-
-""".format(
-    params=_param_docs,
-    returns=_core_docs["returns"],
-)
- 
-class Missing (Data) : 
-    """ Deal with missing in Data 
-    
-    Most algorithms will not work with missing data. Notable exceptions are the 
-    recent boosting libraries such as the XGBoost 
-    (:doc:`watex.documentation.xgboost.__doc__`) CatBoost and LightGBM. 
-    As with many things in machine learning , there are no hard answaers for how 
-    to treat a missing data. Also, missing data could  represent different 
-    situations. There are three warious way to handle missing data:: 
-        
-        * Remove any row with missing data 
-        * Remove any columns with missing data 
-        * Impute missing values 
-        * Create an indicator columns to indicator data was missing 
-    
-    Arguments
-    ----------- 
-    in_percent: bool, 
-        give the statistic of missing data in percentage if ser to ``True``. 
-        
-    sample: int, Optional, 
-        Number of row to visualize or the limit of the number of sample to be 
-        able to see the patterns. This is usefull when data is composed of 
-        many rows. Skrunked the data to keep some sample for visualization is 
-        recommended.  ``None`` plot all the samples ( or examples) in the data 
-    kind: str, Optional 
-        type of visualization. Can be ``dendrogramm``, ``mbar`` or ``bar``. 
-        ``corr`` plot  for dendrogram , :mod:`msno` bar,  :mod:`plt`
-        and :mod:`msno` correlation  visualization respectively: 
-            
-            * ``bar`` plot counts the  nonmissing data  using pandas
-            *  ``mbar`` use the :mod:`msno` package to count the number 
-                of nonmissing data. 
-            * dendrogram`` show the clusterings of where the data is missing. 
-                leaves that are the same level predict one onother presence 
-                (empty of filled). The vertical arms are used to indicate how  
-                different cluster are. short arms mean that branch are 
-                similar. 
-            * ``corr` creates a heat map showing if there are correlations 
-                where the data is missing. In this case, it does look like 
-                the locations where missing data are corollated.
-            * ``None`` is the default vizualisation. It is useful for viewing 
-                contiguous area of the missing data which would indicate that 
-                the missing data is  not random. The :code:`matrix` function 
-                includes a sparkline along the right side. Patterns here would 
-                also indicate non-random missing data. It is recommended to limit 
-                the number of sample to be able to see the patterns. 
-   
-        Any other value will raise an error 
-    
-    Examples 
-    --------
-    >>> from watex.base import Missing
-    >>> data ='data/geodata/main.bagciv.data.csv' 
-    >>> ms= Missing().fit(data) 
-    >>> ms.plot_.fig_size = (12, 4 ) 
-    >>> ms.plot () 
-    
-    """
-    def __init__(self,
-                   in_percent = False, 
-                   sample = None, 
-                   kind = None, 
-                   drop_columns: List[str]=None,
-                   **kws): 
-  
-        self.in_percent = in_percent
-        self.kind = kind  
-        self.sample= sample
-        self.drop_columns=drop_columns 
-        self.isnull_ = None
-        
-        super().__init__(**kws)
-        
-    @property 
-    def isnull(self):
-        """ Check the mean values  in the data  in percentge"""
-        self.isnull_= self.data.isnull().mean(
-            ) * 1e2  if self.in_percent else self.data.isnull().mean()
-        
-        return self.isnull_
-
-
-    def plot(self, data: str | DataFrame=None , **kwd ):
-        """
-        Vizualize patterns in the missing data.
-        
-        Parameters 
-        ------------
-        data: Dataframe of shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        
-        kind: str, Optional 
-            kind of visualization. Can be ``dendrogramm``, ``mbar`` or ``bar`` plot 
-            for dendrogram , :mod:`msno` bar and :mod:`plt` visualization 
-            respectively: 
-                
-                * ``bar`` plot counts the  nonmissing data  using pandas
-                *  ``mbar`` use the :mod:`msno` package to count the number 
-                    of nonmissing data. 
-                * dendrogram`` show the clusterings of where the data is missing. 
-                    leaves that are the same level predict one onother presence 
-                    (empty of filled). The vertical arms are used to indicate how  
-                    different cluster are. short arms mean that branch are 
-                    similar. 
-                * ``corr` creates a heat map showing if there are correlations 
-                    where the data is missing. In this case, it does look like 
-                    the locations where missing data are corollated.
-                * ``None`` is the default vizualisation. It is useful for viewing 
-                    contiguous area of the missing data which would indicate that 
-                    the missing data is  not random. The :code:`matrix` function 
-                    includes a sparkline along the right side. Patterns here would 
-                    also indicate non-random missing data. It is recommended to limit 
-                    the number of sample to be able to see the patterns. 
-       
-                Any other value will raise an error 
-            
-        sample: int, Optional
-            Number of row to visualize. This is usefull when data is composed of 
-            many rows. Skrunked the data to keep some sample for visualization is 
-            recommended.  ``None`` plot all the samples ( or examples) in the data 
-            
-        kws: dict 
-            Additional keywords arguments of :mod:`msno.matrix` plot. 
-
-        Return
-        -------
-        ``self``: :class:`watex.bases.base.Missing` instance 
-            returns ``self`` for easy method chaining.
-            
-        
-        Examples 
-        --------
-        >>> from watex.base import Missing
-        >>> data ='data/geodata/main.bagciv.data.csv' 
-        >>> ms= Missing().fit(data) 
-        >>> ms.plot_.fig_size = (12, 4 ) 
-        >>> ms.plot () 
-    
-        """
-        if data is not None: 
-            self.data = data 
-            
-        ExPlot().plotmissing( self.data, kind =  self.kind, 
-                sample = self.sample, **kwd )
-        return  self 
-
-    @property 
-    def get_missing_columns(self): 
-        """ return columns with Nan Values """
-        return list(self.data.columns [self.data.isna().any()]) 
-    
-
-    def drop (self, 
-              data : str | DataFrame =None,  
-              columns: List[str] = None, 
-              inplace = False, 
-              axis = 1 , 
-              **kwd
-              ): 
-        """Remove missing data 
-        
-        Parameters 
-        -----------
-        data: Dataframe of shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        
-        columns: str or list of str 
-            columns to drop which contain the missing data. Can use the axis 
-            equals to '1'.
-            
-        axis: {0 or 'index', 1 or 'columns'}, default 0
-            Determine if rows or columns which contain missing values are 
-            removed.
-            * 0, or 'index' : Drop rows which contain missing values.
-        
-            * 1, or 'columns' : Drop columns which contain missing value.
-            Changed in version 1.0.0: Pass tuple or list to drop on multiple 
-            axes. Only a single axis is allowed.
-        
-        how: {'any', 'all'}, default 'any'
-            Determine if row or column is removed from DataFrame, when we 
-            have at least one NA or all NA.
-            
-            * 'any': If any NA values are present, drop that row or column.
-            * 'all' : If all values are NA, drop that row or column.
-            
-        thresh: int, optional
-            Require that many non-NA values. Cannot be combined with how.
-        
-        subset: column label or sequence of labels, optional
-            Labels along other axis to consider, e.g. if you are dropping rows 
-            these would be a list of columns to include.
-        
-        inplace: bool, default False
-            Whether to modify the DataFrame rather than creating a new one.
-            
-        Returns 
-        -------
-        ``self``: :class:`watex.bases.base.Missing` instance 
-            returns ``self`` for easy method chaining.
-            
-        """
-        if data is not None: 
-            self.data = data 
-        if columns is not None: 
-            self.drop_columns = columns 
-            
-        existfeatures(self.data , self.drop_columns, error ='raise')
-        
-        if self.drop_columns is None: 
-            if inplace : 
-                self.data.dropna (axis = axis , inplace = True, **kwd )
-            else :  self.data = self.data .dropna (
-                axis = axis , inplace = False, **kwd )
-            
-        elif self.drop_columns is not None: 
-            if inplace : 
-                self.data.drop (columns = self.drop_columns , 
-                                axis = axis, inplace = True, 
-                                **kwd)
-            else : 
-                self.data.drop (columns = self.columns , axis = axis , 
-                                inplace = False , **kwd)
-
-        return self 
-    
-    @property 
-    def sanity_check (self): 
-        """Ensure that we have deal with all missing values. The following 
-        code returns a single boolean if there is any cell that is missing 
-        in a DataFrame """
-        
-        return self.data.isna().any().any() 
-    
-    def replace (self, 
-                 data:str |DataFrame = None , 
-                 columns: List[str] = None,
-                 fill_value: float = None , 
-                 new_column_name: str= None, 
-                 return_non_null: bool = False, 
-                 **kwd): 
-        """ 
-        Replace the missing values to consider. 
-        
-        Use the :code:`coalease` function of :mod:`pyjanitor`. It takes a  
-        dataframe and a list of columns to consider. This is a similar to 
-        functionality found in Excel and SQL databases. It returns the first 
-        non null value of each row. 
-        
-        Parameters 
-        -----------
-        data: Dataframe of shape (M, N) from :class:`pandas.DataFrame` 
-            Dataframe containing samples M  and features N
-        
-        columns: str or list of str 
-            columns to replace which contain the missing data. Can use the axis 
-            equals to '1'.
-            
-        axis: {0 or 'index', 1 or 'columns'}, default 0
-            Determine if rows or columns which contain missing values are 
-            removed.
-            * 0, or 'index' : Drop rows which contain missing values.
-        
-            * 1, or 'columns' : Drop columns which contain missing value.
-            Changed in version 1.0.0: Pass tuple or list to drop on multiple 
-            axes. Only a single axis is allowed.
-            
-         Returns 
-         -------
-         ``self``: :class:`watex.bases.base.Missing` instance 
-             returns ``self`` for easy method chaining.
-             
-        """
-        
-        if data is not None: 
-            self.data = data 
-        existfeatures(self.data , columns )
-        
-        if return_non_null : 
-            new_column_name = _assert_all_types(new_column_name, str  )
-            
-            if 'pyjanitor' not in sys.modules: 
-                raise ModuleNotFoundError(" 'pyjanitor' is missing.Install it"
-                                          " mannualy using conda or pip.")
-            import pyjanitor as jn 
-            return jn.coalease (self.data , 
-                                columns = columns, 
-                                new_column_name = new_column_name, 
-                                )
-        if fill_value is not None: 
-            # fill missing values with a particular values. 
-            
-            try : 
-                self.data = self.data .fillna(fill_value , **kwd)
-            except : 
-                if 'pyjanitor'  in sys.modules:
-                    import pyjanitor as jn 
-                    jn.fill_empty ( 
-                        self.data , columns = columns or list(self.data.columns), 
-                        value = fill_value 
-                        )
-            
-        return self 
-    
 class _Base:
     """Base class for all classes in watex for parameters retrievals
 
@@ -776,8 +239,896 @@ class _Base:
             valid_params[key].set_params(**sub_params)
 
         return self
+    
+class Data: 
+    def __init__ (self, verbose: int =0): 
+        self._logging= watexlog().get_watex_logger(self.__class__.__name__)
+        self.verbose=verbose 
+        self.data_=None 
+        
+    @property 
+    def data (self ):
+        """ return verified data """
+        return self.data_ 
+    @data.setter 
+    def data (self, d):
+        """ Read and parse the data"""
+        self.data_ = _is_readable (d) 
+        
+    @property 
+    def describe (self): 
+        """ Get summary stats  as well as see the cound of non-null data.
+        Here is the default behaviour of the method i.e. it is to only report  
+        on numeric columns. To have have full control, do it manually by 
+        yourself. 
+        
+        """
+        return self.data.describe() 
+    
+    def fit(self, data: str | DataFrame=None):
+        """ Read, assert and fit the data.
+        
+        Parameters 
+        ------------
+        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
+            Dataframe containing samples M  and features N
+        
+        Returns 
+        ---------
+        :class:`Data` instance
+            Returns ``self`` for easy method chaining.
+            
+        """ 
+        
+        if data is not None: 
+            self.data = data 
+        check_array(
+            data, 
+            force_all_finite='allow-nan', 
+            dtype =object , 
+            input_name='Data', 
+            to_frame =True 
+            )
+        # for consistency if not a frame, set to aframe 
+        self.data = array_to_frame (
+            data, to_frame = True , input_name= 'col_', force =True 
+            ) 
+        data= sanitize_frame_cols (self.data, fill_pattern='_' ) 
+        for col in data.columns :
+            setattr (self, col, data[col]) 
+            
+        return self 
+    
+    def skrunk (self, 
+                columns: list[str], 
+                data: str | DataFrame = None, 
+                **kwd 
+                ):
+        """ Reduce the data with importance features
+        
+        Parameters 
+        ------------
+        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
+            Dataframe containing samples M  and features N
+        
+        columns: str or list of str 
+            Columns or features to keep in the datasets
 
-class Perceptron (_Base): 
+        kwd: dict, 
+        additional keywords arguments from :func:`watex.utils.mlutils.selectfeatures`
+ 
+        Returns 
+        ---------
+        :class:`Data` instance
+            Returns ``self`` for easy method chaining.
+        
+        """ 
+        self.inspect 
+
+        self.data = selectfeatures(
+            self.data , features = columns, **kwd)
+  
+        return self 
+    
+    @property 
+    def inspect(self): 
+        """ Inspect data and trigger plot after checking the data entry. 
+        Raises `NotFittedError` if `ExPlot` is not fitted yet."""
+        
+        msg = ( "{dobj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if self.data_ is None: 
+            raise NotFittedError(msg.format(
+                dobj=self)
+            )
+        return 1 
+    
+    def profilingReport (self, data: str | DataFrame= None, **kwd):
+        """Generate a report in a notebook. 
+        
+        It will summarize the types of the columns and allow yuou to view 
+        details of quatiles statistics, a histogram, common values and extreme 
+        values. 
+        
+        Parameters 
+        ------------
+        data: Dataframe or shape (M, N) from :class:`pandas.DataFrame` 
+            Dataframe containing samples M  and features N
+        
+        Returns 
+        ---------
+        :class:`Data` instance
+            Returns ``self`` for easy method chaining.
+        
+        Examples 
+        ---------
+        >>> from watex.bases.base import Data 
+        >>> Data().fit(data).profilingReport()
+        
+        """
+        if data is not None: 
+            self.data = data 
+            
+        extra_msg =("'Data.profilingReport' method uses 'pandas_profiling'"
+                    " as a dependency.")
+        import_optional_dependency("pandas_profiling", extra=extra_msg ) 
+        try : 
+           import pandas_profiling 
+        except ImportError:
+            
+            msg=(f"Missing of 'pandas_profiling package. {extra_msg}"
+                  " Cannot plot profiling report. Install it using pip"
+                  " or conda.")
+            warn(msg)
+            raise ImportError (msg)
+
+        self.inspect 
+        pandas_profiling.ProfilingReport( self.data , **kwd)
+             
+        return self 
+    
+    def rename (self, 
+                data: str | DataFrame= None, 
+                columns: List[str]=None, 
+                pattern:Optional[str] = None
+                ): 
+        """ 
+        rename columns of the dataframe with columns in lowercase and spaces 
+        replaced by underscores. 
+        
+        Parameters 
+        -----------
+        data: Dataframe of shape (M, N) from :class:`pandas.DataFrame` 
+            Dataframe containing samples M  and features N
+        
+        columns: str or list of str, Optional 
+            the  specific columns in dataframe to renames. However all columns 
+            is put in lowecase. if columns not in dataframe, error raises.  
+            
+        pattern: str, Optional, 
+            Regular expression pattern to strip the data. By default, the 
+            pattern is ``'[ -@*#&+/]'``.
+        
+        Return
+        -------
+        ``self``: :class:`watex.bases.base.Data` instance 
+            returns ``self`` for easy method chaining.
+        
+        """
+        pattern = str (pattern)
+        
+        if pattern =='None': 
+            pattern =  r'[ -@*#&+/]'
+        regex =re.compile (pattern, flags=re.IGNORECASE)
+        
+        if data is not None: 
+            self.data = data 
+            
+        self.data.columns= self.data.columns.str.strip() 
+        if columns is not None: 
+            existfeatures(self.data, columns, 'raise')
+            
+        if columns is not None: 
+            self.data[columns].columns = self.data[columns].columns.str.lower(
+                ).map(lambda o: regex.sub('_', o))
+        if columns is None: 
+            self.data.columns = self.data.columns.str.lower().map(
+                lambda o: regex.sub('_', o))
+        
+        return self 
+    
+    #XXX TODO # use logical and to quick merge two frames 
+    def merge (self) : 
+        """ Merge two series whatever the type with operator `&&`. 
+        
+        When series as dtype object as non numeric values, dtypes should be 
+        change into a object 
+        """
+        # try : 
+        #     self.data []
+        
+    # __and__= __rand__ = merge 
+    
+    def drop ( 
+            self, 
+            labels: list[str |int] = None, 
+            columns: List[str]=None,  
+            inplace:bool = False, 
+            axis:int = 0 , **kws 
+            ): 
+        """ Drop specified labels from rows or columns.
+
+        Remove rows or columns by specifying label names and corresponding 
+        axis, or by specifying directly index or column names. When using a 
+        multi-index, labels on different levels can be removed by specifying 
+        the level.
+        
+        Parameters 
+        -----------
+        labels: single label or list-like
+            Index or column labels to drop. A tuple will be used as a single 
+            label and not treated as a list-like.
+            
+        axis: {0 or 'index', 1 or 'columns'}, default 0
+            Whether to drop labels from the index (0 or 'index') 
+            or columns (1 or 'columns').
+            
+        columns: single label or list-like
+            Alternative to specifying axis 
+            (labels, axis=1 is equivalent to columns=labels)
+        kws: dict, 
+            Additionnal keywords arguments passed to :meth:`pd.DataFrame.drop`.
+            
+        Returns 
+        ----------
+        DataFrame or None
+            DataFrame without the removed index or column labels or 
+            None if `inplace` equsls to ``True``.
+
+        """
+        self.inspect 
+  
+        data = self.data.drop(labels= labels,  inplace = inplace, 
+                       columns = columns , axis =axis , **kws )
+        return data 
+    
+    
+        
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        return repr_callable_obj  (self, skip ='y') 
+       
+    def __getattr__(self, name):
+        if name.endswith ('_'): 
+            if name not in self.__dict__.keys(): 
+                if name in ('data_', 'X_'): 
+                    raise NotFittedError (
+                        f'Fit the {self.__class__.__name__!r} object first'
+                        )
+                
+        rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+        appender  = "" if rv is None else f'. Do you mean {rv!r}'
+        
+        raise AttributeError (
+            f'{self.__class__.__name__!r} object has no attribute {name!r}'
+            f'{appender}{"" if rv is None else "?"}'
+            ) 
+        
+Data.__doc__="""\
+Data base class
+
+Typically, we train a model with a matrix of data. Note that pandas Dataframe 
+is the most used because it is very nice to have columns lables even though 
+Numpy arrays work as well. 
+
+For supervised Learning for instance, suc as regression or clasification, our 
+intent is to have a function that transforms features into a label. If we 
+were to write this as an algebra formula, it would be look like:
+    
+.. math::
+    
+    y = f(X)
+
+:code:`X` is a matrix. Each row represent a `sample` of data or information 
+about individual. Every columns in :code:`X` is a `feature`.The output of 
+our function, :code:`y`, is a vector that contains labels (for classification)
+or values (for regression). 
+
+In Python, by convention, we use the variable name :code:`X` to hold the 
+sample data even though the capitalization of variable is a violation of  
+standard naming convention (see PEP8). 
+
+Parameters 
+-----------
+{params.core.data}
+{params.base.columns}
+{params.base.axis}
+{params.base.sample}
+{params.base.kind}
+{params.base.inplace}
+{params.core.verbose}
+
+Returns
+-------
+{returns.self}
+   
+Examples
+--------
+.. include:: ../docs/data.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+)
+ 
+class Missing (Data) : 
+    """ Deal with missing values in Data 
+    
+    Most algorithms will not work with missing data. Notable exceptions are the 
+    recent boosting libraries such as the XGBoost 
+    (:doc:`watex.documentation.xgboost.__doc__`) CatBoost and LightGBM. 
+    As with many things in machine learning , there are no hard answaers for how 
+    to treat a missing data. Also, missing data could  represent different 
+    situations. There are three warious way to handle missing data:: 
+        
+        * Remove any row with missing data 
+        * Remove any columns with missing data 
+        * Impute missing values 
+        * Create an indicator columns to indicator data was missing 
+    
+    Parameters
+    ----------- 
+    in_percent: bool, 
+        give the statistic of missing data in percentage if ser to ``True``. 
+        
+    sample: int, Optional, 
+        Number of row to visualize or the limit of the number of sample to be 
+        able to see the patterns. This is usefull when data is composed of 
+        many rows. Skrunked the data to keep some sample for visualization is 
+        recommended.  ``None`` plot all the samples ( or examples) in the data 
+    kind: str, Optional 
+        type of visualization. Can be ``dendrogramm``, ``mbar`` or ``bar``. 
+        ``corr`` plot  for dendrogram , :mod:`msno` bar,  :mod:`plt`
+        and :mod:`msno` correlation  visualization respectively: 
+            
+            * ``bar`` plot counts the  nonmissing data  using pandas
+            *  ``mbar`` use the :mod:`msno` package to count the number 
+                of nonmissing data. 
+            * dendrogram`` show the clusterings of where the data is missing. 
+                leaves that are the same level predict one onother presence 
+                (empty of filled). The vertical arms are used to indicate how  
+                different cluster are. short arms mean that branch are 
+                similar. 
+            * ``corr` creates a heat map showing if there are correlations 
+                where the data is missing. In this case, it does look like 
+                the locations where missing data are corollated.
+            * ``None`` is the default vizualisation. It is useful for viewing 
+                contiguous area of the missing data which would indicate that 
+                the missing data is  not random. The :code:`matrix` function 
+                includes a sparkline along the right side. Patterns here would 
+                also indicate non-random missing data. It is recommended to limit 
+                the number of sample to be able to see the patterns. 
+   
+        Any other value will raise an error 
+    
+    Examples 
+    --------
+    >>> from watex.base import Missing
+    >>> data ='data/geodata/main.bagciv.data.csv' 
+    >>> ms= Missing().fit(data) 
+    >>> ms.plot_.fig_size = (12, 4 ) 
+    >>> ms.plot () 
+    
+    """
+    def __init__(self,
+                   in_percent = False, 
+                   sample = None, 
+                   kind = None, 
+                   drop_columns: List[str]=None,
+                   **kws): 
+  
+        self.in_percent = in_percent
+        self.kind = kind  
+        self.sample= sample
+        self.drop_columns=drop_columns 
+        self.isnull_ = None
+        
+        super().__init__(**kws)
+        
+    @property 
+    def isnull(self):
+        """ Check the mean values  in the data  in percentge"""
+        self.isnull_= self.data.isnull().mean(
+            ) * 1e2  if self.in_percent else self.data.isnull().mean()
+        
+        return self.isnull_
+
+
+    def plot(self, data: str | DataFrame=None , 
+             figsize:Tuple [int] = None,  **kwd ):
+        """
+        Vizualize patterns in the missing data.
+        
+        Parameters 
+        ------------
+        data: Dataframe of shape (M, N) from :class:`pandas.DataFrame` 
+            Dataframe containing samples M  and features N
+        
+        kind: str, Optional 
+            kind of visualization. Can be ``dendrogramm``, ``mbar`` or ``bar`` plot 
+            for dendrogram , :mod:`msno` bar and :mod:`plt` visualization 
+            respectively: 
+                
+                * ``bar`` plot counts the  nonmissing data  using pandas
+                *  ``mbar`` use the :mod:`msno` package to count the number 
+                    of nonmissing data. 
+                * dendrogram`` show the clusterings of where the data is missing. 
+                    leaves that are the same level predict one onother presence 
+                    (empty of filled). The vertical arms are used to indicate how  
+                    different cluster are. short arms mean that branch are 
+                    similar. 
+                * ``corr` creates a heat map showing if there are correlations 
+                    where the data is missing. In this case, it does look like 
+                    the locations where missing data are corollated.
+                * ``None`` is the default vizualisation. It is useful for viewing 
+                    contiguous area of the missing data which would indicate that 
+                    the missing data is  not random. The :code:`matrix` function 
+                    includes a sparkline along the right side. Patterns here would 
+                    also indicate non-random missing data. It is recommended to limit 
+                    the number of sample to be able to see the patterns. 
+       
+                Any other value will raise an error 
+            
+        sample: int, Optional
+            Number of row to visualize. This is usefull when data is composed of 
+            many rows. Skrunked the data to keep some sample for visualization is 
+            recommended.  ``None`` plot all the samples ( or examples) in the data 
+            
+        kws: dict 
+            Additional keywords arguments of :mod:`msno.matrix` plot. 
+
+        Return
+        -------
+        ``self``: :class:`watex.bases.base.Missing` instance 
+            returns ``self`` for easy method chaining.
+            
+        
+        Examples 
+        --------
+        >>> from watex.base import Missing
+        >>> data ='data/geodata/main.bagciv.data.csv' 
+        >>> ms= Missing().fit(data) 
+        >>> ms.plot(figsize = (12, 4 ) ) 
+
+    
+        """
+        from .view.plot import ExPlot
+    
+        if data is not None: 
+            self.data = data 
+            
+        self.inspect 
+        
+        ExPlot(fig_size=figsize).fit(self.data).plotmissing( 
+            kind =  self.kind, sample = self.sample, **kwd )
+        return  self 
+
+    @property 
+    def get_missing_columns(self): 
+        """ return columns with Nan Values """
+        return list(self.data.columns [self.data.isna().any()]) 
+    
+
+    def drop (self, 
+              data : str | DataFrame =None,  
+              columns: List[str] = None, 
+              inplace = False, 
+              axis = 1 , 
+              **kwd
+              ): 
+        """Remove missing data 
+        
+        Parameters 
+        -----------
+        data: Dataframe of shape (M, N) from :class:`pandas.DataFrame` 
+            Dataframe containing samples M  and features N
+        
+        columns: str or list of str 
+            columns to drop which contain the missing data. Can use the axis 
+            equals to '1'.
+            
+        axis: {0 or 'index', 1 or 'columns'}, default 0
+            Determine if rows or columns which contain missing values are 
+            removed.
+            * 0, or 'index' : Drop rows which contain missing values.
+        
+            * 1, or 'columns' : Drop columns which contain missing value.
+            Changed in version 1.0.0: Pass tuple or list to drop on multiple 
+            axes. Only a single axis is allowed.
+        
+        how: {'any', 'all'}, default 'any'
+            Determine if row or column is removed from DataFrame, when we 
+            have at least one NA or all NA.
+            
+            * 'any': If any NA values are present, drop that row or column.
+            * 'all' : If all values are NA, drop that row or column.
+            
+        thresh: int, optional
+            Require that many non-NA values. Cannot be combined with how.
+        
+        subset: column label or sequence of labels, optional
+            Labels along other axis to consider, e.g. if you are dropping rows 
+            these would be a list of columns to include.
+        
+        inplace: bool, default False
+            Whether to modify the DataFrame rather than creating a new one.
+            
+        Returns 
+        -------
+        ``self``: :class:`watex.bases.base.Missing` instance 
+            returns ``self`` for easy method chaining.
+            
+        """
+        if data is not None: 
+            self.data = data 
+            
+        self.inspect 
+        if columns is not None: 
+            self.drop_columns = columns 
+            
+        existfeatures(self.data , self.drop_columns, error ='raise')
+        
+        if self.drop_columns is None: 
+            if inplace : 
+                self.data.dropna (axis = axis , inplace = True, **kwd )
+            else :  self.data = self.data .dropna (
+                axis = axis , inplace = False, **kwd )
+            
+        elif self.drop_columns is not None: 
+            if inplace : 
+                self.data.drop (columns = self.drop_columns , 
+                                axis = axis, inplace = True, 
+                                **kwd)
+            else : 
+                self.data.drop (columns = self.columns , axis = axis , 
+                                inplace = False , **kwd)
+
+        return self 
+    
+    @property 
+    def sanity_check (self): 
+        """Ensure that we have deal with all missing values. The following 
+        code returns a single boolean if there is any cell that is missing 
+        in a DataFrame """
+        
+        return self.data.isna().any().any() 
+    
+    def replace (self, 
+                 data:str |DataFrame = None , 
+                 columns: List[str] = None,
+                 fill_value: float = None , 
+                 new_column_name: str= None, 
+                 return_non_null: bool = False, 
+                 **kwd): 
+        """ 
+        Replace the missing values to consider. 
+        
+        Use the :code:`coalease` function of :mod:`pyjanitor`. It takes a  
+        dataframe and a list of columns to consider. This is a similar to 
+        functionality found in Excel and SQL databases. It returns the first 
+        non null value of each row. 
+        
+        Parameters 
+        -----------
+        data: Dataframe of shape (M, N) from :class:`pandas.DataFrame` 
+            Dataframe containing samples M  and features N
+        
+        columns: str or list of str 
+            columns to replace which contain the missing data. Can use the axis 
+            equals to '1'.
+            
+        axis: {0 or 'index', 1 or 'columns'}, default 0
+            Determine if rows or columns which contain missing values are 
+            removed.
+            * 0, or 'index' : Drop rows which contain missing values.
+        
+            * 1, or 'columns' : Drop columns which contain missing value.
+            Changed in version 1.0.0: Pass tuple or list to drop on multiple 
+            axes. Only a single axis is allowed.
+            
+         Returns 
+         -------
+         ``self``: :class:`watex.bases.base.Missing` instance 
+             returns ``self`` for easy method chaining.
+             
+        """
+        
+        if data is not None: 
+            self.data = data 
+            
+        self.inspect 
+        existfeatures(self.data , columns )
+        
+        if return_non_null : 
+            new_column_name = _assert_all_types(new_column_name, str  )
+            
+            if 'pyjanitor' not in sys.modules: 
+                raise ModuleNotFoundError(" 'pyjanitor' is missing.Install it"
+                                          " mannualy using conda or pip.")
+            import pyjanitor as jn 
+            return jn.coalease (self.data , 
+                                columns = columns, 
+                                new_column_name = new_column_name, 
+                                )
+        if fill_value is not None: 
+            # fill missing values with a particular values. 
+            
+            try : 
+                self.data = self.data .fillna(fill_value , **kwd)
+            except : 
+                if 'pyjanitor'  in sys.modules:
+                    import pyjanitor as jn 
+                    jn.fill_empty ( 
+                        self.data , columns = columns or list(self.data.columns), 
+                        value = fill_value 
+                        )
+            
+        return self 
+    
+class SequentialBackwardSelection (_Base ):
+    r"""
+    Sequential Backward Selection (SBS) is a feature selection algorithm which 
+    aims to reduce dimensionality of the initial feature subspace with a 
+    minimum decay  in the performance of the classifier to improve upon 
+    computationan efficiency. In certains cases, SBS can even improve the 
+    predictive power of the model if a model suffers from overfitting. 
+    
+    The idea behind the SBS is simple: it sequentially removes features 
+    from the full feature subset until the new feature subspace contains the 
+    desired number of features. In order to determine which feature is to be 
+    removed at each stage, the criterion fonction :math:`J` is needed for 
+    minimization [1]_. 
+    Indeed, the criterion calculated from the criteria function can simply be 
+    the difference in performance of the classifier before and after the 
+    removal of this particular feature. Then, the feature to be remove at each 
+    stage can simply be the defined as the feature that maximizes this 
+    criterion; or in more simple terms, at each stage, the feature that causes 
+    the least performance is eliminated loss after removal. Based on the 
+    preceding definition of SBS, the algorithm can be outlibe with a few steps:
+        
+        - Initialize the algorithm with :math:`k=d`, where :math:`d` is the 
+            dimensionality of the full feature space, :math:`X_d`. 
+        - Determine the feature :math:`x^{-}`,that maximizes the criterion: 
+            :math:`x^{-}= argmax J(X_k-x)`, where :math:`x\in X_k`. 
+        - Remove the feature :math:`x^{-}` from the feature set 
+            :math:`X_{k+1}= X_k -x^{-}; k=k-1`.
+        -Terminate if :math:`k` equals to the number of desired features; 
+            otherwise go to the step 2. [2]_ 
+            
+    Parameters 
+    -----------
+    estimator: callable or instanciated object,
+        callable or instance object that has a fit method. 
+    k_features: int, default=1 
+        the number of features from where starting the selection. It must be 
+        less than the number of feature in the training set, otherwise it 
+        does not make sense. 
+    scoring: callable or str , default='accuracy'
+        metric for scoring. availabe metric are 'precision', 'recall', 
+        'roc_auc' or 'accuracy'. Any other metric with raise an errors. 
+    test_size : float or int, default=None
+        If float, should be between 0.0 and 1.0 and represent the proportion
+        of the dataset to include in the test split. If int, represents the
+        absolute number of test samples. If None, the value is set to the
+        complement of the train size. If ``train_size`` is also None, it will
+        be set to 0.25. 
+        
+    random_state : int, RandomState instance or None, default=None
+        Controls the shuffling applied to the data before applying the split.
+        Pass an int for reproducible output across multiple function calls.
+
+    References 
+    -----------
+    .. [1] Raschka, S., Mirjalili, V., 2019. Python Machine Learning, 3rd ed. Packt.
+    .. [2] Ferri F., Pudil F., Hatef M., and Kittler J., Comparative study of 
+        the techniques for Large-scale feature selection, pages 403-413, 1994.
+    
+    Attributes 
+    -----------
+    feature_names_in_ : ndarray of shape (`n_features_in_`,)
+        Names of features seen during :term:`fit`. Defined only when `X`
+        has feature names that are all strings.
+        
+    indices_: tuple of dimensionnality X
+        Collect the indices of subset of the best validated models 
+        
+    subsets_: list, 
+        list of `indices_` 
+        
+    scores_: list, 
+        Collection of the scores of the best model got during the
+        cross-validating 
+        
+    k_score_: float, 
+        The score of the desired feature. 
+        
+    Examples
+    --------
+    >>> from watex.exlib.sklearn import KNeighborsClassifier , train_test_split
+    >>> from watex.datasets import fetch_data
+    >>> from watex.base import SequentialBackwardSelection
+    >>> X, y = fetch_data('bagoue analysed') # data already standardized
+    >>> Xtrain, Xt, ytrain,  yt = train_test_split(X, y)
+    >>> knn = KNeighborsClassifier(n_neighbors=5)
+    >>> sbs= SequentialBackwardSelection (knn)
+    >>> sbs.fit(Xtrain, ytrain )
+
+    """
+    _scorers = dict (accuracy = accuracy_score , recall = recall_score , 
+                   precision = precision_score, roc_auc= roc_auc_score 
+                   )
+    def __init__ (self, estimator=None , k_features=1 , 
+                  scoring ='accuracy', test_size = .25 , 
+                  random_state = 42 ): 
+        self.estimator=estimator 
+        self.k_features=k_features 
+        self.scoring=scoring 
+        self.test_size=test_size
+        self.random_state=random_state 
+        
+    def fit(self, X, y) :
+        """  Fit the training data 
+        
+        Note that SBS splits the datasets into a test and training insite the 
+        fit function. :math:`X` is still fed to the algorithm. Indeed, SBS 
+        will then create a new training subsets for testing (validation) and 
+        training , which is why this test set is also called the validation 
+        dataset. This approach is necessary to prevent our original test set 
+        to becoming part of the training data. 
+        
+        Parameters 
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        Returns 
+        --------
+        self: `SequentialBackwardSelection` instance 
+            returns ``self`` for easy method chaining.
+        
+        """
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self ), 
+            to_frame= True, 
+            )
+        
+        self._check_sbs_args(X)
+        
+        if hasattr(X, 'columns'): 
+            self.feature_names_in = list(X.columns )
+            X = X.values 
+            
+        Xtr, Xt,  ytr, yt = train_test_split(X, y , test_size=self.test_size, 
+                                            random_state=self.random_state 
+                                            )
+        dim = Xtr.shape [1] 
+        self.indices_= tuple (range (dim))
+        self.subsets_= [self.indices_]
+        score = self._compute_score(Xtr, Xt,  ytr, yt, self.indices_)
+        self.scores_=[score]
+        # compute the score for p indices in 
+        # list indices in dimensions 
+        while dim > self.k_features: 
+            scores , subsets = [], []
+            for p in itertools.combinations(self.indices_, r=dim-1):
+                score = self._compute_score(Xtr, Xt,  ytr, yt, p)
+                scores.append (score) 
+                subsets.append (p)
+            
+            best = np.argmax (scores) 
+            self.indices_= subsets [best]
+            self.subsets_.append(self.indices_)
+            dim -=1 # go back for -1 
+            
+            self.scores_.append (scores[best])
+            
+        # set  the k_feature score 
+        self.k_score_= self.scores_[-1]
+        
+        return self 
+        
+    def transform (self, X): 
+        """ Transform the training set 
+        
+        Parameters 
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        Returns 
+        -------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            New transformed training set with selected features columns 
+        
+        """
+        if not hasattr (self, 'indices_'): 
+            raise NotFittedError(
+                "Can't call transform with estimator not fitted yet."
+                " Fit estimator by calling the 'fit' method with appropriate"
+                " arguments.")
+        return X[:, self.indices_]
+    
+    def _compute_score (self, Xtr, Xt,  ytr, yt, indices):
+        """ Compute score from splitting `X` and indices """
+        self.estimator.fit(Xtr[:, indices], ytr)
+        y_pred = self.estimator.predict (Xt [:, indices])
+        score = self.scoring (yt, y_pred)
+        
+        return score 
+
+    def _check_sbs_args (self, X): 
+        """ Assert SBS main arguments  """
+        
+        if not hasattr(self.estimator, 'fit'): 
+            raise TypeError ("Estimator must have a 'fit' method.")
+        try : 
+            self.k_features = int (self.k_features)
+        except  Exception as err: 
+            raise TypeError ("Expect an integer for number of feature k,"
+                             f" got {type(self.k_features).__name__!r}"
+                             ) from err
+        if self.k_features > X.shape [1] :
+            raise ValueError ("Too many number of features."
+                              f" Expect max-features={X.shape[1]}")
+        if  ( 
+            callable(self.scoring) 
+            or inspect.isfunction ( self.scoring )
+            ): 
+            self.scoring = self.scoring.__name__.replace ('_score', '')
+        
+        if self.scoring not in self._scorers.keys(): 
+            raise ValueError (
+                f"Accept only scorers {list (self._scorers.keys())}"
+                f"for scoring, not {self.scoring!r}")
+            
+        self.scoring = self._scorers[self.scoring] 
+        
+        self.scorer_name_ = self.scoring.__name__.replace (
+            '_score', '').title ()
+        
+    def __repr__(self): 
+        """ Represent the  Sequential Backward Selection class """
+        get_params = self.get_params()  
+        get_params.pop('scoring')
+        if hasattr (self, 'scorer_name_'): 
+            get_params ['scoring'] =self.scorer_name_ 
+        
+        tup = tuple (f"{key}={val}".replace ("'", '') for key, val in 
+                     get_params.items() )
+        
+        return self.__class__.__name__ + str(tup).replace("'", "") 
+    
+class GreedyPerceptron (_Base): 
     r""" Object oriented perceptron API class. Perceptron classifier 
     
     Inspired from Rosenblatt concept of perceptron rules. Indeed, Rosenblatt 
@@ -796,10 +1147,11 @@ class Perceptron (_Base):
         - For each training examples, :math:`x^{(i)}`:
             - Compute the output value :math:`\hat{y}`. 
             - update the weighs. 
-    the weights :math:`w` vector can be fromally written as: 
-        .. math:: 
-            
-            w := w_j + \delta w_j
+    the weights :math:`w` vector can be fromally written as:
+        
+    .. math:: 
+        
+        w := w_j + \delta w_j
             
     Parameters 
     -----------
@@ -857,6 +1209,13 @@ class Perceptron (_Base):
         self: `Perceptron` instance 
             returns ``self`` for easy method chaining.
         """
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self ), 
+            to_frame= True, 
+            )
+        
         rgen = np.random.RandomState(self.random_state)
         
         self.w_ = rgen.normal(loc=0. , scale =.01 , size = 1 + X.shape[1]
@@ -896,7 +1255,11 @@ class Perceptron (_Base):
         -------
         ypred: predicted class label after the unit step  (1, or -1)
 
-        """             
+        """      
+        if not hasattr (self, 'w_'): 
+            raise NotFittedError("Can't call 'predict' method with estimator"
+                                 " not fitted yet. Fit estimator by calling"
+                                 " the 'fit' method first.")
         return np.where (self.net_input(X) >=.0 , 1 , -1 )
     
     def __repr__(self): 
@@ -909,7 +1272,7 @@ class Perceptron (_Base):
     
 
 class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ): 
-    """
+    r"""
     A majority vote Ensemble classifier 
     
     Combine different classification algorithms associate with individual 
@@ -918,9 +1281,9 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
     datasets. In more precise in mathematical terms, the weighs majority 
     vote can be expressed as follow: 
         
-        .. math:: 
-            
-            \hat{y} = arg \max{i} \sum {j=1}^{m} w_j\chi_A (C_j(x)=1)
+    .. math:: 
+        
+        \hat{y} = arg \max{i} \sum {j=1}^{m} w_j\chi_A (C_j(x)=1)
     
     where :math:`w_j` is a weight associated with a base classifier, C_j; 
     :math:`\hat{y}` is the predicted class label of the ensemble. :math:`A` is 
@@ -929,9 +1292,9 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
     the jth clasifier matches i (C_j(x)=1). For equal weights, the equation 
     is simplified as follow: 
         
-        .. math:: 
-            
-            \hat{y} = mode {{C_1(x), C_2(x), ... , C_m(x)}}
+    .. math:: 
+        
+        \hat{y} = mode {{C_1(x), C_2(x), ... , C_m(x)}}
             
     Parameters 
     ------------
@@ -1045,7 +1408,13 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
         self: `MajorityVoteClassifier` instance 
             returns ``self`` for easy method chaining.
         """
-
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self ), 
+            to_frame= True, 
+            )
+        
         self._check_clfs_vote_and_weights ()
         
         # use label encoder to ensure that class start by 0 
@@ -1060,6 +1429,20 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
             self.classifiers_.append (fitted_clf ) 
             
         return self 
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'classifiers_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
     
     def predict(self, X):
         """
@@ -1081,9 +1464,9 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
         -------
         maj_vote:{array_like}, shape (n_examples, )
             Predicted class label array 
-            
-
         """
+        self.inspect 
+        
         if self.vote =='proba': 
             maj_vote = np.argmax (self.predict_proba(X), axis =1 )
         if self.vote =='label': 
@@ -1124,6 +1507,7 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
             weights average probabilities for each class per example. 
 
         """
+        self.inspect 
         probas = np.asarray (
             [ clf.predict_proba(X) for clf in self.classifiers_ ])
         avg_proba = np.average (probas , axis = 0 , weights = self.weights ) 
@@ -1190,7 +1574,7 @@ class AdelineStochasticGradientDescent (_Base) :
     r""" Adaptative Linear Neuron Classifier  with batch  (stochastic) 
     gradient descent 
     
-    A stochastic gradient descent is apopular alternative wich is sometimes 
+    A stochastic gradient descent is a popular alternative wich is sometimes 
     also cal iterative or online gradient descent. Instead of updating the 
     weights based on the sum of accumulated erros over all training examples 
     :math:`x^{(i)}`: 
@@ -1267,7 +1651,13 @@ class AdelineStochasticGradientDescent (_Base) :
         --------
         self: `Perceptron` instance 
             returns ``self`` for easy method chaining.
-        """   
+        """  
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self), 
+            )
+    
         self._init_weights (X.shape[1])
         self.cost_=list() 
         for i in range(self.n_iter ): 
@@ -1280,6 +1670,20 @@ class AdelineStochasticGradientDescent (_Base) :
             self.cost_.append(avg_cost) 
         
         return self 
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'w_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
     
     def partial_fit(self, X, y):
         """
@@ -1306,6 +1710,12 @@ class AdelineStochasticGradientDescent (_Base) :
             returns ``self`` for easy method chaining.
 
         """
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self),  
+            )
+        
         if not self.w_initialized : 
            self._init_weights (X.shape[1])
           
@@ -1399,9 +1809,10 @@ class AdelineStochasticGradientDescent (_Base) :
 
         Returns
         -------
-       weight net inputs 
+        weight net inputs 
 
         """
+        self.inspect 
         return np.dot (X, self.w_[1:]) + self.w_[0] 
 
     def activation (self, X):
@@ -1534,6 +1945,12 @@ class AdelineGradientDescent (_Base):
         self: `Perceptron` instance 
             returns ``self`` for easy method chaining.
         """
+        X, y = check_X_y(
+            X, 
+            y, 
+            estimator = get_estimator_name(self), 
+            )
+        
         rgen = np.random.RandomState(self.random_state)
         
         self.w_ = rgen.normal(loc=0. , scale =.01 , size = 1 + X.shape[1]
@@ -1550,6 +1967,20 @@ class AdelineGradientDescent (_Base):
             self.cost_.append(cost) 
         
         return self 
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'w_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
     
     def net_input (self, X):
         """
@@ -1571,6 +2002,7 @@ class AdelineGradientDescent (_Base):
        weight net inputs 
 
         """
+        self.inspect 
         return np.dot (X, self.w_[1:]) + self.w_[0] 
 
     def activation (self, X):
@@ -1681,108 +2113,7 @@ def get_params (obj: object
     
     return PARAMS_VALUES
 
-def is_installing (
-        module: str , 
-        upgrade: bool=True , 
-        action: bool=True, 
-        DEVNULL: bool=False,
-        verbose: int=0,
-        **subpkws
-    )-> bool: 
-    """ Install or uninstall a module/package using the subprocess 
-    under the hood.
-    
-    Parameters 
-    ------------
-    module: str,
-        the module or library name to install using Python Index Package `PIP`
-    
-    upgrade: bool,
-        install the lastest version of the package. *default* is ``True``.   
-        
-    DEVNULL:bool, 
-        decline the stdoutput the message in the console 
-    
-    action: str,bool 
-        Action to perform. 'install' or 'uninstall' a package. *default* is 
-        ``True`` which means 'intall'. 
-        
-    verbose: int, Optional
-        Control the verbosity i.e output a message. High level 
-        means more messages. *default* is ``0``.
-         
-    subpkws: dict, 
-        additional subprocess keywords arguments 
-    Returns 
-    ---------
-    success: bool 
-        whether the package is sucessfully installed or not. 
-        
-    Example
-    --------
-    >>> from watex.base import is_installing
-    >>> is_installing(
-        'tqdm', action ='install', DEVNULL=True, verbose =1)
-    >>> is_installing(
-        'tqdm', action ='uninstall', verbose =1)
-    """
-    #implement pip as subprocess 
-    # refer to https://pythongeeks.org/subprocess-in-python/
-    if not action: 
-        if verbose > 0 :
-            print("---> No action `install`or `uninstall`"
-                  f" of the module {module!r} performed.")
-        return action  # DO NOTHING 
-    
-    success=False 
 
-    action_msg ='uninstallation' if action =='uninstall' else 'installation' 
-
-    if action in ('install', 'uninstall', True) and verbose > 0:
-        print(f'---> Module {module!r} {action_msg} will take a while,'
-              ' please be patient...')
-        
-    cmdg =f'<pip install {module}> | <python -m pip install {module}>'\
-        if action in (True, 'install') else ''.join([
-            f'<pip uninstall {module} -y> or <pip3 uninstall {module} -y ',
-            f'or <python -m pip uninstall {module} -y>.'])
-        
-    upgrade ='--upgrade' if upgrade else '' 
-    
-    if action == 'uninstall':
-        upgrade= '-y' # Don't ask for confirmation of uninstall deletions.
-    elif action in ('install', True):
-        action = 'install'
-
-    cmd = ['-m', 'pip', f'{action}', f'{module}', f'{upgrade}']
-
-    try: 
-        STDOUT = subprocess.DEVNULL if DEVNULL else None 
-        STDERR= subprocess.STDOUT if DEVNULL else None 
-    
-        subprocess.check_call(
-            [sys.executable] + cmd, stdout= STDOUT, stderr=STDERR,
-                              **subpkws)
-        if action in (True, 'install'):
-            # freeze the dependancies
-            reqs = subprocess.check_output(
-                [sys.executable,'-m', 'pip','freeze'])
-            [r.decode().split('==')[0] for r in reqs.split()]
-
-        success=True
-        
-    except: 
-
-        if verbose > 0 : 
-            print(f'---> Module {module!r} {action_msg} failed. Please use'
-                f' the following command: {cmdg} to manually do it.')
-    else : 
-        if verbose > 0: 
-            print(f"{action_msg.capitalize()} of `{module}` "
-                      "and dependancies was successfully done!") 
-        
-    return success
- 
 def existfeatures (df, features, error='raise'): 
     """Control whether the features exists or not  
     
@@ -1860,3 +2191,4 @@ def selectfeatures (
     # raise ValueError: at least one of include or exclude must be nonempty
     # use coerce to no raise error and return data frame instead.
     return df if coerce else df.select_dtypes (include, exclude) 
+

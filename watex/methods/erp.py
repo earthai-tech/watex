@@ -11,9 +11,9 @@ Notes
 ---------
 This module is one of the earlier module designed for predicting flow rate by 
 computing the electrical parameters. Originaly the idea was to automate 
-everything to facilite the task of the users. All things the users need to do 
-is to arrange the electrical data according to the standard arrangement proposed 
-by thus library in :class:`watex.property.P` such as:
+everything to ease the task for the users. All things,  the users need to do, 
+is to arrange the electrical data according to the arrangement proposed 
+by the library in :class:`watex.property.P` such as:
     
     === ======== =========== ========== ======== ======= ========
     *pk  *x         *y          *rho      sloc     shape  type   
@@ -25,44 +25,45 @@ by thus library in :class:`watex.property.P` such as:
     140 790255      1093116     138        
     === ======== =========== ========== ======== ======= ========
     
-    where headers with `*` means compulsory data and others optional  data. 
+    where headers with `*` means compulsory data and optional otherwise. 
     `x`  and `y` are  utm easting and northing coordinates respectively, 
-    while `rho` is the apparemt resistivity at each measurement point(`pk`).
-    `sloc` is the colum of anomaly boundaries definition. The optionals 
-    column's names such as `sloc`, `shape` and  `type` can be nothing.
+    while `rho` is the apparent resistivity at each measurement point(`pk`).
+    `sloc` is the column of anomaly boundaries definition. The optional 
+    column names such as `sloc`, `shape` and  `type` can be None.
     Inside the table: 
         
-    - `low` means the lower boundary of selected anomaly,  can also be '1'
-    - `up` means the uper boundary of selected anomaly , can also be `2` 
-    - `se` means the sounding location on the survey. can be `ves` or `0`. 
+    - `low` means the lower boundary of the selected anomaly,  can also be '1'
+    - `up` means the uper boundary of selected anomaly, can be `2` 
+    - `se` means the sounding location on the survey area. can be `ves` or `0`. 
     - `V` anomaly-shape and can be 'W', 'K', 'U', 'H', 'C' and 'M' 
     - `CP` anomaly type and can be 'CB2P', 'NC' or 'EC' 
 
-The main interesting part in this module is the collection of ERP where 
+The main interesting part of this module is the collection of ERP where 
 the module can rewrite the data and arrange it following the aforementioned  
 disposal (above proposed by the library). If data  is given in a separate sheets 
 (from excel files), the parser exports each sheet and rewrite accordingly. The 
-limit of this approach is that the parser only read the excel as csv format. 
+limit of this approach is that the parser only read the excel format. 
 
 Warnings 
 ----------    
-So once the data is  well organized, the module is able to compute all the 
+Thus, once the data is  well organized, the module is able to compute all the 
 parameters and select the best location for drilling after analyzing all the 
-different point in dataset. 
-However, this way seems, too more perfect (not realistic) far from the reality 
+different points in dataset. 
+However, this seems too much perfect (not realistic) and far from the practice
 since in DC - resistivity, the low resistivity does not mean there is a water 
-in that place thereby leading to a misinsterpretationin the choice of locating 
-the drilling points. To handle this issue, we recommended to use the module 
-:mod:`watex.method.electrical` instead. To force use this module, be sure you 
-are a bagground of the geology of the area and whether you are not in marshes 
-area or a complex geological area which unfortunately is something difficult 
+at that place thereby leading to a misinsterpretationin the choice of locating 
+of the drilling points. To handle this issue, we recommended to use the module 
+:mod:`watex.method.electrical` instead. To force use ERP module, be sure you 
+are a background of the geology of the area and whether you are not in marshes 
+or a complex geological area which unfortunately is something difficult 
 to know in advance. 
 To well organize the watex API and remediate to the problem of automation, it 
 is recommended to use the :class:`watex.methods.electrical.DCProfiling`. The 
 latter provides fast and efficient way to compute the electrical 
-parameters with a few margin of errors. The module with deprecated in the future 
-release and rewrite the automation of the erp parser sheets using the deep 
-neural networks (automate shape and type recognition).  
+parameters with a few margin of errors. The module will be deprecated in the  
+future and should be rewritten. The automation of parameter computation from 
+the erp parser sheets such as shape and type of anomaly will henceforth use 
+the deep neural networks.  
 
 """
 import os

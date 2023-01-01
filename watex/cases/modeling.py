@@ -12,7 +12,7 @@ import warnings
 import numpy as np 
 import pandas as pd 
 
-from ..typing import ( 
+from .._typing import ( 
     T, 
     Generic,
     Iterable , 
@@ -50,6 +50,7 @@ from ..exceptions import (
 
 _logger =watexlog().get_watex_logger(__name__)
 
+__all__=["BaseModel"] 
 
 class BaseModel: 
     """
@@ -735,35 +736,7 @@ class BaseModel:
             self.X_train.columns, perm_sorted_idx, pfi_type, switch, savefig
         
         
-# if __name__=='__main__': 
-    
-#     from sklearn.preprocessing import RobustScaler,  PolynomialFeatures 
-#     from sklearn.feature_selection import SelectKBest, f_classif 
-#     from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-#     from sklearn.compose import make_column_selector 
 
-#     pipeline2={
-#                     'num_column_selector_': make_column_selector(dtype_include=np.number),
-#                     'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
-#                     'features_engineering_':PolynomialFeatures(2, include_bias=False),
-#                     'selectors_': SelectKBest(f_classif, k=2), 
-#                     'encodages_': RobustScaler()
-#                       } 
-#     estimator2= RandomForestClassifier()
-#     #SVC(C=1, gamma=0.1)
-#     modelObj = Modeling( pipelines = {
-#                     'num_column_selector_': make_column_selector(dtype_include=np.number),
-#                     'cat_column_selector_': make_column_selector(dtype_exclude=np.number),
-#                     'features_engineering_':PolynomialFeatures(2, include_bias=False),
-#                     'selectors_': SelectKBest(f_classif, k=2), 
-#                     'encodages_': RobustScaler()
-#                       }, 
-#                 estimator = RandomForestClassifier())
-
-#     modelObj.permutation_feature_importances(
-#         estimator = AdaBoostClassifier(random_state=7), 
-#         data_fn ='data/geo_fdata/BagoueDataset2.xlsx',  
-#                                              switch ='on', pitype='pfi')
  
 
     

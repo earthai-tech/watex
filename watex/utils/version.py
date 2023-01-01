@@ -12,7 +12,7 @@ from __future__ import annotations
 import collections
 import itertools
 import re
-from typing import (
+from .._typing import (
     Callable,
     Iterator,
     SupportsInt,

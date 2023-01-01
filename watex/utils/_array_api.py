@@ -3,6 +3,7 @@
 # Copyright (c) 2007-2022 The scikit-learn developers.
 # All rights reserved.
 """Tools to support array_api."""
+
 import numpy
 
 class _ArrayAPIWrapper:
@@ -97,3 +98,86 @@ def _convert_to_numpy(array, xp):
         return numpy.asarray(array)
 
 
+def get_namespace(*arrays, array_api_dispatch=False):
+    """Get namespace of arrays.
+    Introspect `arrays` arguments and return their common Array API
+    compatible namespace object, if any. NumPy 1.22 and later can
+    construct such containers using the `numpy.array_api` namespace
+    for instance.
+    See: https://numpy.org/neps/nep-0047-array-api-standard.html
+    If `arrays` are regular numpy arrays, an instance of the
+    `_NumPyApiWrapper` compatibility wrapper is returned instead.
+    Namespace support is not enabled by default. To enabled it
+    call:
+      sklearn.set_config(array_api_dispatch=True)
+    or:
+      with sklearn.config_context(array_api_dispatch=True):
+          # your code here
+    Otherwise an instance of the `_NumPyApiWrapper`
+    compatibility wrapper is always returned irrespective of
+    the fact that arrays implement the `__array_namespace__`
+    protocol or not.
+    
+    Parameters
+    ----------
+    *arrays : array objects
+        Array objects.
+    array_api_dispatch: bool, False
+        If `arrays` are regular numpy arrays, an instance of the
+        `_NumPyApiWrapper` compatibility wrapper is returned instead.
+        
+    Returns
+    -------
+    namespace : module
+        Namespace shared by array objects.
+    is_array_api : bool
+        True of the arrays are containers that implement the Array API spec.
+    """
+    # `arrays` contains one or more arrays, or possibly Python scalars (accepting
+    # those is a matter of taste, but doesn't seem unreasonable).
+    # Returns a tuple: (array_namespace, is_array_api)
+
+    if not array_api_dispatch:
+        return _NumPyApiWrapper(), False
+
+    namespaces = {
+        x.__array_namespace__() if hasattr(x, "__array_namespace__") else None
+        for x in arrays
+        if not isinstance(x, (bool, int, float, complex))
+    }
+
+    if not namespaces:
+        # one could special-case np.ndarray above or use np.asarray here if
+        # older numpy versions need to be supported.
+        raise ValueError("Unrecognized array input")
+
+    if len(namespaces) != 1:
+        raise ValueError(f"Multiple namespaces for array inputs: {namespaces}")
+
+    (xp,) = namespaces
+    if xp is None:
+        # Use numpy as default
+        return _NumPyApiWrapper(), False
+
+    return _ArrayAPIWrapper(xp), True
+
+def _asarray_with_order(array, dtype=None, order=None, copy=None, xp=None):
+    """Helper to support the order kwarg only for NumPy-backed arrays
+    Memory layout parameter `order` is not exposed in the Array API standard,
+    however some input validation code in scikit-learn needs to work both
+    for classes and functions that will leverage Array API only operations
+    and for code that inherently relies on NumPy backed data containers with
+    specific memory layout constraints (e.g. our own Cython code). The
+    purpose of this helper is to make it possible to share code for data
+    container validation without memory copies for both downstream use cases:
+    the `order` parameter is only enforced if the input array implementation
+    is NumPy based, otherwise `order` is just silently ignored.
+    """
+    if xp is None:
+        xp, _ = get_namespace(array)
+    if xp.__name__ in {"numpy", "numpy.array_api"}:
+        # Use NumPy API to support order
+        array = numpy.asarray(array, order=order, dtype=dtype)
+        return xp.asarray(array, copy=copy)
+    else:
+        return xp.asarray(array, dtype=dtype, copy=copy)

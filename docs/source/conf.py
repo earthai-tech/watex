@@ -61,19 +61,27 @@ release = '0.1'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
+    #'sphinx.ext.jsmath',
     'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
     'sphinx.ext.coverage',
-    'sphinx.ext.imgmath',
+    #'sphinx.ext.pngmath',
     # 'numpydoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
     # "sphinx_rtd_theme",
     'sphinx.ext.githubpages', 
-    # 'nbsphinx',
+    # "nbsphinx",
     #'autoapi.sphinx',
+     "myst_nb",
 ]
+# nbsphinx_custom_formats = {
+#     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
+# }
 
+nb_custom_formats = {
+     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
+}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 # The suffix(es) of source filenames.
@@ -128,7 +136,7 @@ htmlhelp_basename = 'WATexdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
-
+# latex_engine = 'xelatex'
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #

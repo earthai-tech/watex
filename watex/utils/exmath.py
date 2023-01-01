@@ -21,11 +21,15 @@ import scipy.integrate as integrate
 from scipy.optimize import curve_fit
 from scipy.integrate import quad 
 from scipy.cluster.hierarchy import  linkage 
+from scipy.linalg import lstsq
+from scipy._lib._util import float_factorial
+from scipy.ndimage import convolve1d
 from scipy.spatial.distance import ( 
     pdist, squareform 
     )
 import  matplotlib.pyplot as plt
- 
+
+from ._arraytools import axis_slice
 from .._watexlog import watexlog
 from .._docstring import refglossary
 from ..decorators import ( 
@@ -41,7 +45,7 @@ from ..exceptions import (
     ExtractionError,
     )
 from ..property import P
-from ..typing import (
+from .._typing import (
     T, 
     F,
     List, 
@@ -64,12 +68,20 @@ from .funcutils import (
     fmt_text, 
     find_position_from_sa , 
     find_feature_positions,
+    find_close_position,
     smart_format,
     reshape,
     ismissing,
     fillNaN, 
-    spi                   
+    spi, 
+                      
 )
+from .validator import ( 
+    _is_arraylike_1d, 
+    _validate_ves_operator,
+    check_y,
+    check_array, 
+    )
 try: import scipy.stats as spstats
 except: pass 
 
@@ -264,7 +276,8 @@ def linkage_matrix(
         row_clusters = linkage (pdist(df, metric =metric), method =method
                                 )
     if kind =='design': 
-        row_clusters = linkage(df.values, method = method, 
+        row_clusters = linkage(df.values if hasattr (df, 'columns') else df, 
+                               method = method, 
                                optimal_ordering=optimal_ordering )
         
     if as_frame: 
@@ -292,12 +305,13 @@ def d_hanning_window(
     :param x: variable point along the window width
     :param xk: Center of the window `W`. It presumes to host the most weigth.   
     :param W: int, window-size; preferably set to odd number. It must be less than
-         the dipole length. 
-    :return: Anonymous function (x,xk, W)
+          the dipole length. 
+    :return: Anonymous function (x,xk, W) value 
     """
-    return lambda x, xk, W: 1/W * (1 + np.cos (
+    # x =check_y (x, input_name ='x') 
+    return  1/W * (1 + np.cos (
         2 * np.pi * (x-xk) /W)) if np.abs(x-xk) <= W/2 else  0.
-     
+    
 def betaj (
         xj: int ,
         L: int , 
@@ -359,6 +373,7 @@ def rhoa2z (
     ... array([[2.54950976+2.54950976j]])
     
     """
+    
     rhoa = np.array(rhoa); freq = np.array(freq) ; phs = np.array(phs) 
     
     if len(phs) != len(rhoa): 
@@ -484,6 +499,7 @@ def savitzky_golay1d (
         raise TypeError("window_size is too small for the polynomials order")
     order_range = range(order+1)
     
+    y = check_y( y, y_numeric= True )
     half_window = (window_size -1) // 2
     # precompute coefficients
     b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
@@ -551,11 +567,17 @@ def interpolate2d (
         
     """ 
     arr2d = np.array(arr2d)
+    
     if len(arr2d.shape) ==1: 
         arr2d = arr2d[:, None] # put on 
     if arr2d.shape[0] ==1: 
         arr2d = reshape (arr2d, axis=0)
-
+    arr2d = check_array(
+        arr2d, 
+        to_frame = False, 
+        input_name ="arr2d",
+        force_all_finite="allow-nan" 
+        )
     arr2d  = np.hstack ([ reshape (interpolate1d(arr2d[:, ii], kind=method, 
                                         method ='pd', **kws), axis=0)
                          for ii in  range (arr2d.shape[1])])
@@ -687,7 +709,9 @@ def fitfunc(
         - new axis  `x_new` generated from the samples.
         - projected sample values got from `f`.
     """
-    
+    for ar, n in  zip ((x, y),("x", "y")): 
+        if not _is_arraylike_1d(ar): 
+            raise TypeError (f"{n!r} only supports 1d array.")
     # generate a sample of values to cover the fit function 
     # thus compute ynew (yn) from the poly function f
     minl, = argrelextrema(y, np.less) 
@@ -722,42 +746,50 @@ def vesDataOperator(
     at the same spacing `AB`. Note that for the `LeaveOneOut``, the selected 
     resistivity value is randomly chosen. 
     
-    :param AB: array-like - Spacing of the current electrodes when exploring
-        in deeper. Units are in meters. 
+    Parameters 
+    -----------
+    AB: array-like 1d, 
+        Spacing of the current electrodes when exploring in deeper. 
+        Is the depth measurement (AB/2) using the current electrodes AB.
+        Units are in meters. 
     
-    :param rhoa: array-like - Apparent resistivity values collected in imaging 
-        in depth. Units are in :math:`\Omega {.m}` not :math:`log10(\Omega {.m})`
+    rhoa: array-like 1d
+        Apparent resistivity values collected by imaging in depth. 
+        Units are in :math:`\Omega {.m}` not :math:`log10(\Omega {.m})`
     
-    :param data: DataFrame - It is composed of spacing values `AB` and  the 
-        apparent resistivity values `rhoa`. If `data` is given, params `AB` and 
-        `rhoa` should be kept to ``None``.   
+    data: DataFrame, 
+        It is composed of spacing values `AB` and  the apparent resistivity 
+        values `rhoa`. If `data` is given, params `AB` and `rhoa` should be 
+        kept to ``None``.   
     
-    :param typeofop: str - Type of operation to apply  to the resistivity 
-        values `rhoa` of the duplicated spacing points `AB`. The default 
-        operation is ``mean``. 
+    typeofop: str,['mean'|'median'|'leaveoneout'], default='mean' 
+        Type of operation to apply  to the resistivity values `rhoa` of the 
+        duplicated spacing points `AB`. The default operation is ``mean``. 
     
-    :param outdf: bool - Outpout a new dataframe composed of `AB` and `rhoa` 
-        data renewed. 
+    outdf: bool , default=False, 
+        Outpout a new dataframe composed of `AB` and `rhoa`; data renewed. 
     
-    :returns: 
+    Returns 
+    ---------
         - Tuple of (AB, rhoa): New values computed from `typeofop` 
         - DataFrame: New dataframe outputed only if ``outdf`` is ``True``.
         
-    :note: 
-        By convention `AB` and `MN` are half-space dipole length which 
-        correspond to `AB/2` and `MN/2` respectively. 
+    Notes 
+    ---------
+    By convention `AB` and `MN` are half-space dipole length which 
+    correspond to `AB/2` and `MN/2` respectively. 
     
-    :Example: 
-        
-        >>> from watex.utils.exmath import vesDataOperator
-        >>> from watex.utils.coreutils import vesSelector 
-        >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx')
-        >>> len(data)
-        ... (32, 3) # include the potentiel electrode values `MN`
-        >>> df= vesDataOperator(data.AB, data.resistivity,
-                                typeofop='leaveOneOut', outdf =True)
-        >>> df.shape 
-        ... (26, 2) # exclude `MN` values and reduce(-6) the duplicated values. 
+    Examples 
+    ---------
+    >>> from watex.utils.exmath import vesDataOperator
+    >>> from watex.utils.coreutils import vesSelector 
+    >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx')
+    >>> len(data)
+    ... (32, 3) # include the potentiel electrode values `MN`
+    >>> df= vesDataOperator(data.AB, data.resistivity,
+                            typeofop='leaveOneOut', outdf =True)
+    >>> df.shape 
+    ... (26, 2) # exclude `MN` values and reduce(-6) the duplicated values. 
     """
     op = copy.deepcopy(typeofop) 
     typeofop= str(typeofop).lower()
@@ -769,26 +801,12 @@ def vesDataOperator(
 
     typeofop ='mean' if typeofop =='none' else typeofop 
     
-    if data is not None: 
-        data = _assert_all_types(data, pd.DataFrame)
-        rhoa = np.array(data.resistivity )
-        AB= np.array(data.AB) 
-    
-    AB= np.array( _assert_all_types(
-        AB, np.ndarray, list, tuple, pd.Series)) 
-    rhoa = np.array( _assert_all_types(
-        rhoa, np.ndarray, list, tuple, pd.Series))
- 
-    if len(AB)!= len(rhoa): 
-        raise VESError(
-            'Deep measurement `AB` must have the same size with '
-            ' the collected apparent resistivity `rhoa`.'
-            f' {len(AB)} and {len(rhoa)} were given.')
-    
+    AB, rhoa = _validate_ves_operator(
+        AB, rhoa, data = data , exception= VESError )
+
     #----> When exploring in deeper, after changing the distance 
     # of MN , measure are repeated at the same points. So, we will 
-    # selected these points and take the mean values of tyhe resistivity 
-    
+    # selected these points and take the mean values of tyhe resistivity         
     # make copies 
     AB_ = AB.copy() ; rhoa_= rhoa.copy() 
     # find the duplicated values 
@@ -816,6 +834,7 @@ def vesDataOperator(
     
     return (X, Y) if not outdf else pd.DataFrame (
         {'AB': X,'resistivity':Y}, index =range(len(X)))
+
 
 # XXXTODO 
 def invertVES (data: DataFrame[DType[float|int]] = None, 
@@ -853,8 +872,8 @@ def invertVES (data: DataFrame[DType[float|int]] = None,
 
 @refAppender(refglossary.__doc__)    
 def ohmicArea(
-        data: DataFrame[DType[float|int]] = None, 
-        ohmSkey: float = 45., 
+        data: DataFrame[DType[float|int]]=None, 
+        search: float = 45., 
         sum : bool = False, 
         objective: str = 'ohmS',
         **kws
@@ -868,12 +887,12 @@ def ohmicArea(
         electrodes, the potentials electrodes MN and the collected apparents 
         resistivities. 
     
-    * ohmSkey: float - The depth in meters from which one expects to find a 
-        fracture zone outside of pollutions. Indeed, the `ohmSkey` parameter is 
+    * search: float - The depth in meters from which one expects to find a 
+        fracture zone outside of pollutions. Indeed, the `search` parameter is 
         used to  speculate about the expected groundwater in the fractured rocks 
         under the average level of water inrush in a specific area. For instance 
         in `Bagoue region`_ , the average depth of water inrush
-        is around ``45m``. So the `ohmSkey` can be specified via the water inrush 
+        is around ``45m``. So the `search` can be specified via the water inrush 
         average value. 
         
     * objective: str - Type operation to outputs. By default, the function 
@@ -908,7 +927,7 @@ def ohmicArea(
     Raises
     -------
     VESError 
-        If the `ohmSkey` is greater or equal to the maximum investigation 
+        If the `search` is greater or equal to the maximum investigation 
         depth in meters. 
     
     Examples 
@@ -916,11 +935,11 @@ def ohmicArea(
     >>> from watex.utils.exmath import ohmicArea 
     >>> from watex.utils.coreutils import vesSelector 
     >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx') 
-    >>> (ohmS, err, roots), *_ = ohmicArea(data = data, ohmSkey =45, sum =True ) 
+    >>> (ohmS, err, roots), *_ = ohmicArea(data = data, search =45, sum =True ) 
     ... (13.46012197818152, array([5.8131967e-12]), array([45.        , 98.07307307]))
     # pseudo-area is computed between the spacing point AB =[45, 98] depth. 
     >>> _, (XY.shape, XYfit.shape, XYohms_area.shape) = ohmicArea(
-                    AB= data.AB, rhoa =data.resistivity, ohmSkey =45, 
+                    AB= data.AB, rhoa =data.resistivity, search =45, 
                     objective ='plot') 
     ... ((26, 2), (1000, 2), (8, 2))    
     
@@ -1015,15 +1034,15 @@ def ohmicArea(
     X, Y = vesDataOperator(data =data, **kws)
     
     try : 
-       ohmSkey = str(ohmSkey).lower().replace('m', '')
-       if ohmSkey.find('none')>=0 : 
-           ohmSkey = X.max()/2 
-       ohmSkey = float(ohmSkey)
+       search = str(search).lower().replace('m', '')
+       if search.find('none')>=0 : 
+           search = X.max()/2 
+       search = float(search)
     except: 
-        raise ValueError (f'Could not convert value {ohmSkey!r} to float')
+        raise ValueError (f'Could not convert value {search!r} to float')
         
-    if ohmSkey >= X.max(): 
-        raise VESError(f"The startpoint 'ohmSkey={ohmSkey}m'is expected "
+    if search >= X.max(): 
+        raise VESError(f"The startpoint 'search={search}m'is expected "
                            f"to be less than the 'maxdepth={X.max()}m'.")
 
     #-------> construct the fitting curves for 1000 points 
@@ -1034,54 +1053,62 @@ def ohmicArea(
     # Finding the intercepts between the fitting curve and the dummy 
     # basement curves 
     #--> e. g. start from 20m (oix) --> ... searching  and find the index 
-    oIx = np.argmin (np.abs(X - ohmSkey)) 
+    oIx = np.argmin (np.abs(X - search)) 
     # from this index (oIx) , read the remain depth. 
     oB = X[int(oIx):] # from O-> end [OB]
-    #--< construct the basement curve from the index of ohmSkey
-    f_brl, beta = dummy_basement_curve( f_rhotl,  ohmSkey)
+    #--< construct the basement curve from the index of search
+    f_brl, beta = dummy_basement_curve( f_rhotl,  search)
     # 1000 points from OB (xx)
     xx = np.linspace(oB.min(), oB.max(), 1000)
-    b45_projected= f_brl(xx)
+    #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # b45_projected= f_brl(xx)
     
     # create a fit function for b45 and find the limits 
     # find the intersection between the b45_projected values and 
     # fpartial projected values are the solution of equations f45 -fpartials 
-    diff_arr = b45_projected - f_rhotl(xx) #ypartial_projected 
+    # diff_arr = b45_projected - f_rhotl(xx) #ypartial_projected 
 
     # # if f-y < 0 => f< y so fitting curve is under the basement curve 
-    # # we keep the limit indexes for integral computation 
-    # # we want to keep the 
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # make basement func f45 from oB
+    f45, *_ = fitfunc(oB, Y[oIx:])
+    ff = f45 - f_rhotl  # f(x) -g(x)
+
+    diff_arr= ff (xx)  # get the relative position f/g from oB
+    # mask negative values where g is up to f 
     array_masked = np.ma.masked_where (diff_arr < 0 , diff_arr , copy =True)
-    # get indexes of valid values 
+    # get indexes of valid positions 
     indexes, = array_masked.nonzero() 
- 
+    
+    # find integration bounds 
     try : 
         ib_indexes = find_bound_for_integration(indexes, b0=bound0)
     except : 
-        bound0=[] #initialize the bounds lists 
+        bound0=[] # initialize the bounds lists 
         ib_indexes =find_limit_for_integration(indexes, b0= bound0) 
-    
+        
+    # get the roots of integration inf and sup pairs 
     roots = xx[ib_indexes] 
-    f45, *_ = fitfunc(oB, Y[oIx:])
-    ff = f45 - f_rhotl 
+
     pairwise_r = np.split(roots, len(roots)//2 ) if len(
         roots) > 2 else [np.array(roots)]
     ohmS = np.zeros((len(pairwise_r,)))
     err_ohmS = np.zeros((len(pairwise_r,)))
+
     for ii, (inf, sup) in enumerate(pairwise_r): 
         values, err = integrate.quad(ff, a = inf, b = sup)
         ohmS[ii] = np.zeros((1,)) if values < 0 else values 
         err_ohmS[ii] = err
         
-
+    # sum area if True
     if sum: 
         ohmS = ohmS.sum()  
-    
+
     rv =[
         (ohmS, err_ohmS, roots),
          ( np.hstack((X[:, np.newaxis], Y[:, np.newaxis]) ), 
              np.hstack((x_new[:, np.newaxis], y_projected[:, np.newaxis])), 
-             np.hstack((oB[:, np.newaxis], f_brl(oB)[:, np.newaxis]) )
+             np.hstack((oB[:, np.newaxis], f45(oB)[:, np.newaxis]) )
          ) 
         ]    
         
@@ -1196,7 +1223,7 @@ def type_ (erp: ArrayLike[DType[float]] ) -> str:
     
     erp = _assert_all_types(erp, tuple, list, np.ndarray, pd.Series)
     erp = np.array (erp)
-    
+    erp= check_y(erp, to_frame =False, input_name="'erp'" )
     try : 
         ssets = np.split(erp, len(erp)//7)
     except ValueError: 
@@ -1302,7 +1329,9 @@ def shape (
     
     cz = _assert_all_types( cz , tuple, list, np.ndarray, pd.Series) 
     cz = np.array(cz)
-    # detect the staion position index
+    # detect the station position index
+    cz= check_y(cz, to_frame =False, input_name="Conductive zone"
+                    )
     if s is (None or ... ):
         s_index = np.argmin(cz)
     elif s is not None: 
@@ -1480,10 +1509,14 @@ def scalePosition(
                     f"`c_order`'{c_order}' should be less than the number of " 
                     f"given columns '{len(ydata.columns)}'. Use column name instead.")
             ydata= ydata.iloc[:, c_order]
-            
-    ydata = np.array(ydata)
+                  
+    ydata = check_y (np.array(ydata)  , input_name= "ydata")
+    
     if xdata is None: 
         xdata = np.linspace(0, 4, len(ydata))
+        
+    xdata = check_y (xdata , input_name= "Xdata")
+    
     if len(xdata) != len(ydata): 
         raise ValueError(" `x` and `y` arrays must have the same length."
                         "'{len(xdata)}' and '{len(ydata)}' are given.")
@@ -1577,7 +1610,8 @@ def detect_station_position (
             is out of the range; max position = 40
     """
     s = _assert_all_types( s, float, int, str)
-    p = _assert_all_types( p, tuple, list, np.ndarray, pd.Series) 
+    
+    p = check_y (p, input_name ="Position array 'p'", to_frame =True )
     
     S=copy.deepcopy(s)
     if isinstance(s, str): 
@@ -1622,13 +1656,13 @@ def detect_station_position (
     return int(s_index) , s 
     
 def sfi (
-        cz: Sub[ArrayLike[T, DType[T]]] | List[float] ,
-        p: Sub[SP[ArrayLike, DType [int]]] | List [int] = None, 
-        s: Optional [str] =None, 
-        dipolelength: Optional [float] = None, 
-        plot: bool = False,
-        raw : bool = False,
-        **plotkws
+    cz: Sub[ArrayLike],
+    p: Sub[SP[ArrayLike]] = None, 
+    s: Optional [str] =None, 
+    dipolelength: Optional [float] = None, 
+    view: bool = False,
+    raw : bool = False,
+    **plotkws
 ) -> float: 
     r""" 
     Compute  the pseudo-fracturing index known as *sfi*. 
@@ -1650,34 +1684,45 @@ def sfi (
     respectively. :math:`$P_a^{*}$`  is and :math:`$M_a^{*}$` are the projected 
     power and magnitude of the lower point of the selected anomaly.
     
-    :param cz: array-like. Selected conductive zone 
-    :param p: array-like. Station positions of the conductive zone.
-    :param dipolelength: float. If `p` is not given, it will be set 
+    Parameters 
+    -----------
+    cz: array-like, 
+        Selected conductive zone 
+    p: array-like, 
+        Station positions of the conductive zone.
+    dipolelength: float. If `p` is not given, it will be set 
         automatically using the default value to match the ``cz`` size. 
         The **default** value is ``10.``.
-    :param plot: bool. Visualize the fitting curve. *Default* is ``False``. 
-    :param raw: bool. Overlaining the fitting curve with the raw curve from `cz`. 
-    :param plotkws: dict. `Matplotlib plot`_ keyword arguments. 
-    
-    
-    :Example:
+    view: bool, default=False, 
+        Visualize the fitting curve. *Default* is ``False``. 
+    raw: bool,default=False,
+        Overlaining the fitting curve with the raw curve from `cz`. 
+    plotkws: dict
+        `Matplotlib plot`_ keyword arguments. 
         
-        >>> from numpy as np 
-        >>> from watex.properties import P 
-        >>> from watex.utils.exmath import sfi 
-        >>> rang = np.random.RandomState (42) 
-        >>> condzone = np.abs(rang.randn (7)) 
-        >>> # no visualization and default value `s` with gloabl minimal rho
-        >>> pfi = sfi (condzone)
-        ... 3.35110143
-        >>> # visualize fitting curve 
-        >>> plotkws  = dict (rlabel = 'Conductive zone (cz)', 
-                             label = 'fitting model',
-                             color=f'{P().frcolortags.get("fr3")}', 
-                             )
-        >>> sfi (condzone, plot= True , s= 5, figsize =(7, 7), 
-                  **plotkws )
-        ... Out[598]: (array([ 0., 10., 20., 30.]), 1)
+    Return 
+    --------
+    sfi: float 
+        value computed for pseudo-fracturing index 
+    
+    Examples 
+    ----------
+    >>> from numpy as np 
+    >>> from watex.properties import P 
+    >>> from watex.utils.exmath import sfi 
+    >>> rang = np.random.RandomState (42) 
+    >>> condzone = np.abs(rang.randn (7)) 
+    >>> # no visualization and default value `s` with gloabl minimal rho
+    >>> pfi = sfi (condzone)
+    ... 3.35110143
+    >>> # visualize fitting curve 
+    >>> plotkws  = dict (rlabel = 'Conductive zone (cz)', 
+                         label = 'fitting model',
+                         color=f'{P().frcolortags.get("fr3")}', 
+                         )
+    >>> sfi (condzone, plot= True , s= 5, figsize =(7, 7), 
+              **plotkws )
+    ... Out[598]: (array([ 0., 10., 20., 30.]), 1)
         
     References
     ----------
@@ -1692,15 +1737,18 @@ def sfi (
     # Determine the number of curve inflection 
     # to find the number of degree to compose 
     # cz fonction 
+    cz = check_y (cz, input_name ="Conductive-zone")
     if p is None :
         dipolelength = 10. if dipolelength is  None else dipolelength  
         p = np.arange (0, len(cz) * dipolelength, dipolelength)
-   
+        
+    p = check_y (p, input_name ="Position array 'p'")
+    
     if len(p) != len(cz): 
         raise StationError (
             'Array of position and conductive zone must have the same length:'
             f' `{len(p)}` and `{len(cz)}` were given.')
-        
+    
     minl, = argrelextrema(cz, np.less)
     maxl, = argrelextrema(cz,np.greater)
     ixf = len(minl) + len(maxl)
@@ -1756,12 +1804,114 @@ def sfi (
         if sfi == np.inf : 
             sfi = np.sqrt ( (pw/pw_star)**2 + (ma / ma_star )**2 ) % np.sqrt(2)
  
-    if plot: 
+    if view: 
         plot_(p,cz,'-ok', xn, yn, raw = raw , **plotkws)
   
     
     return sfi 
 
+def plotOhmicArea (
+    data: DataFrame= None, 
+    search: float = 45., 
+    pre_computed =False, 
+    xy=None, 
+    xyf=None, 
+    xyarea=None, 
+    colors = None, 
+    fbtw=False, 
+    **plot_kws, 
+)->'plot_': 
+    """ 
+    Plot the |VES| data ohmic -area 
+    
+    Parameters 
+    -----------
+    * data: Dataframe pandas 
+        contains the depth measurement AB from current  electrodes, 
+        the potentials electrodes MN and the collected apparent 
+        resistivities. 
+    
+    * search: float, default=45 
+        The depth in meters from which one expects to find a fracture zone 
+        outside of pollutions. Indeed, the `search` parameter is 
+        used to  speculate about the expected groundwater in the fractured rocks 
+        under the average level of water inrush in a specific area. For instance 
+        in `Bagoue region`_ , the average depth of water inrush
+        is around ``45m``. So the `search` can be specified via the water inrush 
+        average value. 
+        
+    pre_computed:bool, default=False,
+        If ``True`` computed the `ohmic_area` parameters. If ``False``, the 
+        ohmic area arguments must be passed to `xy`, `xyf` and `xyarea`, 
+        otherwise an errors will raise. 
+    xy: array-like of shape (n_AB, 2)
+        Arraylike of the sanitized depth measurement AB from current. 
+        electrodes `n_AB`. See :func:`~.vesDataOperator`. 
+    xyf: array-like of shape (n_fit_samples, 2)
+        Array-like of the fitted samples i.e the number of points for 
+        fitting the sounding resistivity values from the surface thin the 
+        total depth. The fitted `rhoa` showns a smooth curves. The default 
+        point is ``1000``. 
+    xyarea: array-like of shape (n_area, 2)
+        Arraylike of the resistivity positions of the depth measurment AB 
+        where the fractured zone is found. 
+        
+    fbtw: bool, default=False, 
+        If ``True``, filled the computed fractured zone using the parameters 
+        computed from `xyf` and `xyarea`.  
+         
+    kws: dict - Additionnal keywords arguments from |VES| data operations. 
+        See :func:`watex.utils.exmath.vesDataOperator` for futher details. 
+    
+    Notes  
+    --------
+    The first and second columns of `xy`, `xyfit` and `xyarea` are 
+    the position AB/2 and  their corresponding resistivity values. 
+    
+    Examples 
+    ----------
+    >>> from watex.datasets import load_semien 
+    >>> from watex.utils.exmath import plotOhmicArea 
+    >>> ves_data = load_semien () 
+    >>> plotOhmicArea (ves_data) 
+    """ 
+
+    if not pre_computed: 
+        _ , (xy, xyf, xyarea) = ohmicArea( 
+                data = data , search =search, objective ='plot', sum=False 
+                        ) 
+    if  ( pre_computed 
+         and (xy is None 
+              or xyf is None 
+              or xyarea is None 
+              )
+         ): 
+        raise VESError("'pre_computed'is 'True' while ohmic-area parameters"
+                       " are not computed yet. Set 'pre_computed=False' and "
+                       " provide the appropriate arguments.")
+    #check_array 
+    [ check_array (ar, input_name= name, to_frame =False) 
+     for ar , name in zip ([ xy, xyf, xyarea],  ["xy", "xyf", "xyarea"]
+                           )
+     ]
+    c = _manage_colors(colors ) 
+
+    args = [ * xy.T ] + [c[0]] + [*xyf.T ] +[c[1]] + [*xyarea.T] +[c[2]]
+    
+    legs =['raw app.res', 'fitted app.res ', 'search zone']
+    return plot_(*args , dtype ='ves', raw= True, kind='semilogy', fbtw=fbtw, 
+                 leg =legs, **plot_kws) 
+
+def _manage_colors (c, default = ['ok', 'ob-', 'r-']): 
+    """ Manage the ohmic-area plot colors """
+    c = c or default 
+    if isinstance(c, str): 
+        c= [c] 
+    c = list(c) +  default 
+    
+    return c [:3] # return 3colors 
+
+        
 @refAppender(refglossary.__doc__)
 def plot_ (
     *args : List [Union [str, ArrayLike, ...]],
@@ -1770,13 +1920,14 @@ def plot_ (
     style : str = 'seaborn',   
     dtype: str  ='erp',
     kind: Optional[str] = None , 
+    fbtw:bool=False, 
     **kws
     ) -> None : 
     """ Quick visualization for fitting model, |ERP| and |VES| curves.
     
     :param x: array-like - array of data for x-axis representation 
     :param y: array-like - array of data for plot y-axis  representation
-    :param figsize: tuple - Mtplotlib (MPL) figure size; should be a tuple 
+    :param figsize: tuple - Matplotlib (MPL) figure size; should be a tuple 
          value of integers e.g. `figsize =(10, 5)`.
     :param raw: bool- Originally the `plot_` function is intended for the 
         fitting |ERP| model i.e. the correct value of |ERP| data. However, 
@@ -1786,7 +1937,7 @@ def plot_ (
     :param style: str - Pyplot style. Default is ``seaborn``
     :param dtype: str - Kind of data provided. Can be |ERP| data or |VES| data. 
         When the |ERP| data are provided, the common plot is sufficient to 
-        visualize all the data insignt i.e. the default value of `kind` is kept 
+        visualize all the data insight i.e. the default value of `kind` is kept 
         to ``None``. However, when the data collected is |VES| data, the 
         convenient plot for visualization is the ``loglog`` for parameter
         `kind``  while the `dtype` can be set to `VES` to specify the labels 
@@ -1797,6 +1948,11 @@ def plot_ (
         i.e. its keep the normal plots. It can be ``loglog``, ``semilogx`` and 
         ``semilogy``.
         
+    :param fbtw: bool, default=False, 
+        Mostly used for |VES| data. If ``True``, filled the computed 
+        fractured zone using the parameters computed from 
+        :func:`~.watex.utils.exmath.ohmicArea`. 
+
     :param kws: dict - Additional `Matplotlib plot`_ keyword arguments. To cus-
         tomize the plot, one can provide a dictionnary of MPL keyword 
         additional arguments like the example below.
@@ -1821,6 +1977,8 @@ def plot_ (
         del kws['ylabel']
     if (rotate:= kws.get ('rotate')) is not None: 
         del kws ['rotate']
+    if (leg:= kws.get ('leg')) is not None: 
+        del kws ['leg']
         
     if (title:= kws.get ('title')) is not None: 
         del kws ['title']
@@ -1842,7 +2000,6 @@ def plot_ (
                       label =rlabel, 
                       )
         elif kind =='loglog': 
-            print('yes')
             plt.loglog (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
@@ -1852,6 +2009,18 @@ def plot_ (
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
+            
+        if fbtw and dtype=='ves': 
+            # remove colors 
+            args = [ag for ag in args if not isinstance (ag, str)] 
+            if len(args ) <4 : 
+                raise VESError ("'Fill_between' expects four arguments:"
+                                " (x0, y0) for fitting plot and (x1, y1)"
+                                " for ohmic area. Got {len(args)}")
+            xf, yf , xo, yo,*_ = args  
+            # find the index position in xf 
+            ixp = list ( find_close_position (xf, xo ) ) 
+            plt.fill_between(xo, yf[ixp], y2=yo  )
             
     dtype = dtype.lower() if isinstance(dtype, str) else dtype
     
@@ -1869,7 +2038,8 @@ def plot_ (
                     rotation = 0. if rotate is None else rotate 
                     )
         
-    plt.xlabel ('Stations') if xlabel is  None  else plt.xlabel (xlabel)
+    plt.xlabel ('AB/2 (m)' if dtype=='ves' else "Stations"
+                ) if xlabel is  None  else plt.xlabel (xlabel)
     plt.ylabel ('Resistivity (Ω.m)'
                 ) if ylabel is None else plt.ylabel (ylabel)
     
@@ -1880,7 +2050,7 @@ def plot_ (
         
     plt.tight_layout()
     fig.suptitle(**fig_title_kws)
-    plt.legend ()
+    plt.legend (leg, loc ='best') if leg  else plt.legend ()
     plt.show ()
         
     
@@ -2129,54 +2299,56 @@ def define_conductive_zone (
 #FR1: 9EB3DD
 #FR2: 9EB3DD
 #FR3: 0A4CEE
-def shortPlot (sample, cz=None): 
+def shortPlot (erp, cz=None): 
     """ 
-    Quick plot to visualize the `sample` line as well as the  selected 
-    conductive zone if given.
+    Quick plot to visualize the `sample` of ERP data overlained to the  
+    selected conductive zone if given.
     
-    :param sample: array_like, the electrical profiling array 
+    :param erp: array_like, the electrical profiling array 
     :param cz: array_like, the selected conductive zone. If ``None``, `cz` 
         should be plotted.
     
     :Example: 
-        >>> import numpy as np 
-        >>> from watex.utils.exmath import shortPlot, define_conductive_zone 
-        >>> test_array = np.random.randn (10)
-        >>> selected_cz ,*_ = define_conductive_zone(test_array, 7) 
-        >>> shortPlot(test_array, selected_cz )
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import shortPlot, define_conductive_zone 
+    >>> test_array = np.random.randn (10)
+    >>> selected_cz ,*_ = define_conductive_zone(test_array, 7) 
+    >>> shortPlot(test_array, selected_cz )
         
     """
+    erp = check_y (erp , input_name ="sample of ERP data")
     import matplotlib.pyplot as plt 
     fig, ax = plt.subplots(1,1, figsize =(10, 4))
     leg =[]
-    ax.scatter (np.arange(len(sample)), sample, marker ='.', c='b')
-    zl, = ax.plot(np.arange(len(sample)), sample, 
+    ax.scatter (np.arange(len(erp)), erp, marker ='.', c='b')
+    zl, = ax.plot(np.arange(len(erp)), erp, 
                   c='r', 
                   label ='Electrical resistivity profiling')
     leg.append(zl)
     if cz is not None: 
+        cz= check_y (cz, input_name ="Conductive zone 'cz'")
         # construct a mask array with np.isin to check whether 
         # `cz` is subset array
-        z = np.ma.masked_values (sample, np.isin(sample, cz ))
+        z = np.ma.masked_values (erp, np.isin(erp, cz ))
         # a masked value is constructed so we need 
         # to get the attribute fill_value as a mask 
         # However, we need to use np.invert or tilde operator  
         # to specify that other value except the `CZ` values mus be 
         # masked. Note that the dtype must be changed to boolean
         sample_masked = np.ma.array(
-            sample, mask = ~z.fill_value.astype('bool') )
+            erp, mask = ~z.fill_value.astype('bool') )
     
         czl, = ax.plot(
-            np.arange(len(sample)), sample_masked, 
+            np.arange(len(erp)), sample_masked, 
             ls='-',
             c='#0A4CEE',
             lw =2, 
             label ='Conductive zone')
         leg.append(czl)
 
-    ax.set_xticks(range(len(sample)))
+    ax.set_xticks(range(len(erp)))
     ax.set_xticklabels(
-        ['S{0:02}'.format(i+1) for i in range(len(sample))])
+        ['S{0:02}'.format(i+1) for i in range(len(erp))])
     
     ax.set_xlabel('Stations')
     ax.set_ylabel('app.resistivity (ohm.m)')
@@ -2848,7 +3020,7 @@ def compute_lower_anomaly(
         
         >>> from watex.utils.exmath import compute_lower_anolamy 
         >>> import pandas as pd 
-        >>> path_to_= 'data/l10_gbalo.xlsx'
+        >>> erp_data= 'data/l10_gbalo.xlsx'
         >>> dataRes=pd.read_excel(erp_data).to_numpy()[:,-1]
         >>> anomaly, *_ =  compute_lower_anomaly(erp_array=data, step =10)
         >>> anomaly
@@ -2857,6 +3029,7 @@ def compute_lower_anomaly(
     display_infos= kws.pop('diplay_infos', False)
     # got minumum of erp data 
     collectanlyBounds=[]
+    erp_array = check_y (erp_array, input_name = "erp_array") 
     if step is not None: 
         station_position = np.arange(0, step * len(erp_array), step)
 
@@ -3134,7 +3307,8 @@ def scaley(
         >>> plt.plot(x, y, x, yc) 
         
     """   
-
+    y = check_y( y )
+    
     if str(func).lower() != 'none': 
         if not hasattr(func, '__call__') or not inspect.isfunction (func): 
             raise TypeError(
@@ -3146,6 +3320,9 @@ def scaley(
     degree = len(minl) + 1
     if x is None: 
         x = np.arange(len(y)) # np.linspace(0, 4, len(y))
+        
+    x= check_y (x , input_name="x") 
+    
     if len(x) != len(y): 
         raise ValueError(" `x` and `y` arrays must have the same length."
                         f"'{len(x)}' and '{len(y)}' are given.")
@@ -3217,7 +3394,7 @@ def fittensor(
            33157895.2631579 , 29473684.78947368])
     
     """
-    
+    refreq = check_y (refreq, input_name="Reference array 'refreq'")
     freqn, mask = ismissing(refarr= refreq , arr =compfreq, return_index='mask',
                             fill_value = fill_value)
     
@@ -3357,6 +3534,7 @@ def interpolate1d (
     elif method in ('interp1d', 'scipy', 'base', 'simpler', 'i1d'): 
         method ='base' 
     
+    arr = check_y(arr, allow_nan= True, to_frame= True ) 
     # check whether there is nan and masked invalid 
     # and take only the valid values 
     t_arr = arr.copy() 
@@ -3655,7 +3833,351 @@ def get_strike (
     return  geo_electric_strike, profile_angle 
         
         
-        
+
+def savgol_coeffs(window_length, polyorder, deriv=0, delta=1.0, pos=None,
+                  use="conv"):
+    """Compute the coefficients for a 1-D Savitzky-Golay FIR filter.
+
+    Parameters
+    ----------
+    window_length : int
+        The length of the filter window (i.e., the number of coefficients).
+        `window_length` must be an odd positive integer.
+    polyorder : int
+        The order of the polynomial used to fit the samples.
+        `polyorder` must be less than `window_length`.
+    deriv : int, optional
+        The order of the derivative to compute. This must be a
+        nonnegative integer. The default is 0, which means to filter
+        the data without differentiating.
+    delta : float, optional
+        The spacing of the samples to which the filter will be applied.
+        This is only used if deriv > 0.
+    pos : int or None, optional
+        If pos is not None, it specifies evaluation position within the
+        window. The default is the middle of the window.
+    use : str, optional
+        Either 'conv' or 'dot'. This argument chooses the order of the
+        coefficients. The default is 'conv', which means that the
+        coefficients are ordered to be used in a convolution. With
+        use='dot', the order is reversed, so the filter is applied by
+        dotting the coefficients with the data set.
+
+    Returns
+    -------
+    coeffs : 1-D ndarray
+        The filter coefficients.
+
+    References
+    ----------
+    A. Savitzky, M. J. E. Golay, Smoothing and Differentiation of Data by
+    Simplified Least Squares Procedures. Analytical Chemistry, 1964, 36 (8),
+    pp 1627-1639.
+
+    See Also
+    --------
+    savgol_filter
+
+    Notes
+    -----
+
+    .. versionadded:: 0.14.0
+
+    Examples
+    --------
+    >>> from scipy.signal import savgol_coeffs
+    >>> savgol_coeffs(5, 2)
+    array([-0.08571429,  0.34285714,  0.48571429,  0.34285714, -0.08571429])
+    >>> savgol_coeffs(5, 2, deriv=1)
+    array([ 2.00000000e-01,  1.00000000e-01,  2.07548111e-16, -1.00000000e-01,
+           -2.00000000e-01])
+
+    Note that use='dot' simply reverses the coefficients.
+
+    >>> savgol_coeffs(5, 2, pos=3)
+    array([ 0.25714286,  0.37142857,  0.34285714,  0.17142857, -0.14285714])
+    >>> savgol_coeffs(5, 2, pos=3, use='dot')
+    array([-0.14285714,  0.17142857,  0.34285714,  0.37142857,  0.25714286])
+
+    `x` contains data from the parabola x = t**2, sampled at
+    t = -1, 0, 1, 2, 3.  `c` holds the coefficients that will compute the
+    derivative at the last position.  When dotted with `x` the result should
+    be 6.
+
+    >>> x = np.array([1, 0, 1, 4, 9])
+    >>> c = savgol_coeffs(5, 2, pos=4, deriv=1, use='dot')
+    >>> c.dot(x)
+    6.0
+    """
+
+    # An alternative method for finding the coefficients when deriv=0 is
+    #    t = np.arange(window_length)
+    #    unit = (t == pos).astype(int)
+    #    coeffs = np.polyval(np.polyfit(t, unit, polyorder), t)
+    # The method implemented here is faster.
+
+    # To recreate the table of sample coefficients shown in the chapter on
+    # the Savitzy-Golay filter in the Numerical Recipes book, use
+    #    window_length = nL + nR + 1
+    #    pos = nL + 1
+    #    c = savgol_coeffs(window_length, M, pos=pos, use='dot')
+
+    if polyorder >= window_length:
+        raise ValueError("polyorder must be less than window_length.")
+
+    halflen, rem = divmod(window_length, 2)
+
+    if rem == 0:
+        raise ValueError("window_length must be odd.")
+
+    if pos is None:
+        pos = halflen
+
+    if not (0 <= pos < window_length):
+        raise ValueError("pos must be nonnegative and less than "
+                         "window_length.")
+
+    if use not in ['conv', 'dot']:
+        raise ValueError("`use` must be 'conv' or 'dot'")
+
+    if deriv > polyorder:
+        coeffs = np.zeros(window_length)
+        return coeffs
+
+    # Form the design matrix A. The columns of A are powers of the integers
+    # from -pos to window_length - pos - 1. The powers (i.e., rows) range
+    # from 0 to polyorder. (That is, A is a vandermonde matrix, but not
+    # necessarily square.)
+    x = np.arange(-pos, window_length - pos, dtype=float)
+    if use == "conv":
+        # Reverse so that result can be used in a convolution.
+        x = x[::-1]
+
+    order = np.arange(polyorder + 1).reshape(-1, 1)
+    A = x ** order
+
+    # y determines which order derivative is returned.
+    y = np.zeros(polyorder + 1)
+    # The coefficient assigned to y[deriv] scales the result to take into
+    # account the order of the derivative and the sample spacing.
+    y[deriv] = float_factorial(deriv) / (delta ** deriv)
+
+    # Find the least-squares solution of A*c = y
+    coeffs, _, _, _ = lstsq(A, y)
+
+    return coeffs
+
+
+def _polyder(p, m):
+    """Differentiate polynomials represented with coefficients.
+
+    p must be a 1-D or 2-D array.  In the 2-D case, each column gives
+    the coefficients of a polynomial; the first row holds the coefficients
+    associated with the highest power. m must be a nonnegative integer.
+    (numpy.polyder doesn't handle the 2-D case.)
+    """
+
+    if m == 0:
+        result = p
+    else:
+        n = len(p)
+        if n <= m:
+            result = np.zeros_like(p[:1, ...])
+        else:
+            dp = p[:-m].copy()
+            for k in range(m):
+                rng = np.arange(n - k - 1, m - k - 1, -1)
+                dp *= rng.reshape((n - m,) + (1,) * (p.ndim - 1))
+            result = dp
+    return result
+
+
+def _fit_edge(x, window_start, window_stop, interp_start, interp_stop,
+              axis, polyorder, deriv, delta, y):
+    """
+    Given an N-d array `x` and the specification of a slice of `x` from
+    `window_start` to `window_stop` along `axis`, create an interpolating
+    polynomial of each 1-D slice, and evaluate that polynomial in the slice
+    from `interp_start` to `interp_stop`. Put the result into the
+    corresponding slice of `y`.
+    """
+
+    # Get the edge into a (window_length, -1) array.
+    x_edge = axis_slice(x, start=window_start, stop=window_stop, axis=axis)
+    if axis == 0 or axis == -x.ndim:
+        xx_edge = x_edge
+        swapped = False
+    else:
+        xx_edge = x_edge.swapaxes(axis, 0)
+        swapped = True
+    xx_edge = xx_edge.reshape(xx_edge.shape[0], -1)
+
+    # Fit the edges.  poly_coeffs has shape (polyorder + 1, -1),
+    # where '-1' is the same as in xx_edge.
+    poly_coeffs = np.polyfit(np.arange(0, window_stop - window_start),
+                             xx_edge, polyorder)
+
+    if deriv > 0:
+        poly_coeffs = _polyder(poly_coeffs, deriv)
+
+    # Compute the interpolated values for the edge.
+    i = np.arange(interp_start - window_start, interp_stop - window_start)
+    values = np.polyval(poly_coeffs, i.reshape(-1, 1)) / (delta ** deriv)
+
+    # Now put the values into the appropriate slice of y.
+    # First reshape values to match y.
+    shp = list(y.shape)
+    shp[0], shp[axis] = shp[axis], shp[0]
+    values = values.reshape(interp_stop - interp_start, *shp[1:])
+    if swapped:
+        values = values.swapaxes(0, axis)
+    # Get a view of the data to be replaced by values.
+    y_edge = axis_slice(y, start=interp_start, stop=interp_stop, axis=axis)
+    y_edge[...] = values
+
+
+def _fit_edges_polyfit(x, window_length, polyorder, deriv, delta, axis, y):
+    """
+    Use polynomial interpolation of x at the low and high ends of the axis
+    to fill in the halflen values in y.
+
+    This function just calls _fit_edge twice, once for each end of the axis.
+    """
+    halflen = window_length // 2
+    _fit_edge(x, 0, window_length, 0, halflen, axis,
+              polyorder, deriv, delta, y)
+    n = x.shape[axis]
+    _fit_edge(x, n - window_length, n, n - halflen, n, axis,
+              polyorder, deriv, delta, y)
+
+
+def savgol_filter(x, window_length, polyorder, deriv=0, delta=1.0,
+                  axis=-1, mode='interp', cval=0.0):
+    """ Apply a Savitzky-Golay filter to an array.
+
+    This is a 1-D filter. If `x`  has dimension greater than 1, `axis`
+    determines the axis along which the filter is applied.
+
+    Parameters
+    ----------
+    x : array_like
+        The data to be filtered. If `x` is not a single or double precision
+        floating point array, it will be converted to type ``numpy.float64``
+        before filtering.
+    window_length : int
+        The length of the filter window (i.e., the number of coefficients).
+        `window_length` must be a positive odd integer. If `mode` is 'interp',
+        `window_length` must be less than or equal to the size of `x`.
+    polyorder : int
+        The order of the polynomial used to fit the samples.
+        `polyorder` must be less than `window_length`.
+    deriv : int, optional
+        The order of the derivative to compute. This must be a
+        nonnegative integer. The default is 0, which means to filter
+        the data without differentiating.
+    delta : float, optional
+        The spacing of the samples to which the filter will be applied.
+        This is only used if deriv > 0. Default is 1.0.
+    axis : int, optional
+        The axis of the array `x` along which the filter is to be applied.
+        Default is -1.
+    mode : str, optional
+        Must be 'mirror', 'constant', 'nearest', 'wrap' or 'interp'. This
+        determines the type of extension to use for the padded signal to
+        which the filter is applied.  When `mode` is 'constant', the padding
+        value is given by `cval`.  See the Notes for more details on 'mirror',
+        'constant', 'wrap', and 'nearest'.
+        When the 'interp' mode is selected (the default), no extension
+        is used.  Instead, a degree `polyorder` polynomial is fit to the
+        last `window_length` values of the edges, and this polynomial is
+        used to evaluate the last `window_length // 2` output values.
+    cval : scalar, optional
+        Value to fill past the edges of the input if `mode` is 'constant'.
+        Default is 0.0.
+
+    Returns
+    -------
+    y : ndarray, same shape as `x`
+        The filtered data.
+
+    See Also
+    --------
+    savgol_coeffs
+
+    Notes
+    -----
+    Details on the `mode` options:
+
+        'mirror':
+            Repeats the values at the edges in reverse order. The value
+            closest to the edge is not included.
+        'nearest':
+            The extension contains the nearest input value.
+        'constant':
+            The extension contains the value given by the `cval` argument.
+        'wrap':
+            The extension contains the values from the other end of the array.
+
+    For example, if the input is [1, 2, 3, 4, 5, 6, 7, 8], and
+    `window_length` is 7, the following shows the extended data for
+    the various `mode` options (assuming `cval` is 0)::
+
+        mode       |   Ext   |         Input          |   Ext
+        -----------+---------+------------------------+---------
+        'mirror'   | 4  3  2 | 1  2  3  4  5  6  7  8 | 7  6  5
+        'nearest'  | 1  1  1 | 1  2  3  4  5  6  7  8 | 8  8  8
+        'constant' | 0  0  0 | 1  2  3  4  5  6  7  8 | 0  0  0
+        'wrap'     | 6  7  8 | 1  2  3  4  5  6  7  8 | 1  2  3
+
+    .. versionadded:: 0.14.0
+
+    Examples
+    --------
+    >>> from scipy.signal import savgol_filter
+    >>> np.set_printoptions(precision=2)  # For compact display.
+    >>> x = np.array([2, 2, 5, 2, 1, 0, 1, 4, 9])
+
+    Filter with a window length of 5 and a degree 2 polynomial.  Use
+    the defaults for all other parameters.
+
+    >>> savgol_filter(x, 5, 2)
+    array([1.66, 3.17, 3.54, 2.86, 0.66, 0.17, 1.  , 4.  , 9.  ])
+
+    Note that the last five values in x are samples of a parabola, so
+    when mode='interp' (the default) is used with polyorder=2, the last
+    three values are unchanged. Compare that to, for example,
+    `mode='nearest'`:
+
+    >>> savgol_filter(x, 5, 2, mode='nearest')
+    array([1.74, 3.03, 3.54, 2.86, 0.66, 0.17, 1.  , 4.6 , 7.97])
+
+    """
+    if mode not in ["mirror", "constant", "nearest", "interp", "wrap"]:
+        raise ValueError("mode must be 'mirror', 'constant', 'nearest' "
+                         "'wrap' or 'interp'.")
+
+    x = np.asarray(x)
+    # Ensure that x is either single or double precision floating point.
+    if x.dtype != np.float64 and x.dtype != np.float32:
+        x = x.astype(np.float64)
+
+    coeffs = savgol_coeffs(window_length, polyorder, deriv=deriv, delta=delta)
+
+    if mode == "interp":
+        if window_length > x.size:
+            raise ValueError("If mode is 'interp', window_length must be less "
+                             "than or equal to the size of x.")
+
+        # Do not pad. Instead, for the elements within `window_length // 2`
+        # of the ends of the sequence, use the polynomial that is fitted to
+        # the last `window_length` elements.
+        y = convolve1d(x, coeffs, axis=axis, mode="constant")
+        _fit_edges_polyfit(x, window_length, polyorder, deriv, delta, axis, y)
+    else:
+        # Any mode other than 'interp' is passed on to ndimage.convolve1d.
+        y = convolve1d(x, coeffs, axis=axis, mode=mode, cval=cval)
+
+    return y        
         
         
         

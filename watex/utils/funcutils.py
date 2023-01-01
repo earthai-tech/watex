@@ -2,8 +2,10 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 
-from __future__ import annotations 
-
+from __future__ import ( 
+    annotations , 
+    print_function 
+    )
 import os 
 import re 
 import sys
@@ -12,9 +14,12 @@ import copy
 import json
 import h5py
 import yaml
+import joblib
+import pickle
 import shutil
 import numbers 
-import inspect  
+import inspect
+import datetime  
 import warnings
 import itertools
 import subprocess 
@@ -25,7 +30,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from .._watexlog import watexlog
-from ..typing import ( 
+from .._typing import ( 
     Tuple,
     Dict,
     Optional,
@@ -77,10 +82,13 @@ except ImportError:
     
 #-----
 
-
 def to_numeric_dtypes (
-        arr: NDArray | DataFrame, *, columns:List[str] = None, 
-        return_feature_types:bool =False , missing_values:float = np.nan, 
+        arr: NDArray | DataFrame, *, 
+        columns:List[str] = None, 
+        return_feature_types:bool =False , 
+        missing_values:float = np.nan, 
+        pop_cat_features:bool=False, 
+        verbose:bool= False, 
     )-> DataFrame : 
     """ Convert array to dataframe and coerce arguments to appropriate dtypes. 
     
@@ -95,6 +103,12 @@ def to_numeric_dtypes (
         return the list of numerical and categorial features
     missing_values: float: 
         Replace the missing or empty string if exist in the dataframe.
+    pop_cat_features:bool, default=False, 
+        remove removes the categorial features  from the DataFrame.
+        
+    verbose: bool, default=False, 
+        outputs a message by listing the categorial items dropped from 
+        the dataframe if exists. 
     Returns 
     --------
     df or (df, nf, cf): Dataframe of values casted to numeric types 
@@ -141,9 +155,90 @@ def to_numeric_dtypes (
             cf.append(serie)
             continue
         
+    if pop_cat_features: 
+        [ df.pop(item) for item in cf ] 
+        if verbose: 
+            msg ="Dataframe does not contain any categorial features."
+            b= f"Feature{'s' if len(cf)>1 else ''}"
+            e = (f"{'have' if len(cf) >1 else 'has'} been dropped"
+                 " from the dataframe.")
+            print(msg) if len(cf)==0 else listing_items_format (
+                cf , b, e ,lstyle ='.', inline=True)
+            
+        return df 
+    
     return (df, nf, cf) if return_feature_types else df 
 
-            
+
+def listing_items_format ( 
+        lst, /, begintext ='', endtext='' , bullet='-', 
+        enum =True , lstyle=None , space =3 , inline =False, verbose=True
+        ): 
+    """ Format list by enumerate them successively with carriage return
+    
+    :param lst: list,
+        object for listening 
+    :param begintext: str, 
+        Text to display at the beginning of listing the items in `lst`. 
+    :param endtext: str, 
+        Text to display at the end of the listing items in `lst`. 
+    :param enum:bool, default=True, 
+        Count the number of items in `lst` and display it 
+    :param lstyle: str, default =None 
+        listing marker. 
+    :param bullet:str, default='-'
+        symbol that is used to introduce item if `enum` is set to False. 
+    :param space: int, 
+        number of space to keep before each outputted item in `lst`
+    :param inline: bool, default=False, 
+        Display all element inline rather than carriage return every times. 
+    :param verbose: bool, 
+        Always True for print. If set to False, return list of string 
+        litteral text. 
+    :returns: None or str 
+        None or string litteral if verbose is set to ``False``.
+    Examples
+    ---------
+    >>> from watex.utils.funcutils import listing_items_format 
+    >>> litems = ['hole_number', 'depth_top', 'depth_bottom', 'strata_name', 
+                'rock_name','thickness', 'resistivity', 'gamma_gamma', 
+                'natural_gamma', 'sp','short_distance_gamma', 'well_diameter']
+    >>> listing_items_format (litems , 'Features' , 
+                               'have been successfully drop.' , 
+                              lstyle ='.', space=3) 
+    """
+    out =''
+    if not is_iterable(lst): 
+        lst=[lst]
+   
+    if hasattr (lst, '__array__'): 
+        if lst.ndim !=1: 
+            raise ValueError (" Can not print multidimensional array."
+                              " Expect one dimensional array.")
+    lst = list(lst)
+    begintext = str(begintext); endtext=str(endtext)
+    lstyle=  lstyle or bullet  
+    lstyle = str(lstyle)
+    b= f"{begintext +':' } "   
+    if verbose :
+        print(b, end=' ') if inline else (
+            print(b)  if  begintext!='' else None)
+    out += b +  ('\n' if not inline else ' ') 
+    for k, item in enumerate (lst): 
+        sp = ' ' * space 
+        if ( not enum and inline ): lstyle =''
+        o = f"{sp}{str(k+1) if enum else bullet+ ' ' }{lstyle} {item}"
+        if verbose:
+            print (o , end=' ') if inline else print(o)
+        out += o + ('\n' if not inline else ' ') 
+       
+    en= ', ' + endtext if inline else endtext
+    if verbose: 
+        print(en) if endtext !='' else None 
+    out +=en 
+    
+    return None if verbose else out 
+    
 def parse_attrs (attr, /, regex=None ): 
     """ Parse attributes using the regular expression.
     
@@ -166,7 +261,7 @@ def parse_attrs (attr, /, regex=None ):
     -------
     attr: List of attributes 
     
-    Examples
+    Example
     ---------
     >>> from watex.utils.funcutils import parse_attrs 
     >>> parse_attrs('lwi_sub_ohmSmulmagnitude')
@@ -180,7 +275,7 @@ def parse_attrs (attr, /, regex=None ):
     return attr 
     
 def url_checker (url: str , install:bool = False, 
-                      raises:str ='ignore')-> bool : 
+                 raises:str ='ignore')-> bool : 
     """
     check whether the URL is reachable or not. 
     
@@ -195,7 +290,7 @@ def url_checker (url: str , install:bool = False,
         Action to install the 'requests' module if module is not install yet.
     raises: str 
         raise errors when url is not recheable rather than returning ``0``.
-        if ``raises` is ``ignore``, and module 'requests' is not installed, it 
+        if `raises` is ``ignore``, and module 'requests' is not installed, it 
         will use the django url validator. However, the latter only assert 
         whether url is right but not validate its reachability. 
               
@@ -520,7 +615,7 @@ def smart_strobj_recognition(
         try:
             ix = container_.index (name)
         except ValueError: 
-            raise AttributeError("{name!r} attribute is not defined")
+            raise AttributeError(f"{name!r} attribute is not defined")
         
     if deep and ix is None:
         # go deeper in the search... 
@@ -1324,17 +1419,21 @@ def _isin (
             ) if not return_mask else np.isin (arr, subarr) 
 
 def _assert_all_types (
-        obj: object , 
-        *expected_objtype: type 
+    obj: object , 
+    *expected_objtype: type, 
+    objname:str=None, 
  ) -> object: 
-    """ Quick assertion of object type. Raise an `TypeError` if 
-    wrong type is given."""
+    """ Quick assertion of object type. Raises a `TypeError` if wrong type 
+    is passed as an argument. For polishing the error message, one can add  
+    the object name `objname` for specifying the object that raises errors  
+    for letting the users to be aware of the reason of failure."""
     # if np.issubdtype(a1.dtype, np.integer): 
     if not isinstance( obj, expected_objtype): 
+        n=str(objname) + ' expects' if objname is not None else 'Expects'
         raise TypeError (
-            f'Expected {smart_format(tuple (o.__name__ for o in expected_objtype))}'
-            f' type{"s" if len(expected_objtype)>1 else ""} '
-            f'but `{type(obj).__name__}` is given.')
+            f"{n} type{'s' if len(expected_objtype)>1 else ''} "
+            f"{smart_format(tuple (o.__name__ for o in expected_objtype))}"
+            f" but {type(obj).__name__!r} is given.")
             
     return obj 
 
@@ -1429,8 +1528,235 @@ def drawn_boundaries(erp_data, appRes, index):
     
     return appRes, index, anomalyBounds 
 
+def serialize_data(
+        data, 
+        filename=None, 
+        force=True, 
+        savepath=None,
+        verbose:int =0
+     ): 
+    """ Store a data into a binary file 
+    
+    :param data: Object
+        Object to store into a binary file. 
+    :param filename: str
+        Name of file to serialize. If 'None', should create automatically. 
+    :param savepath: str, PathLike object
+         Directory to save file. If not exists should automaticallycreate.
+    :param force: bool
+        If ``True``, remove the old file if it exists, otherwise will 
+        create a new incremenmted file.
+    :param verbose: int, get more message.
+    :return: dumped or serialized filename.
+        
+    :Example:
+        
+        >>> import numpy as np
+        >>> import watex.utils.coreutils import serialize_data
+        >>> data = np.arange(15)
+        >>> file = serialize_data(data, filename=None,  force=True, 
+        ...                          savepath =None, verbose =3)
+        >>> file
+    """
+    
+    def _cif(filename, force): 
+        """ Control the file. If `force` is ``True`` then remove the old file, 
+        Otherwise create a new file with datetime infos."""
+        f = copy.deepcopy(filename)
+        if force : 
+            os.remove(filename)
+            if verbose >2: print(f" File {os.path.basename(filename)!r} "
+                      "has been removed. ")
+            return None   
+        else :
+            # that change the name in the realpath 
+            f= os.path.basename(f).replace('.pkl','') + \
+                f'{datetime.datetime.now()}'.replace(':', '_')+'.pkl' 
+            return f
 
-       
+    if filename is not None: 
+        file_exist =  os.path.isfile(filename)
+        if file_exist: 
+            filename = _cif (filename, force)
+    if filename is None: 
+        filename ='__mymemoryfile.{}__'.format(datetime.datetime.now())
+        filename =filename.replace(' ', '_').replace(':', '-')
+    if not isinstance(filename, str): 
+        raise TypeError(f"Filename needs to be a string not {type(filename)}")
+    if filename.endswith('.pkl'): 
+        filename = filename.replace('.pkl', '')
+ 
+    _logger.info (
+        f"Save data to {'memory' if filename.find('memo')>=0 else filename}.")    
+    try : 
+        joblib.dump(data, f'{filename}.pkl')
+        filename +='.pkl'
+        if verbose > 2:
+            print(f'Data dumped in `{filename} using to `~.externals.joblib`!')
+    except : 
+        # Now try to pickle data Serializing data 
+        with open(filename, 'wb') as wfile: 
+            pickle.dump( data, wfile)
+        if verbose >2:
+            print( 'Data are well serialized using Python pickle module.`')
+    # take the real path of the filename
+    filename = os.path.realpath(filename)
+
+    if savepath is  None:
+        dirname ='_memory_'
+        try : savepath = sPath(dirname)
+        except :
+            # for consistency
+            savepath = os.getcwd() 
+    if savepath is not None: 
+        try:
+            shutil.move(filename, savepath)
+        except :
+            file = _cif (os.path.join(savepath,
+                                      os.path.basename(filename)), force)
+            if not force: 
+                os.rename(filename, os.path.join(savepath, file) )
+            if file is None: 
+                #take the file  in current word 
+                file = os.path.join(os.getcwd(), filename)
+                shutil.move(filename, savepath)
+            filename = os.path.join(savepath, file)
+                
+    if verbose > 0: 
+            print(f"Data are well stored in {savepath!r} directory.")
+            
+    return os.path.join(savepath, filename) 
+    
+def load_serialized_data (filename, verbose=0): 
+    """ Load data from dumped file.
+    :param filename: str or path-like object 
+        Name of dumped data file.
+    :return: Data reloaded from dumped file.
+
+    :Example:
+        
+        >>> from watex.utils.functils import load_serialized_data
+        >>> data = load_serialized_data(
+        ...    filename = '_memory_/__mymemoryfile.2021-10-29_14-49-35.647295__.pkl', 
+        ...    verbose =3)
+
+    """
+    if not isinstance(filename, str): 
+        raise TypeError(f'filename should be a <str> not <{type(filename)}>')
+        
+    if not os.path.isfile(filename): 
+        raise FileExistsError(f"File {filename!r} does not exist.")
+
+    _filename = os.path.basename(filename)
+    _logger.info(
+        f"Loading data from {'memory' if _filename.find('memo')>=0 else _filename}.")
+   
+    data =None 
+    try : 
+        data= joblib.load(filename)
+        if verbose >2:
+            (f"Data from {_filename !r} are sucessfully"
+             " reloaded using ~.externals.joblib`!")
+    except : 
+        if verbose >2:
+            print(f"Nothing to reload. It's seems data from {_filename!r}" 
+                      " are not dumped using ~external.joblib module!")
+        
+        with open(filename, 'rb') as tod: 
+            data= pickle.load (tod)
+            
+        if verbose >2: print(f"Data from `{_filename!r} are well"
+                      " deserialized using Python pickle module.`!")
+        
+    is_none = data is None
+    if verbose > 0:
+        if is_none :
+            print("Unable to deserialize data. Please check your file.")
+        else : print(f"Data from {_filename} have been sucessfully reloaded.")
+    
+    return data
+
+def save_job(job , savefile ,* ,  protocol =None,  append_versions=True , 
+             fix_imports= True, buffer_callback = None,   **job_kws): 
+    """ Quick save your job using 'joblib' or persistent Python pickle module
+    
+    Parameters 
+    -----------
+    job: Any 
+        Anything to save, preferabaly a models in dict 
+    savefile: str, or path-like object 
+         name of file to store the model
+         The *file* argument must have a write() method that accepts a
+         single bytes argument. It can thus be a file object opened for
+         binary writing, an io.BytesIO instance, or any other custom
+         object that meets this interface.
+    append_versions: bool, default =True 
+        Append the version of Joblib module or Python Pickle module following 
+        by the scikit-learn, numpy and also pandas versions. This is useful 
+        to have idea about previous versions for loading file when system or 
+        modules have been upgraded. This could avoid bottleneck when data 
+        have been stored for long times and user has forgotten the date and 
+        versions at the time the file was saved. 
+    
+    protocol: int, optional 
+        The optional *protocol* argument tells the pickler to use the
+        given protocol; supported protocols are 0, 1, 2, 3, 4 and 5.
+        The default protocol is 4. It was introduced in Python 3.4, and
+        is incompatible with previous versions.
+    
+        Specifying a negative protocol version selects the highest
+        protocol version supported.  The higher the protocol used, the
+        more recent the version of Python needed to read the pickle
+        produced.
+        
+    fix_imports: bool, default=True, 
+        If *fix_imports* is True and *protocol* is less than 3, pickle
+        will try to map the new Python 3 names to the old module names
+        used in Python 2, so that the pickle data stream is readable
+        with Python 2.
+        
+    buffer_call_back: int, optional 
+        If *buffer_callback* is None (the default), buffer views are
+        serialized into *file* as part of the pickle stream.
+    
+        If *buffer_callback* is not None, then it can be called any number
+        of times with a buffer view.  If the callback returns a false value
+        (such as None), the given buffer is out-of-band; otherwise the
+        buffer is serialized in-band, i.e. inside the pickle stream.
+    
+        It is an error if *buffer_callback* is not None and *protocol*
+        is None or smaller than 5.
+        
+    job_kws: dict, 
+        Additional keywords arguments passed to :func:`joblib.dump`. 
+        
+    Returns
+    --------
+    savefile: str, 
+        returns the filename
+    """
+    import sklearn 
+    
+    versions = 'sklearn_v{0}.numpy_v{1}.pandas_v{2}'.format( 
+        sklearn.__version__, np.__version__, pd.__version__) 
+    date = datetime.datetime.now() 
+    
+    savefile +=".{}".format(date) 
+    if append_versions : 
+        savefile += ".{}"+ versions 
+    try : 
+        savefile= savefile.format(".joblib_v{}.".format(joblib.__version__))
+        joblib.dump(job, f'{savefile}.joblib', **job_kws)
+        
+    except :  
+        savefile= savefile.format(".pickle_v{}.pkl".format(pickle.__version__))
+        with open(savefile, 'wb') as wfile: 
+            pickle.dump( job, wfile, protocol= protocol, 
+                        fix_imports=fix_imports , 
+                        buffer_callback=buffer_callback )
+
+    return savefile 
+
 def find_position_from_sa(
         an_res_range, 
         pos=None,
@@ -2068,7 +2394,7 @@ def ismissing(refarr, arr, fill_value = np.nan, return_index =False):
     The function makes sense especially for frequency interpollation in the 
     'attenuation band' when using the audio-frequency magnetotelluric methods. 
     
-    :param arr: array-like- Array to extended with fill value. It should be  
+    :param arr: array-like- Array to be extended with fill value. It should be  
         shorter than the `refarr`. Otherwise it returns the same array `arr` 
     :param refarr: array-like- the reference array. It should have a greater 
         length than the array 
@@ -2127,6 +2453,115 @@ def ismissing(refarr, arr, fill_value = np.nan, return_index =False):
     #refarr[refarr ==arr] if return_index else arr 
     return  ref , miss_val_or_ix   
 
+def make_arr_consistent (
+        refarr, arr, fill_value = np.nan, return_index = False, 
+        method='naive'): 
+    """
+    Make `arr` to be consistent with the reference array `refarr`. Fill the 
+    missing value with param `fill_value`. 
+    
+    Note that it does care of the position of the value in the array. Use 
+    Numpy digitize to compute the bins. The array caveat here is the bins 
+    must be monotonically decreasing or increasing.
+    
+    If the values in `arr` are present in `refarr`, the position of `arr` 
+    in new consistent array should be located decreasing or increasing order. 
+    
+    Parameters 
+    ------------
+    arr: array-like 1d, 
+        Array to extended with fill value. It should be  shorter than the 
+        `refarr`.
+        
+    refarr: array-like- the reference array. It should have a greater 
+        length than the array `arr`.  
+    fill_value: float, 
+        Value to fill the `arr` to match the length of the `refarr`. 
+    return_index: bool or str, default=True 
+         index of the position of the  elements in `refarr`.
+         Default is ``False``. If ``mask`` should  return the 
+        mask of existing element in reference array
+    method: str, default="naive"
+        Is the method used to find the right position of items in `arr`
+        based on the reference array. 
+        - ``naive``, considers the length of ``arr`` must fit the number of 
+            items that should be visible in the consistent array. This method 
+            erases the remaining bins values out of length of `arr`. 
+        - ``strict` did the same but rather than considering the length, 
+            it considers the maximum values in the `arr`. It assumes that `arr`
+            is sorted in ascending order. This methods is usefull for plotting 
+            a specific stations since the station loactions are sorted in 
+            ascending order. 
+        
+    Returns 
+    ---------
+    non_zero_index , mask or t  
+        index: indices of the position of `arr` items in ``refarr``. 
+        mask: bool of the position `arr` items in ``refarr``
+        t: new consistent array with the same length as ``refarr``
+    
+    Examples 
+    ----------
+    >>> import numpy as np 
+    >>> from watex.utils.funcutils import make_arr_consistent
+    >>> refarr = np.arange (12) 
+    >>> arr = np.arange (7, 10) 
+    >>> make_arr_consistent (refarr, arr ) 
+    Out[84]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., nan, nan])
+    >>> make_arr_consistent (refarr, arr , return_index =True )
+    Out[104]: array([7, 8, 9], dtype=int64)
+    >>> make_arr_consistent (refarr, arr , return_index ="mask" )
+    Out[105]: 
+    array([False, False, False, False, False, False, False,  True,  True,
+            True, False, False])
+    >>> a = np.arange ( 12 ); b = np.linspace (7, 10 , 7) 
+    >>> make_arr_consistent (a, b ) 
+    Out[112]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., 10., 11.])
+    >>> make_arr_consistent (a, b ,method='strict') 
+    Out[114]: array([nan, nan, nan, nan, nan, nan, nan,  7.,  8.,  9., 10., nan])
+    """
+    try : 
+        refarr = reshape( refarr).shape[1] 
+        arr= reshape( arr).shape[1] 
+    except :pass 
+    else: raise TypeError ("Expects one-dimensional arrays for both arrays.")
+
+    t = np.full_like( refarr, fill_value = np.nan, dtype =float )
+    temp_arr = np.digitize( refarr, arr) 
+    non_zero_index = reshape (np.argwhere (temp_arr!=0 ) ) 
+    t[non_zero_index] = refarr [non_zero_index] 
+    # force value to keep only 
+    # value in array 
+    if method=='strict':
+        index = reshape ( np.argwhere (  (max( arr)  - t) < 0 ) ) 
+        t [index ]= np.nan 
+    else: 
+        if len (t[~np.isnan (t)]) > len(arr): 
+            t [ - (len(t[~np.isnan (t)])-len(arr)):]= np.nan 
+    # update the non_zeros index 
+    non_zero_index= reshape ( np.argwhere (~np.isnan (t)))
+    # now replace all NaN value by filled value 
+    t [np.isnan(t)] = fill_value 
+
+    return  refarr == t  if return_index =='mask' else (
+        non_zero_index if return_index else t )
+
+def find_close_position (refarr, arr): 
+    """ Get the close item from `arr` in the reference array `refarr`. 
+    
+    :param arr: array-like 1d, 
+        Array to extended with fill value. It should be  shorter than the 
+        `refarr`.
+        
+    :param refarr: array-like- 
+        the reference array. It should have a greater length than the
+        array `arr`.  
+    :return: generator of index of the closest position in  `refarr`.  
+    """
+    for item in arr : 
+        ix = np.argmin (np.abs (refarr - item)) 
+        yield ix 
+    
 
 def fillNaN(arr, method ='ff'): 
     """ Most efficient way to back/forward-fill NaN values in numpy array. 
@@ -2229,7 +2664,7 @@ def fillNaN(arr, method ='ff'):
     
     
 def get_params (obj: object 
-                ) -> Dict: 
+               ) -> Dict: 
     """
     Get object parameters. 
     
@@ -2285,8 +2720,7 @@ def get_params (obj: object
     
     return PARAMS_VALUES
 
-    
-    
+
 def fit_by_ll(ediObjs): 
     """ Fit edi by location and reorganize EDI (sort EDI) according to the site  
     longitude and latitude coordinates. 
@@ -2296,9 +2730,9 @@ def fit_by_ll(ediObjs):
     according to the location(longitude and latitude) is usefull for distance 
     betwen site computing with a right position at each site.  
     
-    :param ediObjs: list of EDI object , composed of a collection of 
-        pycsamt.core.edi.Edi object 
-    :type ediObjs: pycsamt.core.edi.Edi_Collection 
+    :param ediObjs: list of EDI object, composed of a collection of 
+        watex.edi.Edi or pycsamt.core.edi.Edi or mtpy.core.edi objects 
+    :type ediObjs: watex.edi.Edi_Collection 
 
     
     :returns: array splitted into ediObjs and Edifiles basenames 
@@ -2331,7 +2765,7 @@ def make_ids(arr, prefix =None, how ='py', skip=False):
     
     :param arr: Iterable object to generate an id site . For instance it can be 
         the array-like or list of EDI object that composed a collection of 
-        pycsamt.core.edi.Edi object. 
+        watex.edi.Edi object. 
     :type ediObjs: array-like, list or tuple 
 
     :param prefix: string value to add as prefix of given id. Prefix can be 
@@ -2455,7 +2889,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
         considered the given station as a index. so it remove all the letter and
         keep digit as index of each stations. 
         
-    :param how: :param how: Mode to index the station. Default is 
+    :param how: Mode to index the station. Default is 
         'Python indexing' i.e.the counting starts by 0. Any other mode will 
         start the counting by 1. Note that if `is_index` is ``True`` and the 
         param `how` is set to it default value ``py``, the station index should 
@@ -2465,7 +2899,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
     
     :return: station index. If the list `id_` is given will return the tuple.
     
-    :example:
+    :Example:
         
     >>> from watex.utils.funcutils import station_id 
     >>> dat1 = ['S13', 's02', 's85', 'pk20', 'posix1256']
@@ -2541,13 +2975,67 @@ def assert_doi(doi):
                        "not: {str(type(doi).__name__!r)}")
     return doi
     
+def strip_item(item_to_clean, item=None, multi_space=12):
+    """
+    Function to strip item around string values.  if the item to clean is None or 
+    item-to clean is "''", function will return None value
+
+    Parameters
+    ----------
+        * item_to_clean : list or np.ndarray of string 
+                 List to strip item.
+        * cleaner : str , optional
+                item to clean , it may change according the use. The default is ''.
+        * multi_space : int, optional
+                degree of repetition may find around the item. The default is 12.
+    Returns
+    -------
+        list or ndarray
+            item_to_clean , cleaned item 
+            
+    :Example: 
+        
+     >>> import numpy as np
+     >>> new_data=_strip_item (item_to_clean=np.array(['      ss_data','    pati   ']))
+     >>>  print(np.array(['      ss_data','    pati   ']))
+     ... print(new_data)
+
+    """
+    if item==None :
+        item = ' '
     
+    cleaner =[(''+ ii*'{0}'.format(item)) for ii in range(multi_space)]
+    
+    if isinstance (item_to_clean, str) : 
+        item_to_clean=[item_to_clean] 
+        
+    # if type(item_to_clean ) != list :#or type(item_to_clean ) !=np.ndarray:
+    #     if type(item_to_clean ) !=np.ndarray:
+    #         item_to_clean=[item_to_clean]
+    
+    if item_to_clean in cleaner or item_to_clean ==['']:
+        warnings.warn ('No data found for sanitization; returns None.')
+        return None 
+    try : 
+        multi_space=int(multi_space)
+    except : 
+        raise TypeError('argument <multplier> must be'\
+                        ' an integer not {0}'.format(type(multi_space)))
+    
+    for jj, ss in enumerate(item_to_clean) : 
+        for space in cleaner:
+            if space in ss :
+                new_ss=ss.strip(space)
+                item_to_clean[jj]=new_ss
+    
+    return item_to_clean  
+ 
 def parse_json(json_fn =None,
                data=None, 
                todo='load',
                savepath=None,
                verbose:int =0,
-               **jsonkws) :
+               **jsonkws):
     """ Parse Java Script Object Notation file and collect data from JSON
     config file. 
     
@@ -2662,11 +3150,11 @@ def parse_csv(
         csv_fn:str =None,
         data=None, 
         todo='reader', 
-         fieldnames=None, 
-         savepath=None,
-         header: bool=False, 
-         verbose:int=0,
-         **csvkws
+        fieldnames=None, 
+        savepath=None,
+        header: bool=False, 
+        verbose:int=0,
+        **csvkws
    ) : 
     """ Parse comma separated file or collect data from CSV.
     
@@ -2951,8 +3439,61 @@ def get_config_fname_from_varname(data,
             f'.{config}', '').replace(f'.{config}', '').replace('.yaml', '')
     
     return config_fname
-    
 
+def pretty_printer(
+        clfs: List[F],  
+        clf_score:List[float]=None, 
+        scoring: Optional[str] =None,
+        **kws
+ )->None: 
+    """ Format and pretty print messages after gridSearch using multiples
+    estimators.
+    
+    Display for each estimator, its name, it best params with higher score 
+    and the mean scores. 
+    
+    Parameters
+    ----------
+    clfs:Callables 
+        classifiers or estimators 
+    
+    clf_scores: array-like
+        for single classifier, usefull to provided the 
+        cross validation score.
+    
+    scoring: str 
+        Scoring used for grid search.
+    """
+    empty =kws.pop('empty', ' ')
+    e_pad =kws.pop('e_pad', 2)
+    p=list()
+
+    if not isinstance(clfs, (list,tuple)): 
+        clfs =(clfs, clf_score)
+
+    for ii, (clf, clf_be, clf_bp, clf_sc) in enumerate(clfs): 
+        s_=[e_pad* empty + '{:<20}:'.format(
+            clf.__class__.__name__) + '{:<20}:'.format(
+                'Best-estimator <{}>'.format(ii+1)) +'{}'.format(clf_be),
+         e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'Best paramaters') + '{}'.format(clf_bp),
+         e_pad* empty  +'{:<20}:'.format(' ') + '{:<20}:'.format(
+            'scores<`{}`>'.format(scoring)) +'{}'.format(clf_sc)]
+        try : 
+            s0= [e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'scores mean')+ '{}'.format(clf_sc.mean())]
+        except AttributeError:
+            s0= [e_pad* empty +'{:<20}:'.format(' ')+ '{:<20}:'.format(
+            'scores mean')+ 'None']
+            s_ +=s0
+        else :
+            s_ +=s0
+
+        p.extend(s_)
+    
+    for i in p: 
+        print(i)
+ 
 def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
     """ Move file to its savepath and output message. 
     If path does not exist, should create one to save data.
@@ -3036,7 +3577,6 @@ def str2columns (text, /, regex=None , pattern = None):
     
     Parameters 
     -----------
-    
     text: str, 
         text litteral containing the columns the names to retrieve
         
@@ -3074,14 +3614,16 @@ def str2columns (text, /, regex=None , pattern = None):
          'text']
 
     """
-    pattern = r'[_#&.*@!_,;\s-]\s*'
+    pattern = pattern or  r'[_#&.*@!_,;\s-]\s*'
     regex = regex or re.compile (pattern, flags=re.IGNORECASE) 
     text= list(filter (None, regex.split(text)))
     return text 
     
     
-def sanitize_frame_cols(d, /, func:F = None , regex=None, pattern:str = None, 
-                            fill_pattern:str =None, inplace:bool =False ):
+def sanitize_frame_cols(
+        d, /, func:F = None , regex=None, pattern:str = None, 
+        fill_pattern:str =None, inplace:bool =False 
+        ):
     """ Remove an indesirable characters and returns new columns 
     
     Use regular expression for columns sanitizing 
@@ -3091,7 +3633,7 @@ def sanitize_frame_cols(d, /, func:F = None , regex=None, pattern:str = None,
     
     d: list, columns, 
         columns to sanitize. It might contain a list of items to 
-        to polish. if dataframe or series are given, the dataframe columns  
+        to polish. If dataframe or series are given, the dataframe columns  
         and the name respectively will be polished and returns the same 
         dataframe.
         
@@ -3130,7 +3672,7 @@ def sanitize_frame_cols(d, /, func:F = None , regex=None, pattern:str = None,
                
     """
     isf , iss= False , False 
-    pattern = r'[_#&.)(*@!_,;\s-]\s*'
+    pattern = pattern or r'[_#&.)(*@!_,;\s-]\s*'
     fill_pattern = fill_pattern or '' 
     fill_pattern = str(fill_pattern)
     
@@ -3165,7 +3707,7 @@ def sanitize_frame_cols(d, /, func:F = None , regex=None, pattern:str = None,
 
     return d 
 
-def to_hdf5(d, /, fn= None, objname =None, close =True,  **hdf5_kws): 
+def to_hdf5(d, /, fn, objname =None, close =True,  **hdf5_kws): 
     """
     Store a frame data in hierachical data format 5 (HDF5) 
     
@@ -3215,10 +3757,13 @@ def to_hdf5(d, /, fn= None, objname =None, close =True,  **hdf5_kws):
     ------- 
     store : Dict-like IO interface for storing pandas objects.
     
+    Examples 
+    ------------
     >>> import os 
     >>> from watex.utils.funcutils import sanitize_frame_cols, to_hdf5 
     >>> from watex.utils import read_data 
     >>> data = read_data('data/boreholes/H502.xlsx') 
+    >>> sanitize_frame_cols (data, fill_pattern='_', inplace =True ) 
     >>> store_path = os.path.join('watex/datasets/data', 'h') # 'h' is the name of the data 
     >>> store = to_hdf5 (data, fn =store_path , objname ='h502' ) 
     >>> store 
@@ -3230,13 +3775,21 @@ def to_hdf5(d, /, fn= None, objname =None, close =True,  **hdf5_kws):
     
     
     """
+    store =None 
+    if ( 
+        not hasattr (d, '__array__') 
+        or not hasattr (d, 'columns')
+            ) : 
+        raise TypeError ("Expect an array or dataframe,"
+                         f" not {type (d).__name__!r}")
+        
     if hasattr (d, '__array__') and hasattr (d, "columns"): 
         # assert whether pytables is installed 
         import_optional_dependency ('tables') 
-        store = pd.HDFStore(fn +'.h5' , **hdf5_kws)
+        store = pd.HDFStore(str(fn) +'.h5' ,  **hdf5_kws)
         objname = objname or 'data'
         store[ str(objname) ] = d 
-        return store 
+
     
     elif not hasattr(d, '__array__'): 
         d = np.asarray(d) 
@@ -3246,20 +3799,452 @@ def to_hdf5(d, /, fn= None, objname =None, close =True,  **hdf5_kws):
                              dtype=store.dtype,
                              data=store
                              )
-        if close : store.close () 
         
+    if close : store.close () 
+
     return store 
     
-    
-  
-    
-    
-    
-    
-    
-    
-    
-    
 
+def find_by_regex (o , /, pattern,  func = re.match, **kws ):
+    """ Find pattern in object whatever an "iterable" or not. 
+    
+    when we talk about iterable, a string value is not included.
+    
+    Parameters 
+    -------------
+    o: str or iterable,  
+        text litteral or an iterable object containing or not the specific 
+        object to match. 
+    pattern: str, default = '[_#&*@!_,;\s-]\s*'
+        The base pattern to split the text into a columns
+    
+    func: re callable , default=re.match
+        regular expression search function. Can be
+        [re.match, re.findall, re.search ],or any other regular expression 
+        function. 
+        
+        * ``re.match()``:  function  searches the regular expression pattern and 
+            return the first occurrence. The Python RegEx Match method checks 
+            for a match only at the beginning of the string. So, if a match is 
+            found in the first line, it returns the match object. But if a match 
+            is found in some other line, the Python RegEx Match function returns 
+            null.
+        * ``re.search()``: function will search the regular expression pattern 
+            and return the first occurrence. Unlike Python re.match(), it will 
+            check all lines of the input string. The Python re.search() function 
+            returns a match object when the pattern is found and “null” if 
+            the pattern is not found
+        * ``re.findall()`` module is used to search for 'all' occurrences that 
+            match a given pattern. In contrast, search() module will only 
+            return the first occurrence that matches the specified pattern. 
+            findall() will iterate over all the lines of the file and will 
+            return all non-overlapping matches of pattern in a single step.
+    kws: dict, 
+        Additional keywords arguments passed to functions :func:`re.match` or 
+        :func:`re.search` or :func:`re.findall`. 
+        
+    Returns 
+    -------
+    om: list 
+        matched object put is the list 
+        
+    Example
+    --------
+    >>> from watex.utils.funcutils import find_by_regex
+    >>> from watex.datasets import load_hlogs 
+    >>> X0, _= load_hlogs (as_frame =True )
+    >>> columns = X0.columns 
+    >>> str_columns =','.join (columns) 
+    >>> find_by_regex (str_columns , pattern='depth', func=re.search)
+    ... ['depth']
+    >>> find_by_regex(columns, pattern ='depth', func=re.search)
+    ... ['depth_top', 'depth_bottom']
+    
+    """
+    om = [] 
+    if isinstance (o, str): 
+        om = func ( pattern=pattern , string = o, **kws)
+        if om: 
+            om= om.group() 
+        om =[om]
+    elif is_iterable(o): 
+        o = list(o) 
+        for s in o : 
+            z = func (pattern =pattern , string = s, **kws)
+            if z : 
+                om.append (s) 
+                
+    if func.__name__=='findall': 
+        om = list(itertools.chain (*om )) 
+    # keep None is nothing 
+    # fit the corresponding pattern 
+    if len(om) ==0 or om[0] is None: 
+        om = None 
+    return  om 
+    
+def is_in_if (o: iter, /, items: str | iter, error = 'raise', 
+               return_diff =False, return_intersect = False): 
+    """ Raise error if item is not  found in the iterable object 'o' 
+    
+    :param o: unhashable type, iterable object,  
+        object for checkin. It assumes to be an iterable from which 'items' 
+        is premused to be in. 
+    :param items: str or list, 
+        Items to assert whether it is in `o` or not. 
+    :param error: str, default='raise'
+        raise or ignore error when none item is found in `o`. 
+    :param return_diff: bool, 
+        returns the difference items which is/are not included in 'items' 
+        if `return_diff` is ``True``, will put error to ``ignore`` 
+        systematically.
+    :param return_intersect:bool,default=False
+        returns items as the intersection between `o` and `items`.
+    :raise: ValueError 
+        raise ValueError if `items` not in `o`. 
+    :return: list,  
+        `s` : object found in ``o` or the difference object i.e the object 
+        that is not in `items` provided that `error` is set to ``ignore``.
+        Note that if None object is found  and `error` is ``ignore`` , it 
+        will return ``None``, otherwise, a `ValueError` raises. 
+        
+    :example: 
+        >>> from watex.datasets import load_hlogs 
+        >>> from watex.utils.funcutils import is_in_if 
+        >>> X0, _= load_hlogs (as_frame =True )
+        >>> is_in_if  (X0 , items= ['depth_top', 'top']) 
+        ... ValueError: Item 'top' is missing in the object 
+        >>> is_in_if (X0, ['depth_top', 'top'] , error ='ignore') 
+        ... ['depth_top']
+        >>> is_in_if (X0, ['depth_top', 'top'] , error ='ignore',
+                       return_diff= True) 
+        ... ['sp',
+         'well_diameter',
+         'layer_thickness',
+         'natural_gamma',
+         'short_distance_gamma',
+         'strata_name',
+         'gamma_gamma',
+         'depth_bottom',
+         'rock_name',
+         'resistivity',
+         'hole_id']
+    """
+    
+    if isinstance (items, str): 
+        items =[items]
+    elif not is_iterable(o): 
+        raise TypeError (f"Expect an iterable object, not {type(o).__name__!r}")
+    # find intersect object 
+    s= set (o).intersection (items) 
+    
+    miss_items = list(s.difference (o)) if len(s) > len(
+        items) else list(set(items).difference (s)) 
+
+    if return_diff or return_intersect: 
+        error ='ignore'
+    
+    if len(miss_items)!=0 :
+        if error =='raise': 
+            v= smart_format(miss_items)
+            verb = f"{ ' '+ v +' is' if len(miss_items)<2 else  's '+ v + 'are'}"
+            raise ValueError (
+                f"Item{verb} missing in the {type(o).__name__.lower()} {o}.")
+            
+       
+    if return_diff : 
+        # get difference 
+        s = list(set(o).difference (s))  if len(o) > len( 
+            s) else list(set(items).difference (s)) 
+        # s = set(o).difference (s)  
+    elif return_intersect: 
+        s = list(set(o).intersection(s))  if len(o) > len( 
+            items) else list(set(items).intersection (s))     
+    
+    s = None if len(s)==0 else list (s) 
+    
+    return s  
+  
+def map_specific_columns ( 
+        X: DataFrame, 
+        ufunc:F , 
+        columns_to_skip:List[str]=None,   
+        pattern:str=None, 
+        inplace:bool= False, 
+        **kws
+        ): 
+    """ Apply function to a specific columns is the dataframe. 
+    
+    It is possible to skip some columns that we want operation to not be 
+    performed.
+    
+    Parameters 
+    -----------
+    X: dataframe, 
+        pandas dataframe with valid columns 
+    ufunc: callable, 
+        Universal function that can be applying to the dataframe. 
+    columns_to_skip: list or str , 
+        List of columns to skip. If given as string and separed by the default
+        pattern items, it should be converted to a list and make sure the 
+        columns name exist in the dataframe. Otherwise an error with 
+        raise.
+        
+    pattern: str, default = '[#&*@!,;\s]\s*'
+        The base pattern to split the text in `column2skip` into a columns
+        For instance, the following string coulb be splitted to:: 
+            
+            'depth_top, thickness, sp, gamma_gamma' -> 
+            ['depth_top', 'thickness', 'sp', 'gamma_gamma']
+        
+        Refer to :func:`~.str2columns` for further details. 
+    inplace: bool, default=True 
+        Modified dataframe in place and return None, otherwise return a 
+        new dataframe 
+    kws: dict, 
+        Keywords argument passed to :func: `pandas.DataFrame.apply` function 
+        
+    Returns 
+    ---------
+    X: Dataframe or None 
+        Dataframe modified inplace with values computed using the given 
+        `func`except the skipped columns, or ``None`` if `inplace` is ``True``. 
+        
+    Examples 
+    ---------
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.plotutils import map_specific_columns 
+    >>> X0, _= load_hlogs (as_frame =True ) 
+    >>> # let visualize the  first3 values of `sp` and `resistivity` keys 
+    >>> X0['sp'][:3] , X0['resistivity'][:3]  
+    ... (0   -1.580000
+         1   -1.580000
+         2   -1.922632
+         Name: sp, dtype: float64,
+         0    15.919130
+         1    16.000000
+         2    24.422316
+         Name: resistivity, dtype: float64)
+    >>> column2skip = ['hole_id','depth_top', 'depth_bottom', 
+                      'strata_name', 'rock_name', 'well_diameter', 'sp']
+    >>> map_specific_columns (X0, ufunc = np.log10, column2skip)
+    >>> # now let visualize the same keys values 
+    >>> X0['sp'][:3] , X0['resistivity'][:3]
+    ... (0   -1.580000
+         1   -1.580000
+         2   -1.922632
+         Name: sp, dtype: float64,
+         0    1.201919
+         1    1.204120
+         2    1.387787
+         Name: resistivity, dtype: float64)
+    >>> # it is obvious the `resistiviy` values is log10 
+    >>> # while `sp` stil remains the same 
+      
+    """
+    X = _assert_all_types(X, pd.DataFrame)
+    if not callable(ufunc): 
+        raise TypeError ("Expect a function for `ufunc`; "
+                         f"got {type(ufunc).__name__!r}")
+        
+    pattern = pattern or r'[#&*@!,;\s]\s*'
+    if not is_iterable( columns_to_skip): 
+        raise TypeError ("Columns  to skip expect an iterable object;"
+                         f" got {type(columns_to_skip).__name__!r}")
+        
+    if isinstance(columns_to_skip, str):
+        columns_to_skip = str2columns (columns_to_skip, pattern=pattern  )
+    #assert whether column to skip is in 
+    if columns_to_skip:
+        cskip = copy.deepcopy(columns_to_skip)
+        columns_to_skip = is_in_if(X.columns, columns_to_skip, return_diff= True)
+        if len(columns_to_skip) ==len (X.columns): 
+            warnings.warn("Value(s) to skip are not detected.")
+    elif columns_to_skip is None: 
+        columns_to_skip = list(X.columns) 
+        
+    if inplace : 
+        X[columns_to_skip] = X[columns_to_skip].apply (
+            ufunc , **kws)
+        X.drop (columns = cskip , inplace =True )
+        return 
+    if not inplace: 
+        X0 = X.copy() 
+        X0[columns_to_skip] = X0[columns_to_skip].apply (
+            ufunc , **kws)
+    
+        return  X0   
+    
+def is_depth_in (X, name, columns = None, error= 'ignore'): 
+    """ assert wether depth exists in the columns.  If name is an 
+    integer value, it assumes to be the index in the columns of the dataframe
+    if not exist , a warming will be show to user. 
+    
+    :param X: dataframe 
+        dataframe containing the data for plotting 
+        
+    :param columns: list,
+        New labels to replace the columns in the dataframe. If given , it 
+        should fit the number of colums of `X`. 
+        
+    :param name: str, int  
+        depth name in the dataframe or index to retreive the name of the depth 
+        in dataframe 
+    :param error: str , default='ignore'
+        Raise or ignore when depth is not found in the dataframe. Whe error is 
+        set to ``ignore``, a pseudo-depth is created using the lenght of the 
+        the dataframe, otherwise a valueError raises.
+        
+    :return: X, depth 
+        Dataframe without the depth columns and depth values.
+    """
+    X= _assert_all_types( X, pd.DataFrame )
+    if columns is not None: 
+        columns = list(columns)
+        if not is_iterable(columns): 
+            raise TypeError("columns expects an iterable object."
+                            f" got {type (columns).__name__!r}")
+        if len(columns ) != len(X.columns): 
+            warnings.warn("Cannot rename columns with new labels. Expect "
+                          "a size to be consistent with the columns X."
+                          f" {len(columns)} and {len(X.columns)} are given."
+                          )
+        else : 
+            X.columns = columns # rename columns
+        
+    else:  columns = list(X.columns) 
+    
+    _assert_all_types(name,str, int, float )
+    
+    # if name is given as indices 
+    # collect the name at that index 
+    if isinstance (name, (int, float) )  :     
+        name = int (name )
+        if name > len(columns): 
+            warnings.warn ("Name index {name} is out of the columns range."
+                           f" Max index of columns is {len(columns)}")
+            name = None 
+        else : 
+            name = columns.pop (name)
+    
+    elif isinstance (name, str): 
+        # find in columns whether a name can be 
+        # found. Note that all name does not need 
+        # to be written completely 
+        # for instance name =depth can retrieved 
+        # ['depth_top, 'depth_bottom'] , in that case 
+        # the first occurence is selected i.e. 'depth_top'
+        n = find_by_regex( 
+            columns, pattern=fr'{name}', func=re.search)
+
+        if n is not None:
+            name = n[0]
+            
+        # for consistency , recheck all and let 
+        # a warning to user 
+        if name not in columns :
+            msg = f"Name {name!r} does not match any column names."
+            if error =='raise': 
+                raise ValueError (msg)
+
+            warnings.warn(msg)
+            name =None  
+            
+    # now create a pseudo-depth 
+    # as a range of len X 
+    if name is None: 
+        if error =='raise':
+            raise ValueError ("Depth column not found in dataframe."
+                              )
+        depth = pd.Series ( np.arange ( len(X)), name ='depth (m)') 
+    else : 
+        # if depth name exists, 
+        # remove it from X  
+        depth = X.pop (name ) 
+        
+    return  X , depth     
+    
+    
+def count_func (path , verbose = 0 ): 
+    """ Count function and method using 'ast' modules """
+    
+    cobj ={}
+    import_optional_dependency('ast')
+    import ast 
+    class CountFunc (ast.NodeVisitor): 
+        func_count=0 
+        # def visit_FunctionDef(self, node): 
+        #     self.func_count +=1 
+        # def visit_Lambda(self, node): 
+        #     self.func_count +=1 
+        def visit_ClassDef(self, node): 
+            self.func_count +=1 
+        # def visit_Module(self, node): 
+        #     self.func_count +=1 
+        # def visit_Call(self, node): 
+        #     self.func_count +=1 
+     
+    if os.path.isdir (path): 
+        pyfiles = [ os.path.join (path , f) 
+                   for f in os.listdir (path) if f.endswith ('.py') ] 
+    elif os.path.isfile (path) : 
+        pyfiles = [ path ] 
+    else : 
+        raise TypeError (f"Expects a path-like object, got {path!r}") 
+        
+    val=0
+    
+    if verbose : 
+        print("module = {:^12}".format(os.path.dirname (pyfiles[0])))
+    for mod in pyfiles : 
+
+        p=ast.parse (open(mod, encoding='utf-8').read())
+        f= CountFunc()
+        f.visit(p)
+        cobj[os.path.basename (mod)]= f.func_count 
+        val += f.func_count 
+        if verbose: 
+            print("### {:^7}{:<17} ={:>7}".format (' ', os.path.basename (mod), 
+                                              f.func_count ))
+            
+    print(">>>Total = {:>24}".format(val )) if verbose else print() 
+ 
+    return cobj if not verbose else None 
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
         

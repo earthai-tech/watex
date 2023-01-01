@@ -3,106 +3,17 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created date: Fri Apr 15 10:46:56 2022
 
-"""
-`WATex`_ property objects 
-=========================
+"""\
 
-**Water**: Base class module. It contains all the water properties usefull 
-    for pure hydrogeological module writting. Instanciated the class should 
-    raise an error, however, its special attributes can be used by the child 
-    class object. 
-    
-**BasePlot**: The base class of all plots. It can be the parent class of all 
-    other plotting classes. The module :mod:`~.view.plot` uses the `BasePlot`
-    class for `Matplotlib plot`_.
-    
-**P**: Is a property class that handles the |ERP| and |VES| attributes. Along 
-    the :mod:`~.methods.electrical`, it deals with the electrical dipole 
-    arrangements, the data classsification and assert whether it is able to 
-    be read by the scripts. It is a lind of "asserter". Accept data or reject 
-    data provided by the used indicated the way to sanitize it before feeding 
-    to the algorithm:: 
-        
-        >>> from watex.property import P 
-        >>> pObj = P() 
-        >>> P.idictags 
-        ... <property at 0x15b2248a450>
-        >>> pObj.idicttags 
-        ... {'station': ['pk', 'sta', 'pos'],
-        ...     'resistivity': ['rho', 'app', 'res', 'se', 'sounding.values'],
-        ...     'longitude': ['long', 'lon'],
-        ...     'latitude': ['lat'],
-        ...     'easting': ['east', 'x'],
-        ...     'northing': ['north', 'y']}
-        >>> rphead = ['res', 'x', 'y', '']
-        >>> pObj (rphead) # sanitize the given resistivity profiling head data.
-        ... ['resistivity', 'easting', 'northing']
-        >>> rphead = ['lat', 'x', 'rho', '']
-        ... ['latitude', 'easting', 'resistivity']
-        >>> rphead= ['pos', 'x', 'lon', 'north', 'latitud', 'app.res' ]
-        >>> pObj (rphead)
-        ... ['station', 'easting', 'longitude', 'northing', 'latitude', 'resistivity'] 
-        >>> # --> for sounding head assertion 
-        >>> vshead=['ab', 's', 'rho', 'potential']
-        >>> pObj (vshead, kind ='ves')
-        ... ['AB', 'resistivity'] # in the list of vshead, 
-        ... # only 'AB' and 'resistivity' columns are recognized. 
-        
-**BagoueNotes**: Give some details about the test dataset used throughout the 
-    `WATex`_ packages. It is a guidance for the user to get anay details about
-    the data preprocessed in order to wuick implement or testing the method.
-    Some examples to fetching infos and data are illustrated below:: 
-        
-        >>> from watex.datasets import fetch_data
-        >>> bag_records = fetch_data('original').get('DESCR')
-        ... 'https://doi.org/10.5281/zenodo.5571534: bagoue-original'
-        >>> data_contests =fetch_data('original').get('dataset-contest') 
-        ... {'__documentation:': '`watex.property.BagoueNotes.__doc__`',
-        ...     '__area': 'https://en.wikipedia.org/wiki/Ivory_Coast',
-        ...     '__casehistory': 'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
-        ...     '__wikipages': 'https://github.com/WEgeophysics/watex/wiki',
-        ...     '__citations': ('https://doi.org/10.1029/2021wr031623',
-        ...      ' https://doi.org/10.5281/zenodo.5529368')}
-        >>> #-->  fetching X, y dat
-        >>> # get the list of tags before 
-        >>> tags=fetch_data('original').get('tags')
-        ... ('Bagoue original', ...,'Bagoue prepared sets', 'Bagoue untouched test sets')
-        >>> len(tags)
-        ... 11 
-        >>> --> fetch the preprocessing sets of data 
-        >>> X, y = fetch_data('preprocessing')
-        >>> X.shape , y.shape 
-        ... ((344, 8), (344,)) 
-        >>> list(X.columns) 
-        ... ['power', 'magnitude', 'sfi', 'ohmS', 'lwi', 'shape', 'type', 'geol']
-        >>> X, y = fetch_data('prepared') # data are vectorized and onehotencoded 
-        ... ((344, 18), (344,))
-        >>> X, y = fetch_data('test sets')
-        >>> X.shape , y.shape
-        ... ((87, 12), (87,))
-        
-**ElectricalMethods**: Is another Base class of :mod:`~.methods.electrical` 
-    especially the :class:`~.methods.electrical.ResistivityProfiling` and 
-    :class:`~.methods.electrical.VerticalSounding`. It is composed of the 
-    details of geolocalisation of the survey area and the array configuration. 
-    It expects to hold other attributes as the development is still ongoing.
-     
-**IsEdi**: Is an abstract Base class for control the valid EDI. It is also 
-    used to ckeck whether object is an instance of EDI object. For instance:: 
-    
-        >>> import pycsamt
-        >>> from watex.property import IsEdi 
-        >>> from watex.methods.em import EM
-        >>> IsEdi.register (pycsamt.core.edi.Edi )
-        >>> ediObj= EM().fit(r'data/edis').ediObjs_ [0] # one edi-file for assertion 
-        >>> isinstance (ediObj, IsEdi)
-        ... True 
+:code:`watex` property objects 
 
 .. _WATex: https://github.com/WEgeophysics/watex/
 .. |ERP| replace:: Electrical resistivity profiling 
 .. |VES| replace:: Vertical Electrical Sounding 
+.. _interpol_imshow: https://matplotlib.org/stable/gallery/images_contours_and_fields/interpolation_methods.html
 
-"""
+"""   
+
 # import warnings 
 from __future__ import annotations 
 import os 
@@ -128,10 +39,16 @@ __all__ = [
     "IsEdi",
     "Config", 
     "UTM_DESIGNATOR", 
-    
+    "_EDI", 
+    "_ZRP_COMPS", 
+    "_TIP_COMPS", 
+    "Software", 
+    "Copyright", 
+    "References", 
+    "Person", 
 ]
 
-  
+
 UTM_DESIGNATOR ={
     'X':[72,84], 
     'W':[64,72], 
@@ -156,8 +73,6 @@ UTM_DESIGNATOR ={
     'Z':[-80,84]
 }
     
-# XXX EDI-
-
 _EDI =[
     #Head=Infos-Frequency-Rhorot
     # Zrot and end blocks
@@ -256,11 +171,48 @@ _EDI =[
     '>FILWIDTH','>FILANGLE',
     '>EQUIVLEN' , '>END'
 ] 
+#
+_ZRP_COMPS =[
+    #z
+    [
+         ['zxxr', 'zxxi', 'zxx.var'],
+         ['zxyr', 'zxyi', 'zxy.var'],
+         ['zyxr', 'zyxi', 'zyx.var'],
+         ['zyyr', 'zyyi', 'zyy.var']
+    ],
+    #Rho
+    [
+         ['rhoxx', 'rhoxx.var','rhoxx.err', 'rhoxx.fit'],
+         ['rhoxy','rhoxy.var','rhoxy.err', 'rhoxy.fit']
+    ],
+                                    
+    [
+         ['phxx','phsxx.var', 'phsxx.err', 'phsxx.fit'],
+         ['phxy','phsxy.var', 'phsxy.err', 'phsxy.fit']
+    ], 
+    # filtered 
+    [
+         ['frhoxx','frhoxx.var','frhoxx.err', 'frhoxx.fit'],
+         ['frhoxy','frhoxy.var', 'frhoxy.err', 'frhoxy.fit']
+    ],
+                                         
+    [
+         ['fphsxx','fphsxx.var', 'fphsxx.err', 'fphsxx.fit'],
+         ['fphsxy','fphsxy.var', 'fphsxy.err', 'fphsxy.fit']
+     ],
+ ]
+                                                    
+_TIP_COMPS =[
+    ['txr.exp', 'txi.exp', 'txvar.exp'],
+    ['tyr.exp', 'tyi.exp', 'tyvar.exp']
+    ]
 
 @refAppender(refglossary.__doc__) 
 class Water (ABC): 
     r""" Should be a SuperClass for methods classes which deals with water 
-    properties and components. Instanciate the class shoud raise an error. 
+    properties and components. 
+    
+    Instanciate the class shoud raise an error.  
     
     Water (H2O) is a polar inorganic compound that is at room temperature a 
     tasteless and odorless liquid, which is nearly colorless apart from an 
@@ -536,8 +488,9 @@ class BasePlot(ABC):
     ==================  =======================================================
     fig_dpi             dots-per-inch resolution of the figure
                         *default* is 300
-    fig_num             number of the figure instance
-                        *default* is 'Mesh'
+    fig_num             number of the figure instance. *default* is ``1``
+    fig_aspect          ['equal'| 'auto'] or float, figure aspect. Can be 
+                        rcParams["image.aspect"]. *default* is ``auto``.
     fig_size            size of figure in inches (width, height)
                         *default* is [5, 5]
     savefig             savefigure's name, *default* is ``None``
@@ -571,6 +524,11 @@ class BasePlot(ABC):
     rotate_ylabel       angle to rotate `ylabel` in plot. *default* is None 
     leg_kws             keyword arguments of legend. *default* is empty dict.
     plt_kws             keyword arguments of plot. *default* is empty dict
+    plt_style           keyword argument of 2d style. *default* is ``pcolormesh``
+    imshow_interp       ['bicubic'|'nearest'|'bilinear'|'quadractic' ] kind of 
+                        interpolation for 'imshow' plot. Click `interpol_imshow`_ 
+                        to get furher details about the interpolation method. 
+                        *default* is ``None``.
     rs                  [ '-' | '.' | ':' ] line style of `Recall` metric
                         *default* is '--'
     ps                  [ '-' | '.' | ':' ] line style of `Precision `metric
@@ -578,6 +536,7 @@ class BasePlot(ABC):
     rc                  line color of `Recall` metric *default* is ``(.6,.6,.6)``
     pc                  line color of `Precision` metric *default* is ``k``
     s                   size of items in scattering plots. default is ``fs*40.``
+    cmap                matplotlib colormap. *default* is `jet_r`
     gls                 [ '-' | '.' | ':' ] line style of grid  
                         *default* is '--'.
     glc                 line color of the grid plot, *default* is ``k``
@@ -616,6 +575,7 @@ class BasePlot(ABC):
     verbose             control the verbosity. Higher value, more messages.
                         *default* is ``0``.
     ==================  =======================================================
+    
     """
     
     @abstractmethod 
@@ -623,10 +583,11 @@ class BasePlot(ABC):
                  savefig: str = None,
                  fig_num: int =  1,
                  fig_size: tuple =  (12, 8),
-                 fig_dpi:int = 300,
+                 fig_dpi:int = 300, 
                  fig_legend: str =  None,
                  fig_orientation: str ='landscape',
                  fig_title:str = None,
+                 fig_aspect:str='auto',
                  font_size: float =3.,
                  font_style: str ='italic',
                  font_weight: str = 'bold',
@@ -651,7 +612,10 @@ class BasePlot(ABC):
                  rotate_ylabel: int =None ,
                  leg_kws: dict = dict(),
                  plt_kws: dict = dict(), 
+                 plt_style:str="pcolormesh",
+                 imshow_interp:str =None,
                  s: float=  40.,
+                 cmap:str='jet_r',
                  show_grid: bool = False,
                  galpha: float = .5,
                  gaxis: str = 'both',
@@ -691,6 +655,7 @@ class BasePlot(ABC):
         self.fig_legend=fig_legend
         self.fig_orientation=fig_orientation
         self.fig_title=fig_title
+        self.fig_aspect=fig_aspect
         self.font_size=font_size
         self.font_style=font_style
         self.font_weight=font_weight
@@ -715,7 +680,10 @@ class BasePlot(ABC):
         self.rotate_ylabel=rotate_ylabel
         self.leg_kws=leg_kws
         self.plt_kws=plt_kws
+        self.plt_style=plt_style
+        self.imshow_interp=imshow_interp
         self.s=s 
+        self.cmap=cmap
         self.show_grid=show_grid
         self.galpha=galpha
         self.gaxis=gaxis
@@ -775,7 +743,10 @@ class ElectricalMethods (ABC) :
     
     The :class:`watex.methods.electrical.ElectricalMethods` compose the base 
     class of all the geophysical methods that images the underground using 
-    the resistivity values. 
+    the resistivity values. Is another Base class of :mod:`~.methods.electrical` 
+    especially the :class:`~.methods.electrical.ResistivityProfiling` and 
+    :class:`~.methods.electrical.VerticalSounding`. It is composed of the 
+    details of geolocalisation of the survey area and the array configuration. 
     
     Holds on others optionals infos in ``kws`` arguments: 
        
@@ -866,13 +837,28 @@ class ElectricalMethods (ABC) :
 class IsEdi(ABC): 
     """ Assert SEG MT/EMAP Data Interchange Standard EDI-file .
     
+    Is an abstract Base class for control the valid EDI [1]_. It is also 
+    used to ckeck whether object is an instance of EDI object.
+    
     EDI stands for Electrical Data Interchange module can read and write an *.edi 
     file as the 'standard ' format of magnetotellurics. Each section of the .edi 
     file belongs to a class object, thus the elements of each section are attributes 
     for easy access. Edi is outputted  following the SEG documentation and rules  
     of EMAP (Electromagnetic  Array Profiling) and MT sections. 
     
-    * [1]  Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 
+    Examples 
+    --------
+    >>> import pycsamt
+    >>> from watex.property import IsEdi 
+    >>> from watex.methods.em import EM
+    >>> IsEdi.register (pycsamt.core.edi.Edi )
+    >>> ediObj= EM().fit(r'data/edis').ediObjs_ [0] # one edi-file for assertion 
+    >>> isinstance (ediObj, IsEdi)
+    ... True 
+    
+    References 
+    ------------
+    .. [1]  Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 
     1rt ed. Society of Exploration Geophysicists, Texas 7831, USA.
     
     """
@@ -882,26 +868,38 @@ class IsEdi(ABC):
         """ Assert whether EDI is valid."""
         pass 
         
-    def _assert_edi (self, 
-                     file: str ,
+    @staticmethod 
+    def _assert_edi (file: str ,
                      deep: bool  =True
                      )-> bool : 
         """ Assert EDI- file .  
         :param file: str - path-like object 
         :param deep: bool - Open the file and assert whether it is a valid EDI
             if ``False``, just control the EDI extension . """
+        msg = (" Unrecognized SEG EDI-file. Follow the paper of"
+               " [Wight, D.E., Drive, B., 1988.]"
+               " <https://www.mtnet.info/docs/seg_mt_emap_1987.pdf>"
+               " to build a correct EDI- file."
+                )
         flag = False 
         if file  is None : 
             raise  FileHandlingError("NoneType can not be checked. Please"
                                      " provide the right file.") 
+        if not os.path.isfile(file): 
+            raise FileNotFoundError(f"{file!r} is not file. Expect a Path-like"
+                                    " object to EDI-file.")
         if isinstance(file  , str): 
             flag = os.path.splitext(file )[-1].replace('.', '')
             
-        if flag =='edi' and not deep : 
-            return True 
+        if not deep: 
+            if flag =='edi': 
+                return True 
             # Open the file now 
-        elif flag !='edi': 
-            raise EDIError('')
+            if flag !='edi': 
+                raise EDIError("Commonly SEG-EDI file must have extension *.edi."
+                               f" Got {flag!r}. Set 'deep=True' to check whether"
+                               " the file contents match an expected EDI contents."
+                               )
         try :
             with open (file, 'r', encoding ='utf8') as f : 
                     edi_data =f.readlines()
@@ -916,11 +914,10 @@ class IsEdi(ABC):
             if (_EDI[0] not in  edi_data[0]) or  (
                     _EDI[-1] not in  edi_data[-1]): 
                 
-                raise EDIError(" Unrecognized SEG- EDI-file. Follow the "
-                               "[Wight, D.E., Drive, B., 1988.] to build a"
-                               " correct EDI- file.")
+                raise EDIError(msg)
             flag =True 
-            
+        else : raise EDIError(msg)
+        
         return flag 
      
 class P:
@@ -928,6 +925,13 @@ class P:
     Data properties are values that are hidden to avoid modifications alongside 
     the packages. Its was used for assertion, comparison etceteara. These are 
     enumerated below into a property objects.
+    
+    Is a property class that handles the |ERP| and |VES| attributes. Along 
+    the :mod:`~.methods.electrical`, it deals with the electrical dipole 
+    arrangements, the data classsification and assert whether it is able to 
+    be read by the scripts. It is a lind of "asserter". Accept data or reject 
+    data provided by the used indicated the way to sanitize it before feeding 
+    to the algorithm.
 
     .. |ERP| replace:: Electrical resistivity profiling 
     
@@ -990,7 +994,30 @@ class P:
          'isenr': <property at 0x1ec1f2c3db0>}
     >>> P().isrll 
     ... ['station','resistivity','longitude','latitude']
-
+    >>> from watex.property import P 
+    >>> pObj = P() 
+    >>> P.idictags 
+    ... <property at 0x15b2248a450>
+    >>> pObj.idicttags 
+    ... {'station': ['pk', 'sta', 'pos'],
+    ...     'resistivity': ['rho', 'app', 'res', 'se', 'sounding.values'],
+    ...     'longitude': ['long', 'lon'],
+    ...     'latitude': ['lat'],
+    ...     'easting': ['east', 'x'],
+    ...     'northing': ['north', 'y']}
+    >>> rphead = ['res', 'x', 'y', '']
+    >>> pObj (rphead) # sanitize the given resistivity profiling head data.
+    ... ['resistivity', 'easting', 'northing']
+    >>> rphead = ['lat', 'x', 'rho', '']
+    ... ['latitude', 'easting', 'resistivity']
+    >>> rphead= ['pos', 'x', 'lon', 'north', 'latitud', 'app.res' ]
+    >>> pObj (rphead)
+    ... ['station', 'easting', 'longitude', 'northing', 'latitude', 'resistivity'] 
+    >>> # --> for sounding head assertion 
+    >>> vshead=['ab', 's', 'rho', 'potential']
+    >>> pObj (vshead, kind ='ves')
+    ... ['AB', 'resistivity'] # in the list of vshead, 
+    ... # only 'AB' and 'resistivity' columns are recognized. 
     """
     
     station_prefix   = [
@@ -1232,11 +1259,43 @@ class BagoueNotes:
     The configuration used during the ERP is Schlumberger with distance of
     :math:`AB = 200m \quad \text{and} \quad  MN =20m`.
     
-    Refer to `FlowRatePredictionUsingSVMs`_ for further details. 
+    Examples 
+    -----------
+    Give some details about the test dataset used throughout the 
+    `WATex`_ packages. It is a guidance for the user to get anay details about
+    the data preprocessed in order to wuick implement or testing the method.
+    Some examples to fetching infos and data are illustrated below:: 
+        
+    >>> from watex.datasets import fetch_data
+    >>> bag_records = fetch_data('original').get('DESCR')
+    ... 'https://doi.org/10.5281/zenodo.5571534: bagoue-original'
+    >>> data_contests =fetch_data('original').get('dataset-contest') 
+    ... {'__documentation:': '`watex.property.BagoueNotes.__doc__`',
+    ...     '__area': 'https://en.wikipedia.org/wiki/Ivory_Coast',
+    ...     '__casehistory': 'https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021WR031623',
+    ...     '__wikipages': 'https://github.com/WEgeophysics/watex/wiki',
+    ...     '__citations': ('https://doi.org/10.1029/2021wr031623',
+    ...      ' https://doi.org/10.5281/zenodo.5529368')}
+    >>> #-->  fetching X, y dat
+    >>> # get the list of tags before 
+    >>> tags=fetch_data('original').get('tags')
+    ... ('Bagoue original', ...,'Bagoue prepared sets', 'Bagoue untouched test sets')
+    >>> len(tags)
+    ... 11 
+    >>> --> fetch the preprocessing sets of data 
+    >>> X, y = fetch_data('preprocessing')
+    >>> X.shape , y.shape 
+    ... ((344, 8), (344,)) 
+    >>> list(X.columns) 
+    ... ['power', 'magnitude', 'sfi', 'ohmS', 'lwi', 'shape', 'type', 'geol']
+    >>> X, y = fetch_data('prepared') # data are vectorized and onehotencoded 
+    ... ((344, 18), (344,))
+    >>> X, y = fetch_data('test sets')
+    >>> X.shape , y.shape
+    ... ((87, 12), (87,))
+        
     
     .. _repository docs: https://github.com/WEgeophysics/watex#documentation>
-    
-    .. _FlowRatePredictionUsingSVMs: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
     
     """
     bagkeys = ('num',
@@ -1321,7 +1380,7 @@ class Config:
                  ".csv" : pd.read_csv, 
                  ".xlsx": pd.read_excel,
                  ".json": pd.read_json,
-                 ".html": pd.read_json,
+                 ".html": pd.read_html,
                  ".sql" : pd.read_sql, 
                  ".xml" : pd.read_xml , 
                  ".fwf" : pd.read_fwf, 
@@ -1430,10 +1489,194 @@ class Config:
              
              }
     
+
+class References:
+    """
+    References information for a citation.
+
+    Holds the following information:
+        
+    ================  ==========  =============================================
+    Attributes         Type        Explanation
+    ================  ==========  =============================================
+    author            string      Author names
+    title             string      Title of article, or publication
+    journal           string      Name of journal
+    doi               string      DOI number 
+    year              int         year published
+    ================  ==========  =============================================
+
+    More attributes can be added by inputing a key word dictionary
     
+    Examples
+    ---------
+    >>> from watex.property import References
+    >>> refobj = References(
+        **{'volume':18, 'pages':'234--214', 
+        'title':'watex :A machine learning research for hydrogeophysic' ,
+        'journal':'Computers and Geosciences', 
+        'year':'2021', 'author':'DMaryE'}
+        )
+    >>> refobj.journal
+    Out[21]: 'Computers and Geosciences'
+    """
+    def __init__(
+        self, 
+        author=None, 
+        title=None, 
+        journal=None, 
+        volume=None, 
+        doi=None, 
+        year=None,  
+        **kws
+        ):
+        self.author=author 
+        self.title=title 
+        self.journal=journal 
+        self.volume=volume 
+        self.doi=doi 
+        self.year=year 
+   
+        for key in list(kws.keys()):
+            setattr(self, key, kws[key])
+
+
+class Copyright:
+    """
+    Information of copyright, mainly about the use of data can use
+    the data. Be sure to read over the conditions_of_use.
+
+    Holds the following informations:
+
+    =================  ===========  ===========================================
+    Attributes         Type         Explanation
+    =================  ===========  ===========================================
+    References          References  citation of published work using these data
+    conditions_of_use   string      conditions of use of data used for testing 
+                                    program
+    release_status      string      release status [ open | public |proprietary]
+    =================  ===========  ===========================================
+
+    More attributes can be added by inputing a key word dictionary
     
+   Examples
+   ----------
+    >>> from watex.property import Copyright 
+    >>> copbj =Copyright(**{'owner':'University of AI applications',
+    ...             'contact':'WATER4ALL'})
+    >>> copbj.contact 
+    Out[20]: 'WATER4ALL
     
+    """
+    cuse =( 
+        "All Data used for software demonstration mostly located in "
+        " data directory <data/> cannot be used for commercial and " 
+        " distributive purposes. They can not be distributed to a third"
+        " party. However, they can be used for understanding the program."
+        " Some available ERP and VES raw data can be found on the record"
+        " <'10.5281/zenodo.5571534'>. Whereas EDI-data e.g. EMAP/MT data,"
+        " can be collected at http://ds.iris.edu/ds/tags/magnetotelluric-data/."
+        " The metadata from both sites are available free of charge and may"
+        " be copied freely, duplicated and further distributed provided"
+        " these data are cited as the reference."
+        )
+    def __init__(
+        self, 
+        release_status=None, 
+        additional_info=None, 
+        conditions_of_use=None, 
+        **kws
+        ):
+        self.release_status=release_status
+        self.additional_info=additional_info
+        self.conditions_of_use=conditions_of_use or self.cuse 
+        self.References=References()
+        for key in list(kws.keys()):
+            setattr(self, key, kws[key])
+
+
+class Person:
+    """
+    Information for a person
+
+    ================  ==========  =============================================
+    Attributes         Type        Explanation
+    ================  ==========  =============================================
+    email             string      email of person
+    name              string      name of person
+    organization      string      name of person's organization
+    organization_url  string      organizations web address
+    ================  ==========  =============================================
+
+    More attributes can be added by inputing a key word dictionary
     
+    Examples 
+    ----------
+    >>> from watex.property import Person
+    >>> person =Person(**{'name':'ABA', 'email':'aba@water4all.ai.org',
+    ...                  'phone':'00225-0769980706', 
+    ...          'organization':'WATER4ALL'})
+    >>> person.name
+    Out[23]: 'ABA
+    >>> person.organization
+    Out[25]: 'WATER4ALL'
+    """
+
+    def __init__(
+        self, 
+        email=None, 
+        name=None, 
+        organization=None, 
+        organization_url=None, 
+        **kws
+        ):
+        self.email=email 
+        self.name=name 
+        self.organization=organization
+        self.organization_url=organization_url
+
+        for key in list(kws.keys()):
+            setattr(self, key, kws[key])
+
+
+class Software:
+    """
+    software info 
+
+    ================= =========== =============================================
+    Attributes         Type        Explanation
+    ================= =========== =============================================
+    name                string      name of software 
+    version             string      version of sotware 
+    Author              string      Author of software
+    release             string      latest version release
+    ================= =========== =============================================
+    
+    More attributes can be added by inputing a key word dictionary
+
+    Examples 
+    ----------
+    >>> from watex.property import Software
+    >>> Software(**{'release':'0.11.23'})
+
+    """
+    def __init__(
+        self,
+        name=None, 
+        version=None, 
+        release=None, 
+        **kws
+        ):
+        self.name=name 
+        self.version=version 
+        self.release=release 
+        self.Author=Person()
+        
+        for key in kws:
+            setattr(self, key, kws[key]) 
+            
+                
+
     
     
     

@@ -16,11 +16,19 @@ from warnings import warn
 import numpy as np 
 import matplotlib.pyplot as plt 
 from matplotlib.colors import ListedColormap 
+from sklearn.preprocessing import StandardScaler 
+from sklearn.model_selection import train_test_split 
+from sklearn.decomposition import PCA 
 from .._docstring import _core_docs 
-from ..exlib.sklearn import (train_test_split, StandardScaler, PCA )
-from ..utils.plotutils import make_mpl_properties
 from ..utils.funcutils import _assert_all_types 
 # ---
+__all__=[
+    "extract_pca", 
+    "decision_region", 
+    "feature_transformation", 
+    "total_variance_ratio" , 
+    "linear_discriminant_analysis"
+    ]
 
 def extract_pca (X): 
     # standize the features 
@@ -32,7 +40,7 @@ def extract_pca (X):
     return eigen_vals, eigen_vecs, X
 
 extract_pca.__doc__="""\
- A naive approach to extract PCA from training set X 
+A naive approach to extract PCA from training set X 
  
 Parameters 
 ----------
@@ -100,7 +108,7 @@ def total_variance_ratio (X, view =False):
     
     return cum_var_exp 
     
-total_variance_ratio.__doc__="""\
+total_variance_ratio.__doc__=r"""\
 Ratio of an eigenvalues :math:`\lambda_j`, as simply the fraction of 
 and eigen value, :math:`\lambda_j` and the total sum of the eigen values 
 as: 
@@ -137,6 +145,7 @@ Examples
 
 def feature_transformation (
         X, y=None, n_components =2, positive_class=1, view =False):
+    
     # select k vectors which correspond to the k largest 
     # eigenvalues , where k is the dimesionality of the new  
     # subspace (k<=d) 
@@ -161,6 +170,7 @@ def feature_transformation (
     X_transf = X.dot(w)
     
     if view: 
+        from ..utils.plotutils import make_mpl_properties
         if y is None: 
             raise TypeError("Missing the target `y`")
         # markers = tuple (D_MARKERS [:len(np.unique (y))])
@@ -209,6 +219,7 @@ X_transf : nd-array
     X PCA training set transformed.
     
 Examples 
+---------
 >>> from watex.analysis import feature_transformation 
 >>> # Use the X, y value in the example of `extract_pca` function  
 >>> Xtransf = feature_transformation(X, y=y,  positive_class = 2 , view =True)
@@ -221,6 +232,7 @@ Examples
 
 def _decision_region (X, y, clf, resolution =.02 ): 
     """ visuzalize the decision region """
+    from ..utils.plotutils import make_mpl_properties
     # setup marker generator and colors map 
     colors = tuple (make_mpl_properties(len(np.unique (y))))
     markers = tuple (make_mpl_properties (
@@ -502,7 +514,7 @@ The main steps requiered to perform LDA are summarized below:
             
             .. math:: 
                 
-                \sum{i} & = &  \frac{1}{n_i}S_i 
+                \sum{i} & = & \frac{1}{n_i}S_i 
                 
                 \sum{i} & = & \frac{1}{n_i} \sum{x\in D_i} (x-m_i)(x-m_i)^T
                 
@@ -514,7 +526,7 @@ The main steps requiered to perform LDA are summarized below:
             S_B= \sum{i}^{n_i}(m_i-m) (m_i-m)^T 
             
         where :math:`m` is the overall mean that is computed , including 
-        examples from all c classes. 
+        examples from all classes. 
 
     4. Compute the eigenvectors and corresponding eigenvalues of the matrix 
         :math:`S_W^{-1}S_B`. 
@@ -570,76 +582,6 @@ Examples
 >>> X = SimpleImputer().fit_transform(X)
 >>> Xtr= linear_discriminant_analysis (X, y , view =True)
 """
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
