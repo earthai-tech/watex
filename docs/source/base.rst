@@ -174,12 +174,6 @@ preceding definition of SBS, the algorithm can be outlibe with a few steps:
 	- Terminate if :math:`k` equals to the number of desired features; 
 		otherwise go to the step 2. [2]_ 
 
-
-.. topic:: References
-
-	.. [1] Raschka, S., Mirjalili, V., 2019. Python Machine Learning, 3rd ed. Packt.
-    .. [2] Ferri F., Pudil F., Hatef M., and Kittler J., Comparative study of 
-        the techniques for Large-scale feature selection, pages 403-413, 1994.
 		
 .. topic:: Examples:
 
@@ -215,13 +209,6 @@ the weights :math:`w` vector can be fromally written as:
 	
 .. math:: w := w_j + \delta w_j
 
-.. topic:: References 
-
-    .. [3] Rosenblatt F, 1957, The perceptron:A perceiving and Recognizing
-        Automaton,Cornell Aeoronautical Laboratory 1957
-    .. [4] McCulloch W.S and W. Pitts, 1943. A logical calculus of Idea of 
-        Immanent in Nervous Activity, Bulleting of Mathematical Biophysics, 
-        5(4): 115-133, 1943.
 		
 .. topic:: Examples: 
 
@@ -256,8 +243,6 @@ is simplified as follow:
 	
 .. math:: \hat{y} = mode {{C_1(x), C_2(x), ... , C_m(x)}}
 
-.. topic:: Examples: 
-
 .. code-block:: default 
 
     >>> from watex.exlib.sklearn import (
@@ -283,8 +268,8 @@ is simplified as follow:
     >>> pipe3 = Pipeline ([('sc', StandardScaler()), 
                            ('clf', clf3)])
     
-	
-(1): Test the each classifier results taking individually 
+
+* (1): Test the each classifier results taking individually 
     
 .. code-block:: python 
 
@@ -299,7 +284,7 @@ is simplified as follow:
         ROC AUC: 0.73 (+/- 0.07) [DTC]
         ROC AUC: 0.77 (+/- 0.09) [KNN]
     
-(2): Implement the MajorityVoteClassifier for reducing errors 
+* (2): Implement the MajorityVoteClassifier for reducing errors 
     
 .. code-block:: python  
 
@@ -335,11 +320,6 @@ the identify function of the net input so that:
 
 while the linear activation function is used for learning the weights. 
 
-.. topic:: References 
-
-	.. [5] Windrow and al., 1960. An Adaptative "Adeline" Neuron Using Chemical
-			"Memistors", Technical reports Number, 1553-2,B Windrow and al., 
-			standford Electron labs, Standford, CA,October 1960. 
 
 .. topic:: Examples 
 
@@ -387,3 +367,14 @@ the weights are updated incremetally for each training examples:
 			0.11365574,  0.4715504 ,  0.65265459,  0.27175669,  0.4257843 ,
 			0.52242138,  0.48250745,  0.58282695,  0.52649733,  0.69415282,
 			0.56346338,  0.62798868,  0.45071501,  0.66074818])
+			
+.. topic:: References
+
+   .. [1] Raschka, S., Mirjalili, V., 2019. Python Machine Learning, 3rd ed. Packt.
+   .. [2] Ferri F., Pudil F., Hatef M., and Kittler J., Comparative study of the techniques for Large-scale feature selection, pages 403-413, 1994.
+   .. [3] Rosenblatt F, 1957, The perceptron:A perceiving and RecognizingAutomaton,Cornell Aeoronautical Laboratory 1957
+   .. [4] McCulloch W.S and W. Pitts, 1943. A logical calculus of Idea of Immanent in Nervous Activity, Bulleting of Mathematical 
+   	   Biophysics, 5(4): 115-133, 1943.
+   .. [5] Windrow and al., 1960. An Adaptative "Adeline" Neuron Using Chemical "Memistors", Technical reports Number, 1553-2,B 
+   	Windrow and al., standford Electron labs, Standford, CA,October 1960. 
+	

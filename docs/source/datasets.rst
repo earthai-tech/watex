@@ -29,19 +29,19 @@ Most of the `DC-ERP` data are collected different survey area during the Nationa
 This an example of the ERP data arrangement table: 
 
 +-----------+-----------+-----------+--------------+     
-|station 	| easting 	| northing 	| resistivity  |             
+|station    | easting 	| northing  | resistivity  |             
 +===========+===========+===========+==============+    
-|0       	|382741	    |896203	    |79        	   |
+|0          |382741	|896203	    |79        	   |
 +-----------+-----------+-----------+--------------+ 
-|10	    	|382743	    |896193	    |62            |
+|10	    |382743	|896193	    |62            |
 +-----------+-----------+-----------+--------------+ 
-|20	        |382747   	|896184	    |51            |
+|20	    |382747   	|896184	    |51            |
 +-----------+-----------+-----------+--------------+ 
 |...        |...        |...        | ...          |
 +-----------+-----------+-----------+--------------+          
-|980     	|382705	    |894887	    |55            |
+|980        |382705	|894887	    |55            |
 +-----------+-----------+-----------+--------------+ 
-|990     	|382704	    |895879	    |58            |
+|990        |382704	|895879	    |58            |
 +-----------+-----------+-----------+--------------+     
  
 All the DC-ERP datasets holds the following parameters: 
@@ -95,15 +95,15 @@ The following table gives an illustration of the standard data arrangement:
 +------+--------+----------+----------+------------+
 |AB/2  |  MN/2  |     SE1  |    SE2   |      SE... |	
 +------+--------+----------+----------+------------+
-| 1    | 0.4	|  107	   |     93	  |      75	   |
+| 1    | 0.4	|  107	   |     93   |      75	   |
 +------+--------+----------+----------+------------+
-| 2    | 0.4	|  97	   |     91	  |      49	   |
+| 2    | 0.4	|  97	   |     91   |      49	   |
 +------+--------+----------+----------+------------+
 | ...  |  ...   |   ...    |   ...    |     ...    |
 +------+--------+----------+----------+------------+
-| 100  |  10	|   79     |   96	  |      98	   |
+| 100  |  10	|   79     |   96     |      98	   |
 +------+--------+----------+----------+------------+
-| 110  |  10	|   84	   |  104	  |     104	   |
+| 110  |  10	|   84	   |  104     |     104	   |
 +------+--------+----------+----------+------------+
 
 where :math:`AB/2`,  :math:`MN/2` and :math:`SE` are the depth measurement of the current electrodes AB, the potential electrodes spacing and 
@@ -114,17 +114,17 @@ renamed to :math:`resistivity`.
 The following table gives the true sanitized arrangement acceptable for all functions and methods that use the VES data: 
 
 +-----------+-----------+-------------+-------------+----------------+     
-|AB 		| MN 	 	| resistivity | resistivity | resistivity... |             
+|AB 	    | MN 	| resistivity | resistivity | resistivity... |             
 +===========+===========+=============+=============+================+    
-|1       	|0.4	    |107 	      |93       	| 75 			 |
+|1          |0.4	|107 	      |93           | 75 	     |
 +-----------+-----------+-------------+-------------+----------------+ 
-|2	    	|0.4	    |97     	  |91           | 49             |
+|2	    |0.4	|97           |91           | 49             |
 +-----------+-----------+-------------+-------------+----------------+ 
-|...        |...        |...          | ...         | ...   		 |
+|...        |...        |...          | ...         | ...   	     |
 +-----------+-----------+-------------+-------------+----------------+ 
-|100	    |10 	    |79     	  |96           | 98             |
+|100	    |10 	|79           |96           | 98             |
 +-----------+-----------+-------------+-------------+----------------+  
-|110	    |10 	    |84     	  |104          | 104            |
+|110	    |10 	|84           |104          | 104            |
 +-----------+-----------+-------------+-------------+----------------+ 
 
 The following parameters is passed to the VES data to retrieve the expected data:
@@ -180,8 +180,8 @@ If the raw arrangement (above ) is given, it is better to reverify the arrangeme
 	`resistivity` columns are in :math:`\Omega.m` as apparent resistivity values.  
 	
 	
-`Learning Dataset` 
-------------------
+Learning Dataset
+===================
 
 The learning datasets are the data ready for predictions where the features are already precomputed.  An example is 
 the most popular dataset :func:`~watex.datasets.iris`. The fameous example of :code:`watex` datasets in the 
@@ -229,8 +229,8 @@ and logging data. Refer to :func:`~watex.datasets.dload.load_hlogs` for paramete
 	['pumping_level', 'aquifer_thickness'] 
 	
 	
-`EDI dataset` 
----------------
+EDI dataset 
+===============
 
 SEG-EDI datasets is a collection of edi-objects from :class:`~watex.edi.Edi`. Data can be restored using the 
 :func:`~watex.datasets.dload.load_edis`. Refer to the function (:func:`~watex.datasets.dload.load_edis`.) parameters 
@@ -257,8 +257,8 @@ explanation for further details.
 	6  26.053815  110.487753
 	
 	
-`Boilerplate function`: :func:`~watex.datasets.fetch_data`
------------------------------------------------------------- 
+Boilerplate function : :func:`~watex.datasets.fetch_data`
+=========================================================== 
 
 The boilerplate function :func:`~watex.datasets.fetch_data` accepts as `tag` argument the area name of 
 all sampling datasets implemented in :mod:`~watex.datasets` and returns the return values of each datasets. 
@@ -333,8 +333,8 @@ demonstration below to fetch some processing stage of `Bagoue datasets`.
                                                  OneHotEncoder())]))])
 												 
 
-`Generate ERP or VES data` 
-------------------------------
+Generate ERP or VES data 
+============================
 
 ERP and VES data can be generated using the function :func:`~watex.datasets.gdata.make_erp` and :func:`~watex.datasets.gdata.make_ves` 
 respectively. Check the function parameters for further details. The following code snippets gives an example of generating 
@@ -365,7 +365,7 @@ ERP and VES data:
 
 .. topic:: References 
 
-	.. [1] Kouadio, K.L., Nicolas, K.L., Binbin, M., Déguine, G.S.P. & Serge, K.K. (2021). Bagoue dataset-Cote d’Ivoire: Electrical 
+    .. [1] Kouadio, K.L., Nicolas, K.L., Binbin, M., Déguine, G.S.P. & Serge, K.K. (2021). Bagoue dataset-Cote d’Ivoire: Electrical 
 		profiling,electrical sounding and boreholes data, Zenodo. https://zenodo.org/record/5560937
     
     .. [2] Koefoed, O. (1970). A fast method for determining the layer distribution 
@@ -376,7 +376,7 @@ ERP and VES data:
         Soundings: an Algorithm. Geophysical Prospecting, 24(2), 233–240.
         https://doi.org/10.1111/j.1365-2478.1976.tb00921.x
 		
-	.. [4] Kouadio, K.L., Kouame, L.N., Drissa, C., Mi, B., Kouamelan, K.S., Gnoleba, S.P.D., Zhang, H., et al. (2022) Groundwater Flow Rate 
+    .. [4] Kouadio, K.L., Kouame, L.N., Drissa, C., Mi, B., Kouamelan, K.S., Gnoleba, S.P.D., Zhang, H., et al. (2022) Groundwater Flow Rate 
 		Prediction from GeoElectrical Features using Support Vector Machines. Water Resour. Res.  https://doi.org/10.1029/2021wr031623
         
     .. [5] Biemi, J. (1992). Contribution à l’étude géologique, hydrogéologique et par télédétection
