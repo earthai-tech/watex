@@ -457,7 +457,7 @@ impedance tensor 'z'  valid if the quality control shows at least that score at 
 	53
 
 .. note:: 
-	The ample of EDI data stored in :func:`~watex.datasets.dload.load_edis` is already a preprocessed data so it is not useful for 
+	The sample of EDI data stored in :func:`~watex.datasets.dload.load_edis` is already a preprocessed data so it is not useful for 
 	use the example for software demonstation. Rather, we use the concrete *data/edis/* . However, the data is not available in the 
 	sofware repository *data/edis* and can be collected upon a request. 
 	

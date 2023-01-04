@@ -1,30 +1,30 @@
-`WATex` Installation
-===================================
+.. _installation:
 
-:code:`watex` has been  tested on virtual machine Pop_OS Linux env  and run sucessfully. 
-Please follow the different steps below to propertly install the software. For GUI, you can use anaconda navigator.
-Open `spyder`, `pycharm` or any other IDEs unizip the project and set the root to *watex* accordingly. That's all. 	
-The package root is **watex/** and all main modules are located in source directory **./watex/**  
+==================
+Installing 
+==================
 
 System requirement 
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-The system requiers preferabbly
+===================
+:code:`watex` has been  tested on virtual machine Pop_OS Linux env  and run sucessfully. 
+Please follow the different steps below to propertly install the software. For GUI, you can use anaconda navigator.
+Open `spyder`, `pycharm` or any other IDEs unizip the project and set the root to :code:`watex` accordingly. That's all. 	
+The package root is `watex/` and all main modules are located in source directory `./watex/` . The system requiers preferabbly
 
 .. code-block:: bash 
 	
 	$ python 3.9 
 
-and can be found from https://www.anaconda.com/distribution/ . However :code:`Python >=3.9` can also be used. 
+and can be found from `anaconda <https://www.anaconda.com/distribution/>`_ . However :code:`Python >=3.9` can also be used. 
 
-Installation  
-^^^^^^^^^^^^^^
+Installing  
+==============
 
 It is possible to intall :code:`watex` from source, using anaconda prompt or GUI . 
 
 
-`1. From source` 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+`From source` 
+------------------
 
 To install from source, clone the project with git: 
 
@@ -35,8 +35,8 @@ To install from source, clone the project with git:
 Or download the latest version from the project webpage: https://github.com/WEgeophysics/watex 
 
 
-`2. Using Prompt`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+`Using Prompt`
+----------------
 
 * You have two options. Either, need to create your root folder named `watex` and inside this root folder  create your virtual 
 environmenent (venv) or gloabally setup a new env by typing: 
@@ -90,8 +90,8 @@ Install the software dependancies using `conda` or `pip`. Note that some depende
 	$ conda install scikit-learn-intelex 
 	
 	
-`3. Using GUI` 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+`Using GUI` 
+-------------------
 	
 	* After installing Anaconda, open the Anaconda Navigator app
 	* In the left sidebar, select `Environments`, then at the bottom of the window select `Create`
@@ -104,7 +104,8 @@ Install the software dependancies using `conda` or `pip`. Note that some depende
 
 
 Dependencies 
-^^^^^^^^^^^^^^^^^^^^^^^
+=================
+
 The following packages are the dependencies of the :code:`watex`. However, all are not compulsory for the software to 
 run properly( base implementation) except the package following by `*`. 
 

@@ -20,9 +20,10 @@ User Guide
    :numbered:
    :maxdepth: 3
 
-   base.rst
    analysis.rst
+   base.rst
    cases.rst 
    datasets.rst 
    methods.rst 
+   view.rst
 

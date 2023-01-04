@@ -269,7 +269,7 @@ class TPlot (BasePlot):
             ): 
         
         """ 
-        Plot mutiple site/stations with signal recovery. 
+        Plots mutiple site/stations with signal recovery. 
         
         Parameters 
         -----------
@@ -335,18 +335,21 @@ class TPlot (BasePlot):
         z_norm_args = list( zip (fs, zs, colors[: len(ma)] )) 
         args  = list(itertools.chain(*z_norm_args))
         # >>> #  make a fitting args 
-        colors = ['c-.'] + colors[len(ma):]
-        z_cor_objs = list( zip (fs, ma, ['c-.'] + colors[len(ma):] )) 
+        colors = ['m-'] + colors[len(ma):]
+        z_cor_objs = list( zip (fs, ma, ['m-'] + colors[len(ma):] )) 
         fit_args = list(itertools.chain(*z_cor_objs))
         
+        xlim = (f.min() -.5 * f.min(), f.max() +.5 * f.max())
         return self._plot_recovery (
-            *args,fit_args= fit_args, **kws )
+            *args, fit_args= fit_args, xlim=xlim, sites = sites,  **kws )
 
     def _plot_recovery (
             self,
             *args,  
             fit_args = None, 
             leg= None,  
+            xlim=None, 
+            sites=None, 
             **kws
             ): 
         """" Template to plot two stations with signal recovery 
@@ -381,19 +384,18 @@ class TPlot (BasePlot):
         """
         fig, ax = plt.subplots(
             1,figsize = self.fig_size, 
-            num = self.fig_num,
-            dpi = self.fig_dpi, 
+            #num = self.fig_num,
              )
-        p1,*_ = ax.loglog(*args,  
+        p1= ax.loglog(*args,  
                   markersize = self.ms ,
                   linewidth = self.lw ,
                   **kws 
                   )
-            
+        p2 =[]
         if fit_args  is not None: 
             fit_args  = _assert_all_types(
                 fit_args , list, tuple, objname="Fit arguments")  
-            p2,*_ = ax.loglog(*fit_args,
+            p2 = ax.loglog(*fit_args,
                       markersize = self.ms ,
                       linewidth = self.lw 
                       )
@@ -403,16 +405,25 @@ class TPlot (BasePlot):
         ax.set_ylabel(self.ylabel or '$ App.resistivity \quad xy \quad [ \Omega.m]$',
                    fontsize =1.5*self.font_size)
         
-        ax.legend (handles = [p1, p1,  p2] ,
-                   labels= ['restored data' , 'raw data ', 'recovery trend '] 
+        p1labels= [f'rec.tensor {i}' for i in sites ]
+        p2labels= [f'mov-aver. line {i}' for i in sites 
+                   ] if fit_args is not None else []
+        
+        ax.legend (handles = [*p1 ,*p2], 
+                   labels= [*p1labels, *p2labels] #['restored data' , 'recovery trend '] 
                    if leg is  None else leg,
                    loc ='best', 
-                   ncol =len(args)//3 if fit_args  is None else (
-                        len(args)+len(fit_args ))//3  ,
-                    fontsize =self.font_size
+                   # ncol =len(args)//3 if fit_args  is None else (
+                   #      (len(args)+len(fit_args )))//3  ,
+                    fontsize =1.5 * self.font_size
                     )
+    
+        if xlim is not None: 
+            ax.set_xlim (xlim)
+        ax.tick_params (axis= 'both', labelsize = 1.5 * self.font_size )
         plt.title (self.fig_title or  'Recovered tensor $|Z_{xy}|$',
                    fontsize =1.5*self.font_size)
+        
         
         if self.show_grid :
             ax.grid (visible =True , alpha =self.galpha,
@@ -431,8 +442,8 @@ class TPlot (BasePlot):
         sites =None, 
         to_log10=False, 
         ): 
-        """ Plot two dimensional array. 
-        
+        """ Plot two dimensional tensor. 
+         
         Parameters 
         -----------
         freqs: array-like 
@@ -491,7 +502,7 @@ class TPlot (BasePlot):
         
         arr2d = self.p_.make2d (out = f'{tensor}{self.component}') 
 
-        return self._make_tensor_utils (arr2d, sites , to_log10)  
+        return self._make_tensor_utils (arr2d, sites , to_log10, tensor )  
     
     @temp2d("Base template for 2D filtered tensors plot.")
     def plot_ctensor2d  (
@@ -563,11 +574,12 @@ class TPlot (BasePlot):
             ) 
         ffilter= str (ffilter).lower().strip()         
         arr2d = fd.get(ffilter)()
-        
-        return self._make_tensor_utils (arr2d, sites, to_log10 ) 
+    
+        return self._make_tensor_utils (arr2d, sites, to_log10 , tensor ) 
     
     
-    def _make_tensor_utils (self, arr2d, sites, to_log10= False ): 
+    def _make_tensor_utils (
+            self, arr2d, sites, to_log10= False, tensor=None ): 
         """ Make utilities for plotting tensors   
         
         Parameters 
@@ -618,8 +630,13 @@ class TPlot (BasePlot):
         if len(sites)!= len(positions): 
             raise TypeError (f"Sites={len(sites)} length must be consistent."
                              "  Expects positions={len(positions)}.")
+            
+        if tensor in {'phase', 'phs'}: 
+            arr2d %=90
+            
         if to_log10: 
-            arr2d = np.log10 (arr2d) ; freqs = np.log10 (freqs)
+            arr2d = arr2d if tensor in ("phase", "phs") else np.log10 (arr2d) 
+            freqs = np.log10 (freqs)
             
         base_plot_kws = {
             k: v for k, v in self.__dict__.items () 
@@ -643,18 +660,18 @@ class TPlot (BasePlot):
             
         Examples 
         --------
+        >>> from watex.view import TPlot
+        >>> from watex.datasets import load_edis 
+        >>> edi_data = load_edis (return_data =True, samples =7) 
         >>> plot_kws = dict( ylabel = '$Log_{10}Frequency [Hz]$', 
                     xlabel = '$Distance(m)$', 
                     cb_label = '$Log_{10}Rhoa[\Omega.m$]', 
-                    fig_size =(6, 3), 
+                    fig_size =(7, 4), 
                     font_size =7. 
                     ) 
         >>> t= TPlot(**plot_kws ).fit(edi_data)
         >>> # plot recovery of site 'S01'
-        >>> t.plot_recovery ('S01')  
-        ... <'TPlot':survey_area=None, distance=50.0, prefix='S',
-        window_size=5, component='xy', mode='same', method='slinear', 
-        out='srho', how='py', c=2> 
+        >>> t.plot_recovery ('S01')
         
         """
         self.inspect 
@@ -704,11 +721,14 @@ class TPlot (BasePlot):
         plt.figure(figsize =self.fig_size) #(10, 5)
         plt.loglog(reffreq, zfit, '^r', reffreq, zxy_restored, 'ok--')
         plt.loglog( reffreq, zcorrected, '1-.')
-        plt.legend (['data', 'restored', 'corrected' ], loc ='best')
+        plt.legend (['raw data', 'tensor $res_{xy}$ restored',
+                     'moving-average trend line' ],loc ='best')
         plt.xlabel ('$Frequency [H_z]$') 
         plt.ylabel('$ Resistivity_{xy} [ \Omega.m]$')
-        plt.title ('Recovered tensor $|Z_{xy}|$')
+        plt.title ('Recovered tensor $|Z_{xy}|$' + f" at site {site[0].upper()}")
         plt.grid (visible =True , alpha =0.8, which ='both', color ='k')
+        plt.xlim (reffreq.min() -.5* reffreq.min(), 
+                  reffreq.max() + .5 * reffreq.max())
         plt.tight_layout()
         
         return self 
@@ -751,7 +771,7 @@ class ExPlot (BasePlot):
     def save (self, fig): 
         """ savefigure if figure properties are given. """
         if self.savefig is not None: 
-            fig.savefig (self.savefig,dpi = self.fig_dpi , 
+            fig.savefig (self.savefig, dpi = self.fig_dpi , 
                          bbox_inches = 'tight'
                          )
         plt.show() if self.savefig is None else plt.close () 
@@ -833,7 +853,7 @@ class ExPlot (BasePlot):
         >>> data =fetch_data('original data').get('data=dfy1')
         >>> p = ExPlot (tname ='flow').fit(data)
         >>> p.plotparallelcoords(pkg='yb')
-        >>> <'ExPlot':xname=None, yname=None , tname='flow'>
+        ... <'ExPlot':xname=None, yname=None , tname='flow'>
          
         """
         self.inspect 
@@ -864,7 +884,8 @@ class ExPlot (BasePlot):
             ticks_loc = list(ax.get_xticks())
             ax.xaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
             ax.set_xticklabels([label_format.format(x) for x in ticks_loc], 
-                               rotation =rxlabel)
+                                rotation =rxlabel)
+            pc.show()
             
         elif pkg =='pd': 
             if self.tname is not None: 
@@ -883,7 +904,7 @@ class ExPlot (BasePlot):
                     **kwd
                     )-> 'ExPlot': 
         """ plot each sample on circle or square, with features on the  
-        circonference to vizualize separateky between target. 
+        circonference to vizualize separately between target. 
         
         Values are normalized and each figure has a spring that pulls samples 
         to it based on the value. 
@@ -954,6 +975,8 @@ class ExPlot (BasePlot):
             rv.fit(df, y =None or self.y_ )
             _ = rv.transform(df )
             
+            rv.show()
+            
         elif pkg =='pd': 
             if (self.tname is not None)  and (self.y_ is not None) :
                 df [self.tname] = self.y_ 
@@ -972,7 +995,7 @@ class ExPlot (BasePlot):
             pkg:str ='sns', 
             **kws
             )-> 'ExPlot': 
-        """ Create pairwize comparizons bteween features. 
+        """ Create pairwise comparizons between features. 
         
         Plots shows a ['pearson'|'spearman'|'covariance'] correlation. 
         
@@ -1023,6 +1046,7 @@ class ExPlot (BasePlot):
                          algorithm=corr, **kws)
             pcv.fit(df, y = None or self.y_ )
             pcv.transform(df)
+            pcv.show() 
             
         elif pkg =='sns': 
             sns.set(rc={"figure.figsize":self.fig_size}) 
@@ -1300,9 +1324,9 @@ class ExPlot (BasePlot):
         kws: dict, 
             Other keyword arguments are passed down to `seaborn.joinplot`_ .
             
-         Returns 
-         -----------
-         ``self``: `ExPlot` instance and returns ``self`` for easy method chaining.
+        Returns 
+        -----------
+        ``self``: `ExPlot` instance and returns ``self`` for easy method chaining.
              
         Notes 
         -------
@@ -1330,19 +1354,19 @@ class ExPlot (BasePlot):
             fig, ax = plt.subplots(figsize = self.fig_size )
             jpv = JointPlotVisualizer(
                 ax =ax , 
-                # columns = self.data.columns, 
+                #columns =self.xname_,   # self.data.columns, 
                 correlation=corr, 
-                feature = self.xname_, 
-                target = self.tname, 
-                kind = kind , 
-                fig = fig 
+                # feature=self.xname_, 
+                # target=self.tname, 
+                kind= kind , 
+                fig = fig, 
+                **yb_kws
                 )
             jpv.fit(
                 self.data [self.xname_], 
                 self.data [self.tname] if self.y_ is None else self.y_,
-                    **yb_kws
                     ) 
-
+            jpv.show()
         elif pkg =='sns': 
             sns.set(rc={"figure.figsize":self.fig_size}) 
             df = self.data.copy() 
@@ -1368,7 +1392,7 @@ class ExPlot (BasePlot):
             s: int |ArrayLike =None, 
             **kwd
         )->'ExPlot': 
-        """ Shown the relationship between two numeric columns. 
+        """ Shows the relationship between two numeric columns. 
         
         Parameters 
         ------------
@@ -1496,16 +1520,17 @@ class ExPlot (BasePlot):
 
         Examples
         --------
-        >>> import pandas as pd 
+        >>> from watex.utils import read_data 
         >>> from watex.view import ExPlot
-        >>> data = pd.read_csv ( 'data/geodata/main.bagciv.data.csv' ) 
+        >>> data = read_data  ( 'data/geodata/main.bagciv.data.csv' ) 
         >>> p = ExPlot(tname ='flow').fit(data)
-        >>> p.fig_size = (12, 4)
+        >>> p.fig_size = (7, 5)
         >>> p.savefig ='bbox.png'
-        >>> p.plothistvstarget (name= 'sfi', c = 0, kind = 'binarize',  kde=True, 
+        >>> p.plothistvstarget (xname= 'sfi', c = 0, kind = 'binarize',  kde=True, 
                           posilabel='dried borehole (m3/h)',
                           neglabel = 'accept. boreholes'
                           )
+        Out[95]: <'ExPlot':xname='sfi', yname=None , tname='flow'>
         """.format( returns= _core_docs["returns"], 
                     seealso=_core_docs["seealso"]
                     )
@@ -1574,7 +1599,7 @@ class ExPlot (BasePlot):
             
         g.legend ()
         
-        self.save(g)
+        # self.save(g)
   
         return self 
 
@@ -1712,7 +1737,7 @@ class ExPlot (BasePlot):
                               )
     
             elif kind =='dendro': 
-                ax = msno.dendrogram(self.data, **kwd) 
+                ax = msno.dendrogram(self.data, figsize = self.fig_size , **kwd) 
         
             elif kind =='corr': 
                 ax= msno.heatmap(self.data, figsize = self.fig_size)
@@ -1862,7 +1887,9 @@ class QuickPlot (BasePlot):
         **kws
         ): 
         """
-        Quick plot a distributions of categorized classes according to the 
+        Histogram plot distribution. 
+        
+        Plots a distributions of categorized classes according to the 
         percentage of occurence. 
         
         Parameters 
@@ -1956,6 +1983,9 @@ class QuickPlot (BasePlot):
         df_= self.data_.copy()  #make a copy for safety 
         df_.reset_index(inplace =True)
         
+        if kws.get('bins', None) is not None: 
+            self.bins = kws.pop ('bins', None)
+            
         plt.figure(figsize =self.fig_size)
         plt.hist(df_[self.tname], bins=self.bins ,
                   stacked = stacked , color= self.lc , **kws)
@@ -1977,8 +2007,10 @@ class QuickPlot (BasePlot):
         groupby: List[str] | Dict [str, float] =None,
         **kws):
         """
-        Bar plot distribution. Can plot a distribution according to 
-        the occurence of the `target` in the data and other parameters 
+        Bar plot distribution. 
+        
+        Plots a categorical distribution according to the occurence of the 
+        `target` in the data. 
         
         Parameters 
         -----------
@@ -2319,11 +2351,7 @@ class QuickPlot (BasePlot):
         """
         Method to quick plot the numerical and categorical features. 
         
-        Set `features` by providing the quantitative features as well
-         as the qualitative feature names. If ``None`` value is provided, It 
-        assumes to consider on groundwater exploration therefore the 
-        `target` is set to ``flow``. If not the case and ``feature_names`` are 
-        still ``None``, an errors raises. 
+        Set `features` by providing the names of  features for visualization. 
 
         Parameters 
         -----------
@@ -2337,8 +2365,8 @@ class QuickPlot (BasePlot):
             ``pearson``
             
         features: List, optional 
-            list of  the name of features for corroleation analysis. If given, 
-            must be sure that the names belongs to the dataframe columns,  
+            list of  the name of features for correlation analysis. If given, 
+            must be sure that the names belong to the dataframe columns,  
             otherwise an error will occur. If features are valid, dataframe 
             is shrunk to the number of features before the correlation plot.
        
@@ -2448,8 +2476,8 @@ class QuickPlot (BasePlot):
         map_lower_kws=None,
         **sns_kws): 
         """
-        Plot qualitative features distribution using correlative aspect. Be 
-        sure to provided numerical features arguments. 
+        Plots qualitative features distribution using correlative aspect. Be 
+        sure to provide numerical features as data arguments. 
         
         Parameters 
         -----------
@@ -2563,7 +2591,7 @@ class QuickPlot (BasePlot):
         join_kws=None, marginals_kws=None, 
         **sns_kws):
         """
-        Joint methods allow to visualize correlation of two features. 
+        Joint method allows to visualize correlation of two features. 
         
         Draw a plot of two features with bivariate and univariate graphs. 
         
@@ -2817,7 +2845,7 @@ class QuickPlot (BasePlot):
         
         This method maps a dataset onto multiple axes arrayed in a grid of
         rows and columns that correspond to levels of features in the dataset. 
-        The plots it produces are often called “lattice”, “trellis”, or
+        The plots produced are often called "lattice", "trellis", or
         'small-multiple' graphics. 
         
         Parameters 

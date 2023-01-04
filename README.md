@@ -1,4 +1,8 @@
-# 💧 _WATex_: A machine learning research package in hydrogeophysic
+<img src="docs/source/_static/logo_wide.svg"><br>
+
+-----------------------------------------------------
+
+# A machine learning research package in hydrogeophysic
 
 ### *Life is much better with potable water*
 

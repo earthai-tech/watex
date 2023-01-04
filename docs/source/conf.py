@@ -13,6 +13,7 @@
 import os
 import sys
 # import sphinx_rtd_theme
+# import sphinx_bootstrap_theme
 
 for p in ('..', '../../' ): #../../'
     sys.path.insert(0, os.path.abspath(p))
@@ -38,14 +39,14 @@ def setup(app):
     app.connect('builder-inited', run_apidoc)
     # app.add_javascript('copybutton.js')
     app.add_js_file('copybutton.js')
-
+    #app.add_css_file('style.css')
 # -- Project information -----------------------------------------------------
 # cur_dir = os.path.dirname(__file__)
 # print(os.path.dirname(__file__))
 # print(os.path.join(os.path.dirname (cur_dir), 'watex')) 
 project = 'WATex'
-copyright = '2022, LKouadio'
-author = 'LKouadio'
+copyright = '2022, L. Kouadio'
+author = 'L. Kouadio'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1'
@@ -72,16 +73,17 @@ extensions = [
     # "sphinx_rtd_theme",
     'sphinx.ext.githubpages', 
     "nbsphinx",
+    'sphinx_panels', 
     #'autoapi.sphinx',
-     #"myst_nb",
+     # "myst_nb",
 ]
 nbsphinx_custom_formats = {
-     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
+      ".md": ["jupytext.reads", {"fmt": "mystnb"}],
 }
 
-#nb_custom_formats = {
+# nb_custom_formats = {
 #     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
-#}
+# }
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 # The suffix(es) of source filenames.
@@ -107,17 +109,179 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# Include the example source for plots in API docs
+plot_include_source = True
+plot_formats = [("png", 90)]
+plot_html_show_formats = False
+plot_html_show_source_link = False
+# html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #'nature' #'classic'#'alabaster', 'bizstyle'#'traditional'#'haiku' # 'sphinx_rtd_theme' 
-html_theme = 'classic'
+html_theme = "pydata_sphinx_theme" #'classic'"bootstrap" #
+html_logo = "_static/logo.svg"
+html_favicon = "_static/logo.svg"
+html_sourcelink_suffix = ""
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
+
+# Activate the theme.
+                            # html_theme = 'bootstrap'
+                            # html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+                            
+                            # html_static_path = ['_static']
+                            # html_theme_options = {
+                            #     'source_link_position': "footer",
+                            #     'bootswatch_theme': "paper",
+                            #     'navbar_title': " ",
+                            #     'navbar_sidebarrel': False,
+                            #     'bootstrap_version': "3",
+                            #     'nosidebar': True,
+                            #     'body_max_width': '100%',
+                            #     'navbar_links': [
+                            #         # ("Gallery", "examples/index"),
+                            #         ("Tutorial", "demo/tutorials"),
+                            #         ("API", "api_references"),
+                            #     ],
+                            
+                            # }
+        
+html_theme_options = {
+    # "external_links": [
+    #     {
+    #         "url": "https://pydata.org",
+    #         "name": "PyData",
+    #     },
+    #     {
+    #         "url": "https://numfocus.org/",
+    #         "name": "NumFocus",
+    #     },
+    #     {
+    #         "url": "https://numfocus.org/donate",
+    #         "name": "Donate to NumFocus",
+    #     },
+    #   {
+    #    "name": "Twitter",
+    #    "url": "https://twitter.com/<your-handle>",
+    #    "icon": "fa-brands fa-square-twitter",
+    #    # The default for `type` is `fontawesome` so it is not actually required in any of the above examples as it is shown here
+    #},
+    # ],
+    "github_url": "https://github.com/WEgeophysics/watex",
+    "twitter_url": "https://twitter.com/watex",
+    "header_links_before_dropdown": 5,
+    # "icon_links": [
+    #     {
+    #         "name": "PyPI",
+    #         "url": "https://pypi.org/project/pydata-sphinx-theme",
+    #         "icon": "fa-solid fa-box",
+    #     },
+    #     {
+    #         "name": "watex",
+    #         "url": "https://watex.pydata.org/",
+    #         "icon": "_static/watex_logo_square.png",
+    #         "type": "local",
+    #           "attributes": {"target": "_blank"},
+    #     },
+    # ],
+    "logo": {
+        # "text": "watex",
+        "image_dark":"logo.svg", #logo0.svg",
+        "alt_text": "watex",
+    },
+    "use_edit_page_button": True,
+    "show_toc_level": 1,
+     "navbar_align": "left",  # [left, content, right] For testing that the navbar items align properly
+    #  "navbar_center": ["version-switcher", "navbar-nav"],
+    # "announcement": "https://raw.githubusercontent.com/WEgeophysics/watex/master/docs/_templates/custom-template.html",
+    #"show_nav_level": 2,
+    "navbar_start": ["navbar-logo"],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "navbar_persistent": ["search-button"],
+    "primary_sidebar_end": ["custom-template.html", "sidebar-ethical-ads.html"],
+    "footer_items": ["copyright", "sphinx-version"],
+    "secondary_sidebar_items": ["page-toc.html"],  # Remove the source buttons
+# 'source_link_position': "footer",
+# 'bootswatch_theme': "paper",
+# 'navbar_title': " ",
+# 'navbar_sidebarrel': False,
+'bootstrap_version': "3",
+# 'nosidebar': True,
+# 'body_max_width': '100%',
+
+    'navbar_links': [
+        ("About", "about"),
+        ("Installing", "installation"), 
+        ("User guide", "user_guide"), 
+        ("API", "api_references"),
+        ("Citing", "citing"), 
+        ("Examples","examples"), 
+    ], 
+    # "switcher": {
+    #     "json_url": json_url,
+    #     "version_match": version_match,
+    # },
+
+    "search_bar_position": "navbar",  # TODO: Deprecated - remove in future version
+}
+
+# html_sidebars = {
+#     "community/index": [
+#         "sidebar-nav-bs",
+#         "custom-template",
+#     ],  # This ensures we test for custom sidebars
+#     # "examples/no-sidebar": [],  # Test what page looks like with no sidebar items
+#     # "examples/persistent-search-field": ["search-field"],
+#     # Blog sidebars
+#     # ref: https://ablog.readthedocs.io/manual/ablog-configuration-options/#blog-sidebars
+#     # "examples/blog/*": [
+#     #     "postcard.html",
+#     #     "recentposts.html",
+#     #     "tagcloud.html",
+#     #     "categories.html",
+#     #     "authors.html",
+#     #     "languages.html",
+#     #     "locations.html",
+#     #     "archives.html",
+#     # ],
+# }
+
+myst_heading_anchors = 2
+myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
+
+html_context = {
+    "github_user": "WEgeophysics",
+    "github_repo": "watex",
+    "github_version": "master",
+    "doc_path": "docs",
+}
+
+rediraffe_redirects = {
+    "contributing.rst": "community/index.rst",
+}
+
+# ABlog configuration
+# blog_path = "examples/blog/index"
+# blog_authors = {
+#     "pydata": ("PyData", "https://pydata.org"),
+#     "jupyter": ("Jupyter", "https://jupyter.org"),
+# }
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+todo_include_todos = True
+
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
 #
@@ -134,6 +298,11 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'WATexdoc'
 
+
+# Add the 'copybutton' javascript, to hide/show the prompt in code
+# examples, originally taken from scikit-learn's doc/conf.py
+
+#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # -- Options for LaTeX output ------------------------------------------------
 # latex_engine = 'xelatex'
@@ -181,7 +350,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'WATex', u'WATex Documentation',
-     author, 'watex', 'A machine learning research library for hydrogeophysic',
+     author, 'watex', 'A machine learning research package for hydrogeophysic',
      'Miscellaneous'),
 ]
 
@@ -222,3 +391,14 @@ import mock
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
+
+
+intersphinx_mapping = {
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'scikit-learn': ('http://scikit-learn.org/stable', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'seaborn': ('https://seaborn.pydata.org/', None),
+    'matplotlib': ('https://matplotlib.org/stable', None),
+    
+}

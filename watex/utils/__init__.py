@@ -31,7 +31,8 @@ from .exmath import (
     )
 from .funcutils import ( 
     reshape, 
-    to_numeric_dtypes 
+    to_numeric_dtypes, 
+    smart_label_classifier
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -123,6 +124,7 @@ __all__=[
         'plotOhmicArea', 
         'reshape', 
         'to_numeric_dtypes' , 
+        'smart_label_classifier', 
         'cattarget', 
         'labels_validator', 
         'projection_validator', 

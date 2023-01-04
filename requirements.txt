@@ -3,6 +3,9 @@ sphinx >=3.5
 sphinx_rtd_theme
 sphinxcontrib-jsmath 
 sphinx-mathjax-offline
+pydata-sphinx-theme
+sphinx_bootstrap_theme
+sphinx-panels
 jupytext
 nbsphinx 
 myst_nb

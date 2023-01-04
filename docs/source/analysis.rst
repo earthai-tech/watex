@@ -1,7 +1,7 @@
 .. _analysis:
 
 ================
-Base Analysis 
+Analysis 
 ================
 
 .. currentmodule:: watex.analysis
@@ -20,7 +20,7 @@ Steps behing the principal component analysis (PCA) and matrices decomposition
 
 A naive approach to extract PCA from training set :math:`X` 
 
-.. notes:: 
+.. note:: 
 
 	All consequent principal component (PC) will have the larget variance 
 	given the constraint that these component are uncorrelated (orthogonal)  
@@ -28,8 +28,7 @@ A naive approach to extract PCA from training set :math:`X`
 	resulting of pc will be mutually orthogonal (uncorelated). 
 	Note that the PCA directions are highly sensistive to data scaling and we 
 	need to standardize the features prior to PCA if the features were measured 
-	on different scales and we assign equal importances of all features   
-		
+	on different scales and we assign equal importances of all features.   
 	Moreover, the numpy function was designed to operate on both symetric and non-symetric 
 	squares matrices. However you may find it return complex eigenvalues in 
 	certains casesA related function, `numpy.linalg.eigh` has been implemented 
