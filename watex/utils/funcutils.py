@@ -4165,7 +4165,21 @@ def is_depth_in (X, name, columns = None, error= 'ignore'):
     
     
 def count_func (path , verbose = 0 ): 
-    """ Count function and method using 'ast' modules """
+    """ Count function and method using 'ast' modules 
+    
+    Parameters
+    -----------
+    path: str, Path-like object,    
+        Path to the python module file 
+    verbose: int, default=0 
+        Different to 0 outputs the counting details. 
+        
+    Returns
+    -----------
+    cobj or None: Returns the counter object from module `ast` or nothing if 
+        `verbose` is ``False``. 
+        
+    """
     
     cobj ={}
     import_optional_dependency('ast')
@@ -4210,6 +4224,223 @@ def count_func (path , verbose = 0 ):
  
     return cobj if not verbose else None 
 
+
+def smart_label_classifier (
+        arr: ArrayLike, /, values: float | List[float]= None , labels =None, 
+        order ='soft', func: F=None, raise_warn=True): 
+    """ map smartly the numeric array into a class labels from a map function 
+    or a given fixed values. 
+    
+    New classes created from the fixed values can be renamed if `labels` 
+    are supplied. 
+    
+    Parameters 
+    -------------
+    arr: Arrylike 1d, 
+        array-like whose items are expected to be categorized. 
+        
+    values: float, list of float, 
+        The threshold item values from which the default categorization must 
+        be fixed. 
+    labels: int |str| or List of [str, int], 
+        The labels values that might be correspond to the fixed values. Note  
+        that the number of `fixed_labels` might be consistent with the fixed 
+        `values` plus one, otherwise a ValueError shall raise if `order` is 
+        set to ``strict``. 
+        
+    order: str, ['soft'|'strict'], default='soft', 
+        If order is ``True``, the argument passed to `values` must be self 
+        contain as item in the `arr`, and raise warning otherwise. 
+        
+    func: callable, optional 
+        Function to map the given array. If given, values dont need to be  
+        supply. 
+        
+    raise_warn: bool, default='True'
+        Raise warning message if `order=soft` and the fixed `values` are not 
+        found in the `arr`. Also raise warnings, if `labels` arguments does 
+        not match the number of class from fixed `values`. 
+        
+    Returns 
+    ----------
+    arr: array-like 1d 
+        categorized array with the same length as the raw 
+        
+    Examples
+    ----------
+    >>> import numpy as np
+    >>> from watex.utils.funcutils import smart_label_classifier
+    >>> sc = np.arange (0, 7, .5 ) 
+    >>> smart_label_classifier (sc, values = [1, 3.2 ]) 
+    array([0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2], dtype=int64)
+    >>> # rename labels <=1 : 'l1', ]1; 3.2]: 'l2' and >3.2 :'l3'
+    >>> smart_label_classifier (sc, values = [1, 3.2 ], labels =['l1', 'l2', 'l3'])
+    >>> array(['l1', 'l1', 'l1', 'l2', 'l2', 'l2', 'l2', 'l3', 'l3', 'l3', 'l3',
+           'l3', 'l3', 'l3'], dtype=object)
+    >>> def f (v): 
+            if v <=1: return 'l1'
+            elif 1< v<=3.2: return "l2" 
+            else : return "l3"
+    >>> smart_label_classifier (sc, func= f )
+    array(['l1', 'l1', 'l1', 'l2', 'l2', 'l2', 'l2', 'l3', 'l3', 'l3', 'l3',
+           'l3', 'l3', 'l3'], dtype=object)
+    >>> smart_label_classifier (sc, values = 1.)
+    array([0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=int64)
+    >>> smart_label_classifier (sc, values = 1., labels='l1')  
+    array(['l1', 'l1', 'l1', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=object)
+    
+    """
+    name =None 
+    from .validator import _is_arraylike_1d 
+    if hasattr(arr, "name") and isinstance (arr, pd.Series): 
+        name = arr.name 
+        
+    arr= np.array (arr)  
+    
+    if not _is_arraylike_1d(arr): 
+        raise TypeError ("Expects a one-dimensional array, got array with"
+                         f" shape {arr.shape }")
+    
+    if isinstance (values, str): 
+        values = str2columns(values )
+    if (values is not None 
+        and not is_iterable( values)): 
+        values =[values ]
+        
+    if values is not None:
+        approx_vs=list()
+        values_ =np.zeros ((len(values), ), dtype =float )
+        for i, v in enumerate (values ) : 
+            try : v= float (v)
+            except TypeError as type_error : 
+                raise TypeError (
+                    f"Value {v} must be a valid number." + str(type_error))
+            diff_v = np.abs (arr[~np.isnan(arr)] - v ) 
+            
+            ix_v = np.argmin (diff_v)
+            if order =='strict' and diff_v [ix_v]!=0. :
+                raise ValueError (
+                    f" Value {v} is missing the array. {v} must be an item"
+                    " existing in the array or turn order to 'soft' for"
+                    " approximate values selectors. ") 
+                
+            # skip NaN in the case array contains NaN values 
+            values_[i] = arr[~np.isnan(arr)][ix_v] 
+            
+            if diff_v [ix_v]!=0.: 
+                approx_vs.append ((v, arr[~np.isnan(arr)][ix_v]))
+          
+        if len(approx_vs) !=0 and raise_warn: 
+            vv, aa = zip (*approx_vs)
+            verb ="are" if len(vv)>1 else "is"
+            warnings.warn(f"Values {vv} are missing in the array. {aa} {verb}"
+                          f" approximatively used for substituting the {vv}.")
+    arr_ = arr.copy () 
+    
+    #### 
+    if (func is None and values is None ): 
+        raise TypeError ("'ufunc' cannot be None when the values are not given") 
+    
+    dfunc =None 
+
+    if values is not None: 
+        dfunc = lambda k : _smart_mapper (k, kr = values_ )
+    func = func or  dfunc 
+
+    # func_vectorized  =np.vectorize(func ) 
+    # arr_ = func_vectorized( arr ) 
+    arr_ = pd.Series (arr_, name ='temp').map (func).values 
+    
+    d={} 
+    if labels is not None: 
+        if isinstance (labels, str): 
+            labels = str2columns(labels )
+        labels, d = _assert_labels_from_values (
+            arr_, values_ , labels , d, raise_warn= raise_warn , order =order 
+            )
+
+    arr_ = arr_ if labels is None else ( 
+        pd.Series (arr_, name = name or 'tname').map(d))
+    
+    # if name is None: # for consisteny if labels is None 
+    arr_= (arr_.values if labels is not None else arr_
+           ) if name is None else pd.Series (arr_, name = name )
+
+    return arr_ 
+
+def _assert_labels_from_values (ar, values , labels , d={}, 
+                                raise_warn= True , order ='soft'): 
+    """ Isolated part of the :func:`~.smart_label_classifier`"""
+    from .validator import _check_consistency_size 
+
+    nlabels = list(np.unique (ar))
+    if not is_iterable(labels): 
+        labels =[labels]
+    if not _check_consistency_size(nlabels, labels, error ='ignore'): 
+        if order=='strict':
+            verb= "were" if len (labels) > 1 else "was"
+            raise TypeError (
+                "Expect {len(nlabels)} labels for the {len(values)} values"
+                f" renaming. {len(labels)} {verb} given.")
+ 
+        verb ="s are" if len(values)>1 else " is"
+        msg = (f"{len(values)} value{verb} passed. Labels for"
+                " renaming values expect to be composed of"
+                f" {len(values)+1} items i.e. 'number of values"
+                " + 1' for pure categorization.")
+        ur_classes = nlabels [len(labels):] 
+        labels = list(labels ) + ur_classes 
+        labels = labels [:len(nlabels)] 
+        msg += (f" Class{'es' if len(ur_classes)>1 else ''}"
+                f" {smart_format(ur_classes)} cannot be renamed." ) 
+        
+        if raise_warn: 
+            warnings.warn (msg )
+        
+    d = dict (zip (nlabels , labels ))
+    
+    return labels, d 
+
+def _smart_mapper (k, /,  kr , return_dict_map =False ) :
+    """ Default  mapping using dict to validate the continue  value 'k' 
+    :param k: float, 
+        continue value to be framed between `kr`
+    :param kr: Tuple, 
+        range of fixed values  to categorize  
+    :return: int - new categorical class 
+    
+    :Example: 
+    >>> from watex.utils.funcutils import _smart_mapper 
+    >>> _smart_mapper (10000 , ( 500, 1500, 2000, 3500) )
+    Out[158]: 4
+    >>> _smart_mapper (10000 , ( 500, 1500, 2000, 3500) , return_dict_map=True)
+    Out[159]: {0: False, 1: False, 2: False, 3: False, 4: True}
+    
+    """
+    import math 
+    if len(kr )==1 : 
+        d = {0:  k <=kr[0], 1: k > kr[0]}
+    elif len(kr)==2: 
+        d = {0: k <=kr[0], 1: kr[0] < k <= kr[1],  2: k > kr[1]} 
+    else : 
+        d= dict()
+        for ii  in range (len(kr) + 1  ): 
+            if ii ==0: 
+                d[ii]= k <= kr[ii] 
+            elif ii == len(kr):
+                d[ii] = k > kr [-1] 
+            else : 
+                d[ii] = kr[ii-1] < k <= kr[ii]
+
+    if return_dict_map: 
+        return d 
+    
+    for v, value in d.items () :
+        if value: return v if not math.isnan (v) else np.nan 
+        
+    
+    
+        
 
     
     

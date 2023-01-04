@@ -1259,13 +1259,14 @@ class BagoueNotes:
     The configuration used during the ERP is Schlumberger with distance of
     :math:`AB = 200m \quad \text{and} \quad  MN =20m`.
     
+    The class gives some details about the test dataset used throughout the 
+    `WATex`_ packages. It is a guidance for the user to get any details about
+    the data preprocessed in order to wuick implement or testing the method.
+    Some examples to fetching infos and data are illustrated below: 
+        
     Examples 
     -----------
-    Give some details about the test dataset used throughout the 
-    `WATex`_ packages. It is a guidance for the user to get anay details about
-    the data preprocessed in order to wuick implement or testing the method.
-    Some examples to fetching infos and data are illustrated below:: 
-        
+
     >>> from watex.datasets import fetch_data
     >>> bag_records = fetch_data('original').get('DESCR')
     ... 'https://doi.org/10.5281/zenodo.5571534: bagoue-original'

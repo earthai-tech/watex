@@ -1677,7 +1677,7 @@ def cattarget(
         Function to categorize the target y.  
     labels: int, list of int, 
         if an integer value is given, it should be considered as the number 
-        of category to split 'y'. For instance ``label=3`` and applied on 
+        of category to split 'y'. For instance ``label=3`` applied on 
         the first ten number, the labels values should be ``[0, 1, 2]``. 
         If labels are given as a list, items must be self-contain in the 
         target 'y'.
@@ -1808,17 +1808,17 @@ def rename_labels_in (arr, new_names, coerce = False):
 
     
 def _cattarget (ar , labels , order=None): 
-    """ A shadow function of :func:`watex.utils.funcutils.cattarget`. 
+    """ A shadow function of :func:`watex.utils.mlutils.cattarget`. 
     
     :param ar: array-like of numerical values 
     :param labels: int or list of int, 
         the number of category to split 'ar'into. 
     :param order: str, optional, 
-        the order of label to ne categorized. If None or any other values, 
-        the categorization of labels considers only the leangth of array. 
+        the order of label to be categorized. If None or any other values, 
+        the categorization of labels considers only the length of array. 
         For instance a reverse array and non-reverse array yield the same 
         categorization samples. When order is set to ``strict``, the 
-        categorization  strictly consider the value of each element. 
+        categorization  strictly considers the value of each element. 
         
     :return: array-like of int , array of categorized values.  
     """

@@ -1,4 +1,4 @@
-.. tutorials: 
+.. _tutorials: 
 
 ============
 Tutorials
@@ -8,7 +8,7 @@ Overview
 ===========
 
 
-Here are some code snippets implemented in Jupyter notebook to quick showing how to use :watex:`watex`. It is composed 
+Here are some code snippets implemented in Jupyter notebook to quick showing how to use :code:`watex`. It is composed 
 of : 
 
 * `Quick visualization` 

@@ -10,14 +10,18 @@ function raw specifications may not be enough to give full guidelines on their
 uses.
 For reference on concepts repeated across the API, see :ref:`glossary`.
 
+.. _base_ref:
+
 :mod:`watex.base`: Base classes and functions
 =======================================================
 
 .. automodule:: watex.base
     :no-members:
     :no-inherited-members:
+	
+**User guide:** See the :ref:`bases <bases>` section for further details.
 
-`Classes`
+Classes
 ~~~~~~~~~~~~
 
 .. currentmodule:: watex
@@ -35,7 +39,7 @@ For reference on concepts repeated across the API, see :ref:`glossary`.
    base.MajorityVoteClassifier
    base.SequentialBackwardSelection
 
-`Functions`
+Functions
 ~~~~~~~~~~~~
 
 .. currentmodule:: watex
@@ -68,55 +72,6 @@ The CLI does not work yet. Should be available for  the next release
    cli.PluginGroup.get_command
    cli.PluginGroup.list_commands
 
-.. _decorator_ref:
-
-:mod:`watex.decorators`: Decorators 
-================================================
-
-Displays some decorated classes and functions 
-
-.. automodule:: watex.decorators
-   :no-members:
-   :no-inherited-members:
-
-`Classes`
-~~~~~~~~~~~~
-
-.. currentmodule:: watex
-
-.. autosummary::
-   :toctree: generated/
-   :template: class.rst
-
-
-	decorators.catmapflow2
-	decorators.deprecated
-	decorators.docAppender
-	decorators.docSanitizer
-	decorators.docstring
-	decorators.donothing
-	decorators.gdal_data_check
-	decorators.gplot2d
-	decorators.pfi
-	decorators.predplot
-	decorators.redirect_cls_or_func
-	decorators.refAppender 
-	decorators.temp2d 
-	decorators.visualize_valearn_curve '
-	decorators.writef 
-	decorators.writef2 
-
-`Functions`
-~~~~~~~~~~~~
-.. autosummary::
-   :toctree: generated/
-   :template: function.rst
-
-	decorators.assert_doi
-	decorators.available_if
-	decorators.catmapflow
-	decorators.rpop 
-
 .. _analysis_ref:
 
 
@@ -128,6 +83,8 @@ The module is a set of feature extraction and selection, matrices decomposition 
 .. automodule:: watex.analysis
    :no-members:
    :no-inherited-members:
+
+**User guide:** See the :ref:`analysis <analysis>` section for further details.
 
 .. currentmodule:: watex
 
@@ -162,9 +119,9 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :no-members:
    :no-inherited-members:
 
-**User guide:** See the :ref:`cases` section for further details.
+**User guide:** See the :ref:`cases histories <cases>` section for further details.
 
-`Classes`
+Classes
 ~~~~~~~~~~~~
 
 .. currentmodule:: watex
@@ -180,7 +137,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    cases.processing.Preprocessing
    cases.processing.Processing
 
-`Functions`
+Functions
 ~~~~~~~~~~~~
 
 .. autosummary::
@@ -200,7 +157,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :no-members:
    :no-inherited-members:
 
-**User guide:** See the :ref:`datasets` section for further details.
+**User guide:** See the :ref:`datasets <datasets>` section for further details.
 
 .. currentmodule:: watex
 
@@ -230,9 +187,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :no-members:
    :no-inherited-members:
 
-**User guide:** See the :ref:`externals` section for further details.
-
-`classes` 
+classes 
 ~~~~~~~~~
 
 .. currentmodule:: watex
@@ -246,7 +201,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    externals.z.Tipper 
    externals.z.ZError 
 
-`Functions`
+Functions
 ~~~~~~~~~~~~~~
 
 .. autosummary::
@@ -254,22 +209,14 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :template: function.rst
 
 	externals.z.correct4sensor_orientation
-	externals.zutils.centre_point
-	externals.zutils.compute_determinant_error
-	externals.zutils.get_period_list
 	externals.zutils.invertmatrix_incl_errors
 	externals.zutils.make_log_increasing_array
 	externals.zutils.multiplymatrices_incl_errors
-	externals.zutils.nearest_index
 	externals.zutils.old_z_error2r_phi_error
 	externals.zutils.propagate_error_polar2rect
 	externals.zutils.propagate_error_rect2polar
-	externals.zutils.reorient_data2D
-	externals.zutils.rhophi2z
 	externals.zutils.rotatematrix_incl_errors
 	externals.zutils.rotatevector_incl_errors
-	externals.zutils.roundsf
-	externals.zutils.z_error2r_phi_error
 
 .. _geology_ref:
 
@@ -280,7 +227,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :no-members:
    :no-inherited-members:
 
-`Classes` 
+Classes 
 ~~~~~~~~~~~~
 
 .. currentmodule:: watex
@@ -299,7 +246,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    geology.geology.Structures
    geology.stratigraphic.GeoStrataModel 
 
-`Functions`
+Functions
 ~~~~~~~~~~~~
 
 .. autosummary::
@@ -321,6 +268,8 @@ The module is a set of feature extraction and selection, matrices decomposition 
 .. automodule:: watex.methods
    :no-members:
    :no-inherited-members:
+
+**User guide:** See the :ref:`methods <methods>` section for further details.
 
 .. currentmodule:: watex
 
@@ -357,7 +306,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :no-inherited-members:
 
 
-`Classes` 
+Classes 
 ~~~~~~~~~~~~
 
 .. currentmodule:: watex
@@ -371,7 +320,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    models.GridSearchMultiple 
    models.pModels 
 
-`Functions` 
+Functions 
 ~~~~~~~~~~~~
 
 .. autosummary::
@@ -388,8 +337,8 @@ The module is a set of feature extraction and selection, matrices decomposition 
 
 .. _exceptions_ref:
 
-:mod:`watex.exceptions`: Exceptions and warnings
-==================================================
+:mod:`watex.exceptions`: Exceptions 
+=====================================
 
 .. automodule:: watex.exceptions
    :no-members:
@@ -438,6 +387,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
 	exceptions.VESError
 	exceptions.kError
 
+.. _edi_ref:
 
 :mod:`watex.edi`: Electrical Data Interchange 
 ==============================================
@@ -455,7 +405,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    edi.Edi 
 
 
-.. _metrics:
+.. _metrics_ref:
 
 :mod:`watex.metrics`: Metrics 
 =====================================================
@@ -463,8 +413,6 @@ The module is a set of feature extraction and selection, matrices decomposition 
 .. automodule:: watex.metrics
    :no-members:
    :no-inherited-members:
-
-**User guide:** See the :ref:`metrics` section for further details.
 
 .. currentmodule:: watex
 
@@ -476,7 +424,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    metrics.confusion_matrix
    metrics.precision_recall_tradeoff
 
-.. _property:
+.. _property_ref:
 
 :mod:`watex.property`: Property 
 =====================================================
@@ -485,7 +433,6 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :no-members:
    :no-inherited-members:
 
-**User guide:** See the :ref:`property` section for further details.
 
 .. currentmodule:: watex
 
@@ -506,7 +453,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
    property.Software
    property.Water
    
-.. _sites:
+.. _sites_ref:
 
 :mod:`watex.site`: Site and Location  
 =====================================================
@@ -523,7 +470,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
 
    site.Location
 
-.. _transformers:
+.. _transformers_ref:
 
 :mod:`watex.transformers`: Transformers  
 =====================================================
@@ -532,7 +479,6 @@ The module is a set of feature extraction and selection, matrices decomposition 
    :no-members:
    :no-inherited-members:
 
-**User guide:** See the :ref:`transformers` section for further details.
 
 .. currentmodule:: watex
 
@@ -555,8 +501,6 @@ The module is a set of feature extraction and selection, matrices decomposition 
 .. automodule:: watex.utils
    :no-members:
    :no-inherited-members:
-
-**User guide:** See the :ref:`utilities` section for further details.
 
 .. currentmodule:: watex
 
@@ -632,12 +576,13 @@ The module is a set of feature extraction and selection, matrices decomposition 
 	utils.shape
 	utils.split_train_test
 	utils.to_numeric_dtypes
+	utils.smart_label_classifier
 	utils.type_
 	utils.vesDataOperator
 	utils.vesSelector
 	utils.z2rhoa
    
-`Geotools utilities` 
+Geotools utilities 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: watex.utils.geotools
@@ -672,8 +617,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
 	utils.geotools.zoom_processing
 
 
-Plotting
---------
+.. _view_ref:
 
 :mod:`watex.view`: Plotting 
 ===============================
@@ -682,11 +626,13 @@ Plotting
    :no-members:
    :no-inherited-members:
 
+**User guide:** See the :ref:` visualization <view>` section for further details.
 
-`Classes` 
+Classes
 ~~~~~~~~~~~~
 
 .. currentmodule:: watex
+
 
 .. autosummary::
    :toctree: generated/
@@ -697,7 +643,7 @@ Plotting
    view.TPlot 
    view.EvalPlot
    
-`Functions`
+Functions
 ~~~~~~~~~~~~
 
 .. autosummary::

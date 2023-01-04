@@ -1,7 +1,7 @@
 .. _base:
 
 =============
-Base module 
+Base
 =============
 
 .. currentmodule:: watex.base

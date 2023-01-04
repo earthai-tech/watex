@@ -56,6 +56,12 @@ class temp2d:
             _args = self. _func (*args, **kwargs) 
             base_plot_kws = _args[-1]
             for key in base_plot_kws.keys () :
+                # if attribute exist arase it 
+                # if ( key in self.__dict__.keys() 
+                #     and base_plot_kws[key] is not None
+                #     ): 
+                #     self.__dict__[key] = base_plot_kws[key] 
+                # else:
                 setattr (self, key , base_plot_kws[key] )
             return self.plot2d(*_args[:-1] )
         

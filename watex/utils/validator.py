@@ -3,11 +3,6 @@
 # Copyright (c) 2007-2022 The scikit-learn and watex developers.
 # All rights reserved.
 
-# Note that this module is not the sckit-learn original file, 
-# some functions have been removed to keep only  
-# the usefull for of watex package. Furthermore some others 
-# function have been edited and added. 
-
 # Utilities for input validation
 
 from functools import wraps
