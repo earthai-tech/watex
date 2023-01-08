@@ -52,5 +52,7 @@ openpyxl
 h5py >=3.2.0
 python-latex
 sphinxcontrib-jsmath 
+tables
+mlxtend 
 
 
