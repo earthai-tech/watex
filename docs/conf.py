@@ -85,24 +85,15 @@ extensions = [
     'sphinx.ext.githubpages', 
     "sphinx_gallery.gen_gallery",
     "sphinx-prompt",
-    #"sphinxext.opengraph",
     #'numpydoc',
     'sphinx_copybutton', 
     'sphinx_design',
     'matplotlib.sphinxext.plot_directive',
     'sphinx_issues',
-    # "nbsphinx",
     'sphinx_panels', 
-    #'autoapi.sphinx',
-     # "myst_nb",
-]
-# nbsphinx_custom_formats = {
-#       ".md": ["jupytext.reads", {"fmt": "mystnb"}],
-# }
 
-# nb_custom_formats = {
-#     ".md": ["jupytext.reads", {"fmt": "mystnb"}],
-# }
+]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 # The suffix(es) of source filenames.
@@ -145,9 +136,19 @@ plot_formats = [("png", 90)]
 plot_html_show_formats = False
 plot_html_show_source_link = False
 
-# html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
-#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Don't add a source link in the sidebar
+html_show_sourcelink = False
 
+# Control the appearance of type hints
+autodoc_typehints = "none"
+autodoc_typehints_format = "short"
+
+# Allow shorthand references for main function interface
+rst_prolog = """
+.. currentmodule:: watex
+"""
+
+# Define replacements (used in whatsnew bullets)
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -194,8 +195,8 @@ html_theme_options = {
     ],
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],
-    "navbar_end": ["theme-switcher","navbar-icon-links"],
-    "navbar_persistent": ["search-button"],
+    "navbar_end": ["navbar-icon-links"],# ["theme-switcher",
+    #"navbar_persistent": ["search-button"],
     "header_links_before_dropdown": 5,
     # 'navbar_links': [
     #     ("About", "about"),
@@ -208,16 +209,14 @@ html_theme_options = {
 }
 
 html_context = {
-    #"default_mode": "light",
+    # "default_mode": "light",
     "github_user": "WEgeophysics",
     "github_repo": "watex",
     "github_version": "master",
     "doc_path": "docs",
 }
 
-html_static_path = ['_static', 'example_thumbs']
 
-html_css_files =  [f'custom.css?v={watex.__version__}']
 
 html_logo = "_static/logo.svg"
 html_favicon = "_static/favicon.ico"
@@ -235,9 +234,10 @@ rediraffe_redirects = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
-html_css_files = ["custom.css"]
 # todo_include_todos = True
+html_static_path = ['_static', 'example_thumbs']
+
+html_css_files =  [f'custom.css?v={watex.__version__}']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -264,7 +264,7 @@ htmlhelp_basename = 'WATexdoc'
 def setup(app):
     app.connect('builder-inited', run_apidoc)
     app.add_js_file('copybutton.js')
-    app.add_css_file('custom.css')
+    #app.add_css_file('custom.css')
     
 intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
