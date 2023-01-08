@@ -59,11 +59,13 @@ In most situations where **_WATex_** is cited, a citation to [scikit-learn](http
 * Python 3.9+ 
 
 
-## Contributors
-  
-1. Department of Geophysics, School of Geosciences & Info-physics, [Central South University](https://en.csu.edu.cn/), China.
-2. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny]( https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
+## contributions 
 
-* Developer: [1](https://en.csu.edu.cn/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) - [_LKouadio_](etanoyau@gmail.com) <<etanoyau@gmail.com>>
+1. Department of Geophysics, School of Geosciences & Info-physics, [Central South University](https://en.csu.edu.cn/), China.
+2. Hunan Key Laboratory of Nonferrous Resources and Geological Hazards Exploration Changsha, Hunan, China
+3. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny]( https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
+
+Developer: [1,2](https://en.csu.edu.cn/), [3](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) - [_L. Kouadio_](etanoyau@gmail.com) <<etanoyau@gmail.com>>
+
 
 
