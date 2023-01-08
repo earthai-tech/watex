@@ -3362,7 +3362,7 @@ def fittensor(
         missing in the data. 
     
     
-    Example::
+    :example:
     >>> import numpy as np 
     >>> from watex.utils.exmath import fittensor
     >>> refreq = np.linspace(7e7, 1e0, 20) # 20 frequencies as reference
