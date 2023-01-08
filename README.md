@@ -42,7 +42,7 @@ To conclude, a [wiki page](https://github.com/WEgeophysics/watex/wiki) can also 
 **_WATex_** is not available in any distribution platforms yet (PyPI or conda-forge). However, your can install the package from 
 source: 
 ```
-$ git clone https://github.com/WEgeophysics/watex.git 
+git clone https://github.com/WEgeophysics/watex.git 
 ```
 or simply visit the [installation guide](https://watex.readthedocs.io/en/latest/installation.html) page.
 
