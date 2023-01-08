@@ -1,4 +1,4 @@
-<img src="docs/_static/_static/logo_wide.svg"><br>
+<img src="docs/_static/logo_wide_with_trend_line_new.svg"><br>
 
 -----------------------------------------------------
 
