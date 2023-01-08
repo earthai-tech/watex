@@ -16,46 +16,48 @@
 
 ##  Goals and Missions 
 
-**_WATex_** is a Python  package for reducing numerous losses during the hydro-geophysical exploration projects (HGEP).
+**_WATex_** is a Python  package for reducing losses during the hydro-geophysical exploration projects.
   The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** such 
    as participating in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) and [Africa Agenda 2063 N1](https://au.int/en/agenda2063/flagship-projects#)  achievements.
-   It encompasses different methods: DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short-periods EM, geology and hydrogeology parameters calculation methods. 
-   It is mainly focused on the field of groundwater exploration. The use of machine learning methods using the hydro-geophysics parameter for predictions 
-   such as the DC and hydrogeology parameters will first allow to right locate the place for the
-   drilling operations and also to predict the water content in the well such the collection of the permeability coefficient (k) which are very costly in HGEP. Henceforth, `watex` should be an alternative package for minimizing  the numerous unsucessfull drillings, k-data collection, etc. This is beneficial for funders, state governements, geophysical and drilling ventures. 
+   It encompasses the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short-periods EM, geology and hydrogeology parameters calculation methods. 
+   It is mainly focused on the field of groundwater exploration. The computing of hydro-geophysical parameters combined with the machine learning methods 
+   allow to right locate the drilling operations by predicting the water content in the well and reduce the cost of permeability coefficient (k) collection during the hydro-geophysical engineering projects. 
+   This will minimize the numerous unsucessfull drillings, k-data collection, thereby saving money for funders, state governements, geophysical and drilling ventures. 
  
 
 ## Documentation 
 
-* [Home](https://watex.readthedocs.io/en/latest/)
-* [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
-* [Installation](https://watex.readthedocs.io/en/latest/installation.html)
-* [User guide](https://watex.readthedocs.io/en/latest/user_guide.html)
-* [Code snippets](https://watex.readthedocs.io/en/latest/demo/tutorials.html)
-  * *Example of DC & EM parameters computation useful for [FR prediction](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/edemo.ipynb)*
-  * *Example of Naive Aquifer predicting useful for [k-prediction](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/hdemo.ipynb)*
-  * *Example of exploratory and feature analyses [visualization](https://github.com/WEgeophysics/watex/blob/master/docs/source/demo/qdemo.ipynb)*
-* [Case history](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623)
-* [Wiki page](https://github.com/WEgeophysics/watex/wiki) 
-
-         
+Visit the [package website](https://watex.readthedocs.io/en/latest/) for more resources. You can also quick browse the software [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
+and flip through the [examples page](https://watex.readthedocs.io/en/latest/general_examples.html) to see some of expected results. Furthermore, the 
+[step-by-step guide] is elaborated for read-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html). 
+instead. A concrete example using watex can be found in the published [case history](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623) paper.
+To conclude, a [wiki page](https://github.com/WEgeophysics/watex/wiki) can also be visited for more curiosity.
+   
 ## Licence 
 
 **_WATex_** is under [3-Clause BSD](https://opensource.org/licenses/BSD-3-Clause) License.
 
+## Installation 
+
+**_WATex_** is not available in any distribution platforms yet (PyPI or conda-forge). However, your can install the package from 
+source: 
+```
+git clone https://github.com/WEgeophysics/watex.git 
+```
+or simply visit the [installation guide](https://watex.readthedocs.io/en/latest/installation.html) page.
 
 ## Citations
-
 
 If you use the software in any published work, I will much appreciate to cite the paper or the [DOI](https://doi.org/10.5281/zenodo.5529368) below:
 
 > *Kouadio, K. L., Kouame, L. N., Drissa, C., Mi, B., Kouamelan, K. S., Gnoleba, S. P. D., et al. (2022). Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resources Research, (May 2022). https://doi.org/10.1029/2021wr031623*
 
-> *Kouadio, K.L., Kouame, L.N., Mi, B., 2021. WATex: A machine learning research library in hydrogeophysic. https://doi.org/10.5281/zenodo.5529368*
-
+In most situations where **_WATex_** is cited, a citation to [scikit-learn](http://scikit-learn.org/stable/) would also be appropriate.
 
 ## System requirements
+
 * Python 3.9+ 
+
 
 ## Contributors
   

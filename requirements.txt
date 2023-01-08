@@ -1,6 +1,4 @@
-#sphinx>=2.4.0
 sphinx >=3.5
-sphinx_rtd_theme
 sphinx-gallery
 sphinxcontrib-jsmath 
 sphinx-mathjax-offline
@@ -11,17 +9,14 @@ sphinx-issues
 sphinx-design
 sphinx-prompt
 sphinx-copybutton
-pillow
 jupytext
 nbsphinx 
 myst_nb
 cython
 matplotlib>=3.3.0
-# numpy>=1.23.3
 numpy
 scipy
 scikit-learn
-#sklearn 
 qtpy
 netcdf4
 numpydoc >=1.0.0
@@ -32,10 +27,8 @@ flake8
 flask
 pyyaml
 pyproj>=1.9.6
-# pandas >=1.1.4
 pandas
 python-coveralls
-# sklearn >=1.1 
 joblib
 seaborn
 tqdm
@@ -47,9 +40,9 @@ missingno
 pandas_profiling 
 pyjanitor 
 openpyxl
-#threadpoolctl >= 2.0.0
-#pytables
 h5py >=3.2.0
+tables
+pillow
 python-latex
 sphinxcontrib-jsmath 
 tables
