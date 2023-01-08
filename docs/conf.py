@@ -15,6 +15,7 @@ import sys
 from sphinx.ext.apidoc import main
 import shutil
 import re 
+import time 
 # import sphinx_rtd_theme
 # import sphinx_bootstrap_theme
 #import watex 
@@ -59,13 +60,10 @@ def run_apidoc(_):
 # -- Project information -----------------------------------------------------
 
 project = 'watex'
-copyright = '2022, L. Kouadio'
+copyright = f"2012-{time.strftime('%Y')}"
 author = 'L. Kouadio'
-
 # The full version, including alpha/beta/rc tags
 version = release = watex.__version__
-
-#release = "0.1.3"
 
 
 # -- General configuration ---------------------------------------------------
@@ -121,7 +119,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 
 
-
 # Generate the API documentation when building
 autosummary_generate = True
 numpydoc_show_class_members = False
@@ -132,7 +129,6 @@ issues_github_path = 'WEgeophysics/watex'
 # Include the example source for plots in API docs
 plot_include_source = True
 plot_formats = [("png", 90)]
-
 plot_html_show_formats = False
 plot_html_show_source_link = False
 
@@ -150,24 +146,27 @@ rst_prolog = """
 
 # Define replacements (used in whatsnew bullets)
 
+# rst_epilog = """
+# """  # noqa
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#'nature' #'classic'#'alabaster', 'bizstyle'#'traditional'#'haiku' # 'sphinx_rtd_theme' 
-html_theme = "pydata_sphinx_theme" #'classic'"bootstrap" 
+# ( 'nature' #'classic'#'alabaster', 'bizstyle'#'traditional'#'haiku' # 'sphinx_rtd_theme') 
+html_theme = "pydata_sphinx_theme" 
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named 'default.css' will overwrite the builtin 'default.css'.
 
+html_static_path = ['_static', 'example_thumbs']
+html_css_files =  [f'css/custom.css?v={watex.__version__}']
+# todo_include_todos = True
+html_logo = "_static/logo_wide_rev.svg"
+html_favicon = "_static/favicon.ico"
 
 html_theme_options = {
-        #"logo": {
-            # "text": "watex",
-           # "image_dark":"logo.svg", #logo0.svg",
-            #"alt_text": "watex",
-    #}, 
     "icon_links": [
         {
             "name": "GitHub",
@@ -187,25 +186,18 @@ html_theme_options = {
             "icon": "fab fa-twitter",
             "type": "fontawesome",
         },
-                # {
-                #     "name": "PyPI",
-                #     "url": "https://pypi.org/project/watex", # next 
-                #     "icon": "fa-solid fa-box",
-                # },
+            # {
+            #     "name": "PyPI",
+            #     "url": "https://pypi.org/project/watex", # next 
+            #     "icon": "fa-solid fa-box",
+            # },
     ],
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],
-    "navbar_end": ["navbar-icon-links"],# ["theme-switcher",
+    "navbar_end": ["navbar-icon-links"], # ["theme-switcher",
     #"navbar_persistent": ["search-button"],
     "header_links_before_dropdown": 5,
-    # 'navbar_links': [
-    #     ("About", "about"),
-    #     ("Installing", "installation"), 
-    #     ("User guide", "user_guide"), 
-    #     ("API", "api_references"),
-    #     ("Examples","examples"), 
-    #     ("Citing", "citing"), 
-    # ], 
+
 }
 
 html_context = {
@@ -217,27 +209,11 @@ html_context = {
 }
 
 
-
-html_logo = "_static/logo.svg"
-html_favicon = "_static/favicon.ico"
 #html_sourcelink_suffix = ""
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
+# rediraffe_redirects = {
+#     "contributing.rst": "community/index.rst",
+# }
 
-
-rediraffe_redirects = {
-    "contributing.rst": "community/index.rst",
-}
-
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-# todo_include_todos = True
-html_static_path = ['_static', 'example_thumbs']
-
-html_css_files =  [f'custom.css?v={watex.__version__}']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -253,7 +229,6 @@ html_sidebars = {
     "**": ["sidebar-nav-bs.html"],
 }
 
-
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
@@ -264,7 +239,7 @@ htmlhelp_basename = 'WATexdoc'
 def setup(app):
     app.connect('builder-inited', run_apidoc)
     app.add_js_file('copybutton.js')
-    #app.add_css_file('custom.css')
+    app.add_css_file('css/custom.css')
     
 intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
@@ -276,8 +251,6 @@ intersphinx_mapping = {
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
     
 }
-#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 # -- Options for LaTeX output ------------------------------------------------
 # latex_engine = 'xelatex'
 latex_elements = {
@@ -303,15 +276,13 @@ latex_elements = {
         \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
         """
 }
-
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, 'WATex.tex', u'WATex Documentation',
-     u'Kouadio K. Laurent', 'manual'),
-]
-
+# latex_documents = [
+#     (master_doc, 'WATex.tex', u'WATex Documentation',
+#      u'L. Kouadio', 'manual'),
+# ]
 
 # -- Options for manual page output ------------------------------------------
 
@@ -323,8 +294,7 @@ man_pages = [
 ]
 
 # ------------config sphinx gallery ---------------------------------------
-# customize watex using class made 
-# by from scikit-learn developers 
+# customize watex inspired from scikit-learn  
 
 class SubSectionTitleOrder:
     """Sort example gallery by title of subsection.
@@ -387,11 +357,11 @@ sphinx_gallery_conf = {
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'WATex', u'WATex Documentation',
-     author, 'watex', 'A machine learning research package for hydrogeophysics',
-     'Miscellaneous'),
-]
+# texinfo_documents = [
+#     (master_doc, 'WATex', u'WATex Documentation',
+#      author, 'watex', 'A machine learning research package for hydrogeophysics',
+#      'Miscellaneous'),
+# ]
 
 
 # -- Options for Epub output -------------------------------------------------
@@ -415,7 +385,6 @@ epub_copyright = copyright
 epub_exclude_files = ['search.html']
 
 
-
 # -- Extension configuration -------------------------------------------------
 MOCK_MODULES = [
     'osgeo',
@@ -425,12 +394,11 @@ MOCK_MODULES = [
     'test',
 
 ]
-
 import mock
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
-#############################################
-# reimport utils to fix circular import
+# re-import utils to fix circular import
+# this is usefull for gallery to read iles.
 from watex import utils 

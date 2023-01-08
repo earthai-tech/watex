@@ -1,9 +1,5 @@
 /**** Overriding theme defaults ****/
 
-i.fa-twitter-square:before {
-   color: #55acee;
-}
-
 html[data-theme=light]{
   --pst-color-primary: rgb(13, 124, 163);
   --pst-color-secondary: rgb(107, 161, 174);
