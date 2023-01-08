@@ -166,7 +166,7 @@ html_theme_options = {
             # "text": "watex",
            # "image_dark":"logo.svg", #logo0.svg",
             #"alt_text": "watex",
-    }, 
+    #}, 
     "icon_links": [
         {
             "name": "GitHub",
