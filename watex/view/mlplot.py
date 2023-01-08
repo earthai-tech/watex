@@ -988,8 +988,8 @@ class EvalPlot(BasePlot):
         >>> # binarize the label b.y 
         >>> ybin = cattarget(b.y, labels= 2 ) # can also use labels =[0, 1]
         >>> b.y = ybin 
-        >>> # plot the Precision-recall tradeoff  
-        >>> b.plotPR(sgd_clf , label =1) # class=1
+        >>> # plot the ROC 
+        >>> b.plotROC(sgd_clf , label =1) # class=1
         ... EvalPlot(tname= None, objective= None, scale= True, ... , 
                      sns_height= 4.0, sns_aspect= 0.7, verbose= 0)
         
@@ -1151,7 +1151,7 @@ class EvalPlot(BasePlot):
         >>> b.fit_transform (X, y) 
         >>> # prepare our estimator 
         >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42)
-        >>> >>> matshow_kwargs ={
+        >>> matshow_kwargs ={
                 'aspect': 'auto', # 'auto'equal
                 'interpolation': None, 
                'cmap':'jet }                   
@@ -1168,7 +1168,7 @@ class EvalPlot(BasePlot):
                 }
         >>> b.plotConfusionMatrix(clf=svc_clf, 
                                   matshow_kws = matshow_kwargs, 
-                                  **conf_mx_kws)
+                                  **plot_kws)
         >>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', 
         ...                  random_state =42) 
         >>> # replace the integer identifier with litteral string 
@@ -1473,7 +1473,7 @@ def plotProjection(
         prediction time, used as independent variables in learning. The 
         notation is uppercase to denote that it is ordinarily a matrix.
     columns: list of str or index, optional 
-        columns is usefull what a dataframe is given  with a dimension size 
+        columns is usefull when a dataframe is given  with a dimension size 
         greater than 2. If such data is passed to `X` or `Xt`, columns must
         hold the name to considered as 'easting', 'northing' when UTM 
         coordinates are given or 'latitude' , 'longitude' when latlon are 
@@ -1494,7 +1494,14 @@ def plotProjection(
     --------
     >>> from watex.datasets import fetch_data 
     >>> from watex.view.mlplot import plotProjection 
+    >>> # Discard all the non-numeric data 
+    >>> # then inut numerical data 
+    >>> from watex.utils import to_numeric_dtypes, naive_imputer
     >>> X, Xt, *_ = fetch_data ('bagoue', split_X_y =True, as_frame =True) 
+    >>> X =to_numeric_dtypes(X, pop_cat_features=True )
+    >>> X= naive_imputer(X)
+    >>> Xt = to_numeric_dtypes(Xt, pop_cat_features=True )
+    >>> Xt= naive_imputer(Xt)
     >>> plot_kws = dict (fig_size=(8, 12),
                      lc='k',
                      marker='o',
@@ -1512,7 +1519,7 @@ def plotProjection(
                      rotate_xlabel =90.,
                      fs =3.,
                      s =None )
-    >>>  plotProjection( X, Xt , columns= ['east', 'north'], 
+    >>> plotProjection( X, Xt , columns= ['east', 'north'], 
                         trainlabel='train location', 
                         testlabel='test location', **plot_kws
                        )
@@ -1641,8 +1648,8 @@ def plotModel(
     """ Plot model 'y' (true labels) versus 'ypred' (predicted) from test 
     data.
     
-    Plot will allow to know where estimator/classifier failed to predict 
-    correctly. 
+    Plot will allow to know where estimator/classifier fails to predict 
+    correctly the target 
     
     Parameters
     ----------
@@ -1706,6 +1713,7 @@ def plotModel(
             
     >>> from watex.exlib.sklearn  import SVC 
     >>> from watex.datasets import fetch_data 
+    >>> from watex.view import plotModel 
     >>> from watex.utils.mlutils import split_train_test_by_id
     >>> X, y = fetch_data('bagoue analysis' ) 
     >>> _, Xtest = split_train_test_by_id(X, 
@@ -1751,7 +1759,7 @@ def plotModel(
                    labels=['FR0', 'FR1', 'FR2', 'FR3'], # replace 'y' labels. 
                    **base_plot_params 
                    )
-    >>> plot show where the model failed to well predict the target 'yt'
+    >>> # plot show where the model failed to predict the target 'yt'
     
     """
     def format_ticks (ind, tick_number):
@@ -2084,7 +2092,7 @@ def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws):
         model = model or 'None'
         if not isinstance (model, str): 
             if inspect.isclass(model.__class__): 
-                models[ii][0] = model.__name__
+                models[ii][0] = model.__class__.__name__
             else: 
                 models[ii][0] = type(model).__name__
                 
@@ -2127,7 +2135,7 @@ def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws):
     for k in range(len(models)): 
         ax.plot(np.array([i for i in range(cv_size)])+1,
                 models[k][1],
-                color = lcs_kws['lc'].colors[k], 
+                color = lcs_kws['lc'][k], 
                 linewidth = pobj.lw,
                 linestyle = lcs_kws['ls'][k], 
                 label = models[k][0],
@@ -2189,12 +2197,12 @@ Examples
 >>> from watex.view.mlplot import plot_model_scores
 >>> import numpy as np 
 >>> svc_model = SVC() 
->>> fake_cores = np.random.permutation (np.arange (0, 1,  .05))
+>>> fake_scores = np.random.permutation (np.arange (0, 1,  .05))
 >>> plot_model_scores([(svc_model, fake_scores )])
 ... 
 (2) -> Use model and score separately 
 
->>> plot_model_scores([svc_model],scores =[fake_cores] )# 
+>>> plot_model_scores([svc_model],scores =[fake_scores] )# 
 >>> # customize plot by passing keywords properties 
 >>> base_plot_params ={
                     'lw' :3.,                  
@@ -2215,7 +2223,7 @@ Examples
                     's' :20 ,
                     'sns_style': 'darkgrid', 
                }
->>> plot_model_scores([svc_model],scores =[fake_cores] , **base_plot_params ) 
+>>> plot_model_scores([svc_model],scores =[fake_scores] , **base_plot_params ) 
 """
 def plotDendroheat(
     df: DataFrame |NDArray, 
@@ -2293,19 +2301,19 @@ def plotDendroheat(
     ---------
     (1) -> Use random data
     >>> import numpy as np 
-    >>> >>> from watex.view.mlplot import plotBindDendro2Heatmap
+    >>> >>> from watex.view.mlplot import plotDendroheat
     >>> np.random.seed(123) 
     >>> variables =['X', 'Y', 'Z'] ; labels =['ID_0', 'ID_1', 'ID_2',
                                              'ID_3', 'ID_4']
     >>> X= np.random.random_sample ([5,3]) *10 
     >>> df =pd.DataFrame (X, columns =variables, index =labels)
-    >>> plotBindDendro2Heatmap (df, )
+    >>> plotDendroheat (df, )
     
     (2) -> Use Bagoue data 
     >>> from watex.datasets import load_bagoue  
     >>> X, y = load_bagoue (as_frame=True )
     >>> X =X[['magnitude', 'power', 'sfi']].astype(float) # convert to float
-    >>> plotBindDendro2Heatmap (X )
+    >>> plotDendroheat (X )
     
     
     """
@@ -2518,7 +2526,7 @@ def plotSilhouette (
     **kwd 
  ): 
     r"""
-    Plot silhouette to quantifyg the quality  of clustering samples. 
+    Plot silhouette to quantify the quality  of clustering samples. 
     
     Parameters
     ----------
@@ -2810,7 +2818,7 @@ def plotLearningInspections (
     Examples 
     ---------
     >>> from watex.datasets import fetch_data
-    >>> from watex.models import p 
+    >>> from watex.models.premodels import p 
     >>> from watex.view.mlplot import plotLearningInspections 
     >>> # import sparse  matrix from Bagoue dataset 
     >>> X, y = fetch_data ('bagoue prepared') 
@@ -3068,7 +3076,6 @@ def plot_matshow(
     arr= check_array(
         arr, 
         to_frame =True, 
-        dtype=object,  
         input_name="Array 'arr'"
         )
     matshow_kws= matshow_kws or dict()
@@ -3189,7 +3196,7 @@ def biPlot(
     """
     The biplot is the best way to visualize all-in-one following a PCA analysis.
     There is an implementation in R but there is no standard implementation
-    in python. 
+    in Python. 
 
     Parameters  
     -----------
@@ -3233,7 +3240,7 @@ def biPlot(
     >>> components = pca.components_ [:2, :] # for two components 
     >>> biPlot (pobj, pca.X, components , y ) # pca.X is the reduced dim X 
     >>> # to change for instance line width (lw) or style (ls) 
-    >>> # just use the baseplotobject (pobj) like 
+    >>> # just use the baseplotobject (pobj)
     
     References 
     -----------

@@ -1703,8 +1703,8 @@ def sfi (
     
     Examples 
     ----------
-    >>> from numpy as np 
-    >>> from watex.properties import P 
+    >>> import numpy as np 
+    >>> from watex.property import P 
     >>> from watex.utils.exmath import sfi 
     >>> rang = np.random.RandomState (42) 
     >>> condzone = np.abs(rang.randn (7)) 
@@ -1718,7 +1718,7 @@ def sfi (
                          )
     >>> sfi (condzone, plot= True , s= 5, figsize =(7, 7), 
               **plotkws )
-    ... Out[598]: (array([ 0., 10., 20., 30.]), 1)
+    Out[598]: (array([ 0., 10., 20., 30.]), 1)
         
     References
     ----------
@@ -1975,7 +1975,8 @@ def plot_ (
         del kws ['rotate']
     if (leg:= kws.get ('leg')) is not None: 
         del kws ['leg']
-        
+    if (show_grid:= kws.get ('show_grid')) is not None: 
+        del kws ['show_grid']
     if (title:= kws.get ('title')) is not None: 
         del kws ['title']
     x , y, *args = args 
@@ -2044,6 +2045,9 @@ def plot_ (
         style ='italic', 
         bbox =dict(boxstyle='round',facecolor ='lightgrey'))
         
+    if show_grid is not None: 
+        # plt.minorticks_on()
+        plt.grid (visible =True, which='both')
     plt.tight_layout()
     fig.suptitle(**fig_title_kws)
     plt.legend (leg, loc ='best') if leg  else plt.legend ()
@@ -2291,10 +2295,11 @@ def define_conductive_zone (
     return  conductive_zone, conductive_zone[stn], ix_stn 
     
 
-#FR0: CED9EF
-#FR1: 9EB3DD
-#FR2: 9EB3DD
-#FR3: 0A4CEE
+#FR0: #CED9EF # (206, 217, 239)
+#FR1: #9EB3DD # (158, 179, 221)
+#FR2: #3B70F2 # (59, 112, 242) #repl rgb(52, 54, 99)
+#FR3: #0A4CEE # (10, 76, 238)
+
 def shortPlot (erp, cz=None): 
     """ 
     Quick plot to visualize the `sample` of ERP data overlained to the  

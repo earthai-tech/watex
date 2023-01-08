@@ -443,7 +443,7 @@ Each pretrained model can fetched  as an attribute. For instance::
          'l1_ratio': None
      }
     >>> # fetcth the pretrained RandomForest with out-of-bagg equal to True 
-    >>> p.RandomForest_.best_estimator_ 
+    >>> p.RandomForest.best_estimator_ 
     ... RandomForestClassifier(max_depth=15, oob_score=True)
     
 Note

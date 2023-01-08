@@ -936,7 +936,7 @@ def plotAnomaly(
         the `erp` should be displayed. Note that `cz` is an subset of `erp` 
         array. 
         
-    :param s: str - The station location given as string (e.g. ``s= "S10"``) 
+    :param station: str - The station location given as string (e.g. ``s= "S10"``) 
         or as a station number (indexing; e.g ``s =10``). If value is set to 
         ``"auto"``, `s` should be find automatically and fetching `cz` as well. 
         
@@ -977,10 +977,10 @@ def plotAnomaly(
         ...    plot_anomaly, _define_conductive_zone)
         >>> test_array = np.random.randn (10)
         >>> selected_cz ,*_ = _define_conductive_zone(test_array, 7) 
-        >>> plot_anomaly(test_array, selected_cz )
-        >>> plot_anomaly(tes_array, selected_cz , s= 5)
-        >>> plot_anomaly(tes_array, s= 's02')
-        >>> plot_anomaly(tes_array)
+        >>> plotAnomaly(test_array, selected_cz )
+        >>> plotAnomaly(tes_array, selected_cz , s= 5)
+        >>> plotAnomaly(tes_array, s= 's02')
+        >>> plotAnomaly(tes_array)
         
     .. note::
         

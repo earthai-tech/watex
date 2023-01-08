@@ -365,7 +365,7 @@ class Data:
         
         Examples 
         ---------
-        >>> from watex.bases.base import Data 
+        >>> from watex.base import Data 
         >>> Data().fit(data).profilingReport()
         
         """
@@ -414,7 +414,7 @@ class Data:
         
         Return
         -------
-        ``self``: :class:`watex.bases.base.Data` instance 
+        ``self``: :class:`~watex.base.Data` instance 
             returns ``self`` for easy method chaining.
         
         """
@@ -691,7 +691,7 @@ class Missing (Data) :
 
         Return
         -------
-        ``self``: :class:`watex.bases.base.Missing` instance 
+        ``self``: :class:`~watex.base.Missing` instance 
             returns ``self`` for easy method chaining.
             
         
@@ -764,7 +764,7 @@ class Missing (Data) :
             
         Returns 
         -------
-        ``self``: :class:`watex.bases.base.Missing` instance 
+        ``self``: :class:`~watex.base.Missing` instance 
             returns ``self`` for easy method chaining.
             
         """
@@ -837,7 +837,7 @@ class Missing (Data) :
             
          Returns 
          -------
-         ``self``: :class:`watex.bases.base.Missing` instance 
+         ``self``: :class:`~watex.base.Missing` instance 
              returns ``self`` for easy method chaining.
              
         """
@@ -1281,11 +1281,11 @@ class MajorityVoteClassifier (BaseEstimator, ClassifierMixin ):
         
         \hat{y} = arg \max{i} \sum {j=1}^{m} w_j\chi_A (C_j(x)=1)
     
-    where :math:`w_j` is a weight associated with a base classifier, C_j; 
+    where :math:`w_j` is a weight associated with a base classifier, :math:`C_j`; 
     :math:`\hat{y}` is the predicted class label of the ensemble. :math:`A` is 
     the set of the unique class label; :math:`\chi_A` is the characteristic 
     function or indicator function which returns 1 if the predicted class of 
-    the jth clasifier matches i(C_j(x)=1). For equal weights, the equation 
+    the jth clasifier matches :math:`i(C_j(x)=1)`. For equal weights, the equation 
     is simplified as follow: 
         
     .. math:: 
@@ -1570,20 +1570,20 @@ class AdalineStochasticGradientDescent (_Base) :
     r""" Adaptative Linear Neuron Classifier  with batch  (stochastic) 
     gradient descent 
     
-    A stochastic gradient descent is a popular alternative wich is sometimes 
-    also cal iterative or online gradient descent. Instead of updating the 
-    weights based on the sum of accumulated erros over all training examples 
-    :math:`x^{(i)}`: 
+    A stochastic gradient descent is a popular alternative algorithm which is  
+    sometimes also called iterative or online gradient descent [1]_. It updates
+    the weights based on the sum of accumulated errors over all training 
+    examples :math:`x^{(i)}`: 
         
-        .. math:: 
-            
-            \delta w: \sum{i} (y^{(i)} -\phi( z^{(i)}))x^(i)
+    .. math:: 
+        
+        \delta w: \sum{i} (y^{(i)} -\phi( z^{(i)}))x^(i)
             
     the weights are updated incremetally for each training examples: 
         
-        .. math:: 
-            
-            \neta(y^{(i)} - \phi(z^{(i)})) x^{(i)}
+    .. math:: 
+        
+        \eta(y^{(i)} - \phi(z^{(i)})) x^{(i)}
             
     Parameters 
     -----------
@@ -1606,11 +1606,11 @@ class AdalineStochasticGradientDescent (_Base) :
         
     See also 
     ---------
-    AdelineGradientDescent: :class:`watex.base.AdelineGradientDescent` 
+    AdelineGradientDescent: :class:`~watex.base.AdalineGradientDescent` 
     
     References 
     -----------
-    .. [1] Windrow and al., 1960. An Adaptative "Adeline" Neuron Using Chemical
+    .. [1] Windrow and al., 1960. An Adaptative "Adaline" Neuron Using Chemical
         "Memistors", Technical reports Number, 1553-2,B Windrow and al., 
         standford Electron labs, Standford, CA,October 1960. 
             
