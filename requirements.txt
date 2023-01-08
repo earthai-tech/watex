@@ -9,6 +9,8 @@ sphinx_bootstrap_theme
 sphinx-panels
 sphinx-issues
 sphinx-design
+sphinx-prompt
+sphinx-copybutton
 pillow
 jupytext
 nbsphinx 
