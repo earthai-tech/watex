@@ -9,7 +9,8 @@ sphinx_bootstrap_theme
 sphinx-panels
 sphinx-issues
 sphinx-design
-optipng
+sphinx-prompt
+sphinx-copybutton
 pillow
 jupytext
 nbsphinx 
@@ -49,7 +50,10 @@ openpyxl
 #threadpoolctl >= 2.0.0
 #pytables
 h5py >=3.2.0
+tables
 python-latex
 sphinxcontrib-jsmath 
+mlxtend
+yellowbrick
 
 
