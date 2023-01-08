@@ -1,17 +1,6 @@
 #sphinx>=2.4.0
 sphinx >=3.5
 sphinx_rtd_theme
-sphinx-gallery
-sphinxcontrib-jsmath 
-sphinx-mathjax-offline
-pydata-sphinx-theme
-sphinx_bootstrap_theme
-sphinx-panels
-sphinx-issues
-sphinx-design
-sphinx-prompt
-sphinx-copybutton
-pillow
 jupytext
 nbsphinx 
 myst_nb
@@ -51,6 +40,17 @@ openpyxl
 #pytables
 h5py >=3.2.0
 tables
+sphinx-gallery
+sphinxcontrib-jsmath 
+sphinx-mathjax-offline
+pydata-sphinx-theme
+sphinx_bootstrap_theme
+sphinx-panels
+sphinx-issues
+sphinx-design
+sphinx-prompt
+sphinx-copybutton
+pillow
 python-latex
 sphinxcontrib-jsmath 
 mlxtend
