@@ -230,7 +230,7 @@ Examples
 """.format(params = _core_docs["params"]
 )
 
-def _decision_region (X, y, clf, resolution =.02 ): 
+def _decision_region (X, y, clf, resolution =.02 , ax =None ): 
     """ visuzalize the decision region """
     from ..utils.plotutils import make_mpl_properties
     # setup marker generator and colors map 
@@ -247,24 +247,27 @@ def _decision_region (X, y, clf, resolution =.02 ):
                             )
     z= clf.predict(np.array ([xx1.ravel(), xx2.ravel()]).T)
     z= z.reshape (xx1.shape)
-    
-    plt.contourf (xx1, xx2, z, alpha =.4, cmap =cmap )
-    plt.xlim(xx1.min(), xx1.max())
-    plt.ylim(xx2.min(), xx2.max())
+    if ax is None: 
+        fig, ax= plt.subplots()
+    ax.contourf (xx1, xx2, z, alpha =.4, cmap =cmap )
+    ax.set_xlim(xx1.min(), xx1.max())
+    ax.set_ylim(xx2.min(), xx2.max())
     # plot the examples by classes 
     for idx, cl in enumerate (np.unique (y)): 
-        plt.scatter (x= X[y ==cl, 0] , y = X[y==cl, 1], 
+        ax.scatter (x= X[y ==cl, 0] , y = X[y==cl, 1], 
                      alpha =.6 , 
                      color = cmap(idx), 
                      edgecolors='black', 
                      marker = markers[idx], 
                      label=cl 
                      ) 
+    return ax 
         
 def decision_region (
         X, y, clf, Xt =None, yt=None, random_state = 42, test_size = .3 , 
         scaling =True, split =False,  n_components =2 , view ='X',
-        resolution =.02, return_expl_variance_ratio =False, 
+        resolution =.02, return_expl_variance_ratio =False, return_axe =False, 
+        axe =None, 
         **kws 
         ): 
     view = str(view).lower().strip()
@@ -290,21 +293,23 @@ def decision_region (
     # now plot the decision regions 
     if view is not None: 
         if view =='train': 
-            _decision_region(X_pca, y, clf = clf,resolution = resolution) 
+            ax = _decision_region(
+                X_pca, y, clf = clf,resolution = resolution, ax= axe) 
         if view =='test':
             if Xt_pca is None: 
                 raise TypeError("Cannot plot missing test sets (Xt, yt)")
-            _decision_region(Xt_pca, yt, clf=clf, resolution =resolution )
-        plt.xlabel("PC1")
-        plt.ylabel ("PC2")
-        plt.legend (loc= 'lower left')
+            ax = _decision_region(Xt_pca, yt, clf=clf, resolution =resolution,
+                                  ax =axe )
+        ax.set_xlabel("PC1")
+        ax.set_ylabel ("PC2")
+        ax.legend (loc= 'lower left')
         plt.show ()
     if return_expl_variance_ratio : 
         pca =PCA(n_components =None )
         X_pca = pca.fit_transform(X)
         return pca.explained_variance_ratio_ 
     
-    return X_pca 
+    return ax if return_axe else X_pca 
 
 decision_region.__doc__="""\
 View decision regions for the training data reduced to two 
@@ -340,6 +345,11 @@ resolution: float, default{{.02}}
     level of the extension of numpy meshgrip to tighting layout the plot. 
 return_expl_variance_ratio: bool, default is {{False}}
     returns the PCA variance ratio explaines of all principal components. 
+    
+return_axes: bool, default=False, 
+    Return matplotlib object axe 
+ax: Matplotlib.Axes object, optional 
+    If not supplied, it is created.
     
 kws: dict 
     Additional keywords arguments passed to  the scikit-learn function 

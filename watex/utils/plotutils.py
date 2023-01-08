@@ -54,13 +54,7 @@ try:
         silhouette_samples
         ) 
 except : pass 
-
-try : 
-    from mlxtend.Plotting import ( 
-        scatterplotmatrix, 
-        heatmap 
-        ) 
-except: pass 
+ 
 try : 
     from yellowbrick.classifier import ConfusionMatrix 
 except: pass 
@@ -465,7 +459,7 @@ def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
     >>> import numpy as np 
     >>> from watex.exlib.sklearn import KMeans 
     >>> from watex.datasets import load_iris 
-    >>> from watex.view.mlplot import plotSilhouette
+    >>> from watex.utils.plotutils import plot_silhouette
     >>> d= load_iris ()
     >>> X= d.data [:, 0][:, np.newaxis] # take the first axis 
     >>> km= KMeans (n_clusters =3 , init='k-means++', n_init =10 , 
@@ -474,7 +468,7 @@ def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
                     random_state =0 
                     )
     >>> y_km = km.fit_predict(X) 
-    >>> plotSilhouette (X, y_km)
+    >>> plot_silhouette (X, y_km)
 
     """
     X, labels = check_X_y(
@@ -829,7 +823,7 @@ def plot_rf_feature_importances (
     plt.close () if savefig is not None else plt.show() 
     
         
-def plot_confusion_matrix (yt, y_pred, view =True, ax=None, annot=True, **kws ):
+def plot_confusion_matrix (yt, y_pred, view =True, ax=None, annot=True,  **kws ):
     """ plot a confusion matrix for a single classifier model.
     
     :param yt : ndarray or Series of length n
@@ -848,16 +842,43 @@ def plot_confusion_matrix (yt, y_pred, view =True, ax=None, annot=True, **kws ):
         :func:`sckitlearn.metrics.confusion_matrix`. 
     :returns: mat- confusion matrix bloc matrix 
     
+    :example: 
+    >>> #Import the required models and fetch a an Ababoost model 
+    >>> # for instance then plot the confusion metric 
+    >>> import matplotlib.pyplot as plt 
+    >>> plt.style.use ('classic')
+    >>> from watex.datasets import fetch_data
+    >>> from watex.exlib.sklearn import train_test_split 
+    >>> from watex.models import pModels 
+    >>> from watex.utils.plotutils import plot_confusion_matrix
+    >>> # split the  data . Note that fetch_data output X and y 
+    >>> X, Xt, y, yt  = train_test_split (* fetch_data ('bagoue analysed'),
+                                          test_size =.25  )  
+    >>> # train the model with the best estimator 
+    >>> pmo = pModels (model ='ada' ) 
+    >>> pmo.fit(X, y )
+    >>> print(pmo.estimator_ )
+    >>> #%% 
+    >>> # Predict the score using under the hood the best estimator 
+    >>> # for adaboost classifier 
+    >>> ypred = pmo.predict(Xt) 
+    >>> # now plot the score 
+    >>> plot_confusion_matrix (yt , ypred )
+
+    
     """
     check_consistent_length (yt, y_pred)
     mat= confusion_matrix (yt, y_pred, **kws)
+    if ax is None: 
+        fig, ax = plt.subplots ()
+        
     if view: 
         sns.heatmap (
-            mat.T, square =True, annot =annot,  fmt='d', cbar=False, ax=ax)
+            mat.T, square =True, annot =annot, cbar=False, ax=ax)
         # xticklabels= list(np.unique(ytrue.values)), 
         # yticklabels= list(np.unique(ytrue.values)))
-        ax.set_xlabel('true labels')
-        #ax.set_ylabel ('predicted label')
+        ax.set_xlabel('true labels' )
+        ax.set_ylabel ('predicted labels')
     return mat 
 
 def plot_yb_confusion_matrix (
@@ -929,6 +950,30 @@ def plot_yb_confusion_matrix (
     cmo: :class:`yellowbrick.classifier.confusion_matrix.ConfusionMatrix`
         return a yellowbrick confusion matrix object instance. 
     
+    Examples 
+    --------
+    >>> #Import the required models and fetch a an extreme gradient boosting 
+    >>> # for instance then plot the confusion metric 
+    >>> import matplotlib.pyplot as plt 
+    >>> plt.style.use ('classic')
+    >>> from watex.datasets import fetch_data
+    >>> from watex.exlib.sklearn import train_test_split 
+    >>> from watex.models import pModels 
+    >>> from watex.utils.plotutils import plot_yb_confusion_matrix
+    >>> # split the  data . Note that fetch_data output X and y 
+    >>> X, Xt, y, yt  = train_test_split (* fetch_data ('bagoue analysed'),
+                                          test_size =.25  )  
+    >>> # train the model with the best estimator 
+    >>> pmo = pModels (model ='xgboost' ) 
+    >>> pmo.fit(X, y )
+    >>> print(pmo.estimator_ ) # pmo.XGB.best_estimator_
+    >>> #%% 
+    >>> # Predict the score using under the hood the best estimator 
+    >>> # for adaboost classifier 
+    >>> ypred = pmo.predict(Xt) 
+    
+    >>> # now plot the score 
+    >>> plot_yb_confusion_matrix (pmo.XGB.best_estimator_, Xt, yt  )
     """
     import_optional_dependency('yellowbrick', (
         "Cannot plot the confusion matrix via 'yellowbrick' package."
@@ -971,9 +1016,8 @@ def plot_confusion_matrices (
     -----------
     clfs : list of classifier estimators
         A scikit-learn estimator that should be a classifier. If the model is
-        not a classifier, an exception is raised. If the internal model is not
-        fitted, it is fit when the visualizer is fitted, unless otherwise specified
-        by ``is_fitted``.
+        not a classifier, an exception is raised. Note that the classifier 
+        must be fitted beforehand.
         
     Xt : ndarray or DataFrame of shape (M X N)
         A matrix of n instances with m features. Preferably, matrix represents 
@@ -1015,6 +1059,29 @@ def plot_confusion_matrices (
     savefig: str, default =None , 
         the path to save the figures. Argument is passed to matplotlib.Figure 
         class. 
+        
+    Examples
+    ----------
+    >>> import matplotlib.pyplot as plt 
+    >>> plt.style.use ('classic')
+    >>> from watex.datasets import fetch_data
+    >>> from watex.exlib.sklearn import train_test_split 
+    >>> from watex.models.premodels import p
+    >>> from watex.utils.plotutils import plot_confusion_matrices 
+    >>> # split the  data . Note that fetch_data output X and y 
+    >>> X, Xt, y, yt  = train_test_split (* fetch_data ('bagoue analysed'), test_size =.25  )  
+    >>> # compose the models 
+    >>> # from RBF, and poly 
+    >>> models =[ p.SVM.rbf.best_estimator_,
+             p.LogisticRegression.best_estimator_,
+             p.RandomForest.best_estimator_ 
+             ]
+    >>> models 
+    [SVC(C=2.0, coef0=0, degree=1, gamma=0.125), LogisticRegression(), 
+     RandomForestClassifier(criterion='entropy', max_depth=16, n_estimators=350)]
+    >>> # now fit all estimators 
+    >>> fitted_models = [model.fit(X, y) for model in models ]
+    >>> plot_confusion_matrices(fitted_models , Xt, yt)
     """
     pkg = pkg or 'sklearn'
     pkg= str(pkg).lower() 
@@ -1037,6 +1104,8 @@ def plot_confusion_matrices (
         if pkg in ('sklearn', 'scikit-learn'): 
             plot_confusion_matrix(yt, ypred, annot =annot , ax = axes[kk], 
                 normalize= normalize , sample_weight= sample_weight ) 
+            axes[kk].set_title (mname)
+            
         elif pkg in ('yellowbrick', 'yb'):
             plot_yb_confusion_matrix(
                 model, Xt, yt, ax=axes[kk], encoder =encoder )
@@ -1138,7 +1207,7 @@ def plot_learning_curves(
     ---------
     (1) -> plot via a metaestimator already cross-validated. 
     
-    >>> from watex.models import p 
+    >>> from watex.models.premodels import p 
     >>> from watex.datasets import fetch_data 
     >>> from watex.utils.plotutils import plot_learning_curves
     >>> X, y = fetch_data ('bagoue prepared') # yields a sparse matrix 
@@ -1154,7 +1223,7 @@ def plot_learning_curves(
                                          )
     >>> models =[LogisticRegression(), RandomForestClassifier(), SVC() ,
                  KNeighborsClassifier() ]
-    >>> >>> plot_learning_curves (models, X, y, cv=4, sns_style = 'darkgrid')
+    >>> plot_learning_curves (models, X, y, cv=4, sns_style = 'darkgrid')
     
     """
     if not is_iterable(models): 
@@ -1403,12 +1472,12 @@ def plot_clusters (
         centroids or the similar points with continous features. 
         
     :Example: 
-    >>> from watex.utils import read_data 
     >>> from watex.exlib.sklearn import KMeans, MinMaxScaler
     >>> from watex.utils.plotutils import plot_clusters
-    >>> h = read_data ('data/boreholes/H502.xlsx')
+    >>> from watex.datasets import fetch_data 
+    >>> h= fetch_data('hlogs').frame 
     >>> # collect two features 'resistivity' and gamma-gamma logging values
-    >>> h2 = h[['resistivity', 'gamma-gamma']] 
+    >>> h2 = h[['resistivity', 'gamma_gamma']] 
     >>> km = KMeans (n_clusters =3 , init= 'random' ) 
     >>> # scaled the data with MinMax scaler i.e. between ( 0-1) 
     >>> h2_scaled = MinMaxScaler().fit_transform(h2)
@@ -1463,7 +1532,7 @@ def plot_elbow (
         fig_size = (10, 4 ), marker = 'o', savefig= None, 
         **kwd): 
     """ Plot elbow method to find the optimal number of cluster, k', 
-    for a given class. 
+    for a given data. 
     
     Parameters
     ----------
@@ -1584,7 +1653,7 @@ def _plot_elbow (distorsions: list  , n_clusters:int ,fig_size = (10 , 4 ),
 
 def plot_cost_vs_epochs(regs, *,  fig_size = (10 , 4 ), marker ='o', 
                      savefig =None, **kws): 
-    """ Plot the cost agianst the number of epochs  for the two different 
+    """ Plot the cost against the number of epochs  for the two different 
     learnings rates 
     
     Parameters 
@@ -1601,14 +1670,14 @@ def plot_cost_vs_epochs(regs, *,  fig_size = (10 , 4 ), marker ='o',
     
     Examples 
     ---------
+
     >>> from watex.datasets import load_iris 
-    >>> from watex.base import AdelineGradientDescent
+    >>> from watex.base import AdalineGradientDescent
     >>> from watex.utils.plotutils import plot_cost_vs_epochs
     >>> X, y = load_iris (return_X_y= True )
-    >>> ada1 = AdelineGradientDescent (n_iter= 10 , eta= .01 ).fit(X, y) 
-    >>> ada2 = AdelineGradientDescent (n_iter=10 , eta =.0001 ).fit(X, y)
-    >>> plot_cost_vs_epochs (reg = [ada1, ada2] ) 
-
+    >>> ada1 = AdalineGradientDescent (n_iter= 10 , eta= .01 ).fit(X, y) 
+    >>> ada2 = AdalineGradientDescent (n_iter=10 , eta =.0001 ).fit(X, y)
+    >>> plot_cost_vs_epochs (regs = [ada1, ada2] ) 
     """
     if not isinstance (regs, (list, tuple, np.array)): 
         regs =[regs]
@@ -1646,9 +1715,20 @@ def plot_mlxtend_heatmap (df, columns =None, savefig=None,  **kws):
         :func:`mlxtend.plotting.heatmap`
     :return: :func:`mlxtend.plotting.heatmap` axes object 
     
+    :example: 
+        
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.plotutils import plot_mlxtend_heatmap
+    >>> h=load_hlogs()
+    >>> features = ['gamma_gamma', 'sp',
+                'natural_gamma', 'resistivity']
+    >>> plot_mlxtend_heatmap (h.frame , columns =features, cmap ='PuOr')
     """
     import_optional_dependency('mlxtend', extra=(
         "Can't plot heatmap using 'mlxtend' package."))
+  
+    from mlxtend.plotting import (  heatmap 
+            ) 
     cm = np.corrcoef(df[columns]. values.T)
     ax= heatmap(cm, row_names = columns , column_names = columns, **kws )
     
@@ -1671,11 +1751,22 @@ def plot_mlxtend_matrix(df, columns =None, fig_size = (10 , 8 ),
     :param alpha: figure transparency, default is ``.5``. 
     
     :return: :func:`mlxtend.plotting.scatterplotmatrix` axes object 
-    
+    :example: 
+    >>> from watex.datasets import load_hlogs 
+    >>> from watex.utils.plotutils import plot_mlxtend_matrix
+    >>> import pandas as pd 
+    >>> import numpy as np 
+    >>> h=load_hlogs()
+    >>> features = ['gamma_gamma', 'natural_gamma', 'resistivity']
+    >>> data = pd.DataFrame ( np.log10 (h.frame[features]), columns =features )
+    >>> plot_mlxtend_matrix (data, columns =features)
+
     """
     import_optional_dependency("mlxtend", extra = (
         "Can't plot the scatter matrix using 'mlxtend' package.") 
                                )
+    from mlxtend.plotting import scatterplotmatrix
+                                       
     if isinstance (columns, str): 
         columns = [columns ] 
     try: 

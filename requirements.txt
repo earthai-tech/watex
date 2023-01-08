@@ -1,11 +1,16 @@
 #sphinx>=2.4.0
 sphinx >=3.5
 sphinx_rtd_theme
+sphinx-gallery
 sphinxcontrib-jsmath 
 sphinx-mathjax-offline
 pydata-sphinx-theme
 sphinx_bootstrap_theme
 sphinx-panels
+sphinx-issues
+sphinx-design
+optipng
+pillow
 jupytext
 nbsphinx 
 myst_nb

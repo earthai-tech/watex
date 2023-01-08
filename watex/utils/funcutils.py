@@ -3563,10 +3563,57 @@ def random_state_validator(seed):
         "%r cannot be used to seed a numpy.random.RandomState instance" % seed
     )
 
-
-def is_iterable (y, /)->bool: 
-    """ Asserts iterable object and returns 'True' or 'False' """
-    return hasattr (y, '__iter__') 
+def is_iterable (
+        y, /, exclude_string= False, transform = False , parse_string =False, 
+        )->bool | list: 
+    """ Asserts iterable object and returns 'True' or 'False' 
+    
+    :param y: any, object to be asserted 
+    :param exclude_string: bool, does not consider string as an iterable 
+        object if `y` is passed as a string object. 
+    :param transform: bool, transform  `y` to an iterable objects. But default 
+        puts `y` in a list object. 
+    :param parse_string: bool, parse string and convert the list of string 
+        into iterable object is the `y` is a string object and containg the 
+        word separator character '[_#&.*@!_,;\s-]'. Refer to the function 
+        :func:`~watex.utils.funcutils.str2columns` documentation.
+        
+    :returns: 
+        - bool, or iterable object if `transform` is set to ``True``. 
+        
+    .. note:: 
+        Parameter `parse_string` expect `transform` to be ``True``, otherwise 
+        a ValueError will raise. Note :func:`.is_iterable` is not dedicated 
+        for string parsing. It parses string using the default behaviour of 
+        :func:`.str2columns`. Use the latter for string parsing instead. 
+        
+    :Examples: 
+    >>> from watex.funcutils.is_iterable 
+    >>> is_iterable ('iterable', exclude_string= True ) 
+    Out[28]: False
+    >>> is_iterable ('iterable', exclude_string= True , transform =True)
+    Out[29]: ['iterable']
+    >>> is_iterable ('iterable', transform =True)
+    Out[30]: 'iterable'
+    >>> is_iterable ('iterable', transform =True, parse_string=True)
+    Out[31]: ['iterable']
+    >>> is_iterable ('iterable', transform =True, exclude_string =True, 
+                     parse_string=True)
+    Out[32]: ['iterable']
+    >>> is_iterable ('parse iterable object', parse_string=True, 
+                     transform =True)
+    Out[40]: ['parse', 'iterable', 'object']
+    """
+    if (parse_string and not transform) and isinstance (y, str): 
+        raise ValueError ("Cannot parse the given string. Set 'transform' to"
+                          " ``True`` otherwise use the 'str2columns' util"
+                          " from 'watex.utils.funcutils' instead.")
+    y = str2columns(y) if isinstance(y, str) and parse_string else y 
+    
+    isiter = False  if exclude_string and isinstance (
+        y, str) else hasattr (y, '__iter__')
+    
+    return ( y if isiter else [ y ] )  if transform else isiter 
 
     
 def str2columns (text, /, regex=None , pattern = None): 
@@ -4303,9 +4350,11 @@ def smart_label_classifier (
     
     if isinstance (values, str): 
         values = str2columns(values )
-    if (values is not None 
-        and not is_iterable( values)): 
-        values =[values ]
+    if values is not None: 
+        values = is_iterable(values, parse_string =True, transform = True )
+    # if (values is not None 
+    #     and not is_iterable( values)): 
+    #     values =[values ]
         
     if values is not None:
         approx_vs=list()
@@ -4353,8 +4402,9 @@ def smart_label_classifier (
     
     d={} 
     if labels is not None: 
-        if isinstance (labels, str): 
-            labels = str2columns(labels )
+        labels = is_iterable(labels, parse_string=True, transform =True )
+        # if isinstance (labels, str): 
+        #     labels = str2columns(labels )
         labels, d = _assert_labels_from_values (
             arr_, values_ , labels , d, raise_warn= raise_warn , order =order 
             )
@@ -4438,8 +4488,11 @@ def _smart_mapper (k, /,  kr , return_dict_map =False ) :
     for v, value in d.items () :
         if value: return v if not math.isnan (v) else np.nan 
         
-    
-    
+def hex_to_rgb (c, /): 
+    """ Convert colors Hexadecimal to RGB """
+    c=c.lstrip('#')
+    return tuple(int(c[i:i+2], 16) for i in (0, 2, 4)) 
+
         
 
     

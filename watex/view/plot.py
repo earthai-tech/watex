@@ -1057,7 +1057,7 @@ class ExPlot (BasePlot):
         
         return self 
         
-    def plotcatcomparison(
+    def plotcutcomparison(
             self, 
             xname: str =None, 
             yname:str =None, 
@@ -1067,7 +1067,7 @@ class ExPlot (BasePlot):
             duplicates:str ='drop', 
             **kws
         )->'ExPlot': 
-        """Compare two ordinal categories 
+        """Compare the cut or `q` quantiles values of ordinal categories.
         
         It simulates that the the bining of 'xname' into a `q` quantiles, and 
         'yname'into `bins`. Plot is normalized so its fills all the vertical area.
@@ -1120,7 +1120,7 @@ class ExPlot (BasePlot):
         >>> from watex.view import ExPlot 
         >>> data = fetch_data ('bagoue original').get('data=dfy1') 
         >>> p= ExPlot(tname='flow').fit(data)
-        >>> p.plotcatcomparison(xname ='sfi', yname='ohmS')
+        >>> p.plotcutcomparison(xname ='sfi', yname='ohmS')
         """
         self.inspect 
         
@@ -1317,7 +1317,17 @@ class ExPlot (BasePlot):
             columns. Raise an error if elements do not exist.
         pkg: str, Optional, 
             kind or library to use for visualization. can be ['sns'|'yb']  for 
-            'seaborn' or 'yellowbrick'. default is ``sns``.   
+            'seaborn' or 'yellowbrick'. default is ``sns``.
+            
+        kind : str in {'scatter', 'hex'}, default: 'scatter'
+            The type of plot to render in the joint axes. Note that when 
+            kind='hex' the target cannot be plotted by color.
+            
+        corr: str, default: 'pearson'
+            The algorithm used to compute the relationship between the 
+            variables in the joint plot, one of: 'pearson', 'covariance', 
+            'spearman', 'kendalltau'.
+            
         yb_kws: dict, 
             Additional keywords arguments from 
             :class:`yellowbrick.JointPlotVisualizer`
@@ -1369,6 +1379,7 @@ class ExPlot (BasePlot):
             jpv.show()
         elif pkg =='sns': 
             sns.set(rc={"figure.figsize":self.fig_size}) 
+            sns.set_style (self.sns_style)
             df = self.data.copy() 
             if (self.tname not in df.columns) and (self.y_ is not None): 
                 df [self.tname] = self.y_ # set new dataframe with a target 
@@ -1455,11 +1466,11 @@ class ExPlot (BasePlot):
             existfeatures( self.data, self.xname_ )
         if yname is not None: 
             existfeatures( self.data, self.yname_ )
-            
-        if self.sns_style is not None: 
-           sns.set_style(self.sns_style)
+        
         # state the fig plot and change the figure size 
         sns.set(rc={"figure.figsize":self.fig_size}) #width=3, #height=4
+        if self.sns_style is not None: 
+           sns.set_style(self.sns_style)
         # try : 
         fig= sns.scatterplot( data = self.data, x = self.xname_,
                              y=self.yname_, hue =self.tname, 
