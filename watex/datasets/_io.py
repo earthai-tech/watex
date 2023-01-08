@@ -190,9 +190,9 @@ descr : str, optional
 """
 
 def description_loader(descr_file, *, descr_module=DESCR, encoding ='utf8'):
-    fdescr=resources.files(descr_module).joinpath(descr_file).read_text(
-        encoding=encoding)
-    #fdescr = resources.read_text(descr_module, descr_file)
+    # fdescr=resources.files(descr_module).joinpath(descr_file).read_text(
+    #     encoding=encoding)
+    fdescr = resources.read_text(descr_module, descr_file, encoding= 'utf8')
     return fdescr
 
 description_loader.__doc__ ="""\
