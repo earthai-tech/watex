@@ -664,3 +664,4 @@ Functions
 	view.pobj
 	view.viewtemplate
 
+Click :ref:`here <api/watex>` to visit all the modules of the package.
