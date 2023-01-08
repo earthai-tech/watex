@@ -45,7 +45,8 @@ tables
 pillow
 python-latex
 sphinxcontrib-jsmath 
-mlxtend
+tables
+mlxtend 
 yellowbrick
 
 
