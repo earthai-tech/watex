@@ -1,4 +1,4 @@
-<img src="docs/_static/logo.svg"><br>
+<img src="docs/_static/logo_wide_rev.svg"><br>
 
 -----------------------------------------------------
 
@@ -28,12 +28,7 @@
 
 Visit the [package website](https://watex.readthedocs.io/en/latest/) for more resources. You can also quick browse the software [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
 and flip through the [examples page](https://watex.readthedocs.io/en/latest/general_examples.html) to see some of expected results. Furthermore, the 
-<<<<<<< HEAD
-[step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/applications/index.html#applications-step-by-step-guide) is elaborated for read-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html). 
-=======
-[step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/index.html) is elaborated for read-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html). 
->>>>>>> 9d9b6dd288f96b2deafd81ab466715dec75e10eb
-instead. A concrete example using watex can be found in the published [case history](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623) paper.
+[step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/applications/index.html#applications-step-by-step-guide) is elaborated for read-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html) instead. A concrete example using watex can be found in the published [case history](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623) paper.
 To conclude, a [wiki page](https://github.com/WEgeophysics/watex/wiki) can also be visited for more curiosity.
    
 ## Licence 
