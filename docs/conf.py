@@ -186,11 +186,11 @@ html_theme_options = {
             "icon": "fab fa-twitter",
             "type": "fontawesome",
         },
-                # {
-                #     "name": "PyPI",
-                #     "url": "https://pypi.org/project/watex", # next 
-                #     "icon": "fa-solid fa-box",
-                # },
+            # {
+            #     "name": "PyPI",
+            #     "url": "https://pypi.org/project/watex", # next 
+            #     "icon": "fa-solid fa-box",
+            # },
     ],
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],
@@ -210,10 +210,10 @@ html_context = {
 
 
 #html_sourcelink_suffix = ""
-
 # rediraffe_redirects = {
 #     "contributing.rst": "community/index.rst",
 # }
+
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

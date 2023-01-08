@@ -28,7 +28,11 @@
 
 Visit the [package website](https://watex.readthedocs.io/en/latest/) for more resources. You can also quick browse the software [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
 and flip through the [examples page](https://watex.readthedocs.io/en/latest/general_examples.html) to see some of expected results. Furthermore, the 
+<<<<<<< HEAD
 [step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/applications/index.html#applications-step-by-step-guide) is elaborated for read-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html). 
+=======
+[step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/index.html) is elaborated for read-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html). 
+>>>>>>> 9d9b6dd288f96b2deafd81ab466715dec75e10eb
 instead. A concrete example using watex can be found in the published [case history](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623) paper.
 To conclude, a [wiki page](https://github.com/WEgeophysics/watex/wiki) can also be visited for more curiosity.
    
@@ -58,11 +62,13 @@ In most situations where **_WATex_** is cited, a citation to [scikit-learn](http
 * Python 3.9+ 
 
 
-## Contributors
-  
-1. Department of Geophysics, School of Geosciences & Info-physics, [Central South University](https://en.csu.edu.cn/), China.
-2. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny]( https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
+## contributions 
 
-* Developer: [1](https://en.csu.edu.cn/), [2](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) - [_LKouadio_](etanoyau@gmail.com) <<etanoyau@gmail.com>>
+1. Department of Geophysics, School of Geosciences & Info-physics, [Central South University](https://en.csu.edu.cn/), China.
+2. Hunan Key Laboratory of Nonferrous Resources and Geological Hazards Exploration Changsha, Hunan, China
+3. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny]( https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
+
+Developer: [1,2](https://en.csu.edu.cn/), [3](https://www.univ-fhb.edu.ci/index.php/ufr-strm/) - [_L. Kouadio_](etanoyau@gmail.com) <<etanoyau@gmail.com>>
+
 
 
