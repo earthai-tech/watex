@@ -117,7 +117,7 @@ def csv_data_loader(
     cat_feature_exist = False # for homogeneous feature control
     with resources.files(data_module).joinpath(
             data_file).open('r', encoding='utf-8') as csv_file:
-    #with resources.open_text(data_module, data_file) as csv_file:
+    # with resources.open_text(data_module, data_file) as csv_file:
         data_file = csv.reader(csv_file)
         temp = next(data_file)
         n_samples = int(temp[0]) ; n_features = int(temp[1])
