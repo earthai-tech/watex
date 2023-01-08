@@ -1,8 +1,8 @@
-<img src="docs/source/_static/logo_wide.svg"><br>
+<img src="docs/_static/logo_wide_with_trend_line_new.svg"><br>
 
 -----------------------------------------------------
 
-# A machine learning research package in hydrogeophysic
+# *WATex*: A machine learning research package in hydro-geophysics
 
 ### *Life is much better with potable water*
 
@@ -16,7 +16,7 @@
 
 ##  Goals and Missions 
 
-**_WATex_** is a Python  library for reducing numerous losses during the hydro-geophysical exploration projects (HGEP).
+**_WATex_** is a Python  package for reducing numerous losses during the hydro-geophysical exploration projects (HGEP).
   The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** such 
    as participating in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) and [Africa Agenda 2063 N1](https://au.int/en/agenda2063/flagship-projects#)  achievements.
    It encompasses different methods: DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short-periods EM, geology and hydrogeology parameters calculation methods. 

@@ -1,7 +1,7 @@
 :html_theme.sidebar_secondary.remove:
 
-*watex: machine learning in hydro-geophysics*
-================================================
+*watex: A machine learning in hydro-geophysics*
+===================================================
 
 `watex` is a Python package to bring a piece of solution faced with engineering problems encountered in the groundwater exploration (GWE) field. It uses 
 some electrical, logging and hydrogeology parameters combined with the machine learning methods to predict some water content targets such as 
