@@ -7,11 +7,10 @@
 ### *Life is much better with potable water*
 
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
- [![Build Status](https://travis-ci.com/WEgeophysics/watex.svg?branch=master)](https://travis-ci.com/WEgeophysics/watex)
  ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
   ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/WEgeophysics/watex?logo=appveyor) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6657013.svg)](https://doi.org/10.5281/zenodo.6657013)
   ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/WEgeophysics/watex?logo=python)
-  ![GitHub issues](https://img.shields.io/github/issues/WEgeophysics/watex) ![Stack Exchange reputation](https://img.shields.io/stackexchange/stackoverflow/r/1)
+  ![GitHub issues](https://img.shields.io/github/issues/WEgeophysics/watex) ![Stack Exchange reputation](https://img.shields.io/stackexchange/stackoverflow/r/3)
 
 
 ##  Goals and Missions 
@@ -29,7 +28,7 @@
 
 Visit the [package website](https://watex.readthedocs.io/en/latest/) for more resources. You can also quick browse the software [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
 and flip through the [examples page](https://watex.readthedocs.io/en/latest/general_examples.html) to see some of expected results. Furthermore, the 
-[step-by-step guide] is elaborated for read-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html). 
+[step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/applications/index.html#applications-step-by-step-guide) is elaborated for read-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html). 
 instead. A concrete example using watex can be found in the published [case history](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623) paper.
 To conclude, a [wiki page](https://github.com/WEgeophysics/watex/wiki) can also be visited for more curiosity.
    
