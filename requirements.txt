@@ -9,7 +9,6 @@ sphinx_bootstrap_theme
 sphinx-panels
 sphinx-issues
 sphinx-design
-optipng
 pillow
 jupytext
 nbsphinx 
