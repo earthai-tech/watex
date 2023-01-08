@@ -162,10 +162,10 @@ html_theme = "pydata_sphinx_theme" #'classic'"bootstrap"
 
 
 html_theme_options = {
-        "logo": {
+        #"logo": {
             # "text": "watex",
-            "image_dark":"logo.svg", #logo0.svg",
-            "alt_text": "watex",
+           # "image_dark":"logo.svg", #logo0.svg",
+            #"alt_text": "watex",
     }, 
     "icon_links": [
         {
@@ -236,7 +236,7 @@ rediraffe_redirects = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-# html_css_files = ["custom.css"]
+html_css_files = ["custom.css"]
 # todo_include_todos = True
 
 # Custom sidebar templates, must be a dictionary that maps document names
