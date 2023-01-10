@@ -12,7 +12,7 @@
   ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/WEgeophysics/watex?logo=python)
 
 
-##  Goals and Missions 
+##  Mission and Goals
 
 **_WATex_** is a Python  package for reducing losses during the hydro-geophysical exploration projects.
   The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** such 
