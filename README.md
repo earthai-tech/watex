@@ -15,12 +15,9 @@
 ##  Mission and Goals
 
 **_WATex_** is a Python  package for reducing losses during the hydro-geophysical exploration projects.
-  The main objective is, first, to bring a piece of solution in a wide program of  **_WATER4ALL_** such 
-   as participating in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) and [Africa Agenda 2063 N1](https://au.int/en/agenda2063/flagship-projects#)  achievements.
-   It encompasses the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short-periods EM, geology and hydrogeology parameters calculation methods. 
-   It is mainly focused on the field of groundwater exploration. The computing of hydro-geophysical parameters combined with the machine learning methods 
-   allow to right locate the drilling operations by predicting the water content in the well and reduce the cost of permeability coefficient (k) collection during the hydro-geophysical engineering projects. 
-   This will minimize the numerous unsucessfull drillings, k-data collection, thereby saving money for funders, state governements, geophysical and drilling ventures. 
+  Its mission is to bring a piece of solution in a wide program of  **_WATER4ALL_** such 
+   as participating in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) and [Africa Agenda 2063 N1](https://au.int/en/agenda2063/flagship-projects#)  achievements. It's mainly focused on the field of groundwater exploration. 
+   It encompasses the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short periods EM, geology and hydrogeology methods combined with the machine learning approaches to right locate the drilling operations, reduce the cost of permeability coefficient (k) collection during the hydro-geophysical engineering projects, predicting the water content in the well... It contributes to minimize the numerous unsucessfull drillings, unsustainable boreholes thereby saving money for funders, state governements, geophysical and drilling ventures. 
  
 
 ## Documentation 
