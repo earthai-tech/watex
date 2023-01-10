@@ -4,5 +4,6 @@
 Applications: Step-by-step guide 
 ----------------------------------
 
-This example shows a step-by-step guide for computing the DC-parameters, restoring tensors and analysing features.They
-converns the :mod:`watex.datasets`, :mod:`watex.methods` and :mod:`watex.view`.
+These example show a step-by-step guide for computing the DC-parameters, the mixture learning strategy to predict the permeability coefficient :math:`k`
+and restoring tensors via the modules :mod:`watex.methods` and :mod:`watex.utils.hydroutils`. The feature analyses and visualization are performed using the :mod:`watex.view` module. 
+The datasets explanation can be found in :mod:`watex.datasets`.

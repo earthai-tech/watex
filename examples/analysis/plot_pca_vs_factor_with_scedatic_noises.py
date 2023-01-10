@@ -11,6 +11,7 @@ the probabilistic PCA and FA  models by adding scedatic
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 # fetch the analysed data 
 from watex.analysis import pcavsfa 
 from watex.datasets import fetch_data 

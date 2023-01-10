@@ -9,6 +9,7 @@ regression line called a joinplot.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.datasets import fetch_data 
 from watex.view import ExPlot 
 data = fetch_data ('bagoue original').get('data=dfy1') 

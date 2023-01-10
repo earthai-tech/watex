@@ -9,6 +9,7 @@ component 'yx'
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.view.plot import TPlot 
 from watex.datasets import load_edis 
 # get some 12 samples of EDI for demo 

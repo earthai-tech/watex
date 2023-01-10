@@ -9,6 +9,7 @@ View
 :mod:`~watex.view` is dedicated for visualization purposes data from the local machine. The module deals with the parameters 
 and processing spaces  and yields multiples plots for data exploration, features analysis, features discussion, 
 tensor recovery, model inspection, and evaluation.  :mod:`~watex.view`  is divided in two sub-modules: 
+
 * :mod:`~watex.view.plot` for handling the params space plots via  :class:`~watex.view.ExPlot`, :class:`~watex.view.QuickPlot`, and :class:`~watex.view.TPlot`. 
 * :mod:`~watex.view.mlplot` for handling the processing space plot through the :class:`~watex.view.EvalPlot` as well as many other functions. 
 
@@ -16,7 +17,8 @@ All the classes implemented in :mod:`~watex.view` module from :class:`~watex.pro
 All arguments from this class can be used for customize the plots. Refer to :class:`~watex.property.Baseplots` to know the 
 acceptables attributes for that class for plot customizing. 
 
-Furthermore, note the existence of the `tname` and `pkg` parameters passed mostly to the :mod:`~watex.view`  module classes.
+Furthermore, note the existence of the `tname` and `pkg` parameters passed mostly to the :mod:`~watex.view`  module classes:
+
 * `tname`: always str, is  the target name or label. In supervised learning the target name is considered as the reference name of :math:`y` or label variable:  
 * `pkg`: always str, Optional by default, is the kind or library to use for visualization. can be ['yb'|'msn'|'sns'|'pd']  for 'yellowbrick'[1]_ , 'missingno', 'seaborn' or 'pandas' respectively. 
 	Mosyly the default value for `pkg` is ``pd`` or ``sns``.  To install these packages, use ``pip`` or ``conda``. Note that the `pkg` parameter is specific for each plotting method, is not passed to `__init__` method. 
@@ -318,11 +320,12 @@ The remains two gives another representations of missing data.
 Originally, it was designed for the flow rate (`FR`) prediction during the drinking water supply campaign (DWSC) [2]_. The parameters `mapflow` and `classes` work together and usefull when 
 flow data is passed to :meth:`~watex.view.plot.QuickPlot.fit`. Once `mapflow` is set to ``True``, the flow target :math:`y` should be 
 turned to categorical values encoded  referring to the type of types of hydraulic system commonly recommended during the DWSC. Mostly 
-the hydraulic system is tied to the number of living inhabitants in the survey area [3]_. For instance:: 
-	* FR = 0 is for dry boreholes (FR0)
-	* 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants) (FR1)
-	* 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) (FR2)
-	* 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants)(FR3)
+the hydraulic system is tied to the number of living inhabitants in the survey area [3]_. For instance:
+
+* FR = 0 is for dry boreholes (FR0)
+* 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants) (FR1)
+* 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) (FR2)
+* 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants)(FR3)
     
 Note that this flow range passed by default when `mapflow=True` is not exhaustive and can be modified according to the type of hydraulic 
 required on each project project. 
@@ -374,7 +377,6 @@ features names at least 04 and discuss with their distribution. Here is a basic 
 
 :meth:`~watex.view.QuickPlot.discussingfeatures` maps a dataset onto multiple axes arrayed in a grid of rows and columns that 
 correspond to levels of features in the dataset. Here is a snippet codes for a concrete example: 
-
 
 .. code-block:: python 
 
@@ -518,7 +520,6 @@ this demonstration, we will change a little bit the target name to ohmic-area `o
 in the data. Note, rather than mapping the flow with parameter `mapflow`, we use the function :func:`~watex.utils.funcutils.smart_label_classifier` to 
 categorize the numerical `ohmS` values into three classes called `oarea` such as :math:`oarea1 :ohmS \leq 1000 \Omega.m^2` encoded to `{0}`, 
 :math:`oarea2 :1000 <ohmS \leq 2000 \Omega.m^2` encoded to `{1}` and :math:`oarea3 : oa3 > 2000 \Omega.m^2` encoded to `{2}`.  The code snippet is given below:
-
 
 .. code-block:: python 
 

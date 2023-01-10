@@ -18,15 +18,11 @@ Steps behind the principal component analysis (PCA) and matrices decomposition
 `Extract PCA` 
 ---------------
 
-A naive approach to extract PCA from training set :math:`X` 
+A naive approach to extract PCA from training set :math:`X`.
 
 .. note:: 
 
-	All consequent principal component (PC) will have the larget variance 
-	given the constraint that these component are uncorrelated (orthogonal)  
-	to other PC - even if the inputs features are corralated , the 
-	resulting of pc will be mutually orthogonal (uncorelated). 
-	Note that the PCA directions are highly sensistive to data scaling and we 
+	The PCA directions are highly sensistive to data scaling and we 
 	need to standardize the features prior to PCA if the features were measured 
 	on different scales and we assign equal importances of all features.   
 	Moreover, the numpy function was designed to operate on both symetric and non-symetric 
@@ -144,42 +140,30 @@ that optimize class separability.
 
 The main steps requiered to perform LDA are summarized below: 
     
-1. Standardize the d-dimensional datasets (d is the number of features)
-2. For each class , compute the d-dimensional mean vectors. Thus for 
-	each mean feature value, :math:`\mu_m` with respect to the examples
-	of class :math:`i`: 
+* Standardize the d-dimensional datasets (:math:`d` is the number of features)
+* For each class , compute the d-dimensional mean vectors. Thus for 
+  each mean feature value, :math:`\mu_m` with respect to the examples of class :math:`i`: 
 		
 .. math:: m_i = \frac{1}{n_i} \sum{x\in D_i} x_m 
 		
-3. Construct the between-clas scatter matrix, :math:`S_B` and the 
-	within class scatter matrix, :math:`S_W`. 
-	Individual scatter matrices are scalled :math:`S_i` before we sum 
-	them up as scatter matrix :math:`S_W` as: 
+* Construct the between-clas scatter matrix, :math:`S_B` and the within class scatter matrix, :math:`S_W`. 
+  Individual scatter matrices are scalled :math:`S_i` before we sum them up as scatter matrix :math:`S_W` as: 
 		
 .. math:: 
 	
 	\sum{i} = \frac{1}{n_i}S_i = \frac{1}{n_i} \sum{x\in D_i} (x-m_i)(x-m_i)^T
 			
-The within-class is also called the covariance matrix, thus we cam 
-compute the between class scatter_matrix :math:`S_B`. 
+The within-class is also called the covariance matrix, thus we can compute the between class scatter_matrix :math:`S_B` as:
 
 .. math:: S_B= \sum{i}^{n_i}(m_i-m) (m_i-m)^T 
 	
-where :math:`m` is the overall mean that is computed , including 
-examples from all classes. 
+where :math:`m` is the overall mean that is computed including examples from all classes. 
 
-4. Compute the eigenvectors and corresponding eigenvalues of the matrix 
-	:math:`S_W^{-1}S_B`. 
-	
-5. Sort the eigenvalues by decreasing order to rank the corresponding 
-	eigenvectors 
-	
-6. Choose the :math:`k` eigenvectors that correspond to the :math:`k` 
-	largest eigenvalues to construct :math:`dxk`-dimensional 
-	transformation matrix, :math:`W`; the eigenvectors are the columns 
-	of this matrix. 
-7. project the examples onto the new_features subspaces using the 
-transformation matrix :math:`W`. 
+* Compute the eigenvectors and corresponding eigenvalues of the matrix :math:`S_W^{-1}S_B`. 
+* Sort the eigenvalues by decreasing order to rank the corresponding eigenvectors 
+* Choose the :math:`k` eigenvectors that correspond to the :math:`k` largest eigenvalues to construct :math:`dxk`-dimensional 
+  transformation matrix, :math:`W`; the eigenvectors are the columns of this matrix. 
+* Project the examples onto the new_features subspaces using the transformation matrix :math:`W`. 
 
 .. topic:: Examples: 
 
@@ -374,7 +358,7 @@ the probabilistic PCA and FA  models.
 	([-13.35021821995266, -13.376979159782895],
 	[-13.340444115947667, -13.392643293410558])
 	
-The output PCA and FA score with homo vs hetero_scedatic noises 
+The output PCA and FA score with homo vs hetero_scedatic noises:
 
 .. |homo_scedatic| image:: ../examples/auto_examples/analysis_factor_compare_pca_and_factor_analysis_homoscedastic.png
    :target: ../examples/auto_examples/analysis_factor_compare_pca_and_factor_analysis_homoscedastic.html
@@ -398,9 +382,9 @@ The output PCA and FA score with homo vs hetero_scedatic noises
 :func:`~watex.analysis.factor.make_scedastic_data` generates a sampling data for probabilistic PCA and Factor Analysis 
 model comparison. By default: 
  
-	* nsamples    = 1000 
-	* n_features  = 50  
-	* rank        =10 
+* nsamples    = 1000 
+* n_features  = 50  
+* rank        =10 
         
 	
 .. topic:: Examples: 

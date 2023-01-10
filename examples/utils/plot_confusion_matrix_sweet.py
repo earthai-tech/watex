@@ -8,7 +8,8 @@ plots a confusion matrix using the 'yellowbrick' package.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
-#Import the required models and fetch a an extreme gradient boosting 
+#%%
+#Import the required models and fetch an extreme gradient boosting 
 # for instance then plot the confusion metric 
 import matplotlib.pyplot as plt 
 plt.style.use ('classic')

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>watex: A machine learning in hydro-geophysics &#8212; watex 0.1.2 documentation</title>
+    <title>watex: A machine learning in hydro-geophysics &#8212; watex 0.1.3 documentation</title>
   
   
   
@@ -38,7 +38,7 @@
     <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=0.1.2" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=0.1.3" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=796348d33e8b1d947c94">
@@ -57,7 +57,7 @@
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="About" href="about.html" />
+    <link rel="next" title="Installing" href="installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="docsearch:language" content="en">
   </head>
@@ -132,22 +132,15 @@
     <ul id="navbar-main-elements" class="navbar-nav">
         
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="about.html">
-                            About
-                      </a>
-                    </li>
-                
-
-                    <li class="nav-item">
                       <a class="nav-link nav-internal" href="installation.html">
-                            Installing
+                            Install
                       </a>
                     </li>
                 
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="api_references.html">
-                        API
+                            API
                       </a>
                     </li>
                 
@@ -161,7 +154,14 @@
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="glr_examples/index.html">
-                            Examples
+                        Examples
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="about.html">
+                            About
                       </a>
                     </li>
                 
@@ -195,6 +195,14 @@
 </button>
         </div>
       
+      
+      <div class="navbar-end-item">
+        <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+</button>
+      </div>
       
       <div class="navbar-end-item">
         <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
@@ -248,6 +256,10 @@
   
 
   
+  <label class="sidebar-toggle secondary-toggle" for="__secondary">
+      <span class="fa-solid fa-outdent"></span>
+  </label>
+  
 
 </div>
   </nav>
@@ -272,22 +284,15 @@
     <ul id="navbar-main-elements" class="navbar-nav">
         
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="about.html">
-                            About
-                      </a>
-                    </li>
-                
-
-                    <li class="nav-item">
                       <a class="nav-link nav-internal" href="installation.html">
-                            Installing
+                            Install
                       </a>
                     </li>
                 
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="api_references.html">
-                        API
+                            API
                       </a>
                     </li>
                 
@@ -301,7 +306,14 @@
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="glr_examples/index.html">
-                            Examples
+                        Examples
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="about.html">
+                            About
                       </a>
                     </li>
                 
@@ -330,6 +342,14 @@
     
     
     <div class="sidebar-header-items__end">
+      
+      <div class="navbar-end-item">
+        <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+</button>
+      </div>
       
       <div class="navbar-end-item">
         <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
@@ -400,52 +420,37 @@
               
   <section id="watex-a-machine-learning-in-hydro-geophysics">
 <h1><em>watex: A machine learning in hydro-geophysics</em><a class="headerlink" href="#watex-a-machine-learning-in-hydro-geophysics" title="Permalink to this headline">#</a></h1>
-<p><cite>watex</cite> is a Python package to bring a piece of solution faced with engineering problems encountered in the groundwater exploration (GWE) field. It uses
-some electrical, logging and hydrogeology parameters combined with the machine learning methods to predict some water content targets such as
-the flow rate and the costly hydrogeological parameters(e.g. the permeabilty coefficient <cite>k</cite> related to the water inrush). <cite>watex</cite> expects contributing in
-the <a class="reference external" href="https://unric.org/en/sdg-6/">Sustainable Development Goals n 6</a>  and the <a class="reference external" href="https://au.int/en/agenda2063/flagship-projects">Africa-Union Agenda 2063n1</a>
-achievements for the rural and urban population welfare. To read more about the ideas behind the design of the package, check the <a class="reference internal" href="about.html#about"><span class="std std-ref">introductory notes</span></a> instead. To get started with
-the package, you can visit the <a class="reference internal" href="installation.html#installation"><span class="std std-ref">installation page</span></a> to see how to download it. You can also browse the
-<a class="reference internal" href="user_guide.html#user-guide"><span class="std std-ref">user guide</span></a> to go deeper in the different methods implemented ( geology, geophysical and hydrogeology)
-supported by theories and concrete examples. To find out with <cite>watex</cite>, visit the <a class="reference internal" href="api_references.html#api-ref"><span class="std std-ref">API reference</span></a>. Finally, you can
-flip through the <a class="reference internal" href="glr_examples/index.html"><span class="doc">examples</span></a> to see some of expected results you can get using the software.</p>
-<p>To report a bug or contributing for the software development, please visit the <a class="reference external" href="https://github.com/WEgeophysics/watex">GitHub repository</a>.</p>
-<div class="sphinx-bs container pb-4 docutils">
-<div class="row docutils">
-<div class="d-flex col-lg-6 col-md-6 col-sm-6 col-xs-12 p-2 docutils">
-<div class="card w-100 shadow docutils">
-<div class="card-header docutils">
-<p class="card-text"><strong>Contents</strong></p>
+<div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
+<div class="sd-row sd-row-cols-1 sd-row-cols-xs-1 sd-row-cols-sm-1 sd-row-cols-md-3 sd-row-cols-lg-3 docutils">
+<div class="sd-col sd-d-flex-row sd-col-12 sd-col-xs-12 sd-col-sm-12 sd-col-md-10 sd-col-lg-10 docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold sd-fs-5 docutils">
+Synopsis</div>
+<p class="sd-card-text"><cite>WATex</cite> is a Python package focused on the groundwater exploration field. It brings piece solutions to minimize the losses
+during the hydro-geophysical engineering projects. It uses the geophysical methods combined with the machine learning approaches
+to predict some water content targets. More about the ideas behind the package can be found in the <a class="reference internal" href="about.html#about"><span class="std std-ref">introductory notes</span></a>.</p>
+<p class="sd-card-text">To getting started with the software, refer to the <a class="reference internal" href="installation.html#installation"><span class="std std-ref">installation guide</span></a>. You can also browse
+the <a class="reference internal" href="glr_examples/index.html"><span class="doc">examples</span></a> page to see some of the expected results you can achieve using the software.
+The <a class="reference internal" href="user_guide.html#user-guide"><span class="std std-ref">user guide</span></a> is more in-depth guide about the different methods implemented supported by theories and concrete examples.</p>
 </div>
-<div class="card-body text-justify docutils">
+</div>
+</div>
+<div class="sd-col sd-d-flex-row sd-col-12 sd-col-xs-12 sd-col-sm-12 sd-col-md-2 sd-col-lg-2 docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm docutils">
+<div class="sd-card-body sd-pl-3 docutils">
+<div class="sd-card-title sd-font-weight-bold sd-fs-5 docutils">
+Contents</div>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="about.html">    About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">    Installing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api_references.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">    Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_references.html">    API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="user_guide.html">    User Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="glr_examples/index.html">    Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glr_examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">    About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="citing.html">Citing</a></li>
 </ul>
 </div>
-</div>
-</div>
-</div>
-<div class="d-flex col-lg-6 col-md-6 col-sm-6 col-xs-12 p-2 docutils">
-<div class="card w-100 shadow docutils">
-<div class="card-header docutils">
-<p class="card-text"><strong>Features</strong></p>
-</div>
-<div class="card-body docutils">
-<ul class="simple">
-<li><p class="card-text"><span class="sd-sphinx-override sd-badge sd-bg-secondary sd-bg-text-secondary">New</span> Objects: <a class="reference internal" href="api_references.html#api-ref"><span class="std std-ref">API</span></a> | <a class="reference internal" href="glr_examples/index.html#general-examples"><span class="std std-ref">Tutorial</span></a></p></li>
-<li><p class="card-text">Analysis: <a class="reference internal" href="api_references.html#analysis-ref"><span class="std std-ref">API</span></a> | <a class="reference internal" href="glr_examples/analysis/index.html#analysis-examples"><span class="std std-ref">Tutorial</span></a></p></li>
-<li><p class="card-text">Base methods: <a class="reference internal" href="api_references.html#base-ref"><span class="std std-ref">API</span></a> | <a class="reference internal" href="glr_examples/base/index.html#base-examples"><span class="std std-ref">Tutorial</span></a></p></li>
-<li><p class="card-text">Case history: <a class="reference internal" href="api_references.html#cases-ref"><span class="std std-ref">API</span></a> | <a class="reference internal" href="glr_examples/applications/index.html#applications-examples"><span class="std std-ref">Tutorial</span></a></p></li>
-<li><p class="card-text">Utilities : <a class="reference internal" href="api_references.html#utils-ref"><span class="std std-ref">API</span></a> | <a class="reference internal" href="glr_examples/utils/index.html#utils-examples"><span class="std std-ref">Tutorial</span></a></p></li>
-<li><p class="card-text">DC &amp; EM Methods: <a class="reference internal" href="api_references.html#methods-ref"><span class="std std-ref">API</span></a> | <a class="reference internal" href="glr_examples/methods/index.html#methods-examples"><span class="std std-ref">Tutorial</span></a></p></li>
-<li><p class="card-text">Visualization: <a class="reference internal" href="api_references.html#view-ref"><span class="std std-ref">API</span></a> | <a class="reference internal" href="glr_examples/view/index.html#view-examples"><span class="std std-ref">Tutorial</span></a></p></li>
-</ul>
 </div>
 </div>
 </div>
@@ -461,6 +466,29 @@ flip through the <a class="reference internal" href="glr_examples/index.html"><s
           </div>
           
           
+          
+            <div class="bd-sidebar-secondary bd-toc">
+              
+<div class="toc-item">
+  
+<div id="searchbox"></div>
+</div>
+
+<div class="toc-item">
+  
+</div>
+
+<div class="toc-item">
+  
+<div class="tocsection sourcelink">
+    <a href="_sources/index.rst.txt">
+        <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+</div>
+
+</div>
+
+            </div>
           
           
         </div>
@@ -480,37 +508,25 @@ flip through the <a class="reference internal" href="glr_examples/index.html"><s
   <script src="_static/scripts/bootstrap.js?digest=796348d33e8b1d947c94"></script>
 <script src="_static/scripts/pydata-sphinx-theme.js?digest=796348d33e8b1d947c94"></script>
 
-  <footer class="bd-footer"><div class="bd-footer__inner container">
-  
-  <div class="footer-item">
-    
-<p class="copyright">
-
-    &copy; Copyright 2012-2023.<br>
-
-</p>
-
+<footer class="footer" style="border-top: 1px solid #ccc; padding-top: 10px">
+  <div class="container">
+    <div id="credits" style="width: 50%; float: left">
+      <p>
+      &#169; Copyright 2012-2023, <a href="https://etanoyau@gmail.com">L. Kouadio</a>.<br/>
+      Created using the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/">PyData Sphinx Theme</a> 0.12.0 and <a href="https://www.sphinx-doc.org/">Sphinx </a>5.3.0.<br/>
+      </p>
+    </div>
+    <div class="dropup show" style="float: right; margin: 10px; color: #9EB3DD">
+        <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Release
+        </a>
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuLink">
+          <a class="dropdown-item" href="https://watex.readthedocs.io/en/latest/index.html">v0.1.3</a>
+        </div>
+    </div>
+    <div id="version" style="color: #9999; float: right; margin: 15px">v0.1.3</div>
+    </div>
   </div>
-  
-  <div class="footer-item">
-    <p class="theme-version">
-    Built with the
-    <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">
-        PyData Sphinx Theme
-    </a>
-    0.12.0.
-</p>
-  </div>
-  
-  <div class="footer-item">
-    
-<p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.5.0.<br>
-</p>
-
-  </div>
-  
-</div>
-  </footer>
+</footer>
   </body>
 </html>

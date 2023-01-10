@@ -10,7 +10,7 @@ a ['pearson'|'spearman'|'covariance'] correlation.
 # Licence: BSD-3-clause
 
 #%%
-# Plot the numerical paiwise correlation 
+# Plot the numerical pairwise correlation 
 from watex.datasets import fetch_data 
 from watex.view import ExPlot 
 from watex.utils import bi_selector 

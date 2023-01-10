@@ -9,6 +9,7 @@ hydrogeophysical features
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 import matplotlib.pyplot as plt 
 from watex.datasets import load_hlogs 
 from watex.methods.hydro import Logging 

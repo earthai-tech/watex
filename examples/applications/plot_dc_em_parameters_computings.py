@@ -9,6 +9,7 @@ naive aquifer group (NGA) for prediction purposes
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
+
 #%% 
 # Import required modules 
 import numpy as np 

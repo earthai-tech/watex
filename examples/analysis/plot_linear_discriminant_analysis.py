@@ -11,6 +11,7 @@ due to the curse of dimensionality in non-regularized models.
 # Author: L.Kouadio 
 # Licence: BSD-3 clause
 
+#%%
 from watex.datasets import fetch_data 
 from watex.utils import selectfeatures
 from watex.exlib.sklearn import SimpleImputer  

@@ -5,8 +5,7 @@ Citing
 =============
 
 
-:code:`watex` is under-review in `computers and geosciences journal <https://www.sciencedirect.com/journal/computers-and-geosciences/>`_ for a scientific publication. 
-However, we appreciate to cite the paper implementing watex in a case history software below if the software is used in any scientific publication.
+We appreciate to cite the paper below if the software is used in any scientific publication.
 It has been published in the `Water Resources Research journal <https://doi.org/10.1029/2021wr031623>`_.
 Here is a ready-made BibTeX entry:
 

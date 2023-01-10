@@ -8,6 +8,7 @@ plots mutiple site/stations tensor with recovery signals
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.view.plot import TPlot 
 from watex.datasets import load_edis 
 # takes the 03 samples of EDIs 

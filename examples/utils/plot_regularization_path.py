@@ -9,6 +9,7 @@ modifying at every iteration a bit more the  different regularization strengths.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
+#%%
 import matplotlib.pyplot as plt 
 from watex.utils.plotutils import plot_regularization_path 
 from watex.datasets import fetch_data

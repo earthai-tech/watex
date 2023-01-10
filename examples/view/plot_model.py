@@ -10,8 +10,9 @@ correctly the target.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
-# (1)-> Prepare our data - Use analysis data of Bagoue dataset 
-#         since data is alread scaled and imputed
+# %%
+# * Prepare our data - Use analysis data of Bagoue dataset since data 
+# is alread scaled and imputed
             
 from watex.exlib.sklearn  import SVC 
 from watex.datasets import fetch_data 
@@ -24,7 +25,7 @@ _, Xtest = split_train_test_by_id(X,
                         )
 _, ytest = split_train_test_by_id(y, .3 , keep_colindex =False) 
     
-# (2)-> prepared our demo estimator and plot model predicted 
+# * prepared our demo estimator and plot model predicted 
    
 svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
 base_plot_params ={
@@ -61,4 +62,4 @@ plotModel(yt= ytest ,
         labels=['FR0', 'FR1', 'FR2', 'FR3'], # replace 'y' labels. 
         **base_plot_params 
                    )
-# plot show where the model failed to predict the target 'yt'
+# plot shows where the model failed to predict the target 'yt'

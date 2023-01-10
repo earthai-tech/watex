@@ -80,58 +80,56 @@ As with many things in machine learning , there are no hard answers for how
 to treat a missing data. Also, missing data could  represent different 
 situations. There are three warious way to handle missing data: 
 	
-	* Remove any row with missing data 
-	* Remove any columns with missing data 
-	* Impute missing values 
-	* Create an indicator columns to indicator data was missing 
+* Remove any row with missing data 
+* Remove any columns with missing data 
+* Impute missing values 
+* Create an indicator columns to indicator data was missing 
 	
 :class:`Missing` inherits from :class:`Data`  and use :mod:`missingno`. Install 
 the package :code:`missingno` for taking advantage of many missing plot. The parameter `kind` is 
 passed to :class:`Missing` for selecting the kind of plot for visualisation: 
 
-	* ``bar`` plot counts the  non-missing data  using pandas
-	* ``mbar`` uses the :mod:`msno` package to count the number 
-		of non-missing data. 
-	* ``dendrogram`` show the clusterings of where the data is missing. 
-		leaves that are the same level predict one onother presence 
-		(empty of filled). The vertical arms are used to indicate how  
-		different cluster are. short arms mean that branch are 
-		similar. 
-	* ``corr`` creates a heat map showing if there are correlations 
-		where the data is missing. In this case, it does look like 
-		the locations where missing data are corollated.
-	* ``None`` is the default vizualisation. It is useful for viewing 
-		contiguous area of the missing data which would indicate that 
-		the missing data is  not random. The :code:`matrix` function 
-		includes a sparkline along the right side. Patterns here would 
-		also indicate non-random missing data. It is recommended to limit 
-		the number of sample to be able to see the patterns. 
+* ``bar`` plot counts the  non-missing data  using pandas
+* ``mbar`` uses the :mod:`msno` package to count the number 
+	of non-missing data. 
+* ``dendrogram`` show the clusterings of where the data is missing. 
+	leaves that are the same level predict one onother presence 
+	(empty of filled). The vertical arms are used to indicate how  
+	different cluster are. short arms mean that branch are 
+	similar. 
+* ``corr`` creates a heat map showing if there are correlations 
+	where the data is missing. In this case, it does look like 
+	the locations where missing data are corollated.
+* ``None`` is the default vizualisation. It is useful for viewing 
+	contiguous area of the missing data which would indicate that 
+	the missing data is  not random. The :code:`matrix` function 
+	includes a sparkline along the right side. Patterns here would 
+	also indicate non-random missing data. It is recommended to limit 
+	the number of sample to be able to see the patterns. 
 
-	Any other value will raise an error 
-            
-	For instance::
-	
-		>>> from watex.base import Missing
-		>>> data ='data/geodata/main.bagciv.data.csv' 
-		>>> ms= Missing().fit(data) 
-		>>> # Check the mean values  in the data  in percentage
-		>>> ms.isnull 
-		num          0.000000
-		name         0.000000
-		east         0.000000
-		north        0.000000
-		power        0.000000
-		magnitude    0.000000
-		shape        0.000000
-		type         0.000000
-		sfi          0.013921
-		ohmS         0.016241
-		lwi          0.032483
-		geol         0.000000
-		flow         0.000000
-		dtype: float64
-		>>> ms.kind='corr'
-		>>> ms.plot(figsize = (12, 4 )) 
+Any other value will raise an error. For instance::
+
+	>>> from watex.base import Missing
+	>>> data ='data/geodata/main.bagciv.data.csv' 
+	>>> ms= Missing().fit(data) 
+	>>> # Check the mean values  in the data  in percentage
+	>>> ms.isnull 
+	num          0.000000
+	name         0.000000
+	east         0.000000
+	north        0.000000
+	power        0.000000
+	magnitude    0.000000
+	shape        0.000000
+	type         0.000000
+	sfi          0.013921
+	ohmS         0.016241
+	lwi          0.032483
+	geol         0.000000
+	flow         0.000000
+	dtype: float64
+	>>> ms.kind='corr'
+	>>> ms.plot(figsize = (12, 4 )) 
 		
 The `corr` argument passed to parameter `kind` output the following picture: 
 
@@ -164,15 +162,15 @@ stage can simply be the defined as the feature that maximizes this
 criterion; or in more simple terms, at each stage, the feature that causes 
 the least performance is eliminated loss after removal. Based on the 
 preceding definition of SBS, the algorithm can be outlibe with a few steps:
-	
-	- Initialize the algorithm with :math:`k=d`, where :math:`d` is the 
-		dimensionality of the full feature space, :math:`X_d`. 
-	- Determine the feature :math:`x^{-}`,that maximizes the criterion: 
-		:math:`x^{-}= argmax J(X_k-x)`, where :math:`x\in X_k`. 
-	- Remove the feature :math:`x^{-}` from the feature set 
-		:math:`X_{k+1}= X_k -x^{-}; k=k-1`.
-	- Terminate if :math:`k` equals to the number of desired features; 
-		otherwise go to the step 2. [2]_ 
+
+* Initialize the algorithm with :math:`k=d`, where :math:`d` is the 
+	dimensionality of the full feature space, :math:`X_d`. 
+* Determine the feature :math:`x^{-}`,that maximizes the criterion: 
+	:math:`x^{-}= argmax J(X_k-x)`, where :math:`x\in X_k`. 
+* Remove the feature :math:`x^{-}` from the feature set 
+	:math:`X_{k+1}= X_k -x^{-}; k=k-1`.
+* Terminate if :math:`k` equals to the number of desired features; 
+	otherwise go to the step 2. [2]_ 
 
 		
 .. topic:: Examples:
@@ -200,11 +198,12 @@ could them be used to predict whether a new data points belongs to one
 class or the other [4]_. 
 
 Rosenblatt initial perceptron rule and the perceptron algorithm can be 
-summarized by the following steps: 
-	- initialize the weights at 0 or small random numbers. 
-	- For each training examples, :math:`x^{(i)}` :
-		- Compute the output value :math:`\hat{y}` . 
-		- update the weighs. 
+summarized by the following steps:
+ 
+* initialize the weights at 0 or small random numbers. 
+* For each training examples, :math:`x^{(i)}` :
+	* Compute the output value :math:`\hat{y}` . 
+	* update the weighs. 
 the weights :math:`w` vector can be fromally written as:
 	
 .. math:: w := w_j + \delta w_j
@@ -224,7 +223,7 @@ the weights :math:`w` vector can be fromally written as:
 Majority Vote Classifier 
 ==========================
 
- A majority vote Ensemble classifier combines different classification algorithms associate with individual 
+A majority vote Ensemble classifier combines different classification algorithms associate with individual 
 weights for confidence. The goal is to build a stronger meta-classifier 
 that balance out of the individual classifiers weaknes on a particular  
 datasets. In more precise in mathematical terms, the weighs majority 
@@ -269,7 +268,7 @@ is simplified as follow:
                            ('clf', clf3)])
     
 
-* (1): Test the each classifier results taking individually 
+* Test the each classifier results taking individually 
     
 .. code-block:: python 
 
@@ -284,7 +283,7 @@ is simplified as follow:
         ROC AUC: 0.73 (+/- 0.07) [DTC]
         ROC AUC: 0.77 (+/- 0.09) [KNN]
     
-* (2): Implement the MajorityVoteClassifier for reducing errors 
+* Implement the MajorityVoteClassifier for reducing errors 
     
 .. code-block:: python  
 

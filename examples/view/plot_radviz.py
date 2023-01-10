@@ -10,6 +10,7 @@ figure has a spring that pulls samples to it based on the value.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.datasets import fetch_data 
 from watex.view import ExPlot 
 # visualization using the yellowbrick package 

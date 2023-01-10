@@ -8,6 +8,7 @@ Inspect model from its learning curve.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 
 from watex.datasets import fetch_data
 from watex.models.premodels import p 

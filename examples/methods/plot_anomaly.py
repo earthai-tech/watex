@@ -9,6 +9,7 @@ operations.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 # For demonstration,  the station is not specified, the algorithm will find the best 
 # conductive zone based on the resistivity values and will store the value in 
 # attribute `sves_` (position to make a drill). The auto-detection can be used 

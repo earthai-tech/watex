@@ -10,6 +10,44 @@ function raw specifications may not be enough to give full guidelines on their
 uses.
 For reference on concepts repeated across the API, see :ref:`glossary`.
 
+.. _analysis_ref:
+
+:mod:`watex.analysis`: Analyses
+=======================================================
+
+The module is a set of feature extraction and selection, matrices decomposition and features analyses.
+
+.. automodule:: watex.analysis
+   :no-members:
+   :no-inherited-members:
+
+**User guide:** See the :ref:`analysis <analysis>` section for further details.
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+	analysis.LLE
+	analysis.pcavsfa
+	analysis.compute_scores
+	analysis.decision_region
+	analysis.extract_pca
+	analysis.feature_transformation
+	analysis.find_features_importances
+	analysis.get_component_with_most_variance
+	analysis.iPCA
+	analysis.kPCA
+	analysis.linear_discriminant_analysis
+	analysis.lw_score
+	analysis.make_scedastic_data
+	analysis.nPCA
+	analysis.plot_projection
+	analysis.shrunk_cov_score
+	analysis.total_variance_ratio
+	
+	
 .. _base_ref:
 
 :mod:`watex.base`: Base classes and functions
@@ -51,64 +89,6 @@ Functions
    base.existfeatures
    base.get_params
    base.selectfeatures
-
-.. _cli_ref:
-
-:mod:`watex.cli`: Command line Interface
-============================================
-
-The CLI does not work yet. Should be available for  the next release 
-
-.. automodule:: watex.cli
-   :no-members:
-   :no-inherited-members:
-
-.. currentmodule:: watex
-
-.. autosummary::
-   :toctree: generated/
-   :template: function.rst
-
-   cli.PluginGroup.get_command
-   cli.PluginGroup.list_commands
-
-.. _analysis_ref:
-
-
-:mod:`watex.analysis`: Analyses
-=======================================================
-
-The module is a set of feature extraction and selection, matrices decomposition and features analyses.
-
-.. automodule:: watex.analysis
-   :no-members:
-   :no-inherited-members:
-
-**User guide:** See the :ref:`analysis <analysis>` section for further details.
-
-.. currentmodule:: watex
-
-.. autosummary::
-   :toctree: generated/
-   :template: function.rst
-
-	analysis.LLE
-	analysis.pcavsfa
-	analysis.compute_scores
-	analysis.decision_region
-	analysis.extract_pca
-	analysis.feature_transformation
-	analysis.find_features_importances
-	analysis.get_component_with_most_variance
-	analysis.iPCA
-	analysis.kPCA
-	analysis.linear_discriminant_analysis
-	analysis.lw_score
-	analysis.make_scedastic_data
-	analysis.nPCA
-	analysis.plot_projection
-	analysis.shrunk_cov_score
-	analysis.total_variance_ratio
 
 .. _cases_ref:
 
@@ -176,7 +156,75 @@ Functions
 	datasets.load_tankesse
 	datasets.make_erp 
 	datasets.make_ves 
+	
+.. _edi_ref:
 
+:mod:`watex.edi`: Electrical Data Interchange 
+==============================================
+
+.. automodule:: watex.edi
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: class.rst
+
+   edi.Edi 
+
+.. _exceptions_ref:
+
+:mod:`watex.exceptions`: Exceptions 
+=====================================
+
+.. automodule:: watex.exceptions
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: class.rst
+
+	exceptions.AquiferGroupError
+	exceptions.ArgumentError
+	exceptions.ConfigError
+	exceptions.CoordinateError
+	exceptions.DatasetError
+	exceptions.DepthError
+	exceptions.EDIError
+	exceptions.EMError
+	exceptions.ERPError
+	exceptions.EstimatorError
+	exceptions.ExtractionError
+	exceptions.FeatureError
+	exceptions.FileHandlingError
+	exceptions.FrequencyError
+	exceptions.GISError
+	exceptions.GeoArgumentError
+	exceptions.GeoDatabaseError
+	exceptions.GeoPropertyError
+	exceptions.HeaderError
+	exceptions.HintError
+	exceptions.LearningError
+	exceptions.NotFittedError
+	exceptions.ParameterNumberError
+	exceptions.PlotError
+	exceptions.ProcessingError
+	exceptions.ResistivityError
+	exceptions.SQLError
+	exceptions.SQLManagerError
+	exceptions.ScikitLearnImportError
+	exceptions.SiteError
+	exceptions.StationError
+	exceptions.StrataError
+	exceptions.TipError
+	exceptions.TopModuleError
+	exceptions.VESError
+	exceptions.kError
 
 .. _externals_ref:
 
@@ -295,7 +343,26 @@ Functions
    :toctree: generated/
    :template: function.rst
 
+.. _metrics_ref:
 
+:mod:`watex.metrics`: Metrics 
+=====================================================
+
+.. automodule:: watex.metrics
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+   metrics.ROC_curve
+   metrics.confusion_matrix
+   metrics.precision_recall_tradeoff
+   
+   
 .. _models_ref:
 
 :mod:`watex.models`:  Models
@@ -335,94 +402,6 @@ Functions
 	models.get_best_kPCA_params
 	models.get_scorers
 
-.. _exceptions_ref:
-
-:mod:`watex.exceptions`: Exceptions 
-=====================================
-
-.. automodule:: watex.exceptions
-   :no-members:
-   :no-inherited-members:
-
-.. currentmodule:: watex
-
-.. autosummary::
-   :toctree: generated/
-   :template: class.rst
-
-	exceptions.AquiferGroupError
-	exceptions.ArgumentError
-	exceptions.ConfigError
-	exceptions.CoordinateError
-	exceptions.DatasetError
-	exceptions.DepthError
-	exceptions.EDIError
-	exceptions.EMError
-	exceptions.ERPError
-	exceptions.EstimatorError
-	exceptions.ExtractionError
-	exceptions.FeatureError
-	exceptions.FileHandlingError
-	exceptions.FrequencyError
-	exceptions.GISError
-	exceptions.GeoArgumentError
-	exceptions.GeoDatabaseError
-	exceptions.GeoPropertyError
-	exceptions.HeaderError
-	exceptions.HintError
-	exceptions.LearningError
-	exceptions.NotFittedError
-	exceptions.ParameterNumberError
-	exceptions.PlotError
-	exceptions.ProcessingError
-	exceptions.ResistivityError
-	exceptions.SQLError
-	exceptions.SQLManagerError
-	exceptions.ScikitLearnImportError
-	exceptions.SiteError
-	exceptions.StationError
-	exceptions.StrataError
-	exceptions.TipError
-	exceptions.TopModuleError
-	exceptions.VESError
-	exceptions.kError
-
-.. _edi_ref:
-
-:mod:`watex.edi`: Electrical Data Interchange 
-==============================================
-
-.. automodule:: watex.edi
-   :no-members:
-   :no-inherited-members:
-
-.. currentmodule:: watex
-
-.. autosummary::
-   :toctree: generated/
-   :template: class.rst
-
-   edi.Edi 
-
-
-.. _metrics_ref:
-
-:mod:`watex.metrics`: Metrics 
-=====================================================
-
-.. automodule:: watex.metrics
-   :no-members:
-   :no-inherited-members:
-
-.. currentmodule:: watex
-
-.. autosummary::
-   :toctree: generated/
-   :template: function.rst
-
-   metrics.ROC_curve
-   metrics.confusion_matrix
-   metrics.precision_recall_tradeoff
 
 .. _property_ref:
 
@@ -595,27 +574,18 @@ Geotools utilities
    :toctree: generated/
    :template: function.rst
 
-	utils.geotools.annotate_log
-	utils.geotools.assert_len_lns_tres
 	utils.geotools.assert_station
 	utils.geotools.base_log
-	utils.geotools.display_s_infos
-	utils.geotools.find_distinct_items_and_indexes
 	utils.geotools.fit_rocks
 	utils.geotools.fit_stratum_property
-	utils.geotools.frame_top_to_bottom
-	utils.geotools.get_closest_gap
-	utils.geotools.get_index_for_mapping
 	utils.geotools.get_s_thicknesses
 	utils.geotools.grouped_items
 	utils.geotools.lns_and_tres_split
 	utils.geotools.map_bottom
 	utils.geotools.map_top
-	utils.geotools.print_running_line_prop
 	utils.geotools.set_default_hatch_color_values
 	utils.geotools.smart_zoom
 	utils.geotools.zoom_processing
-
 
 .. _view_ref:
 
@@ -664,4 +634,4 @@ Functions
 	view.pobj
 	view.viewtemplate
 
-Click :ref:`here <api/watex>` to visit all the modules of the package.
+Click :doc:`here <api/watex>` to visit all the modules of the package.

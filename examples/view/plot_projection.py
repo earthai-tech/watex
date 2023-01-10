@@ -11,6 +11,7 @@ in the survey area.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.datasets import fetch_data 
 from watex.view.mlplot import plotProjection 
 # Discard all the non-numeric data 

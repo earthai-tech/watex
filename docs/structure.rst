@@ -1,4 +1,4 @@
-.. _struture:
+.. _structure:
 
 =================
 Structure

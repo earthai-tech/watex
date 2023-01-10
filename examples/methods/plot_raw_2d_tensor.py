@@ -8,6 +8,7 @@ Plot shows the raw tensor in two dimensional layout.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.view.plot import TPlot 
 from watex.datasets import load_edis 
 e= load_edis (samples =21 , key='*') 

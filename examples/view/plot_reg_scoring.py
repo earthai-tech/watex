@@ -9,6 +9,7 @@ PlotsPlot regressor learning curves with (root)mean squared error
 # Author: L.Kouadio 
 # Licence: BSD-3-clausee 
 
+#%%
 from watex.datasets import fetch_data 
 from watex.view.mlplot import plot_reg_scoring 
 # Note that for the demo, we import SVC rather than LinearSVR since the 
