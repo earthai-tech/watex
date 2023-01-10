@@ -10,6 +10,7 @@ of the  resistivity values of the selected anomaly (conductive zone)
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
+#%%
 import numpy as np 
 from watex.utils.exmath import sfi 
 rang = np.random.RandomState (42) 

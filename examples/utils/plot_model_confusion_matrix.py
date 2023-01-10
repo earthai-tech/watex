@@ -8,6 +8,7 @@ plots a confusion matrix for a single classifier model.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
+#%%
 #Import the required models and fetch a an Ababoost model 
 # for instance then plot the confusion metric 
 import matplotlib.pyplot as plt 

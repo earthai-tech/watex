@@ -9,7 +9,7 @@ learning rates
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
-
+#%%
 from watex.datasets import load_iris 
 from watex.base import AdalineGradientDescent
 from watex.utils.plotutils import plot_cost_vs_epochs

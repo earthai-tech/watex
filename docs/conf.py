@@ -26,6 +26,7 @@ for p in ('.', '../' ): #../../'
 sys.path.insert(0, os.path.abspath("sphinxext"))
 
 import watex 
+from watex import utils 
 import sphinx_gallery
 
 try:
@@ -61,7 +62,7 @@ def run_apidoc(_):
 
 project = 'watex'
 copyright = f"2012-{time.strftime('%Y')}"
-author = 'L. Kouadio'
+author = 'K. Laurent Kouadio'
 # The full version, including alpha/beta/rc tags
 version = release = watex.__version__
 
@@ -133,7 +134,7 @@ plot_html_show_formats = False
 plot_html_show_source_link = False
 
 # Don't add a source link in the sidebar
-html_show_sourcelink = False
+html_show_sourcelink = True
 
 # Control the appearance of type hints
 autodoc_typehints = "none"
@@ -188,20 +189,25 @@ html_theme_options = {
         },
             # {
             #     "name": "PyPI",
-            #     "url": "https://pypi.org/project/watex", # next 
+            #     "url": "https://pypi.org/project/watex", 
             #     "icon": "fa-solid fa-box",
             # },
     ],
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],
-    "navbar_end": ["navbar-icon-links"], # ["theme-switcher",
+    "navbar_end": [ "theme-switcher", "navbar-icon-links",],
     #"navbar_persistent": ["search-button"],
     "header_links_before_dropdown": 5,
-
+    "primary_sidebar_end": ["sidebar-ethical-ads"]
+    #"use_edit_page_button": True,
+    # "switcher": {
+        #"json_url": "_static/json_url.json",
+    #     "version_match": version,
+    # },
 }
 
 html_context = {
-    # "default_mode": "light",
+    #"default_mode": "light",
     "github_user": "WEgeophysics",
     "github_repo": "watex",
     "github_version": "master",
@@ -224,18 +230,18 @@ html_context = {
 # 'searchbox.html']``.
 #
 html_sidebars = {
-    "index": [],
-    "examples/index": [],
-    "**": ["sidebar-nav-bs.html"],
+    "index": [], 
+    "**": ["sidebar-nav-bs.html"] 
 }
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'WATexdoc'
+# htmlhelp_basename = 'WATexdoc'
 
 # Add the 'copybutton' javascript, to hide/show the prompt in code
 # examples, originally taken from scikit-learn's doc/conf.py
+
 def setup(app):
     app.connect('builder-inited', run_apidoc)
     app.add_js_file('copybutton.js')
@@ -288,10 +294,10 @@ latex_elements = {
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'watex', u'WATex Documentation',
-     [author], 1)
-]
+# man_pages = [
+#     (master_doc, 'watex', u'WATex Documentation',
+#      [author], 1)
+# ]
 
 # ------------config sphinx gallery ---------------------------------------
 # customize watex inspired from scikit-learn  
@@ -375,11 +381,11 @@ epub_copyright = copyright
 # The unique identifier of the text. This can be a ISBN number
 # or the project homepage.
 #
-# epub_identifier = ''
+epub_identifier = ''
 
 # A unique identification for the text.
 #
-# epub_uid = ''
+epub_uid = ''
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
@@ -391,14 +397,12 @@ MOCK_MODULES = [
     'osgeo.ogr',
     'osgeo.gdal',
     'osgeo.osr',
-    'test',
-
+    'tests',
 ]
 import mock
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
-# re-import utils to fix circular import
-# this is usefull for gallery to read iles.
-from watex import utils 
+
+

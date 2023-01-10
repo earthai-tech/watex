@@ -8,19 +8,19 @@ visualizes model fined tuned scores vs the cross validation
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
-# (1) -> Score is appended to the model 
+#%%
+# * Score is appended to the model 
+import numpy as np
 from watex.exlib.sklearn import SVC 
 from watex.view.mlplot import plot_model_scores
-import numpy as np 
+ 
 svc_model = SVC() 
 fake_scores = np.random.permutation (np.arange (0, 1,  .05))
 plot_model_scores([(svc_model, fake_scores )])
-# uncomment this if 
-# (2) -> Use model and score separately 
-# plot_model_scores([svc_model],scores =[fake_scores] )
-  
-# now customize the plot as 
-# >>> # customize plot by passing keywords properties 
+
+#%%
+# Use scores separately 
+# customize plot by passing base plot keyword properties 
 base_plot_params ={
                     'lw' :3.,   
                     'ls': '-.', 

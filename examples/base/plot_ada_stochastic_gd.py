@@ -9,6 +9,7 @@ smaller subset of test data.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 # fetch data and uses the preprocessed  
 import matplotlib.pyplot as plt 
 from watex.base import AdalineStochasticGradientDescent 

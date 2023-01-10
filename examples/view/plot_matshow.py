@@ -8,6 +8,7 @@ Quick matrix visualization using matplotlib.pyplot.matshow.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 import numpy as np
 from watex.view.mlplot import plot_matshow 
 matshow_kwargs ={

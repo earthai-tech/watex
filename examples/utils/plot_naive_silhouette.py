@@ -8,6 +8,7 @@ Plot quantifies the quality  of clustering silhouette
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
+#%%
 import numpy as np 
 from watex.exlib.sklearn import KMeans 
 from watex.datasets import load_iris 

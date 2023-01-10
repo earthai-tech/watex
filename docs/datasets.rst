@@ -8,9 +8,10 @@ Datasets
 
 :mod:`~watex.datasets` fetches data from the local machine. If data does not exist, retrieve it 
 from remote (repository) or using or zenodo record. :code:`watex` implements three (3) kind of datasets: 
-	* DC-resistivity datasets (DC-datasets) 
-	* Learning datasets 
-	* EDI datasets ; EDI stands for Electrical Data Interchange, refer to :mod:`~watex.edi`. 
+
+* DC-resistivity datasets (DC-datasets) 
+* Learning datasets 
+* EDI datasets ; EDI stands for Electrical Data Interchange, refer to :mod:`~watex.edi`. 
 
 DC-Datasets 
 ==================
@@ -46,21 +47,22 @@ This an example of the ERP data arrangement table:
  
 All the DC-ERP datasets holds the following parameters: 
 
-	* `kind` : str , ['ves'|'erp'], default is {'erp'}
-		the kind of DC data to retrieve. If `kind` is set to ``ves`` , VES data is 
-		fetched and ERP otherwise. Note that this is only valid for Gbalo locality (:func:`~watex.datasets.dload.load_gbalo`).
-	* `tag, data_names`: ``None``, Always None for API consistency.
-	* `as_frame` : bool, default=False
-		If True, the data is a `pandas dataFrame`_ including columns with
-		appropriate types (numeric). The target is
-		a pandas DataFrame or Series depending on the number of target columns.
-		If `as_frame` is ``False``, then returning a :class:`~watex.utils.box.Boxspace`.
-	* `kws` : dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
+* `kind` : str , ['ves'|'erp'], default is {'erp'}
+	the kind of DC data to retrieve. If `kind` is set to ``ves`` , VES data is 
+	fetched and ERP otherwise. Note that this is only valid for Gbalo locality (:func:`~watex.datasets.dload.load_gbalo`).
+* `tag, data_names`: ``None``, Always None for API consistency.
+* `as_frame` : bool, default=False
+	If True, the data is a `pandas dataFrame`_ including columns with
+	appropriate types (numeric). The target is
+	a pandas DataFrame or Series depending on the number of target columns.
+	If `as_frame` is ``False``, then returning a :class:`~watex.utils.box.Boxspace`.
+* `kws` : dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
 		
 There are two localities for DC-ERP datasets : 
-	* `Tankesse` data fetches using :func:`~watex.datasets.dload.load_tankesse`  
-	* `Gbalo` data feches using :func:`~watex.datasets.dload.load_gbalo`
-	
+
+* `Tankesse` data fetches using :func:`~watex.datasets.dload.load_tankesse`  
+* `Gbalo` data feches using :func:`~watex.datasets.dload.load_gbalo`
+
 .. topic:: Examples: 
 
 .. code-block:: python 
@@ -72,7 +74,7 @@ There are two localities for DC-ERP datasets :
 	>>> load_gablo().station.max()  # in meter 
 	440.0
 	
-.. notes:: 
+.. note:: 
 
 	The array configuration  during the PNEAP is Schlumberger and the max depth investigation is in meters for :math:`AB/2` 
 	(current electrodes). The  profiling step :math:`AB/2` and  :math:`MN/2` (potential electrodes)  are fixed to
@@ -129,27 +131,26 @@ The following table gives the true sanitized arrangement acceptable for all func
 
 The following parameters is passed to the VES data to retrieve the expected data:
 
-	* `tag, data_names`: ``None`` , Always None for API consistency 
-	* `as_frame` : bool, default=False
-		If True, the data is a pandas DataFrame including columns with
-		appropriate types (numeric). The target is
-		a panda DataFrame or Series depending on the number of target columns.
-		If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
-		dictionary-like object.
-		
-	* `index_rhoa`: int, default=0 
-		Index of the resistivy columns to retrieve. Note that this is useful in the 
-		cases many sounding values are collected in the same survey area. 
-		`index_rhoa=0` fetches the first sounding values in the collection of all
-		 values. For instance `index_rhoa=0` in the raw arrangement above fetches the sounding 
-		 data `SE1` i.e the first resistivity column. 
-		 
-	* `kws`: dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
+* `tag, data_names`: ``None`` , Always None for API consistency 
+* `as_frame` : bool, default=False
+	If True, the data is a pandas DataFrame including columns with
+	appropriate types (numeric). The target is
+	a panda DataFrame or Series depending on the number of target columns.
+	If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
+	dictionary-like object.
+* `index_rhoa`: int, default=0 
+	Index of the resistivy columns to retrieve. Note that this is useful in the 
+	cases many sounding values are collected in the same survey area. 
+	`index_rhoa=0` fetches the first sounding values in the collection of all
+	 values. For instance `index_rhoa=0` in the raw arrangement above fetches the sounding 
+	 data `SE1` i.e the first resistivity column. 
+* `kws`: dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
  
 There are three localities for DC-VES datasets: 
-	* `Gbalo` data fetches using :func:`~watex.datasets.dload.load_gbalo`  by passing argument ``ves`` to parameter `kind`. 
-	* `Boundiali` data feches using :func:`~watex.datasets.dload.load_boundiali`
-	* `Semien` data feches using :func:`~watex.datasets.dload.load_semien`
+
+* `Gbalo` data fetches using :func:`~watex.datasets.dload.load_gbalo`  by passing argument ``ves`` to parameter `kind`. 
+* `Boundiali` data feches using :func:`~watex.datasets.dload.load_boundiali`
+* `Semien` data feches using :func:`~watex.datasets.dload.load_semien`
 	
 If the raw arrangement (above ) is given, it is better to reverify the arrangement using the function :func:`~watex.utils.coreutils.vesSelector` for data validation. 
 
@@ -171,7 +172,7 @@ If the raw arrangement (above ) is given, it is better to reverify the arrangeme
 	>>> load_gbalo (kind ='ves').AB.max () # max AB/2 depth 
 	100
 
-.. notes:: 
+.. note:: 
 	
 	The array configuration is schlumberger and the max depth investigation is 
 	100 meters for :math:`AB/2` (current electrodes). The  profiling step
@@ -232,7 +233,7 @@ and logging data. Refer to :func:`~watex.datasets.dload.load_hlogs` for paramete
 EDI dataset 
 ===============
 
-SEG-EDI datasets is a collection of edi-objects from :class:`~watex.edi.Edi`. Data can be restored using the 
+SEG-EDI dataset is a collection of edi-objects from :class:`~watex.edi.Edi`. Data can be restored using the 
 :func:`~watex.datasets.dload.load_edis`. Refer to the function (:func:`~watex.datasets.dload.load_edis`.) parameters 
 explanation for further details. 
 

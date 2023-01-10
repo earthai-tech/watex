@@ -10,6 +10,7 @@ features scaling using using the test data
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 # Fetch the data 
 import matplotlib.pyplot as plt 
 from watex.base import AdalineGradientDescent 

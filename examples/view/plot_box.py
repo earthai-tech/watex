@@ -9,6 +9,7 @@ the box, boxen or violin plots
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 import matplotlib.pyplot as plt 
 plt.style.use ('classic')
 from watex.datasets import fetch_data 

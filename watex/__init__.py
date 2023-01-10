@@ -1,26 +1,22 @@
 # -*- coding: utf-8 -*-
 # Licence:BSD 3-Clause
-# author: @Daniel<etanoyau@gmail.com>
+# author: L. Kouadio <etanoyau@gmail.com>
 """
-💧 A machine learning research package for hydrogeophysic 
+A machine learning research package for hydrogeophysic 
 ===========================================================
 
-:code:`watex` stands for *WAT-er EX-ploration*. Its packages and modules are 
+:code:`watex` stands for *WAT-er EX-ploration*. Packages and/or modules are 
 written to solve real-engineering problems in the field of groundwater 
-exploration (GWE). Currently, it deals with the differents methods below: 
-    
-    * `geophysical (from DC-Electrical to Electromagnetic)` 
-    * `hydrogeology (from drilling to parameters calculation)`
-    * `geology (for stratigraphic model generation)`
-    * `predicting permeability coefficient (k), flow rate and else` 
-    
-All methods mainly focus on GWE field. One of the main advantage using `WATex`_ 
-is the application of machine learning methods in the hydrogeophysic parameter 
-predictions. It contributes to minimize the risk of unsucessfull drillings and 
-the hugely reduce the cost of the hydrogeology parameter collections.
+exploration (GWE). Currently, Dealing with: 
+* `geophysical (from DC-Electrical to Electromagnetic)` 
+* `hydrogeology (from drilling to parameters calculation)`
+* `geology (for stratigraphic model generation)`
+* `predicting permeability coefficient (k), flow rate and else`,  
+`WATex`_ contributes to minimize the risk of unsucessfull drillings, 
+unustainable boreholes and could hugely reduce the cost of the hydrogeology 
+parameter collections.
 
 .. _WATex: https://github.com/WEgeophysics/watex/
-.. _SDGn6: https://www.un.org/sustainabledevelopment/development-agenda/
 
 """
 import os 
@@ -28,7 +24,7 @@ import sys
 import logging 
 import random
  
-__version__='0.1.2' ; __author__= 'LKouadio'
+__version__='0.1.3' ; __author__= 'L.Kouadio'
 
 # set the package name 
 # for consistency ckecker 
@@ -100,21 +96,6 @@ else:
     from . import _distributor_init  # noqa: F401
     from . import _build  # noqa: F401
     #from .utils._show_versions import show_versions
-
-    # import required subpackages  
-
-    # __all__ = [
-    #     "analysis", 
-    #     "datasets", 
-    #     "etc", 
-    #     "exlib", 
-    #     "utils", 
-    #     "externals",
-    #     "geology", 
-    #     "models", 
-    #     "methods", 
-    #     "view",
-    # ]
 
 
 def setup_module(module):

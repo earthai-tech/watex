@@ -8,6 +8,7 @@ plots a histogram of continuous values against the target of binary plot.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.datasets import fetch_data  
 from watex.view import ExPlot
 data= fetch_data("bagoue original").get('data=df') # raw data not encoded flow

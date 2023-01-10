@@ -8,6 +8,7 @@ visualizes the cluster that k-means identified in the dataset
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
+#%%
 
 from watex.exlib.sklearn import KMeans, MinMaxScaler
 from watex.utils.plotutils import plot_clusters

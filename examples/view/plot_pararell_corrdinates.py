@@ -8,6 +8,7 @@ See :ref:`Plot parallel coordinates <view>`
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.datasets import fetch_data 
 from watex.view import ExPlot 
 data =fetch_data('original data').get('data=dfy1')

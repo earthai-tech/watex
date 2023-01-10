@@ -10,6 +10,7 @@ in Python.
 # Author: L.Kouadio 
 # Licence: BS3-clause 
 
+#%%
 from watex.analysis import nPCA
 from watex.datasets import fetch_data
 from watex.view import biPlot, pobj  # pobj is Baseplot instance 

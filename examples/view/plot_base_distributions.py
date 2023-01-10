@@ -9,6 +9,7 @@ target can be mapped into a categorized labels.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.view.plot import QuickPlot
 from watex.datasets import load_bagoue 
 data = load_bagoue ().frame 

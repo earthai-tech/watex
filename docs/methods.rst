@@ -48,8 +48,7 @@ The method is composed of `station`, `resistivity` data and/or coordinates of me
 As an example, we will make an samples of 100 measurements using the function :func:`~watex.datasets.gdata.make_erp` and compute the DC -electrical parameters for flow rate prediction [3]_.
 The :meth:`~watex.methods.electrical.ResistivityProfiling.summary` recaps all the prediction parameters. 
 
-.. notes:: 
-
+.. note:: 
 	For demonstration, I assume that the drilling is performed at station 5(S05) on the survey line, 
 	i.e the DC parameters are computed at that station. However, if the station is not specified, the algorithm 
 	will find the best conductive zone based on the resistivity values and will store the value in attribute `sves_` 
@@ -80,8 +79,7 @@ The :meth:`~watex.methods.electrical.ResistivityProfiling.summary` recaps all th
 	>>> erpo.sfi_
 	array([1.048])
 	>>> erpo.conductive_zone_
-	array([202.8182, 212.9091, 656.9091, 132.1818, 374.3636, 808.2727,
-       979.8182])
+	array([202.8182, 212.9091, 656.9091, 132.1818, 374.3636, 808.2727, 979.8182])
 	>>> erpo.summary (return_table=True ) 
 		dipole  longitude  latitude  ...  shape  type       sfi
 	station                               ...                       
@@ -124,8 +122,7 @@ by convention `AB` is `AB/2` in meters and the resistivity is preferably express
 a samples of 31 measurements in deeper using the function :func:`~watex.datasets.gdata.make_ves`. 
 
 
-.. notes:: 
-
+.. note:: 
 	:class:`~watex.methods.electrical.VerticalSounding` has a `search` which is very useful. Indeed, the parameter passed to the 
 	above class is implemented to find water outside of the pollution. Usually, when exploring deeper using the VES, we are 
 	looking for groundwater in the fractured rock that is outside the anthropic pollution [12]_. Thus the search parameter 

@@ -8,6 +8,8 @@ plots qualitative (numerical) features  distribution using correlative aspect.
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
+
 from watex.view.plot import QuickPlot 
 from watex.datasets import load_bagoue 
 from watex.utils import smart_label_classifier 

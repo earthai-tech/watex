@@ -9,6 +9,7 @@ containing the permeability coefficient k
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+#%%
 from watex.datasets import load_hlogs 
 from watex.methods.hydro import Logging 
 # get the logging data 
