@@ -3,8 +3,8 @@
 Plot regularization path 
 =================================================
 
-Plot the regularisation path from Logit / LogisticRegression by  
-modifying at every iteration a bit more the  different regularization strengths. 
+visualizes the regularisation path from Logit/LogisticRegression by  
+modifying at every iteration a bit more the different regularization strengths. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

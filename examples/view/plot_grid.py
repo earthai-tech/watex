@@ -3,8 +3,7 @@
 Plot grid 
 =================================================
 
-Plots includes histogram on the edge as well as a 
-regression line called a joinplot. 
+joints histogram on the edge of regression line 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

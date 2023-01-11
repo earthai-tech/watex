@@ -3,7 +3,7 @@
 Plot scatterring features 
 =================================================
 
-Plots shows shows the relationship between two numeric columns.
+shows shows the relationship between two numerical features.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

@@ -1,11 +1,11 @@
 """
 ==========================================
-EM, DC and Hydro parameters computing 
+EM, DC, and Hydro parameters computing 
 ==========================================
 
-Here are some code snippets for quick showing the computation of EM tensor, 
+Real-world examples for showing the computation of EM tensor, 
 DC parameters and how to implement the mixture learning strategy (MXS) from 
-naive aquifer group (NGA) for prediction purposes 
+the naive aquifer group (NGA) for the permeability coefficient k prediction. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt_style ='classic'
 
-# Load real data collected during the Drinking water supply campain 
+# Load real data collected during the drinking water supply campaign 
 # occured in 2012-2014 in Cote d'Ivoire. Read more in the dataset 
 # module ( :mod:`~watex.datasets`)
 from watex.datasets import ( 
@@ -26,7 +26,7 @@ from watex.datasets import (
     load_tankesse,
     load_boundiali
     ) 
-# Real logging data collected in Hongliu coal mne , in China, Hunan province
+# Real logging data collected in Hongliu coal mine, in China, Hunan province
 from watex.datasets import load_hlogs
 from watex.methods import( 
     DCProfiling, 
@@ -40,10 +40,10 @@ from watex.methods import(
 #%%
 # EM :mod:`~watex.methods.em`
 # ============================
-# The EM module is related for a few meter exploration in the case of groundwater 
-# exploration. Module provides some basics processing steps for EMAP data filtering
-# and remove noises. Commonly the methods mostly used in the groundwater 
-# exploration is the audio-magnetoteluric because of the shortest frequency 
+# The EM module is related to a few meter exploration in the case of groundwater 
+# exploration. The module provides some basic processing steps for EMAP data filtering
+# and removing noises. Commonly the method mostly used in groundwater 
+# exploration is the audio-magnetotelluric because of the shortest frequency 
 # and rapid executions. Furthermore, we can also list some other advantages 
 # such as:    
 # * is useful for imaging both deep geologic structure and near-surface geology 
@@ -55,14 +55,14 @@ from watex.methods import(
 #   regional reconnaissance exploration or detailed surveys of local geology 
 #   and has no environmental impact 
 #
-# :notes: For deep implementation or explorating a large scale of EM/AMT data  
+# :notes: For deep implementation or exploring a large scale of EM/AMT data  
 #     processing, it is recommended to use the package `pycsamt <https://github.com/WEgeophysics/watex/>`_. 
 #     Create EM object as a collection of EDI-file. 
-#     Collect edifiles and create an EM object. It sets  the properties from 
+#     Collect edi-files and create an EM object. It sets he properties from 
 #     audio-magnetotelluric. The two(2) components XY and YX will be set and 
-#     calculated.Can read MT data instead, however the full handling transfer 
-#     function like Tipper and Spectra  is not completed. Use  other MT 
-#     softwares for a long periods data.
+#     calculated.Can read MT data instead, however, the full handling transfer 
+#     function like Tipper and Spectra is not completed. Use other MT 
+# software for a long period's data.
 
 from watex.methods.em import EM
 edi_data = load_edis (return_data =True, samples =7) # object from Edi_collection 
@@ -83,7 +83,7 @@ p = Processing().fit(edi_data)
 p.window_size =2 
 p.component ='yx'
 rc= p.tma()
-# get the resistivy value of the third frequency  at all stations 
+# get the resistivity value of the third frequency  at all stations 
 # >>> p.res2d_[3, :]  
 
 # get the resistivity value corrected at the third frequency 
@@ -102,8 +102,8 @@ plt.semilogy (np.arange (p.res2d_.shape[1] ), p.res2d_[3, :], '--',
 
 # restore tensor 
 pObjs= Processing().fit(edi_data)
-# One can specify the frequency buffer like the example below, However 
-# it is not necessaray at least there is a a specific reason to fix the frequencies 
+# One can specify the frequency buffer like the example below, however 
+# it is not necessary at least there is a specific reason to fix the frequencies 
 # buffer = [1.45000e+04,1.11500e+01]
 zobjs_b =  pObjs.zrestore(
     # buffer = buffer
@@ -128,10 +128,10 @@ zobjs_b
 # DC-method :mod:`~watex.methods.electrical` 
 # ================================================
 # A collection of DC-resistivity profiling and sounding classes. 
-# It reads and compute electrical parameters. Each line or site compose a specific
-# object and gather all the attributes of :class:`~.ResistivityProfiling` 
+# It reads and computes electrical parameters. Each line or site composes a specific
+# object and gathers all the attributes of :class:`~.ResistivityProfiling` 
 # or :class:`~watex.methods.electrical.VerticalSounding`  for easy use. For instance, 
-# the expeced drilling location point  and its 
+# the expected drilling location point  and its 
 # resistivity value for two survey lines ( line1 and line2) can be fetched 
 
 #%%
@@ -205,9 +205,9 @@ ves.plotOhmicArea (fbtw=True , style =plt_style)
 #%%
 # Hydrogeology :mod:`~watex.methods.hydro` 
 # ==========================================
-# Hydrogeological parameters of aquifer are the essential and crucial basic data 
+# Hydrogeological parameters of the aquifer are the essential and crucial basic data 
 # in the designing and construction progress of geotechnical engineering and 
-# groundwater dewatering, which are directly related to the reliability of these 
+# groundwater dewatering, which is directly related to the reliability of these 
 # parameters.
 
 # get the logging data 
@@ -235,13 +235,13 @@ log.plot (y = h.frame.k , posiy =0 )# first position
 # k-parameter collection is feasible if the layer in the well is an aquifer. 
 # Unfortunately, predicting some samples of k in a large set of missing data 
 # remains an issue using the classical supervised learning methods. We, 
-# therefore propose an alternative approach called a mixture learning 
+#, therefore, propose an alternative approach called a mixture of learning 
 # strategy (MXS) to solve these double issues. It entails predicting upstream 
 # a naïve group of aquifers (NGA) combined with the real values k to 
 # counterbalance the missing values and yield an optimal prediction score. 
 # The method, first, implies the K-Means and Hierarchical Agglomerative 
 # Clustering (HAC) algorithms. K-Means and HAC are used for NGA label 
-# predicting necessary the MXS label merging. 
+# predicting necessary for the MXS label merging. 
 
 hdata = load_hlogs ().frame 
 # drop the 'remark' columns since there is no valid data 
@@ -255,8 +255,8 @@ print(mxs.yNGA_ [62:74] )
 
 print(ymxs[62:74])  
 # array([ 1, 22, 22, 22,  3,  1, 22,  1, 22, 22,  1, 22]) 
-# to get the label similariry , need to provide the 
-# the column name of aquifer group and fit again like 
+# to get the label similarity , need to provide the 
+# the column name of the aquifer group and fit again like 
 mxs = MXS (kname ='k', aqname ='aquifer_group').fit(hdata)
 sim = mxs.labelSimilarity() 
 print(sim ) 

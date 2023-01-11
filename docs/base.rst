@@ -6,15 +6,13 @@ Base
 
 .. currentmodule:: watex.base
 
-The following are a set of methods intended for base module implementation in which
-the target value is expected to be a linear combination of the features.
-In mathematical notation, if :math:`\hat{y}` is the predicted
-value.
-
+The following module is a set of classes and methods intended for base module implementation in which 
+target value is expected to be a linear combination of the features. In mathematical notation, 
+if :math:`\hat{y}` is the predicted value, 
 .. math::  \hat{y}(w, x) = w_0 + w_1 x_1 + ... + w_p x_p
 
-Across the module, we designate the vector :math:`w = (w_1,
-..., w_p)` as ``coef_`` and :math:`w_0` as ``intercept_``.
+Across the module, we designate the vector :math:`w = (w_1,..., w_p)` as ``coef_`` 
+and :math:`w_0` as ``intercept_``.
 
 
 .. _data:
@@ -22,31 +20,24 @@ Across the module, we designate the vector :math:`w = (w_1,
 Data
 =======================
 
-:class:`Data` is a shadow class for base data transformation. 
-
-Typically, we train a model with a matrix of data. Note that `pandas dataframe`_ 
-is the most used because it is very nice to have columns labels even though 
-Numpy arrays work as well. 
-
-For supervised Learning for instance, suc as regression or clasification, our 
-intent is to have a function that transforms features into a label. If we 
-were to write this as an algebra formula, it would be look like:
+:class:`Data` is a shadow class for base data transformation. Typically, we train a model with a matrix of data. 
+Note that `pandas dataframe`_  is the most used because it is very nice to have column labels even though  
+Numpy arrays work as well. For supervised Learning, for instance, such as regression or classification, we 
+intend to have a function that transforms features into a label. If we were to write this as an algebra formula, 
+it would look like this:
     
 .. math:: y = f(X)
 
-:code:`X` is a matrix. Each row represents a `sample` of data or information 
-about individual. Every columns in :code:`X` is a `feature`. The output of 
-our function, :code:`y`, is a vector that contains labels (for classification)
-or values (for regression). 
-
-In Python, by convention, we use the variable name :code:`X` to hold the 
-sample data even though the capitalization of variable is a violation of  
-standard naming convention (see PEP8). 
+:code:`X` is a matrix. Each row represents a `sample` of data or information about an individual. 
+Every column in :code:`X` is a `feature`. The output of :code:`y`, is a vector that contains labels 
+(for classification)or values (for regression). In Python, by convention, we use the variable 
+name :code:`X` to hold the sample data even though the capitalization of the variable is a violation 
+of the standard naming convention (see PEP8). 
 
 .. _pandas dataframe: https://pandas.pydata.org/docs/ 
 
-:class:`Data` will take in its ``fit`` method arrays X
-and each column that compose the dataset can be retrieved as member:: 
+:class:`Data` will take in its ``fit`` method arrays :math:`X` and each column that 
+composes the dataset can be retrieved as a member:: 
 
     >>> from watex.base import Data
 	>>> import pandas as pd 
@@ -73,21 +64,19 @@ and each column that compose the dataset can be retrieved as member::
 Missing 
 ====================
 
-:class:`Missing` is a shadow class for misssing data handling. 
-
-Most algorithms will not work with missing data.  
-As with many things in machine learning , there are no hard answers for how 
-to treat a missing data. Also, missing data could  represent different 
-situations. There are three warious way to handle missing data: 
+:class:`Missing` is a shadow class for missing data handling. Indeed, most algorithms will not 
+work with missing data.  As with many things in machine learning, there are no hard answers for 
+how to treat missing data. Also, missing data could represent different situations. There are 
+three various ways to handle missing data: 
 	
 * Remove any row with missing data 
 * Remove any columns with missing data 
 * Impute missing values 
-* Create an indicator columns to indicator data was missing 
+* Create an indicator column to indicate that data was missing 
 	
-:class:`Missing` inherits from :class:`Data`  and use :mod:`missingno`. Install 
-the package :code:`missingno` for taking advantage of many missing plot. The parameter `kind` is 
-passed to :class:`Missing` for selecting the kind of plot for visualisation: 
+:class:`Missing` inherits from :class:`Data`  and use :mod:`missingno`. Install the package 
+:code:`missingno` for taking advantage of many missing plots. The parameter `kind` is  passed 
+to :class:`Missing` for selecting the kind of plot for visualization: 
 
 * ``bar`` plot counts the  non-missing data  using pandas
 * ``mbar`` uses the :mod:`msno` package to count the number 
@@ -100,12 +89,10 @@ passed to :class:`Missing` for selecting the kind of plot for visualisation:
 * ``corr`` creates a heat map showing if there are correlations 
 	where the data is missing. In this case, it does look like 
 	the locations where missing data are corollated.
-* ``None`` is the default vizualisation. It is useful for viewing 
-	contiguous area of the missing data which would indicate that 
-	the missing data is  not random. The :code:`matrix` function 
-	includes a sparkline along the right side. Patterns here would 
-	also indicate non-random missing data. It is recommended to limit 
-	the number of sample to be able to see the patterns. 
+* ``None`` is the default visualization. It is useful for viewing the contiguous area of 
+   the missing data, indicating that the missing data is not random. The :code:`matrix` function 
+   includes a sparkline along the right side. Patterns here would also indicate non-random missing 
+   data. It is recommended to limit the number of samples to be able to see the patterns. 
 
 Any other value will raise an error. For instance::
 
@@ -142,26 +129,22 @@ The `corr` argument passed to parameter `kind` output the following picture:
 Sequential Backward Selection
 ===============================
 
-Sequential Backward Selection (SBS) is a feature selection algorithm which 
-aims to reduce dimensionality of the initial feature subspace with a 
-minimum decay  in the performance of the classifier to improve upon 
-computationan efficiency. In certains cases, SBS can even improve the 
-predictive power of the model if a model suffers from overfitting. 
-    
-**Mathematical details**
+Sequential Backward Selection (SBS) is a feature selection algorithm that aims to reduce 
+the dimensionality of the initial feature subspace with a minimum decay in the performance 
+of the classifier to improve upon computational efficiency. In certain cases, SBS can even 
+improve the model’s predictive power if a model suffers from overfitting. 
 
-The idea behind the SBS is simple: it sequentially removes features 
-from the full feature subset until the new feature subspace contains the 
-desired number of features. In order to determine which feature is to be 
-removed at each stage, the criterion fonction :math:`J` is needed for 
-minimization [1]_. 
-Indeed, the criterion calculated from the criteria function can simply be 
-the difference in performance of the classifier before and after the 
-removal of this particular feature. Then, the feature to be remove at each 
-stage can simply be the defined as the feature that maximizes this 
-criterion; or in more simple terms, at each stage, the feature that causes 
-the least performance is eliminated loss after removal. Based on the 
-preceding definition of SBS, the algorithm can be outlibe with a few steps:
+**Mathematical details**
+The idea behind the SBS is simple: it sequentially removes features from the full feature 
+subset until the new feature subspace contains the desired number of features. To determine 
+which feature is to be removed at each stage, the criterion function:math:`J` is needed for 
+minimization [1]_. Indeed, the criterion calculated from the criteria function can simply be 
+the difference in the performance of the classifier before and after the removal of this 
+particular feature. Then, the feature to be removed at each 
+stage can simply be defined as the feature that maximizes this criterion; or in more simple 
+terms, at each stage, the feature that causes the least performance is eliminated loss after 
+removal. Based on the preceding definition of SBS, the algorithm can be outlined with a few 
+steps:
 
 * Initialize the algorithm with :math:`k=d`, where :math:`d` is the 
 	dimensionality of the full feature space, :math:`X_d`. 
@@ -169,8 +152,8 @@ preceding definition of SBS, the algorithm can be outlibe with a few steps:
 	:math:`x^{-}= argmax J(X_k-x)`, where :math:`x\in X_k`. 
 * Remove the feature :math:`x^{-}` from the feature set 
 	:math:`X_{k+1}= X_k -x^{-}; k=k-1`.
-* Terminate if :math:`k` equals to the number of desired features; 
-	otherwise go to the step 2. [2]_ 
+* Terminate if :math:`k` equals the number of desired features; 
+	otherwise, go to step 2. [2]_ 
 
 		
 .. topic:: Examples:
@@ -189,22 +172,18 @@ preceding definition of SBS, the algorithm can be outlibe with a few steps:
 Greedy Perceptron
 =====================
 
-Inspired from Rosenblatt concept of perceptron rules.  Rosenblatt 
-proposed an algorithm that would automatically learn the optimal weights 
-coefficients that would them be multiplied by the input features in order 
-to make the decision of whether a neuron fires (transmits a signal) or not [3]_. 
-In the context of supervised learning and classification, such algorithm 
-could them be used to predict whether a new data points belongs to one 
-class or the other [4]_. 
-
-Rosenblatt initial perceptron rule and the perceptron algorithm can be 
-summarized by the following steps:
+Inspired by Rosenblatt’s concept of perceptron rules.  Rosenblatt proposed an algorithm 
+that would automatically learn the optimal weights coefficients that would then be multiplied 
+by the input features to decide whether a neuron fires (transmits a signal) or not [3]_. In the 
+context of supervised learning and classification, such algorithms could then be used to predict 
+whether a new data point belongs to one class or the other [4]_. Rosenblatt's initial perceptron 
+rule and the perceptron algorithm can be summarized by the following steps:
  
 * initialize the weights at 0 or small random numbers. 
 * For each training examples, :math:`x^{(i)}` :
 	* Compute the output value :math:`\hat{y}` . 
 	* update the weighs. 
-the weights :math:`w` vector can be fromally written as:
+The weight :math:`w` vector can be formally written as:
 	
 .. math:: w := w_j + \delta w_j
 
@@ -223,22 +202,20 @@ the weights :math:`w` vector can be fromally written as:
 Majority Vote Classifier 
 ==========================
 
-A majority vote Ensemble classifier combines different classification algorithms associate with individual 
-weights for confidence. The goal is to build a stronger meta-classifier 
-that balance out of the individual classifiers weaknes on a particular  
-datasets. In more precise in mathematical terms, the weighs majority 
-vote can be expressed as follow: 
+A majority vote Ensemble classifier combines different classification algorithms associated 
+with individual weights for confidence. The goal is to build a stronger meta-classifier that 
+balance out the individual classifier weaknesses on particular datasets. In more precise 
+mathematical terms, the weighs majority vote can be expressed as follow: 
         
 .. math:: 
 	
 	\hat{y} = arg \max{i} \sum {j=1}^{m} w_j\chi_A (C_j(x)=1)
 
 where :math:`w_j` is a weight associated with a base classifier, :math:`C_j` ; 
-:math:`\hat{y}` is the predicted class label of the ensemble. :math:`A` is 
-the set of the unique class label; :math:`\chi_A` is the characteristic 
-function or indicator function which returns 1 if the predicted class of 
-the jth clasifier matches :math:`i (C_j(x)=1)`. For equal weights, the equation 
-is simplified as follow: 
+:math:`\hat{y}` is the predicted class label of the ensemble. :math:`A` is the set of the unique 
+class label; :math:`\chi_A` is the characteristic function or indicator function which returns 1 
+if the predicted class of the jth classifier matches :math:`i (C_j(x)=1)`. For equal weights, the 
+equation is simplified as follows: 
 	
 .. math:: \hat{y} = mode {{C_1(x), C_2(x), ... , C_m(x)}}
 
@@ -268,7 +245,7 @@ is simplified as follow:
                            ('clf', clf3)])
     
 
-* Test the each classifier results taking individually 
+* Test each classifier's results taking them individually 
     
 .. code-block:: python 
 
@@ -287,7 +264,7 @@ is simplified as follow:
     
 .. code-block:: python  
 
-    >>> # test the resuls with Majority vote  
+    >>> # test the results with a Majority vote  
     >>> mv_clf = MajorityVoteClassifier(clfs = [pipe1, clf2, pipe3])
     >>> clf_labels += ['Majority voting']
     >>> all_clfs = [pipe1, clf2, pipe3, mv_clf]
@@ -303,16 +280,13 @@ is simplified as follow:
 		
 Adaline Gradient Descent
 ==========================
-ADAptative LInear NEuron (Adaline) was published by Bernard Widrow [5]_. 
-Adaline illustrates the key concepts of defining and minimizing continuous
-cost function. This lays the groundwork for understanding more advanced 
-machine learning algorithm for classification, such as Logistic Regression, 
-Support Vector Machines,and Regression models.  
-
-The key difference between Adaline rule (also know as the WIdrow-Hoff rule) 
-and Rosenblatt's perceptron is that the weights are updated based on linear 
-activation function rather than unit step function like in the perceptron. 
-In Adaline, this linear activation function :math:`\phi(z)` is simply 
+ADAptative LInear NEuron (Adaline) was published by Bernard Widrow [5]_. Adaline illustrates 
+the key concepts of defining and minimizing a continuous cost function. This lays the groundwork 
+for understanding more advanced machine learning algorithms for classification, such as Logistic 
+Regression, Support Vector Machines, and Regression models.  
+The key difference between the Adaline rule (also known as the WIdrow-Hoff rule)  and Rosenblatt's 
+perceptron is that the weights are updated based on linear activation function rather than unit step 
+function like in the perceptron. In Adaline, this linear activation function :math:`\phi(z)` is simply 
 the identify function of the net input so that:
 	
 .. math:: \phi (w^Tx)= w^Tx 
@@ -338,19 +312,15 @@ while the linear activation function is used for learning the weights.
 
 Adaline Gradient Descent with Batch 
 =======================================
-
-Adaptative Linear Neuron Classifier  with batch  (stochastic) gradient descent 
-    
-:class:`AdalineStochasticGradientDescent` is a popular alternative wich is sometimes 
-also cal iterative or online gradient descent. Instead of updating the 
-weights based on the sum of accumulated erros over all training examples 
-:math:`x^{(i)}`: 
+Adaptative Linear Neuron Classifier with batch  (stochastic) gradient descent ( :class:`AdalineStochasticGradientDescent` ) 
+is a popular alternative which is sometimes also called iterative or online gradient descent. Here,  
+weights are updated  based on the sum of accumulated errors over all training examples :math:`x^{(i)}`: 
 	
 .. math:: 
 	
 	\delta w: \sum{i} (y^{(i)} -\phi( z^{(i)}))x^(i)
 		
-the weights are updated incremetally for each training examples: 
+the weights are updated incrementally for each training example: 
 
 .. math:: 
 	
@@ -375,5 +345,5 @@ the weights are updated incremetally for each training examples:
    .. [4] McCulloch W.S and W. Pitts, 1943. A logical calculus of Idea of Immanent in Nervous Activity, Bulleting of Mathematical 
    	   Biophysics, 5(4): 115-133, 1943.
    .. [5] Windrow and al., 1960. An Adaptative "Adeline" Neuron Using Chemical "Memistors", Technical reports Number, 1553-2,B 
-   	Windrow and al., standford Electron labs, Standford, CA,October 1960. 
+   	   Windrow and al., standford Electron labs, Standford, CA,October 1960. 
 	

@@ -3,8 +3,8 @@
 Plot errors vs epochs 
 ======================================================
 
-Plot the cost (errors ) against the number of epochs  for the two different 
-learning rates 
+visualizes the cost(errors ) against the number of epochs  of two different 
+learning rates. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

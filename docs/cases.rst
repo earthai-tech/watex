@@ -6,34 +6,29 @@ Case Histories
 
 .. currentmodule:: watex.cases
 
-:mod:`~watex.cases` implements function and modules already available and 
-ready to use for solving real engineering problems like the Flow Rate predictions and boosting 
-using the bases learners , SVC  and  ensemble paradigms. 
-
-'features', 'processing', 'modeling' and 'prepare' modules have base steps  
-and can be used for processing and analyses to give a quick depiction of how data 
-looks like. This can figure out the next processing steps for solving the 
-evidence problem.
- 
+:mod:`~watex.cases` implements functions and modules already available and ready to use 
+for solving real engineering problems like flow rate predictions and boosting using the 
+bases learners, SVC, and ensemble paradigms. :mod:`watex.cases.features`, :mod:`watex.cases.processing`, 
+:mod:`watex.cases.modeling` and :mod:`watex.cases.prepare` modules have base steps and can 
+be used for processing and analyses to give a quick depiction of how data looks like. This 
+can figure out the next processing steps for solving the evidence problem.
 
 Features 
 ============
 
 :mod:`~watex.cases.features` is a set of different manipulation that can be performed on the 
-case history  feature data. 
+case history feature data. 
 
 
 `GeoFeatures`
----------------
+------------------------
 :class:`~watex.cases.features.GeoFeatures` expects the geological, the boreholes and DC-electrical 
-resistivity data. 
+resistivity data. :class:`~watex.cases.features.GeoFeatures` set all feature values of 
+different investigation sites. `GeoFeatures` class is  composed of: 
 
-:class:`~watex.cases.features.GeoFeatures` set all features values of differents investigation sites. `GeoFeatures` class is  
-composed of: 
-    
-    * `erp` class  get from :class:`~watex.methods.erp.ERPCollection`
-    * `geol`  obtained from :class:`~watex.geology.geology.Geology` 
-    * `boreh` get from :class:`~watex.geology.geology.Borehole` 
+* `erp` class  get from :class:`~watex.methods.erp.ERPCollection`
+* `geol`  obtained from :class:`~watex.geology.geology.Geology` 
+* `boreh` get from :class:`~watex.geology.geology.Borehole` 
 
 .. topic:: Examples: 
 
@@ -50,10 +45,10 @@ composed of:
 	
 
 `Feature Inspection` 
-------------------------
+------------------------------
 :class:`~watex.cases.features.FeatureInspection` summarizes flow features. It deals with
-data features categorization. When numericall values are provided standard `qualitative` or `quantitative`  analysis is performed. 
-
+data feature categorization. When numerical values are provided standard `qualitative` or 
+`quantitative`  analysis is performed. 
 	
 .. code-block:: python 
 
@@ -68,17 +63,16 @@ data features categorization. When numericall values are provided standard `qual
 Prepare 
 ============
 
-:mod:`~watex.cases.prepare` base module  helps to automate data preparation at once. It is created fast 
-data preparation in real engineering cases study. This is naive approach for quick reproducing the 
-the published paper work especially for flow rate prediction. 
+:mod:`~watex.cases.prepare` base module helps to automate data preparation at once. It is created fast 
+data preparation in real engineering cases study. This is a naive approach for quickly reproducing the 
+published paperwork, especially for flow rate prediction. 
 
 `Base data preparation for case studies`
--------------------------------------------
+--------------------------------------------------------
 
-The bases step has been  used to solve a flow rate prediction problems [1]_. Its steps procedure 
-can straighforwardly help user to fast reach the same goal as the published 
-paper. An example of  different kind of `Bagoue dataset [2]_ , is prepared  
-using the `BaseSteps` module. 
+The base step has been used to solve flow rate prediction problems [1]_. Its steps procedure 
+can straightforwardly help users to fast reach the same goal as the published paper. An example 
+of a different kind of `Bagoue dataset [2]_, is prepared using the `BaseSteps` module. 
 
 .. topic:: References 
 
@@ -99,17 +93,17 @@ using the `BaseSteps` module.
 Processing 
 =============
 
-:mod:`~watex.cases.processing` gives a basic processing for achieving results. Here, we implement for the 
+:mod:`~watex.cases.processing` gives basic processing for achieving results. Here, we implement the 
 processing step performed for predicting the flow rate prediction [1]_. 
 
 `Preprocessing` 
---------------------
+-------------------------
 :class:`~watex.cases.processing.Preprocessing` gives the prior steps for flow rate prediction. 
 
 .. note:: 
 
-	If :math:`X` and :math:`y` are provided, they are considered as a features set
-	and target respectively. They should be splitted to the training set 
+	If :math:`X` and :math:`y` are provided, they are considered as a feature set
+	and target respectively. They should be split into the training set 
 	and test set respectively.
 	
 .. code-block:: python 
@@ -122,10 +116,10 @@ processing step performed for predicting the flow rate prediction [1]_.
 	>>> len(pc.X ),  len(y), len(pc.Xt ),  len(pc.yt)
 	(344, 344, 87, 87) # trainset (X,y) and testset (Xt, yt)
 	
-One can assemble pipes and estimator to make model (default) following the snippet code below. 
-Indeed, the model is composed of the transformers and estimator. If one is set to `None`, it uses the 
-default pipe and estimator which might be not the one expected. Therefore providing a pipe and estimator is 
-recommended.
+One can assemble pipes and an estimator to make a model (default) following the snippet code 
+below. Indeed, the model is composed of transformers and estimators. If one is set to `None`, 
+it uses the default pipe and estimator which might be not the one expected. Therefore providing 
+a pipe and estimator is recommended.
 
 .. topic:: Examples: 
 
@@ -140,10 +134,10 @@ recommended.
 	>>> pc.makeModel() # use default model and preprocessor 
 	>>> pc.model_ 
 	Pipeline(steps=[('preprocessor',
-					 ColumnTransformer(transformers=[('numpipe',
-						  Pipeline(steps=[('imputer',
-										   SimpleImputer()),
-										  ('polynomialfeatures',
+			 ColumnTransformer(transformers=[('numpipe',
+					Pipeline(steps=[('imputer',
+							   SimpleImputer()),
+							('polynomialfeatures',
 										   PolynomialFeatures(degree=10,
 															  include_bias=False)),
 										  ('selectors',
@@ -161,7 +155,7 @@ recommended.
 						  ['type', 'shape', 'geol'])])),
 					('SVC', SVC(C=100, gamma=0.001, random_state=42))])
                  
-(2)-> Or build your own preprocesor object using the example below: 
+(2)-> Or build your preprocessor object using the example below: 
 
 .. code-block:: python 
 
@@ -207,9 +201,10 @@ recommended.
 
 
 
-Once  a premodel is created,  a dummy baseline model can be evaluated from preprocessing pipeline; onto a 
-model by providing an estimator. This is possible thank to :meth:`~watex.cases.processing.Preprocessing.baseEvaluation`. 
-A code snippet is given below as: 
+Once a model is created,  a dummy baseline model can be evaluated from preprocessing 
+pipeline; onto a model by providing an estimator. This is possible thanks to 
+:meth:`~watex.cases.processing.Preprocessing.baseEvaluation`.  A code snippet is 
+given below: 
 
 .. code-block:: python 
 
@@ -253,13 +248,13 @@ A code snippet is given below as:
 	{'RandomForestClassifier': 0.7816091954022989,
 	'SGDClassifier': 0.14942528735632185}
 	
-When using the estimator "randomForest" , the score is little bit improved to `78%` whereas it was `47.13 %` for dummy prediction. 
+When using the estimator "randomForest", the score is a little bit improved to `78%` 
+whereas it was `47.13 %` for dummy prediction. 
 
 `Processing` 
 ----------------
-:class:`~watex.cases.processing.Processing` is dedicated for managing baseline model evaluation and learning. 
-
-It also manages the validation curves after fiddling a little bit an estimator hyperparameters. 
+:class:`~watex.cases.processing.Processing` is dedicated to managing baseline model evaluation 
+and learning. It also manages the validation curves after fiddling with a few estimator hyperparameters. 
 
 .. topic:: Examples: 
 

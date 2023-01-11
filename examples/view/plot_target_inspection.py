@@ -3,7 +3,7 @@
 Plot target inspection
 ===================================
 
-Plot indicates the distribution of the data based on the coordinates positions. 
+indicates the distribution of the data based on the coordinates positions. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

@@ -3,7 +3,7 @@
 Plot learning inspections  
 =================================================
 
-Inspect multiple models from their learning curves. 
+inspects multiple models from their learning curves. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

@@ -3,7 +3,7 @@
 Vertical Electrical Sounding (VES)
 ====================================
 
-Plots the frature zone from synthetic VES data 
+visualizes the fracture zone from synthetic VES data.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

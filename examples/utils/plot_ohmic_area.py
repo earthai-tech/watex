@@ -3,14 +3,13 @@
 Plot ohmic-area 
 ======================================================
 
-Plot ohmic-area from the vertical electrical sounding 
-data collected in exploration area.
+visualizes the ohmic-area from the vertical electrical sounding data.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
 #%% 
-# Generate a synthetic data using the function :func:`~watex.datasets.make_ves` 
+# Generates a synthetic data using the function :func:`~watex.datasets.make_ves` 
 
 from watex.datasets import make_ves 
 from watex.utils.exmath import plotOhmicArea 

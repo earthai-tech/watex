@@ -3,7 +3,7 @@
 Plot single learning inspection 
 =================================================
 
-Inspect model from its learning curve.
+inspects model from its learning curve.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

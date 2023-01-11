@@ -3,9 +3,9 @@
 Plot Linear Adaptative Neuron Classifier (Adaline)
 =====================================================
 
-plots an example of using Adaline for 
+visualizes the Adaline estimator in action for 
 improving the gradient descent through 
-features scaling using using the test data 
+features scaling using the test data 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

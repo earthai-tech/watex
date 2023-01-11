@@ -3,7 +3,7 @@
 Plot learning curves  
 =================================================
 
-plots intline multiple of multiple models learning curves. 
+plots inline multiple models learning curves. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

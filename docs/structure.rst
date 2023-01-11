@@ -4,7 +4,7 @@
 Structure
 =================
 
-The struture pages gives a synopsis about the data formats and the methods implemented by the package. 
+The structure page gives a synopsis of the data formats and the methods implemented by the package. 
 
 Data formats 
 ===============
@@ -14,9 +14,7 @@ The data space domain of :code:`watex` is composed of four different data types 
 ERP data type
 ------------------
 
-It can be arranged into several formats such as `*.csv`, `*. xlsx`, `*.xml`, `*.html`, or 
-simple in `Pandas <https://pandas.pydata.org/>`_  data frame. The columns of ERP must be composed of station positions, the resistivity data, 
-and the coordinates such as longitude/latitude or easting/ northing. 
+It can be arranged into several formats such as `*.csv`, `*. xlsx`, `*.xml`, `*.html`, or simple in `Pandas <https://pandas.pydata.org/>`_  data frame. The columns of ERP must be composed of station positions, resistivity data, and the coordinates such as longitude/latitude or easting/ northing. 
 
 VES data type
 ---------------
@@ -48,15 +46,14 @@ Learning
 * `Neighbors: KNN`
 * `Trees: Decision Tree (DTC), Extratrees` 
 * `Ensemble methods (RandomForests, Bagging and Pasting, Boosting and Stacking)`
-* `Apriori, KMeans and Hierachical Agglomerative Trees`
+* `Apriori, KMeans and Hierarchical Agglomerative Trees`
 * `Kernel -Incremental- Principal Component Analysis k-PCA, i-PCA, nPCA`
 * `t-distributed Stochastic Neighbor Embedding t-SNE`
 * `Randomized PCA`
 * `Locally Linear Embedding (LLE)`
 * `more...`
     
-Furthermore, :code:`watex` implements an additional learning methods which are not implement in `scikit-learn`_ yet. These 
-are: 
+Furthermore, :code:`watex` implements additional learning methods which are not implemented in `scikit-learn`_ yet. These are: 
 
 * `SequentialBackwardSelection`
 * `MajorityVoteClassifier`

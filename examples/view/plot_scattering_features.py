@@ -3,7 +3,7 @@
 Plot scattering features
 ===================================
 
-visualizes correlation of two features with bivariate and univariate graphs.
+visualizes correlation of two or more features with bivariate and univariate graphs.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

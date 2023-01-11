@@ -3,7 +3,7 @@
 Plot Receiving Operating Characteristic (ROC)
 =================================================
 
-Plot ROC classifiers performance. 
+visualizes the ROC classifier(s) performance. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

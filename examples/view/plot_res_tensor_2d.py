@@ -4,7 +4,7 @@ Plot two dimensional resistivity tensors
 ================================================
 
 gives a quick visualization of resistivity tensors at the 
-component 'yx'
+component 'yx' in a two-dimensional.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

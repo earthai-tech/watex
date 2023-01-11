@@ -3,7 +3,7 @@
 Plot feature importance with Randomforest 
 =================================================
 
-Plot features importance with RandomForest estimator  
+plot the features importance with RandomForest estimator  
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

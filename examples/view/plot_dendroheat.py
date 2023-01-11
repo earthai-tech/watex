@@ -3,7 +3,7 @@
 Plot dendrogram combined with heatmap
 =================================================
 
-visualize model fined tuned scores vs the cross validation 
+visualizes combined dendrogram and heatmap
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

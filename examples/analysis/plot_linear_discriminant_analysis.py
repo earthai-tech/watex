@@ -3,7 +3,7 @@
 Linear discriminant analysis (LDA)
 ==============================================
 
-plots LDA to increase the 
+visualizes the LDA to increase the 
 computational efficiency and reduce the degree of overfitting 
 due to the curse of dimensionality in non-regularized models.
 """

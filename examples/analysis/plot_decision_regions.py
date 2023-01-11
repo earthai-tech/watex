@@ -3,7 +3,7 @@
 Plot decision regions 
 =================================================
 
-Displays the decision region for the training data reduced to 
+displays the decision region for the training data reduced to 
 two principal component axes. 
 
 """

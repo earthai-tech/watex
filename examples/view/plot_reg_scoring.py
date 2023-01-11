@@ -3,8 +3,8 @@
 Plot Regression learning scoring 
 =================================================
 
-PlotsPlot regressor learning curves with (root)mean squared error
-'(r)mse'scorings.
+visualizes the regressor learning curves with (root)mean squared error
+scorings.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clausee 

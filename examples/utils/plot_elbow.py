@@ -3,7 +3,7 @@
 Plot elbow
 ======================================================
 
-Plot elbow method to find the optimal number of cluster for a given data. 
+visualize the elbow method to find the optimal number of cluster for a given data. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

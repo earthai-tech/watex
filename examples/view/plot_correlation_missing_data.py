@@ -3,7 +3,7 @@
 Plot correlation missing data  
 =================================
 
-Plots helps vizualizing patterns in the missing data using the dendrogram 
+vizualizes the patterns in the missing data using the correlation map 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

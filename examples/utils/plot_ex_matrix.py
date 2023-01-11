@@ -3,7 +3,7 @@
 Plot ex-matrix
 ======================================================
 
-Plot correlation matrix array  as a heat map. 
+visualizes the features correlation as a matrix array. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

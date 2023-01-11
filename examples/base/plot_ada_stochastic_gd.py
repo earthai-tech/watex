@@ -3,7 +3,7 @@
 Plot Stochastic Linear Adaptative Neuron Classifier  
 =====================================================
 
-Plots the mini-batch by applying batch gradient descent to a 
+visualizes the mini-batch by applying batch gradient descent to a 
 smaller subset of test data.
 """
 # Author: L.Kouadio 

@@ -3,7 +3,7 @@
 Plot Box 
 =================================================
 
-Plots allows the feature distributions visualization using 
+visualizes the feature distributions using 
 the box, boxen or violin plots
 """
 # Author: L.Kouadio 

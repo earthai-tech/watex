@@ -4,7 +4,7 @@ Plot discussing features
 ===================================
 
 maps a dataset onto multiple axes arrayed in a grid of rows and columns that 
-correspond to levels of features in the dataset.
+correspond to the level of features in the dataset.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

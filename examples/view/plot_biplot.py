@@ -3,7 +3,7 @@
 Plot bipolar with Principal component analysis (PCA)
 =======================================================
 
-The biplot is the best way to visualize all-in-one following a PCA analysis.
+visualizes all-in-one features from PCA analysis.
 There is an implementation in R but there is no standard implementation
 in Python. 
 """

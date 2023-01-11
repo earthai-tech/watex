@@ -3,8 +3,8 @@
 Plot base distributions 
 ================================================
 
-plot base histogram and bar distribution respectively. For better view, 
-target can be mapped into a categorized labels.
+plots the base-histogram and bar-distribution from
+categorized labels.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

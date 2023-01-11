@@ -3,7 +3,7 @@
 Plot dendrogram 
 =================================================
 
-visualize model fined tuned scores vs the cross validation 
+visualizes specific features on a dendrogram diagram 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
