@@ -41,7 +41,7 @@ Benefits
 
 :code:`watex` has been used to solve a real-engineering problem, such as the FR prediction during the campaigns for 
 drinking water supply. It aims to compute some geoelectrical parameters using the DC-resistivity methods 
-(Resistivity Profiling and vertical sounding) and used the `Support vector machines for the FR prediction with 
+(Resistivity Profiling and vertical sounding) and used the Support vector machines for the FR prediction with 
 a success rate greater than 77%. The case history is published in `Water Resources Research`_ journal is known 
 as one of the most popular journals in the GWE field research.  
 
