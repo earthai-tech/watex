@@ -5,9 +5,7 @@ Citing
 =============
 
 
-We appreciate to cite the paper below if the software is used in any scientific publication.
-It has been published in the `Water Resources Research journal <https://doi.org/10.1029/2021wr031623>`_.
-Here is a ready-made BibTeX entry:
+If the software is used in any scientific publication, We appreciate citing the paper below. It has been published in the `Water Resources Research journal <https://doi.org/10.1029/2021wr031623>`_. Here is a ready-made BibTeX entry:
 
 .. highlight:: none
 

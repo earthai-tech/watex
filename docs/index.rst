@@ -9,13 +9,13 @@
     :class-title: sd-fs-5  
     :columns: 12 12 10 10
 
-    `WATex` is a Python package focused on the groundwater exploration field. It brings piece solutions to minimize the losses 
-    during the hydro-geophysical engineering projects. It uses the geophysical methods combined with the machine learning approaches 
+    `WATex` is a Python package focused on the groundwater exploration field. It brings novel approaches and solutions to minimize losses 
+    during hydro-geophysical engineering projects. It uses geophysical methods combined with machine learning approaches 
     to predict some water content targets. More about the ideas behind the package can be found in the :ref:`introductory notes <about>`.     	
 	
     To getting started with the software, refer to the :ref:`installation guide <installation>`. You can also browse 
     the :doc:`examples <glr_examples/index>` page to see some of the expected results you can achieve using the software. 
-    The :ref:`user guide <user_guide>` is more in-depth guide about the different methods implemented supported by theories and concrete examples. 
+    The :ref:`user guide <user_guide>` is a more in-depth guide about the different methods implemented supported by theories and real-world examples. 
 
   .. grid-item-card:: Contents
     :columns: 12 12 2 2

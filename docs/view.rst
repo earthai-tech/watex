@@ -6,53 +6,59 @@ View
 
 .. currentmodule:: watex.view
 
-:mod:`~watex.view` is dedicated for visualization purposes data from the local machine. The module deals with the parameters 
-and processing spaces  and yields multiples plots for data exploration, features analysis, features discussion, 
-tensor recovery, model inspection, and evaluation.  :mod:`~watex.view`  is divided in two sub-modules: 
+:mod:`~watex.view` is dedicated to visualization purposes. The module deals with the parameters and 
+processing spaces and yields multiple plots for data exploration, features analysis, features discussion, 
+tensor recovery, model inspection, and evaluation.  :mod:`~watex.view`  is divided into two sub-modules: 
 
-* :mod:`~watex.view.plot` for handling the params space plots via  :class:`~watex.view.ExPlot`, :class:`~watex.view.QuickPlot`, and :class:`~watex.view.TPlot`. 
-* :mod:`~watex.view.mlplot` for handling the processing space plot through the :class:`~watex.view.EvalPlot` as well as many other functions. 
+* :mod:`~watex.view.plot` for handling the params space plots via  :class:`~watex.view.ExPlot`, :class:`~watex.view.QuickPlot`, 
+  and :class:`~watex.view.TPlot`. 
+* :mod:`~watex.view.mlplot` for handling the processing space plot through the :class:`~watex.view.EvalPlot` as well 
+  as many other functions. 
 
-All the classes implemented in :mod:`~watex.view` module from :class:`~watex.property.Baseplots` ABC (Abstract Base Class) objects. 
-All arguments from this class can be used for customize the plots. Refer to :class:`~watex.property.Baseplots` to know the 
-acceptables attributes for that class for plot customizing. 
+All the classes implemented in :mod:`~watex.view` module from  :class:`~watex.property.Baseplots` ABC (Abstract Base Class) 
+objects. All arguments from this class can be used for customizing the plots. Refer to :class:`~watex.property.Baseplots` 
+to know the explanation of the attributes for plot customizing. 
 
 Furthermore, note the existence of the `tname` and `pkg` parameters passed mostly to the :mod:`~watex.view`  module classes:
 
-* `tname`: always str, is  the target name or label. In supervised learning the target name is considered as the reference name of :math:`y` or label variable:  
-* `pkg`: always str, Optional by default, is the kind or library to use for visualization. can be ['yb'|'msn'|'sns'|'pd']  for 'yellowbrick'[1]_ , 'missingno', 'seaborn' or 'pandas' respectively. 
-	Mosyly the default value for `pkg` is ``pd`` or ``sns``.  To install these packages, use ``pip`` or ``conda``. Note that the `pkg` parameter is specific for each plotting method, is not passed to `__init__` method. 
-	
-Additional to that, each module plots has some specific parameters passed to ``__init__`` methods. Refer to each plot class documentation.   
+* `tname`: always str, is  the target name or label. In supervised learning the target name is considered as the reference 
+   name of :math:`y` or label variable:  
+* `pkg`: always str, Optional by default, is the kind or library to use for visualization. can be ['yb'|'msn'|'sns'|'pd']  
+   for 'yellowbrick'[1]_ , 'missingno', 'seaborn' or 'pandas' respectively. Mosyly the default value for `pkg` is 
+   ``pd`` or ``sns``.  To install these packages, use ``pip`` or ``conda``. Note that the `pkg` parameter 
+   is specific for each plotting method, and s not passed to `__init__` method. Additionally, each module 
+   plot some specific parameters passed to ``__init__`` methods. Refer to each plot class documentation.   
 
 
 Params space plots  
 ====================
 The `params space` plots is ensured by the modules :class:`~watex.view.ExPlot`, :class:`~watex.view.QuickPlot`, for 
-data exploratory, data analysis and quick visualization,  and tensors plots for EM recovery signals. 
+data exploratory, data analysis and quick visualization,  and tensor plots for EM recovery signals. 
 
 
 `Exploratory plots` 
---------------------
+--------------------------
 
-`ExPlot` ( :class:`~watex.view.plot.ExPlot` ) is a shadow class and explore data to create a model since 
-it gives a feel for the data and also at great excuses to meet and discuss issues with business units that controls the data. Moreover 
-all `ExPlot` methods return an instancied object that inherits from :class:`~watex.property.Baseplots` for visualization. Simply, `ExPlot` 
-can be called as:: 
+`ExPlot` ( :class:`~watex.view.plot.ExPlot` ) is a shadow class and explores data to create a model since 
+it gives a feel for the data and also at great excuses to meet and discuss issues with business units 
+that control the data. Moreover, all `ExPlot` methods return an instanced object that inherits from 
+class:`~watex.property.Baseplots` for visualization. Simply, `ExPlot` can be called:: 
+
 	>>> from watex.view import ExPlot # for short calling 
 	>>> from watex.view.plot import ExPlot 
 	
-The costumizing attributes can be passed as keywords arguments before the `fit` method (:meth:`~watex.view.ExPlot.fit` as :: 
+The customizing attributes can be passed as keywords arguments before the `fit` method (:meth:`~watex.view.ExPlot.fit` as:: 
 
 	>>> plot_kws =dict (fig_size=(12, 7), xlabel="Label for X", ylabel= "something for Y", ... ) 
 	>>> ExPlot (**plot_kws) 
 
-Here, are some examples of plots can be inferred the :class:`~watex.view.plot.ExPlot`. Refer to :class:`~watex.view.plot.ExPlot` for 
-acceptable additional parameters. 
+Here, are some examples of plots that can be inferred from the :class:`~watex.view.plot.ExPlot`. 
+Refer to :class:`~watex.view.plot.ExPlot` for additional parameters explanation. 
 
 Plot parallel coordinates: :meth:`~watex.view.ExPlot.plotparallelcoords` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:meth:`~watex.view.ExPlot.plotparallelcoords` uses parallel coordinates in multivariates for clustering visualization. For examples:
+:meth:`~watex.view.ExPlot.plotparallelcoords` uses parallel coordinates in multivariates for 
+clustering visualization. For examples:
 
 .. code-block:: python 
 
@@ -71,9 +77,9 @@ Plot parallel coordinates: :meth:`~watex.view.ExPlot.plotparallelcoords`
 Plot Radial: :meth:`~watex.view.ExPlot.radviz` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.ExPlot.radviz`  shows each sample on circle or square, with features on the circonference to 
-vizualize separately between target. Values are normalized and each figure has a spring that pulls samples 
-to it based on the value. Here is an example: 
+:meth:`~watex.view.ExPlot.radviz`  shows each sample on a circle or square, with features on 
+the circumference to visualize separately between targets. Values are normalized and each figure 
+has a spring that pulls samples based on the value. Here is an example: 
 
 .. code-block:: python 
 	
@@ -94,10 +100,10 @@ to it based on the value. Here is an example:
    :target: ../examples/auto_examples/view_explot_plot_rad_viz_yb.html
    :scale: 50%
 	
-* **Radial Visualization: using pandas and yellowbrick plots** 
+* **Radial Visualization: using pandas and yellow-brick plots** 
 
   ==================================== ====================================
-  RadViz with Pandas 	              		RadViz with yellowbrick  
+  RadViz with Pandas 	              		RadViz with yellow-brick  
   ==================================== ====================================
   |pd_rv|                         		|yb_rd|
   ==================================== ====================================
@@ -105,8 +111,9 @@ to it based on the value. Here is an example:
 Plot Pairwise comparison: :meth:`~watex.view.ExPlot.plotpairwisecomparison` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.ExPlot.plotpairwisecomparison` creates pairwise comparison between features. It shows 
-a ['pearson'|'spearman'|'covariance'] correlation. Here is a example of code snippet:
+:meth:`~watex.view.ExPlot.plotpairwisecomparison` creates a pairwise comparison between 
+features. It shows a ['pearson'|'spearman'|'covariance'] correlation. Here is an example 
+of a code snippet:
 
 .. code-block:: python 
 
@@ -120,7 +127,7 @@ a ['pearson'|'spearman'|'covariance'] correlation. Here is a example of code sni
 								 vmin=-1, 
 								 vmax=1 )
 								 
-The following outputs is given below:
+The following output is given below:
 
 .. figure:: ../examples/auto_examples/view_explot_plot_pairwise_comparison.png
    :target: ../examples/auto_examples/view_explot_plot_pairwise_comparison.html
@@ -130,11 +137,12 @@ The following outputs is given below:
 Plot Categorical Features Comparison :meth:`~watex.view.ExPlot.plotcutcomparison` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.ExPlot.plotcutcomparison` compares the quantile values of ordinal categories. It simulates that the the bining of `xname` into a `q` 
-quantiles, and `yname` into `bins`. Plot is normalized so its fills all the vertical area which makes easy to see that in the `4*q %` 
-quantiles. Note that `xname` and `yname` are vectors or keys in data variables that specify positions on the `x` and `y` axes. Both 
-are the column names to consider. Should be items in the dataframe columns. Raise an error if elements do not exist. Here is an example of 
-`sfi` (:func:`~watex.utils.exmath.sfi`) and `ohmS` (:func:`~watex.utils.exmath.ohmicArea`):   
+:meth:`~watex.view.ExPlot.plotcutcomparison` compares the quantile values of ordinal categories. It stimulates 
+the bining of `xname` into a `q` quantiles, and `yname` into `bins`. The plot is normalized so it fills all 
+the vertical area which makes it easy to see that in the `4*q %` quantiles. Note that `xname` and `yname` are 
+vectors or keys in data variables that specify positions on the `x` and `y` axes. Both are column names to consider. 
+Should be items in the data frame columns. Raise an error if elements do not exist. Here is an example of `sfi` 
+(:func:`~watex.utils.exmath.sfi`) and `ohmS` (:func:`~watex.utils.exmath.ohmicArea`):   
 
 .. code-block:: python 
 
@@ -153,9 +161,9 @@ are the column names to consider. Should be items in the dataframe columns. Rais
 Plot Box: :meth:`~watex.view.ExPlot.plotbv` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-:meth:`~watex.view.ExPlot.plotbv` allows the distributions visualization using the box, boxen or violin plots. The choice of the 
-box is passed to the parameter `kind`. See :meth:`~watex.view.ExPlot.plotbv` documentation for further details. A basic example 
-using the 'violin' plot is given below: 
+:meth:`~watex.view.ExPlot.plotbv` allows the visualization of the distribution using the box, boxen, or 
+violin plots. The choice of the box is passed to the parameter `kind`. See :meth:`~watex.view.ExPlot.plotbv` 
+documentation for further details. A basic example using the 'violin' plot is given below: 
 
 .. code-block:: python 
 
@@ -176,9 +184,9 @@ Here is the given output:
 Plot Grid in Pair: :meth:`~watex.view.ExPlot.plotpairgrid`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.ExPlot.plotpairgrid` creates a pair grid. Plot is a matrix of columns and kernel density estimations. 
-To color by a columns from a dataframe, use `hue` parameter. Refer to :meth:`~watex.view.ExPlot.plotpairgrid` for more details. 
-Here is a basic example: 
+:meth:`~watex.view.ExPlot.plotpairgrid` creates a pairing grid. The plot is a matrix of columns and kernel 
+density estimations. To color by columns from a data frame, use the  `hue` parameter. Refer to 
+:meth:`~watex.view.ExPlot.plotpairgrid` for more details. Here is a basic example: 
 
 .. code-block:: python 
 
@@ -197,7 +205,7 @@ Here is a basic example:
 Plot Joint features: :meth:`~watex.view.ExPlot.plotjoint`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.ExPlot.plotjoint` is a fancier scatterplot that includes histogram on the edge as well as a 
+:meth:`~watex.view.ExPlot.plotjoint` is a fancier scatterplot that includes a histogram on the edge as well as a 
 regression line called a `joinplot`. Here is an example: 
 
 .. code-block:: python 
@@ -214,7 +222,7 @@ regression line called a `joinplot`. Here is an example:
    :align: center
    :scale: 60%     
    
-There several options to customize the jointplot passed to :meth:`~watex.view.ExPlot.plotjoint`.  
+There are several options to customize joint plots passed to :meth:`~watex.view.ExPlot.plotjoint`.  
    
 .. seealso:: 
 	:meth:`~watex.view.plot.QuickPlot.joint2features` 
@@ -222,7 +230,8 @@ There several options to customize the jointplot passed to :meth:`~watex.view.Ex
 Plot Scatter: :meth:`~watex.view.ExPlot.plotscatter`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.ExPlot.plotscatter` plot numerical features and shows the relationship between two numeric columns. 
+:meth:`~watex.view.ExPlot.plotscatter` plots numerical features and shows the relationship between 
+two numeric columns. 
 
 
 .. code-block:: python 
@@ -241,7 +250,8 @@ The above code generates the following output:
 Plot Histogram - Features vs Target: :meth:`~watex.view.ExPlot.plothistvstarget`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.ExPlot.plothistvstarget` plots a histogram of continuous values against the target of binary plot. Here is a base implementation: 
+:meth:`~watex.view.ExPlot.plothistvstarget` plots a histogram of continuous values against the target of 
+a binary plot. Here is a base implementation: 
 
 .. code-block:: python 
 	
@@ -271,7 +281,7 @@ Here is the example output:
 Plot Missing: :meth:`~watex.view.ExPlot.plotmissing`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.ExPlot.plotmissing` helps vizualizing patterns in the missing data. Here are some examples: 
+:meth:`~watex.view.ExPlot.plotmissing` helps visualizing patterns in the missing data. Here are some examples: 
 
 .. code-block:: python 
 
@@ -283,14 +293,14 @@ Plot Missing: :meth:`~watex.view.ExPlot.plotmissing`
 	>>> p.plotmissing(kind ='dendrogram')
 	<'ExPlot':xname=None, yname=None , tname=None>
 	
-The following outputs gives three kind of missing data visualization.The first outputs the base missing pattern:
+The following outputs give three kinds of missing data visualization. The first outputs the base missing pattern:
  
 .. figure:: ../examples/auto_examples/view_explot_plot_missing_mpattern.png
    :target: ../examples/auto_examples/view_explot_plot_missing_mpattern.html
    :align: center
    :scale: 70%
 
-The remains two gives another representations of missing data. 
+The remaining two give another representation of missing data. 
 
 .. |dendro_mss| image:: ../examples/auto_examples/view_explot_plot_missing_dendrogram.png
    :target: ../examples/auto_examples/view_explot_plot_missing_dendrogram.html
@@ -300,7 +310,7 @@ The remains two gives another representations of missing data.
    :target: ../examples/auto_examples/view_explot_plot_missing_corr.html
    :scale: 60%
 	
-* **Three kind of missing data visualization** 
+* **Three kinds of missing data visualization** 
 
   ==================================== ====================================
   Dendrogram missing patterns 	              Correlation missing patterns  
@@ -314,29 +324,33 @@ The remains two gives another representations of missing data.
 
 
 `Analysis and Discussing plots` 
--------------------------------------
+-------------------------------------------
 
-:class:`~watex.view.QuickPlot` is a special class that deals with analysis modules for quick diagrams, histograms and bar visualization. 
-Originally, it was designed for the flow rate (`FR`) prediction during the drinking water supply campaign (DWSC) [2]_. The parameters `mapflow` and `classes` work together and usefull when 
-flow data is passed to :meth:`~watex.view.plot.QuickPlot.fit`. Once `mapflow` is set to ``True``, the flow target :math:`y` should be 
-turned to categorical values encoded  referring to the type of types of hydraulic system commonly recommended during the DWSC. Mostly 
-the hydraulic system is tied to the number of living inhabitants in the survey area [3]_. For instance:
+:class:`~watex.view.QuickPlot` is a special class that deals with analysis modules for quick diagrams, 
+histograms, and bar visualization. Originally, it was designed for the flow rate (`FR`) prediction 
+during the drinking water supply campaign (DWSC) [2]_. The parameters `mapflow` and `classes` work 
+together and are useful when flow data is passed to :meth:`~watex.view.plot.QuickPlot.fit`. Once `mapflow` 
+is set to ``True``, the flow target :math:`y` should be turned to categorical values encoded referring to 
+the type or types of hydraulic system commonly recommended during the DWSC. Mostly the hydraulic system is 
+tied to the number of living inhabitants in the survey area [3]_. For instance:
 
 * FR = 0 is for dry boreholes (FR0)
 * 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants) (FR1)
 * 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) (FR2)
 * 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants)(FR3)
     
-Note that this flow range passed by default when `mapflow=True` is not exhaustive and can be modified according to the type of hydraulic 
-required on each project project. 
-Beyond the FR objective as the first motivation design of this class, however, it still prefectly works with any other dataset 
-if the appropriate arguments are passed to different methods. In the following, some examples will be displayed to give a visual depiction 
-of using the :class:`~watex.view.QuickPlot`  class. 
+Note that this flow range passed by default when `mapflow=True` is not exhaustive and can be modified 
+according to the type of hydraulic required on each project. Beyond the FR objective as the first 
+motivation design of this class, however, it still perfectly works with any other dataset if the 
+appropriate arguments are passed to different methods. In the following, some examples will be 
+displayed to give a visual depiction of using the :class:`~watex.view.QuickPlot`  class. 
 
 Plot Naive Target Inspection: :meth:`~watex.view.QuickPlot.naiveviz`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:meth:`~watex.view.QuickPlot.naiveviz` generates a plot to visualize the data using  the existing coordinates `x` and `y`  by considering a special dataframe feature, mostly 
-the target :math:`y`. The plot indicates the distribution of the data based on the coordinates positions. Here a demonstration for naive visualization. 
+:meth:`~watex.view.QuickPlot.naiveviz` generates a plot to visualize the data using the existing 
+coordinates `x` and `y` by considering a special data frame feature, mostly the target :math:`y`. 
+The plot indicates the distribution of the data based on the coordinate positions. Here is a demonstration 
+of naive visualization. 
         
 .. code-block:: python
  
@@ -365,18 +379,19 @@ Here is the following output:
    :align: center
    :scale: 70%  
    
-As a brief interpretation, at a glance, the survey area is dominated by the dried boreholes :math:`FR=0` and the unsustainable 
-boreholes ( :math:`0 \leq FR < 2 \quad m^3/hr`). The most productive boreholes  (:math:`FR \geq 4 \quad m^3/hr` ) are located in the 
-southeastern part of survey area. 
+As a brief interpretation, at a glance, the survey area is dominated by the dried boreholes :math:`FR=0` and 
+the unsustainable boreholes ( :math:`0 \leq FR < 2 \quad m^3/hr`). The most productive boreholes  
+(:math:`FR \geq 4 \quad m^3/hr` ) are located in the southeastern part of the survey area. 
 
 Plot Feature Discussing: :meth:`~watex.view.QuickPlot.discussingfeatures`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.QuickPlot.discussingfeatures` plots feature distributions along the target. For instance, ones can provide the 
-features names at least 04 and discuss with their distribution. Here is a basic example of Bagoue dataset (:func:`watex.datasets.load_bagoue`) 
+:meth:`~watex.view.QuickPlot.discussingfeatures` plots feature distributions along the target. For instance, 
+ones can provide the features names at least 04 and discuss them with their distribution. Here is a basic 
+example of the Bagoue dataset (:func:`watex.datasets.load_bagoue`) 
 
-:meth:`~watex.view.QuickPlot.discussingfeatures` maps a dataset onto multiple axes arrayed in a grid of rows and columns that 
-correspond to levels of features in the dataset. Here is a snippet codes for a concrete example: 
+:meth:`~watex.view.QuickPlot.discussingfeatures` maps a dataset onto multiple axes arrayed in a grid of rows 
+and columns that correspond to levels of features in the dataset. Here is a snippet code for a real-world example: 
 
 .. code-block:: python 
 
@@ -405,24 +420,25 @@ This is the following output:
    :align: center
    :scale: 50%  
    
-At a glance, the figure above shows that most of the drillings carried out on granites have an `FR` of around :math:`1 \quad m^3/hr` 
-(:math:`FR1:0< FR \leq 1`). With these kinds of flows, it is obvious that the boreholes will be unproductive 
-(unsustainable) within a few years.  However, the volcano-sedimentary schists seem the most suitable geological structure 
-with an `FR` greater than :math:`3 \quad m^3/hr`. However, the wide fractures on these formations 
-(explained by :math:`ohmS > 1500 \Omega.m^2`) do not mean that they should be more productive since all the drillings performed 
-on the wide fracture do not always give a productive `FR` (:math:`FR>3 \quad m^3/hr`) contrary to the narrow fractures 
-(around 1000 ohmS). As a result, it is reliable to consider this approach during a future DWSC such as the geology of the 
-area and also the rock fracturing ratio computed thanks to the parameters `sfi` and `ohmS`.  
+At a glance, the figure above shows that most of the drillings carried out on granites have an `FR` of 
+around :math:`1 \quad m^3/hr` (:math:`FR1:0< FR \leq 1`). With these kinds of flows, it is obvious that 
+the boreholes will be unproductive (unsustainable) within a few years.  However, the volcano-sedimentary 
+schists seem the most suitable geological structure with an `FR` greater than :math:`3 \quad m^3/hr`. However, 
+the wide fractures on these formations (explained by :math:`ohmS > 1500 \Omega.m^2`) do not mean that they should 
+be more productive since all the drillings performed on the wide fracture do not always give a productive `FR` 
+(:math:`FR>3 \quad m^3/hr`) contrary to the narrow fractures (around 1000 ohmS). As a result, it is reliable to 
+consider this approach during a future DWSC such as the geology of the area and also the rock fracturing ratio 
+computed thanks to the parameters `sfi` and `ohmS`.  
 
 
 Plot Features Scattering: :meth:`~watex.view.QuickPlot.scatteringfeatures`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.QuickPlot.scatteringfeatures` draws a scatter plot with possibility of several semantic features grouping.
-Indeed `scatteringfeatures` analysis is a process of understanding how features in a dataset relate to each other and how those 
-relationships depend on other features. Visualization can be a core component of this process because, when data are visualized 
-properly,the human visual system can see trends and patterns that indicate a relationship. Below is an example of feature scattering 
-plots: 
+:meth:`~watex.view.QuickPlot.scatteringfeatures` draws a scatter plot with possibility of several semantic 
+features grouping.Indeed `scatteringfeatures` analysis is a process of understanding how features in a dataset 
+relate to each other and how those relationships depend on other features. Visualization can be a core component 
+of this process because, when data are visualized properly, the human visual system can see trends and patterns 
+that indicate a relationship. Below is an example of feature scattering plots: 
 
 .. code-block:: python 
 
@@ -470,14 +486,14 @@ This is the following output:
    :align: center
    :scale: 70%  
    
-In the above figure, ones can notice that the productive `FR` is mostly found between 10 -20  and 40-45 m meters deep. Some borehole 
-has the two level of water inrush and mostly found in volcano-sedimentary schists. 
+In the above figure, ones can notice that the productive `FR` is mostly found between 10 -20  and 40-45 m 
+meters deep. Some borehole has two-level of water inrush and is mostly found in volcano-sedimentary schists. 
 
 Plot Jointing Features: :meth:`~watex.view.QuickPlot.joint2features`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.QuickPlot.joint2features` allows to visualize correlation of two features. It draws a plot of two features 
-with bivariate and univariate graphs. Here is an example: 
+:meth:`~watex.view.QuickPlot.joint2features` allows visualizing the correlation of two features. It draws 
+a plot of two features with bivariate and univariate graphs. Here is an example: 
 
 .. code-block:: python 
 
@@ -509,17 +525,20 @@ The above code snippet renders the following output:
    :scale: 60%  
    
 .. seealso:: 
-	:meth:`~watex.view.ExPlot.plotjoint` uses additional package like `yellowbrick` [1]_. 
+	:meth:`~watex.view.ExPlot.plotjoint` uses an additional package like `yellowbrick` [1]_. 
 
 Plot Qualitative Features: :meth:`~watex.view.QuickPlot.numfeatures`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.QuickPlot.numfeatures` plots qualitative (numerical) features  distribution using correlative aspect. It only works with 
-sure numerical features.  Here is a concrete examples for plotting the numerical distribution according to the target passed to `tname`. For 
-this demonstration, we will change a little bit the target name to ohmic-area `ohmS` and only keep the features `['ohmS', 'power', 'lwi', 'flow']` 
-in the data. Note, rather than mapping the flow with parameter `mapflow`, we use the function :func:`~watex.utils.funcutils.smart_label_classifier` to 
-categorize the numerical `ohmS` values into three classes called `oarea` such as :math:`oarea1 :ohmS \leq 1000 \Omega.m^2` encoded to `{0}`, 
-:math:`oarea2 :1000 <ohmS \leq 2000 \Omega.m^2` encoded to `{1}` and :math:`oarea3 : oa3 > 2000 \Omega.m^2` encoded to `{2}`.  The code snippet is given below:
+:meth:`~watex.view.QuickPlot.numfeatures` plots qualitative (numerical) features distribution using 
+correlative aspect. It only works with sure numerical features.  Here is a tangible example for plotting 
+the numerical distribution according to the target passed to `tname`. For this demonstration, we will change 
+a little bit the target name to ohmic-area `ohmS` and only keep the features `['ohmS', 'power', 'lwi', 'flow']` 
+in the data. Note, rather than mapping the flow with the parameter `mapflow`, we use the function 
+:func:`~watex.utils.funcutils.smart_label_classifier` to categorize the numerical `ohmS` values into 
+three classes called `oarea` such as :math:`oarea1 :ohmS \leq 1000 \Omega.m^2` encoded to `{0}`, 
+:math:`oarea2 :1000 <ohmS \leq 2000 \Omega.m^2` encoded to `{1}` and :math:`oarea3 : oa3 > 2000 \Omega.m^2` 
+encoded to `{2}`.  The code snippet is given below:
 
 .. code-block:: python 
 
@@ -558,9 +577,9 @@ Here is the following output:
 Plot Correlating Features: :meth:`~watex.view.QuickPlot.corrmatrix`  
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.QuickPlot.corrmatrix`  method quickly plots the correlation between the numerical and categorical features 
-by setting the parameter `cortype` to ``num`` or ``cat`` for numerical or categorical features. Here is an example 
-using the `Bagoue dataset` with mixture type of features:
+:meth:`~watex.view.QuickPlot.corrmatrix`  method quickly plots the correlation between the numerical 
+and categorical features by setting the parameter `cortype` to ``num`` or ``cat`` for numerical or 
+categorical features. Here is an example using the `Bagoue dataset` with a mixture type of features:
         
 .. code-block:: python 
 
@@ -577,7 +596,7 @@ using the `Bagoue dataset` with mixture type of features:
 	>>> qplotObj.corrmatrix( **sns_kwargs)
 	QuickPlot(savefig= None, fig_num= 1, fig_size= (7, 5), ... , classes= None, tname= None, mapflow= False)
    
-Here are examples of matrix correlation between categorical and numerical features 
+Here are examples of matrix correlation between categorical and numerical features:
 
 .. |cat_corr| image:: ../examples/auto_examples/view_quickplot_correlation_matrix_categorical_features.png
    :target: ../examples/auto_examples/view_quickplot_correlation_matrix_categorical_features.html
@@ -600,8 +619,8 @@ Here are examples of matrix correlation between categorical and numerical featur
 Plot Multiples categorical feature distribution :meth:`~watex.view.QuickPlot.multicatdist`  
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.QuickPlot.multicatdist` gives a figure-level interface for drawing multiple categorical distributions. It plots 
-onto a FacetGrid. The following code snippet gives a basic illustration. 
+:meth:`~watex.view.QuickPlot.multicatdist` gives a figure-level interface for drawing multiple categorical 
+distributions. It plots onto a FacetGrid. The following code snippet gives a basic illustration. 
 
 .. code-block:: python 
 
@@ -620,39 +639,43 @@ onto a FacetGrid. The following code snippet gives a basic illustration.
 	>>> qplotObj.multicatdist(**fdict)
         
 
-A mutiples categorical feature distributions can give a usefull insights about the figure distributions. Let check the following outputs and 
-give a brief interpretation: 
+Multiple categorical feature distributions can give useful insights into the figure distributions. Let’s 
+check the following outputs and give a brief interpretation: 
 
 .. figure:: ../examples/auto_examples/view_quickplot_multicat_distribution_with_geol_as_target.png
    :target: ../examples/auto_examples/view_quickplot_multicat_distribution_with_geol_as_target.html
    :align: center
    :scale: 50%  
 
-For instance the figure above shows at the glance that the granites are the most geological structures encountered in the survey area. Furthermore, the conductive zones 
-found in the volcano-sedimentary schists are mostly dominated by the type `CP` and `NC` whereas the they are found everywhere in the 
-granites formations especially in the anomly with shape `V` . The conductive zone with shape `C` and `K` as well as the `U` are rarely found. This can be 
-explained by the difficulty to find a wide-fracture in that area. Refer to :func:`~watex.utils.exmath.type_`  and :func:`~watex.utils.exmath.shape` for 
-further details about the `type` and `shape` DC parameters` computation and [4]_ for a better explanations. The next figure will try to 
-give  insights about the probable relationship between the geological formations of the area and the other features. 
+For instance, the figure above shows at a glance that the granites are the most geological structures 
+encountered in the survey area. Furthermore, the conductive zones found in the volcano-sedimentary schists 
+are mostly dominated by the type `CP` and `NC` whereas they are found everywhere in the granite formations, 
+especially in the anomaly with shape `V` . The conductive zone with shapes `C` and `K` as well as the `U` is 
+rarely found. This can be explained by the difficulty to find a wide fracture in that area. Refer to :func:`~watex.utils.exmath.type_`  
+and :func:`~watex.utils.exmath.shape` for further details about the `type` and `shape` DC parameters` computation and [4]_ 
+for a better explanation. The next figure will try to give insights into the probable relationship between the geological 
+formations of the area and the other features. 
 
 .. figure:: ../examples/auto_examples/view_quickplot_multicat_distribution_with_flow_as_target_vs_geol.png
    :target: ../examples/auto_examples/view_quickplot_multicat_distribution_with_flow_as_target_vs_geol.html
    :align: center
    :scale: 50%  
    
-The figure validates the predominance of the granites formations in the area and indicated that at the same time, the granites are the 
-most structures that yield a dried boreholes (unsucessful (FR0: FR=0)) and unsustainable boreholes (FR1). At the opposite to the granites, 
-the volcano-sedimentary shists are the most productives with productive FR values (FR2 and FR3) althought there are a little bit FR1. It seems 
-very interesting to consider the geology of the area when looking about the productive FR in the survey area. 
+The figure validates the predominance of the granite formations in the area and indicated that at the same time, 
+the granites are the most structures that yield dried boreholes successful (FR0: FR=0)) and unsustainable boreholes 
+(FR1). At the site of the granites, the volcano-sedimentary shists are the most productive with productive FR 
+values (FR2 and FR3) although there is a little bit of FR1. It seems very interesting to consider the geology 
+of the area when looking at productive FR in the survey area. 
 
 
 Plot Base Distributions using Histogram or Bar: :meth:`~watex.view.QuickPlot.histcatdist` | :meth:`~watex.view.QuickPlot.barcatdist`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Two basic distributions plots can be visualized using the :meth:`~watex.view.QuickPlot.histcatdist` or 
-:meth:`~watex.view.QuickPlot.barcatdist` for histogram and bar distribution respectively. Here are two bases examples. 
-For better view, target can be mapped into a categorized labels. For instance the flow target straighforwardly fetched 
-from :mod:`~watex.datasets` can be mapped using the function :func:`~watex.utils.cattarget` as follow:: 
+Two basic distributions plots can be visualized using the :meth:`~watex.view.QuickPlot.histcatdist` 
+or :meth:`~watex.view.QuickPlot.barcatdist` for histogram and bar distribution respectively. Here are 
+two bases examples. For a better view, the target can be mapped into categorized labels. For instance the 
+flow target straightforwardly checked from :mod:`~watex.datasets` can be mapped using the 
+function :func:`~watex.utils.cattarget` as follow:: 
 
 	>>> from watex.datasets import load_bagoue 
 	>>> from watex.utils import cattarget 
@@ -663,15 +686,16 @@ from :mod:`~watex.datasets` can be mapped using the function :func:`~watex.utils
 	>>> data.flow.values  [:7] 
 	array(['FR2', 'FR0', 'FR1', 'FR1', 'FR1', 'FR2', 'FR1'], dtype=object)
 	
-The snippet code above can be skipped by fetching the same data using the boilerplate function :func:`~watex.datasets.fetch_data` yields the stored 
-the second stored kind of flow target in the frame by passing  the `get` dictionnary method to the the `tag=original`like this::
+The snippet code above can be skipped by fetching the same data using the boilerplate 
+function :func:`~watex.datasets.fetch_data` yields the stored second stored kind of flow target 
+in the frame by passing  the `get` dictionary method to the `tag=original` like this::
 	
 	>>> from watex.datasets import fetch_data 
 	>>> data= fetch_data ('Bagoue original').get('data=dfy2')
 	>>> data.flow.values [:7]  # same like above even the data is shuffled.
 	array(['FR2', 'FR1', 'FR1', 'FR2', 'FR2', 'FR2', 'FR1'], dtype=object)
 	
-The following codes gives bases distributions histogram and bar plots: 
+The following codes give distributions histogram and bar plots: 
 
 .. code-block:: python 
 
@@ -680,15 +704,15 @@ The following codes gives bases distributions histogram and bar plots:
 	>>> data = load_bagoue ().frame 
 	>>> # data = fetch_data ('Bagoue original').get ('data=dfy2') # for FR categorization instead  
 	>>> qplotObj= QuickPlot(xlabel = 'Anomaly type',
-							ylabel='Number of  occurence (%)',
-							lc='b', tname='flow')
+					ylabel='Number of  occurence (%)',
+					lc='b', tname='flow')
 	>>> qplotObj.fig_size = (7, 5) 
 	>>> qplotObj.sns_style = 'darkgrid'
 	>>> qplotObj.fit(data)
 	>>> qplotObj. barcatdist(basic_plot =False, 
 						  groupby=['shape' ])
 	
-The following outputs gives the target numerical and  categorization histogram plots: 
+The following outputs give target numerical and  categorization histogram plots: 
 
 .. |num_hplot| image:: ../examples/auto_examples/view_quickplot_bar_distributions_num_values.png
    :target: ../examples/auto_examples/view_quickplot_bar_distributions_num_values.html
@@ -712,21 +736,23 @@ For base bar distribution plots, refer to ::meth:`~watex.view.QuickPlot.barcatdi
 
 `Tensor recovery  plots` 
 ------------------------------
-:class:`~watex.view.TPlot`  gives base plots from short-periods EM processing data.
-Indeed, :class:`~watex.view.TPlot` plots Tensors (Impedances , resistivity and phases ) plot class. 
-:class:`~watex.view.TPlot` returns an instancied object that inherits from :class:`watex.property.Baseplots` ABC (Abstract Base Class) 
-for visualization. 
+:class:`~watex.view.TPlot`  gives base plots from short-period processing data.
+Indeed, :class:`~watex.view.TPlot` plots Tensors (Impedances, resistivity, and phases ) plot class. 
+:class:`~watex.view.TPlot` returns an instanced object that inherits from :class:`watex.property.Baseplots` 
+ABC (Abstract Base Class) for visualization. 
 
 .. note:: 
-	:class:`~watex.view.TPlot` can straighforwardly used without explicity call the :class:`~watex.methods.Processing` beforehand. 
-	When Edi data is passed to `fit` methods, it implicitely call the :class:`~watex.methods.Processing` under the hood for 
-	attributes loading ready for visualization. The class does not output any restored or corrected EDI-files. To handle this 
-	procedure, use :class:`~watex.methods.EM` instead.
+     :class:`~watex.view.TPlot` can straightforwardly be used without explicitly calling  
+	 the :class:`~watex.methods.Processing` beforehand. When Edi data is passed to `fit` methods, 
+	 it implicitly calls the :class:`~watex.methods.Processing` under the hood for attributes loading 
+	 ready for visualization. The class does not output any restored or corrected EDI file. For this 
+	 procedure, use :class:`~watex.methods.EM` instead.
 	
-Here, we will give some examples of base tensor recovery plots from EDI datasets loaded from using :func:`~watex.datasets.load_edis`. 
-Note that, as well as all the :mod:`~watex.view` plotting classes, :class:`~watex.view.TPlot` inherits from a global parameters of 
-:class:`~watex.view.property.BasePlot`. Thus, each plot can be flexibly customized according to the user's desire. 
-For instance, to visualize the corrected 2D tensors, one can  customize the plot by settling the plot keyword arguments as::
+Here, we will give some examples of base tensor recovery plots from EDI datasets loaded from 
+using :func:`~watex.datasets.load_edis`. Note that, as well as all the :mod:`~watex.view` plotting classes, 
+:class:`~watex.view.TPlot` inherits from global parameters of :class:`~watex.view.property.BasePlot`. 
+Thus, each plot can be flexibly customized according to the user's desire. For instance, to visualize 
+the corrected 2D tensors, one can  customize the plot by settling the plot keyword arguments as::
 
 	>>> plot_kws = dict(
 		ylabel = '$Log_{10}Frequency [Hz]$', 
@@ -740,8 +766,8 @@ For instance, to visualize the corrected 2D tensors, one can  customize the plot
 Single site signal recovery visualization: :meth:`~watex.view.TPlot.plot_recovery` 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.TPlot.plot_recovery` allows visualizing the restored tensor at each site. For instance the visualisation of 
-the first site `S00` is given as: 
+:meth:`~watex.view.TPlot.plot_recovery` allows visualizing the restored tensor at each site. For instance, 
+the visualization of the first site `S00` is given as: 
 
 .. code-block:: 
 
@@ -762,19 +788,20 @@ the first site `S00` is given as:
 	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	<'TPlot':survey_area=None, distance=50.0, prefix='S', window_size=5, component='xy', mode='same', method='slinear', out='srho', how='py', c=2>
 
-The result of the abode code is given below: 
+The result of the above  is given below: 
 
 .. figure:: ../examples/auto_examples/view_tplot_recovery_tensor_site_s1.png
    :target: ../examples/auto_examples/view_tplot_recovery_tensor_site_s1.html
    :align: center
    :scale: 70% 
    
-Indeed, the EDI-data stored in :code:`watex` is already preprocessed. For a concrete example, refer to :ref:`methods` page.
+Indeed, the EDI data stored in :code:`watex` is already preprocessed. For a concrete example, 
+refer to :ref:` methods <methods>` page.
 
 Mutiple sites signal recovery visualization: :meth:`~watex.view.TPlot.plot_multi_recovery`   
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.TPlot.plot_multi_recovery` plots mutiple site/stations with signal recovery. Here is a example: 
+:meth:`~watex.view.TPlot.plot_multi_recovery` plots multiple sites/stations with signal recovery. Here is an example: 
 
 .. code-block:: python 
 
@@ -795,8 +822,8 @@ The above code yields the following result.
  
 Two dimensional tensor plot: :meth:`~watex.view.TPlot.plot_tensor2d`   
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:meth:`~watex.view.TPlot.plot_tensor2d`  gives a quick visualization of tensors. In the following examples, the resistivity and 
-phase tensors from `yx` are plotted using: 
+:meth:`~watex.view.TPlot.plot_tensor2d`  gives a quick visualization of tensors. In the following 
+examples, the resistivity and phase tensors from `yx` are plotted using: 
 
 .. code-block:: python 
 
@@ -816,8 +843,8 @@ phase tensors from `yx` are plotted using:
 	>>> # plot recovery2d using the log10 resistivity 
 	>>> t.plot_tensor2d (to_log10=True)
 	
-To run the phase tensor at the same component `yx`, we don't need to re-run the script above, just customize the colorbar label 
-and easily set the `tensor` params to ``phase`` like below: 
+To run the phase tensor at the same component `yx`, we don't need to re-run the script above, 
+just customize the color bar label and easily set the `tensor` params to ``phase`` like below: 
 
 .. code-block:: python 
 
@@ -825,7 +852,7 @@ and easily set the `tensor` params to ``phase`` like below:
 	>>> t.plot_tensor2d ( tensor ='phase', to_log10=True) 
 	<AxesSubplot:xlabel='$Distance(m)$', ylabel='$Log_{10}Frequency [Hz]$'>
 	
-The following outputs is given below : 
+The following outputs are given below : 
 
 .. |res_yx| image:: ../examples/auto_examples/view_tplot_quick_plot_tensor_resyx.png
    :target: ../examples/auto_examples/view_tplot_quick_plot_tensor_resyx.html
@@ -847,9 +874,10 @@ The following outputs is given below :
 Two dimensional filtered tensor plots: :meth:`~watex.view.TPlot.plot_ctensor2d`   
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~watex.view.TPlot.plot_ctensor2d` plots the filtered tensor by applying the filtered function. Refer to :ref:`methods` to 
-have an idea about the different available filters. As the example below, we collected 12 EDI data and applied the fixed-dipole-length 
-moving-average filter (FLMA) passed to the parameter `ffilter`. The default filter is trimming moving average (TMA)as: 
+:meth:`~watex.view.TPlot.plot_ctensor2d` plots the filtered tensor by applying the filtered function. 
+Refer to :ref:`methods` to have an idea about the different available filters. As the example below, we 
+collected 12 EDI data and applied the fixed-dipole-length moving-average filter (FLMA) passed to the parameter 
+`ffilter`. The default filter is trimming moving average (TMA)as: 
 
 .. code-block:: python 
 
@@ -869,7 +897,8 @@ moving-average filter (FLMA) passed to the parameter `ffilter`. The default filt
 	>>> # plot filtered tensor using the log10 resistivity 
 	>>> t.plot_ctensor2d (to_log10=True, ffilter='flma')
 
-Here is the following output and can be compared with the above figure. The FLMA shows a smooth filtered resistivity tensor `yx` as possible. 
+Here is the following output which can be compared with the above figure. The FLMA shows a smooth filtered 
+resistivity tensor `yx` as possible. 
 
 
 .. figure:: ../examples/auto_examples/view_tplot_quick_plot_tensor_resyx_filtered_with_fixed_dipole_length_moving_average.png
@@ -880,12 +909,14 @@ Here is the following output and can be compared with the above figure. The FLMA
 
 .. note:: 
 	
-	The params space plots give some basic plots for data exploratory and analysis. However, user can provides it own scripts for plotting.
-	The module :mod:`~watex.view.plot` can not give all the possible plot that can be yield with the predicting datasets. 
+	The params space plots give some basic plots for data exploration and analysis. However, the user can 
+	provide its scripts for plotting.
+
+The module :mod:`~watex.view.plot` can not give all the possible plots that can be yielded with the predicting datasets. 
 	
 .. seealso:: 
 
-	`seaborn`_ provides some wonderfull statistical data visualization tools. 
+	`seaborn`_ provides some wonderful statistical data visualization tools. 
 	
 .. _seaborn: https://seaborn.pydata.org/
 

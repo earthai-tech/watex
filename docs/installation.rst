@@ -4,8 +4,7 @@
 Installing 
 ==================
 
-:code:`watex` has been  tested on virtual machine Pop_OS Linux env  and run sucessfully. 
-Please follow the different steps below to propertly install the software. The system requiers preferably
+:code:`watex` has been tested on the virtual machine Pop_OS Linux env and runs successfully. Please follow the different steps below to properly install the software. The system requires preferably
 
 .. code-block:: bash 
 	
@@ -16,12 +15,12 @@ and can be found from `anaconda <https://www.anaconda.com/distribution/>`_ . How
 Getting started 
 =================
 
-It is possible to intall :code:`watex` from source, using anaconda prompt or GUI . 
+It is possible to install :code:`watex` from source, using anaconda prompt or GUI . 
 
 From source 
 -------------
 
-To install from source, clone the project with git: 
+To install from the source, clone the project with git: 
 
 .. code-block:: bash 
 
@@ -33,10 +32,10 @@ Or download the latest version from the project webpage: https://github.com/WEge
 Using Prompt
 -------------
 
-* Option 1: Fast and easy 
+* Option 1: Recommended
  
-You can globally setup a virtual environment <`venv`> and straighforwardly install dependencies. 
-Note the <`venv`> can be any enviromment name. For instance <`py39`> for Python 3.9 as:
+You can globally set up a virtual environment <`venv`> and install dependencies. 
+Note the <`venv`>  can be any environment name. For instance <`py39`> for Python 3.9 as:
 
 .. code-block:: bash
 
@@ -44,13 +43,13 @@ Note the <`venv`> can be any enviromment name. For instance <`py39`> for Python 
 	$ conda activate venv
 	$ pip install scikit-learn numpy scipy pandas matplotlib tables h5py xgboost seaborn openpyxl pyyaml h5py joblib
 	
-Have a look of optional :ref:`dependencies <dependencies>` below to take advantage of additional functionalities. 
+Check the list of optional :ref:`dependencies <dependencies>` to take advantage of additional functionalities. 
 
 * Option 2: Optional 
 
-If you want create your virtual environement under the root folder named `watex`, the steps below can guide you to see 
-whether the installation is well done. The advantage of creating the env under the project root is that no need to configure 
-jupyter notebook enviromement variable.  
+If you want to create your virtual environment under the root folder named `watex`, the steps below can 
+guide you to see whether the installation is well done. The advantage of creating the env under the project 
+root is that you do not need to set up the jupyter notebook environment variable.  
 
 .. code-block:: bash
 
@@ -79,8 +78,8 @@ You may update and upgrade :code:`pip`, :code:`setuptools` and :code:`wheel` as 
 	$ pip install setuptools --upgrade 
 	$ pip install wheel --upgrade
 	
-Finally, you can install the software dependencies using :code:`conda` or :code:`pip`. Note that some dependencies are 
-not available in conda-forge. Use :code:`pip` instead. The command should be: 
+Finally, you can install the software dependencies using :code:`conda` or :code:`pip`. Note that some 
+dependencies are not available in conda-forge. Use :code:`pip` instead. The command should be: 
 
 .. code-block:: bash 
 
@@ -90,14 +89,13 @@ not available in conda-forge. Use :code:`pip` instead. The command should be:
 	
 Using GUI 
 -------------------
-This installation is once again optional. After installing `Anaconda <https://anaconda.org/>`_, you can open `spyder`, `pycharm` or 
-any other IDEs unizip the project and set the root to your environement name. Follow the steps below for clarity. 
+This installation is once again optional. After installing `Anaconda <https://anaconda.org/>`_, you can open `spyder`, `pycharm` or any other IDEs unzip the project, and set the root to your environment name. Follow the steps below for clarity. 
 
 * open the Anaconda Navigator app
 * In the left sidebar, select `Environments`, then at the bottom of the window select `Create`
 * Give your new environment a suitable name and select Python 3.9 as the package, then press the green `Create` button to confirm. 
-* select the environment you have created from the list of available environments and in the package window to the right,
-* select `Not installed` from the drop-down and enter `gdal` and ` libgdal `, then click the `Apply button` in the lower right corner and a window will display confirming dependencies to install,
+* Select the environment you have created from the list of available environments and in the package window to the right,
+* Select `Not installed` from the drop-down and enter `gdal` and ` libgdal `, then click the `Apply button` in the lower right corner and a window will display confirming dependencies to install,
 * Repeat the process for all dependencies. 
 
 
@@ -106,8 +104,8 @@ any other IDEs unizip the project and set the root to your environement name. Fo
 Dependencies 
 =================
 
-The following packages are the dependencies of the :code:`watex`. However, all are not compulsory for the software to 
-run properly(base implementation) except the package following by << * >>. 
+The following packages are the dependencies of the :code:`watex`. However, it is not compulsory to install all the 
+dependencies for the software to run properly (base implementation) except for the package following by << * >>. 
 
 * scikit-learn >=1.1.2 *
 * numpy *

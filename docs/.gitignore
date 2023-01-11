@@ -1,0 +1,6 @@
+*_files/
+example_thumbs/
+generated/
+glr_examples/
+_static/
+_build/

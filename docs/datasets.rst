@@ -7,15 +7,16 @@ Datasets
 .. currentmodule:: watex.datasets
 
 :mod:`~watex.datasets` fetches data from the local machine. If data does not exist, retrieve it 
-from remote (repository) or using or zenodo record. :code:`watex` implements three (3) kind of datasets: 
+From the remote (repository) or using  zenodo record. :code:`watex` implements three (3) kinds of datasets: 
 
 * DC-resistivity datasets (DC-datasets) 
 * Learning datasets 
-* EDI datasets ; EDI stands for Electrical Data Interchange, refer to :mod:`~watex.edi`. 
+* EDI datasets; EDI stands for Electrical Data Interchange, refer to :mod:`~watex.edi`. 
 
 DC-Datasets 
 ==================
-The DC-dataset is divided into two kind of datasets: The Electrical resistivity profiling (ERP) and vertical electrical sounding (VES) datasets [1]_.  
+The DC dataset is divided into two kinds of datasets: The Electrical resistivity profiling (ERP) 
+and vertical electrical sounding (VES) datasets [1]_.  
 
 .. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast 
 .. _pandas dataframe: https://pandas.pydata.org/docs/
@@ -24,44 +25,42 @@ The DC-dataset is divided into two kind of datasets: The Electrical resistivity 
 `ERP dataset` 
 ---------------
 
-Most of the `DC-ERP` data are collected different survey area during the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
-`Cote d'Ivoire`_. 
+Most of the `DC-ERP` data are collected from different survey areas during the National Drinking 
+Water Supply Program (PNAEP) occurs in 2014 in `Cote d'Ivoire`_. 
 
-This an example of the ERP data arrangement table: 
+This is an example of the ERP data arrangement table: 
 
 +-----------+-----------+-----------+--------------+     
 |station    | easting 	| northing  | resistivity  |             
 +===========+===========+===========+==============+    
-|0          |382741	|896203	    |79        	   |
+|0          |382741	    |896203	    |79        	   |
 +-----------+-----------+-----------+--------------+ 
-|10	    |382743	|896193	    |62            |
+|10	        |382743	    |896193	    |62            |
 +-----------+-----------+-----------+--------------+ 
-|20	    |382747   	|896184	    |51            |
+|20	        |382747   	|896184	    |51            |
 +-----------+-----------+-----------+--------------+ 
 |...        |...        |...        | ...          |
 +-----------+-----------+-----------+--------------+          
-|980        |382705	|894887	    |55            |
+|980        |382705	    |894887	    |55            |
 +-----------+-----------+-----------+--------------+ 
-|990        |382704	|895879	    |58            |
+|990        |382704	    |895879	    |58            |
 +-----------+-----------+-----------+--------------+     
  
-All the DC-ERP datasets holds the following parameters: 
+All the DC-ERP datasets hold the following parameters: 
 
-* `kind` : str , ['ves'|'erp'], default is {'erp'}
-	the kind of DC data to retrieve. If `kind` is set to ``ves`` , VES data is 
-	fetched and ERP otherwise. Note that this is only valid for Gbalo locality (:func:`~watex.datasets.dload.load_gbalo`).
+* `kind` : str , ['ves'|'erp'], default is {'erp'}. The kind of DC data to retrieve. 
+   If `kind` is set to ``ves`` , VES data is fetched and ERP otherwise. Note that this is only 
+   valid for Gbalo locality (:func:`~watex.datasets.dload.load_gbalo`).
 * `tag, data_names`: ``None``, Always None for API consistency.
-* `as_frame` : bool, default=False
-	If True, the data is a `pandas dataFrame`_ including columns with
-	appropriate types (numeric). The target is
-	a pandas DataFrame or Series depending on the number of target columns.
-	If `as_frame` is ``False``, then returning a :class:`~watex.utils.box.Boxspace`.
+* `as_frame` : bool, default=False. If True, the data is a `pandas dataframe`_ including columns with appropriate 
+   types (numeric). The target is a pandas Data frame or Series depending on the number of target 
+   columns. If `as_frame` is ``False``,  then returning a :class:`~watex.utils.box.Boxspace`.
 * `kws` : dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
 		
 There are two localities for DC-ERP datasets : 
 
 * `Tankesse` data fetches using :func:`~watex.datasets.dload.load_tankesse`  
-* `Gbalo` data feches using :func:`~watex.datasets.dload.load_gbalo`
+* `Gbalo` data fetches using :func:`~watex.datasets.dload.load_gbalo`
 
 .. topic:: Examples: 
 
@@ -76,22 +75,22 @@ There are two localities for DC-ERP datasets :
 	
 .. note:: 
 
-	The array configuration  during the PNEAP is Schlumberger and the max depth investigation is in meters for :math:`AB/2` 
-	(current electrodes). The  profiling step :math:`AB/2` and  :math:`MN/2` (potential electrodes)  are fixed to
-	to meters [2]_. The `easting`, and `northing` are in meters and `resistivity` columns are in :math:`\Omega.m`
-	as apparent resistivity values. Furthermore, if the UTM coordinates (easting and northing) data is given as well 
-	as the UTM_zone, the latitude and longitude data are auto-computed and vice versa. The user does need to provide 
-	both coordinates data types( UTM or DD:MM.SS)
+	The array configuration  during the PNEAP is Schlumberger and the max depth investigation is 
+	in meters for :math:`AB/2` (current electrodes). The profiling step :math:`AB/2` and  :math:`MN/2` 
+	(potential electrodes)  are fixed to meters [2]_. The `easting`, and `northing` are in meters and 
+	`resistivity` columns are in :math:`\Omega.m` as apparent resistivity values. Furthermore, if the 
+	UTM coordinates (easting and northing) data is given as well as the UTM_zone, the latitude and longitude 
+	data are auto-computed and vice versa. The user does need to provide both coordinates data types
+	( UTM or DD:MM.SS)
 
 To ascertain whether the data is acceptable,  it is better to reverify the arrangement using the function 
 :func:`~watex.utils.coreutils.erpSelector` for data validation. 
 
 
 `VES dataset` 
----------------
+-------------------
 
-Most of the `DC-VES` data are also collected different survey area during the PNAEP program. 
-
+Most of the `DC-VES` data are also collected from different survey areas during the PNAEP program. 
 The following table gives an illustration of the standard data arrangement: 
 
 +------+--------+----------+----------+------------+
@@ -108,51 +107,49 @@ The following table gives an illustration of the standard data arrangement:
 | 110  |  10	|   84	   |  104     |     104	   |
 +------+--------+----------+----------+------------+
 
-where :math:`AB/2`,  :math:`MN/2` and :math:`SE` are the depth measurement of the current electrodes AB, the potential electrodes spacing and 
-the sounding resistivity values in :math:`\Omega.m` [3]_. Note that many sounding data (`SE`) can  be collected in the survey area. For 
-simplify purpose, :math:`AB/2` and  :math:`MN/2` are kept in VES frame as :math:`AB` and  :math:`MN` respectively whereas :math:`SE` is 
+where :math:`AB/2`,  :math:`MN/2` and :math:`SE` are the depth measurement of the current electrodes AB, 
+the spacing of the potential electrodes, and the sounding resistivity values in :math:`\Omega.m` [3]_. 
+Note that many sounding data (`SE`) can be collected in the survey area. For simplifying purposes :math:`AB/2` 
+and  :math:`MN/2` are kept in VES frame as :math:`AB` and  :math:`MN` respectively whereas :math:`SE` is 
 renamed to :math:`resistivity`.  
 
-The following table gives the true sanitized arrangement acceptable for all functions and methods that use the VES data: 
+The following table gives the true sanitized arrangement acceptable for all functions and 
+methods that use the VES data: 
 
 +-----------+-----------+-------------+-------------+----------------+     
-|AB 	    | MN 	| resistivity | resistivity | resistivity... |             
+|AB 	    | MN 	    | resistivity | resistivity | resistivity... |             
 +===========+===========+=============+=============+================+    
-|1          |0.4	|107 	      |93           | 75 	     |
+|1          |0.4	    |107 	      |93           | 75 	         |
 +-----------+-----------+-------------+-------------+----------------+ 
-|2	    |0.4	|97           |91           | 49             |
+|2	        |0.4	    |97           |91           | 49             |
 +-----------+-----------+-------------+-------------+----------------+ 
 |...        |...        |...          | ...         | ...   	     |
 +-----------+-----------+-------------+-------------+----------------+ 
-|100	    |10 	|79           |96           | 98             |
+|100	    |10 	    |79           |96           | 98             |
 +-----------+-----------+-------------+-------------+----------------+  
-|110	    |10 	|84           |104          | 104            |
+|110	    |10 	    |84           |104          | 104            |
 +-----------+-----------+-------------+-------------+----------------+ 
 
-The following parameters is passed to the VES data to retrieve the expected data:
+The following parameters are passed to the VES data to retrieve the expected data:
 
 * `tag, data_names`: ``None`` , Always None for API consistency 
-* `as_frame` : bool, default=False
-	If True, the data is a pandas DataFrame including columns with
-	appropriate types (numeric). The target is
-	a panda DataFrame or Series depending on the number of target columns.
-	If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
-	dictionary-like object.
-* `index_rhoa`: int, default=0 
-	Index of the resistivy columns to retrieve. Note that this is useful in the 
-	cases many sounding values are collected in the same survey area. 
-	`index_rhoa=0` fetches the first sounding values in the collection of all
-	 values. For instance `index_rhoa=0` in the raw arrangement above fetches the sounding 
-	 data `SE1` i.e the first resistivity column. 
+* `as_frame` : bool, default=False. If True, the data is a pandas DataFrame including columns withappropriate types (numeric). 
+   The target is a panda DataFrame or Series depending on the number of target columns. If `as_frame` is False, 
+   then returning a :class:`~watex.utils.Boxspace` dictionary-like object.
+* `index_rhoa`: int, default=0. Index of the resistivity columns to retrieve. Note that this is useful in 
+   cases many sounding values are collected in the same survey area. 
+   `index_rhoa=0` fetches the first sounding values in the collection of all values. For instance `index_rhoa=0` 
+   in the raw arrangement above fetches the sounding data `SE1` i.e the first resistivity column. 
 * `kws`: dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
  
 There are three localities for DC-VES datasets: 
 
 * `Gbalo` data fetches using :func:`~watex.datasets.dload.load_gbalo`  by passing argument ``ves`` to parameter `kind`. 
-* `Boundiali` data feches using :func:`~watex.datasets.dload.load_boundiali`
-* `Semien` data feches using :func:`~watex.datasets.dload.load_semien`
+* `Boundiali` data fetches using :func:`~watex.datasets.dload.load_boundiali`
+* `Semien` data fetches using :func:`~watex.datasets.dload.load_semien`
 	
-If the raw arrangement (above ) is given, it is better to reverify the arrangement using the function :func:`~watex.utils.coreutils.vesSelector` for data validation. 
+If the raw arrangement (above ) is given, it is better to reverify the arrangement using 
+the function :func:`~watex.utils.coreutils.vesSelector` for data validation. 
 
 .. topic:: Examples: 
 
@@ -173,8 +170,7 @@ If the raw arrangement (above ) is given, it is better to reverify the arrangeme
 	100
 
 .. note:: 
-	
-	The array configuration is schlumberger and the max depth investigation is 
+	The array configuration is Schlumberger and the max depth investigation is 
 	100 meters for :math:`AB/2` (current electrodes). The  profiling step
 	:math:`AB` is fixed to 100  meters whereas :math:`MN/2`  also fixed to
 	(potential electrodes) to 10 meters. `station` , `easting` and `northing` are in meters and 
@@ -184,12 +180,11 @@ If the raw arrangement (above ) is given, it is better to reverify the arrangeme
 Learning Dataset
 ===================
 
-The learning datasets are the data ready for predictions where the features are already precomputed.  An example is 
-the most popular dataset :func:`~watex.datasets.iris`. The fameous example of :code:`watex` datasets in the 
-Bagoue datasets. See :func:`~watex.datasets.dload.load_bagoue` for parameters definitions. 
-
-The second samples of learning datasets is the hydrogeological dataset. The later is composed of geology, boreholes 
-and logging data. Refer to :func:`~watex.datasets.dload.load_hlogs` for parameters explanations. 
+The learning datasets are the data ready for predictions where the features are already precomputed.  
+An example is the most popular dataset:func:`~watex.datasets.iris`. The famous example of :code:`watex` 
+datasets in the Bagoue datasets. See :func:`~watex.datasets.dload.load_bagoue` for parameter definitions. 
+The second sample of learning datasets is the hydrogeological dataset. The latter is composed of geology, 
+boreholes, and logging data. Refer to :func:`~watex.datasets.dload.load_hlogs` for parameter explanations. 
 
 .. topic:: Examples
 
@@ -234,8 +229,8 @@ EDI dataset
 ===============
 
 SEG-EDI dataset is a collection of edi-objects from :class:`~watex.edi.Edi`. Data can be restored using the 
-:func:`~watex.datasets.dload.load_edis`. Refer to the function (:func:`~watex.datasets.dload.load_edis`.) parameters 
-explanation for further details. 
+:func:`~watex.datasets.dload.load_edis`. Refer to the function (:func:`~watex.datasets.dload.load_edis`.) 
+parameters explanation for further details. 
 
 .. topic:: Examples: 
 
@@ -261,15 +256,15 @@ explanation for further details.
 Boilerplate function : :func:`~watex.datasets.fetch_data`
 =========================================================== 
 
-The boilerplate function :func:`~watex.datasets.fetch_data` accepts as `tag` argument the area name of 
-all sampling datasets implemented in :mod:`~watex.datasets` and returns the return values of each datasets. 
-However, there is a special case when using :func:`~watex.datasets.fetch_data` for Bagoue area [4]_. Indeed, the 
-later datasets gives multiples stages of data processing. To fecth any stage of  the data processing, the 
-area name must be following with the processing stage name. For instance fetching the `analysed` data for 
-PCA analysis, the `tag` should be ``Bagoue analysed`` rather than ``Bagoue``. Refer to the function parameters 
-explanation for further details as well as the processing stages [5]_. If the only name is given, 
-the :func:`~watex.datasets.load_bagoue` should be enabled and will output the return accordingly. See the 
-demonstration below to fetch some processing stage of `Bagoue datasets`. 
+The boilerplate function :func:`~watex.datasets.fetch_data` accepts as `tag` argument the area 
+name of all sampling datasets implemented in :mod:`~watex.datasets` and returns the return values of 
+each dataset. However, there is a special case when using :func:`~watex.datasets.fetch_data` for the 
+Bagoue area [4]_. Indeed, the later dataset gives multiple stages of data processing. To fetch any stage 
+of the data processing, the area name must be following by the processing stage name. For instance, fetching 
+the `analysed` data for PCA analysis, the `tag` should be ``Bagoue analyzed `` rather than ``Bagoue``. Refer 
+to the function parameters explanation for further details as well as the processing stages [5]_. If the only 
+name is given, the :func:`~watex.datasets.load_bagoue` should be enabled and will output the return accordingly. 
+See the demonstration below to fetch some processing stages of `Bagoue datasets`. 
  
 .. topic:: Examples: 
 
@@ -337,9 +332,9 @@ demonstration below to fetch some processing stage of `Bagoue datasets`.
 Generate ERP or VES data 
 ============================
 
-ERP and VES data can be generated using the function :func:`~watex.datasets.gdata.make_erp` and :func:`~watex.datasets.gdata.make_ves` 
-respectively. Check the function parameters for further details. The following code snippets gives an example of generating 
-ERP and VES data: 
+ERP and VES data can be generated using the function :func:`~watex.datasets.gdata.make_erp` 
+and :func:`~watex.datasets.gdata.make_ves` respectively. Check the function parameters for 
+further details. The following code snippets gives an example of generating ERP and VES data: 
 
 .. code-block:: python 
 
