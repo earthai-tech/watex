@@ -21,9 +21,9 @@ to know the explanation of the attributes for plot customizing.
 
 Furthermore, note the existence of the `tname` and `pkg` parameters passed mostly to the :mod:`~watex.view`  module classes:
 
-* `tname`: always str, is  the target name or label. In supervised learning the target name is considered as the reference 
-   name of :math:`y` or label variable:  
-* `pkg`: always str, Optional by default, is the kind or library to use for visualization. can be ['yb'|'msn'|'sns'|'pd']  
+* `tname`: always str, is  the target name or label. In supervised learning the target 
+   name is considered as the reference name of :math:`y` or label variable:  
+* `pkg`: always str, Optional by default, is the kind or library to use for visualization. can be ['yb'|'msn'|'sns'|'pd'] 
    for 'yellowbrick'[1]_ , 'missingno', 'seaborn' or 'pandas' respectively. Mosyly the default value for `pkg` is 
    ``pd`` or ``sns``.  To install these packages, use ``pip`` or ``conda``. Note that the `pkg` parameter 
    is specific for each plotting method, and s not passed to `__init__` method. Additionally, each module 
@@ -537,7 +537,7 @@ a little bit the target name to ohmic-area `ohmS` and only keep the features `['
 in the data. Note, rather than mapping the flow with the parameter `mapflow`, we use the function 
 :func:`~watex.utils.funcutils.smart_label_classifier` to categorize the numerical `ohmS` values into 
 three classes called `oarea` such as :math:`oarea1 :ohmS \leq 1000 \Omega.m^2` encoded to `{0}`, 
-:math:`oarea2 :1000 <ohmS \leq 2000 \Omega.m^2` encoded to `{1}` and :math:`oarea3 : oa3 > 2000 \Omega.m^2` 
+:math:`oarea2 :1000 <ohmS \leq 2000 \Omega.m^2` encoded to `{1}` and :math:`oarea3 : ohmS > 2000 \Omega.m^2` 
 encoded to `{2}`.  The code snippet is given below:
 
 .. code-block:: python 

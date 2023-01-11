@@ -6,8 +6,8 @@ Datasets
 
 .. currentmodule:: watex.datasets
 
-:mod:`~watex.datasets` fetches data from the local machine. If data does not exist, retrieve it 
-From the remote (repository) or using  zenodo record. :code:`watex` implements three (3) kinds of datasets: 
+:mod:`~watex.datasets` fetches data from the local machine. If data does not exist, module retrieve it from 
+the remote (repository) or using  zenodo record. :code:`watex` implements three (3) kinds of datasets: 
 
 * DC-resistivity datasets (DC-datasets) 
 * Learning datasets 
@@ -15,6 +15,7 @@ From the remote (repository) or using  zenodo record. :code:`watex` implements t
 
 DC-Datasets 
 ==================
+
 The DC dataset is divided into two kinds of datasets: The Electrical resistivity profiling (ERP) 
 and vertical electrical sounding (VES) datasets [1]_.  
 
@@ -48,13 +49,13 @@ This is an example of the ERP data arrangement table:
  
 All the DC-ERP datasets hold the following parameters: 
 
-* `kind` : str , ['ves'|'erp'], default is {'erp'}. The kind of DC data to retrieve. 
-   If `kind` is set to ``ves`` , VES data is fetched and ERP otherwise. Note that this is only 
-   valid for Gbalo locality (:func:`~watex.datasets.dload.load_gbalo`).
+* `kind` : str , ['ves'|'erp'], default is {'erp'}. 
+   The kind of DC data to retrieve. If `kind` is set to ``ves`` , VES data is fetched 
+   and ERP otherwise. Note that this is only valid for Gbalo locality (:func:`~watex.datasets.dload.load_gbalo`).
 * `tag, data_names`: ``None``, Always None for API consistency.
-* `as_frame` : bool, default=False. If True, the data is a `pandas dataframe`_ including columns with appropriate 
-   types (numeric). The target is a pandas Data frame or Series depending on the number of target 
-   columns. If `as_frame` is ``False``,  then returning a :class:`~watex.utils.box.Boxspace`.
+* `as_frame` : bool, default=False. If True, the data is a `pandas dataframe`_ 
+   including columns with appropriate types (numeric). The target is a pandas Data frame or Series depending 
+   on the number of target columns. If `as_frame` is ``False``,  then returning a :class:`~watex.utils.box.Boxspace`.
 * `kws` : dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
 		
 There are two localities for DC-ERP datasets : 
@@ -133,13 +134,13 @@ methods that use the VES data:
 The following parameters are passed to the VES data to retrieve the expected data:
 
 * `tag, data_names`: ``None`` , Always None for API consistency 
-* `as_frame` : bool, default=False. If True, the data is a pandas DataFrame including columns withappropriate types (numeric). 
-   The target is a panda DataFrame or Series depending on the number of target columns. If `as_frame` is False, 
-   then returning a :class:`~watex.utils.Boxspace` dictionary-like object.
-* `index_rhoa`: int, default=0. Index of the resistivity columns to retrieve. Note that this is useful in 
-   cases many sounding values are collected in the same survey area. 
-   `index_rhoa=0` fetches the first sounding values in the collection of all values. For instance `index_rhoa=0` 
-   in the raw arrangement above fetches the sounding data `SE1` i.e the first resistivity column. 
+* `as_frame` : bool, default=False. If True, the data is a pandas DataFrame including columns 
+   with appropriate types (numeric). The target is a panda DataFrame or Series depending on the number 
+   of target columns. If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace` dictionary-like object.
+* `index_rhoa`: int, default=0. Index of the resistivity columns to retrieve. Note that this is useful in cases many 
+   sounding values are collected in the same survey area. `index_rhoa=0` fetches the first sounding values 
+   in the collection of all values. For instance `index_rhoa=0` in the raw arrangement above fetches the 
+   sounding data `SE1` i.e the first resistivity column. 
 * `kws`: dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
  
 There are three localities for DC-VES datasets: 
@@ -148,8 +149,7 @@ There are three localities for DC-VES datasets:
 * `Boundiali` data fetches using :func:`~watex.datasets.dload.load_boundiali`
 * `Semien` data fetches using :func:`~watex.datasets.dload.load_semien`
 	
-If the raw arrangement (above ) is given, it is better to reverify the arrangement using 
-the function :func:`~watex.utils.coreutils.vesSelector` for data validation. 
+If the raw arrangement (above ) is given, it is better to reverify the arrangement using the function :func:`~watex.utils.coreutils.vesSelector` for data validation. 
 
 .. topic:: Examples: 
 
@@ -261,7 +261,7 @@ name of all sampling datasets implemented in :mod:`~watex.datasets` and returns 
 each dataset. However, there is a special case when using :func:`~watex.datasets.fetch_data` for the 
 Bagoue area [4]_. Indeed, the later dataset gives multiple stages of data processing. To fetch any stage 
 of the data processing, the area name must be following by the processing stage name. For instance, fetching 
-the `analysed` data for PCA analysis, the `tag` should be ``Bagoue analyzed `` rather than ``Bagoue``. Refer 
+the `analysed` data for PCA analysis, the `tag` should be ``Bagoue analyzed`` rather than ``Bagoue``. Refer 
 to the function parameters explanation for further details as well as the processing stages [5]_. If the only 
 name is given, the :func:`~watex.datasets.load_bagoue` should be enabled and will output the return accordingly. 
 See the demonstration below to fetch some processing stages of `Bagoue datasets`. 

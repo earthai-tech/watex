@@ -88,13 +88,25 @@ The :meth:`~watex.methods.electrical.ResistivityProfiling.summary` recaps all th
    :align: center
    :scale: 50%
    
-Here, the automatic detection specifies the best point for making a drill to `S15` with its prediction parameters summarized in the :attr:`~watex.methods.electrical.ResistivityProfiling.table_`. 
+Here, the automatic detection specifies the best point for making a drill to `S15` with its prediction 
+parameters summarized in the :attr:`~watex.methods.electrical.ResistivityProfiling.table_`. 
+
  
 `Vertical Sounding (VES)`
 -------------------------------------
-:class:`~watex.methods.electrical.VerticalSounding`  is carried out to speculate about the existence of a fracture zone and the layer thicknesses. Commonly, it comes as a supplement method to ERP after selecting the best conductive zone. The main data that compose the VES are `AB` and `resistivity`. The `MN` is not compulsory. Note that by convention `AB` is `AB/2` in meters and the resistivity is preferably expressed in :math:`\Omega.m`.  In the following example, we will generate samples of 31 measurements in deeper using the function:func:`~watex.datasets.gdata.make_ves`. 
-.. note:: 
-	:class:`~watex.methods.electrical.VerticalSounding` has a `search` which is very useful. Indeed, the parameter passed to the above class is implemented to find water outside of the pollution. Usually, when exploring deeper using the VES, we are looking for groundwater in the fractured rock that is outside the anthropic pollution [12]_. Thus the search parameter indicates where the search for the fracture zone in deeper must start. For instance, `search=45` tells the algorithm to search or start detecting the fracture zone from 45m to deeper. 
+
+:class:`~watex.methods.electrical.VerticalSounding`  is carried out to speculate about the 
+existence of a fracture zone and the layer thicknesses. Commonly, it comes as a supplement 
+method to ERP after selecting the best conductive zone. The main data that compose the VES 
+are `AB` and `resistivity`. The `MN` is not compulsory. Note that by convention `AB` is `AB/2` in meters 
+and the resistivity is preferably expressed in :math:`\Omega.m`.  In the following example, we will generate 
+samples of 31 measurements in deeper using the function :func:`~watex.datasets.gdata.make_ves`. 
+Furthermore, :class:`~watex.methods.electrical.VerticalSounding` has a `search` parameter which is very useful. Indeed, 
+the parameter passed to the above class is implemented to find water outside of the pollution. Usually, when exploring 
+deeper using the VES, we are looking for groundwater in the fractured rock that is outside the anthropic 
+pollution [12]_. Thus the search parameter indicates where the search for the fracture zone in 
+deeper must start. For instance, `search=45` tells the algorithm to search or start detecting the 
+fracture zone from 45m to deeper. 
 	
 .. topic:: Example: 
 	* Compute the ohmic-area `OhmS` prediction parameters and plot the searching fracture zone 
@@ -128,7 +140,8 @@ Here, the automatic detection specifies the best point for making a drill to `S1
    :align: center
    :scale: 50%
    
-Here the `ohmic-area` zone is hatched (fill_between) with a value equal to :math:`867.3 \Omega.m^2`. The summarized parameters can be collected using: 
+Here the `ohmic-area` zone is hatched (fill_between) with a value equal to :math:`867.3 \Omega.m^2`. The 
+summarized parameters can be collected using: 
 
 .. code-block:: python 
 
@@ -141,12 +154,17 @@ Here the `ohmic-area` zone is hatched (fill_between) with a value equal to :math
 `DC-Profiling` 
 -----------------------
 
-:class:`~watex.methods.electrical.DCProfiling` reads a collection of DC-resistivity profiling data. It computes electrical profiling parameters and store data in a line object where each line is :class:`~watex.methods.electrical.ResistivityProfiling` object. For instance, the expected drilling location point  and its resistivity value for two survey lines ( line1 and line2) can be fetched as:: 
+:class:`~watex.methods.electrical.DCProfiling` reads a collection of DC-resistivity profiling data. 
+It computes electrical profiling parameters and store data in a line object where each line 
+is :class:`~watex.methods.electrical.ResistivityProfiling` object. For instance, the expected drilling 
+location point  and its resistivity value for two survey lines ( line1 and line2) can be fetched as:: 
         
         >>> <object>.line1.sves_ ; <object>.line1.sves_resistivity_ 
         >>> <object>.line2.sves_ ; <object>.line2.sves_resistivity_ 
 		
-For further details about the parameters explanations, click on :class:`~watex.methods.electrical.DCProfiling` . The following examples give a concrete example of data collected and stored in the software *data/erp* directory. 
+For further details about the parameters explanations, click 
+on :class:`~watex.methods.electrical.DCProfiling` . The following examples give a real 
+example of data collected and stored in the software *data/erp* directory. 
 
 
 .. topic:: Example:
@@ -208,16 +226,20 @@ For further details about the parameters explanations, click on :class:`~watex.m
 	
 `DC-Sounding` 
 -----------------------
-:class:`~watex.methods.electrical.DCSounding` reads a  collection of VES data and stores the computed predictor in a :class:`~watex.methods.electrical.VerticalSounding` object. Contrary to :class:`~watex.methods.electrical.DCProfiling` , data is stored in `site` object not in `line`. Retrieving data from each DC-sounding site follow the naming below::
+:class:`~watex.methods.electrical.DCSounding` reads a  collection of VES data and stores 
+the computed predictor in a :class:`~watex.methods.electrical.VerticalSounding` object. 
+Contrary to :class:`~watex.methods.electrical.DCProfiling` , data is stored in `site` object 
+not in `line`. Retrieving data from each DC-sounding site follow the naming below::
         
-        >>> <object>.site<number>.<:attr:`~.VerticalSounding.<attr>_`
+    >>> <object>.site<number>.<:attr:`~.VerticalSounding.<attr>_`
         
 For instance to fetch the DC-sounding data position and the resistivity in depth of the fractured zone for the first site, it should be:: 
         
-        >>> <object>.site1.fractured_zone_
-        >>> <object>.site1.fractured_zone_resistivity_   
+	>>> <object>.site1.fractured_zone_
+	>>> <object>.site1.fractured_zone_resistivity_   
 		
-For parameters explanation, refer to :class:`~watex.methods.electrical.DCSounding` instead. The following examples will illustrate the literature above: 
+For parameters explanation, refer to :class:`~watex.methods.electrical.DCSounding` instead. The 
+following examples will illustrate the literature above: 
 
 .. topic:: Example: 
 
@@ -248,10 +270,9 @@ For parameters explanation, refer to :class:`~watex.methods.electrical.DCSoundin
 	>>> dcvo= DCSounding ()   
 	>>> dcvo.fit('data/ves') 	# read the ves data in directory
 	>>> dcvo.survey_names_  	# survey names successfully read 
-	dc-ves: 100%|##################################| 4/4 [00:00<00:00, 162.10B/s]
 	['ves_gbalo', 'ves_gbalo', 'ves_gbalo', 'ves_gbalo_unique']
     >>> dcvo.ohmic_areas_ 
-	Out[446]: array([ 268.0877,  268.0877, 1183.3641])
+	array([ 268.0877,  268.0877, 1183.3641])
 	>>> dcvo.nareas_ 
 	array([2., 2., 2.])
     >>> dcvo.summary() 
@@ -259,7 +280,6 @@ For parameters explanation, refer to :class:`~watex.methods.electrical.DCSoundin
 	site1  200.0  20.0  schlumberger  ...       100   268.087715      2
 	site2  200.0  20.0  schlumberger  ...       100   268.087715      2
 	site3  200.0  20.0  schlumberger  ...       100  1183.364102      2
-	[3 rows x 11 columns]
 	
 EM  
 =======
@@ -498,8 +518,9 @@ The code snippets are given below:
   ====================== ====================== ====================== ======================
 	
 	
-Note, there are many other functions in :mod:`~watex.em` that can be implemented. One of them is the method :meth:`~watex.methods.em.Processing.exportedis` 
-that export the new tensor (new_Z) for modeling after updating tensor using the decorator :class:`~watex.methods.em._zupdate`by triggering 
+Note, there are many other functions in :mod:`~watex.em` that can be implemented. One of them is 
+the method :meth:`~watex.methods.em.Processing.exportedis` that exports the new tensor (new_Z) for modeling 
+after updating tensor using the decorator :class:`~watex.methods.em._zupdate` by triggering 
 the `option` parameter to ``write``. 
 
 
@@ -512,18 +533,31 @@ engineering and groundwater dewatering, which are directly related to the reliab
 In the following, it is useful to remember the hydrogeological attribute definition below: 
 
 * `aqname`
-    Name of aquifer group column. `aqname` allows retrieving the aquifer group `arr_aq` value in a specific data frame. Commonly`aqname` needs to be supplied when a data frame is passed as a positional or keyword argument. Note that it is not mandatory to have a group of the aquifer in the log data. It is needed only if the label similarity needs to be calculated.  
+    Name of aquifer group column. `aqname` allows retrieving the aquifer group `arr_aq` value in a specific 
+	data frame. Commonly`aqname` needs to be supplied when a data frame is passed as a positional or keyword 
+	argument. Note that it is not mandatory to have a group of the aquifer in the log data. It is needed only 
+	if the label similarity needs to be calculated.  
 * `sname`
-    Name of the column in the data frame that contains the strata values. Don't confuse 'sname' with 'stratum' which is the name of the valid layer/rock in the array/Series of strata. 
+    Name of the column in the data frame that contains the strata values. Don't confuse 'sname' with 'stratum' 
+	which is the name of the valid layer/rock in the array/Series of strata. 
 * `z` 
-    An array of depth or a pandas series that contains the depth values. A two-dimensional array or more is not allowed. However when `z` is given as  a dataframe and `zname` is not supplied, an error raises since `zname` is used to fetch and overwrite `z` from the data frame. 
+    An array of depth or a pandas series that contains the depth values. A two-dimensional array or 
+	more is not allowed. However when `z` is given as  a dataframe and `zname` is not supplied, an 
+	error raises since `zname` is used to fetch and overwrite `z` from the data frame. 
 * `zname`
-    Name of depth columns. `zname` allows retrieving the depth column in a data frame. If an integer is passed, it assumes the index of the data frame fits the depth column. Integer value must not be out of the data frame size along axis 1. Commonly `zname` needs to be supplied when a data frame is 
+    Name of depth columns. `zname` allows retrieving the depth column in a data frame. If an integer 
+	is passed, it assumes the index of the data frame fits the depth column. Integer value must not be 
+	out of the data frame size along axis 1. Commonly `zname` needs to be supplied when a data frame is 
     passed to a function argument. 
 * `kname` 
-	Name of permeability coefficient columns. `kname` allows retrieving the permeability coefficient 'k' in a specific data frame. If an integer is passed, it assumes the index of the data frame fits the 'k' columns. Note that the integer value must not be out of the data frame size along axis 1. Commonly `kname` needs to be supplied when a data frame is passed as a positional or keyword argument.  
+	Name of permeability coefficient columns. `kname` allows retrieving the permeability coefficient 'k' 
+	in a specific data frame. If an integer is passed, it assumes the index of the data frame fits the 
+	'k' columns. Note that the integer value must not be out of the data frame size along axis 1. Commonly 
+	`kname` needs to be supplied when a data frame is passed as a positional or keyword argument.  
 * `k`
-    An array of permeability coefficient 'k' or a pandas series that contains the 'k' values. A two-dimensional array or more is not allowed. However, when `k` passes as a data frame and `kname` is not supplied, an error raises since `kname` is used to retrieve `k` values from the data frame 
+    An array of permeability coefficient 'k' or a pandas series that contains the 'k' values. A two-dimensional 
+	array or more is not allowed. However, when `k` passes as a data frame and `kname` is not supplied, an 
+	error raises since `kname` is used to retrieve `k` values from the data frame 
     and overwritten it.
 	
 Here is data that composes the hydro-geophysical dataset (HGDS): 
@@ -542,12 +576,15 @@ Here is data that composes the hydro-geophysical dataset (HGDS):
 		  dtype='object')
 
 
-`Aquifer section 
+`Aquifer section` 
 --------------------------
-:class:`~watex.methods.hydro.AqSection` get the section of each aquifer from the HGDS. For further details about the hydro-dataframe, read the documentation of the :func:`~watex.datasets.dload.load_hlogs`.   
 
-Indeed, the unique section 'upper' and 'lower' is the valid range of the whole data to consider as valid data. Indeed, the aquifer section computing is necessary to shrink the data of the whole boreholes. Mostly the data from the section is considered valid data as the predictor:math:`X_r`. Out of the range of the aquifers section, data can be discarded or compressed to the top :math:`X_r`. Refer to :mod:`~watex.utils.hydroutils` for 
-additional details. 
+:class:`~watex.methods.hydro.AqSection` get the section of each aquifer from the HGDS. For further details about the 
+hydro-dataframe, read the documentation of the :func:`~watex.datasets.dload.load_hlogs`. Indeed, the unique 
+section 'upper' and 'lower' is the valid range of the whole data to consider as valid data. Indeed, the aquifer 
+section computing is necessary to shrink the data of the whole boreholes. Mostly the data from the section is 
+considered valid data as the predictor:math:`X_r`. Out of the range of the aquifers section, data can be discarded 
+or compressed to the top :math:`X_r`. Refer to :mod:`~watex.utils.hydroutils` for additional details. 
 
 Here is an example of computing a section from a single borehole data `H502` (default): 
 
@@ -564,8 +601,8 @@ In the above example, the valid section of the aquifer is found between 197.12 a
 
 `Logging`
 ---------------
-:class:`~watex.methods.hydro.Logging`  class deals with the numerical values of HGDS that compose the predictor :math:`X`. If categorical values are found in the 
-logging dataset, they should be discarded. 
+:class:`~watex.methods.hydro.Logging`  class deals with the numerical values of HGDS that compose the 
+predictor :math:`X`. If categorical values are found in the logging dataset, they should be discarded. 
 
 Here is an example of plotting the logging data. 
 
@@ -617,9 +654,22 @@ The figure below shows the following outputs. Note that the logging plot has man
 `Mixture Learning Strategy (MXS)`
 --------------------------------------------------
 
-:class:`~watex.methods.hydro.MXS` entails predicting the permeability coefficient `k` from the HGDS data. Note that the dataset for predicting `k` comes with a lot of missing data in the target :math:`y`.  This is obvious since the `k` is strongly tied to the productive aquifer and is collected after the pumping test. Commonly the pumping is performed if and only if the layer is an aquifer. To work around this issue and to predict k with an optimal score, watex implements a new ML approach called MXS. The approach first predicts upstream the naïve group of aquifers (NGA) s using the clustering algorithms such as K-Means and Hierarchical Agglomerative Clustering (HAC).  The HAC dendrogram is used to validate the number of clusters that fit the NGA as well as the silhouette and elbow metrics using the K-Means. NGA assumes to be the main aquifer group in the area. Once the NGA is predicted, an MXS target:math:`y*` is created by merging the NGA labels with the true label (valid `k`) in the target :math:`y` following criteria of label similarity computation using Bayesian evidential learning. The NGA labels are used to compensate for the missing `k` in the target `y`. The new MXS target  :math:`y*`  represents a full-strength target ready for predicting k using the supervised learning algorithms. The case history implemented in the Hongliu coal mine with 11 boreholes has successfully given more than 80% of correct prediction of k using the SVM radial basis kernel ([3]_, [14]_) and XGB. 
+:class:`~watex.methods.hydro.MXS` entails predicting the permeability coefficient `k` from the HGDS data. Note 
+that the dataset for predicting `k` comes with a lot of missing data in the target :math:`y`.  This is obvious 
+since the `k` is strongly tied to the productive aquifer and is collected after the pumping test. Commonly the 
+pumping is performed if and only if the layer is an aquifer. To work around this issue and to predict k with an 
+optimal score, watex implements a new ML approach called MXS. The approach first predicts upstream the naïve group 
+of aquifers (NGA) s using the clustering algorithms such as K-Means and Hierarchical Agglomerative Clustering (HAC).  
+The HAC dendrogram is used to validate the number of clusters that fit the NGA as well as the silhouette and elbow 
+metrics using the K-Means. NGA assumes to be the main aquifer group in the area. Once the NGA is predicted, an MXS 
+target:math:`y*` is created by merging the NGA labels with the true label (valid `k`) in the target :math:`y` following 
+criteria of label similarity computation using Bayesian evidential learning. The NGA labels are used to compensate 
+for the missing `k` in the target `y`. The new MXS target  :math:`y*`  represents a full-strength target ready for 
+predicting k using the supervised learning algorithms. The case history implemented in the Hongliu coal mine with 11 
+boreholes has successfully given more than 80% of correct prediction of k using the SVM radial basis kernel ([3]_, [14]_) and XGB. 
 
-Here are the following code snippets to achieve the results using a single borehole 'h2601'. First, I fetch the logging data stored in the software for visualization to see what a sample of logging data looks likes: 
+Here are the following code snippets to achieve the results using a single borehole 'h2601'. First, I fetch the logging 
+data stored in the software for visualization to see what a sample of logging data looks likes: 
 
 .. code-block:: python 
 
