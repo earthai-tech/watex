@@ -85,9 +85,9 @@ of a different kind of `Bagoue dataset [2]_, is prepared using the `BaseSteps` m
 		K.K. (2021, October) Bagoue dataset-Cote d’Ivoire: Electrical profiling,
 		electrical sounding and boreholes data, Zenodo. :doi:`10.5281/zenodo.5560937`
 
-.. topic:: Examples 
+.. seealso:: 
 
-	* :ref:`../../watex/datasets._p.py`
+	An example of Bagoue dataset preparation in the :mod:`~watex.datasets._p` module. 
 	
 	
 Processing 
@@ -123,7 +123,7 @@ a pipe and estimator is recommended.
 
 .. topic:: Examples: 
 
-(1) We can get the default preprocessor by merely calling: 
+* We can get the default preprocessor by merely calling: 
 
 .. code-block:: python 
 
@@ -155,7 +155,7 @@ a pipe and estimator is recommended.
 						  ['type', 'shape', 'geol'])])),
 					('SVC', SVC(C=100, gamma=0.001, random_state=42))])
                  
-(2)-> Or build your preprocessor object using the example below: 
+* Or build your preprocessor object using the example below: 
 
 .. code-block:: python 
 

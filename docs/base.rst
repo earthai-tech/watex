@@ -1,15 +1,14 @@
 .. _base:
 
-=============
-Base
-=============
+================================
+Base Assessors and Estimators 
+================================
 
 .. currentmodule:: watex.base
 
 The following module is a set of classes and methods intended for base module implementation in which 
 target value is expected to be a linear combination of the features. In mathematical notation, 
-if :math:`\hat{y}` is the predicted value, 
-.. math::  \hat{y}(w, x) = w_0 + w_1 x_1 + ... + w_p x_p
+if :math:`\hat{y}` is the predicted value, :math: \hat{y}(w, x) = w_0 + w_1 x_1 + ... + w_p x_p
 
 Across the module, we designate the vector :math:`w = (w_1,..., w_p)` as ``coef_`` 
 and :math:`w_0` as ``intercept_``.
@@ -79,20 +78,16 @@ three various ways to handle missing data:
 to :class:`Missing` for selecting the kind of plot for visualization: 
 
 * ``bar`` plot counts the  non-missing data  using pandas
-* ``mbar`` uses the :mod:`msno` package to count the number 
-	of non-missing data. 
-* ``dendrogram`` show the clusterings of where the data is missing. 
-	leaves that are the same level predict one onother presence 
-	(empty of filled). The vertical arms are used to indicate how  
-	different cluster are. short arms mean that branch are 
-	similar. 
-* ``corr`` creates a heat map showing if there are correlations 
-	where the data is missing. In this case, it does look like 
-	the locations where missing data are corollated.
-* ``None`` is the default visualization. It is useful for viewing the contiguous area of 
-   the missing data, indicating that the missing data is not random. The :code:`matrix` function 
-   includes a sparkline along the right side. Patterns here would also indicate non-random missing 
-   data. It is recommended to limit the number of samples to be able to see the patterns. 
+* ``mbar`` uses the :mod:`msno` package to count the number of non-missing data. 
+* ``dendrogram`` show the clusterings of where the data is missing. leaves that are the 
+    same level predict one onother presence (empty of filled). The vertical arms 
+	are used to indicate how  different cluster are. short arms mean that branch are similar. 
+* ``corr`` creates a heat map showing if there are correlations where 
+   the data is missing. In this case, it does look like the locations where 
+   missing data are corollated.
+* ``None`` is the default visualization. It is useful for viewing the contiguous area of the missing 
+   data, indicating that the missing data is not random. The :code:`matrix` function includes a sparkline along the right side. 
+   Patterns here would also indicate non-random missing data. It is recommended to limit the number of samples to be able to see the patterns. 
 
 Any other value will raise an error. For instance::
 
@@ -135,6 +130,7 @@ of the classifier to improve upon computational efficiency. In certain cases, SB
 improve the model’s predictive power if a model suffers from overfitting. 
 
 **Mathematical details**
+
 The idea behind the SBS is simple: it sequentially removes features from the full feature 
 subset until the new feature subspace contains the desired number of features. To determine 
 which feature is to be removed at each stage, the criterion function:math:`J` is needed for 
@@ -146,14 +142,10 @@ terms, at each stage, the feature that causes the least performance is eliminate
 removal. Based on the preceding definition of SBS, the algorithm can be outlined with a few 
 steps:
 
-* Initialize the algorithm with :math:`k=d`, where :math:`d` is the 
-	dimensionality of the full feature space, :math:`X_d`. 
-* Determine the feature :math:`x^{-}`,that maximizes the criterion: 
-	:math:`x^{-}= argmax J(X_k-x)`, where :math:`x\in X_k`. 
-* Remove the feature :math:`x^{-}` from the feature set 
-	:math:`X_{k+1}= X_k -x^{-}; k=k-1`.
-* Terminate if :math:`k` equals the number of desired features; 
-	otherwise, go to step 2. [2]_ 
+* Initialize the algorithm with :math:`k=d`, where :math:`d` is the dimensionality of the full feature space, :math:`X_d`. 
+* Determine the feature :math:`x^{-}`,that maximizes the criterion: :math:`x^{-}= argmax J(X_k-x)`, where :math:`x\in X_k`. 
+* Remove the feature :math:`x^{-}` from the feature set :math:`X_{k+1}= X_k -x^{-}; k=k-1`.
+* Terminate if :math:`k` equals the number of desired features; otherwise, go to step 2. [2]_ 
 
 		
 .. topic:: Examples:
