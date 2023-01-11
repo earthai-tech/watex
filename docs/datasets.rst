@@ -50,11 +50,10 @@ This is an example of the ERP data arrangement table:
 All the DC-ERP datasets hold the following parameters: 
 
 * `kind` : str , ['ves'|'erp'], default is {'erp'}. 
-   The kind of DC data to retrieve. If `kind` is set to ``ves`` , VES data is fetched 
-   and ERP otherwise. Note that this is only valid for Gbalo locality (:func:`~watex.datasets.dload.load_gbalo`).
+   The kind of DC data to retrieve. If `kind` is set to ``ves`` , VES data is fetched and ERP otherwise. Note that this is only valid for Gbalo locality (:func:`~watex.datasets.dload.load_gbalo`).
 * `tag, data_names`: ``None``, Always None for API consistency.
-* `as_frame` : bool, default=False. If True, the data is a `pandas dataframe`_ 
-   including columns with appropriate types (numeric). The target is a pandas Data frame or Series depending 
+* `as_frame` : bool, default=False. 
+   If True, the data is a `pandas dataframe`_ including columns with appropriate types (numeric). The target is a pandas Data frame or Series depending 
    on the number of target columns. If `as_frame` is ``False``,  then returning a :class:`~watex.utils.box.Boxspace`.
 * `kws` : dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
 		
@@ -134,13 +133,10 @@ methods that use the VES data:
 The following parameters are passed to the VES data to retrieve the expected data:
 
 * `tag, data_names`: ``None`` , Always None for API consistency 
-* `as_frame` : bool, default=False. If True, the data is a pandas DataFrame including columns 
-   with appropriate types (numeric). The target is a panda DataFrame or Series depending on the number 
-   of target columns. If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace` dictionary-like object.
-* `index_rhoa`: int, default=0. Index of the resistivity columns to retrieve. Note that this is useful in cases many 
-   sounding values are collected in the same survey area. `index_rhoa=0` fetches the first sounding values 
-   in the collection of all values. For instance `index_rhoa=0` in the raw arrangement above fetches the 
-   sounding data `SE1` i.e the first resistivity column. 
+* `as_frame` : bool, default=False. 
+   If True, the data is a pandas DataFrame including columns with appropriate types (numeric). The target is a panda data frame or Series depending on the number of target columns. If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace` dictionary-like object.
+* `index_rhoa`: int, default=0. 
+   Index of the resistivity columns to retrieve. Note that this is useful in cases many sounding values are collected in the same survey area. `index_rhoa=0` fetches the first sounding values in the collection of all values. For instance `index_rhoa=0` in the raw arrangement above fetches the sounding data `SE1` i.e the first resistivity column. 
 * `kws`: dict, Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` function for parsing data. 
  
 There are three localities for DC-VES datasets: 

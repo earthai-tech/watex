@@ -21,13 +21,11 @@ to know the explanation of the attributes for plot customizing.
 
 Furthermore, note the existence of the `tname` and `pkg` parameters passed mostly to the :mod:`~watex.view`  module classes:
 
-* `tname`: always str, is  the target name or label. In supervised learning the target 
-   name is considered as the reference name of :math:`y` or label variable:  
-* `pkg`: always str, Optional by default, is the kind or library to use for visualization. can be ['yb'|'msn'|'sns'|'pd'] 
-   for 'yellowbrick'[1]_ , 'missingno', 'seaborn' or 'pandas' respectively. Mosyly the default value for `pkg` is 
-   ``pd`` or ``sns``.  To install these packages, use ``pip`` or ``conda``. Note that the `pkg` parameter 
-   is specific for each plotting method, and s not passed to `__init__` method. Additionally, each module 
-   plot some specific parameters passed to ``__init__`` methods. Refer to each plot class documentation.   
+* `tname`: always str, 
+  Is  the target name or label. In supervised learning the target name is considered as the reference name of :math:`y` or label variable:  
+* `pkg`: always str, Optional by default,
+  Is the kind or library to use for visualization. can be ['yb'|'msn'|'sns'|'pd']  for 'yellowbrick'[1]_ , 'missingno', 'seaborn' or 'pandas' respectively. Mosyly the default value for `pkg` is 
+  ``pd`` or ``sns``.  To install these packages, use ``pip`` or ``conda``. Note that the `pkg` parameter  is specific for each plotting methods, not a class initialization parameters. Refer to each plot class documentation.   
 
 
 Params space plots  
