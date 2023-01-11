@@ -8,7 +8,9 @@ Base Assessors and Estimators
 
 The following module is a set of classes and methods intended for base module implementation in which 
 target value is expected to be a linear combination of the features. In mathematical notation, 
-if :math:`\hat{y}` is the predicted value, :math:`\hat{y}(w, x) = w_0 + w_1 x_1 + ... + w_p x_p`
+if :math:`\hat{y}` is the predicted value, 
+
+.. math::`\hat{y}(w, x) = w_0 + w_1 x_1 + ... + w_p x_p`
 
 Across the module, we designate the vector :math:`w = (w_1,..., w_p)` as ``coef_`` 
 and :math:`w_0` as ``intercept_``.
