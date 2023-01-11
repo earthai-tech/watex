@@ -79,15 +79,9 @@ to :class:`Missing` for selecting the kind of plot for visualization:
 
 * ``bar`` plot counts the  non-missing data  using pandas
 * ``mbar`` uses the :mod:`msno` package to count the number of non-missing data. 
-* ``dendrogram`` show the clusterings of where the data is missing. leaves that are the 
-    same level predict one onother presence (empty of filled). The vertical arms 
-	are used to indicate how  different cluster are. short arms mean that branch are similar. 
-* ``corr`` creates a heat map showing if there are correlations where 
-   the data is missing. In this case, it does look like the locations where 
-   missing data are corollated.
-* ``None`` is the default visualization. It is useful for viewing the contiguous area of the missing 
-   data, indicating that the missing data is not random. The :code:`matrix` function includes a sparkline along the right side. 
-   Patterns here would also indicate non-random missing data. It is recommended to limit the number of samples to be able to see the patterns. 
+* ``dendrogram`` show the clusterings of where the data is missing. leaves that are the same level predict one onother presence (empty of filled). The vertical arms are used to indicate how  different cluster are. short arms mean that branch are similar. 
+* ``corr`` creates a heat map showing if there are correlations where the data is missing. In this case, it does look like the locations where  missing data are corollated.
+* ``None`` is the default visualization. It is useful for viewing the contiguous area of the missing data, indicating that the missing data is not random. The :code:`matrix` function includes a sparkline along the right side. Patterns here would also indicate non-random missing data. It is recommended to limit the number of samples to be able to see the patterns. 
 
 Any other value will raise an error. For instance::
 
