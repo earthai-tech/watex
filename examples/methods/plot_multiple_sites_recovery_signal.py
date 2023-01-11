@@ -3,7 +3,7 @@
 Plot multiple  sites signal recovery
 ================================================
 
-plots mutiple site/stations tensor with recovery signals 
+plots mutiple site/stations tensors with recovery signals 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

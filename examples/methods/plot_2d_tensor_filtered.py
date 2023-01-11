@@ -3,7 +3,7 @@
 Plot filtered tensors in 2D 
 =================================
 
-Plot the corrected filtered  tensor in two dimensional layout 
+visualizes the filtered  tensors in a two-dimensional layout
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

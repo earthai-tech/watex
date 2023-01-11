@@ -3,7 +3,7 @@
 Plot logging Predictor and target 
 ========================================
 
-Plots the logging data including the target y  
+plots the logging data by including the target y  
 containing the permeability coefficient k 
 """
 # Author: L.Kouadio 
@@ -16,7 +16,7 @@ from watex.methods.hydro import Logging
 h = load_hlogs ()
    
 log= Logging(kname ='k', zname='depth_top' ).fit(h.frame[h.feature_names])
-# Uncomment this see all the predictor predictor X 
+# Uncomment the line below to plot all the feature that composed the predictor X 
 # except the categorial feature like strata 
 # log.plot ()
 

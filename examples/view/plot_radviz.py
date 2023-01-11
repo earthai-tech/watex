@@ -3,14 +3,16 @@
 Plot radial (RadViz)
 ===================================
 
-Radviz hows each sample on circle or square, with features on the circonference 
-to vizualize separately between target. Values are normalized and each 
-figure has a spring that pulls samples to it based on the value. 
+shows each sample on circle or square, with features on the circonference 
+to vizualize separately between target.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
 #%%
+# Note that the plot expects the values to be normalized. Thus, each 
+# figure has a spring that pulls samples to it based on the value. 
+
 from watex.datasets import fetch_data 
 from watex.view import ExPlot 
 # visualization using the yellowbrick package 

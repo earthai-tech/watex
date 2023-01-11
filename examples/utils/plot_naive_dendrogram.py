@@ -3,7 +3,7 @@
 Plot naive dendrogram 
 =================================================
 
-Rapid dendrogram plot using the ward clustering function from Scipy.
+visualizes a rapid dendrogram using the ward clustering function from Scipy.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

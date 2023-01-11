@@ -3,7 +3,7 @@
 Plot data with missing features 
 =================================
 
-Plots missing features and extract insight with their correlation
+plots the missing features and extracts insight with their correlation
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

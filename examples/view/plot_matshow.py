@@ -3,7 +3,7 @@
 Plot matrix show 
 =================================================
 
-Quick matrix visualization using matplotlib.pyplot.matshow.
+visualizes basically the matrix show
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

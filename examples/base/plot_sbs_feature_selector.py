@@ -3,8 +3,8 @@
 Plot Sequential Backward Selection  (SBS)
 ============================================
 
-Plot shows the SBS in action with the classification 
-accuracy of the KNeigborhs Classifier that was 
+shows the SBS in action with the classification 
+accuracy of the KNeighbors Classifier that was 
 calculated on the validation dataset. 
 """
 # Author: L.Kouadio 

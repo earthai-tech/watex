@@ -3,7 +3,7 @@
 Plot features vs target on histogram plots 
 =================================================
 
-plots a histogram of continuous values against the target of binary plot.
+plots a histogram of continuous values against the a binary target.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

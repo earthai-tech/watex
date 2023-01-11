@@ -3,11 +3,7 @@
 Plot log 
 =================================================
 
-The log plot expects a collection of logging data. Each logging data composes a 
-column of data collected on the field. Note that can also plot anykind of 
-data related that it contains numerical values. The function does not 
-accept categorical data.   If categorical data are given, they should be 
-discarded. 
+plots a collection of logging data. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
@@ -15,6 +11,11 @@ discarded.
 #%% 
 # Plot the logging data using the default behavior
 # use the borehole `h2601`. 
+# Note that each logging data composes a 
+# column of data collected on the field. Note that can also plot anykind of 
+# data related that it contains numerical values. The function does not 
+# accept categorical data.   If categorical data are given, they should be 
+# discarded. 
 
 from watex.datasets import load_hlogs 
 from watex.utils.plotutils import plot_logging

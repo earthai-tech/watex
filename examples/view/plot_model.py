@@ -3,14 +3,14 @@
 Plot model
 =================================================
 
-Plots  model 'y' (true labels) versus 'ypred' (predicted) from test 
-data. it allow to know where estimator/classifier fails to predict 
-correctly the target. 
+plots  model results 'y' (true labels) versus 'ypred' (predicted) from test data. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
 # %%
+# The plots is a great alternative to know where estimator/classifier fails to predict 
+# correctly the target. 
 # * Prepare our data - Use analysis data of Bagoue dataset since data 
 # is alread scaled and imputed
             

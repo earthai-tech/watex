@@ -3,7 +3,7 @@
 Plot ex-heatmap 
 ======================================================
 
-Plot correlation matrix array  as a heat map. 
+plots correlation matrix  as a heat map. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

@@ -3,9 +3,9 @@
 Plot pseudo-fracturing index (sfi)
 ======================================================
 
-Plot the pseudo-fracturing index known as *sfi* that is used to speculate 
+visualizes the pseudo-fracturing index known as *sfi* that is used to speculate 
 about the apparent resistivity dispersion ratio around the cumulated sum 
-of the  resistivity values of the selected anomaly (conductive zone)
+of the  resistivity values of the selected conductive zone.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

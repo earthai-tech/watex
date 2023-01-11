@@ -1,17 +1,17 @@
 """
 =====================================================
-yMXS target for k-prediction: step-by-step guide  
+yMXS target for k-prediction: a step-by-step guide  
 =====================================================
 
-Here are some code snippets for generating the nixture learning strategy 
-target :math:`y*` for predicting the premeability coefficient 
-:math:`k` parameter from two combined boreholes.  
+Real-world examples to generate the mixture learning strategy 
+target :math:`y*` for predicting the permeability coefficient 
+:math:`k` parameter from two boreholes.  
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
 #%% 
-#Import neccessary modules 
+#Import necessary modules 
 import pandas as pd 
 from watex.datasets import load_hlogs 
 
@@ -21,35 +21,35 @@ from watex.datasets import load_hlogs
 # Make a unique dataset from two boreholes data collected in Hongliu 
 # coal mine :h502 and h2601 and reduce down dimensions if necessary
 
-# * load `load_hlogs` to get explicityly the features names and target names 
+# * load `load_hlogs` to get explicitly the features names and target names 
 box = load_hlogs () 
 # combine our test data 
 data  = load_hlogs().frame + load_hlogs(key= 'h2601').frame  
  
 X0, y0 = data [box.feature_names] , data [box.target_names ] 
-# make a copies for safety 
+# make copies for safety 
 X, y = X0.copy() , y0.copy() 
-# let visualize the features names and target names 
+# let's visualize the features names and target names 
 print("feature_names:\n" , box.feature_names ) 
-print("traget names:\n", box.target_names ) 
+print("target names:\n", box.target_names ) 
 
-# data contain some categorical values, we will drop the rockname, the hole_id 
-# and well diameter which are subjective data and not usefull for prediction 
-#puposes and impute  the remain data using bi-impute strategy 
+# data contain some categorical values, we will drop the rock name, the hole_id 
+# and well diameter which are subjective data and not useful for prediction 
+#puposes and impute  the remaining data using a bi-impute strategy 
 
 from watex.utils import naive_imputer 
 X.drop (columns = ['rock_name', 'hole_id', 'well_diameter'] , inplace =True )
 
-# * Merge both depth into one to compose only a single depth columns 
+# * Merge both depths into one to compose only a single depth column 
 X['depth'] = ( X.depth_bottom + X.depth_top )/2 
 X.drop (columns =['depth_top', 'depth_bottom'], inplace =True )
 data_imputed = naive_imputer( X , strategy='mean', mode='bi-impute')  
 
-# * Use PCA analysis to reduced the dimension to down the importances features 
-# to predicting the naive aquifer group (NGA).
+# * Use PCA analysis to reduce the dimension to down the important features 
+# to predict the naive aquifer group (NGA).
 
-# Note that for PCA the analysis, we can remove the only categorial fatures 
-# "strata_name" and scaled the remaining features as follow: 
+# Note that for PCA analysis, we can remove the only categorial features 
+# "strata_name" and scaled the remaining features as follows: 
 
 from watex.utils import to_numeric_dtypes  
 from watex.utils import naive_scaler 
@@ -66,70 +66,70 @@ from watex.analysis import nPCA
 # * Plot explained variance ratio
 pca = nPCA (Xpca_scaled , return_X= False, view = True ) # return PCA object rather than the reduced X  
 
-# As a comment,  here to 5/6 features are enough since the explained variance ratio is already 
+# As a comment,  here 5/6 features are enough since the explained variance ratio is already 
 # got 98 % 
 #%%
-# * Set the number of components and use convenient plot the both components   
+# * Set the number of components and use a convenient plot the both components   
 
 from watex.utils import plot_pca_components 
-pca = nPCA (Xpca_scaled ,n_components=2,  return_X=False ) # return object for plot pupose 
+pca = nPCA (Xpca_scaled ,n_components=2,  return_X=False ) # return object for plot purpose 
  
 components = pca.components_ 
 features = pca.feature_names_in_
 plot_pca_components (components, feature_names= features, cmap='jet_r') 
 #%%
-#  As a comments, the matrix plot shows the contributions of all features 
+#  As comments, the matrix plot shows the contributions of all features 
 # first components. 
-# Indeed, while the most contributions are got in depth resistivity gamma and gamma short distane 
-# they are negatively correlated with layer thichness, natural gamma. However 
+# Indeed, while most contributions are got in-depth resistivity gamma and gamma short distance 
+# they are negatively correlated with layer thickness and natural gamma. However, 
 # no-correlation is found with the sp log data 
-# second components. depth and natural gamma are more corollated and inversely 
-# correlated with the resistivity gamma, sp and shorth distance . 
-# whereas the quasi-null correlation exist with layer thiickness . 
-# By summarizing the PC1 abd PC2 analysis, all features are usefull as prediction 
-# and one of them can be skipped. This validate the explained variance ratio where 
-# under 8 features, after 7 dimensions, the explained variance ratio is aleardy 
+# second components. the depth and natural gamma are more corollated and inversely 
+# correlated with the resistivity gamma, sp, and short distance. 
+# whereas the quasi-null correlation exists with layer thickness. 
+# By summarizing the PC1 and PC2 analysis, all features are useful as prediction 
+# and one of them can be skipped. This validates the explained variance ratio where 
+# under 8 features, after 7 dimensions, the explained variance ratio is already 
 # reached 98 %.  Therefore features skipped should not influence the result of 
 # prediction 
 #%%
 # * Auto-preprocess the data using the default pipe 
-# Note that the categorical data "strata_name" is one-hoty-encoded and 
-# generate a sparse matrix ready  for the data for prediction, then  we will ue the function 'make_naive_pipe'
+# Note that the categorical data "strata_name" is one-hot-encoded and 
+# generate a sparse matrix ready  for the data for prediction, then  we will use the function 'make_naive_pipe'
 # to fast encode and transform the data as output.
 
 from watex.utils  import make_naive_pipe 
 
-# auto scaled the data and store into a compressed sparse matrix format 
-csr_data = make_naive_pipe(data_imputed, transform= True) # auto scaled the data using StandardScaler and  transform the data inplace 
+# auto scaled the data and store it into a compressed sparse matrix format 
+csr_data = make_naive_pipe(data_imputed, transform= True) # auto-scaled the data using StandardScaler and  transform the data in place 
 csr_data
 
 #%%
 # Prediction of Naive Group of Aquifer (NGA) 
 # ============================================
-# We randomly set the number of cluster to 05 which might correspond to 
-# the number of aquifer group in the survey area according to the geological informations. 
+# We randomly set the number of clusters to 05 which might correspond to 
+# the number of aquifer groups in the survey area according to the geological information. 
 # KMeans is used to predict the  class label instead  and plot the clusters 
 
 from watex.exlib.sklearn import KMeans 
 from watex.utils import plot_clusters 
 #%%
-# * Group the principal two most components of pca  into the 5 clusters 
+# * Group the principal two components of PCA  into the 5 clusters 
 
 km = KMeans (n_clusters =5 , init= 'random' )  
 ykm = km.fit_predict(pca.X  ) 
 km3c = KMeans (n_clusters =3 , init= 'random' )  
 ykm3 = km3c.fit_predict(pca.X  )
-# plot clusters into the general informations of 5 group of aquifers  
+# plot clusters into the general information of 5 groups of aquifers  
 plot_clusters (5 , pca.X, ykm , km.cluster_centers_ )  
 #%%
 # Plot 03 clusters
 # Now test the sample lot with only 03 clusters as a theory group of aquifer 
-# base on the distribution of the data.
+# based on the distribution of the data.
 
 plot_clusters (3 , pca.X, ykm3 , km3c.cluster_centers_ ) 
 #%%
-# * Plot the feature importances 
-# We encode the strata_name and add it to the scale value and plot_the feature  importances 
+# * Plot the feature’s importance 
+# We encode the strata_name and add it to the scale value and plot_the feature  importance 
 
 from watex.exlib.sklearn import RandomForestClassifier 
 from watex.utils import plot_rf_feature_importances 
@@ -146,24 +146,25 @@ from watex.utils import plot_elbow
 plot_elbow(pca.X, n_clusters=11)  
 
 #%%
-# As a comments, we can see, the elbow is located at k=3 that i.e we can classify the aquifer 
-# group based on the current datasets into three group in hongliu coal mine. 
-# Note that the dataset is only for to boreholes, this can not confirm the 
-# exact number of aquifer. In the case study data applied in Honliu coal mine composed 
-# of 11 boreholes, the number of 03 clusters is selected althrough the 05 clusters 
+# As comments, we can see, the elbow is located at k=3 that i.e we can classify the aquifer 
+# group based on the current datasets into three groups in hongliu coal mine. 
+# Note that the dataset is only for boreholes, this can not confirm the 
+# exact number of the aquifer. In the case study data applied in Honliu coal mine composed 
+# of 11 boreholes, the number of 03 clusters is selected although the 05 clusters 
 # do not indicate a bad clustering after a silhouette plot. The number of 03 is 
-# finally ascertained using the Hierachical Agglomerative clustering (HAC) dendrogram plot. 
+# finally ascertained using the Hierarchical Agglomerative clustering (HAC) dendrogram plot. 
 # The step are enumerated below: 
     
 #%%
-# Let confirm the 05 clusters  using the silhoutette plot from KMeans
+# Let’s confirm the 05 clusters  using the silhouette plot from KMeans
 
 from watex.view import plotSilhouette 
 # plot silhouette for the 05 clusters with pca reduced data 
-plotSilhouette (pca.X, labels =ykm , prefit =True)   
+plotSilhouette (pca.X, labels =ykm , prefit =True)  
+ 
 #%%
-# Plot with the 03 custers; plot silhouettte for the three clusters by 
-# setting prefit to False since a new prediction should be make under the hood
+# Plot with the 03 custers; plot silhouette for the three clusters by 
+# setting prefit to False since a new prediction should be made under the hood
 # after n-iterations to find the best clustering. Refer to 
 # :func:`~watex.view.plotSilhouette` documentation.
 
@@ -176,19 +177,19 @@ from watex.view import plotDendrogram
 plotDendrogram (pca.X , labels = ykm)
 
 #%%
-# As a comments in the case of MXS target , merging the predicted y with cluster =5 
+# As comments in the case of MXS target, merging the predicted y with cluster =5 
 # with create a lot of y=k33' where we expected to have a list a =balance target 
 # with the true labels y (k1, k2 and k3 ) 
-# therefore the clsuter with 3 labels is used instead of 5 
+# therefore the cluster with 3 labels is used instead of 5 
 # thus the predicted NGA labels with true labels is combined with the 
 # the true labels y for supervised learnings. Note that 
 # the true labels are not altered by the predicted label y 
-# not let plot the dendro heat
+# not let plot the dendro-heat
 
 #%%
-# Before prediction the NGA labels, we can  fit aquifer group and find the 
+# Before predicting the NGA labels, we can  fit the  aquifer group and find the 
 # most representative of the true k labels to the predicted labels 
-# test with the number of cluster set to 3 
+# test with the number of clusters set to 3 
 
 from watex.utils.hydroutils import find_aquifer_groups, classify_k
 # categorize the k-values using the default func 
@@ -210,18 +211,18 @@ yNGA = predict_NGA_labels(pca.X, n_clusters= 3)
 from watex.utils import make_MXS_labels 
 
 yMXS = make_MXS_labels(y_true=yk_map , y_pred=yNGA )
-# Let print the 12 firstMXS target 
+# Let’s print the 12 firstMXS target 
 print(yMXS[:12])
 #%%
 # As a comment, the existing :math:`21` and math:`2*` in the :math:`y*(yMXS)`
-# indicates that there is a strong similarity found between the label 2 in 
+# indicates that there is a strong similarity found between label 2 in 
 # the permeability coefficient dataset :math:`y` and the predicted `yNGA` labels. 
-# This is validate by the group preponderance object above. Whilst, the math:`2*`
+# This is validated by the group preponderance object above. Whilst, the math:`2*`
 # indicates that the label `2` in yNGA has no similarity found in :math:`y*(yMXS)`). 
 # The label `3` in `yNGA` has no relationship with any labels in the :math:`y` 
-# therefore no modification is occured and kept safe. 
-# If the parameter `return_obj` is set to True, it will return a MXS object 
-# where many attributes like class mapping can be retrieved for understanding purpose. 
+# therefore no modification is occurred and kept safe. 
+# If the parameter `return_obj` is set to True, it will return an MXS object 
+# where many attributes like class mapping can be retrieved for understanding purposes. 
 # for instance:
 
 mxso = make_MXS_labels(y_true=yk_map , y_pred=yNGA , return_obj=True )
@@ -235,10 +236,9 @@ print(mxso.mxs_group_classes_)
 # modified based on the similarity computation.
 print(mxso.mxs_classes_)
 
-# Once the :math:`y*(yMXS)` is predicted, the surpervised learning model 
-# training can be made with the predictor :math:`X`. 
+# Once the :math:`y*(yMXS)` is predicted, the supervised learning model 
+# training can be made with the predictor:math:`X`. 
 #%%
-
 # :notes: 
 #    A paper is already submitted in Engineering Geology for k-prediction which 
 #    explained a concrete study (Case study in Hongliu coal mine). If published 
@@ -277,7 +277,7 @@ print(mxso.mxs_classes_)
 
 
 
-
+	
 
 
 

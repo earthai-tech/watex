@@ -3,7 +3,7 @@
 Plot two dimensional dimensional filtered tensor
 ==================================================
 
-plots the filtered tensor by applying the filtered function. 
+plots the filtered tensors by applying the filtered function. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

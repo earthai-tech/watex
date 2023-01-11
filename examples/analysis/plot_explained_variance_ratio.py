@@ -3,7 +3,7 @@
 Explained variance ratio 
 ==============================================
 
-plots an example of explained variance ratio using 
+visualizes the explained variance ratio using 
 the test data looking at the steps behind the PCA
 """
 # Author: L.Kouadio 

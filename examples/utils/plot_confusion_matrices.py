@@ -3,7 +3,7 @@
 Plot confusion matrices  
 =================================================
 
-plots intline multiple confusion matrices from  selected models  
+plots inline multiple confusion matrices from  selected models  
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

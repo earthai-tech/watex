@@ -1,18 +1,15 @@
 """
-======================================================
+================================================
 Plot electrical resistivity profiling (ERP)
-======================================================
+================================================
 
-Plot the ERP and selected conductive zone. The conductive zone can be 
-supplied nannualy as a subset of the `erp` or by specifying the station 
-expected for drilling location.
-
+shows the ERP and selected conductive zone.
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
 #%%
-# Generate a synthetic data and plot the without any selected 
+# Generate synthetic data and plot the without any selected 
 # conductive zone. The synthetic ERP data can be generated using 
 # the function :func:`~watex.datasets.make_erp`
 
@@ -23,7 +20,9 @@ test_array = make_erp (stations = 30, seed = 0).frame.resistivity
 plotAnomaly(test_array, style ="dark_background") 
 
 #%% 
-# Define the conductive zone manually and plot 
+# The conductive zone can be supplied mannualy as a subset 
+# of the `erp` or by specifying the station 
+# expected for drilling location. 
 selected_cz ,*_ = defineConductiveZone(test_array, station=7)  
 plotAnomaly(test_array, selected_cz , style ='dark_background')
 #%%
@@ -41,8 +40,4 @@ plotAnomaly(test_array, station= 'auto', style ='dark_background')
 #   can predict a station located in a marsh area that is not a suitable place 
 #   for making a drill. Therefore, to avoid any misinterpretation due to the 
 #   complexity of the geological area, it is useful to provide the station 
-#   position. 
-    
-
-
-        
+#   position.

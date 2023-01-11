@@ -3,7 +3,7 @@
 Plot dendrogram missing data  
 ================================
 
-Plots helps vizualizing patterns in the missing data using the dendrogram 
+visualizes the patterns in the missing data using the dendrogram 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

@@ -3,7 +3,7 @@
 Plot robust principal components analysis (PCA)
 =================================================
 
-Robust plot of  PCA component analysis using hydrogoelogical data
+visualizes the robust PCA component analysis from hydro-geological data
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

@@ -3,7 +3,7 @@
 Electrical Resistivity Profiling (ERP)
 ======================================================================
 
-Plots the ERP and selects the best conductive zone for the drilling 
+plots the ERP and selects the best conductive zone for the drilling 
 operations.
 """
 # Author: L.Kouadio 

@@ -3,7 +3,7 @@
 Plot Cut/Quantile features
 =================================================
 
-Plots compares the quantile values of ordinal categories 
+compares the quantile values of ordinal categories 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

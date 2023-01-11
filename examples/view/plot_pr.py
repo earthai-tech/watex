@@ -3,7 +3,7 @@
 Plot Precision-Recall (PR)
 =================================================
 
-plot computes the score based on the decision function
+computes the score based on the decision function
  and plot the result as a score vs threshold.
 """
 # Author: L.Kouadio 

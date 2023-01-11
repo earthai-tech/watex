@@ -3,7 +3,7 @@
 Plot tensor 2D 
 ======================
 
-Plot shows the raw tensor in two dimensional layout. 
+shows the raw tensors in a two-dimensional layout. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

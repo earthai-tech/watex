@@ -3,15 +3,18 @@
 Plot projection
 =================================================
 
-create a scatterplot of all instances to visualize data if there is 
-there is geographical information(latitude/longitude or
-easting/northing) in the data. It alows to show the distributions of the data 
-in the survey area.
+creates a scatterplot of all instances to visualize data 
+alongside the geographical information. e
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
 #%%
+# The plot needs the coordinates informations of the survey area. If there is 
+# there is geographical information(latitude/longitude or easting/northing) in the data, 
+# plot shows the distribution of the data  and can be used to visualize the 
+# location of the correct of wrong predicted value in the survey area.
+
 from watex.datasets import fetch_data 
 from watex.view.mlplot import plotProjection 
 # Discard all the non-numeric data 

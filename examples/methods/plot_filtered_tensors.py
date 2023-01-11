@@ -3,9 +3,9 @@
 Plot filtered tensors in 1D
 ==============================
  
-Plot tensors using the adaptative moving average (AMA), the fixed-dipole 
+visualizes filtered tensors in 1D using the adaptative moving average (AMA), the fixed-dipole 
 length moving average (FLMA) and the trimming-moving average (TMA) filters 
-after signal recovery 
+after signal recovery. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

@@ -3,7 +3,7 @@
 Plot parallel coordinates 
 ===============================================
 
-See :ref:`Plot parallel coordinates <view>`
+visualizes the features parallel coordinates 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

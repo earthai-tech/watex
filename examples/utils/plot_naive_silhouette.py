@@ -3,7 +3,7 @@
 Plot naive silhouette 
 =================================================
 
-Plot quantifies the quality  of clustering silhouette 
+quantifies the quality  of clustering silhouette 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 

@@ -3,8 +3,8 @@
 Plot logging predictor  
 =========================
 
-plots the predictor :math:`X`  only composed  with 
-hydrogeophysical features
+plots the predictor :math:`X` only composed  of 
+hydro-geophysical features
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

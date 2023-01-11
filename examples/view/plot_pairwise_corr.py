@@ -3,14 +3,14 @@
 Plot pairwise features
 ===================================
 
-Plots creates pairwise comparison between features. It shows 
-a ['pearson'|'spearman'|'covariance'] correlation. 
+creates a pairwise comparison between features. 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
 #%%
 # Plot the numerical pairwise correlation 
+# It shows ['pearson'|'spearman'|'covariance'] correlation. 
 from watex.datasets import fetch_data 
 from watex.view import ExPlot 
 from watex.utils import bi_selector 

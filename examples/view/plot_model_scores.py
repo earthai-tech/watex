@@ -3,7 +3,7 @@
 Plot model scores
 =================================================
 
-visualizes model fined tuned scores vs the cross validation 
+visualizes model fined tuned scores from the cross validation 
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause

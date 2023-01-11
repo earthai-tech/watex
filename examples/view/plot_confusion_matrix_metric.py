@@ -3,7 +3,7 @@
 Plot confusion matrix metric 
 =================================================
 
-Represents of the confusion matrix for error visualization.  
+displays the confusion matrix for errors analysis.  
 """
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
