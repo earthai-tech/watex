@@ -23,8 +23,8 @@ For the first release three main methods are implemented:
 DC-Resistivity 
 ================
 
-The:mod:`~watex.methods.electrical` is composed of multiples DC readings prefixed par the `DC` as the names of the methods (:class:`~watex.methods.electrical.DCProfiling`,
-class:`~watex.methods.electrical.DCSounding` and single DC reading classes (:class:`~watex.methods.electrical.ResistivityProfiling` and :class:`~watex.methods.electrical.VerticalSounding`). The latter offers supplemental plot functions whereas the former does not. 
+The :mod:`~watex.methods.electrical` is composed of multiples DC readings prefixed par the `DC` as the names of the methods (:class:`~watex.methods.electrical.DCProfiling`,
+:class:`~watex.methods.electrical.DCSounding` and single DC reading classes (:class:`~watex.methods.electrical.ResistivityProfiling` and :class:`~watex.methods.electrical.VerticalSounding`). The latter offers supplemental plot functions whereas the former does not. 
 
 `Resistivity Profiling (ERP)` 
 --------------------------------
@@ -533,32 +533,20 @@ engineering and groundwater dewatering, which are directly related to the reliab
 In the following, it is useful to remember the hydrogeological attribute definition below: 
 
 * `aqname`
-    Name of aquifer group column. `aqname` allows retrieving the aquifer group `arr_aq` value in a specific 
-	data frame. Commonly`aqname` needs to be supplied when a data frame is passed as a positional or keyword 
-	argument. Note that it is not mandatory to have a group of the aquifer in the log data. It is needed only 
-	if the label similarity needs to be calculated.  
+    Name of aquifer group column. `aqname` allows retrieving the aquifer group `arr_aq` value in a specific data frame. Commonly`aqname` needs to be supplied when a data frame is passed as a positional or keyword argument. Note that it is not mandatory to have a group of the aquifer in the log data. It is needed only if the label similarity needs to be calculated.  
 * `sname`
-    Name of the column in the data frame that contains the strata values. Don't confuse 'sname' with 'stratum' 
-	which is the name of the valid layer/rock in the array/Series of strata. 
+    Name of the column in the data frame that contains the strata values. Don't confuse `sname` with `stratum` which is the name of the valid layer/rock in the array/Series of strata. 
 * `z` 
-    An array of depth or a pandas series that contains the depth values. A two-dimensional array or 
-	more is not allowed. However when `z` is given as  a dataframe and `zname` is not supplied, an 
-	error raises since `zname` is used to fetch and overwrite `z` from the data frame. 
+    An array of depth or a pandas series that contains the depth values. A two-dimensional array or more is not allowed. However when `z` is given as  a dataframe and `zname` is not supplied, an error raises since `zname` is used to fetch and overwrite `z` from the data frame. 
 * `zname`
-    Name of depth columns. `zname` allows retrieving the depth column in a data frame. If an integer 
-	is passed, it assumes the index of the data frame fits the depth column. Integer value must not be 
-	out of the data frame size along axis 1. Commonly `zname` needs to be supplied when a data frame is 
-    passed to a function argument. 
+    Name of depth columns. `zname` allows retrieving the depth column in a data frame. If an integer is passed, it assumes the index of the data frame fits the depth column. Integer value must not be out of the data frame size along axis 1. Commonly `zname` needs to be supplied when a data frame is passed to a function argument. 
 * `kname` 
 	Name of permeability coefficient columns. `kname` allows retrieving the permeability coefficient 'k' 
 	in a specific data frame. If an integer is passed, it assumes the index of the data frame fits the 
-	'k' columns. Note that the integer value must not be out of the data frame size along axis 1. Commonly 
+	`k` columns. Note that the integer value must not be out of the data frame size along axis 1. Commonly 
 	`kname` needs to be supplied when a data frame is passed as a positional or keyword argument.  
 * `k`
-    An array of permeability coefficient 'k' or a pandas series that contains the 'k' values. A two-dimensional 
-	array or more is not allowed. However, when `k` passes as a data frame and `kname` is not supplied, an 
-	error raises since `kname` is used to retrieve `k` values from the data frame 
-    and overwritten it.
+    An array of permeability coefficient `k` or a pandas series that contains the `k` values. A two-dimensional array or more is not allowed. However, when `k` passes as a data frame and `kname` is not supplied, an error raises since `kname` is used to retrieve `k` values from the data frame and overwritten it.
 	
 Here is data that composes the hydro-geophysical dataset (HGDS): 
 

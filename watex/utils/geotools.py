@@ -3,12 +3,8 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 
 """
-Geology utilities 
-==================
-
-A set of utilities to deals with geological rocks, strata and stratigraphy 
-information of undergrounds 
-
+Is A set of utilities that deal with geological rocks, strata and 
+stratigraphic details for log construction. 
 """
 import os
 import itertools
@@ -24,6 +20,7 @@ from .funcutils import (
     smart_format, 
     station_id, 
     )
+from ..exceptions import StrataError 
 from .._watexlog import watexlog 
 _logger = watexlog().get_watex_logger(__name__ )
 
@@ -1251,7 +1248,7 @@ def _assert_model_type(kind):
     if kind  in ['crm', 'resmodel', 'occam', 'rawmodel', '1']: 
         kind= 'crm'
     if kind not in ('nm', 'crm'): 
-        raise SrataError(
+        raise StrataError(
             f"Argument kind={kind!r} is wrong! Should be `nm`"
             "for stratigraphyic model and `crm` for occam2d model. ")
     return kind 

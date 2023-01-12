@@ -3,7 +3,9 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   created date Wed Jul 14 20:00:26 2021
 #   Edited on Mon Sep  6 17:53:06 2021
-
+"""
+Gives some efficient tools for data manipulation and transformation.
+"""
 from __future__ import division 
 
 import inspect

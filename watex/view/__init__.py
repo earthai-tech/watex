@@ -1,3 +1,9 @@
+""" 
+View is the visualization sub-package. It is divised into the learning plot
+(:mod:`~watex.view.mlplot`) and, data analysis and exploratory modules 
+(:mod:`~watex.view.plot`).
+"""
+
 from .mlplot import ( 
     pobj,
     biPlot, 

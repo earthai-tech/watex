@@ -1,5 +1,8 @@
-# -*- coding: utf-8 -*-
-
+"""
+Methods sub-package is composed of DC-Resistivity, EM, and hydro-geological 
+methods for prediction parameter computations as well as exporting filtering 
+tensors for 1D/2D modeling purpose.
+"""
 from .electrical import (
     ResistivityProfiling ,
     VerticalSounding, 

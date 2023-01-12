@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-
+"""
+Learning utilities for data transformation, 
+model learning and inspections. 
+"""
 from __future__ import annotations 
 import os 
 import copy 
@@ -1443,7 +1446,7 @@ def _assert_sl_target (target,  df=None, obj=None):
 def default_data_splitting(X, y=None, *,  test_size =0.2, target =None,
                            random_state=42, fetch_target =False,
                            **skws): 
-    """ Splitting data function. 
+    """ Splitting data function naively. 
     
     Split data into the training set and test set. If target `y` is not
     given and you want to consider a specific array as a target for 

@@ -56,7 +56,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
     :no-members:
     :no-inherited-members:
 	
-**User guide:** See the :ref:`bases <bases>` section for further details.
+**User guide:** See the :ref:`bases <base>` section for further details.
 
 Classes
 ~~~~~~~~~~~~
@@ -91,14 +91,14 @@ Functions
 
 .. _cases_ref:
 
-:mod:`watex.cases`: Cases Histories
+:mod:`watex.cases`: Case Histories
 ==================================================
 
 .. automodule:: watex.cases
    :no-members:
    :no-inherited-members:
 
-**User guide:** See the :ref:`cases histories <cases>` section for further details.
+**User guide:** See the :ref:`case histories <cases>` section for further details.
 
 Classes
 ~~~~~~~~~~~~
@@ -560,8 +560,110 @@ Functions
 	utils.vesSelector
 	utils.z2rhoa
    
-Geotools utilities 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:mod:`~watex.utils.mlutils`: Additional learning utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+.. automodule:: watex.utils.mlutils
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+	utils.mlutils.correlatedfeatures
+	utils.mlutils.exporttarget
+	utils.mlutils.existfeatures 
+	utils.mlutils.getGlobalScore
+	utils.mlutils.predict
+	utils.mlutils.load_data 
+	utils.mlutils.test_set_check_id
+	utils.mlutils.split_train_test_by_id
+	utils.mlutils.discretizeCategoriesforStratification
+	utils.mlutils.stratifiedUsingDiscretedCategories
+	utils.mlutils.fetch_model
+	utils.mlutils.dumpOrSerializeData
+	utils.mlutils.loadDumpedOrSerializedData
+	utils.mlutils.default_data_splitting
+	utils.mlutils.fetchModel 
+	utils.mlutils.cattarget 
+	
+:mod:`~watex.utils.plotutils`: Additional plot-utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: watex.utils.plotutils
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+	utils.plotutils.plot_confusion_matrix
+	utils.plotutils.savefigure
+	utils.plotutils.make_mpl_properties
+	utils.plotutils.resetting_colorbar_bound
+	utils.plotutils.get_color_palette
+	utils.plotutils.plot_bar 
+	
+:mod:`~watex.utils.exmath`: Additional math-utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: watex.utils.exmath
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+	utils.exmath.d_hanning_window
+	utils.exmath.betaj
+	utils.exmath.savitzky_golay1d 
+	utils.exmath.dummy_basement_curve
+	utils.exmath.find_limit_for_integration
+	utils.exmath.find_bound_for_integration
+	utils.exmath.fitfunc
+	utils.exmath.invertVES
+	utils.exmath.detect_station_position
+	utils.exmath.convert_distance_to_m
+	utils.exmath.get_station_number 
+	utils.exmath.define_conductive_zone
+	utils.exmath.compute_anr
+	utils.exmath.compute_lower_anomaly
+	utils.exmath.select_anomaly
+	utils.exmath.define_anomaly 
+	utils.exmath.get_profile_angle
+	utils.exmath.savgol_coeffs
+	utils.exmath.savgol_filter
+	
+:mod:`~watex.utils.coreutils`: Additional core-utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: watex.utils.coreutils
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+	utils.coreutils.fill_coordinates
+	utils.coreutils.is_erp_series
+	utils.coreutils.is_erp_dataframe
+	utils.coreutils.dummy_basement_curve
+	utils.coreutils.parseDCArgs
+	
+:mod:`~watex.utils.geotools`: Geology utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: watex.utils.geotools
    :no-members:
@@ -588,14 +690,15 @@ Geotools utilities
 
 .. _view_ref:
 
+
 :mod:`watex.view`: Plotting 
 ===============================
 
-.. automodule:: watex.utils
+.. automodule:: watex.view
    :no-members:
    :no-inherited-members:
 
-**User guide:** See the :ref:` visualization <view>` section for further details.
+**User guide:** See the :ref:`visualization <view>` section for further details.
 
 Classes
 ~~~~~~~~~~~~

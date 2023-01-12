@@ -84,6 +84,10 @@ extensions = [
     'sphinx.ext.githubpages', 
     "sphinx_gallery.gen_gallery",
     "sphinx-prompt",
+    
+    "doi_role", 
+    "add_toctree_functions",
+    
     #'numpydoc',
     'sphinx_copybutton', 
     'sphinx_design',

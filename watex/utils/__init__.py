@@ -1,4 +1,13 @@
-# -*- coding: utf-8 -*-
+"""
+Utils sub-package offers several tools for data handling, parameters computation 
+models estimation and evalution, and graphs visualization. The extension of the 
+mathematical concepts, and the core of program are performed via the modules 
+:mod:`~watex.utils.exmath` and :mod:`~watex.utils.coreutils` respectively. Whereas
+the machine learning utilities and additional functionalities are performed 
+with :mod:`~watex.utils.mluttils` and :mod:`~watex.utils.funcutils` respectively. 
+The plot utilities from :mod:`~watex.utils.plotutils` gives several plotting 
+tools for visualization.
+"""
 
 from .coreutils import ( 
     plotAnomaly, 

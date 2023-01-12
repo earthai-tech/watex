@@ -4,10 +4,7 @@
 #   Created date: Fri Apr 15 10:46:56 2022
 
 """
-Core utilities 
-========================
-
-Encompasses the main functionalities for class and methods to sucessfully 
+The module encompasses the main functionalities for class and methods to sucessfully 
 run. Somes modules are written and shortcutted for the users to do some 
 singular tasks before feeding to the main algorithms. 
 
@@ -227,7 +224,8 @@ def fill_coordinates(
     datum: str  = 'WGS84', 
     verbose:int =0, 
 ) -> Tuple [DataFrame, str] : 
-    """ Recompute coordinates values  
+    """ Assert and recompute coordinates values based on geographical 
+    coordinates systems.
     
     Compute the couples (easting, northing) or (longitude, latitude ) 
     and set the new calculated values into a dataframe.
@@ -408,7 +406,7 @@ def is_erp_series (
         data : Series ,
         dipolelength : Optional [float] = None 
         ) -> DataFrame : 
-    """ Validate the series.  
+    """ Validate the data series whether is ERP data.  
     
     The `data` should be the resistivity values with the one of the following 
     property index names ``resistivity`` or ``rho``. Will raises error 
@@ -1650,7 +1648,7 @@ def parseDCArgs(fn :str ,
                 delimiter:Optional[str]=None,
                  arg='stations'
                  )-> ArrayLike [str]: 
-    """ Parse DC `stations` and `fromS` arguments from file and output to 
+    """ Parse DC `stations` and `search` arguments from file and output to 
     array accordingly.
     
     The `froms` argument is the depth in meters from which one expects to find  

@@ -3,8 +3,6 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 
 """
-Hydrogeological utilities 
-================================
 Hydrogeological parameters of aquifer are the essential and crucial basic data 
 in the designing and construction progress of geotechnical engineering and 
 groundwater dewatering, which are directly related to the reliability of these 

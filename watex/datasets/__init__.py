@@ -2,11 +2,9 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>.
 """ 
-Dataset 
-==========
-Fetch data from the local machine. If data does not exist, retrieve it 
-from remote (repository or zenodo record ) 
-
+Dataset subpackage is used to fetch data from the local machine. If the data 
+does not exist or deleted, the remote searching (repository or zenodo record ) 
+triggers via the module :mod:`~watex.datasets.rload`. 
 """
 from warnings import warn 
 

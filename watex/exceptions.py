@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """ 
-:code:`watex` Exceptions 
-
-
+Package exceptions 
 """
 class ArgumentError(Exception): 
     """
