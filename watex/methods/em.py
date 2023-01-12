@@ -12,18 +12,17 @@ and remove noises. Commonly the methods mostly used in the groundwater
 exploration is the audio-magnetoteluric because of the shortest frequency 
 and rapid executions. Furthermore, we can also list some other advantages 
 such as: 
-    
-    * is useful for imaging both deep geologic structure and near-surface 
-        geology and can provide significant details. 
-    *  includes a backpack portable system that allows for use in difficult 
-        terrain. 
-    * the technique requires no high-voltage electrodes, and logistics 
-        are relatively easy to support in the field. Stations can be acquired 
-        almost anywhere and can be placed any distance apart. This allows for
-        large-scale regional reconnaissance exploration or detailed surveys of 
-        local geology and has no environmental impact 
 
-:notes: For deep implementation or explorating a large scale of EM/AMT data  
+* is useful for imaging both deep geologic structure and near-surface 
+  geology and can provide significant details. 
+* includes a backpack portable system that allows for use in difficult terrain. 
+* the technique requires no high-voltage electrodes, and logistics 
+  are relatively easy to support in the field. Stations can be acquired 
+  almost anywhere and can be placed any distance apart. This allows for
+  large-scale regional reconnaissance exploration or detailed surveys of 
+  local geology and has no environmental impact 
+
+:note: For deep implementation or explorating a large scale of EM/AMT data  
     processing, it is recommended to use the package `pycsamt`_. 
     
 """

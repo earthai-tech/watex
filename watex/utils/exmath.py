@@ -2,12 +2,9 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created date: on Fri Sep 17 11:25:15 2021
-# """
-# Extension maths utilities 
-# ===========================
-# Utilities to process and compute parameters. Algebra calculus of the packages 
-# is performed.
-# """
+"""
+Utilities to process and compute parameters. Module for Algebra calculus.
+"""
 from __future__ import annotations 
 import copy 
 import inspect 
@@ -648,10 +645,12 @@ def find_bound_for_integration(
         ix_arr: ArrayLike[DType[int]],
         b0: List[T] =[]
 )-> List[T]: 
-    r""" Recursive function. Use the roots between f curve and basement 
-    curves to detect the  integration bounds. The function use entirely 
-    numpy for seaching integration bound. Since it is much faster than 
-    `find_limit_for_integration` although both did the same tasks. 
+    r""" Recursive function to find the roots between f curve and basement 
+    curves so to detect the  integration bounds. 
+    
+    The function use entirely numpy for seaching integration bound. 
+    Since it is much faster than :func:`find_limit_for_integration` although 
+    both did the same tasks. 
     
     :param ix_arr: array-like - Indexes array from masked array where 
         the value are true i.e. where :math:`b-f > 0 \Rightarrow b > f` . 
@@ -2465,7 +2464,9 @@ def compute_anr (
         )-> float:
     r"""
     Compute the select anomaly ratio (ANR) along with the whole profile from
-    SFI. The standardized resistivity values`rhoa`  of is averaged from 
+    SFI. 
+    
+    The standardized resistivity values`rhoa`  of is averaged from 
     :math:`X_{begin}` to :math:`X_{end}`. The ANR is a positive value and the 
     equation is given as:
         
@@ -2996,7 +2997,8 @@ def compute_lower_anomaly(
     )-> Tuple[Dict[str, Any], ArrayLike, List[ArrayLike], List[Tuple[int, float]]]: 
     """
     Function to get the minimum value on the ERP array. 
-    If `pk` is provided wil give the index of pk
+    
+    If `pk` is provided wil give the index of pk.
     
     :param erp_array: array of apparent resistivity profile 
     :type erp_array: array_like

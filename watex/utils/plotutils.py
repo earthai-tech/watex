@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-
+"""
+Additional plot utilities. 
+"""
 from __future__ import annotations 
 import os
 import re 

@@ -114,7 +114,7 @@ and eigen value, :math:`\lambda_j` and the total sum of the eigen values
 as: 
  
 .. math:: 
-    explained_variance_ratio = \fract{\lambda_j}{\sum{j=1}^{d} \lambda_j}
+    \text{explained_variance_ratio}= \frac{\lambda_j}{\sum{j=1}^{d} \lambda_j}
     
 Using numpy cumsum function,we can then calculate the cumulative sum of 
 explained variance which can be plot if `plot` is set to ``True`` via 
@@ -508,46 +508,45 @@ that optimize class separability.
  
 The main steps requiered to perform LDA are summarized below: 
     
-    1. Standardize the d-dimensional datasets (d is the number of features)
-    2. For each class , compute the d-dimensional mean vectors. Thus for 
-        each mean feature value, :math:`\mu_m` with respect to the examples
-        of class :math:`i`: 
-            
-        .. math:: 
-            
-            m_i = \frac{1}{n_i} \sum{x\in D_i} x_m 
-            
-    3. Construct the between-clas scatter matrix, :math:`S_B` and the 
-        within class scatter matrix, :math:`S_W`. 
-        Individual scatter matrices are scalled :math:`S_i` before we sum 
-        them up as scatter matrix :math:`S_W` as: 
-            
-            .. math:: 
-                
-                \sum{i} & = & \frac{1}{n_i}S_i 
-                
-                \sum{i} & = & \frac{1}{n_i} \sum{x\in D_i} (x-m_i)(x-m_i)^T
-                
-        The within-class is also called the covariance matrix, thus we cam 
-        compute the between class scatter_matrix :math:`S_B`. 
+* Standardize the d-dimensional datasets (d is the number of features)
+* For each class , compute the d-dimensional mean vectors. Thus for 
+  each mean feature value, :math:`\mu_m` with respect to the examples 
+  of class :math:`i`: 
         
-        .. math:: 
+  .. math:: 
+      
+      m_i = \frac{1}{n_i} \sum{x\in D_i} x_m 
+        
+* Construct the between-clas scatter matrix, :math:`S_B` and the 
+  within class scatter matrix, :math:`S_W`. Individual scatter matrices 
+  are scalled :math:`S_i` before we sum them up as scatter 
+  matrix :math:`S_W` as:
+  .. math:: 
+         
+      \sum{i} & = & \frac{1}{n_i}S_i 
+        
+      \sum{i} & = & \frac{1}{n_i} \sum{x\in D_i} (x-m_i)(x-m_i)^T
             
-            S_B= \sum{i}^{n_i}(m_i-m) (m_i-m)^T 
-            
-        where :math:`m` is the overall mean that is computed , including 
-        examples from all classes. 
+  The within-class is also called the covariance matrix, thus we can compute 
+  the between class scatter_matrix :math:`S_B`. 
+  
+  .. math:: 
+      
+      S_B= \sum{i}^{n_i}(m_i-m) (m_i-m)^T 
+        
+  where :math:`m` is the overall mean that is computed , including examples 
+  from all classes. 
 
-    4. Compute the eigenvectors and corresponding eigenvalues of the matrix 
-        :math:`S_W^{-1}S_B`. 
-    5. Sort the eigenvalues by decreasing order to rank the corresponding 
-        eigenvectors 
-    6. Choose the :math:`k` eigenvectors that correspond to the :math:`k` 
-        largest eigenvalues to construct :math:`dxk`-dimensional 
-        transformation matrix, :math:`W`; the eigenvectors are the columns 
-        of this matrix. 
-    7. project the examples onto the new_features subspaces using the 
-    transformation matrix :math:`W`.  
+* Compute the eigenvectors and corresponding eigenvalues of the matrix 
+  :math:`S_W^{-1}S_B`. 
+* Sort the eigenvalues by decreasing order to rank the corresponding 
+  eigenvectors 
+* Choose the :math:`k` eigenvectors that correspond to the :math:`k` 
+  largest eigenvalues to construct :math:`dxk`-dimensional 
+  transformation matrix, :math:`W`; the eigenvectors are the columns 
+  of this matrix. 
+* project the examples onto the new_features subspaces using the 
+  transformation matrix :math:`W`.  
     
 Parameters 
 -----------

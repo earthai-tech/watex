@@ -307,7 +307,7 @@ class EvalPlot(BasePlot):
         return self 
     
     def transform (self, X, **t_params): 
-        """ Transform the data and keep only the numerical features. 
+        """ Transform the data and imputs the numerical features. 
         
         It is not convenient to use `transform` if user want to keep 
         categorical values in the array 
@@ -930,7 +930,7 @@ class EvalPlot(BasePlot):
                  ('sgd', SGDClassifier(), "decision_function" ),
                  ('forest', RandomForestClassifier(), "predict_proba") 
                  ]
-        It is import to know whether the method 'predict_proba' is valid for 
+        It is important to know whether the method 'predict_proba' is valid for 
         the scikit-learn classifier, we want to plot its ROC curve. 
         
         Parameters 
@@ -1453,7 +1453,8 @@ def plotProjection(
     test_kws: dict =None,  
     **baseplot_kws 
     ): 
-    """ Visualize dataset. 
+    """ Visualize train and test dataset based on 
+    the geographical coordinates.
     
     Since there is geographical information(latitude/longitude or
     easting/northing), it is a good idea to create a scatterplot of 

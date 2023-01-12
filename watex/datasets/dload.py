@@ -134,12 +134,12 @@ def load_gbalo (
  
 load_gbalo.__doc__ ="""\ 
 A DC-Electrical resistivity profiling (ERP) and Vertical sounding  (VES) data
-collected from a Gbalo locality during the National Drinking Water Supply 
-Program (PNAEP) occurs in 2012-2014 in `Cote d'Ivoire`_.
+collected from Gbalo locality.
 
+The data is collected during the National Drinking Water Supply Program (PNAEP) 
+occurs in 2012-2014 in `Cote d'Ivoire`_. 
 Refer to :doc:`~watex._docstring.erp_doc.__doc__` and 
-:doc:`~watex._docstring.ves_doc.__doc__` for illustrating the data arrangement 
-is following: 
+:class:`~watex._docstring.ves_doc` for the data arrangement illustration. 
 
 Parameters 
 -----------
@@ -450,16 +450,17 @@ def load_bagoue(
     )
 
 load_bagoue.__doc__=r"""\
-Load and return the Bagoue dataset (classification).
+Load the Bagoue dataset. 
 
-The Bagoue dataset is a classic and very easy multi-class classification
-dataset.
+The Bagoue dataset is a classic and a multi-class classification
+dataset. Refer to the description for more details. 
 
 Parameters
 ----------
 return_X_y : bool, default=False
-    If True, returns ``(data, target)`` instead of a BowlSpace object. See
-    below for more information about the `data` and `target` object.
+    If True, returns ``(data, target)`` instead of a 
+    :class:`~watex.utils.box.Boxspace` object. See below for more information 
+    about the `data` and `target` object.
     .. versionadded:: 0.1.2
 as_frame : bool, default=False
     If True, the data is a pandas DataFrame including columns with
@@ -474,14 +475,14 @@ split_X_y=False,
 test_size: float, default is {{.3}} i.e. 30% (X, y)
     The ratio to split the data into training (X, y)  and testing (Xt, yt) set 
     respectively.
-(tag, data_names): None
-    `tag` and `data_names` do nothing. just for API purpose and to allow 
-    fetching the same data uing the func:`~watex.data.fetch_data` since the 
+tag, data_names: None
+    `tag` and `data_names` do nothing. just for API purpose. They allow 
+    to fetch the same data uing the func:`~watex.datasets.fetch_data` since the 
     latter already holds `tag` and `data_names` as parameters. 
 
 Returns
 -------
-data : :class:`~watex.utils.Boxspace`
+data: :class:`~watex.utils.box.Boxspace`
     Dictionary-like object, with the following attributes.
     data : {ndarray, dataframe} of shape (150, 4)
         The data matrix. If `as_frame=True`, `data` will be a pandas
@@ -502,24 +503,24 @@ data : :class:`~watex.utils.Boxspace`
     filename: str
         The path to the location of the data.
         .. versionadded:: 0.1.2
-(data, target) : tuple if ``return_X_y`` is True
+data, target: tuple if ``return_X_y`` is True
     A tuple of two ndarray. The first containing a 2D array of shape
     (n_samples, n_features) with each row representing one sample and
     each column representing the features. The second ndarray of shape
     (n_samples,) containing the target samples.
     .. versionadded:: 0.1.2
-(X, Xt, y, yt): Tuple if ``split_X_y`` is True 
+X, Xt, y, yt: Tuple if ``split_X_y`` is True 
     A tuple of two ndarray (X, Xt). The first containing a 2D array of:
         
-        .. math:: 
-            
-        shape (X, y) =  1-  \text{test_ratio} * (n_{samples}, n_{features}) *100
+    .. math:: 
         
-        shape (Xt, yt)= \text{test_ratio} * (n_{samples}, n_{features}) *100
+        \text{shape}(X, y) =  1-  \text{test_ratio} * (n_{samples}, n_{features}) *100
         
-     where each row representing one sample and each column representing the 
-     features. The second ndarray of shape(n_samples,) containing the target 
-     samples.
+        \text{shape}(Xt, yt)= \text{test_ratio} * (n_{samples}, n_{features}) *100
+        
+    where each row representing one sample and each column representing the 
+    features. The second ndarray of shape(n_samples,) containing the target 
+    samples.
      
 Examples
 --------

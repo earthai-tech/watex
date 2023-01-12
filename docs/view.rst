@@ -919,6 +919,377 @@ The module :mod:`~watex.view.plot` can not give all the possible plots that can 
 .. _seaborn: https://seaborn.pydata.org/
 
 
+Processing space plots
+=============================
+The `processing space` plots from :mod:`~watex.view.mlplot` is dedicated to modeling visualization through the :class:`~watex.view.EvalPlot`. Models 
+are evaluated and estimated with either diagrams, curves, or dendrograms.  It also includes additional plot functions for inspecting the model on their learning curves, 
+evaluating the number of clustering, scores analysis, etc. 
+
+`Model Evaluation plots`
+-----------------------------
+
+The model evaluation plots are performed with the :class:`~watex.view.EvalPlot` class.
+The :class:`~watex.view.EvalPlot` is mostly dedicated to metrics and dimensionality evaluation plots. The class inherits from 
+:class:`BasePlot`.  
+
+.. note:: 
+   :class:`~watex.view.EvalPlot` works only with numerical features. If categorical features are included in the dataset, they should be discarded. However, for plot reasons, if the target is a categorial labels , provided that it 
+   is specified by the parameter `tname`, the categorical labels can be renamed to non-numerical labels using :meth:`~watex.view.EvalPlot._cat_codes_y` method.
+
+Furthermore, :class:`~watex.view.EvalPlot` applies the :meth:`~watex.view.EvalPlot.transform` and :meth:`~watex.view.EvalPlot.fit_transform` methods. The former imputes directly the missing 
+data existing in the dataset whereas the latter does the `fit()` and `transform()`at once. The base `strategy` for data imputation 
+is the ``most_frequent``, however, the impute strategy can be changed if specifying the parameter `strategy` to `median`,`mean`, or any other 
+argument values from :class:`~watex.exlib.sklearn.SimpleImputer`. 
+
+Plot Robust PCA: :meth:`~watex.view.EvalPlot.plotPCA`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The robust PCA identifies the axis that accounts for the largest amount of variance in the trainset :math:`X`. It also 
+finds a second axis orthogonal to the first one, that accounts for the largest amount of remaining variance. Here we give an example of 
+a code snippet elaborated using a real-world example of the Bagoue dataset (c.f. :mod:`~watex.datasets`)  for the flow rate prediction. 
+
+.. code-block:: python 
+
+	>>> from watex.datasets import load_bagoue 
+	>>> from watex.view.mlplot import EvalPlot 
+	>>> X , y = load_bagoue(as_frame =True )
+	>>> b=EvalPlot(tname ='flow', encode_labels=True ,
+					  scale = True )
+	>>> b.fit_transform (X, y)
+	>>> b.plotPCA (n_components= 2 )
+
+.. note:: 
+   The number of components and axes might be consistent. For instance, if two components are selected, 
+   The maximum axis cannot be greater than 2. The example below gives a real-case example. 
+
+.. code-block:: python 
+
+	>>> # pc1 and pc2 labels > n_components -> raises user warnings
+	>>> # throws a userwarning since the components is two and 
+	>>> b.plotPCA (n_components= 2 , biplot=False, pc1_label='Axis 3',
+				   pc2_label='axis 4') 
+	... UserWarning: Number of components and axes might be consistent;
+		'2'and '4 are given; default two components are used.
+	>>> b.plotPCA (n_components= 8 , biplot=False, pc1_label='Axis3',
+				   pc2_label='axis4')
+		# works fine since n_components are greater to the number of axes
+	... EvalPlot(tname= None, objective= None, scale= True, ... , 
+				 sns_height= 4.0, sns_aspect= 0.7, verbose= 0)
+				 
+The above code gives the following output:
+
+.. figure:: glr_examples/view/images/sphx_glr_plot_pca_001.png 
+   :target: glr_examples/view/images/sphx_glr_plot_pca_001.html 
+   :align: center
+   :scale: 50% 
+   
+To rename the numerical labels to fit specific categorical classes from the target `y`, one can plot the robust PCA by setting the following 
+attributes as::
+
+.. code-block:: python 
+	>>> b.encode_labels =True 
+	>>> b.prefix ='FR' # set the prefix of the new labels 
+	>>> b.label_values =[0,1, 2, 3] # labels values 
+	>>> b.plotPCA (n_components= 2 )
+	
+The code above yields the following output where the classes have been fitted to match the `FR0`, `FR1`, `FR2`, and `FR3` classes. 
+
+.. figure:: ../examples/auto_examples/view_evalplot_plot_pca_r.png 
+   :target: ../examples/auto_examples/view_evalplot_plot_pca_r.html 
+   :align: center
+   :scale: 50% 
+   
+An other example can be found below: 
+
+.. topic:: Examples:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_pca.py`
+
+
+Plot Precision-Recall (PR): :meth:`~watex.view.EvalPlot.plotPR`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~watex.view.EvalPlot.plotPR` method plots the precision/recall (PR) and tradeoff plots. The PR computes a 
+score based on the decision function and plots the result as a score vs threshold. Here is an example of a code 
+snippet with the :class:`~watex.exlib.SGDClassifier` with binarizing target. 
+
+.. code-block:: python 
+
+	>>> from watex.exlib.sklearn import SGDClassifier
+	>>> from watex.datasets.dload import load_bagoue 
+	>>> from watex.utils.mlutils import cattarget 
+	>>> from watex.view.mlplot import EvalPlot 
+	>>> X , y = load_bagoue(as_frame =True )
+	>>> sgd_clf = SGDClassifier(random_state= 42) # our estimator 
+	>>> base_plot_kws = dict (fig_size = (7, 5) , sns_style ='ticks', font_size =7. , ls ='-', lw =3., lc ='b' )  
+	>>> b= EvalPlot(scale = True , encode_labels=True, ** base_plot_kws)
+	>>> b.fit_transform(X, y)
+	>>> # binarize the label b.y 
+	>>> ybin = cattarget(b.y, labels= 2 ) # can also use labels =[0, 1]
+	>>> b.y = ybin 
+	>>> # plot the Precision-recall tradeoff  
+	>>> b.plotPR(sgd_clf , label =0) # class= 0 for negative label
+	Out[16]: EvalPlot(tname= None, objective= None, scale= True, ... , sns_height= 4.0, sns_aspect= 0.7, verbose= 0)
+	
+The following graph plots the negative labels (class =0).  
+
+.. figure:: ../examples/auto_examples/view_evalplot_plot_pr.png 
+   :target: ../examples/auto_examples/view_evalplot_plot_pr.html 
+   :align: center
+   :scale: 50% 
+
+An example of positive class plot can be found in the example below: 
+
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_pr.py`
+
+
+Plot ROC: :meth:`~watex.view.EvalPlot.plotROC`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ROC stands for Receiving operating characteristic and is another metric for classifier model evaluation. 
+The :meth:`~watex.view.EvalPlot.plotROC` plots the model performance. It can also plot multiple classifiers at once. 
+If multiple classifiers are given, each classifier must be a tuple of ``( <name>, classifier>, <method>)``. For instance, 
+to plot the both :class:`watex.exlib.RandomForestClassifier` and :class:`watex.exlib.SGDClassifier` classifiers, they must be
+ranged as follow::
+            
+	clfs =[
+	 ('sgd', SGDClassifier(), "decision_function" ),
+	 ('forest', RandomForestClassifier(), "predict_proba") 
+	 ]
+	 
+It is important to know whether the method ``predict_proba`` or ``decision_function`` is valid for the scikit-learn classifier. The kind of 
+The method is passed to the parameter `method`. The default is ``decision_function``. Here is an example 
+of ROC figure for a single  :class:`watex.exlib.SGDClassifier` classifier model evaluation: 
+
+.. figure:: glr_examples/view/images/sphx_glr_plot_roc_001.png 
+   :target: glr_examples/view/images/sphx_glr_plot_roc_001.html 
+   :align: center
+   :scale: 50% 
+
+Let's try to experiment with multiple-classifiers plots. The snippet code below gives an example of plotting four (04) classifiers on a single 
+ROC graph: 
+
+.. code-block:: python 
+
+	>>> from watex.exlib.sklearn import SGDClassifier, RandomForestClassifier, LogisticRegression, SVC
+	>>> from watex.datasets.dload import load_bagoue 
+	>>> from watex.utils.mlutils import cattarget 
+	>>> from watex.view.mlplot import EvalPlot 
+	>>> X , y = load_bagoue(as_frame =True )
+	>>> sgd_clf = SGDClassifier(random_state= 42) # our estimator 
+	>>> b= EvalPlot(scale = True , encode_labels=True)
+	>>> b.fit_transform(X, y)
+	>>> # binarize the label b.y 
+	>>> ybin = cattarget(b.y, labels= 2 ) # can also use labels =[0, 1]
+	>>> b.y = ybin 
+	>>> base_plot_kws = dict (lw =3., lc=(.9, 0, .8), font_size=7, fig_size = (7, 5)) 
+	>>> b= EvalPlot(scale = True , encode_labels=True, 
+					** base_plot_kws )
+	>>> sgd_clf = SGDClassifier(random_state= 42)
+	>>> forest_clf =RandomForestClassifier(random_state=42)
+	>>> lr_clf = LogisticRegression (random_state =42) 
+	>>> svc_clf = SVC (random_state = 42) 
+	>>> b.fit_transform(X, y)
+	>>> # binarize the label b.y 
+	>>> ybin = cattarget(b.y, labels= 2 ) # can also use labels =[0, 1]
+	>>> b.y = ybin 
+	>>> clfs =[('sgd', sgd_clf, "decision_function" ), 
+		   ('forest', forest_clf, "predict_proba"), 
+		   ('logit', lr_clf , "predict_proba") , 
+		   ('svc', svc_clf, "decision_function") 
+		   ]
+	>>> b.plotROC (clfs =clfs , label =1 )
+	EvalPlot(tname= None, objective= None, scale= True, ... , sns_height= 4.0, sns_aspect= 0.7, verbose= 0)
+
+The following output gives the result of the above code: 
+
+.. figure:: ../examples/auto_examples/view_evalplot_plot_roc_multiples.png 
+   :target: ../examples/auto_examples/view_evalplot_plot_roc_multiples.html 
+   :align: center
+   :scale: 50% 
+
+Other examples can be found in: 
+
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_roc.py`
+   
+
+Plot Confusion Matrix: :meth:`~watex.view.EvalPlot.plotConfusionMatrix`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:meth:`~watex.view.EvalPlot.plotConfusionMatrix` gives a representation of the confusion matrix for error visualization. If 
+the parameter ``kind is set ``map``, the plot gives the number of confused instances/items. However, when `kind` is set to ``error``, 
+the number of items confused is explained as a percentage. Let go ahead for a basic example. The kind of plot is set to ``err`` for 
+error visualization using the :class:`~watex.exlib.sklearn.AdaBoostClassifier`.   
+
+.. code-block:: python 
+
+	>>> from watex.datasets import fetch_data
+	>>> from watex.utils.mlutils import cattarget 
+	>>> from watex.exlib.sklearn import AdaBoostClassifier 
+	>>> from watex.view.mlplot import EvalPlot
+	>>> X, y = fetch_data ('bagoue', return_X_y=True, as_frame =True)
+	>>> # partition the target into 4 clusters-> just for demo 
+	>>> b= EvalPlot(scale =True, label_values = 4 ) 
+	>>> b.fit_transform (X, y) 
+	>>> # prepare our estimator 
+	>>> ada_clf = AdaBoostClassifier( random_state =42)
+	>>> matshow_kwargs ={
+			'aspect': 'auto', # 'auto'equal
+			'interpolation': None, 
+		   'cmap':'summer' }                   
+	>>> plot_kws ={'lw':3, 
+		   'lc':(.9, 0, .8), 
+		   'font_size':15., 
+			'cb_format':None,
+			'xlabel': 'Predicted classes',
+			'ylabel': 'Actual classes',
+			'font_weight':None,
+			'tp_labelbottom':False,
+			'tp_labeltop':True,
+			'tp_bottom': False, 
+			'fig_size': (7, 7)
+			}
+	>>> b.litteral_classes = ['FR0', 'FR1', 'FR2', 'FR3']
+	>>> b.plotConfusionMatrix(ada_clf, matshow_kws=matshow_kwargs, 
+							  kind='error', **plot_kws) 
+Here is the following output. 
+
+.. figure:: ../examples/auto_examples/view_evalplot_plot_confusion_matrix.png 
+   :target: ../examples/auto_examples/view_evalplot_plot_confusion_matrix.html 
+   :align: center
+   :scale: 50% 
+   
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_confusion_matrix_metric.py`
+   
+`Model functions plots`
+-----------------------------
+The additional plot functions called model functions in :mod:`~watex.view.mlplot` are singleton functions that accept the :class:~watex.property.BasePlot` class 
+parameters for the plot customizing. The :class:~watex.property.BasePlot` parameters can be passed as keyword arguments to the model functions. The are several utils 
+for model scores evaluation, estimating, etc. Here are some useful plots in the list of model function plots. 
+
+
+Projection plot: :func:`~watex.view.plotProjection`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`~watex.view.plotProjection` allows visualizing the location of the training and test dataset based on geographical coordinates.  If the 
+dataset includes geographical information such as latitude/longitude or easting/northing, the plot creates a scatterplot of 
+all instances for train and test survey location. Let's go straight to an example: 
+
+.. code-block:: python 
+
+	>>> from watex.datasets import fetch_data 
+	>>> from watex.view.mlplot import plotProjection 
+	>>> import matplotlib.pyplot as plt 
+	>>> plt.style.use ("classic") 
+	>>> # Discard all the non-numeric data 
+	>>> # then input numerical data 
+	>>> from watex.utils.mlutils import to_numeric_dtypes, naive_imputer
+	>>> X, Xt, *_ = fetch_data ('bagoue', split_X_y =True, as_frame =True) 
+	>>> X =to_numeric_dtypes(X, pop_cat_features=True )
+	>>> X= naive_imputer(X)
+	>>> Xt = to_numeric_dtypes(Xt, pop_cat_features=True )
+	>>> Xt= naive_imputer(Xt)
+	>>> plot_kws = dict (fig_size=(8, 12),
+					 lc='#CED9EF',
+					 marker='o',
+					 lw =3.,
+					 font_size=15.,
+					 xlabel= 'easting (m) ',
+					 ylabel='northing (m)' , 
+					 marker_facecolor ='#CED9EF', 
+					 marker_edgecolor='#9EB3DD',
+					 alpha =1., 
+					 marker_edgewidth=2., 
+					 show_grid =True,
+					 galpha =0.2, 
+					 glw=.5, 
+					 rotate_xlabel =90.,
+					 fs =7.,
+					 s = 7)
+	>>> plotProjection( X, Xt , columns= ['east', 'north'], trainlabel='train location', 
+						testlabel='test location', test_kws = dict (color = "r", edgecolor="#0A4CEE") ,
+						 **plot_kws
+					   )
+The code above outputs the following figure: 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_projection.png 
+   :target: ../examples/auto_examples/view_plot_projection.html 
+   :align: center
+   :scale: 50% 
+
+
+In the above plot, one can notice the location of the test data and the train data. 
+
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_projection.py`
+
+
+Model plot: :func:`~watex.view.plotModel`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`~watex.view.plotModel` allows to visualization dataset with correct and wrong predictions. It plots 'y' (true labels) versus 
+'ypred' (predicted) from test data. It allows knowing where the estimator/classifier fails to predict correctly the target. The plot creates a 
+scatterplot of all instances for correct and wrong visualization. Here is an example: 
+
+.. code-block:: python 
+
+	>>> from watex.exlib.sklearn  import SVC 
+	>>> from watex.datasets import fetch_data 
+	>>> from watex.view import plotModel 
+	>>> from watex.utils.mlutils import split_train_test_by_id
+	>>> X, y = fetch_data('bagoue analysis' ) 
+	>>> _, Xtest = split_train_test_by_id(X, test_ratio=.3 ,  keep_colindex= False)
+	>>> _, ytest = split_train_test_by_id(y, .3 , keep_colindex =False) 
+	>>> svc_clf = SVC(C=100, gamma=1e-2, kernel='rbf', random_state =42) 
+	>>> base_plot_params ={
+						'lw' :3.,                  # line width 
+						'lc':'#0A4CEE', 
+						'ms':7.,                
+						'yp_marker' :'o', 
+						'fig_size':(12, 8),
+						'font_size':15.,
+						'xlabel': 'Test examples',
+						'ylabel':'Flow categories' ,
+						'marker':'o', 
+						'markeredgecolor':'k', 
+						'markerfacecolor':'b', 
+						'markeredgewidth':3, 
+						'yp_markerfacecolor' :'k', 
+						'yp_markeredgecolor':'r', 
+						'alpha' :1., 
+						'yp_markeredgewidth':2.,
+						'show_grid' :True,          
+						'galpha' :0.2,              
+						'glw':.5,                   
+						'rotate_xlabel' :90.,
+						'fs' :3.,                   
+						's' :20 ,                  
+						'rotate_xlabel':90
+				   }
+	>>> plotModel(yt= ytest ,
+				   Xt=Xtest , 
+				   predict =True , # predict the result (estimator fit)
+				   clf=svc_clf ,  
+				   fill_between= False, 
+				   prefix ='b', 
+				   labels=['FR0', 'FR1', 'FR2', 'FR3'], # replace 'y' labels. 
+				   **base_plot_params 
+				   )
+				   
+The code above gives the following output: 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_model.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_model.html 
+   :align: center
+   :scale: 50% 
+   
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_model.py`
+
 .. topic:: References 
 	.. [1] Bengfort, B., & Bilbro, R., 2019. Yellowbrick: Visualizing the scikit-learn model. Journal of Open Source Software, 4( 35 ), 1075. https://doi.org/10.21105/joss.01075
 	.. [2] Mel, E.A.C.T., Adou, D.L., Ouattara, S., 2017. Le programme presidentiel d’urgence (PPU) et son impact dans le departement de Daloa (Cote d’Ivoire). Rev. Géographie Trop. d’Environnement 2, 10.

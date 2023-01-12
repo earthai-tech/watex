@@ -4,18 +4,11 @@
 #   Created on Tue Oct  5 15:09:46 2021
 
 """
-
 Metrics are measures of quantitative assessment commonly used for 
-assessing, comparing, and tracking performance or production. Generally,
+estimating, comparing, and tracking performance or production. Generally,
 a group of metrics will typically be used to build a dashboard that
 management or analysts review on a regular basis to maintain performance
 assessments, opinions, and business strategies.
-
-Here we implement some `scikit-learn`_ metrics like `precision`, `recall`
-`f1_score` , `confusion matrix`, and `receiving operating characteristic`
-(R0C)
-
-.. _scikit_learn: https://scikit-learn.org/
 """
 from __future__ import annotations 
 import copy

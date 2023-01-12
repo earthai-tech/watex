@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-'cases' subpackage implements function and modules already validated and 
-used to solve real engineering problems such as the flow rate prediction and boosting 
-using the base learners, SVC  and  ensemble paradigms. 
+'cases' subpackage implements functions and modules already used to solve real 
+engineering problems such as the flow rate prediction and boosting 
+using the base learners and  an ensemble paradigms. 
 
-'features', 'processing', 'modeling' and 'prepare' modules have base steps  
-and can be used for processing and analyses to give a quick depiction of how data 
-looks like. This can figure out the next processing steps for solving the 
-evidence problem. 
-
+:mod:`~watex.cases.features`, :mod:`~watex.cases.processing`, 
+:mod:`~watex.cases.modeling` and :mod:`~watex.cases.prepare` modules have 
+base step procedures and can be used for  processing and analyses to 
+give a quick depiction of how data looks like and model performance estimation. 
 """
 
 from .prepare import ( 

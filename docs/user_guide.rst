@@ -18,7 +18,7 @@ User Guide
 
 .. toctree::
    :numbered:
-   :maxdepth: 3
+   :maxdepth: 2
 
    analysis.rst
    base.rst
@@ -26,4 +26,5 @@ User Guide
    datasets.rst 
    methods.rst 
    view.rst
+
 

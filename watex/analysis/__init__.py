@@ -1,4 +1,9 @@
-
+"""
+Analysis sub-package is used for basic feature extraction, transformation and 
+matrices covariance computations (:mod:`~watex.analysis.decomposition`). 
+It also includes some dimensional reduction (:mod:`~watex.analysis.dimensionality`) 
+and factor analysis from :mod:`~watex.analysis.fa`. 
+"""
 from .dimensionality import (   
     get_component_with_most_variance,
     plot_projection, 

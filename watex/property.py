@@ -3,9 +3,10 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created date: Fri Apr 15 10:46:56 2022
 
-"""\
-
-:code:`watex` property objects 
+"""
+:code:`watex` property objects. It is composed of base classes that are inherited 
+by methods implemented throughout the package. It also inferred properties to 
+data objects. 
 
 .. _WATex: https://github.com/WEgeophysics/watex/
 .. |ERP| replace:: Electrical resistivity profiling 
@@ -1240,7 +1241,9 @@ class P:
 
 class BagoueNotes: 
     r"""
-    `Bagoue dataset` are are Bagoue region is located in WestAfrica and lies
+    A contest class about the `Bagoue dataset`. 
+    
+    The dataset comes from Bagoue region, located in WestAfrica and lies
     between longitudes 6° and 7° W and latitudes 9° and 11° N in the north of 
     Cote d’Ivoire.
     
