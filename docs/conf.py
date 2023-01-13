@@ -61,7 +61,7 @@ def run_apidoc(_):
 # -- Project information -----------------------------------------------------
 
 project = 'watex'
-copyright = f"2012-{time.strftime('%Y')}"
+copyright = f"2022-{time.strftime('%Y')}"
 author = 'K. Laurent Kouadio'
 # The full version, including alpha/beta/rc tags
 version = release = watex.__version__
