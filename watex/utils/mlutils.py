@@ -2159,7 +2159,7 @@ def labels_validator (t, /, labels, return_bool = False):
     return isvalid if return_bool else  labels 
         
 def bi_selector (d, /,  features =None, return_frames = False ):
-    """ Select the remaining attributes from the given attributes 
+    """ Auto-differentiates the numerical from categorical attributes.
     
     This is usefull to select the categorial features from the numerical 
     features and vice-versa when we are a lot of features. Enter features 

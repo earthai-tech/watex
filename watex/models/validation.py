@@ -268,7 +268,7 @@ Examples
 """.format (params=_param_docs,
 )
     
-class GridSearchMultiple :
+class GridSearchMultiple:
     def __init__ (
         self, 
         estimators: F, 
