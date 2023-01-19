@@ -48,6 +48,7 @@ tables
 mlxtend 
 yellowbrick
 plotly
+ipywidgets
 pandas-profiling
 
 
