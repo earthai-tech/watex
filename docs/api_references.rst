@@ -189,7 +189,6 @@ Functions
    :template: class.rst
 
 	exceptions.AquiferGroupError
-	exceptions.ArgumentError
 	exceptions.ConfigError
 	exceptions.CoordinateError
 	exceptions.DatasetError
@@ -203,11 +202,9 @@ Functions
 	exceptions.FileHandlingError
 	exceptions.FrequencyError
 	exceptions.GISError
-	exceptions.GeoArgumentError
 	exceptions.GeoDatabaseError
 	exceptions.GeoPropertyError
 	exceptions.HeaderError
-	exceptions.HintError
 	exceptions.LearningError
 	exceptions.NotFittedError
 	exceptions.ParameterNumberError
@@ -215,20 +212,17 @@ Functions
 	exceptions.ProcessingError
 	exceptions.ResistivityError
 	exceptions.SQLError
-	exceptions.SQLManagerError
-	exceptions.ScikitLearnImportError
 	exceptions.SiteError
 	exceptions.StationError
 	exceptions.StrataError
-	exceptions.TipError
-	exceptions.TopModuleError
 	exceptions.VESError
+	exceptions.ZError
 	exceptions.kError
 
 .. _externals_ref:
 
-:mod:`watex.externals`: External Tensor Utilities 
-===========================================================
+:mod:`watex.externals`: Tensors 
+===================================
 
 .. automodule:: watex.externals
    :no-members:
@@ -246,7 +240,6 @@ classes
    externals.z.Z
    externals.z.ResPhase
    externals.z.Tipper 
-   externals.z.ZError 
 
 Functions
 ~~~~~~~~~~~~~~
@@ -357,9 +350,11 @@ Functions
    :toctree: generated/
    :template: function.rst
 
-   metrics.ROC_curve
    metrics.confusion_matrix
+   metrics.get_eval_scores
+   metrics.get_metrics
    metrics.precision_recall_tradeoff
+   metrics.ROC_curve
    
    
 .. _models_ref:
@@ -479,6 +474,8 @@ Functions
 .. automodule:: watex.utils
    :no-members:
    :no-inherited-members:
+
+**User guide:** See the :ref:`methods <utils>` section for further details.
 
 .. currentmodule:: watex
 
@@ -659,7 +656,6 @@ Functions
 	utils.coreutils.fill_coordinates
 	utils.coreutils.is_erp_series
 	utils.coreutils.is_erp_dataframe
-	utils.coreutils.dummy_basement_curve
 	utils.coreutils.parseDCArgs
 	
 :mod:`~watex.utils.geotools`: Geology utilities
@@ -736,4 +732,4 @@ Functions
 	view.pobj
 	view.viewtemplate
 
-Click :doc:`here <api/watex>` to visit all the modules of the package.
+Click :doc:`here <api/modules>` to visit all the modules of the package.

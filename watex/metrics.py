@@ -44,7 +44,12 @@ from .utils.validator import get_estimator_name
 
 _logger = watexlog().get_watex_logger(__name__)
 
-__all__=['precision_recall_tradeoff', 'ROC_curve', 'confusion_matrix']
+__all__=['precision_recall_tradeoff',
+         'ROC_curve',
+         'confusion_matrix', 
+         "get_metrics", 
+         "get_eval_scores"
+         ]
 
 #----add metrics docs 
 _metrics_params =dict (
@@ -77,14 +82,14 @@ _param_docs = DocstringComponents.from_nested_components(
 # ------
 
 def get_metrics(): 
-    """ Get the list of `Scikit_learn`_  metrics. 
+    """
+    Get the list of  available metrics. 
     
     Metrics are measures of quantitative assessment commonly used for 
     assessing, comparing, and tracking performance or production. Generally,
     a group of metrics will typically be used to build a dashboard that
     management or analysts review on a regular basis to maintain performance
     assessments, opinions, and business strategies.
-    
     """
     return tuple(metrics.SCORERS.keys())
 
@@ -134,8 +139,7 @@ def get_eval_scores (
     return scores 
 
 get_eval_scores.__doc__ ="""\
-Compute the`accuracy`, `precision`, `recall` and `AUC`
-scores.
+Compute the `accuracy`,  `precision`, `recall` and `AUC` scores.
 
 Parameters 
 ------------
@@ -427,9 +431,8 @@ def precision_recall_tradeoff(
     
     return obj
 
-precision_recall_tradeoff.__doc__=r"""\
-Precision/recall Tradeoff computes a score based on the decision 
-function. 
+precision_recall_tradeoff.__doc__ ="""\
+Precision-recall Tradeoff computes a score based on the decision function. 
 
 Is assign the instance to the positive class if that score on 
 the left is greater than the `threshold` else it assigns to negative 
@@ -498,15 +501,17 @@ is called `preicionrecall tradeoff`.
 Returns 
 --------
 obj: object, an instancied metric tying object 
-    The metric object is composed of the following attributes:: 
-        * `confusion_matrix` 
-        * `f1_score`
-        * `precision_score`
-        * `recall_score`
-        * `precisions` from `precision_recall_curve` 
-        * `recalls` from `precision_recall_curve` 
-        * `thresholds` from `precision_recall_curve` 
-        * `y` classified 
+    The metric object is composed of the following attributes:
+        
+    * `confusion_matrix` 
+    * `f1_score`
+    * `precision_score`
+    * `recall_score`
+    * `precisions` from `precision_recall_curve` 
+    * `recalls` from `precision_recall_curve` 
+    * `thresholds` from `precision_recall_curve` 
+    * `y` classified 
+    
     and can be retrieved for plot purpose.    
   
 Examples
@@ -543,7 +548,7 @@ ROC_curve.__doc__ ="""\
 The Receiving Operating Characteric (ROC) curve is another common
 tool  used with binary classifiers. 
 
-It s very similar to preicision/recall , but instead of plotting 
+It's very similar to precision/recall , but instead of plotting 
 precision versus recall, the ROC curve plots the `true positive rate`
 (TNR)another name for recall) against the `false positive rate`(FPR). 
 The FPR is the ratio of negative instances that are correctly classified 

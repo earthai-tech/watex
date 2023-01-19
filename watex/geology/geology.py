@@ -38,7 +38,8 @@ def setstructures(self , configfile:str =None , fillna:int =0  ):
     
     :return: ``self`` for method chaining. 
     
-    :note: Each geological strutures can be retrieved as an attribute. For 
+    .. note:: 
+        Each geological strutures can be retrieved as an attribute. For 
         instance to get the code, the label and the pattern density of the 
         'amphibolite', one can use:: 
             
@@ -106,22 +107,20 @@ class Structures(Base):
     **color             str             color of specific structure
     ==================  ============  =========================================
     
-    .. note:: To get the attribute value, merely replace the param "**" by  the
+    .. note::
+        To get the attribute value, merely replace the param "**" by  the
         *name of struture* following by dot ".". See examples: 
     
-    1.  To get the names of different strutures, write the script below 
+    Examples 
+    ----------
+    * To get the names of different strutures, write the script below:: 
     
-    :Example:
-        
         >>> from watex.geology.geology import Structures
         >>> geo_structure = Structures()
         >>> geo_structure.names_ # get the list of all geological strutures 
         
-        
-    2.  To extract color  and to get the code of structure  like `tonalite` 
+    * To extract color  and to get the code of structure  like `tonalite`:: 
     
-    :Example:
-        
         >>> from watex.geology.geology import Structures
         >>> sobj = Structures() 
         >>> sobj.tonalite.pat_thickness_

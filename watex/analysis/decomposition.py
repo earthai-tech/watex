@@ -7,9 +7,6 @@ Decomposition
 ================
 
 Steps behing the principal component analysis (PCA) and matrices decomposition 
-
-Created on Thu Oct 13 08:41:13 2022
-@author: Daniel
 """
 
 from warnings import warn 
@@ -108,15 +105,17 @@ def total_variance_ratio (X, view =False):
     
     return cum_var_exp 
     
-total_variance_ratio.__doc__=r"""\
-Ratio of an eigenvalues :math:`\lambda_j`, as simply the fraction of 
-and eigen value, :math:`\lambda_j` and the total sum of the eigen values 
-as: 
+total_variance_ratio.__doc__ ="""\
+Compute the total variance ratio. 
+
+Is the ratio of an eigenvalues :math:`\\lambda_j`, as simply the fraction of 
+and eigen value, :math:`\\lambda_j` and the total sum of the eigen values as: 
  
 .. math:: 
-    \text{explained_variance_ratio}= \frac{\lambda_j}{\sum{j=1}^{d} \lambda_j}
     
-Using numpy cumsum function,we can then calculate the cumulative sum of 
+    \\text{explained_variance_ratio}= \\frac{\\lambda_j}{\\sum{j=1}^{d} \\lambda_j}
+    
+Using numpy cumsum function, we can then calculate the cumulative sum of 
 explained variance which can be plot if `plot` is set to ``True`` via 
 matplotlib set function.    
     
@@ -197,8 +196,8 @@ def feature_transformation (
     return X_transf 
 
 feature_transformation.__doc__="""\
-Transform  X into a new principal components after successfully 
-decomposed to the covariances matrices.    
+Transform  X into  new principal components after decomposing 
+the covariances matrices.    
     
 Parameters 
 -----------
@@ -379,7 +378,6 @@ Examples
 """.format(params = _core_docs["params"]
 )
 
-
 def linear_discriminant_analysis (
         X, y, n_components = 2 , view=False, verbose = 0  , return_X=True, 
  ): 
@@ -495,8 +493,8 @@ def linear_discriminant_analysis (
     return  X.dot(W) if return_X else W 
 
 
-linear_discriminant_analysis.__doc__=r"""\
-Linear Discriminant Analysis (LDA) 
+linear_discriminant_analysis.__doc__ ="""\
+Linear Discriminant Analysis `LDA`. 
 
 LDA is used as a technique for feature extraction to increase the 
 computational efficiency and reduce the degree of overfitting due to the 
@@ -504,35 +502,35 @@ curse of dimensionnality in non-regularized models. The general concept
 behind LDA is very similar to the principal component analysis (PCA), but  
 whereas PCA attempts to find the orthogonal component axes of minimum 
 variance in a dataset, the goal in LDA is to find the features subspace 
-that optimize class separability.
- 
-The main steps requiered to perform LDA are summarized below: 
+that optimize class separability. The main steps requiered to perform 
+LDA are summarized below: 
     
 * Standardize the d-dimensional datasets (d is the number of features)
 * For each class , compute the d-dimensional mean vectors. Thus for 
-  each mean feature value, :math:`\mu_m` with respect to the examples 
+  each mean feature value, :math:`\\mu_m` with respect to the examples 
   of class :math:`i`: 
         
   .. math:: 
       
-      m_i = \frac{1}{n_i} \sum{x\in D_i} x_m 
+      m_i = \\frac{1}{n_i} \\sum{x\\in D_i} x_m 
         
-* Construct the between-clas scatter matrix, :math:`S_B` and the 
+* Construct the between-class scatter matrix, :math:`S_B` and the 
   within class scatter matrix, :math:`S_W`. Individual scatter matrices 
   are scalled :math:`S_i` before we sum them up as scatter 
   matrix :math:`S_W` as:
+      
   .. math:: 
          
-      \sum{i} & = & \frac{1}{n_i}S_i 
+      \\sum{i} = \\frac{1}{n_i}S_i 
         
-      \sum{i} & = & \frac{1}{n_i} \sum{x\in D_i} (x-m_i)(x-m_i)^T
+      \\sum{i} = \\frac{1}{n_i} \\sum{x\\in D_i} (x-m_i)(x-m_i)^T
             
   The within-class is also called the covariance matrix, thus we can compute 
   the between class scatter_matrix :math:`S_B`. 
   
   .. math:: 
       
-      S_B= \sum{i}^{n_i}(m_i-m) (m_i-m)^T 
+      S_B= \\sum{i}^{n_i}(m_i-m) (m_i-m)^T 
         
   where :math:`m` is the overall mean that is computed , including examples 
   from all classes. 
@@ -558,6 +556,7 @@ X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
     sample. :code:`X` may also not be a matrix, and may require a 
     feature extractor or a pairwise metric to turn it into one  before 
     learning a model.
+    
 y: array-like, shape (M, ) ``M=m-samples``, 
     train target; Denotes data that may be observed at training time 
     as the dependent variable in learning, but which is unavailable 

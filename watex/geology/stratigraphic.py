@@ -395,7 +395,7 @@ class GeoStrataModel(Base):
         if disp:
             display_infos(infos=print_layers,
                           header= hinfos)
-        #STEP 4: Train ANN: see pycsamt.geodrill.ml.py to predict your 
+        #STEP 4: Train ANN: (still in development) to predict your 
         #layer: No need to plot the NM 
         
         # copy main attributes for pseudostratigraphic plot purpose 
@@ -458,8 +458,8 @@ class GeoStrataModel(Base):
                 into argument `degree`.
         :Example: 
             
-            >>> from watex.geology.stratigraphic import GeoStratigraphy
-            >>> geosObj = GeoStratigraphy().fit(**inversion_files, 
+            >>> from watex.geology.stratigraphic import GeoStrataModel
+            >>> geosObj = GeoStrataModel().fit(**inversion_files, 
                               input_resistivities=input_resistivity_values) 
             >>> ss0, error = geosObj._hardMinError(subblocks=geosObj.subblocks[0],
                                      s0=geosObj.s0[0])
@@ -624,14 +624,14 @@ class GeoStrataModel(Base):
      
     @classmethod 
     def geoArgumentsParser(cls, config_file =None): 
-        """ Read and parse the `GeoStratigraphy` arguments files from 
+        """ Read and parse the `GeoStrataModel` arguments files from 
         the config [JSON|YAML] file.
         :param config_file: configuration file. Can be [JSON|YAML]
         
         :Example: 
-            >>> GeoStratigraphy.geoArgumentsParser(
+            >>> GeoStrataModel.geoArgumentsParser(
                 'data/saveJSON/cj.data.json')
-            >>> GeoStratigraphy.geoArgumentsParser(
+            >>> GeoStrataModel.geoArgumentsParser(
                 'data/saveYAML/cy.data.yml')
         """
         if config_file.endswith('json'): 
@@ -683,7 +683,7 @@ class GeoStrataModel(Base):
     
     @subblocks.setter 
     def subblocks(self, subblks):
-        """ keep subblocks as :class:`~GeoStratigraphy` property"""
+        """ keep subblocks as :class:`~GeoStrataModel` property"""
         
         self._subblocks = subblks 
         
@@ -868,7 +868,7 @@ class GeoStrataModel(Base):
                                   input_layers=input_layer_names)
             >>> geosObj.strataModel(kind='nm', misfit_G =False)
         """
-        m_='pycsamt.geodrill.geocore.GeoStratigraphy.strataModel'
+        m_='watex.geology.GeostrataModel.strataModel'
         def compute_misfit(rawb, newb, percent=True): 
             """ Compute misfit with calculated block and new model block """
             m_misfit = .01* np.sqrt (
@@ -927,20 +927,20 @@ class GeoStrataModel(Base):
         
         Parameters
         ----------
-            station: str or int
-                Use normal count to identify the number of site to plot or use 
-                the name of station preceed of letter `S`. For instance site 
-                1 matches the station `S00` litterally
-            display_s:bool
-                Display the log layer infos as well as layers thicknesses
+        station: str or int
+            Use normal count to identify the number of site to plot or use 
+            the name of station preceed of letter `S`. For instance site 
+            1 matches the station `S00` litterally
+        display_s:bool
+            Display the log layer infos as well as layers thicknesses
         
         Examples
         --------
-            >>> from watex.geology.stratigraphic import GeoStrataModel 
-            >>> import pycsamt.utils.geo_utils as GU 
-            >>> geosObj = GeoStrataModel().fit( input_resistivities=TRES, 
-            ...              input_layers=LNS,**INVERS_KWS)
-            >>> geosObj._strataPropertiesOfSite(geosObj,station= 'S05')
+        >>> from watex.geology.stratigraphic import GeoStrataModel 
+        >>> import watex.utils.geotools as GU 
+        >>> geosObj = GeoStrataModel().fit( input_resistivities=TRES, 
+        ...              input_layers=LNS,**INVERS_KWS)
+        >>> geosObj._strataPropertiesOfSite(geosObj,station= 'S05')
         """
         
         def stamping_ignored_rocks(fittedrocks, lns): 
@@ -1056,7 +1056,7 @@ class GeoStrataModel(Base):
 def _ps_memory_management(obj=None, option='set'): 
     """ Manage the running times for stratigraphic model construction.
     
-    The script allows to avoid running several times the GeoStratigraphy model
+    The script allows to avoid running several times the GeoStrataModel model
     construction to retrieve the pseudostratigraphic (PS) log at each station.  
     It memorizes the model data for the first run and used it when calling it
     to  visualize the PS log at each station. Be aware to edit this script.
@@ -1079,11 +1079,11 @@ def _ps_memory_management(obj=None, option='set'):
     elif option in ('get', 'recover', 'fetch'): 
         memory_exists =  os.path.isfile(os.path.join(memorypath, memory))
         if not memory_exists: 
-            _logger.error('No memory found. Run the GeoStratigraphy class '
+            _logger.error('No memory found. Run the GeoStrataModel class '
                           'beforehand to create your first model.')
             warnings.warn("No memory found. You need to build your "
-                          " GeoStratigraphy model by running the class first.")
-            raise  MemoryError("Memory not found. Use the GeoStratigraphy class to "
+                          " GeoStrataModel model by running the class first.")
+            raise  MemoryError("Memory not found. Use the GeoStrataModel class to "
                                "create your model first.")
         psobj_token, data_ = load_serialized_data(
             os.path.join(memorypath, memory))
@@ -1141,12 +1141,11 @@ def makeBlockSites(station_location, x_nodes, block_model):
   
 
 def display_infos(infos, **kws):
-    """ Display unique element on list of array infos
+    """ Display unique element on list of array infos.
     
     :param infos: Iterable object to display. 
     :param header: Change the `header` to other names. 
     :Example: 
-        
         >>> from watex.geology.stratigraphic import display_infos
         >>> ipts= ['river water', 'fracture zone', 'granite', 'gravel',
              'sedimentary rocks', 'massive sulphide', 'igneous rocks', 
@@ -1194,12 +1193,12 @@ def fit_default_layer_properties(layers, dbproperties_= ['hatch', 'colorMPL']):
     
     :Example: 
         
-        >>> import watex.geology.stratigraphic as GM
-        >>> GC.fit_default_layer_properties(
-        ...    ['tuff', 'granite', 'evaporite', 'saprock']))
-        ... (['none', 'none', 'none', 'none'],
-        ...     [(1.0, 1.0, 0.0), (1.0, 0.0, 1.0), (0.0, 0.0, 1.0),
-        ...     (1.0, 0.807843137254902, 1.0)])
+    >>> import watex.geology.stratigraphic as GS
+    >>> GS.fit_default_layer_properties(
+    ...    ['tuff', 'granite', 'evaporite', 'saprock']))
+    ... (['none', 'none', 'none', 'none'],
+    ...     [(1.0, 1.0, 0.0), (1.0, 0.0, 1.0), (0.0, 0.0, 1.0),
+    ...     (1.0, 0.807843137254902, 1.0)])
     """
     # for consistency check again and keep the DB properties untouchable.
     dbproperties_= ['colorMPL' if g.lower().find('mpl') >=0 else 
@@ -1226,7 +1225,7 @@ def fit_default_layer_properties(layers, dbproperties_= ['hatch', 'colorMPL']):
     return tuple(r_props)    
  
 def __build_ps__token(obj):
-    """ Build a special token for each GeoStratigraphic model. Please don't 
+    """ Build a special token for each GeoStrataModel model. Please don't 
     edit anything here. Force editing is your own risk."""
     import random 
     random.seed(42)
@@ -1480,10 +1479,10 @@ Examples
 ----------
 >>> from watex.geology.stratigraphic import GeoStrataModel 
 >>> # Works with occam2d inversion files if 'pycsamt' or 'mtpy' is installed
->>> # will call the module Geodrill from pycsamt to make blocks occam2d 
->>> # for our demo. It presumes pycsamt is installed. 
+>>> # will call the module Geodrill from pycsamt to make occam2d 2D resistivity
+>>> # block for our demo. It presumes pycsamt is installed. 
 >>> from pycsamt.geodrill.geocore import Geodrill 
->>> path=r'data/inversfiles/inver_res/K4'
+>>> path=r'data/inversfiles/inver_res/K4' # path to inversion files 
 >>> inversion_files = {'model_fn':'Occam2DModel', 
 ...                   'mesh_fn': 'Occam2DMesh',
 ...                    "iter_fn":'ITER27.iter',
@@ -1499,20 +1498,20 @@ Examples
 >>> gdrill= Geodrill (**inversion_files, 
                      input_resistivities=input_resistivity_values
                      )
->>> # we can collect the 'model_res' and 'geo_depth_attributes' 
->>> # passed to 'GeoStratigraphy' fit method 
->>> geosObj = GeoStratigraphy(ptol =0.1).fit(crm = model_res , 
+>>> # we can collect the 'model_res' and 'geo_depth_attributes' from 
+>>> # `gdrill object` and passed to 'GeoStrataModel' fit method as 
+>>> geosObj = GeoStrataModel(ptol =0.1).fit(crm = model_res , 
                      input_resistivities=gdrill.input_resistivity_values
                      geo_depth= gdrill.geo_depth )
 >>> zmodel = geosObj._zmodel
->>> geosObj.nm 
+>>> geosObj.nm # resistivity 2D model block is constructed 
 
 Notes
 ------
-Modules works properly with occam2d inversion files if 'pycsamt' or 'mtpy' is 
+Modules work properly with occam2d inversion files if 'pycsamt' or 'mtpy' is 
 installed and  inherits the `Base package` which works with occam2d  model.
 Occam2d inversion files are also acceptables for building model blocks. 
-However the MODEM resistivity files is still ongoing 
+However the MODEM resistivity files development is still ongoing 
 
 """
 # def assert_len_layers_with_resistivities(

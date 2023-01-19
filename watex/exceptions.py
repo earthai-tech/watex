@@ -217,4 +217,9 @@ class AquiferGroupError (Exception):
     objective of the users."""
     pass 
 
+class ZError (BaseException ):
+    """ Raises an Exception if the Impedance Z tensor parameters failed to 
+    be calculated properly. """
+    pass 
+
 

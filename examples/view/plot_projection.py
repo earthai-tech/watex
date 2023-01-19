@@ -33,7 +33,7 @@ plot_kws = dict (fig_size=(8, 12),
                  xlabel= 'easting (m) ',
                  ylabel='northing (m)' , 
                  marker_facecolor ='k', 
-                 marker_edgecolor='r',
+                 marker_edgecolor='blue',
                  alpha =1., 
                  marker_edgewidth=2., 
                  show_grid =True,
@@ -44,5 +44,7 @@ plot_kws = dict (fig_size=(8, 12),
                  s =None )
 plotProjection( X, Xt , columns= ['east', 'north'], 
                     trainlabel='train location', 
-                    testlabel='test location', **plot_kws
+                    testlabel='test location', 
+                    #test_kws = dict (color = "r", edgecolor="#0A4CEE"), 
+                    **plot_kws
                    )

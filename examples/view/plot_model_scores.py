@@ -8,23 +8,28 @@ visualizes model fined tuned scores from the cross validation
 # Author: L.Kouadio 
 # Licence: BSD-3-clause
 
+# %%
+# :func:`~watex.view.plot_model_scores`  is able to 
+# read multiple classifiers and accepts differents way of estimators arrangements.  
+# Here is two examples of estimators arrangement before feeding to the function. 
+
 #%%
-# * Score is appended to the model 
+# * Append scores to the model 
 import numpy as np
 from watex.exlib.sklearn import SVC 
 from watex.view.mlplot import plot_model_scores
- 
-svc_model = SVC() 
-fake_scores = np.random.permutation (np.arange (0, 1,  .05))
-plot_model_scores([(svc_model, fake_scores )])
+svc_model = SVC()
+svc_fake_scores = np.sqrt (np.abs (np.linspace (0, 50, 200 ) + np.random.randn (200 ))) #add gaussian noises
+# normalize the scores 
+svc_fake_scores = (svc_fake_scores - svc_fake_scores.min())/ (svc_fake_scores.max() - svc_fake_scores.min()) 
+plot_model_scores([(svc_model, svc_fake_scores )], ** dict (xlabel ='samples', ylabel ='scores', font_size =7., lw=2. ))
 
-#%%
-# Use scores separately 
-# customize plot by passing base plot keyword properties 
+# %%
+# * Use scores separately and customize plot by passing baseplot keyword properties 
 base_plot_params ={
                     'lw' :3.,   
                     'ls': '-.', 
-                    'lc':'m', #(.9, 0, .8), 
+                    'lc':'m', 
                     'ms':7.,                
                     'fig_size':(9, 6),
                     'font_size':15.,
@@ -41,4 +46,4 @@ base_plot_params ={
                     's' :20 ,
                     'sns_style': 'ticks', 
                 }
-plot_model_scores([svc_model],scores =[fake_scores] , **base_plot_params )
+plot_model_scores([svc_model], scores =[svc_fake_scores] , **base_plot_params )

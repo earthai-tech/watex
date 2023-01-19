@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 #       Authors: Lars Krieger, Jared R. Peacock & Alison Louise Kirkby
-#       contact: < https://github.com/MTgeophysics/mtpy.git>
 #       Licence: GPL
+#       Edited by LKouadio 
+# Original file can be found in  < https://github.com/MTgeophysics/mtpy.git>
 
 import numpy as np
 import math, cmath
-
-class MTError (Exception): 
-    pass 
+from ..exceptions import EMError 
 
 #define uncertainty for differences between time steps
 epsilon = 1e-9
@@ -130,18 +129,18 @@ def make_log_increasing_array(z1_layer, target_depth, n_layers, increment_factor
 
 
 def invertmatrix_incl_errors(inmatrix, inmatrix_err=None):
-
+    """ Invert matrices with inclinaison errors"""
     if inmatrix is None:
-        raise MTError.MTpyError_inputarguments('Matrix must be defined')
+        raise EMError('Matrix must be defined')
 
     if (inmatrix_err is not None) and (inmatrix.shape != inmatrix_err.shape):
-        raise MTError.MTpyError_inputarguments('Matrix and err-matrix shapes do not match: %s - %s'%(str(inmatrix.shape), str(inmatrix_err.shape)))
+        raise EMError('Matrix and err-matrix shapes do not match: %s - %s'%(str(inmatrix.shape), str(inmatrix_err.shape)))
 
     if (inmatrix.shape[-2] != inmatrix.shape[-1]):
-        raise MTError.MTpyError_inputarguments('Matrices must be square!')
+        raise EMError('Matrices must be square!')
 
     if (inmatrix_err is not None) and (inmatrix_err.shape[-2] != inmatrix_err.shape[-1]) :
-        raise MTError.MTpyError_inputarguments('Matrices must be square!')
+        raise EMError('Matrices must be square!')
 
     dim = inmatrix.shape[-1]
 
@@ -149,14 +148,14 @@ def invertmatrix_incl_errors(inmatrix, inmatrix_err=None):
     det = np.linalg.det(inmatrix)
 
     if det == 0:
-        raise MTError.MTpyError_inputarguments('Matrix is singular - I cannot invert that!')
+        raise EMError('Matrix is singular - I cannot invert that!')
 
     inv_matrix = np.zeros_like(inmatrix)
 
 
 
     if dim != 2:
-        raise MTError.MTpyError_inputarguments('Only 2D matrices supported yet')
+        raise EMError('Only 2D matrices supported yet')
 
     inv_matrix = np.linalg.inv(inmatrix)
 
@@ -202,7 +201,7 @@ def rhophi2z(rho, phi, freq):
             raise
 
     except: 
-        raise MTError.MTpyError_inputarguments('ERROR - arguments must be two 2x2 arrays (real)')
+        raise EMError('ERROR - arguments must be two 2x2 arrays (real)')
 
     z = np.zeros((2,2),'complex')
     for i in range(2):
@@ -252,10 +251,16 @@ def compute_determinant_error(z_array, z_err_array, method = 'theoretical', repe
 
 def propagate_error_polar2rect(r,r_error,phi, phi_error):
     """
-        Find error estimations for the transformation from polar to cartesian coordinates.
+    Find error estimations for the transformation from polar to cartesian 
+    coordinates.
 
-        Uncertainties in polar representation define a section of an annulus. Find the 4 corners of this section and additionally the outer boundary point, which is defined by phi = phi0, rho = rho0 + sigma rho.
-        The cartesian "box" defining the uncertainties in x,y is the outer bound around the annulus section, defined by the four outermost points. So check the four corners as well as the outer boundary edge of the section to find the extrema in x znd y. These give you the sigma_x/y. 
+    Uncertainties in polar representation define a section of an annulus. 
+    Find the 4 corners of this section and additionally the outer boundary 
+    point, which is defined by phi = phi0, rho = rho0 + sigma rho.
+    The cartesian "box" defining the uncertainties in x,y is the outer bound
+    around the annulus section, defined by the four outermost points. So check 
+    the four corners as well as the outer boundary edge of the section to find 
+    the extrema in x znd y. These give you the sigma_x/y. 
 
     """ 
 
@@ -281,7 +286,9 @@ def propagate_error_polar2rect(r,r_error,phi, phi_error):
 
 
 def propagate_error_rect2polar(x,x_error,y, y_error):
-    
+    """Find error estimations for the transformation from cartesian 
+    coordinates to polar.
+    """
     # x_error, y_error define a  rectangular uncertainty box  
     
     # rho error is the difference between the closest and furthest point of the box (w.r.t. the origin)
@@ -456,18 +463,19 @@ def old_z_error2r_phi_error(x,x_error,y, y_error):
 
 
 def rotatematrix_incl_errors(inmatrix, angle, inmatrix_err = None) :
-   
+    """ rotates the matrix including the propagation errors."""
+    
     if inmatrix is None :
-        raise MTError.MTpyError_inputarguments('Matrix AND eror matrix must be defined')
+        raise EMError('Matrix AND eror matrix must be defined')
 
     if (inmatrix_err is not None) and (inmatrix.shape != inmatrix_err.shape):
-        raise MTError.MTpyError_inputarguments('Matrix and err-matrix shapes do not match: %s - %s'%(str(inmatrix.shape), str(inmatrix_err.shape)))
+        raise EMError('Matrix and err-matrix shapes do not match: %s - %s'%(str(inmatrix.shape), str(inmatrix_err.shape)))
 
 
     try:
         degreeangle = angle % 360
     except:
-        raise MTError.MTpyError_inputarguments('"Angle" must be a valid number (in degrees)')
+        raise EMError('"Angle" must be a valid number (in degrees)')
 
     phi = math.radians(degreeangle)
 
@@ -509,18 +517,19 @@ def rotatematrix_incl_errors(inmatrix, angle, inmatrix_err = None) :
 
 
 def rotatevector_incl_errors(invector, angle, invector_err = None):
+    """ rotates vector including the propagation errors."""
     #check for row or column vector 
     
     if invector is None :
-        raise MTError.MTpyError_inputarguments('Vector AND error-vector must be defined')
+        raise EMError('Vector AND error-vector must be defined')
 
     if (invector_err is not None) and (invector.shape != invector_err.shape):
-        raise MTError.MTpyError_inputarguments('Vector and errror-vector shapes do not match: %s - %s'%(str(invector.shape), str(invector_err.shape)))
+        raise EMError('Vector and errror-vector shapes do not match: %s - %s'%(str(invector.shape), str(invector_err.shape)))
 
     try:
         degreeangle = angle%360
     except:
-        raise MTError.MTpyError_inputarguments('"Angle" must be a valid number (in degrees)')
+        raise EMError('"Angle" must be a valid number (in degrees)')
 
     phi = math.radians(degreeangle)
     
@@ -555,12 +564,13 @@ def rotatevector_incl_errors(invector, angle, invector_err = None):
 
 
 def multiplymatrices_incl_errors(inmatrix1, inmatrix2, inmatrix1_err = None,inmatrix2_err = None ):
+    """ multiplies matrices including the propagation errors."""
 
     if inmatrix1 is None or inmatrix2 is None:
-        raise MTError.MTpyError_inputarguments('ERROR - two 2x2 arrays needed as input')
+        raise EMError('ERROR - two 2x2 arrays needed as input')
 
     if inmatrix1.shape != inmatrix2.shape:
-        raise MTError.MTpyError_inputarguments('ERROR - two 2x2 arrays with same dimensions needed as input')
+        raise EMError('ERROR - two 2x2 arrays with same dimensions needed as input')
 
 
     prod = np.array(np.dot( np.matrix(inmatrix1), np.matrix(inmatrix2)))
@@ -586,20 +596,21 @@ def multiplymatrices_incl_errors(inmatrix1, inmatrix2, inmatrix1_err = None,inma
 
 def reorient_data2D(x_values, y_values, x_sensor_angle = 0 , y_sensor_angle = 90):
     """
-        Re-orient time series data of a sensor pair, which has not been in default (x=0, y=90) orientation.
+    Re-orient time series data of a sensor pair, which has not been 
+    in default (x=0, y=90) orientation.
 
-        Input:
-        - x-values - Numpy array
-        - y-values - Numpy array
-        Note: same length for both! - If not, the shorter length is taken 
+    Input:
+    - x-values - Numpy array
+    - y-values - Numpy array
+    Note: same length for both! - If not, the shorter length is taken 
 
-        Optional:
-        - Angle of the x-sensor - measured in degrees, clockwise from North (0) 
-        - Angle of the y-sensor - measured in degrees, clockwise from North (0) 
+    Optional:
+    - Angle of the x-sensor - measured in degrees, clockwise from North (0) 
+    - Angle of the y-sensor - measured in degrees, clockwise from North (0) 
 
-        Output:
-        - corrected x-values (North)
-        - corrected y-values (East)
+    Output:
+    - corrected x-values (North)
+    - corrected y-values (East)
     """
 
     x_values = np.array(x_values)
@@ -612,7 +623,7 @@ def reorient_data2D(x_values, y_values, x_sensor_angle = 0 , y_sensor_angle = 90
         if len(x_values) != len(y_values):
             raise
     except:
-        raise MTError.MTpyError_inputarguments('ERROR - both input arrays must be of same length')
+        raise EMError('ERROR - both input arrays must be of same length')
 
     if len(x_values) != len(y_values):
         l = min(len(x_values) , len(y_values))
@@ -628,7 +639,7 @@ def reorient_data2D(x_values, y_values, x_sensor_angle = 0 , y_sensor_angle = 90
         x_angle = math.radians(x_sensor_angle)
         y_angle = math.radians(y_sensor_angle)
     except:
-        raise MTError.MTpyError_inputarguments('ERROR - both angles must be of type int or float')
+        raise EMError('ERROR - both angles must be of type int or float')
        
 
     T = np.matrix( [[ np.real(cmath.rect(1,x_angle)), np.imag(cmath.rect(1,x_angle))],[np.real(cmath.rect(1,y_angle)), np.imag(cmath.rect(1,y_angle))]])
@@ -636,7 +647,7 @@ def reorient_data2D(x_values, y_values, x_sensor_angle = 0 , y_sensor_angle = 90
     try:
         new_array = np.dot(in_array, T.I)
     except:
-        raise MTError.MTpyError_inputarguments('ERROR - angles must define independent axes to span 2D')
+        raise EMError('ERROR - angles must define independent axes to span 2D')
 
     #print new_array.shape
 

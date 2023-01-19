@@ -132,13 +132,15 @@ def load_gbalo (
     
     return Boxspace( **d )
  
-load_gbalo.__doc__ ="""\ 
-A DC-Electrical resistivity profiling (ERP) and Vertical sounding  (VES) data
-collected from Gbalo locality.
+load_gbalo.__doc__ ="""\
+Load Gbalo ERP and VES datasets.
 
-The data is collected during the National Drinking Water Supply Program (PNAEP) 
+The dataset is composed of DC-Electrical resistivity profiling (ERP) and 
+Vertical sounding  (VES) data collected from Gbalo locality. To change the 
+kind of dataset, pass ``erp`` or ``ves`` to parameter `key`. The data is 
+collected during the National Drinking Water Supply Program (PNAEP) 
 occurs in 2012-2014 in `Cote d'Ivoire`_. 
-Refer to :doc:`~watex._docstring.erp_doc.__doc__` and 
+Refer to :class:`~watex._docstring.erp_doc` and 
 :class:`~watex._docstring.ves_doc` for the data arrangement illustration. 
 
 Parameters 
@@ -217,7 +219,8 @@ soundings performed with the prefix '`SE`' is 4.
 """ 
 def load_hlogs (
         *,  return_X_y=False, as_frame =False, key =None,  split_X_y=False, 
-        test_size =.3 , tag =None, tnames = None , data_names=None , **kws): 
+        test_size =.3 , tag =None, tnames = None , data_names=None , **kws
+        ): 
 
     cf = as_frame 
     key = key or 'h502' 
@@ -291,8 +294,8 @@ def load_hlogs (
         data_module=DMODULE,
     )
 
-load_hlogs.__doc__=r"""\
-Load and return the hydro-logging dataset.
+load_hlogs.__doc__="""\
+Load the hydro-logging dataset.
 
 Dataset contains multi-target and can be used for a classification or 
 regression problem.
@@ -330,7 +333,7 @@ key: str, default='h502'
     Kind of logging data to fetch. Can also be the borehole ["h2601"]
     
 Returns
--------
+---------
 data : :class:`~watex.utils.Boxspace`
     Dictionary-like object, with the following attributes.
     data : {ndarray, dataframe} 
@@ -352,24 +355,24 @@ data : :class:`~watex.utils.Boxspace`
     filename: str
         The path to the location of the data.
         .. versionadded:: 0.1
-(data, target) : tuple if ``return_X_y`` is True
+data, target: tuple if ``return_X_y`` is True
     A tuple of two ndarray. The first containing a 2D array of shape
     (n_samples, n_features) with each row representing one sample and
     each column representing the features. The second ndarray of shape
     (n_samples,) containing the target samples.
     .. versionadded:: 0.1
-(X, Xt, y, yt): Tuple if ``split_X_y`` is True 
+X, Xt, y, yt: Tuple if ``split_X_y`` is True 
     A tuple of two ndarray (X, Xt). The first containing a 2D array of:
         
-        .. math:: 
-            
-        shape (X, y) =  1-  \text{test_ratio} * (n_{samples}, n_{features}) *100
+    .. math:: 
         
-        shape (Xt, yt)= \text{test_ratio} * (n_{samples}, n_{features}) *100
+        \\text{shape}(X, y) =  1-  \\text{test_ratio} * (n_{samples}, n_{features}) *100
         
-     where each row representing one sample and each column representing the 
-     features. The second ndarray of shape(n_samples,) containing the target 
-     samples.
+        \\text{shape}(Xt, yt)= \\text{test_ratio} * (n_{samples}, n_{features}) *100
+    
+    where each row representing one sample and each column representing the 
+    features. The second ndarray of shape(n_samples,) containing the target 
+    samples.
      
 Examples
 --------
@@ -449,7 +452,7 @@ def load_bagoue(
         data_module=DMODULE,
     )
 
-load_bagoue.__doc__=r"""\
+load_bagoue.__doc__="""\
 Load the Bagoue dataset. 
 
 The Bagoue dataset is a classic and a multi-class classification
@@ -514,9 +517,9 @@ X, Xt, y, yt: Tuple if ``split_X_y`` is True
         
     .. math:: 
         
-        \text{shape}(X, y) =  1-  \text{test_ratio} * (n_{samples}, n_{features}) *100
+        \\text{shape}(X, y) =  1-  \\text{test_ratio} * (n_{samples}, n_{features}) *100
         
-        \text{shape}(Xt, yt)= \text{test_ratio} * (n_{samples}, n_{features}) *100
+        \\text{shape}(Xt, yt)= \\text{test_ratio} * (n_{samples}, n_{features}) *100
         
     where each row representing one sample and each column representing the 
     features. The second ndarray of shape(n_samples,) containing the target 
@@ -549,18 +552,18 @@ def load_iris(
     target_columns = [
         "target",
     ]
-    if as_frame:
-        frame, data, target = _to_dataframe(
-            data, feature_names = feature_names, tnames = target_columns, 
-            target = target)
+    #if as_frame:
+    frame, data, target = _to_dataframe(
+        data, feature_names = feature_names, tnames = target_columns, 
+        target = target)
         # _to(
         #     "load_iris", data, target, feature_names, target_columns
         # )
     if return_X_y or as_frame:
-        return data, target
+        return to_numeric_dtypes(data) if as_frame else data , target
 
     return Boxspace(
-        data=data,
+        data=data.values,
         target=target,
         frame=frame,
         tnames=target_names,

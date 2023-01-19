@@ -11,8 +11,7 @@ quick alternative for users to save their time for writting their own plot
 scripts. However to have full control of the plot, it is recommended to write 
 your own plot scripts. 
 Note that this module can not handle all the plots that can offer the
-software. 
-  
+software.   
 """
 from __future__ import annotations 
 import re
@@ -89,6 +88,7 @@ from ..utils.mlutils import (
     )
 from ..utils.plotutils import make_mpl_properties
 from ..utils.validator import ( 
+    _check_consistency_size, 
     get_estimator_name , 
     array_to_frame, 
     check_array, 
@@ -1290,8 +1290,8 @@ class EvalPlot(BasePlot):
             f'{appender}{"" if rv is None else "?"}'
             )        
 
-EvalPlot.__doc__=r"""\
-Metric and dimensionality Evaluatation Plots  
+EvalPlot.__doc__ ="""\
+Metrics, dimensionality and model evaluatation plots.  
 
 Inherited from :class:`BasePlot`. Dimensional reduction and metric 
 plots. The class works only with numerical features. 
@@ -1300,7 +1300,7 @@ plots. The class works only with numerical features.
     
     Contineous target values for plotting classification metrics is 
     discouraged. However, We encourage user to prepare its dataset 
-    before using the `~.EvalPlot` methods. This is recommended to have 
+    before using the :class:`EvalPlot` methods. This is recommended to have 
     full control of the expected results. Indeed, the most metrics plot 
     implemented here works with supervised methods especially deals 
     with the classification problems. So, the convenient way is for  
@@ -1308,8 +1308,8 @@ plots. The class works only with numerical features.
     If not the case, as the examples of demonstration  under each method 
     implementation, we first need to categorize the continue labels. 
     The choice is twofolds: either providing individual class label 
-    as a list of integers using the method `~._cat_codes_y` or by 
-    specifying the number of clusters that the target must hold. 
+    as a list of integers using the method :meth:`EvalPlot._cat_codes_y` 
+    or by specifying the number of clusters that the target must hold. 
     Commonly the latter choice is usefull for a test or academic 
     purpose. In practice into a real dataset, it is discouraged 
     to use this kind of target partition since, it is far away of the 
@@ -1445,6 +1445,23 @@ chunked during the fit methods.
 _b= EvalPlot () 
 pobj = type ('Plot', (BasePlot, ), {**_b.__dict__} ) 
 setattr(pobj, 'save', _b.save )
+# redefine the pobj doc 
+pobj.__doc__="""\
+Shadow plotting class that holds the :class:`~watex.property.BasePlot`
+parameters. 
+
+Each matplotlib properties can be modified as  :class:`~watex.view.pobj`
+attributes object. For instance:: 
+    
+    >>> pobj.ls ='-.' # change the line style 
+    >>> pobj.fig_Size = (7, 5) # change the figure size 
+    >>> pobj.lw=7. # change the linewidth 
+    
+.. seealso:: 
+    
+    Refer to :class:`~watex.property.BasePlot` for parameter details. 
+    
+"""
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def plotProjection(
     X: DataFrame | NDArray, 
@@ -1896,7 +1913,7 @@ def plotModel(
 def plot_reg_scoring(
     reg, X, y, test_size=None, random_state =42, scoring ='mse',
     return_errors: bool=False, **baseplot_kws
-    ) : 
+    ): 
     #xxxxxxxxxxxxxxxx update base plot keyword arguments
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
@@ -1973,10 +1990,10 @@ def plot_reg_scoring(
     
     return (train_errors, val_errors) if return_errors else None 
 
-plot_reg_scoring.__doc__ =="""
-Plot regressor learning curves with (root)mean squared error
- '(r)mse'scorings.
-Use the hold-out [1]_ cross validation technique for score evaluation. 
+plot_reg_scoring.__doc__ ="""\
+Plot regressor learning curves using root-mean squared error scorings. 
+
+Use the hold-out cross-validation technique for score evaluation [1]_. 
 
 Parameters 
 -----------
@@ -2047,15 +2064,10 @@ References
 .. [2] Raschka, S. & Mirjalili, V. (2019) Python Machine Learning. 
     (J. Malysiak, S. Jain, J. Lovell, C. Nelson, S. D’silva & R. Atitkar, Eds.), 
     3rd ed., Packt.
-
 """.format(params = _param_docs)    
 
 
 def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws): 
-    """ 
-    Uses cross validation to get an estimate of model's generalisation 
-    performance. 
-    """
     #xxxxxxxxxxxxxxxx set base plot keywords arguments
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
@@ -2070,8 +2082,7 @@ def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws):
         
     _ckeck_score = scores is not None 
     if _ckeck_score :
-        if not is_iterable(scores): 
-            scores =[scores]
+        scores = is_iterable(scores, exclude_string=True, transform= True )
         # if is_iterable(models) and is_iterable(scores): 
         if len(models) != len(scores): 
             raise TypeError(
@@ -2100,7 +2111,7 @@ def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws):
     # get_the minimal size from cv if not isinstance(cv, (int, float) ):
     cv_size_min = min (
         [ len(models[i][1]) for i in range (len(models))])
-    
+
     if cv_size is None: 
         cv_size = cv_size_min
 
@@ -2126,6 +2137,8 @@ def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws):
     lcs_kws = {'lc': make_mpl_properties(cv_size), 
              'ls':make_mpl_properties(cv_size, 'line')
              }
+    lcs_kws ['ls']= [pobj.ls] + lcs_kws['ls']
+    lcs_kws ['lc']= [pobj.lc] + lcs_kws['lc']
     # create figure obj and change style
     # if sns_style is passed as base_plot_params 
     fig = plt.figure(figsize = pobj.fig_size)
@@ -2134,7 +2147,9 @@ def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws):
        sns.set_style(pobj.sns_style)
        
     for k in range(len(models)): 
-        ax.plot(np.array([i for i in range(cv_size)])+1,
+        ax.plot(
+            # np.array([i for i in range(cv_size)]) +1,
+                np.arange (cv_size) +1, 
                 models[k][1],
                 color = lcs_kws['lc'][k], 
                 linewidth = pobj.lw,
@@ -2148,7 +2163,10 @@ def plot_model_scores(models, scores=None, cv_size=None, **baseplot_kws):
     pobj.save(fig)
     
 plot_model_scores.__doc__="""\
-Visualize model fined tuned scores vs the cross validation
+uses the cross validation to get an estimation of model performance 
+generalisation.
+
+It Visualizes model fined tuned scores vs the cross validation
 
 Parameters 
 ----------
@@ -2239,10 +2257,10 @@ def plotDendroheat(
     **kwd
 ):
     """
-    Attached dendrogram to a heat map 
+    Attaches dendrogram to a heat map. 
     
-    Hiearchical dendrogram are often used in combination with a heat map wich 
-    qllows us to represent the individual value in data array or matrix 
+    Hierachical dendrogram are often used in combination with a heat map which
+    allows us to represent the individual value in data array or matrix 
     containing our training examples with a color code. 
     
     Parameters 
@@ -2308,7 +2326,7 @@ def plotDendroheat(
                                              'ID_3', 'ID_4']
     >>> X= np.random.random_sample ([5,3]) *10 
     >>> df =pd.DataFrame (X, columns =variables, index =labels)
-    >>> plotDendroheat (df, )
+    >>> plotDendroheat (df)
     
     (2) -> Use Bagoue data 
     >>> from watex.datasets import load_bagoue  
@@ -2396,13 +2414,17 @@ def plotDendroheat(
 def plotDendrogram (
     df:DataFrame, 
     columns:List[str] =None, 
-    labels:ArrayLike  =None,
+    labels: ArrayLike =None,
     metric:str ='euclidean',  
     method:str ='complete', 
     kind:str = None,
-    return_r:bool =False , 
+    return_r:bool =False, 
+    verbose:bool=False, 
     **kwd ): 
-    """ Visualize the linkage matrix in the results of dendogram 
+    r""" Visualizes the linkage matrix in the results of dendrogram. 
+    
+    Note that the categorical features if exist in the dataframe should 
+    automatically be discarded. 
     
     Parameters 
     -----------
@@ -2447,7 +2469,11 @@ def plotDendrogram (
         an original observation and not a non-singleton cluster.
         
     return_r: bool, default='False', 
-        return r-dictionnary if set to 'True' otherwise return nothing 
+        return r-dictionnary if set to 'True' otherwise returns nothing 
+    
+    verbose: int, bool, default='False' 
+        If ``True``, output message of the name of categorical features 
+        dropped.
     
     kwd: dict 
         additional keywords arguments passes to 
@@ -2492,12 +2518,17 @@ def plotDendrogram (
     >>> plotDendrogram (X, columns =['X1', 'X2' ] ) 
 
     """
+    if hasattr (df, 'columns') and columns is not None: 
+        df = df [columns ]
+        
+    df = to_numeric_dtypes(df, pop_cat_features= True, verbose =verbose )
+    
     df=check_array (
         df, 
         input_name="Data 'df' ", 
         to_frame =True, 
         )
-    
+
     kind:str = kind or 'design'
     row_cluster = linkage_matrix(df = df, columns = columns, metric= metric, 
                                  method =method , kind = kind ,
@@ -2527,7 +2558,7 @@ def plotSilhouette (
     **kwd 
  ): 
     r"""
-    Plot silhouette to quantify the quality  of clustering samples. 
+    quantifies the quality  of clustering samples. 
     
     Parameters
     ----------
@@ -2600,19 +2631,19 @@ def plotSilhouette (
     Silhouette is used as graphical tools,  to plot a measure how tighly is  
     grouped the examples of the clusters are.  To calculate the silhouette 
     coefficient, three steps is allows: 
-        - calculate the **cluster cohesion**, :math:`a(i)`, as the average 
-            distance between examples, :math:`x^{(i)}`, and all the others 
-            points
-        - calculate the **cluster separation**, :math:`b^{(i)}` from the next 
-            average distance between the example , :math:`x^{(i)}` amd all 
-            the example of nearest cluster 
-        - calculate the silhouette, :math:`s^{(i)}`, as the difference between 
-            the cluster cohesion and separation divided by the greater of the 
-            two, as shown here: 
-                
-            .. math:: 
-                
-                s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
+    * calculate the **cluster cohesion**, :math:`a(i)`, as the average 
+        distance between examples, :math:`x^{(i)}`, and all the others 
+        points
+    * calculate the **cluster separation**, :math:`b^{(i)}` from the next 
+        average distance between the example , :math:`x^{(i)}` amd all 
+        the example of nearest cluster 
+    * calculate the silhouette, :math:`s^{(i)}`, as the difference between 
+        the cluster cohesion and separation divided by the greater of the 
+        two, as shown here: 
+    
+        .. math:: 
+            
+            s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
                 
     Examples 
     --------
@@ -3065,11 +3096,12 @@ def plotLearningInspection(
     axes[2].set_title(f"Performance of {title_name}")
 
     return axes
-
+#XXX
 def plot_matshow(
     arr, / , labelx:List[str] =None, labely:List[str]=None, 
     matshow_kws=None, **baseplot_kws
     ): 
+    
     #xxxxxxxxx update base plot keyword arguments
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
@@ -3092,19 +3124,22 @@ def plot_matshow(
     ax.set_xlabel( pobj.xlabel,
           fontsize= pobj.font_size )
     
-    for label in zip ([labelx, labely]): 
-        if label is not None:
-            if not is_iterable(label):
-                label = [label]
-            if len(label) !=arr.shape[1]: 
-                warnings.warn(
-                    "labels and arr dimensions must be consistent"
-                    f" Expect {arr.shape[1]}, got {len(label)}. "
-                    )
-                continue 
-            ax.set_yticks(np.arange(0, arr.shape[1]))
-            ax.set_yticklabels(label)
- 
+    
+    # for label in zip ([labelx, labely]): 
+    #     if label is not None:
+    #         if not is_iterable(label):
+    #             label = [label]
+    #         if len(label) !=arr.shape[1]: 
+    #             warnings.warn(
+    #                 "labels and arr dimensions must be consistent"
+    #                 f" Expect {arr.shape[1]}, got {len(label)}. "
+    #                 )
+                #continue
+    if labelx is not None: 
+        ax = _check_labelxy (labelx , arr, ax )
+    if labely is not None: 
+        ax = _check_labelxy (labely, arr, ax , axis ='y')
+    
     if pobj.ylabel is None:
         pobj.ylabel =''
     if pobj.xlabel is None:
@@ -3196,6 +3231,7 @@ def biPlot(
  ):
     """
     The biplot is the best way to visualize all-in-one following a PCA analysis.
+    
     There is an implementation in R but there is no standard implementation
     in Python. 
 
@@ -3307,13 +3343,12 @@ def biPlot(
                  color = 'k', 
                  ha = 'center',
                  va = 'center',
-                 fontsize= self.ms * self.fs *.5 
+                 fontsize= self.font_size
                  )
-
-    plt.xlabel(self.xlabel or "PC{}".format(1),
-               size=self.ms* self.fs)
-    plt.ylabel(self.ylabel or "PC{}".format(2),
-               size=self.ms* self.fs)
+    plt.tick_params(axis ='both', labelsize = self.font_size)
+    
+    plt.xlabel(self.xlabel or "PC1",size=self.font_size)
+    plt.ylabel(self.ylabel or "PC2",size=self.font_size)
     limx= int(xs.max()) + 1
     limy= int(ys.max()) + 1
     plt.xlim([-limx,limx])
@@ -3321,7 +3356,7 @@ def biPlot(
     plt.grid()
     plt.tick_params(axis='both',
                     which='both', 
-                    labelsize=self.ms* self.fs
+                    labelsize=self.font_size
                     )
     
     self.save(fig)
@@ -3462,7 +3497,38 @@ def _chk_predict_args (Xt, yt, *args,  predict =False ):
         
     return Xt, yt, index , clf ,  ypred 
 
+def _check_labelxy (lablist, ar, ax, axis = 'x' ): 
+    """ Assert whether the x and y labels given for setting the ticklabels 
+    are consistent. 
+    
+    If consistent, function set x or y labels along the x or y axis 
+    of the given array. 
+    
+    :param lablist: list, list of the label to set along x/y axis 
+    :param ar: arraylike 2d, array to set x/y axis labels 
+    :param ax: matplotlib.pyplot.Axes, 
+    :param axis: str, default="x", kind of axis to set the label. 
+    
+    """
+    warn_msg = ("labels along axis {axis} and arr dimensions must be"
+                " consistent. Expects {shape}, got {len_label}")
+    ax_ticks, ax_labels  = (ax.set_xticks, ax.set_xticklabels 
+                         ) if axis =='x' else (
+                             ax.set_yticks, ax.set_yticklabels )
+    if lablist is not None: 
+        lablist = is_iterable(lablist, exclude_string=True, 
+                              transform =True )
+        if not _check_consistency_size (
+                lablist , ar[0 if axis =='x' else 1], error ='ignore'): 
+            warnings.warn(warn_msg.format(
+                axis = axis , shape=ar.shape[0 if axis =='x' else 1], 
+                len_label=len(lablist))
+                )
+        else:
+            ax_ticks(np.arange(0, ar.shape[0 if axis =='x' else 1]))
+            ax_labels(lablist)
         
+    return ax         
         
         
         

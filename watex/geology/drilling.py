@@ -128,18 +128,15 @@ class Drill(Geology):
         
     :Example: 
         
-    >>> from watex.geoloy.drill import Drill 
+    >>> from watex.geoloy.drilling import Drill 
     >>> parser_file ='nbleDH.csv'
-    >>> drill_obj=Drill(well_filename=os.path.join(os.environ['pyCSAMT'],
-    ...                  'data', 'drill_example_files',parser_file),
-    ...      build_manually_welldata=False)
+    >>> drill_obj=Drill(well_filename='data/drill/drill_example_files')
     >>>  scollar=drill._collar(DH_Top=None)
     >>> sgeo=drill.dhGeology()
     >>> ssam=drill.dhSample()
     >>> selevaz=drill.dhSurveyElevAz( add_elevation=None, 
     ...                             add_azimuth=None)
-    >>> swrite=drill.writeDHData(data2write ="*",
-                             savepath =None)
+    >>> swrite=drill.writeDHData(data2write ="*", savepath =None)
     """
 
     import_optional_dependency ("openpyxl")   
@@ -236,14 +233,14 @@ class Drill(Geology):
         
         Parameters 
         ----------
-            * DH_Top  : np.ndarray ,
-                    it's the Top of data for each Hole Name. 
-                    ndaray (number of DH , 1) 
-                    *Default* is None.
+        * DH_Top  : np.ndarray ,
+                it's the Top of data for each Hole Name. 
+                ndaray (number of DH , 1) 
+                *Default* is None.
         Returns
         -------
-            pd.DataFrme 
-                collar Drillhole log
+        pd.DataFrme 
+            collar Drillhole log
         """
 
         if DH_Top is None :
@@ -330,17 +327,17 @@ class Drill(Geology):
  
         Parameters
         ----------
-            * dh_geomask : np.ndarray, optional
-                        geology mask. send mask value can take exactly
-                        the np.ndarray(num_of_geology set ,). The better way 
-                        to set geology maskis to fill on the wellfilename.
-                        if not , programm will take the general mask value. 
-                        The *default* is None.
+        * dh_geomask : np.ndarray, optional
+                    geology mask. send mask value can take exactly
+                    the np.ndarray(num_of_geology set ,). The better way 
+                    to set geology maskis to fill on the wellfilename.
+                    if not , programm will take the general mask value. 
+                    The *default* is None.
 
         Returns
         -------
-            pd.DataFrame 
-                geology drillhole log.
+        pd.DataFrame 
+            geology drillhole log.
         """
         
         
@@ -432,18 +429,18 @@ class Drill(Geology):
 
         Parameters
         ----------
-            * path_to_agso_codefile : str, optional
-                                path to conventional
-                                AGSO_STRUCTURAL CODES.
-                                The *default* is None.
-                                
-            * dh_sampmask : np.ndarray, optional
-                            Structural mask. The default is None.
+        * path_to_agso_codefile : str, optional
+                            path to conventional
+                            AGSO_STRUCTURAL CODES.
+                            The *default* is None.
+                            
+        * dh_sampmask : np.ndarray, optional
+                        Structural mask. The default is None.
 
         Returns
         -------
-            pd.DataFrame 
-                Sample DH log.
+        pd.DataFrame 
+            Sample DH log.
         """
         
         sampKeys=["DH_Hole","DH_From",	"DH_To","Rock",	"Sample",
@@ -465,7 +462,7 @@ class Drill(Geology):
         
         if path_to_agso_codefile is None:
             path_to_agso_codefile=os.path.join(os.path.abspath('.'),
-                                             'pycsamt/geodrill/_geocodes' )
+                                             'watex/etc/_geocodes' )
             sampelm= get_agso_properties(
                 config_file = os.path.join(path_to_agso_codefile,
                                            'AGSO_STCODES.csv') )
@@ -678,27 +675,27 @@ class Drill(Geology):
         
         Parameters
         ----------
-            * data2write : str or list , optional
-                        the search key. The default is None.
-            
-            * datafn :str
-                    savepath to exported file 
-                    *Default* is current work directory.
-                    
-            * write_index_on_sheet : bool, 
-                    choice to write the sheet with pandas.Dataframe index. 
-                    
-            * writeType : str , 
-                    file type . its may *.csv or *.xlsx .
-                    *Default* is *.xlsx
-                    
-            * add_header : bool, 
-                    add head on exported sheet. set False to mask heads. 
-                    *Default* is True. 
-                    
-            * csv_separateType : str , 
-                    Indicated for csv exported files , 
-                    the type of comma delimited . defaut is ','.
+        * data2write : str or list , optional
+                    the search key. The default is None.
+        
+        * datafn :str
+                savepath to exported file 
+                *Default* is current work directory.
+                
+        * write_index_on_sheet : bool, 
+                choice to write the sheet with pandas.Dataframe index. 
+                
+        * writeType : str , 
+                file type . its may *.csv or *.xlsx .
+                *Default* is *.xlsx
+                
+        * add_header : bool, 
+                add head on exported sheet. set False to mask heads. 
+                *Default* is True. 
+                
+        * csv_separateType : str , 
+                Indicated for csv exported files , 
+                the type of comma delimited . defaut is ','.
         """
     
         savepath =kwargs.pop("savepath",None )

@@ -2,7 +2,7 @@
 .. _analysis_examples:
 
 
-Analysis
+Analyses
 ------------
 
 Examples concerning the :mod:`watex.analysis` module.

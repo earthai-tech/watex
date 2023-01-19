@@ -7,7 +7,6 @@
 Plot templates 
 ================
 Base plot for data exploratory and analysis 
-
 """
 from __future__ import annotations 
 
@@ -3127,7 +3126,7 @@ class QuickPlot (BasePlot):
             )
         return 1
      
-ExPlot .__doc__=r"""\
+ExPlot .__doc__="""\
 Exploratory plot for data analysis 
 
 `ExPlot` is a shadow class. Explore data is needed to create a model since 
@@ -3209,9 +3208,9 @@ Examples
     returns= _core_docs["returns"],
 )
  
-QuickPlot.__doc__=r"""\
+QuickPlot.__doc__="""\
 Special class dealing with analysis modules for quick diagrams, 
-histograms and bar visualization.
+histograms and bar visualizations. 
 
 Originally, it was designed for the flow rate prediction, however, it still 
 works with any other dataset by following the parameters details. 
@@ -3304,8 +3303,8 @@ Examples
     returns= _core_docs["returns"],
 )
     
-TPlot .__doc__=r"""\
-Tensor plot from EM processing data  
+TPlot.__doc__="""\
+Tensor plot from EM processing data.
 
 `TPlot` is a Tensor (Impedances , resistivity and phases ) plot class. 
 Explore SEG ( Society of Exploration Geophysicist ) class data.  Plot recovery 

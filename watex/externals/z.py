@@ -17,14 +17,17 @@ from .zutils import (
     propagate_error_polar2rect
     )
 from .._watexlog import watexlog 
+from ..exceptions import ZError 
 
-class ZError (BaseException ):
-    pass 
+__all__=["ResPhase", "Z"]
 
 class ResPhase(object):
     """
-    resistivity and phase container
+    resistivity and phase class - generates Resistivity and phase 
+    tensors object.
+    
     .. module:: Z
+    
     """
 
     def __init__(self, z_array=None, z_err_array=None, freq=None, **kwargs):
@@ -1062,7 +1065,7 @@ class Z(ResPhase):
 
 class Tipper(object):
     """
-    Tipper class --> generates a Tipper-object.
+    Tipper class that generates a Tipper-object.
 
     Errors are given as standard deviations (sqrt(VAR))
 
