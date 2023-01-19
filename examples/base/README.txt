@@ -2,7 +2,7 @@
 .. _base_examples:
 
 
-Base-estimators & Miscellaneous 
+Base assessors & estimators 
 --------------------------------
 
 Examples concerning the :mod:`watex.base` module.

@@ -2,7 +2,7 @@
 .. _view_examples:
 
 
-Visualization
+Visualizations
 ------------------
 
 Examples concerning the :mod:`watex.view` module.

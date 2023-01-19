@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Created date: on Fri Sep 17 11:25:15 2021
 """
 Utilities to process and compute parameters. Module for Algebra calculus.
 """
@@ -152,77 +151,77 @@ def linkage_matrix(
     The following are methods for calculating the distance between the
     newly formed cluster :math:`u` and each :math:`v`.
 
-      * method='single' assigns
+    * method='single' assigns
 
-        .. math::
-           d(u,v) = \min(dist(u[i],v[j]))
+      .. math::
+         d(u,v) = \min(dist(u[i],v[j]))
 
-        for all points :math:`i` in cluster :math:`u` and
-        :math:`j` in cluster :math:`v`. This is also known as the
-        Nearest Point Algorithm.
+      for all points :math:`i` in cluster :math:`u` and
+      :math:`j` in cluster :math:`v`. This is also known as the
+      Nearest Point Algorithm.
 
-      * method='complete' assigns
+    * method='complete' assigns
 
-        .. math::
-           d(u, v) = \max(dist(u[i],v[j]))
+      .. math::
+         d(u, v) = \max(dist(u[i],v[j]))
 
-        for all points :math:`i` in cluster u and :math:`j` in
-        cluster :math:`v`. This is also known by the Farthest Point
-        Algorithm or Voor Hees Algorithm.
+      for all points :math:`i` in cluster u and :math:`j` in
+      cluster :math:`v`. This is also known by the Farthest Point
+      Algorithm or Voor Hees Algorithm.
 
-      * method='average' assigns
+    * method='average' assigns
 
-        .. math::
-           d(u,v) = \sum_{ij} \\frac{d(u[i], v[j])}{(|u|*|v|)}
+      .. math::
+         d(u,v) = \sum_{ij} \\frac{d(u[i], v[j])}{(|u|*|v|)}
 
-        for all points :math:`i` and :math:`j` where :math:`|u|`
-        and :math:`|v|` are the cardinalities of clusters :math:`u`
-        and :math:`v`, respectively. This is also called the UPGMA
-        algorithm.
+      for all points :math:`i` and :math:`j` where :math:`|u|`
+      and :math:`|v|` are the cardinalities of clusters :math:`u`
+      and :math:`v`, respectively. This is also called the UPGMA
+      algorithm.
 
-      * method='weighted' assigns
+    * method='weighted' assigns
 
-        .. math::
-           d(u,v) = (dist(s,v) + dist(t,v))/2
+      .. math::
+         d(u,v) = (dist(s,v) + dist(t,v))/2
 
-        where cluster u was formed with cluster s and t and v
-        is a remaining cluster in the forest (also called WPGMA).
+      where cluster u was formed with cluster s and t and v
+      is a remaining cluster in the forest (also called WPGMA).
 
-      * method='centroid' assigns
+    * method='centroid' assigns
 
-        .. math::
-           dist(s,t) = ||c_s-c_t||_2
+      .. math::
+         dist(s,t) = ||c_s-c_t||_2
 
-        where :math:`c_s` and :math:`c_t` are the centroids of
-        clusters :math:`s` and :math:`t`, respectively. When two
-        clusters :math:`s` and :math:`t` are combined into a new
-        cluster :math:`u`, the new centroid is computed over all the
-        original objects in clusters :math:`s` and :math:`t`. The
-        distance then becomes the Euclidean distance between the
-        centroid of :math:`u` and the centroid of a remaining cluster
-        :math:`v` in the forest. This is also known as the UPGMC
-        algorithm.
+      where :math:`c_s` and :math:`c_t` are the centroids of
+      clusters :math:`s` and :math:`t`, respectively. When two
+      clusters :math:`s` and :math:`t` are combined into a new
+      cluster :math:`u`, the new centroid is computed over all the
+      original objects in clusters :math:`s` and :math:`t`. The
+      distance then becomes the Euclidean distance between the
+      centroid of :math:`u` and the centroid of a remaining cluster
+      :math:`v` in the forest. This is also known as the UPGMC
+      algorithm.
 
-      * method='median' assigns :math:`d(s,t)` like the ``centroid``
-        method. When two clusters :math:`s` and :math:`t` are combined
-        into a new cluster :math:`u`, the average of centroids s and t
-        give the new centroid :math:`u`. This is also known as the
-        WPGMC algorithm.
+    * method='median' assigns :math:`d(s,t)` like the ``centroid``
+      method. When two clusters :math:`s` and :math:`t` are combined
+      into a new cluster :math:`u`, the average of centroids s and t
+      give the new centroid :math:`u`. This is also known as the
+      WPGMC algorithm.
 
-      * method='ward' uses the Ward variance minimization algorithm.
-        The new entry :math:`d(u,v)` is computed as follows,
+    * method='ward' uses the Ward variance minimization algorithm.
+      The new entry :math:`d(u,v)` is computed as follows,
 
-        .. math::
+      .. math::
 
-           d(u,v) = \sqrt{\frac{|v|+|s|}{T}d(v,s)^2 \\
-                        + \frac{|v|+|t|}{T}d(v,t)^2 \\
-                        - \frac{|v|}{T}d(s,t)^2}
+         d(u,v) = \sqrt{\frac{|v|+|s|}{T}d(v,s)^2 \\
+                      + \frac{|v|+|t|}{T}d(v,t)^2 \\
+                      - \frac{|v|}{T}d(s,t)^2}
 
-        where :math:`u` is the newly joined cluster consisting of
-        clusters :math:`s` and :math:`t`, :math:`v` is an unused
-        cluster in the forest, :math:`T=|v|+|s|+|t|`, and
-        :math:`|*|` is the cardinality of its argument. This is also
-        known as the incremental algorithm.
+      where :math:`u` is the newly joined cluster consisting of
+      clusters :math:`s` and :math:`t`, :math:`v` is an unused
+      cluster in the forest, :math:`T=|v|+|s|+|t|`, and
+      :math:`|*|` is the cardinality of its argument. This is also
+      known as the incremental algorithm.
 
     Warning: When the minimum distance pair in the forest is chosen, there
     may be two or more pairs with the same minimum distance. This
@@ -251,7 +250,8 @@ def linkage_matrix(
             raise TypeError("Number of columns must fit the shape of X."
                             f" got {len(columns)} instead of {df.shape [1]}"
                             )
-        df = pd.DataFrame(data = df, columns = columns )
+        df = pd.DataFrame(data = df.values if hasattr(df, 'columns') else df ,
+                          columns = columns )
         
     kind= str(kind).lower().strip() 
     if kind not in ('squareform', 'condense', 'design'): 

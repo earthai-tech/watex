@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Created:on Wed Oct 14 13:38:13 2020
-#   Edited by the same author Thu Sep 22 11:52:42 2022
+#   Thu Sep 22 11:52:42 2022
 #   Revised on Sat Oct  1 15:24:33 2022
 """
 GeoDataBase
 ============
 Special class to manage outputs-input requests from-into SQL  database 
 Editing this module presume that you are aware of what you  are doing. 
-The module is a core of Stratigraphic and drilling subpackages. 
+The module is a core of geology sub-packages. 
 However the the way the dataBase is arranged can be enhanced  and adapted 
 for better convenient or other suitable purposes.
 
-@author: LKouadio a.k.a @Daniel
 """
 
 import os
@@ -43,44 +41,49 @@ for p in ('.', '..', '../..', 'watex/etc'):
 
 class GeoDataBase (object): 
     """
-    Geodatabase class . Currently we do not create the specific pattern 
-    for each geostructures. DataBase is built is built following the   
-       codef `code`,   `label`,`__description`,`pattern`, `pat_size`,`pat_density`,
-       `pat_thickness`,`RGBA`, `electrical_props`, `hatch`, `colorMPL`, `FGDC` .
+    Core geological database class. 
+    
+    Currently we do not create the specific pattern for each geostructures. 
+    DataBase is built is built following  structure or property code 
+    definition `codef`:: 
+        
+        `code`,   `label`, `__description`,`pattern`, `pat_size`,`pat_density`,
+        `pat_thickness`,`RGBA`, `electrical_props`, `hatch`, `colorMPL`, `FGDC` 
 
-    Arguments
+    Parameters 
     -----------
-        **geo_structure_name** : str 
-                Name of geological rocks , strata or layer.
+    **geo_structure_name** : str 
+        Name of geological rocks , strata or layer.
                 
-    .. seealso:: FGDC-Digital cartographic Standard for Geological 
-                Map Symbolisation. 
+    .. seealso:: 
+        FGDC-Digital cartographic Standard for Geological Map Symbolisation. 
     
     """
     #  FGDC is not set yet , we use the  matplotlib pattern symbol makers 
     make_pattern_symbol =["/", "\\", "|", '-', '+', 'x', 'o', 'O', '.', 
                           '*', '\-', '\+', '\o', '\O', '\.', '\*'] 
     #use '\\' rather than '\'.
-    # latter , it will be deprecated to FGDC geological map symbolisation . 
+    # latter , it will be deprecated to FGDC geological map symbolization. 
     
     codef = ['code','label','__description','pattern', 'pat_size',	
              'pat_density','pat_thickness','rgb','electrical_props', 
                  'hatch', 'colorMPL', 'FGDC' ]
-    # geoDataBase=os.path.join(os.environ['pyCSAMT'],'pycsamt',
-    #                'geodrill', '_geomemo', 'memory.sq3') 
+
     # locate the geodataBase
     geoDataBase = os.path.join(
         os.path.abspath('watex/etc'),'memory.sq3')
  
     # :memory: is faster but we chose the static option :~.sq3 
-    #in sql_DB contains drill holes and wells Tables 
-    # will develop in the future extensions 
+    # in sql_DB contains drill holes and wells Tables 
 
-    def __init__(self, geo_structure_name=None):
+    def __init__(
+            self, 
+            geo_structure_name=None
+            ):
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         self.geo_structure_name = geo_structure_name
         self.dateTime= datetime.datetime.now().utcnow()   # Get the date time now  
-        self.comment =None                                # initialise comment  text
+        self.comment =None                                
         
         self._mplcolor =None 
         self._rgb =None 
@@ -100,7 +103,8 @@ class GeoDataBase (object):
             warnings.warn(mess)
             self.success= 0
  
-        else : self.success = 1 
+        else: 
+            self.success = 1 
 
     def _avoid_injection (self): 
         """
@@ -146,7 +150,7 @@ class GeoDataBase (object):
             list of data of each columns.
         
         :Exemple:
-            >>> from pycsamt.geodrill.geodatabase import GeoDataBase 
+            >>> from watex.geology.database import GeoDataBase
             >>> dbObj = GeoDataBase()
             >>>  values = dbObj._retreive_databasecolumns(
                     ['__description', 'electrical_props'])    
@@ -282,7 +286,7 @@ class GeoDataBase (object):
         
         :Example:
             
-            >>> from pycsamt.geodrill.geodatabase import GeoDataBase 
+            >>> from watex.geology.database import GeoDataBase 
             >>> GeoDataBase()._update_geo_structure(
                 **{'__description':'basement rocks', 
                     'electrical_props':[1e99, 1e6 ]})
@@ -470,7 +474,7 @@ class GeoDataBase (object):
         
         :Example: 
             
-            >>> from pycsamt.geodrill.geodatabase import GeoDataBase 
+            >>> from watex.geology.database import GeoDataBase 
             >>> geodatabase_obj= GeoDataBase._add_geo_structure( **{
             ...                                     'name': 'massive sulfure', 
             ...                                     'pattern': 218., 
@@ -797,12 +801,13 @@ class GeoDataBase (object):
         """
         configure georgb
         
-        .. note:: return the rgb value and the convert rgb palette value: 
-                keep the rgb value eg `R125G90B29` and compute the colorMPL
-                let fill automatically the "rgb" and the colorMPL 
+        .. note:: 
+            Return the rgb value and the convert rgb palette value: 
+            keep the rgb value eg `R125G90B29` and compute the colorMPL
+            let fill automatically the "rgb" and the colorMPL 
         """
-        from pycsamt.geodrill.geoCore.structural import get_color_palette
-
+        from ..utils.plotutils import get_color_palette
+ 
         self._rgb=(litteral_rgb, str(
             get_color_palette(RGB_color_palette=litteral_rgb)))
         
@@ -871,17 +876,18 @@ class GeoDataBase (object):
     @property
     def _setGeoDatabase(self): 
         """
-        .. note:: property of  GeoDataBase -create the GeoDataBase
-                 Setting geoDataBase table
-                 No Need to reset the DataBase at least you dropped the table,
-                 avoid to do that if you are not sure of what you are doing. 
+        .. note:: 
+            Property of  GeoDataBase -create the GeoDataBase
+            Setting geoDataBase table
+            No Need to reset the DataBase at least you dropped the table,
+            avoid to do that if you are not sure of what you are doing. 
         """
-        import  pycsamt.utils.func_utils as func 
+        from ..utils.funcutils import concat_array_from_list
         #set other attributes
         # create connection 
         # try : 
-        #     # call manage DB  so to connect geodataBse 
-        #     manage_geoDataBase =ManageDB(db_host=os.path.dirname(self.geoDataBase), 
+        #     # call DBSetting DB  so to connect geodataBse 
+        #     manage_geoDataBase =DBSetting(db_host=os.path.dirname(self.geoDataBase), 
         #                                  db_name ='memory.sq3')
         # except : pass 
         # if success is True  : 
@@ -916,10 +922,10 @@ class GeoDataBase (object):
         # get attribute from geoformation and #build new geo_formations _codes 
         geo_form_codes =[ getattr(geo_formation_obj, codehead) 
                          for codehead in new_codef ]
-        geo_form_codes =func.concat_array_from_list(geo_form_codes,
+        geo_form_codes =concat_array_from_list(geo_form_codes,
                                                     concat_axis=1)
         # generate other main columns of tables to fill laters 
-        geo_add_form_codes = func.concat_array_from_list(
+        geo_add_form_codes = concat_array_from_list(
             list_of_array = [ np.zeros((len(geo_formation_obj.codes),)), 
                             np.full((len(geo_formation_obj.codes),), 'none'), 
                             np.array([str (clsp) 
@@ -967,13 +973,15 @@ class DBSetting(object) :
     build a datable postgre Sql  from dict_app.py  simple way to make a transit
     between two objects One object dict_app to populate DataBase
         
-    Arguments
+    Parameters 
     ------------
-           **db_name** : str  
-               name of dataBase 
-           **db_host** : st 
-                path to database 
+    **db_name** : str  
+        name of dataBase 
+    **db_host** : st 
+         path to database 
 
+    Hold other additional informations: 
+        
     ====================  ==============  ==================================== 
     Attributes              Type            Explanation 
     ====================  ==============  ==================================== 
@@ -995,21 +1003,22 @@ class DBSetting(object) :
     ==========================  ===============================================
         
         
-    :Example: 
-        
-        >>> path= os.getcwd()
-        >>> nameofDB='memory.sq3'
-        >>> manDB=ManageDB(db_name=nameofDB, 
-        ...                   db_host=path)
-        ... print(SqlQ.sql_req[-1])
-        ... manDB.executeReq(SqlQ.sql_req[2])
-        ... ss=manDB.print_last_Query()
-        ... print(ss)
-        ... manDB.export_req(SqlQ.sql_req[-1],
-                             export_type='.csv')
-        ... manDB.dicT_sqlDB(dictTables=Glob.dicoT, 
-                           visualize_request=False)
-        """
+    Examples
+    ----------
+    >>> from watex.geology.database import DBSetting 
+    >>> path= os.getcwd()
+    >>> nameofDB='memory.sq3'
+    >>> manDB=DBSetting(db_name=nameofDB, 
+    ...                   db_host=path)
+    ... print(SqlQ.sql_req[-1])
+    ... manDB.executeReq(SqlQ.sql_req[2])
+    ... ss=manDB.print_last_Query()
+    ... print(ss)
+    ... manDB.export_req(SqlQ.sql_req[-1],
+                         export_type='.csv')
+    ... manDB.dicT_sqlDB(dictTables=Glob.dicoT, 
+                       visualize_request=False)
+    """
     def __init__(self, db_name =None, db_host=None): 
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         
@@ -1046,8 +1055,7 @@ class DBSetting(object) :
         if mess !='': 
             warnings.warn(mess)
             self._logging.error(mess)
-            # raise CSex.pyCSAMTError_SQL(mess )
-         
+
         # try to connect to de dataBase 
         if self.db_host is not None :
             try : 
@@ -1069,23 +1077,24 @@ class DBSetting(object) :
                 
         Parameters
         ----------
-        * dictTables : dict
-               Rely on dict_app.py module. it populates the  datababse 
-               from dictionnay app 
+        * dictTables: dict
+            Rely on dict_app.py module. it populates the  datababse 
+            from dictionnay app 
                
         Returns
         ---------
-          str 
-            execute queries from dict_app 
+        req: str 
+          Execute queries from dict_app 
             
-        :Example :
-            
-            >>>  mDB=GestionDB (dbname='memory.sq3, 
-            ...                   db_host =os.getcwd()')
-            >>> mDB.dicT_sqlDB(dicTables=Glob.dicoT,
-            ...                  visualize_request=False)
-            >>> ss=mB.print_last_query()
-            >>> print(ss)
+        Examples
+        -----------
+        >>> from watex.geology.database import DBSetting 
+        >>> mDB=DBSetting (dbname='memory.sq3, 
+        ...                   db_host =os.getcwd()')
+        >>> mDB.dicT_sqlDB(dicTables=Glob.dicoT,
+        ...                  visualize_request=False)
+        >>> ss=mB.print_last_query()
+        >>> print(ss)
         """
         visual_req=kwargs.pop('visualize_request', False)
         
@@ -1133,26 +1142,28 @@ class DBSetting(object) :
         
         Parameters  
         -----------
-        * query : str  
-                sql_query 
-        * param : str 
-                Default is None . 
+        * query: str  
+            sql_query 
+        * param: str 
+            Default is None . 
         
-        raise : 
+        raise 
         -------
-            layout the wrong sql queries . 
+            Layout of the wrong sql queries . 
             
-        return : 
+        return  
         -------
-         int  
-             1, the request has been successuful run .
+         True or False: int  
+             TWether the request has been successuful run  or not.
               
-        :Example: 
-            
-                >>>  for keys in Glob.dicoT.keys(): 
-                ...        reqst='select * from %s'%keys
-                >>>  ss=manageDB.executeReq(query=reqst)
-                >>>  print(ss)
+        Examples
+        -----------
+        >>> from watex.geology.database import DBSetting
+        >>> for keys in Glob.dicoT.keys(): 
+        ...        reqst='select * from %s'%keys
+        >>>  ss=DBSetting(dbname='memory.sq3, db_host =os.getcwd()'
+                          ).executeReq(query=reqst)
+        >>>  print(ss)
         """
         
         try :
@@ -1188,9 +1199,9 @@ class DBSetting(object) :
                 Must select if you need to drop all table. 
                 The default is False.
 
-        Raises
+        Note
         ------
-            Exception : Errors occurs ! .
+        Raise an exception of errors occurs. 
 
         """
         
@@ -1232,10 +1243,10 @@ class DBSetting(object) :
         """
         return the result of the previous query.
         
-        Parameters :
+        Parameters 
         ------------
-            * query_table_nam : str
-                name of table to fetch colounm data .
+        * query_table_nam : str
+            name of table to fetch colounm data .
         """
         if  column_name is not None :
             return self.curs.fetchone()
@@ -1258,20 +1269,22 @@ class DBSetting(object) :
         * kwargs : str
             Others parameters.
 
-        Raises
-        ------
-        Exception
-            Print wrong sqlrequests.
+        Returns
+        ----------
+        None: 
+            Print wrong SQL request messages. 
 
-        :Example:
-            
-            >>> from sqlrequests import SqlQ
-            >>> manageDB.executeReq(SqlQ.sql_req[2])
-            >>> ss=manageDB.print_last_Query()
-            >>> print(ss)
-            >>> manageDB.export_req(SqlQ.sql_req[-1],
-                                export_type='.csv',
-                                )
+        Example
+        ----------
+        >>> from watex.geology.database import DBSetting
+        >>> from sqlrequests import SqlQ
+        >>> DBSetting(dbname='memory.sq3, db_host =os.getcwd()
+                      ).executeReq(SqlQ.sql_req[2])
+        >>> ss=manageDB.print_last_Query()
+        >>> print(ss)
+        >>> manageDB.export_req(SqlQ.sql_req[-1],
+                            export_type='.csv',
+                            )
         """
         
         exportfolder=kwargs.pop('savefolder','savefiles')

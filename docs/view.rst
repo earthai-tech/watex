@@ -1290,8 +1290,373 @@ The code above gives the following output:
 
    * :ref:`sphx_glr_glr_examples_view_plot_model.py`
 
+
+Regression score plot: :func:`~watex.view.plot_reg_scoring`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`~watex.view.plot_reg_scoring` focuses on the regression model. It plots regressor learning curves with (root)mean squared error
+scorings. It uses the hold-out [5]_ cross-validation technique for score evaluation. A basic example using the :class:`~watex.exlib.sklearn.SVC` 
+is given below: 
+
+.. code-block:: python 
+
+	>>> import matplotlib.pyplot as plt 
+	>>> from watex.datasets import fetch_data 
+	>>> from watex.view.mlplot import plot_reg_scoring
+	>>> plt.style.use ('classic')  
+	>>> # Note that for the demo, we import SVC rather than LinearSVR since the 
+	>>> # problem of Bagoue dataset is a classification rather than regression.
+	>>> # if use regression instead, a convergence problem will occurs. 
+	>>> from watex.exlib.sklearn import SVC 
+	>>> X, y = fetch_data('bagoue analysed')# got the preprocessed and imputed data
+	>>> plot_kws = dict(fig_size =(7, 5 ), lc='blue', ls='-' , font_size =7.,lw=3) 
+	>>> svm =SVC() 
+	>>> _=plot_reg_scoring(svm, X, y, return_errors=True,**plot_kws )
+
+The figure below is the result of the code snippet implemented above: 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_reg_scorings.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_reg_scorings.html 
+   :align: center
+   :scale: 70% 
+   
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_reg_scoring.py`
+
+
+Model score plot: :func:`~watex.view.plot_model_scores`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`~watex.view.plot_model_scores`  uses cross-validation to get an estimation of model performance generalization. 
+It visualizes the fined tuned model scores vs the cross-validation to determine its performance. The function can 
+read multiple classifiers and accepts the different way of estimators' arrangements. Here are two examples of the 
+estimator arrangement before feeding to the function: 
+
+* Append each score to the model 
+  This is encouraged when we deal with a single model.
+ 
+
+.. code-block:: python 
+
+	>>> import matplotlib.pyplot as plt
+	>>> plt.style.use ('classic')
+	>>> from watex.exlib.sklearn import KNeighborsClassifier  
+	>>> from watex.view.mlplot import plot_model_scores
+	>>> import numpy as np 
+	>>> knn_model = KNeighborsClassifier() 
+	>>> y = 2 * np.linspace (0, 1e3, 400 ) + 12 * np.random.randn (400) # add randon noises 
+	>>> y =  np.sqrt (np.abs (y)) 
+	>>> fake_scores = (y- y.min()) / (y.max() -y.min() )  # normalize the scores
+	>>> # customize the base plot with plot params 
+	>>> plot_kws = dict(fig_size =(9, 6 ), 
+		lc='r', ls='-' , 
+		font_size =7., 
+		lw=3,
+		xlabel ='training samples', 
+		ylabel ='scores')
+	>>> plot_model_scores([(knn_model, fake_scores )], **plot_kws )
+	>>> # same as
+	>>> # plot_model_scores ([knn_model], scores = [fake_scores ] , **plot_kws) 
+	
+.. figure:: ../examples/auto_examples/view_mlplot_plot_model_scores.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_model_scores.html 
+   :align: center
+   :scale: 60% 
+
+* Plot multiple cross-validation scores
+
+.. code-block:: python
+
+	>>> from watex.exlib.sklearn import LogisticRegression, DecisionTreeClassifier , KNeighborsClassifier 
+	>>> from watex.view.mlplot import plot_model_scores
+	>>> import numpy as np
+	>>> log_model = LogisticRegression () 
+	>>> dc_model = DecisionTreeClassifier ()
+	>>> knn_model = KNeighborsClassifier() 
+	>>> y = np.sqrt(np.abs (2 * np.linspace (0, 1e3, 400 ) + 12 * np.random.randn (400)) )
+	>>> knn_scores = (y- y.min()) / (y.max() -y.min() )  # normalize the score 
+	>>> log_scores = np.abs (2 * np.linspace (0, 100, 400 ) +  1.5* np.random.randn (400)) **2
+	>>> log_scores = (log_scores- log_scores.min()) / (log_scores.max() -log_scores.min() )
+	>>> dc_scores = ( np.abs (4* np.linspace (0, 50, 400 ) +  np.random.randn (400)) ) 
+	>>> dc_scores = (dc_scores- dc_scores.min()) / (dc_scores.max() -dc_scores.min() )
+	>>> plot_kws = dict(
+		fig_size =(9, 6 ),
+		lc='r', ls='-' , 
+		font_size =7., 
+		lw=3, 
+		xlabel ='training samples', 
+		ylabel ='scores'
+		)
+	>>> plot_model_scores([knn_model, log_model, dc_model], 
+		scores = [knn_scores, log_scores, dc_scores ],   **plot_kws )
+		
+Here is the following output with the fake scores created for 400 samples. 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_model_scores_2.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_model_scores_2.html 
+   :align: center
+   :scale: 60% 
+
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_model_scores.py`
+
+
+Dendrogram plot: :func:`~watex.view.plotDendrogram`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   
+:func:`~watex.view.plotDendrogram` Visualizes the linkage matrix in the results of the dendrogram. 
+
+.. note:: 
+   :func:`~watex.view.plotDendrogram` does not work with categorical features. If data contain categorical features, they 
+   should be discarded instead. Moreover, if NaN is included in the data, they must be imputed otherwise an error will raise. 
+
+.. code-block:: python 
+
+	>>> import matplotlib.pyplot as plt; plt.style.use ("classic")
+	>>> from watex.datasets import load_hlogs 
+	>>> from watex.utils import naive_imputer # for impute NAN
+	>>> from watex.view import plotDendrogram
+	>>> data = load_hlogs ().frame
+	>>> data.drop (columns ='remark', inplace =True )
+	>>> data = naive_imputer (data ,mode='bi-impute')
+	>>> fig, axe = plt.subplots (1, 1, figsize =(14, 7) ) # dimension the axis 
+	>>> plotDendrogram (data , columns =['gamma_gamma', 'sp', 'resistivity'] ,ax = axe  ) # for three features 
+
+The output of the above code is below: 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_dendrogram.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_dendrogram.html 
+   :align: center
+   :scale: 50% 
+   
+Other example using the IRIS dataset ( :func:`~watex.datasets.load_iris` ) is given below: 
+
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_dendrogram.py`
+   
+   
+Dendrogram-heatmap plot: :func:`~watex.view.plotDendroheat`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`~watex.view.plotDendroheat` attaches the dendrogram to a heat map to ease of interpretation.  Sometimes, the hierarchical dendrogram is 
+often used in combination with a heat map which allows us to represent the individual value in a data array or matrix containing the 
+training examples with a color code. Here is a naive example using a random data 
+ 
+.. code-block:: python 
+
+	>>> import numpy as np; import pandas as pd 
+	>>> from watex.view.mlplot import plotDendroheat
+	>>> np.random.seed(123) 
+	>>> variables =['shape', 'type', 'power', 'sfi','magnitude', 'ohmS'] 
+	>>> labels =['FR0', 'FR1', 'FR2','FR3', 'FR4', 'FR5'] 
+	>>> X= np.random.random_sample ([6,6]) *10 
+	>>> df =pd.DataFrame (X, columns =variables, index =labels)
+	>>> plotDendroheat (df, cmap ='jet_r')
+
+Here is the following output. 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_dendro_heat.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_dendro_heat.html 
+   :align: center
+   :scale: 60% 
+
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_dendroheat.py`
+   
+
+Silhouette plot: :func:`~watex.view.plotSilhouette`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   
+:func:`~watex.view.plotSilhouette` quantifies the quality of clustering samples. Commonly the silhouette is used as a graphical tool 
+to plot a measure know how tightly is grouped the examples of the clusters. To calculate the silhouette coefficient, the three steps can be 
+basic guidance: 
+* calculate the **cluster cohesion**, :math:`a(i)`, as the average distance between examples, :math:`x^{(i)}`, and all the others points
+* calculate the **cluster separation**, :math:`b^{(i)}` from the next average distance between the example , :math:`x^{(i)}` amd all the example of nearest cluster 
+* calculate the silhouette, :math:`s^{(i)}`, as the difference between the cluster cohesion and separation divided by the greater of the two, as shown here: 
+  
+.. math:: 
+	
+	s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
+
+
+Here is a basic example using the :func:`~watex.datasets.load_hlogs` data: 
+
+.. code-block:: python 
+
+	>>> from watex.datasets import load_hlogs 
+	>>> from watex.view.mlplot import plotSilhouette
+	>>> from watex.utils import naive_imputer 
+	>>> # use 'natural_gamma', 'short_distance_gamma', 'resistivity', 'sp' for  demonstration
+	>>> data= load_hlogs().frame[['natural_gamma', 'short_distance_gamma', 'resistivity', 'sp']]  
+	>>> # inpute the NanN using the naive_imputer 
+	>>> data = naive_imputer (data, mode ='bi-impute')
+	>>> plotSilhouette (data, prefit =False) # 	will trigger fit method of K-Means-clustering 
+	
+	
+See the output below: 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_silhouette.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_silhouette.html 
+   :align: center
+   :scale: 60% 
+   
+
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_silhouette.py`
+
+Inspect single model: :func:`~watex.view.plotLearningInspection`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`~watex.view.plotLearningInspection` inspects the model through its learning curve. It generates 3 plots: the test and training 
+learning curve, the training samples vs fit times curve, and the fit times vs score curve. Here is a concrete example using the 
+pre-trained model of :class:`~watex.exlib.sklearn.AdaBoostClassifier` fetched from dumped pre-trained model :class:`~watex.models.premodels.p`. 
+
+.. code-block:: python 
+
+	>>> from watex.datasets import fetch_data
+	>>> from watex.models.premodels import p 
+	>>> from watex.view.mlplot import plotLearningInspection 
+	>>> # import sparse  matrix from Bagoue datasets 
+	>>> X, y = fetch_data ('bagoue prepared') 
+	>>> # import the  AdabostClassifier from pretrained models 
+	>>> plotLearningInspection (p.AdaBoost.best_estimator_  , X, y )
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_single_inspection.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_single_inspection.html 
+   :align: center
+   :scale: 60% 
+   
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_model_inspection.py`
+
+
+Inspect multiple models: :func:`~watex.view.plotLearningInspections`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`~watex.view.plotLearningInspections` inspects multiple models from their learning curves. It plots the model learning curves, 
+the training samples vs fit times curve, and the fit times vs score curve for each model. Here is an example of 
+two :class:`~watex.exlib.sklearn.ExtraTreeClassifier` and :class:`watex.exlib.sklearn.VotingClassifier` models fetched from 
+dumped pre-trained object (:class:`~watex.models.premodels.p` of :mod:`~watex.models.premodels` module. 
+
+.. code-block:: python 
+
+	>>> from watex.datasets import fetch_data
+	>>> from watex.models.premodels import p 
+	>>> from watex.view.mlplot import plotLearningInspections 
+	>>> # import sparse  matrix from Bagoue dataset 
+	>>> X, y = fetch_data ('bagoue prepared') 
+	>>> # import the two pretrained models from pre-trained modules  
+	>>> models = [p.ExtraTrees.best_estimator_  , p.Voting.best_estimator_ ]
+	>>> plotLearningInspections (models , X, y, ylim=(0.7, 1.01) )
+
+
+Here is the following output: 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_multiple_inspections.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_multiple_inspections.html 
+   :align: center
+   :scale: 70% 
+   
+See other examples using the SVM below:
+
+.. topic:: Examples:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_learning_inspections.py`
+
+Matrix-show plot: :func:`~watex.view.plot_matshow`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`~watex.view.plot_matshow` visualizes data in a matrix representation. Here is a basic geological example with 
+a generated flow rate data.
+
+.. code-block:: python 
+
+	>>> import numpy as np
+	>>> from watex.view.mlplot import plot_matshow 
+	>>> matshow_kwargs ={
+		'aspect': 'auto',
+		'interpolation': None,
+	   'cmap':'magma', 
+			}
+	>>> baseplot_kws ={'lw':3, 
+			   'lc':(.9, 0, .8), 
+			   'font_size':10., 
+				'cb_format':None,
+				#'cb_label':'Rate of prediction',
+				'xlabel': 'Predicted flow classes',
+				'ylabel': 'Geological rocks',
+				#'rotate_xlabel':45, 
+				'font_weight':None,
+				'tp_labelbottom':False,
+				'tp_labeltop':True,
+				'tp_bottom': False, 
+				'fig_size': (12, 12 ), 
+				}
+	>>> labelx =['FR0', 'FR1', 'FR2', 'FR3', 'Rates'] 
+	>>> labely =['VOLCANO-SEDIM. SCHISTS', 'GEOSYN. GRANITES', 
+				 'GRANITES', 'MIGMATITES-GNEISS', 'Rates']
+	>>> array2d = np.array([(1. , .5, 1. ,1., .9286), 
+						(.5,  .8, 1., .667, .7692),
+						(.7, .81, .7, .5, .7442),
+						(.667, .75, 1., .75, .82),
+						(.9091, 0.8064, .7, .8667, .7931)])
+	>>> plot_matshow(array2d, labelx, labely, matshow_kwargs, **baseplot_kws )
+	
+.. figure:: ../examples/auto_examples/view_mlplot_plot_matshow.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_matshow.html 
+   :align: center
+   :scale: 50% 
+   
+.. topic:: Examples:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_matshow.py`
+   
+
+Bivariate PCA plot: :func:`~watex.view.biPlot`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:func:`~watex.view.biPlot` visualizes all-in-one for PCA analysis. There is an implementation in R but there is no 
+standard implementation in Python. Here is an example: 
+
+.. note:: 
+    :func:`~watex.view.biPlot`  accepts as the first parameter the :class:`~watex.view.mlplot.pobj` of :class:`~watex.property.BasePlot`. 
+	You may first need to call the object and secondly feed the :math:`X` and remaining arguments.  Moreover the Default 
+	:class:`~watex.property.BasePlot` cannot be instanced so, the user must call the shadow object :class:`~watex.view.mlplot.pobj` for 
+	plotting as:: 
+	
+		>>> from watex.view import pobj 
+		
+The following example will illustrate how to implement the bivariate plot. 
+
+.. code-block:: python 
+
+	>>> from watex.analysis import nPCA
+	>>> from watex.datasets import fetch_data
+	>>> from watex.view import biPlot, pobj  # pobj is Baseplot instance 
+	>>> X, y = fetch_data ('bagoue pca' )  # fetch pca data 
+	>>> pca= nPCA (X, n_components= 2 , return_X= False ) # return PCA object 
+	>>> components = pca.components_ [:2, :] # for two components 
+	>>> # to change for instance line width (lw) or style (ls) use *pobj*. Here 
+	>>> # we will change the fontsize and set the x and y labels 
+	>>> pobj.font_size =7.
+	>>> pobj.xlabel ='axis1: PC1'; pobj.ylabel='axis2: PC2'
+	>>> biPlot (pobj, pca.X, components , y ) # pca.X is the reduced dim X 
+
+.. figure:: ../examples/auto_examples/view_mlplot_plot_bivariate.png 
+   :target: ../examples/auto_examples/view_mlplot_plot_bivariate.html 
+   :align: center
+   :scale: 90% 
+   
+.. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_biplot.py`
+
+   
+   
 .. topic:: References 
-	.. [1] Bengfort, B., & Bilbro, R., 2019. Yellowbrick: Visualizing the scikit-learn model. Journal of Open Source Software, 4( 35 ), 1075. https://doi.org/10.21105/joss.01075
-	.. [2] Mel, E.A.C.T., Adou, D.L., Ouattara, S., 2017. Le programme presidentiel d’urgence (PPU) et son impact dans le departement de Daloa (Cote d’Ivoire). Rev. Géographie Trop. d’Environnement 2, 10.
-	.. [3] Mobio, A.K., 2018. Exploitation des systèmes d’Hydraulique Villageoise Améliorée pour un accès durable à l’eau potable des populations rurales en Côte d’Ivoire : Quelle stratégie ? Institut International d’Ingenierie de l’Eau et de l’Environnement.
-	.. [3] Kouadio, K.L., Loukou, N.K., Coulibaly, D., Mi, B., Kouamelan, S.K., Gnoleba, S.P.D., Zhang, H., XIA, J., 2022. Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resour. Res. 1–33. https://doi.org/10.1029/2021wr031623
+
+   .. [1] Bengfort, B., & Bilbro, R., 2019. Yellowbrick: Visualizing the scikit-learn model. Journal of Open Source Software, 4( 35 ), 1075. https://doi.org/10.21105/joss.01075
+   .. [2] Mel, E.A.C.T., Adou, D.L., Ouattara, S., 2017. Le programme presidentiel d’urgence (PPU) et son impact dans le departement de Daloa (Cote d’Ivoire). Rev. Géographie Trop. d’Environnement 2, 10.
+   .. [3] Mobio, A.K., 2018. Exploitation des systèmes d’Hydraulique Villageoise Améliorée pour un accès durable à l’eau potable des populations rurales en Côte d’Ivoire : Quelle stratégie ? Institut International d’Ingenierie de l’Eau et de l’Environnement.
+   .. [4] Kouadio, K.L., Loukou, N.K., Coulibaly, D., Mi, B., Kouamelan, S.K., Gnoleba, S.P.D., Zhang, H., XIA, J., 2022. Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resour. Res. 1–33. https://doi.org/10.1029/2021wr031623
+   .. [5] Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., et al. (2011) Scikit-learn: Machine learning in Python. J. Mach. Learn. Res., 12, 2825–2830.

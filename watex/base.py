@@ -369,14 +369,16 @@ class Data:
         >>> Data().fit(data).profilingReport()
         
         """
-        if data is not None: 
-            self.data = data 
-            
-        extra_msg =("'Data.profilingReport' method uses 'pandas_profiling'"
+        extra_msg =("'Data.profilingReport' method uses 'pandas-profiling'"
                     " as a dependency.")
         import_optional_dependency("pandas_profiling", extra=extra_msg ) 
+
+        self.inspect
+        
+        self.data = data or self.data 
+
         try : 
-           import pandas_profiling 
+           from pandas_profiling import ProfileReport
         except ImportError:
             
             msg=(f"Missing of 'pandas_profiling package. {extra_msg}"
@@ -385,10 +387,7 @@ class Data:
             warn(msg)
             raise ImportError (msg)
 
-        self.inspect 
-        pandas_profiling.ProfilingReport( self.data , **kwd)
-             
-        return self 
+        return ProfileReport( self.data , **kwd)
     
     def rename (self, 
                 data: str | DataFrame= None, 

@@ -195,8 +195,9 @@ def make_scedastic_data (
         n_samples= 1000, n_features=50, rank =  10, sigma=1., 
         random_state =42
    ): 
-    """ Generate a sampling data for probabilistic PCA and Factor Analysis 
-    model comparison 
+    """ Generate a sampling data for probabilistic PCA and Factor Analysis for  
+    model comparison. 
+    
     By default: 
         nsamples    = 1000 
         n_features  = 50  

@@ -25,6 +25,8 @@ User Guide
    cases.rst 
    datasets.rst 
    methods.rst 
+   utils.rst
    view.rst
+   glossary.rst
 
 

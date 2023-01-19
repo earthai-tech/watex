@@ -97,6 +97,25 @@ else:
     from . import _build  # noqa: F401
     #from .utils._show_versions import show_versions
 
+    __all__=[
+        "exlib",
+        "analysis", 
+        "cases", 
+        "datasets", 
+        "externals", 
+        "geology", 
+        "methods", 
+        "models", 
+        "utils", 
+        "view", 
+        "base", 
+        "cli", 
+        "edi", 
+        "property", 
+        "metrics", 
+        "site", 
+        "transformers"
+        ]
 
 def setup_module(module):
     """Fixture for the tests to assure globally controllable seeding of RNGs"""
