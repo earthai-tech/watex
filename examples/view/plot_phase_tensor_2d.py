@@ -20,7 +20,6 @@ plot_kws = dict( ylabel = '$Log_{10}Frequency [Hz]$',
 						cb_label= '$Phase [\degree]$' , 
 						fig_size =(6, 3), 
 						font_size =7.,
-						plt_style ='imshow',  
 						) 
 t= TPlot(component='yx', **plot_kws).fit(edi_data)
 # plot recovery2d using the log10 resistivity 
