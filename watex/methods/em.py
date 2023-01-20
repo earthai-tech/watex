@@ -3,28 +3,9 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 
 """
-Module EM 
-==========
-
-The EM module is related for a few meter exploration in the case of groundwater 
-exploration. Module provides some basics processing steps for EMAP data filtering
-and remove noises. Commonly the methods mostly used in the groundwater 
-exploration is the audio-magnetoteluric because of the shortest frequency 
-and rapid executions. Furthermore, we can also list some other advantages 
-such as: 
-
-* is useful for imaging both deep geologic structure and near-surface 
-  geology and can provide significant details. 
-* includes a backpack portable system that allows for use in difficult terrain. 
-* the technique requires no high-voltage electrodes, and logistics 
-  are relatively easy to support in the field. Stations can be acquired 
-  almost anywhere and can be placed any distance apart. This allows for
-  large-scale regional reconnaissance exploration or detailed surveys of 
-  local geology and has no environmental impact 
-
-:note: For deep implementation or explorating a large scale of EM/AMT data  
-    processing, it is recommended to use the package `pycsamt`_. 
-    
+:mod:`~watex.methods.em` module is related for a few meter exploration in 
+the case of groundwater exploration. Module provides some basics processing 
+steps for EMAP data filtering and remove noises. 
 """
 from __future__ import annotations 
 import os
@@ -684,9 +665,10 @@ class EM(IsEdi):
         kind:str = 'complex' , 
         **kws 
         )-> NDArray[DType[float]]: 
-        """ Out 2D resistivity, phase (error) and tensor matrix from EDI-collection
-        objects. Matrix for number of frequency x number of sites. 
+        """ Out 2D resistivity, phase-error and tensor matrix from a collection
+        of EDI-objects. 
         
+        Matrix depends of the number of frequency times number of sites. 
         The function asserts whether all data from all frequencies are available. 
         The missing values should be filled by NaN. 
         
@@ -1395,7 +1377,7 @@ class Processing (EM) :
     def flma (
         self, 
         )-> NDArray[DType[float]] :
-        """ Use a fixed-length-moving-average filter to estimate average apparent
+        """ A fixed-length-moving-average filter to estimate average apparent
         resistivities at a single static-correction-reference frequency. 
         
         The FLMA filter estimates static-corrected apparent resistivities at a 
@@ -1865,7 +1847,7 @@ class Processing (EM) :
         freq: ArrayLike[DType[T]], 
         buffer:Optional[Tuple[float]] = None 
         )-> ArrayLike[DType[T]] :
-        """ Assert the frequency buffer and find the nearest value if the 
+        """ Assert buffer and find the nearest value if the 
         value of the buffer is not in frequency ranges .
         
         :param freq: array-like of frequencies 
@@ -2027,12 +2009,13 @@ class Processing (EM) :
 
 
     @_zupdate(option = 'write')
-    def getValidData(
+    def getValidTensors(
         self, 
         tol:float = .5 ,  
         **kws 
         )-> NDArray[DType[complex]]: 
-        """ Rewrite EDI and get the valid data.  
+        """Select valid tensors from tolerance threshold and write EDI if 
+        applicable.
         
         Function analyzes the data and keep the good ones. The goodness of the data 
         depends on the  `threshold` rate.  For instance 50% means to consider an 
@@ -2066,10 +2049,10 @@ class Processing (EM) :
         >>> f= pObj.freqs_
         >>> len(f) 
         ... 55
-        >>> zObjs_soft = pObj.getValidData (tol= 0.3, option='None' ) # None doesn't export EDI-file
+        >>> zObjs_soft = pObj.getValidTensors (tol= 0.3, option='None' ) # None doesn't export EDI-file
         >>> len(zObjs_soft[0]._freq) # suppress 3 tensor data 
         ... 52 
-        >>> zObjs_hard  = pObj.getValidData(p.ediObjs_, tol = 0.6 )
+        >>> zObjs_hard  = pObj.getValidTensors(p.ediObjs_, tol = 0.6 )
         >>> len(zObjs_hard[0]._freq)  # suppress only two 
         ... 53
         

@@ -3,7 +3,7 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 
 """
-Is A set of utilities that deal with geological rocks, strata and 
+Is a set of utilities that deal with geological rocks, strata and 
 stratigraphic details for log construction. 
 """
 import os

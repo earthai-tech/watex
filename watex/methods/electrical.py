@@ -2,7 +2,12 @@
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created date: Thu Apr 14 17:45:55 2022
-
+"""
+:mod:`~watex.methods.electrical` computes some DC parameters from ERP and VES. 
+From these parameters, it provides intelligent methods to propose the 
+right place to locate a drill and predicts the flow rate before any drilling 
+operations.
+"""
 from __future__ import annotations 
 import os 
 import re 

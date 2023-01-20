@@ -987,8 +987,7 @@ class Edi :
         return edi_fn
     
 Edi.__doc__="""\
-EDI stands for Electrical Data Interchange module can read and write an *.edi 
-file as the 'standard ' proposed by [1]_.
+Electrical Data Interchange class. 
 
 Each section of the .edi file belongs to a class object, thus the elements of 
 each section are attributes for easy access. Edi is outputted  following 

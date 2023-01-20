@@ -24,7 +24,7 @@ import sys
 import logging 
 import random
  
-__version__='0.1.3' ; __author__= 'L.Kouadio'
+__version__='0.1.4' ; __author__= 'L.Kouadio'
 
 # set the package name 
 # for consistency ckecker 

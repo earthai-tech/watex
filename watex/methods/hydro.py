@@ -4,15 +4,9 @@
 #   Created date: Sep 19 09:04:21 2022
 
 """
-Hydrogeological module 
-========================
-Hydrogeological parameters of aquifer are the essential and crucial basic data 
-in the designing and construction progress of geotechnical engineering and 
-groundwater dewatering, which are directly related to the reliability of these 
-parameters.
-
-Created on Mon Sep 19 09:04:21 2022
-
+:mod:`~watex.methods.hydro` computes Hydrogeological parameters of aquifer 
+that are the essential and crucial basic data in the designing and 
+construction progress of geotechnical engineering and groundwater dewatering. 
 """
 
 from __future__ import ( 
