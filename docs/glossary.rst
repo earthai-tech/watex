@@ -24,7 +24,7 @@ Abbreviations
 		Pseudo-fracturing index 
 	VES
 		Vertical Electrical Sounding 
-	ERP:
+	ERP
 		Electrical Resistivity Profiling 
 	MT 
 		Magnetetolluric 
@@ -867,7 +867,8 @@ Core parameters
 		The core functionality of some estimators may also be available as a
 		``function``.
 
-	cv: float,    
+	cv
+		float,    
 		A cross validation splitting strategy. It used in cross-validation based 
 		routines. cv is also available in estimators such as multioutput. 
 		ClassifierChain or calibration.CalibratedClassifierCV which use the 
@@ -907,7 +908,7 @@ Core parameters
 		complement of the train size. If ``train_size`` is also None, it will
 		be set to 0.25.    
 
-	n_jobs: 
+	n_jobs 
 		int, 
 		is used to specify how many concurrent processes or threads should be 
 		used for routines that are parallelized with joblib. It specifies the maximum 
@@ -925,7 +926,7 @@ Core parameters
 		Note that even if n_jobs=1, low-level parallelism (via Numpy and OpenMP) 
 		might be used in some configuration.  
 
-	verbose:
+	verbose
 		int, `default` is ``0``    
 		Control the level of verbosity. Higher value lead to more messages. 
 

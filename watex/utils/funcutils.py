@@ -786,7 +786,7 @@ def check_dimensionality(obj, data, z, x):
 
 
 def smart_format(iter_obj, choice ='and'): 
-    """ Smart format iterable ob.
+    """ Smart format iterable object.
     
     :param iter_obj: iterable obj 
     :param choice: can be 'and' or 'or' for optional.
@@ -1628,7 +1628,9 @@ def serialize_data(
     return os.path.join(savepath, filename) 
     
 def load_serialized_data (filename, verbose=0): 
-    """ Load data from dumped file.
+    """
+    Load data from dumped file.
+    
     :param filename: str or path-like object 
         Name of dumped data file.
     :return: Data reloaded from dumped file.
@@ -1984,8 +1986,9 @@ def find_position_bounds(
         dl=10.
         ):
     """
-    Find station position boundary indexed in |ERP| line. Usefull 
-    to get the boundaries indexes `pk_boun_indexes` for |ERP| 
+    Find station position boundary indexed in |ERP| line. 
+    
+    Useful to get the boundaries indexes `pk_boun_indexes` for |ERP| 
     normalisation  when computing `anr` or else. 
     
     .. |ERP| replace:: Electrical Resistivity Profiling
@@ -2722,7 +2725,7 @@ def get_params (obj: object
 
 
 def fit_by_ll(ediObjs): 
-    """ Fit edi by location and reorganize EDI (sort EDI) according to the site  
+    """ Fit EDI by location and reorganize EDI according to the site  
     longitude and latitude coordinates. 
     
     EDIs data are mostly reading in an alphabetically order, so the reoganization  
@@ -3378,6 +3381,7 @@ def cparser_manager (cfile,
                      todo:str ='load', dpath=None,
                      verbose =0, **pkws): 
     """ Save and output message according to the action. 
+    
     :param cfile: name of the configuration file
     :param savepath: Path-like object 
     :param dpath: default path 
@@ -3399,6 +3403,7 @@ def get_config_fname_from_varname(data,
                                   config_fname=None,
                                   config='.yml') -> str: 
     """ use the variable name given to data as the config file name.
+    
     :param data: Given data to retrieve the variable name 
     :param config_fname: Configurate variable filename. If ``None`` , use 
         the name of the given varibale data 
@@ -3496,6 +3501,7 @@ def pretty_printer(
  
 def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
     """ Move file to its savepath and output message. 
+    
     If path does not exist, should create one to save data.
     :param cfile: name of the configuration file
     :param savepath: Path-like object 
@@ -4122,7 +4128,7 @@ def map_specific_columns (
         return  X0   
     
 def is_depth_in (X, name, columns = None, error= 'ignore'): 
-    """ assert wether depth exists in the columns.  If name is an 
+    """ Assert wether depth exists in the columns.  If name is an 
     integer value, it assumes to be the index in the columns of the dataframe
     if not exist , a warming will be show to user. 
     

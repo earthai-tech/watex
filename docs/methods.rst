@@ -20,6 +20,8 @@ For the first release three main methods are implemented:
 	it focuses on computing hydrogeology parameters such as permeability coefficient k, finding the aquifer group similarities, and managing the logging data indispensable in hydrogeological exploration ([6]_,[8]_). Genuinely, logging technology distinguishes the properties of rock and fluid by measuring the physical property of heat, sound, and electricity in the borehole compared to other geophysical methods ([5]_, 10]_). Thanks to the mixture learning strategy (MXS) implemented by watex, the combination of both methods infers the relationship between the logging data and the hydrogeological parameters thereby minimizing the numerous pumping test failures and reducing the useless boreholes.
 
 
+.. _dc_resistivity: 
+
 DC-Resistivity 
 ================
 
@@ -281,13 +283,32 @@ following examples will illustrate the literature above:
 	site2  200.0  20.0  schlumberger  ...       100   268.087715      2
 	site3  200.0  20.0  schlumberger  ...       100  1183.364102      2
 	
+.. _em: 
+
 EM  
 =======
 
 :mod:`~watex.methods.em` module is related to a few meter exploration in the case of groundwater 
 exploration(GWE). The module provides some basic processing steps for EMAP data filtering
-and removing noises. Commonly the method mostly used in groundwater exploration is the audio-magnetotelluric because of the shortest frequency and rapid executions. Note that for deep implementation especially for long-period data, or exploring a large scale of EM/AMT data  
-processing, it is recommended to visit other the package `pycsamt`_ , `MTpy`_, `razorback`_ or `MTnet`_ website.  :code:`watex` can also read EDI objects created from the first both packages. 
+and removing noises. Commonly the method mostly used in groundwater exploration is the audio-magnetotelluric because of 
+the shortest frequency and rapid executions. Furthermore, we can also list some other advantages 
+such as: 
+
+* is useful for imaging both deep geologic structure and near-surface 
+  geology and can provide significant details. 
+* includes a backpack portable system that allows for use in difficult terrain. 
+* the technique requires no high-voltage electrodes, and logistics 
+  are relatively easy to support in the field. Stations can be acquired 
+  almost anywhere and can be placed any distance apart. This allows for
+  large-scale regional reconnaissance exploration or detailed surveys of 
+  local geology and has no environmental impact 
+  
+.. note::
+   
+   Note that for deep implementation especially for long-period data, or exploring a large scale of EM/AMT data 
+   processing, it is recommended to visit other the package `pycsamt`_ , `MTpy`_, `razorback`_ or `MTnet`_ website.  
+   :code:`watex` can also read EDI objects created from the first both packages. 
+  
 
 .. _pycsamt: https://github.com/WEgeophysics/pycsamt
 .. _MTpy: https://github.com/MTgeophysics/mtpy
@@ -523,6 +544,7 @@ the method :meth:`~watex.methods.em.Processing.exportedis` that exports the new 
 after updating tensor using the decorator :class:`~watex.methods.em._zupdate` by triggering 
 the `option` parameter to ``write``. 
 
+.. _hydrogeology: 
 
 Hydrogeology 
 ==============

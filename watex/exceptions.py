@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """ 
-Package exceptions 
+List of :code:`watex` exceptions for warning users. 
 """
 class ArgumentError(Exception): 
     """

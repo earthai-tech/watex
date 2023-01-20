@@ -59,7 +59,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
 **User guide:** See the :ref:`bases <base>` section for further details.
 
 Classes
-~~~~~~~~~~~~
+~~~~~~~~~~~
 
 .. currentmodule:: watex
 
@@ -77,7 +77,7 @@ Classes
    base.SequentialBackwardSelection
 
 Functions
-~~~~~~~~~~~~
+~~~~~~~~~~
 
 .. currentmodule:: watex
 
@@ -92,7 +92,7 @@ Functions
 .. _cases_ref:
 
 :mod:`watex.cases`: Case Histories
-==================================================
+===================================
 
 .. automodule:: watex.cases
    :no-members:
@@ -228,7 +228,7 @@ Functions
    :no-members:
    :no-inherited-members:
 
-classes 
+Classes 
 ~~~~~~~~~
 
 .. currentmodule:: watex
@@ -261,14 +261,14 @@ Functions
 .. _geology_ref:
 
 :mod:`watex.geology`: Geology 
-===============================================
+================================
 
 .. automodule:: watex.geology
    :no-members:
    :no-inherited-members:
 
 Classes 
-~~~~~~~~~~~~
+~~~~~~~~
 
 .. currentmodule:: watex
 
@@ -309,6 +309,9 @@ Functions
    :no-members:
    :no-inherited-members:
 
+Classes 
+~~~~~~~~~~~~
+
 **User guide:** See the :ref:`methods <methods>` section for further details.
 
 .. currentmodule:: watex
@@ -331,9 +334,89 @@ Functions
    methods.ResistivityProfiling
    methods.VerticalSounding
 
+
+Functions
+~~~~~~~~~~~~~~~
+
+:mod:`~watex.methods.electrical`: DC-Resistivity 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: watex.methods.electrical 
+   :no-members:
+   :no-inherited-members:
+
+**User guide:** See the :ref:`DC-resistivity <dc_resistivity>` section for further details.
+
+.. currentmodule:: watex
+
 .. autosummary::
    :toctree: generated/
    :template: function.rst
+
+	methods.electrical.DCProfiling.summary 
+	methods.electrical.DCSounding.summary 
+	methods.electrical.ResistivityProfiling.summary 
+	methods.electrical.ResistivityProfiling.plotAnomaly 
+	methods.electrical.VerticalSounding.summary 
+	methods.electrical.VerticalSounding.plotOhmicArea
+    methods.electrical.VerticalSounding.invert 	
+
+:mod:`~watex.methods.em`: EM - EMAP: short-periods Processing 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+.. automodule:: watex.methods.em 
+   :no-members:
+   :no-inherited-members:
+
+**User guide:** See the :ref:`EM tensors processing <em>` section for further details.
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+	methods.em.EM.rewrite 
+	methods.em.EM.getfullfrequency 
+	methods.em.EM.make2d 
+	methods.em.EM.getreferencefrequency 
+	methods.em.EM.exportedis
+	methods.em.Processing.tma 
+	methods.em.Processing.flma 
+	methods.em.Processing.ama 
+	methods.em.Processing.skew 
+	methods.em.Processing.zrestore 
+	methods.em.Processing.freqInterpolation 
+	methods.em.Processing.controlFrequencyBuffer 	
+	methods.em.Processing.qc 
+	methods.em.Processing.getValidTensors 
+
+:mod:`~watex.methods.hydro`: Hydrogeology 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+.. automodule:: watex.methods.hydro 
+   :no-members:
+   :no-inherited-members:
+
+**User guide:** See the :ref:`hydrogeology <hydrogeology>` section for further details.
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+	methods.hydro.HData.squeeze_data 
+	methods.hydro.HData.get_base_stratum 
+	methods.hydro.AqSection.findSection 
+	methods.hydro.MXS.predictNGA 
+	methods.hydro.MXS.makeyMXS 
+	methods.hydro.MXS.labelSimilarity 
+	methods.hydro.Logging.plot 
+	methods.hydro.AqGroup.findGroups 
+	
+Refer to :mod:`~watex.utils.hydroutils` to get many other utilities 
+for hydro-parameters calculation. 
 
 .. _metrics_ref:
 
@@ -475,7 +558,7 @@ Functions
    :no-members:
    :no-inherited-members:
 
-**User guide:** See the :ref:`methods <utils>` section for further details.
+**User guide:** See the :ref:`utilities <utilities>` section for further details.
 
 .. currentmodule:: watex
 
@@ -657,6 +740,69 @@ Functions
 	utils.coreutils.is_erp_series
 	utils.coreutils.is_erp_dataframe
 	utils.coreutils.parseDCArgs
+
+
+:mod:`~watex.utils.funcutils`: Other utilities 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The section exposes some additional tools expected to be 
+useful for manipulating data or to be incorporated to
+a third-party Python package. The list is not exhaustive. Get more 
+utilities by consulting the whole :mod:`~watex.utils.funcutils` module. 
+
+.. automodule:: watex.utils.funcutils
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+	utils.funcutils.is_depth_in
+	utils.funcutils.map_specific_columns
+	utils.funcutils.find_by_regex
+	utils.funcutils.is_in_if
+	utils.funcutils.to_hdf5
+	utils.funcutils.sanitize_frame_cols
+	utils.funcutils.str2columns
+	utils.funcutils.random_state_validator
+	utils.funcutils.move_cfile
+	utils.funcutils.pretty_printer
+	utils.funcutils.get_config_fname_from_varname
+	utils.funcutils.cparser_manager
+	utils.funcutils.parse_yaml
+	utils.funcutils.return_ctask
+	utils.funcutils.parse_csv
+	utils.funcutils.fetch_json_data_from_url
+	utils.funcutils.parse_json
+	utils.funcutils.assert_doi
+	utils.funcutils.station_id
+	utils.funcutils.concat_array_from_list
+	utils.funcutils.show_stats
+	utils.funcutils.make_ids
+	utils.funcutils.fit_by_ll
+	utils.funcutils.fillNaN
+	utils.funcutils.find_close_position
+	utils.funcutils.make_arr_consistent
+	utils.funcutils.ismissing
+	utils.funcutils.reshape
+	utils.funcutils.save_job
+	utils.funcutils.load_serialized_data
+	utils.funcutils.serialize_data
+	utils.funcutils.sanitize_unicode_string
+	utils.funcutils.cpath
+	utils.funcutils.smart_format
+	utils.funcutils.read_from_excelsheets
+	utils.funcutils.accept_types
+	utils.funcutils.smart_strobj_recognition
+	utils.funcutils.is_installing
+	utils.funcutils.shrunkformat
+	utils.funcutils.url_checker
+	utils.funcutils.parse_attrs
+	utils.funcutils.listing_items_format
+	
 	
 :mod:`~watex.utils.geotools`: Geology utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
