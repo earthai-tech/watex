@@ -2,7 +2,7 @@
 
 -----------------------------------------------------
 
-# *WATex*: A machine learning research package in hydro-geophysics
+# *WATex*: machine learning research in hydro-geophysics
 
 ### *Life is much better with potable water*
 
@@ -14,7 +14,7 @@
 
 ##  Mission and Goals
 
-**_WATex_** is a Python  package for reducing numerous losses during the hydro-geophysical exploration projects.
+**_WATex_** is a Python  library for reducing numerous losses during the hydro-geophysical exploration projects.
   Its mission is to bring a piece of solution in a wide program of  **_WATER4ALL_** such 
    as participating in [Sustanaible Development Goals N6](https://www.un.org/sustainabledevelopment/development-agenda/) and [Africa Agenda 2063 N1](https://au.int/en/agenda2063/flagship-projects#)  achievements. It's mainly focused on the field of groundwater exploration. 
    It encompasses the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short periods EM, geology and hydrogeology methods combined with the machine learning approaches to: 
@@ -28,7 +28,7 @@ It contributes to minimize the numerous unsucessfull drillings, unsustainable bo
 
 ## Documentation 
 
-Visit the [package website](https://watex.readthedocs.io/en/latest/) for more resources. You can also quick browse the software [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
+Visit the [library website](https://watex.readthedocs.io/en/latest/) for more resources. You can also quick browse the software [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
 and flip through the [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html) to see some of expected results. Furthermore, the 
 [step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/applications/index.html#applications-step-by-step-guide) is elaborated for real-world engineering problems such as computing DC parameters and predicting the k-parameter. For deep implementation, consult the [user guide](https://watex.readthedocs.io/en/latest/user_guide.html) instead. A tangible example using watex can be found in the published [case history](https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623) paper.
 To conclude, a [wiki page](https://github.com/WEgeophysics/watex/wiki) can also be visited for more curiosity.
