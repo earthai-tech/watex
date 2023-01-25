@@ -688,7 +688,8 @@ Functions
 	utils.plotutils.make_mpl_properties
 	utils.plotutils.resetting_colorbar_bound
 	utils.plotutils.get_color_palette
-	utils.plotutils.plot_bar 
+	utils.plotutils.plot_bar
+	utils.plotutils.plot_profiling
 	
 :mod:`~watex.utils.exmath`: Additional math-utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -703,25 +704,26 @@ Functions
    :toctree: generated/
    :template: function.rst
 
-	utils.exmath.d_hanning_window
 	utils.exmath.betaj
-	utils.exmath.savitzky_golay1d 
+	utils.exmath.compute_lower_anomaly
+	utils.exmath.d_hanning_window
+	utils.exmath.define_anomaly
+	utils.exmath.define_conductive_zone
+	utils.exmath.detect_station_position
 	utils.exmath.dummy_basement_curve
 	utils.exmath.find_limit_for_integration
 	utils.exmath.find_bound_for_integration
 	utils.exmath.fitfunc
-	utils.exmath.invertVES
-	utils.exmath.detect_station_position
-	utils.exmath.convert_distance_to_m
-	utils.exmath.get_station_number 
-	utils.exmath.define_conductive_zone
-	utils.exmath.compute_anr
-	utils.exmath.compute_lower_anomaly
-	utils.exmath.select_anomaly
-	utils.exmath.define_anomaly 
+	utils.exmath.get_anomaly_ratio
 	utils.exmath.get_profile_angle
+	utils.exmath.get_station_number 
+	utils.exmath.invertVES
+	utils.exmath.plot_sfi
 	utils.exmath.savgol_coeffs
 	utils.exmath.savgol_filter
+	utils.exmath.savitzky_golay1d 
+	utils.exmath.select_anomaly
+
 	
 :mod:`~watex.utils.coreutils`: Additional core-utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
