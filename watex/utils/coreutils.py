@@ -46,7 +46,7 @@ from ..exceptions import (
     ResistivityError,
     ERPError,
     VESError, 
-    FileHandlingError, 
+    FileHandlingError
 )
 from .funcutils import (
     smart_format as smft,
@@ -264,12 +264,36 @@ def fill_coordinates(
     utm_zone : string
             zone number and 'S' or 'N' e.g. '55S'. Defaults to the
             centre point of the provided points
+    verbose: int,default=0 
+        warning user if UTMZONE is not supplied when computing the 
+        latitude/longitude from easting/northing 
+    
                     
     Returns 
     ------- 
         - `data`: Dataframe with new coodinates values computed 
         - `utm_zone`: zone number and 'S' or 'N'  
         
+    Examples 
+    ----------
+	>>> from watex.utils.coreutils import fill_coordinates 
+    >>> from watex.utils import read_data 
+    >>> data = read_data ('data/erp/l2_gbalo.xlsx') 
+    >>> # rename columns 'x' and 'y' to 'easting' and 'northing'  inplace 
+    >>> data.rename (columns ={"x":'easting', "y":'northing'} , inplace =True ) 
+    >>> # transform the data by computing latitude/longitude by specifying the utm zone 
+    >>> data_include,_ = fill_coordinates (data , utm_zone ='49N' ) 
+    >>> data.head(2)  
+          easting   northing   rho  longitude  latitude
+     0   790752  1092750.0  1101        113         9
+    10   790747  1092758.0  1147        113         9
+    >>> # doing the revert action 
+    >>> datalalon = data_include[['pk', 'longitude', 'latitude']] 
+	>>> data_east_north, _ = fill_coordinates (datalalon ) 
+	>>> data_east_north.head(2) 
+		pk  longitude  latitude  easting  northing
+	0   0        113         9   719870    995452
+	1  10        113         9   719870    995452
         
     """
     def _get_coordcomps (str_, df):
@@ -311,6 +335,7 @@ def fill_coordinates(
         return xx, yy , uz  
     
     if data is None:  
+
         data = pd.DataFrame (
             dict ( 
                 longitude = lon ,
@@ -323,7 +348,7 @@ def fill_coordinates(
             )
 
     if data is not None : 
-        data = _assert_all_types(data, pd.DataFrame)
+        data = _assert_all_types(data, pd.DataFrame, objname="Coordinate data")
 
     lon , lon_isvalid  = _get_coordcomps(
         'longitude', data )
@@ -337,12 +362,12 @@ def fill_coordinates(
     if lon_isvalid and lat_isvalid: 
         try : 
             east , north , uz = _set_coordinate_values(
-                lat.values, lon.values,
-                project_point_ll2utm,
+                lat.values, lon.values, func=project_point_ll2utm,
                 )
         except :# pass if an error occurs 
             pass 
-        else : data['easting'] = east ; data['northing'] = north 
+        else : 
+            data['easting'] = east ; data['northing'] = north 
             
     elif e_isvalid and n_isvalid: 
         if utm_zone is None: 
@@ -357,7 +382,8 @@ def fill_coordinates(
                 func = project_point_utm2ll,
                 )
         except : pass 
-        else : data['longitude'] = lon ;  data['latitude'] = lat 
+        else : 
+            data['longitude'] = lon ;  data['latitude'] = lat 
         
     
     return data, utm_zone 
@@ -905,7 +931,7 @@ def plotAnomaly(
     erp: ArrayLike | List[float],
     cz: Optional [Sub[ArrayLike], List[float]] = None, 
     station: Optional [str] = None, 
-    figsize: Tuple [int, int] = (10, 4),
+    fig_size: Tuple [int, int] = (10, 4),
     fig_dpi: int = 300 ,
     savefig: str | None = None, 
     show_fig_title: bool = True,
@@ -927,63 +953,79 @@ def plotAnomaly(
     filling with `Matplotlib pyplot`_ additional keywords araguments thought 
     the kewords argument `czkws`. 
 
-    :param sample: array_like - the |ERP| survey line. The line is an array of
-        resistivity values.  
+    Parameters 
+    -----------
+    erp: array_like 1d
+        the |ERP| survey line. The line is an array of resistivity values. 
+        Note that if a dataframe is passed, be sure that the frame matches 
+        the DC resistivity data (ERP), otherwise an error occurs. At least,
+        the frame columns includes the resistivity and stations. 
         
-    :param cz: array_like - the selected conductive zone. If ``None``, only 
-        the `erp` should be displayed. Note that `cz` is an subset of `erp` 
-        array. 
+    cz: array_like 1d 
+        the selected conductive zone. If ``None``, only the `erp` should be 
+        displayed. Note that `cz` is an subset of `erp` array. 
         
-    :param station: str - The station location given as string (e.g. ``s= "S10"``) 
+    station: str, optional
+        The station location given as string (e.g. ``s= "S10"``) 
         or as a station number (indexing; e.g ``s =10``). If value is set to 
         ``"auto"``, `s` should be find automatically and fetching `cz` as well. 
         
-    :param figsize: tuple- Tuple value of figure size. Refer to the 
-        web resources `Matplotlib figure`_. 
+    figsize: tuple, default =(10, 4)
+        Tuple value of figure size. Refer to the web resources `Matplotlib figure`_. 
         
-    :param fig_dpi: int - figure resolution "dot per inch". Refer to 
-            `Matplotlib figure`_.
+    fig_dpi: int , default=300, 
+        figure resolution "dot per inch". Refer to `Matplotlib figure`_.
         
-    :param savefig: str -  save figure. Refer  to `Matplotlib figure`_.
+    savefig: str, optional, 
+        save the figure. Refer  to `Matplotlib figure`_.
     
-    :param show_fig_tile: bool - display the title of the figure. 
+    show_fig_title: bool, default =True
+        display the title of the figure. 
     
-    :param fig_title_kws: dict - Keywords arguments of figure suptile. Refer to 
+    fig_title_kws: dict, 
+        Keywords arguments of figure suptile. Refer to 
         `Matplotlib figsuptitle`_.
         
-    :param style: str - the style for customizing visualization. For instance to 
+    style: str - the style for customizing visualization. For instance to 
         get the first seven available styles in pyplot, one can run 
         the script below:: 
         
             plt.style.available[:7]
+            
         Futher details can be foud in Webresources below or click on 
         `GeekforGeeks`_. 
         
-    :param czkws: dict - keywords `Matplotlib pyplot`_ additional arguments to 
-        customize the `cz` plot.
+    czkws: dict, 
+        keywords `Matplotlib pyplot`_ additional arguments to customize 
+        the `cz` plot.
         
-    :param legkws: dict - keywords Matplotlib legend additional keywords
-        arguments. 
+    legkws: dict, 
+        Additional keywords Matplotlib legend arguments. 
         
-    :param kws: dict - additional keywords argument for `Matplotlib pyplot`_ to 
+    kws: dict, 
+        additional keywords argument for `Matplotlib pyplot`_ to 
         customize the `erp` plot.
         
-   
-    :Example: 
-        >>> import numpy as np 
-        >>> from watex.utils.coreutils import ( 
-        ...    plot_anomaly, _define_conductive_zone)
-        >>> test_array = np.random.randn (10)
-        >>> selected_cz ,*_ = _define_conductive_zone(test_array, 7) 
-        >>> plotAnomaly(test_array, selected_cz )
-        >>> plotAnomaly(tes_array, selected_cz , s= 5)
-        >>> plotAnomaly(tes_array, s= 's02')
-        >>> plotAnomaly(tes_array)
+    Return 
+    ---------
+    ax: Matplotlib.pyplot.Axis
+        Axis 
+       
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils import plotAnomaly, defineConductiveZone 
+    >>> test_array = np.abs (np.random.randn (10)) *1e2
+    >>> selected_cz ,*_ = defineConductiveZone(test_array, 7) 
+    >>> plotAnomaly(test_array, selected_cz )
+    >>> plotAnomaly(test_array, selected_cz , s= 5)
+    >>> plotAnomaly(test_array, s= 's02')
+    >>> plotAnomaly(test_array)
         
-    .. note::
-        
-        If `cz` is given, one does not need to worry about the station `s`. 
-        `s` can stay with it default value``None``. 
+    Note
+    ----
+    If `cz` is given, No need to worry about the station `s`. `s` can still
+    keep it default value ``None``. 
         
      
     References   
@@ -1001,11 +1043,15 @@ def plotAnomaly(
         
         ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
         """
-        if value % 7 ==0: 
+        nskip = len(erp ) * 7 // 100 
+        
+        if value % nskip ==0: 
             return 'S{:02}'.format(int(value)+ 1)
         else: None 
         
-    
+    if hasattr ( erp, "columns") and isinstance (erp, pd.DataFrame): 
+        erp = is_valid_dc_data(erp).resistivity 
+        
     erp = _assert_all_types( 
         erp, tuple, list , np.ndarray , pd.Series)
     if cz is not None: 
@@ -1044,7 +1090,7 @@ def plotAnomaly(
     if (rotate:= kws.get ('rotate')) is not None: 
         del kws ['rotate']
         
-    fig, ax = plt.subplots(1,1, figsize =figsize)
+    fig, ax = plt.subplots(1,1, figsize =fig_size)
     
     leg =[]
 
@@ -1062,7 +1108,7 @@ def plotAnomaly(
                 # if provide the station. 
                 keepindex =False 
                 
-            if station.lower() =='auto': station=None  # reset s 
+            if station.lower() =='auto': station=None  # reset station 
         cz , _ , _, ix = defineConductiveZone(
            erp, station = station , auto = auto, keepindex=keepindex 
            )
@@ -1093,6 +1139,7 @@ def plotAnomaly(
     ax.tick_params (labelrotation = 0. if rotate is None else rotate)
     ax.set_xticks(range(len(erp)),
                   )
+
     if len(erp ) >= 14 : 
         ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))
     else : 
@@ -1130,7 +1177,9 @@ def plotAnomaly(
                     dpi=fig_dpi,
                     )
         
-    plt.show()
+    plt.close () if savefig is not None else plt.show() 
+    
+    return ax 
         
 #XXX OPTIMIZE 
 def defineConductiveZone(
@@ -1152,7 +1201,9 @@ def defineConductiveZone(
     erp : array_like,
         the array contains the apparent resistivity values 
     station: str or int, 
-        is the station position. 
+        is the station position name. 
+    position: float, 
+        station position value. 
     auto: bool
         If ``True``, the station position should be the position of the lower 
         resistivity value in |ERP|. 
@@ -1166,6 +1217,7 @@ def defineConductiveZone(
     
     :Example: 
         >>> import numpy as np 
+        >>> 
         >>> from watex.utils.coreutils import defineConductiveZone
         >>> test_array = np.random.randn (10)
         >>> selected_cz ,*_ = defineConductiveZone(test_array, 's20') 
@@ -1461,7 +1513,7 @@ def makeCoords(
         raise_warning: bool=True, 
         **kws
   )-> Tuple[ArrayLike[DType[float]]]: 
-    """ Generate multiples stations coordinates (longitudes, latitudes)
+    """ Generate multiple stations coordinates (longitudes, latitudes)
     from a reference station/site.
     
     One degree of latitude equals approximately 364,000 feet (69 miles), 

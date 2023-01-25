@@ -24,6 +24,7 @@
    - etc.
    
 It contributes to minimize the numerous unsucessfull drillings, unsustainable boreholes thereby saving money for funders, state governements, geophysical and drilling ventures. 
+
  
 
 ## Documentation 

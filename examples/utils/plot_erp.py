@@ -25,14 +25,15 @@ plotAnomaly(test_array, style ="dark_background")
 # expected for drilling location. 
 selected_cz ,*_ = defineConductiveZone(test_array, station=7)  
 plotAnomaly(test_array, selected_cz , style ='dark_background')
+
 #%%
 # Automatic detect the position for making a drill by setting the 
-# `station` paameter to 'auto`. 
+# `station` parameter to `auto`. 
 
 plotAnomaly(test_array, station= 'auto', style ='dark_background')
 
-# Notes
-# ---------
+# Note
+# ------
 #   The auto-detection can be used when users need to propose a place to 
 #   make a drill.  Commonly for a real case study, it is recommended to 
 #   specify the station where the drilling operation was performed through 

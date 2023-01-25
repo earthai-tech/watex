@@ -1,20 +1,13 @@
 # -*- coding: utf-8 -*-
-# Created on Thu Dec 15 09:42:55 2022
-# @author: Daniel
 #  Licence: BS3-clause 
+#  Author: L. Kouadio
 """
 EDI stands for Electrical Data Interchange module can read and write an *.edi 
-file as the 'standard ' proposed by [1]_. Each section of the .edi 
+file as the standard MT/EMAP Data Interchange. Each section of the .edi 
 file belongs to a class object, thus the elements of each section are attributes 
-for easy access. Edi is outputted  following the SEG documentation and rules  
-of EMAP (Electromagnetic  Array Profiling) and MT sections. 
-
-References 
-----------
-.. [1] Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 1rt ed.
-     Society of Exploration Geophysicists, Texas 7831, USA.
-             
+for easy access. Edi is outputted  following the SEG documentation. 
 """
+
 from __future__ import annotations 
 import os
 import re
@@ -992,7 +985,7 @@ Electrical Data Interchange class.
 Each section of the .edi file belongs to a class object, thus the elements of 
 each section are attributes for easy access. Edi is outputted  following 
 the SEG documentation and rules  of EMAP (Electromagnetic  Array Profiling) 
-and MT sections. 
+and MT sections [1]_. 
 
 Ediclass  is for especialy dedicated to .edi files, mainly reading 
 and writingwhich are meant to follow the archaic EDI format put forward 

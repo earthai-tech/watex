@@ -1409,7 +1409,8 @@ def _isin (
     
     :param arr: Array-like - Array of item elements 
     :param subarr: Array-like, float - Subset array containing a subset items.
-    :param return_mask: bool, return the mask where the element is in `arr`.  
+    :param return_mask: bool, return the mask where the element is in `arr`.
+    
     :return: True if items in  test array `subarr` are in array `arr`. 
     
     """
