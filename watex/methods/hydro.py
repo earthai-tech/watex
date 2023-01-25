@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Created date: Sep 19 09:04:21 2022
-
 """
 :mod:`~watex.methods.hydro` computes Hydrogeological parameters of aquifer 
 that are the essential and crucial basic data in the designing and 
@@ -125,7 +123,7 @@ class HData(ABC):
  
         fit_params: dict, 
             Additional keyword arguments passed to 
-            :func:`~.watex.utils.funcutils.to_numeric_dtypes`. 
+            :func:`~watex.utils.funcutils.to_numeric_dtypes`. 
       
         """
         data = check_array (
@@ -188,7 +186,7 @@ class HData(ABC):
             
         rs_kws: dict, 
             keyword arguments passed to 
-            :func:`~.watex.utils.hydroutils.reduce_samples`
+            :func:`~watex.utils.hydroutils.reduce_samples`
             
         Returns 
         ----------
@@ -215,7 +213,7 @@ class HData(ABC):
         return sqdat 
     
     def get_base_stratum (self , stratum=None ): 
-        """ Select the base stratum 
+        """Select the base stratum 
         
         Parameters
         -----------

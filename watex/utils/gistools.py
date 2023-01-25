@@ -366,6 +366,7 @@ def project_point_ll2utm(lat, lon, datum='WGS84', utm_zone=None, epsg=None):
         if(HAS_GDAL):
             utm_cs.SetUTM(zone_number, is_northern)
         else:
+            import pyproj # for consistency 
             projstring = '+proj=utm +zone=%d +%s +datum=%s' % \
                          (zone_number, 'north' if is_northern else 'south', datum)
             pp = pyproj.Proj(projstring)

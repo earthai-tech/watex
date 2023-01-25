@@ -2561,3 +2561,122 @@ def plot_bar(x, y, wh= .8,  kind ='v', fig_size =(8, 6), savefig=None,
         
     plt.close () if savefig is not None else plt.show() 
     
+def plot_profiling (
+        erp, 
+        cz=None, *, 
+        style = 'classic', 
+        fig_size = (10, 4), 
+        cz_plot_kws= None,
+        marker_kws= None, 
+        savefig =None, 
+        **plot_kws
+        ): 
+    """ 
+    Visualizes  the resistivity profiling of  ERP data. 
+    
+    Function can overlain the selected conductive zone to the ERP if `cz` is 
+    given. 
+    
+    Parameters 
+    -----------
+    erp: array_like 1d
+        The electrical resistivity profiling array. 
+        
+    cz: array_like, optional, 
+        The selected conductive zone. If ``None``, `cz` should not be plotted.
+        
+    style: str, default='classic'
+        Matplotlib plottings style.
+        
+    fig_size: tuple, default= (10, 4) 
+        Matplotlib figure size. 
+        
+    marker_kws: dict, default = {'marker':'o', 'c':'#9EB3DD' }
+        The dictionnary to customize marker in the plot 
+        
+    cz_plot_kws: dict, default = {'ls':'-','c':'#0A4CEE', 'lw'L2 }
+        The dictionnary to customize the conductize zone in the plot.
+        
+    savefig: str, optional 
+        Save figure name. The default resolution dot-per-inch is ``300``. 
+        
+    plot_kws: dict, 
+        Additional keyword arguments passed to :func:`matplotlib.pyplot.plot` 
+        function 
+        
+    Return
+    --------
+    ax: Matplotlib.pyplot.Axis 
+        Return axis  
+        
+    Examples 
+    ----------
+    >>> from watex.datasets import make_erp 
+    >>> from watex.utils import defineConductiveZone 
+    >>> from watex.utils.plotutils import plot_profiling 
+    >>> d= make_erp (n_stations =56, seed = 42)
+    >>> plot_profiling  (d.resistivity)
+    
+    """
+    plt.style.use (style )
+    
+    erp = check_y (erp , input_name ="sample of ERP data")
+    fig, ax = plt.subplots(1,1, figsize =fig_size)
+    leg =[]
+    
+    zl, = ax.plot(np.arange(len(erp)), erp, 
+                  label ='Electrical resistivity profiling', 
+                  **plot_kws 
+                  )
+    marker_kws = marker_kws or dict (marker ='o', c='#9EB3DD' )
+    ax.scatter (np.arange(len(erp)), erp, **marker_kws )
+    
+    leg.append(zl)
+    if cz is not None: 
+        cz= check_y (cz, input_name ="Conductive zone 'cz'")
+        z = np.ma.masked_values (erp, np.isin(erp, cz ))
+        sample_masked = np.ma.array(
+            erp, mask = ~z.fill_value.astype('bool') )
+    
+        cz_plot_kws = cz_plot_kws or dict (ls='-',c='#0A4CEE', lw =2 )
+        czl, = ax.plot(
+            np.arange(len(erp)), sample_masked, 
+            label ='Conductive zone', 
+            **cz_plot_kws
+            )
+        leg.append(czl)
+
+    ax.set_xticks(range(len(erp)))
+    
+    if len(erp ) >= 14 : 
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
+    else : 
+        
+        ax.set_xticklabels(
+            ['S{:02}'.format(int(i)+1) for i in range(len(erp))]) 
+         
+    ax.set_xlabel('Stations')
+    ax.set_ylabel('App.resistivity ($\Omega.m$)')
+    ax.legend( handles = leg, loc ='best')
+    ax.set_xlim ([-1, len(erp)])
+
+    if savefig is not  None: savefigure (fig, savefig, dpi = 300)
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+    return ax 
+
+def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =7 ):
+    """ Format thick parameter with 'FuncFormatter(func)'
+    rather than using `axi.xaxis.set_major_locator (plt.MaxNLocator(3))`
+    ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
+    
+    :param value: tick range values for formatting 
+    :param tick_number: number of ticks to format 
+    :param fmt: str, default='S{:02}', kind of tick formatage 
+    :param nskip: int, default =7, number of tick to skip 
+    
+    """
+    if value % nskip==0: 
+        return fmt.format(int(value)+ 1)
+    else: None 

@@ -10,7 +10,7 @@ plots the filtered tensors by applying the filtered function.
 
 #%%
 
-# here we plot the ama filtered 'ama' 
+# Here we plot the ama filtered 'ama' 
 # passed to the filter function ;ffilter'='ama'
 from watex.view.plot import TPlot 
 from watex.datasets import load_edis 

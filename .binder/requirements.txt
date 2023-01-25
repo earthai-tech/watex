@@ -1,0 +1,28 @@
+# --find-links https://pypi.anaconda.org/scipy-wheels-nightly/simple/watex
+# --pre
+scikit-learn
+matplotlib
+scikit-image
+pandas
+seaborn
+Pillow
+sphinx-gallery
+numpy
+scipy
+pyyaml
+pyproj
+joblib
+tqdm
+xgboost
+missingno
+pyjanitor 
+openpyxl
+h5py
+tables
+pillow
+tables
+mlxtend 
+yellowbrick
+plotly
+ipywidgets
+pandas-profiling

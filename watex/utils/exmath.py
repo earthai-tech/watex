@@ -60,6 +60,7 @@ from .._typing import (
 )
 from .funcutils import (
     _assert_all_types, 
+    _isin, 
     drawn_boundaries, 
     fmt_text, 
     find_position_from_sa , 
@@ -75,6 +76,7 @@ from .funcutils import (
 from .validator import ( 
     _is_arraylike_1d, 
     _validate_ves_operator,
+    is_valid_dc_data, 
     check_y,
     check_array, 
     )
@@ -459,7 +461,7 @@ def savitzky_golay1d (
     --------
     >>> import numpy as np 
     >>> import matplotlib.pyplot as plt 
-    >>> from watex.exmath import savitzky_golay1d 
+    >>> from watex.utils.exmath import savitzky_golay1d 
     >>> t = np.linspace(-4, 4, 500)
     >>> y = np.exp( -t**2 ) + np.random.normal(0, 0.05, t.shape)
     >>> ysg = savitzky_golay1d(y, window_size=31, order=4)
@@ -778,7 +780,7 @@ def vesDataOperator(
     ---------
     >>> from watex.utils.exmath import vesDataOperator
     >>> from watex.utils.coreutils import vesSelector 
-    >>> data = vesSelector (f= 'data/ves/ves_gbalo.xlsx')
+    >>> data = vesSelector ('data/ves/ves_gbalo.xlsx')
     >>> len(data)
     ... (32, 3) # include the potentiel electrode values `MN`
     >>> df= vesDataOperator(data.AB, data.resistivity,
@@ -1004,7 +1006,6 @@ def ohmicArea(
         de bassins versants subsaheliens du socle précambrien d’Afrique de l’Ouest:
         hydrostructurale hydrodynamique, hydrochimie et isotopie des aquifères discontinus
         de sillons et aires gran. In Thèse de Doctorat (IOS journa, p. 493). Abidjan, Cote d'Ivoire
- 
     """
     
     objkeys = ( 'ohms','none','eval', 'area', 'ohmic','true',
@@ -1180,7 +1181,7 @@ def type_ (erp: ArrayLike[DType[float]] ) -> str:
         
         >>> import numpy as np 
         >>> from watex.utils.exmath import type_
-        >>> rang = random.RandomState(42)
+        >>> rang = np.random.RandomState(42)
         >>> test_array2 = rang.randn (7)
         >>> type_(np.abs(test_array2))
         ... 'EC'
@@ -1291,17 +1292,17 @@ def shape (
     
     :Example: 
         >>> import numpy as np 
-        >>> rang = random.RandomState(42)
-        >>> from watex.utils.exmath import shape_ 
+        >>> rang = np.random.RandomState(42)
+        >>> from watex.utils.exmath import shape 
         >>> test_array1 = np.arange(10)
-        >>> shape_ (test_array1)
+        >>> shape (test_array1)
         ...  'C'
         >>> test_array2 = rang.randn (7)
-        >>> _shape(test_array2)
-        ... 'K'
+        >>> shape(test_array2)
+        ... 'H'
         >>> test_array3 = np.power(10, test_array2 , dtype =np.float32) 
-        >>> _shape (test_array3) 
-        ... 'K'   # does not change whatever the resistivity values.
+        >>> shape (test_array3) 
+        ... 'H'   # does not change whatever the resistivity values.
     
     References 
     ----------
@@ -1657,6 +1658,7 @@ def sfi (
     dipolelength: Optional [float] = None, 
     view: bool = False,
     raw : bool = False,
+    return_components:bool=False, 
     **plotkws
 ) -> float: 
     r""" 
@@ -1692,6 +1694,10 @@ def sfi (
         Visualize the fitting curve. *Default* is ``False``. 
     raw: bool,default=False,
         Overlaining the fitting curve with the raw curve from `cz`. 
+    return_components: bool, default=False, 
+        If ``True``, it returns the different components used for compute sfi
+        especially for external visualization. 
+        
     plotkws: dict
         `Matplotlib plot`_ keyword arguments. 
         
@@ -1707,7 +1713,7 @@ def sfi (
     >>> from watex.utils.exmath import sfi 
     >>> rang = np.random.RandomState (42) 
     >>> condzone = np.abs(rang.randn (7)) 
-    >>> # no visualization and default value `s` with gloabl minimal rho
+    >>> # no visualization and default value `s` with global minimal rho
     >>> pfi = sfi (condzone)
     ... 3.35110143
     >>> # visualize fitting curve 
@@ -1715,7 +1721,7 @@ def sfi (
                          label = 'fitting model',
                          color=f'{P().frcolortags.get("fr3")}', 
                          )
-    >>> sfi (condzone, plot= True , s= 5, figsize =(7, 7), 
+    >>> sfi (condzone, view= True , s= 5, figsize =(7, 7), 
               **plotkws )
     Out[598]: (array([ 0., 10., 20., 30.]), 1)
         
@@ -1795,16 +1801,109 @@ def sfi (
     
     with np.errstate(all='ignore'):
         # $\sqrt2# is the threshold 
-        sfi = np.sqrt ( (pw_star/pw)**2 + (ma_star / ma )**2 ) % np.sqrt(2)
-        if sfi == np.inf : 
-            sfi = np.sqrt ( (pw/pw_star)**2 + (ma / ma_star )**2 ) % np.sqrt(2)
+        sfi_ = np.sqrt ( (pw_star/pw)**2 + (ma_star / ma )**2 ) % np.sqrt(2)
+        if sfi_ == np.inf : 
+            sfi_ = np.sqrt ( (pw/pw_star)**2 + (ma / ma_star )**2 ) % np.sqrt(2)
  
+    components = cz, p, xn, yn
+    
     if view: 
         plot_(p,cz,'-ok', xn, yn, raw = raw , **plotkws)
-  
-    
-    return sfi 
+        
+    return (sfi_ , components) if return_components else sfi_ 
 
+
+def plot_sfi(
+    cz: Sub[ArrayLike],
+    p: Sub[SP[ArrayLike]] = None, 
+    s: Optional [str] =None, 
+    dipolelength: Optional [float]= None, 
+    fig_size:tuple = (10, 4), 
+    style:str='classic', 
+    **plotkws
+    ): 
+    """ Plot *sfi* parameter components. 
+    
+    Parameters
+    ------------
+    cz: array-like 1d, 
+        Selected conductive zone 
+    p: array-like 1d, 
+        Station positions of the conductive zone.
+    dipolelength: float. If `p` is not given, it will be set 
+        automatically using the default value to match the ``cz`` size. 
+        The **default** value is ``10``.
+    fig_size: tuple, default=(10, 4) 
+        Matplotlib (MPL) figure size; should be a tuple value of integers 
+         
+    see Also
+    ---------
+    Refer to :func:`watex.exmath.sfi` for more details about the *sfi* 
+    parameter computation. 
+    
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import plot_sfi 
+    >>> rang = np.random.RandomState (42) 
+    >>> condzone = np.abs(rang.randn (7))*1e2
+    >>> plotkws  = dict (rlabel = 'Selected conductive zone (cz)', 
+                         color=f'{P().frcolortags.get("fr3")}', 
+                         )
+    >>> plot_sfi (condzone, **plotkws)
+    """
+    
+    pfi, comps = sfi (cz, p=p,    s= s, view =False, dipolelength= dipolelength,  
+                     return_components= True)
+    cz, p, xn, yn = comps
+    
+    plt.figure (figsize = fig_size )
+    plt.axhline(y=cz.min(), color="black", linestyle="--")
+    plt.axhline(y=cz.max(), color="black", linestyle="--")
+  
+    plt.text(x= p.min(), y=cz.max(), s="sfi={}".format(np.around (pfi, 3)),  
+             fontdict= dict (style ='italic',  bbox =dict(
+                 boxstyle='round',facecolor ='orange'))
+             ) 
+    
+    plt.legend()
+    
+    if (colors:= plotkws.get ('color')) is not None: 
+        del plotkws ['color']
+    c = _manage_colors(colors) 
+
+    args = [p, cz, c[0] ,  xn, yn]
+    legs = ['conductive zone',  'sfi fit-model']
+    plot_(*args,  raw = True , fig_size=fig_size,  
+          title = "Plot Pseudo-fracturing index: sfi={}".format(np.around (pfi, 5)), 
+          style = style, 
+          dtype ='sfi',
+          leg =legs,  
+          **plotkws
+          )
+    plt.xlabel ("Station position in meters")
+
+    yax = plt.ylim() 
+    ylims = [ (cz.min() -min(yax))/ (max(yax)-min(yax)) ,
+             ( cz.max()-min(yax))/ (max(yax)-min(yax))
+             ] 
+    
+    plt.axvline(x = 0, ymin = ylims[0], ymax = ylims[1], color ='red', lw=4., 
+                label='magnitude')
+    
+    plt.xlim ([ p.min() , p.max()])
+    
+    xax= plt.xlim() 
+    
+    xlims = [ (p.min() -min(xax))/ (max(xax)-min(xax)) ,
+             ( p.max()-min(xax))/ (max(xax)-min(xax))
+             ] 
+    plt.axhline(y= 0, xmin = xlims[0], xmax = xlims[1], color ='m', 
+                label='power', lw=4. )
+    
+   
+    plt.legend() 
+    
 def plotOhmicArea (
     data: DataFrame= None, 
     search: float = 45., 
@@ -1889,6 +1988,7 @@ def plotOhmicArea (
      for ar , name in zip ([ xy, xyf, xyarea],  ["xy", "xyf", "xyarea"]
                            )
      ]
+    
     c = _manage_colors(colors ) 
 
     args = [ * xy.T ] + [c[0]] + [*xyf.T ] +[c[1]] + [*xyarea.T] +[c[2]]
@@ -1910,19 +2010,21 @@ def _manage_colors (c, default = ['ok', 'ob-', 'r-']):
 @refAppender(refglossary.__doc__)
 def plot_ (
     *args : List [Union [str, ArrayLike, ...]],
-    figsize: Tuple[int] = None,
+    fig_size: Tuple[int] = None,
     raw : bool = False, 
     style : str = 'seaborn',   
     dtype: str  ='erp',
     kind: Optional[str] = None , 
+    fig_title_kws: dict=None, 
     fbtw:bool=False, 
+    fig=None, 
     **kws
     ) -> None : 
     """ Quick visualization for fitting model, |ERP| and |VES| curves.
     
     :param x: array-like - array of data for x-axis representation 
     :param y: array-like - array of data for plot y-axis  representation
-    :param figsize: tuple - Matplotlib (MPL) figure size; should be a tuple 
+    :param fig_size: tuple - Matplotlib (MPL) figure size; should be a tuple 
          value of integers e.g. `figsize =(10, 5)`.
     :param raw: bool- Originally the `plot_` function is intended for the 
         fitting |ERP| model i.e. the correct value of |ERP| data. However, 
@@ -1947,7 +2049,12 @@ def plot_ (
         Mostly used for |VES| data. If ``True``, filled the computed 
         fractured zone using the parameters computed from 
         :func:`~.watex.utils.exmath.ohmicArea`. 
-
+    :param fig_title_kws: dict, 
+        Additional keywords argument passed in dictionnary to customize 
+        the figure title. 
+    :param fig: Matplotlib.pyplot.figure
+        add plot on the same figure. 
+        
     :param kws: dict - Additional `Matplotlib plot`_ keyword arguments. To cus-
         tomize the plot, one can provide a dictionnary of MPL keyword 
         additional arguments like the example below.
@@ -1979,7 +2086,10 @@ def plot_ (
     if (title:= kws.get ('title')) is not None: 
         del kws ['title']
     x , y, *args = args 
-    fig = plt.figure(1, figsize =figsize)
+    
+    if fig is None: 
+        fig = plt.figure(1, figsize =fig_size)
+    
     plt.plot (x, y,*args, 
               **kws)
     if raw: 
@@ -2039,10 +2149,15 @@ def plot_ (
     plt.ylabel ('Resistivity (Ω.m)'
                 ) if ylabel is None else plt.ylabel (ylabel)
     
-    fig_title_kws = dict (
-        t = 'Plot fit model' if dtype =='erp' else title, 
-        style ='italic', 
-        bbox =dict(boxstyle='round',facecolor ='lightgrey'))
+    t0= {'erp': 'Plot Electrical Resistivity Profiling', 
+         'sfi': 'Pseudo-fracturing index', 
+         'ves': 'Vertical Electrical Sounding'
+         }
+
+    fig_title_kws = fig_title_kws or dict (
+            t = t0.get( dtype) or  title, 
+            style ='italic', 
+            bbox =dict(boxstyle='round',facecolor ='lightgrey'))
         
     if show_grid is not None: 
         # plt.minorticks_on()
@@ -2456,7 +2571,144 @@ def compute_sfi (
   
     
     return sfi
+  
+def get_anomaly_ratio(erp: ArrayLike, czposix=None, cz = None, 
+             cz_sfi= None,  raise_exception=True,  p=None, 
+             e_spacing = None, **sfi_kws,
+             ): 
+    r""" Computes the selected anomaly ratio (ANR) from the whole ERP line.
     
+    The standardized resistivity values`rhoa`  of is averaged from 
+    :math:`S_{begin}` to :math:`S_{end}`. The ANR is a positive value and the 
+    equation is given as:
+        
+    .. math:: 
+        
+        ANR= sfi * \frac{1}{N} * | \sum_{i=1}^{N} \frac{\rho_{a_i} - \bar \rho_a}{\sigma_{\rho_a}} |
+       
+        
+    where :math:`\sigma_{rho_a}`  and :math:`\bar \rho_a` are the standard 
+    deviation  and the mean of the resistivity values composing the selected
+    anomaly. 
+    
+    Parameters 
+    ------------
+    erp: array_like 1d
+        The ERP survey line. The line is an array of resistivity values. 
+        Note that if a dataframe is passed, be sure that the frame matches 
+        the DC resistivity data (ERP), otherwise an error occurs. At least,
+        the frame columns includes the resistivity and stations. 
+        
+    cz_sfi: float, 
+        The pseudo-fracturing index value. It can be computed from 
+        :func:`~sfi`. It is given , `p`  and `e_spacing` are not needed. 
+    
+    czposix: list of int, 
+        The selected anomaly station location boundaries indexes. The indexes 
+        might correspond to the first and last stations indexes that represents 
+        the selected conductive zone. For instance, ``czposix=[2, 13]`` 
+        means the third ( second+ 1)  stations to the 14 (13+1) th stations. 
+        Note that the index counts is Python indexes so it starts by 0. 
+        
+    p: arraylike, 
+        is the station positions of the whole ERP line. It must be consistent 
+        with the ERP line.  
+        
+    e_spacing: float, int,
+        The electrode spacing. It is needed in complience with 
+        `p` especially when the `czposix` is not supplied. 
+        
+    raise_exception: bool, default= True, 
+        Raise exception when the `czposix` is not given. However another 
+        alternative when the `p` is not given too, is to use the `cz` 
+        resistivity values from detecting the `cxposix`, however this has 
+        a risk of biais the position then raise exception for user to be 
+        aware. Note that user can force this approach to take effect by 
+        setting `raise_exception` to ``False``. 
+        
+        
+    cz: array_like 1d 
+        the selected conductive zone. If ``None``, only the `erp` should be 
+        displayed. Note that `cz` is an subset of `erp` array. 
+    
+    Examples
+    --------
+    >>> from watex.datasets import make_erp 
+    >>> from watex.utils.exmath import get_anomaly_ratio
+    >>>  # for data reproducibility seed to 123
+    >>> d = make_erp (n_stations =70, min_rho =10 , max_rho =1e4 , seed =123 )
+    >>> selected_cz,* _= defineConductiveZone (d.resistivity , auto=True) 
+    >>> ANR = get_anomaly_ratio (d.resistivity, cz= selected_cz , e_spacing =10)
+    >>> print(ANR)
+    ... 0.06 #6% 
+    
+    """
+    pcz =None 
+    if hasattr(erp, "columns") and isinstance (erp, pd.DataFrame): 
+        erp = is_valid_dc_data(erp)
+        erp = erp.resistiviy 
+        
+    erp = np.array (erp , dtype = np.float64)
+    
+    if cz_sfi is None  and cz is None: 
+        raise TypeError("Selected conductive (cz) zone cannot be None while"
+                        " the pseudo-fracturing index ( cz_sfi) of that zone"
+                        " is not supplied."
+                        )
+    if cz_sfi is None and cz is not None: 
+        
+        sfi_, components = sfi (cz, return_components= True, 
+                                dipolelength = e_spacing, p=p,  **sfi_kws )
+        cz, pcz, *_= components 
+        
+    if e_spacing is not None: 
+        p = np.arange (len(erp)) * e_spacing 
+        
+    if ( p is not None
+        and pcz is not None
+        ): 
+        czposix  = reshape (
+            np.argwhere (_isin (p, pcz , return_mask= True))) 
+        
+        czposix = [czposix [0], czposix[-1]]
+        
+    if np.all (_isin (erp, cz, return_mask= True )  == False): 
+        raise ValueError ("The selected conductive  zone (cz) not found in" 
+                          " the whole ERP line. cz sub-array contents are"
+                          " items of the DC resistivity profiling.")
+
+    if czposix is None: 
+        msg = ("Index of station positions (`czposix`) where the selected"
+               " conductive zone is not supplied mannually. Automatic detection"
+               " from the `erp` and `cz` resistivity values may lead to"
+               " a misinterpretation results. It is better to provide the"
+               " the czposix to accurately compute the ANR. To force the"
+               " computation of the ANR with both cz and ERP resistivities,"
+               " set the `raise_exception` params to ``False``. Use at your"
+               " own risk.")
+        if raise_exception: raise ERPError(msg )
+        
+        czposix  = reshape (
+            np.argwhere (_isin (erp, cz , return_mask= True))) 
+        czposix = [czposix [0], czposix[-1]]
+            
+    czposix = sorted ( czposix) 
+    if len(czposix) !=2: 
+        raise ValueError (
+            "The station position from the selected conductive zone"
+            " expects two numbers: The first (start) and last station"
+            " (stop) positions that delineate the conductive zone:"
+            f" Got {len(czposix)} index{'' if len(czposix)<=1 else 'es'}."
+            )
+    if len(set (czposix))!=2: 
+        raise TypeError (f"'czposix' indexes must be differents. Got {czposix}")
+    
+    std = ((erp - erp.mean() /np.std(erp))[czposix[0]: czposix[-1]])
+    std = ((std  - std.min()) / ( std.max() - std.min() )) .sum()
+    
+    return sfi_ * 1/ len(erp ) * np.abs (std ) 
+
+@deprecated('Function should be removed for the next release.')
 def compute_anr (
         sfi: float , 
         rhoa_array: ArrayLike | List[float],
@@ -2496,13 +2748,13 @@ def compute_anr (
     
     :Example: 
         
-        >>> from watex.utils.exmath import compute_anr 
-        >>> import pandas as pd
-        >>> anr = compute_anr(sfi=sfi, 
-        ...                  rhoa_array=data = pd.read_excel(
-        ...                  'data/l10_gbalo.xlsx').to_numpy()[:, -1],
-        ...              pk_bound_indexes  = [9, 13])
-        >>> anr
+    >>> from watex.utils.exmath import compute_anr 
+    >>> import pandas as pd
+    >>> anr = compute_anr(sfi=sfi, 
+    ...                  rhoa_array=data = pd.read_excel(
+    ...                  'data/l10_gbalo.xlsx').to_numpy()[:, -1],
+    ...              pk_bound_indexes  = [9, 13])
+    >>> anr
     """
     
     stand = (rhoa_array - rhoa_array.mean())/np.std(rhoa_array)

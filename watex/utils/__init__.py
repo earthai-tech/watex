@@ -15,7 +15,7 @@ from .coreutils import (
     erpSelector, 
     defineConductiveZone,
     makeCoords,
-    read_data 
+    read_data, 
     )
 from .exmath import ( 
     type_,
@@ -36,7 +36,8 @@ from .exmath import (
     get_profile_angle, 
     moving_average, 
     linkage_matrix, 
-    plotOhmicArea
+    plotOhmicArea, 
+    plot_sfi
     )
 from .funcutils import ( 
     reshape, 
@@ -77,6 +78,7 @@ from .plotutils import (
     plot_rf_feature_importances, 
     plot_logging, 
     plot_silhouette, 
+    plot_profiling, 
     )
 # to fix circular 
 # import
@@ -173,7 +175,9 @@ __all__=[
         'find_aquifer_groups', 
         'find_similar_labels', 
         'classify_k',
-        'label_importance'
+        'label_importance', 
+        'plot_profiling', 
+        'plot_sfi',
         ]
 
 
