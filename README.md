@@ -60,7 +60,7 @@ the software [documentation](https://watex.readthedocs.io/en/latest/).
 
 ## Installation 
 
-**_WATex_** is not available in any distribution platforms yet ( [pyPI](https://pypi.org/)  and [conda-forge](https://conda-forge.org/) ). 
+**_WATex_** is not available in any distribution platforms yet ( [PyPI](https://pypi.org/)  and [conda-forge](https://conda-forge.org/) ). 
 However, your can install the package from source: 
 
 ```bash
@@ -68,7 +68,7 @@ git clone https://github.com/WEgeophysics/watex.git
 ```
 or simply visit the [installation guide](https://watex.readthedocs.io/en/latest/installation.html) page.
 
-Installation via `pip`( [pyPI](https://pypi.org/) ) and `conda` ( [conda-forge](https://conda-forge.org/) ) is coming soon ... 
+Installation via `pip`( [PyPI](https://pypi.org/) ) and `conda` ( [conda-forge](https://conda-forge.org/) ) is coming soon ... 
 
 ## System requirement
 
