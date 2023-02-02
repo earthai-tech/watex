@@ -12,13 +12,13 @@ Analysis
    Most of the analysis functions have a parameter `view` . Setting the `view` parameter to `True` 
    will give a basic visualization. 
 
-Decomposition
-=================
+Decomposition: :mod:`~watex.analysis.decomposition`
+=====================================================
 
 Steps behind the principal component analysis (PCA) and matrices decomposition 
 
-`Extract PCA` 
----------------
+Extract PCA: :func:`~watex.analysis.decomposition.extract_pca`
+---------------------------------------------------------------
 
 A naive approach to extract PCA from training set :math:`X`. Indeed, the PCA directions are highly 
 sensitive to data scaling and we need to standardize the 
@@ -28,8 +28,6 @@ both symmetric and non-symmetric squares matrices. However you may find it retur
 complex eigenvalues in certain cases related function, `numpy.linalg.eigh` has been implemented 
 to decompose Hermitian matrices which is numerically more stable to work with matrices such as 
 the covariance matrix. `numpy.linalg.eigh` always returns real eigh eigenvalues
-
-.. topic:: Examples: 
 
 .. code-block:: python 
 
@@ -49,8 +47,8 @@ the covariance matrix. `numpy.linalg.eigh` always returns real eigh eigenvalues
 		   0.85749283, 0.64907948, 0.71364687])
 
 
-`Total variance ratio` 
-------------------------------
+Total variance ratio: :func:`~watex.analysis.decomposition.total_variance_ratio`
+----------------------------------------------------------------------------------
 
 :func:`~watex.analysis.decomposition.total_variance_ratio` of eigenvalues :math:`\lambda_j`, is simply the 
 fraction of an eigenvalue, :math:`\lambda_j` and the total sum of the eigenvalues as:
@@ -60,8 +58,6 @@ fraction of an eigenvalue, :math:`\lambda_j` and the total sum of the eigenvalue
     
 Using the numpy `cumsum` function, we can then calculate the cumulative sum of explained variance 
 which can be plotted if `plot` is set to ``True`` via the matplotlib set function.    
-
-.. topic:: Examples: 
 
 .. code-block:: python 
 
@@ -77,11 +73,11 @@ which can be plotted if `plot` is set to ``True`` via the matplotlib set functio
    :align: center
    :scale: 50%
    
-`Feature transformation` 
------------------------------------
+Feature transformation: :func:`~watex.analysis.decomposition.feature_transformation`
+--------------------------------------------------------------------------------------
 
-It consists to transform  :math:`X` into new principal components after successfully decomposing to 
-the covariances matrices. 
+:func:`~watex.analysis.decomposition.feature_transformation` consists to transform  :math:`X` into new principal 
+components after successfully decomposing to the covariances matrices. 
 
 .. topic:: Examples: 
 
@@ -94,12 +90,11 @@ the covariances matrices.
 	array([-1.0168034 ,  2.56417088])
 	
 	
-`Decision region`
---------------------------
+Decision region: :func:`~watex.analysis.decomposition.decision_region`
+-----------------------------------------------------------------------
 
-Displays the decision region for the training data reduced to two principal component axes. 
-
-.. topic:: Examples: 
+:func:`~watex.analysis.decomposition.decision_region` displays the decision region for the training data reduced 
+to two principal component axes. 
 
 .. code-block:: python 
 
@@ -122,8 +117,8 @@ Displays the decision region for the training data reduced to two principal comp
    :align: center
    :scale: 50%
    
-`Linear Discriminant Analysis`
----------------------------------------------
+Linear Discriminant Analysis: :func:`~watex.analysis.decomposition.linear_discriminant_analysis`
+-------------------------------------------------------------------------------------------------
 
 Linear Discriminant Analysis (LDA) is used as a technique for feature extraction to increase the 
 computational efficiency and reduce the degree of overfitting due to the curse of dimensionality in 
@@ -161,8 +156,6 @@ where :math:`m` is the overall mean that is computed including examples from all
   transformation matrix, :math:`W`; the eigenvectors are the columns of this matrix. 
 * Project the examples onto the new_features subspaces using the transformation matrix :math:`W`. 
 
-.. topic:: Examples: 
-
 .. code-block:: python 
 
 	>>> from watex.datasets import fetch_data
@@ -182,21 +175,20 @@ where :math:`m` is the overall mean that is computed including examples from all
    :align: center
    :scale: 50%
    
-Dimensionality 
-===================
+   
+Dimensionality: :mod:`~watex.analysis.dimensionality`
+======================================================
 
 Reduces the number of dimensions down to two (or to three) for instance, make it possible to plot 
 high-dimension training set on the graph and often gain some important insights by visually detecting 
 patterns, such as clusters.
 
-`Normal Principal Component Analysis (nPCA )`
-----------------------------------------------------------------
+Normal Principal Component Analysis (nPCA ): :func:`~watex.analysis.nPCA`
+--------------------------------------------------------------------------
 
-PCA is by far the most popular dimensional reduction algorithm. First, it identifies the hyperplane that 
+:func:`~watex.analysis.nPCA` is by far the most popular dimensional reduction algorithm. First, it identifies the hyperplane that 
 lies closest to the data and projects it to the data onto it.
 
-.. topic:: Examples 
-	
 .. code-block:: python 
 
 	>>> from watex.analysis.dimensionality import nPCA
@@ -222,15 +214,13 @@ lies closest to the data and projects it to the data onto it.
           0.0065]))]
 		  
 		  
-`Incremental PCA (iPCA)`
------------------------------------
+Incremental PCA (iPCA): :func:`~watex.analysis.iPCA`
+------------------------------------------------------
     
-`iPCA` allows splitting the training set into mini-batches and feeding the algorithm one 
+:func:`~watex.analysis.iPCA` allows splitting the training set into mini-batches and feeding the algorithm one 
 mini-batch at a time. One problem with the preceding implementation of PCA is that requires 
 the whole training set to fit in memory for the SVD algorithm to run. This is useful for large 
 training sets, and also for applying PCA online(i.e, on the fly as a new instance arrives).
-
-.. topic:: Examples: 
 
 .. code-block:: python 
 
@@ -240,10 +230,10 @@ training sets, and also for applying PCA online(i.e, on the fly as a new instanc
     >>> Xtransf = iPCA(X,n_components=None,n_batches=100, view=True)
 
 
-`Kernel PCA (kPCA)`
--------------------------
+Kernel PCA (kPCA): :func:`~watex.analysis.kPCA`
+-------------------------------------------------
 
-`kPCA` performs complex nonlinear projections for dimensionality reduction.
+:func:`~watex.analysis.kPCA` performs complex nonlinear projections for dimensionality reduction.
      
 Commonly the kernel trick is a mathematical technique that implicitly
 maps instances into a very high-dimensionality space(called the feature
@@ -252,7 +242,6 @@ Recall that a linear decision boundary in the high dimensional
 feature space corresponds to a complex non-linear decision boundary
 in the original space.
 
-.. topic:: Examples: 
 
 .. code-block:: python 
 
@@ -261,10 +250,10 @@ in the original space.
 	>>> X, _=fetch_data('Bagoue analysed data')
 	>>> Xtransf=kPCA(X,n_components=None,kernel='rbf', gamma=0.04 )
     
-`Locally Linear Embedding(LLE)`
---------------------------------- 
+Locally Linear Embedding(LLE): :func:`~watex.analysis.LLE`
+--------------------------------------------------------------
     
-`LLE` is a nonlinear dimensionality reduction based on closest neighbors [1]_. It is another powerful 
+:func:`~watex.analysis.LLE` is a nonlinear dimensionality reduction based on closest neighbors [1]_. It is another powerful 
 non-linear dimensionality reduction(NLDR) technique. It is a Manifold Learning technique that does not 
 rely on projections like `PCA`. In a nutshell, works by first measuring how each training instance 
 library linearly relates to its closest neighbors(c.n.) and then looking for a low-dimensional 
@@ -272,16 +261,6 @@ representation of the training set where these local relationships are best pres
 Using LLE yields good results especially when makes it is particularly good at unrolling twisted manifolds, 
 especially when there is too much noise [2]_.
 
-.. topic:: References 
-
-	.. [1] Gokhan H. Bakir, Jason Wetson and Bernhard Scholkoft, 2004;
-		"Learning to Find Pre-images";Tubingen, Germany:Max Planck Institute
-		for Biological Cybernetics.
-
-	.. [2] S. Roweis, L.Saul, 2000, Nonlinear Dimensionality Reduction by
-		Loccally Linear Embedding.
-
-.. topic:: Examples: 
 
 .. code-block:: python 
 
@@ -293,8 +272,8 @@ especially when there is too much noise [2]_.
 	    "n_neighbors": 5}
 	>>> Xtransf=LLE(X,**lle_kws)
 	
-Model selection with Probabilistic PCA and Factor Analysis (FA) 
-=======================================================================
+Model selection with Probabilistic PCA and Factor Analysis (FA): :mod:`~watex.analysis.factor`
+===============================================================================================
 
 Probabilistic PCA and Factor Analysis are probabilistic models. The consequence is that the 
 likelihood of new data can be used for model selection and covariance estimation. Here we compare 
@@ -307,8 +286,8 @@ However, PCA fails and overestimates the rank when heteroscedastic noise is pres
 circumstances, the low-rank models are more likely than the shrinkage models. The automatic estimation 
 from Automatic Choice of Dimensionality for PCA. NIPS 2000: 598-604 by Thomas P. Minka is also compared.
 
-`Shrunk covariance scores` 
----------------------------------------
+Shrunk covariance scores: :func:`~watex.analysis.factor.shrunk_cov_score`
+---------------------------------------------------------------------------
 
 :func:`~watex.analysis.factor.shrunk_cov_score` shrunks  the covariance scores.
 
@@ -322,13 +301,11 @@ from Automatic Choice of Dimensionality for PCA. NIPS 2000: 598-604 by Thomas P.
 	>>> shrunk_cov_score (X) 
 	-11.234180833710871
 	
-`Compare PCA and FA`
------------------------------------
+Compare PCA and FA: :func:`~watex.analysis.factor.pcavsfa` 
+------------------------------------------------------------
 
 :func:`~watex.analysis.factor.pcavsfa` Compute PCA score and Factor Analysis scores from 
 training :math:`X` and compare the probabilistic PCA and FA  models.
-
-.. topic:: Examples: 
 
 .. code-block:: python 
 
@@ -357,8 +334,8 @@ The output PCA and FA score with homo vs hetero_scedatic noises:
   |homo_scedatic|                         |hetero_scedatic|
   ==================================== ====================================
   
-`Make Homo/Hetero scedatic noise data`
--------------------------------------------------------------
+Make Homo/Hetero scedatic noise data: :func:`~watex.analysis.factor.make_scedastic_data`
+------------------------------------------------------------------------------------------
 
 :func:`~watex.analysis.factor.make_scedastic_data` generates sampling data for probabilistic PCA 
 and Factor Analysis model comparison. By default: 
@@ -367,12 +344,18 @@ and Factor Analysis model comparison. By default:
 * n_features  = 50  
 * rank        =10 
         
-	
-.. topic:: Examples: 
 
 .. code-block:: python 
 
 	>>> from watex.analysis import make_scedastic_data  
 	>>> X, X_homo, X_hetero , n_components = make_scedastic_data ()  
 	
-	
+
+.. topic:: References 
+
+	.. [1] Gokhan H. Bakir, Jason Wetson and Bernhard Scholkoft, 2004;
+		"Learning to Find Pre-images";Tubingen, Germany:Max Planck Institute
+		for Biological Cybernetics.
+
+	.. [2] S. Roweis, L.Saul, 2000, Nonlinear Dimensionality Reduction by
+		Loccally Linear Embedding.

@@ -1,9 +1,9 @@
 """
 =====================================================
-yMXS target for k-prediction: a step-by-step guide  
+k-prediction from MXS: step-by-step guide  
 =====================================================
 
-Real-world examples to generate the mixture learning strategy 
+Real-world examples to generate the mixture learning strategy (MXS) 
 target :math:`y*` for predicting the permeability coefficient 
 :math:`k` parameter from two boreholes.  
 """
@@ -11,7 +11,11 @@ target :math:`y*` for predicting the permeability coefficient
 # Licence: BSD-3-clause 
 
 #%% 
-#Import necessary modules 
+# Note that this is an example of two boreholes which results is quited less relevant compared to the tangible example implemented in 
+# the `Hongliu coal mine <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4326365>`_ with 11 boreholes data [1]_.  
+
+#%%
+# We start by importing the required modules 
 import pandas as pd 
 from watex.datasets import load_hlogs 
 
@@ -33,9 +37,10 @@ X, y = X0.copy() , y0.copy()
 print("feature_names:\n" , box.feature_names ) 
 print("target names:\n", box.target_names ) 
 
-# data contain some categorical values, we will drop the rock name, the hole_id 
+#%%
+# Data contains some categorical values, we will drop the rock name, the hole_id 
 # and well diameter which are subjective data and not useful for prediction 
-#puposes and impute  the remaining data using a bi-impute strategy 
+# puposes and impute  the remaining data using a bi-impute strategy 
 
 from watex.utils import naive_imputer 
 X.drop (columns = ['rock_name', 'hole_id', 'well_diameter'] , inplace =True )
@@ -45,6 +50,7 @@ X['depth'] = ( X.depth_bottom + X.depth_top )/2
 X.drop (columns =['depth_top', 'depth_bottom'], inplace =True )
 data_imputed = naive_imputer( X , strategy='mean', mode='bi-impute')  
 
+#%%
 # * Use PCA analysis to reduce the dimension to down the important features 
 # to predict the naive aquifer group (NGA).
 
@@ -68,6 +74,7 @@ pca = nPCA (Xpca_scaled , return_X= False, view = True ) # return PCA object rat
 
 # As a comment,  here 5/6 features are enough since the explained variance ratio is already 
 # got 98 % 
+
 #%%
 # * Set the number of components and use a convenient plot the both components   
 
@@ -77,13 +84,13 @@ pca = nPCA (Xpca_scaled ,n_components=2,  return_X=False ) # return object for p
 components = pca.components_ 
 features = pca.feature_names_in_
 plot_pca_components (components, feature_names= features, cmap='jet_r') 
+
 #%%
-#  As comments, the matrix plot shows the contributions of all features 
-# first components. 
+# As comments, the matrix plot shows the contributions of all features in the first and second components. 
 # Indeed, while most contributions are got in-depth resistivity gamma and gamma short distance 
 # they are negatively correlated with layer thickness and natural gamma. However, 
 # no-correlation is found with the sp log data 
-# second components. the depth and natural gamma are more corollated and inversely 
+# In the second components, the depth and natural gamma are more corollated and inversely 
 # correlated with the resistivity gamma, sp, and short distance. 
 # whereas the quasi-null correlation exists with layer thickness. 
 # By summarizing the PC1 and PC2 analysis, all features are useful as prediction 
@@ -91,6 +98,7 @@ plot_pca_components (components, feature_names= features, cmap='jet_r')
 # under 8 features, after 7 dimensions, the explained variance ratio is already 
 # reached 98 %.  Therefore features skipped should not influence the result of 
 # prediction 
+
 #%%
 # * Auto-preprocess the data using the default pipe 
 # Note that the categorical data "strata_name" is one-hot-encoded and 
@@ -122,7 +130,7 @@ ykm3 = km3c.fit_predict(pca.X  )
 # plot clusters into the general information of 5 groups of aquifers  
 plot_clusters (5 , pca.X, ykm , km.cluster_centers_ )  
 #%%
-# Plot 03 clusters
+# * Plot the 03 clusters
 # Now test the sample lot with only 03 clusters as a theory group of aquifer 
 # based on the distribution of the data.
 
@@ -238,12 +246,13 @@ print(mxso.mxs_classes_)
 
 # Once the :math:`y*(yMXS)` is predicted, the supervised learning model 
 # training can be made with the predictor:math:`X`. 
-#%%
-# :notes: 
-#    A paper is already submitted in Engineering Geology for k-prediction which 
-#    explained a concrete study (Case study in Hongliu coal mine). If published 
-#    the link should be added to that file accordingly. 
 
+#%%
+# A paper is under puclication in Engineering Geology for k-prediction which 
+#  explained a concrete study (Case study in Hongliu coal mine). See the reference below: 
+# ..topic:: References 
+# 
+#   .. [1] KOUADIO, Kouao Laurent and LIU, Jianxin and LIU, Rong, A Mixture Learning Strategy for Predicting Aquifers Permeability Coefficient K. ENGEO-D-22-02041, Available at SSRN: https://ssrn.com/abstract=4326365 or http://dx.doi.org/10.2139/ssrn.4326365
 
 
 

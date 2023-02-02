@@ -476,7 +476,8 @@ class MXS (HData):
         y_pred: Array-like 1d, pandas.Series
             Array composing the valid NGA labels. Note that NGA labels is  a 
             predicted labels mostly using the unsupervising learning. 
-            See also: :func:`~predict_NGA_labels` for further details. 
+            
+            :seealso: :func:`~predict_NGA_labels` for further details. 
         
         func: callable 
             Function to specifically map the permeability coefficient column 
@@ -1128,25 +1129,22 @@ class Hydrogeology(ABC):
     (through aquifers) and how groundwater interacts with the surrounding soil 
     and rock (the geology).
     
-    
-    see also
-    ---------
-
-    Hydrogeologists apply this knowledge to many practical uses. They might:
+    Indeed, hydrogeologists apply this knowledge to many practical uses. 
+    They might:
         
-        * Design and construct water wells for drinking water supply, irrigation 
-            schemes and other purposes;
-        * Try to discover how much water is available to sustain water supplies 
-            so that these do not adversely affect the environment – for example, 
-            by depleting natural baseflows to rivers and important wetland 
-            ecosystems;
-        * Investigate the quality of the water to ensure that it is fit for its 
-            intended use; 
-        * Where the groundwater is polluted, they design schemes to try and 
-            clean up this pollution;
-            Design construction dewatering schemes and deal with groundwater 
-            problems associated with mining; Help to harness geothermal energy
-            through groundwater-based heat pumps.
+    * Design and construct water wells for drinking water supply, irrigation 
+        schemes and other purposes;
+    * Try to discover how much water is available to sustain water supplies 
+        so that these do not adversely affect the environment – for example, 
+        by depleting natural baseflows to rivers and important wetland 
+        ecosystems;
+    * Investigate the quality of the water to ensure that it is fit for its 
+        intended use; 
+    * Where the groundwater is polluted, they design schemes to try and 
+        clean up this pollution;
+        Design construction dewatering schemes and deal with groundwater 
+        problems associated with mining; Help to harness geothermal energy
+        through groundwater-based heat pumps.
     """
     @abstractclassmethod 
     def __init__(

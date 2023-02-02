@@ -858,7 +858,9 @@ def invertVES (data: DataFrame[DType[float|int]] = None,
         approach (``BNN``). 
     
     :param kws: dict - Additionnal keywords arguments from |VES| data operations. 
-        See :func:`watex.utils.exmath.vesDataOperator` for futher details. 
+        See 
+    
+    :seealso: :func:`watex.utils.exmath.vesDataOperator` for futher details. 
     
     """
     
@@ -941,7 +943,7 @@ def ohmicArea(
     ... ((26, 2), (1000, 2), (8, 2))    
     
     
-    See also
+    Notes
     ---------
     
     The `ohmS` value calculated from `pseudo-area` is a fully data-driven 
@@ -1838,8 +1840,7 @@ def plot_sfi(
          
     see Also
     ---------
-    Refer to :func:`watex.exmath.sfi` for more details about the *sfi* 
-    parameter computation. 
+    watex.utils.exmath.sfi:  for more details about the  *sfi* parameter computation. 
     
     Examples
     ---------
@@ -4133,14 +4134,9 @@ def savgol_coeffs(window_length, polyorder, deriv=0, delta=1.0, pos=None,
     --------
     savgol_filter
 
-    Notes
-    -----
-
-    .. versionadded:: 0.14.0
-
     Examples
     --------
-    >>> from scipy.signal import savgol_coeffs
+    >>> from watex.exmath.signal import savgol_coeffs
     >>> savgol_coeffs(5, 2)
     array([-0.08571429,  0.34285714,  0.48571429,  0.34285714, -0.08571429])
     >>> savgol_coeffs(5, 2, deriv=1)
@@ -4388,7 +4384,7 @@ def savgol_filter(x, window_length, polyorder, deriv=0, delta=1.0,
 
     Examples
     --------
-    >>> from scipy.signal import savgol_filter
+    >>> from watex.utils.exmath import savgol_filter
     >>> np.set_printoptions(precision=2)  # For compact display.
     >>> x = np.array([2, 2, 5, 2, 1, 0, 1, 4, 9])
 

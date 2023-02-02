@@ -1,7 +1,5 @@
 .. Places parent toc into the sidebar
 
-:parenttoc: True
-
 .. title:: User guide: contents
 
 .. _user_guide:
@@ -27,6 +25,5 @@ User Guide
    methods.rst 
    utils.rst
    view.rst
-   glossary.rst
 
 

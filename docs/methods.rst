@@ -1,3 +1,4 @@
+
 .. _methods:
 
 ================
@@ -22,14 +23,16 @@ For the first release three main methods are implemented:
 
 .. _dc_resistivity: 
 
-DC-Resistivity 
-================
+DC-Resistivity: :mod:`~watex.methods.electrical`
+==================================================
 
 The :mod:`~watex.methods.electrical` is composed of multiples DC readings prefixed par the `DC` as the names of the methods (:class:`~watex.methods.electrical.DCProfiling`,
 :class:`~watex.methods.electrical.DCSounding` and single DC reading classes (:class:`~watex.methods.electrical.ResistivityProfiling` and :class:`~watex.methods.electrical.VerticalSounding`). The latter offers supplemental plot functions whereas the former does not. 
 
-`Resistivity Profiling (ERP)` 
---------------------------------
+
+Resistivity Profiling (ERP): :class:`~watex.methods.electrical.ResistivityProfiling` 
+-------------------------------------------------------------------------------------
+
 :class:`~watex.methods.electrical.ResistivityProfiling` deals with single Electrical Resistivity Profiling (ERP).
 The method is composed of `station`, `resistivity` data, and/or coordinates of measurements. Refer to :ref:`datasets` for further details.
 As an example, we will make samples of 100 measurements using the function :func:`~watex.datasets.gdata.make_erp` and compute the DC -electrical parameters for flow rate prediction [3]_.
@@ -38,8 +41,9 @@ The :meth:`~watex.methods.electrical.ResistivityProfiling.summary` recaps all th
 .. note:: 
 	For demonstration, I assume that the drilling is performed at station 5(S05) on the survey line, 
 	i.e the DC parameters are computed at that station. However, if the station is not specified, the algorithm will find the best conductive zone based on the resistivity values and will store the value in attribute `sves_` (position to make a drill). The auto-detection can be used when users need to propose a place to make a drill.  Note that for a real case study, it is recommended to specify the station where the drilling operation was performed through the parameter station. For instance, automatic drilling location detection can predict a station located in a marsh area that is not a suitable place for making a drill. Therefore, to avoid any misinterpretation due to the complexity of the geological area, it is useful to provide the station position. The following examples illustrate the aforementioned details:  
-.. topic:: Example:
-	* Compute the DC parameters and plot the conductive zone at stations `S5` 
+
+
+* Compute the DC parameters and plot the conductive zone at stations `S5` 
 
 .. code-block:: python 
 
@@ -69,9 +73,8 @@ The :meth:`~watex.methods.electrical.ResistivityProfiling.summary` recaps all th
    :align: center
    :scale: 50%
    
-.. topic:: Example:
 
-	* Compute the DC parameters and plot the conductive zone using the automatic-detection 
+* Compute the DC parameters and plot the conductive zone using the automatic-detection 
 
 .. code-block:: python 
 
@@ -94,8 +97,8 @@ Here, the automatic detection specifies the best point for making a drill to `S1
 parameters summarized in the :attr:`~watex.methods.electrical.ResistivityProfiling.table_`. 
 
  
-`Vertical Sounding (VES)`
--------------------------------------
+Vertical Sounding (VES): :class:`~watex.methods.electrical.VerticalSounding`
+------------------------------------------------------------------------------
 
 :class:`~watex.methods.electrical.VerticalSounding`  is carried out to speculate about the 
 existence of a fracture zone and the layer thicknesses. Commonly, it comes as a supplement 
@@ -110,9 +113,8 @@ pollution [12]_. Thus the search parameter indicates where the search for the fr
 deeper must start. For instance, `search=45` tells the algorithm to search or start detecting the 
 fracture zone from 45m to deeper. 
 	
-.. topic:: Example: 
-	* Compute the ohmic-area `OhmS` prediction parameters and plot the searching fracture zone 
-	
+* Compute the ohmic-area `OhmS` prediction parameters and plot the searching fracture zone
+
 .. code-block:: python 
 
 	>>> from watex.datasets import make_ves 
@@ -152,9 +154,13 @@ summarized parameters can be collected using:
 	area                                      ...                                     
 	None  200.0  20.0  schlumberger     None  ...     60     109.0    867.2946       1
 	
+.. topic:: Example: 
 
-`DC-Profiling` 
------------------------
+	* :ref:`sphx_glr_glr_examples_utils_plot_ohmic_area.py` 
+	
+	
+DC-Profiling: :class:`~watex.methods.electrical.DCProfiling`
+-------------------------------------------------------------
 
 :class:`~watex.methods.electrical.DCProfiling` reads a collection of DC-resistivity profiling data. 
 It computes electrical profiling parameters and store data in a line object where each line 
@@ -168,11 +174,8 @@ For further details about the parameters explanations, click
 on :class:`~watex.methods.electrical.DCProfiling` . The following examples give a real 
 example of data collected and stored in the software *data/erp* directory. 
 
+* Get DC -resistivity profiling from the individual ERP data  
 
-.. topic:: Example:
-
-	* Get DC -resistivity profiling from the individual ERP data  
-    
 .. code-block:: python 
 
     >>> from watex.datasets import make_erp 
@@ -200,9 +203,8 @@ example of data collected and stored in the software *data/erp* directory.
 	line2      10  -13.48851  0.000997  ...      M    PC  1.306801
 	line3      10  -13.48851  0.000997  ...      M    PC  1.306801
 	
-.. topic:: Example:
-
-	*  Read a collection of ERP data  in excel sheets 
+	
+* Read a collection of ERP data  in excel sheets
 		
 .. code-block:: python 
 
@@ -226,8 +228,9 @@ example of data collected and stored in the software *data/erp* directory.
 	['sheet1', 'l11_gbalo', 'sheet2', 'sheet3']
 
 	
-`DC-Sounding` 
------------------------
+DC-Sounding: :class:`~watex.methods.electrical.DCSounding` 
+-----------------------------------------------------------
+
 :class:`~watex.methods.electrical.DCSounding` reads a  collection of VES data and stores 
 the computed predictor in a :class:`~watex.methods.electrical.VerticalSounding` object. 
 Contrary to :class:`~watex.methods.electrical.DCProfiling` , data is stored in `site` object 
@@ -243,9 +246,7 @@ For instance to fetch the DC-sounding data position and the resistivity in depth
 For parameters explanation, refer to :class:`~watex.methods.electrical.DCSounding` instead. The 
 following examples will illustrate the literature above: 
 
-.. topic:: Example: 
-
-    * Read a single DC Electrical Sounding file 
+* Read a single DC Electrical Sounding file 
     
 .. code-block:: python 
 
@@ -263,9 +264,8 @@ following examples will illustrate the literature above:
     array([ 66.1963,  67.5732,  69.2663,  71.2754,  74.2315,  77.6814,
         81.6254,  86.0633,  96.4209, 108.7543, 123.0635, 139.3486])
     
-.. topic:: Example: 
 
-    * Read Multiple Sounding files from sheets 
+* Read Multiple Sounding files from sheets 
 	
 .. code-block:: 
 
@@ -282,11 +282,12 @@ following examples will illustrate the literature above:
 	site1  200.0  20.0  schlumberger  ...       100   268.087715      2
 	site2  200.0  20.0  schlumberger  ...       100   268.087715      2
 	site3  200.0  20.0  schlumberger  ...       100  1183.364102      2
+
 	
 .. _em: 
 
-EM  
-=======
+EM: :mod:`~watex.methods.em`  
+=============================
 
 :mod:`~watex.methods.em` module is related to a few meter exploration in the case of groundwater 
 exploration(GWE). The module provides some basic processing steps for EMAP data filtering
@@ -315,9 +316,11 @@ such as:
 .. _razorback: https://github.com/BRGM/razorback
 .. _MTnet: https://www.mtnet.info/main/
 
-When EDI data is passed to EM :meth:`~watex.methods.em.Processing.fit` method, each Edi-file is considered as an `EM` object, and attributes 
-are wrapped and recomputed such the `coordinates`, `ids` sites, `frequency` and `reference frequency`.  EDI files can also rewrite accordingly using the EM :meth:`~watex.methods.em.Processing.rewrite` method. The latter gives many options for EDI outputs. Refer to 
-:meth:`~watex.methods.em.Processing.rewrite` for further details of parameter explanations. 
+Note that the :class:`~watex.methods.em.Processing` inherits from :class:`~watex.methods.em.EM` class. When EDI data is passed 
+to EM :meth:`~watex.methods.em.EM.fit` method, each Edi-file is considered as an `EM` object, and attributes 
+are wrapped and recomputed such the `coordinates`, `ids` sites, `frequency` and `reference frequency`.  EDI files can also rewrite accordingly 
+using the EM :meth:`~watex.methods.em.EM.rewrite` method. The latter gives many options for EDI outputs. Refer to 
+:meth:`~watex.methods.em.EM.rewrite` for further details about parameters. 
 
 For the whole examples, let's fetch 21 examples of EDI files stored in :func:`~watex.datasets.dload.load_edis`.  
 
@@ -392,10 +395,12 @@ The code snippets below show a concrete example of data composed of weak signal 
 	((55, 3), (55, 3), (55, 3))
 
 
-`Restoring tensors` 
-------------------------------
+Restoring tensors: :meth:`~watex.methods.em.Processing.zrestore`  
+----------------------------------------------------------------
 
-In the following, we will show some examples for restoring signal and processing EDI data using the EM :class:`~watex.methods.em.Processing` class. The signal recovery is ensured by the :meth:`~watex.methods.em.Processing.zrestore`. Before, the EDI quality data can be analyzed using the :meth:`~watex.methods.em.Processing.qc` method. For instance: 
+In the following, we will show some examples for restoring signal and processing EDI data using the EM :class:`~watex.methods.em.Processing` 
+class. The signal recovery is ensured by the :meth:`~watex.methods.em.Processing.zrestore`. Before, the EDI quality data 
+can be analyzed using the :meth:`~watex.methods.em.Processing.qc` method. For instance: 
 
 .. code-block:: python 
 
@@ -411,7 +416,9 @@ In the following, we will show some examples for restoring signal and processing
 	>>> c, freq_new  = pobj.qc ( tol=.6 , return_freq =True) # returns the interpolated frequency 
 
 If the quality is so poor, there is a possibility to remove the bad data using 
-the :meth:`~watex.methods.em.Processing.getValidData` method. Indeed the :meth:`~watex.methods.em.Processing.getValidData` method analyzes the data and keeps the good ones. The goodness of the data depends on the  `threshold` rate.  For instance ``50%`` means to consider an impedance tensor 'z'  valid if the quality control shows at least that score at each frequency of all stations. For example: 
+the :meth:`~watex.methods.em.Processing.getValidTensors` method. Indeed the :meth:`~watex.methods.em.Processing.getValidTensors` method 
+analyzes the data and keeps the good ones. The goodness of the data depends on the  `threshold` rate.  For instance ``50%`` means to c
+onsider an impedance tensor 'z'  valid if the quality control shows at least that score at each frequency of all stations. For example: 
  
 .. code-block:: python 
 
@@ -420,15 +427,18 @@ the :meth:`~watex.methods.em.Processing.getValidData` method. Indeed the :meth:`
 	>>> f= pObj.freqs_
 	>>> len(f) 
 	55
-	>>> zObjs_soft = pObj.getValidData (tol= 0.3, option='None' ) # None doesn't export EDI-file
+	>>> zObjs_soft = pObj.getValidTensors (tol= 0.3, option='None' ) # None doesn't export EDI-file
 	>>> len(zObjs_soft[0]._freq) # suppress 3 tensor data 
 	52 
-	>>> zObjs_hard  = pObj.getValidData( tol = 0.6 )
+	>>> zObjs_hard  = pObj.getValidTensors( tol = 0.6 )
 	>>> len(zObjs_hard[0]._freq)  # suppress only two 
 	53
 
 .. note:: 
-	The sample of EDI data stored in :func:`~watex.datasets.dload.load_edis` is already preprocessed data so it is not useful for a software demonstration. Rather, we use the concrete *data/edis/* . However, the data is not available in the software repository *data/edis* and can be collected upon request. 
+
+	The sample of EDI data stored in :func:`~watex.datasets.dload.load_edis` is already preprocessed data so it is not useful for a 
+	software demonstration. Rather, we use the concrete *data/edis/* . However, the data is not available in the software repository *data/edis* 
+	and can be collected upon request. 
 
 The tensors recovering can be operated as :
 
@@ -452,8 +462,8 @@ The tensors recovering can be operated as :
    :scale: 50%
 	
 	
-`Filtering tensors`
--------------------------
+Filtering tensors: :meth:`~watex.methods.em.Processing.ama`, :meth:`~watex.methods.em.Processing.flma`  & :meth:`~watex.methods.em.Processing.tma` 
+-----------------------------------------------------------------------------------------------------------------------------------------------------
 
 After recovering the signal, the latter exhibits a field strength amplitude for the next processing step like filtering. :code:`watex` implements three filterings linked to the :class:`~watex.methods.em.Processing` class such as the adaptative moving average (AMA), the fixed-dipole length moving average (FLMA), and the trimming-moving average (TMA). Note that when using the AMA filter,  the `c` parameter is a window-width expansion factor that must be input to the filter adaptation process to control the roll-off characteristics of the applied Hanning window [13]_. Here is an illustration: 
 
@@ -546,8 +556,8 @@ the `option` parameter to ``write``.
 
 .. _hydrogeology: 
 
-Hydrogeology 
-==============
+Hydrogeology: :mod:`~watex.methods.hydro`
+==========================================
 
 :mod:`~watex.methods.hydro` deals with the hydrogeological parameters calculations of aquifers. 
 These parameters are essential and crucial in the designing and construction progress of geotechnical 
@@ -586,8 +596,8 @@ Here is data that composes the hydro-geophysical dataset (HGDS):
 		  dtype='object')
 
 
-`Aquifer section` 
---------------------------
+Aquifer section: :class:`~watex.methods.hydro.AqSection` 
+---------------------------------------------------------
 
 :class:`~watex.methods.hydro.AqSection` get the section of each aquifer from the HGDS. For further details about the 
 hydro-dataframe, read the documentation of the :func:`~watex.datasets.dload.load_hlogs`. Indeed, the unique 
@@ -609,8 +619,9 @@ Here is an example of computing a section from a single borehole data `H502` (de
 	
 In the above example, the valid section of the aquifer is found between 197.12 and 340.35 meters deep. 
 
-`Logging`
----------------
+Logging: :class:`~watex.methods.hydro.Logging` 
+-------------------------------------------------
+
 :class:`~watex.methods.hydro.Logging`  class deals with the numerical values of HGDS that compose the 
 predictor :math:`X`. If categorical values are found in the logging dataset, they should be discarded. 
 
@@ -661,8 +672,8 @@ The figure below shows the following outputs. Note that the logging plot has man
    :align: center
    :scale: 40%
 	
-`Mixture Learning Strategy (MXS)`
---------------------------------------------------
+Mixture Learning Strategy (MXS): :class:`~watex.methods.hydro.MXS` 
+-----------------------------------------------------------------------
 
 :class:`~watex.methods.hydro.MXS` entails predicting the permeability coefficient `k` from the HGDS data. Note 
 that the dataset for predicting `k` comes with a lot of missing data in the target :math:`y`.  This is obvious 
@@ -712,8 +723,8 @@ selected models.  For reproducing the model results, send the request for collec
 
 The left panel of the figure above is for the learning curve. The center panel is for the model scalability and the right panel is for the model performance. :math:`XGB^{+}`  paradigm finds out a good tradeoff between computation time and performance since it reaches its optimal performance with a relatively faster time. :math:`M_{dt}`: Maximum depth of trees. :math:`\eta`: Learning rate for boosting trees (between 0 and 1). :math:`\beta` is the booster. It could be linear (`Lin`), tree (`Tree`), or Dropouts with multiple Additive Regression Trees (`DART`). :math:`\eta_e`: the number of the rounds/estimators of boosted trees. :math:`\gamma` controls the pruning. Minimum loss reduction is needed to further split a leaf. Higher :math:`\gamma`  is more conservative [15]_. 
 
-`Aquifer Group` 
-------------------------
+Aquifer Group:  :class:`~watex.methods.hydro.AqGroup`
+-------------------------------------------------------
 
 :class:`~watex.methods.hydro.AqGroup` find the existing group between the permeability coefficient `k`  and the group of the aquifer. 
 It computes the occurrence between the true labels and the group of aquifer as a function of occurrence and representativity via the method :meth:`~watex.methods.hydro.AqGroup.findGroups`. Refer to :class:`~watex.methods.hydro.AqGroup` for further explanation. Many possibilities of group manipulations can be handled using the raw function :func:`~watex.utils.hydroutils.find_aquifer_groups`. 

@@ -1,12 +1,14 @@
 {% extends "!layout.html" %}
 
+<script src="{{ pathto('../_static/css/bootstrap.min.js', 1) }}"></script>
+{% include "javascript.html" %}
 {%- block footer %}
 <footer class="footer" style="border-top: 1px solid #ccc; padding-top: 10px">
   <div class="container">
     <div id="credits" style="width: 50%; float: left">
       <p>
-      {% trans copyright=copyright|e %}&#169; Copyright {{ copyright }}, <a href="https://etanoyau@gmail.com">L. Kouadio</a>.{% endtrans %}<br/>
-      Created using the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/">PyData Sphinx Theme</a> 0.12.0 and <a href="https://www.sphinx-doc.org/">Sphinx </a>5.3.0.<br/>
+      {% trans copyright=copyright|e %}&#169; Copyright {{ copyright }}, <a href="https://wegeophysics.github.io/">Laurent Kouadio</a>.{% endtrans %}<br/>
+      Created using the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/">PyData Sphinx Theme</a> v0.12 and <a href="https://www.sphinx-doc.org/">Sphinx </a>v4.5<br/>
       </p>
     </div>
     <div class="dropup show" style="float: right; margin: 10px; color: #9EB3DD">
@@ -17,8 +19,9 @@
           <a class="dropdown-item" href="https://watex.readthedocs.io/en/latest/index.html">v{{ version }}</a>
         </div>
     </div>
-    <div id="version" style="color: #9999; float: right; margin: 15px">v{{ version }}</div>
+		<div id="moto" >
+			<p class="moto"> "Life is much better with potable water" </p>
+		</div>
     </div>
-  </div>
 </footer>
 {%- endblock %}

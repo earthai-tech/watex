@@ -195,3 +195,5 @@ data0.joblib
 scripts/
 # git certificate 
 git-mycompany-com.pem
+
+watex/wlogfiles

@@ -77,8 +77,9 @@ class Base:
 
     """
     
-    def __init__(self, **kwargs):
+    def __init__(self, verbose: int =0 , **kwargs):
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
+        self.verbose= verbose 
         
 #++++ configure the geological rocks from files:AGSO & AGSO.STCODES +++++++++++
 __agso_properties =dict(
@@ -154,7 +155,7 @@ def mapping_stratum(download_files =True):
     return   tuple(rock_and_structural_props)
 
 def fetching_data_from_repo(repo_file, savepath =None ): 
-    """ Try to retreive data from github repository.
+    """ Try to retrieve data from github repository.
     
     :param repo_file: str or Path-like object 
         Give the full path from the repository root to the file name.

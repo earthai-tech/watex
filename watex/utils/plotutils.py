@@ -451,7 +451,7 @@ def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
         
     See Also
     --------
-    plotSilhouette :func:`watex.view.mlplot.plotSilhouette` 
+    watex.view.mlplot.plotSilhouette: 
         Gives consistency plot as the use of `prefit` parameter which checks 
         whether`labels` are expected to be passed into the function 
         directly or not. 

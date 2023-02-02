@@ -1178,8 +1178,8 @@ class EvalPlot(BasePlot):
         
         See also 
         ---------
-        Refer to :meth:`watex.utils.metrics.Metrics.confusion_matrix` 
-        for furthers details.
+        watex.utils.metrics.Metrics.confusion_matrix:  
+            Compute the confusion matrix  
         
         """
         self.inspect
@@ -2735,22 +2735,28 @@ def _plotSilhouette (X, labels, metric ='euclidean', **kwds ):
   
     See also 
     ---------
+    watex.utils.plotutils.plot_silhouette: Plot naive silhouette 
+    
+    Notes
+    ------ 
+    
     Silhouette is used as graphical tools,  to plot a measure how tighly is  
     grouped the examples of the clusters are.  To calculate the silhouette 
     coefficient, three steps is allows: 
-        - calculate the **cluster cohesion**, :math:`a(i)`, as the average 
-            distance between examples, :math:`x^{(i)}`, and all the others 
-            points
-        - calculate the **cluster separation**, :math:`b^{(i)}` from the next 
-            average distance between the example , :math:`x^{(i)}` amd all 
-            the example of nearest cluster 
-        - calculate the silhouette, :math:`s^{(i)}`, as the difference between 
-            the cluster cohesion and separation divided by the greater of the 
-            two, as shown here: 
-                
-            .. math:: 
-                
-                s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
+        
+    * calculate the **cluster cohesion**, :math:`a(i)`, as the average 
+        distance between examples, :math:`x^{(i)}`, and all the others 
+        points
+    * calculate the **cluster separation**, :math:`b^{(i)}` from the next 
+        average distance between the example , :math:`x^{(i)}` amd all 
+        the example of nearest cluster 
+    * calculate the silhouette, :math:`s^{(i)}`, as the difference between 
+        the cluster cohesion and separation divided by the greater of the 
+        two, as shown here: 
+            
+        .. math:: 
+            
+            s^{(i)}=\frac{b^{(i)} - a^{(i)}}{max {{b^{(i)},a^{(i)} }}}
     
     Note that the sihouette coefficient is bound between -1 and 1 
     
@@ -2836,7 +2842,7 @@ def plotLearningInspections (
         class. 
         
     kws: dict, 
-        Additional keywords argument passed to :func:`~.plotLearningInspection`. 
+        Additional keywords argument passed to :func:`plotLearningInspection`. 
         
     Returns
     ----------
@@ -2844,8 +2850,7 @@ def plotLearningInspections (
     
     See also 
     ---------
-    :func:`~.plotLearningInspection`: for more details about the keyword 
-    arguments. 
+    plotLearningInspection:  Inspect single model 
     
     Examples 
     ---------

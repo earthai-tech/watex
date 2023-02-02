@@ -1121,11 +1121,7 @@ class VerticalSounding (ElectricalMethods):
     **kws**: dict 
         Additionnal keywords arguments from |VES| data operations. 
         See :func:`watex.utils.exmath.vesDataOperator` for futher details.
-        
-    See also 
-    ---------
-    `Kouadio et al 2022 <https://doi.org/10.1029/2021WR031623>`_
-    
+
     References
     ----------
     *Koefoed, O. (1970)*. A fast method for determining the layer distribution 

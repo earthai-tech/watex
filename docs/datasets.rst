@@ -1,3 +1,4 @@
+
 .. _datasets:
 
 ================
@@ -6,7 +7,7 @@ Datasets
 
 .. currentmodule:: watex.datasets
 
-:mod:`~watex.datasets` fetches data from the local machine. If data does not exist, module retrieve it from 
+:mod:`~watex.datasets` fetches data from the local machine. If data does not exist, module retrieves it from 
 the remote (repository) or using  zenodo record. :code:`watex` implements three (3) kinds of datasets: 
 
 * DC-resistivity datasets (DC-datasets) 
@@ -23,7 +24,9 @@ and vertical electrical sounding (VES) datasets [1]_.
 .. _pandas dataframe: https://pandas.pydata.org/docs/
 
 
-`ERP dataset` 
+.. _erp_dataset:
+
+ERP dataset
 ---------------
 
 Most of the `DC-ERP` data are collected from different survey areas during the National Drinking 
@@ -31,21 +34,25 @@ Water Supply Program (PNAEP) occurs in 2014 in `Cote d'Ivoire`_.
 
 This is an example of the ERP data arrangement table: 
 
-+-----------+-----------+-----------+--------------+     
-|station    | easting 	| northing  | resistivity  |             
-+===========+===========+===========+==============+    
-|0          |382741	    |896203	    |79        	   |
-+-----------+-----------+-----------+--------------+ 
-|10	        |382743	    |896193	    |62            |
-+-----------+-----------+-----------+--------------+ 
-|20	        |382747   	|896184	    |51            |
-+-----------+-----------+-----------+--------------+ 
-|...        |...        |...        | ...          |
-+-----------+-----------+-----------+--------------+          
-|980        |382705	    |894887	    |55            |
-+-----------+-----------+-----------+--------------+ 
-|990        |382704	    |895879	    |58            |
-+-----------+-----------+-----------+--------------+     
+.. table::
+   :widths: auto
+   :class: longtable
+   
+   +-----------+-----------+-----------+--------------+     
+   |station    | easting   | northing  | resistivity  |             
+   +===========+===========+===========+==============+ 
+   |0          |382741     |896203     |79            |
+   +-----------+-----------+-----------+--------------+ 
+   |10         |382743     |896193     |62            |
+   +-----------+-----------+-----------+--------------+ 
+   |20         |382747     |896184     |51            |
+   +-----------+-----------+-----------+--------------+ 
+   |...        |...        |...        | ...          |
+   +-----------+-----------+-----------+--------------+          
+   |980        |382705     |894887     |55            |
+   +-----------+-----------+-----------+--------------+ 
+   |990        |382704     |895879     |58            |
+   +-----------+-----------+-----------+--------------+     
  
 All the DC-ERP datasets hold the following parameters: 
 
@@ -86,26 +93,31 @@ There are two localities for DC-ERP datasets :
 To ascertain whether the data is acceptable,  it is better to reverify the arrangement using the function 
 :func:`~watex.utils.coreutils.erpSelector` for data validation. 
 
+.. _ves_dataset:
 
-`VES dataset` 
+VES dataset 
 -------------------
 
 Most of the `DC-VES` data are also collected from different survey areas during the PNAEP program. 
 The following table gives an illustration of the standard data arrangement: 
 
-+------+--------+----------+----------+------------+
-|AB/2  |  MN/2  |     SE1  |    SE2   |      SE... |	
-+------+--------+----------+----------+------------+
-| 1    | 0.4	|  107	   |     93   |      75	   |
-+------+--------+----------+----------+------------+
-| 2    | 0.4	|  97	   |     91   |      49	   |
-+------+--------+----------+----------+------------+
-| ...  |  ...   |   ...    |   ...    |     ...    |
-+------+--------+----------+----------+------------+
-| 100  |  10	|   79     |   96     |      98	   |
-+------+--------+----------+----------+------------+
-| 110  |  10	|   84	   |  104     |     104	   |
-+------+--------+----------+----------+------------+
+.. table::
+   :widths: auto
+   :class: longtable
+
+   +------+--------+----------+----------+------------+
+   |AB/2  |  MN/2  |     SE1  |    SE2   |      SE... |	
+   +======+========+==========+==========+============+
+   |1     |0.4     |107       |93        |75          |
+   +------+--------+----------+----------+------------+
+   |2     |0.4     |97        |91        |49          |
+   +------+--------+----------+----------+------------+
+   | ...  |  ...   |   ...    |   ...    |     ...    |
+   +------+--------+----------+----------+------------+
+   |100   |10      |79        |96        |98          |
+   +------+--------+----------+----------+------------+
+   |110   |10      |84        |104       |104         |
+   +------+--------+----------+----------+------------+
 
 where :math:`AB/2`,  :math:`MN/2` and :math:`SE` are the depth measurement of the current electrodes AB, 
 the spacing of the potential electrodes, and the sounding resistivity values in :math:`\Omega.m` [3]_. 
@@ -116,19 +128,23 @@ renamed to :math:`resistivity`.
 The following table gives the true sanitized arrangement acceptable for all functions and 
 methods that use the VES data: 
 
-+-----------+-----------+-------------+-------------+----------------+     
-|AB 	    | MN 	    | resistivity | resistivity | resistivity... |             
-+===========+===========+=============+=============+================+    
-|1          |0.4	    |107 	      |93           | 75 	         |
-+-----------+-----------+-------------+-------------+----------------+ 
-|2	        |0.4	    |97           |91           | 49             |
-+-----------+-----------+-------------+-------------+----------------+ 
-|...        |...        |...          | ...         | ...   	     |
-+-----------+-----------+-------------+-------------+----------------+ 
-|100	    |10 	    |79           |96           | 98             |
-+-----------+-----------+-------------+-------------+----------------+  
-|110	    |10 	    |84           |104          | 104            |
-+-----------+-----------+-------------+-------------+----------------+ 
+.. table::
+   :widths: auto
+   :class: longtable
+   
+   +-----------+-----------+-------------+-------------+----------------+----------------+     
+   |AB         | MN        | resistivity | resistivity | resistivity    |   ...          |      
+   +===========+===========+=============+=============+================+================+    
+   |1          |0.4        |107          |93           | 75             |   ...          |
+   +-----------+-----------+-------------+-------------+----------------+----------------+ 
+   |2          |0.4        |97           |91           | 49             |   ...          |   
+   +-----------+-----------+-------------+-------------+----------------+----------------+ 
+   |...        |...        |...          | ...         | ...   	        |   ...          |
+   +-----------+-----------+-------------+-------------+----------------+----------------+ 
+   |100        |10         |79           |96           |98              |   ...          |
+   +-----------+-----------+-------------+-------------+----------------+----------------+  
+   |110        |10         |84           |104          |104             |   ...          |
+   +-----------+-----------+-------------+-------------+----------------+----------------+ 
 
 The following parameters are passed to the VES data to retrieve the expected data:
 
@@ -220,7 +236,8 @@ boreholes, and logging data. Refer to :func:`~watex.datasets.dload.load_hlogs` f
 	>>> list(y.columns)
 	['pumping_level', 'aquifer_thickness'] 
 	
-	
+.. _em_dataset:	
+
 EDI dataset 
 ===============
 
@@ -281,7 +298,7 @@ See the demonstration below to fetch some processing stages of `Bagoue datasets`
 	>>> h.frame.columns[:7] 
 	Index(['hole_id', 'depth_top', 'depth_bottom', 'strata_name', 'rock_name',
        'layer_thickness', 'resistivity'],
-      dtype='object')
+       dtype='object')
 	>>> e= fetch_data ('edis', samples =7 , return_data = True) 
 	array([Edi( verbose=0 ), Edi( verbose=0 ), Edi( verbose=0 ),
        Edi( verbose=0 ), Edi( verbose=0 ), Edi( verbose=0 ),
@@ -290,18 +307,18 @@ See the demonstration below to fetch some processing stages of `Bagoue datasets`
 	>>> b.tnames 
 	array(['flow'], dtype='<U4')
 	>>> b.feature_names 
-	... ['num',
-		 'name',
-		 'east',
-		 'north',
-		 'power',
-		 'magnitude',
-		 'shape',
-		 'type',
-		 'sfi',
-		 'ohmS',
-		 'lwi',
-		 'geol']
+    ['num',
+	 'name',
+	 'east',
+	 'north',
+	 'power',
+	 'magnitude',
+	 'shape',
+	 'type',
+	 'sfi',
+	 'ohmS',
+	 'lwi',
+	 'geol']
 	>>> X, y = fetch_data('bagoue prepared' ) # prepared staged 
 	>>> X # is transformed  # ready for prediction 
 	>>> X[0] 
@@ -334,15 +351,15 @@ further details. The following code snippets gives an example of generating ERP 
 
 .. code-block:: python 
 
-	>>> from watex.datasets import make_erp, make_ves 
-	>>> erp_data = make_erp (n_stations =50 , step =30  , as_frame =True)
+    >>> from watex.datasets import make_erp, make_ves 
+    >>> erp_data = make_erp (n_stations =50 , step =30  , as_frame =True)
     >>> erp_data.head(3)
     Out[256]: 
        station  longitude  latitude        easting    northing  resistivity
     0        0 -13.488511  0.000997  668210.580864  110.183287   225.265306
     1       30 -13.488511  0.000997  668210.581109  110.183482   327.204082
     2       60 -13.488510  0.000997  668210.581355  110.183676   204.877551
-	>>> b = make_ves (samples =50 , order ='+') # 50 measurements in deeper 
+    >>> b = make_ves (samples =50 , order ='+') # 50 measurements in deeper 
     >>> b.resistivity [:-7]
     Out[314]: 
     array([429.873 , 434.255 , 438.5707, 442.8203, 447.0042, 451.1228,

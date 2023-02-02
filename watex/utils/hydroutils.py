@@ -131,8 +131,7 @@ def make_MXS_labels (
     y_pred: Array-like 1d, pandas.Series
         Array composing the valid NGA labels. Note that NGA labels is  a 
         predicted labels mostly using the unsupervising learning. 
-        See also: :func:`~predict_NGA_labels` for further details. 
-       
+         
     threshold: float, default=None 
         The threshold from which, label in 'y_true' can be considered  
         similar than the one in NGA labels 'y_pred'. The default is 'None' which 
@@ -229,6 +228,11 @@ def make_MXS_labels (
     MXS: array-like 1d or :class:`~watex.utils.box.Boxspace`
         array like of MXS labels or MXS object containing the 
         usefull attributes. 
+    
+    See Also
+    ---------
+    predict_NGA_labels: Predicts Naive group of Aquifers  labels. 
+    
     
     Examples
     ---------
@@ -1493,8 +1497,10 @@ up, low :list of upper and lower section values of aquifer.
 
 See Also 
 ----------
-- compute multiple sections: :func:`~watex.utils.hydroutils.get_aquifer_sections`. 
-- compute single secion:  :func:`~watex.utils.hydroutils.get_aquifer_section`. 
+watex.utils.hydroutils.get_aquifer_section: compute single section
+
+watex.utils.hydroutils.get_aquifer_sections: compute multiple sections 
+ 
 
 Example
 -------   
@@ -1615,7 +1621,8 @@ up, low :list of upper and lower section values of aquifer.
 
 See Also 
 ----------
-- compute single secion:  :func:`~watex.utils.hydroutils.get_aquifer_sections`. 
+watex.utils.hydroutils.get_aquifer_sections: 
+    compute multiples aquifer sections
 
 Example
 -------   

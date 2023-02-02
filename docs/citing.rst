@@ -5,7 +5,7 @@ Citing
 =============
 
 
-If the software is used in any scientific publication, We appreciate citing the paper below. It has been published in the `Water Resources Research journal <https://doi.org/10.1029/2021wr031623>`_. Here is a ready-made BibTeX entry:
+If the software is used in any scientific publication, we appreciate citing the paper below. Here is a ready-made BibTeX entry:
 
 .. highlight:: none
 
@@ -23,5 +23,5 @@ If the software is used in any scientific publication, We appreciate citing the 
 	}
 
 
-In most situations where :code:`watex` is cited, a citation to `scikit-learn <http://scikit-learn.org/stable/>`_ would also be appropriate.
+In most situations where :code:`watex` is cited, a citation to `scikit-learn <https://scikit-learn.org/stable/about.html#citing-scikit-learn>`_ would also be appropriate.
 

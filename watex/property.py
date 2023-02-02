@@ -395,7 +395,7 @@ class Water (ABC):
     =================   =======================================================                        
     
     
-    See also 
+    Notes  
     ----------
     Water (chemical formula H2O) is an inorganic, transparent, tasteless, 
     odorless, and nearly colorless chemical substance, which is the main 
@@ -860,7 +860,7 @@ class IsEdi(ABC):
     References 
     ------------
     .. [1]  Wight, D.E., Drive, B., 1988. MT/EMAP Data Interchange Standard, 
-    1rt ed. Society of Exploration Geophysicists, Texas 7831, USA.
+        1rt ed. Society of Exploration Geophysicists, Texas 7831, USA.
     
     """
     @property
@@ -1563,8 +1563,8 @@ class Copyright:
 
     More attributes can be added by inputing a key word dictionary
     
-   Examples
-   ----------
+    Examples
+    ----------
     >>> from watex.property import Copyright 
     >>> copbj =Copyright(**{'owner':'University of AI applications',
     ...             'contact':'WATER4ALL'})

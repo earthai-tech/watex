@@ -45,9 +45,9 @@ from watex.methods import(
 # and removing noises. Commonly the method mostly used in groundwater 
 # exploration is the audio-magnetotelluric because of the shortest frequency 
 # and rapid executions. Furthermore, we can also list some other advantages 
-# such as:    
-# * is useful for imaging both deep geologic structure and near-surface geology 
-#   and can provide significant details. 
+# such as:  
+#  
+# * is useful for imaging both deep geologic structure and near-surface geology and can provide significant details. 
 # * includes a backpack portable system that allows for use in difficult terrain. 
 # * the technique requires no high-voltage electrodes, and logistics are 
 #   relatively easy to support in the field. Stations can be acquired almost 
@@ -55,14 +55,13 @@ from watex.methods import(
 #   regional reconnaissance exploration or detailed surveys of local geology 
 #   and has no environmental impact 
 #
-# :notes: For deep implementation or exploring a large scale of EM/AMT data  
+# :note: For deep implementation or exploring a large scale of EM/AMT data  
 #     processing, it is recommended to use the package `pycsamt <https://github.com/WEgeophysics/watex/>`_. 
 #     Create EM object as a collection of EDI-file. 
 #     Collect edi-files and create an EM object. It sets he properties from 
 #     audio-magnetotelluric. The two(2) components XY and YX will be set and 
 #     calculated.Can read MT data instead, however, the full handling transfer 
-#     function like Tipper and Spectra is not completed. Use other MT 
-# software for a long period's data.
+#     function like Tipper and Spectra is not completed. Use other MT software for a long period's data.
 
 from watex.methods.em import EM
 edi_data = load_edis (return_data =True, samples =7) # object from Edi_collection 

@@ -68,7 +68,7 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
     Once data is tratified, the new category will be drop and return the 
     train set and testset stratified. For instance::  
         
-        >>> from watex.bases.transformers import StratifiedWithCategoryAdder
+        >>> from watex.transformers import StratifiedWithCategoryAdder
         >>> stratifiedNumObj= StratifiedWithCatogoryAdder('flow')
         >>> stratifiedNumObj.fit_transform(X=df)
         >>> stats2 = stratifiedNumObj.statistics_
@@ -85,7 +85,7 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
     Notes 
     ------
     If `base_num_feature` is not given, dataset will be stratified using 
-    purely random sampling.
+    random sampling.
         
     """
     
@@ -224,7 +224,7 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
     biais.Therefore strafied sampling is a better way to avoid 
      a significant biais of sampling survey. For instance:: 
         
-        >>> from watex.bases.transformers import StratifiedUsingBaseCategory 
+        >>> from watex.transformers import StratifiedUsingBaseCategory 
         >>> from watex.utils.mlutils import load_data 
         >>> df = load_data('data/geo_fdata')
         >>> stratifiedObj = StratifiedUsingBaseCategory(base_column='geol')
@@ -233,11 +233,11 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
 
     Notes
     ------
-    An :attr:`~.statictics_` inspection attributes is good way to observe 
-    the test set generated using purely random sampling and using the 
+    An :attr:`~.statictics_` inspection attribute is good way to observe 
+    the test set generated using purely random and  the 
     stratified sampling. The stratified sampling has category 
-    ``base_column``proportions almost indentical to those in the full 
-    dataset whereas the testset generated using purely random sampling 
+    ``base_column`` proportions almost indentical to those in the full 
+    dataset whereas the test set generated using purely random sampling 
     is quite skewed. 
     
     """
@@ -352,29 +352,29 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
     From the boundaries values including, features values can be transformed.
     `num_columns_properties` is composed of:
         
-        - `feature name` or index equals to 'flow`' or index of flow ='12' 
-        - `features boundaries` equals to ``[0., 1., 3]`` may correspond to:
+    - `feature name` or index equals to 'flow`' or index of flow ='12' 
+    - `features boundaries` equals to ``[0., 1., 3]`` may correspond to:
+        
+        - 0: features flow values with equal to 0. By default the begining 
+            value like 0 is unranged.
+        - 0-1: replace values ranged between 0 and 1. 
+        - 1-3:replace values ranged between 1-3 
+        - >3 : get all values greater than 3. by default categorize values 
+            greater than  the last  values. 
+        If the default classification is not suitable, create your own range
+            values like ``[[0-1], [1-3], 3] (1)``
             
-            - 0: features flow values with equal to 0. By default the begining 
-                value like 0 is unranged.
-            - 0-1: replace values ranged between 0 and 1. 
-            - 1-3:replace values ranged between 1-3 
-            - >3 : get all values greater than 3. by default categorize values 
-                greater than  the last  values. 
-            If the default classification is not suitable, create your own range
-                values like ``[[0-1], [1-3], 3] (1)``
-                
-        - `categorized names`: Be sure that if the value is provided as  without 
-            ranging like (1). The number of `categorized values` must be 
-            the size of the `features boundaries` +1. For instance, we try to 
-            replace all numerical values in column `flow` by ::
-                
-                -FR0 : all fllow egal to 0. 
-                -FR1: flow between 0-1 
-                -FR2: flow between 1-3 
-                -FR3: flow greater than 3. 
-            As you can see the `features boundaries` [0., 1., 3]size is equal 
-            to `categorized name`['FR0', 'FR1', 'FR2', 'FR3'] size +1. 
+    - `categorized names`: Be sure that if the value is provided as  without 
+        ranging like (1). The number of `categorized values` must be 
+        the size of the `features boundaries` +1. For instance, we try to 
+        replace all numerical values in column `flow` by ::
+            
+            -FR0 : all fllow egal to 0. 
+            -FR1: flow between 0-1 
+            -FR2: flow between 1-3 
+            -FR3: flow greater than 3. 
+        As you can see the `features boundaries` [0., 1., 3]size is equal 
+        to `categorized name`['FR0', 'FR1', 'FR2', 'FR3'] size +1. 
             
     Usage
     ------
@@ -391,7 +391,7 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
             
     Examples
     --------
-    >>> from watex.bases.transformers import  CategorizeFeatures
+    >>> from watex.transformers import  CategorizeFeatures
     >>> from watex.utils.mlutils import load_data 
     >>> df= mlfunc.load_data('data/geo_fdata')
     >>> catObj = CategorizeFeatures(
@@ -704,7 +704,7 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
             returns X transformed (``M=m-samples``, & ``N=n+1-features``) 
             with attribute  combined. 
             
-            .. versionadded:: 0.1.3
+        .. versionadded:: 0.1.3
             
         """
         columns =[]
@@ -836,7 +836,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
             
     Examples 
     ---------
-    >>> from watex.bases.transformers import DataFrameSelector 
+    >>> from watex.transformers import DataFrameSelector 
     >>> from watex.utils.mlutils import load_data   
     >>> df = mlfunc.load_data('data/geo_fdata')
     >>> XObj = DataFrameSelector(attribute_names=['power','magnitude','sfi'],
@@ -964,8 +964,9 @@ class FrameUnion (BaseEstimator, TransformerMixin) :
     
     Example
     ------- 
-    >>> from watex.datasets import X_
-    >>> from watex.utils.transformers import FrameUnion 
+    >>> from watex.datasets import fetch_data 
+    >>> from watex.utils.transformers import FrameUnion
+    >>> X_= fetch_data ('Bagoue original').get('data=dfy1')
     >>> frameObj = FrameUnion(X_, encoding =OneHotEncoder)
     >>> X= frameObj.fit_transform(X_)
         

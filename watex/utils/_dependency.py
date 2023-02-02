@@ -15,6 +15,7 @@ from .version import Version
 VERSIONS = {
     "qtpy":"0.3", 
     "numpydoc": "1.0.4",
+    "pyproj":"3.3.0", 
     "tqdm": "4.30.1",
     "pycsamt": "1.1.2" ,
     "xgboost": "1.5.0" ,
@@ -31,6 +32,7 @@ VERSIONS = {
     "html5lib": "1.1",
     "gcsfs": "0.6.0",
     "jinja2": "2.11",
+    "joblib":'1.2.0', 
     "lxml.etree": "4.5.0",
     "markupsafe": "2.0.1",
     "matplotlib": "3.3.2",
@@ -55,6 +57,7 @@ VERSIONS = {
     "xlrd": "2.0.1",
     "xlwt": "1.3.0",
     "xlsxwriter": "1.2.2",
+    "yellowbrick": "1.5.0", 
     "zstandard": "0.15.2",
 }
 

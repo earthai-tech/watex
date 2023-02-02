@@ -1178,12 +1178,6 @@ preprocessor_: Callable , F
     Compose piplenes and estimators for default model scorage.
 
 
-See also
----------
-.. [1] https://scikit-learn.org/stable/modules/classes.html#module-sklearn.pipeline
-.. [2] https://scikit-learn.org/stable/modules/classes.html#module-sklearn.compose
-
-
 Examples 
 ---------
 
@@ -1210,7 +1204,7 @@ Examples
 >>> processObj.fit(data=data )
 >>> processObj.baseEvaluation (eval_metric=True ) 
 ... 0.4942528735632184 # score is an ensemble score for both model 
-    
+  
 """.format(
     params=_param_docs,
 )      

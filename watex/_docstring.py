@@ -21,7 +21,8 @@ ves_doc =type ("ves_doc", (), dict(
     __doc__="""\
 A DC-vertical Electrical resistivity data collected from {survey_name} during
 the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
-`Cote d'Ivoire`_. An illustration of the data arrangement is the following: 
+`Cote d'Ivoire <https://en.wikipedia.org/wiki/Ivory_Coast>`__. An illustration 
+of the data arrangement is the following: 
 
 =====   =======     =======     =======     =========
 AB/2    MN/2        SE1         SE2         SE...	
@@ -100,7 +101,8 @@ erp_doc = type ('erp_doc', (), dict (
     __doc__="""\
 A DC-Electrical resistivity profiling data collected from {survey_name} during
 the National Drinking Water Supply Program (PNAEP) occurs in 2014 in 
-`Cote d'Ivoire`_  and an example of the data arrangement is the following: 
+`Cote d'Ivoire <https://en.wikipedia.org/wiki/Ivory_Coast>`__  and an example 
+of the data arrangement is the following: 
 
 =====   =========   =========   =======     
 pk      east        north       rho         
@@ -173,8 +175,6 @@ as the UTM_zone, the latitude and longitude data are auto-computed and
 vice versa. The user does need to provide both coordinates data types
 ( UTM or DD:MM.SS)
 
-.. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
-
 """
     )
 )
@@ -182,6 +182,8 @@ vice versa. The user does need to provide both coordinates data types
 refglossary =type ('refglossary', (), dict (
     __doc__="""\
 .. _Bagoue region: https://en.wikipedia.org/wiki/Bagou%C3%A9
+
+. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
 
 .. _Dieng et al: http://documents.irevues.inist.fr/bitstream/handle/2042/36362/2IE_2004_12_21.pdf?sequence=1
 .. _Kouadio et al: https://doi.org/10.1029/2021WR031623
@@ -213,7 +215,7 @@ refglossary =type ('refglossary', (), dict (
 .. |sfi| replace:: Pseudo-fracturing index 
 .. |VES| replace:: Vertical Electrical Sounding 
 .. |ERP| replace:: Electrical Resistivity Profiling 
-.. |MT| replace:: Magnetetolluric 
+.. |MT| replace:: Magnetotelluric 
 .. |AMT| replace:: Audio-Magnetotellurics 
 .. |CSAMT| replace:: Controlled Source |AMT| 
 .. |NSAMT| replace:: Natural Source |AMT| 
