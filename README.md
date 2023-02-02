@@ -35,7 +35,7 @@ engineering problems such as computing DC parameters and predicting the k-parame
 
 This is a naive example (no constraints) to automatically propose the suitable location to make 
 the drilling operations during the GWE. We may understand by ``suitable``, a location 
-expecting to give a flow rate greater than > 3m3/hr at least. 
+expecting to give a flow rate greater than  3m3/hr at least. 
 
 We randomly generate 50 stations with DC-resistivity ```min/min =1e1/1e4`` ohm.m:
 
