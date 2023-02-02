@@ -230,13 +230,13 @@ example of a DGMT development syntax:
 		   """Class description and documentation """"
 		   def __init__(self, data, param1=None , param2=None, **kws): 
 		      self.data=data 
-              self.param1=param1
-              self.param2=param2
+                      self.param1=param1
+                      self.param2=param2
 			
-              for key in list(kws.keys()): 
-              setattr (self, key, kws[key])
+                      for key in list(kws.keys()): 
+                           setattr (self, key, kws[key])
 			
-              _fit_democlass (self.data ) 
+                       _fit_democlass (self.data ) 
 				
 		   def _fit_democlass(self): 
 		      """ Documentation of _fit_democlass method """
