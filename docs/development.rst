@@ -290,7 +290,7 @@ Bug reports must:
 
 	       >>> from watex.base import Data
 	       >>> d = Data(...)
-       ...
+               ...
 
 #. Include the full version string of watex and its dependencies. You can use the built-in function:
 
