@@ -1445,27 +1445,6 @@ class Processing (EM) :
         r"""
         The conventional asymmetry parameter based on the Z magnitude. 
         
-        Parameters 
-        ---------
-        data: str of path-like or list of pycsamt.core.edi.Edi 
-            EDI data or EDI object with full impedance tensor Z. 
-        
-        method: str 
-            Kind of correction. Can be ``swift`` for the remove distorsion proposed 
-            by Swift in 1967. The value close to 0. assume the 1D and 2D structures 
-            and 3D otherwise. Conversly to ``bahr`` for the remove distorsion proposed  
-            by Bahr in 1991. The latter threshold is set to 0.3. Above this value 
-            the structures is 3D. 
-        
-        Returns 
-        --------- 
-        skw, mu : Tuple of ndarray-like , shape (N, M )
-            - Array of skew at each frequency 
-            - rotational invariant ``mu`` at each frequency. 
-            
-            
-        See also 
-        ----------- 
         The EM signal is influenced by several factors such as the dimensionality
         of the propagation medium and the physical anomalies, which can distort the
         EM field both locally and regionally. The distortion of Z was determined 
@@ -1513,6 +1492,25 @@ class Processing (EM) :
         3D structures (Bahr, 1991).
         
         
+        Parameters 
+        ---------
+        data: str of path-like or list of pycsamt.core.edi.Edi 
+            EDI data or EDI object with full impedance tensor Z. 
+        
+        method: str 
+            Kind of correction. Can be ``swift`` for the remove distorsion proposed 
+            by Swift in 1967. The value close to 0. assume the 1D and 2D structures 
+            and 3D otherwise. Conversly to ``bahr`` for the remove distorsion proposed  
+            by Bahr in 1991. The latter threshold is set to 0.3. Above this value 
+            the structures is 3D. 
+        
+        Returns 
+        --------- 
+        skw, mu : Tuple of ndarray-like , shape (N, M )
+            - Array of skew at each frequency 
+            - rotational invariant ``mu`` at each frequency. 
+            
+
         Examples
         --------
         >>> from watex.methods.em import Processing 
@@ -1579,6 +1577,19 @@ class Processing (EM) :
         that the 'dead- band' also known as 'attenuation -band' is where the AMT 
         signal is weak or generally abscent. 
     
+        One main problem in collecting |NSAMT| data is the signal level in the 
+        'attenuation band'. Compared to the |CSAMT| method (Wang and Tan, 2017; 
+        Zonge and Hughes, 1991),the natural signals are not under our control and 
+        suffer from frequency  ranges with little or no signal.  Most notably, the 
+        |NSAMT| 'dead-band' between approximately 1 kHz and 4 kHz, but also a signal 
+        low in the vicinityof 1 Hz where the transition to magnetospheric energy 
+        sources occurs (Goldak and Olson, 2015). In this band, natural source signals
+        are generally  absent. The EM energy is dissipated and often cultural |EM| 
+        noise fills the gap (Zonge, 2000). The response is extrapolated from results 
+        observed top frequencies( For instance at 20, 40, 250, and 500 Hz).Experience
+        indicates that the natural source signal level at 2000 Hz can be expected 
+        to approach 10-6 γ/√Hz (Zheng, 2010; Zonge, 2000).
+        
         Parameters 
         ---------- 
         data: Path-like object or list of pycsamt.core.edi objects
@@ -1634,21 +1645,6 @@ class Processing (EM) :
             Array collection of new Z impedances objects with dead-band tensor 
             recovered. :class:`pycsamt.core.z.Z` are ndarray (nfreq, 2, 2). 
             2x2 matrices for components xx, xy and yx, yy. 
-    
-        See also  
-        ---------
-        One main problem in collecting |NSAMT| data is the signal level in the 
-        'attenuation band'. Compared to the |CSAMT| method (Wang and Tan, 2017; 
-        Zonge and Hughes, 1991),the natural signals are not under our control and 
-        suffer from frequency  ranges with little or no signal.  Most notably, the 
-        |NSAMT| 'dead-band' between approximately 1 kHz and 4 kHz, but also a signal 
-        low in the vicinityof 1 Hz where the transition to magnetospheric energy 
-        sources occurs (Goldak and Olson, 2015). In this band, natural source signals
-        are generally  absent. The EM energy is dissipated and often cultural |EM| 
-        noise fills the gap (Zonge, 2000). The response is extrapolated from results 
-        observed top frequencies( For instance at 20, 40, 250, and 500 Hz).Experience
-        indicates that the natural source signal level at 2000 Hz can be expected 
-        to approach 10-6 γ/√Hz (Zheng, 2010; Zonge, 2000).
     
         References 
         ----------

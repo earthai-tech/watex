@@ -129,10 +129,10 @@ classes: list of int | float, [categorized classes]
     `flow` data analysis in the Bagoue dataset, the `classes` could be 
     ``[0., 1., 3.]`` which means:: 
         
-        - 0 m3/h  --> FR0
-        - > 0 to 1 m3/h --> FR1
-        - > 1 to 3 m3/h --> FR2
-        - > 3 m3/h  --> FR3    
+    * 0 m3/h  --> FR0
+    * > 0 to 1 m3/h --> FR1
+    * > 1 to 3 m3/h --> FR2
+    * > 3 m3/h  --> FR3    
     """, 
     mapflow ="""   
 mapflow: bool, 
@@ -146,10 +146,10 @@ mapflow: bool,
     the living population in a specific area. For instance, flow classes 
     can be ranged as follow: 
 
-        - FR = 0 is for dry boreholes
-        - 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
-        - 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
-        - 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
+    * FR = 0 is for dry boreholes
+    * 0 < FR ≤ 3m3/h for village hydraulic (≤2000 inhabitants)
+    * 3 < FR ≤ 6m3/h  for improved village hydraulic(>2000-20 000inhbts) 
+    * 6 <FR ≤ 10m3/h for urban hydraulic (>200 000 inhabitants). 
     
     Note that the flow range from `mapflow` is not exhaustive and can be 
     modified according to the type of hydraulic required on the project.   
@@ -1444,10 +1444,11 @@ class ExPlot (BasePlot):
         >>> p
         ...  <'ExPlot':xname='sfi', yname='ohmS' , tname='flow'>
         
-        See also
-        ---------
+        References 
+        ------------
         Scatterplot: https://seaborn.pydata.org/generated/seaborn.scatterplot.html
         Pd.scatter plot: https://www.w3resource.com/pandas/dataframe/dataframe-plot-scatter.php
+        
         .. _seaborn.scatterplot: https://seaborn.pydata.org/generated/seaborn.scatterplot.html
         
         """

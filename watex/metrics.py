@@ -225,29 +225,30 @@ Note that if `yt` is given, it computes `y_score` known as array-like of
 shape (n_samples,) or (n_samples, n_classes)Target scores following the 
 scheme below: 
 
-    * In the binary case, it corresponds to an array of shape
-      `(n_samples,)`. Both probability estimates and non-thresholded
-      decision values can be provided. The probability estimates correspond
-      to the **probability of the class with the greater label**,
-      i.e. `estimator.classes_[1]` and thus
-      `estimator.predict_proba(X, y)[:, 1]`. The decision values
-      corresponds to the output of `estimator.decision_function(X, y)`.
-      See more information in the :ref:`User guide <roc_auc_binary>`;
-    * In the multiclass case, it corresponds to an array of shape
-      `(n_samples, n_classes)` of probability estimates provided by the
-      `predict_proba` method. The probability estimates **must**
-      sum to 1 across the possible classes. In addition, the order of the
-      class scores must correspond to the order of ``labels``,
-      if provided, or else to the numerical or lexicographical order of
-      the labels in ``y_true``. See more information in the
-      :ref:`User guide <roc_auc_multiclass>`;
-    * In the multilabel case, it corresponds to an array of shape
-      `(n_samples, n_classes)`. Probability estimates are provided by the
-      `predict_proba` method and the non-thresholded decision values by
-      the `decision_function` method. The probability estimates correspond
-      to the **probability of the class with the greater label for each
-      output** of the classifier. See more information in the
-      :ref:`User guide <roc_auc_multilabel>`.
+* In the binary case, it corresponds to an array of shape
+  `(n_samples,)`. Both probability estimates and non-thresholded
+  decision values can be provided. The probability estimates correspond
+  to the **probability of the class with the greater label**,
+  i.e. `estimator.classes_[1]` and thus
+  `estimator.predict_proba(X, y)[:, 1]`. The decision values
+  corresponds to the output of `estimator.decision_function(X, y)`.
+  See more information in the :ref:`User guide <roc_auc_binary>`;
+* In the multiclass case, it corresponds to an array of shape
+  `(n_samples, n_classes)` of probability estimates provided by the
+  `predict_proba` method. The probability estimates **must**
+  sum to 1 across the possible classes. In addition, the order of the
+  class scores must correspond to the order of ``labels``,
+  if provided, or else to the numerical or lexicographical order of
+  the labels in ``y_true``. See more information in the
+  :ref:`User guide <roc_auc_multiclass>`;
+* In the multilabel case, it corresponds to an array of shape
+  `(n_samples, n_classes)`. Probability estimates are provided by the
+  `predict_proba` method and the non-thresholded decision values by
+  the `decision_function` method. The probability estimates correspond
+  to the **probability of the class with the greater label for each
+  output** of the classifier. See more information in the
+  :ref:`User guide <roc_auc_multilabel>`.
+      
 References
 ----------
 
@@ -572,8 +573,9 @@ roc_kws: dict
     
 See also
 ---------
-`ROC_curve` deals with optional and positionals keywords arguments of
-:meth:`watex.view.mlplot.MLPlot.precisionRecallTradeoff`.
+watex.view.mlplot.MLPlot.precisionRecallTradeoff:  
+    plot consistency precision recall curve. 
+    
     
 Returns 
 ---------

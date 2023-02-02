@@ -7,10 +7,10 @@ Base data preparation for case studies
 ========================================
 
 Base module helps to automate data preparation at once. It is created for fast 
-data preparation in real engineering cases study. The bases step has been 
+data preparation in real engineering case study. The base steps has been 
 used to solve a flow rate prediction problems [1]_. Its steps procedure 
 can straighforwardly help user to fast reach the same goal as the published 
-paper. An example of  different kind of `Bagoue dataset [2]_ , is prepared  
+paper. An example of  different kind of Bagoue dataset [2]_ , is prepared  
 using the `BaseSteps` module. 
 
 References
@@ -21,7 +21,7 @@ References
     Prediction from Geo‐Electrical Features using Support Vector Machines. 
     Water Resour. Res. :doi:`10.1029/2021wr031623`
 .. [2] Kouadio, K.L., Nicolas, K.L., Binbin, M., Déguine, G.S.P. & Serge, 
-    K.K. (2021, October) Bagoue dataset-Cote d’Ivoire: Electrical profiling,
+    K.K. (2021, October) Bagoue dataset-Cote d'Ivoire: Electrical profiling,
     electrical sounding and boreholes data, Zenodo. :doi:`10.5281/zenodo.5560937`
 
 """
@@ -201,13 +201,7 @@ class BaseSteps(object):
     features). Both pipelines are combined and applied to the trainset and 
     later to the test set. 
      
-    See also 
-    ---------
-    Refer to the `case history`_ < flow rate prediction using SVM > to get 
-    the definition of geoelectrical features. 
-    
-    .. _case history: https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2021WR031623
-    
+
     Examples
     ---------
 

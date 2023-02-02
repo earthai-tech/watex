@@ -1,24 +1,8 @@
 # -*- coding: utf-8 -*-
 # Licence:BSD 3-Clause
 # author: L. Kouadio <etanoyau@gmail.com>
-"""
-A machine learning research package for hydrogeophysic 
-===========================================================
 
-:code:`watex` stands for *WAT-er EX-ploration*. Packages and/or modules are 
-written to solve real-engineering problems in the field of groundwater 
-exploration (GWE). Currently, Dealing with: 
-* `geophysical (from DC-Electrical to Electromagnetic)` 
-* `hydrogeology (from drilling to parameters calculation)`
-* `geology (for stratigraphic model generation)`
-* `predicting permeability coefficient (k), flow rate and else`,  
-`WATex`_ contributes to minimize the risk of unsucessfull drillings, 
-unustainable boreholes and could hugely reduce the cost of the hydrogeology 
-parameter collections.
-
-.. _WATex: https://github.com/WEgeophysics/watex/
-
-"""
+from __future__ import annotations 
 import os 
 import sys 
 import logging 
@@ -26,8 +10,7 @@ import random
  
 __version__='0.1.4' ; __author__= 'L.Kouadio'
 
-# set the package name 
-# for consistency ckecker 
+# set the package name for consistency ckecker 
 sys.path.insert(0, os.path.dirname(__file__))  
 for p in ('.','..' ,'./watex'): 
     sys.path.insert(0,  os.path.abspath(p)) 
@@ -37,7 +20,7 @@ if  __package__ is None:
     sys.path.append( os.path.dirname(__file__))
     __package__ ='watex'
 
-# configure the logger 
+# configure the logger file
 # from ._watexlog import watexlog
 try: 
     conffile = os.path.join(
@@ -56,66 +39,151 @@ logging.getLogger('matplotlib.font_manager').disabled = True
 # or ust suppress the DEBUG messages but not the others from that logger.
 # logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 
-
-# setting up 
-# On OSX, we can get a runtime error due to multiple OpenMP libraries loaded
-# simultaneously. This can happen for instance when calling BLAS inside a
-# prange. Setting the following environment variable allows multiple OpenMP
-# libraries to be loaded. It should not degrade performances since we manually
-# take care of potential over-subcription performance issues, in sections of
-# the code where nested OpenMP loops can happen, by dynamically reconfiguring
-# the inner OpenMP runtime to temporarily disable it while under the scope of
-# the outer OpenMP parallel section.
+# setting up
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "True")
 
 # Workaround issue discovered in intel-openmp 2019.5:
 # https://github.com/ContinuumIO/anaconda-issues/issues/11294
 os.environ.setdefault("KMP_INIT_AT_FORK", "FALSE")
 
+# https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/
 try:
-    # This variable is injected in the __builtins__ by the build
-    # process. It is used to enable importing subpackages of watex when
-    # the binaries are not built
-    # mypy error: Cannot determine type of '__WATEX_SETUP__'
+    # This variable is injected in the __builtins__ by the build process. 
     __WATEX_SETUP__  # type: ignore
 except NameError:
     __WATEX_SETUP__ = False
 
 if __WATEX_SETUP__:
     sys.stderr.write("Partial import of watex during the build process.\n")
-    # We are not importing the rest of watex during the build
-    # process, as it may not be compiled yet
 else:
-    # `_distributor_init` allows distributors to run custom init code.
-    # For instance, for the Windows wheel, this is used to pre-load the
-    # vcomp shared library runtime for OpenMP embedded in the watex/.libs
-    # sub-folder.
-    # It is necessary to do this prior to importing show_versions as the
-    # later is linked to the OpenMP runtime to make it possible to introspect
-    # it and importing it first would fail if the OpenMP dll cannot be found.
     from . import _distributor_init  # noqa: F401
     from . import _build  # noqa: F401
-    #from .utils._show_versions import show_versions
+    from .utils._show_versions import show_versions
+    
+#https://github.com/pandas-dev/pandas
+# Let users know if they're missing any of our hard dependencies
+_main_dependencies = ("numpy", "scipy", "sklearn", "matplotlib", 
+                      "pandas","seaborn")
+_missing_dependencies = []
 
-    __all__=[
-        "exlib",
-        "analysis", 
-        "cases", 
-        "datasets", 
-        "externals", 
-        "geology", 
-        "methods", 
-        "models", 
-        "utils", 
-        "view", 
-        "base", 
-        "cli", 
-        "edi", 
-        "property", 
-        "metrics", 
-        "site", 
-        "transformers"
-        ]
+for _dependency in _main_dependencies:
+    try:
+        __import__(_dependency)
+    except ImportError as _e:  # pragma: no cover
+        _missing_dependencies.append(
+            f"{'scikit-learn' if _dependency=='sklearn' else _dependency }: {_e}")
+
+if _missing_dependencies:  # pragma: no cover
+    raise ImportError(
+        "Unable to import required dependencies:\n" + "\n".join(_missing_dependencies)
+    )
+del _main_dependencies, _dependency, _missing_dependencies
+
+import watex.exlib as sklearn 
+from .exlib.optional import XGBClassifier
+
+from .analysis import ( 
+    nPCA, 
+    kPCA, 
+    LLE, 
+    iPCA, 
+    )
+from .base import ( 
+    Data, 
+    Missing, 
+    AdalineGradientDescent, 
+    AdalineStochasticGradientDescent, 
+    SequentialBackwardSelection, 
+    ) 
+from .cases import ( 
+    BaseSteps, 
+    Preprocessing , 
+    BaseModel,
+    FeatureInspection, 
+    ) 
+from .datasets import ( 
+    fetch_data, 
+    make_erp, 
+    make_ves 
+    ) 
+from .geology import ( 
+    Structural, 
+    Structures 
+    )
+from .methods import (
+    ResistivityProfiling ,
+    VerticalSounding, 
+    DCProfiling, 
+    DCSounding, 
+    EM, 
+    Processing as EMProcessing , 
+    MXS, 
+    )
+from . models import ( 
+    GridSearch, 
+    GridSearchMultiple,
+    get_scorers, 
+    pModels
+    )
+
+from .view import ( 
+    EvalPlot, 
+    plotLearningInspections, 
+    plotSilhouette,
+    plotDendrogram, 
+    plotProjection, 
+    QuickPlot , 
+    ExPlot,
+    TPlot, 
+    )
+
+from .utils import ( 
+    plotAnomaly, 
+    vesSelector, 
+    erpSelector, 
+    read_data, 
+    type_,
+    shape, 
+    power, 
+    magnitude, 
+    sfi, 
+    ohmicArea, 
+    fittensor,
+    plotOhmicArea, 
+    plot_sfi,
+    reshape, 
+    to_numeric_dtypes, 
+    smart_label_classifier,
+    select_base_stratum , 
+    reduce_samples , 
+    make_MXS_labels, 
+    predict_NGA_labels, 
+    classify_k,  
+    plot_elbow, 
+    plot_clusters, 
+    plot_pca_components, 
+    plot_naive_dendrogram, 
+    plot_learning_curves, 
+    plot_confusion_matrices, 
+    plot_sbs_feature_selection, 
+    plot_regularization_path, 
+    plot_rf_feature_importances, 
+    plot_logging, 
+    plot_silhouette, 
+    plot_profiling, 
+    )
+# may useful to fix 
+# circular import
+try : 
+    from .utils import ( 
+        selectfeatures, 
+        naive_imputer, 
+        naive_scaler,  
+        make_naive_pipe, 
+        bi_selector, 
+        )
+except ImportError :
+    pass 
 
 def setup_module(module):
     """Fixture for the tests to assure globally controllable seeding of RNGs"""
@@ -130,3 +198,108 @@ def setup_module(module):
     print("I: Seeding RNGs with %r" % _random_seed)
     np.random.seed(_random_seed)
     random.seed(_random_seed)
+   
+__doc__= """\
+A machine learning research package for hydrogeophysic 
+===========================================================
+
+:code:`watex` stands for *WAT-er EX-ploration*. Packages and/or modules are 
+written to solve real-engineering problems in the field of groundwater 
+exploration (GWE). Currently, Dealing with: 
+    
+* `geophysical (from DC-Electrical to Electromagnetic)` 
+* `hydrogeology (from drilling to parameters calculation)`
+* `geology (for stratigraphic model generation)`
+* `predicting permeability coefficient (k), flow rate and else`,  
+
+`WATex`_ contributes to minimize the risk of unsucessfull drillings, 
+unustainable boreholes and could hugely reduce the cost of the hydrogeology 
+parameter collections.
+
+.. _WATex: https://github.com/WEgeophysics/watex/
+
+"""
+#  __all__ is used to display a few public API. the public API is determined
+# based on the documentation.
+    
+__all__ = [ 
+    "sklearn", 
+    "XGBClassifier", 
+    "nPCA", 
+    "kPCA", 
+    "LLE", 
+    "iPCA",  
+    "Data", 
+    "Missing", 
+    "AdalineGradientDescent", 
+    "AdalineStochasticGradientDescent", 
+    "SequentialBackwardSelection", 
+    "BaseSteps", 
+    "Preprocessing" , 
+    "BaseModel",
+    "FeatureInspection", 
+    "fetch_data",
+    "make_erp", 
+    "make_ves" , 
+    "Structural", 
+    "Structures", 
+    "ResistivityProfiling" ,
+    "VerticalSounding", 
+    "DCProfiling", 
+    "DCSounding", 
+    "EM", 
+    "EMProcessing" , 
+    "MXS", 
+    "GridSearch", 
+    "GridSearchMultiple",
+    "get_scorers", 
+    "pModels", 
+    "EvalPlot", 
+    "plotLearningInspections", 
+    "plotSilhouette",
+    "plotDendrogram", 
+    "plotProjection", 
+    "QuickPlot" , 
+    "ExPlot",
+    "TPlot", 
+    "plotAnomaly", 
+    "vesSelector", 
+    "erpSelector", 
+    "read_data", 
+    "type_",
+    "shape", 
+    "power", 
+    "magnitude", 
+    "sfi", 
+    "ohmicArea", 
+    "fittensor",
+    "plotOhmicArea", 
+    "plot_sfi",
+    "reshape", 
+    "to_numeric_dtypes", 
+    "smart_label_classifier",
+    "select_base_stratum" , 
+    "reduce_samples" , 
+    "make_MXS_labels", 
+    "predict_NGA_labels", 
+    "classify_k",  
+    "plot_elbow", 
+    "plot_clusters", 
+    "plot_pca_components", 
+    "plot_naive_dendrogram", 
+    "plot_learning_curves", 
+    "plot_confusion_matrices",  
+    "plot_sbs_feature_selection", 
+    "plot_regularization_path", 
+    "plot_rf_feature_importances", 
+    "plot_logging", 
+    "plot_silhouette", 
+    "plot_profiling", 
+    "selectfeatures", 
+    "naive_imputer", 
+    "naive_scaler",  
+    "make_naive_pipe", 
+    "bi_selector", 
+    "show_versions", 
+    ]
+

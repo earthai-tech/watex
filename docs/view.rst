@@ -1,3 +1,4 @@
+
 .. _view:
 
 ================
@@ -12,7 +13,7 @@ tensor recovery, model inspection, and evaluation.  :mod:`~watex.view`  is divid
 
 * :mod:`~watex.view.plot` for handling the params space plots via  :class:`~watex.view.ExPlot`, :class:`~watex.view.QuickPlot`, 
   and :class:`~watex.view.TPlot`. 
-* :mod:`~watex.view.mlplot` for handling the processing space plot through the :class:`~watex.view.EvalPlot` as well 
+* :mod:`~watex.view.mlplot` for handling the learning space plot through the :class:`~watex.view.EvalPlot` as well 
   as many other functions. 
 
 All the classes implemented in :mod:`~watex.view` module from  :class:`~watex.property.Baseplots` ABC (Abstract Base Class) 
@@ -28,14 +29,14 @@ Furthermore, note the existence of the `tname` and `pkg` parameters passed mostl
   ``pd`` or ``sns``.  To install these packages, use ``pip`` or ``conda``. Note that the `pkg` parameter  is specific for each plotting methods, not a class initialization parameters. Refer to each plot class documentation.   
 
 
-Params space plots  
-====================
+Params space plots: :mod:`~watex.view.plot`
+===========================================
 The `params space` plots is ensured by the modules :class:`~watex.view.ExPlot`, :class:`~watex.view.QuickPlot`, for 
 data exploratory, data analysis and quick visualization,  and tensor plots for EM recovery signals. 
 
 
-`Exploratory plots` 
---------------------------
+Exploratory plots: :class:`~watex.view.plot.ExPlot`
+-----------------------------------------------------
 
 `ExPlot` ( :class:`~watex.view.plot.ExPlot` ) is a shadow class and explores data to create a model since 
 it gives a feel for the data and also at great excuses to meet and discuss issues with business units 
@@ -321,8 +322,8 @@ The remaining two give another representation of missing data.
 	:class:`~watex.base.Missing` for missing data manipulating
 
 
-`Analysis and Discussing plots` 
--------------------------------------------
+Analysis and Discussing plots: :class:`~watex.view.QuickPlot`
+---------------------------------------------------------------
 
 :class:`~watex.view.QuickPlot` is a special class that deals with analysis modules for quick diagrams, 
 histograms, and bar visualization. Originally, it was designed for the flow rate (`FR`) prediction 
@@ -732,8 +733,8 @@ The following outputs give target numerical and  categorization histogram plots:
 		
 For base bar distribution plots, refer to ::meth:`~watex.view.QuickPlot.barcatdist` examples below. 
 
-`Tensor recovery  plots` 
-------------------------------
+Tensor recovery  plots: :class:`~watex.view.TPlot` 
+----------------------------------------------------
 :class:`~watex.view.TPlot`  gives base plots from short-period processing data.
 Indeed, :class:`~watex.view.TPlot` plots Tensors (Impedances, resistivity, and phases ) plot class. 
 :class:`~watex.view.TPlot` returns an instanced object that inherits from :class:`watex.property.Baseplots` 
@@ -913,19 +914,20 @@ resistivity tensor `yx` as possible.
 The module :mod:`~watex.view.plot` can not give all the possible plots that can be yielded with the predicting datasets. 
 	
 .. seealso:: 
-
-	`seaborn`_ provides some wonderful statistical data visualization tools. 
+	
+	`seaborn_` provides some wonderful statistical data visualization tools. 
 	
 .. _seaborn: https://seaborn.pydata.org/
 
 
-Processing space plots
-=============================
-The `processing space` plots from :mod:`~watex.view.mlplot` is dedicated to modeling visualization through the :class:`~watex.view.EvalPlot`. Models 
+Learning space plots: :mod:`~watex.view.mlplot`
+================================================
+
+The `Learning space` plots from :mod:`~watex.view.mlplot` is dedicated to modeling visualization through the :class:`~watex.view.EvalPlot`. Models 
 are evaluated and estimated with either diagrams, curves, or dendrograms.  It also includes additional plot functions for inspecting the model on their learning curves, 
 evaluating the number of clustering, scores analysis, etc. 
 
-`Model Evaluation plots`
+Model Evaluation plots
 -----------------------------
 
 The model evaluation plots are performed with the :class:`~watex.view.EvalPlot` class.
@@ -1165,7 +1167,7 @@ Here is the following output.
 
    * :ref:`sphx_glr_glr_examples_view_plot_confusion_matrix_metric.py`
    
-`Model functions plots`
+Model functions plots
 -----------------------------
 The additional plot functions called model functions in :mod:`~watex.view.mlplot` are singleton functions that accept the :class:~watex.property.BasePlot` class 
 parameters for the plot customizing. The :class:~watex.property.BasePlot` parameters can be passed as keyword arguments to the model functions. The are several utils 

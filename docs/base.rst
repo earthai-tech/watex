@@ -1,3 +1,4 @@
+
 .. _base:
 
 ================================
@@ -6,14 +7,15 @@ Base Assessors and Estimators
 
 .. currentmodule:: watex.base
 
-The following module is a set of classes and methods intended for base module implementation in which 
-target value is expected to be a linear combination of the features. In mathematical notation, 
-if :math:`\hat{y}` is the predicted value, 
+The following module is a set of classes and methods composed `assessors` ( :mod:`~watex.base.Data` 
+and :mod:`~watex.base.Missing`) and `inner-learners` or `estimators. The `assessors` are used for basic controls of the data 
+whereas the `inner-learners` are prediction algorithms implemented by :code:`watex`. In the following, the target value is 
+expected to be a linear combination of the features. In mathematical notation, if :math:`\hat{y}` is the predicted value, 
 
 .. math:: \hat{y}(w, x) = w_0 + w_1 x_1 + ... + w_p x_p
 
-Across the module, we designate the vector :math:`w = (w_1,..., w_p)` as ``coef_`` 
-and :math:`w_0` as ``intercept_``.
+Idem,  we designate the vector :math:`w = (w_1,..., w_p)` as ``coef_`` 
+and :math:`w_0` as ``intercept_`` accross the module. 
 
 
 .. _data:
@@ -21,7 +23,7 @@ and :math:`w_0` as ``intercept_``.
 Data
 =======================
 
-:class:`Data` is a shadow class for base data transformation. Typically, we train a model with a matrix of data. 
+:class:`Data` is an assessor that can be considered as a shadow class for base data transformation/manipulation. Typically, we train a model with a matrix of data. 
 Note that `pandas dataframe`_  is the most used because it is very nice to have column labels even though  
 Numpy arrays work as well. For supervised Learning, for instance, such as regression or classification, we 
 intend to have a function that transforms features into a label. If we were to write this as an algebra formula, 
@@ -41,21 +43,21 @@ of the standard naming convention (see PEP8).
 composes the dataset can be retrieved as a member:: 
 
     >>> from watex.base import Data
-	>>> import pandas as pd 
-	>>> import numpy as np 
+    >>> import pandas as pd 
+    >>> import numpy as np 
     >>> d = pd.DataFrame ({'a':np.arange (3), 'b':['banana', 'onion', 'apple'], 'c':['obj1','obj2', 'obj3'] })
     >>> data= Data().fit(d) 
     >>> data.a
 	0    0
 	1    1
 	2    2
-	Name: a, dtype: object
-	>>> data.b
-    0    banana
+    Name: a, dtype: object
+    >>> data.b
+    0     banana
 	1     onion
 	2     apple
 	Name: b, dtype: object
-	>>> data.shrunk (columns =['b', 'c']) 
+    >>> data.shrunk (columns =['b', 'c']) 
 	        b     c
 	0  banana  obj1
 	1   onion  obj2
@@ -65,7 +67,7 @@ composes the dataset can be retrieved as a member::
 Missing 
 ====================
 
-:class:`Missing` is a shadow class for missing data handling. Indeed, most algorithms will not 
+:class:`Missing` inherits from :class:`Data` class. It is the second assessor for missing data handling. Indeed, most algorithms will not 
 work with missing data.  As with many things in machine learning, there are no hard answers for 
 how to treat missing data. Also, missing data could represent different situations. There are 
 three various ways to handle missing data: 
@@ -148,7 +150,7 @@ steps:
 
 .. code-block:: python
 	
-	>>> from watex.exlib.sklearn import KNeighborsClassifier, train_test_split
+    >>> from watex.exlib.sklearn import KNeighborsClassifier, train_test_split
     >>> from watex.datasets import fetch_data
     >>> from watex.base import SequentialBackwardSelection
     >>> X, y = fetch_data('bagoue analysed') # data already standardized
@@ -244,9 +246,9 @@ equation is simplified as follows:
             print("ROC AUC: %.2f (+/- %.2f) [%s]" %(scores.mean(), 
                                                      scores.std(), 
                                                      label))
-    ... ROC AUC: 0.91 (+/- 0.05) [Logit]
-        ROC AUC: 0.73 (+/- 0.07) [DTC]
-        ROC AUC: 0.77 (+/- 0.09) [KNN]
+    ROC AUC: 0.91 (+/- 0.05) [Logit]
+    ROC AUC: 0.73 (+/- 0.07) [DTC]
+    ROC AUC: 0.77 (+/- 0.09) [KNN]
     
 * Implement the MajorityVoteClassifier for reducing errors 
     
@@ -286,11 +288,11 @@ while the linear activation function is used for learning the weights.
 
 .. code-block:: python 
 
-	>>> from watex.base import AdalineGradientDescent 
-	>>> from watex.datasets import fetch_data 
-	>>> X, y = fetch_data ('bagoue prepared data') 
-	>>> agd= AdalineGradientDescent ().fit(X.toarray(), y)
-	>>>	agd.w_ # get the weight
+    >>> from watex.base import AdalineGradientDescent 
+    >>> from watex.datasets import fetch_data 
+    >>> X, y = fetch_data ('bagoue prepared data') 
+    >>> agd= AdalineGradientDescent ().fit(X.toarray(), y)
+    >>>	agd.w_ # get the weight
 	array([-1.18921402e+40,  7.28164687e+39,  7.98336232e+39,  5.04024942e+39,
        -6.58883438e+38,  1.78115247e+39, -1.11444526e+39, -2.27145085e+38,
        -5.63263926e+38, -9.01672565e+39, -9.70560276e+38, -8.14116123e+38,

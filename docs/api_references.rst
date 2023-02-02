@@ -1,3 +1,4 @@
+
 .. _api_ref:
 
 ===============
@@ -545,7 +546,7 @@ Functions
    transformers.CategorizeFeatures 
    transformers.CombinedAttributesAdder
    transformers.DataFrameSelector 
-   transformers.FeatureUnion
+   transformers.FrameUnion
    transformers.StratifiedUsingBaseCategory
    transformers.StratifiedWithCategoryAdder
    
@@ -880,4 +881,4 @@ Functions
 	view.pobj
 	view.viewtemplate
 
-Click :doc:`here <api/modules>` to visit all the modules of the package.
+To browse the available modules of the software, click on :doc:`long description <modules/wx_apidoc/watex>` . 

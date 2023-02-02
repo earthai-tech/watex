@@ -1,3 +1,4 @@
+
 .. _cases:
 
 ================
@@ -20,8 +21,8 @@ Features
 case history feature data. 
 
 
-`GeoFeatures`
-------------------------
+GeoFeatures
+------------
 :class:`~watex.cases.features.GeoFeatures` expects the geological, the boreholes and DC-electrical 
 resistivity data. :class:`~watex.cases.features.GeoFeatures` set all feature values of 
 different investigation sites. `GeoFeatures` class is  composed of: 
@@ -44,8 +45,8 @@ different investigation sites. `GeoFeatures` class is  composed of:
     array(['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'], dtype=object)
 	
 
-`Feature Inspection` 
-------------------------------
+Feature Inspection
+--------------------
 :class:`~watex.cases.features.FeatureInspection` summarizes flow features. It deals with
 data feature categorization. When numerical values are provided standard `qualitative` or 
 `quantitative`  analysis is performed. 
@@ -61,18 +62,18 @@ data feature categorization. When numerical values are provided standard `qualit
 		  dtype='object')
 
 Prepare 
-============
+========
 
 :mod:`~watex.cases.prepare` base module helps to automate data preparation at once. It is created fast 
 data preparation in real engineering cases study. This is a naive approach for quickly reproducing the 
 published paperwork, especially for flow rate prediction. 
 
-`Base data preparation for case studies`
---------------------------------------------------------
+Base data preparation for case studies
+-----------------------------------------
 
 The base step has been used to solve flow rate prediction problems [1]_. Its steps procedure 
 can straightforwardly help users to fast reach the same goal as the published paper. An example 
-of a different kind of `Bagoue dataset [2]_, is prepared using the `BaseSteps` module. 
+of a different kind of Bagoue dataset [2]_, is prepared using the `BaseSteps` module. 
 
 .. topic:: References 
 
@@ -96,8 +97,8 @@ Processing
 :mod:`~watex.cases.processing` gives basic processing for achieving results. Here, we implement the 
 processing step performed for predicting the flow rate prediction [1]_. 
 
-`Preprocessing` 
--------------------------
+Preprocessing 
+----------------
 :class:`~watex.cases.processing.Preprocessing` gives the prior steps for flow rate prediction. 
 
 .. note:: 
@@ -251,7 +252,7 @@ given below:
 When using the estimator "randomForest", the score is a little bit improved to `78%` 
 whereas it was `47.13 %` for dummy prediction. 
 
-`Processing` 
+Processing
 ----------------
 :class:`~watex.cases.processing.Processing` is dedicated to managing baseline model evaluation 
 and learning. It also manages the validation curves after fiddling with a few estimator hyperparameters. 

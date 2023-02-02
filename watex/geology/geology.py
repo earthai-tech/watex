@@ -86,7 +86,7 @@ class Geology:
                
 class Structures(Base): 
     """
-    This class is an axilliary class to supplement geodatabase , 
+    This class is an auxilliary class to supplement geodatabase , 
     if the GeodataBase doesnt reply  to SQL request  , then use this class
     to secah information about structures .  If SQL is done as well ,
     program won't call this class as rescure . 
@@ -116,13 +116,13 @@ class Structures(Base):
     * To get the names of different strutures, write the script below:: 
     
         >>> from watex.geology.geology import Structures
-        >>> geo_structure = Structures()
+        >>> geo_structure = Structures().fit()
         >>> geo_structure.names_ # get the list of all geological strutures 
         
     * To extract color  and to get the code of structure  like `tonalite`:: 
     
         >>> from watex.geology.geology import Structures
-        >>> sobj = Structures() 
+        >>> sobj = Structures().fit()
         >>> sobj.tonalite.pat_thickness_
         ... 0.  # -> not implemented 
         >>> sobj.tonalite.code_ 

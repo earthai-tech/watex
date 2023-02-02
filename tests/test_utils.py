@@ -107,7 +107,7 @@ class TestTools(unittest.TestCase):
 
         for i, f in enumerate(self.data_collections):
             print('i=', i)
-            df =  erpSelector( f)
+            df =  erpSelector( f, force=True)
             col = list(df.columns) if isinstance(
                 df, pd.DataFrame) else [df.name] # for Series
             if os.path.isfile (f): 
