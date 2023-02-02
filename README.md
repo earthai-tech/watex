@@ -12,13 +12,13 @@
   ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/WEgeophysics/watex?logo=python)
 
 
-##  Mission and Goals
+##  Overview
 
-**_WATex_** is a Python library mainly focused on the groundwater exploration (GWE) field. It brings novel approaches 
+**_WATex_** is a Python library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
     for reducing numerous losses during the hydro-geophysical exploration projects and encompasses 
-    the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short periods EM, geology 
-    and hydrogeology methods. From new methods based on Machine Learning,  it allows to: 
-   - auto-detect the right position to locate the drilling operations, 
+    the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short-periods EM, geology 
+    and hydrogeology methods. From methodologies based on Machine Learning,  it allows to: 
+   - auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings and unsustainable boreholes;
    - reduce the cost of permeability coefficient (k) data collection during the hydro-geophysical engineering projects,
    - predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
    - etc.
