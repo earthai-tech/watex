@@ -37,7 +37,7 @@ This is a naive example (no constraints) to automatically propose the suitable l
 the drilling operations during the GWE. We may understand by ``suitable``, a location 
 expecting to give a flow rate greater than  3m3/hr at least. 
 
-We randomly generate 50 stations with DC-resistivity ```min/min =1e1/1e4`` ohm.m:
+We randomly generate 50 stations with DC-resistivity ``min/min =1e1/1e4`` ohm.m:
 
 ```python
 
