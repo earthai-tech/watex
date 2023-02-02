@@ -228,7 +228,7 @@ example of a DGMT development syntax:
 
 	>>> class DemoClass_: 
 		   """Class description and documentation """"
-		   def __init__(self, data, param1=None , param2=None, **kws): 
+		   def __init__(self, data=None, param1=None , param2=None, **kws): 
 		      self.data=data 
                       self.param1=param1
                       self.param2=param2
@@ -238,7 +238,7 @@ example of a DGMT development syntax:
 			
                        _fit_democlass (self.data ) 
 				
-		   def _fit_democlass(self): 
+		   def _fit_democlass(self, data =None): 
 		      """ Documentation of _fit_democlass method """
 		      ...
 		      self.param3_= ... 
