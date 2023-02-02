@@ -284,15 +284,17 @@ Bug reports must:
       >>> d= Data(...)
       ...
       ```
-   * or `reStructured <https://www.writethedocs.org/guide/writing/reStructuredText/>`_ text:: 
+   * or `reStructured <https://www.writethedocs.org/guide/writing/reStructuredText/>`_ text::
 	
 	.. code-block::
-	
-	   >>> from watex.base import Data
-       >>> d = Data(...)
+
+	       >>> from watex.base import Data
+	       >>> d = Data(...)
        ...
 
-#. Include the full version string of watex and its dependencies. You can use the built-in function::
+#. Include the full version string of watex and its dependencies. You can use the built-in function:
+
+.. code-block:: python
 
       >>> import watex as wx 
       >>> wx.show_versions() 
