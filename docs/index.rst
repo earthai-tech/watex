@@ -4,7 +4,7 @@
 *watex: machine learning in hydro-geophysics*
 ==========================================================
 
-`WATex` is an open-source `Python-based <https://www.python.org/>`__  library focused on the :term:`groundwater` exploration. It 
+`WATex` is an open-source :term:`Python` library focused on the :term:`groundwater` exploration. It 
 provides "smart" approaches to minimize losses during :term:`hydro-geophysical` engineering projects such as the automatic detection 
 of the best location for :term:`drilling` operations, predicting the :term:`permeability coefficient k`, recovering missing :term:`EM` tensors
 in :term:`dead-band` frequency, fitting :term:`EMAP` noised tensors to improve the :term:`SNR` ...

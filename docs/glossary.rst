@@ -226,13 +226,12 @@ Geosciences concepts
        report (CIEH), four types of anomalies were emphasized:
        
        * EC: The extensive or large conductive zone (`EC`);  when the width of the conductive area :math:`W_cz` is greater than four 
-         times the dipole length everywhere in the ERP line. 
+         times the dipole length everywhere in the ERP line; 
        * CB2P: The contact between two plans (`CB2P`): defines the contact between two plans with different levels of the lateral 
-         distribution of the apparent resistivity values. 
+         distribution of the apparent resistivity values; 
        * NC: The narrow conductive zone (`NC`): when the width of the conductive zone is ranging between the dipole length
-         (:math:`d_l`) and four times the dipole length everywhere in the ERP line. 
-       * CP: The conductive plan zone (`CP`) shows a large and stretched conductive zone, and is consecutively 
-          evaluated according to the whole :term:`ERP` line.
+         (:math:`d_l`) and four times the dipole length everywhere in the ERP line; 
+       * CP: The conductive plan zone (`CP`) shows a large and stretched conductive zone, and is consecutively evaluated according to the whole :term:`ERP` line.
 
     Vertical electrical sounding
     DC-Sounding
@@ -399,6 +398,12 @@ Note also that the maths concepts are also included. The list is not exhaustive.
         models that often work better and faster with integer-coded
         categorical variables.
 
+    Cython 
+        Cython is a programming language, a (non-strict, at least for :term:`Python` 3) superset 
+        of the Python programming language (with slightly different semantics), designed to give 
+        C-like performance with code that is written mostly in Python with optional additional 
+        C-inspired syntax. See more `here <https://cython.org/>`_.
+
     deprecation
         We use deprecation to slowly violate our :term:`backwards
         compatibility` assurances, usually to:
@@ -411,8 +416,6 @@ Note also that the maths concepts are also included. The list is not exhaustive.
         a warning when someone sets a parameter that has been deprecated, but
         may not when they access that parameter's attribute on the estimator
         instance.
-
-        See the :ref:`Contributors' Guide <contributing_deprecation>`.
 
     dimensionality
         May be used to refer to the number of :term:`features` (i.e.
@@ -786,6 +789,16 @@ Note also that the maths concepts are also included. The list is not exhaustive.
         this is the case, then the estimator should set the `pairwise`
         estimator tag as True.
 
+    Python 
+    python-based
+        Python is a programming languages. It's used in everything from :term:`machine learning` to building 
+        websites and software testing. It can be used by developers and non-developers alike. It is  also 
+        a general-purpose language, which means it’s designed to be used in a range of applications, 
+        including data science, :software and web development, automation, and generally getting stuff done.
+        In computers sciences, Python is defined as a high-level, general-purpose, interpreted object-oriented 
+        programming language. Similar to PERL, Python is a programming language popular among experienced 
+        C++ and Java programmers. Get further details `here <https://www.python.org/doc/essays/blurb/>`__.
+        
     rectangular
         Data that can be represented as a matrix with :term:`samples` on the
         first axis and a fixed, finite set of :term:`features` on the second
