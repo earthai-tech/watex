@@ -116,7 +116,7 @@ from .methods import (
     DCProfiling, 
     DCSounding, 
     EM, 
-    Processing as EMProcessing , 
+    Processing as EMProcessing, 
     MXS, 
     )
 from . models import ( 

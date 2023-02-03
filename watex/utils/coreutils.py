@@ -15,7 +15,8 @@ import re
 import pathlib
 import warnings 
 import copy 
-import itertools  
+import itertools
+import collections   
 
 import numpy as np 
 import pandas as pd 
@@ -54,7 +55,9 @@ from .funcutils import (
     _assert_all_types,
     accept_types,
     read_from_excelsheets,
-    reshape
+    reshape, 
+    is_iterable, 
+    is_in_if
     ) 
 from .gistools import (
     assert_lat_value,
@@ -70,7 +73,8 @@ from .validator import  (
     _is_arraylike_1d, 
     _check_consistency_size, 
     is_valid_dc_data, 
-    array_to_frame
+    array_to_frame, 
+    check_y
     )
 _logger = watexlog.get_watex_logger(__name__)
 
@@ -1180,7 +1184,257 @@ def plotAnomaly(
     plt.close () if savefig is not None else plt.show() 
     
     return ax 
+  
+def erpSmartDetector(
+        constr: list |dict,  
+        erp: ArrayLike, 
+        station:str=None, 
+        coerce:bool=False, 
+        return_cz:bool=False, 
+        ): 
+    """ 
+    Automatically detect the drilling location by involving the 
+    constraints observed in the survey area. 
+    
+    Consider the constraints on the survey area and detect the suitable
+    drilling location. Commonly the `station` is not needed when using 
+    the constraintssince the station indicates that the user is aware 
+    about the reason to select this station. However in the case, 
+    doubts raise, user can set the parameter `coerce` to 
+    ``True``. 
+    
+    Parameters 
+    -----------
+    constr: list, dict
+        List of restricted station. The constraint or restricted stations are 
+        the station where to ignore when selecting the best drilling location. 
+        Indeed, this is useful since in :term:`DWSC`, not the station are 
+        presumed to be suitable to propose the drilling in technical view. 
+        For instance, if some stations are close to the household waste site,
+        the stations must be list and ignored. 
         
+        If the `constr` is passed in a dictionnary, it might be contain, the 
+        key for the restricted stations and the value for the reason why the 
+        station is restricted. For instance:: 
+            
+            constr = {"s02": "station close to the household waste"
+                      "S25": "station is located in a marsh area."
+                      }
+    erp: array-like 1d
+        DC profiling :term:`ERP` resistivity values 
+        
+    station: str, optional
+        The station of the presumed location for drilling operations. Commonly 
+        the station is not need when using the constraints. If the station is 
+        given whereas ``coerce=False`` an errors will raise top warnm the users, 
+        To force considering the station in the auto-detection, ``coerce`` must
+        be set to ``True``. 
+        
+    coerce:bool, default=False, 
+        Allow the station to be consider in the auto-detection. 
+        
+    Return 
+    -------
+    (station |None) or cz : str, 
+        staion for  the drilling operations detected automatically. 
+        If no station is detected, will return ``None``. 
+        if `return_cz` is ``True``, station and the conductive zone are 
+        returned. 
+        
+    Examples
+    --------
+    >>> import numpy as np 
+    >>> from watex.datasets import make_erp 
+    >>> from watex.utils.coreutils import erpSmartDetector 
+    >>> resistivity = make_erp (n_stations =50 , as_frame=True, seed=125).resistivity 
+    >>> # get the min value of the resistivity 
+    >>> resmin_index = np.where ( resistivity==resistivity.min()) 
+    42
+    >>> erpSmartDetector (constr =['s42'], resistivity )
+    'S13'
+    >>> # S42 is rejected and selected another zone presumed to be better.
+    >>> constraints ={"S00": "Site forddibben foreigers ", 
+                      "S10": " Municipality square, no authorization to make drill",
+                      "S29": "Heritage site", 
+                      "S46": "Household waste site",
+                      "S42": "Household waste site"
+                      } 
+    >>> erpSmartDetector (constraints, resistivity)
+    'S16'
+    >>> erpSmartDetector (['s12', 's40'], resistivity) 
+    'S29'
+    >>> # station 42 close s40 is rejected too.
+  
+    """   
+    
+    constr_msg=("No suitable location for drilling operations is detected"
+                " after applying the constraints. To force proposing"
+                " an alternative location, set ``restrictions=None``"
+                " and re-fit the DC-profiling object. Use it at your"
+                " own risk."
+                )
+    # assert station when given 
+    s=None
+    if station is not None: 
+        if not coerce:
+            raise ERPError(
+                "Usually the restriction is not applicable when user explicitly"
+                " sets the station for the drilling operations. Restriction"
+                " is effective for automatic drilling location. To force"
+               f" algorithm to consider the station {station}, set"
+                " parameter ``coerce=True``."
+             )
+
+        s = re.findall('\d+', str(station )) 
+        if len(s)==0: 
+            raise StationError(f"Wrong station {station}. Station must contain"
+                               " the position number. e.g., 'S07'")
+        s = int (s[0])
+    
+    # assert erp 
+    erp = check_y (erp, allow_nan=True, input_name="DC-Resistivity data ")
+    res_arr = np.array (erp).copy() # for consistency 
+    # assert constraint values 
+    if not isinstance ( constr , dict) and is_iterable(constr): 
+        constr = list( constr)
+
+    constr = _assert_all_types(
+        constr, list, dict, objname="Constraints")
+    
+    constr = list(constr)
+    
+    # check the effectiveness of constraints 
+    cs = _check_constr_eff (constr, s, station)
+    # if constraints is not applicable 
+    if cs is not None:
+        for ix in cs: 
+            if ix > len(erp): 
+                warnings.warn(f"Station position {ix} is ignored. Position"
+                              f" number {ix} is out range of the number"
+                              f" of survey stations={len(erp)}.")
+            res_arr = _nan_constr(ix, res_arr)
+
+    if np.isnan (res_arr).all(): 
+        warnings.warn(constr_msg)
+        
+        return 
+    
+    if coerce and station is not None: 
+        cz = _nan_constr(s, res_arr, return_indexed_arr=True )
+        
+    else:
+        cz , *_, pos= defineConductiveZone(
+            res_arr, auto =True, keepindex =True)
+        
+        station = f'S{pos:02}'
+        
+    if np.isnan (cz).any(): 
+        warnings.warn(f"Please, do not take a risk by considering the station"
+                      f" {station!r} for drilling operations. It seems close"
+                      " to a restricted station. You may leave this station"
+                      " and carry out another ERP line far from this site."
+                      " Force considering this station with DC-parameters"
+                      " resulting with is your own risk.") 
+
+    return (station, cz) if return_cz else station 
+    
+    
+def _check_constr_eff (constr, six= None, station=None ): 
+    """ Check if the given station is not in the constraint values.
+    
+    Raise  warning messages otherwise.
+    
+    :param constr: list of dict conatining the constraint items 
+    :param s_ix: index of the station to apply the constraints 
+    :param station: name of the station. The station may include the position 
+        values.
+    """
+    def raise_warn_if (l, lt): 
+        """ Raise warning if the no position is found 
+        
+        :param l: list containing the position number, e.g. e.g: [04]
+        :param lt: The total position including the letter. eg. 'S04'
+        """ 
+        if len(l) ==0: 
+            warnings.warn(f"Missing position number of station {lt}."
+                          f" Station {lt} is ignored instead.")
+            return [None] 
+        return [int (l[0])]
+  
+    # use regex to find the station positions. 
+    cs = [raise_warn_if(re.findall('\d+', key), key) for key in constr ] 
+    # use itertools to generate single list for all 
+    cs=list (itertools.chain (*cs))
+    # remove all missing position numbers 
+    cs =list(filter (None, cs))
+    # check duplicate stations 
+    dp = [item for item, count in collections.Counter(cs).items() if count > 1
+          ]
+    if len(dp)!=0: 
+        warnings.warn(f"Duplicated stations {smft(dp)} found in"
+                      "the constraint items. Single item is kept"
+                      " while others should be discarded.")
+    cs = list(set(cs))
+    if six is not None:
+        # check whether the given station is among the constraint values 
+        d = is_in_if ( cs, [six], return_intersect= True) 
+        if d is not None: 
+            msg = (f"Station {station} is a restricted station. Constraints"
+                   " cannot be applied when the station is explicitly given."
+                   " By default, the constraints applicability is ignored."
+                   f" You may remove the station {station!r} among the "
+                   " restricted stations or select another station."
+                   )
+            warnings.warn(msg)
+            
+            cs= None 
+        
+    return cs 
+
+def _nan_constr (cs_ix , arr , return_indexed_arr =False ):
+    """ Use NaN to mask the constraints in the erp. 
+    
+    :param cs_ix: int, index of the constraint station. 
+    :param erp: DC profiling  resistivity array 
+    :param return_indexed_arr: 
+        If ``True``, returns the resistivity values  of the selected 
+        conductive zone from constraint.
+        
+    :return: arraylike 
+      New array of discarded the constraint area. 
+      
+    :example: 
+        
+    >>> import numpy as np 
+    >>> from watex.utils.coreutils import _nan_constr 
+    >>> r = np.linspace (1, 10, 21)
+    array([ 1.  ,  1.45,  1.9 ,  2.35,  2.8 ,  3.25,  3.7 ,  4.15,  4.6 ,
+        5.05,  5.5 ,  5.95,  6.4 ,  6.85,  7.3 ,  7.75,  8.2 ,  8.65,
+        9.1 ,  9.55, 10.  ])
+    >>> r = _nan_constr ( 10, r)
+    >>> r 
+    array([ 1.  ,  1.45,  1.9 ,  2.35,  2.8 ,  3.25,  3.7 ,   nan,   nan,
+             nan,   nan,   nan,   nan,   nan,  7.3 ,  7.75,  8.2 ,  8.65,
+            9.1 ,  9.55, 10.  ])
+    >>> r = _nan_constr (5, r)
+    >>> r 
+    array([ 1.  ,  1.45,   nan,   nan,   nan,   nan,   nan,   nan,   nan,
+             nan,   nan,   nan,   nan,   nan,  7.3 ,  7.75,  8.2 ,  8.65,
+            9.1 ,  9.55, 10.  ])
+    """
+    # note that station must be framed with 3 stations before and after. 
+    index_range = np.arange (cs_ix - 3 , cs_ix + 3 +1 ) 
+    # if there is a negative index, discarded then 
+    index_range= index_range [ index_range >=0 ] 
+    # use is inx to find the valuable index 
+    mask = _isin( np.arange (len(arr)), index_range, return_mask=True) 
+    index_in = np.arange (len(arr))[mask]
+    # replace value of index with NaN
+    arr[index_in]  = np.nan 
+    
+    return  index_in if return_indexed_arr else arr 
+
+
 #XXX OPTIMIZE 
 def defineConductiveZone(
     erp:ArrayLike| pd.Series | List[float] ,
@@ -1231,6 +1485,8 @@ def defineConductiveZone(
     if isinstance(erp, pd.Series):
         erp = erp.values 
     
+    erp = check_y(erp, allow_nan= True, input_name ="DC-resistivity ERP data" )  
+
     # conductive zone positioning
     pcz : Optional [ArrayLike]  = None  
     
@@ -1241,7 +1497,7 @@ def defineConductiveZone(
     elif  ( station is None 
            and auto is True 
            ): 
-        station= np.argwhere (erp ==erp.min())
+        station= np.argwhere (erp ==np.nanmin(erp))
         station= int(station) if len(station) ==1 else int(station[0])
         # station, = np.where (erp == erp.min()) 
         # station=int(station)
@@ -1267,7 +1523,6 @@ def defineConductiveZone(
     # from the of the whole erp 
     pix= np.argwhere (cz == erp[pos])
     pix = pix [0] if len(pix) > 1 else pix 
-
     return cz , pcz, int(pix), pos
 
 #XXX OPTIMIZE 

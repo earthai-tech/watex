@@ -743,14 +743,16 @@ class ResistivityProfiling(ElectricalMethods):
         self, 
         station: str = None,
         dipole: float = 10.,
-        auto: bool = False, 
+        auto: bool = False,
+        constraints:list|dict=None, 
         **kws): 
         super().__init__(**kws) 
         
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         self.dipole=dipole
         self.station=station
-        self.auto=auto 
+        self.auto=auto
+        self.constraints=constraints 
 
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
