@@ -33,7 +33,8 @@ engineering problems such as computing DC parameters and predicting the k-parame
 
 ## Demo of the drilling location auto-detection 
 
-For this example, we randomly generate 50 stations with DC-resistivity ```min/min =1e1/1e4`` ohm.m as 
+For this example, we randomly generate 50 stations of synthetic ERP resistivity data with ``minimum`` and ``maximum ``
+resistivity values equal to  ``1e1`` and ``1e4`` ohm.m  respectively as:
 
 ```python 
 import watex as wx 
