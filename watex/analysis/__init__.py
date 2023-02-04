@@ -21,7 +21,7 @@ from .decomposition import (
     linear_discriminant_analysis
     )
 from .factor import ( 
-    lw_score, 
+    LW_score, 
     shrunk_cov_score, 
     compute_scores, 
     pcavsfa, 
@@ -41,7 +41,7 @@ __all__= [
     "feature_transformation", 
     "total_variance_ratio" ,
     "linear_discriminant_analysis", 
-    "lw_score", 
+    "LW_score", 
     "shrunk_cov_score", 
     "compute_scores", 
     "pcavsfa", 

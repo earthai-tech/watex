@@ -941,10 +941,11 @@ def plotAnomaly(
     show_fig_title: bool = True,
     style: str = 'seaborn', 
     fig_title_kws: Dict[str, str|Any] = ...,
-    czkws: Dict [str , str|Any] = ... , 
-    legkws: Dict [Any , str|Any] = ... , 
+    czkws: Dict [str , str|Any] = ..., 
+    legkws: Dict [Any , str|Any] = ...,
+    how:Optional[str]='py',
     **kws, 
-) -> None: 
+): 
 
     """ Plot the whole |ERP| line and selected conductive zone. 
     
@@ -953,9 +954,9 @@ def plotAnomaly(
     ``S07`` for the seventh station. Futhermore, for automatic detection, one 
     should set the station argument `s` to ``auto``. However, it 's recommended 
     to provide the `cz` or the `s` to have full control. The conductive zone 
-    is juxtaposed to the whole |ERP| survey. One can customize the `cz` plot by 
+    overlained the whole |ERP| survey. user can customize the `cz` plot by 
     filling with `Matplotlib pyplot`_ additional keywords araguments thought 
-    the kewords argument `czkws`. 
+    the keyword arguments `czkws`. 
 
     Parameters 
     -----------
@@ -998,6 +999,10 @@ def plotAnomaly(
             
         Futher details can be foud in Webresources below or click on 
         `GeekforGeeks`_. 
+    how: str, default='py'
+        By default (``how='py'``), the station is naming following the 
+        Python indexing. Station is counting from station 00(S00). Any other
+        values will start the station naming from 1.
         
     czkws: dict, 
         keywords `Matplotlib pyplot`_ additional arguments to customize 
@@ -1027,11 +1032,20 @@ def plotAnomaly(
     >>> plotAnomaly(test_array)
         
     Note
-    ----
-    If `cz` is given, No need to worry about the station `s`. `s` can still
-    keep it default value ``None``. 
+    -----
+    :func:`plotAnomaly` does not imply the use of constraints. The conductive
+    detection can only be used if and only if there is not constraints 
+    applicable to the survey site, otherwise use :func:`erpSmartDetector` 
+    by triggered the `view` parameter to ``True``.
+    In addition, If `cz` is given, No need to worry about the 
+    station `s`. `s` can still keep it default value ``None``. 
+    
+    See Also
+    ---------
+    watex.erpSmartDetector: 
+            Detection conductive zone applying the constraint. Set the
+            ``view=True`` for constraints visualization. 
         
-     
     References   
     -----------
     See Matplotlib Axes: https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.tick_params.html
@@ -1050,7 +1064,9 @@ def plotAnomaly(
         nskip = len(erp ) * 7 // 100 
         
         if value % nskip ==0: 
-            return 'S{:02}'.format(int(value)+ 1)
+            return 'S{:02}'.format(int(value)+ 1 
+                                   if str(how).lower()!='py' else int(value)
+                                   )
         else: None 
         
     if hasattr ( erp, "columns") and isinstance (erp, pd.DataFrame): 
@@ -1103,21 +1119,21 @@ def plotAnomaly(
                   )
     leg.append(zl)
     
-    if station =='' : station= None  # for consistency 
+    if station =='' : 
+        station= None  # for consistency 
+
     if station is not None:
-        auto =False ; keepindex =True 
+        auto =False 
         if isinstance (station , str): 
-            auto = True if station.lower()=='auto' else station 
-            if 's' or 'pk' in station.upper(): 
-                # if provide the station. 
-                keepindex =False 
-                
-            if station.lower() =='auto': station=None  # reset station 
+            if station.lower()=='auto': 
+                auto=True ; station =None # reset station 
         cz , _ , _, ix = defineConductiveZone(
-           erp, station = station , auto = auto, keepindex=keepindex 
+           erp,
+           station = station, 
+           auto = auto,
+           index=how, 
            )
-        
-        station = "S{:02}".format(ix +1) if station is not None else station 
+        station = "S{:02}".format(ix if str(how).lower()=='py' else ix+ 1)
 
     if cz is not None: 
         # construct a mask array with np.isin to check whether
@@ -1149,7 +1165,8 @@ def plotAnomaly(
     else : 
         
         ax.set_xticklabels(
-            ['S{:02}'.format(int(i)+1) for i in range(len(erp))],
+            ['S{:02}'.format(int(i)+1 if str(how).lower()!='py' else int(i) )
+             for i in range(len(erp))],
             rotation =0. if rotate is None else rotate ) 
    
 
@@ -1191,6 +1208,9 @@ def erpSmartDetector(
         station:str=None, 
         coerce:bool=False, 
         return_cz:bool=False, 
+        view:bool=False, 
+        raise_warn: bool=True, 
+        **plot_kws
         ): 
     """ 
     Automatically detect the drilling location by involving the 
@@ -1233,14 +1253,28 @@ def erpSmartDetector(
     coerce:bool, default=False, 
         Allow the station to be consider in the auto-detection. 
         
+    raise_warn: bool, default=True, 
+         warn the user whether a suitable location is found or not. Returns 
+         ``None`` otherwise. 
+         
+    view: bool, default=False, 
+        Plot the conductive zone and restricted stations.
+    plot_kws:dict, 
+        Additional plotting keywords arguments passed to 
+        :func:`plotAnomaly`. 
+        
     Return 
     -------
-    (station |None) or cz : str, 
+    (station |None) or cz, cs : str, 
         staion for  the drilling operations detected automatically. 
         If no station is detected, will return ``None``. 
         if `return_cz` is ``True``, station and the conductive zone are 
-        returned. 
+        returned as well as the restricted station position number. 
         
+    See Also
+    ----------
+    watex.plotAnomaly: Plot DC profiling :term:`ERP` and conductive zone. 
+    
     Examples
     --------
     >>> import numpy as np 
@@ -1268,11 +1302,7 @@ def erpSmartDetector(
     """   
     
     constr_msg=("No suitable location for drilling operations is detected"
-                " after applying the constraints. To force proposing"
-                " an alternative location, set ``restrictions=None``"
-                " and re-fit the DC-profiling object. Use it at your"
-                " own risk."
-                )
+                " after applying the constraints.")
     # assert station when given 
     s=None
     if station is not None: 
@@ -1281,9 +1311,7 @@ def erpSmartDetector(
                 "Usually the restriction is not applicable when user explicitly"
                 " sets the station for the drilling operations. Restriction"
                 " is effective for automatic drilling location. To force"
-               f" algorithm to consider the station {station}, set"
-                " parameter ``coerce=True``."
-             )
+               f" considering the station {station}, set ``coerce=True``.")
 
         s = re.findall('\d+', str(station )) 
         if len(s)==0: 
@@ -1292,17 +1320,16 @@ def erpSmartDetector(
         s = int (s[0])
     
     # assert erp 
-    erp = check_y (erp, allow_nan=True, input_name="DC-Resistivity data ")
+    erp = check_y (erp, allow_nan=True, input_name="ERP data ")
     res_arr = np.array (erp).copy() # for consistency 
     # assert constraint values 
-    if not isinstance ( constr , dict) and is_iterable(constr): 
+    if isinstance ( constr , dict): 
         constr = list( constr)
-
-    constr = _assert_all_types(
-        constr, list, dict, objname="Constraints")
+    else: 
+        constr= is_iterable(constr, exclude_string=True,
+                            transform=True, parse_string=True)
     
     constr = list(constr)
-    
     # check the effectiveness of constraints 
     cs = _check_constr_eff (constr, s, station)
     # if constraints is not applicable 
@@ -1315,8 +1342,8 @@ def erpSmartDetector(
             res_arr = _nan_constr(ix, res_arr)
 
     if np.isnan (res_arr).all(): 
-        warnings.warn(constr_msg)
-        
+        if raise_warn:
+            warnings.warn(constr_msg)
         return 
     
     if coerce and station is not None: 
@@ -1324,7 +1351,7 @@ def erpSmartDetector(
         
     else:
         cz , *_, pos= defineConductiveZone(
-            res_arr, auto =True, keepindex =True)
+            res_arr, auto =True)
         
         station = f'S{pos:02}'
         
@@ -1336,10 +1363,17 @@ def erpSmartDetector(
                       " Force considering this station with DC-parameters"
                       " resulting with is your own risk.") 
 
-    return (station, cz) if return_cz else station 
+    if view and cs is not None: 
+        ax = plotAnomaly(erp, station= station, cz = cz, **plot_kws) 
+        ax.scatter (cs, erp [cs ], marker="s", s=70, 
+                        color = 'red', alpha = .5, 
+                    label=f"Restricted station{'s' if len(cs)>1 else ''}")
+        ax.legend ()
+
+    return (station, cz , cs) if return_cz else station 
     
-    
-def _check_constr_eff (constr, six= None, station=None ): 
+
+def _check_constr_eff (constr, six= None, station=None, raise_warn=True): 
     """ Check if the given station is not in the constraint values.
     
     Raise  warning messages otherwise.
@@ -1348,16 +1382,21 @@ def _check_constr_eff (constr, six= None, station=None ):
     :param s_ix: index of the station to apply the constraints 
     :param station: name of the station. The station may include the position 
         values.
+    :param raise_warn: alert user that the site is not appropriate 
+        for drilling.
+    :return: cs
+       list of constraints position indexes
     """
     def raise_warn_if (l, lt): 
-        """ Raise warning if the no position is found 
+        """ Raise warning if the no position number is found 
         
         :param l: list containing the position number, e.g. e.g: [04]
         :param lt: The total position including the letter. eg. 'S04'
         """ 
         if len(l) ==0: 
-            warnings.warn(f"Missing position number of station {lt}."
-                          f" Station {lt} is ignored instead.")
+            if raise_warn:
+                warnings.warn(f"Missing position number of station {lt}."
+                              f" Station {lt} is ignored instead.")
             return [None] 
         return [int (l[0])]
   
@@ -1385,7 +1424,7 @@ def _check_constr_eff (constr, six= None, station=None ):
                    f" You may remove the station {station!r} among the "
                    " restricted stations or select another station."
                    )
-            warnings.warn(msg)
+            if raise_warn: warnings.warn(msg)
             
             cs= None 
         
@@ -1440,7 +1479,8 @@ def defineConductiveZone(
     erp:ArrayLike| pd.Series | List[float] ,
     station: Optional [str|int] = None, 
     position: SP = None,  
-    auto: bool = False, 
+    auto: bool = False,
+    index:str='py', 
     **kws,
 ) -> Tuple [ArrayLike, int] :
     """ Define conductive zone as subset of the erp line.
@@ -1461,6 +1501,7 @@ def defineConductiveZone(
     auto: bool
         If ``True``, the station position should be the position of the lower 
         resistivity value in |ERP|. 
+    indexing: str, 
     
     Returns 
     -------- 
@@ -1489,10 +1530,10 @@ def defineConductiveZone(
 
     # conductive zone positioning
     pcz : Optional [ArrayLike]  = None  
-    
+
     if station is None and auto is False: 
-        raise StationError("Expect a station position or trigger the 'auto'"
-                        "to 'True'. NoneType is given.")
+        raise StationError("Missing station. Set ``auto=True`` for a naive"
+                          " auto-detection (no-restrictions observed).")
         
     elif  ( station is None 
            and auto is True 
@@ -1501,12 +1542,25 @@ def defineConductiveZone(
         station= int(station) if len(station) ==1 else int(station[0])
         # station, = np.where (erp == erp.min()) 
         # station=int(station)
-    station, pos = _assert_stations(station, **kws )
-    
+    elif auto and station:
+        warnings.warn ("Naive auto-detection is ignored while the"
+                       " station is supplied.")
+
+    station, pos = _assert_stations(station, index=index,  **kws )
     # takes the last position if the position is outside 
     # the number of stations. 
-    pos = len(erp) -1  if pos >= len(erp) else pos 
-    # frame the `sves` (drilling position) and define the conductive zone 
+    msg=("Station position must not be greater than the number of stations."
+     " It seems the dipole length is used for naming the stations."
+     " If true, set `dipole` parameter value with the units. For instance"
+     " '10m' names the stations as S00-S10-S20... and recompute the position"
+     " for consistency to fit the number of stations. Expect {} stations,"
+     " got {}."
+     )
+    if pos >= len(erp): 
+        raise StationError(msg.format(len(erp), pos))
+    # pos = len(erp) -1  if pos >= len(erp) else pos 
+    # frame the `sves` (drilling position) within 03 stations left/right
+    # and define the conductive zone 
     ir = erp[:pos][-3:] ;  il = erp[pos:pos +3 +1 ]
     cz = np.concatenate((ir, il))
 
@@ -1529,7 +1583,7 @@ def defineConductiveZone(
 def _assert_stations(
     station:Any , 
     dipole:Any = None,
-    keepindex:bool = False
+    index:str = None,
 ) -> Tuple[str, int]:
     """ Sanitize stations and returns station name and index.
     
@@ -1542,8 +1596,9 @@ def _assert_stations(
     :param dipole: dipole_length in meters.  
     :type dipole: float 
     
-    :param keepindex: bool - Stands for keeping the Python indexing. If set to 
-        ``True`` so the station should start by `S00` and so on. 
+    :param index: str, default=None,
+        Stands for keeping the Python indexing. If set to 
+        ``py` so the station should start by `S00` and so on. 
     
     :returns: 
         - station name 
@@ -1551,8 +1606,8 @@ def _assert_stations(
         
     .. note:: 
         
-        The defaut station numbering is from 1. SO if ``S00` is given, and 
-        the argument `keepindex` is still on its default value i.e ``False``,
+        The defaut station numbering is from 1. So if ``S00` is given, and 
+        the argument `index` is still on its default value i.e ``False``,
         the station name should be set to ``S01``. Moreover, if `dipole`
         value is given, the station should  named according to the 
         value of the dipole. For instance for `dipole` equals to ``10m``, 
@@ -1567,7 +1622,7 @@ def _assert_stations(
         ... ('S01', 0)
         >>> _assert_stations('S1')
         ... ('S01', 0)
-        >>> _assert_stations('S1', keepindex =True)
+        >>> _assert_stations('S1', index =None)
         ... ('S01', 1) # station here starts from 0 i.e `S00` 
         >>> _assert_stations('S00')
         ... ('S00', 0)
@@ -1591,6 +1646,13 @@ def _assert_stations(
                             f"prefixed by {smft(stnl +['S'], 'or')} e.g. "
                             "'S00' for the first station")
     else : station = int(station[0])
+    
+    if (str(index).lower().find ('py')>=0 
+        or str(index).lower().find ('true')>=0
+        ): 
+        # keep Python indexing for naming stations. 
+        keepindex =True 
+    else: keepindex =False
     
     if station ==0 : 
         # set index to 0 , is station `S00` is found for instance.

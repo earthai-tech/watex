@@ -44,7 +44,8 @@ from ..utils.coreutils import (
     erpSelector, 
     vesSelector,
     parseDCArgs ,
-    plotAnomaly
+    plotAnomaly, 
+    erpSmartDetector
 ) 
 from ..utils.exmath import (
     shape, 
@@ -701,7 +702,7 @@ class ResistivityProfiling(ElectricalMethods):
     Parameters 
     ----------
     
-    **station**: str 
+    station: str 
         Station name where the drilling is  expected to be located. The 
         station should numbered from 1 not 0. So if ``S00` is given, the 
         station name should be set to ``S01``. Moreover, if `dipole` value 
@@ -712,15 +713,31 @@ class ResistivityProfiling(ElectricalMethods):
         station using counting numbers rather than using the dipole 
         position.
             
-    **dipole**: float 
+    dipole: float 
         The dipole length used during the exploration area. 
         
-    **auto**: bool 
+    auto: bool 
         Auto dectect the best conductive zone. If ``True``, the station 
         position should be  the  `station` of the lower resistivity value 
         in |ERP|. 
-    
-    **kws**: dict 
+    constraints: list or dict,
+        It determines the restriction observed in the site during the survey 
+        area. Any station close to a restriction area must be listed and 
+        should be ignored when the best location for drilling operations
+        is automatically detected. A restricted stations can be enumerated as 
+        a dictionnary of ``key='restricted station'`` and ``value='reason`` why 
+        the station must be ignored. For instance::
+            
+            constraints ={'S10': 'Heritage site, no authorization for drilling'
+                          'S25': 'Close to the household waste'
+                          "S45": 'Station close to a municipality domain'
+                          'S50': 'Marsh area' 
+                          ...
+                          }
+       Note that, commonly ``constraints`` is mostly needed when the 
+       automatic detection is triggered. However, it can be `coerce` with the 
+       explicit defined `station`. 
+    kws: dict 
          Additional |ERP| keywords arguments  
          
     Examples
@@ -744,7 +761,8 @@ class ResistivityProfiling(ElectricalMethods):
         station: str = None,
         dipole: float = 10.,
         auto: bool = False,
-        constraints:list|dict=None, 
+        constraints:list|dict=None,
+        coerce: bool=False, 
         **kws): 
         super().__init__(**kws) 
         
@@ -752,7 +770,8 @@ class ResistivityProfiling(ElectricalMethods):
         self.dipole=dipole
         self.station=station
         self.auto=auto
-        self.constraints=constraints 
+        self.constraints=constraints
+        self.coerce=coerce
 
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
@@ -841,8 +860,7 @@ class ResistivityProfiling(ElectricalMethods):
         self._logging.info(f'Assert the station {self.station!r} if given' 
                            'or auto-detected otherwise.')
         
-        # assert station and use the automatic station detection  
-        ##########################################################
+        # assert station and use the automatic station renaming  
         if self.auto and self.station is not None: 
             warnings.warn (
                 f"Station {self.station!r} is given while 'auto' is 'True'."
@@ -870,6 +888,31 @@ class ResistivityProfiling(ElectricalMethods):
         self.data_['station'] = self.position_ 
         
         ############################################################
+        # check whether constraints are given and find the suitable
+        # position 
+        if self.constraints: 
+            constr_r = erpSmartDetector(
+                self.constraints, erp= self.resistivity_,
+                station = self.station, coerce= self.coerce, 
+                # turn off to reformulate the message
+                raise_warn=False, 
+                return_cz=True, 
+                )
+            # if none suitable location is found 
+            if constr_r is None: 
+                warnings.warn(
+                    "No suitable location for drilling operations is detected"
+                    " after applying the constraints. Process to compute the"
+                    " DC-profiling parameters is aborted. To force proposing"
+                    " an alternative location with the naive auto-detection"
+                    " set ``constraints=None`` and re-fit the"
+                   f" {self.__class__.__name__!r} object. Use it at your"
+                    " own risk.")
+                return self 
+            
+            self.station ,_, self.constr_ix_ = constr_r
+            # turn off auto detection since the best station is found.
+            self.auto=False 
         # Define the selected anomaly (conductive_zone )
         # ix: s the index of drilling point in the selected 
         # conductive zone while 
@@ -881,16 +924,15 @@ class ResistivityProfiling(ElectricalMethods):
                         station= self.station, 
                         auto = self.auto,
                         #keep Python numbering index (from 0 ->...),
-                        keepindex = True, 
+                        #index = 'py', 
                         
                         # No need to implement the dipole computation 
-                        # for detecting the sation position if the 
+                        # for detecting the station position if the 
                         # station is given
                         # dipole =self.dipole if self.station is None else None,
-                        
                         position = self.position_
             )
-
+        ############################################################
         if self.verbose >7 : 
             print('Compute the property values at the station location ' 
                   ' expecting for drilling location <`sves`> at'
@@ -978,7 +1020,6 @@ class ResistivityProfiling(ElectricalMethods):
             
         return self.table_ if return_table else self  
         
-    #XXX TODO DEFINED CONDUCTIVE 
     def plotAnomaly (self, **plot_kws): 
         """ Plot the best conductive zone found in the |ERP|
         
@@ -988,8 +1029,19 @@ class ResistivityProfiling(ElectricalMethods):
         """ 
         self.inspect 
         
-        return plotAnomaly(self.resistivity_, cz = self.conductive_zone_, 
+        ax= plotAnomaly(self.resistivity_, cz = self.conductive_zone_, 
                            station= self.sves_, **plot_kws)  
+        if ( 
+                self.constraints is not None 
+                and getattr( self, 'constr_ix_') is not None
+            ): 
+            lab=f"Restricted station{'s' if len(self.constr_ix_)>1 else ''}"
+            ax.scatter (self.constr_ix_, self.resistivity_ [self.constr_ix_ ],
+                        marker="s", s=77, color='r', alpha = .8, 
+                        label=lab)
+            ax.legend ()
+    
+        return ax 
     
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
