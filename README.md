@@ -66,11 +66,11 @@ application to our example.
 
 ```python 
 restrictions = {
-    'S10': 'sacred village site, no authorization',
-    'S27': 'Municipality site, no authorization to make drill',
+    'S10': 'Household waste site, avoid contamination',
+    'S27': 'Municipality site, no authorization to make a drill',
     'S29': 'Heritage site, drilling prohibited',
-    'S46': 'Household waste site, avoid contamination',
-    'S42': 'Anthropic polluted place, avoid contamination within a few years'
+    'S42': 'Anthropic polluted place, avoid contamination within a few years',
+    'S46': 'Marsh zone, borehole will dry up in the dry season'
  }
 robj=wx.ResistivityProfiling (constraints= restrictions, auto=True ).fit(data ) 
 robj.sves_
