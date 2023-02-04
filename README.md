@@ -67,7 +67,7 @@ application to our example.
 ```python 
 restrictions = {
     'S10': 'sacred village site, no authorization',
-    'S20': ' Municipality site, no authorization to make drill',
+    'S27': 'Municipality site, no authorization to make drill',
     'S29': 'Heritage site, drilling prohibited',
     'S46': 'Household waste site, avoid contamination',
     'S42': 'Anthropic polluted place, avoid contamination within a few years'
