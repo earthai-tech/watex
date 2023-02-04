@@ -70,7 +70,7 @@ restrictions = {
     'S27': 'Municipality site, no authorization to make a drill',
     'S29': 'Heritage site, drilling prohibited',
     'S42': 'Anthropic polluted place, avoid contamination within a few years',
-    'S46': 'Marsh zone, borehole will dry up in the dry season'
+    'S46': 'Marsh zone, borehole will dry up during the dry season'
  }
 robj=wx.ResistivityProfiling (constraints= restrictions, auto=True ).fit(data ) 
 robj.sves_
