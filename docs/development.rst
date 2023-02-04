@@ -228,17 +228,17 @@ example of a DGMT development syntax:
 
 	>>> class DemoClass_: 
 		   """Class description and documentation """"
-		   def __init__(self, data, param1=None , param2=None, **kws): 
+		   def __init__(self, data=None, param1=None , param2=None, **kws): 
 		      self.data=data 
-              self.param1=param1
-              self.param2=param2
+                      self.param1=param1
+                      self.param2=param2
 			
-              for key in list(kws.keys()): 
-              setattr (self, key, kws[key])
+                      for key in list(kws.keys()): 
+                           setattr (self, key, kws[key])
 			
-              _fit_democlass (self.data ) 
+                       _fit_democlass (self.data ) 
 				
-		   def _fit_democlass(self): 
+		   def _fit_democlass(self, data =None): 
 		      """ Documentation of _fit_democlass method """
 		      ...
 		      self.param3_= ... 
@@ -284,15 +284,17 @@ Bug reports must:
       >>> d= Data(...)
       ...
       ```
-   * or `reStructured <https://www.writethedocs.org/guide/writing/reStructuredText/>`_ text:: 
+   * or `reStructured <https://www.writethedocs.org/guide/writing/reStructuredText/>`_ text::
 	
 	.. code-block::
-	
-	   >>> from watex.base import Data
-       >>> d = Data(...)
-       ...
 
-#. Include the full version string of watex and its dependencies. You can use the built-in function::
+	       >>> from watex.base import Data
+	       >>> d = Data(...)
+               ...
+
+#. Include the full version string of watex and its dependencies. You can use the built-in function:
+
+.. code-block:: python
 
       >>> import watex as wx 
       >>> wx.show_versions() 
