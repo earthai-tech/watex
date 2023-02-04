@@ -33,26 +33,55 @@ engineering problems such as computing DC parameters and predicting the k-parame
 
 ## Demo of the drilling location auto-detection 
 
-This is a naive example (no constraints) to automatically propose the suitable location to make 
-the drilling operations during the GWE. We may understand by ``suitable``, a location 
-expecting to give a flow rate greater than  3m3/hr at least. 
+For this example, we randomly generate 50 stations with DC-resistivity ```min/min =1e1/1e4`` ohm.m as 
 
-We randomly generate 50 stations with DC-resistivity ``min/min =1e1/1e4`` ohm.m:
+```python 
+import watex as wx 
+data = wx.make_erp (n_stations=50, max_rho=1e4, min_rho=10., as_frame =True, seed =42 ) 
+``` 
+* Naive auto-detection (NAD)
+
+The NAD automatically proposes a suitable location with NO restrictions (constraints) observed in the survey site
+during the GWE. We may understand by ``suitable``, a location expecting to give a flow rate greater 
+than 1m3/hr at least. 
 
 ```python
 
-import watex as wx 
-data = wx.make_erp (n_stations=50, max_rho=1e4, min_rho=10., as_frame =True, seed =42 ) 
 robj=wx.ResistivityProfiling (auto=True ).fit(data ) 
 robj.sves_ 
 Out[1]: 'S025'
 
 ```
-The algorithm proposes the best drilling location be made at station ``S25`` (stored in the attribute ``sves_``). Note that 
-before the drilling operations commence, make sure to carry out the DC-sounding (VES) at that point. **_WATex_** computes 
+The suitable drilling location is proposed at station ``S25`` (stored in the attribute ``sves_``). 
+
+* Auto-detection with constraints (ADC)
+
+The constraints refer to the restrictions observed in the survey area during the DWSC. This is common
+in real-world exploration. For instance, a station close to a heritage site should be discarded 
+since no drilling operations are authorized at that place. When many restrictions 
+are enumerated in the survey site, they must be listed in a dictionary with a reason and passe to the parameter 
+``constraints`` so these stations should be ignored during the automatic detection. Here is an example of constraints
+application to our example.
+
+```python 
+restrictions = {
+    'S10': 'sacred village site, no authorization',
+    'S20': ' Municipality site, no authorization to make drill',
+    'S29': 'Heritage site, drilling prohibited',
+    'S46': 'Household waste site, avoid contamination',
+    'S42': 'Anthropic polluted place, avoid contamination within a few years'
+ }
+robj=wx.ResistivityProfiling (constraints= restrictions, auto=True ).fit(data ) 
+robj.sves_
+Out[2]: 'S033'
+```
+Notice, the station ``S25`` is no longer considered as the `suitable` location and henceforth, propose ``S33`` as the
+priority for drilling operations. However, if the station is close to a restricted area, a warning should raise to 
+inform the user to avoid taking a risk to perform a drilling location at that location.
+
+Note that before the drilling operations commence, make sure to carry out the DC-sounding (VES) at that point. **_WATex_** computes 
 another parameter called `ohmic-area` `` (ohmS)`` to detect the effectiveness of the existing fracture zone at that point. See more in 
 the software [documentation](https://watex.readthedocs.io/en/latest/).
-
   
 ## Licence 
 

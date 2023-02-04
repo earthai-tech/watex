@@ -35,7 +35,7 @@ from sklearn.model_selection import GridSearchCV, cross_val_score
 from .._docstring import _core_docs
 
 __all__=[ 
-    "lw_score", 
+    "LW_score", 
     "shrunk_cov_score", 
     "compute_scores", 
     "pcavsfa", 
@@ -91,9 +91,48 @@ score: score of covariance estimator (best ) with shrinkage
 """.format(
     params =_core_docs["params"]
 )
-def lw_score(X):
-    """ low rank models score. Most likely than shrinkage models"""
-    return np.mean(cross_val_score(LedoitWolf(), X))
+def LW_score(X, store_precision=True, assume_centered=False,  **kws):
+    r"""Models score from Ledoit-Wolf.
+    
+    Parameters
+    ----------
+    store_precision : bool, default=True
+        Specify if the estimated precision is stored.
+
+    assume_centered : bool, default=False
+        If True, data will not be centered before computation.
+        Useful when working with data whose mean is almost, but not exactly
+        zero.
+        If False (default), data will be centered before computation.
+
+    block_size : int, default=1000
+        Size of blocks into which the covariance matrix will be split
+        during its Ledoit-Wolf estimation. This is purely a memory
+        optimization and does not affect results.
+        
+    Notes
+    -----
+    The regularised covariance is:
+        
+    .. math::
+        
+        (1 - text{shrinkage}) * \text{cov} + \text{shrinkage} * \mu * \text{np.identity(n_features)}
+    
+    where :math:`\mu = \text{trace(cov)} / n_{features}`
+    and shrinkage is given by the Ledoit and Wolf formula
+    
+    See also
+    ----------
+        LedoitWolf
+        
+    References
+    ----------
+    "A Well-Conditioned Estimator for Large-Dimensional Covariance Matrices",
+    Ledoit and Wolf, Journal of Multivariate Analysis, Volume 88, Issue 2,
+    February 2004, pages 365-411.
+    
+    """
+    return np.mean(cross_val_score(LedoitWolf(**kws), X))
 
 def pcavsfa (
         X,
@@ -149,7 +188,7 @@ def pcavsfa (
         # compare with other covariance estimators
         plt.axhline(shrunk_cov_score(X), color='violet',
                     label='Shrunk Covariance MLE', linestyle='-.')
-        plt.axhline(lw_score(X), color='orange',
+        plt.axhline(LW_score(X), color='orange',
                     label='LedoitWolf MLE' % n_components_pca_mle, linestyle='-.')
     
         plt.xlabel('nb of components')

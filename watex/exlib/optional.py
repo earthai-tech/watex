@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 12 14:27:57 2022
+# Licence:BSD 3-Clause
+# Author: LKouadio <etanoyau@gmail.com>
 
-@author: Daniel
-"""
-
-from warnings import warn 
+import warnings 
 from ..utils._dependency import import_optional_dependency 
 
 
@@ -50,9 +47,11 @@ extra =("'xgboost' is one the pretrained models stored in the watex package"
         )
 import_optional_dependency ("xgboost", extra=extra, min_version="1.2.0" ) 
 try : 
-    import xgboost 
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        import xgboost 
 except ( ImportError, ModuleNotFoundError ): 
-    warn("Missing Gradient Boosting Machine <'xgboost'> module"
+    warnings.warn("Missing Gradient Boosting Machine <'xgboost'> module"
          "Use pip or conda for its installation.")
 else :IS_GBM =True 
  

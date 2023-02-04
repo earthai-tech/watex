@@ -15,7 +15,8 @@ from .coreutils import (
     erpSelector, 
     defineConductiveZone,
     makeCoords,
-    read_data, 
+    read_data,
+    erpSmartDetector
     )
 from .exmath import ( 
     type_,
@@ -107,6 +108,7 @@ __all__=[
         'vesSelector', 
         'erpSelector', 
         'defineConductiveZone',
+        'erpSmartDetector', 
         'makeCoords', 
         'type_',
         'shape', 

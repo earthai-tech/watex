@@ -75,6 +75,7 @@ def setstructures(self , configfile:str =None , fillna:int =0  ):
     
     return self 
 
+#XXXTODO
 class Geology: 
     """ Geology class deals with all concerns the structures during 
     investigation sites"""

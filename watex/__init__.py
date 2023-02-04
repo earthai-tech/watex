@@ -116,7 +116,7 @@ from .methods import (
     DCProfiling, 
     DCSounding, 
     EM, 
-    Processing as EMProcessing , 
+    Processing as EMProcessing, 
     MXS, 
     )
 from . models import ( 
@@ -142,6 +142,7 @@ from .utils import (
     vesSelector, 
     erpSelector, 
     read_data, 
+    erpSmartDetector,
     type_,
     shape, 
     power, 
@@ -265,7 +266,8 @@ __all__ = [
     "plotAnomaly", 
     "vesSelector", 
     "erpSelector", 
-    "read_data", 
+    "read_data",
+    "erpSmartDetector", 
     "type_",
     "shape", 
     "power", 
