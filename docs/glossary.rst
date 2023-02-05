@@ -103,10 +103,6 @@ Geosciences concepts
         always an ASCII file. However, a provision has been made to store actual data values in a parallel binary data file and reference them 
         through the (ASCII) data interchange file. See the EDI file format construction in the document of `Wight and Drive,1988 <https://homepages.dias.ie/~ajones/publications/seg_mt_emap_1987.pdf>`_.
 
-and writing which are meant to follow the archaic EDI format put forward 
-by SEG. Can read impedance, Tipper but not spectra. To read spectra format
-please consult MTpy documentation https://mtpy2.readthedocs.io/en/develop/ 
-The Edi class contains a class for each major section of the .edi file.
     Electrical resistivity profiling
     DC-Profiling
     ERP
