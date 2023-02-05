@@ -605,7 +605,8 @@ def get_component_with_most_variance(
         X: NDArray | DataFrame,
         **pca_kws
         )->ArrayLike:
-    """ Get the number of component with 95% ratio
+    """ Get the number of component with 95% ratio. 
+    
     :param X: Training set.
     :param pca_kws: additional pca  keywords arguments.
     """

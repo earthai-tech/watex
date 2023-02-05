@@ -31,6 +31,8 @@ of Python and the most popular scientific libraries.
 
 It is possible to install :code:`watex` from source, using anaconda prompt or GUI . 
 
+.. _Miniforge3: https://github.com/conda-forge/miniforge#miniforge3 
+
 From source 
 -------------
 
@@ -41,7 +43,7 @@ webpage: https://github.com/WEgeophysics/watex :
 
    git clone https://github.com/WEgeophysics/watex.git  # add --depth 1 
   
-Moreover, it If you plan on submitting a pull-request, you should clone from your fork instead.
+Moreover, if you plan on submitting a pull-request, you should clone from your fork instead.
 
 
 Using Prompt
@@ -59,7 +61,7 @@ and install dependencies( see example below). Note the <`venv`>  can be any envi
 	conda activate venv
 	pip install scikit-learn xgboost seaborn pyyaml pyproj joblib 
 	
-some dependencies come with others and we dont need to install the full :ref:`hard-dependencies <dependencies>` to take 
+Some dependencies come with others and we dont need to install the full :ref:`hard-dependencies <dependencies>` to take 
 advantage of the basic implementation. However for consistency, you can install the full hard-dependencies like 
 
 .. prompt:: bash $ 
@@ -68,7 +70,7 @@ advantage of the basic implementation. However for consistency, you can install 
 	
 Check the list of optional :ref:`dependencies <dependencies>` to take advantage of additional functionalities. 
 
-.. note:: If you use ``conda install <package name> ``, some dependencies are not available in conda-forge you may use :code:`pip` instead.
+.. note:: If you use ``conda install <package name>``, some dependencies are not available in conda-forge you may use :code:`pip` instead.
  
  
 * Option 2: creating virtualenv_ under the root of project (Optional) 
@@ -110,7 +112,7 @@ Finally, you can install the software full dependencies `dependencies`_ using :c
 
 	conda install scikit-learn=1.1.2  xgboost seaborn pyyaml pyproj joblib openpyxl h5py tables numpy scipy pandas matplotlib missingno pandas_profiling pyjanitor yellowbrick mlxtend
 	
-for rapid execution of the script, you can also install `scikit-learn-intelex <https://intel.github.io/scikit-learn-intelex/>`_. 
+For a rapid execution of the script, you can also install `scikit-learn-intelex <https://intel.github.io/scikit-learn-intelex/>`_. 
 
 .. prompt:: bash $
 

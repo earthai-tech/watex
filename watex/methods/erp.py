@@ -112,9 +112,9 @@ class ERPCollection:
     attributes. The goal is to build a container  geao-elecricals to 
     straigthforwardly given to :class:`watex.bases.features.GeoFeatures`
     class.
-     
-    Arguments
-    ----------
+    
+    Parameters 
+    ------------
     listOferpfn: list, ndarray
         list of different `erp` files.
             
@@ -135,7 +135,7 @@ class ERPCollection:
         are alread created. Gather them on a list and pass though the 
         argument `erpObjs`.
     
-    Holds on others optionals infos in ``kws`: 
+    Holds others optionals infos passed as  keyword arguments. 
     
     ======================  =============   ===================================
     Attributes              Type                Description  
@@ -166,9 +166,9 @@ class ERPCollection:
         >>> erpcol = ERPC(listOferpfn='list|path|filename')
         >>> erpcol.survey_ids
         >>> erpcol.selectedPoints
-     
-    Call the following :class:`ERP_collection` atribute properties:
-     
+    
+    List of the :class:`ERP_collection` attribute properties:
+    
     ====================   ==============   ===================================
     Properties              Type                Description  
     ====================   ==============   ===================================
@@ -189,7 +189,7 @@ class ERPCollection:
                                             Refer to :doc:`ERP` for
                                             more details.
     ====================   ==============   ===================================
-     
+    
     Examples
     ---------
     >>> from watex.methods.erp import ERP_collection 

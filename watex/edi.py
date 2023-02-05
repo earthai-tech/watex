@@ -2,10 +2,10 @@
 #  Licence: BS3-clause 
 #  Author: L. Kouadio
 """
-EDI stands for Electrical Data Interchange module can read and write an *.edi 
-file as the standard MT/EMAP Data Interchange. Each section of the .edi 
-file belongs to a class object, thus the elements of each section are attributes 
-for easy access. Edi is outputted  following the SEG documentation. 
+:term:`EDI` stands for Electrical Data Interchange. The :class:`watex.Edi` class read and write an EDI file(*.edi)
+file as the standard :term:`MT`/:term:`EMAP` Data Interchange. It does the basic tensors operations. Each section 
+of the :term:`EDI` file belongs to a class object, thus the elements of each section are attributes 
+for easy access. :term:`Edi` is outputted  following the :term:`SEG` documentation. 
 """
 
 from __future__ import annotations 
@@ -988,7 +988,7 @@ the SEG documentation and rules  of EMAP (Electromagnetic  Array Profiling)
 and MT sections [1]_. 
 
 Ediclass  is for especialy dedicated to .edi files, mainly reading 
-and writingwhich are meant to follow the archaic EDI format put forward 
+and writing which are meant to follow the archaic EDI format put forward 
 by SEG. Can read impedance, Tipper but not spectra. To read spectra format
 please consult MTpy documentation https://mtpy2.readthedocs.io/en/develop/ 
 The Edi class contains a class for each major section of the .edi file.
