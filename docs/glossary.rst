@@ -36,7 +36,7 @@ Geosciences concepts
         So :math:`1 mS/m = 1000Ohm-m`.
 
     Controlled-source audio-frequency magnetotelluric
-    controlled-source audio-magnetotelluric
+    Controlled-source audio-magnetotelluric
     CSAMT 
         Controlled Source Audio-Magnetotellurics; It is a frequency-domain electromagnetic sounding technique which uses a 
         fixed grounded dipole or horizontal loop as an artificial signal source. Mostly, Its involves transmitting a current 
@@ -479,13 +479,11 @@ Note also that the maths concepts are also included. The list is not exhaustive.
         Note that in this case, the precision can be platform dependent.
         The `numeric` dtype refers to accepting both `integer` and `floating`.
 
-
     early stopping
         This consists in stopping an iterative optimization method before the
         convergence of the training loss, to avoid over-fitting. This is
         generally done by monitoring the generalization score on a validation
-        set. When available, it is activated through the parameter
-        ``early_stopping`` or by setting a positive :term:`n_iter_no_change`.
+        set. 
 
     estimator instance
         We sometimes use this terminology to distinguish an :term:`estimator`
@@ -841,20 +839,11 @@ Note also that the maths concepts are also included. The list is not exhaustive.
         A sample property is data for each sample (e.g. an array of length
         n_samples) passed to an estimator method or a similar function,
         alongside but distinct from the :term:`features` (``X``) and
-        :term:`target` (``y``). The most prominent example is
-        :term:`sample_weight`; see others at :ref:`glossary_sample_props`.
+        :term:`target` (``y``).
 
         As of version 0.19 we do not have a consistent approach to handling
         sample properties and their routing in :term:`meta-estimators`, though
         a ``fit_params`` parameter is often used.
-
-    semi-supervised
-    semi-supervised learning
-    semisupervised
-        Learning where the expected prediction (label or ground truth) is only
-        available for some samples provided as training data when
-        :term:`fitting` the model.  We conventionally apply the label ``-1``
-        to :term:`unlabeled` samples in semi-supervised classification.
 
     sparse matrix
     sparse graph
@@ -897,13 +886,6 @@ Note also that the maths concepts are also included. The list is not exhaustive.
         possible (i.e. if an estimator does not / cannot support sparse
         matrices).
 
-    supervised
-    supervised learning
-        Learning where the expected prediction (label or ground truth) is
-        available for each sample when :term:`fitting` the model, provided as
-        :term:`y`.  This is the approach taken in a :term:`classifier` or
-        :term:`regressor` among other estimators.
-
     target
     targets
         The *dependent variable* in :term:`supervised` (and
@@ -912,29 +894,13 @@ Note also that the maths concepts are also included. The list is not exhaustive.
         variable*, *response variable*, *ground truth* or *label*. watex
         works with targets that have minimal structure: a class from a finite
         set, a finite real-valued number, multiple classes, or multiple
-        numbers. See :ref:`glossary_target_types`.
+        numbers. 
 
     transduction
     transductive
         A transductive (contrasted with :term:`inductive`) machine learning
         method is designed to model a specific dataset, but not to apply that
-        model to unseen data.  Examples include :class:`manifold.TSNE`,
-        :class:`cluster.AgglomerativeClustering` and
-        :class:`neighbors.LocalOutlierFactor`.
-
-    unlabeled
-    unlabeled data
-        Samples with an unknown ground truth when fitting; equivalently,
-        :term:`missing values` in the :term:`target`.  See also
-        :term:`semisupervised` and :term:`unsupervised` learning.
-
-    unsupervised
-    unsupervised learning
-        Learning where the expected prediction (label or ground truth) is not
-        available for each sample when :term:`fitting` the model, as in
-        :term:`clusterers` and :term:`outlier detectors`.  Unsupervised
-        estimators ignore any :term:`y` passed to :term:`fit`.
-
+        model to unseen data.  
 
 .. _glossary_ml_concepts: 
 
@@ -942,7 +908,7 @@ Machine Learning concepts
 ==========================
 
 These are basic concepts about Machine Learning. For more-in depth, refer to 
-Scikit-learn `glossary <https://scikit-learn.org/stable/glossary.html>`. 
+Scikit-learn `glossary <https://scikit-learn.org/stable/glossary.html>`_. 
 
 .. glossary:: 
 
@@ -1043,9 +1009,13 @@ Scikit-learn `glossary <https://scikit-learn.org/stable/glossary.html>`.
         A purely :term:`transductive` transformer, such as
         :class:`manifold.TSNE`, may not implement ``transform``.
 
-    vectorizer
-    vectorizers
-        See :term:`feature extractor`.
+    semi-supervised
+    semi-supervised learning
+    semisupervised
+        Learning where the expected prediction (label or ground truth) is only
+        available for some samples provided as training data when
+        :term:`fitting` the model. 
+
     supervised
     supervised learning
         Learning where the expected prediction (label or ground truth) is
@@ -1060,7 +1030,8 @@ Scikit-learn `glossary <https://scikit-learn.org/stable/glossary.html>`.
         variable*, *response variable*, *ground truth* or *label*. Scikit-learn
         works with targets that have minimal structure: a class from a finite
         set, a finite real-valued number, multiple classes, or multiple
-        numbers. See :ref:`glossary_target_types`.		 
+        numbers. See :ref:`glossary_target_types`.
+
     unsupervised
     unsupervised learning
         Learning where the expected prediction (label or ground truth) is not
@@ -1114,8 +1085,8 @@ Scikit-learn `glossary <https://scikit-learn.org/stable/glossary.html>`.
 
 .. _glossary_methods:
 
-Estimators and assessos methods
-===============================
+Estimators and assessors methods
+=================================
 
 .. glossary::
 
@@ -1315,246 +1286,238 @@ These parameter names, are commonly used in estimator, assessors and common func
 
 .. glossary:: 
 
-	as_frame
-		Transform the data in a pandas DataFrame including columns with
-		appropriate types (numeric). The target is
-		a panda DataFrame or Series depending on the number of target columns.
-		If `as_frame` is False, then returning a :class:`~watex.utils.box.Boxspace`
-		dictionary-like object, with the following attributes:
-			
-		* data : {ndarray, dataframe} 
-			The data matrix. If `as_frame=True`, `data` will be a pandas
-			DataFrame.
-		* resistivity: {array-like} of shape (shape[0],)
-			The resistivity of the sounding point. 
-		* MN: {array-like} of shape (shape[0],)
-			The step value of potential electrodes increasing in meters  
-		*  AB: {array-like} of shape (shape[0],)
-			The step value of current electrodes increasing in meters  
-		* feature_names: list
-			The names of the dataset columns.
-		* DESCR: str
-			The full description of the dataset.
-		* filename: str
-			The path to the location of the data.
-	  
-	data
-		str, filepath_or_buffer or :class:`pandas.core.DataFrame`
-		Path -like object or Dataframe. If data is given as path-like object,
-		data is read, asserted and validated. Any valid string path is acceptable. 
-		The string could be a URL. Valid URL schemes include http, ftp, s3, gs, and
-		file. For file URLs, a host is expected. A local file could be a
-		file://localhost/path/to/table.csv. If you want to pass in a path object, 
-		pandas accepts any :code:`os.PathLike`. By file-like object, we refer to 
-		objects with a `read()` method, such as a file handle e.g. via builtin 
-		`open` function or `StringIO`.
+    as_frame
+        Transform the data in a pandas DataFrame including columns with
+        appropriate types (numeric). The target is
+        a panda DataFrame or Series depending on the number of target columns.
+        If `as_frame` is False, then returning a :class:`~watex.utils.box.Boxspace`
+        dictionary-like object, with the following attributes:
 
-	index_rhoa
-		int, 
-		index of the resistivy columns to retrieve. Note that this is useful in the 
-		cases many sounding values are collected in the same survey area. 
-		`index_rhoa=0` fetches the first sounding values in the collection of all values. 
-		
-	tag
-		str, 
-		Name of the dataset to fectched. Tag can be a data set processing stages. 
-		See `datasets <datasets>` for consistent details. 
-	 
-	X 
-		Ndarray of shape ( M x N), :math:`M=m-samples` & :math:`N=n-features`
-		training set; Denotes data that is observed at training and prediction time, 
-		used as independent variables in learning. The notation is uppercase to denote 
-		that it is ordinarily a matrix. When a matrix, each sample may be 
-		represented by a feature vector, or a vector of precomputed (dis)similarity 
-		with each training sample. :code:`X` may also not be a matrix, and 
-		may require a feature extractor or a pairwise metric to turn it into one 
-		before learning a model.
+        * data : {ndarray, dataframe} 
+            The data matrix. If `as_frame=True`, `data` will be a pandas DataFrame.
+        * resistivity: {array-like} of shape (shape[0],)
+            The resistivity of the sounding point. 
+        * MN: {array-like} of shape (shape[0],)
+            The step value of potential electrodes increasing in meters  
+        * AB: {array-like} of shape (shape[0],)
+           The step value of current electrodes increasing in meters  
+        * feature_names: list
+           The names of the dataset columns.
+        * DESCR: str
+           The full description of the dataset.
+        * filename: str
+           The path to the location of the data.
 
-	y
-		array-like of shape (M, ) `:math:`M=m-samples` 
-		train target; Denotes data that may be observed at training time as the 
-		dependent variable in learning, but which is unavailable at prediction time, 
-		and is usually the target of prediction. 
+    data
+        str, filepath_or_buffer or :class:`pandas.core.DataFrame`
+        Path -like object or Dataframe. If data is given as path-like object,
+        data is read, asserted and validated. Any valid string path is acceptable. 
+        The string could be a URL. Valid URL schemes include http, ftp, s3, gs, and
+        file. For file URLs, a host is expected. A local file could be a
+        file://localhost/path/to/table.csv. If you want to pass in a path object, 
+        pandas accepts any :code:`os.PathLike`. By file-like object, we refer to 
+        objects with a `read()` method, such as a file handle e.g. via builtin 
+        `open` function or `StringIO`.
 
-	Xt
-		Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
-		Shorthand for "test set"; data that is observed at testing and prediction time, 
-		used as independent variables in learning.The notation is uppercase to denote 
-		that it is ordinarily a matrix.
+    index_rhoa
+        int, index of the resistivy columns to retrieve. Note that this is useful in the 
+        cases many sounding values are collected in the same survey area. 
+        `index_rhoa=0` fetches the first sounding values in the collection of all values. 
 
-	yt
-		array-like, shape (M, ) ``M=m-samples``,
-		test target; Denotes data that may be observed at training time as the 
-		dependent variable in learning, but which is unavailable at prediction time, 
-		and is usually the target of prediction. 
+    tag
+        str, Name of the dataset to fectched. Tag can be a data set processing stages. 
+        See `datasets <datasets>` for consistent details. 
 
-	tname
-		str, 
-		A target name or label. In supervised learning the target name is considered  
-		as the reference name of `y` or label variable.   
+    X 
+        Ndarray of shape ( :math:`M x N`), :math:`M = m_{samples}` & :math:`N=n_{features}`
+        training set; Denotes data that is observed at training and prediction time, 
+        used as independent variables in learning. The notation is uppercase to denote 
+        that it is ordinarily a matrix. When a matrix, each sample may be 
+        represented by a feature vector, or a vector of precomputed (dis)similarity 
+        with each training sample. :code:`X` may also not be a matrix, and 
+        may require a feature extractor or a pairwise metric to turn it into one 
+        before learning a model.
 
-	z
-		array-like 1d, pandas.Series 
-		Array of depth or a pandas series that contains the depth values. Two  
-		dimensional array or more is not allowed. However when `z` is given as 
-		a dataframe and `zname` is not supplied, an error raises since `zname` is 
-		used to fetch and overwritten `z` from the dataframe. 
+    y
+        array-like of shape (:math:`M,` ), :math:`M=m_{samples}` 
+        train target; Denotes data that may be observed at training time as the 
+        dependent variable in learning, but which is unavailable at prediction time, 
+        and is usually the target of prediction. 
 
-	zname
-		str, int
-		Name of depth columns. `zname` allows to retrieve the depth column in 
-		a dataframe. If integer is passed, it assumes the index of the dataframe 
-		fits the depth column. Integer value must not be out the dataframe size 
-		along axis 1. Commonly `zname`needs to be supplied when a dataframe is 
-		passed to a function argument. 
+    Xt
+        Ndarray ( :math:`M x N` matrix where :math:`M=m_{samples}`, & :math:`N=n_{features}`)
+        Shorthand for "test set"; data that is observed at testing and prediction time, 
+        used as independent variables in learning.The notation is uppercase to denote 
+        that it is ordinarily a matrix.
 
-	kname
-		str, int
-		Name of permeability coefficient columns. `kname` allows to retrieve the 
-		permeability coefficient 'k' in  a specific dataframe. If integer is passed, 
-		it assumes the index of the dataframe  fits the 'k' columns. Note that 
-		integer value must not be out the dataframe size along axis 1. Commonly
-		`kname` needs to be supplied when a dataframe is passed as a positional 
-		or keyword argument. 
+    yt
+        array-like, shape (:math:`M`, ) :math:`M=m_{samples}`,
+        test target; Denotes data that may be observed at training time as the 
+        dependent variable in learning, but which is unavailable at prediction time, 
+        and is usually the target of prediction. 
 
-	k
-		array-like 1d, pandas.Series 
-		Array of permeability coefficient 'k' or a pandas series that contains the 
-		'k' values. Two  dimensional array or more is not allowed. However,
-		when `k` passes as a dataframe and `kname` is not supplied, an error 
-		raises since `kname` is used to retrieve `k` values from the dataframe 
-		and overwritten it.
+    tname
+        str, 
+        A target name or label. In supervised learning the target name is considered  
+        as the reference name of :term:`y` or label variable.   
 
-	target
-		Array-like or :class:`pd.Series`
-		Is the dependent variable in supervised (and semisupervised) learning, 
-		passed as `y` to an estimator's fit method. Also known as dependent 
-		variable, outcome variable, response variable, ground truth or label. 
-		`watex`_ works with targets that have minimal structure: a class 
-		from a finite set, a finite real-valued number, multiple classes, or 
-		multiple numbers. Refer to `watex`_ `target types`_ . Note that 
-		throughout this library, a `target` is considered as a `pd.Series` where 
-		the name is `tname` and the variable `y` i.e `target = tname + y`.
-		
-		.. _target types: https://scikit-learn.org/stable/glossary.html#glossary-target-types
-		
+    z
+        array-like 1d, pandas.Series 
+        Array of depth or a pandas series that contains the depth values. Two  
+        dimensional array or more is not allowed. However when `z` is given as 
+        a dataframe and :term:`zname` is not supplied, an error raises since `zname` is 
+        used to fetch and overwritten `z` from the dataframe. 
 
-	model
-		callable, always as a function,    
-		A model estimator. An object which manages the estimation and decoding 
-		of a model. The model is estimated as a deterministic function of:
-			
-		* parameters provided in object construction or with set_params;
-		* the global numpy.random random state if the estimator’s random_state 
-			parameter is set to None; and
-		* any data or sample properties passed to the most recent call to fit, 
-			fit_transform or fit_predict, or data similarly passed in a sequence 
-			of calls to partial_fit.
-			
-		The estimated model is stored in public and private attributes on the 
-		estimator instance, facilitating decoding through prediction and 
-		transformation methods.
-		Estimators must provide a fit method, and should provide `set_params` and 
-		`get_params`, although these are usually provided by inheritance from 
-		`base.BaseEstimator`.
-		The core functionality of some estimators may also be available as a ``function``.
+    zname
+        str, int
+        Name of depth columns. `zname` allows to retrieve the depth column in 
+        a dataframe. If integer is passed, it assumes the index of the dataframe 
+        fits the depth column. Integer value must not be out the dataframe size 
+        along axis 1. Commonly `zname`needs to be supplied when a dataframe is 
+        passed to a function argument. 
 
-	clf
-		callable, always as a function, classifier estimator
-		A supervised (or semi-supervised) predictor with a finite set of discrete 
-		possible output values. A classifier supports modeling some of binary, 
-		multiclass, multilabel, or multiclass multioutput targets. Within scikit-learn, 
-		all classifiers support multi-class classification, defaulting to using a 
-		one-vs-rest strategy over the binary classification problem.
-		Classifiers must store a classes_ attribute after fitting, and usually 
-		inherit from base.ClassifierMixin, which sets their _estimator_type attribute.
-		A classifier can be distinguished from other estimators with is_classifier.
-		It must implement:
-		* fit
-		* predict
-		* score
-		It may also be appropriate to implement decision_function, predict_proba 
-		and predict_log_proba.    
+    kname
+        str, int
+        Name of permeability coefficient columns. `kname` allows to retrieve the 
+        permeability coefficient :term:`k` in  a specific dataframe. If integer is passed, 
+        it assumes the index of the dataframe  fits the :term:`k` columns. Note that 
+        integer value must not be out the dataframe size along axis 1. Commonly
+        `kname` needs to be supplied when a dataframe is passed as a positional 
+        or keyword argument. 
 
-	reg
-		callable, always as a function
-		A regression estimator; Estimators must provide a fit method, and should 
-		provide `set_params` and 
-		`get_params`, although these are usually provided by inheritance from 
-		`base.BaseEstimator`. The estimated model is stored in public and private 
-		attributes on the estimator instance, facilitating decoding through prediction 
-		and transformation methods.
-		The core functionality of some estimators may also be available as a
-		``function``.
+    k
+        array-like 1d, pandas.Series 
+        Array of permeability coefficient 'k' or a pandas series that contains the 
+        'k' values. Two  dimensional array or more is not allowed. However,
+        when `k` passes as a dataframe and `kname` is not supplied, an error 
+        raises since `kname` is used to retrieve `k` values from the dataframe 
+        and overwritten it.
 
-	cv
-		float,    
-		A cross validation splitting strategy. It used in cross-validation based 
-		routines. cv is also available in estimators such as multioutput. 
-		ClassifierChain or calibration.CalibratedClassifierCV which use the 
-		predictions of one estimator as training data for another, to not overfit 
-		the training supervision.
-		Possible inputs for cv are usually:
-		
-		* An integer, specifying the number of folds in K-fold cross validation. 
-			K-fold will be stratified over classes if the estimator is a classifier
-			(determined by base.is_classifier) and the targets may represent a 
-			binary or multiclass (but not multioutput) classification problem 
-			(determined by utils.multiclass.type_of_target).
-		* A cross-validation splitter instance. Refer to the User Guide for 
-			splitters available within `watex`_
-		* An iterable yielding train/test splits.
-		
-		With some exceptions (especially where not using cross validation at all 
-							  is an option), the default is ``4-fold``.
-		.. _Scikit-learn: https://scikit-learn.org/stable/glossary.html#glossary
+    target
+        Array-like or :class:`pd.Series`
+        Is the dependent variable in supervised (and semisupervised) learning, 
+        passed as :term:`y` to an estimator's fit method. Also known as dependent 
+        variable, outcome variable, response variable, ground truth or label. 
+        :term:`watex` works with targets that have minimal structure: a class 
+        from a finite set, a finite real-valued number, multiple classes, or 
+        multiple numbers. Refer to `target types`_ . Note that 
+        throughout this library, a :term:`target` is considered as a `pd.Series` where 
+        the name is `tname` and the variable :term:`y` i.e `target = tname + y`.
 
-	scoring
-		str, 
-		Specifies the score function to be maximized (usually by :ref:`cross
-		validation <cross_validation>`), or -- in some cases -- multiple score
-		functions to be reported.
+        .. _target types: https://scikit-learn.org/stable/glossary.html#glossary-target-types
 
-	random_state 
-		int, RandomState instance or None, default=None
-		Controls the shuffling applied to the data before applying the split.
-		Pass an int for reproducible output across multiple function calls..    
 
-	test_size 
-		float or int, default=None
-		If float, should be between 0.0 and 1.0 and represent the proportion
-		of the dataset to include in the test split. If int, represents the
-		absolute number of test samples. If None, the value is set to the
-		complement of the train size. If ``train_size`` is also None, it will
-		be set to 0.25.    
+    model
+        callable, always as a function,    
+        A model estimator. An object which manages the estimation and decoding 
+        of a model. The model is estimated as a deterministic function of:
 
-	n_jobs 
-		int, 
-		is used to specify how many concurrent processes or threads should be 
-		used for routines that are parallelized with joblib. It specifies the maximum 
-		number of concurrently running workers. If 1 is given, no joblib parallelism 
-		is used at all, which is useful for debugging. If set to -1, all CPUs are 
-		used. For instance:
-		
-		* `n_jobs` below -1, (n_cpus + 1 + n_jobs) are used. 
-		
-		* `n_jobs`=-2, all CPUs but one are used. 
-		* `n_jobs` is None by default, which means unset; it will generally be 
-			interpreted as n_jobs=1 unless the current joblib.Parallel backend 
-			context specifies otherwise.
+        * parameters provided in object construction or with set_params;
+        * the global numpy.random random state if the estimator’s random_state parameter is set to None; and
+        * any data or sample properties passed to the most recent call to fit, 
+          fit_transform or fit_predict, or data similarly passed in a sequence of calls to partial_fit.
 
-		Note that even if n_jobs=1, low-level parallelism (via Numpy and OpenMP) 
-		might be used in some configuration.  
+        The estimated model is stored in public and private attributes on the 
+        estimator instance, facilitating decoding through prediction and 
+        transformation methods.
+        Estimators must provide a fit method, and should provide `set_params` and 
+        `get_params`, although these are usually provided by inheritance from 
+        `base.BaseEstimator`.
+        The core functionality of some estimators may also be available as a ``function``.
 
-	verbose
-		int, `default` is ``0``    
-		Control the level of verbosity. Higher value lead to more messages.
+    clf
+        callable, always as a function, classifier estimator
+        A supervised (or semi-supervised) predictor with a finite set of discrete 
+        possible output values. A classifier supports modeling some of binary, 
+        multiclass, multilabel, or multiclass multioutput targets. Within scikit-learn, 
+        all classifiers support multi-class classification, defaulting to using a 
+        one-vs-rest strategy over the binary classification problem.
+        Classifiers must store a classes_ attribute after fitting, and usually 
+        inherit from base.ClassifierMixin, which sets their _estimator_type attribute.
+        A classifier can be distinguished from other estimators with is_classifier.
+        It must implement:
+        * fit
+        * predict
+        * score
+        It may also be appropriate to implement decision_function, predict_proba 
+        and predict_log_proba.    
+
+    reg
+        callable, always as a function
+        A regression estimator; Estimators must provide a fit method, and should 
+        provide `set_params` and `get_params`, although these are usually provided by inheritance from 
+        `base.BaseEstimator`. The estimated model is stored in public and private 
+        attributes on the estimator instance, facilitating decoding through prediction 
+        and transformation methods.
+        The core functionality of some estimators may also be available as a``function``.
+
+    cv
+        float,    
+        A cross validation splitting strategy. It used in cross-validation based 
+        routines. cv is also available in estimators such as multioutput. 
+        ClassifierChain or calibration.CalibratedClassifierCV which use the 
+        predictions of one estimator as training data for another, to not overfit 
+        the training supervision.
+        Possible inputs for cv are usually:
+
+        * An integer, specifying the number of folds in K-fold cross validation. 
+            K-fold will be stratified over classes if the estimator is a classifier
+            (determined by base.is_classifier) and the targets may represent a 
+            binary or multiclass (but not multioutput) classification problem 
+            (determined by utils.multiclass.type_of_target).
+        * A cross-validation splitter instance. Refer to the User Guide for 
+            splitters available within :code:`watex`. 
+        * An iterable yielding train/test splits.
+
+        With some exceptions (especially where not using cross validation at all 
+        is an option), the default is ``4-fold``.
+        .. _Scikit-learn: https://scikit-learn.org/stable/glossary.html#glossary
+
+    scoring
+        str, 
+        Specifies the score function to be maximized (usually by :ref:`cross
+        validation <cross_validation>`), or -- in some cases -- multiple score
+        functions to be reported.
+
+    random_state 
+        int, RandomState instance or None, default=None
+        Controls the shuffling applied to the data before applying the split.
+        Pass an int for reproducible output across multiple function calls..    
+
+    test_size 
+        float or int, default=None
+        If float, should be between 0.0 and 1.0 and represent the proportion
+        of the dataset to include in the test split. If int, represents the
+        absolute number of test samples. If None, the value is set to the
+        complement of the train size. If ``train_size`` is also None, it will
+        be set to 0.25.    
+
+    n_jobs 
+        int, 
+        is used to specify how many concurrent processes or threads should be 
+        used for routines that are parallelized with joblib. It specifies the maximum 
+        number of concurrently running workers. If 1 is given, no joblib parallelism 
+        is used at all, which is useful for debugging. If set to -1, all CPUs are 
+        used. For instance:
+
+        * `n_jobs` below -1, (n_cpus + 1 + n_jobs) are used. 
+        * `n_jobs`=-2, all CPUs but one are used. 
+        * `n_jobs` is None by default, which means unset; it will generally be 
+            interpreted as n_jobs=1 unless the current joblib.Parallel backend 
+            context specifies otherwise.
+
+        Note that even if n_jobs=1, low-level parallelism (via Numpy and OpenMP) 
+        might be used in some configuration.  
+
+    verbose
+        int, `default` is ``0``    
+        Control the level of verbosity. Higher value lead to more messages.
         Any True value should enable some logging, but larger integers 
         (e.g. above 7) may be  needed for full verbosity.  
-		
-	self: 
-		`Baseclass` instance 
-		returns ``self`` for easy method chaining.
+
+    self: 
+        `Baseclass` instance 
+        returns ``self`` for easy method chaining.
 
 
 .. _glossary_plot_parameters:
