@@ -45,7 +45,7 @@ about programming and/or geosciences. The best way to contribute and help the pr
 
 The project is making its road expecting to reach maximum audience in geosciences community within five years. Because of this 
 aim in mind, we keep relative and not strict rules. We expect the contributors to bring their 
-ideas for future possible direction ( keep in mind, always fitting the`SDG n6 <https://unric.org/en/sdg-6/>`_). Many contributors 
+ideas for future possible direction ( keep in mind, always fitting the `SDG n6 <https://unric.org/en/sdg-6/>`_). Many contributors 
 with diverse skills will pull the project to move forward. 
 
 However, there are different ways to contribute: 
@@ -235,7 +235,6 @@ example of a DGMT development syntax:
               ...
               for key in list(kws.keys()): 
                   setattr (self, key, kws[key])
-              ...
               _fit_democlass (self.data ) 
               
            def _fit_democlass(self): 
@@ -321,5 +320,4 @@ For those that are new to the scientific Python ecosystem, we highly recommend t
 We also highly recommend the following book for the french speaking countries developers: 
 
 * `Apprendre a programmer avec Python <https://www.pierre-giraud.com/python-apprendre-programmer-cours/>`_ de Gérard Swinnen. « Un tres bon 
-	livre qui vous permettra de faire vos premiers pas et un progres considerable dans l'apprentissage Python ».
-	
+  livre qui vous permettra de faire vos premiers pas et un progres considerable dans l'apprentissage Python ».

@@ -249,10 +249,10 @@ print(mxso.mxs_classes_)
 
 #%%
 # A paper is under puclication in Engineering Geology for k-prediction which 
-#  explained a concrete study (Case study in Hongliu coal mine). See the reference below: 
-# ..topic:: References 
+# explained a concrete study (Case study in Hongliu coal mine). See the reference below: 
+# .. topic:: References 
 # 
-#   .. [1] KOUADIO, Kouao Laurent and LIU, Jianxin and LIU, Rong, A Mixture Learning Strategy for Predicting Aquifers Permeability Coefficient K. ENGEO-D-22-02041, Available at SSRN: https://ssrn.com/abstract=4326365 or http://dx.doi.org/10.2139/ssrn.4326365
+#    .. [1] KOUADIO, Kouao Laurent and LIU, Jianxin and LIU, Rong, A Mixture Learning Strategy for Predicting Aquifers Permeability Coefficient K. ENGEO-D-22-02041, Available at SSRN: https://ssrn.com/abstract=4326365 or http://dx.doi.org/10.2139/ssrn.4326365
 
 
 
@@ -286,7 +286,7 @@ print(mxso.mxs_classes_)
 
 
 
-	
+
 
 
 

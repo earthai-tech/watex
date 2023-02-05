@@ -2,7 +2,7 @@
 #  Licence: BS3-clause 
 #  Author: L. Kouadio
 """
-:term:`EDI` stands for Electrical Data Interchange. The :class:`watex.Edi` class read and write an EDI file(*.edi)
+:term:`EDI` stands for Electrical Data Interchange. The :class:`Edi` class read and write an EDI file(*.edi)
 file as the standard :term:`MT`/:term:`EMAP` Data Interchange. It does the basic tensors operations. Each section 
 of the :term:`EDI` file belongs to a class object, thus the elements of each section are attributes 
 for easy access. :term:`Edi` is outputted  following the :term:`SEG` documentation. 
