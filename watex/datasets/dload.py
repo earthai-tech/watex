@@ -314,7 +314,7 @@ as_frame : bool, default=False
     If `return_X_y` is True, then (`data`, `target`) will be pandas
     DataFrames or Series as described below.
     .. versionadded:: 0.1.3
-split_X_y=False,
+split_X_y: bool, default=False,
     If True, the data is splitted to hold the training set (X, y)  and the 
     testing set (Xt, yt) with the according to the test size ratio.  
 test_size: float, default is {{.3}} i.e. 30% (X, y)
@@ -337,8 +337,7 @@ Returns
 data : :class:`~watex.utils.Boxspace`
     Dictionary-like object, with the following attributes.
     data : {ndarray, dataframe} 
-        The data matrix. If `as_frame=True`, `data` will be a pandas
-        DataFrame.
+        The data matrix. If ``as_frame=True``, `data` will be a pandas DataFrame.
     target: {ndarray, Series} 
         The classification target. If `as_frame=True`, `target` will be
         a pandas Series.
@@ -377,21 +376,22 @@ X, Xt, y, yt: Tuple if ``split_X_y`` is True
 Examples
 --------
 Let's say ,we do not have any idea of the columns that compose the target,
-thus, the best approach is to run the function without passing any parameters 
+thus, the best approach is to run the function without passing any parameters::
+
 >>> from watex.datasets.dload import load_hlogs 
 >>> b= load_hlogs()
 >>> b.target_names 
-... ['aquifer_group',
-     'pumping_level',
-     'aquifer_thickness',
-     'hole_depth',
-     'pumping_depth',
-     'section_aperture',
-     'k',
-     'kp',
-     'r',
-     'rp',
-     'remark']
+['aquifer_group',
+ 'pumping_level',
+ 'aquifer_thickness',
+ 'hole_depth',
+ 'pumping_depth',
+ 'section_aperture',
+ 'k',
+ 'kp',
+ 'r',
+ 'rp',
+ 'remark']
 >>> # Let's say we are interested of the targets 'pumping_level' and 
 >>> # 'aquifer_thickness' and returns `y' 
 >>> _, y = load_hlogs (as_frame=True, # return as frame X and y
@@ -472,7 +472,7 @@ as_frame : bool, default=False
     If `return_X_y` is True, then (`data`, `target`) will be pandas
     DataFrames or Series as described below.
     .. versionadded:: 0.1.1
-split_X_y=False,
+split_X_y: bool, default=False,
     If True, the data is splitted to hold the training set (X, y)  and the 
     testing set (Xt, yt) with the according to the test size ratio.  
 test_size: float, default is {{.3}} i.e. 30% (X, y)
@@ -488,8 +488,7 @@ Returns
 data: :class:`~watex.utils.box.Boxspace`
     Dictionary-like object, with the following attributes.
     data : {ndarray, dataframe} of shape (150, 4)
-        The data matrix. If `as_frame=True`, `data` will be a pandas
-        DataFrame.
+        The data matrix. If `as_frame=True`, `data` will be a pandas DataFrame.
     target: {ndarray, Series} of shape (150,)
         The classification target. If `as_frame=True`, `target` will be
         a pandas Series.
@@ -528,13 +527,14 @@ X, Xt, y, yt: Tuple if ``split_X_y`` is True
 Examples
 --------
 Let's say you are interested in the samples 10, 25, and 50, and want to
-know their class name.
+know their class name::
+
 >>> from watex.datasets import load_bagoue
 >>> d = load_bagoue () 
 >>> d.target[[10, 25, 50]]
-... array([0, 2, 0])
+array([0, 2, 0])
 >>> list(d.target_names)
-... ['flow']   
+['flow']   
   
 """
 

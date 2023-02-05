@@ -98,7 +98,8 @@ class HData(ABC):
         data,  
         **fit_params
         ): 
-        """ Fit Hydro-data and populate attributes. 
+        """
+        Fit Hydro-data and populate attributes. 
         
         Note that each column of the dataframe can be retrieved as an attribute
         value. The attribute maker replace all spaces in the items if exist
@@ -114,12 +115,12 @@ class HData(ABC):
         -----------
         
         data : Dataframe of shape (n_samples, n_features)
-             where `n_samples` is the number of data, expected to be the data 
-             collected at different depths and `n_features` is the number of 
-             columns (features) that supposed to be plot. 
-             Note that `X` must include the ``depth`` columns. If not given a 
-             relative depth should be created according to the number of 
-             samples that composes `data`.
+            where `n_samples` is the number of data, expected to be the data 
+            collected at different depths and `n_features` is the number of 
+            columns (features) that supposed to be plot. 
+            Note that `X` must include the ``depth`` columns. If not given a 
+            relative depth should be created according to the number of 
+            samples that composes `data`.
  
         fit_params: dict, 
             Additional keyword arguments passed to 
@@ -866,20 +867,20 @@ class Logging :
         -----------
         
         data : Dataframe of shape (n_samples, n_features)
-             where `n_samples` is the number of data, expected to be the data 
-             collected at different depths and `n_features` is the number of 
-             columns (features) that supposed to be plot. 
-             Note that `X` must include the ``depth`` columns. If not given a 
-             relative depth should be created according to the number of 
-             samples that composes `data`.
+            where `n_samples` is the number of data, expected to be the data 
+            collected at different depths and `n_features` is the number of 
+            columns (features) that supposed to be plot. 
+            Note that `X` must include the ``depth`` columns. If not given a 
+            relative depth should be created according to the number of 
+            samples that composes `data`.
  
         fit_params: dict, 
             Additional keyword arguments passed to 
             :func:`~.watex.utils.funcutils.to_numeric_dtypes`. 
                
-       Returns 
-       -------
-          self:  object instanciated for chaining methods. 
+        Returns 
+        -------
+        self: object instanciated for chaining methods. 
        
         """
         

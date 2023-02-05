@@ -25,13 +25,13 @@ the National Drinking Water Supply Program (PNAEP) occurs in 2014 in
 of the data arrangement is the following: 
 
 =====   =======     =======     =======     =========
-AB/2    MN/2        SE1         SE2         SE...	
+AB/2    MN/2        SE1         SE2         SE...    
 =====   =======     =======     =======     =========
-1       0.4	        107	        93	        75	
-2       0.4	        97	        91	        49	
-...     ...         ...         ...         ...
-100     10	        79       	96	        98	
-110     10	        84	        104	        104	
+1       0.4         107         93          75       
+2       0.4         97          91          49       
+...     ...         ...         ...         ...      
+100     10          79          96          98       
+110     10          84          104         104      
 =====   =======     =======     =======     ========= 
  
 Parameters 
@@ -42,6 +42,7 @@ as_frame : bool, default=False
     a panda DataFrame or Series depending on the number of target columns.
     If `as_frame` is False, then returning a :class:`~watex.utils.Boxspace`
     dictionary-like object, with the following attributes:
+    
     - data : {{ndarray, dataframe}} of shape {shape}
         The data matrix. If `as_frame=True`, `data` will be a pandas
         DataFrame.
@@ -64,11 +65,11 @@ as_frame : bool, default=False
 index_rhoa: int, default=0 
     index of the resistivy columns to retrieve. Note that this is useful in the 
     cases many sounding values are collected in the same survey area. 
-    `index_rhoa=0` fetches the first sounding values in the collection of all
-     values. 
+    `index_rhoa=0` fetches the first sounding values in the collection of all values. 
     
 tag, data_names: None, 
-    Always None for API consistency 
+    Always None for API consistency
+    
 kws: dict, 
     Keywords arguments pass to :func:`~watex.utils.coreutils._is_readable` 
     function for parsing data. 
@@ -77,9 +78,8 @@ Returns
 --------
 data : :class:`~watex.utils.Boxspace`
     Dictionary-like object, with the following attributes.
-    data : {{ndarray, dataframe}} 
-        The data matrix. If `as_frame=True`, `data` will be a pandas
-        DataFrame.
+    - data : {{ndarray, dataframe}} 
+        The data matrix. If ``as_frame=True``, `data` will be a pandas DataFrame.
 
 Notes
 ------
@@ -89,8 +89,8 @@ The array configuration is Schlumberger and the max depth investigation is
 (potential electrodes) starts from {p_start} to {p_stop} meters. 
 The total number of sounding performers in {sounding_number} with the prefix '`SE`'.
 AB, AB is in meters and SE are in ohm. meters as apparent resistivity values. 
-Use the param `index_rho` to get the ranking of the sounding resistivity value. 
-For instance ``index_rhoa=0` fetch the first array of resistivity values (SE1).
+Use the param ``index_rho`` to get the ranking of the sounding resistivity value. 
+For instance ``index_rhoa=0`` fetch the first array of resistivity values (SE1).
 
 .. _Cote d'Ivoire: https://en.wikipedia.org/wiki/Ivory_Coast
 
