@@ -5,7 +5,7 @@
 API Reference
 ===============
 
-This is the class and function reference of watex. Please refer to
+This is the class and function reference of :code:`watex`. Please refer to
 the :ref:`full user guide <user_guide>` for further details, as the class and
 function raw specifications may not be enough to give full guidelines on their
 uses.
@@ -40,7 +40,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
 	analysis.iPCA
 	analysis.kPCA
 	analysis.linear_discriminant_analysis
-	analysis.lw_score
+	analysis.LW_score
 	analysis.make_scedastic_data
 	analysis.nPCA
 	analysis.plot_projection
@@ -574,6 +574,7 @@ Functions
 	utils.correlatedfeatures
 	utils.defineConductiveZone
 	utils.erpSelector
+	utils.erpSmartDetector
 	utils.evalModel
 	utils.findCatandNumFeatures
 	utils.find_aquifer_groups

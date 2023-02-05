@@ -75,7 +75,7 @@ Fork the repository
 ------------------------
 
 The first step of contribution to watex is to fork the `main repository <https://github.com/watex/watex/>`__ on GitHub,
-then submit a "pull request" (PR) as:
+then submit a ``pull request`` (PR) as:
 
 1. `Create an account <https://github.com/join>`_ on
    GitHub if you do not already have one.
@@ -123,7 +123,7 @@ repository properly configured.
 
 
 Add Algorithms 
---------------------
+---------------
 
 There are two steps to follow when adding algorithms to :code:`watex`.  
 
@@ -191,14 +191,14 @@ the new class must not contain keywords arguments like:
 	>>> class DemoClass(BaseEstimator, TransformerMixin): 
 		   """Class description and documentation  """"
 		   def __init__(self, param1=value1 , param2=value2): 
-			  self.param1=param1
-			  self.param2=param2 
+		      self.param1=param1
+		      self.param2=param2 
 		   def fit(self, X, y= None, **fit_params): 
-			  """ Documentation of fit DemoClass method """
-			  self.param3_= ... 
-			  ...
-			  return self 
-			  
+		      """ Documentation of fit DemoClass method """
+		      self.param3_= ... 
+		      ...
+		      return self 
+		      
 		   def predict (self, X): 
 		      """Documentation of DEmoClass predict method """
 		      ...
@@ -226,24 +226,24 @@ example of a DGMT development syntax:
 
 .. code-block:: python 
 
-	>>> class DemoClass_: 
-		   """Class description and documentation """"
-		   def __init__(self, data, param1=None , param2=None, **kws): 
-		      self.data=data 
+    >>> class DemoClass_: 
+           """Class description and documentation """"
+           def __init__(self, data, param1=None , param2=None, **kws): 
+              self.data=data 
               self.param1=param1
               self.param2=param2
-			
+              ...
               for key in list(kws.keys()): 
-              setattr (self, key, kws[key])
-			
+                  setattr (self, key, kws[key])
+              ...
               _fit_democlass (self.data ) 
-				
-		   def _fit_democlass(self): 
-		      """ Documentation of _fit_democlass method """
-		      ...
-		      self.param3_= ... 
-		      ... 
-			
+              
+           def _fit_democlass(self): 
+              """ Documentation of _fit_democlass method """
+              ...
+              self.param3_= ... 
+              ... 
+              
 
 
 Note the underscore *_* at the end of the class. Moreover, in DGMT, the *fit* method must start with an underscore at the 

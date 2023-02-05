@@ -143,7 +143,7 @@ kernel, and incremental PCA.
 In addition, it also includes some other learning algorithms such as the sequential backward selection algorithm (:class:`~watex.base.SequentialBackwardSelection`),  
 proposed by `Ferri et al., (1994) <https://doi.org/https://doi.org/10.1016/B978-0-444-81892-8.50040-7>`_. The latter is useful to control the feature importance and get the rate of contribution of each feature in the dataset. 
 It can also improve the predicting power of the model if the model suffers from overfitting. Moreover, the adaptative linear neuron classifier (:class:`~watex.base.AdalineGradientDescent`)
-( Widrow, 1960; Wlodarczak, 2019), greedy perceptron (:class:`~watex.base.GreedyPerceptron`)( `McCulloch and Pitts, 2014 <https://doi.org/10.2307/2268029>`_) , 
+(Widrow, 1960; Wlodarczak, 2019), greedy perceptron (:class:`~watex.base.GreedyPerceptron`)( `McCulloch and Pitts, 2014 <https://doi.org/10.2307/2268029>`_) , 
 and the naïve majority vote classifier (:class:`~watex.base.MajorityVoteClassifier`) are also additional algorithms. 
 
 Overall, the modules of the learning space follow the scikit-learn API and mostly inherit from the base-estimator class for ease of cross-validating. Individually, the **cases** sub-package in the 
@@ -198,7 +198,7 @@ The list of the Public API displayed here concerned only the inner-learning, met
     Geology                    :mod:`watex.geology`         `Borehole`, `Structural` , `Structural` , `Stratigraphic`, ...                                                   
    ========================== ============================= ===========================
 
-Each public can be implemented via the following syntax:: 
+Each class or function in the public API can be implemented via the following syntax:: 
 
 	>>> import watex as wx 
 	>>> data = wx.make_erp (n_stations =30 , max_rho = 1e4 , min_rho=1 ).frame # generate an Electrical Resistivity Profiling 
