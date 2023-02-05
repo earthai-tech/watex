@@ -91,7 +91,7 @@ Geosciences concepts
 
     Electrical Data Interchange 
     EDI 
-        EDI Is a data format for electrical geophysical data. It purpose is to facilitate data exchange from contractors to clients and among 
+        EDI is a data format for electrical geophysical data. It purpose is to facilitate data exchange from contractors to clients and among 
         clients.  It also serves a very important function as a standard format for archiving data. The format has been designed to accommodate a 
         wide variety of different field measurement configurations and processing requirements which might arise from special applications 
         or new developments.  Although very similar in appearance to some existing formats, it has been slightly modified to be more consistent, 
