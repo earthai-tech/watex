@@ -89,6 +89,24 @@ Geosciences concepts
         for supplying population from rural and urban areas to potable water. It is mostly registered under the `Sustainable Development Goals Number 6 <https://unric.org/en/sdg-6/>`_. 
         In developing countries, some DWSC tends to cover 1000 and more villages per years for population welfare. 
 
+    Electrical Data Interchange 
+    EDI 
+        EDI Is a data format for electrical geophysical data. It purpose is to facilitate data exchange from contractors to clients and among 
+        clients.  It also serves a very important function as a standard format for archiving data. The format has been designed to accommodate a 
+        wide variety of different field measurement configurations and processing requirements which might arise from special applications 
+        or new developments.  Although very similar in appearance to some existing formats, it has been slightly modified to be more consistent, 
+        unambiguous, extensible, and realizable.  A number of refinements have been incorporated as a result of actually implementing the standard.
+        The format can accommodate any currently used data acquisition configuration, and has the flexibility to handle any reasonable future 
+        configuration.  Supported configurations include single and multi-station :term:`MT`, telluric-magnetotelluric sounding, :term:`EMAP` 
+        profiling, and combinations of the above.  Provisions have been made for interchange of data at various levels of acquisition and processing 
+        including time series, power spectra, impedance, and computed parameters including non-standard parameters.  The data interchange file is 
+        always an ASCII file. However, a provision has been made to store actual data values in a parallel binary data file and reference them 
+        through the (ASCII) data interchange file. See the EDI file format construction in the document of `Wight and Drive,1988 <https://homepages.dias.ie/~ajones/publications/seg_mt_emap_1987.pdf>`_.
+
+and writing which are meant to follow the archaic EDI format put forward 
+by SEG. Can read impedance, Tipper but not spectra. To read spectra format
+please consult MTpy documentation https://mtpy2.readthedocs.io/en/develop/ 
+The Edi class contains a class for each major section of the .edi file.
     Electrical resistivity profiling
     DC-Profiling
     ERP
@@ -193,6 +211,12 @@ Geosciences concepts
         It is basically the resistance per unit volume. It is defined as the voltage measured across a unit cube's length (volts per metre, or V/m) 
         divided by the current flowing through the unit cube's cross sectional area (Amps per metre squared, or A/m2). This results in units 
         of :math:`\Omega.m^2/m` or :math:`\Omega.m`. The greek symbol:math:`\Omega`, is often used to represent resistivity.
+
+    Society of Exploration Geophysicists
+    SEG
+        SEG is a learned society dedicated to promoting the science and education of exploration geophysics in particular 
+        and geophysics in general. The Society fosters the expert and ethical practice of geophysics in the exploration and 
+        development of natural resources, in characterizing the near-surface, and in mitigating earth hazards. See more in `SEG.ORG <https://seg.org/>`__.
 
     Shape
         The shape parameter is mostly used in the basement medium to depict the better conductive zone 
