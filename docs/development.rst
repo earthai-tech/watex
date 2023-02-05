@@ -19,13 +19,12 @@ for solving geosciences issues related to ground/water exploration.*
 Foreword 
 ===========
 Before starting, remember that :code:`watex` is not only dedicated to machine learning purposes. It is a crossroad 
-between machine learning and geosciences, especially hydrology and/or geophysics. For clarity, it can be considered as an applied machine learning library to geosciences 
-especially in hydro-geophysics. However, it is not limited to that way, some useful algorithms for prediction pruposes or not 
-can also be developed provided they could help users ( academic or geosciences community or else ) to achieve excellent results 
+between machine learning and geosciences, especially hydrogeology and/or geophysics. For clarity, it can be considered as an applied machine learning library to geosciences 
+especially in hydro-geophysics. However, it is not limited to that way, some useful algorithms for prediction purposes or not 
+can also be developed, provided they could help users ( academic or geosciences community or else ) to achieve excellent results 
 in groundwater exploration (GWE field). 
 
-For pure machine learning, there are several online tutorials available which are geared toward
-specific subject areas:
+There are several online tutorials available which are geared toward specific subject areas:
 
 - `Introduction to Machine Learning in Geophysics <https://www.epts.org/courses/standard-courses/geophysics/introduction-to-machine-learning-(ml)-for-geophysics/>`_
 - `Machine Learning and AI in Geophysics <https://seg.org/Events/Applications-of-Machine-Learning-and-AI-in-Geophysics>`_
@@ -44,8 +43,8 @@ and everyone is welcome to contribute.
 The project is not selective when it's come to adding new algorithms provided that the contributors have minimum knowledge 
 about programming and/or geosciences. The best way to contribute and help the project is to start working on both challenges.
 
-The project is making its road expecting to reach maximum audience in geosciences community within 10 years. Because of this 
-aim in mind, we keep relative and not strict rules. In fact, we expect the contributors to bring their 
+The project is making its road expecting to reach maximum audience in geosciences community within five years. Because of this 
+aim in mind, we keep relative and not strict rules. We expect the contributors to bring their 
 ideas for future possible direction ( keep in mind, always fitting the`SDG n6 <https://unric.org/en/sdg-6/>`_). Many contributors 
 with diverse skills will pull the project to move forward. 
 
@@ -74,7 +73,7 @@ Development
 Fork the repository 
 ------------------------
 
-The first step of contribution to watex is to fork the `main repository <https://github.com/watex/watex/>`__ on GitHub,
+The first step of contribution to :code:`watex` is to fork the `main repository <https://github.com/watex/watex/>`__ on GitHub,
 then submit a ``pull request`` (PR) as:
 
 1. `Create an account <https://github.com/join>`_ on
@@ -145,12 +144,12 @@ or *predict()* methods to transform data or inferred properties which consist to
   the prediction methods whereas for unsupervised learning, the data are often transformed or 
   inferred properties using the *transform ()* or *predict()* methods. 
  
-This is very common when it comes to developers familiar with `scikit-learn`  
+This is very common when it comes to developers familiar with `Scikit-learn <https://scikit-learn.org/stable/index.html>`__.  
 
 Note all classes following the DSKL must follow the Python class convention rules `PEP8 <https://peps.python.org/pep-0008/>`__. 
 and adopts `fit` method for populating attributes and doing the first operation like modular calculus, validating the data structure, control the parameter etc. 
 
-However, all the parameters directly requested by the class  (class parameters ) should be the same name as instance attributes. Moreover, 
+However, all the parameters directly requested by the class (class parameters ) should be the same name as instance attributes. Moreover, 
 each inner attribute (attributes that are not physically known by the users ) should hold an underscore *_* at the final of the name. Here 
 is an example of a demo class: 
 
@@ -176,13 +175,14 @@ is an example of a demo class:
 The *fit* method must always return the object *self*. When algorithms are not designed for prediction purposes, :math:`X` 
 and :math:`y` must be a *fit_params* keywords argument plus other keyword parameters.
 	
-Conversely to scikit-learn, all algorithms are not dedicated to prediction purposes since the library is not only for pure machine  learning library
-rather for its application to solve geosciences engineering problems. However,new ML algorithms can also be developed and tested with a real-case study 
+Conversely to `Scikit-learn <https://scikit-learn.org/stable/index.html>`_ , all algorithms are not 
+dedicated to prediction purposes since the library is not only for pure machine  learning library rather for its 
+application to solve geosciences engineering problems. However,new ML algorithms can also be developed and tested with a real-case study 
 for efficaciousness. The *fit_params* can be any other parameters. For that reason, *fit* method could be adopted everywhere in any function.  
 
 If there is a geosciences problem (not related to pure hydro-geophysics) that the developer wants to solve, the module can be created under the sub-package :mod:`~watex.geology`. 
 
-When a new algorithm *for prediction* is designed, It must adopt the **predict** methods and/or **transform** or **fit_transform**. In that case 
+When a new algorithm for *prediction* is designed, It must adopt the **predict** methods and/or **transform** or **fit_transform**. In that case 
 the new class must not contain keywords arguments like:
 
 .. code-block:: python 
@@ -211,10 +211,10 @@ and fine-tune hyperparameters.
 
 .. note:: 
 
-	If you are not a scikit-learn user, you can design the algorithms at your own using  and mention in the second line of the documentation which 
-	technique do you adopts for fine-tuning hyperparameters. For instance, for other other machine-learning libraries like  
+	If you are not a scikit-learn user, you can design the algorithms at your own. However, user must indicate in the second line of the documentation which 
+	technique or machine adopted for fine-tuning hyperparameters, such as the other machine-learning libraries:   
 	`Keras <https://github.com/keras-team/keras>`__, `Tensors flow <https://github.com/tensorflow/tensorflow>`__ etc. Furthermore, the reason for 
-	postponing the validation following the scikit-learn API is that the same validation  would have to be performed in ``set_params``, 
+	postponing the validation following the `Scikit-learn <https://scikit-learn.org/stable/index.html>`_  API is that the same validation  would have to be performed in ``set_params``, 
 	which is used in algorithms like :class:`watex.exlib.GridSearchCV` | :mod:`watex.models.GridSearch` | :mod:`watex.models.GridSearchMultiple`. 
 
 	
@@ -245,11 +245,11 @@ example of a DGMT development syntax:
               ... 
               
 
-
-Note the underscore *_* at the end of the class. Moreover, in DGMT, the *fit* method must start with an underscore at the 
-beginning and lowercase the class. Notice also the location of *_fit_democlass* after the attribute initialization and the *for* loop for populating extra attributes. 
+Note the underscore "_" at the end of the class. Moreover, in DGMT, the *fit* method must start with an underscore at the 
+beginning and lowercase the class. Notice the location of *_fit_democlass* after the attribute initialization and the *for* loop for 
+populating extra attributes. 
 	
-DGMT and DSKL both use **_**  for instance and class attributes (e.g., ``param3_``) that are not passed as parameters. 
+Both DGMT and DSKL use "_"  for instance and class attributes (e.g., ``param3_``) that are not passed as parameters. 
 Furthermore, the extra-sensible methods inside the class object must all adopts the *_* at the beginning. 
 
 The reason why we added the DGMT syntax is that `GMT software <https://www.generic-mapping-tools.org/download/>`_ is most known in the geosciences 
@@ -284,15 +284,17 @@ Bug reports must:
       >>> d= Data(...)
       ...
       ```
-   * or `reStructured <https://www.writethedocs.org/guide/writing/reStructuredText/>`_ text:: 
+   * or `reStructured <https://www.writethedocs.org/guide/writing/reStructuredText/>`_ text::
 	
 	.. code-block::
-	
-	   >>> from watex.base import Data
-       >>> d = Data(...)
-       ...
 
-#. Include the full version string of watex and its dependencies. You can use the built-in function::
+	       >>> from watex.base import Data
+	       >>> d = Data(...)
+               ...
+
+#. Include the full version string of watex and its dependencies. You can use the built-in function:
+
+.. code-block:: python
 
       >>> import watex as wx 
       >>> wx.show_versions() 
@@ -305,8 +307,7 @@ Bug reports must:
 New to Scientific Python
 =========================
 
-For those that are still new to the scientific Python ecosystem, we highly
-recommend: 
+For those that are new to the scientific Python ecosystem, we highly recommend the following lectures and books: 
 
 * `Python Scientific Lecture Notes <https://scipy-lectures.org>`_. This will help you find your footing a
   bit and will improve your watex experience.  A basic understanding of NumPy arrays is recommended to make the most 

@@ -12,13 +12,13 @@
   ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/WEgeophysics/watex?logo=python)
 
 
-##  Mission and Goals
+##  Overview
 
-**_WATex_** is a Python library mainly focused on the groundwater exploration (GWE) field. It brings novel approaches 
+**_WATex_** is a Python library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
     for reducing numerous losses during the hydro-geophysical exploration projects and encompasses 
-    the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short periods EM, geology 
-    and hydrogeology methods. From new methods based on Machine Learning,  it allows to: 
-   - auto-detect the right position to locate the drilling operations, 
+    the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short-periods EM, geology 
+    and hydrogeology methods. From methodologies based on Machine Learning,  it allows to: 
+   - auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings and unsustainable boreholes;
    - reduce the cost of permeability coefficient (k) data collection during the hydro-geophysical engineering projects,
    - predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
    - etc.
@@ -89,7 +89,7 @@ the software [documentation](https://watex.readthedocs.io/en/latest/).
 
 ## Installation 
 
-**_WATex_** is not available in any distribution platforms yet ( [pyPI](https://pypi.org/)  and [conda-forge](https://conda-forge.org/) ). 
+**_WATex_** is not available in any distribution platforms yet ( [PyPI](https://pypi.org/)  and [conda-forge](https://conda-forge.org/) ). 
 However, your can install the package from source: 
 
 ```bash
@@ -97,7 +97,7 @@ git clone https://github.com/WEgeophysics/watex.git
 ```
 or simply visit the [installation guide](https://watex.readthedocs.io/en/latest/installation.html) page.
 
-Installation via `pip`( [pyPI](https://pypi.org/) ) and `conda` ( [conda-forge](https://conda-forge.org/) ) is coming soon ... 
+Installation via `pip`( [PyPI](https://pypi.org/) ) and `conda` ( [conda-forge](https://conda-forge.org/) ) is coming soon ... 
 
 ## System requirement
 
@@ -105,8 +105,8 @@ Installation via `pip`( [pyPI](https://pypi.org/) ) and `conda` ( [conda-forge](
 
 
 ## Citations
-)
-If you use the software in any published work, I will much appreciate to cite the paper or the [DOI](https://doi.org/10.5281/zenodo.7553789) below:
+
+If the [software](https://doi.org/10.5281/zenodo.7553789) seemed useful to you in any published work, I will much appreciate to cite the paper below:
 
 > *Kouadio, K. L., Kouame, L. N., Drissa, C., Mi, B., Kouamelan, K. S., Gnoleba, S. P. D., et al. (2022). Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resources Research, (May 2022). https://doi.org/10.1029/2021wr031623*
 
