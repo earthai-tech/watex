@@ -73,7 +73,7 @@ extensions = [
     'sphinx_design',
     'matplotlib.sphinxext.plot_directive',
     'sphinx_issues',
-    'sphinx_panels', 
+    #'sphinx_panels', 
 
 ]
 
@@ -302,7 +302,7 @@ man_pages = [
 
 texinfo_documents = [
     (master_doc, 'WATex', u'WATex Documentation',
-      author, 'watex', 'ML research in hydro-geophysics',
+      author, 'watex', 'Machine learning in water exploration',
       'Miscellaneous'),
 ]
 

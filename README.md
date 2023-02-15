@@ -2,14 +2,15 @@
 
 -----------------------------------------------------
 
-# *WATex*: machine learning research in hydro-geophysics
+# *WATex*: machine learning research in water exploration
 
 ### *Life is much better with potable water*
 
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
- ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
-  ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/WEgeophysics/watex?logo=appveyor) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
-  ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/WEgeophysics/watex?logo=python)
+ ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&logo=Github&logoColor=blue&style=flat-square)
+ ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/WEgeophysics/watex?logo=appveyor)
+ [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
+ ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/WEgeophysics/watex?color=blue&include_prereleases&logo=python)
 
 
 ##  Overview

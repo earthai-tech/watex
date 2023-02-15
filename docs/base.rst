@@ -131,7 +131,7 @@ improve the model’s predictive power if a model suffers from overfitting.
 
 The idea behind the SBS is simple: it sequentially removes features from the full feature 
 subset until the new feature subspace contains the desired number of features. To determine 
-which feature is to be removed at each stage, the criterion function:math:`J` is needed for 
+which feature is to be removed at each stage, the criterion function :math:`J` is needed for 
 minimization [1]_. Indeed, the criterion calculated from the criteria function can simply be 
 the difference in the performance of the classifier before and after the removal of this 
 particular feature. Then, the feature to be removed at each 

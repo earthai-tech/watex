@@ -34,7 +34,7 @@ if not os.path.isfile(data_fn):
     
 def _bagoue_data_preparer (): 
     """ Prepare the defaults case study data using 
-    'class:`watex.cases.prepare.BaseSteps` and main bagoue data file 
+    :class:`watex.cases.prepare.BaseSteps` and main bagoue data file 
     collected on the local machine or the remote. 
     """
     # target or label name. 
