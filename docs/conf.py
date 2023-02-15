@@ -73,7 +73,6 @@ extensions = [
     'sphinx_design',
     'matplotlib.sphinxext.plot_directive',
     'sphinx_issues',
-    #'sphinx_panels', 
 
 ]
 
