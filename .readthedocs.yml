@@ -15,7 +15,11 @@ python:
 
 requirements_file: requirements.txt
 
+formats:
+  - pdf
+  - epub
+  
 ignore:
-- test/
+- tests/
 - conftest.py
 - "**/setup.py"
