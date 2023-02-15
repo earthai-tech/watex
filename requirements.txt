@@ -3,7 +3,6 @@ sphinx-gallery
 sphinxcontrib-jsmath 
 sphinx-mathjax-offline
 pydata-sphinx-theme
-sphinx_bootstrap_theme
 sphinx-issues
 sphinx-design
 sphinx-prompt
@@ -37,7 +36,6 @@ h5py >=3.2.0
 tables
 pillow
 python_latex
-tables
 mlxtend 
 yellowbrick
 plotly
