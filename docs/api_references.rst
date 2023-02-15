@@ -503,7 +503,6 @@ Functions
    property.ElectricalMethods
    property.Copyright
    property.IsEdi
-   property.Copyright
    property.P
    property.Person
    property.References

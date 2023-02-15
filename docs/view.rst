@@ -16,8 +16,8 @@ tensor recovery, model inspection, and evaluation.  :mod:`~watex.view`  is divid
 * :mod:`~watex.view.mlplot` for handling the learning space plot through the :class:`~watex.view.EvalPlot` as well 
   as many other functions. 
 
-All the classes implemented in :mod:`~watex.view` module from  :class:`~watex.property.Baseplots` ABC (Abstract Base Class) 
-objects. All arguments from this class can be used for customizing the plots. Refer to :class:`~watex.property.Baseplots` 
+All the classes implemented in :mod:`~watex.view` module from  :class:`~watex.property.Baseplot` ABC (Abstract Base Class) 
+objects. All arguments from this class can be used for customizing the plots. Refer to :class:`~watex.property.Baseplot` 
 to know the explanation of the attributes for plot customizing. 
 
 Furthermore, note the existence of the `tname` and `pkg` parameters passed mostly to the :mod:`~watex.view`  module classes:
@@ -312,9 +312,9 @@ The remaining two give another representation of missing data.
 * **Three kinds of missing data visualization** 
 
   ==================================== ====================================
-  Dendrogram missing patterns 	              Correlation missing patterns  
+  Dendrogram missing patterns              Correlation missing patterns  
   ==================================== ====================================
-  |dendro_mss|                         		|corr_mss|
+  |dendro_mss|                                |corr_mss|
   ==================================== ====================================
 
 .. seealso:: 

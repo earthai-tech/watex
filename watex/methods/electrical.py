@@ -870,14 +870,16 @@ class ResistivityProfiling(ElectricalMethods):
         
         if self.station is None: 
             if not self.auto: 
-                warnings.warn("Station number is missing. By default the " 
-                              "automatic-detection should be triggered.")
+                warnings.warn("Station number is missing and no constraint is"
+                              " supplied. By default the naive-auto-detection " 
+                              " should be triggered."
+                              )
                 self.auto = True 
 
         if self.station is not None: 
             if self.verbose > 7 : 
-                print("Assert the given station and recomputed the array position."
-                      )
+                print("Assert the given station and recomputed the array"
+                      " position.")
                 self._logging.warn(
                     f'Station value {self.station!r} in the given data '
                     'should be overwritten...')

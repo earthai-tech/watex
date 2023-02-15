@@ -213,11 +213,14 @@ ves.plotOhmicArea (fbtw=True , style =plt_style)
 h = load_hlogs ()
 print(h.feature_names) 
 
+#%%
 # we can  collect the valid logging data and fit it
 log= Logging(kname ='k', zname='depth_top' ).fit(h.frame[h.feature_names])
 print( log.feature_names_in_)  # categorical features should be discarded.
 #%%
-# Plot default log using the predictor :math:`X`( composed of features only)
+# Plot default log using the predictor :math:`X` ( composed of features only)
+# As an example, we will plot the first five features 
+log= Logging(kname ='k', zname='depth_top' ).fit(h.frame[log.feature_names_in_[:5]])
 log.plot ()
 #%%
 # Plot log including the target y 
@@ -234,7 +237,7 @@ log.plot (y = h.frame.k , posiy =0 )# first position
 # k-parameter collection is feasible if the layer in the well is an aquifer. 
 # Unfortunately, predicting some samples of k in a large set of missing data 
 # remains an issue using the classical supervised learning methods. We, 
-#, therefore, propose an alternative approach called a mixture of learning 
+# therefore, propose an alternative approach called a mixture of learning 
 # strategy (MXS) to solve these double issues. It entails predicting upstream 
 # a naïve group of aquifers (NGA) combined with the real values k to 
 # counterbalance the missing values and yield an optimal prediction score. 
