@@ -280,7 +280,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-     (master_doc, 'WATex.tex', u'WATex Documentation',
+     (master_doc, 'watex.tex', u'WATex Documentation',
       u'L. Kouadio', 'manual'),
 ]
 
