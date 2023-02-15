@@ -61,7 +61,7 @@ The suitable drilling location is proposed at station ``S25`` (stored in the att
 The constraints refer to the restrictions observed in the survey area during the DWSC. This is common
 in real-world exploration. For instance, a station close to a heritage site should be discarded 
 since no drilling operations are authorized at that place. When many restrictions 
-are enumerated in the survey site, they must be listed in a dictionary with a reason and passe to the parameter 
+are enumerated in the survey site, they must be listed in a dictionary with a reason and passed to the parameter 
 ``constraints`` so these stations should be ignored during the automatic detection. Here is an example of constraints
 application to our example.
 
