@@ -288,10 +288,10 @@ intersphinx_mapping = {
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'watex', u'WATex Documentation',
-      [author], 1)
-]
+# man_pages = [
+#     (master_doc, 'watex', u'WATex Documentation',
+#       [author], 1)
+# ]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -299,11 +299,11 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 
-texinfo_documents = [
-    (master_doc, 'WATex', u'WATex Documentation',
-      author, 'watex', 'Machine learning in water exploration',
-      'Miscellaneous'),
-]
+# texinfo_documents = [
+#     (master_doc, 'WATex', u'WATex Documentation',
+#       author, 'watex', 'Machine learning in water exploration',
+#       'Miscellaneous'),
+# ]
 
 
 def setup(app):

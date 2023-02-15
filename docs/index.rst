@@ -33,7 +33,7 @@
   .. grid-item:: 
 
       .. image:: _static/watex_thumb_image.svg
-        :target: example_thumbs/watex_thumb_image.html
+        :target: _static/watex_thumb_image.html
 
 
 .. toctree::
