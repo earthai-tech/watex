@@ -20,7 +20,7 @@
     |License BSD| 
     |DOI|
 
-  .. grid-item-card:: Useful resources (`Date`: |today|)
+  .. grid-item-card:: Useful resources — `Date`: |today|
     :columns: 12 12 5 5
     :class-title: sd-fs-6
     :class-body: sd-pl-3
