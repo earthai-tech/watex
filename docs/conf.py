@@ -252,8 +252,8 @@ intersphinx_mapping = {
 
 # -- Options for LaTeX output -------------------------------------------------
 
-latex_engine = 'xelatex'
-latex_elements = {
+# latex_engine = 'xelatex'
+# latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
@@ -269,29 +269,29 @@ latex_elements = {
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
-    "preamble": r"""
-        \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
-        \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
-        \let\oldhref\href
-        \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
-        """
-}
+#     "preamble": r"""
+#         \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
+#         \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
+#         \let\oldhref\href
+#         \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
+#         """
+# }
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-     (master_doc, 'watex.tex', u'WATex Documentation',
-      u'L. Kouadio', 'manual'),
-]
+# latex_documents = [
+#      (master_doc, 'watex.tex', u'WATex Documentation',
+#       u'L. Kouadio', 'manual'),
+# ]
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-# man_pages = [
-#     (master_doc, 'watex', u'WATex Documentation',
-#       [author], 1)
-# ]
+man_pages = [
+    (master_doc, 'watex', u'WATex Documentation',
+      [author], 1)
+]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -299,11 +299,11 @@ latex_documents = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 
-# texinfo_documents = [
-#     (master_doc, 'WATex', u'WATex Documentation',
-#       author, 'watex', 'Machine learning in water exploration',
-#       'Miscellaneous'),
-# ]
+texinfo_documents = [
+    (master_doc, 'WATex', u'WATex Documentation',
+      author, 'watex', 'Machine learning in water exploration',
+      'Miscellaneous'),
+]
 
 
 def setup(app):
