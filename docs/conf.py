@@ -288,7 +288,7 @@ sphinx_enable_epub_build=False
 #       (master_doc, 'watex.tex', u'Machine learning in watex exploration',
 #       u'L. Kouadio', 'manual'),
 # ]
-latex_documents = []
+# latex_documents = [
 #     (
 #         master_doc,
 #         "user_guide.tex",
