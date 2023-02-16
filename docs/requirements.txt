@@ -1,13 +1,5 @@
 
-seaborn
-tqdm
-pycsamt 
-autoapi 
-xgboost
-click 
-missingno
-pyjanitor 
-openpyxl
+
 h5py >=3.2.0
 tables
 mlxtend 
