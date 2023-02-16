@@ -9,7 +9,7 @@ import logging
 import random
 import warnings 
  
-__version__='0.1.4' ; __author__= 'L.Kouadio'
+__version__='0.1.5' ; __author__= 'L.Kouadio'
 
 # set the package name for consistency checker 
 sys.path.insert(0, os.path.dirname(__file__))  
