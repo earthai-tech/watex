@@ -249,11 +249,14 @@ intersphinx_mapping = {
     "pycsamt": ("https://pycsamt.readthedocs.io/en/latest/", None),
     "mtpy": ("https://mtpy.readthedocs.io/en/master/", None)
 }
+# ----Options to enable or disable pdf/epubd 
+sphinx_enable_pdf_build =False
+sphinx_enable_epub_build=False 
 
 # -- Options for LaTeX output -------------------------------------------------
 
 #latex_engine = 'xelatex'
-latex_elements = {
+# latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
@@ -264,18 +267,18 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #
-    # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
-    "preamble": r"""
-        \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
-        \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
-        \let\oldhref\href
-        \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
-        """
-}
+#     "preamble": r"""
+#         \usepackage{svg}
+#         \includesvg[width=\textwidth]{p}
+#         \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
+#         \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
+#         \let\oldhref\href
+#         \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
+#         """
+# }
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
@@ -283,27 +286,27 @@ latex_elements = {
 #       (master_doc, 'watex.tex', u'Machine learning in watex exploration',
 #       u'L. Kouadio', 'manual'),
 # ]
-latex_documents = [
-    (
-        master_doc,
-        "user_guide.tex",
-        "watex user guide",
-        u"L. Kouadio",
-        "manual",
-    ),
-]
+# latex_documents = [
+#     (
+#         master_doc,
+#         "user_guide.tex",
+#         "watex user guide",
+#         u"L. Kouadio",
+#         "manual",
+#     ),
+# ]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-latex_logo = "_static/watex_latex_logo.png"
+# latex_logo = "_static/watex_latex_logo.png"
 
 # Documents to append as an appendix to all manuals.
 # latex_appendices = []
 
 # If false, no module index is generated.
-latex_domain_indices = False
+# latex_domain_indices = False
 
-trim_doctests_flags = True
+# trim_doctests_flags = True
 
 # -- Options for manual page output ------------------------------------------
 
@@ -325,7 +328,6 @@ trim_doctests_flags = True
 #       author, 'watex', 'Machine learning in water exploration',
 #       'Miscellaneous'),
 # ]
-
 
 def setup(app):
     # run  apidoc 
@@ -360,17 +362,17 @@ def setup(app):
 
 
 # -- Extension configuration --------------------------------------------------
-MOCK_MODULES = [
-    'osgeo',
-    'osgeo.ogr',
-    'osgeo.gdal',
-    'osgeo.osr',
-    'tests',
-]
-import mock
+# MOCK_MODULES = [
+#     'osgeo',
+#     'osgeo.ogr',
+#     'osgeo.gdal',
+#     'osgeo.osr',
+#     'tests',
+# ]
+# import mock
 
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+# for mod_name in MOCK_MODULES:
+#     sys.modules[mod_name] = mock.Mock()
 # xxxxxxxxxxxxxxxxxxxxxxx   Element functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 def make_wx_apidoc(_):
