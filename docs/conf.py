@@ -146,6 +146,19 @@ rst_epilog = """
 .. |EM| replace:: electromagnetic
 .. |EMAP| replace:: |EM| array profiling
 
+.. |Open Source? Yes!| image:: https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github
+   :target: https://github.com/WEgeophysics/watex
+   
+.. |License BSD| image:: https://img.shields.io/github/license/WEgeophysics/watex?color=b&label=License&logo=github&logoColor=blue
+   :alt: GitHub
+   :target: https://github.com/WEgeophysics/watex/blob/master/LICENSE
+   
+.. |simpleicons git| image:: https://img.shields.io/badge/--F05032?logo=git&logoColor=ffffff
+   :target: http://git-scm.com 
+   
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg
+   :target: https://doi.org/10.5281/zenodo.7553789
+   
 """ 
 # noqa
 
@@ -258,7 +271,7 @@ sphinx_enable_epub_build=False
 # -- Options for LaTeX output -------------------------------------------------
 
 #latex_engine = 'xelatex'
-# latex_elements = {
+latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
@@ -272,15 +285,15 @@ sphinx_enable_epub_build=False
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
-#     "preamble": r"""
-#         \usepackage{svg}
-#         \includesvg[width=\textwidth]{p}
-#         \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
-#         \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
-#         \let\oldhref\href
-#         \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
-#         """
-# }
+    "preamble": r"""
+        \usepackage{svg}
+        \includesvg[width=\textwidth]{p}
+        \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
+        \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
+        \let\oldhref\href
+        \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
+        """
+}
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
@@ -288,15 +301,15 @@ sphinx_enable_epub_build=False
 #       (master_doc, 'watex.tex', u'Machine learning in watex exploration',
 #       u'L. Kouadio', 'manual'),
 # ]
-# latex_documents = [
-#     (
-#         master_doc,
-#         "user_guide.tex",
-#         "watex user guide",
-#         u"L. Kouadio",
-#         "manual",
-#     ),
-# ]
+latex_documents = [
+    (
+        master_doc,
+        "user_guide.tex",
+        "watex user guide",
+        u"L. Kouadio",
+        "manual",
+    ),
+]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -314,10 +327,10 @@ sphinx_enable_epub_build=False
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-# man_pages = [
-#     (master_doc, 'watex', u'WATex Documentation',
-#       [author], 1)
-# ]
+man_pages = [
+    (master_doc, 'watex', u'WATex Documentation',
+      [author], 1)
+]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -325,42 +338,41 @@ sphinx_enable_epub_build=False
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 
-# texinfo_documents = [
-#     (master_doc, 'WATex', u'WATex Documentation',
-#       author, 'watex', 'Machine learning in water exploration',
-#       'Miscellaneous'),
-# ]
+texinfo_documents = [
+    (master_doc, 'WATex', u'WATex Documentation',
+      author, 'watex', 'Machine learning in water exploration',
+      'Miscellaneous'),
+]
 
 def setup(app):
     # run  apidoc 
     app.connect('builder-inited', make_wx_apidoc)
-    
     # do not run the examples when using linkcheck by using a small priority
     # (default priority is 500 and sphinx-gallery using builder-inited event too)
-    # app.connect("builder-inited", disable_plot_gallery_for_linkcheck, priority=50)
-    #app.add_js_file('copybutton.js')
+    app.connect("builder-inited", disable_plot_gallery_for_linkcheck, priority=100)
+    app.add_js_file('copybutton.js')
     app.add_css_file('css/custom.css')
     # to hide/show the prompt in code examples:
     app.connect("build-finished", filter_search_index)
 
 # -- Options for Epub output -------------------------------------------------
 # Bibliographic Dublin Core info.
-# epub_title = project
-# epub_author = author
-# epub_publisher = author
-# epub_copyright = copyright
+epub_title = project
+epub_author = author
+epub_publisher = author
+epub_copyright = copyright
 
 # The unique identifier of the text. This can be a ISBN number
 # or the project homepage.
 #
-# epub_identifier = ''
+epub_identifier = ''
 
 # A unique identification for the text.
 #
-# epub_uid = ''
+epub_uid = ''
 
 # A list of files that should not be packed into the epub file.
-# epub_exclude_files = ['search.html']
+epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration --------------------------------------------------
