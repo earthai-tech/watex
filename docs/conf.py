@@ -264,12 +264,12 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #
-    # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
     "preamble": r"""
+        \usepackage{svg}
+        \includesvg[width=\textwidth]{p}
         \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
         \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
         \let\oldhref\href
@@ -326,7 +326,6 @@ trim_doctests_flags = True
 #       'Miscellaneous'),
 # ]
 
-
 def setup(app):
     # run  apidoc 
     app.connect('builder-inited', make_wx_apidoc)
@@ -360,17 +359,17 @@ def setup(app):
 
 
 # -- Extension configuration --------------------------------------------------
-MOCK_MODULES = [
-    'osgeo',
-    'osgeo.ogr',
-    'osgeo.gdal',
-    'osgeo.osr',
-    'tests',
-]
-import mock
+# MOCK_MODULES = [
+#     'osgeo',
+#     'osgeo.ogr',
+#     'osgeo.gdal',
+#     'osgeo.osr',
+#     'tests',
+# ]
+# import mock
 
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+# for mod_name in MOCK_MODULES:
+#     sys.modules[mod_name] = mock.Mock()
 # xxxxxxxxxxxxxxxxxxxxxxx   Element functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 def make_wx_apidoc(_):

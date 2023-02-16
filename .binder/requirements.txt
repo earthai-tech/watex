@@ -2,10 +2,8 @@
 # --pre
 scikit-learn
 matplotlib
-scikit-image
 pandas
 seaborn
-Pillow
 sphinx-gallery
 numpy
 scipy
