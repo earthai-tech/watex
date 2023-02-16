@@ -252,8 +252,8 @@ intersphinx_mapping = {
 
 # -- Options for LaTeX output -------------------------------------------------
 
-# latex_engine = 'xelatex'
-# latex_elements = {
+latex_engine = 'xelatex'
+latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
@@ -269,20 +269,20 @@ intersphinx_mapping = {
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
-#     "preamble": r"""
-#         \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
-#         \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
-#         \let\oldhref\href
-#         \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
-#         """
-# }
+    "preamble": r"""
+        \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
+        \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
+        \let\oldhref\href
+        \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
+        """
+}
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-# latex_documents = [
-#      (master_doc, 'watex.tex', u'WATex Documentation',
-#       u'L. Kouadio', 'manual'),
-# ]
+latex_documents = [
+      (master_doc, 'watex.tex', u'Machine learning in watex exploration',
+      u'L. Kouadio', 'manual'),
+]
 
 # -- Options for manual page output ------------------------------------------
 
@@ -308,8 +308,7 @@ intersphinx_mapping = {
 
 def setup(app):
     # run  apidoc 
-    app.connect('builder-inited', make_wx_apidoc
-    )
+    app.connect('builder-inited', make_wx_apidoc)
     
     # do not run the examples when using linkcheck by using a small priority
     # (default priority is 500 and sphinx-gallery using builder-inited event too)

@@ -14,7 +14,7 @@ numpy
 scipy
 scikit-learn
 numpydoc >=1.0.0
-Numexpr >= 2.6.2
+numexpr >= 2.6.2
 blosc >= 1.4.1
 pytest
 flake8
@@ -34,12 +34,11 @@ pyjanitor
 openpyxl
 h5py >=3.2.0
 tables
-pillow
-python_latex
 mlxtend 
 yellowbrick
 plotly
 ipywidgets
 pandas-profiling
-
+latexmk.py
+python_latex
 
