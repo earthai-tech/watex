@@ -249,7 +249,9 @@ intersphinx_mapping = {
     "pycsamt": ("https://pycsamt.readthedocs.io/en/latest/", None),
     "mtpy": ("https://mtpy.readthedocs.io/en/master/", None)
 }
-# ----Options to enable or disable pdf/epubd 
+
+
+# ----Options to enable or disable pdf/epub 
 sphinx_enable_pdf_build =False
 sphinx_enable_epub_build=False 
 
@@ -286,7 +288,7 @@ sphinx_enable_epub_build=False
 #       (master_doc, 'watex.tex', u'Machine learning in watex exploration',
 #       u'L. Kouadio', 'manual'),
 # ]
-# latex_documents = [
+latex_documents = []
 #     (
 #         master_doc,
 #         "user_guide.tex",
