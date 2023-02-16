@@ -20,6 +20,7 @@ build:
 #    - pdf
 
 # Optionally declare the Python requirements required to build your docs
+
 python:
    install:
    - requirements: docs/requirements.txt
@@ -27,7 +28,7 @@ python:
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/conf.py
-   
+
 ignore:
 - tests/
 - conftest.py
