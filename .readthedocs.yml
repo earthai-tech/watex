@@ -29,11 +29,6 @@ python:
 sphinx:
    configuration: docs/conf.py
 
-ignore:
-- tests/
-- conftest.py
-- "**/setup.py"
-
 commands: 
 - rm *.aux
 - rm _readthedocs/pdf/*
