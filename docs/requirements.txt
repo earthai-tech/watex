@@ -33,12 +33,5 @@ missingno
 pyjanitor 
 openpyxl
 h5py >=3.2.0
-tables
-mlxtend 
-yellowbrick
-plotly
-ipywidgets
-pandas-profiling
-latexmk.py
-python_latex
+
 
