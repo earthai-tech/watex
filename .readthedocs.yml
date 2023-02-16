@@ -11,7 +11,7 @@ sphinx:
    configuration: docs/conf.py   
 
 python:
-  version: 3.8
+  version: "3.10"
 
 requirements_file: docs/requirements.txt
 
@@ -22,3 +22,10 @@ ignore:
 - tests/
 - conftest.py
 - "**/setup.py"
+- cat latexmkrc
+- latexmk -r latexmkrc -pdf -f -dvi- -ps- -jobname=watex -interaction=nonstopmode
+- python -m sphinx -T -E -b epub -d _build/doctrees -D language=en . $READTHEDOCS_OUTPUT/epub
+
+commands: 
+- rm *.aux
+- rm _readthedocs/pdf/*
