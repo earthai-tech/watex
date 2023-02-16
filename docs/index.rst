@@ -51,16 +51,3 @@
   Glossary <glossary>
   
 
-.. |Open Source? Yes!| image:: https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github
-   :target: https://github.com/WEgeophysics/watex
-   
-.. |License BSD| image:: https://img.shields.io/github/license/WEgeophysics/watex?color=b&label=License&logo=github&logoColor=blue
-   :alt: GitHub
-   :target: https://github.com/WEgeophysics/watex/blob/master/LICENSE
-   
-.. |simpleicons git| image:: https://img.shields.io/badge/--F05032?logo=git&logoColor=ffffff
-   :target: http://git-scm.com 
-   
-.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg
-   :target: https://doi.org/10.5281/zenodo.7553789
-   

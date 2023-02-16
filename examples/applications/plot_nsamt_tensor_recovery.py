@@ -34,7 +34,7 @@ new_Z =Processing().fit(edi_data ).zrestore ()
     
 # >>> TPlot().fit(<<raw_data>>).plot_multiple_recovery (sites =['E12', 'E27'])
 #%%
-# Refer to :ref:`<em>` for the output 
+# Refer to :doc:`EM method <methods.html#em-em>` for the output 
  
 #%%
 # After recovering the signal, the latter exhibits a field strength amplitude for 
