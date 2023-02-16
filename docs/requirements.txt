@@ -1,16 +1,4 @@
-numpy
-scipy
-scikit-learn
-numpydoc >=1.0.0
-numexpr >= 2.6.2
-blosc >= 1.4.1
-pytest
-flake8
-flask
-pyyaml
-pyproj>=1.9.6
-pandas
-joblib
+
 seaborn
 tqdm
 pycsamt 
