@@ -15,8 +15,8 @@ python:
 
 requirements_file: docs/requirements.txt
 
-formats:
-  - pdf
+# formats:
+#   - pdf
   
 ignore:
 - tests/
