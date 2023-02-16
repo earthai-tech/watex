@@ -2318,17 +2318,16 @@ def plotDendroheat(
         
     Examples
     ---------
-    (1) -> Use random data
+    >>> # (1) -> Use random data
     >>> import numpy as np 
-    >>> >>> from watex.view.mlplot import plotDendroheat
+    >>> from watex.view.mlplot import plotDendroheat
     >>> np.random.seed(123) 
     >>> variables =['X', 'Y', 'Z'] ; labels =['ID_0', 'ID_1', 'ID_2',
                                              'ID_3', 'ID_4']
     >>> X= np.random.random_sample ([5,3]) *10 
     >>> df =pd.DataFrame (X, columns =variables, index =labels)
     >>> plotDendroheat (df)
-    
-    (2) -> Use Bagoue data 
+    >>> # (2) -> Use Bagoue data 
     >>> from watex.datasets import load_bagoue  
     >>> X, y = load_bagoue (as_frame=True )
     >>> X =X[['magnitude', 'power', 'sfi']].astype(float) # convert to float
@@ -2825,10 +2824,10 @@ def plotLearningInspections (
         Determines the cross-validation splitting strategy.
         Possible inputs for cv are:
 
-          - None, to use the default 5-fold cross-validation,
-          - integer, to specify the number of folds.
-          - :term:`CV splitter`,
-          - An iterable yielding (train, test) splits as arrays of indices.
+        - None, to use the default 5-fold cross-validation,
+        - integer, to specify the number of folds.
+        - :term:`CV splitter`,
+        - An iterable yielding (train, test) splits as arrays of indices.
 
         For integer/None inputs, if ``y`` is binary or multiclass,
         :class:`StratifiedKFold` used. If the estimator is not a classifier
@@ -2943,10 +2942,10 @@ def plotLearningInspection(
         Determines the cross-validation splitting strategy.
         Possible inputs for cv are:
 
-          - None, to use the default 5-fold cross-validation,
-          - integer, to specify the number of folds.
-          - :term:`CV splitter`,
-          - An iterable yielding (train, test) splits as arrays of indices.
+        - None, to use the default 5-fold cross-validation,
+        - integer, to specify the number of folds.
+        - :term:`CV splitter`,
+        - An iterable yielding (train, test) splits as arrays of indices.
 
         For integer/None inputs, if ``y`` is binary or multiclass,
         :class:`StratifiedKFold` used. If the estimator is not a classifier
@@ -3287,9 +3286,9 @@ def biPlot(
     References 
     -----------
     Originally written by `Serafeim Loukas`_, serafeim.loukas@epfl.ch 
-    and was edited to fit the `WATex`_ package API. 
+    and was edited to fit the :term:`watex` package API. 
     
-    .. _Serafeim Loukas: https://towardsdatascience.com/...-python-7c274582c37e>
+    .. _Serafeim Loukas: https://towardsdatascience.com/...-python-7c274582c37e
     
     """
     Xr = check_array(

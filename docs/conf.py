@@ -279,11 +279,19 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
+# latex_documents = [
+#       (master_doc, 'watex.tex', u'Machine learning in watex exploration',
+#       u'L. Kouadio', 'manual'),
+# ]
 latex_documents = [
-      (master_doc, 'watex.tex', u'Machine learning in watex exploration',
-      u'L. Kouadio', 'manual'),
+    (
+        master_doc,
+        "user_guide.tex",
+        "watex user guide",
+        u"L. Kouadio",
+        "manual",
+    ),
 ]
-
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
