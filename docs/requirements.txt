@@ -39,6 +39,4 @@ yellowbrick
 plotly
 ipywidgets
 pandas-profiling
-latexmk.py
-python_latex
 

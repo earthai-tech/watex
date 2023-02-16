@@ -292,6 +292,19 @@ latex_documents = [
         "manual",
     ),
 ]
+
+# The name of an image file (relative to this directory) to place at the top of
+# the title page.
+latex_logo = "_static/watex_latex_logo.png"
+
+# Documents to append as an appendix to all manuals.
+# latex_appendices = []
+
+# If false, no module index is generated.
+latex_domain_indices = False
+
+trim_doctests_flags = True
+
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
