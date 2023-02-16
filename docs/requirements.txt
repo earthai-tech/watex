@@ -1,4 +1,44 @@
-
+sphinx >=3.5
+sphinx-gallery
+sphinxcontrib-jsmath 
+sphinx-mathjax-offline
+pydata-sphinx-theme
+sphinx-issues
+sphinx-design
+sphinx-prompt
+sphinx-copybutton
+jupytext
+cython
+matplotlib>=3.3.0
+numpy
+scipy
+scikit-learn
+numpydoc >=1.0.0
+numexpr >= 2.6.2
+blosc >= 1.4.1
+pytest
+flake8
+flask
+pyyaml
+pyproj>=1.9.6
+pandas
+joblib
+seaborn
+tqdm
+pycsamt 
+autoapi 
+xgboost
+click 
+missingno
+pyjanitor 
+openpyxl
+h5py >=3.2.0
+tables
+mlxtend 
+yellowbrick
+plotly
+ipywidgets
+pandas-profiling
 
 
 
