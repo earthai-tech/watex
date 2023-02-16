@@ -1,20 +1,26 @@
-sphinx >=4.5
+sphinx >=3.5
 sphinx-gallery
 sphinxcontrib-jsmath 
 sphinx-mathjax-offline
 pydata-sphinx-theme
+sphinx_bootstrap_theme
+sphinx-panels
 sphinx-issues
 sphinx-design
 sphinx-prompt
 sphinx-copybutton
 jupytext
+nbsphinx 
+myst_nb
 cython
 matplotlib>=3.3.0
 numpy
 scipy
 scikit-learn
+qtpy
+netcdf4
 numpydoc >=1.0.0
-numexpr >= 2.6.2
+Numexpr >= 2.6.2
 blosc >= 1.4.1
 pytest
 flake8
@@ -22,6 +28,7 @@ flask
 pyyaml
 pyproj>=1.9.6
 pandas
+python-coveralls
 joblib
 seaborn
 tqdm
@@ -34,10 +41,13 @@ pyjanitor
 openpyxl
 h5py >=3.2.0
 tables
+pillow
+python-latex
+sphinxcontrib-jsmath 
+tables
 mlxtend 
 yellowbrick
 plotly
-ipywidgets
 pandas-profiling
 
 
