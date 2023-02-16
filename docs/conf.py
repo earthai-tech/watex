@@ -292,6 +292,19 @@ latex_documents = [
         "manual",
     ),
 ]
+
+# The name of an image file (relative to this directory) to place at the top of
+# the title page.
+latex_logo = "_static/watex_latex_logo.png"
+
+# Documents to append as an appendix to all manuals.
+# latex_appendices = []
+
+# If false, no module index is generated.
+latex_domain_indices = False
+
+trim_doctests_flags = True
+
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
@@ -328,22 +341,22 @@ def setup(app):
 
 # -- Options for Epub output -------------------------------------------------
 # Bibliographic Dublin Core info.
-epub_title = project
-epub_author = author
-epub_publisher = author
-epub_copyright = copyright
+# epub_title = project
+# epub_author = author
+# epub_publisher = author
+# epub_copyright = copyright
 
 # The unique identifier of the text. This can be a ISBN number
 # or the project homepage.
 #
-epub_identifier = ''
+# epub_identifier = ''
 
 # A unique identification for the text.
 #
-epub_uid = ''
+# epub_uid = ''
 
 # A list of files that should not be packed into the epub file.
-epub_exclude_files = ['search.html']
+# epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration --------------------------------------------------
