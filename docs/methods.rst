@@ -26,8 +26,12 @@ For the first release three main methods are implemented:
 DC-Resistivity: :mod:`~watex.methods.electrical`
 ==================================================
 
+For non-specialized users about the :term:`DC-resistivity`  methods especially the :term:`ERP` and :term:`VES` methods, it is suggested to take 
+:doc:`five-minutes <history/five_min_understanding>` reading to undertand the DC-methods before getting started with. 
+
 The :mod:`~watex.methods.electrical` is composed of multiples DC readings prefixed par the `DC` as the names of the methods (:class:`~watex.methods.electrical.DCProfiling`,
-:class:`~watex.methods.electrical.DCSounding` and single DC reading classes (:class:`~watex.methods.electrical.ResistivityProfiling` and :class:`~watex.methods.electrical.VerticalSounding`). The latter offers supplemental plot functions whereas the former does not. 
+:class:`~watex.methods.electrical.DCSounding` and single DC reading classes (:class:`~watex.methods.electrical.ResistivityProfiling` and :class:`~watex.methods.electrical.VerticalSounding`). 
+The latter offers supplemental plot functions whereas the former does not. 
 
 
 Resistivity Profiling (ERP): :class:`~watex.methods.electrical.ResistivityProfiling` 
