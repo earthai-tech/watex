@@ -23,6 +23,11 @@ Geosciences concepts
     AMT 
        is an important high resolution non-seismic geophysical technique that measures variations in the Earth's natural electromagnetic 
        fields to detect electrical resistivity variations in the subsurface at shallow to intermediate depths.
+    
+    Aquifer 
+       In :term:`hydrology`, aquifer is defined as a rock layer that contains :term:`water` and releases it in appreciable amounts. 
+       The rock contains water-filled pore spaces, and, when the spaces are connected, the water is able to flow through 
+       the matrix of the rock.
 
     Borehole
         A deep hole made in the ground when looking for oil, gas, or water: We must sink a borehole so that people will have water. 
@@ -82,7 +87,7 @@ Geosciences concepts
 
     Drinking water supply campaign 
     Drinking water supply project
-    Campaign for drinking water 
+    Campaign for drinking water supply
     DWSC 
     CDWS
         It is a project hugely financed by  Global organizations (UNICEF, UNESCO) in collaboration with  states governements 
@@ -119,25 +124,55 @@ Geosciences concepts
     Electromagnetic array profiling 
     EMAP 
         A variant of the magnetotelluric method (q.v.) where electric field measurements along a profile are made in a continuous fashion. Data is then processed to remove the effects of near-surface inhomogeneities. 
+    
+    Flow-rate 
+    Flow rate 
+    flow 
+    FR
+        flow is defined as liquids, gases, or electricity  to move in one direction, especially continuously. It can be:
+        - lava from the volcano that was flowing down the hillside.
+        - many short rivers flow into the Pacific Ocean.
+        - river flows through three counties before flowing into the sea just south of here.
+        - more ...
+        Here, when we talk about the ``flow rate``, we are mostly focused on the underground water flow ( :term:`groundwater`) circulating 
+        in the fractures obtained during/after the :term:`drilling` operations. It can be defined as the mass/volumetric of a :term:`water` 
+        which passes per unit of time. We denoted mostly the unit as :math:`m^3/hr`. 
 
     Geology
+    Geological
         Geology is a branch of natural science concerned with Earth and other astronomical objects, the features or rocks of which it is 
         composed, and the processes by which they change over time. 
 
     Geophysic
+    Geophysical
         Geophysics is a subject of natural science concerned with the physical processes and physical properties 
         of the Earth and its surrounding space environment, and the use of quantitative methods for their analysis. 
         The term geophysics classically refers to solid earth applications. 
+    
+    Geosciences
+        Is the study of the Earth - its oceans, atmosphere, rivers and lakes, ice sheets and glaciers, soils, 
+        its complex surface, rocky interior, and metallic core. This includes many aspects of how living things, 
+        including humans, interact with the Earth.
 
-    Groundwater 
+    Groundwater
+    Underground water
         It is the water present beneath Earth's surface in rock and soil pore spaces and in the fractures of rock formations.
     
+    Groundwater exploration 
+        Groundwater exploration is the investigation of underground formations to understand the hydrologic cycle, know
+        the :term:`groundwater` quality, and identify the nature, number and type of aquifers. There are different groundwater
+        exploration methods. Surface :term:`geophysical` method is one of the groundwater investigation methods. One of the
+        surface geophysical methods is therefore the :term:`vertical electrical sounding` (VES) method. :term:`VES`
+        is one to provide valuable information regarding the vertical successions of subsurface geo-materials in terms of
+        their individual thicknesses and corresponding resistivity values. It is rapid and much effective in estimating aquifer
+        thickness of an area and is cheap effective technique for :term:`groundwater` study. 
+
     GWE 
-       Is a shorthand of :term:`groundwater` exploration. 
+       Is a shorthand of :term:`groundwater exploration`. 
 
     Hydrogeology
         Hydrogeology (hydro- meaning water, and -geology meaning the study of the Earth) is the area of geology that deals with the 
-        distribution and movement of groundwater in the soil and rocks of the Earth's crust (commonly in aquifers). The terms 
+        distribution and movement of groundwater in the soil and rocks of the Earth's crust (commonly in :term:`aquifers`). The terms 
         :term:`groundwater` hydrology, geohydrology, and hydrogeology are often used interchangeably. It can also be defined as a study of the laws 
         governing the movement of subterranean water, the mechanical, chemical, and thermal interaction of this water with 
         the porous solid, and the transport of energy, chemical constituents, and particulate matter by flow. 
@@ -154,6 +189,12 @@ Geosciences concepts
         Hydrogeophysics differs from geophysics in its specific uses and methods. Although geophysical knowledge and methods 
         have existed and grown over the last half century for applications in mining and petroleum industries, hydrogeological 
         study sites have different subsurface conditions than those industries.
+
+    Hydrology 
+    Hydrologic 
+        Hydrology is an important field of :term:`goeosciences` study, dealing with :term:`water` as one of the most valuable resources on 
+        Earth. All aspects of the Earth’s available water are studied by experts from many disciplines, 
+        from geologists to engineers, to obtain the information needed to manage this vital resource.
 
     Magnetetolluric
     MT 
@@ -181,6 +222,24 @@ Geosciences concepts
         groundwater. Mathematically, the computed area constitutes the expected “fracture zone” and is expressed in :math:`\Omega.m^2`. Thus,  
         when :math:`ohmS≠0` confirms the existence of the fracture zone while :math:`ohms=0` raises doubts. 
 
+    PNAEP
+    National drinking water supply program
+    Programme national d'adduction en eau potable 
+        PNEAP is a huge program funded by the :term:`Cote d'Ivoire` `government <https://www.gouv.ci/Main.php>`__ in partnership with international organizations such as the `World Bank <https://www.worldbank.org/en/home>`__, 
+        `UNICEF <https://www.unicef.org/>`__ to bring drinking water to rural and urban populations in several villages 
+        and towns within the country. The program extended over phases (from 2012 to 2014) and from 2015 to 2016. During this 
+        program the local geophysical companies were assisted by and West-Africa International Drilling Company (`FORACO-CI <https://foraco.com/>`__) for the 
+        development of :term:`drilling` after :term:`geophysics` exploration.
+
+    PPU 
+    Emergency presidential program 
+    Programme presidentiel d'urgence
+       The PPU is a :term:`Cote d'Ivoire` `government <https://www.gouv.ci/Main.php>`__ initiative few months later after the inauguration of `Dr Alassane Ouattara <https://en.m.wikipedia.org/wiki/Alassane_Ouattara>`__ 
+       as president of Cote d'Ivoire. The project was opened just after the politico-military-crisis from 2012. The project started from 2012 to-2013 and 
+       and relauched from 2013-2014. The objective was the same as the :term:`PNAEP` but entirely financed by the state goverment.
+       and a few part of funds is collected from `NGO children of Africa <https://childrenofafrica.org/en/>`__ lead by `Dominique Ouattara <https://en.m.wikipedia.org/wiki/Dominique_Ouattara>`__, 
+       First Lady of Côte d’Ivoire. See some other resource from `Mel et al., 2018 <http://revue-geotrope.com/update/root_revue/20181202/13-Article-MEL-AL.pdf>`__. 
+
     pseudo-fracturing index
     IF
     sfi
@@ -198,7 +257,22 @@ Geosciences concepts
         defined as the volume of an incompressible fluid that will flow in unit time through a unit cube of a porous 
         substance across which a unit pressure difference is maintained. consult the `documentation <https://www.sciencedirect.com/topics/engineering/permeability-coefficient>`__ 
         for further details. 
-    
+
+    Required-flow rate 
+    Required flow rate 
+    Recommended FR
+    Required FR
+    Flow rate required
+    Flow rate recommended 
+    RFR 
+        RFR is defined as the :term:`flow rate` that is requested/requiered by contractors/funders to supply in potable water a 
+        specific locality. It is strongly tied to the number of living inhabitants of that locality. For instance, the :term:`FR`
+        recommended to supply a village with a population estimated to 2,000 inhabitants should naturally be  different from 
+        the :term:`FR` of 20,000 inhabitants, i.e. 10 times the peculiar area composed of 2,000 inhabitants. The objective of the funders 
+        when they requiered this rate of :term:`FR` is to adress the issue of water scarcity  for a long-term  
+        by minimizing the impact of the climate change during the dry season ( especially for the population living in Africa). 
+
+
     Resistance
         It is simply the measured voltage over the measured (known) current (which is Ohm's Law). Resistance will change 
         if the measurement geometry or if the volume of material changes. Therefore, it is NOT a physical property.
@@ -912,6 +986,15 @@ Scikit-learn `glossary <https://scikit-learn.org/stable/glossary.html>`_.
 
 .. glossary:: 
 
+    Artificial intelligence 
+    AI
+    Intelligence artificielle
+    IA 
+        It is the science and engineering of making intelligent machines, 
+        especially intelligent computer programs. It is related to the similar task of using computers 
+        to understand human intelligence, but AI does not have to confine itself to methods that are biologically 
+        observable. See more `here <https://www.ibm.com/hk-en/cloud/learn/what-is-artificial-intelligence>`__. 
+
     binary classification
         A 1-dimensional array, where values strictly greater than zero
         indicate the positive class (i.e. the last class in :term:`classes_`).
@@ -966,6 +1049,14 @@ Scikit-learn `glossary <https://scikit-learn.org/stable/glossary.html>`_.
         two data points.  See :func:`metrics.pairwise_distances`.  In practice,
         for some algorithms, an improper distance metric (one that does not
         obey the triangle inequality, such as Cosine Distance) may be used.
+
+    Machine Learning
+    Machine learning
+    Machine-learning 
+    Learning machine
+    ML  
+        Machine learning is a branch of artificial intelligence (:term:`AI`) and computer science which focuses on the use of 
+        data and algorithms to imitate the way that humans learn, gradually improving its accuracy. See more `here <https://www.ibm.com/topics/machine-learning>`__.
 
     multiclass classification
         A 2-dimensional array, where the row-wise arg-maximum is the
@@ -1813,7 +1904,16 @@ Resource-links
     
     Case-history in Bagoue-region 
        `Kouadio et al <https://doi.org/10.1029/2021WR031623>`_  case-history paper
-
+    
+    Côte d'Ivoire
+    Cote d'Ivoire
+    Ivory-Coast 
+    Ivory coast 
+    CIV
+        Is a west africa country known as the first productor of cocoa in the world.  To get futher details, 
+        click of the following `link <https://en.wikipedia.org/wiki/Ivory_Coast>`__. To see more about the country cultures 
+        and other features, click `here <https://www.britannica.com/place/Cote-dIvoire/Climate>`__.  
+        
     Flow rate prediction using SVMs 
         See :term:`Case-history in Bagoue-region` 
 

@@ -25,8 +25,8 @@
     :class-title: sd-fs-6
     :class-body: sd-pl-3
 
-    * :bdg-secondary:`New` :bdg-link-warning-line:`Issues & Ideas <https://github.com/WEgeophysics/watex/issues>` | :bdg-link-success-line:`Q&A Tags <https://stackoverflow.com/tags/watex>` | :bdg-link-dark-line:`Source Repository <https://github.com/WEgeophysics/watex>` 
-    * :bdg-info:`Quick-view` :bdg-ref-info-line:`Mission & Goals <about>` | :bdg-ref-secondary-line:`Applications <glr_examples/applications/index>` | :bdg-ref-success-line:`Contributions <development>`
+    * :bdg-secondary:`New` :bdg-link-warning-line:`Issues & Ideas <https://github.com/WEgeophysics/watex/issues>` | :bdg-link-dark-line:`Source Repository <https://github.com/WEgeophysics/watex>` | :bdg-link-success-line:`Q&A Tags <https://stackoverflow.com/tags/watex>` 
+    * :bdg-info:`Synopsis` :bdg-ref-primary-line:`Project story <history/project_story>` |:bdg-ref-info-line:`Mission & Goals <history/project_goals>` | :bdg-ref-secondary-line:`Applications <glr_examples/applications/index>` 
 
 .. grid:: 
 
@@ -46,8 +46,9 @@
   Examples <glr_examples/index>
   Structure <structure>
   Development <development>
-  About <about>
+  Release notes <whatsnew/index>
   Citing <citing>
+  About us <history/index>
   Glossary <glossary>
   
 

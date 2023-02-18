@@ -270,6 +270,8 @@ sphinx_enable_epub_build=False
 
 # -- Options for LaTeX output -------------------------------------------------
 
+# create a custom sphinx output for the youtube and vimeo video
+
 #latex_engine = 'xelatex'
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
@@ -294,6 +296,7 @@ latex_elements = {
         \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
         """
 }
+
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).

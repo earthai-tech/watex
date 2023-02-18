@@ -1,0 +1,27 @@
+v0.1.0 (September 12, 2021)
+----------------------------
+
+This is the sketch/beginning of the project that implemented the :term:`case-history in Bagoue-region`. At this 
+time of project, it wasn't expect to be a library. It was just a toolbox for solving a specific task as a lever/pilot 
+initiative to test the capability of using the :term:`machine learning` with the available data to solve the water scarcity problem 
+occured in :term:`Bagoue region`. 
+
+Features
+~~~~~~~~~~~~
+- Upload the first commit of the project that implemented the scripts to handle the case history problem. 
+
+- Developed :class:`watex.cases.BaseSteps` for processing the data at once.  Additionally, the default organization 
+  and scaling with different figure sizes has been improved.
+
+- Added the ``feature_transformation`` option to :mod:`watex.transformers` to automate the data transformation using 
+  :class:`watex.transformers.StratifiedWithCategoryAdder`.
+
+- Added the ability to seed the random number generator for the bootstrap used to define error bars in several plots especially 
+  in ``MetricPlot`` which was renamed to :class:`watex.view.EvalPlot` in the ``v0.1.3`` release and :class:`watex.view.QuickPlot`. 
+
+- Improved support for grouping observations based on pandas index information in categorical features plots. Should be auto-discarded 
+  using the powerfull function :func:`watex.utils.to_numeric_dtypes`. The later automates the data types conversion and outputs either 
+  the numerical, categorical features or both.
+
+- Test the :term:`flow-rate` prediction using the support vector machines algorithmns from the defined DC-features. 
+

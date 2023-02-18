@@ -1,0 +1,36 @@
+v0.1.3 (September 23, 2022)
+----------------------------
+
+This is a minor release with a change in objective and bug fixes for issues identified since ``v0.1.2``. 
+
+Features 
+~~~~~~~~~~
+- Change made in the software orientation by starting developing the packages following the `scikit-learn <https://scikit-learn.org/stable/>`_
+  API. The ``fit`` method is implemented in many functions and replaces the `GMT` development API. This has happened 
+  when the :mod:`models` module is starting growing by implementing the cross-validation. 
+  
+- New algorithmns in the :mod:`watex.base` module are started such as :class:`watex.base.SequentialBackwardSelection`, :class:`watex.base.AdalineGradientDescent`
+  additional to the assessors :class:`watex.base.Data`  and :class:`watex.base.Missing`. 
+
+- Upload the :code:`watex` documentation in `ReadTheDocs <https://readthedocs.org/>`__ server for the first time. See 
+  older `v0.1.3 <https://watex.readthedocs.io/en/v0.1.3/>`__ documentation  
+
+- Upload the ``_p`` module ( from :mod:`watex.datasets._p`) referring to an example of data preparation, the case of :term:`Bagoue Region`. 
+
+- Upload new packages of datasets such  :func:`watex.datasets.load_semien`, :func:`watex.datasets.load_boundiali`, 
+  :func:`watex.datasets.load_gbalo`, :func:`watex.datasets.load_iris`. 
+  
+  
+Bug fixes 
+~~~~~~~~~~~
+
+- Fixed a bug in :class:`watex.view.QuickPlot` when setting objective to ``flow`` and expecting the data to be automated following 
+  the case-history paper of :term:`Bagoue region`. 
+
+- Fixed a bug in fetching data in remote from :func:`watex.datasets.rload.loadBagoueDataset`. Unable to fetch correctly the dataset
+  reset every time a new data record is uploaded in `zenodo <https://zenodo.org/>`__.
+  
+- Fixed bug in :class:`watex.datasets.rload.Loader` by mixing the three ways of fetching data from 
+  ``_fromgithub``, ``_fromzenodo``, ``_fromlocal``  to optmize the change of recovering data. A thread is set for parallelizing 
+  the data retrieval. 
+
