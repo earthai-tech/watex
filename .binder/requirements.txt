@@ -8,6 +8,8 @@ sphinx-gallery
 numpy
 scipy
 pyyaml
+autoapi
+pycsamt
 pyproj
 joblib
 tqdm
