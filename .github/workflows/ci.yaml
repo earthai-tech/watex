@@ -42,7 +42,7 @@ jobs:
 
       - name: Install watex
         run: |
-          pip install --upgrade pip wheel
+          pip install --upgrade pip 
           if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS=',pycsamt'; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .[dev$EXTRAS] $DEPS
