@@ -1,35 +1,46 @@
 
-Contributing to watex
+Contributing to watex 
 =======================
 
 General support
+----------------
+
+General support queries ("how do I do X?") go to [StackOverflow], which has a bigger audience 
+of individuals who will notice your post and may be able to help. Include runnable code, a 
+specific definition of what you want to accomplish, and a detailed explanation of the challenges 
+that you have experienced to increase your chances of receiving a timely response.
+
+Bug reporting
 ---------------
 
-General support questions ("how do I do X?") are most at home on [StackOverflow](https://stackoverflow.com/), which has a larger 
-audience of people who will see your post and may be able to offer assistance. Your chance of getting a quick answer will be higher 
-if you include runnable code, a precise statement of what you are hoping to achieve, and a clear explanation of the problems that 
-you have encountered.
+If you believe you have found a problem in watex, please file a bug report on 
+the [Github issue tracker](https://github.com/WEgeophysics/watex/issues/new). Bug reports must contain the 
+following information in order to be useful:
 
-Reporting bugs
---------------
+- A reproducible code sample demonstrating the issue
+- The output that you are viewing (a plot picture or an error message) - A detailed explanation of why you 
+  believe something is incorrect - The versions of watex and matplotlib with which you are working
 
-If you think you've encountered a bug in watex, please report it on the 
-[Github issue tracker](https://github.com/WEgeophysics/watex/issues/new). To be useful, bug reports *must* include the 
-following information:
+Bug reports are easier to handle if they can be proven using one of the watex documentation' 
+example datasets (i.e. ``watex.datasets.load_XXX`` (``XXX`` refers to the datasets, i.e. ``watex.datasets.load_tankesse``). 
+Instead, your example should create synthetic data to replicate the issue. If you can only show the problem 
+with your real dataset, you must provide it, preferably as a csv. You may directly submit a csv to a github 
+issue thread, however it must have a '.txt' suffix.
 
-- A reproducible code example that demonstrates the problem
-- The output that you are seeing (an image of a plot, or the error message)
-- A clear explanation of why you think something is wrong
-- The specific versions of watex and matplotlib that you are working with
-
-Bug reports are easiest to address if they can be demonstrated using one of the example datasets from the watex docs (i.e. with `watex.load_dataset`). Otherwise, it is preferable that your example generate synthetic data to reproduce the problem. If you can only demonstrate the issue with your actual dataset, you will need to share it, ideally as a csv. Note that you can upload a csv directly to a github issue thread, but it must have a `.txt` suffix.
-
-If you've encountered an error, searching the specific text of the message before opening a new issue can often help you solve the problem quickly and avoid making a duplicate report.
-
-Because matplotlib handles the actual rendering, errors or incorrect outputs may be due to a problem in matplotlib rather than one in watex. It can save time if you try to reproduce the issue in an example that uses only matplotlib, so that you can report it in the right place. But it is alright to skip this step if it's not obvious how to do it.
+If you come across an error, examining the particular wording of the notice before posting a new 
+issue will frequently help you address the problem quickly and prevent creating a duplicate report.
 
 
 New features
-------------
+-------------
 
-If you think there is a new feature that should be added to watex, you can open an issue to discuss it. But please be aware that current development efforts are mostly focused on standardizing the API and internals, and there may be relatively low enthusiasm for novel features that do not fit well into short- and medium-term development plans
+If you believe a new feature should be added to ``watex``, you may create an issue to discuss it. Nevertheless, 
+please keep in mind that present development efforts are primarily focused on standardizing the API and internals, 
+and there may be limited excitement for unique features that do not fit well into short-and medium-term development 
+plans.
+
+Development  
+-------------
+
+For the development, improve/adding new algorithms, please refer to [Development guide](https://watex.readthedocs.io/en/latest/development.html). 
+to follow the ``watex API`` recommended syntaxes. 
