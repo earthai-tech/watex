@@ -17,23 +17,23 @@ from pprint import pprint
 import numpy as np 
 import pandas as pd 
 
-from watex.bases.transformers import  ( 
+from watex.transformers import  ( 
     FrameUnion ) 
-from watex.bases.base import (
+from watex.base import (
     Missing, 
     Data, 
     )
-from watex.bases.features import  ( 
+from watex.cases.features import  ( 
     FeatureInspection, 
     ) 
-from watex.bases.modeling import ( 
+from watex.cases.modeling import ( 
     Processing ,
     )
-from watex.bases.prepare import ( 
+from watex.cases.prepare import ( 
     BaseSteps 
     )
 
-from watex.bases.processing import ( 
+from watex.cases.processing import ( 
     Preprocessing 
     )
 

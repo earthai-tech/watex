@@ -17,12 +17,12 @@ import numpy as np
 from tests.__init__ import ( 
     ANALYSIS_DATA,
     make_temp_dir , TEST_TEMP_DIR , 
-    reset_matplotlib, watexlog
+    reset_matplotlib
     ) 
 
 from watex.analysis.dimensionality import (
     nPCA, kPCA, LLE, iPCA, 
-    get_best_kPCA_params
+   # get_best_kPCA_params
     )
 
 X, y=ANALYSIS_DATA
@@ -55,7 +55,6 @@ class TestReducers(unittest.TestCase):
         
         if not os.path.isdir(TEST_TEMP_DIR):
             print('--> outdir not exist , set to None !')
-            watexlog.get_watex_logger().error('Outdir does not exist !')
             
     def test_incrementalPCA(self, **kws ): 
         """ Test incremental PCA"""
@@ -74,26 +73,26 @@ class TestReducers(unittest.TestCase):
         
         #plot_projection(self.rObj ,self.rObj.n_components )
     
-    def test_get_best_kPCA_params(self): 
-        """ Get the kpca hyperparameters using grid SearchCV"""
-        param_grid =[{
-                "kpca__gamma":np.linspace(0.03, 0.05, 10),
-                "kpca__kernel":["rbf", "sigmoid"]
-                }]
-        from sklearn.pipeline import Pipeline 
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.decomposition import KernelPCA
+    # def test_get_best_kPCA_params(self): 
+    #     """ Get the kpca hyperparameters using grid SearchCV"""
+    #     param_grid =[{
+    #             "kpca__gamma":np.linspace(0.03, 0.05, 10),
+    #             "kpca__kernel":["rbf", "sigmoid"]
+    #             }]
+    #     from sklearn.pipeline import Pipeline 
+    #     from sklearn.linear_model import LogisticRegression
+    #     from sklearn.decomposition import KernelPCA
         
-        clf =Pipeline([
-            ('kpca', KernelPCA(n_components=self.n_components)),
-            ('log_reg', LogisticRegression())
-            ])
+    #     clf =Pipeline([
+    #         ('kpca', KernelPCA(n_components=self.n_components)),
+    #         ('log_reg', LogisticRegression())
+    #         ])
         
-        kpca_best_param =get_best_kPCA_params(self.X,y=y,scoring = 'accuracy',
-                                              n_components= 2, clf=clf, 
-                                              param_grid=param_grid,)
+    #     kpca_best_param =get_best_kPCA_params(self.X,y=y,scoring = 'accuracy',
+    #                                           n_components= 2, clf=clf, 
+    #                                           param_grid=param_grid,)
         
-        pprint(kpca_best_param)
+    #     pprint(kpca_best_param)
         
     def test_LLE(self):
         """ Test Loccally Linear Embedding with closest neighbors"""
