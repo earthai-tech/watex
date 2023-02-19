@@ -20,12 +20,12 @@ jobs:
 
     strategy:
       matrix:
-        python: ["3.8", "3.9", "3.10", "3.11"]
+        python: ["3.9", "3.10", "3.11"]
         install: [full]
         deps: [latest]
 
         include:
-          - python: "3.8"
+          - python: "3.9"
             install: full
             deps: pinned
           - python: "3.11"
@@ -40,7 +40,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install seaborn
+      - name: Install watex
         run: |
           pip install --upgrade pip wheel
           if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS=',pycsamt'; fi
