@@ -1,5 +1,5 @@
 scikit-learn>=1.1.2
-joblib>=3.0.0
+joblib>=1.2.0
 xgboost>=1.5.0
 seaborn>=0.12.0
 pyyaml>=5.0.0
