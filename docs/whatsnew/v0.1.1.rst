@@ -1,5 +1,5 @@
 
-v0.1.1 (Juin 2022)
+v0.1.1 (June 03, 2022)
 ------------------------
 
 This is a minor release with some bug fixes and adaptations to changes in watex :ref:`dependencies <dependencies>`. There are 

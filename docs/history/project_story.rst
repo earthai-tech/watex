@@ -99,10 +99,10 @@ Here is a `youtube video <https://youtube.com/shorts/NDci9g_v01Q>`__ that shows 
 
 .. raw:: html
 
-    <div style="text-align: center; margin-bottom: 2em;">
-       <iframe width="100%" height="350" src="http://youtube.com/shorts/NDci9g_v01Q?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-  
+   <div style="text-align: center; margin-bottom: 2em;">
+   <iframe width="320" height="560" src="https://www.youtube.com/embed/NDci9g_v01Q" title="Geosciences computing: watex efficient test performed in Tankesse area" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   </div>
+
 It was a great chance for the popualtion living in this area since the Tankesse  area (get data from :func:`watex.datasets.load_tankesse`)
 has significant thick layers conposed of granitic arenas which often give a wrong rate of :term:`FR` during/after the :term:`drilling` operations 
 based on our traditional methods thereby causing the numerous unsucessful drillings and unsustainable boreholes. 
