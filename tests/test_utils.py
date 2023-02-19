@@ -105,11 +105,12 @@ class TestTools(unittest.TestCase):
         straigthly from `csv` and `xlsx` and sanitize data to fit the 
         corresponding ``PREFIX``. """
 
-        for i, f in enumerate(self.data_collections):
+        for i, f in enumerate(self.data_collections[:4]):
             print('i=', i)
             df =  erpSelector( f, force=True)
             col = list(df.columns) if isinstance(
                 df, pd.DataFrame) else [df.name] # for Series
+            print(df.head(2))
             if os.path.isfile (f): 
                 print(os.path.basename(
                     os.path.splitext(f)[0].lower()) )

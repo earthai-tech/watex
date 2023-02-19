@@ -119,7 +119,7 @@ the :term:`RFR` of :math:`3m^3/hr` today (with 2,000 inhabitants) will no longer
 growth and the effects of climate change. From now on, :code:`watex` seems an alternative solution to reduce the 
 rate of unsucessful and non-sustainable drillings.
 
-Beyond this aforementioned problem purely related to :term:`hydro-geologic`al exploration, :code:`watex` offers other exploitable assets 
+Beyond this aforementioned problem purely related to hydrogeological exploration, :code:`watex` offers other exploitable assets 
 and hopes in the next five years to become an important library in the :term:`GWE` field with with the participation of diverse of 
 constributors of to this project hopefully.  
 

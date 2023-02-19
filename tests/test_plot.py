@@ -65,8 +65,8 @@ class TestExPlot(unittest.TestCase):
                                      vmax=1 
                                      )
         plt.close() 
-    def test_plotcatcomparison (self): 
-        self.p.plotcatcomparison(xname ='sfi', yname='ohmS')
+    def test_plotcutcomparison (self): 
+        self.p.plotcutcomparison(xname ='sfi', yname='ohmS')
         
     def test_plotradviz (self): 
         self.p.plotradviz(classes= None, pkg='pd' )
