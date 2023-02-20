@@ -1,55 +1,123 @@
 version: 2.1
 
-on:
-  push:
-    branches: [master, v0.*]
-  pull_request:
-    branches: master
-  schedule:
-    - cron:  '0 6 * * 1,4' # Each Monday and Thursday at 06:00 UTC
-  workflow_dispatch:
-
-env:
-  NB_KERNEL: python
-  MPLBACKEND: Agg
-  WATEX_DATA: ${{ github.workspace }}/watex-data
-
 jobs:
-  run-tests:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python: ["3.8", "3.9", "3.10"]
-        install: [full]
-        deps: [latest]
-
-        include:
-          - python: "3.9"
-            install: full
-            deps: pinned
-          - python: "3.10"
-            install: light
-            deps: pinned
-
+  lint:
+    docker:
+      - image: cimg/python:3.8.12
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Python ${{ matrix.python }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python }}
+      - checkout
+      - run:
+          name: dependencies
+          command: |
+            pip install --upgrade pip 
+            pip install pytest flake8 $(get_dep mypy min) $(get_dep black min)
+            pip install -r ci/deps_pinned.txt
+      - run:
+          name: linting
+          command: ./build_tools/linting.sh
 
-      - name: Install dependencies 
-        run: |
-          pip install --upgrade pip
-          python -m pip install flake8 pytest
-          if [[ ${{matrix.install}} == 'full' ]]; then pip install -r docs/requirements.txt; fi
-          if [[ ${{matrix.deps }} == 'pinned' ]]; then pip install -r ci/deps_pinned.txt; fi
+  doc-min-dependencies:
+    docker:
+      - image: cimg/python:3.8.12
+    environment:
+      - MKL_NUM_THREADS: 2
+      - OPENBLAS_NUM_THREADS: 2
+      - CONDA_ENV_NAME: testenv
+      - SPHINX_NUMJOBS: 1
+    steps:
+      - checkout
+      - run: ./build_tools/circle/checkout_merge_commit.sh
+      - restore_cache:
+          key: v1-doc-min-deps-datasets-{{ .Branch }}
+      - restore_cache:
+          keys:
+            - doc-min-deps-ccache-{{ .Branch }}
+            - doc-min-deps-ccache
+      - run: ./build_tools/circle/build_doc.sh
+      - save_cache:
+          key: doc-min-deps-ccache-{{ .Branch }}-{{ .BuildNum }}
+          paths:
+            - ~/.ccache
+            - ~/.cache/pip
+      - save_cache:
+          key: v1-doc-min-deps-datasets-{{ .Branch }}
+          paths:
+            - ~/watex_data
+      - store_artifacts:
+          path: doc/_build/html/stable
+          destination: doc
+      - store_artifacts:
+          path: ~/log.txt
+          destination: log.txt
 
-      - name: Run tests and collect coverage
-        run: |
-          pytest 
-        
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        if: ${{ success() }}
+  doc:
+    docker:
+      - image: cimg/python:3.8.12
+    environment:
+      - MKL_NUM_THREADS: 2
+      - OPENBLAS_NUM_THREADS: 2
+      - CONDA_ENV_NAME: testenv
+      - LOCK_FILE: build_tools/circle/doc_linux-64_conda.lock
+    steps:
+      - checkout
+      - run: |
+          pip install -r docs/requirements.txt 
+      - restore_cache:
+          key: v1-doc-datasets-{{ .Branch }}
+      - restore_cache:
+          keys:
+            - doc-ccache-{{ .Branch }}
+            - doc-ccache
+      - run: ./build_tools/circle/build_doc.sh
+      - save_cache:
+          key: doc-ccache-{{ .Branch }}-{{ .BuildNum }}
+          paths:
+            - ~/.ccache
+            - ~/.cache/pip
+      - save_cache:
+          key: v1-doc-datasets-{{ .Branch }}
+          paths:
+            - ~/watex_data
+      - store_artifacts:
+          path: doc/_build/html/latest
+          destination: doc
+      - store_artifacts:
+          path: ~/log.txt
+          destination: log.txt
+      # Persists generated documentation so that it can be attached and deployed
+      # in the 'deploy' step.
+      - persist_to_workspace:
+          root: doc/_build/html
+          paths: .
+
+  deploy:
+    docker:
+      - image: cimg/python:3.8.12
+    steps:
+      - checkout
+      - run: ./build_tools/circle/checkout_merge_commit.sh
+      # Attach documentation generated in the 'doc' step so that it can be
+      # deployed.
+      - attach_workspace:
+          at: doc/_build/html
+      - run: ls -ltrh doc/_build/html/latest
+      # - deploy:
+      #    command: |
+      #      if [[ "${CIRCLE_BRANCH}" =~ ^master$|^[0-9]+\.[0-9]+\.X$ ]]; then
+      #        bash build_tools/circle/push_doc.sh doc/_build/html/stable
+      #      fi
+
+workflows:
+  version: 2
+  build-doc-and-deploy:
+    jobs:
+      - lint
+      - doc:
+          requires:
+            - lint
+      - doc-min-dependencies:
+          requires:
+            - lint
+      - deploy:
+          requires:
+            - doc
