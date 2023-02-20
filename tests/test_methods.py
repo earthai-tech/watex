@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 """
 Created on Mon Jul  5 13:27:27 2021
 
@@ -19,21 +18,29 @@ import pandas as pd
 import  unittest 
 import pytest
 from watex.utils import naive_imputer
-from watex.datasets import (make_erp , make_ves , load_hlogs )
-from watex.methods import (ResistivityProfiling, VerticalSounding, 
-                           DCProfiling, DCSounding, MXS, 
-                           # AqSection, 
-                           # Logging
-                           )
+from watex.datasets import (
+    make_erp ,
+    make_ves ,
+    load_hlogs, 
+    load_edis 
+    )
+from watex.methods import (
+    ResistivityProfiling, VerticalSounding, 
+    DCProfiling, DCSounding, MXS, 
+    AqSection, AqGroup, 
+    Logging , EM , Processing, 
+   )
 from watex.methods.erp import ERP 
 from tests import  ( 
-    
     ERP_PATH, TEST_TEMP_DIR,  
     make_temp_dir 
     ) 
 
 from tests import erp_test_location_name 
 from tests.__init__ import reset_matplotlib, watexlog, diff_files
+
+#*** Get the data **** 
+HDATA = load_hlogs(key ='*', drop_observations =True ).frame 
 
 class TestERP(unittest.TestCase):
     """
@@ -196,8 +203,86 @@ class TestMXS (unittest.TestCase ):
         print("label similarity groups=", sim )
         
         
+class TestAqGroup(unittest.TestCase): 
+    """ Test aquifer Group sections """
+    
+    def test_findgroup (self): 
+         
+        hg = AqGroup (kname ='k', aqname='aquifer_group').fit(HDATA ) 
+        print( hg.findGroups () ) 
+        
+class TestqASection (unittest.TestCase): 
+    """ Compute the section of aquifer"""
+    section = AqSection (aqname ='aquifer_group', kname ='k',
+                         zname ='depth_top').fit(HDATA) 
+
+    def test_findsection (self): 
+        self.assertListEqual(self.section.findSection () , [93.1, 340.35]) 
+        
+class TestLogging (unittest.TestCase): 
+    
+    h = load_hlogs(key ='h2601') 
+    log = Logging(kname ='k', zname='depth_top' ).fit(
+        h.frame[h.feature_names])
+    
+    @classmethod 
+    def setUpClass(cls):
+        """
+        Reset building matplotlib plot and generate tempdir inputfiles 
+        
+        """
+        reset_matplotlib()
+        cls._temp_dir = make_temp_dir(cls.__name__)
+
+    def setUp(self): 
+        
+        if not os.path.isdir(TEST_TEMP_DIR):
+            print('--> outdir not exist , set to None !')
+            watexlog.get_watex_logger().error('Outdir does not exist !')
+            
+    def test_log (self): 
+        self.log.plot() 
+        
+class TestEM (unittest.TestCase): 
+    # output the edis data as array_like 1d 
+    edi_data = load_edis (key='edi' , return_data =True )
+    
+    emobj = EM ().fit(edi_data )
+        
+    def test_make2d (self): 
+        """ make2D blocks """
+        self.emobj.make2d() 
+        print("emobj.freqs_.max()=", self.emobj.freqs_.max())
+        print("emobj.refreq_=", self.emobj.refreq_)
+        
+        self.assertAlmostEqual( self.emobj.freqs_.max() , self.emobj.refreq_)
         
         
+class TestProcessing (unittest.TestCase): 
+    # output the edis data as array_like 1d 
+    edi_data = load_edis (key='edi' , return_data =True, samples = 17 )
+    pobj = Processing().fit(edi_data)
+    
+    def test_ama (self ): 
+        
+        self.pobj.ama () ; self.pobj.flma () ; self.pobj.ama () 
+        
+    def test_qc (self): 
+        """ Compute the quality control """ 
+        
+        c, _ = self.pobj.qc ( tol = .6 )
+        print(f"QC= {c * 100}%"  ) 
+        
+    def test_zrestore (self): 
+        """ Restore Impedance data """
+        self.pobj.zrestore () 
+        
+    def test_skew (self ): 
+        
+        for meth in ("swift", 'bahr'): 
+            self.pobj.skew (method =meth) 
+            
+            
 def compare_diff_files(refout, refexp):
     """
     Compare diff files like expected files and output files generated after 

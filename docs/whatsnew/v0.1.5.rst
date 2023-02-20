@@ -10,48 +10,42 @@ Adaptations and Features
   (`Issue #144 <https://github.com/pydata/pydata-sphinx-theme/issues/1144>`__ ). Credit to 
   `Vincent Rouvreau <https://github.com/VincentRouvreau>`__ to workaround this issue by providing the script to 
   handle this. 
+ 
 - Add the project story and a simple testimonial to test the efficiency of the software in predicting the :term:`flow` during the 
   a :term:`drilling` operation performed in Tankesse area (see :func:`watex.datasets.load_tankesse`).  
 
 - Polishing the :ref:`methods <methods>` page of the documentation and fixing some typos. 
 
-- Add the :doc:`release notes <whatsnew/index>` for displaying the project historical changes. 
+- Add the :ref:`release notes <release>` for displaying the project historical changes. 
 
-- Add the electronic :doc:`citations <citing>` from submitted papers in `Engineering Geology <https://www.sciencedirect.com/journal/engineering-geology>`__ for MXS (:class:`watex.methods.MXS`) and 
+- Add the electronic :ref:`citations <citing>` from submitted papers in `Engineering Geology <https://www.sciencedirect.com/journal/engineering-geology>`__ for MXS (:class:`watex.methods.MXS`) and 
   the software submission in `SoftwareX <https://www.sciencedirect.com/journal/softwarex>`__ journal.  
  
-- Add the :doc:`project story <history/project_story>`  and move the :doc:`project mission and goals <history/project_goals>` into 
-  a single folder called :doc:`history <history/index>`. 
+- Add the :doc:`project story <../history/project_story>`  and move the :doc:`project mission and goals <../history/project_goals>` into 
+  a single folder called :doc:`history <../history/index>`. 
  
 - Add new page named :doc:`five-minutes <../history/five_min_understanding>` for undertanding. This seems useful for an ease of comprehension of non-specialized readers/users about the :term:`geophysical` 
   :term:`DC` methods.
 
 - Aggregate and drop the null observations in the borehole datasets from :func:`watex.datasets.load_hlogs`. Henceforth both actions can be performed as a single task. The parameter ``key`` can be  set to ``*`` to 
   fetch all available logging data and concatenate them into a single frame. Whilst, the new parameter `drop_observations` set to ``True`` removes the ``remark`` column in the data. Indeed, the observation ("remark") column 
-  sometimes does not contain  meaningful informations and can be annoying by calling the "drop" function  of the :term:`Pandas DataFrame` everytimes to drop it.  Here is the newest version implementation to 
-  to achieve a faster result into a single code line: 
-
-.. code-block:: python 
-   
-   >>> import pandas as pd
-   >>> import watex as wx
-   >>> # 
-   >>> # OLDEST VERSION 
-   >>> # 
-   >>> # Aggregate boreholes data ('h502' and 'h2601') into a single frame 
-   >>> hdata_o = pd.concat ([wx.fetch_data('hlogs').frame , wx.fetch_data('hlogs', key ='h2601').frame ])
-   >>> # drop observation ('remark') in the data 
-   >>> print("Data size:", len(hdata_o)) 
-   218
-   >>> hdata_o. drop (columns = 'remark', inplace = True ) 
-   >>> # 
-   >>> # NEW VERSION 
-   >>> 
-   >>> # perform in a single task ( skip Pandas calling) 
-   >>> hdata = wx.fetch_data("hlogs", key='*', drop_observations =True ).frame 
-   >>> print("Data size:", len(hdata)) 
-   218
-   >>> print( "Does observation still exist? — ", "remark" in hdata.columns)
-   False 
+  sometimes does not contain  meaningful informations and can be annoying by calling the "drop" function  of the :term:`Pandas DataFrame` everytimes to drop it.  Here is the newest version implementation 
+  to achieve a faster result into a single code line:
+  
+  - *Version v0.1.4* ::
+  
+  >>> import pandas as pd
+  >>> import watex as wx
+  >>> # Aggregate boreholes data ('h502' and 'h2601') into a single frame 
+  >>> hdata_o = pd.concat ([wx.fetch_data('hlogs').frame , wx.fetch_data('hlogs', key ='h2601').frame ])
+  >>> # drop observation ('remark') in the data 
+  >>> hdata_o. drop (columns = 'remark', inplace = True ) 
+  
+  - *New in v0.1.5* ::
+  
+  >>> import watex as wx 
+  >>> hdata = wx.fetch_data("hlogs", key='*', drop_observations =True ).frame 
+  >>> print( "Does observation still exist? - ","remark" in hdata.columns)
+  Does observation still exist? - False 
 
 

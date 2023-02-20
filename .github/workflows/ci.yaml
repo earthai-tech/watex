@@ -55,3 +55,4 @@ jobs:
         with:
           github-token: ${{ secrets.github_token }}
           path-to-lcov: tests/lcov.info
+
