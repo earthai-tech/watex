@@ -19,7 +19,7 @@ constructed following referring to Python `PEP8 <https://peps.python.org/pep-000
 
 - Adapted to a change in the auto-selection of the best anomaly that caused problems with multiple reading excel sheets.
 
-- Developed a :func:`watex.utils.mlutils.read_excelsheets` to parse multiple excel data from different localities at once.  
+- Developed a :func:`watex.utils.funcutils.read_from_excelsheets` to parse multiple excel data from different localities at once.  
 
 - Deprecated several utility functions that are no longer used internally (``select_anomaly``, 
   ``getminVal``, ``compute_lower_anomaly``, and ``define_conductive_zone``, ``compute_sfi``). 
