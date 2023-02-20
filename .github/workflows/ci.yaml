@@ -49,7 +49,7 @@ jobs:
 
       - name: Run tests and collect coverage
         run: |
-          pytest --cov 
+          pytest  
     
       - name: Upload coverage
         uses: codecov/codecov-action@v3
