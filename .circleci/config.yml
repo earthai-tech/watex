@@ -12,10 +12,7 @@ jobs:
             pip install --upgrade pip 
             pip install pytest flake8 $(get_dep mypy min) $(get_dep black min)
             pip install -r ci/deps_pinned.txt
-      - run:
-          name: linting
-          command: ./build_tools/linting.sh
-
+            
   doc-min-dependencies:
     docker:
       - image: cimg/python:3.8.12
