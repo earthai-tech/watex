@@ -30,7 +30,7 @@ jobs:
             deps: pinned
           - python: "3.11"
             install: light
-            deps: latest
+            deps: pinned
 
     steps:
       - uses: actions/checkout@v3
