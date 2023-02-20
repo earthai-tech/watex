@@ -30,7 +30,7 @@ Trigger effect
 Althrough, the desire to enhance the living conditions of the population remains one of my main concerns, the trigger factor 
 that accelerates the design of :code:`watex` was the  Diacohou-Nord project in 2017 ( in the center part of :term:`Cote d’Ivoire`, see Figure 1).  
 The project was specific which purpose was to find the best location for the :term:`drilling` operations expecting to obtain a 
-:term:`flow` rate (:term:`FR`) of :math:`10m^3/hr`( = :term:`RFR`). However, this peculiar area strongly faced with a drinking water shortage 
+:term:`flow` rate (:term:`FR`) of :math:`10m^3/hr` (= :term:`RFR`). However, this peculiar area strongly faced with a drinking water shortage 
 especially during the dry season. The condition such as the topographic/terrain and other constraints were not optimals to get such :term:`FR` thereby worsening the 
 conditions of the living populations. In addition, during our trip to that locality,  from 6 P.M. to 6 A.M. every day, women in the village rush away 
 into the forest for seeking potable water for the households, their husbands, and their children ( Figure 1.a). The water flowing from 
@@ -45,8 +45,8 @@ in the locality and surrondings had dried up notwithstanding the dangers with th
    :term:`DC-resistivity` survey investigations. a) An illustration of the critical issue of water shortage in Diacohu-Nord. Women are 
    waiting for water in the forest from night until the morning. b) DC survey investigations in the "Koro" locality, north area of the :term:`Cote d'Ivoire`
    
-Unfortunately, the consequences of that :term:`water` quest late at night in the forest were terrible and numerous such as the 
-snakebites I witnessed on May 17, 2017. The woman was immediately transported to the nearest city for treatment. I was upset to hear that 
+Unfortunately, the consequences of that :term:`water` quest at night in the forest were numerous and terrible such as the 
+snakebites that I witnessed on May 17, 2017. The lady was immediately transported to the nearest city for treatment. I was upset to hear that 
 this phenomenon seems common experienced and frequently happened in their daily life. 
 
 On my return from the mission, I, therefore, thought to solve this problem so that such a story does no longer happen again. Thus, two
@@ -63,14 +63,13 @@ months later, I resigned from the company and looking for a scholarship opportun
    my team and I went to the site for inspection to propose an alternative solution ; right-panel) survey investigation in 
    Diacohu-Nord locality. The color of grasses shows the drastic consequences of the dry season in this locality.   
    
-However, being a geophysicist as my academic training, registering as a computer scientist seemed very difficult. Fortunately, 
-three months later, I got a scholarship from the `China Scholarship Council (CSC) <https://www.chinesescholarshipcouncil.com/>`__ 
-of the Chinese government in collaboration with the government of :term:`Côte d'Ivoire` for a Ph.D study. Thus, I was registered 
-to `Zhejiang University <https://www.zju.edu.cn/english/>`__ (ZJU) in 2018 where I selected computational geophysics  as my research interest. 
-My research work focused on the capability to design new :term:`ML` approaches to predict :term:`FR` and efficiently detect the fracture zone 
-from :term:`DC-resistivity` and electromagnetic data (especially the :term:`controlled source audio-frequency magnetotelluric`). Thus,  
-the first trial version of :code:`watex` was born. It was focused on a case study problem in the :term:`Bagoue region` ( see Figure 1.) 
-The results were satisfactory with a prediction score of 77% of correct :term:`FR`.  
+Fortunately, three months later, I got a scholarship from the `China Scholarship Council (CSC) <https://www.chinesescholarshipcouncil.com/>`__ 
+of the Chinese government in collaboration with the government of :term:`Côte d'Ivoire` for a Ph.D candidate. Thus, I was registered 
+to `Zhejiang University <https://www.zju.edu.cn/english/>`__ (ZJU) in 2018 where I my research interest was computational geophysics. 
+My research work entailed to design new :term:`ML` approaches capable to detect the fracture zones and predict :term:`FR` efficiently
+from :term:`DC-resistivity` and electromagnetic (especially the :term:`CSAMT`) data. Thus,  the first trial version of :code:`watex` 
+was born. It was focused on a case study problem in the :term:`Bagoue region` ( see Figure 1.). The results were satisfactory with a 
+prediction score of 77% of correct :term:`FR` with a reasonnable amount of data.  
 
 Efficiency test 
 -----------------

@@ -873,10 +873,14 @@ class IsEdi(ABC):
     def _assert_edi (file: str ,
                      deep: bool  =True
                      )-> bool : 
-        """ Assert EDI- file .  
+        """ Assert EDI- file .
+        
         :param file: str - path-like object 
         :param deep: bool - Open the file and assert whether it is a valid EDI
-            if ``False``, just control the EDI extension . """
+            if ``False``, just control the EDI extension.
+            
+        :return: bool- ``True`` if EDI is valid and ``False`` otherwise. 
+        """
         msg = (" Unrecognized SEG EDI-file. Follow the paper of"
                " [Wight, D.E., Drive, B., 1988.]"
                " <https://www.mtnet.info/docs/seg_mt_emap_1987.pdf>"

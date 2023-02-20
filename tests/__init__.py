@@ -16,8 +16,8 @@ from watex.datasets import fetch_data
 if os.path.abspath('..') not in sys.path: 
     sys.path.insert(0, os.path.abspath('..'))
 
-# create logdir if does not exists
-# and save error, infos and warnings log files as 
+# create logdir if does not exist
+# and save errors, infos and warnings log files 
 LOG_DIR = 'watex/wlogfiles'
 
 if not os.path.isdir (LOG_DIR): 

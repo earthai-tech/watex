@@ -156,7 +156,7 @@ The hard-dependencies are all needed for the software to run properly.
    seaborn                   >=0.12.0                     -
    pyyaml                    >=5.0.0                      -
    pyproj                    >=3.3.0                      -
-   joblib                    >=3.5.0                      -
+   joblib                    >=1.2.0                      -
    openpyxl                  >=3.0.3                     pandas 
    h5py                      >=3.2.0                     pandas 
    tables                    >=3.6.0                     pandas     
@@ -177,7 +177,7 @@ and don't need to install again.  The following table shows the optional depende
    ========================= ======================
    **Optional dependencies**   **Minimum version**    
    ------------------------- ----------------------
-   missingno                  >=1.1.2         
+   missingno                  >=0.4.2         
    pandas_profiling           >=0.1.7          
    pyjanitor                  >=0.1.7          
    yellowbrick                >=1.5.0        

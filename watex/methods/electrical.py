@@ -904,9 +904,9 @@ class ResistivityProfiling(ElectricalMethods):
             if constr_r is None: 
                 warnings.warn(
                     "No suitable location for drilling operations is detected"
-                    " after applying the constraints. Process to compute the"
+                    " after applying the constraints. Procedure to compute the"
                     " DC-profiling parameters is aborted. To force proposing"
-                    " an alternative location with the naive auto-detection"
+                    " an alternative location using the naive auto-detection"
                     " set ``constraints=None`` and re-fit the"
                    f" {self.__class__.__name__!r} object. Use it at your"
                     " own risk.")
@@ -1026,8 +1026,8 @@ class ResistivityProfiling(ElectricalMethods):
         """ Plot the best conductive zone found in the |ERP|
         
         :param plot_kws: dict, additional keyword arguments passed to 
-            :func:~.watex.utils.coreutils.plotAnomaly`. 
-
+            :func:`~watex.utils.coreutils.plotAnomaly`. 
+            
         """ 
         self.inspect 
         
