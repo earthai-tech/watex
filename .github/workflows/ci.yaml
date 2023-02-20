@@ -28,7 +28,7 @@ jobs:
           - python: "3.9"
             install: full
             deps: pinned
-          - python: "3.11"
+          - python: "3.10"
             install: light
             deps: pinned
 
