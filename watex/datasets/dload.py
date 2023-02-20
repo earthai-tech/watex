@@ -343,7 +343,7 @@ key: str, default='h502'
     If ``key='*'``, all the data is aggregated on a single frame of borehole. 
     .. versionadded:: 0.1.5
 drop_observations: bool, default='False'
-    Drop the ``remark`` columns in the logging data if set to ``True``.  
+    Drop the ``remark`` column in the logging data if set to ``True``.  
     .. versionadded:: 0.1.5
     
 Returns
