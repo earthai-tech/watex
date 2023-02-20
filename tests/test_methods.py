@@ -124,7 +124,7 @@ class TestResistivityProfiling (unittest.TestCase):
                                         ).fit(self.erp_data ) 
         
         # sstation detection  
-        erpobj_s_c = ResistivityProfiling(station= 'S25', constraints=self.constraints
+        erpobj_s_c = ResistivityProfiling(station= 'S25', constraints=self.constraints, coerce=True, 
                                         ).fit(self.erp_data ) 
         
         erpobj_s= ResistivityProfiling(station= 'S25', ).fit(self.erp_data )
