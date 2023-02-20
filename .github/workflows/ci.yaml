@@ -42,14 +42,15 @@ jobs:
 
       - name: Install watex
         run: |
-          pip install --upgrade pip 
-          if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt; fi
-          if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS=',pycsamt'; fi
-          if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
-          pip install .[dev$EXTRAS] $DEPS
-      - name: Run tests
-        run: make test
+          pip install --upgrade pip
+          python -m pip install flake8 pytest
+          if [[ ${{matrix.install}} == 'full' ]]; then pip install -r docs/requirements.txt; fi
+          if [[ ${{matrix.deps }} == 'pinned' ]]; then pip install -r ci/deps_pinned.txt; fi
 
+      - name: Run tests
+        run: |
+            pytest
+            
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         if: ${{ success() }}
