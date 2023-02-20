@@ -15,12 +15,15 @@ Description:
 """
 import os
 # import datetime
+import pandas as pd 
 import  unittest 
 import pytest
-from watex.datasets import (make_erp , make_ves )
+from watex.utils import naive_imputer
+from watex.datasets import (make_erp , make_ves , load_hlogs )
 from watex.methods import (ResistivityProfiling, VerticalSounding, 
-                           DCProfiling, DCSounding, MXS, AqSection, 
-                           Logging
+                           DCProfiling, DCSounding, MXS, 
+                           # AqSection, 
+                           # Logging
                            )
 from watex.methods.erp import ERP 
 from tests import  ( 
@@ -113,24 +116,85 @@ class TestResistivityProfiling (unittest.TestCase):
                    "S50": "Marsh zone", 
                    "S70": "Heritage site"
                    }
-    erp_data = make_erp( n_stations =100 , seed =123 , max_rho = 1e5 , min_rho = 1e1, as_frame =True)
+    erp_data = make_erp( n_stations =100 , seed =123 , max_rho = 1e5 ,
+                        min_rho = 1e1, as_frame =True)
     auto_detection = True 
 
     def test_summary (self ): 
         
         # automatic detection 
-        erpobj = ResistivityProfiling(auto= self.auto_detection ).fit(self.erp_data )
-        erpobj_c = ResistivityProfiling(auto=self.auto_detection, constraints=self.constraints
-                                        ).fit(self.erp_data ) 
+        erpobj = ResistivityProfiling(auto= self.auto_detection 
+                                      ).fit(self.erp_data )
+        erpobj_c = ResistivityProfiling(
+            auto=self.auto_detection, constraints=self.constraints
+            ).fit(self.erp_data ) 
         
         # sstation detection  
-        erpobj_s_c = ResistivityProfiling(station= 'S25', constraints=self.constraints, coerce=True, 
+        erpobj_s_c = ResistivityProfiling(
+            station= 'S25', constraints=self.constraints, coerce=True, 
                                         ).fit(self.erp_data ) 
         
         erpobj_s= ResistivityProfiling(station= 'S25', ).fit(self.erp_data )
         
         # get data from table 
-        erpobj.summary() ; erpobj_c.summary() ; erpobj_s.summary(); erpobj_s_c.summary() 
+        erpobj.summary() ; erpobj_c.summary()
+        erpobj_s.summary(); erpobj_s_c.summary() 
+        
+        # compute DC data from the same datasets 
+        dc_res = DCProfiling(stations = 'S25').fit(self.erp_data )
+        # assert whether both values are the same 
+        
+        for param  in ("sfi", 'power', 'magnitude', 'shape', 'type'): 
+            self.assertAlmostEqual(getattr (erpobj_s, param +'_' ),
+                                   getattr (dc_res.line1, f"{param}_")
+                                   ) 
+
+
+class TestVerticalSounding (unittest.TestCase): 
+    """ Make test for |VES| """
+    search = 20 
+    ves_data = make_ves (samples =50 , max_depth= 200 , order ='+',
+                         max_rho=1e5, seed = 123).frame 
+    
+    def test_summary (self): 
+        """ Compute Parameters with simple run """
+        
+        vesobj = VerticalSounding(search = self.search ).fit(self.ves_data ) 
+        dcobj = DCSounding(search = self.search ).fit(self.ves_data )
+        self.assertAlmostEquals(vesobj.ohmic_area_, dcobj.site1.ohmic_area_)
+        
+        dcobj.summary(return_table =True)
+        vesobj.summary(return_table= True ) 
+        
+        self.assertAlmostEqual(dcobj.nareas_, vesobj.nareas_ )
+   
+
+class TestMXS (unittest.TestCase ): 
+    "Test Mixture Learning Strategy (MXS) "
+    
+    # aggreate the two boreholes data  the two boreholes data 
+    # --> shape = ( 218, 17)
+    hdata = pd.concat ([ load_hlogs().frame  
+                        + load_hlogs(key ='h2601').frame ]) 
+    # drop remark column 
+    hdata.drop (columns ='remark', inplace =True )
+    # fit NaN values using naive transformer 
+    hdata = naive_imputer(hdata, mode = 'bi-impute')
+    
+    mxsobj = MXS(kname ='k' ).fit(hdata )
+    
+    def test_mxs (self  ): 
+        """ Predict NGA labels and MXS  """
+        self.mxsobj.predictNGA(n_components= 3 )
+        self.mxsobj.makeyMXS(categorize_k=True, default_func=True)
+        
+    def test_label_similarity (self ): 
+        # refit the data 
+        mxs = MXS (kname ='k', aqname ='aquifer_group').fit(self.hdata)
+        sim = mxs.labelSimilarity() 
+        
+        print("label similarity groups=", sim )
+        
         
         
         

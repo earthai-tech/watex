@@ -49,9 +49,24 @@ jobs:
 
       - name: Run tests and collect coverage
         run: |
-          pytest  
-    
+          pytest -v --cov=watex --cov-report=tests --ignore=watex/exlib | python -m pytest --cov-fail-under=20
+      
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel: true
+        
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         if: ${{ success() }}
 
+finish:
+  needs: test
+  runs-on: ubuntu-latest
+  steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        parallel-finished: true

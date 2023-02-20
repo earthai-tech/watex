@@ -1840,7 +1840,8 @@ def plot_sfi(
          
     see Also
     ---------
-    watex.utils.exmath.sfi:  for more details about the  *sfi* parameter computation. 
+    watex.utils.exmath.sfi:  
+        for more details about the  *sfi* parameter computation. 
     
     Examples
     ---------
