@@ -47,11 +47,11 @@ jobs:
           if [[ ${{matrix.install}} == 'full' ]]; then pip install -r docs/requirements.txt; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then pip install -r ci/deps_pinned.txt; fi
 
-      - name: Run tests
+      - name: Run tests and collect coverage
         run: |
-          pytest
+          pytest --cov app
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         if: ${{ success() }}
-s
+
