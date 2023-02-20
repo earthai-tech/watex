@@ -337,7 +337,7 @@ class EM(IsEdi):
                     lambda o: self.is_valid(o), self.ediObjs_)) 
             except EDIError: 
                 raise EMError ("Expect a list of EDI objects not "
-                                  f"{type(self.ediObjs_[0]).__name__!r}")
+                               f"{type(self.ediObjs_[0]).__name__!r}")
             
         # sorted ediObjs from latlong  
         self.ediObjs_ , self.edinames = fit_by_ll(self.ediObjs_)
@@ -354,7 +354,7 @@ class EM(IsEdi):
         elev = _fetch_headinfos(self.ediObjs_, 'elev')
         lon,*_ = scalePosition(lon) if len(self.ediObjs_)> 1 else lon 
         lat,*_ = scalePosition(lat) if len(self.ediObjs_)> 1 else lat
-        # ---> get impednaces, phase tensor and
+        # ---> get impedances, phase tensor and
         # resistivities values form ediobject
         self._logging.info('Setting impedances and phases tensors and'
                            'resistivity values from a collection ediobj.')
@@ -377,7 +377,7 @@ class EM(IsEdi):
         # get frequency array from the first value of edifiles.
         self.freq_array = self.ediObjs_[0].Z.freq
 
-        #---> set ino dictionnary the impdance and phase Tensor 
+        #---> set into dictionnary the impdance and phase Tensors 
         self._z = {key:value for key , value in zip (self.id, zz)}
         self._z_err ={key:value for key , value in zip (self.id, zz_err)}
 
@@ -2036,7 +2036,7 @@ class Processing (EM) :
             
         Returns 
         -------
-        Zc:class:`watex.external.z.Z` impedance tensor objects.
+        Zc: :class:`watex.externals.z.Z` impedance tensor objects.
             
         Examples 
         --------

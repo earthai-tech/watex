@@ -5,14 +5,11 @@
 Created on Mon Jul  5 13:27:27 2021
 
 Description:
-    Test to core module . Containers of modules  :mod:`~.core.erp.ERP` and 
-    :mod:~.core.ves.VES`
+    Test to core module . Containers of modules  :mod:`~.methods.erp.ERP` and 
+    :mod:`~.methods.ves.VES`
     Test ouputfiles from rewriting and generating files , which includes:
     Reference input data are from ERP_DATA_DIR and VES_DATA_DIR
-
-References:
-    .. _module-core::`watex.core`
-    
+   
 @author: @Daniel03
 
 """
@@ -20,7 +17,11 @@ import os
 # import datetime
 import  unittest 
 import pytest
-
+from watex.datasets import (make_erp , make_ves )
+from watex.methods import (ResistivityProfiling, VerticalSounding, 
+                           DCProfiling, DCSounding, MXS, AqSection, 
+                           Logging
+                           )
 from watex.methods.erp import ERP 
 from tests import  ( 
     
@@ -105,7 +106,33 @@ class TestERP(unittest.TestCase):
             self.assertEqual(geoCounter,8, 'Parameters count shoud be'
                              '8 not {0}'.format(geoCounter)) 
             geoCounter =0 
+            
+class TestResistivityProfiling (unittest.TestCase): 
+    
+    constraints = {"S10":'Prohibited site', 
+                   "S50": "Marsh zone", 
+                   "S70": "Heritage site"
+                   }
+    erp_data = make_erp( n_stations =100 , seed =123 , max_rho = 1e5 , min_rho = 1e1)
+    auto_detection = True 
 
+    def test_summary (self ): 
+        
+        # automatic detection 
+        erpobj = ResistivityProfiling(auto= self.auto_detection ).fit(self.erp_data )
+        erpobj_c = ResistivityProfiling(auto=self.auto_detection, constraints=self.constraints
+                                        ).fit(self.erp_data ) 
+        
+        # sstation detection  
+        erpobj_s_c = ResistivityProfiling(station= 'S25', constraints=self.constraints
+                                        ).fit(self.erp_data ) 
+        
+        erpobj_s= ResistivityProfiling(station= 'S25', ).fit(self.erp_data )
+        
+        # get data from table 
+        erpobj.summary() ; erpobj_c.summary() ; erpobj_s.summary(); erpobj_s_c.summary() 
+        
+        
         
 def compare_diff_files(refout, refexp):
     """

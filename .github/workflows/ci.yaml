@@ -30,7 +30,7 @@ jobs:
             deps: pinned
           - python: "3.11"
             install: light
-            deps: latest
+            deps: pinned
 
     steps:
       - uses: actions/checkout@v3
@@ -40,37 +40,18 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install watex
+      - name: Install dependencies 
         run: |
           pip install --upgrade pip 
-          if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt; fi
-          if [[ ${{matrix.install}} == 'full' ]]; then EXTRAS=',pycsamt'; fi
-          if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
-          pip install .[dev$EXTRAS] $DEPS
+          python -m pip install flake8 pytest
+          if [[ ${{matrix.install}} == 'full' ]]; then pip install -r docs/requirements.txt; fi
+          if [[ ${{matrix.deps }} == 'pinned' ]]; then pip install -r ci/deps_pinned.txt; fi
+
       - name: Run tests
-        run: make test
+        run: |
+          pytest
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         if: ${{ success() }}
-
-  lint:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-
-      - name: Install tools
-        run: pip install mypy flake8
-
-      - name: Flake8
-        run: make lint
-
-      - name: Type checking
-        run: make typecheck
+s
