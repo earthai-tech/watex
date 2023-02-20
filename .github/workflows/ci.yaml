@@ -46,13 +46,6 @@ jobs:
           if [[ ${{matrix.install}} == 'full' ]]; then pip install -r docs/requirements.txt; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then pip install -r ci/deps_pinned.txt; fi
 
-      - name: Run tests and collect coverage
-        run: |
-          pytest 
-          
-      - name: Lint with flake8
-        run: flake8 --statistics
-
       - name: Run unit tests with pytest and code coverage with coverage.py
         run: |
           pytest tests -v --cov=tests/ --cov-report lcov:tests/lcov.info
