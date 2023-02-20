@@ -113,7 +113,7 @@ class TestResistivityProfiling (unittest.TestCase):
                    "S50": "Marsh zone", 
                    "S70": "Heritage site"
                    }
-    erp_data = make_erp( n_stations =100 , seed =123 , max_rho = 1e5 , min_rho = 1e1)
+    erp_data = make_erp( n_stations =100 , seed =123 , max_rho = 1e5 , min_rho = 1e1, as_frame =True)
     auto_detection = True 
 
     def test_summary (self ): 
