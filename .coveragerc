@@ -1,9 +1,10 @@
 [run]
+relative_files = True
 branch = True
 source = watex
 parallel = True
 omit =
-    */watex/_watexlog/*
+    */watex/watexlog/*
     */watex/_docstrings/*
     **/setup.py
 exclude_lines =
