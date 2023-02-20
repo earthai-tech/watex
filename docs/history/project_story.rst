@@ -30,7 +30,7 @@ Trigger effect
 Althrough, the desire to enhance the living conditions of the population remains one of my main concerns, the trigger factor 
 that accelerates the design of :code:`watex` was the  Diacohou-Nord project in 2017 ( in the center part of :term:`Cote d’Ivoire`, see Figure 1).  
 The project was specific which purpose was to find the best location for the :term:`drilling` operations expecting to obtain a 
-:term:`flow` rate (:term:`FR`) of :math:`10m^3/hr`( = :term:`RFR`). However, this peculiar area strongly faced with a drinking water shortage 
+:term:`flow` rate (:term:`FR`) of :math:`10m^3/hr` (= :term:`RFR`). However, this peculiar area strongly faced with a drinking water shortage 
 especially during the dry season. The condition such as the topographic/terrain and other constraints were not optimals to get such :term:`FR` thereby worsening the 
 conditions of the living populations. In addition, during our trip to that locality,  from 6 P.M. to 6 A.M. every day, women in the village rush away 
 into the forest for seeking potable water for the households, their husbands, and their children ( Figure 1.a). The water flowing from 
