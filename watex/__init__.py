@@ -7,15 +7,16 @@ import os
 import sys 
 import logging 
 import random
+import warnings 
  
-__version__='0.1.4' ; __author__= 'L.Kouadio'
+__version__='0.1.5' ; __author__= 'L.Kouadio'
 
-# set the package name for consistency ckecker 
+# set the package name for consistency checker 
 sys.path.insert(0, os.path.dirname(__file__))  
 for p in ('.','..' ,'./watex'): 
     sys.path.insert(0,  os.path.abspath(p)) 
     
-# assert packages 
+# assert package 
 if  __package__ is None: 
     sys.path.append( os.path.dirname(__file__))
     __package__ ='watex'
@@ -63,7 +64,7 @@ else:
 #https://github.com/pandas-dev/pandas
 # Let users know if they're missing any of our hard dependencies
 _main_dependencies = ("numpy", "scipy", "sklearn", "matplotlib", 
-                      "pandas","seaborn")
+                      "pandas","seaborn", "openpyxl")
 _missing_dependencies = []
 
 for _dependency in _main_dependencies:
@@ -79,8 +80,11 @@ if _missing_dependencies:  # pragma: no cover
     )
 del _main_dependencies, _dependency, _missing_dependencies
 
-import watex.exlib as sklearn 
-from .exlib.optional import XGBClassifier
+# Suppress pandas future warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings(action='ignore', category=UserWarning)
+    import watex.exlib as sklearn 
+    from .exlib.optional import XGBClassifier
 
 from .analysis import ( 
     nPCA, 

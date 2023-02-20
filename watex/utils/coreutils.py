@@ -1287,7 +1287,7 @@ def erpSmartDetector(
     >>> erpSmartDetector (constr =['s42'], resistivity )
     'S13'
     >>> # S42 is rejected and selected another zone presumed to be better.
-    >>> constraints ={"S00": "Site forddibben foreigers ", 
+    >>> constraints ={"S00": "Marsh area. ", 
                       "S10": " Municipality square, no authorization to make drill",
                       "S29": "Heritage site", 
                       "S46": "Household waste site",
@@ -1320,6 +1320,12 @@ def erpSmartDetector(
         s = int (s[0])
     
     # assert erp 
+    if ( 
+            hasattr (erp, 'columns')  
+            and hasattr(erp, 'resistivity')
+        ) : 
+        erp = erp.resistivity 
+        
     erp = check_y (erp, allow_nan=True, input_name="ERP data ")
     res_arr = np.array (erp).copy() # for consistency 
     # assert constraint values 
@@ -1332,15 +1338,25 @@ def erpSmartDetector(
     constr = list(constr)
     # check the effectiveness of constraints 
     cs = _check_constr_eff (constr, s, station)
-    # if constraints is not applicable 
+    # if constraints is not applicable
+    # list of stations to  remove if out of the range 
+    out_cs =list()  
     if cs is not None:
         for ix in cs: 
-            if ix > len(erp): 
-                warnings.warn(f"Station position {ix} is ignored. Position"
-                              f" number {ix} is out range of the number"
-                              f" of survey stations={len(erp)}.")
+            if ix >= len(erp): 
+                if raise_warn: 
+                    warnings.warn(f"Station position {ix} is ignored. Position"
+                                  f" number {ix} is out range of station number"
+                                  " range. By default station numbering starts"
+                                  f" from 'S00'--> 'S{len(erp)-1:02}`."
+                                  )
+                out_cs.append(ix )
+                continue 
             res_arr = _nan_constr(ix, res_arr)
-
+    #------------
+    if len(out_cs)!=0: [cs.remove (it) for it in out_cs]  
+    cs = None if ( hasattr (cs, '__len__')  and len(cs)==0 ) else cs 
+    #-------------
     if np.isnan (res_arr).all(): 
         if raise_warn:
             warnings.warn(constr_msg)
@@ -1356,19 +1372,29 @@ def erpSmartDetector(
         station = f'S{pos:02}'
         
     if np.isnan (cz).any(): 
-        warnings.warn(f"Please, do not take a risk by considering the station"
-                      f" {station!r} for drilling operations. It seems close"
-                      " to a restricted station. You may leave this station"
-                      " and carry out another ERP line far from this site."
-                      " Force considering this station with DC-parameters"
-                      " resulting with is your own risk.") 
+        warnings.warn(f"{station!r} seems close to a restricted area."
+                      " It is recommended to not take a risk by considering"
+                      f" {station} for drilling operations. You may leave"
+                      " this station and carry out another ERP line far away"
+                      f" this site. Force considering {station} with its "
+                      " resulting DC-parameters is your own risk.") 
 
-    if view and cs is not None: 
-        ax = plotAnomaly(erp, station= station, cz = cz, **plot_kws) 
-        ax.scatter (cs, erp [cs ], marker="s", s=70, 
-                        color = 'red', alpha = .5, 
-                    label=f"Restricted station{'s' if len(cs)>1 else ''}")
-        ax.legend ()
+    if view: 
+        if cs is not None: 
+            ax = plotAnomaly(erp, station= station, cz = cz, **plot_kws) 
+            ax.scatter (cs, erp [cs ], marker="s", s=70, 
+                            color = 'red', alpha = .5, 
+                        label=f"Restricted station{'s' if len(cs)>1 else ''}")
+            ax.legend ()
+            plt.show() 
+        else: 
+            imsg = ( f"{smft([f'S{i:02}' for i in out_cs])} are not valid"
+                    " restricted areas. " if len(out_cs)!=0 else ''
+                    )
+            if raise_warn: 
+                warnings.warn(f"{imsg}Visualization cannot be possible with no"
+                              " constraints. Use `watex.plotAnomaly()` instead."
+                              )
 
     return (station, cz , cs) if return_cz else station 
     

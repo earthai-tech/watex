@@ -388,7 +388,7 @@ Functions
 	methods.em.Processing.skew 
 	methods.em.Processing.zrestore 
 	methods.em.Processing.freqInterpolation 
-	methods.em.Processing.controlFrequencyBuffer 	
+	methods.em.Processing.controlFrequencyBuffer 
 	methods.em.Processing.qc 
 	methods.em.Processing.getValidTensors 
 
@@ -503,7 +503,6 @@ Functions
    property.ElectricalMethods
    property.Copyright
    property.IsEdi
-   property.Copyright
    property.P
    property.Person
    property.References

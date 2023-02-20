@@ -1,0 +1,30 @@
+v0.1.5 (February 16, 2023)
+----------------------------
+
+This is a minor change performed since ``v0.1.4`` and bug fixes for issues identified. 
+
+Adaptations and Features 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Extend the article content to take the full-width in the `Home Page <https://watex.readthedocs.io/en/latest/index.html>`__ 
+  (`Issue #144 <https://github.com/pydata/pydata-sphinx-theme/issues/1144>`__ ). Credit to 
+  `Vincent Rouvreau <https://github.com/VincentRouvreau>`__ to workaround this issue by providing the script to 
+  handle this. 
+- Add the project story and a simple testimonial to test the efficiency of the software in predicting the :term:`flow` during the 
+  a :term:`drilling` operation performed in Tankesse area (see :func:`watex.datasets.load_tankesse`).  
+
+- Polishing the :ref:`methods <methods>` page of the documentation and fixing some typos. 
+
+- Add the :doc:`release notes <whatsnew/index>` for displaying the project historical changes. 
+
+- Add the electronic :doc:`citations <citing>` from submitted papers in `Engineering Geology <https://www.sciencedirect.com/journal/engineering-geology>`__ for MXS (:class:`watex.methods.MXS`) and 
+  the software submission in `SoftwareX <https://www.sciencedirect.com/journal/softwarex>`__ journal.  
+ 
+- Add the :doc:`project story <history/project_story>`  and move the :doc:`project mission and goals <history/project_goals>` into 
+  a single folder called :doc:`history <history/index>`. 
+ 
+- Add new page named :doc:`five-minutes <../history/five_min_understanding>` for undertanding. This seems useful for an ease of comprehension of non-specialized readers/users about the :term:`geophysical` 
+  :term:`DC` methods. 
+
+ 
+

@@ -2,14 +2,15 @@
 
 -----------------------------------------------------
 
-# *WATex*: machine learning research in hydro-geophysics
+# *WATex*: machine learning research in water exploration
 
 ### *Life is much better with potable water*
 
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
- ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&style=flat-square)
-  ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/WEgeophysics/watex?logo=appveyor) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
-  ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/WEgeophysics/watex?logo=python)
+ ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&logo=Github&logoColor=blue&style=flat-square)
+ ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/WEgeophysics/watex?logo=appveyor)
+ [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
+ ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/WEgeophysics/watex?color=blue&include_prereleases&logo=python)
 
 
 ##  Overview
@@ -33,7 +34,8 @@ engineering problems such as computing DC parameters and predicting the k-parame
 
 ## Demo of the drilling location auto-detection 
 
-For this example, we randomly generate 50 stations with DC-resistivity ```min/min =1e1/1e4`` ohm.m as 
+For this example, we randomly generate 50 stations of synthetic ERP resistivity data with ``minimum`` and ``maximum ``
+resistivity values equal to  ``1e1`` and ``1e4`` ohm.m  respectively as:
 
 ```python 
 import watex as wx 
@@ -59,17 +61,17 @@ The suitable drilling location is proposed at station ``S25`` (stored in the att
 The constraints refer to the restrictions observed in the survey area during the DWSC. This is common
 in real-world exploration. For instance, a station close to a heritage site should be discarded 
 since no drilling operations are authorized at that place. When many restrictions 
-are enumerated in the survey site, they must be listed in a dictionary with a reason and passe to the parameter 
+are enumerated in the survey site, they must be listed in a dictionary with a reason and passed to the parameter 
 ``constraints`` so these stations should be ignored during the automatic detection. Here is an example of constraints
 application to our example.
 
 ```python 
 restrictions = {
-    'S10': 'sacred village site, no authorization',
-    'S20': ' Municipality site, no authorization to make drill',
+    'S10': 'Household waste site, avoid contamination',
+    'S27': 'Municipality site, no authorization to make a drill',
     'S29': 'Heritage site, drilling prohibited',
-    'S46': 'Household waste site, avoid contamination',
-    'S42': 'Anthropic polluted place, avoid contamination within a few years'
+    'S42': 'Anthropic polluted place, avoid contamination within a few years',
+    'S46': 'Marsh zone, borehole will dry up during the dry season'
  }
 robj=wx.ResistivityProfiling (constraints= restrictions, auto=True ).fit(data ) 
 robj.sves_

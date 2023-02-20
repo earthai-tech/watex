@@ -73,7 +73,6 @@ extensions = [
     'sphinx_design',
     'matplotlib.sphinxext.plot_directive',
     'sphinx_issues',
-    'sphinx_panels', 
 
 ]
 
@@ -147,6 +146,19 @@ rst_epilog = """
 .. |EM| replace:: electromagnetic
 .. |EMAP| replace:: |EM| array profiling
 
+.. |Open Source? Yes!| image:: https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github
+   :target: https://github.com/WEgeophysics/watex
+   
+.. |License BSD| image:: https://img.shields.io/github/license/WEgeophysics/watex?color=b&label=License&logo=github&logoColor=blue
+   :alt: GitHub
+   :target: https://github.com/WEgeophysics/watex/blob/master/LICENSE
+   
+.. |simpleicons git| image:: https://img.shields.io/badge/--F05032?logo=git&logoColor=ffffff
+   :target: http://git-scm.com 
+   
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg
+   :target: https://doi.org/10.5281/zenodo.7553789
+   
 """ 
 # noqa
 
@@ -237,7 +249,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'wATexdoc'
+htmlhelp_basename = 'WATexdoc'
     
 intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
@@ -251,9 +263,16 @@ intersphinx_mapping = {
     "mtpy": ("https://mtpy.readthedocs.io/en/master/", None)
 }
 
+
+# ----Options to enable or disable pdf/epub 
+sphinx_enable_pdf_build =False
+sphinx_enable_epub_build=False 
+
 # -- Options for LaTeX output -------------------------------------------------
 
-# latex_engine = 'xelatex'
+# create a custom sphinx output for the youtube and vimeo video
+
+#latex_engine = 'xelatex'
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
@@ -265,25 +284,47 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #
-    # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
     "preamble": r"""
+        \usepackage{svg}
+        \includesvg[width=\textwidth]{p}
         \usepackage{amsmath}\usepackage{amsfonts}\usepackage{bm}
         \usepackage{morefloats}\usepackage{enumitem} \setlistdepth{10}
         \let\oldhref\href
         \renewcommand{\href}[2]{\oldhref{#1}{\hbox{#2}}}
         """
 }
+
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 # latex_documents = [
-#     (master_doc, 'WATex.tex', u'WATex Documentation',
-#      u'L. Kouadio', 'manual'),
+#       (master_doc, 'watex.tex', u'Machine learning in watex exploration',
+#       u'L. Kouadio', 'manual'),
 # ]
+latex_documents = [
+    (
+        master_doc,
+        "user_guide.tex",
+        "watex user guide",
+        u"L. Kouadio",
+        "manual",
+    ),
+]
+
+# The name of an image file (relative to this directory) to place at the top of
+# the title page.
+# latex_logo = "_static/watex_latex_logo.png"
+
+# Documents to append as an appendix to all manuals.
+# latex_appendices = []
+
+# If false, no module index is generated.
+# latex_domain_indices = False
+
+# trim_doctests_flags = True
 
 # -- Options for manual page output ------------------------------------------
 
@@ -302,20 +343,17 @@ man_pages = [
 
 texinfo_documents = [
     (master_doc, 'WATex', u'WATex Documentation',
-      author, 'watex', 'ML research in hydro-geophysics',
+      author, 'watex', 'Machine learning in water exploration',
       'Miscellaneous'),
 ]
 
-
 def setup(app):
     # run  apidoc 
-    app.connect('builder-inited', make_wx_apidoc
-    )
-    
+    app.connect('builder-inited', make_wx_apidoc)
     # do not run the examples when using linkcheck by using a small priority
     # (default priority is 500 and sphinx-gallery using builder-inited event too)
-    # app.connect("builder-inited", disable_plot_gallery_for_linkcheck, priority=50)
-    #app.add_js_file('copybutton.js')
+    app.connect("builder-inited", disable_plot_gallery_for_linkcheck, priority=100)
+    app.add_js_file('copybutton.js')
     app.add_css_file('css/custom.css')
     # to hide/show the prompt in code examples:
     app.connect("build-finished", filter_search_index)
@@ -341,17 +379,17 @@ epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration --------------------------------------------------
-MOCK_MODULES = [
-    'osgeo',
-    'osgeo.ogr',
-    'osgeo.gdal',
-    'osgeo.osr',
-    'tests',
-]
-import mock
+# MOCK_MODULES = [
+#     'osgeo',
+#     'osgeo.ogr',
+#     'osgeo.gdal',
+#     'osgeo.osr',
+#     'tests',
+# ]
+# import mock
 
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+# for mod_name in MOCK_MODULES:
+#     sys.modules[mod_name] = mock.Mock()
 # xxxxxxxxxxxxxxxxxxxxxxx   Element functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 def make_wx_apidoc(_):

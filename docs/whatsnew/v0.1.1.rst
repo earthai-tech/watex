@@ -1,0 +1,48 @@
+
+v0.1.1 (June 3, 2022)
+------------------------
+
+This is a minor release with some bug fixes and adaptations to changes in watex :ref:`dependencies <dependencies>`. There are 
+also several new features. This release is the beginning of writing the project to fit the common open-source library design in the 
+literature. The release ``v0.1.1`` can be considered as the starting point of the :code:`watex` project design. 
+
+New features
+~~~~~~~~~~~~
+- Implement a single reducers ``Reducers`` class focused on the unsupervised methods dimensionality reduction ( ``PCA``, ``kPCA``, ``LLE``
+  and ``iPCA``). 
+
+- Improve the transformer module (:mod:`watex.transformers`) by adding the :class:`watex.transformers.StratifiedUsingBaseCategory` for 
+  auto-category stratification. 
+
+- Improved the :class:`watex.cases.BaseSteps` by adding the default pipeline :func:`watex.cases.prepare.default_pipeline`
+  for processing the data out of the class in any other datasets.
+  
+- Rewritten the :mod:`watex.cases` module  to be a boilerplate module for any kind of dataset that objective is to predict 
+  the :term:`groundwater` :term:`flow` rate from the dedicated predictor [:term:`X` and :term:`y`]. 
+  
+- Designed the :mod:`watex.methods.electrical` module to supplement the :mod:`watex.methods.erp` module that is purely focused on the 
+  auto-detection. The new module :mod:`watex.methods.electrical` is meaningful, efficient, and complete by henceforth implementing the constraints 
+  which are mostly encountered during the :term:`CDWS` project and affected the drilling location positioning. An example of 
+  constraints can be found in the :term:`Case-history in Bagoue-region` paper. 
+  
+
+Bug fixes and adaptations
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Hashed the train and test split using the id methods  to avoid  an error when singular data is 
+  passed to :meth:`BaseSteps.stratifydata`, issuing a warning instead. 
+
+- Fixed a bug where values would be excluded from categorical plots from :class:`watex.view.EvalPlot` when only :term:`y` was 
+  a pandas ``Series`` with a non-default index.
+
+- Fixed a bug when passing a ``norm`` object and using color annotations in the ``pobj`` alias of :class:`watex.property.BasePlot`.
+
+- Fixed a bug where data were not rearranged to match the :term:`X` data in :func:`watex.cases.prepare.base_transform`.
+
+- Standardized the output format of custom color palette functions.
+
+- Fixed a bug where legends for numerical variables in a relational plot could show a surprisingly large number of decimal places.
+
+- Improved robustness to missing values in :class:`watex.view.QuickPlot` distribution plots.
+
+

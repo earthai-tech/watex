@@ -7,8 +7,14 @@ html[data-theme=light]{
   --pst-color-link: rgb(74, 105, 145);
   --pst-color-inline-code: rgb(247, 147, 30); 
 }
+/* try to article to take the full width  */
+.bd-main .bd-content .bd-article-container {
+    max-width: 100%;
+}
+.bd-page-width{
+    max-width:100%;
+}
 /* Anchor links */
-
 a.headerlink {
   color: #c60f0f;
   font-size: 0.8em;

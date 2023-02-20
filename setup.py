@@ -7,23 +7,25 @@ try:
     from setuptools import setup  
 except ImportError:
     setuptools = False
-    from distutils.core import setup
+    #from distutils.core import setup
 else:
     setuptools = True
     
-with open(os.path.join(os.path.abspath('.'), 'README.md'), 'r') as fm:
+with open(os.path.join(os.path.abspath('.'), 'README.md'), 'r', encoding ='utf8') as fm:
     LONG_DESCRIPTION =fm.read()
 
 setup_kwargs = {}
-setup_kwargs['entry_points'] = {
-    'watex.commands': [
-        'say-hello=mypkg.watex_cli:cli',
-        ],
-    'console_scripts':[
-             # 'occambuildinputs=watex.cli.occambuildinputs:main'
-                     ]
-     }
-                     
+
+# commands
+# setup_kwargs['entry_points'] = {
+#     'watex.commands': [
+#         'welcome-hello=watex.watex_cli:cli',
+#         ],
+#     'console_scripts':[
+#               # 'occambuildinputs=watex.cli.occambuildinputs:main'
+#                       ]
+#       }
+setup_kwargs['entry_points'] = {}                
 # But many people will not have setuptools installed, so we need to handle
 # the default Python installation, which only has Distutils:
 if setuptools is False:
@@ -52,44 +54,48 @@ setup_kwargs['packages'] = [
 # force install watex. Once watex is installed , pyyaml and pyproj 
 # should already installed too. 
 setup_kwargs['install_requires'] = [
-    'numpy>=1.8.1',
-    'scipy>=0.14.0',
-    'matplotlib',
-    'mtpy >=1.1.0',
-    'threadpoolctl >= 2.0.0', 
-    'pyyaml',
-    'pyproj',
-    'configparser', 
-    'tqdm', 
-    'pycsamt' 
-    'autoapi' 
-    'xgboost'
-    'click' 
-    'missingno'
-    'pandas_profiling' 
-    'pyjanitor' 
-    'openpyxl'
+    "scikit-learn>=1.1.2",
+    "xgboost>=1.5.0",
+    "seaborn>=0.12.0",
+    "pyyaml>=5.0.0",
+    "pycsamt>=1.0.0",
+    "pyproj>=3.3.0",
+    "joblib>=3.5.0",
+    "openpyxl>=3.0.3",
+    "h5py>=3.2.0",
+    "tables>=3.6.0",
+    "numpy>=1.23.0",
+    "scipy>=1.9.0",
+    "pandas>=1.4.0",
+    "matplotlib>=3.3.0",
+    "missingno>=1.1.2",
+    "pandas_profiling>=0.1.7",
+    "pyjanitor>=0.1.7",
+    "yellowbrick>=1.5.0",
+    "mlxtend>=0.21",
+    "tqdm>=4.64.1",
  ]
                                      
-setup_kwargs['python_requires'] ='>=3.8'
+setup_kwargs['python_requires'] ='>=3.9'
 
+# def setup_package(): 
 setup(
  	name="watex",
  	version=watex.__version__,
- 	author="Kouadio K. Laurent",
+ 	author="Laurent Kouadio",
     author_email='etanoyau@gmail.com',
-    maintainer="Kouadio K. Laurent",
+    maintainer="Laurent Kouadio",
     maintainer_email='etanoyau@gmail.com',
- 	description="A machine learning research package for Hydrogeophysic",
+ 	description="Machine learning research in water exploration",
  	long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     url="https://github.com/WEgeophysics/watex",
     project_urls={
-        "API Documentation"  : "https://watex.readthedocs.io/en/latest/api/watex.html",
-        "Home page" : "https://github.com/WEgeophysics/watex/wiki",
+        "API Documentation"  : "https://watex.readthedocs.io/en/latest/api_references.html",
+        "Home page" : "https://watex.readthedocs.io",
         "Bugs tracker": "https://github.com/WEgeophysics/watex/issues",
-        "Installation guide" : "https://github.com/WEgeophysics/watex/wiki/watex-installation-guide-for-Windows--and-Linux", 
-        #"User guide" : "https://github.com/WEgeophysics/watex/blob/develop/docs/watex%20User%20Guide.pdf",
+        "Installation guide" : "https://watex.readthedocs.io/en/latest/installation.html", 
+        "User guide" : "https://watex.readthedocs.io/en/latest/user_guide.html",
         },
  	include_package_data=True,
  	license="BSD 3-Clause LICENCE v3",
@@ -102,7 +108,6 @@ setup(
         'Topic :: Scientific/Engineering :: Geophysics',
         'Topic :: Scientific/Engineering :: Geosciences',
         'Programming Language :: C ',
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
@@ -136,6 +141,9 @@ setup(
     
  	**setup_kwargs
 )
+
+# if __name__ == "__main__":
+#     setup_package()
 
 
 

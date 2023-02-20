@@ -50,8 +50,8 @@ def _get_deps_info():
         "pandas",
         "matplotlib",
         "joblib",
-        "threadpoolctl"
         "seaborn",
+        "openpyxl", 
     ]
 
     deps_info = {
@@ -90,15 +90,14 @@ def show_versions():
     #         k="Built with OpenMP", stat=_openmp_parallelism_enabled()
     #     )
     # )
+    threadpoolctl_results = threadpool_info()
+    
+    if threadpoolctl_results:
+       print()
+       print("threadpoolctl info:")
 
-    # show threadpoolctl results
-    threadpool_results = threadpool_info()
-    if threadpool_results:
-        print()
-        print("threadpoolctl info:")
-
-        for i, result in enumerate(threadpool_results):
-            for key, val in result.items():
-                print(f"{key:>15}: {val}")
-            if i != len(threadpool_results) - 1:
-                print()
+       for i, result in enumerate(threadpoolctl_results):
+           for key, val in result.items():
+               print(f"{key:>15}: {val}")
+           if i != len(threadpoolctl_results) - 1:
+               print()

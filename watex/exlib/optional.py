@@ -16,7 +16,7 @@ xgboostdoc = type ('xgboostdoc', (), dict (
     
     XgBoost, which was proposed by the researchers at the University of 
     Washington. It is a library written in C++ which optimizes the training for 
-    Gradient  Boosting. Before understanding the XGBoost, we first need to 
+    Gradient  Boosting [1]_. Before understanding the XGBoost, we first need to 
     understand the trees especially the decision tree. 
     
     Indeed , a Decision tree(DT) is a flowchart-like tree structure, where 
@@ -26,7 +26,7 @@ xgboostdoc = type ('xgboostdoc', (), dict (
     based on an attribute value test. This process is repeated on each derived 
     subset in a recursive manner called recursive partitioning. The recursion 
     is completed when the subset at a node all has the same value of the target 
-    variable, or when splitting no longer adds value to the predictions.
+    variable, or when splitting no longer adds value to the predictions [2]_.
     
     References 
     -----------
@@ -48,11 +48,11 @@ extra =("'xgboost' is one the pretrained models stored in the watex package"
 import_optional_dependency ("xgboost", extra=extra, min_version="1.2.0" ) 
 try : 
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+        warnings.filterwarnings("ignore", category =FutureWarning)
         import xgboost 
 except ( ImportError, ModuleNotFoundError ): 
     warnings.warn("Missing Gradient Boosting Machine <'xgboost'> module"
-         "Use pip or conda for its installation.")
+         " Use pip or conda for its installation.")
 else :IS_GBM =True 
  
 if IS_GBM: 

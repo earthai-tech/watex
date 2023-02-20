@@ -27,7 +27,7 @@ of Python and the most popular scientific libraries.
 
 .. prompt:: bash $
 	
-	$ python 3.9 
+	python 3.9 
 
 It is possible to install :code:`watex` from source, using anaconda prompt or GUI . 
 
@@ -59,7 +59,7 @@ and install dependencies( see example below). Note the <`venv`>  can be any envi
 
 	conda create -n venv python=3.9
 	conda activate venv
-	pip install scikit-learn xgboost seaborn pyyaml pyproj joblib 
+	pip install scikit-learn xgboost seaborn pyyaml pyproj joblib openpyxl
 	
 Some dependencies come with others and we dont need to install the full :ref:`hard-dependencies <dependencies>` to take 
 advantage of the basic implementation. However for consistency, you can install the full hard-dependencies like 
@@ -208,7 +208,7 @@ For quickstart with :code:`watex`, the following import strategy is suggested::
 There are two ways to import modules, classes, or functions from :code:`~watex`, the shorthand, and the complete import strategies. For instance, 
 to get the list of seven geological structures and structural pieces of information, we can use: 
 
-*  shorthand import strategy: `wx`  
+*  shorthand import strategy: ``wx``  
  
 .. code-block:: python 
 
@@ -242,13 +242,13 @@ to get the list of seven geological structures and structural pieces of informat
 	'Boudin Axis'
 
 	
-* complete-import strategy: `from watex.~`	
+* complete-import strategy: ``from watex.~``	
 
 .. code-block:: 
 
 	>>> from watex.geology import Structures
 	>>> geo_structure = Structures().fit()
-	>>> geo_structure.names_ 
+	>>> geo_structure.names_[:7] 
 	('argillite',
 	 'alluvium',
 	 'amphibolite',
@@ -277,5 +277,5 @@ based on the documentation. The class, functions, and modules presumed to be the
 are displayed as public API. To more-in depth implementation, used the `complete-import strategy` instead. 
 	
 For more about the core and the data structure, visit the  :ref:`structure <structure>` page. However, for any issue or contributing to the 
-software development, please check the :ref:`development guide <development>`.
+software development, please check the :doc:`development guide <development>`.
 
