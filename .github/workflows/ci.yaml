@@ -34,7 +34,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
       - name: Setup Python ${{ matrix.python }}
         uses: actions/setup-python@v4
         with:
@@ -50,12 +49,6 @@ jobs:
       - name: Run tests and collect coverage
         run: |
           pytest 
-      
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.repo_token }}
-          parallel: true
         
       - name: Upload coverage
         uses: codecov/codecov-action@v3
