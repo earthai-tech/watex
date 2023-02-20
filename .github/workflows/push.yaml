@@ -4,12 +4,17 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.9"]
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
 
     - name: Unit tests
-      run: make test PYTHON_WITH_VERSION=python3
+      run: |
+        pytest
 
     - name: Default arguments
       uses: ./
