@@ -549,7 +549,7 @@ class MXS (HData):
             raise AquiferGroupError (
                 "y_pred for Naive Group of Aquifer (NGA) cannot be "
                 " None. Use :meth:`~predictNGA` method or"
-                " :func:~.watex.utils.predict_NGA_labels` to"
+                " :func:`~.watex.utils.predict_NGA_labels` to"
                 " predict NGA labels first."
                  )
         

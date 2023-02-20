@@ -219,21 +219,30 @@ soundings performed with the prefix '`SE`' is 4.
 """ 
 def load_hlogs (
         *,  return_X_y=False, as_frame =False, key =None,  split_X_y=False, 
-        test_size =.3 , tag =None, tnames = None , data_names=None , **kws
-        ): 
-
+        test_size =.3 , tag =None, tnames = None , data_names=None, 
+        **kws): 
+    
+    drop_observations =kws.pop("drop_observations", False)
+    
     cf = as_frame 
     key = key or 'h502' 
     # assertion error if key does not exist. 
+    available_sets = {"h502", "h2601"}
     msg = (f"key {key!r} does not exist yet, expect 'h502' or 'h2601'")
-    assert str(key).lower() in {"h502", "h2601"}, msg
+    assert str(key).lower() in {"h502", "h2601", "*"}, msg
     
     data_file ='h.h5'
     with resources.path (DMODULE , data_file) as p : 
         data_file = p 
-
-    data = pd.read_hdf(data_file, key = key)
-
+    if key =='*': 
+        data =  pd.concat( [ pd.read_hdf(data_file, key = k) 
+                            for k in available_sets ]) 
+    else:
+        data = pd.read_hdf(data_file, key = key)
+        
+    if drop_observations: 
+        data.drop (columns = "remark", inplace = True )
+        
     frame = None
     feature_names = list(data.columns [:12] ) 
     target_columns = list(data.columns [12:])
@@ -330,7 +339,12 @@ tnames: str, optional
     fetching the same data uing the func:`~watex.data.fetch_data` since the 
     latter already holds `tag` and `data_names` as parameters. 
 key: str, default='h502'
-    Kind of logging data to fetch. Can also be the borehole ["h2601"]
+    Kind of logging data to fetch. Can also be the borehole ["h2601", "*"]. 
+    If ``key='*'``, all the data is aggregated on a single frame of borehole. 
+    .. versionadded:: 0.1.5
+drop_observations: bool, default='False'
+    Drop the ``remark`` column in the logging data if set to ``True``.  
+    .. versionadded:: 0.1.5
     
 Returns
 ---------
@@ -348,18 +362,18 @@ data : :class:`~watex.utils.Boxspace`
     frame: DataFrame 
         Only present when `as_frame=True`. DataFrame with `data` and
         `target`.
-        .. versionadded:: 0.1
+        .. versionadded:: 0.1.1
     DESCR: str
         The full description of the dataset.
     filename: str
         The path to the location of the data.
-        .. versionadded:: 0.1
+        .. versionadded:: 0.1.2
 data, target: tuple if ``return_X_y`` is True
     A tuple of two ndarray. The first containing a 2D array of shape
     (n_samples, n_features) with each row representing one sample and
     each column representing the features. The second ndarray of shape
     (n_samples,) containing the target samples.
-    .. versionadded:: 0.1
+    .. versionadded:: 0.1.2
 X, Xt, y, yt: Tuple if ``split_X_y`` is True 
     A tuple of two ndarray (X, Xt). The first containing a 2D array of:
         
