@@ -11,9 +11,8 @@
  ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/WEgeophysics/watex?logo=appveyor)
  ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/WEgeophysics/watex/ci.yaml)
  [![Coverage Status](https://coveralls.io/repos/github/WEgeophysics/watex/badge.svg?branch=master)](https://coveralls.io/github/WEgeophysics/watex?branch=master)
- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
  ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/WEgeophysics/watex?color=blue&include_prereleases&logo=python)
-
+ [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
 
 ##  Overview
 
