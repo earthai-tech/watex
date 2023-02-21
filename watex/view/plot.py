@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #   Licence:BSD 3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-#   Create data: Wed Jul  7 22:23:02 2021 hz
 
 """
 Plot templates 

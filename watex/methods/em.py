@@ -490,6 +490,15 @@ class EM(IsEdi):
         >>> emObjs = EM().fit(edipath)
         >>> emObjs.rewrite_edis(by='id', edi_prefix ='b1',
                                 savepath =savepath)
+        >>> # 
+        >>> # second example to write 7 samples of edi from 
+        >>> # Edi objects inner datasets 
+        >>> #
+        >>> import watex as wx 
+        >>> edi_sample = wx.fetch_data ('edis', key ='edi', 
+                                        samples =7, return_data =True ) 
+        >>> emobj = wx.EM ().fit(edi_sample)
+        >>> emobj.rewrite(by='station', prefix='PS')
         
         """
         def replace_reflatlon (  olist , nval, kind ='reflat'):
@@ -575,8 +584,8 @@ class EM(IsEdi):
         # clean the old main Edi section info and 
         # and get the new values
         if correct_ll or make_coords:
-            londms,*_ = scalePosition(self.longitude, todms=True)
-            latdms,*_ = scalePosition(self.latitude, todms=True)
+            londms,*_ = scalePosition(self.longitude)
+            latdms,*_ = scalePosition(self.latitude) 
 
         # collect new ediObjs 
         cobjs = np.zeros_like (self.ediObjs_, dtype=object ) 

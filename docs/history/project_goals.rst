@@ -22,24 +22,24 @@ Mission
     and difficult to collect thereby creating a huge loss for funders, geophysical and drilling ventures.
     
     :code:`watex` henceforth works around these issues by bringing  efficient algorithms and smart approaches 
-    to solve these issues such as the recovery EM tensors, the automatic location detection for drilling operations, 
-    the prediction of flow rate, and the mixture learning strategy using machine learning.
+    such as the recovery EM tensors, the automatic location detection for drilling operations, 
+    the prediction of flow rate, and the :term:`mixture learning strategy` using :term:`machine learning` ...
 
 - to facilitate the reproducibility of some published papers results related to :term:`GWE` which codes are 
   not available in the literature, to help the academicians of geosciences community, and non-dedicated users who have no-more in-depth 
   skills in programming.
   
   - Indeed, one of the major problems encountered in the scientific research world is the code availability for reproducing works. 
-    Some journals tried their best by recommending that authors must share their codes to make their work reproducible by their party. 
-    Unfortunately, some of the resource codes, once the paper is published are some-no more available. Sometimes the link referring 
-    to the downloading the codes does no more exists or is broken. This habit seems not worthy thereby making it difficult for 
-    the user and academicians to achieve the same results, especially for those in lack skill in programming. :code:`watex` tries to remedy 
+    Some journals tried their best by recommending that authors must share their codes to make their work reproducible by third-party. 
+    Unfortunately, some of the resource codes, once the paper is published are no more available. Sometimes the link referring 
+    to codes source does no more exist or is broken. This habit seems not worthy thereby making it difficult for 
+    the user and academicians to achieve the same results, especially for new-comers in programming. :code:`watex` tries to remedy 
     this issue, especially related to :term:`GWE` by reproducing the results from the paper himself and making the code available for all. 
  
     It invites geosciences developers to adhere to the project by sharing their codes or reproducing published papers related 
-    to groundwater exploration in this platform to make together the world better and scientific progress. 
+    to :term:`groundwater exploration` in this platform to make together the world better and scientific progress. 
 
-    See the :ref:`development guide <development>` for sharing your code or reproduced published papers and making it available for the geosciences 
+    See the :doc:`development guide <../development>` for sharing your code or reproduced published papers and making it available for the geosciences 
     community following the software API.  
  
 	

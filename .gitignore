@@ -199,4 +199,5 @@ git-mycompany-com.pem
 watex/wlogfiles
 watex/_wlogfiles/
 .github/
+tests/temp/
 
