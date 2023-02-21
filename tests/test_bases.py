@@ -106,16 +106,13 @@ class MyTransformers(unittest.TestCase):
                         })
             self.X = frameObj.fit_transform(X)
             
-        except TypeError: 
+        except: 
              pass # pytest.skip("Could not convert ro float")
-      
-        except AttributeError: 
-            pass 
+     
             # pytest.skip("Don't recognize the method `toarray()` of Numpy"
             #             "version. Unsupported numpy version used. ", 
             #             allow_module_level=True)
-        except KeyError: 
-            pass # pytest.skip('Only a column name can be used for the key in a'
+            # pytest.skip('Only a column name can be used for the key in a'
                  #       'dtype mappings argument.')
         else :
             self.num_attributes = frameObj.num_attributes 

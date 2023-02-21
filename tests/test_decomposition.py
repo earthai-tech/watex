@@ -5,11 +5,9 @@ Created on Fri Oct 14 17:32:49 2022
 @author: Daniel
 """
 
-import os
+
 # import datetime
 import  unittest 
-# import pytest
-from pprint import pprint 
 
 import numpy as np 
 from watex.exlib.sklearn import SimpleImputer, LogisticRegression 
