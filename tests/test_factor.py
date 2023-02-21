@@ -25,8 +25,4 @@ class TestFactor (unittest.TestCase) :
         
                 
 if __name__=='__main__': 
-    
-    # TestFactor().test_make_make_scedastic_data()
-    # TestFactor().test_shrunk_cov_score() 
-    # TestFactor().test_pcavsfa() 
     unittest.main()
