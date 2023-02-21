@@ -48,7 +48,7 @@ jobs:
 
       - name: Run unit tests with pytest and code coverage with coverage.py
         run: |
-          pytest tests -v --cov=tests/ --omit==*/__init__.py --cov-report lcov:tests/lcov.info 
+          pytest tests -v --cov=tests/ --cov-config=.coveragerc --cov-report lcov:tests/lcov.info --cov-fail-under=60
 
       - name: Upload Coverage Results
         uses: coverallsapp/github-action@master
