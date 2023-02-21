@@ -13,6 +13,7 @@ Description:
 
 """
 import os
+import copy 
 import pandas as pd 
 import  unittest 
 from watex.utils import naive_imputer
@@ -167,7 +168,7 @@ class TestEM (unittest.TestCase):
         
     def test_rewrite (self): 
         # rewrite EDI with 7 seven of edi from a clone edi_class 
-        import copy 
+
         edi_sample = self.edi_data [:7]  
         self.emobj_cloned = copy.deepcopy(self.emobj)
         self.emobj_cloned.fit(edi_sample )
