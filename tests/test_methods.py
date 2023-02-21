@@ -39,8 +39,6 @@ from tests import  (
 from tests import erp_test_location_name 
 from tests.__init__ import reset_matplotlib, watexlog, diff_files
 
-#*** Get the data **** 
-HDATA = load_hlogs(key ='*', drop_observations =True ).frame 
 
 class TestERP(unittest.TestCase):
     """
@@ -176,6 +174,9 @@ class TestElectrical (unittest.TestCase):
 class TestHydro (unittest.TestCase ): 
     """ Test Hydrogeological module"""
     
+    #*** Get the data **** 
+    HDATA = load_hlogs(key ='*', drop_observations =True ).frame 
+    
     @classmethod 
     def setUpClass(cls):
         """
@@ -210,7 +211,7 @@ class TestHydro (unittest.TestCase ):
         
     def test_label_similarity (self ): 
         # refit the data 
-        mxs = MXS (kname ='k', aqname ='aquifer_group').fit(self.hdata)
+        mxs = MXS (kname ='k', aqname ='aquifer_group').fit(self.HDATA)
         sim = mxs.labelSimilarity() 
         
         print("label similarity groups=", sim )
@@ -218,13 +219,13 @@ class TestHydro (unittest.TestCase ):
 
     def test_AqGroup (self): 
         """ Test aquifer Group sections """
-        hg = AqGroup (kname ='k', aqname='aquifer_group').fit(HDATA ) 
+        hg = AqGroup (kname ='k', aqname='aquifer_group').fit(self.HDATA ) 
         print( hg.findGroups () ) 
         
     def test_AqSection (self): 
         """ Compute the section of aquifer"""
         section = AqSection (aqname ='aquifer_group', kname ='k',
-                         zname ='depth_top').fit(HDATA) 
+                         zname ='depth_top').fit(self.HDATA) 
         self.assertEqual(len(section.findSection ()) , 2) 
         
         
@@ -232,7 +233,7 @@ class TestHydro (unittest.TestCase ):
         
         h = load_hlogs(key ='h2601') 
         log = Logging(kname ='k', zname='depth_top' ).fit(
-        h.frame[h.feature_names])
+                h.frame[h.feature_names])
         log.plot() 
         
 class TestEM (unittest.TestCase): 
@@ -240,6 +241,22 @@ class TestEM (unittest.TestCase):
     edi_data = load_edis (key='edi' , return_data =True  )
     emobj = EM ().fit(edi_data )
         
+    @classmethod 
+    def setUpClass(cls):
+        """
+        Reset building matplotlib plot and generate tempdir inputfiles 
+        
+        """
+        reset_matplotlib()
+        cls._temp_dir = make_temp_dir(cls.__name__)
+
+
+    def setUp(self): 
+        
+        if not os.path.isdir(TEST_TEMP_DIR):
+            print('--> outdir not exist , set to None !')
+            watexlog.get_watex_logger().error('Outdir does not exist !')
+            
     def test_make2d (self): 
         """ make2D blocks """
         self.emobj.make2d() 
@@ -255,7 +272,8 @@ class TestEM (unittest.TestCase):
         self.emobj_cloned = copy.deepcopy(self.emobj)
         self.emobj_cloned.fit(edi_sample )
         self.emobj_cloned.rewrite(by='station', prefix='PS', 
-                           savepath = TEST_TEMP_DIR
+                           savepath = os.path.join( 
+                               TEST_TEMP_DIR, self.__class__.__name__) 
                            )
         # fix bug in :meth:`watex.methods.em.EM.rewrite`. remove 'todms' in 
         # :func:`watex.utils.exmath.scalePosition` since the latter does not 
