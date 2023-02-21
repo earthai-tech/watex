@@ -313,8 +313,8 @@ class GridSearchMultiple:
             params =_param_docs , 
             returns = _core_docs['returns'] 
         ) 
-        err_msg = (" Each estimator must have its corresponding grip params,"
-                   " i.e estimators and grid param must have the same length."
+        err_msg = (" Each estimator must have its corresponding grid params,"
+                   " i.e estimators and grid params must have the same length."
                    " Please provide the appropriate arguments.")
         try: 
             check_consistent_length(self.estimators, self.grid_params)
@@ -389,7 +389,7 @@ class GridSearchMultiple:
             if self.verbose: 
                 pprint(msg)
                 bg = ("Job is successfully saved. Try to fetch your job from "
-                       "{filename!r} using")
+                       f"{self.filename!r} using")
                 lst =[ "{}.load('{}') or ".format('joblib', self.filename ),
                       "{}.load('{}')".format('pickle', self.filename)]
                 
@@ -437,7 +437,7 @@ kind:str, default='GridSearchCV' or '1'
 
 savejob: bool, default=False
     Save your model parameters to external file using 'joblib' or Python 
-    peristent 'pickle' module. Default sorted to 'jolib' format. 
+    persistent 'pickle' module. Default sorted to 'joblib' format. 
     
 {params.core.verbose} 
 

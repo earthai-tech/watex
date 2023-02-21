@@ -117,17 +117,22 @@ class TestERP(unittest.TestCase):
                              '8 not {0}'.format(geoCounter)) 
             geoCounter =0 
             
-class TestResistivityProfiling (unittest.TestCase): 
-    
+class TestElectrical (unittest.TestCase): 
+    # constraints elaborations 
     constraints = {"S10":'Prohibited site', 
                    "S50": "Marsh zone", 
                    "S70": "Heritage site"
                    }
+    # electrical resistivity data generating 
     erp_data = make_erp( n_stations =100 , seed =123 , max_rho = 1e5 ,
                         min_rho = 1e1, as_frame =True)
     auto_detection = True 
+    # vertical electrical data generating 
+    search = 20 
+    ves_data = make_ves (samples =50 , max_depth= 200 , order ='+',
+                         max_rho=1e5, seed = 123).frame 
 
-    def test_summary (self ): 
+    def test_ResistivityProfiling (self ): 
         
         # automatic detection 
         erpobj = ResistivityProfiling(auto= self.auto_detection 
@@ -156,15 +161,8 @@ class TestResistivityProfiling (unittest.TestCase):
                                    getattr (dc_res.line1, f"{param}_")
                                    ) 
 
-
-class TestVerticalSounding (unittest.TestCase): 
-    """ Make test for |VES| """
-    search = 20 
-    ves_data = make_ves (samples =50 , max_depth= 200 , order ='+',
-                         max_rho=1e5, seed = 123).frame 
-    
-    def test_summary (self): 
-        """ Compute Parameters with simple run """
+    def test_VerticalSounding (self): 
+        """ Make test for |VES| , Compute Parameters with simple run """
         
         vesobj = VerticalSounding(search = self.search ).fit(self.ves_data ) 
         dcobj = DCSounding(search = self.search ).fit(self.ves_data )
@@ -175,55 +173,8 @@ class TestVerticalSounding (unittest.TestCase):
         
         self.assertAlmostEqual(dcobj.nareas_, vesobj.nareas_ )
    
-
-class TestMXS (unittest.TestCase ): 
-    "Test Mixture Learning Strategy (MXS) "
-    
-    # aggreate the two boreholes data  the two boreholes data 
-    # --> shape = ( 218, 17)
-    hdata = pd.concat ([ load_hlogs().frame  
-                        + load_hlogs(key ='h2601').frame ]) 
-    # drop remark column 
-    hdata.drop (columns ='remark', inplace =True )
-    # fit NaN values using naive transformer 
-    hdata = naive_imputer(hdata, mode = 'bi-impute')
-    
-    mxsobj = MXS(kname ='k' ).fit(hdata )
-    
-    def test_mxs (self  ): 
-        """ Predict NGA labels and MXS  """
-        self.mxsobj.predictNGA(n_components= 3 )
-        self.mxsobj.makeyMXS(categorize_k=True, default_func=True)
-        
-    def test_label_similarity (self ): 
-        # refit the data 
-        mxs = MXS (kname ='k', aqname ='aquifer_group').fit(self.hdata)
-        sim = mxs.labelSimilarity() 
-        
-        print("label similarity groups=", sim )
-        
-        
-class TestAqGroup(unittest.TestCase): 
-    """ Test aquifer Group sections """
-    
-    def test_findgroup (self): 
-         
-        hg = AqGroup (kname ='k', aqname='aquifer_group').fit(HDATA ) 
-        print( hg.findGroups () ) 
-        
-class TestqASection (unittest.TestCase): 
-    """ Compute the section of aquifer"""
-    section = AqSection (aqname ='aquifer_group', kname ='k',
-                         zname ='depth_top').fit(HDATA) 
-
-    def test_findsection (self): 
-        self.assertEqual(len(self.section.findSection ()) , 2) 
-        
-class TestLogging (unittest.TestCase): 
-    
-    h = load_hlogs(key ='h2601') 
-    log = Logging(kname ='k', zname='depth_top' ).fit(
-        h.frame[h.feature_names])
+class TestHydro (unittest.TestCase ): 
+    """ Test Hydrogeological module"""
     
     @classmethod 
     def setUpClass(cls):
@@ -240,13 +191,53 @@ class TestLogging (unittest.TestCase):
             print('--> outdir not exist , set to None !')
             watexlog.get_watex_logger().error('Outdir does not exist !')
             
-    def test_log (self): 
-        self.log.plot() 
+    def test_mxs (self  ): 
+        """ Test Mixture Learning Strategy (MXS). 
+        Predict NGA labels and MXS  """
+        # aggreate the two boreholes data  the two boreholes data 
+        # --> shape = ( 218, 17)
+        hdata = pd.concat ([ load_hlogs().frame  
+                            + load_hlogs(key ='h2601').frame ]) 
+        # drop remark column 
+        hdata.drop (columns ='remark', inplace =True )
+        # fit NaN values using naive transformer 
+        hdata = naive_imputer(hdata, mode = 'bi-impute')
+        
+        mxsobj = MXS(kname ='k' ).fit(hdata )
+        
+        mxsobj.predictNGA(n_components= 3 )
+        mxsobj.makeyMXS(categorize_k=True, default_func=True)
+        
+    def test_label_similarity (self ): 
+        # refit the data 
+        mxs = MXS (kname ='k', aqname ='aquifer_group').fit(self.hdata)
+        sim = mxs.labelSimilarity() 
+        
+        print("label similarity groups=", sim )
+ 
+
+    def test_AqGroup (self): 
+        """ Test aquifer Group sections """
+        hg = AqGroup (kname ='k', aqname='aquifer_group').fit(HDATA ) 
+        print( hg.findGroups () ) 
+        
+    def test_AqSection (self): 
+        """ Compute the section of aquifer"""
+        section = AqSection (aqname ='aquifer_group', kname ='k',
+                         zname ='depth_top').fit(HDATA) 
+        self.assertEqual(len(section.findSection ()) , 2) 
+        
+        
+    def test_Logging (self): 
+        
+        h = load_hlogs(key ='h2601') 
+        log = Logging(kname ='k', zname='depth_top' ).fit(
+        h.frame[h.feature_names])
+        log.plot() 
         
 class TestEM (unittest.TestCase): 
     # output the edis data as array_like 1d 
-    edi_data = load_edis (key='edi' , return_data =True )
-    
+    edi_data = load_edis (key='edi' , return_data =True  )
     emobj = EM ().fit(edi_data )
         
     def test_make2d (self): 
@@ -257,13 +248,35 @@ class TestEM (unittest.TestCase):
         
         self.assertAlmostEqual( self.emobj.freqs_.max() , self.emobj.refreq_)
         
+    def test_rewrite (self): 
+        # rewrite EDI with 7 seven of edi from a clone edi_class 
+        import copy 
+        edi_sample = self.edi_data [:7]  
+        self.emobj_cloned = copy.deepcopy(self.emobj)
+        self.emobj_cloned.fit(edi_sample )
+        self.emobj_cloned.rewrite(by='station', prefix='PS', 
+                           savepath = TEST_TEMP_DIR
+                           )
+        # fix bug in :meth:`watex.methods.em.EM.rewrite`. remove 'todms' in 
+        # :func:`watex.utils.exmath.scalePosition` since the latter does not 
+        # longer convert data to D:MM:SS. 
         
+    def test_getreference_frequency (self): 
+        """ check the reference frequency"""
+        # this is a naive approach since our EDI data used for the test 
+        # is already preprocessed data and missing weak signal are alreay 
+        # removed. Thus the reference frequency should obviously equals 
+        # to the max frequency. 
+        self.assertAlmostEqual(self.emobj.getreferencefrequency(), 
+                               self.emobj.freq_array.max ()) 
+        
+
 class TestProcessing (unittest.TestCase): 
     # output the edis data as array_like 1d 
     edi_data = load_edis (key='edi' , return_data =True, samples = 17 )
     pobj = Processing().fit(edi_data)
     
-    def test_ama (self ): 
+    def test_processing (self ): 
         
         self.pobj.ama () ; self.pobj.flma () ; self.pobj.ama () 
         

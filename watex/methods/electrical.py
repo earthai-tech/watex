@@ -581,7 +581,7 @@ class DCSounding(ElectricalMethods) :
          object: A collection of |VES| objects 
          
         """
-        self._logging.info (f" {self.__class__.__name__!r} collects the "
+        self._logging.info (f"{self.__class__.__name__!r} collects the "
                             "resistivity objects ")
         
         ex=(f"{self.__class__.__name__!r} expects 'tqdm' to be installed."

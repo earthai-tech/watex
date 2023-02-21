@@ -48,4 +48,8 @@ Adaptations and Features
   >>> print( "Does observation still exist? - ","remark" in hdata.columns)
   Does observation still exist? - False 
 
+Bug fixes 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- Bug fixed  in rewritting :term:`EDI` files using :meth:`watex.methods.em.EM.rewrite` method. ``todms`` passed as parameter to the function :func:`watex.utils.exmath.scalePosition` used to correct the 
+  station positions is henceforth removed. Convertion to DD:MM:SS can be performed automatically when calling the :class:`watex.edi.DefineMeasurement` object. 
