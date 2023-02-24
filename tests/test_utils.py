@@ -137,10 +137,7 @@ class TestTools(unittest.TestCase):
                         f'{col}')
                 
 if __name__=='__main__': 
-    
-    # p = TestTools() 
-    # p.test_skrunkformat()  
-    
+
     unittest.main()
 
     

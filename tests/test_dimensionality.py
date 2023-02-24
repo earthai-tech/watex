@@ -5,28 +5,20 @@ Created on Mon Sep 27 11:59:06 2021
 @author: @Daniel03
 """
 
-import os
-# import datetime
 import  unittest 
-# import pytest
-from pprint import pprint 
-
-import numpy as np 
-# import pandas as pd 
-
 from tests.__init__ import ( 
     ANALYSIS_DATA,
-    make_temp_dir , TEST_TEMP_DIR , 
+    make_temp_dir, 
     reset_matplotlib
     ) 
 
 from watex.analysis.dimensionality import (
     nPCA, kPCA, LLE, iPCA, 
-   # get_best_kPCA_params
     )
 
 X, y=ANALYSIS_DATA
-class TestReducers(unittest.TestCase):
+
+class TestDimensionality(unittest.TestCase):
     """
     Test differents Reducers: 
         - PCA
@@ -41,7 +33,6 @@ class TestReducers(unittest.TestCase):
     closest_neighbors=4
     pre_image=False
    
-    
     @classmethod 
     def setUpClass(cls):
         """
@@ -51,11 +42,6 @@ class TestReducers(unittest.TestCase):
         reset_matplotlib()
         cls._temp_dir = make_temp_dir(cls.__name__)
 
-    def setUp(self): 
-        
-        if not os.path.isdir(TEST_TEMP_DIR):
-            print('--> outdir not exist , set to None !')
-            
     def test_incrementalPCA(self, **kws ): 
         """ Test incremental PCA"""
          
@@ -68,32 +54,11 @@ class TestReducers(unittest.TestCase):
         """ Test kernel PCA """
         
         kPCA(X=self.X, n_components=self.n_components, 
-                    kernel=self.kernel,reconstruct_pre_image=self.pre_image, 
+                    kernel=self.kernel,
+                    reconstruct_pre_image=self.pre_image, 
                     gamma=self.gamma, **kws)
         
         #plot_projection(self.rObj ,self.rObj.n_components )
-    
-    # def test_get_best_kPCA_params(self): 
-    #     """ Get the kpca hyperparameters using grid SearchCV"""
-    #     param_grid =[{
-    #             "kpca__gamma":np.linspace(0.03, 0.05, 10),
-    #             "kpca__kernel":["rbf", "sigmoid"]
-    #             }]
-    #     from sklearn.pipeline import Pipeline 
-    #     from sklearn.linear_model import LogisticRegression
-    #     from sklearn.decomposition import KernelPCA
-        
-    #     clf =Pipeline([
-    #         ('kpca', KernelPCA(n_components=self.n_components)),
-    #         ('log_reg', LogisticRegression())
-    #         ])
-        
-    #     kpca_best_param =get_best_kPCA_params(self.X,y=y,scoring = 'accuracy',
-    #                                           n_components= 2, clf=clf, 
-    #                                           param_grid=param_grid,)
-        
-    #     pprint(kpca_best_param)
-        
     def test_LLE(self):
         """ Test Loccally Linear Embedding with closest neighbors"""
         
@@ -106,9 +71,10 @@ class TestReducers(unittest.TestCase):
     def test_PCA (self):
         nPCA (self.X, n_components=self.n_components)
         
+
 if __name__=='__main__': 
     unittest.main()
-    #Reducers().incrementalPCA(X, n_batches=100)
+    # TestDimensionality().test_incrementalPCA()
     
     
     
