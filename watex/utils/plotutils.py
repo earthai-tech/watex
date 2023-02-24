@@ -31,7 +31,8 @@ from .funcutils import  (
     to_numeric_dtypes, 
     str2columns, 
     is_in_if, 
-    is_depth_in
+    is_depth_in, 
+    make_ids,
     )
 from .validator import  ( 
     _check_array_in  , 
@@ -2680,3 +2681,5 @@ def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =7 ):
     if value % nskip==0: 
         return fmt.format(int(value)+ 1)
     else: None 
+    
+ 
