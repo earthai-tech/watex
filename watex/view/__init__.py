@@ -17,14 +17,14 @@ from .mlplot import (
     plotModel, 
     plot_reg_scoring, 
     plot_matshow, 
-    plot_model_scores 
+    plot_model_scores, 
+    plot2d,
     )
 from .plot import ( 
     QuickPlot , 
     ExPlot,
     TPlot, 
     viewtemplate, 
-
     )
 
 __all__=[
@@ -44,5 +44,6 @@ __all__=[
     "plotModel", 
     "plot_reg_scoring", 
     "plot_matshow", 
-    "plot_model_scores"
+    "plot_model_scores", 
+    "plot2d"
     ]

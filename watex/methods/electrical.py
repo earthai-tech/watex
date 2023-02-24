@@ -995,7 +995,12 @@ class ResistivityProfiling(ElectricalMethods):
         
         """
         self.inspect
-       
+        
+        if self.constraints and not hasattr(self, 'constr_ix_'): 
+            raise ERPError(" Can't summary the DC-parameters. NO suitable "
+                           " location was found for drilling operations"
+                           " when constraints are applied.")
+            
         usefulparams = (
             'station','dipole',  'sves_lon_', 'sves_lat_','sves_east_', 
             'sves_north_', 'sves_resistivity_', 'power_', 'magnitude_',

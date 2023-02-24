@@ -6,10 +6,12 @@ from __future__ import print_function
 import functools
 import inspect
 import os
+import sys
 import copy 
 import shutil
 import warnings
 import datetime 
+from contextlib import contextmanager
 import numpy as np
 import  matplotlib.pyplot as plt 
 import matplotlib as mpl 
@@ -28,6 +30,7 @@ _logger = watexlog.get_watex_logger(__name__)
 
 __docformat__='restructuredtext'
 
+      
 class temp2d: 
     """ Two dimensional plot template 
     
@@ -2318,7 +2321,68 @@ class _AvailableIfDescriptor:
                 return self.fn(*args, **kwargs)
 
         return out
+    
+@contextmanager
+def nullify_output(suppress_stdout=True, suppress_stderr=True):
+    """
+    suppress stdout and stderr messages using context manager. 
+    https://www.codeforests.com/2020/11/05/python-suppress-stdout-and-stderr/ 
+    """
+    stdout = sys.stdout
+    stderr = sys.stderr
+    devnull = open(os.devnull, "w")
+    try:
+        if suppress_stdout:
+            sys.stdout = devnull
+        if suppress_stderr:
+            sys.stderr = devnull
+        yield
+    finally:
+        if suppress_stdout:
+            sys.stdout = stdout
+        if suppress_stderr:
+            sys.stderr = stderr
+            
+class suppress_output:
+    """ 
+    Python recipes- suppress stdout and stderr messages
+    
+    If you have worked on some projects that requires API calls to the 
+    external parties or uses 3rd party libraries, you may sometimes run 
+    into the problem that you are able to get the correct return results 
+    but it also comes back with a lot of noises in the stdout and stderr. 
+    For instance, the developer may leave a lot of “for your info” messages 
+    in the standard output or some warning or error messages due to the 
+    version differences in some of the dependency libraries.
 
+    All these messages would flood your console and you have no control on 
+    the source code, hence you cannot change its behavior. To reduce these 
+    noises, one option is to suppress stdout and stderr messages during 
+    making the function call. In this article, we will discuss about some 
+    recipes to suppress the messages for such scenarios.
+    
+    """
+    def __init__(self, suppress_stdout=False, suppress_stderr=False):
+        self.suppress_stdout = suppress_stdout
+        self.suppress_stderr = suppress_stderr
+        self._stdout = None
+        self._stderr = None
+
+    def __enter__(self):
+        devnull = open(os.devnull, "w")
+        if self.suppress_stdout:
+            self._stdout = sys.stdout
+            sys.stdout = devnull
+
+        if self.suppress_stderr:
+            self._stderr = sys.stderr
+            sys.stderr = devnull
+
+    def __exit__(self, *args):
+        if self.suppress_stdout:
+            sys.stdout = self._stdout
+        if self.suppress_stderr:
+            sys.stderr = self._stderr
 def available_if(check):
     """An attribute that is available only if check returns a truthy value
 
