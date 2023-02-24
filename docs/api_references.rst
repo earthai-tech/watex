@@ -151,6 +151,7 @@ Functions
 	datasets.load_edis
 	datasets.load_gbalo
 	datasets.load_hlogs
+	datasets.load_huayuan
 	datasets.load_iris
 	datasets.load_semien
 	datasets.load_tankesse
@@ -580,9 +581,11 @@ Functions
 	utils.find_similar_labels
 	utils.fittensor
 	utils.getGlobalScore
+	utils.get2dtensor
 	utils.get_aquifer_section
 	utils.get_aquifer_sections
 	utils.get_compressed_vector
+	utils.get_full_frequency
 	utils.get_profile_angle
 	utils.get_sections_from_depth
 	utils.get_strike
@@ -617,12 +620,14 @@ Functions
 	utils.plot_rf_feature_importances
 	utils.plot_sbs_feature_selection
 	utils.plot_silhouette
+	utils.plot_skew
 	utils.plot_yb_confusion_matrix
 	utils.power
 	utils.predict_NGA_labels
 	utils.projection_validator
 	utils.read_data
 	utils.reduce_samples
+	utils.remove_outliers
 	utils.rename_labels_in
 	utils.reshape
 	utils.rhoa2z
@@ -805,6 +810,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.funcutils.url_checker
 	utils.funcutils.parse_attrs
 	utils.funcutils.listing_items_format
+	utils.functils.zip_extractor
 	
 	
 :mod:`~watex.utils.geotools`: Geology utilities
@@ -878,6 +884,7 @@ Functions
 	view.plot_matshow
 	view.plot_model_scores
 	view.plot_reg_scoring
+	view.plot2d
 	view.pobj
 	view.viewtemplate
 

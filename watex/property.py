@@ -526,6 +526,9 @@ class BasePlot(ABC):
     leg_kws             keyword arguments of legend. *default* is empty dict.
     plt_kws             keyword arguments of plot. *default* is empty dict
     plt_style           keyword argument of 2d style. *default* is ``pcolormesh``
+    plt_shading         keyword argument of Axes pycolormesh shading. It can be 
+                        ['flat'|'nearest'|'gouraud'|'auto'].*default* is 
+                        'auto'
     imshow_interp       ['bicubic'|'nearest'|'bilinear'|'quadractic' ] kind of 
                         interpolation for 'imshow' plot. Click `interpol_imshow`_ 
                         to get furher details about the interpolation method. 
@@ -614,6 +617,7 @@ class BasePlot(ABC):
                  leg_kws: dict = dict(),
                  plt_kws: dict = dict(), 
                  plt_style:str="pcolormesh",
+                 plt_shading: str="auto", 
                  imshow_interp:str =None,
                  s: float=  40.,
                  cmap:str='jet_r',
@@ -682,6 +686,7 @@ class BasePlot(ABC):
         self.leg_kws=leg_kws
         self.plt_kws=plt_kws
         self.plt_style=plt_style
+        self.plt_shading=plt_shading
         self.imshow_interp=imshow_interp
         self.s=s 
         self.cmap=cmap

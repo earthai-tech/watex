@@ -1,7 +1,8 @@
 v0.1.5 (February 16, 2023)
 ----------------------------
 
-This is a minor change performed since ``v0.1.4`` and bug fixes for issues identified. 
+This is a minor change performed from ``v0.1.4`` and bug fixes for issues identified. Furthermore, the comments from Editors and reviewers to 
+improve the paper submitted to `softwareX`_ are also displayed in the final section of this note with the replies for  bug fixes and improvements. 
 
 Adaptations and Features 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,7 +20,7 @@ Adaptations and Features
 - Add the :ref:`release notes <release>` for displaying the project historical changes. 
 
 - Add the electronic :ref:`citations <citing>` from submitted papers in `Engineering Geology <https://www.sciencedirect.com/journal/engineering-geology>`__ for MXS (:class:`watex.methods.MXS`) and 
-  the software submission in `SoftwareX <https://www.sciencedirect.com/journal/softwarex>`__ journal.  
+  the software submission in `SoftwareX`_ journal.  
  
 - Add the :doc:`project story <../history/project_story>`  and move the :doc:`project mission and goals <../history/project_goals>` into 
   a single folder called :doc:`history <../history/index>`. 
@@ -53,3 +54,270 @@ Bug fixes
 
 - Bug fixed  in rewritting :term:`EDI` files using :meth:`watex.methods.em.EM.rewrite` method. ``todms`` passed as parameter to the function :func:`watex.utils.exmath.scalePosition` used to correct the 
   station positions is henceforth removed. Convertion to DD:MM:SS can be performed automatically when calling the :class:`watex.edi.DefineMeasurement` object. 
+
+- Bug fixed in selected the best drilling location when the resistivity data from :term:`ERP` is in  ``dtype=int``. ``np.nan`` is used to arease the restricted area found in the :term:`ERP` 
+  when constraints are passed since array with `dtype=int*` cannot be coerce with ``np.nan``. For consistency, the resistivity array of :term:`ERP` in :func:`watex.utils.erpSmartDetector` is 
+  converted to `dtype=np.float64`.  Now error is gone whatever ``dtype=int*`` is passed as resistivity data. 
+
+Reviews comments 
+~~~~~~~~~~~~~~~~~~~~~~~~
+This is the comments/replies section of reviewers when submitting the paper in `SoftwareX`_ journal as minor revisions. 
+We are greateful to the anonymous reviewers for their constructive suggestions. 
+
+**Reviewer #1** 
+
+* *I have read the paper "machine-learning research in hydro-geophysics".It is an interesting paper about the application of machine learning in hydrogeophysics 
+   and the open-source code is also useful for hydrogeophysics society. After I tested the codes, I found parts of the codes may be improved. The paper is generally 
+   well-written and I recommend it to be published after a minor revision. Here are my comments:
+
+* *1) It seems useful to consider the ``openpyxl`` package as a hard dependency. Some modules in the "Geology "sub-package are called public API which uses "openpyxl" (see watex.__init__.py file). When 
+      running watex for the first time, the missing "openpyxl" is required. To avoid this annoyed behavior and fix the bug, try to set "openpyxl" as the required dependency or move the geology 
+      module (Structures and Structural) from the public API.
+
+* Reply: ``openpyxl`` is now part of the hard dependency at the initiliation of the package. This is visible  at code line 66 – 67 of `watex.__init__.py`. 
+
+
+* *2) To make the software more attractive at the glance for the non-dedicated reader in the geophysical and hydrogeology domains, the term "hydro-geophysics" can be modified to "water exploration "for short 
+      as the aim goal and name of the software. I suggest "Machine learning in water exploration" or "machine learning research in water exploration".
+      The first one is short and global while the second gives a new perspective since the term research in the title makes the software dynamic and new methods can be added and 
+      included many geosciences fields that imply water exploration.
+
+* Reply: Thanks for this suggestion. We modified the title in the revised version of the paper. We have selected the second choice as *machine learning research in water exploration*. 
+
+* *3) In the module "watex.methods.em", the authors computed the skew from the Processing module. As the mathematical concept is explained, it should be better to write the code for skew visualization 
+      from Bahr or Swift. This could help users to easily determine the type of structures (1D, 2D, 3D or distorted, …) without the necessary output of the two-dimensional matrices. 
+      (See the references guide in the docstrings ). 
+
+* Reply: New code plot plotting skew is henceforth written. The phase sensistive skew can be visualize using the :func:`watex.utils.plot_skew`. In addition, we also gives a consistent plot for 
+      skew visualization in :meth:`watex.view.TPlot.plotSkew` method  where the user can easily customize the plot accordingly. Furthermore, the  :meth:`watex.view.TPlot.plot_phase_tensor` plot 
+      also give an alternative way for skew visulization in pseudo-section format by specifying the `tensor` parameter to ``skew`` . Here are two examples of skew plots. 
+
+    - *Plot skew (:func:`watex.utils.plot_skew`)* ::  
+
+    >>> import watex as wx 
+    >>> from watex.utils.plotutils import plot_skew 
+    >>> edi_sk = wx.fetch_data ("edis", return_data =True , samples = 20 ) # fetch 20 samples of EDI objets
+    >>> plot_skew (edi_sk) 
+    >>> plot_skew (edi_sk, threshold_line= True)
+
+    - *Plot skew from phase tensor plot ( :meth:`watex.view.TPlot.plot_phase_tensors`)*::
+
+    >>> tplot = wx.TPlot ().fit(edi_sk ) 
+    >>> tplot.plot_phase_tensors (tensor ='skew')
+  
+  .. topic:: Examples:
+
+   * :ref:`sphx_glr_glr_examples_utils_plot_skew.py`
+   * :ref:`sphx_glr_glr_examples_view_plot_phase_sensistive_skew.py`
+
+* *4) I suggest writing a complete application example as you did for predicting k "in the step-by-step" guide in the software documentation that involves the missing tensor and recovery of 2D tensors. 
+      It seems you used the preprocessed data (from load_edis) for illustration where no missing data is available. This is not meaningful.
+
+* Reply: To solve this issue, we used a real dataset collected from Huayuan area, Hunan province, China,  which are composed of missing tensors. We implements in this new version data set function as 
+      as `load_huayuan` (:func:`watex.datasets.load_huayuan`). The parameter `raw` can allow to retrieve a noised data for the sake of user to better comprehend the trick behind the recovery tensors. 
+      For demonstration and a real guidance, for user, we fetched 27 sations for demonstration and the result are displayed and missing tensors cane be vsualized as well as the way to handle. 
+      Here is quick implementation , however in  the :doc:`gallery example <https://watex.readthedocs.io/en/latest/glr_examples/index.html#>`, the step-by-step guide give further explanations::
+     
+    >>> data = wx.fetch_data('huayuan', return_data =True, samples =27 ,
+                     key ='raw', clear_cache=True) # clear watex cache data to save new EDI
+    >>> tro = wx.EMProcessing().fit(data)
+    >>> wx.view.plot2d(tro.make2d(out= 'resxy' ) , y = tro.freqs_,to_log10= True) 
+
+    The results shows blank spaces in resistivity tensor in TE mode (``xy``). After applying the recovery trick, all omplete tensors has be recovered at all frequency as::  
+
+    >>> tro.component ='yx'  
+    >>> wx.view.plot2d(tro.zrestore ( tensor ='res'), y = tro.freqs_,to_log10= True) 
+
+  After recovery, the data is full-strength amplitudes for processing 
+
+  .. topic:: Example:
+
+   * :ref:`sphx_glr_glr_examples_view_plot_tensor_restoring.py`
+
+
+* *5) The motivation illustrates the importance of hydrology but lacks an illustration of the importance of hydrogeophysics. I suggest adding a part to introduce the development of hydrogeophysics and how it helps hydrology studies (e.g., Binley et al., 2015; Parsekian et al., 2015; Chen, 2022)
+      Binley, A., Hubbard, S.S., Huisman, J.A., Revil, A., Robinson, D.A., Singha, K. and Slater, L.D., 2015. The emergence of hydrogeophysics for improved understanding of subsurface processes over multiple scales. Water resources research, 51(6), pp.3837-3866.
+      Parsekian, A.D., Singha, K., Minsley, B.J., Holbrook, W.S. and Slater, L., 2015. Multiscale geophysical imaging of the critical zone. Reviews of Geophysics, 53(1), pp.1-26.
+      Chen, H., 2022. Exploring subsurface hydrology with electrical resistivity tomography. Nature Reviews Earth & Environment, 3(12), pp.813-813.
+
+  *Reply: Fixed it in the manuscript new version (Fixed it in new MS) 
+
+**Reviewer #2**   
+
+* *1.) (Lines 137-142) the parameters are computed from the selected conductive zone; the loss or weak frequency signal are recovered and new tensors are updated.
+       Please provide more details about the computation process, and how to recover and update the related dataset.
+
+* *Reply: Fixed it in new MS  and more details can also be visible in :ref:`sphx_glr_glr_examples_view_plot_tensor_restoring.py` . 
+
+
+* *2.) (Lines 146-148) What is the meaning of the 'features manipulation got from the previous step'?
+
+* *3. (Lines 149-154) In 'learning space' step, what are the algorithms applied for the training and testing models? Is the algorithm freely selected by the user or automatically 
+      selected according to the previous datasets? How to determine the 'appropriate modules' ?
+
+  *Reply: In general, the learning space does not care about the prediction to make. Whether the dataset can be applied using the implemented algorithms. For instance, the 
+      the :class:`watex.base.SequentialBackwardSelection` can be used for selected the meaningful features. Likewise the algorithms in :mod:`watex.transformers` are all available 
+      for manipulating the datasets. For instance, the :class:`watex.transformers.CombinedAttributesAdder` can automatically create  new attributes using features index or litteral string 
+      operator. It the parameter `operator` is set to ``/``, and attributes for operation is passed as `attribute_names`, new attributes combinaison are created systematically as 
+      a ratio of the given attribute/numerical features. This tricks can help eliminates many correlated features by transformed them into a single features. 
+
+      *In addition, when the user objective is to predicting :term:`FR` , user can selected some pretrained models of :mod:`watex.models`. To get the available of pretrained models, 
+      user can do this:: 
+
+      >>> from watex.models.premodels import p 
+      >>> p.keys
+      ('SVM', 'SVM_', 'LogisticRegression', 'KNeighbors', 'DecisionTree',
+         'Voting', 'RandomForest', 'RandomForest_', 'ExtraTrees', 
+         'ExtraTrees_', 'Bagging', 'AdaBoost', 'XGB', 'Stacking'
+         ) 
+      
+      For instance to fetch the pretrained :class:watex.exlib.LogisticRegression best parameters, just call:: 
+
+      >>> p.LogisticRegression.best_params_ 
+      {'penalty': 'l2',
+         'dual': False,
+         'tol': 0.0001,
+         'C': 1.0,
+         'fit_intercept': True,
+         'intercept_scaling': 1,
+         'class_weight': None,
+         'random_state': None,
+         'solver': 'lbfgs',
+         'max_iter': 100,
+         'multi_class': 'auto',
+         'verbose': 0,
+         'warm_start': False,
+         'n_jobs': None,
+         'l1_ratio': None
+      }
+
+    However some models with geology structures collected in a paricular area could obviously not correspond to the pretrained geological survey area. In that case, user can retrain its data to fine-tune 
+    models hyperparameters into a single line of codes when he could feed to the algorithms many models and save the training phase result into a disk. Here is an example:
+
+    .. warnings:
+    
+       Note that run the following script will take a while`  
+
+    .. code-block:: python 
+
+      >>> from watex.models import GridSearchMultiple , displayFineTunedResults
+      >>> from watex.exlib import LinearSVC, SGDClassifier, SVC, LogisticRegression
+      >>> X, y  = wx.fetch_data ('bagoue prepared') 
+      >>> X
+      ... <344x18 sparse matrix of type '<class 'numpy.float64'>'
+	    ... with 2752 stored elements in Compressed Sparse Row format>
+    As example, we can build 04 estimators and provide their grid parameters range for fine-tuning as ::
+
+      >>> random_state=42
+      >>> logreg_clf = LogisticRegression(random_state =random_state)
+      >>> linear_svc_clf = LinearSVC(random_state =random_state)
+      >>> sgd_clf = SGDClassifier(random_state = random_state)
+      >>> svc_clf = SVC(random_state =random_state) 
+      >>> estimators =(svc_clf,linear_svc_clf, logreg_clf, sgd_clf )
+      >>> grid_params= ([dict(C=[1e-2, 1e-1, 1, 10, 100], gamma=[5, 2, 1, 1e-1, 1e-2, 1e-3],kernel=['rbf']), 
+                               dict(kernel=['poly'],degree=[1, 3,5, 7], coef0=[1, 2, 3], C= [1e-2, 1e-1, 1, 10, 100])],
+                      [dict(C=[1e-2, 1e-1, 1, 10, 100], loss=['hinge'])], 
+                      [dict()], # we just no provided parameter for 
+                      [dict()]
+                      )
+    Now  we can call :class:`watex.models.GridSearchMultiple` for training and self-validating as::
+
+      >>> gobj = GridSearchMultiple(estimators = estimators, 
+                           grid_params = grid_params ,
+                           cv =4, 
+                           scoring ='accuracy', 
+                           verbose =1,   #> 7 put more verbose 
+                           savejob=False ,  # set true to save job in binary disk file.
+                           kind='GridSearchCV').fit(X, y)
+    
+    Once the parameters are fined tuned, we can display the fined tuning results using :func:`watex.models.displayFineTunedResults`` functions or other similar functions 
+    in the module: :mod:`watex.models.validation` like : :func:`watex.models.displayModelMaxDetails`` or :func:`watex.models.displayCVTables` or else like:: 
+
+      >>> displayFineTunedResults (gobj.models.values_) 
+      MODEL NAME = SVC
+      BEST PARAM = {'C': 100, 'gamma': 0.01, 'kernel': 'rbf'}
+      BEST ESTIMATOR = SVC(C=100, gamma=0.01, random_state=42)
+
+      MODEL NAME = LinearSVC
+      BEST PARAM = {'C': 100, 'loss': 'hinge'}
+      BEST ESTIMATOR = LinearSVC(C=100, loss='hinge', random_state=42)
+
+      MODEL NAME = LogisticRegression
+      BEST PARAM = {}
+      BEST ESTIMATOR = LogisticRegression(random_state=42)
+
+      MODEL NAME = SGDClassifier
+      BEST PARAM = {}
+      BEST ESTIMATOR = SGDClassifier(random_state=42)
+
+
+* *4. (Lines 155-158) 'enough plots for data exploration, feature analysis and discussion, tensor recovery, and model inspection'
+      In View space part, in addition to the sounding curve plot and DC-parameters discussing plot as shown in Figures 2 and 3, what kind of plots can be provided for the above exploration and analysis?
+
+* Reply: The implements three modules to handles differents plot additional to the plot utilities in :func:`watex.utils.plotutils` functions. For instance: 
+  - TPlot (:class:`watex.view.TPlot` ) focused on tensor plots and contained the plot for corrected tensors (plot_ctensor2d ), phase tensor plots ( plot_phase_tensors ) and now the skew plots (plotSkew)
+  - ExPlot (:class:`watex.view.ExPlot`) focused on exploratory plots. It contains parallel coordinates plot (plotparallelcoords) which allow e parallel coordinates in multivariates for clustering 
+    visualization; the radial visualization (plotradviz) plot each sample on circle or square ; Quantiles comparison plots (plotcutcomparison) which compare the cut or `q` quantiles values of 
+    ordinal categories; the pair grid plot (plotpairgrid) which is useful for columns and kernel density estimations ; bivariate plot (plotbv), ... 
+  - QuickPlot (:class:`watex.vieww.QuickPlot`) focused on quick features analysis and inspections. For instance, the `barcatdist` plot shows a categorical distribution according to the occurence of the 
+    `target` in the data, the `corrmatrix` plots correlations  between numerical and categorical features. ; `discussingfeatures` plot allows discussing between features, the naive visualization, 
+    `naiveviz` that creates a plot  to visualize the samples distributions according to the geographical coordinates `x` and `y`, ... 
+  - EvalPlot (:class:`watex.view.EvalPlot`) focused on model estimations and evaluation. For instance `plot_reg_scoring` uses the hold-out cross-validation technique for score evaluation;  `plot_model_scores`
+    uses the cross validation to get an estimation of model performance generalization; `plotDendroheat` attaches dendrogram to a heat map. This is useful and allows us to represent the individual 
+    value in data array or matrix containing our training examples with a color code. `plotSilhouette` quantifies the quality  of clustering samples; `plotLearningInspections` inspect multiple models from 
+    their learning curves...
+  Others useful plots can be found in :mod:`watex.utils.plotutils` such as `plot_logging` which plots the logging data ; `plot_clusters` to visualize  the cluster that k-means identified in the dataset;  
+  `plot_pca_components` to visualize the coefficient of principal component analysis (PCA) as a heatmap; `plot_sbs_feature_selection` plot Sequential Backward Selection (SBS) for feature selection and 
+  collects the scores of the  best feature subset at each stage... 
+
+  Full demonstration can be found in the software documentation. 
+          
+* *5. In this work, how to reduce the collection of k-parameter? Please provide some comparisons or explanations to show the differences from the expensive k parameter detection in previous work.
+
+* Reply: In litterature, predicting k seems novel and this is comprehensible because of expensiveness of k collection and it is almost not possible to generate a synthetic k data since k is related to each aqquifer 
+  and difficult to estimate its value due to many heterogenities in underground. Indeed, k parameter is got after the pumping tests. If we know in advance with the hydrogeological, the logging data, the geology of the boreholes, we can skip doing a pumping test in this boreholes if the 
+  threshold k is not what we expect to get. Indeed, hydrogeological parameters such as k is useful for successful drilling technology construction. If the uncertainty of k lead to useless boreholes since its 
+  values is strongly tied to the acquifer.  Therefore,  its evaluation  after the pumping test seems meaningful to reduce the cost during its collection. For instance, a concreate study have been in Hongliu 
+  coal mines  and submitted for publication in Engineering Geology (http://dx.doi.org/10.2139/ssrn.4326365). Here,  at the beginning of the Hongliu project, 106 were the expected number of pumping tests. 
+  Finally, only 11 boreholes with complete pumping test samples have been collected. This is very far from the objective because of many unsucessfull pumping tests.  Is is the same reason , we try to solve 
+  this problem by implementing a new strategy which  use of an ML framework for predicting k in future engineering project. However, the k- value prediction from borehole data  comes with another problem. 
+  The missing values of k .For instance in supervised learning, we expect k as a target for our prediction, however, many missing k will lead to poor performance. Indeed, the missing k is evident in 
+  borehole data collection, at least the aquifer thickness equals the total depth of the borehole which is not possible in practice. For clarity, a borehole with a depth equal to 721 m, where the 
+  aquifer is located between 197 to 372 m deep (175 m thick), the top of the data (< 197 m) and the bottom (372 –721 m) will contain a missing k since the measurement of  k is only related to each aquifer. 
+  If one replaces each missing k with null (k=0), it will create a lot of bias accordingly, leading to bad  prediction (Weidner and Walton, 2021).  The new MXS approach has solved this problem and the 
+  test in hongliu coal mine has predicted 80% of correct k with a smal set of samples (11 boreholes). 
+
+* *6.) Comments for the Software/Code:
+
+* *6.1. (Line 1564 - 1780) Tensors recovery in the processing module
+    The method "zrestore" is used to recover the weak and missing signals in the EDI data. I have run the method, but it seems you used the preprocessed data (Impedance tensors are already recovered) for illustration. This is visible in the documentation too. It looks not seem meaningful to practice this way. Even if the data is not available, you can:
+   - generate a synthetic data where the tensor is missing and then apply the recovery technique to recover the missing tensors, or
+   - use a sample of real-world EDI data (if data is available) where data is noised and the signals are missing , then use the recovery approach with the method "zrestore" to recover it.
+   You may select one of these options. This is useful to show the readers and scientific community the relevance of the technique and ascertain its trueness.
+
+* Reply: We selected the option 2 and we provided a convenient application step by step guide with a concrete example of a missing tensor in Huayuan survey area for user. Our answer is well 
+  explained in the comment comment 4 of the **review #1**. Please, you could refer to the reply section of the commment N4 of the reviewer 1. 
+ 
+* *6.2. (Line 779 - 1021 ) Fix the bug in ResistivityProfiling class in module electrical
+  Indeed, when the constraints are applied and the auto-detection indicates that there is no possibility of making a drill on this ERP line. It is better to stop the running "fit" method rather than 
+  let it continue since no DC parameters can be calculated. Formatting a warning message to the user is very important in that case. 
+  This is not applied in your case. For instance, after running, the user can think that parameters are correctly calculated and could try to fetch the table of prediction parameters. 
+  While no parameters are calculated the summary method of ResistivityProfiling generates a "getattributeError". You may try to fix it by formatting the warning message in the summary method 
+  ( if applicable ) and stopping the running process of the "fit" method.
+
+* Reply : Thanks for this suggestion. We fixed it and stop running the program when no suitable area for drilling location is found when constrints is applied.  Henceforth, 
+   an ERPError raise and a warning message is thrown that no suitable location was detected. Futhermore, there is an other expection emit in summary methods to warn smartly warn user than 
+   DC parameters can not be computed when missing ERP line is not suitable for drilling location. ( refer to line 999 -102 of :meth:`~watex.methods.ResistivityProfiling.summary` method  ). 
+
+* *6.3. (Structural class Line 335 ) Module geology.
+  The verbose attribute is not set properly. While Structural inherits from module Base, 'verbose' must be set in the Base module since "Super" will call it straightforwardly.
+
+* Reply: We fixed by implemented `verbose` parameter as attribute in :class:`watex.geology.core.Base` module of ( Line 80  and 82) 
+
+*We specially thanks the anonymous reviewers for their constructive suggestions and comments to  improve the MS and the software thereby making scientific research progress.*
+
+Best regards!
+
+
+
+.. _SoftwareX: https://www.sciencedirect.com/journal/softwarex 

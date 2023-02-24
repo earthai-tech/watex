@@ -5,7 +5,6 @@
 import warnings 
 from ..utils._dependency import import_optional_dependency 
 
-
 xgboostdoc = type ('xgboostdoc', (), dict (
     __doc__= """\
     Extreme Gradient Boosting

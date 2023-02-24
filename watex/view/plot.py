@@ -62,7 +62,8 @@ from ..utils.funcutils import (
     shrunkformat, 
     is_iterable, 
     station_id, 
-    make_ids
+    make_ids, 
+    remove_outliers, 
     )
 from ..utils.mlutils import (
     existfeatures,
@@ -232,7 +233,7 @@ class TPlot (BasePlot):
             c=self.c 
             ) 
         p.fit(data)
-        # set EM processing moule 
+        # set EM processing module 
         # as an attr
         setattr (self, "p_", p )
 
@@ -252,12 +253,6 @@ class TPlot (BasePlot):
             )
         return 1 
     
-    def __repr__(self): 
-        """ Represents the output class format """
-        outm = ( '<{!r}:' + ', '.join(
-            [f"{k}={getattr(self, k)!r}" for k in self._t]) + '>' 
-            ) 
-        return  outm.format(self.__class__.__name__)
     
     def plot_multi_recovery(
             self,  
@@ -604,7 +599,6 @@ class TPlot (BasePlot):
             - base_plot_kws: plot keywords arguments inherits from 
                 :class:`watex.property.BasePlot`. It composes the last 
                 parameters for customizing plot as decorated return function.
-                
         """
         try : 
             distance = float(self.distance) 
@@ -694,7 +688,6 @@ class TPlot (BasePlot):
                             )
     
         ediObjs = self.p_.ediObjs_ 
-        
         # >>> zobjs_b = restoreZ(ediObjs, buffer = buffer) # with buffer 
         zobjs = self.p_.zrestore() # with no buffer 
     
@@ -731,12 +724,329 @@ class TPlot (BasePlot):
         
         return self 
     
+    def plot_phase_tensors(
+        self,
+        mode ='frequency',
+        stretch = (7000, 20 ),
+        linedir ='ns',
+        tensor='phimin',
+        ellipse_dict = None,
+        **kws
+        ): 
+        """ Plot phase tensor pseudosection and skew ellipsis 
+        visualization. 
         
+        Method plots the phase tensor ellipses in a pseudo section format.
+        It uses `mtpy` as dependency. 
+        
+        Parameters 
+        -----------
+        mode: str, default ='frequency'
+            Tempoora scale in y-axis. Can be ['frequency' | 'period']
+
+        stretch : float or tuple (xstretch, ystretch), default=200
+            Is a factor that scales the distance from one station to the next 
+            to make the plot readable. It determines (x,y) aspect ratio of plot.
+    
+        linedir: str [ 'ns' | 'ew' ], default='ns'
+            The predominant direction of profile line. It can be ['ns' | 'ew']
+            where: 
+               
+            * 'ns' refer to North-South Line or line is closer to north-south)
+            * 'ew' refer to  East-West line or line is closer to east-west
+            *Default* is 'ns'
+        tensor: str, default='phimin' 
+            Is the tensor skew or ellipsis visualizations. The color for plot 
+            style is referred accordingly. Tensor can be: 
+                
+                [ 'phimin' | 'phimax' | 'skew' |'skew_seg' | 'phidet' |'ellipticity' ]
+           where: 
+                  
+                - 'phimin' -> colors by minimum phase
+                - 'phimax' -> colors by maximum phase
+                - 'skew' -> colors by skew
+                - 'skew_seg' -> colors by skew indiscrete segments defined 
+                   by the range
+                - 'normalized_skew' -> colors by skew see [Booker, 2014]
+                - 'normalized_skew_seg' -> colors by normalized skew in
+                   discrete segments defined by the range
+                - 'phidet' -> colors by determinant of the phase tensor
+                - 'ellipticity' -> colors by ellipticity *default* is 'phimin'  
+                
+        ellipse_dict: dict, optional
+            Dictionary of parameters for the phase tensor ellipses with keys:
+            
+            * 'size': float, default =2 , is the size of ellipse in points
+            * 'colorby' : str, default='phimin' 
+               Is the color for plot style referring either to  tensor, 
+               skew or ellipsis visualizations. It can be all the `tensor`
+               parameter values. see `tensor` parameter values. 
+               [ 'phimin' | 'phimax' | 'skew' |'skew_seg' | 'phidet' |'ellipticity' ]
+        
+            * 'range' : tuple (min, max, step), default='colorby'
+               Need to input at least the min and max  and if using 
+               'skew_seg' to plot discrete values input step as well
+               
+            * 'cmap' : [ 'mt_yl2rd' | 'mt_bl2yl2rd' |'mt_wh2bl' | 'mt_rd2bl' |
+                        'mt_bl2wh2rd' | 'mt_seg_bl2wh2rd' |'mt_rd2gr2bl' ]
+
+                     - 'mt_yl2rd' -> yellow to red
+                     - 'mt_bl2yl2rd' -> blue to yellow to red
+                     - 'mt_wh2bl' -> white to blue
+                     - 'mt_rd2bl' -> red to blue
+                     - 'mt_bl2wh2rd' -> blue to white to red
+                     - 'mt_bl2gr2rd' -> blue to green to red
+                     - 'mt_rd2gr2bl' -> red to green to blue
+                     - 'mt_seg_bl2wh2rd' -> discrete blue to white to red
+        kws: dict 
+            Additional keywords arguments passed from |MTpy| pseudosection 
+            phase tensor class: :class:`~.PlotPhaseTensorPseudoSection` 
+
+        See Also
+        ----------
+        mtpy.imaging.phase_tensor_pseudosection.PlotPhaseTensorPseudoSection: 
+            PlotPhase pseudo section tensor from |MTpy| package. 
+        watex.utils.plot_skew: 
+            Phase sensitive skew visualization. 
+        
+        Examples
+        ---------
+        >>> import watex as wx 
+        >>> edi_data = wx.fetch_data ('edis', key='edi', return_data =True , samples =17 ) 
+        >>> tplot = wx.TPlot ().fit(edi_data ) 
+        >>> tplot.plot_phase_tensors (tensor ='skew')
+        
+        """
+        extra =("Phase tensor plots or skew ellipsis visualization"
+                " uses 'mtpy' as dependency. Alternatively, you may"
+                " also use the phase sensitive 'skew' visualization"
+                " of plot utilities if plot  only refers to 'skew'."
+                )
+        import_optional_dependency ('mtpy' , extra = extra )
+        from mtpy.imaging.phase_tensor_pseudosection import (
+            PlotPhaseTensorPseudoSection ) 
+        
+        self.inspect 
+        
+        zobjs = [edi_obj.Z for edi_obj in self.p_.ediObjs_]
+        
+        elrange =  [-7, 7] if 'skew' in str(tensor).lower()  else [0, 90 ]  
+        ellipse_dict = ellipse_dict or  {
+            'ellipse_colorby':tensor,
+            'ellipse_range':elrange,  # Color limits
+            'ellip_size': 2, 
+            'ellipse_cmap':'mt_bl2wh2rd'
+        } 
+        # skew_seg need to provide
+        # 3 numbers, the 3rd indicates
+        from contextlib import suppress 
+        # interval, e.g. [-12,12,3]
+        with suppress (Exception): 
+            ptsection = PlotPhaseTensorPseudoSection(
+                            fn_list = self.p_.edifiles,
+                            z_object_list = zobjs, 
+                            fig_size = self.fig_size, 
+                            tscale = mode, 
+                            plot_num = self.fig_num, 
+                            plot_title = self.fig_title, 
+                            xlimits = self.xlim, 
+                            ylimits = self.ylim,
+                            linedir= linedir,  
+                            stretch= stretch, 
+                            station_id=(0, len(self.p_.ediObjs_)), 
+                            font_size=self.font_size ,
+                            lw=self.lw,
+                            **ellipse_dict , 
+                            **kws,
+                )
+
+        ptsection.save_figure(save_fn =self.savefig, fig_dpi=self.fig_dpi
+                              ) if self.savefig else  ptsection.plot()
+
+        return self 
+    
+    def plotSkew (
+        self , 
+        method ='Bahr', 
+        view ='skew', 
+        mode=None,
+        threshold_line=None, 
+        show_average_sensistivity=True, 
+        suppress_outliers =True, 
+        **plot_kws 
+        ): 
+        """ Plot phase sensistive skew visualization
+        
+        'Skew' is also knwown as the conventional asymmetry parameter 
+        based on the Z magnitude. 
+        
+        Mosly, the :term:`EM` signal is influenced by several factors such 
+        as the dimensionality of the propagation medium and the physical 
+        anomalies, which can distort theEM field both locally and regionally. 
+        The distortion of Z was determined from the quantification of its 
+        asymmetry and the deviation from the conditions that define its 
+        dimensionality. The parameters used for this purpose are all rotational 
+        invariant because the Z components involved in its definition are
+        independent of the orientation system used. The conventional asymmetry
+        parameter based on the Z magnitude is the skew defined by Swift (1967)
+        [1]_ and Bahr (1991) [2]_.
+
+        Parameters 
+        -----------
+        method: str, default='Bahr': 
+            Kind of correction. Can be:
+                
+            - ``swift`` for the remove distorsion proposed by Swift in 1967. 
+              The value close to 0. assume the 1D and 2D structures, and 3D 
+              otherwise. 
+            - ``bahr`` for the remove distorsion proposed  by Bahr in 1991. 
+              The latter threshold is set to 0.3. Above this value the 
+              structures is 3D.
+              
+        view: str, default='skew'
+           phase sensistive visualization. Can be rotational invariant 
+           ``invariant``. In fact, setting to ``mu`` or ``invariant`` does 
+           not change any interpretation when since the  distortion of Z 
+           are all rotational invariant whether using the ``Bahr`` or ``swift``
+           methods. 
+           
+        mode:str, optional 
+           X-axis coordinates for visualisation. plot either ``'frequency'`` or
+           ``'periods'``.  The default is ``'frequency'`` 
+           
+        threshold_line: float, optional
+           Visualize th threshold line. Can be ['bahr', 'swift', 'both']:
+               
+           - Note that when method is set to ``swift``, the value close 
+             to close to :math:`0.` assume the 1D and 2D structures,  and 
+             3D otherwise. 
+           - when method is set to ``Bahr``, :math:`\mu > 0.3``  is 3D 
+             structures, between :math:`[0.1 - 0.3]` assumes modified 3D/2D 
+             structures whereas :math:`<0.1` 1D, 2D or distorted 2D. 
+        show_average_sensistivity: bool, default=True 
+           Display the averaged value of skew data at all -frequencies. 
+           Value can help a dimensionality interpretation purposes. 
+           
+        suppress_outliers: bool, default=True
+           Remove the outliers in the data if exists. It uses the 
+           Inter Quartile Range (``IQR``) approach. See the documentation 
+           of :func:`watex.utils.remove_outliers`. This is useful for clear 
+           interpretation using the skew threshold value. 
+          
+        See Also
+        ---------
+        watex.methods.Processing.skew: 
+            
+            For mathematical skew `Bahr` and `Swift` concept formulations. 
+        watex.utils.plot_skew: 
+            For phase sensistive skew visualization - naive plot.
+  
+        Examples
+        --------
+        >>> import watex 
+        >>> test_data = watex.fetch_data ('edis', samples =37, return_data =True )
+        >>> watex.TPlot(fig_size =(10,  4), marker ='x').fit(
+            test_data).plotSkew(method ='swift', threshold_line=True)
+        
+        References 
+        -----------
+        .. [1]  Swift, C., 1967. A magnetotelluric investigation of an 
+                electrical conductivity  anomaly in the southwestern United 
+                States. Ph.D. Thesis, MIT Press. Cambridge.
+        .. [2] Bahr, K., 1991. Geological noise in magnetotelluric data: a 
+               classification of distortion types. Physics of the Earth and 
+               Planetary Interiors 66 (1–2), 24–38.
+        """
+        self.inspect 
+        
+        view = str(view).lower() 
+        for ix in ('inv', 'rot', 'mu'): 
+            if view.find(ix)>=0: 
+                view ='mu' 
+                break 
+            
+        view='skew' if view=='none' else view 
+        assert view in {"skew", 'mu'}, ("expect 'skew' or 'rotational invariant'"
+                                        f" plot, got {view!r}")
+        
+        if 'period' in str(mode).lower(): 
+            mode ='period'
+
+        skew, mu =self.p_.skew(method = method )
+        freqs =  1/ self.p_.freqs_ if mode =='period' else self.p_.freqs_ 
+        ymat = skew if view =='skew' else mu 
+        
+        if suppress_outliers: 
+            ymat = remove_outliers(ymat, fill_value = np.NaN )
+        
+        fig, ax = plt.subplots(figsize = self.fig_size )
+
+        #---manage threshold hline ------
+        thr_code = {"bahr": [1] , "swift":[ 2] , 'both':[1, 2] }
+        
+        if str(threshold_line).lower()=='true': 
+            threshold_line = str(method).lower() 
+            
+        if threshold_line is not None: 
+            if str(threshold_line).lower() in ("*", "both" ): 
+                threshold_line = 'both'
+                
+        ct = thr_code.get(str(threshold_line).lower(), None ) 
+        
+        for i in range (skew.shape[1]): 
+            ax.scatter ( freqs, reshape (ymat[:, i]),
+                        marker = plot_kws.get ('marker', None) or self.marker, 
+                        cmap = plot_kws.get('cmap', None) or self.cmap, 
+                        alpha = plot_kws.get('alpha', None) or self.alpha, 
+                        s = plot_kws.get('s', None) or self.s , 
+                        **plot_kws 
+                        )
+        if ct: 
+            for m in ct: 
+                plt.axhline(y=0.1 if m==2 else 0.3 , color="k" if m==1 else "g",
+                            linestyle="-",
+                            label=f'threshold: $\mu={0.1 if m==2 else 0.3}$'
+                            )
+                ax.legend() 
+
+        # see phase sensitive trend 
+        if show_average_sensistivity: 
+            plt.text(x= np.nanmin(freqs) , y= np.nanmax(ymat), 
+                     s="aver.-{}:{}={}".format(view, str(method).capitalize(), 
+                    np.around (np.average(ymat[ ~np.isnan(ymat)]), 3)),  
+                    fontdict= dict (style ='italic',  bbox =dict(
+                         boxstyle='round',facecolor ='#CED9EF'))
+                     ) 
+        plt.legend()
+        ax.set_xscale('log')
+        ax.set_xlabel('Period ($s$)' if mode=='period' 
+                      else 'Frequency ($H_z$)' or self.xlabel )
+        ax.set_ylabel(f"{'Skew' if view =='skew' else 'Rot.Invariant'}" + "($\mu$)"
+                      or self.ylabel )
+
+        plt.xlim ([ freqs.min() , freqs.max()] or self.xlim )
+        
+        plt.xlim() 
+
+        if self.savefig is not  None: 
+            plt.savefig (self.savefig, dpi = self.fig_dpi)
+            
+        plt.close () if self.savefig is not None else plt.show() 
+        
+        return self 
+        
+    def __repr__(self): 
+        """ Represents the output class format """
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={getattr(self, k)!r}" for k in self._t]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+    
 class ExPlot (BasePlot): 
     
-    msg = ( "{expobj.__class__.__name__} instance is not fitted yet."
-           " Call 'fit' with appropriate arguments before using"
-           " this method"
+    msg = ("{expobj.__class__.__name__} instance is not"
+           " fitted yet. Call 'fit' with appropriate"
+           " arguments before using this method."
            )
     
     def __init__(
@@ -3011,8 +3321,8 @@ class QuickPlot (BasePlot):
         leg_kws:dict ={}, 
         **pd_kws
         ):
-        """ Create a plot to visualize the data using `x` and `y` 
-        considered as dataframe features. 
+        """ Creates a plot  to visualize the samples distributions 
+        according to the geographical coordinates `x` and `y`.
         
         Parameters 
         -----------

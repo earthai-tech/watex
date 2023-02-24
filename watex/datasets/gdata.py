@@ -140,7 +140,6 @@ def make_erp (
     return  data.frame if as_frame else data 
 
 
-
 def make_ves (
     *, 
     samples:int= 31, 
@@ -268,7 +267,5 @@ def _generate_ABMN_samples (
         MN.extend (s)
         
     return np.around (MN, 1 )   
-
-                  
     
     

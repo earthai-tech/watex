@@ -378,8 +378,9 @@ class Series (DType[T], Generic [T]):
         return self 
     
 class EDIO(Generic [T]): 
-    """ EDIO stand for Electrical Data Interchange (EDI) Object. It is an object 
-    built from `pycsamt`_ or `MTpy`_ packages.
+    """ EDIO stand for Electrical Data Interchange (EDI) Object. It is an
+    EDI object  built from  :class:`watex.edi.Edi` or  from `pycsamt`_ 
+    or `MTpy`_. 
     
     It holds 'T' or str as type variables supposed to be an object created from 
     the aforementioned packages. Indeed the `str` is related to the EDI-file or
@@ -391,7 +392,20 @@ class EDIO(Generic [T]):
         """ Get Generic Type object and return an object presumed to be an
         EDI Object `EDIO`."""
         ...      
-       
+        
+class ZO(Generic [T]): 
+    """ ZO stand for Impendance tensor Object. It is an Impendance tensor object 
+    built from :class:`watex.extenals.z.Z` or  :class:`pycsamt.core.z.Z` or 
+    :class:`mtpy.core.z.Z`. It is a tridimensional data with 
+    dimension equals to (n_freq, 2, 2) where `n_freq` equals to the number of 
+    collected frequency and 2x2 matrix referred to components
+    xx (0, 0), xy (0, 1), yx (1, 0) and yy (1, 1). 
+
+    """
+    def __getitem__  (self, T: str | T ) -> object: 
+        """ Get Generic Type object and return an object presumed to be an
+        Z Object `ZO`."""
+        ...      
 class DataFrame (Series[T], Generic[T]): 
     """ Type hint variable to illutsrate the `pandas DataFrame`_ object. 
     

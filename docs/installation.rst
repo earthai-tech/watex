@@ -157,7 +157,7 @@ The hard-dependencies are all needed for the software to run properly.
    pyyaml                    >=5.0.0                      -
    pyproj                    >=3.3.0                      -
    joblib                    >=1.2.0                      -
-   openpyxl                  >=3.0.3                     pandas 
+   openpyxl                  >=3.0.3                      - 
    h5py                      >=3.2.0                     pandas 
    tables                    >=3.6.0                     pandas     
    numpy                     >=1.23.0                    scikit-learn
