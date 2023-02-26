@@ -51,13 +51,15 @@ Adaptations and Features
   
 - Add :func:`watex.utils.get2dtensor` for getting the tensor from 3D to 2D after signal recovery with :meth:`watex.methods.Processing.zrestore`. 
 
-- Add skew visualization: :func:`watex.utils.plot_skew` for phase sensitive visualization; :meth:`watex.view.TPlot.plotSkew` 
-  for consistent plot for phase sensitive visualization
+- Add skew visualization: :func:`watex.utils.plot_skew` for phase-sensitive visualization; :meth:`watex.view.TPlot.plotSkew` 
+  for a consistent plot for phase-sensitive visualization
 
 - Visualizes the phase tensors with  :meth:`watex.view.TPlot.plot_phase_tensors`. 
 
 - Load Huayuan :term:`SEG`- :term:`EDI` datasets from :func:`watex.datasets.load_huayuan`. 
 
+- Warn user when DC-parameters can be computed because of constraints ( fixed `GetAttributeError`
+  in meth:`watex.methods.ResistivityProfiling.summary` ) 
 
 Bug fixes 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
