@@ -38,11 +38,24 @@ Bug fixes
 
   .. code-block:: default 
 
-      File "/home/docs/checkouts/readthedocs.org/user_builds/watex/envs/master/lib/python3.10/site-packages/matplotlib/_api/__init__.py", line 224, in __getattr__
-          raise AttributeError(
-      AttributeError: module 'matplotlib.cm' has no attribute 'cmap_d'
+      Unexpected failing examples:
+      
+      /home/docs/checkouts/readthedocs.org/user_builds/watex/checkouts/master/examples/methods/plot_phase_tensors.py failed leaving traceback:
+      Traceback (most recent call last):
+        File "/home/docs/checkouts/readthedocs.org/user_builds/watex/checkouts/master/examples/methods/plot_phase_tensors.py", line 39, in <module>
+           tplot.plot_phase_tensors (ellipse_dict= ellip_dic)
+        File "/home/docs/checkouts/readthedocs.org/user_builds/watex/checkouts/master/watex/view/plot.py", line 826, in plot_phase_tensors
+           from mtpy.imaging.phase_tensor_pseudosection import (
+        File "/home/docs/checkouts/readthedocs.org/user_builds/watex/envs/master/lib/python3.10/site-packages/mtpy/imaging/phase_tensor_pseudosection.py", line 18, in <module>
+           import mtpy.imaging.mtcolors as mtcl
+        File "/home/docs/checkouts/readthedocs.org/user_builds/watex/envs/master/lib/python3.10/site-packages/mtpy/imaging/mtcolors.py", line 252, in <module>
+           cmapdict.update(cm.cmap_d)
+        File "/home/docs/checkouts/readthedocs.org/user_builds/watex/envs/master/lib/python3.10/site-packages/matplotlib/_api/__init__.py", line 224, in __getattr__
+           raise AttributeError(
+        AttributeError: module 'matplotlib.cm' has no attribute 'cmap_d'
 
-  We fix it ( just for doc building ) by using the matplotlib colormaps rather than MTpy proper colors. 
+  To fix it and let the doc building correctly, we uncomment the example in gallery ``methods.plot_phase_tensors.py`` ( just for doc building ) 
+  rather than using the matplotlib colormaps instead since  MTpy proper colors don't work. 
   
   
 .. _comments: 
