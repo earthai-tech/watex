@@ -33,6 +33,8 @@ from .exmath import (
     interpolate2d,
     scaley, 
     fittensor, 
+    get2dtensor,
+    get_full_frequency, 
     get_strike, 
     get_profile_angle, 
     moving_average, 
@@ -43,7 +45,8 @@ from .exmath import (
 from .funcutils import ( 
     reshape, 
     to_numeric_dtypes, 
-    smart_label_classifier
+    smart_label_classifier, 
+    remove_outliers, 
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -80,6 +83,7 @@ from .plotutils import (
     plot_logging, 
     plot_silhouette, 
     plot_profiling, 
+    plot_skew
     )
 # to fix circular 
 # import
@@ -124,6 +128,8 @@ __all__=[
         'interpolate2d',
         'scaley', 
         'fittensor', 
+        'get2dtensor',
+        'get_full_frequency', 
         'selectfeatures', 
         'getGlobalScore',  
         'split_train_test', 
@@ -180,6 +186,8 @@ __all__=[
         'label_importance', 
         'plot_profiling', 
         'plot_sfi',
+        'plot_skew',
+        'remove_outliers', 
         ]
 
 

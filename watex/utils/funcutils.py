@@ -23,8 +23,9 @@ import datetime
 import warnings
 import itertools
 import subprocess 
+from zipfile import ZipFile
 from six.moves import urllib 
-
+ 
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt
@@ -3016,15 +3017,14 @@ def strip_item(item_to_clean, item=None, multi_space=12):
     # if type(item_to_clean ) != list :#or type(item_to_clean ) !=np.ndarray:
     #     if type(item_to_clean ) !=np.ndarray:
     #         item_to_clean=[item_to_clean]
-    
     if item_to_clean in cleaner or item_to_clean ==['']:
-        warnings.warn ('No data found for sanitization; returns None.')
+        #warnings.warn ('No data found for sanitization; returns None.')
         return None 
     try : 
         multi_space=int(multi_space)
     except : 
-        raise TypeError('argument <multplier> must be'\
-                        ' an integer not {0}'.format(type(multi_space)))
+        raise TypeError('argument <multplier> must be an integer'
+                        'not {0}'.format(type(multi_space)))
     
     for jj, ss in enumerate(item_to_clean) : 
         for space in cleaner:
@@ -4500,13 +4500,241 @@ def hex_to_rgb (c, /):
     c=c.lstrip('#')
     return tuple(int(c[i:i+2], 16) for i in (0, 2, 4)) 
 
+def zip_extractor(
+        zip_file ,
+        samples ='*', 
+        ftype=None,  
+        savepath = None,
+        pwd=None,  
+    ): 
+    """ Extract  ZIP archive objects. 
+    
+    Can extract all or a sample objects when the number of object is passed 
+    to the parameter ``samples``. 
+    
+    .. versionadded:: 0.1.5
+    
+    Parameters 
+    -----------
+    zip_file: str
+        Full Path to archive Zip file. 
+    samples: int, str, default ='*'
+       Number of data to retrieve from archive files. This is useful when 
+       the archive file contains many data. ``*`` means extract all. 
+    savepath: str, optional 
+       Path to store the decompressed archived files.
+    ftype: str, 
+       Is the extension of a specific file to decompressed. Indeed, if the 
+       archived files contains many different data formats, specifying the 
+       data type would retrieved this specific files from the whole 
+       files archieved. 
+    pwd: int, optional
+      Password to pass if the zip file is encrypted.
+      
+    Return 
+    --------
+    objnames: list, 
+     List of decompressed objects. 
+     
+    Examples 
+    ----------
+    >>> from watex.utils.funcutils import zip_extractor 
+    >>> zip_extractor ('watex/datasets/data/edis/e.E.zip')
+    
+    """
+    def raise_msg_when ( objn, ft): 
+        """ Raise message when None file is detected when the type of 
+        of file is supplied. Otherwise return the object collected 
+        from this kind of data-types
+        """
+        objn = [ o for o  in objn if o.endswith (ft)]
+        if len(objn)  ==0:
+            get_extension = [s.split('.')[-1] for s in objn if '.'  in s ]
+            if len(get_extension)==0 : get_extension=['']
+            msg = ( "The available file types are {smart_format(get_extension)}"
+                   if len(get_extension)!=0 else ''
+                   ) 
+            raise ValueError (f"None objects in the zip collection of matches"
+                              f"the {ft!r}. Available file types are {msg}")
+        return objn 
+    
+    if not os.path.isfile (zip_file ): 
+        raise FileExistsError( f"File {os.path.basename(zip_file)!r} does"
+                              " not exist. Expect a Path-like object,"
+                              f" got {type(zip_file).__name__!r}")
         
+    if not os.path.basename(zip_file ).lower().endswith ('.zip'): 
+        raise FileNotFoundError("Unrecognized zip-file.")
+        
+    samples = str(samples) 
+    if samples !='*': 
+        try :samples = int (samples )
+        except: 
+            raise ValueError ("samples must be an integer value"
+                              f" or '*' not {samples}")
+
+    with ZipFile (zip_file, 'r', ) as zip_obj : 
+        objnames = zip_obj.namelist() 
+        if samples =='*':
+                samples = len(objnames )
+            
+        if ftype is not None: 
+            objnames = raise_msg_when(objn=objnames, ft= ftype) 
+
+        if ( samples >= len(objnames) 
+            and ftype is None
+            ) :
+            zip_obj.extractall( path = savepath , pwd=pwd) 
+        else: 
+            for zf in objnames [:samples ]: 
+                zip_obj.extract ( zf, path = savepath, pwd = pwd)        
+    
+    return objnames 
 
     
+def remove_outliers (
+    ar, 
+    method ='IQR',
+    threshold = 3.,
+    fill_value = None, 
+    axis = 1, 
+    ): 
+    """ Efficient strategy to remove outliers in the data. 
     
+    Indeed, an outlier is the data point of the given sample, 
+    observation, or distribution that shall lie outside the overall pattern. 
+    A commonly used rule says that one will consider a data point an 
+    outlier if it has more than 1.5 IQR below the first quartile or above 
+    the third. 
     
+    Two approaches is used to remove the outliers. 
+
+    - Inter Quartile Range (``IQR``)
+      IQR is the most commonly used and most trusted approach used in 
+      the research field. Said differently, low outliers shall 
+      lie below Q1-1.5 IQR, and high outliers shall lie Q3+1.5IQR. 
+      One needs to calculate median, quartiles, including IQR, Q1, 
+      and Q3. 
+      
+      .. math:: 
+          
+        Q1 = 1/4(n + 1)
+        
+        Q3 = 1/4 (n + 1)
+        
+        Q2 = Q3 – Q1
+      
+      To define the outlier base value is defined above and below 
+      datasets normal range namely Upper and Lower bounds, define the 
+      upper and the lower bound (1.5*IQR value is considered) :
+      
+      .. math:: 
+          
+         upper = Q3 +1.5*IQR
+
+         lower = Q1 – 1.5*IQR
+         
+     In the above formula as according to statistics, the 0.5 
+     scale-up of :math:`IQR (new_IQR = IQR + 0.5*IQR)` is taken, to consider 
+     all the data between 2.7 standard deviations in the Gaussian 
+     Distribution
     
+     - Z-score 
+      Is also called a standard score. This value/score helps to understand 
+      that how far is the data point from the mean. And after setting up 
+      a threshold value one can utilize z score values of data points 
+      to define the outliers.
+      
+      .. math:: 
+          
+          Zscore = (\text{data_point} -\text{mean}) / \text{std. deviation}
+      
+    Now to define an outlier threshold value is chosen which is 
+    generally 3.0. As 99.7% of the data points lie between +/- 3 standard 
+    deviation (using Gaussian Distribution approach). 
     
+    Parameters 
+    -----------
+    ar: Arraylike, 
+       Array containing outliers to remove 
+    method: str, default='IQR'
+      The selected approach to remove the outliers. It can be
+      ['IQR'|'Z-score']. See Above for outlier explanations.  Note that 
+      when selecting ``"z-score"`` the threshold value greatly influence 
+      the quality of data considering as ooutliers. 
+      
+    threshold: float, default=3 
+      Thershold values is useful for ``"z-score"`` as the value for considering 
+      data above as outliers. 
+      
+    fill_value: float, optional
+      Value to replace the outliers. If not given, outliers are suppressed 
+      in the array. 
+    
+    axis: int, default=1 
+      axis from which to remove values. This is useful when two dimensional 
+      array is supplied. Default, delete outlier from the rows. 
+      
+    Returns
+    --------
+    arr: Array_like 
+        New array whith removed outliers. 
+        
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> np.random.seed (42 )
+    >>> from watex.utils.funcutils import remove_outliers 
+    >>> data = np.random.randn (7, 3 )
+    >>> data_r = remove_outliers ( data )
+    >>> data.shape , data_r.shape 
+    (7, 3) (5, 3)
+    >>> remove_outliers ( data, fill_value =np.nan )
+    array([[ 0.49671415, -0.1382643 ,  0.64768854],
+           [ 1.52302986, -0.23415337, -0.23413696],
+           [ 1.57921282,  0.76743473, -0.46947439],
+           [ 0.54256004, -0.46341769, -0.46572975],
+           [ 0.24196227,         nan,         nan],
+           [-0.56228753, -1.01283112,  0.31424733],
+           [-0.90802408,         nan,  1.46564877]])
+    >>> # for one dimensional 
+    >>> remove_outliers ( data[:, 0] , fill_value =np.nan )
+    array([ 0.49671415,  1.52302986,  1.57921282,  0.54256004,  0.24196227,
+           -0.56228753,         nan]) 
+    """
+    method = str(method).lower()
+
+    arr =np.array (ar)
+    
+    if method =='iqr': 
+        Q1 = np.percentile(arr, 25,) 
+        Q3 = np.percentile(arr, 75)
+        IQR = Q3 - Q1
+        
+        upper = Q3 + 1.5 * IQR  
+        
+        upper_arr = np.array (arr >= upper) 
+        lower = Q3 - 1.5 * IQR 
+        lower_arr =  np.array ( arr <= lower )
+        # replace the oulier by nan 
+        arr [upper_arr]= fill_value if fill_value else np.nan  
+        arr[ lower_arr]= fill_value if fill_value else np.nan 
+        
+    if method =='z-score': 
+        from scipy import stats
+        z = np.abs(stats.zscore(arr))
+        zmask  = np.array ( z > threshold )
+        arr [zmask]= fill_value if fill_value else np.nan
+        
+    if fill_value is None: 
+        # delete nan if fill value is not provided 
+        arr = arr[ ~np.isnan (arr ).any(axis =1)
+                  ]  if np.ndim (arr) > 1 else arr [~np.isnan(arr)]
+
+    return arr 
+
+        
+        
     
     
     

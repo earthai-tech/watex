@@ -793,14 +793,14 @@ def fetchSingleZIPData(
         zip_file=os.path.join(zipdir, zip_file)
         
     with zipfile.ZipFile(zip_file,'r') as zip_ref:
-        try : 
+        # try : 
             # extract in the current directory 
             fetchedfile = retrieveZIPmember(zip_ref, **zip_kws ) 
-        except : 
-            raise  ExtractionError (
-            f"Unable to retreive file from zip {zip_file!r}")
-        print(f"---> Dataset={os.path.basename(fetchedfile)!r} "
-              "was successfully retreived.")
+        # except : 
+        #     raise  ExtractionError (
+        #     f"Unable to retreive file from zip {zip_file!r}")
+        # print(f"---> Dataset={os.path.basename(fetchedfile)!r} "
+        #       "was successfully retreived.")
             
     
 def retrieveZIPmember(
@@ -830,9 +830,11 @@ def retrieveZIPmember(
         The name of path retreived. If file is renamed than shoud take it 
         new names.
     """
+    if savepath is None: 
+        savepath =os.getcwd()
     if not os.path.isdir(savepath) :
         os.makedirs(savepath)
-    if savepath is None: savepath =os.getcwd()
+    
     
     if file_to_extract in zipObj.namelist(): 
         member2extract=zipObj.getinfo(file_to_extract)

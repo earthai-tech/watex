@@ -1327,7 +1327,7 @@ def erpSmartDetector(
         erp = erp.resistivity 
         
     erp = check_y (erp, allow_nan=True, input_name="ERP data ")
-    res_arr = np.array (erp).copy() # for consistency 
+    res_arr = np.array (erp).copy().astype(np.float64) # for consistency 
     # assert constraint values 
     if isinstance ( constr , dict): 
         constr = list( constr)
@@ -1340,8 +1340,11 @@ def erpSmartDetector(
     cs = _check_constr_eff (constr, s, station)
     # if constraints is not applicable
     # list of stations to  remove if out of the range 
-    out_cs =list()  
+    out_cs =list() 
+
+    
     if cs is not None:
+        
         for ix in cs: 
             if ix >= len(erp): 
                 if raise_warn: 
@@ -1405,7 +1408,7 @@ def _check_constr_eff (constr, six= None, station=None, raise_warn=True):
     Raise  warning messages otherwise.
     
     :param constr: list of dict conatining the constraint items 
-    :param s_ix: index of the station to apply the constraints 
+    :param six: index of the station to apply the constraints 
     :param station: name of the station. The station may include the position 
         values.
     :param raise_warn: alert user that the site is not appropriate 
@@ -1437,7 +1440,7 @@ def _check_constr_eff (constr, six= None, station=None, raise_warn=True):
           ]
     if len(dp)!=0: 
         warnings.warn(f"Duplicated stations {smft(dp)} found in"
-                      "the constraint items. Single item is kept"
+                      " the constraint items. Single item is kept"
                       " while others should be discarded.")
     cs = list(set(cs))
     if six is not None:
@@ -1460,7 +1463,7 @@ def _nan_constr (cs_ix , arr , return_indexed_arr =False ):
     """ Use NaN to mask the constraints in the erp. 
     
     :param cs_ix: int, index of the constraint station. 
-    :param erp: DC profiling  resistivity array 
+    :param arr: DC profiling  resistivity array 
     :param return_indexed_arr: 
         If ``True``, returns the resistivity values  of the selected 
         conductive zone from constraint.
@@ -1489,6 +1492,7 @@ def _nan_constr (cs_ix , arr , return_indexed_arr =False ):
     """
     # note that station must be framed with 3 stations before and after. 
     index_range = np.arange (cs_ix - 3 , cs_ix + 3 +1 ) 
+
     # if there is a negative index, discarded then 
     index_range= index_range [ index_range >=0 ] 
     # use is inx to find the valuable index 
@@ -1498,7 +1502,6 @@ def _nan_constr (cs_ix , arr , return_indexed_arr =False ):
     arr[index_in]  = np.nan 
     
     return  index_in if return_indexed_arr else arr 
-
 
 #XXX OPTIMIZE 
 def defineConductiveZone(
@@ -1605,7 +1608,6 @@ def defineConductiveZone(
     pix = pix [0] if len(pix) > 1 else pix 
     return cz , pcz, int(pix), pos
 
-#XXX OPTIMIZE 
 def _assert_stations(
     station:Any , 
     dipole:Any = None,

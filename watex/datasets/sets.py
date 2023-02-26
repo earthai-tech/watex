@@ -17,6 +17,7 @@ _DTAGS=(
     "tankesse", 
     "boundiali",
     "hlogs", 
+    "huayuan", 
     "edis"
     )
 
@@ -28,6 +29,7 @@ from .dload import (
     load_tankesse , 
     load_boundiali,
     load_hlogs,
+    load_huayuan, 
     load_edis
     ) 
 from .gdata import ( 
@@ -50,6 +52,7 @@ __all__=[
          "load_tankesse", 
          "load_boundiali",
          "load_hlogs", 
+         "load_huayuan", 
          "fetch_data",
          "load_edis",
          "make_erp" , 
@@ -61,7 +64,7 @@ def fetch_data (tag, **kws):
     tag = _parse_tags(tag, multi_kind_dataset='bagoue')
     func= _fetch_data if fi else None 
     funcs= (load_bagoue , load_gbalo, load_iris, load_semien, load_tankesse , 
-            load_boundiali, load_hlogs, load_edis ) 
+            load_boundiali, load_hlogs, load_huayuan, load_edis ) 
     funcns = list (map(lambda f: f.__name__.replace('load_', ''), funcs))
     if tag in (funcns): 
         func = funcs[funcns.index (tag)] 

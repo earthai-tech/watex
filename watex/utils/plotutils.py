@@ -31,7 +31,9 @@ from .funcutils import  (
     to_numeric_dtypes, 
     str2columns, 
     is_in_if, 
-    is_depth_in
+    is_depth_in, 
+    reshape, 
+    remove_outliers, 
     )
 from .validator import  ( 
     _check_array_in  , 
@@ -515,7 +517,8 @@ def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
 
 def plot_sbs_feature_selection (
         sbs_estimator,/,  X=None, y=None ,fig_size=(8, 5), 
-        sns_style =False, savefig = None, verbose=0 , **sbs_kws
+        sns_style =False, savefig = None, verbose=0 , 
+        **sbs_kws
         ): 
     """plot Sequential Backward Selection (SBS) for feature selection.  
     
@@ -2666,6 +2669,172 @@ def plot_profiling (
     
     return ax 
 
+def plot_skew (
+    edi_obj, 
+    method='Bahr', 
+    mode=None, 
+    threshold_line =None, 
+    fig_size = (7, 5), 
+    savefig = None, 
+    view=None, 
+    **kws 
+    ):
+    """ Plot phase sensitive skew visualization. 
+    
+    Phase Sensitivity Skew (:math:`\mu`) is a dimensionality tool that 
+    represents a measure of the skew of the  phases of the impedance 
+    tensor. The parameter is thus unaffected by the distortion 
+    effect, unlike the Swift-skew and ellipticity dimensionality 
+    tools [1]_. 
+    
+    Values of :math:`\mu` > 0.3 are considered to represent 3D data. 
+    Phase-sensitive skews less than 0.1 indicate 1D, 2D or distorted 
+    2D (3-D /2-D) cases. Values of :math:`mu` between 0.1 and 0.3 indicates 
+    modified 3D/2D structures [2]_. 
+    
+    .. versionadded:: 0.1.5 
+    
+    Parameters
+    -----------
+    edi_obj: str, :class:`watex.edi.Edi` 
+        Full path to edifiles or  :class:`~watex.edi.Edi` object. 
+        
+    method: str, default='Bahr': 
+        Kind of correction. Can be ``swift`` for the remove distorsion proposed 
+        by Swift in 1967 [3]_. The value close to 0. assume the 1D and 2D 
+        structures, and 3D otherwise. Conversly to ``bahr`` for the remove 
+        distorsion proposed  by Bahr in 1991 [2]_. The latter threshold is set 
+        to 0.3. Above this value the structures is 3D. 
+        
+    threshold_line: float, optional
+       Visualize th threshold line. Can be ['bahr', 'swift', 'both']:
+           
+       - Note that when method is set to ``swift``, the value close to close 
+         to :math:`0.` assume the 1D and 2D structures,  and 3D otherwise. 
+       - when method is set to ``Bahr``, :math:`\mu > 0.3``  is 3D structures, 
+         between :math:`[0.1 - 0.3]` assumes modified 3D/2D structures whereas 
+         :math:`<0.1` 1D, 2D or distorted 2D. 
+         
+    mode:str, optional 
+       X-axis coordinates for visualisation. plot either ``'frequency'`` or
+       ``'periods'``.  The default is ``'frequency'`` 
+       
+    view: str, default='skew'
+       phase sensistive visualization. Can be rotational invariant 
+       ``invariant``. Note that setting to ``mu`` or ``invariant`` does 
+       not change any interpretation since the distortion of Z are all 
+       rotational invariant whether using the ``Bahr`` or ``swift``
+       methods. 
+  
+    fig_size: tuple, default= (10, 4) 
+        Matplotlib figure size. 
+        
+    savefig: str, optional 
+         Save figure name. The default resolution dot-per-inch is ``300``. 
+         
+    kws: dict, 
+       Matplotlib Axes scatterplot additional keywords arguments. 
+        
+    Return
+    --------
+    ax: Matplotlib.pyplot.Axis 
+        Return axis  
+        
+    See Also 
+    ---------
+    watex.methods.em.Processing.skew: 
+        Skew equation formulations. 
+    watex.view.TPlot.plotSkew: 
+        Give a consistent plot where user can customize the plot using the 
+        plot parameter of :class:`watex.property.BasePlot` class.
+        
+    References 
+    -----------
+    .. [1] Bahr, K. (1988) Interpretation of the magnetotelluric impedance 
+           tensor: regional induction 395 and local telluric distortion. J. 
+           Geophys. Res., 62, 119–127.
+    .. [2] Bahr, K. (1991) Geological noise in magnetotelluric data: 
+           a classification of distortion types. 397 Phys. Earth Planet. 
+           Inter., 66, 24–38.
+    .. [3] Bahr, K., 1991. Geological noise in magnetotelluric data: a 
+           classification of distortion types. Physics of the Earth and 
+           Planetary Interiors 66 (1–2), 24–38.  
+    Examples 
+    ---------
+    >>> import watex as wx 
+    >>> from watex.utils.plotutils import plot_skew 
+    >>> edi_sk = wx.fetch_data ("edis", return_data =True , samples = 20 ) 
+    >>> plot_skew (edi_sk) 
+    >>> plot_skew (edi_sk, threshold_line= True) 
+    
+    """
+
+    view = view or 'skew'
+    
+    if ('inv'  in str (view).lower()
+        or 'rot' in str (view).lower()
+        or 'mu' in str (view).lower()
+        ) : 
+        view ='mu'
+        
+    if 'period' in str(mode).lower(): 
+        mode ='period'
+        
+    if str(threshold_line).lower()=='true': 
+        threshold_line = str(method).lower() 
+            
+    import watex as wx 
+    po =  wx.EMProcessing().fit(edi_obj)
+    
+    skew, mu =po.skew(method = method )
+    freqs =  1/ po.freqs_ if mode =='period' else po.freqs_ 
+    ymat = skew if view =='skew' else mu 
+    
+    fig, ax = plt.subplots(1,1, figsize =fig_size)
+
+    #---manage threshold line ------
+    thr_code = {"bahr": [1] , "swift":[ 2] , 'both':[1, 2] }
+
+        
+    if threshold_line is not None: 
+        if str(threshold_line).lower() in ("*", "both"): 
+            threshold_line = 'both'
+            
+    ct = thr_code.get(str(threshold_line).lower(), None ) 
+    
+    # remove the outliers in the data
+    # and filled with NaN 
+    ymat = remove_outliers(ymat, fill_value= np.nan ) 
+    
+    for i in range (skew.shape[1]): 
+        ax.scatter ( freqs, reshape (ymat[:, i]),**kws )
+        
+    if ct: 
+        for m in ct: 
+            plt.axhline(y=0.1 if m==2 else 0.3 , color="k" if m==1 else "g",
+                        linestyle="-",
+                        label=f'threshold: $\mu={0.1 if m==2 else 0.3}$'
+                        )
+            ax.legend() 
+
+    ax.set_xscale('log')
+    
+    ax.set_xlabel('Period ($s$)' if mode=='period' 
+                  else 'Frequency ($H_z$)')
+    ax.set_ylabel(f"{'Skew' if view =='skew' else 'Rot.Invariant'}" + "($\mu$)")
+
+    plt.xlim ([ freqs.min() , freqs.max()])
+    
+    #plt.xlim() 
+
+    if savefig is not  None: 
+        savefigure (fig, savefig, dpi = 300)
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+    return ax 
+
+    
 def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =7 ):
     """ Format thick parameter with 'FuncFormatter(func)'
     rather than using `axi.xaxis.set_major_locator (plt.MaxNLocator(3))`
@@ -2680,3 +2849,5 @@ def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =7 ):
     if value % nskip==0: 
         return fmt.format(int(value)+ 1)
     else: None 
+    
+ 

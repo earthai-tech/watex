@@ -44,6 +44,7 @@ from ..utils.funcutils import (
     pretty_printer, 
 
     )
+from ..utils.box import Boxspace 
 from ..utils.validator import ( 
     check_X_y, 
     check_consistent_length, 
@@ -323,7 +324,7 @@ class GridSearchMultiple:
 
         self.best_estimators_ =[] 
         self.data_ = {} 
-    
+        models_= {}
         msg =''
         
         self.filename = self.filename or '__'.join(
@@ -349,13 +350,16 @@ class GridSearchMultiple:
                     " attributes\n'"
                  )
             self.data_[estm_name]= {
-                                'best_model':searchObj.best_estimator_ ,
+                                'best_model_':searchObj.best_estimator_ ,
                                 'best_params_':searchObj.best_params_ , 
                                 'cv_results_': searchObj.cv_results_,
-                                'grid_param':self.grid_params[j],
+                                'grid_params':self.grid_params[j],
                                 'scoring':self.scoring, 
                                 "grid_kws": self.grid_kws
                                     }
+            
+            models_[estm_name] = searchObj
+            
             
             msg += ( f"Cross-evaluatation the {estm_name} best model."
                     f" with KFold ={self.cv}"
@@ -375,6 +379,17 @@ class GridSearchMultiple:
                           searchObj.best_params_, 
                           bestim_best_scores) 
                         )
+            
+        # save models into a Box 
+        d = {**models_, ** dict( 
+            keys_ = list (models_.values() ), 
+            values_ = list (models_.values() ), 
+            models_= models_, 
+            )
+            
+            }
+        self.models= Boxspace(**d) 
+        
         if self.verbose:
             msg += ('\Pretty print estimators results using'
                     f' scoring ={self.scoring!r}')
@@ -410,10 +425,15 @@ estimators: list of callable obj
     list of estimator objects to fine-tune their hyperparameters 
     For instance::
         
-        estimators= (LogisticRegression(random_state =random_state), 
-         LinearSVC(random_state =random_state), 
-         SVC(random_state =random_state) )
-        
+    random_state=42
+    # build estimators
+    logreg_clf = LogisticRegression(random_state =random_state)
+    linear_svc_clf = LinearSVC(random_state =random_state)
+    sgd_clf = SGDClassifier(random_state = random_state)
+    svc_clf = SVC(random_state =random_state) 
+               )
+    estimators =(svc_clf,linear_svc_clf, logreg_clf, sgd_clf )
+ 
 grid_params: list 
     list of parameters Grids. For instance:: 
         
@@ -423,7 +443,7 @@ grid_params: list
         dict(kernel=['poly'],degree=[1, 3,5, 7], coef0=[1, 2, 3], 
          'C': [1e-2, 1e-1, 1, 10, 100])], 
         [dict(C=[1e-2, 1e-1, 1, 10, 100], loss=['hinge'])], 
-        [dict()]
+        [dict()], [dict()]
         )
 {params.core.cv} 
 
@@ -446,7 +466,56 @@ grid_kws: dict,
     
 Examples
 --------
-../scripts/fine_tune_hyperparams.py
+>>> from watex.models import GridSearchMultiple , displayFineTunedResults
+>>> from watex.exlib import LinearSVC, SGDClassifier, SVC, LogisticRegression
+>>> X, y  = wx.fetch_data ('bagoue prepared') 
+>>> X
+... <344x18 sparse matrix of type '<class 'numpy.float64'>'
+... with 2752 stored elements in Compressed Sparse Row format>
+>>> # As example, we can build 04 estimators and provide their 
+>>> # grid parameters range for fine-tuning as ::
+>>> random_state=42
+>>> logreg_clf = LogisticRegression(random_state =random_state)
+>>> linear_svc_clf = LinearSVC(random_state =random_state)
+>>> sgd_clf = SGDClassifier(random_state = random_state)
+>>> svc_clf = SVC(random_state =random_state) 
+>>> estimators =(svc_clf,linear_svc_clf, logreg_clf, sgd_clf )
+>>> grid_params= ([dict(C=[1e-2, 1e-1, 1, 10, 100], 
+                        gamma=[5, 2, 1, 1e-1, 1e-2, 1e-3],kernel=['rbf']), 
+                   dict(kernel=['poly'],degree=[1, 3,5, 7], coef0=[1, 2, 3],
+                        C= [1e-2, 1e-1, 1, 10, 100])],
+                [dict(C=[1e-2, 1e-1, 1, 10, 100], loss=['hinge'])], 
+                [dict()], # we just no provided parameter for 
+                [dict()]
+                )
+>>> #Now  we can call :class:`watex.models.GridSearchMultiple` for
+>>> # training and self-validating as:
+  >>> gobj = GridSearchMultiple(estimators = estimators, 
+                       grid_params = grid_params ,
+                       cv =4, 
+                       scoring ='accuracy', 
+                       verbose =1,   #> 7 put more verbose 
+                       savejob=False ,  # set true to save job in binary disk file.
+                       kind='GridSearchCV').fit(X, y)
+>>> # Once the parameters are fined tuned, we can display the fined tuning 
+>>> # results using displayFineTunedResults`` function
+>>> displayFineTunedResults (gobj.models.values_) 
+MODEL NAME = SVC
+BEST PARAM = {{'C': 100, 'gamma': 0.01, 'kernel': 'rbf'}}
+BEST ESTIMATOR = SVC(C=100, gamma=0.01, random_state=42)
+
+MODEL NAME = LinearSVC
+BEST PARAM = {{'C': 100, 'loss': 'hinge'}}
+BEST ESTIMATOR = LinearSVC(C=100, loss='hinge', random_state=42)
+
+MODEL NAME = LogisticRegression
+BEST PARAM = {{}}
+BEST ESTIMATOR = LogisticRegression(random_state=42)
+
+MODEL NAME = SGDClassifier
+BEST PARAM = {{}}
+BEST ESTIMATOR = SGDClassifier(random_state=42)
+
 
 Notes
 --------

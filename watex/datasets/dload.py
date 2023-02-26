@@ -15,14 +15,15 @@ from warnings import warn
 from importlib import resources 
 import pandas as pd 
 from .._docstring import erp_doc, ves_doc 
-from ._io import csv_data_loader, _to_dataframe , DMODULE 
+from ._io import csv_data_loader, _to_dataframe, DMODULE, get_data, remove_data 
 from ..utils.coreutils import vesSelector, erpSelector 
 from ..utils.mlutils import split_train_test_by_id , existfeatures
 from ..utils.funcutils import ( 
     to_numeric_dtypes , 
     smart_format, str2columns, 
     is_in_if, 
-    reshape 
+    reshape, 
+    zip_extractor 
     )
 from ..utils.box import Boxspace
 
@@ -723,7 +724,7 @@ Parameters
 return_data : bool, default=False
     If True, returns ``data`` in array-like 1D instead of a Boxspace object.
     Note that the data is only a  collection of EDI-objects from 
-    :class:`pycsamt.ff.core.edi.Edi`
+    :class:`watex.edi.Edi`
 
 as_frame : bool, default=False
     If True, the data is a pandas DataFrame including columns with
@@ -734,7 +735,7 @@ samples: int, default=None
     
 (tag, data_names): None
     `tag` and `data_names` do nothing. just for API purpose and to allow 
-    fetching the same data uing the func:`~watex.data.fetch_data` since the 
+    fetching the same data uing the func:`~watex.datasets.fetch_data` since the 
     latter already holds `tag` and `data_names` as parameters.     
   
 key: str, {'site', 'edi', 'latitude', '*', 'longitude'},  default='edi'
@@ -753,7 +754,7 @@ data : :class:`~watex.utils.Boxspace`
 
     frame: DataFrame of shape (50, 4)
         Only present when `as_frame=True`. DataFrame with `data` and
-        `target`.
+        no `target`.
         .. versionadded:: 0.1.2
     DESCR: str
         The full description of the dataset.
@@ -778,6 +779,198 @@ Examples
 5  26.053410  110.487433
 6  26.053815  110.487753
 """ 
+
+def load_huayuan (
+        *, samples = None, key= None,  as_frame=False,  
+        return_data = False, tag= None, data_names=None, 
+        **kws
+        ) : 
+    savepath = kws.pop("savepath", None)
+    clear_cache = kws.pop('clear_cache', True)
+    # remove the file in cache 
+    if clear_cache: remove_data()
+    
+    emo, frame , feature_names= None ,  None , None 
+    valid_keys = {"pre-processed", 'raw'}
+    if ( 'pre' in str(key).lower() 
+       or 'pro' in str(key).lower()
+       ): 
+        key ='pre-processed'
+        
+    key = key or "pre-processed" 
+    # assertion error if key does not exist. 
+    msg = (f"Invalid key {key!r}. Expects {tuple (valid_keys)}")
+    assert str(key).lower() in {"pre-processed", "raw"}, msg
+    
+    DMOD = DMODULE + '.edis'
+    data_file ='raw.E.zip' if key=='raw' else 's.E.zip'
+    with resources.path (DMOD, data_file) as p : 
+        data_file = p 
+        
+    samples = samples or "*"
+    # extract data using zip extractor 
+    zip_extractor(data_file, samples = samples, ftype =None, 
+                  savepath = savepath or get_data())
+    
+    #******Read Edis****************************
+    import watex as wx 
+    emo = wx.EM().fit(savepath or get_data ()) 
+    #*******************************************
+    if as_frame: 
+        frame = pd.DataFrame ({ 'edi': emo.ediObjs_, 
+                               'longitude': emo.longitude, 
+                               'latitude':emo.latitude, 
+                               'site': emo.stnames, 
+                               'id': emo.id , 
+                                  })
+        # for consistency, set to the appropriate dtype numeric 
+        frame = to_numeric_dtypes(frame)
+        feature_names = list(frame.columns )
+    if return_data or as_frame: 
+        return emo.ediObjs_ if return_data else frame 
+    
+    
+    return Boxspace(
+        data=emo.ediObjs_,
+        frame=frame, 
+        path= get_data (),
+        filename=data_file ,
+        feature_names = feature_names, 
+        data_module=DMOD,
+        emo= emo, 
+        #XXX Add description 
+        DESCR= '', # fdescr,
+    )
+      
+load_huayuan.__doc__="""\
+Load AMT data from Huayuan locality. 
+
+The data is a bacth of 50 :term:`SEG` :term:`EDI` files collected in the 
+Huayuan county, Hunan province, China. The data is a :term:`AMT` data collected 
+the first line.
+
+.. versionadded: 0.1.5
+
+Parameters 
+-----------
+return_data : bool, default=False
+    If True, returns ``data`` in array-like 1D instead of a Boxspace object.
+    Note that the data is only a  collection of EDI-objects from 
+    :class:`watex.edi.Edi`
+
+as_frame : bool, default=False
+    If ``True``, the data is a pandas DataFrame including columns with
+    appropriate dtypes (numeric). 
+    
+samples: int, str, default=None, 
+   Is the number of EDI files to collect. ``None`` or ``*`` allow retrieving 
+   all the 50 EDI sites. 
+key: str, optional 
+   Is the kind of data to fetch. Can be ['preprocessed'|'raw']. The default is
+   ``default='pre-processed'`` for ``None`` value. The ``raw`` data contains 
+   missing tensors and ( weak frequency or noised data intereferences).  
+   
+(tag, data_names): None
+    `tag` and `data_names` do nothing. just for API purpose and to allow 
+    fetching the same data uing the func:`~watex.datasets.fetch_data` since the 
+    latter already holds `tag` and `data_names` as parameters.
+    
+savepath: str, 
+   Path to store temporarily the extracted huayuan data data.  If no supplied 
+   the default cache is used.
+   
+clear_cache:bool, default=False 
+   Clear the cache before storing the new EDI files. For instanceif at the first
+   turn all edis is fetched. At the second run, if samples is given, It does 
+   not have effect. All the EDI files will be retrieved. Thus, to get the 
+   the number of samples for EDI, `clear_cache` should be useful by setting to 
+   ``True``. 
+  
+Returns
+-------
+data : :class:`~watex.utils.Boxspace`
+    Dictionary-like object, with the following attributes.
+    data : {ndarray, dataframe} of shape (50, 4)
+        The data matrix. If `as_frame=True`, `data` will be a pandas
+        DataFrame.
+    path: str
+        Path where the EDI data is stored. By default is stored in a cache 
+        ``~/watex_data``. 
+    frame: DataFrame of shape (50, 4)
+        Only present when `as_frame=True`. DataFrame with `data` no `target`. 
+        
+    feature_names: list
+        The names of the dataset columns.'None' if ``as_frame=False``. 
+        
+    emo: :class:`~watex.methods.em.EM` object. 
+         Object from :term:`EM` class. 
+    filename: str
+        The path to the location of the data.     
+    DESCR: str
+        The full description of the dataset.
+
+See Also 
+---------
+load_edis: 
+    Another collection of :term:`EDI` stored as a supplement inner dataset. 
+    
+Examples 
+---------
+>>> from watex.datasets import load_huayuan 
+>>> box = load_huayuan () 
+>>> len(box.data)
+50 
+>>> len(load_huayuan ( return_data =True ))
+50
+>>> data_sample = load_huayuan (samples=17, return_data =True, clear_cache=True )
+>>> len(data_sample)
+17 
+>>> data_sample = load_huayuan (samples=17 , as_frame=True)
+                edi   longitude   latitude   site   id
+0  Edi( verbose=0 )  110.485833  26.051389  s.E00  S00
+1  Edi( verbose=0 )  110.486483  26.052210  s.E01  S01
+2  Edi( verbose=0 )  110.487134  26.053032  s.E02  S02
+"""
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     

@@ -12,6 +12,7 @@ import warnings
 import numbers
 import operator
 import joblib
+import re
 import numpy as np
 # mypy error: Module 'numpy.core.numeric' has no attribute 'ComplexWarning'
 from numpy.core.numeric import ComplexWarning  # type: ignore
@@ -23,6 +24,166 @@ from ._array_api import get_namespace, _asarray_with_order
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
 
+def _validate_tensor( 
+    out:str='resxy', *,  
+    tensor =None, 
+    component=None, 
+    kind ='complex',
+    **kws, 
+    ):
+    """
+    Validate tensors. 
+
+    Parameters 
+    ----------- 
+
+    out: str 
+        kind of data to output. Be sure to provide the component to retrieve 
+        the attribute from the collection object. Except the `error` and 
+        frequency attribute, the missing component to the attribute will 
+        raise an error. for instance ``resxy`` for xy component. Default is 
+        ``resxy``. 
+    kind : bool or str 
+        focuses on the tensor output. Note that the tensor is a complex number 
+        of ndarray (nfreq, 2,2 ). If set to``modulus`, the modulus of the complex 
+        tensor should be outputted. If ``real`` or``imag``, it returns only
+        the specific one. Default is ``complex``.
+        
+    tensor: str, optional  
+        Tensor name. Can be [ resistivity|phase|z|frequency]
+        
+    component: str, 
+      EM mode. Can be ['xx', 'xy', 'yx', 'yy']
+      
+    kind : bool or str 
+        focuses on the tensor output. Note that the tensor is a complex number 
+        of ndarray (nfreq, 2,2 ). If set to``modulus`, the modulus of the complex 
+        tensor should be outputted. If ``real`` or``imag``, it returns only
+        the specific one. Default is ``complex``.
+          
+    kws: dict 
+        Additional keywords arguments from :func:`~.getfullfrequency `. 
+    
+    Returns 
+    -------- 
+    name, m2: name of tensor and components 
+        the matrix of number of frequency and number of Edi-collectes which 
+        correspond to the number of the stations/sites. 
+    
+    Examples 
+    ---------
+    >>> from watex.methods.em import EM 
+    >>> edipath ='data/edis'
+    >>> emObjs= EM().fit(edipath)
+    >>> phyx = EM().make2d ('phaseyx')
+    >>> phyx 
+    ... array([[ 26.42546593,  32.71066454,  30.9222746 ],
+           [ 44.25990541,  40.77911136,  41.0339148 ],
+           ...
+           [ 37.66594686,  33.03375863,  35.75420802],
+           [         nan,          nan,  44.04498791]])
+    >>> phyx.shape 
+    ... (55, 3)
+    >>> # get the real number of the yy componet of tensor z 
+    >>> zyy_r = make2d (ediObjs, 'zyx', kind ='real')
+    ... array([[ 4165.6   ,  8665.64  ,  5285.47  ],
+           [ 7072.81  , 11663.1   ,  6900.33  ],
+           ...
+           [   90.7099,   119.505 ,   122.343 ],
+           [       nan,        nan,    88.0624]])
+    >>> # get the resistivity error of component 'xy'
+    >>> resxy_err = EM.make2d ('resxy_err')
+    >>> resxy_err 
+    ... array([[0.01329037, 0.02942557, 0.0176034 ],
+           [0.0335909 , 0.05238863, 0.03111475],
+           ...
+           [3.33359942, 4.14684926, 4.38562271],
+           [       nan,        nan, 4.35605603]])
+    >>> phyx.shape ,zyy_r.shape, resxy_err.shape  
+    ... ((55, 3), (55, 3), (55, 3))
+       
+    """
+    from ..exceptions import EMError 
+    if  ( 
+            ( tensor and not component )  
+            or ( component and not tensor)
+            ): 
+        raise EMError("Tensor can not be None while component is"
+                      " given and vice-versa. Both are needed."
+                      )
+    elif ( tensor and component): 
+        out = str(tensor ) + str( component) 
+ 
+    #--- assert out tensor and components----- 
+    out = str(out).lower().strip () 
+    kind = str(kind).lower().strip() 
+    if kind.find('imag')>=0 :
+        kind ='imag'
+    if kind not in ('modulus', 'imag', 'real', 'complex'): 
+        raise ValueError(f"Unacceptable argument {kind!r}. Expect "
+                         "'modulus','imag', 'real', or 'complex'.")
+    # get the name for extraction using regex 
+    regex1= re.compile(r'res|rho|phase|phs|z|tensor|freq')
+    regex2 = re.compile (r'xx|xy|yx|yy')
+    regex3 = re.compile (r'err')
+    
+    m1 = regex1.search(out) 
+    m2= regex2.search (out)
+    m3 = regex3.search(out)
+    
+    if m1 is None: 
+        raise ValueError (f" {out!r} does not match  any 'resistivity',"
+                          " 'phase' 'tensor' nor 'frequency'.")
+    m1 = m1.group() 
+    
+    if m1 in ('res', 'rho'):
+        m1 = 'resistivity'
+    if m1 in ('phase', 'phs'):
+        m1 = 'phase' 
+    if m1 in ('z', 'tensor'):
+        m1 ='z' 
+    if m1  =='freq':
+        m1 ='_freq'
+        
+    if m2 is None or m2 =='': 
+        if m1 in ('z', 'resistivity', 'phase'): 
+            raise ValueError (
+                f"{'Tensor' if m1=='z' else m1.title()!r} component "
+                f"is missing. Use e.g. '{m1}_xy' for 'xy' component")
+    m2 = m2.group() if m2 is not None else m2 
+    m3 = m3.group () if m3 is not None else '' 
+    
+    if m3 =='err':
+        m3 ='_err'
+   
+    name = m1 + m3 if (m3 =='_err' and m1 != ('_freq' or 'z')) else m1 
+
+    return name, m2 
+
+def _assert_z_or_edi_objs ( z_or_edis_obj_list, /): 
+    """ Assert Z or EDI and return objet types """
+    # get the frequency 
+    from ..edi import Edi
+    from ..externals.z import Z 
+    from ..exceptions import EMError 
+    
+    if not hasattr (z_or_edis_obj_list, '__iter__'): 
+        raise TypeError("A collection of EDI or Zobjects should be in"
+                        f" a list. Got {type(z_or_edis_obj_list).__name__!r}"
+                        )
+    obj_type = None 
+    s_edi = set( [ isinstance ( z_or_edis_obj_list[i], ( Edi, Z) ) 
+                  for i in range( len(z_or_edis_obj_list)) ]
+                )
+    if len(s_edi) !=1 or not  list(s_edi)[0]:
+        raise EMError("Expect EDI[watex.edi.Edi]  or Z[watex.externals.z.Z]"
+                      f" objects. Got {s_edi} objects.")
+    else: 
+        obj_type ='EDI' if isinstance ( 
+            z_or_edis_obj_list[0], Edi) else 'Z'
+        
+    return obj_type 
+       
 def _is_numeric_dtype (o, / , to_array =False ): 
     """ Determine whether the argument has a numeric datatype, when
     converted to a NumPy array.

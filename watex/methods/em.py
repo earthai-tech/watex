@@ -33,13 +33,16 @@ from ..utils.funcutils import (
     ) 
 from ..utils.exmath import ( 
     scalePosition, 
-    fittensor, 
+    fittensor,
+    get2dtensor, 
     betaj, 
     interpolate1d,
     interpolate2d, 
+    get_full_frequency, 
     rhoa2z, 
     z2rhoa, 
     mu0, 
+    
     )
 from ..utils.coreutils import ( 
     makeCoords, 
@@ -63,9 +66,15 @@ from .._typing import (
 from ..utils._dependency import ( 
     import_optional_dependency
     )
-
+from ..utils.validator import ( 
+    _validate_tensor, 
+    )
 
 _logger = watexlog.get_watex_logger(__name__)
+
+__all__ =['EM',
+          'Processing',
+          ]
 
 class EM(IsEdi): 
     """
@@ -114,11 +123,12 @@ class EM(IsEdi):
         
     """
 
-    def __init__(self, survey_name:str  =None ): 
+    def __init__(self, survey_name:str  =None , verbose=0): 
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
     
         self.survey_name =survey_name
         self.Location_= Location()
+        self.verbose=verbose
         self._latitude = None
         self._longitude=None
         self._elevation= None 
@@ -344,9 +354,10 @@ class EM(IsEdi):
         # reorganize  edis in lon lat order. 
         self.edifiles = list(map(lambda o: o.edifile , self.ediObjs_))
 
-        try:
-            show_stats(rfiles, self.ediObjs_)
-        except: pass 
+        if self.verbose:
+            try:
+                show_stats(rfiles, self.ediObjs_)
+            except: pass 
         
         #--get coordinates values and correct lon_lat ------------
         lat  = _fetch_headinfos(self.ediObjs_, 'lat')
@@ -475,7 +486,7 @@ class EM(IsEdi):
             
         kws: dict 
             Additionnal keyword arguments from `~Edi.write_edifile` and 
-            :func:`watex.utils.coreutils.make_ll_coordinates`. 
+            :func:`watex.utils.coreutils.makeCoords`. 
             
         Returns 
         --------
@@ -630,43 +641,40 @@ class EM(IsEdi):
         the data collection. Note that when using |NSAMT|, some data are missing 
         due to the weak of missing frequency at certain band especially in the 
         attenuation band. 
-
-        :param to_log10: export frequency to base 10 logarithm 
-        :type to_log10: bool, 
         
-        :returns: frequency with clean data. Out of `attenuation band` if survey 
-            is completed with  |NSAMT|. 
-        :rtype: array_like, shape(N, )
-
-        :example: 
-            >>> from watex.methods.em import EM
-            >>> from watex.datasets import load_edis 
-            >>> edi_data = load_edis (return_data =True, samples =12)
-            >>> cObjs = Edi_collection (edipath) # object from Edi_collection 
-            >>> emObjs = EM().fit(edi_data )  
-            >>> ref = emObjs.getfullfrequency (cObjs.ediObjs)  
-            >>> ref
-            ... array([7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04, 3.50000e+04,
-                   2.94000e+04, 2.47000e+04, 2.08000e+04, 1.75000e+04, 1.47000e+04,
-                   ...
-                   1.12500e+01, 9.37500e+00, 8.12500e+00, 6.87500e+00, 5.62500e+00])
-            >>> len(ref)
-            ... 55 
-            >>> # however full frequency can just be fetched using the attribute `freqs_` 
-            >>> emObjs.freqs_ 
-            ... array([7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04, 3.50000e+04,
-                   2.94000e+04, 2.47000e+04, 2.08000e+04, 1.75000e+04, 1.47000e+04,
-                   ...
-                   1.12500e+01, 9.37500e+00, 8.12500e+00, 6.87500e+00, 5.62500e+00])
+        Parameters 
+        -----------
+        to_log10: bool, default=False, 
+            export frequency to base 10 logarithm 
             
+        Returns 
+        --------
+        f: Arraylike 1d of shape(N, )
+            frequency with clean data. Out of `attenuation band` if survey 
+            is completed with  |NSAMT|. 
+        
+        See Also
+        --------
+        watex.utils.exmath.get_full_frequency: 
+            Get the complete frequency with no missing signals. 
+            
+        Example 
+        -------
+        >>> import watex as wx 
+        >>> edi_sample = wx.fetch_data ('edis', return_data=True, samples = 12 )
+        >>> wx.EM().fit(edi_sample).getfullfrequency(to_log10 =True )
+        array([4.76937733, 4.71707639, 4.66477553, 4.61247466, 4.56017382,
+               4.50787287, 4.45557204, 4.40327104, 4.35097021, 4.29866928,
+               4.24636832, 4.19406761, 4.14176668, 4.08946565, 4.03716465,
+               ...
+               2.67734228, 2.62504479, 2.57274385, 2.52044423, 2.46814047,
+               2.41584107, 2.36353677, 2.31124512, 2.25892448, 2.20663701,
+               2.15433266, 2.10202186, 2.04972182, 1.99743007])
+
         """
         self.inspect 
-        
-        lenfs = np.array([len(ediObj.Z._freq) for ediObj in self.ediObjs_ ] ) 
-        ix_fm = np.argmax (lenfs) ; f= self.ediObjs_ [ix_fm].Z._freq 
-        
-        return np.log10(f) if to_log10 else f 
-    
+        return get_full_frequency (self.ediObjs_ , to_log10 = to_log10) 
+
     def make2d (
         self,
         out:str = 'resxy',
@@ -739,6 +747,8 @@ class EM(IsEdi):
         ... ((55, 3), (55, 3), (55, 3))
         
         """
+        self.inspect 
+        
         def fit2dall(objs, attr, comp): 
             """ Read all ediObjs and replace all missing data by NaN value. 
             
@@ -775,50 +785,10 @@ class EM(IsEdi):
                 
             # stacked the z values alomx axis=1. 
             return np.hstack ([ reshape (o, axis=0) for o in zl])
-            
-        out = str(out).lower().strip () 
-        kind = str(kind).lower().strip() 
-        if kind.find('imag')>=0 :
-            kind ='imag'
-        if kind not in ('modulus', 'imag', 'real', 'complex'): 
-            raise ValueError(f"Unacceptable argument {kind!r}. Expect "
-                             "'modulus','imag', 'real', or 'complex'.")
-        # get the name for extraction using regex 
-        regex1= re.compile(r'res|rho|phase|phs|z|tensor|freq')
-        regex2 = re.compile (r'xx|xy|yx|yy')
-        regex3 = re.compile (r'err')
+           
+        # read/assert edis and get the complete frequency     
+        name , m2 = _validate_tensor(out = out , kind = kind, **kws )
         
-        m1 = regex1.search(out) 
-        m2= regex2.search (out)
-        m3 = regex3.search(out)
-        
-        if m1 is None: 
-            raise ValueError (f" {out!r} does not match  any 'resistivity',"
-                              " 'phase' 'tensor' nor 'frequency'.")
-        m1 = m1.group() 
-        
-        if m1 in ('res', 'rho'):
-            m1 = 'resistivity'
-        if m1 in ('phase', 'phs'):
-            m1 = 'phase' 
-        if m1 in ('z', 'tensor'):
-            m1 ='z' 
-        if m1  =='freq':
-            m1 ='_freq'
-            
-        if m2 is None or m2 =='': 
-            if m1 in ('z', 'resistivity', 'phase'): 
-                raise ValueError (
-                    f"{'Tensor' if m1=='z' else m1.title()!r} component "
-                    f"is missing. Use e.g. '{m1}_xy' for 'xy' component")
-        m2 = m2.group() if m2 is not None else m2 
-        m3 = m3.group () if m3 is not None else '' 
-        
-        if m3 =='err':
-            m3 ='_err'
-        # read/assert edis and get the complete frequency 
-        self.inspect 
-    
         #=> slice index for component retreiving purpose 
         _c= {
               'xx': [slice (None, len(self.freqs_)), 0 , 0] , 
@@ -827,19 +797,18 @@ class EM(IsEdi):
               'yy': [slice (None, len(self.freqs_)), 1,  1] 
         }
         #==> returns mat2d freq 
-        if m1 =='_freq': 
+        # if m1 =='_freq': 
+        if name =='_freq': 
             f2d  = [fittensor(self.freqs_, ediObj.Z._freq, ediObj.Z._freq)
                   for ediObj in self.ediObjs_
                   ]
             return  np.hstack ([ reshape (o, axis=0) for o in f2d])
         
-        # get the value for exportation (attribute name and components)
-        name = m1 + m3 if (m3 =='_err' and m1 != ('_freq' or 'z')) else m1 
-        #print(name, m1 , m2)
+        # # get the value for exportation (attribute name and components)
         mat2d  = fit2dall(objs= self.ediObjs_, attr= name, comp= m2)
         
         return mat2d 
-    
+ 
     def getreferencefrequency (
         self,
         to_log10: bool =False
@@ -878,7 +847,7 @@ class EM(IsEdi):
         self.inspect 
         self.freqs_= self.getfullfrequency ()
         # fit z and find all missing data from complete frequency f 
-        # we take only the componet xy for fitting.
+        # we take only the component xy for fitting.
 
         zxy = [fittensor(self.freqs_, ediObj.Z._freq, ediObj.Z.z[:, 0, 1].real)
               for ediObj in self.ediObjs_
@@ -910,8 +879,8 @@ class EM(IsEdi):
         
         Parameters 
         -----------
-        ediObj: str or  pycsamt.core.edi.Edi 
-            Full path to Edi file or object from `pycsamt`_ 
+        ediObj: str or  :class:`watex.edi.Edi` 
+            Full path to Edi file/object or object from `pycsamt`_ or `MTpy`_
         
         new_Z: ndarray (nfreq, 2, 2) 
             Ndarray of impendance tensors Z. The tensor Z is 3D array composed of 
@@ -928,7 +897,7 @@ class EM(IsEdi):
         ediObj.write_new_edifile( new_Z=new_Z, savepath = savepath , **kws)
         return ediObj 
     
-   
+        
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
         return repr_callable_obj  (self, skip =('edifiles', 'freq_array', 'id'))
@@ -953,7 +922,7 @@ class _zupdate(EM):
         When `option` is set to ``write``. The new EDI -files are exported.
         Any other values should return only the updated impedance tensors.
         
-    :returns: A collection of  :class:`pycsamt.core.z.Z` impedance tensor 
+    :returns: A collection of  :class:`watex.externals.z.Z` impedance tensor 
         objects.
     """
     
@@ -1490,9 +1459,9 @@ class Processing (EM) :
             
         .. math:: 
           
-            [C_1, C_2] & = & \text{Im} C_2*C_1^{*}
+            \[C_1, C_2] & = & \text{Im} C_2*C_1^*
             
-            [C_1, C_2]  & = & \text{Re} C_1 * \text{Im}C_2  - R_e(C_2)* \text{Im}C_1
+            \[C_1, C_2]  & = & \text{Re} C_1 * \text{Im}C_2  - R_e(C_2)* \text{Im}C_1
                         
         Indeed, :math:`skew_{Bahr}` measures the deviation from the symmetry condition
         through the phase differences between each pair of tensor elements,considering
@@ -1519,6 +1488,16 @@ class Processing (EM) :
             - Array of skew at each frequency 
             - rotational invariant ``mu`` at each frequency. 
             
+        See Also
+        ---------
+        watex.utils.plot_skew: 
+            For phase sensistive skew visualization - naive plot. 
+        watex.view.TPlot.plotSkew: 
+            For consistent plot of phase sensitive skew visualization. Allow 
+            customize plots. 
+        watex.view.TPlot.plot_phase_tensors: 
+            Plot skew as ellipsis visualization by turning the `tensor`
+            parameter to ``skew``. 
 
         Examples
         --------
@@ -1548,7 +1527,7 @@ class Processing (EM) :
         """
         self.inspect 
             
-        self.method = method 
+        self.method = str(method).lower()
         if self.method not in ('swift', 'bahr'): 
             raise ValueError(
                 f'Expected argument ``swift`` or ``bahr`` not: {self.method!r}')
@@ -1573,6 +1552,7 @@ class Processing (EM) :
     def zrestore(
         self,
         *, 
+        tensor:str=None, 
         buffer: Tuple[float]=None, 
         method:str ='pd',
         **kws 
@@ -1600,10 +1580,18 @@ class Processing (EM) :
         to approach 10-6 γ/√Hz (Zheng, 2010; Zonge, 2000).
         
         Parameters 
-        ---------- 
-        data: Path-like object or list of pycsamt.core.edi objects
-            Collections of EDI-objects from `pycsamt`_ or full path to EDI files. 
-            
+        ----------
+
+        tensor: str, optional
+           Name of the tensor. It can be [ resistivity|phase|z|frequency]. 
+           If the name of tensor is given, function  returns the tensor value
+           in two-dimensionals composed of (n_freq , n_sites) where 
+           ``n_freq=number of frequency`` and ``n_sations`` number of sites. 
+           Note that if the tensor is passed as boolean values ``True``, the 
+           ``resistivity`` tensor is exported by default and the ``component``
+           should be the component passed to :class:`Processing` at 
+           initialization. 
+          
         buffer: list [max, min] frequency in Hz
             list of maximum and minimum frequencies. It must contain only two values.
             If `None`, the max and min of the clean frequencies are selected. Moreover
@@ -1650,9 +1638,9 @@ class Processing (EM) :
         
         Returns 
         --------
-            Array-like of pycsamt.core.z.Z objects 
+            Array-like of :class:`watex.external.z.Z` objects 
             Array collection of new Z impedances objects with dead-band tensor 
-            recovered. :class:`pycsamt.core.z.Z` are ndarray (nfreq, 2, 2). 
+            recovered. :class:`watex.externals.z..Z` are ndarray (nfreq, 2, 2). 
             2x2 matrices for components xx, xy and yx, yy. 
     
         References 
@@ -1722,6 +1710,13 @@ class Processing (EM) :
                 cfreq= cfreq, ix_s= ix_s, ix_end= ix_end 
                 )
             new_zObjs[kk] = new_Z 
+            
+        if tensor: 
+            tensor = str(tensor).lower() 
+            tensor = 'res' if tensor =='true' else tensor 
+            new_zObjs = get2dtensor(
+                new_zObjs, tensor = tensor , component = self.component, 
+                )
             
         return new_zObjs 
 
@@ -1922,7 +1917,8 @@ class Processing (EM) :
         self, 
         * ,  
         tol: float = .5 , 
-        return_freq: bool =False 
+        return_freq: bool =False,
+        return_ratio:bool=False, 
         )->Tuple[float, ArrayLike]: 
         """ Check the quality control of the collected EDIs. 
         
@@ -1936,7 +1932,11 @@ class Processing (EM) :
             
         :param return_freq: bool 
             return the interpolated frequency if set to ``True``. Default is ``False``.
-            
+        :param return_ratio: bool, default=False, 
+           return only the ratio of the representation of the data. 
+           
+           .. versionadded:: 0.1.5
+        
         :returns: Tuple (float , index )  or (float, array-like, shape (N, ))
             return the quality control value and interpolated frequency if  
             `return_freq`  is set to ``True`` otherwise return the index of useless 
@@ -2010,7 +2010,8 @@ class Processing (EM) :
         new_f = np.logspace(np.log10(new_f.min()) ,np.log10(new_f.max()),
                             len(new_f))[::-1]
         
-        return np.around (ck, 2), new_f   if return_freq else index   
+        return np.around (ck, 2) if return_ratio else (
+            np.around (ck, 2), new_f   if return_freq else index )   
 
 
     @_zupdate(option = 'write')
@@ -2139,8 +2140,28 @@ class Processing (EM) :
         
         return (self.ediObjs_, new_f , z_dict ), kws
 
-
-       
-
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
     
   

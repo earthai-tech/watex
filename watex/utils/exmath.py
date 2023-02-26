@@ -39,6 +39,7 @@ from ..exceptions import (
     VESError, 
     ERPError,
     ExtractionError,
+    EMError, 
     )
 from ..property import P
 from .._typing import (
@@ -57,6 +58,8 @@ from .._typing import (
     SP, 
     Series, 
     DataFrame,
+    EDIO,
+    ZO
 )
 from .funcutils import (
     _assert_all_types, 
@@ -64,6 +67,7 @@ from .funcutils import (
     drawn_boundaries, 
     fmt_text, 
     find_position_from_sa , 
+    concat_array_from_list, 
     find_feature_positions,
     find_close_position,
     smart_format,
@@ -71,12 +75,14 @@ from .funcutils import (
     ismissing,
     fillNaN, 
     spi, 
-                      
+                   
 )
 from .validator import ( 
     _is_arraylike_1d, 
-    _validate_ves_operator,
-    is_valid_dc_data, 
+    _validate_ves_operator, 
+    _assert_z_or_edi_objs, 
+    _validate_tensor, 
+    is_valid_dc_data,
     check_y,
     check_array, 
     )
@@ -2622,9 +2628,9 @@ def get_anomaly_ratio(erp: ArrayLike, czposix=None, cz = None,
         
     raise_exception: bool, default= True, 
         Raise exception when the `czposix` is not given. However another 
-        alternative when the `p` is not given too, is to use the `cz` 
-        resistivity values from detecting the `cxposix`, however this has 
-        a risk of biais the position then raise exception for user to be 
+        alternative way when the `p` is not given too, is to use the `cz` 
+        resistivity values from detecting the `czposix`, however this has 
+        a risk of biais the position then raises an exception for user to be 
         aware. Note that user can force this approach to take effect by 
         setting `raise_exception` to ``False``. 
         
@@ -2680,7 +2686,7 @@ def get_anomaly_ratio(erp: ArrayLike, czposix=None, cz = None,
                           " items of the DC resistivity profiling.")
 
     if czposix is None: 
-        msg = ("Index of station positions (`czposix`) where the selected"
+        msg = ("Index of station positions (`czposix`) is where the selected"
                " conductive zone is not supplied mannually. Automatic detection"
                " from the `erp` and `cz` resistivity values may lead to"
                " a misinterpretation results. It is better to provide the"
@@ -3654,9 +3660,8 @@ def fittensor(
     refreq = check_y (refreq, input_name="Reference array 'refreq'")
     freqn, mask = ismissing(refarr= refreq , arr =compfreq, return_index='mask',
                             fill_value = fill_value)
-    
     #mask_isin = np.isin(refreq, compfreq)
-    z_new = np.full_like(freqn,fill_value = fill_value) 
+    z_new = np.full_like(freqn, fill_value = fill_value) 
     z_new[mask] = reshape(z) 
     
     return z_new 
@@ -4430,6 +4435,185 @@ def savgol_filter(x, window_length, polyorder, deriv=0, delta=1.0,
         y = convolve1d(x, coeffs, axis=axis, mode=mode, cval=cval)
 
     return y        
+
+
+def get2dtensor(
+    z_or_edis_obj_list:List[EDIO |ZO], /, 
+    tensor:str= 'z', 
+    component:str='xy', 
+    kind:str ='modulus', 
+    **kws 
+    ): 
+    """ Make  tensor into two dimensional array from a 
+    collection of Impedance tensors Z.
+    
+    Out 2D resistivity, phase-error and tensor matrix from a collection
+    of EDI-objects. 
+    
+    Matrix depends of the number of frequency times number of sites. 
+    The function asserts whether all data from all frequencies are available. 
+    The missing values should be filled by NaN. Note that each element 
+    of z is (nfreq, 2, 2) dimension for:
+    
+    .. code-block:: default 
+       
+       xx ( 0, 0) ------- xy ( 0, 1)
+       yx ( 1, 0) ------- yy ( 1, 1) 
+       
+    Parameters 
+    ----------- 
+
+    z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
+        :class:`watex.externals.z.Z` 
+        A collection of EDI- or Impedances tensors objects. 
+    
+    tensor: str, default='z'  
+        Tensor name. Can be [ resistivity|phase|z|frequency]
         
+    component: str, default='xy' (TE mode)
+        EM mode. Can be ['xx', 'xy', 'yx', 'yy']
+      
+    out: str 
+        kind of data to output. Be sure to provide the component to retrieve 
+        the attribute from the collection object. Except the `error` and 
+        frequency attribute, the missing component to the attribute will 
+        raise an error. for instance ``resxy`` for xy component. Default is 
+        ``resxy``. 
+        
+    kind: str , default='modulus'
+        focuses on the tensor output. Note that the tensor is a complex number 
+        of ndarray (nfreq, 2,2 ). If set to``modulus`, the modulus of the complex 
+        tensor should be outputted. If ``real`` or``imag``, it returns only
+        the specific one. Default is ``complex``.
+
+    kws: dict 
+        Additional keywords arguments from :meth:`~EM.getfullfrequency `. 
+    
+    Returns 
+    -------- 
+    name, m2: name of tensor and components 
+        the matrix of number of frequency and number of Edi-collectes which 
+        correspond to the number of the stations/sites. 
+    
+    Examples 
+    ---------
+    >>> from watex.datasets import load_huayuan
+    >>> from watex.methods import getTensor2d 
+    >>> box= load_huayuan ( key ='raw', clear_cache = True, samples =7)
+    >>> data = box.data 
+    >>> phase_yx = getTensor2d ( data, tensor ='phase', component ='yx')
+    >>> phase_yx.shape 
+    (56, 7)
+    >>> phase_yx [0, :]
+    array([        nan,         nan,         nan,         nan, 18.73244951,
+           35.00516522, 59.91093054])
+    """
+
+    name, m2 = _validate_tensor (tensor = tensor ,
+                               component = component, 
+                               **kws)
+    if name =='_freq': 
+        raise EMError ("Tensor from 'Frequency' is not allowed here."
+                       " Use `make2d` method instead: 'watex.EM.make2d'")
+        
+    if z_or_edis_obj_list is None: 
+        raise EMError(f"Cannot output {name!r} 2D block with missing a"
+                      " collection of EDI or Z objects.")
+    # assert z and Edi objets 
+    obj_type  = _assert_z_or_edi_objs (z_or_edis_obj_list)
+    # get the frequency 
+    freqs = get_full_frequency(z_or_edis_obj_list)
+    # freqs = ( z_or_edis_obj_list[0].Z.freq if obj_type =='EDI'
+    #          else z_or_edis_obj_list[0].freq ) 
+    
+    _c= {
+          'xx': [slice (None, len(freqs)), 0 , 0] , 
+          'xy': [slice (None, len(freqs)), 0 , 1], 
+          'yx': [slice (None, len(freqs)), 1 , 0], 
+          'yy': [slice (None, len(freqs)), 1,  1] 
+    }
+
+    zl = [getattr( ediObj.Z if obj_type =='EDI' else ediObj,
+                  f"{name}")[tuple (_c.get(m2))]
+          for ediObj in z_or_edis_obj_list ]
+    
+    try : 
+        mat2d = np.vstack (zl ).T 
+    except: 
+        zl = [fittensor(freqs, ediObj.Z.freq 
+                        if obj_type =='EDI' else ediObj.freq , v)
+              for ediObj ,  v  in zip(z_or_edis_obj_list, zl)]
+        # stacked the z values alomx axis=1. 
+        # return np.hstack ([ reshape (o, axis=0) for o in zl])
+        mat2d = concat_array_from_list (zl , concat_axis=1) 
+        
+    if 'z' in name: 
+        zdict = {'modulus': np.abs (mat2d), 'real': mat2d.real, 
+         'imag': mat2d.imag, 'complex':mat2d
+         } 
+    
+        mat2d = zdict [ kind]
+        
+    return mat2d 
+
+def get_full_frequency (
+        z_or_edis_obj_list: List [EDIO |ZO], 
+        /,
+        to_log10:bool  =False 
+    )-> ArrayLike[DType[float]]: 
+    """ Get the frequency with clean data. 
+    
+    The full or plain frequency is array frequency with no missing frequency
+    during the data collection. Note that when using |NSAMT|, some data 
+    are missing due to the weak of missing frequency at certain band 
+    especially in the attenuation band. 
+
+    Parameters 
+    -----------
+    z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
+        :class:`watex.externals.z.Z` 
+        A collection of EDI- or Impedances tensors objects. 
+        
+    to_log10: bool, default=False 
+       Export frequency to base 10 logarithm 
+       
+    Returns 
+    -------
+    f : Arraylike of shape(N, )
+       frequency with clean data. Out of `attenuation band` if survey 
+       is completed with  |NSAMT|. 
+    
+    Examples 
+    --------
+    >>> from watex.datasets import load_huayuan
+    >>> from watex.methods.em import get_full_frequency
+    >>> box= load_huayuan ( key ='raw', clear_cache = True, samples =7)
+    >>> edi_data = box.data
+    >>> f = get_full_frequency (edi_data )
+    >>> f 
+    array([8.19200e+04, 7.00000e+04, 5.88000e+04, 4.95000e+04, 4.16000e+04,
+           3.50000e+04, 2.94000e+04, 2.47000e+04, 2.08000e+04, 1.75000e+04,
+           ...
+           3.25000e+01, 2.75000e+01, 2.25000e+01, 1.87500e+01, 1.62500e+01,
+           1.37500e+01, 1.12500e+01, 9.37500e+00, 8.12500e+00, 6.87500e+00,
+           5.62500e+00])
+    >>> len(f) 
+    56
+    >>> # Get only the z component objects 
+    >>> zobjs = [ box.emo.ediObjs_[i].Z for i in  range (len(box.emo.ediObjs_))]
+    >>> len(zobjs)
+    56 
+    """
+    obj_type  = _assert_z_or_edi_objs (z_or_edis_obj_list)
+    
+    lenfs = np.array([len(ediObj.Z._freq if obj_type =='EDI' else ediObj.freq )
+                      for ediObj in z_or_edis_obj_list ] ) 
+    ix_fm = np.argmax (lenfs) 
+    f=  ( z_or_edis_obj_list [ix_fm].Z._freq if obj_type =='EDI' 
+         else z_or_edis_obj_list [ix_fm]._freq 
+         ) 
+    return np.log10(f) if to_log10 else f 
+    
+
         
         
