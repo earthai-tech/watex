@@ -839,8 +839,10 @@ class TPlot (BasePlot):
         } 
         # skew_seg need to provide
         # 3 numbers, the 3rd indicates
-        from contextlib import suppress 
         # interval, e.g. [-12,12,3]
+        from contextlib import suppress 
+        # suppress as possible the external 
+        #lib resources
         with suppress (Exception): 
             ptsection = PlotPhaseTensorPseudoSection(
                             fn_list = self.p_.edifiles,

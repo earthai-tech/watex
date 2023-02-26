@@ -48,10 +48,20 @@ tplot.plotSkew(method ='swift', threshold_line=True)
 # %%
 # For any specific reasons, user can check the influence of the existing 
 # outliers in the data. This is possible by turning off  the parameter 
-# `suppress_outliers`` to ``False`` like 
+# ``suppress_outliers`` to ``False`` like 
 tplot.plotSkew(method ='swift', threshold_line=True, suppress_outliers=False )
 
 # %% 
 # * `Bahr method (default)`
 # 
 tplot.plotSkew(threshold_line=True, suppress_outliers=False )
+
+#%%
+# .. topic:: References 
+#
+#    .. [1] Swift, C., 1967. A magnetotelluric investigation of an 
+#           electrical conductivity  anomaly in the southwestern United 
+#           States. Ph.D. Thesis, MIT Press. Cambridge.
+#    .. [2] Bahr, K., 1991. Geological noise in magnetotelluric data: a 
+#           classification of distortion types. Physics of the Earth and 
+#           Planetary Interiors 66 (1–2), 24–38.

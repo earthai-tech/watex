@@ -2628,9 +2628,9 @@ def get_anomaly_ratio(erp: ArrayLike, czposix=None, cz = None,
         
     raise_exception: bool, default= True, 
         Raise exception when the `czposix` is not given. However another 
-        alternative when the `p` is not given too, is to use the `cz` 
-        resistivity values from detecting the `cxposix`, however this has 
-        a risk of biais the position then raise exception for user to be 
+        alternative way when the `p` is not given too, is to use the `cz` 
+        resistivity values from detecting the `czposix`, however this has 
+        a risk of biais the position then raises an exception for user to be 
         aware. Note that user can force this approach to take effect by 
         setting `raise_exception` to ``False``. 
         
@@ -2686,7 +2686,7 @@ def get_anomaly_ratio(erp: ArrayLike, czposix=None, cz = None,
                           " items of the DC resistivity profiling.")
 
     if czposix is None: 
-        msg = ("Index of station positions (`czposix`) where the selected"
+        msg = ("Index of station positions (`czposix`) is where the selected"
                " conductive zone is not supplied mannually. Automatic detection"
                " from the `erp` and `cz` resistivity values may lead to"
                " a misinterpretation results. It is better to provide the"
@@ -4513,8 +4513,8 @@ def get2dtensor(
                                component = component, 
                                **kws)
     if name =='_freq': 
-        raise EMError ("Tensor expected from 'Frequency' is not allowed here."
-                       "  Use `make2d` method instead: 'watex.EM.make2d'")
+        raise EMError ("Tensor from 'Frequency' is not allowed here."
+                       " Use `make2d` method instead: 'watex.EM.make2d'")
         
     if z_or_edis_obj_list is None: 
         raise EMError(f"Cannot output {name!r} 2D block with missing a"
@@ -4558,6 +4558,7 @@ def get2dtensor(
 
 def get_full_frequency (
         z_or_edis_obj_list: List [EDIO |ZO], 
+        /,
         to_log10:bool  =False 
     )-> ArrayLike[DType[float]]: 
     """ Get the frequency with clean data. 

@@ -63,7 +63,7 @@ wx.view.plot2d(z_yx,
 # the missing signal at this points. If we try to remove from each missing 
 # signal data wich correspond to a data at a certain frequency, we will loose 
 # lot of useful informations. Mostly the idea is to interpolate data. The 
-# strategy proposed by :code:`watex` for restoring tensor consist to interpolate 
+# strategy proposed by :code:`watex` for restoring tensor consists to interpolate 
 # in two directions (along x-axis and y-axis ) at the same time and decide the 
 # best value that approximatively fit the surrounding resistivity values( because 
 # the demonstration refer to resistivity tensor in TM mode.). This improve a 
@@ -80,19 +80,18 @@ tro.qc (tol =.4 , return_ratio = True ) # we consider good data from .60%
 # The output shows `75%` of data goodness. This score can be improved if the 
 # recovers the losses signal is triggered. However, If the user approves this 
 # ratio, there is a possibility of output the valid tensors  using the 
-# getValid Tensors from method
-#  :meth:`watex.methods.em.Processing.getValidTensors` by keeping the same
-#  tolerance parameters as:  
+# getValid Tensors from method :meth:`watex.methods.em.Processing.getValidTensors` 
+# by keeping the same tolerance parameters as:  
 #
 # .. code-block: python 
-
-#    #>>> tro.getValidTensors (tol = .4 ) # uncomment this will output new edi with valid tensors 
-# 
+#
+#    >>> tro.getValidTensors (tol = .4 ) # uncomment this will output new edi with valid tensors
+ 
+# %% 
 # The next step consists to recover the missing signals since we assume that 
-# we are not satisfy with the qc value =  
+# we are not satisfy with our qc value = 75% 
 
 # * Recovering missing signals  
-# 
 Z = tro.zrestore ( ) 
 
 #%% 
@@ -100,6 +99,7 @@ Z = tro.zrestore ( )
 # collect the TM restoring tensors using the function :func:`watex.utils.get2dtensor` 
 z_yx_restored = wx.get2dtensor(Z, tensor ='z', component='yx') 
 
+#%%
 # The impendance tensor z in TM mode can also be output using: 
 #
 # .. code-block:: python 

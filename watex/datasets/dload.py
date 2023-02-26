@@ -843,7 +843,7 @@ def load_huayuan (
     )
       
 load_huayuan.__doc__="""\
-Load data from Huayan locality. 
+Load AMT data from Huayuan locality. 
 
 The data is a bacth of 50 :term:`SEG` :term:`EDI` files collected in the 
 Huayuan county, Hunan province, China. The data is a :term:`AMT` data collected 
