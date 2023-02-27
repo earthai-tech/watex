@@ -485,12 +485,12 @@ Examples
                    dict(kernel=['poly'],degree=[1, 3,5, 7], coef0=[1, 2, 3],
                         C= [1e-2, 1e-1, 1, 10, 100])],
                 [dict(C=[1e-2, 1e-1, 1, 10, 100], loss=['hinge'])], 
-                [dict()], # we just no provided parameter for 
+                [dict()], # we just no provided parameter for demo
                 [dict()]
                 )
 >>> #Now  we can call :class:`watex.models.GridSearchMultiple` for
 >>> # training and self-validating as:
-  >>> gobj = GridSearchMultiple(estimators = estimators, 
+>>> gobj = GridSearchMultiple(estimators = estimators, 
                        grid_params = grid_params ,
                        cv =4, 
                        scoring ='accuracy', 
@@ -526,6 +526,7 @@ the metrics used to evaluate model errors. Can be any others metrics  in
  
 """.format (params=_param_docs,
 )
+    
 class BaseEvaluation: 
     def __init__(
         self, 

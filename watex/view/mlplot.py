@@ -2632,6 +2632,7 @@ def plotSilhouette (
     Silhouette is used as graphical tools,  to plot a measure how tighly is  
     grouped the examples of the clusters are.  To calculate the silhouette 
     coefficient, three steps is allows: 
+        
     * calculate the **cluster cohesion**, :math:`a(i)`, as the average 
         distance between examples, :math:`x^{(i)}`, and all the others 
         points

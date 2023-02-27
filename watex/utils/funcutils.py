@@ -256,7 +256,7 @@ def parse_attrs (attr, /, regex=None ):
         Regular expresion object. the default is:: 
             
             >>> import re 
-            >>> re.compile (r'per|mod|mul|add|sub|[_#&*@!_,;\s-]\s*', 
+            >>> re.compile (r'per|mod|times|add|sub|[_#&*@!_,;\s-]\s*', 
                                 flags=re.IGNORECASE) 
     Returns
     -------
@@ -270,7 +270,7 @@ def parse_attrs (attr, /, regex=None ):
     
     
     """
-    regex = regex or re.compile (r'per|mod|mul|add|sub|[_#&*@!_,;\s-]\s*', 
+    regex = regex or re.compile (r'per|mod|times|add|sub|[_#&*@!_,;\s-]\s*', 
                         flags=re.IGNORECASE) 
     attr= list(filter (None, regex.split(attr)))
     return attr 

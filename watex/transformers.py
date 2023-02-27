@@ -639,11 +639,11 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
         430    b431V
         Name: name_add_shape, Length: 431, dtype: object
     """
-    _op ={'x': ('prod', 'mul', '*', 'x'), 
-        'add': ('add', '+', 'plus'), 
-        'div': ('quot', '/', 'div', 'per'), 
-        'sub': ('sub', '-', 'less'), 
-        'mod': ('mod', '%'),
+    _op ={'times': ('times', 'prod', 'mul', '*', 'x'), 
+            'add': ('add', '+', 'plus'), 
+            'div': ('quot', '/', 'div', 'per'), 
+            'sub': ('sub', '-', 'less'), 
+            'mod': ('mod', '%'),
         }
     
     def __init__(
