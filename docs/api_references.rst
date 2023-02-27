@@ -810,7 +810,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.funcutils.url_checker
 	utils.funcutils.parse_attrs
 	utils.funcutils.listing_items_format
-	utils.functils.zip_extractor
+	utils.funcutils.zip_extractor
 	
 	
 :mod:`~watex.utils.geotools`: Geology utilities

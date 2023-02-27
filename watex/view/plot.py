@@ -839,26 +839,28 @@ class TPlot (BasePlot):
         } 
         # skew_seg need to provide
         # 3 numbers, the 3rd indicates
-        from contextlib import suppress 
         # interval, e.g. [-12,12,3]
-        with suppress (Exception): 
-            ptsection = PlotPhaseTensorPseudoSection(
-                            fn_list = self.p_.edifiles,
-                            z_object_list = zobjs, 
-                            fig_size = self.fig_size, 
-                            tscale = mode, 
-                            plot_num = self.fig_num, 
-                            plot_title = self.fig_title, 
-                            xlimits = self.xlim, 
-                            ylimits = self.ylim,
-                            linedir= linedir,  
-                            stretch= stretch, 
-                            station_id=(0, len(self.p_.ediObjs_)), 
-                            font_size=self.font_size ,
-                            lw=self.lw,
-                            **ellipse_dict , 
-                            **kws,
-                )
+        #from contextlib import suppress 
+        # suppress as possible the external 
+        #lib resources
+        #with suppress (Exception): 
+        ptsection = PlotPhaseTensorPseudoSection(
+                        fn_list = self.p_.edifiles,
+                        z_object_list = zobjs, 
+                        fig_size = self.fig_size, 
+                        tscale = mode, 
+                        plot_num = self.fig_num, 
+                        plot_title = self.fig_title, 
+                        xlimits = self.xlim, 
+                        ylimits = self.ylim,
+                        linedir= linedir,  
+                        stretch= stretch, 
+                        station_id=(0, len(self.p_.ediObjs_)), 
+                        font_size=self.font_size ,
+                        lw=self.lw,
+                        **ellipse_dict, 
+                        **kws,
+            )
 
         ptsection.save_figure(save_fn =self.savefig, fig_dpi=self.fig_dpi
                               ) if self.savefig else  ptsection.plot()

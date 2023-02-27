@@ -46,7 +46,7 @@ from .funcutils import (
     reshape, 
     to_numeric_dtypes, 
     smart_label_classifier, 
-    remove_outliers, 
+    remove_outliers,
     )
 from .hydroutils import ( 
     select_base_stratum , 

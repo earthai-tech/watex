@@ -879,8 +879,8 @@ class EM(IsEdi):
         
         Parameters 
         -----------
-        ediObj: str or  pycsamt.core.edi.Edi 
-            Full path to Edi file or object from `pycsamt`_ 
+        ediObj: str or  :class:`watex.edi.Edi` 
+            Full path to Edi file/object or object from `pycsamt`_ or `MTpy`_
         
         new_Z: ndarray (nfreq, 2, 2) 
             Ndarray of impendance tensors Z. The tensor Z is 3D array composed of 
@@ -922,7 +922,7 @@ class _zupdate(EM):
         When `option` is set to ``write``. The new EDI -files are exported.
         Any other values should return only the updated impedance tensors.
         
-    :returns: A collection of  :class:`pycsamt.core.z.Z` impedance tensor 
+    :returns: A collection of  :class:`watex.externals.z.Z` impedance tensor 
         objects.
     """
     
@@ -1459,9 +1459,9 @@ class Processing (EM) :
             
         .. math:: 
           
-            [C_1, C_2] & = & \text{Im} C_2*C_1^{*}
+            \[C_1, C_2] & = & \text{Im} C_2*C_1^*
             
-            [C_1, C_2]  & = & \text{Re} C_1 * \text{Im}C_2  - R_e(C_2)* \text{Im}C_1
+            \[C_1, C_2]  & = & \text{Re} C_1 * \text{Im}C_2  - R_e(C_2)* \text{Im}C_1
                         
         Indeed, :math:`skew_{Bahr}` measures the deviation from the symmetry condition
         through the phase differences between each pair of tensor elements,considering
