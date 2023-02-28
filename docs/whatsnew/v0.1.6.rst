@@ -50,11 +50,12 @@ Bug fixes
            raise AttributeError(
         AttributeError: module 'matplotlib.cm' has no attribute 'cmap_d'
 
-  To fix it and let the doc building correctly, we uncomment the example in gallery ``methods.plot_phase_tensors.py`` ( just for doc building ) 
-  rather than using the matplotlib colormaps instead since  MTpy proper colors don't work. 
+  To fix it and let the doc building correctly with the latest version of matplotlib, uncomment the examples in gallery 
+  ``methods.plot_phase_tensors.py`` :meth:`watex.view.TPlot.plot_phase_tensors` object `tplot` rather than using the 
+  matplotlib colormaps instead since  MTpy proper colors don't work. An error will raise in both case...
 
-- Plot phase tensor uses Matplotlib version 3.5.3 max. The latest version will yield an attribute error probably
-  due to the use of `cmap_d` in updating MTpy proper colors ``cmapdict.update(cm.cmap_d)``. 
+- Bug fix with :meth:`watex.view.TPlot.plot_phase_tensors` using Matplotlib version 3.5.3 max. The latest version will yield an 
+  attribute error due to the use of `cmap_d` in updating MTpy proper colors ``cmapdict.update(cm.cmap_d)``. 
   
 - Bug fixes in loading the :func:`watex.models.displayCVTables` from :class:`watex.models.GridSearchMultiple`.  Use try -except instead to accept the 
   fine-tuned models directly from :class:`watex.exlib.GridSearchCV` or  :class:`watex.models.GridSearchMultiple` or :class:`watex.models.GridSearch`  

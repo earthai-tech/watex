@@ -3,7 +3,7 @@
 Plot Skew
 =================================================
 
-Phase sensistive skew visualization from :class:`watex.view.TPlot`.
+Phase sensitive skew visualization
 
 """
 # Author: L.Kouadio 
@@ -34,15 +34,15 @@ Phase sensistive skew visualization from :class:`watex.view.TPlot`.
 #   Phase-sensitive skews less than 0.1 indicate 1D, 2D or distorted 
 #   2D (3-D /2-D) cases. Values of :math:`mu` between 0.1 and 0.3 indicates 
 #   modified 3D/2D structures. 
-  
 # Here is an example of implementation using the :class:`watex.view.TPlot` class 
 # of module :mod:`watex.view`. 
-# we start by importing ``watex`` as 
+# we start by importing ``watex`` as: 
 import watex 
 
 # * `Swift method` 
 test_data = watex.fetch_data ('edis', samples =37, return_data =True )
 tplot = watex.TPlot(fig_size =(10,  4), marker ='x').fit(test_data)
+tplot.plt_style='classic'
 tplot.plotSkew(method ='swift', threshold_line=True)
 
 # %%
