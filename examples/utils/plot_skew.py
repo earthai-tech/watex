@@ -3,7 +3,7 @@
 Plot phase sensitive skew 
 ===================================
 
-shows the phase sensitivity Skew (:math:`\mu`) that 
+shows the phase sensitivity Skew that 
 represents a measure of the skew of the  
 phases of the impedance tensor
 """
