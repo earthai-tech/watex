@@ -9,7 +9,7 @@ sphinx-prompt
 sphinx-copybutton
 jupytext
 cython
-matplotlib=3.5.3
+matplotlib=3.5.2
 numpy
 scipy
 scikit-learn
