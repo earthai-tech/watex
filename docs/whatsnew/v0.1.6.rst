@@ -42,11 +42,7 @@ Bug fixes
       
       /home/docs/checkouts/readthedocs.org/user_builds/watex/checkouts/master/examples/methods/plot_phase_tensors.py failed leaving traceback:
       Traceback (most recent call last):
-        File "/home/docs/checkouts/readthedocs.org/user_builds/watex/checkouts/master/examples/methods/plot_phase_tensors.py", line 39, in <module>
-           tplot.plot_phase_tensors (ellipse_dict= ellip_dic)
-        File "/home/docs/checkouts/readthedocs.org/user_builds/watex/checkouts/master/watex/view/plot.py", line 826, in plot_phase_tensors
-           from mtpy.imaging.phase_tensor_pseudosection import (
-        File "/home/docs/checkouts/readthedocs.org/user_builds/watex/envs/master/lib/python3.10/site-packages/mtpy/imaging/phase_tensor_pseudosection.py", line 18, in <module>
+        ...
            import mtpy.imaging.mtcolors as mtcl
         File "/home/docs/checkouts/readthedocs.org/user_builds/watex/envs/master/lib/python3.10/site-packages/mtpy/imaging/mtcolors.py", line 252, in <module>
            cmapdict.update(cm.cmap_d)
@@ -56,7 +52,12 @@ Bug fixes
 
   To fix it and let the doc building correctly, we uncomment the example in gallery ``methods.plot_phase_tensors.py`` ( just for doc building ) 
   rather than using the matplotlib colormaps instead since  MTpy proper colors don't work. 
+
+- Plot phase tensor uses Matplotlib version 3.5.3 max. The latest version will yield an attribute error probably
+  due to the use of `cmap_d` in updating MTpy proper colors ``cmapdict.update(cm.cmap_d)``. 
   
+- Bug fixes in loading the :func:`watex.models.displayCVTables` from :class:`watex.models.GridSearchMultiple`.  Use try -except instead to accept the 
+  fine-tuned models directly from :class:`watex.exlib.GridSearchCV` or  :class:`watex.models.GridSearchMultiple` or :class:`watex.models.GridSearch`  
   
 .. _comments: 
 
