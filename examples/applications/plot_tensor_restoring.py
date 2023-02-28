@@ -1,6 +1,6 @@
 """
 =================================================
-Restoring tensor with noised :term:`AMT` data
+Restoring tensor with noised AMT data
 =================================================
 
 Gives an step-by-step guide for restoring Z tensors 
@@ -52,7 +52,7 @@ wx.view.plot2d(z_yx,
                plot_style ='imshow', 
                fig_size =(10, 4 ), 
                font_size =7, 
-               ylabel ='TM mode (raw): $Z_yx$', 
+               ylabel ='Frequency[$H_z$]', 
                cb_label ='TM mode: $Z_yx$', 
                distance =50., # distance between stations
                cmap = 'terrain'
@@ -115,7 +115,7 @@ wx.view.plot2d(z_yx_restored,
                plot_style ='imshow', 
                fig_size =(10, 4 ), 
                font_size =7, 
-               ylabel ='TM mode (restored): $Z_yx$', 
+               ylabel ='Frequency[$H_z$]', 
                cb_label ='TM mode: $Z_yx$', 
                distance =50.,cmap = 'terrain'
                )

@@ -32,7 +32,7 @@ Bug fixes
   can be fetched as :class:`watex.utils.box.Boxspace` object that saves the estimator parameters, model names and 
   cv results. 
   
-- when building the :code:`watex` documenation, :meth:`watex.view.TPlot.plot_phase_tensors` calls MTpy imaging 
+- when building the :code:`watex` documentation, :meth:`watex.view.TPlot.plot_phase_tensors` calls MTpy imaging 
   module which call matplotlib in turn to update MTpy propers colors. However, it does not recognize ``cmap_d`` in 
   the ``cmapdict.update(cm.cmap_d)`` of code line 252 by showing and ``AttributeError`` like below:
 
