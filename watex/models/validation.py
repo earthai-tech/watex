@@ -866,7 +866,7 @@ def getGlobalScores (
              cvres.get('std_test_score').mean()) 
 
 def getSplitBestScores(cvres:Dict[str, ArrayLike], 
-                       split:int=1)->Dict[str, float]: 
+                       split:int=0)->Dict[str, float]: 
     """ Get the best score at each split from cross-validation results
     
     Parameters 
@@ -877,8 +877,9 @@ def getSplitBestScores(cvres:Dict[str, ArrayLike],
         during the cross-validation while the value is stored in Numpy array.
     split: int, default=1 
         The number of split to fetch parameters. 
-        The number of split must be the number of split  is the number 
-        of cross-validation (cv) 
+        The number of split must be  the number of cross-validation (cv) 
+        minus one.
+        
     Returns
     -------
     bests: Dict, 
@@ -886,9 +887,9 @@ def getSplitBestScores(cvres:Dict[str, ArrayLike],
         in the cross-validation. 
         
     """
-    if split ==0: split =1 
+    #if split ==0: split =1 
     # get the split score 
-    split_score = cvres[f'split{split-1}_test_score'] 
+    split_score = cvres[f'split{split}_test_score'] 
     # take the max score of the split 
     max_sc = split_score.max() 
     ix_max = split_score.argmax()
@@ -915,8 +916,8 @@ def displayModelMaxDetails(cvres:Dict[str, ArrayLike], cv:int =4):
         The number of KFlod during the fine-tuning models parameters. 
 
     """
-    for k in range(cv):
-        print(f'split =CV{k+1}:')
+    for k in range (cv):
+        print(f'split = {k}:')
         b= getSplitBestScores(cvres, split =k)
         print( b)
 
@@ -945,7 +946,7 @@ def displayFineTunedResults ( cvmodels: list[F] ):
         print()
 
 def displayCVTables(cvres:Dict[str, ArrayLike],  cvmodels:list[F] ): 
-    """ Display allla the cross-validation results from all models at each 
+    """ Display the cross-validation results from all models at each 
     k-fold. 
     
     Parameters 
@@ -956,15 +957,33 @@ def displayCVTables(cvres:Dict[str, ArrayLike],  cvmodels:list[F] ):
         during the cross-validation while the value is stored in Numpy array.
     cvmnodels: list
         list of fined-tuned models.
+        
+    Examples 
+    ---------
+    >>> from watex.datasets import fetch_data
+    >>> from watex.models import GridSearchMultiple, displayCVTables
+    >>> X, y  = fetch_data ('bagoue prepared') 
+    >>> gobj =GridSearchMultiple(estimators = estimators, 
+                                 grid_params = grid_params ,
+                                 cv =4, scoring ='accuracy', 
+                                 verbose =1,  savejob=False , 
+                                 kind='GridSearchCV')
+    >>> gobj.fit(X, y) 
+    >>> displayCVTables (cvmodels=[gobj.models.SVC] ,
+                         cvres= [gobj.models.SVC.cv_results_ ])
+    ... 
     """
     modelnames = (get_estimator_name(model.best_estimator_ ) 
                   for model in cvmodels  )
     for name,  mdetail, model in zip(modelnames, cvres, cvmodels): 
         print(name, ':')
         displayModelMaxDetails(cvres=mdetail)
+        
         print('BestParams: ', model.best_params_)
-        print("Best scores:", model.best_score_)
-        print()
+        try:
+            print("Best scores:", model.best_score_)
+        except: pass 
+        finally: print()
         
         
 def get_scorers (*, scorer:str=None, check_scorer:bool=False, 

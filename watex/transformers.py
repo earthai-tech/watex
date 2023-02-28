@@ -518,9 +518,9 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
 
 
 class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
-    """ Combined attributes from features `ohmS` and `lwi`. 
+    """ Combined attributes from litteral string operators, indexes or names. 
     
-    Create a new attributed using features index or litteral string operator.
+    Create a new attribute using features index or litteral string operator.
     Inherits from scikit_learn `BaseEstimator`and `TransformerMixin` classes.
  
     Arguments 
