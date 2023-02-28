@@ -222,6 +222,7 @@ tag: str,
         contex combine with get method to get the dataframe like::
             
             >>> fetch_data ('bagoue original').get ('data=df')
+            
     * ['stratified'] => stratification data
     * ['mid' |'semi'|'preprocess'|'fit']=> data cleaned with 
         attributes experience combinaisons.

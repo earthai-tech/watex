@@ -256,7 +256,7 @@ def parse_attrs (attr, /, regex=None ):
         Regular expresion object. the default is:: 
             
             >>> import re 
-            >>> re.compile (r'per|mod|mul|add|sub|[_#&*@!_,;\s-]\s*', 
+            >>> re.compile (r'per|mod|times|add|sub|[_#&*@!_,;\s-]\s*', 
                                 flags=re.IGNORECASE) 
     Returns
     -------
@@ -270,7 +270,7 @@ def parse_attrs (attr, /, regex=None ):
     
     
     """
-    regex = regex or re.compile (r'per|mod|mul|add|sub|[_#&*@!_,;\s-]\s*', 
+    regex = regex or re.compile (r'per|mod|times|add|sub|[_#&*@!_,;\s-]\s*', 
                         flags=re.IGNORECASE) 
     attr= list(filter (None, regex.split(attr)))
     return attr 
@@ -4634,12 +4634,12 @@ def remove_outliers (
 
          lower = Q1 – 1.5*IQR
          
-     In the above formula as according to statistics, the 0.5 
-     scale-up of :math:`IQR (new_IQR = IQR + 0.5*IQR)` is taken, to consider 
-     all the data between 2.7 standard deviations in the Gaussian 
-     Distribution
+      In the above formula as according to statistics, the 0.5 
+      scale-up of :math:`IQR (new_IQR = IQR + 0.5*IQR)` is taken, to consider 
+      all the data between 2.7 standard deviations in the Gaussian 
+      Distribution
     
-     - Z-score 
+    - Z-score 
       Is also called a standard score. This value/score helps to understand 
       that how far is the data point from the mean. And after setting up 
       a threshold value one can utilize z score values of data points 
@@ -4652,6 +4652,8 @@ def remove_outliers (
     Now to define an outlier threshold value is chosen which is 
     generally 3.0. As 99.7% of the data points lie between +/- 3 standard 
     deviation (using Gaussian Distribution approach). 
+    
+    .. versionadded: 0.1.5 
     
     Parameters 
     -----------
