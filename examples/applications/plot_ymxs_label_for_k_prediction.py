@@ -10,16 +10,16 @@ target :math:`y*` for predicting the permeability coefficient
 # Author: L.Kouadio 
 # Licence: BSD-3-clause 
 
-#%% 
+# %% 
 # Note that this is an example of two boreholes which results is quited less relevant compared to the tangible example implemented in 
 # the `Hongliu coal mine <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4326365>`_ with 11 boreholes data [1]_.  
 
-#%%
+# %%
 # We start by importing the required modules 
 import pandas as pd 
 from watex.datasets import load_hlogs 
 
-#%%
+# %%
 # Preprocess data 
 # ===================
 # Make a unique dataset from two boreholes data collected in Hongliu 
@@ -37,7 +37,7 @@ X, y = X0.copy() , y0.copy()
 print("feature_names:\n" , box.feature_names ) 
 print("target names:\n", box.target_names ) 
 
-#%%
+# %%
 # Data contains some categorical values, we will drop the rock name, the hole_id 
 # and well diameter which are subjective data and not useful for prediction 
 # puposes and impute  the remaining data using a bi-impute strategy 
@@ -50,7 +50,7 @@ X['depth'] = ( X.depth_bottom + X.depth_top )/2
 X.drop (columns =['depth_top', 'depth_bottom'], inplace =True )
 data_imputed = naive_imputer( X , strategy='mean', mode='bi-impute')  
 
-#%%
+# %%
 # * Use PCA analysis to reduce the dimension to down the important features 
 # to predict the naive aquifer group (NGA).
 
@@ -68,14 +68,13 @@ Xpca_scaled = naive_scaler( Xpca )
 # * Call the normal PCA and plot all components set to None
 
 from watex.analysis import nPCA 
-#%%
+# %%
 # * Plot explained variance ratio
 pca = nPCA (Xpca_scaled , return_X= False, view = True ) # return PCA object rather than the reduced X  
 
+# %%
 # As a comment,  here 5/6 features are enough since the explained variance ratio is already 
 # got 98 % 
-
-#%%
 # * Set the number of components and use a convenient plot the both components   
 
 from watex.utils import plot_pca_components 
@@ -85,7 +84,7 @@ components = pca.components_
 features = pca.feature_names_in_
 plot_pca_components (components, feature_names= features, cmap='jet_r') 
 
-#%%
+# %%
 # As comments, the matrix plot shows the contributions of all features in the first and second components. 
 # Indeed, while most contributions are got in-depth resistivity gamma and gamma short distance 
 # they are negatively correlated with layer thickness and natural gamma. However, 
@@ -99,7 +98,7 @@ plot_pca_components (components, feature_names= features, cmap='jet_r')
 # reached 98 %.  Therefore features skipped should not influence the result of 
 # prediction 
 
-#%%
+# %%
 # * Auto-preprocess the data using the default pipe 
 # Note that the categorical data "strata_name" is one-hot-encoded and 
 # generate a sparse matrix ready  for the data for prediction, then  we will use the function 'make_naive_pipe'
@@ -111,7 +110,7 @@ from watex.utils  import make_naive_pipe
 csr_data = make_naive_pipe(data_imputed, transform= True) # auto-scaled the data using StandardScaler and  transform the data in place 
 csr_data
 
-#%%
+# %%
 # Prediction of Naive Group of Aquifer (NGA) 
 # ============================================
 # We randomly set the number of clusters to 05 which might correspond to 
@@ -120,7 +119,7 @@ csr_data
 
 from watex.exlib.sklearn import KMeans 
 from watex.utils import plot_clusters 
-#%%
+# %%
 # * Group the principal two components of PCA  into the 5 clusters 
 
 km = KMeans (n_clusters =5 , init= 'random' )  
@@ -148,12 +147,12 @@ X_for_fi = pd.concat( [ strata_column , Xpca_scaled ], axis =1 )
 # plot importance with the predicted label ykm  
 plot_rf_feature_importances (RandomForestClassifier(), X_for_fi , y =ykm ) 
 
-#%%
+# %%
 # plot elbow to confirm or infirm the 05 clustering of  aquifers from geological infos
 from watex.utils import plot_elbow 
 plot_elbow(pca.X, n_clusters=11)  
 
-#%%
+# %%
 # As comments, we can see, the elbow is located at k=3 that i.e we can classify the aquifer 
 # group based on the current datasets into three groups in hongliu coal mine. 
 # Note that the dataset is only for boreholes, this can not confirm the 
@@ -163,14 +162,14 @@ plot_elbow(pca.X, n_clusters=11)
 # finally ascertained using the Hierarchical Agglomerative clustering (HAC) dendrogram plot. 
 # The step are enumerated below: 
     
-#%%
+# %%
 # Let’s confirm the 05 clusters  using the silhouette plot from KMeans
 
 from watex.view import plotSilhouette 
 # plot silhouette for the 05 clusters with pca reduced data 
 plotSilhouette (pca.X, labels =ykm , prefit =True)  
  
-#%%
+# %%
 # Plot with the 03 custers; plot silhouette for the three clusters by 
 # setting prefit to False since a new prediction should be made under the hood
 # after n-iterations to find the best clustering. Refer to 
@@ -184,7 +183,7 @@ plotSilhouette (pca.X, n_clusters= 3 , prefit =False)
 from watex.view import plotDendrogram
 plotDendrogram (pca.X , labels = ykm)
 
-#%%
+# %%
 # As comments in the case of MXS target, merging the predicted y with cluster =5 
 # with create a lot of y=k33' where we expected to have a list a =balance target 
 # with the true labels y (k1, k2 and k3 ) 
@@ -194,7 +193,7 @@ plotDendrogram (pca.X , labels = ykm)
 # the true labels are not altered by the predicted label y 
 # not let plot the dendro-heat
 
-#%%
+# %%
 # Before predicting the NGA labels, we can  fit the  aquifer group and find the 
 # most representative of the true k labels to the predicted labels 
 # test with the number of clusters set to 3 
@@ -221,7 +220,7 @@ from watex.utils import make_MXS_labels
 yMXS = make_MXS_labels(y_true=yk_map , y_pred=yNGA )
 # Let’s print the 12 firstMXS target 
 print(yMXS[:12])
-#%%
+# %%
 # As a comment, the existing :math:`21` and math:`2*` in the :math:`y*(yMXS)`
 # indicates that there is a strong similarity found between label 2 in 
 # the permeability coefficient dataset :math:`y` and the predicted `yNGA` labels. 
@@ -247,12 +246,10 @@ print(mxso.mxs_classes_)
 # Once the :math:`y*(yMXS)` is predicted, the supervised learning model 
 # training can be made with the predictor:math:`X`. 
 
-#%%
+# %%
 # A paper is under puclication in Engineering Geology for k-prediction which 
-# explained a concrete study (Case study in Hongliu coal mine). See the reference below: 
-# .. topic:: References 
-# 
-#    .. [1] KOUADIO, Kouao Laurent and LIU, Jianxin and LIU, Rong, A Mixture Learning Strategy for Predicting Aquifers Permeability Coefficient K. ENGEO-D-22-02041, Available at SSRN: https://ssrn.com/abstract=4326365 or http://dx.doi.org/10.2139/ssrn.4326365
+# explained a concrete study (Case study in Hongliu coal mine). See the 
+# reference in the :ref:`citation <citing>` page. 
 
 
 

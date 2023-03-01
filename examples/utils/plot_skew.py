@@ -11,7 +11,7 @@ phases of the impedance tensor
 # Licence: BSD-3-clause
 
 # %%
-# Skew is a dimensionnality tool or a conventional asymmetry parameter based 
+# Skew is a dimensionality tool or a conventional asymmetry parameter based 
 # on the Z magnitude.  
 # Indeed, the EM signal is influenced by several factors such as the dimensionality
 # of the propagation medium and the physical anomalies, which can distort the
@@ -31,7 +31,7 @@ phases of the impedance tensor
 # when the :math:`skew_{swift}` is greater than ``>=0.2``, we assume 3D local 
 # anomaly (Bahr, 1991; Reddy et al., 1977).
 #
-# Furthermore, Bahr (1988) proposed the phase sensitive skew which calculates
+# Furthermore, Bahr (1988) proposed the phase-sensitive skew which calculates
 # the skew taking into account the distortions produced in Z over 2D structures
 # by shallow conductive anomalies and is defined as follows:
 #
@@ -54,13 +54,13 @@ phases of the impedance tensor
 #     \[C_1, C_2] & = & R_e C_1 * I_m C_2  - R_e(C_2)* I_m C_1
 #                
 # Indeed, :math:`skew_{Bahr}` measures the deviation from the symmetry condition
-# through the phase differences between each pair of tensor elements,considering
+# through the phase differences between each pair of tensor elements, considering
 # that phases are less sensitive to surface distortions(i.e. galvanic distortion).
 # The :math:`skew_{Bahr}` threshold is set at ``0.3`` and higher values mean 
 # 3D structures (Bahr, 1991).
 #
-# In this demonstration, we will plot skew with sample of 20 edi files and 
-# we start by importing the reqquired modules 
+# In this demonstration, we will plot skew with a sample of 20 files and 
+# we start by importing the required modules 
 import watex as wx 
 
 # %% 

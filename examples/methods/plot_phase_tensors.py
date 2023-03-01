@@ -10,14 +10,14 @@ phase tensors in pseudo-section format.
 # Licence: BSD-3-clause
 
 # %%
-# Plot the phase tensors with differents parameters for ellipses
+# Plot the phase tensors with different parameters for ellipses
 # such as ``[ 'phimin' | 'phimax' | 'skew' |'skew_seg' | 'phidet' |'ellipticity' ]``
 # For demonstration, we will use the data collected from Huayuan (:func:`watex.datasets.load_huayuan`)
-# area with 27 samples. Here, we will give a three representations of phase tensors ellipsis. 
+# area with 27 samples. Here, we will give three representations of phase tensors ellipsis. 
 # 
 # Import required modules as: 
 import watex as wx 
-# fetch the huayuan data 
+# fetch the Huayuan data 
 edi_samples = wx.fetch_data ('huayuan', samples =27 , return_data = True ) 
 # can also be 
 # >>> from watex.datasets import load_huayuan 
@@ -32,20 +32,20 @@ tplot= wx.TPlot (fig_size =( 5, 2 )).fit(edi_samples )
 # FROM MTPY WHEN UPDATING INNER COLORS
 # SEE RELEASE NOTES v0.1.6 FOR THE REASON 
 # 
-# We can skip the ellip_dic config by using the defaut customization. However 
-# to skip the error from MTpy color when building the doc with matplotlib >3.5.3, 
-# Use the matplotlib conventional colormap instead. 
+# We can skip the ellip_dic config by using the default customization. However 
+# to skip the error from MTpy color when building the doc with Matplotlib >3.5.3, 
+# Use the Matplotlib conventional colormap instead. 
 #----------------------------------------------------
 ellip_dic = {'ellipse_colorby':'phimin',
             'ellipse_range':[0 , 90], # Color limits for skew 
             'ellip_size': 2, 
-            'ellipse_cmap': 'mt_bl2wh2rd'# or color 'bwr'defined in `cmap` parameter 
+            'ellipse_cmap': 'mt_bl2wh2rd'# or color 'bwr' defined in `cmap` parameter 
             }
 tplot.plot_phase_tensors (ellipse_dict= ellip_dic) # by default the color limit for 'phmin' is [0, 90] 
 
 # %%
 # * Ellipse of ``'skew'`` visualization 
-# we can setup the ellipses dictionnary and passed to the 
+# we can setup the ellipses dictionary and passed to the 
 # parameter `ellipse_dict`: 
 ellip_dic_sk = {'ellipse_colorby':'skew',
             'ellipse_range':[-1 , 1], # Color limits for skew 
