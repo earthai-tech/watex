@@ -3589,7 +3589,7 @@ def is_iterable (
         - bool, or iterable object if `transform` is set to ``True``. 
         
     .. note:: 
-        Parameter `parse_string` expect `transform` to be ``True``, otherwise 
+        Parameter `parse_string` expects `transform` to be ``True``, otherwise 
         a ValueError will raise. Note :func:`.is_iterable` is not dedicated 
         for string parsing. It parses string using the default behaviour of 
         :func:`.str2columns`. Use the latter for string parsing instead. 
@@ -4290,7 +4290,7 @@ def smart_label_classifier (
     
     Parameters 
     -------------
-    arr: Arrylike 1d, 
+    arr: Arraylike 1d, 
         array-like whose items are expected to be categorized. 
         
     values: float, list of float, 

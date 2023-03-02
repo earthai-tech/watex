@@ -381,8 +381,8 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
     Can categorize multiples features by setting each component explained 
     above as list of tuples. For instance we try to replace the both 
     numerical features `power` and `flow` in the dataframe by their 
-    corresponding `features boundaries. Here is how to set  the 
-    `num_columns_properties` like:: 
+    corresponding `features` boundaries. Here is how to set  the 
+    `num_columns_properties` :: 
         
         num_columns_porperties =[
             ('flow', ([0, 1, 3], ['FR0', 'FR1', 'FR2', 'FR3'])),
@@ -515,7 +515,6 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
                                 for col_n in self.base_columns_]
         
         return X.values 
-
 
 class CombinedAttributesAdder(BaseEstimator, TransformerMixin ):
     """ Combined attributes from litteral string operators, indexes or names. 

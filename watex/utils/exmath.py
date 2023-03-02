@@ -4509,13 +4509,10 @@ def get2dtensor(
            35.00516522, 59.91093054])
     """
 
-    name, m2 = _validate_tensor (tensor = tensor ,
-                               component = component, 
-                               **kws)
+    name, m2 = _validate_tensor (tensor = tensor ,component = component, **kws)
     if name =='_freq': 
         raise EMError ("Tensor from 'Frequency' is not allowed here."
                        " Use `make2d` method instead: 'watex.EM.make2d'")
-        
     if z_or_edis_obj_list is None: 
         raise EMError(f"Cannot output {name!r} 2D block with missing a"
                       " collection of EDI or Z objects.")

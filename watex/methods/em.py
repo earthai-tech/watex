@@ -926,7 +926,7 @@ class _zupdate(EM):
         objects.
     """
     
-    def __init__(self, option:str = 'write'): 
+    def __init__(self, option: str = 'write'): 
         self.option = option
     
     def __call__ (self, func:F):
@@ -940,19 +940,18 @@ class _zupdate(EM):
             
             # pop the option argument if user provides it 
             option = kwargs.pop('option', None)
-            self.option  = option  or self.option 
+            self.option  = str(option).lower()  or self.option 
             # create an empty array to collect each new Z object 
             Zc = np.empty((len(ediObjs), ), dtype = object )
-            
             for kk in range  (len(ediObjs)):
                 # create a new Z object for each Edi
                 Z= self._make_zObj(kk,freq=freq, z_dict = z_dict  )
                 if self.option =='write': 
-                    self.export2newedis(ediObj=ediObjs[kk] , new_Z=Z, 
+                    self.exportedis(ediObj=ediObjs[kk] , new_Z=Z, 
                                     **kwargs)
                 Zc[kk] =Z
                 
-            return Zc 
+            return Zc if self.option !='write' else None 
           
         return new_func 
     
@@ -1914,9 +1913,9 @@ class Processing (EM) :
 
 
     def qc (
-        self, 
-        * ,  
+        self,  
         tol: float = .5 , 
+        *, 
         return_freq: bool =False,
         return_ratio:bool=False, 
         )->Tuple[float, ArrayLike]: 
@@ -1949,7 +1948,7 @@ class Processing (EM) :
             >>> f = pobj.getfullfrequency ()
             >>> # len(f)
             >>> # ... 55 # 55 frequencies 
-            >>> c,_ = pobj.qc ( tol = .6 ) # mean 60% to consider the data as
+            >>> c,_ = pobj.qc ( tol = .4 ) # mean 60% to consider the data as
             >>> # representatives 
             >>> c  # the representative rate in the whole EDI- collection
             >>> # ... 0.95 # the whole data at all stations is safe to 95%. 
@@ -1969,7 +1968,7 @@ class Processing (EM) :
                              f"{(tol)!r}")
         if tol ==0.: 
             raise ValueError ("Expects a tolerance value  greater than "
-                              f"'0' and less than '1, got: {tol}'")
+                              f"'0' and less than '1', got: '{tol}'")
             
         if 1 < tol <=100: 
             tol /= 100. 
@@ -2014,10 +2013,10 @@ class Processing (EM) :
             np.around (ck, 2), new_f   if return_freq else index )   
 
 
-    @_zupdate(option = 'write')
+    @_zupdate(option = 'none')
     def getValidTensors(
         self, 
-        tol:float = .5 ,  
+        tol:float = .5,  
         **kws 
         )-> NDArray[DType[complex]]: 
         """Select valid tensors from tolerance threshold and write EDI if 
@@ -2055,11 +2054,11 @@ class Processing (EM) :
         >>> f= pObj.freqs_
         >>> len(f) 
         ... 55
-        >>> zObjs_soft = pObj.getValidTensors (tol= 0.3, option='None' ) # None doesn't export EDI-file
-        >>> len(zObjs_soft[0]._freq) # suppress 3 tensor data 
+        >>> zObjs_hard = pObj.getValidTensors (tol= 0.3 ) # None doesn't export EDI-file
+        >>> len(zObjs_hard[0]._freq) # suppress 3 tensor data 
         ... 52 
-        >>> zObjs_hard  = pObj.getValidTensors(p.ediObjs_, tol = 0.6 )
-        >>> len(zObjs_hard[0]._freq)  # suppress only two 
+        >>> zObjs_soft  = pObj.getValidTensors(p.ediObjs_, tol = 0.6 , option ='write')
+        >>> len(zObjs_soft[0]._freq)  # suppress only two 
         ... 53
         
         """
@@ -2073,7 +2072,7 @@ class Processing (EM) :
         
         self.inspect 
         # ediObjs = get_ediObjs(ediObjs) 
-        _, no_ix = self.qc(self.ediObjs_ , tol= tol  ) 
+        _, no_ix = self.qc(tol=tol ) 
         f = self.freqs_.copy() 
     
         ff = np.delete (f[:, None], no_ix, 0)

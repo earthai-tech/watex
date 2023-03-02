@@ -72,18 +72,19 @@ wx.view.plot2d(z_yx,
 # There is a way to do the quality control of the data before restoring using 
 # the quality control method :meth:`watex.methods.em.Processing.qc` by 
 # specifying the tolerance parameter. By default, the data is considered good 
-# above 50%. Note that this threshold can be severe with 30%. Here is an example 
-# to get the quality control of data 
+# above 50%. Note that this threshold can be severe with 30%. Indeed, the control 
+# for data validity should be ``soft`` when the tolerance parameter  is  close 
+# to '1' and ``hard`` otherwise. Here is an example to get the quality control of data. 
 tro.qc (tol =.4 , return_ratio = True ) # we consider good data from .60% 
 
 # %% 
 # The output shows `75%` of data goodness. This score can be improved if the 
 # recovers the losses signal is triggered. However, If the user approves this 
 # ratio, there is a possibility of outputting the valid tensors  using the 
-# getValid Tensors from the method :meth:`watex.methods.em.Processing.getValidTensors` 
-# by keeping the same tolerance parameters as:  
+# the method :meth:`watex.methods.em.Processing.getValidTensors` and set the 
+# ``option`` parameter to ``write`` with the same tolerance parameters as:  
 #
-# .. code-block: python 
+# .. code-block:: python 
 #
 #    >>> tro.getValidTensors (tol = .4 ) # uncomment this will output new edi with valid tensors
  
