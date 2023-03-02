@@ -26,16 +26,13 @@ edi_samples = wx.fetch_data ('huayuan', samples =27 , return_data = True )
 # %%
 # *  Ellipse of ``'phimin'``  
 tplot= wx.TPlot (fig_size =( 5, 2 )).fit(edi_samples )
-# --------------------------------------------------
+# -------------------------------------------------------------------------------------
 # TO BUILD THE DOC WITH  MATPLOTLIB >3.5.3, COMMENT 
-# THE LINES STARTING WITH  "tplot. " TO SKIP ERROR GENERATED 
-# FROM MTPY WHEN UPDATING INNER COLORS
-# SEE RELEASE NOTES v0.1.6 FOR THE REASON 
-# 
-# We can skip the ellip_dic config by using the default customization. However 
-# to skip the error from MTpy color when building the doc with Matplotlib >3.5.3, 
-# Use the Matplotlib conventional colormap instead. 
-#----------------------------------------------------
+# THE LINES STARTING WITH  "tplot." SEE RELEASE NOTES v0.1.6 FOR THE REASON 
+# -------------------------------------------------------------------------------------
+#
+# We can skip the ellip_dic config by using the default customization
+# from the Matplotlib conventional colormap instead. 
 ellip_dic = {'ellipse_colorby':'phimin',
             'ellipse_range':[0 , 90], # Color limits for skew 
             'ellip_size': 2, 
