@@ -5,7 +5,7 @@ v0.1.6-alpha (February 22, 2023)
 
 These are minor changes performed from ``v0.1.5`` after the review :ref:`comments <comments>` from Editors and Reviewers 
 from the `softwareX <https://www.sciencedirect.com/journal/softwarex>`__ journal to improve the paper and software. 
-Here is the comments/replies section of reviewers  for  **minor revisions** that includes some bug fixes and improvements.
+Here is the comments/replies section of reviewers  for  **minor revisions** that includes some bug fixes and improvements. 
 The reviewers comments are in *italic* whereas the replies are in normal text. 
    
 .. _reviewer1: 
