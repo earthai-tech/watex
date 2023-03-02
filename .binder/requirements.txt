@@ -1,7 +1,7 @@
 # --find-links https://pypi.anaconda.org/scipy-wheels-nightly/simple/watex
 # --pre
 scikit-learn
-matplotlib
+matplotlib==3.5.2
 pandas
 seaborn
 sphinx-gallery

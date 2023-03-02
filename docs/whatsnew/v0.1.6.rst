@@ -1,8 +1,8 @@
 v0.1.6 (February 26, 2023)
 ----------------------------
 
-This is a minor change performed from ``v0.1.5`` and bug fixes for issues identified. Furthermore, the 
-:ref:`comments <comments>` from Editors and reviewers  to improve the paper submitted to `softwareX`_ are 
+This is a minor change performed from ``v0.1.6-alpha`` and bug fixes for issues identified. Furthermore, the 
+:ref:`comments <comments>` from Editors and reviewers  to improve the paper submitted to `softwareX <https://www.sciencedirect.com/journal/softwarex>`__ are 
 also displayed in the final section of this note with the replies for  bug fixes and improvements. 
 
 Adaptations and Features 
