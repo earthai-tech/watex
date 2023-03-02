@@ -15,6 +15,7 @@ Version 0.1
    :maxdepth: 2
    
    v0.1.6
+   v0.1.6-alpha
    v0.1.5
    v0.1.4
    v0.1.3

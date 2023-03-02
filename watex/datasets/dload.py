@@ -889,8 +889,9 @@ clear_cache:bool, default=False
 Returns
 -------
 data : :class:`~watex.utils.Boxspace`
-    Dictionary-like object, with the following attributes.
-    data : {ndarray, dataframe} of shape (50, 4)
+    Dictionary-like object, with the following attributes:
+        
+    data: {ndarray, dataframe} of shape (50, 4)
         The data matrix. If `as_frame=True`, `data` will be a pandas
         DataFrame.
     path: str
