@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-#   create date: Thu Sep 23 16:19:52 2021/
+#   create date: Thu Sep 23 16:19:52 2021
+#   Author: L.Kouadio 
+#   Licence: BSD-3 clause
 
 """
 Dataset 
@@ -210,7 +212,7 @@ _fetch_data.__doc__ ="""\
 Fetch dataset from 'tag'. A tag correspond to each level of data 
 processing. 
 
-An example of retrieving Bagoue dataset can be experimented.
+Experiment an example of retrieving Bagoue dataset.
 
 Parameters 
 ------------

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # BSD 3-Clause License
-# Copyright (c) 2007-2022 The scikit-learn and watex developers.
+# Copyright (c) 2022 The scikit-learn and watex developers.
 # All rights reserved.
 
 # Utilities for input validation
@@ -53,7 +53,8 @@ def _validate_tensor(
         Tensor name. Can be [ resistivity|phase|z|frequency]
         
     component: str, 
-      EM mode. Can be ['xx', 'xy', 'yx', 'yy']
+      EM mode. Can be ['xx', 'xy', 'yx', 'yy']. Any other value will raise 
+      error.
       
     kind : bool or str 
         focuses on the tensor output. Note that the tensor is a complex number 
@@ -62,53 +63,33 @@ def _validate_tensor(
         the specific one. Default is ``complex``.
           
     kws: dict 
-        Additional keywords arguments from :func:`~.getfullfrequency `. 
+        Additional keywords arguments from 
+        :func:`~watex.utils.get_full_frequency`. 
     
     Returns 
     -------- 
     name, m2: name of tensor and components 
-        the matrix of number of frequency and number of Edi-collectes which 
-        correspond to the number of the stations/sites. 
+        the name of the tensor asserted, the component of valid tensor. 
     
     Examples 
     ---------
-    >>> from watex.methods.em import EM 
-    >>> edipath ='data/edis'
-    >>> emObjs= EM().fit(edipath)
-    >>> phyx = EM().make2d ('phaseyx')
-    >>> phyx 
-    ... array([[ 26.42546593,  32.71066454,  30.9222746 ],
-           [ 44.25990541,  40.77911136,  41.0339148 ],
-           ...
-           [ 37.66594686,  33.03375863,  35.75420802],
-           [         nan,          nan,  44.04498791]])
-    >>> phyx.shape 
-    ... (55, 3)
-    >>> # get the real number of the yy componet of tensor z 
-    >>> zyy_r = make2d (ediObjs, 'zyx', kind ='real')
-    ... array([[ 4165.6   ,  8665.64  ,  5285.47  ],
-           [ 7072.81  , 11663.1   ,  6900.33  ],
-           ...
-           [   90.7099,   119.505 ,   122.343 ],
-           [       nan,        nan,    88.0624]])
-    >>> # get the resistivity error of component 'xy'
-    >>> resxy_err = EM.make2d ('resxy_err')
-    >>> resxy_err 
-    ... array([[0.01329037, 0.02942557, 0.0176034 ],
-           [0.0335909 , 0.05238863, 0.03111475],
-           ...
-           [3.33359942, 4.14684926, 4.38562271],
-           [       nan,        nan, 4.35605603]])
-    >>> phyx.shape ,zyy_r.shape, resxy_err.shape  
-    ... ((55, 3), (55, 3), (55, 3))
-       
+    >>> from watex.utils.validator import _validate_tensor 
+    >>> _validate_tensor ('zxy') 
+    ('z', 'xy')
+    >>> # when the component is missing 
+    >>> _validate_tensor ('resx')
+    ValueError: 'Resistivity' component is missing. Use e.g. 'resistivity_xy' for 'xy' component
+    >>> # when the kind of Impendance tensor is wronglu imputted 
+    >>> _validate_tensor ('zxy', kind ='reel')
+    ValueError: Unacceptable argument 'reel'. Expect 'modulus','imag', 'real', or 'complex'.
+    
     """
     from ..exceptions import EMError 
     if  ( 
             ( tensor and not component )  
             or ( component and not tensor)
             ): 
-        raise EMError("Tensor can not be None while component is"
+        raise EMError("Tensor cannot be None while component is"
                       " given and vice-versa. Both are needed."
                       )
     elif ( tensor and component): 
@@ -357,7 +338,7 @@ def is_valid_dc_data (d, /, method= "erp" ,
     exception: :class:`BaseException`, ['VESError' |'ERPError'], default=TypeError
         Kind of error to raise. 
     extra: str, 
-        Extra message to imporve the error. 
+        Extra message to improve the error. 
     Return 
     ------
     d: pd.dataframe 
