@@ -105,6 +105,21 @@ class temp2d:
         axe: Matplotllib axis 
         
         """
+        def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =5 ):
+            """ Format thick parameter with 'FuncFormatter(func)'
+            rather than using `axi.xaxis.set_major_locator (plt.MaxNLocator(3))`
+            ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
+            
+            :param value: tick range values for formatting 
+            :param tick_number: number of ticks to format 
+            :param fmt: str, default='S{:02}', kind of tick formatage 
+            :param nskip: int, default =7, number of tick to skip 
+            
+            """
+            if value % nskip==0: 
+                return fmt.format(int(value)+ 1)
+            else: None
+            
         fig, axe = plt.subplots(
             1, 
             figsize = self.fig_size, 
@@ -173,10 +188,15 @@ class temp2d:
                                   'style':self.font_style})
         #--> set second axis 
         axe2 = axe.twiny() 
-        axe2.set_xticks(ticks= x, minor=False, 
+        axe2.set_xticks(range(len(x)), minor=False, 
                         fontsize = self.font_size 
                         )
-        axe2.set_xticklabels(posix, rotation=self.rotate_xlabel, 
+        #axe2.set_xticks(range(len(x)),minor=False )
+
+        if len(x ) >= 10 : 
+            axe2.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
+        else : 
+            axe2.set_xticklabels(posix, rotation=self.rotate_xlabel, 
                              fontsize = self.font_size )
      
         axe2.set_xlabel('Stations', 
