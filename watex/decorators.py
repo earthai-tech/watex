@@ -105,7 +105,7 @@ class temp2d:
         axe: Matplotllib axis 
         
         """
-        def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =5 ):
+        def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =3 ):
             """ Format thick parameter with 'FuncFormatter(func)'
             rather than using `axi.xaxis.set_major_locator (plt.MaxNLocator(3))`
             ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
@@ -193,7 +193,7 @@ class temp2d:
                         )
         #axe2.set_xticks(range(len(x)),minor=False )
 
-        if len(x ) >= 10 : 
+        if len(x ) >= 12 : 
             axe2.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
         else : 
             axe2.set_xticklabels(posix, rotation=self.rotate_xlabel, 

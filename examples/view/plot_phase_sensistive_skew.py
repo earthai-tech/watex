@@ -41,6 +41,7 @@ two dimensional.
 import numpy as np
 import watex 
 
+# %%
 # * `Swift method` 
 test_data = watex.fetch_data ('edis', samples =37, return_data =True )
 tplot = watex.TPlot(fig_size =(11,  5), marker ='x').fit(test_data)
