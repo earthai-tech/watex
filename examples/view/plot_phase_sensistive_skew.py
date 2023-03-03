@@ -43,7 +43,7 @@ import watex
 
 # * `Swift method` 
 test_data = watex.fetch_data ('edis', samples =37, return_data =True )
-tplot = watex.TPlot(fig_size =(10,  4), marker ='x').fit(test_data)
+tplot = watex.TPlot(fig_size =(11,  5), marker ='x').fit(test_data)
 tplot.plt_style='classic'
 tplot.plotSkew(method ='swift', threshold_line=True)
 
@@ -71,18 +71,20 @@ skv = watex.EMProcessing ().fit(test_data).skew(
     return_skewness='skew', suppress_outliers=False) # to return only skew value,
 watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
                    suppress_outliers=False, show_grid =True, 
-                   fig_size = ( 10, 4 ), 
+                   fig_size = ( 11, 5 ), 
                    cmap = 'bwr', 
                    font_size =7, 
                    ylabel ='Log10Frequency[$H_z$]', 
+                   xlabel='Distance (m)', 
                    cb_label ='Skew: swift', 
                    distance =50., # distance between stations
                    )
+# %%
 # As shown in Figure above, the value of skew is smaller than 0.4 at most sites, 
 # indicating a 2D structure. Only a few sites near the fault have a 
 # value of skew greater than 0.4, indicating an obvious 3D structure. Thus, 
 # the electricity model of the research area can be approximated to a 2D 
-# structure for inversion 
+# structure for inversion. 
 
 # %%
 # .. topic:: References 

@@ -28,14 +28,14 @@ and weak frequency signals.
 # thereby leading to a misinterpretation of the structures found in this area
 # after inversion. 
 # 
-# For demonstration, we collected 27 samples of raw data stored as an inner dataset 
+# For demonstration, we collected 47 samples of raw data stored as an inner dataset 
 # and plot the raw data of impedance tensor z in TM mode to visualize the 
 # missing tensors. This is the code snippet: 
 import watex  as wx 
-data = wx.fetch_data('huayuan', return_data =True, samples =27 ,
+data = wx.fetch_data('huayuan', return_data =True, samples =47 ,
                      key ='raw', clear_cache=True) # clear watex cache data to save new EDIs
 tro = wx.EMProcessing().fit(data) 
-#%%
+# %%
 # * Output the impedance tensor in TM mode (`yx`)
 # 
 # Here we output the modulus of the complex number of tensor Z. We can also output 
@@ -44,7 +44,7 @@ tro = wx.EMProcessing().fit(data)
 # part instead. Refer to method documentation for more details. 
 z_yx = tro.make2d(out= 'zyx', kind ='modulus' )  
  
-#%%
+# %%
 # * Visualize the plot using the template 2D from :func:`watex.view.plot2d`.  
 wx.view.plot2d(z_yx, 
                y = tro.freqs_,
@@ -58,7 +58,7 @@ wx.view.plot2d(z_yx,
                cmap = 'terrain'
                ) 
 
-#%% 
+# %% 
 # As a comment: one can visualize the blank line in the data which indicates 
 # the missing signal at these points. If we try to remove from each missing 
 # signal data which corresponds to data at a certain frequency, we will lose 
@@ -95,12 +95,12 @@ tro.qc (tol =.4 , return_ratio = True ) # we consider good data from .60%
 # * Recovering missing signals  
 Z = tro.zrestore ( ) 
 
-#%% 
+# %% 
 # Note that Z is  three dimensional array ( n_freqs, 2 , 2 ), we can 
 # collect the TM restoring tensors using the function :func:`watex.utils.get2dtensor` 
 z_yx_restored = wx.get2dtensor(Z, tensor ='z', component='yx') 
 
-#%%
+# %%
 # The impedance tensor z in TM mode can also be output using: 
 #
 # .. code-block:: python 
@@ -108,7 +108,7 @@ z_yx_restored = wx.get2dtensor(Z, tensor ='z', component='yx')
 #    >>> tro.component ='yx' 
 #    >>> z_yx_restored = tro.zrestore ( tensor ='z')
 
-#%% 
+# %% 
 # * Plot the recovering tensors 
 wx.view.plot2d(z_yx_restored,
                y = tro.freqs_,
@@ -120,7 +120,7 @@ wx.view.plot2d(z_yx_restored,
                cb_label ='TM mode: $Z_yx$', 
                distance =50.,cmap = 'terrain'
                )
-#%%
+# %%
 # The plot below indicates the full-strength amplitudes of restored data. 
 # Tensors are recovered at all frequencies. 
 

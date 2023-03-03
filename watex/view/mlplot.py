@@ -3721,14 +3721,14 @@ def plot2d(
     cbl = 'log_{10}' if to_log10 else ''
     axe.set_xlabel(pobj.xlabel or 'Distance(m)', 
                  fontdict ={
-                  'size': pobj.font_size ,
+                  'size': 1.5 * pobj.font_size ,
                   'weight': pobj.font_weight}
                  )
       
     axe.set_ylabel(pobj.ylabel or  f"{cbl}Frequency$[Hz]$",
              fontdict ={
                      #'style': pobj.font_style, 
-                    'size':  pobj.font_size ,
+                    'size':  1.5 * pobj.font_size ,
                     'weight': pobj.font_weight})
     if pobj.show_grid is True : 
         axe.minorticks_on()
@@ -3743,7 +3743,7 @@ def plot2d(
     cb.ax.tick_params(axis='y', direction='in', pad=2., 
                       labelsize = pobj.font_size )
     
-    cb.set_label(labex,fontdict={'size': pobj.font_size ,
+    cb.set_label(labex,fontdict={'size': 1.2 * pobj.font_size ,
                               'style':pobj.font_style})
     #--> set second axis 
     axe2 = axe.twiny() 
@@ -3756,7 +3756,7 @@ def plot2d(
      
     axe2.set_xlabel('Stations', fontdict ={
         'style': pobj.font_style,
-        'size': pobj.font_size ,
+        'size': 1.5 * pobj.font_size ,
         'weight': pobj.font_weight}, )
       
     fig.suptitle(pobj.fig_title,ha='left',

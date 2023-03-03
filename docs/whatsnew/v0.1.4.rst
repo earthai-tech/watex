@@ -32,7 +32,7 @@ Bug fixes
 - Fix the typos in ``README.txt`` by changing the ``Analysis`` by ``Analyses`` since many analyses are performed with many scripts 
   in the :mod:`watex.analysis` module. 
  
-- Fix the bug in :func:`watex.view.biPlot`. Rename the ``xlabel` and ``ylabel``. 
+- Fix the bug in :func:`watex.view.biPlot`. Rename the ``xlabel`` and ``ylabel``. 
 
 - Fixed bug in :func:`watex.show_versions`  to output the hard dependencies and update the public API in ``watex.__init__``. 
 
@@ -43,11 +43,11 @@ Bug fixes
 - Fix the bug in :func:`watex.analysis.decomposition.linear_discriminant_analysis` mathematical formula in the docstrings. Henceforth 
   the function :func:`~watex.analysis.decomposition.linear_discriminant_analysis` returns weight factor of :term:`X` transformed as : 
 
-.. code-block:: python 
+  .. code-block:: python 
    
-   >>> def linear_discriminant_analysis(X,y, ...):
-           ...
-           return X.dot(W) if return_X else W 
+     >>> def linear_discriminant_analysis(X,y, ...):
+             ...
+             return X.dot(W) if return_X else W 
 
 - Fixed bug in :meth:`watex.base.Data.profilingReport`. Exception henceforth occurs if the optional dependency ``pandas-profiling``
   is not installed yet for report generation. 

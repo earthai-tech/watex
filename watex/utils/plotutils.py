@@ -2825,7 +2825,7 @@ def plot_skew (
         for m in ct: 
             plt.axhline(y=0.4 if m==2 else 0.3 , color="k" if m==1 else "g",
                         linestyle="-",
-                        label=f'threshold: $\mu={0.1 if m==2 else 0.3}$'
+                        label=f'threshold: $\mu={0.4 if m==2 else 0.3}$'
                         )
             ax.legend() 
 
