@@ -603,6 +603,7 @@ Functions
 	utils.moving_average
 	utils.naive_imputer
 	utils.naive_scaler
+	utils.normalizer
 	utils.ohmicArea
 	utils.plotAnomaly
 	utils.plotOhmicArea

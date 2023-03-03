@@ -47,6 +47,7 @@ from .funcutils import (
     to_numeric_dtypes, 
     smart_label_classifier, 
     remove_outliers,
+    normalizer, 
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -188,6 +189,7 @@ __all__=[
         'plot_sfi',
         'plot_skew',
         'remove_outliers', 
+        'normalizer',
         ]
 
 

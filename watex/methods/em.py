@@ -30,6 +30,8 @@ from ..utils.funcutils import (
     reshape, 
     smart_strobj_recognition, 
     repr_callable_obj,
+    remove_outliers, 
+    normalizer
     ) 
 from ..utils.exmath import ( 
     scalePosition, 
@@ -1417,7 +1419,9 @@ class Processing (EM) :
     
     def skew(
         self,
-        method:str ='swift'
+        method:str ='swift', 
+        return_skewness:bool=False, 
+        suppress_outliers:bool=True, 
         )-> NDArray[DType[float]]: 
         r"""
         The conventional asymmetry parameter based on the Z magnitude. 
@@ -1438,7 +1442,9 @@ class Processing (EM) :
             
         When the :math:`skew_{swift}`  is close to ``0.``, we assume a 1D or 2D model
         when the :math:`skew_{swift}` is greater than ``>=0.2``, we assume 3D local 
-        anomaly (Bahr, 1991; Reddy et al., 1977).
+        anomaly (Bahr, 1991; Reddy et al., 1977).  It is generally considered 
+        that an electrical structure of :math:`skew < 0.4` can be treated as a 
+        2D medium.
         
         Furthermore, Bahr (1988) proposed the phase sensitive skew which calculates
         the skew taking into account the distortions produced in Z over 2D structures
@@ -1480,12 +1486,20 @@ class Processing (EM) :
             and 3D otherwise. Conversly to ``bahr`` for the remove distorsion proposed  
             by Bahr in 1991. The latter threshold is set to 0.3. Above this value 
             the structures is 3D. 
-        
+            
+        return_skewness: str, 
+           Typically returns the type of skewness. ``'skew'`` or ``mu`` for 
+           skew and rotation- all invariant values respectively. Any other 
+           value return both skew and rotational invariant. 
+           
+           .. versionadded:: 0.1.6 
+           
         Returns 
         --------- 
         skw, mu : Tuple of ndarray-like , shape (N, M )
             - Array of skew at each frequency 
-            - rotational invariant ``mu`` at each frequency. 
+            - rotational invariant ``mu`` at each frequency that
+              measures of phase differences in the impedance tensor. 
             
         See Also
         ---------
@@ -1522,14 +1536,23 @@ class Processing (EM) :
         Swift, C., 1967. A magnetotelluric investigation of an electrical conductivity 
            anomaly in the southwestern United States. Ph.D. Thesis, MIT Press. Cambridge. 
            
-           
         """
+        
+            
         self.inspect 
             
         self.method = str(method).lower()
         if self.method not in ('swift', 'bahr'): 
             raise ValueError(
                 f'Expected argument ``swift`` or ``bahr`` not: {self.method!r}')
+            
+        return_skewness= str(return_skewness).lower() 
+        if  ( 'mu' in return_skewness or 
+             'rot' in return_skewness or 
+             'invariant' in return_skewness): 
+            return_skewness ='mu' 
+        elif 'skew' in return_skewness: 
+            return_skewness ='skew'
             
         Zxx= self.make2d('zxx')
         Zxy = self.make2d('zxy')
@@ -1540,13 +1563,21 @@ class Processing (EM) :
         D1S2 = (S2 * np.conj(D1)).imag ; S1D2 = (D2 * np.conj(S1)).imag 
         
         if method =='swift': 
-            skw = np.abs ( S1  / D2 )
+            skw = np.abs ( S1  / D2 )  
         else : 
             skw = np.sqrt(np.abs( D1S2 - S1D2))/np.abs(D2)
             
         mu = np.sqrt(np.abs(D1S2) + np.abs (S1D2))/ np.abs(D2) 
+        
+        if suppress_outliers: 
+            skw = remove_outliers(skw, fill_value= np.nan ) 
+            mu = remove_outliers(mu, fill_value= np.nan )
             
-        return skw, mu
+        skw = normalizer(skw) ; mu = normalizer(mu )
+            
+        return skw if return_skewness=='skew' else (
+            mu if return_skewness=='mu' else skw, mu)
+   
 
     def zrestore(
         self,

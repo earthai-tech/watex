@@ -88,7 +88,10 @@ from ..utils.mlutils import (
     cattarget, 
     projection_validator, 
     )
-from ..utils.plotutils import make_mpl_properties
+from ..utils.plotutils import ( 
+    _format_ticks, 
+    make_mpl_properties
+    )
 from ..utils.validator import ( 
     _check_consistency_size, 
     get_estimator_name , 
@@ -3744,9 +3747,12 @@ def plot2d(
                               'style':pobj.font_style})
     #--> set second axis 
     axe2 = axe.twiny() 
-    axe2.set_xticks(ticks= x,
-                minor=False )
-    axe2.set_xticklabels(stn, rotation=pobj.rotate_xlabel)
+    axe2.set_xticks(range(len(x)),minor=False )
+
+    if len(stn ) >= 14 : 
+        axe2.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
+    else : 
+        axe2.set_xticklabels(stn, rotation=pobj.rotate_xlabel)
      
     axe2.set_xlabel('Stations', fontdict ={
         'style': pobj.font_style,

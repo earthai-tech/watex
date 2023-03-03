@@ -1,9 +1,10 @@
 """
 =================================================
-Plot Skew
+Plot Skew 1D/2D
 =================================================
 
-Phase-sensitive skew visualization
+Phase-sensitive skew visualization in one-dimensional and 
+two dimensional. 
 
 """
 # Author: L.Kouadio 
@@ -37,6 +38,7 @@ Phase-sensitive skew visualization
 # Here is an example of implementation using the :class:`watex.view.TPlot` class 
 # of module :mod:`watex.view`. 
 # we start by importing ``watex`` as: 
+import numpy as np
 import watex 
 
 # * `Swift method` 
@@ -56,7 +58,33 @@ tplot.plotSkew(method ='swift', threshold_line=True, suppress_outliers=False )
 # 
 tplot.plotSkew(threshold_line=True, suppress_outliers=False )
 
-#%%
+
+# %%
+# * Plot skew in two-dimensional 
+# It is possible to visualize the skew into two-dimensional by computing 
+# the skew value from :class:`~watex.methods.Processing` class  and call 
+# the boilerplate plot2d function :func:`~watex.view.plot2d` for visualization.
+# In addition, setting the `return_skewness` parameter to ``skew``
+# returns only the skew value. The default behavior returns both the skew and 
+# the rotation all of invariant :math:`\mu`. 
+skv = watex.EMProcessing ().fit(test_data).skew(
+    return_skewness='skew', suppress_outliers=False) # to return only skew value,
+watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
+                   suppress_outliers=False, show_grid =True, 
+                   fig_size = ( 10, 4 ), 
+                   cmap = 'bwr', 
+                   font_size =7, 
+                   ylabel ='Log10Frequency[$H_z$]', 
+                   cb_label ='Skew: swift', 
+                   distance =50., # distance between stations
+                   )
+# As shown in Figure above, the value of skew is smaller than 0.4 at most sites, 
+# indicating a 2D structure. Only a few sites near the fault have a 
+# value of skew greater than 0.4, indicating an obvious 3D structure. Thus, 
+# the electricity model of the research area can be approximated to a 2D 
+# structure for inversion 
+
+# %%
 # .. topic:: References 
 #
 #    .. [1] Swift, C., 1967. A magnetotelluric investigation of an 

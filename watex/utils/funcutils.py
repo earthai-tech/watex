@@ -4735,8 +4735,77 @@ def remove_outliers (
 
     return arr 
 
-        
-        
+def normalizer ( arr, /, method ='naive'): 
+    """ Normalize values to be between 0 and 1. 
+    
+    This normlizer handles NaN values translates data individually such
+    that it is in the given range on the training set, e.g. between
+    zero and one.
+
+    Note that when the transformation is set to the ``method ='MinMax'``,  
+    The transformation is given by::
+
+        X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
+        X_normed = X_std * (max - min) + min
+
+    where min, max = feature_range.
+
+    This transformation is often used as an alternative to zero mean,
+    unit variance scaling.
+
+    Parameters 
+    -----------
+    arr: Arraylike, 
+       Array to normalize, can contain NaN values. 
+    method: str,
+       Can be use 'scikit-learn' :class:`~watex.exlib.MinMaxScaler` for 
+       normalization. Any other values used the naive normalization.
+     
+    Returns
+    --------
+    arr_norm: Normalized array. 
+    
+    Examples
+    ----------
+    >>> import numpy as np 
+    >>> from watex.utils.funcutils import normalizer 
+    >>> np.random.seed (42)
+    >>> arr = np.random.randn (3, 2 ) 
+    array([[ 0.49671415, -0.1382643 ],
+           [ 0.64768854,  1.52302986],
+           [-0.23415337, -0.23413696]])
+    >>> normalizer (arr )
+    array([[4.15931313e-01, 5.45697636e-02],
+           [5.01849720e-01, 1.00000000e+00],
+           [0.00000000e+00, 9.34323403e-06]])
+    >>> normalizer (arr , method ='min-max')  # normalize data along axis=0 
+    array([[0.82879654, 0.05456093],
+           [1.        , 1.        ],
+           [0.        , 0.        ]])
+    >>> arr [0, 1] = np.nan; arr [1, 0] = np.nan 
+    >>> normalizer (arr )
+    array([[4.15931313e-01,            nan],
+           [           nan, 1.00000000e+00],
+           [0.00000000e+00, 9.34323403e-06]])
+    >>> normalizer (arr , method ='min-max')
+    array([[ 1., nan],
+           [nan,  1.],
+           [ 0.,  0.]])
+    
+    """   
+    method = str(method).lower() 
+    arr = np.array(arr )
+    
+    if method in ( 'sklearn', 'scikit-learn', 'minmax', 'min-max'): 
+        from ..exlib import MinMaxScaler 
+        arr = arr.reshape(-1, 1) if arr.ndim ==1 else arr 
+        return  MinMaxScaler().fit_transform(arr ) 
+    
+    arr_norm  = (arr - np.nanmin(arr))/ (np.nanmax (arr) - np.nanmin(arr))
+    
+    return arr_norm 
+
+    
     
     
     
