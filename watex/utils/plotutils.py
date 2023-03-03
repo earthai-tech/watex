@@ -2676,21 +2676,28 @@ def plot_skew (
     threshold_line =None, 
     fig_size = (7, 5), 
     savefig = None, 
-    view=None, 
+    view=None,
+    style=None, 
     **kws 
     ):
     """ Plot phase sensitive skew visualization. 
     
-    Phase Sensitivity Skew (:math:`\mu`) is a dimensionality tool that 
+    Phase Sensitivity Skew (:math:`\eta`) is a dimensionality tool that 
     represents a measure of the skew of the  phases of the impedance 
     tensor. The parameter is thus unaffected by the distortion 
     effect, unlike the Swift-skew and ellipticity dimensionality 
     tools [1]_. 
     
-    Values of :math:`\mu` > 0.3 are considered to represent 3D data. 
+    Values of :math:`\eta` > 0.3 are considered to represent 3D data. 
     Phase-sensitive skews less than 0.1 indicate 1D, 2D or distorted 
-    2D (3-D /2-D) cases. Values of :math:`mu` between 0.1 and 0.3 indicates 
-    modified 3D/2D structures [2]_. 
+    2D (3-D /2-D) cases. Values of :math:`\eta` between 0.1 and 0.3 indicates 
+    modified 3D/2D structures [2]_ according to `Bahr' methods. However,
+    values :math:`\eta >=0.2` using the `Swift` methods, the smaller the value 
+    :math:`\eta` ( close to :math:`0.`), the closer the structure to 2D 
+    structure and vice versa.However, it is generally considered that 
+    an electrical structure of :math:`\eta < 0.4` can be treated as a 2D 
+    medium. Here as the ``threshold_line`` for :meth:`\eta` using the 
+    Swift method should be set as `0.4`. 
     
     .. versionadded:: 0.1.5 
     
@@ -2732,6 +2739,9 @@ def plot_skew (
     savefig: str, optional 
          Save figure name. The default resolution dot-per-inch is ``300``. 
          
+    style: str, default='classic'
+        Matplotlib plottings style.
+        
     kws: dict, 
        Matplotlib Axes scatterplot additional keywords arguments. 
         
@@ -2768,7 +2778,9 @@ def plot_skew (
     >>> plot_skew (edi_sk, threshold_line= True) 
     
     """
-
+    if style is not None:
+        plt.style.use (style )
+        
     view = view or 'skew'
     
     if ('inv'  in str (view).lower()
@@ -2811,7 +2823,7 @@ def plot_skew (
         
     if ct: 
         for m in ct: 
-            plt.axhline(y=0.1 if m==2 else 0.3 , color="k" if m==1 else "g",
+            plt.axhline(y=0.4 if m==2 else 0.3 , color="k" if m==1 else "g",
                         linestyle="-",
                         label=f'threshold: $\mu={0.1 if m==2 else 0.3}$'
                         )

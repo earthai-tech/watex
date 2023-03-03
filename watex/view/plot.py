@@ -900,7 +900,8 @@ class TPlot (BasePlot):
                 
             - ``swift`` for the remove distorsion proposed by Swift in 1967. 
               The value close to 0. assume the 1D and 2D structures, and 3D 
-              otherwise. 
+              otherwise.  However, In general case, the  electrical structure 
+              of :math:`\eta < 0.4` can be treated as a 2D medium.
             - ``bahr`` for the remove distorsion proposed  by Bahr in 1991. 
               The latter threshold is set to 0.3. Above this value the 
               structures is 3D.
@@ -920,9 +921,11 @@ class TPlot (BasePlot):
            Visualize th threshold line. Can be ['bahr', 'swift', 'both']:
                
            - Note that when method is set to ``swift``, the value close 
-             to close to :math:`0.` assume the 1D and 2D structures,  and 
-             3D otherwise. 
-           - when method is set to ``Bahr``, :math:`\mu > 0.3``  is 3D 
+             to close to :math:`0.` assume the 1D and 2D structures 
+             (:math:`\eta <0.4`),  and 3D otherwise( :math:`\eta >0.4`). 
+             The threshold line for ``swift`` is set to :math:`0.4`. 
+             
+           - when method is set to ``Bahr``, :math:`\eta > 0.3``  is 3D 
              structures, between :math:`[0.1 - 0.3]` assumes modified 3D/2D 
              structures whereas :math:`<0.1` 1D, 2D or distorted 2D. 
         show_average_sensistivity: bool, default=True 
@@ -1005,9 +1008,9 @@ class TPlot (BasePlot):
                         )
         if ct: 
             for m in ct: 
-                plt.axhline(y=0.1 if m==2 else 0.3 , color="k" if m==1 else "g",
+                plt.axhline(y=0.4 if m==2 else 0.3 , color="k" if m==1 else "g",
                             linestyle="-",
-                            label=f'threshold: $\mu={0.1 if m==2 else 0.3}$'
+                            label=f'threshold: $\mu={0.4 if m==2 else 0.3}$'
                             )
                 ax.legend() 
 

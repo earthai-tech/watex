@@ -26,6 +26,7 @@ Adaptations and Features
   >>> Z = wx.EMProcessing().fit(edis).getValidTensors (tol =0.3 ) # outputs valid 3D new Impedance tensors with  >=70% assertion of data representativity 
   >>> wx.EMProcessing().fit(edis).getValidTensors (tol =0.3 , option ='write') # export tensors.  
 
+- Enable the skew dimensional plot with the combinaison with :class:`watex.methods.Processing` and :func:`watex.view.plot2d`. 
 
 Bug fixes 
 ~~~~~~~~~~
