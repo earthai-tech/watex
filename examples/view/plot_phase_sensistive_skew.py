@@ -3,7 +3,7 @@
 Plot Skew 1D/2D
 =================================================
 
-Phase-sensitive skew visualization in one-dimentional and 
+Phase-sensitive skew visualization in one-dimensional and 
 two dimensional. 
 
 """
