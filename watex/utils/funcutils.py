@@ -4709,8 +4709,8 @@ def remove_outliers (
     arr =np.array (ar)
     
     if method =='iqr': 
-        Q1 = np.percentile(arr, 25,) 
-        Q3 = np.percentile(arr, 75)
+        Q1 = np.percentile(arr[~np.isnan(arr)], 25,) 
+        Q3 = np.percentile(arr[~np.isnan(arr)], 75)
         IQR = Q3 - Q1
         
         upper = Q3 + 1.5 * IQR  
@@ -4724,7 +4724,7 @@ def remove_outliers (
         
     if method =='z-score': 
         from scipy import stats
-        z = np.abs(stats.zscore(arr))
+        z = np.abs(stats.zscore(arr[~np.isnan(arr)]))
         zmask  = np.array ( z > threshold )
         arr [zmask]= fill_value if fill_value else np.nan
         

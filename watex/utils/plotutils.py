@@ -2336,14 +2336,16 @@ def get_color_palette (RGB_color_palette):
         
     return tuple(rgba)       
 
-def _get_xticks_formatage ( ax,  xtick_range, space= 14 , step=7, fmt ='{}',
-                           **xlkws):
+def _get_xticks_formatage (
+        ax,  xtick_range, space= 14 , step=7, fmt ='{}',auto = False, **xlkws):
     """ Skip xticks label at every number of spaces 
     :param ax: matplotlib axes 
     :param xtick_range: list of the xticks values 
     :param space: interval that the label must be shown.
     :param step: the number of label to skip.
     :param fmt: str, formatage type. 
+    :param auto: bool , if ``True`` a dynamic tick formatage will start. 
+    
     """
     def format_ticks (ind, x):
         """ Format thick parameter with 'FuncFormatter(func)'
@@ -2356,9 +2358,20 @@ def _get_xticks_formatage ( ax,  xtick_range, space= 14 , step=7, fmt ='{}',
         if ind % step ==0: 
             return fmt.format (ind)
         else: None 
+        
     # show label every 'space'samples 
+    if auto: 
+        space = 10.
+        step = int (np.ceil ( len(xtick_range)/ space )) 
+        
     if len(xtick_range) >= space : 
-        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks)) 
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))
+
+        rotation = xlkws.get('rotation') if 'rotation' in xlkws.keys (
+            ) else xlkws.get('rotate_xlabel')
+        if rotation:
+            plt.setp(ax.get_xticklabels(), rotation = rotation ) 
+            
     else: ax.set_xticklabels(xtick_range, **xlkws)
 
         
@@ -2864,4 +2877,8 @@ def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =7 ):
         return fmt.format(int(value)+ 1)
     else: None 
     
- 
+    
+    
+    
+    
+    

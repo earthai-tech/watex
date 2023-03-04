@@ -4612,5 +4612,113 @@ def get_full_frequency (
     return np.log10(f) if to_log10 else f 
     
 
+def compute_error ( arr, /,  method ='std', fill_nan = False, axis = 0, 
+                   confidence_threshold =.95 , return_confidence_interval=False 
+                   ): 
+    """ Compute Error ( Standard Deviation ) or Standard errors 
+    
+    Standard error and standard deviation are both measures of variability:
+    - The standard deviation describes variability within a single sample. Its
+      formula is given as: 
+          
+      .. math:: 
+          
+          SD = \sqrt{ \sum |x -\mu|^2}{N}
+          
+      where :math:`\sum` means the "sum of", :math:`x` is the value in the data 
+      set,:math:`\mu` is the mean of the data set and :math:`N` is the number 
+      of the data points in the population. :math:`SD` is the quantity 
+      expressing by how much the members of a group differ from the mean 
+      value for the group.
+      
+    - The standard error estimates the variability across multiple 
+      samples of a population. Different formulas are used depending on 
+      whether the population standard deviation is known.
+      
+      - when the population standard deviation is known: 
+      
+        .. math:: 
+          
+            SE = \frac{SD}{\sqrt{N}} 
+      - When the population parameter is unknwon 
+      
+        .. math:: 
+            
+            SE = \frac{s}{\sqrt{N}} 
+            
+      where :math:`SE` is the standard error, : math:`s` is the sample
+      standard deviation. When the population standard is knwon the :math:`SE`
+      is more accurate. 
+    
+    Note that the :math:`SD` is  a descriptive statistic that can be 
+    calculated from sample data. In contrast, the standard error is an 
+    inferential statistic that can only be estimated 
+    (unless the real population parameter is known). 
+    
+    Parameters
+    ----------
+    arr : array_like 
+    https://www.scribbr.com/statistics/standard-error/
+    
+    """
+    method = str(method).lower() 
+    if 'error' in method or 'se' in method: 
+        method ='se' 
+
+    err= np.std (arr) if arr.ndim ==1 else np.std (arr, axis= axis 
+                                                       ) 
+    if method=='se': 
+        N = len(arr) if arr.ndim ==1 else arr.shape [axis ]
+        err =  err / np.sqrt(N)
         
+        if return_confidence_interval: 
+            err_lower = arr.mean() - ( 1.96 * err ) 
+            err_upper = arr.mean() + ( 1.96 * err )
         
+    return err if not return_confidence_interval else err_lower, err_upper 
+
+
+   
+        
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
