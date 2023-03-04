@@ -67,10 +67,11 @@ import watex as wx
 # * Barh method 
 edi_sk = wx.fetch_data ("edis", return_data =True , samples = 20 ) 
 # we can set the Barh threshold line by setting the threshold line to 'Barh' 
-wx.utils.plot_skew (edi_sk, method ='bahr', threshold_line='bahr', fig_size = (10, 4), style ='classic')  
+wx.utils.plot_skew (edi_sk, method ='bahr', threshold_line='bahr', fig_size = (11, 5), style ='classic')  
 
 #%% 
 # * Swift method 
-wx.utils.plot_skew (edi_sk, method ='swift', threshold_line='swift', fig_size = (10, 4))  
+wx.utils.plot_skew (edi_sk, method ='swift', threshold_line='swift', fig_size = (11, 5), 
+                    mode='periods')  
 
 

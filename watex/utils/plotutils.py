@@ -2802,7 +2802,9 @@ def plot_skew (
     import watex as wx 
     po =  wx.EMProcessing().fit(edi_obj)
     
-    skew, mu =po.skew(method = method )
+    # remove the outliers in the data
+    # and filled with NaN 
+    skew, mu =po.skew(method = method, suppress_outliers = True  )
     freqs =  1/ po.freqs_ if mode =='period' else po.freqs_ 
     ymat = skew if view =='skew' else mu 
     
@@ -2817,10 +2819,6 @@ def plot_skew (
             threshold_line = 'both'
             
     ct = thr_code.get(str(threshold_line).lower(), None ) 
-    
-    # remove the outliers in the data
-    # and filled with NaN 
-    ymat = remove_outliers(ymat, fill_value= np.nan ) 
     
     for i in range (skew.shape[1]): 
         ax.scatter ( freqs, reshape (ymat[:, i]),**kws )
