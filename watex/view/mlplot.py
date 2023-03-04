@@ -88,9 +88,11 @@ from ..utils.mlutils import (
     cattarget, 
     projection_validator, 
     )
-from ..utils.plotutils import ( 
-    _format_ticks, 
-    make_mpl_properties
+from ..utils.plotutils import (
+    _get_xticks_formatage, 
+    # _format_ticks, 
+    make_mpl_properties, 
+    
     )
 from ..utils.validator import ( 
     _check_consistency_size, 
@@ -3550,7 +3552,8 @@ def plot2d(
     prefix ='S', 
     how= 'py',
     to_log10=False, 
-    plot_contours=False, 
+    plot_contours=False,
+    top_label='', 
     **baseplot_kws
     ): 
     """Two dimensional template for visualization matrices.
@@ -3705,7 +3708,7 @@ def plot2d(
                     interpolation = pobj.imshow_interp, 
                     cmap =cmap,
                     aspect = pobj.fig_aspect ,
-                    origin= 'upper', 
+                    origin= 'lower', 
                     extent=(  np.nanmin(x),
                               np.nanmax (x), 
                               np.nanmin(y), 
@@ -3749,12 +3752,15 @@ def plot2d(
     axe2 = axe.twiny() 
     axe2.set_xticks(range(len(x)),minor=False )
 
-    if len(stn ) >= 14 : 
-        axe2.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
-    else : 
-        axe2.set_xticklabels(stn, rotation=pobj.rotate_xlabel)
+     # get xticks and format labels
+    _get_xticks_formatage(axe2, stn, space =14, fmt = 'S{:02}', step = 7, 
+                          rotation=pobj.rotate_xlabel )
+    # if len(stn ) >= 14 : 
+    #     _get_xticks_formatage(axe2, stn, space =14, fmt = 'S{:02}' )
+    #     #axe2.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
+    # else : axe2.set_xticklabels(stn, rotation=pobj.rotate_xlabel)
      
-    axe2.set_xlabel('Stations', fontdict ={
+    axe2.set_xlabel(top_label, fontdict ={
         'style': pobj.font_style,
         'size': 1.5 * pobj.font_size ,
         'weight': pobj.font_weight}, )

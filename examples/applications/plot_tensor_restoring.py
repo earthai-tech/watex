@@ -49,7 +49,8 @@ z_yx = tro.make2d(out= 'zyx', kind ='modulus' )
 wx.view.plot2d(z_yx, 
                y = tro.freqs_,
                to_log10= True,
-               plot_style ='imshow', 
+               top_label='Stations', 
+               plt_style ='imshow', 
                fig_size =(10, 4 ), 
                font_size =7, 
                ylabel ='Frequency[$H_z$]', 
@@ -78,7 +79,7 @@ wx.view.plot2d(z_yx,
 tro.qc (tol =.4 , return_ratio = True ) # we consider good data from .60% 
 
 # %% 
-# The output shows `75%` of data goodness. This score can be improved if the 
+# The output shows `61%` of data goodness. This score can be improved if the 
 # recovers the losses signal is triggered. However, If the user approves this 
 # ratio, there is a possibility of outputting the valid tensors  using the 
 # the method :meth:`watex.methods.em.Processing.getValidTensors` and set the 
@@ -113,7 +114,8 @@ z_yx_restored = wx.get2dtensor(Z, tensor ='z', component='yx')
 wx.view.plot2d(z_yx_restored,
                y = tro.freqs_,
                to_log10= True,
-               plot_style ='imshow', 
+               top_label='Stations', 
+               plt_style ='imshow', 
                fig_size =(10, 4 ), 
                font_size =7, 
                ylabel ='Frequency[$H_z$]', 

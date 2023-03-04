@@ -1902,7 +1902,7 @@ def make_mpl_properties(n ,prop ='color'):
              'cyan',
              (0.6, 0.6, 0.6)]
         >>> make_mpl_properties(100 , prop = 'marker')
-        >>> ['o',
+        ... ['o',
              '^',
              'x',
              'D',
@@ -2336,11 +2336,14 @@ def get_color_palette (RGB_color_palette):
         
     return tuple(rgba)       
 
-def _get_xticks_formatage ( ax,  xtick_range, space= 14 ):
+def _get_xticks_formatage ( ax,  xtick_range, space= 14 , step=7, fmt ='{}',
+                           **xlkws):
     """ Skip xticks label at every number of spaces 
     :param ax: matplotlib axes 
     :param xtick_range: list of the xticks values 
     :param space: interval that the label must be shown.
+    :param step: the number of label to skip.
+    :param fmt: str, formatage type. 
     """
     def format_ticks (ind, x):
         """ Format thick parameter with 'FuncFormatter(func)'
@@ -2350,14 +2353,15 @@ def _get_xticks_formatage ( ax,  xtick_range, space= 14 ):
         
         ax.xaxis.set_major_formatter (plt.FuncFormatter(format_thicks))
         """
-        if ind % 7 ==0: 
-            return '{}'.format (ind)
+        if ind % step ==0: 
+            return fmt.format (ind)
         else: None 
     # show label every 'space'samples 
     if len(xtick_range) >= space : 
-        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))   
+        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks)) 
+    else: ax.set_xticklabels(xtick_range, **xlkws)
 
-    
+        
 def _set_sns_style (s, /): 
     """ Set sns style whether boolean or string is given""" 
     s = str(s).lower()
@@ -2823,7 +2827,7 @@ def plot_skew (
         
     if ct: 
         for m in ct: 
-            plt.axhline(y=0.4 if m==2 else 0.3 , color="k" if m==1 else "g",
+            plt.axhline(y=0.4 if m==2 else 0.3 , color="k" if m==1 else "r",
                         linestyle="-",
                         label=f'threshold: $\mu={0.4 if m==2 else 0.3}$'
                         )
