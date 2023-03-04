@@ -122,7 +122,7 @@ class Location (object):
         
     @elev.setter 
     def elev(self, elev) : 
-        self._elev = assert_elevation_value(elev) 
+        self._elev = assert_elevation_value(elev ) 
         
     @east.setter 
     def east (self, east): 

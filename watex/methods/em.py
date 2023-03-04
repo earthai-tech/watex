@@ -386,6 +386,8 @@ class EM(IsEdi):
         self.longitude= lon 
         self.latitude= lat  
         self.elevation= elev
+        try : self.elevation= self.elevation.astype (np.float64)
+        except :pass 
         
         # get frequency array from the first value of edifiles.
         self.freq_array = self.ediObjs_[0].Z.freq
@@ -1491,6 +1493,10 @@ class Processing (EM) :
            Typically returns the type of skewness. ``'skew'`` or ``mu`` for 
            skew and rotation- all invariant values respectively. Any other 
            value return both skew and rotational invariant. 
+ 
+        suppress_outliers: bool, default=False, 
+           Remove the outliers (if applicable in the data ) before
+           normalizing. 
            
            .. versionadded:: 0.1.6 
            
