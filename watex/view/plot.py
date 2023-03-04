@@ -977,12 +977,11 @@ class TPlot (BasePlot):
         if 'period' in str(mode).lower(): 
             mode ='period'
 
-        skew, mu =self.p_.skew(method = method )
+        skew, mu =self.p_.skew(
+            method = method, suppress_outliers = suppress_outliers
+            )
         freqs =  1/ self.p_.freqs_ if mode =='period' else self.p_.freqs_ 
         ymat = skew if view =='skew' else mu 
-        
-        if suppress_outliers: 
-            ymat = remove_outliers(ymat, fill_value = np.NaN )
         
         fig, ax = plt.subplots(figsize = self.fig_size )
 
