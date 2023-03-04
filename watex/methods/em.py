@@ -1421,7 +1421,7 @@ class Processing (EM) :
         self,
         method:str ='swift', 
         return_skewness:bool=False, 
-        suppress_outliers:bool=True, 
+        suppress_outliers:bool=False, 
         )-> NDArray[DType[float]]: 
         r"""
         The conventional asymmetry parameter based on the Z magnitude. 

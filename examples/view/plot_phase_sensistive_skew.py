@@ -30,7 +30,7 @@ two dimensional.
 #   otherwise. 
 # - ``bahr`` for the removal of distorsion proposed by Bahr in 1991. 
 #   The threshold is set to 0.3 and above this value the 
-#   structures are 3D. However, Values of :math:`\mu` > 0.3 are considered to 
+#   structures are 3D. However, Values of :math:`\eta` > 0.3 are considered to 
 #   represent 3D data. 
 #   Phase-sensitive skews less than 0.1 indicate 1D, 2D, or distorted 
 #   2D (3-D /2-D) cases. Values of :math:`mu` between 0.1 and 0.3 indicate 
@@ -67,11 +67,10 @@ tplot.plotSkew(threshold_line=True, suppress_outliers=False )
 # the boilerplate plot2d function :func:`~watex.view.plot2d` for visualization.
 # In addition, setting the `return_skewness` parameter to ``skew``
 # returns only the skew value. The default behavior returns both the skew and 
-# the rotation all of invariant :math:`\mu`. 
-skv = watex.EMProcessing ().fit(test_data).skew(
-    return_skewness='skew', suppress_outliers=False) # to return only skew value,
+# the rotation all of invariant :math:`\eta`. 
+skv = watex.EMProcessing ().fit(test_data).skew(return_skewness='skew') # to return only skew value,
 watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
-                   suppress_outliers=False, show_grid =True, 
+                   show_grid =True, 
                    fig_size = ( 11, 5 ), 
                    cmap = 'bwr', 
                    font_size =7, 
@@ -80,6 +79,27 @@ watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
                    cb_label ='Skew: swift', 
                    distance =50., # distance between stations
                    )
+# %%
+# The figure above shows the 2D skewness when some outliers are suppressed 
+# ( default behaviour). Here most of sites shown a skew less than 0.4 i.e. 
+# most of structures a 2D dimensional therefore the 2D inversion can be performed.
+# The blank lines shows the data points assumed that there are outliers ( 
+# expressed by missing or weaks signals).  
+# In the next example, we will keep the data like it was.  
+
+skv = watex.EMProcessing ().fit(test_data).skew(
+    return_skewness='skew', suppress_outliers = False ) # 
+watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
+                   show_grid =True, 
+                   fig_size = ( 11, 5 ), 
+                   cmap = 'bwr', 
+                   font_size =7, 
+                   ylabel ='Log10Frequency[$H_z$]', 
+                   xlabel='Distance (m)', 
+                   cb_label ='Skew: swift', 
+                   distance =50., # distance between stations
+                   )
+
 # %%
 # As shown in Figure above, the value of skew is smaller than 0.4 at most sites, 
 # indicating a 2D structure. Only a few sites near the fault have a 
