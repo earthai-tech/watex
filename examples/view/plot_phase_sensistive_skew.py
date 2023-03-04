@@ -70,6 +70,8 @@ tplot.plotSkew(threshold_line=True, suppress_outliers=False )
 # the rotation all of invariant :math:`\eta`. 
 skv = watex.EMProcessing ().fit(test_data).skew(return_skewness='skew') # to return only skew value,
 watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
+                   distance =50., # distance between stations
+                   top_label='Stations',
                    show_grid =True, 
                    fig_size = ( 11, 5 ), 
                    cmap = 'bwr', 
@@ -77,37 +79,34 @@ watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
                    ylabel ='Log10Frequency[$H_z$]', 
                    xlabel='Distance (m)', 
                    cb_label ='Skew: swift', 
-                   distance =50., # distance between stations
+                  
                    )
-# %%
-# The figure above shows the 2D skewness when some outliers are suppressed 
-# ( default behaviour). Here most of sites shown a skew less than 0.4 i.e. 
-# most of structures a 2D dimensional therefore the 2D inversion can be performed.
-# The blank lines shows the data points assumed that there are outliers ( 
-# expressed by missing or weaks signals).  
-# In the next example, we will keep the data like it was.  
-
-skv = watex.EMProcessing ().fit(test_data).skew(
-    return_skewness='skew', suppress_outliers = False ) # 
-watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
-                   show_grid =True, 
-                   fig_size = ( 11, 5 ), 
-                   cmap = 'bwr', 
-                   font_size =7, 
-                   ylabel ='Log10Frequency[$H_z$]', 
-                   xlabel='Distance (m)', 
-                   cb_label ='Skew: swift', 
-                   distance =50., # distance between stations
-                   )
-
 # %%
 # As shown in Figure above, the value of skew is smaller than 0.4 at most sites, 
 # indicating a 2D structure. Only a few sites near the fault have a 
 # value of skew greater than 0.4, indicating an obvious 3D structure. Thus, 
 # the electricity model of the research area can be approximated to a 2D 
-# structure for inversion. 
-
-# %%
+# structure for inversion.  
+# In the next example, we will suppress the outliers in the data.  
+skv = watex.EMProcessing ().fit(test_data).skew(
+    return_skewness='skew', suppress_outliers = True) 
+watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
+                   distance =50., 
+                   show_grid =True, 
+                   fig_size = ( 11, 5 ), 
+                   cmap = 'bwr', 
+                   font_size =7, 
+                   ylabel ='Log10Frequency[$H_z$]', 
+                   xlabel='Distance (m)', 
+                   cb_label ='Skew: Swift', 
+                   )
+#%%
+# The figure above shows the 2D skewness when some outliers are suppressed. 
+# Here most of sites shown a skew less than 0.4  althrough the outliers are suppressed.
+# Most of structures are 2D dimensional therefore the 2D inversion can be performed.
+# The blank lines show  the data points assumed to be outliers 
+# expressed by missing, noised data or weak signals. 
+#
 # .. topic:: References 
 #
 #    .. [1] Swift, C., 1967. A magnetotelluric investigation of an 
