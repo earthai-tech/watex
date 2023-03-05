@@ -4805,7 +4805,6 @@ def normalizer ( arr, /, method ='naive'):
     
     return arr_norm 
 
-    
 def _validate_name_in (name, /, defaults = '', expect_name= None, 
                          exception = None , deep=False ): 
     """ Assert name in multiples given default names. 

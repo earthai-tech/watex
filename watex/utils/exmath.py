@@ -63,6 +63,7 @@ from .._typing import (
 )
 from .funcutils import (
     _assert_all_types, 
+    _validate_name_in, 
     _isin, 
     drawn_boundaries, 
     fmt_text, 
@@ -4611,10 +4612,13 @@ def get_full_frequency (
          ) 
     return np.log10(f) if to_log10 else f 
     
-
-def compute_error ( arr, /,  method ='std', fill_nan = False, axis = 0, 
-                   confidence_threshold =.95 , return_confidence_interval=False 
-                   ): 
+#XXX OPTIMIZE 
+def compute_errors (
+        arr, /, 
+        error ='std', 
+        axis = 0, 
+        return_confidence=False 
+        ): 
     """ Compute Error ( Standard Deviation ) or Standard errors 
     
     Standard error and standard deviation are both measures of variability:
@@ -4657,25 +4661,51 @@ def compute_error ( arr, /,  method ='std', fill_nan = False, axis = 0,
     
     Parameters
     ----------
-    arr : array_like 
-    https://www.scribbr.com/statistics/standard-error/
+    arr : array_like , 1D or 2D 
+      Array for computing the standard deviation 
+      
+    error: str, default='std'
+      Name of error to compute. By default compute the standard deviation. 
+      Can also compute the the standard error estimation if the  argument 
+      is passed to ``ste``. 
+    return_confidence: bool, default=False, 
+      If ``True``, returns the confidence interval with 95% of sample means 
+      
+    Returns 
+    --------
+    err: arraylike 1D or 2D 
+       Error array. 
+       
+    Examples
+    ---------
+    >>> from watex.datasets import load_huayuan 
+    >>> from watex.utils.exmath import compute_errors
+    >>> emobj=load_huayuan ().emo
+    >>> compute_errors (emobj.freqs_ ) 
+    .. Out[104]: 14397.794665683341
+    >>> freq2d = emobj.make2d ('freq') 
+    >>> compute_errors (freq2d ) [:7]
+    array([14397.79466568, 14397.79466568, 14397.79466568, 14397.79466568,
+           14397.79466568, 14397.79466568, 14397.79466568])
+    >>> compute_errors (freq2d , error ='se') [:7]
+    array([1959.29168624, 1959.29168624, 1959.29168624, 1959.29168624,
+           1959.29168624, 1959.29168624, 1959.29168624])
     
     """
-    method = str(method).lower() 
-    if 'error' in method or 'se' in method: 
-        method ='se' 
+    error = _validate_name_in(error , defaults =('error', 'se'),
+                              deep =True, expect_name ='se')
 
-    err= np.std (arr) if arr.ndim ==1 else np.std (arr, axis= axis 
-                                                       ) 
-    if method=='se': 
+    err= np.std (arr) if arr.ndim ==1 else np.std (arr, axis= axis )
+                  
+    err_lower =  err_upper = None 
+    if error =='se': 
         N = len(arr) if arr.ndim ==1 else arr.shape [axis ]
         err =  err / np.sqrt(N)
-        
-        if return_confidence_interval: 
+        if return_confidence: 
             err_lower = arr.mean() - ( 1.96 * err ) 
             err_upper = arr.mean() + ( 1.96 * err )
         
-    return err if not return_confidence_interval else err_lower, err_upper 
+    return err if not return_confidence else ( err_lower, err_upper)  
 
 
    
