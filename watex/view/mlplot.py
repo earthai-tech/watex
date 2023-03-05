@@ -3752,14 +3752,10 @@ def plot2d(
     axe2 = axe.twiny() 
     axe2.set_xticks(range(len(x)),minor=False )
 
-     # get xticks and format labels
-    _get_xticks_formatage(axe2, stn, space =14, fmt = 'S{:02}', step = 7, 
+     # get xticks and format labels using the auto detection 
+    _get_xticks_formatage(axe2, stn, fmt = 'S{:02}',  auto=True, 
                           rotation=pobj.rotate_xlabel )
-    # if len(stn ) >= 14 : 
-    #     _get_xticks_formatage(axe2, stn, space =14, fmt = 'S{:02}' )
-    #     #axe2.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
-    # else : axe2.set_xticklabels(stn, rotation=pobj.rotate_xlabel)
-     
+
     axe2.set_xlabel(top_label, fontdict ={
         'style': pobj.font_style,
         'size': 1.5 * pobj.font_size ,

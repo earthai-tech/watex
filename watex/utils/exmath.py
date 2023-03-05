@@ -63,6 +63,7 @@ from .._typing import (
 )
 from .funcutils import (
     _assert_all_types, 
+    _validate_name_in, 
     _isin, 
     drawn_boundaries, 
     fmt_text, 
@@ -4611,6 +4612,143 @@ def get_full_frequency (
          ) 
     return np.log10(f) if to_log10 else f 
     
+#XXX OPTIMIZE 
+def compute_errors (
+        arr, /, 
+        error ='std', 
+        axis = 0, 
+        return_confidence=False 
+        ): 
+    """ Compute Error ( Standard Deviation ) or Standard errors 
+    
+    Standard error and standard deviation are both measures of variability:
+    - The standard deviation describes variability within a single sample. Its
+      formula is given as: 
+          
+      .. math:: 
+          
+          SD = \sqrt{ \sum |x -\mu|^2}{N}
+          
+      where :math:`\sum` means the "sum of", :math:`x` is the value in the data 
+      set,:math:`\mu` is the mean of the data set and :math:`N` is the number 
+      of the data points in the population. :math:`SD` is the quantity 
+      expressing by how much the members of a group differ from the mean 
+      value for the group.
+      
+    - The standard error estimates the variability across multiple 
+      samples of a population. Different formulas are used depending on 
+      whether the population standard deviation is known.
+      
+      - when the population standard deviation is known: 
+      
+        .. math:: 
+          
+            SE = \frac{SD}{\sqrt{N}} 
+      - When the population parameter is unknwon 
+      
+        .. math:: 
+            
+            SE = \frac{s}{\sqrt{N}} 
+            
+      where :math:`SE` is the standard error, : math:`s` is the sample
+      standard deviation. When the population standard is knwon the :math:`SE`
+      is more accurate. 
+    
+    Note that the :math:`SD` is  a descriptive statistic that can be 
+    calculated from sample data. In contrast, the standard error is an 
+    inferential statistic that can only be estimated 
+    (unless the real population parameter is known). 
+    
+    Parameters
+    ----------
+    arr : array_like , 1D or 2D 
+      Array for computing the standard deviation 
+      
+    error: str, default='std'
+      Name of error to compute. By default compute the standard deviation. 
+      Can also compute the the standard error estimation if the  argument 
+      is passed to ``ste``. 
+    return_confidence: bool, default=False, 
+      If ``True``, returns the confidence interval with 95% of sample means 
+      
+    Returns 
+    --------
+    err: arraylike 1D or 2D 
+       Error array. 
+       
+    Examples
+    ---------
+    >>> from watex.datasets import load_huayuan 
+    >>> from watex.utils.exmath import compute_errors
+    >>> emobj=load_huayuan ().emo
+    >>> compute_errors (emobj.freqs_ ) 
+    .. Out[104]: 14397.794665683341
+    >>> freq2d = emobj.make2d ('freq') 
+    >>> compute_errors (freq2d ) [:7]
+    array([14397.79466568, 14397.79466568, 14397.79466568, 14397.79466568,
+           14397.79466568, 14397.79466568, 14397.79466568])
+    >>> compute_errors (freq2d , error ='se') [:7]
+    array([1959.29168624, 1959.29168624, 1959.29168624, 1959.29168624,
+           1959.29168624, 1959.29168624, 1959.29168624])
+    
+    """
+    error = _validate_name_in(error , defaults =('error', 'se'),
+                              deep =True, expect_name ='se')
 
+    err= np.std (arr) if arr.ndim ==1 else np.std (arr, axis= axis )
+                  
+    err_lower =  err_upper = None 
+    if error =='se': 
+        N = len(arr) if arr.ndim ==1 else arr.shape [axis ]
+        err =  err / np.sqrt(N)
+        if return_confidence: 
+            err_lower = arr.mean() - ( 1.96 * err ) 
+            err_upper = arr.mean() + ( 1.96 * err )
         
+    return err if not return_confidence else ( err_lower, err_upper)  
+
+
+   
         
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
+   
+    
