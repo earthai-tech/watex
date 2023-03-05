@@ -16,6 +16,7 @@ import itertools
 import numpy as np 
 import  matplotlib.pyplot  as plt
 import matplotlib.ticker as mticker
+from matplotlib.gridspec import GridSpec 
 import pandas as pd 
 from pandas.plotting import ( 
     radviz , 
@@ -33,7 +34,8 @@ from ..cases.features import FeatureInspection
 from ..exceptions import ( 
     PlotError, 
     FeatureError, 
-    NotFittedError
+    NotFittedError, 
+    EMError, 
     )
 from ..property import BasePlot
 from .._typing import (
@@ -54,16 +56,17 @@ from ..utils.exmath import (
     moving_average , fittensor)
 from ..utils.funcutils import ( 
     _assert_all_types , 
+    _validate_name_in, 
     _isin, 
     repr_callable_obj, 
     smart_strobj_recognition, 
+    remove_outliers, 
     smart_format,
     reshape, 
     shrunkformat, 
     is_iterable, 
     station_id, 
-    make_ids, 
-    remove_outliers, 
+    make_ids,
     )
 from ..utils.mlutils import (
     existfeatures,
@@ -71,7 +74,10 @@ from ..utils.mlutils import (
     selectfeatures , 
     exporttarget 
     )
-from ..utils.plotutils import make_mpl_properties
+from ..utils.plotutils import( 
+    make_mpl_properties, 
+     plot_errorbar
+     )
 from ..utils.validator import check_X_y 
 try: 
     import missingno as msno 
@@ -1038,7 +1044,254 @@ class TPlot (BasePlot):
         plt.close () if self.savefig is not None else plt.show() 
         
         return self 
+    
+    def _check_component_validity (self, tensor, components 
+              ): 
+        """Retrieve resistiviy, phase or impedance tensors from 
+        EDI objets if component exists. 
         
+        Parameters 
+        -----------
+        tensor: str, 
+          Name of tensor. Could be ['resistivity'| 'phase'|'z']
+        components: str, list, 
+          Name of components. Could be ['xx', 'xy', 'yx', 'yy']
+        
+        Returns
+        --------
+        rp: list of valid 2D dimensional tensors and ``None`` if 
+          no valid tensors are found. 
+        
+        """
+        rp =[] 
+        tensor =str(tensor) 
+        components = is_iterable(components, exclude_string =True,
+                                transform =True, parse_string =True )
+        for c in components : 
+            try: 
+                mat2d = self.p_.make2d (f'{tensor+c}')
+            except :continue 
+            else: rp.append(mat2d )
+            
+        return rp if len(rp)!=0 else None 
+    
+    def plot_rhoa(
+        self, 
+        mode ='TE', 
+        onto ='period', 
+        site =None, 
+        seed = None, 
+        how ='py', 
+        show_site=True,
+        survey= None, 
+        style=None, 
+        errorbar=True, 
+        suppress_outliers=False, 
+        **kws
+        ): 
+        """ Plot apparent resistivity and phase curves 
+        
+        Parameters 
+        ----------
+        mode: str, default='TE', 
+          Electromagnetic mode. Can be ['TM' |'both']. If ``both``, 
+          components `xy` and `yx` are expected in the data. 
+          
+        onto: str, default='period'
+          Visualization on axis labell. can be ``'frequency'``. 
+        site: int,str, optional 
+          index of name of the site to plot. `site` must be composed of 
+          a position number. For instance ``'S13'``. If not provided, 
+          a random station is selected instead. 
+        how: str, default='py'
+          The way the site is fetched for plot. For instance, in Python 
+          indexing (default), the site is numbered from 0. For instance 
+          'site05' will fetch the data at index 4. If this positioning 
+          is not wished, set to 'None'.
+        show_site:bool, default=True, 
+          Display the number of site. 
+        survey: str, optional 
+          Method used for the survey. e.g., 'AMT' for |AMT|. 
+         
+        style:str, default='default'
+          Matplotlib style. 
+          
+        errorbar: bool, default=True 
+          display the error bar.  
+          
+        kws: dict, 
+          Addfitional keywords arguments passed to 
+          Matplotlib.Axes.Scatter plots. 
+         
+        Examples
+        ---------
+        >>> import watex as wx 
+        >>> edi_data = wx.fetch_data ('edis', return_data =True, samples =27)
+        >>> wx.TPlot(show_grid=True).fit(edi_data).plot_rhoa (
+            seed =52, mode ='*')
+        """
+        self.inspect 
+        
+        m=_validate_name_in(mode,  ('*', 'both', 'tetm'), expect_name='*')
+        
+        if m!='*':
+            m= _validate_name_in(mode, defaults = 'tm transverse-magnetic',
+                                     expect_name ='tm' )
+        if not m: 
+            m='te' 
+
+        onto = _validate_name_in(onto, deep =True, defaults='periods', 
+                                 expect_name='period')
+
+        cpm = {'te': ["xy"] , 'tm': ["yx"], '*': ('xy', 'yx') }
+        
+        components = cpm.get(m)
+        res = self._check_component_validity('res', components)
+        phs = self._check_component_validity('phase', components)
+        if errorbar: 
+            res_err = self._check_component_validity(
+                'res_err', components)
+            phs_err = self._check_component_validity(
+                'phase_err', components)
+        
+        terror =("{0!r} does not contain component {}. Provide the"
+                 " right component of the valid tensor.")
+        if res is None: 
+            raise EMError(terror.format('resistivity', components))
+        if phs is None: 
+            EMError(terror.format('phase', components))
+    
+        fp =  1/ self.p_.freqs_ if onto =='period' else self.p_.freqs_ 
+        
+        if seed: 
+            seed = _assert_all_types(seed , int, float, objname ='Seed')
+            np.random.seed (seed ) 
+           
+        if site is None:
+            site = np.random.choice (range (res[0].shape[1])) 
+           
+        s= copy.deepcopy(site)
+        site =re.search ('\d+', str(site), flags=re.IGNORECASE).group() 
+        try: 
+           site= int(site)
+        except TypeError: 
+            raise TypeError ("Missing position number. Station must be "
+                             f"prefixed with position, e.g. 'S7', got {s!r}")
+        
+        site = abs (site) + 1 if how !='py' else site 
+        
+        if site > res[0].shape [1] : 
+            raise ValueError ("Site position {} is out of the range. The total"
+                             f" number of sites/stations ={res[0].shape [1]}")
+            
+        try: 
+            plt.style.use ( style or 'default')
+        except : 
+            warnings.warn(
+                f"{style} is not available. Use `plt.style.available`"
+                " to get the list of available styles.")
+            plt.style.use ('default')
+    
+        fig = plt.figure(self.fig_num , figsize= self.fig_size,
+                         dpi = self.fig_dpi , # layout='constrained'
+                         )
+
+        gs = GridSpec(3, 1, figure = fig ) 
+        
+        ax1 = fig.add_subplot (gs[:-1, 0 ])
+        ax2 = fig.add_subplot(gs [-1, 0 ], sharex = ax1 )
+        plt.setp(ax1.get_xticklabels(), visible=False)
+        
+        survey= survey or self.p_.survey_name 
+        if not survey: survey=''
+        
+        colors = [ '#069AF3', '#DC143C']
+    
+        #==plotlog10 --------
+        res= [ np.log10 (r) for r in res] ; fp = np.log10 (fp)
+   
+        if suppress_outliers: 
+            res = remove_outliers(res, fill_value=np.nan) 
+            phs = remove_outliers(phs, fill_value=np.nan) 
+            if errorbar: 
+                res_err = remove_outliers(
+                    res_err, fill_value=np.nan) 
+                phs_err = remove_outliers(
+                    phs_err, fill_value=np.nan) 
+                
+        min_y =  np.nanmin(res[0][:, site])
+        for i, ( r, p, e, ep)  in enumerate (zip (
+                res, phs, res_err, phs_err )): 
+            y =  reshape (r[:, site])
+            if errorbar: 
+                plot_errorbar (ax1 , 
+                               fp, 
+                               y,  
+                               y_err = reshape (e[:, site]),
+                               )
+            ax1.scatter (fp  , y, 
+                          marker =self.marker, 
+                          color =colors [i],
+                          edgecolors='k', 
+                          label = fr'{survey}$\rho_a${components[i]}',
+                          **kws 
+                          ) 
+            if errorbar: 
+                plot_errorbar (ax2 , 
+                               fp, reshape (p[:, site]),
+                               y_err = reshape (ep[:, site]), 
+                               )
+            
+            ax2.scatter( fp, 
+                        reshape (p[:, site]),
+                        marker =self.marker, 
+                        color =colors [i] ,
+                        edgecolors='k', 
+                        label = f'{survey}$\phi${components[i]}',
+                        **kws
+                        ) 
+            min_y = np.nanmin (y) if np.nanmin (
+                y) < min_y else min_y 
+            try: 
+                ax1.legend(ncols = len(res)) 
+                ax2.legend(ncols = len(phs)) 
+            except: 
+                # For consistency in the case matplotlib  is < 3.3. 
+                ax1.legend() 
+                ax2.legend() 
+                
+        if show_site:
+            ax1.text (np.nanmin(fp),
+                      min_y,
+                      f'site {s}', 
+                      fontdict= dict (style ='italic',  bbox =dict(
+                           boxstyle='round',facecolor ='#CED9EF'), 
+                          alpha = 0.5 )
+                      )
+        
+        ax2.set_ylim ([0, 90 ])
+        xlabel = self.xlabel or ( 'Log$_{10}$Period($s$)' if onto=='period' 
+                                 else 'Frequency ($H_z$)') 
+        
+        ax2.set_xlabel(xlabel ) 
+        ax1.set_ylabel(self.ylabel or r'Log$_{10}\rho_a$($\Omega$.m)') 
+ 
+        ax2.set_ylabel('$\phi$($\degree$)')
+        
+        if self.show_grid :
+            for ax in (ax1, ax2 ): 
+                ax.grid (visible =True , alpha =self.galpha,
+                         which =self.gwhich, color =self.gc)
+          
+            
+        if self.savefig is not  None: 
+            plt.savefig (self.savefig, dpi = self.fig_dpi)
+            
+        plt.close () if self.savefig is not None else plt.show() 
+        
+        return self 
+    
+
     def __repr__(self): 
         """ Represents the output class format """
         outm = ( '<{!r}:' + ', '.join(

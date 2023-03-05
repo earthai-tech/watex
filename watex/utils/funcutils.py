@@ -4806,8 +4806,61 @@ def normalizer ( arr, /, method ='naive'):
     return arr_norm 
 
     
+def _validate_name_in (name, /, defaults = '', expect_name= None, 
+                         exception = None , deep=False ): 
+    """ Assert name in multiples given default names. 
     
+    Parameters 
+    -----------
+    name: str, 
+      given name to assert 
+    default: list, str, default =''
+      default values used for assertion 
+    expect_name: str, optional 
+      name to return in case assertion is verified ( as ``True``)
+    deep: bool, default=False 
+      Find item in a litteral default string. If set  to ``True``, 
+      `defaults` are joined and check whether an occurence of `name` is in the 
+      defaults 
+      
+    exception: Exception 
+      Error to raise if name is not found in the default values. 
+      
+    Returns
+    -------
+    name: str, 
+      Verified name or boolean if expect name if ``None``. 
+      
+    Examples 
+    -------
+    >>> from watex.utils.funcutils import _validate_name_in 
+    >>> dnames = ('NAME', 'FIST NAME', 'SUrname')
+    >>> _validate_name_in ('name', defaults=dnames )
+    False 
+    >>> _validate_name_in ('name', defaults= dnames, deep =True )
+    True
+    >>> _validate_name_in ('name', defaults=dnames , expect_name ='NAM')
+    False 
+    >>> _validate_name_in ('name', defaults=dnames , expect_name ='NAM', deep=True)
+    'NAM'
+    """
     
+    name = str(name).lower().strip() 
+    defaults = is_iterable(defaults, 
+            exclude_string= True, parse_string= True, transform=True )
+    if deep : 
+        defaults = ''.join([ str(i) for i in defaults] ) 
+        
+    # if name in defaults: 
+    name = ( True if not expect_name else expect_name ) if name in defaults else False 
+    
+    #name = True if name in defaults else ( expect_name if expect_name else False )
+    
+    if not name and exception: 
+        raise exception 
+        
+    return name 
+
     
     
     

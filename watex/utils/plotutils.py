@@ -33,7 +33,6 @@ from .funcutils import  (
     is_in_if, 
     is_depth_in, 
     reshape, 
-    remove_outliers, 
     )
 from .validator import  ( 
     _check_array_in  , 
@@ -2167,10 +2166,10 @@ def plotvec2(a,b):
 
 def plot_errorbar(
         ax,
-        x_array,
-        y_array,
-        y_error=None,
-        x_error=None,
+        x_ar,
+        y_ar,
+        y_err=None,
+        x_err=None,
         color='k',
         marker='x',
         ms=2, 
@@ -2234,19 +2233,9 @@ def plot_errorbar(
     """
     # this is to make sure error bars 
     #plot in full and not just a dashed line
-    if x_error is not None:
-        x_err = x_error
-    else:
-        x_err = None
-
-    if y_error is not None:
-        y_err = y_error
-    else:
-        y_err = None
-
     eobj = ax.errorbar(
-        x_array,
-        y_array,
+        x_ar,
+        y_ar,
         marker=marker,
         ms=ms,
         mfc='None',
