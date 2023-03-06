@@ -69,6 +69,8 @@ from .funcutils import (
     fmt_text, 
     find_position_from_sa , 
     concat_array_from_list, 
+    get_confidence_ratio,
+    remove_outliers, 
     find_feature_positions,
     find_close_position,
     smart_format,
@@ -4442,7 +4444,8 @@ def get2dtensor(
     z_or_edis_obj_list:List[EDIO |ZO], /, 
     tensor:str= 'z', 
     component:str='xy', 
-    kind:str ='modulus', 
+    kind:str ='modulus',
+    return_freqs:bool=False, 
     **kws 
     ): 
     """ Make  tensor into two dimensional array from a 
@@ -4552,7 +4555,7 @@ def get2dtensor(
     
         mat2d = zdict [ kind]
         
-    return mat2d 
+    return mat2d if not return_freqs else (mat2d, freqs  )
 
 def get_full_frequency (
         z_or_edis_obj_list: List [EDIO |ZO], 
@@ -4707,10 +4710,70 @@ def compute_errors (
         
     return err if not return_confidence else ( err_lower, err_upper)  
 
+def plot_freq_confidence (
+    z_or_edis_obj_list: List [EDIO |ZO], 
+    view ='1d', 
+    drop_outliers =True, 
+    distance= None, 
+    figsize = (20, 3), 
+    dpi = 300., 
+    top_label ='Stations',
+    rotate_xlabel=90., 
+    **plot_kws
+    ): 
+    """Plot frequency confidency 
+    
+    Examples 
+    ----------
+    plot_freq_confidence (emobj.ediObjs_[:10]  , distance =20. ,
+                          view =None , fig_size =( 7, 2), )
+    
+    """
+    from .plotutils import _get_xticks_formatage 
+    
+    # by default , we used the resistivity tensor and error at TE mode. 
+    distance = distance or 1. 
+    rerr, freqs = get2dtensor(z_or_edis_obj_list, tensor ='res_err',
+                                return_freqs=True )
+    ratio_0 = get_confidence_ratio(rerr ) # alongside columns (stations )
+    ratio_1 = get_confidence_ratio(rerr , axis =1 ) # along freq 
+   
+    if str(view).lower() =='2d': 
+        from ..view import plot2d
+        plot2d (
+              remove_outliers(rerr, fill_value=np.nan
+                              ) if drop_outliers else rerr, 
+              cmap ='binary', 
+              cb_label ='error', 
+              top_label =top_label , 
+              rotate_xlabel = rotate_xlabel , 
+              distance = distance , 
+              y = np.log10 (freqs), 
+              fig_size  = figsize ,
+              fig_dpi = dpi ,  
+              )
+       
+        return 
+    
+    fig, ax = plt.subplots(figsize = figsize,  dpi = dpi 
+                           )
+    ax.plot(np.arange ( rerr.shape[1])  * distance , ratio_0  , **plot_kws)
+    
+    ax.set_xlabel ( 'Distance (m)', fontsize =3. )
+    ax.set_ylabel ('Error', fontsize = 3. )
+    ax.tick_params (labelsize = 3. )
+    _get_xticks_formatage(ax, range(rerr.shape[1]), auto=True ) 
+    
+   
+def get_z_from ( edi_obj_list , /, ): 
+    """ Get z object from Edis """
+    
+    obj_type  = _assert_z_or_edi_objs (edi_obj_list)
+    if obj_type =='z': return edi_obj_list 
+    
+    return  [ edi_obj_list[i].Z for i in range (len( edi_obj_list)  )] 
 
-   
-        
-   
+    
     
    
     

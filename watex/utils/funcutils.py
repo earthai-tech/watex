@@ -4851,7 +4851,8 @@ def _validate_name_in (name, /, defaults = '', expect_name= None,
         defaults = ''.join([ str(i) for i in defaults] ) 
         
     # if name in defaults: 
-    name = ( True if not expect_name else expect_name ) if name in defaults else False 
+    name = ( True if expect_name is None  else expect_name 
+            ) if name in defaults else False 
     
     #name = True if name in defaults else ( expect_name if expect_name else False )
     
@@ -4860,7 +4861,82 @@ def _validate_name_in (name, /, defaults = '', expect_name= None,
         
     return name 
 
+def get_confidence_ratio (
+        ar, /,
+        axis = 0, 
+        invalid = 'NaN',
+        ):
     
+    """ Get ratio of confidence in array by counting the number of 
+    invalid values. 
+    
+    Parameters 
+    ------------
+    ar: arraylike 1D or 2D  
+      array for checking the ratio of confidence 
+      
+    axis: int, default=0, 
+       Compute the ratio of confidence alongside the rows by defaults. 
+       
+    invalid: int, foat, default='NaN'
+      The value to consider as invalid in the data might be listed if 
+      applicable. The default is ``NaN``. 
+      
+    Returns 
+    ---------
+    ratio: arraylike 1D 
+      The ratio of confidence array alongside the ``axis``. 
+
+    Examples 
+    ----------
+    >>> import numpy as np 
+    >>> np.random.seed (0) 
+    >>> test = np.random.randint (1, 20 , 10 ).reshape (5, 2 ) 
+    >>> test
+    array([[13, 16],
+           [ 1,  4],
+           [ 4,  8],
+           [10, 19],
+           [ 5,  7]])
+    >>> from watex.utils.funcutils import get_confidence_ratio 
+    >>> get_confidence_ratio (test)
+    >>> array([1., 1.])
+    >>> get_confidence_ratio (test, invalid= ( 13, 19) )
+    array([0.8, 0.8])
+    >>> get_confidence_ratio (test, invalid= ( 13, 19, 4) )
+    array([0.6, 0.6])
+    >>> get_confidence_ratio (test, invalid= ( 13, 19, 4), axis =1 )
+    array([0.5, 0.5, 0.5, 0.5, 1. ])
+    
+    """
+    def gfc ( ar, inv):
+        """ Get ratio in each column or row in the array. """
+        inv = is_iterable(inv, exclude_string=True , transform =True, 
+                              )
+        # if inv!='NaN': 
+        for iv in inv: 
+            if iv in ('NAN', np.nan, 'NaN', 'nan', None): 
+                iv=np.nan  
+            ar [ar ==iv] = np.nan 
+                
+        return len( ar [ ~np.isnan (ar)])  / len(ar )
+    
+    # validate input axis name 
+    axis = _validate_name_in (axis , ('1', 'rows', 'sites', 'stations') ,
+                              expect_name=1 )
+    if not axis:
+        axis =0 
+    
+    ar = np.array(ar).astype ( np.float64) # for consistency
+    ratio = np.zeros(( (ar.shape[0] if axis ==1 else ar.shape [1] )
+                      if ar.ndim ==2 else 1, ), dtype= np.float64) 
+    
+    for i in range (len(ratio)): 
+        ratio[i] = gfc ( (ar [:, i] if axis ==0 else ar [i, :])
+                        if ar.ndim !=1 else ar , inv= invalid 
+                        )
+    
+    return ratio 
     
     
     

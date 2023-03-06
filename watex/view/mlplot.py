@@ -3624,16 +3624,6 @@ def plot2d(
     for k  in list(baseplot_kws.keys()): 
         setattr (pobj , k, baseplot_kws[k])
         
-    fig, axe = plt.subplots(1,figsize = pobj.fig_size, 
-                            num = pobj.fig_num,
-                            dpi = pobj.fig_dpi
-                            )
-    try : 
-        distance = float(distance) 
-    except : 
-        raise TypeError (
-            f'Expect a float value not {type(distance).__name__!r}')
-        
     if y is not None: 
         if len(y) != ar.shape [0]: 
             raise ValueError ("'y' array must have an identical number " 
@@ -3643,17 +3633,22 @@ def plot2d(
         if len(x) != ar.shape[1]: 
             raise ValueError (" 'x' array must have the same number " 
                               f" of columns of 2D array: {ar.shape[1]}")
-    
+
+    d= distance or 1.
+    try : 
+         distance = float(distance) 
+    except : 
+        raise TypeError (
+             f'Expect a float value not {type(distance).__name__!r}')
+        
     # put value to log10 if True 
     if to_log10: 
         ar = np.log10 (ar ) # assume the resistivity data 
         y = np.log10(y) if y is not None else y # assume the frequency data 
 
-    d= distance or 1.
-    
     y = np.arange(ar.shape [0]) if y is None else y 
     x=  x  or np.arange(ar.shape[1]) * d
-
+         
     stn = stnlist or make_ids ( x , prefix , how = how) 
     #print(stnlis)
     if stn is not None: 
@@ -3664,6 +3659,11 @@ def plot2d(
                          f" consistent. {len(stnlist)} and {len(x)}"
                          " were given respectively")
             
+    # make figure 
+    fig, axe = plt.subplots(1,figsize = pobj.fig_size, 
+                            num = pobj.fig_num,
+                            dpi = pobj.fig_dpi
+                            )
     
     cmap = plt.get_cmap( pobj.cmap)
     
@@ -3690,6 +3690,7 @@ def plot2d(
             pkws ['norm'] = BoundaryNorm(
                 levels, ncolors=plt.colormaps[pobj.cmap].N, clip=True)
             
+        
         ax = axe.pcolormesh ( X, Y, np.flipud (ar),
                     shading= pobj.plt_shading, 
                     cmap =cmap, 
@@ -3751,11 +3752,14 @@ def plot2d(
     #--> set second axis 
     axe2 = axe.twiny() 
     axe2.set_xticks(range(len(x)),minor=False )
-
-     # get xticks and format labels using the auto detection 
+    
+    # set ticks params to reformat the size 
+    axe.tick_params (  labelsize = pobj.font_size )
+    axe2.tick_params (  labelsize = pobj.font_size )
+    # get xticks and format labels using the auto detection 
     _get_xticks_formatage(axe2, stn, fmt = 'S{:02}',  auto=True, 
                           rotation=pobj.rotate_xlabel )
-
+    
     axe2.set_xlabel(top_label, fontdict ={
         'style': pobj.font_style,
         'size': 1.5 * pobj.font_size ,
@@ -3768,7 +3772,7 @@ def plot2d(
                  bbox =dict(boxstyle='round',
                             facecolor ='moccasin')
                  )
-       
+   
     #plt.tight_layout(h_pad =1.8, w_pad =2*1.08)
     plt.tight_layout()  
     if pobj.savefig is not None :

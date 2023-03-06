@@ -14,6 +14,8 @@ import itertools
 import numpy as np
 import pandas as pd 
 import matplotlib as mpl 
+from matplotlib.patches import Ellipse
+import matplotlib.transforms as transforms
 import seaborn as sns 
 from scipy.cluster.hierarchy import ( 
     dendrogram, ward 
@@ -27,7 +29,7 @@ from ..exceptions import (
     )
 from .funcutils import  ( 
     is_iterable, 
-    _assert_all_types, 
+    _assert_all_types,
     to_numeric_dtypes, 
     str2columns, 
     is_in_if, 
@@ -2326,13 +2328,16 @@ def get_color_palette (RGB_color_palette):
     return tuple(rgba)       
 
 def _get_xticks_formatage (
-        ax,  xtick_range, space= 14 , step=7, fmt ='{}',auto = False, **xlkws):
+        ax,  xtick_range, space= 14 , step=7,
+        fmt ='{}',auto = False, ticks ='x', **xlkws):
     """ Skip xticks label at every number of spaces 
     :param ax: matplotlib axes 
     :param xtick_range: list of the xticks values 
     :param space: interval that the label must be shown.
     :param step: the number of label to skip.
     :param fmt: str, formatage type. 
+    :param ticks: str, default='x', the ticks axis to format the labels. 
+      can be ``'y'``. 
     :param auto: bool , if ``True`` a dynamic tick formatage will start. 
     
     """
@@ -2353,17 +2358,21 @@ def _get_xticks_formatage (
         space = 10.
         step = int (np.ceil ( len(xtick_range)/ space )) 
         
-    if len(xtick_range) >= space : 
-        ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))
+    rotation = xlkws.get('rotation', 90 ) if 'rotation' in xlkws.keys (
+        ) else xlkws.get('rotate_xlabel', 90 )
+    
+    if len(xtick_range) >= space :
+        if ticks=='y': 
+            ax.yaxis.set_major_formatter (plt.FuncFormatter(format_ticks))
+        else: 
+            ax.xaxis.set_major_formatter (plt.FuncFormatter(format_ticks))
 
-        rotation = xlkws.get('rotation') if 'rotation' in xlkws.keys (
-            ) else xlkws.get('rotate_xlabel')
-        if rotation:
-            plt.setp(ax.get_xticklabels(), rotation = rotation ) 
-            
-    else: ax.set_xticklabels(xtick_range, **xlkws)
-
-        
+        plt.setp(ax.get_yticklabels() if ticks=='y' else ax.get_xticklabels(), 
+                 rotation = rotation )
+    else: 
+        ax.set_yticklabels(xtick_range, **xlkws) if ticks=='y' \
+            else ax.set_xticklabels(xtick_range, **xlkws) 
+  
 def _set_sns_style (s, /): 
     """ Set sns style whether boolean or string is given""" 
     s = str(s).lower()
@@ -2850,7 +2859,6 @@ def plot_skew (
     
     return ax 
 
-    
 def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =7 ):
     """ Format thick parameter with 'FuncFormatter(func)'
     rather than using `axi.xaxis.set_major_locator (plt.MaxNLocator(3))`
@@ -2866,7 +2874,354 @@ def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =7 ):
         return fmt.format(int(value)+ 1)
     else: None 
     
+#XXX OPTIMIZE 
+def plot_confidence (data = None, *,  y=None, x=None, ci =.95 ,  kind ='line', 
+                     b_samples = 1000, **sns_kws
+                     ): 
+    """ Plot confidence data 
     
+    Confidence Interval (CI)  is a type of estimate computed from the statistics 
+    of the observed data which gives a range of values that’s likely to 
+    contain a population parameter with a particular level of confidence.
+    CI as a concept was put forth by Jerzy Neyman in a paper published 
+    in 1937. There are various types of the confidence interval, some of 
+    the most commonly used ones are: CI for mean, CI for the median, CI for 
+    the difference between means, CI for a proportion and CI for the difference 
+    in proportions.
+    
+    Parameters 
+    ------------
+    data: pandas.DataFrame, numpy.ndarray, mapping, or sequence
+       Input data structure. Either a long-form collection of vectors 
+       that can be assigned to named variables or a wide-form dataset 
+       that will be internally reshaped.
+
+    x, y: vectors or keys in data
+       Variables that specify positions on the x and y axes.
+       
+    ci: float, default=.95 
+       Confidence value. 
+       
+    kind: str, default='line' 
+       kind of confidence intervval plot. 
+      
+    b_samples: int, default=1000
+        Number of bootstraps to use for computing the confidence interval.
+        
+    sns_kws: dict, 
+       Keywords arguments passed to the `sns.lineplot` or `sns.regplot`
+       
+    Returns 
+    ----------
+    ax: matplotlib.axes.Axes
+       The matplotlib axes containing the plot.
+       
+    """   
+    #y = np.array (y) 
+    #x= x or ( np.arange (len(y)) if 
+    if 'lin' in str(kind).lower(): 
+        ax = sns.lineplot(data= data, x=x, y=y, ci=ci, **sns_kws)
+    elif 'reg' in  str(kind).lower(): 
+        ax = sns.regplot(data = data, x=x, y=y, ci=ci, **sns_kws ) 
+    else: 
+        if not y: 
+            raise ValueError("y should not be None when using the boostrapping"
+                             " for plotting the confidence interval.")
+        b_samples = _assert_all_types(
+            b_samples, int, float, objname="Bootstrap samples `b_samples`")
+        
+        from sklearn.metrics import resample 
+        # configure bootstrap
+        n_iterations = 1000 # here k=no. of bootstrapped samples
+        n_size = int(len(y))
+          
+        # run bootstrap
+        medians = list()
+        for i in range(n_iterations):
+           s = resample(y, n_samples=n_size);
+           m = np.median(s);
+           medians.append(m)
+          
+        # plot scores
+        plt.hist(medians)
+        plt.show()
+          
+        # confidence intervals
+        p = ((1.0-ci)/2.0) * 100
+        lower =  np.percentile(medians, p)
+        p = (ci+((1.0-ci)/2.0)) * 100
+        upper =  np.percentile(medians, p)
+  
+        print(f"\n{ci*100} confidence interval {lower} and {upper}")
+    
+    return ax 
+
+ 
+def plot_confidence_ellipse (x, y  ): 
+    """ Plot a confidence ellipse of a two-dimensional dataset 
+    
+    This function plots the confidence ellipse of the covariance of 
+    the given array-like variables x and y. The ellipse is plotted 
+    into the given axes-object ax.
+    
+    The approach that is used to obtain the correct geometry 
+    is explained and proved here:
+      https://carstenschelp.github.io/2018/09/14/Plot_Confidence_Ellipse_001.html
+      
+    The method avoids the use of an iterative eigen decomposition 
+    algorithm and makes use of the fact that a normalized covariance 
+    matrix (composed of pearson correlation coefficients and ones) is 
+    particularly easy to handle.
+    
+    """
+    fig, ax_nstd = plt.subplots(figsize=(6, 6))
+
+    # dependency_nstd = [[0.8, 0.75],
+    #                    [-0.2, 0.35]]
+    mu = 0, 0
+    # scale = 8, 5
+    
+    ax_nstd.axvline(c='grey', lw=1)
+    ax_nstd.axhline(c='grey', lw=1)
+    
+    #x, y = get_correlated_dataset(500, dependency_nstd, mu, scale)
+    ax_nstd.scatter(x, y, s=0.5)
+    
+    confidence_ellipse(x, y, ax_nstd, n_std=1,
+                       label=r'$1\sigma$', edgecolor='firebrick')
+    confidence_ellipse(x, y, ax_nstd, n_std=2,
+                       label=r'$2\sigma$', edgecolor='fuchsia', linestyle='--')
+    confidence_ellipse(x, y, ax_nstd, n_std=3,
+                       label=r'$3\sigma$', edgecolor='blue', linestyle=':')
+    
+    ax_nstd.scatter(mu[0], mu[1], c='red', s=3)
+    ax_nstd.set_title('Different standard deviations')
+    ax_nstd.legend()
+    plt.show()
+    
+def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
+    """
+    Create a plot of the covariance confidence ellipse of *x* and *y*.
+
+    Parameters
+    ----------
+    x, y : array-like, shape (n, )
+        Input data.
+
+    ax : matplotlib.axes.Axes
+        The axes object to draw the ellipse into.
+
+    n_std : float
+        The number of standard deviations to determine the ellipse's radiuses.
+
+    **kwargs
+        Forwarded to `~matplotlib.patches.Ellipse`
+
+    Returns
+    -------
+    mpl.patches.Ellipse
+    """
+    if x.size != y.size:
+        raise ValueError("x and y must be the same size")
+
+    cov = np.cov(x, y)
+    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+    # Using a special case to obtain the eigenvalues of this
+    # two-dimensional dataset.
+    ell_radius_x = np.sqrt(1 + pearson)
+    ell_radius_y = np.sqrt(1 - pearson)
+    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
+                      facecolor=facecolor, **kwargs)
+
+    # Calculating the standard deviation of x from
+    # the squareroot of the variance and multiplying
+    # with the given number of standard deviations.
+    scale_x = np.sqrt(cov[0, 0]) * n_std
+    mean_x = np.mean(x)
+
+    # calculating the standard deviation of y ...
+    scale_y = np.sqrt(cov[1, 1]) * n_std
+    mean_y = np.mean(y)
+
+    transf = transforms.Affine2D() \
+        .rotate_deg(45) \
+        .scale(scale_x, scale_y) \
+        .translate(mean_x, mean_y)
+
+    ellipse.set_transform(transf + ax.transData)
+    return ax.add_patch(ellipse)    
+   
+def plotStrike (edi_list, /, plot_type = 2, period_tolerance=.05, 
+                text_pad =1.65 , rot_z=0. , **kws): 
+    """ 
+    plot the strike estimated from the invariants, phase tensor
+    and the tipper in either a rose diagram of xy plot. 
+    
+    Parameters 
+    ------------
+    edi_list: list, 
+       full paths to .edi files to plot or list of :term:`EDI-files`. 
+    plot_type: int, default=2 
+       Can be [ 1 | 2 ] where:
+           
+        - *1* to plot individual decades in one plot
+        - *2* to plot all period ranges into one polar diagram
+              for each strike angle estimation
+    fig_num: int, default=1, 
+       figure number to be plotted. *Default* is 1
+            
+    font_size: float, default=10, 
+       Figure size 
+    rot_z: float, default=0., 
+       angle of rotation clockwise positive. 
+
+    period_tolerance: float, default=.05 
+        Tolerance level to match periods from different edi files.
+        *Default* is 0.05
+
+    text_pad: float, default=1.65
+       padding of the angle label at the bottom of each
+                     polar diagram.  *Default* is 1.65
+
+    plot_range:  str, tuple 
+       The period range to estimate the strike angle. It can be 
+       [ 'data' | (period_min,period_max) ].  Options are:
+       * *'data'* for estimating the strike for all periods
+            in the data.
+       * (pmin,pmax) for period min and period max, input as
+          (log10(pmin),log10(pmax))
+
+    plot_tipper: [ True | False ]
+        - True to plot the tipper strike
+        - False to not plot tipper strike
+
+    pt_error_floor: int, optional 
+       Maximum error in degrees that is allowed to 
+        estimate strike. *Default* is None allowing all 
+        estimates to be used.
+
+    fold: [ True | False ]
+       * True to plot only from 0 to 180
+       * False to plot from 0 to 360
+                
+    plot_orthogonal: [ True | False]
+        * True to plot the orthogonal strike directions
+        * False to not
+    
+    color: [ True | False ]
+        * True to plot shade colors
+        * False to plot all in one color
+                  
+    color_inv:str, 
+       color of invariants plots
+    
+    color_pt: str, 
+       color of phase tensor plots
+    
+    color_tip: str 
+       color of tipper plots
+    
+    ring_spacing: float, optional 
+        spacing of rings in polar plots
+    
+    ring_limits: tuple of int, 
+       plot limits (min count, max count) set each plot have these limits 
+                        
+    plot_orientation: str, [ 'h' | 'v' ] 
+       horizontal or vertical plots
+    
+    
+    See More
+    --------
+    Plots the strike angle as determined by phase tensor azimuth (Caldwell et
+    al. [2004]) and invariants of the impedance tensor (Weaver et al. [2003]).
+
+    The data is split into decades where the histogram for each is plotted in
+    the form of a rose diagram with a range of 0 to 180 degrees.
+    Where 0 is North and 90 is East.   The median angle of the period band is
+    set in polar diagram.  The top row is the strike estimated from
+    the invariants of the impedance tensor.  The bottom row is the azimuth
+    estimated from the phase tensor.  If tipper is 'y' then the 3rd row is the
+    strike determined from the tipper, which is orthogonal to the induction
+    arrow direction.
+    
+    Examples 
+    ----------
+    >>> import os 
+    >>> from watex.datasets import fetch_data 
+    >>> from watex.view import TPlot 
+    >>> from watex.datasets._io import get_data # get edidata in cache  
+    >>> fetch_data ( 'huayuan', samples = 25 ) # store edi in cache 
+    >>> # get the edi in cache and plotStrike 
+    >>> edi_fn_lst = [os.path.join(get_data(),ff) for ff in os.listdir(get_data()) 
+    ...         if ff.endswith('.edi')] 
+    >>> PlotStrike(fn_list=edi_fn,
+    plot_type=1,
+    plot_tipper='y')
+    """
+    extra =("PlotStrike uses 'mtpy' as dependency."
+            )
+    import_optional_dependency ('mtpy' , extra = extra )
+    
+    from mtpy.imaging.plotstrike import PlotStrike
+    PlotStrike(
+        fn_list=edi_list,
+        plot_type=2,
+        plot_tipper='y', 
+        **kws
+        )
+   
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
     
     
     

@@ -1045,8 +1045,7 @@ class TPlot (BasePlot):
         
         return self 
     
-    def _check_component_validity (self, tensor, components 
-              ): 
+    def _check_component_validity (self, tensor, components ): 
         """Retrieve resistiviy, phase or impedance tensors from 
         EDI objets if component exists. 
         
