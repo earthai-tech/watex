@@ -1937,6 +1937,14 @@ Resource-links
     Matplotlib figsuptitle
         Example of adding `figure suptitle <https://matplotlib.org/3.5.0/api/_as_gen/matplotlib.pyplot.suptitle.html>`__
 
+    mtpy
+    MTpy
+        Python toolbox for standard Magnetotelluric (:term:`MT`) data analysis. See resources in `MTpy repository <https://github.com/MTgeophysics/mtpy>`__
+
+    pycsamt
+    pyCSAMT
+        Python for audio-frequency magnetotelluric (:term:`AMT`). See more in `pyCSAMT repository <https://github.com/WEgeophysics/pycsamt>`__
+
     Properties of water
        Resources towards the `water properties <https://en.wikipedia.org/wiki/Properties_of_water#Electrical_conductivity>`__ documentation. 
   
@@ -1959,13 +1967,7 @@ Resource-links
     watex
         Resources towards the `watex repository <https://github.com/WEgeophysics/watex/>`_ . It standas for `WAT`-er `Ex`-ploration as 
         package for solving unsuccessful drillings, unsustainable boreholes, predicting the permeability coefficient :math:`k`, and others 
-        hydrogeophysics engineering problems. For calling `watex`, it is simple to use:: 
-         
-             >>> import watex as wx 
-
-    pycsamt
-    pyCSAMT
-        Python for controlled source audio-frequency magnetotelluric (PyCSAMT). See resources toward the `pyCSAMT repository <https://github.com/WEgeophysics/pycsamt>`__
+        hydrogeophysics engineering problems.
 
 
 

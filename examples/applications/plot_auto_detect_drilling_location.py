@@ -20,7 +20,7 @@ data = wx.make_erp (n_stations=50, max_rho=1e4, min_rho=10., as_frame =True, see
 # * Naive auto-detection (NAD)
 #
 # The NAD automatically proposes a suitable location with NO restrictions 
-# (constraints) observed in the survey site during the GWE. We may understand 
+# (constraints) observed in the survey site during the :term:`GWE`. We may understand 
 # by suitable, a location expecting to give a flow rate greater than 1m3/hr at 
 # least.
 
@@ -30,9 +30,11 @@ robj.sves_
 #%%
 # The suitable drilling location is proposed at 
 # station S25 (stored in the attribute sves_).
+#
 # * Auto-detection with constraints (ADC)
+#
 # The constraints refer to the restrictions observed in the survey area during
-# the DWSC. This is common in real-world exploration. For instance, a station 
+# the :term:`DWSC`. This is common in real-world exploration. For instance, a station 
 # close to a heritage site should be discarded since no drilling operations 
 # are authorized at that place. When many restrictions are enumerated in the 
 # survey site, they must be listed in a dictionary with a reason and passe to 

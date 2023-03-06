@@ -3542,7 +3542,6 @@ def _check_labelxy (lablist, ar, ax, axis = 'x' ):
         
     return ax         
         
-        
 def plot2d(
     ar, 
     y=None,  

@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd 
 import matplotlib as mpl 
 from matplotlib.patches import Ellipse
-import matplotlib.transforms as transforms
+import matplotlib.transforms as transforms 
 import seaborn as sns 
 from scipy.cluster.hierarchy import ( 
     dendrogram, ward 
@@ -46,7 +46,7 @@ from .validator import  (
     check_consistent_length
     )
 from ._dependency import import_optional_dependency 
-
+from ..decorators import nullify_output
 try: 
     from ..exlib.sklearn import ( 
         learning_curve ,   
@@ -2370,8 +2370,14 @@ def _get_xticks_formatage (
         plt.setp(ax.get_yticklabels() if ticks=='y' else ax.get_xticklabels(), 
                  rotation = rotation )
     else: 
-        ax.set_yticklabels(xtick_range, **xlkws) if ticks=='y' \
-            else ax.set_xticklabels(xtick_range, **xlkws) 
+        
+        # ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator(3))
+        # # ticks_loc = ax.get_xticks().tolist()
+        # ax.xaxis.set_major_locator(mpl.ticker.FixedLocator(ticks_loc))
+        # ax.set_xticklabels([fmt.format(x) for x in ticks_loc])
+        tlst = [fmt.format(item) for item in  xtick_range]
+        ax.set_yticklabels(tlst, **xlkws) if ticks=='y' \
+            else ax.set_xticklabels(tlst, **xlkws) 
   
 def _set_sns_style (s, /): 
     """ Set sns style whether boolean or string is given""" 
@@ -2875,9 +2881,16 @@ def _format_ticks (value, tick_number, fmt ='S{:02}', nskip =7 ):
     else: None 
     
 #XXX OPTIMIZE 
-def plot_confidence (data = None, *,  y=None, x=None, ci =.95 ,  kind ='line', 
-                     b_samples = 1000, **sns_kws
-                     ): 
+def plot_confidence (
+    data = None, 
+    *,  
+    y=None, 
+    x=None, 
+    ci =.95 ,  
+    kind ='line', 
+    b_samples = 1000, 
+    **sns_kws
+    ): 
     """ Plot confidence data 
     
     Confidence Interval (CI)  is a type of estimate computed from the statistics 
@@ -2919,6 +2932,7 @@ def plot_confidence (data = None, *,  y=None, x=None, ci =.95 ,  kind ='line',
     """   
     #y = np.array (y) 
     #x= x or ( np.arange (len(y)) if 
+    ax=None 
     if 'lin' in str(kind).lower(): 
         ax = sns.lineplot(data= data, x=x, y=y, ci=ci, **sns_kws)
     elif 'reg' in  str(kind).lower(): 
@@ -2956,8 +2970,7 @@ def plot_confidence (data = None, *,  y=None, x=None, ci =.95 ,  kind ='line',
     
     return ax 
 
- 
-def plot_confidence_ellipse (x, y  ): 
+def plot_confidence_ellipse (x, y ): 
     """ Plot a confidence ellipse of a two-dimensional dataset 
     
     This function plots the confidence ellipse of the covariance of 
@@ -2975,12 +2988,10 @@ def plot_confidence_ellipse (x, y  ):
     
     """
     fig, ax_nstd = plt.subplots(figsize=(6, 6))
-
     # dependency_nstd = [[0.8, 0.75],
     #                    [-0.2, 0.35]]
     mu = 0, 0
     # scale = 8, 5
-    
     ax_nstd.axvline(c='grey', lw=1)
     ax_nstd.axhline(c='grey', lw=1)
     
@@ -2990,16 +3001,25 @@ def plot_confidence_ellipse (x, y  ):
     confidence_ellipse(x, y, ax_nstd, n_std=1,
                        label=r'$1\sigma$', edgecolor='firebrick')
     confidence_ellipse(x, y, ax_nstd, n_std=2,
-                       label=r'$2\sigma$', edgecolor='fuchsia', linestyle='--')
+                       label=r'$2\sigma$', edgecolor='fuchsia',
+                       linestyle='--')
     confidence_ellipse(x, y, ax_nstd, n_std=3,
-                       label=r'$3\sigma$', edgecolor='blue', linestyle=':')
+                       label=r'$3\sigma$', edgecolor='blue', 
+                       linestyle=':')
     
     ax_nstd.scatter(mu[0], mu[1], c='red', s=3)
     ax_nstd.set_title('Different standard deviations')
     ax_nstd.legend()
     plt.show()
     
-def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
+def confidence_ellipse(
+    x, 
+    y, 
+    ax, 
+    n_std=3.0, 
+    facecolor='none', 
+    **kwargs
+    ):
     """
     Create a plot of the covariance confidence ellipse of *x* and *y*.
 
@@ -3049,129 +3069,146 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
         .translate(mean_x, mean_y)
 
     ellipse.set_transform(transf + ax.transData)
-    return ax.add_patch(ellipse)    
+    return ax.add_patch(ellipse)  
    
-def plotStrike (edi_list, /, plot_type = 2, period_tolerance=.05, 
-                text_pad =1.65 , rot_z=0. , **kws): 
-    """ 
-    plot the strike estimated from the invariants, phase tensor
-    and the tipper in either a rose diagram of xy plot. 
+def plot_strike (
+    list_of_edis, /, 
+    kind = 2,
+    period_tolerance=.05, 
+    text_pad =1.65 , 
+    rot_z=0. , 
+    **kws
+    ): 
     
-    Parameters 
-    ------------
-    edi_list: list, 
-       full paths to .edi files to plot or list of :term:`EDI-files`. 
-    plot_type: int, default=2 
-       Can be [ 1 | 2 ] where:
-           
-        - *1* to plot individual decades in one plot
-        - *2* to plot all period ranges into one polar diagram
-              for each strike angle estimation
-    fig_num: int, default=1, 
-       figure number to be plotted. *Default* is 1
-            
-    font_size: float, default=10, 
-       Figure size 
-    rot_z: float, default=0., 
-       angle of rotation clockwise positive. 
-
-    period_tolerance: float, default=.05 
-        Tolerance level to match periods from different edi files.
-        *Default* is 0.05
-
-    text_pad: float, default=1.65
-       padding of the angle label at the bottom of each
-                     polar diagram.  *Default* is 1.65
-
-    plot_range:  str, tuple 
-       The period range to estimate the strike angle. It can be 
-       [ 'data' | (period_min,period_max) ].  Options are:
-       * *'data'* for estimating the strike for all periods
-            in the data.
-       * (pmin,pmax) for period min and period max, input as
-          (log10(pmin),log10(pmax))
-
-    plot_tipper: [ True | False ]
-        - True to plot the tipper strike
-        - False to not plot tipper strike
-
-    pt_error_floor: int, optional 
-       Maximum error in degrees that is allowed to 
-        estimate strike. *Default* is None allowing all 
-        estimates to be used.
-
-    fold: [ True | False ]
-       * True to plot only from 0 to 180
-       * False to plot from 0 to 360
-                
-    plot_orthogonal: [ True | False]
-        * True to plot the orthogonal strike directions
-        * False to not
-    
-    color: [ True | False ]
-        * True to plot shade colors
-        * False to plot all in one color
-                  
-    color_inv:str, 
-       color of invariants plots
-    
-    color_pt: str, 
-       color of phase tensor plots
-    
-    color_tip: str 
-       color of tipper plots
-    
-    ring_spacing: float, optional 
-        spacing of rings in polar plots
-    
-    ring_limits: tuple of int, 
-       plot limits (min count, max count) set each plot have these limits 
-                        
-    plot_orientation: str, [ 'h' | 'v' ] 
-       horizontal or vertical plots
-    
-    
-    See More
-    --------
-    Plots the strike angle as determined by phase tensor azimuth (Caldwell et
-    al. [2004]) and invariants of the impedance tensor (Weaver et al. [2003]).
-
-    The data is split into decades where the histogram for each is plotted in
-    the form of a rose diagram with a range of 0 to 180 degrees.
-    Where 0 is North and 90 is East.   The median angle of the period band is
-    set in polar diagram.  The top row is the strike estimated from
-    the invariants of the impedance tensor.  The bottom row is the azimuth
-    estimated from the phase tensor.  If tipper is 'y' then the 3rd row is the
-    strike determined from the tipper, which is orthogonal to the induction
-    arrow direction.
-    
-    Examples 
-    ----------
-    >>> import os 
-    >>> from watex.datasets import fetch_data 
-    >>> from watex.view import TPlot 
-    >>> from watex.datasets._io import get_data # get edidata in cache  
-    >>> fetch_data ( 'huayuan', samples = 25 ) # store edi in cache 
-    >>> # get the edi in cache and plotStrike 
-    >>> edi_fn_lst = [os.path.join(get_data(),ff) for ff in os.listdir(get_data()) 
-    ...         if ff.endswith('.edi')] 
-    >>> PlotStrike(fn_list=edi_fn,
-    plot_type=1,
-    plot_tipper='y')
-    """
-    extra =("PlotStrike uses 'mtpy' as dependency."
+    extra =("PlotStrike uses 'mtpy' or 'pycsamt' as dependency."
             )
-    import_optional_dependency ('mtpy' , extra = extra )
+    import_optional_dependency ('mtpy', extra = extra )
     
     from mtpy.imaging.plotstrike import PlotStrike
-    PlotStrike(
-        fn_list=edi_list,
-        plot_type=2,
-        plot_tipper='y', 
-        **kws
-        )
+    with nullify_output():
+        PlotStrike(
+            fn_list=list_of_edis,
+            plot_type=kind,
+            **kws
+            )
+        
+plot_strike.__doc__="""\ 
+plot the strike estimated from the invariants, phase tensor
+and the tipper in either a rose diagram of xy plot. 
+
+Parameters 
+------------
+edi_list: list, 
+    full paths to .edi files to plot or list of :term:`EDI-files`. 
+kind: int, default=2 
+    Can be [ 1 | 2 ] where:
+       
+   - *1* to plot individual decades in one plot
+   - *2* to plot all period ranges into one polar diagram for each 
+     strike angle estimation
+         
+   One could try also plot_type = 1 to plot by decade
+                                                                   
+fig_num: int, default=1, 
+   figure number to be plotted. *Default* is 1
+        
+font_size: float, default=10, 
+   Figure size 
+rot_z: float, default=0., 
+   angle of rotation clockwise positive. 
+
+period_tolerance: float, default=.05 
+    Tolerance level to match periods from different edi files.
+    *Default* is 0.05
+
+text_pad: float, default=1.65
+   padding of the angle label at the bottom of each
+                 polar diagram.  *Default* is 1.65
+plot_range:  str, tuple 
+   The period range to estimate the strike angle. It can be 
+   [ 'data' | (period_min,period_max) ].  Options are:
+       
+   * *'data'* for estimating the strike for all periods
+     in the data.
+   * (pmin,pmax) for period min and period max, input as
+     (log10(pmin),log10(pmax))
+
+plot_tipper: [ True | False ]
+    - True to plot the tipper strike
+    - False to not plot tipper strike
    
-  
+pt_error_floor: int, optional 
+   Maximum error in degrees that is allowed to 
+   estimate strike. *Default* is None allowing all 
+   estimates to be used.
+
+fold: [ True | False ]
+   * True to plot only from 0 to 180
+   * False to plot from 0 to 360
+            
+plot_orthogonal: [ True | False]
+    * True to plot the orthogonal strike directions
+    * False to not
+
+color: [ True | False ]
+    * True to plot shade colors
+    * False to plot all in one color
+              
+color_inv:str, 
+   color of invariants plots
+
+color_pt: str, 
+   color of phase tensor plots
+
+color_tip: str 
+   color of tipper plots
+
+ring_spacing: float, optional 
+    spacing of rings in polar plots
+
+ring_limits: tuple of int, 
+   plot limits (min count, max count) set each plot have these limits 
+                    
+plot_orientation: str, [ 'h' | 'v' ] 
+   horizontal or vertical plots
+
+
+See More
+--------
+Plots the strike angle as determined by invariants of the impedance tensor 
+(Weaver et al. [2003] [1]_) and phase tensor azimuth 
+(Caldwell et al. [2004] [2]_) 
+
+The data is split into decades where the histogram for each is plotted in
+the form of a rose diagram with a range of 0 to 180 degrees.
+Where 0 is North and 90 is East.  The median angle of the period band is
+set in polar diagram.  The top row is the strike estimated from
+the invariants of the impedance tensor.  The bottom row is the azimuth
+estimated from the phase tensor.  If tipper is 'y' then the 3rd row is the
+strike determined from the tipper, which is orthogonal to the induction
+arrow direction.
+
+References 
+----------
+.. [1] Weaver J.T, Lilley F.E.M.(2003)  Invariants of rotation of axes and indicators of
+       dimensionality in magnetotellurics, Australian National University,
+       University of Victoria; http://bib.gfz-potsdam.de/emtf/2007/pdf/lilley.pdf
+.. [2] T. Grant Caldwell, Hugh M. Bibby, Colin Brown, The magnetotelluric phase tensor, 
+       Geophysical Journal International, Volume 158, Issue 2, August 2004, 
+       Pages 457–469, https://doi.org/10.1111/j.1365-246X.2004.02281.x
+Examples 
+----------
+>>> import os 
+>>> from watex.datasets import fetch_data 
+>>> from watex.utils.plotutils import plot_strike 
+>>> from watex.datasets._io import get_data # get edidata in cache  
+>>> fetch_data ( 'huayuan', samples = 25 ) # store edi in cache 
+>>> # get the edi in cache and plotStrike 
+>>> edi_fn_lst = [os.path.join(get_data(),ff) for ff in os.listdir(get_data()) 
+...         if ff.endswith('.edi')] 
+>>> plot_strike(edi_fn_lst )
+
+"""
     
   
     

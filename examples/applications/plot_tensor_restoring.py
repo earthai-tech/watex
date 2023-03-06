@@ -91,7 +91,7 @@ tro.qc (tol =.4 , return_ratio = True ) # we consider good data from .60%
  
 # %% 
 # The next step consists to recover the missing signals since we assume that 
-# we are not satisfied with our qc value = 75% 
+# we are not satisfied with our qc value = 61% 
 
 # * Recovering missing signals  
 Z = tro.zrestore ( ) 

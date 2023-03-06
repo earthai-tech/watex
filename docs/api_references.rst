@@ -608,6 +608,7 @@ Functions
 	utils.plotAnomaly
 	utils.plotOhmicArea
 	utils.plot_clusters
+	utils.plot_confidence_in
 	utils.plot_confusion_matrices
 	utils.plot_cost_vs_epochs
 	utils.plot_elbow
@@ -622,6 +623,7 @@ Functions
 	utils.plot_sbs_feature_selection
 	utils.plot_silhouette
 	utils.plot_skew
+	utils.plot_strike
 	utils.plot_yb_confusion_matrix
 	utils.power
 	utils.predict_NGA_labels
@@ -780,6 +782,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.funcutils.move_cfile
 	utils.funcutils.pretty_printer
 	utils.funcutils.get_config_fname_from_varname
+	utils.funcutils.get_confidence_ratio
 	utils.funcutils.cparser_manager
 	utils.funcutils.parse_yaml
 	utils.funcutils.return_ctask

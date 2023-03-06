@@ -2296,7 +2296,6 @@ class gplot2d(object):
       
         return self 
     
-
 class _M:
     def _m(self): pass
 MethodType = type(_M()._m)
@@ -2403,6 +2402,17 @@ class suppress_output:
             sys.stdout = self._stdout
         if self.suppress_stderr:
             sys.stderr = self._stderr
+            
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:  
+            yield
+        finally:
+            sys.stdout = old_stdout
+            
 def available_if(check):
     """An attribute that is available only if check returns a truthy value
 
