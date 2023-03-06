@@ -29,7 +29,7 @@ well-written and I recommend it to be published after a minor revision. Here are
   in code lines 66–67 of ``watex.__init__.py``. 
 ..
 
-* **2)** *To make the software more attractive at the glance for the non-dedicated reader in the* :term"`geophysical` *and* 
+* **2)** *To make the software more attractive at the glance for the non-dedicated reader in the* :term:`geophysical` *and* 
   :term:`hydrogeology` *domains, the term "hydro-geophysics" can be modified to "water exploration "for short 
   as the aim goal and name of the software. I suggest* `"Machine learning in water exploration"`` *or* ``"machine learning 
   research in water exploration"``. *The first one is short and global while the second gives a new perspective 
@@ -69,7 +69,7 @@ well-written and I recommend it to be published after a minor revision. Here are
   >>> tplot = wx.TPlot ().fit(edi_sk ) 
   >>> tplot.plot_phase_tensors (tensor ='skew')
   
-  See also the examples :ref:`sphx_glr_glr_examples_utils_plot_skew.py` and :ref:`sphx_glr_glr_examples_utils_plot_skew.py`.  
+  See also the examples :ref:`sphx_glr_glr_examples_utils_plot_skew.py` and :ref:`sphx_glr_glr_examples_methods_plot_phase_tensors.py`.  
   
 ..
 

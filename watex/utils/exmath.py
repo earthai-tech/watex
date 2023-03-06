@@ -69,6 +69,8 @@ from .funcutils import (
     fmt_text, 
     find_position_from_sa , 
     concat_array_from_list, 
+    get_confidence_ratio,
+    remove_outliers, 
     find_feature_positions,
     find_close_position,
     smart_format,
@@ -4442,7 +4444,8 @@ def get2dtensor(
     z_or_edis_obj_list:List[EDIO |ZO], /, 
     tensor:str= 'z', 
     component:str='xy', 
-    kind:str ='modulus', 
+    kind:str ='modulus',
+    return_freqs:bool=False, 
     **kws 
     ): 
     """ Make  tensor into two dimensional array from a 
@@ -4552,7 +4555,7 @@ def get2dtensor(
     
         mat2d = zdict [ kind]
         
-    return mat2d 
+    return mat2d if not return_freqs else (mat2d, freqs  )
 
 def get_full_frequency (
         z_or_edis_obj_list: List [EDIO |ZO], 
@@ -4619,7 +4622,7 @@ def compute_errors (
         axis = 0, 
         return_confidence=False 
         ): 
-    """ Compute Error ( Standard Deviation ) or Standard errors 
+    """ Compute Errors ( Standard Deviation ) and standard errors. 
     
     Standard error and standard deviation are both measures of variability:
     - The standard deviation describes variability within a single sample. Its
@@ -4644,15 +4647,16 @@ def compute_errors (
         .. math:: 
           
             SE = \frac{SD}{\sqrt{N}} 
+            
       - When the population parameter is unknwon 
       
         .. math:: 
             
             SE = \frac{s}{\sqrt{N}} 
             
-      where :math:`SE` is the standard error, : math:`s` is the sample
-      standard deviation. When the population standard is knwon the :math:`SE`
-      is more accurate. 
+       where :math:`SE` is the standard error, : math:`s` is the sample
+       standard deviation. When the population standard is knwon the 
+       :math:`SE` is more accurate. 
     
     Note that the :math:`SD` is  a descriptive statistic that can be 
     calculated from sample data. In contrast, the standard error is an 
@@ -4704,13 +4708,226 @@ def compute_errors (
         if return_confidence: 
             err_lower = arr.mean() - ( 1.96 * err ) 
             err_upper = arr.mean() + ( 1.96 * err )
-        
     return err if not return_confidence else ( err_lower, err_upper)  
 
-
-   
+def plot_confidence_in(
+    z_or_edis_obj_list: List [EDIO |ZO], 
+    /, 
+    tensor='res', 
+    view:str='1d', 
+    drop_outliers:bool=True, 
+    distance:float=None, 
+    c_line:bool =True,
+    view_ci:bool=True, 
+    figsize:Tuple=(6, 2), 
+    fontsize:bool=4., 
+    dpi:int=300., 
+    top_label:str='Stations',
+    rotate_xlabel:float=90., 
+    fbtw:bool =True, 
+    **plot_kws
+    ): 
+    """Plot data confidency from tensor errors. 
+    
+    The default tensor for evaluating the data confidence is the resistivity 
+    at TE mode ('xy'). 
+    
+    Check confidence in the data before starting the concrete processing 
+    seems meaningful. In the area with complex terrain, with high topography 
+    addition to interference noises, signals are weals or missing 
+    especially when using :term:`AMT` survey. The most common technique to 
+    do this is to eliminate the bad frequency and interpolate the remains one. 
+    However, the tricks for eliminating frequency differ from one author 
+    to another. Here, the tip using the data confidence seems meaningful
+    to indicate which frequencies to eliminate (at which stations/sites)
+    and which ones are still recoverable using the tensor recovering 
+    strategy. 
+    
+    The plot implements three levels of confidence: 
         
-   
+    - High confidence: :math:`conf. \geq 0.95` values greater than 95% 
+    - Soft confidence: :math:`0.5 \leq conf. < 0.95`. The data in this 
+      confidence range can be beneficial for tensor recovery to restore 
+      the weak and missing signals. 
+    - bad confidence: :math:`conf. <0.5`. Data in this interval must be 
+      deleted.
+
+    Parameters 
+    -----------
+    z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
+        :class:`watex.externals.z.Z` 
+        A collection of EDI- or Impedances tensors objects. 
+        
+    view:str, default='1d'
+       Type of plot. Can be ['1D'|'2D'] 
+       
+    drop_outliers: bool, default=True 
+       Suppress the ouliers in the data if ``True``. 
+       
+    distance: float, optional 
+       Distance between stations/sites 
+       
+    fontsize: float,  default=3. 
+       label font size. 
+    
+    figsize: Tuple, default=(6, 2)
+       Figure size. 
+       
+    dpi: int, default=300 
+       Image resolution in dot-per-inch 
+       
+    rotate_xlabel: float, default=90.
+       Angle to rotate the stations/sites labels 
+       
+    top_labels: str,default='Stations' 
+       Labels the sites either using the survey name. 
+       
+    view_ci: bool,default=True, 
+       Show the marker of confidence interval. 
+       
+    fbtw: bool, default=True, 
+       Fill between confidence interval. 
+       
+    plot_kws: dict, 
+       Additional keywords pass to the :func:`~mplt.plot`
+       
+    See Also
+    ---------
+    watex.methods.Processing.zrestore: 
+        For more details about the function for tensor recovering technique. 
+        
+    Examples 
+    ----------
+    >>> from watex.utils.exmath import plot_confidence_in 
+    >>> from watex.datasets import fetch_data 
+    >>> emobj  = fetch_data ( 'huayuan', samples = 25, clear_cache =True,
+                             key='raw').emo
+    >>> plot_confidence_in (emobj.ediObjs_ , 
+                            distance =20 , 
+                            view ='2d', 
+                            figsize =(6, 2)
+                            )
+    >>> plot_confidence_in (emobj.ediObjs_ , distance =20 ,
+                            view ='1d', figsize =(6, 3), fontsize =5, 
+                            )
+    """
+    # from .plotutils import _get_xticks_formatage 
+    
+    # by default , we used the resistivity tensor and error at TE mode.
+    # force using the error when resistivity or phase tensors are supplied 
+    tensor = str(tensor).lower() ; view = str(view).lower() 
+    tensor = tensor + '_err' if tensor in 'resistivityphase' else tensor 
+    rerr, freqs = get2dtensor(z_or_edis_obj_list, tensor =tensor,
+                                return_freqs=True )
+    ratio_0 = get_confidence_ratio(rerr ) # alongside columns (stations )
+    #ratio_1 = get_confidence_ratio(rerr , axis =1 ) # along freq 
+    # make confidencity properties ( index, colors, labels ) 
+    conf_props = dict (# -- Good confidencity 
+                       high_cf = (np.where ( ratio_0 >= .95  )[0] ,  
+                                   '#15B01A','$conf. \geq 0.95$' ), 
+                       # -- might be improve using tensor recovering 
+                       soft_cf = (np.where ( (ratio_0 < .95 ) &(ratio_0 >=.5 ))[0], 
+                                  '#FF81C0', '$0.5 \leq conf. < 0.95$'), 
+                       # --may be deleted 
+                       bad_cf= (np.where ( ratio_0 < .5 )[0], 
+                                '#650021','$conf. <0.5$' )
+                       )
+    # re-compute distance 
+    distance = distance or 1. 
+    d= np.arange ( rerr.shape[1])  * distance 
+    # format clabel for error 
+    clab="resistivity" if 'res' in tensor else (
+        'phase' if 'ph' in tensor else tensor )
+    # --plot 
+    if view =='2d': 
+        from ..view import plot2d
+        ar2d = remove_outliers(rerr, fill_value=np.nan
+                              ) if drop_outliers else rerr 
+       
+        ax = plot2d (
+              ar2d,
+              cmap ='binary', 
+              cb_label =f"Error in {clab}", 
+              top_label =top_label , 
+              rotate_xlabel = rotate_xlabel , 
+              distance = distance , 
+              y = np.log10 (freqs), 
+              fig_size  = figsize ,
+              fig_dpi = dpi , 
+              font_size =fontsize,
+              )
+        
+    else: 
+        fig, ax = plt.subplots(figsize = figsize,  dpi = dpi )
+    
+        ax.plot(d , ratio_0  , 'ok-', markersize=2.,  #alpha = 0.5,
+                **plot_kws)
+        if fbtw:
+            # use the minum to extend the plot line 
+            min_sf_ci = .5 if ratio_0.min() <=0.5 else ratio_0.min() 
+            
+            ydict =dict(yh =np.repeat(.95  , len(ratio_0)), 
+                        sh = np.repeat( min_sf_ci , len(ratio_0 ))
+                        )
+            rr= ( ratio_0 >=0.95 , (ratio_0 < .95 ) & (ratio_0 >=min_sf_ci ), 
+                 ratio_0 < min_sf_ci )
+            
+            for ii, rat in enumerate (rr): 
+                if len(rat)==0: break 
+                ax.fill_between(d, ratio_0, ydict ['sh'] if ii!=0 else ydict ['yh'],
+                                facecolor = list( conf_props.values()) [ii][1], 
+                                where = rat, 
+                                alpha = .3 , 
+                                )
+                ax.axhline(y=min_sf_ci if ii!=0 else .95, 
+                            color="k",
+                            linestyle="--", 
+                            lw=1. 
+                            )
+                
+        ax.set_xlabel ('Distance (m)', fontsize =1.2 * fontsize,
+                       fontdict ={'weight': 'bold'})
+        ax.set_ylabel (f"Error in {clab}", fontsize = 1.2 * fontsize , 
+                       fontdict ={'weight': 'bold'}
+                       )
+        ax.tick_params (labelsize = fontsize)
+        
+    #--plot confidency 
+    if view_ci: 
+        for cfv, c , lab in conf_props.values (): 
+            if len(cfv)==0: break 
+            norm_coef  =  np.log10 (freqs).max() if view =='2d' else 1. 
+            ax.scatter (d[cfv], ratio_0[cfv] * norm_coef,
+                          marker ='o', 
+                          edgecolors='k', 
+                          color= c,
+                          label = lab, 
+                          )
+            ax.legend() 
+        # _get_xticks_formatage(ax, [ f'S{i}' for i in range(len(ratio_0))], 
+        #                            rotate_xlabel, )
+        
+    return ax 
+
+
+def get_z_from_edi_objs ( edi_obj_list , /, ): 
+    """ Get z object from Edi object. 
+    Parameters 
+    -----------
+    z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
+        :class:`watex.externals.z.Z` 
+        A collection of EDI- or Impedances tensors objects. 
+    Returns
+    --------
+    Z: list of :class:`watex.externals.z.Z`
+       List of impedance tensor Objects. 
+      
+    """
+    obj_type  = _assert_z_or_edi_objs (edi_obj_list)
+    return   edi_obj_list  if obj_type =='z' else [
+        edi_obj_list[i].Z for i in range (len( edi_obj_list)  )] 
+
+    
     
    
     

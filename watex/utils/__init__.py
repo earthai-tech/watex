@@ -40,6 +40,7 @@ from .exmath import (
     moving_average, 
     linkage_matrix, 
     plotOhmicArea, 
+    plot_confidence_in,
     plot_sfi
     )
 from .funcutils import ( 
@@ -84,7 +85,8 @@ from .plotutils import (
     plot_logging, 
     plot_silhouette, 
     plot_profiling, 
-    plot_skew
+    plot_skew, 
+    plot_strike,
     )
 # to fix circular 
 # import
@@ -154,7 +156,8 @@ __all__=[
         'plot_mlxtend_matrix', 
         'plot_cost_vs_epochs', 
         'plot_elbow', 
-        'plot_clusters', 
+        'plot_clusters',
+        'plot_confidence_in', 
         'plot_pca_components' , 
         'plot_naive_dendrogram', 
         'plot_learning_curves', 
@@ -190,6 +193,7 @@ __all__=[
         'plot_skew',
         'remove_outliers', 
         'normalizer',
+        'plot_strike',
         ]
 
 
