@@ -29,7 +29,7 @@ Adaptations and Features
 - Enable the skew dimensional plot with the combination with :class:`watex.methods.Processing` and :func:`watex.view.plot2d`. 
 
 - Add new features with strike (:func:`watex.utils.plot_strike`) and confidence plots in the :term:`EDI` data 
-  (:func:`watex.utils.plot_confidence_in). The latter is useful to know the signals to recover and useless
+  (:func:`watex.utils.plot_confidence_in`). The latter is useful to know the signals to recover and useless
   frequencies for deletion. 
   
 Bug fixes 
