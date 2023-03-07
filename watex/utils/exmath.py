@@ -4717,7 +4717,7 @@ def plot_confidence_in(
     view:str='1d', 
     drop_outliers:bool=True, 
     distance:float=None, 
-    c_line:bool =True,
+    c_line:bool =False,
     view_ci:bool=True, 
     figsize:Tuple=(6, 2), 
     fontsize:bool=4., 
@@ -4775,7 +4775,7 @@ def plot_confidence_in(
        Figure size. 
        
     c_line: bool, default=True, 
-       Display the confidence line. 
+       Display the confidence line in two dimensinal view.  
        
     dpi: int, default=300 
        Image resolution in dot-per-inch 
@@ -4920,13 +4920,13 @@ def plot_confidence_in(
     if view_ci: 
         if view=='2d' and c_line: 
            # get default line properties 
-           c = plot_kws.get('c', 'r'); del plot_kws['c']
-           ls=plot_kws.get('ls', '-'); del plot_kws['ls'] 
-           lw=plot_kws.get('lw', .5) ; del plot_kws['lw']
+           c= plot_kws.pop ('c', 'r') 
+           lw = plot_kws.pop ('lw', .5)
+           ls = plot_kws.pop ('ls', '-')
            
            ax.plot (d, ratio_0 *np.log10 (freqs).max() , 
                     ls=ls, 
-                    c=c, 
+                    c=c , 
                     lw=lw, 
                     label='Confidence line'
                     )

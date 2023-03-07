@@ -367,7 +367,7 @@ The second reply from Editors occurs in March 06th after the first requiered rev
 
 * *Reply*: We fixed it by combining it with the first new figure and deleting the literature related to him in the illustration example (previous version). 
   The figure is henceforth moved to the software functionalities section when enumerating the different possible plots offered by the library in addition to the two new others plots. 
-  To support the comment of :ref:`reviewer #2 <reviewer2>` about the additional plots that can be provided by the software, we also added two plots (:func:`watex.utils.plot_confidence_in`and :meth:`watex.view.TPlot.plot_phase_tensors`)
+  To support the comment of :ref:`reviewer #2 <reviewer2>` about the additional plots that can be provided by the software, we also added two plots (:func:`watex.utils.plot_confidence_in` and :meth:`watex.view.TPlot.plot_phase_tensors`)
   for clarity since Figure speaks more than ten thousand words. The total figures are henceforth 4 rather in the new version rather than the 3 in the previous version. 
 ..
 
