@@ -1619,7 +1619,7 @@ class Processing (EM) :
         ----------
 
         tensor: str, optional
-           Name of the tensor. It can be [ resistivity|phase|z|frequency]. 
+           Name of the :term:`tensor`. It can be [ resistivity|phase|z|frequency]. 
            If the name of tensor is given, function  returns the tensor value
            in two-dimensionals composed of (n_freq , n_sites) where 
            ``n_freq=number of frequency`` and ``n_sations`` number of sites. 

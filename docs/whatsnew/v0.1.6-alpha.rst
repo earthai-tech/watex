@@ -5,13 +5,21 @@ v0.1.6-alpha (February 22, 2023)
 
 These are minor changes performed from ``v0.1.5`` after the review :ref:`comments <comments>` from Editors and Reviewers 
 from the `softwareX <https://www.sciencedirect.com/journal/softwarex>`__ journal to improve the paper and software. 
-Here is the comments/replies section of reviewers  for  **minor revisions** that includes some bug fixes and improvements. 
-The reviewers comments are in *italic* whereas the replies are in normal text. 
+The manuscript faced two review tours of **minor revisions**. The first from reviewers (February 20th) and second from Editors(March 06th ). 
+Here are the comments/replies sections of Editors/reviewers that includes some bug fixes and improvements. 
+The Editors/reviewers comments are in *italic* whereas the replies are in normal text. 
    
+
+First review 
+~~~~~~~~~~~~~~~
+
+The first reply from Editors/reviewers occurs in February 20th, 2022. Here are the comments: 
+
+
 .. _reviewer1: 
   
 Reviewer #1 
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^
 
 *I have read the paper* ``"machine-learning research in hydro-geophysics"``. *It is an interesting paper about the 
 application of* :term:`machine learning` *in* :term:`hydrogeophysics` *and the open-source code is also useful for hydrogeophysics 
@@ -113,9 +121,10 @@ well-written and I recommend it to be published after a minor revision. Here are
 
 * *Reply*: Fixed it in the manuscript new version (Fixed it in new MS) 
 
+.. _reviewer2: 
 
 Reviewer #2 
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 * **1)** *(Lines 137-142) the parameters are computed from the selected conductive zone; the loss or weak frequency 
   signal are recovered and new tensors are updated. Please provide more details about the computation process, 
@@ -327,6 +336,40 @@ Reviewer #2
 
 * *Reply:* We fixed by implementing `verbose` parameter as an attribute in :class:`watex.geology.core.Base` 
   module of ( Line 80  and 82) 
+
+Second review 
+~~~~~~~~~~~~~~~~
+
+The second reply from Editors occurs in March 06th after the first requiered review completed. Here are the comments: 
+
+* **1)** *Abstract: It needs to be an abstract for a multidisciplinary audience.  You do not define DC, EM or what is the meaning of the k parameter.  Can you make it more general?*
+..
+
+* *Reply*: We fixed it by defining the :term:`DC` (Direct-current), :term:`EM` ( Electromagnetic ), and :term:`k` for the permeability coefficient.  Also, we replaced especially for the abstract the word 
+  ":term:`tensor`" with "missing data" in the following sentence: << Indeed, the recovery of EM *tensors* … >> by  << Indeed, the recovery of EM *missing data* … >> 
+..
+
+* **2)** *Intro: - I suggest splitting up the first paragraph (it is very long).  Maybe at lines 58 and 75?*
+..
+
+* *Reply*: We did it. The first paragraph is henceforth divided into two. 
+..
+
+* **3)** *Again note that the first paragraph should be written for a general audience whereas it gets very technical and I have a hard time understanding it.  Can you try to make the first paragraph for a general reader like me.?*
+..
+
+* *Reply*: Of course! We have tried our best to reconsider all the technical words and translated them into simplified terms and sentences.  As you can see in the 
+  manuscript  first paragraph (henceforth divided into two), we have simplified some sentences by rewriting them expecting to be easily understood by public audience. 
+..
+
+* **3)** *Fig3.  might be better in 2x2 rather than 1x4 format*
+..
+
+* *Reply*: We fixed it by combining it with the first new figure and deleting the literature related to him in the illustration example (previous version). 
+  The figure is henceforth moved to the software functionalities section when enumerating the different possible plots offered by the library in addition to the two new others plots. 
+  To support the comment of :ref:`reviewer #2 <reviewer2>` about the additional plots that can be provided by the software, we also added two plots (:func:`watex.utils.plot_confidence_in`and :meth:`watex.view.TPlot.plot_phase_tensors`)
+  for clarity since Figure speaks more than ten thousand words. The total figures are henceforth 4 rather in the new version rather than the 3 in the previous version. 
+..
 
 
 We are grateful to the anonymous reviewers for their contributions,  suggestions and comments to  improve the 
