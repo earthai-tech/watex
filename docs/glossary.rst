@@ -311,6 +311,18 @@ Geosciences concepts
         than 1:1 (greater than 0 dB) indicates more signal than noise. The signal-to-noise ratio is difficult to 
         quantify accurately because it is difficult to completely separate signal from noise. It also depends on how noise 
         is defined. For further details click on the the following `documentation <https://www.sciencedirect.com/topics/earth-and-planetary-sciences/signal-to-noise-ratios>`__.
+    
+    tensor
+    EM-tensor 
+    EM field tensor 
+       In electromagnetism, the tensor or :term:`EM` field tensor (sometimes called the field strength tensor, `Faraday <https://en.wikipedia.org/wiki/Michael_Faraday>`__ tensor or 
+       `Maxwell <https://en.wikipedia.org/wiki/Maxwell%27s_equations>`__ bivector) is a mathematical object that describes the :term:`EM` field in spacetime. In :term:`EM` survey, 
+       different array types are considered for acquiring the most beneficial data for a particular area. The fameous are scalar or tensors. Typically, Ex are scalar data 
+       collected in the traverse direction with multiple Ex measurements, and one Hy. Tensor :term:`NSAMT` data measure additional components (Ey and Hx) which provide 
+       information about directionality. Ex and Ey refer to the directions of the array used to measure the electric field. Hx and Hy refer to the directions used to 
+       measure the magnetic field. Every Ex has an associated orthogonal Hy measurement, and every Ey has an associated Hx. ``xy``, ``xy``, ``yx`` and ``yy`` are called the 
+       tensor components. Mostly acquiring data according to ``xy`` and ``yx``,  refers to the transverse electric (TE) and transverse magnetic (TM) modes respectively. 
+       Download the following `book <https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119771012.fmatter>`__ for further details about :term:`EM` methods. 
 
     Type
     type_

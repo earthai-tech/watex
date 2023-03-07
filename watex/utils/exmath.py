@@ -4717,7 +4717,7 @@ def plot_confidence_in(
     view:str='1d', 
     drop_outliers:bool=True, 
     distance:float=None, 
-    c_line:bool =True,
+    c_line:bool =False,
     view_ci:bool=True, 
     figsize:Tuple=(6, 2), 
     fontsize:bool=4., 
@@ -4725,11 +4725,12 @@ def plot_confidence_in(
     top_label:str='Stations',
     rotate_xlabel:float=90., 
     fbtw:bool =True, 
+    savefig: str=None, 
     **plot_kws
     ): 
     """Plot data confidency from tensor errors. 
     
-    The default tensor for evaluating the data confidence is the resistivity 
+    The default :term:`tensor` for evaluating the data confidence is the resistivity 
     at TE mode ('xy'). 
     
     Check confidence in the data before starting the concrete processing 
@@ -4773,6 +4774,9 @@ def plot_confidence_in(
     figsize: Tuple, default=(6, 2)
        Figure size. 
        
+    c_line: bool, default=True, 
+       Display the confidence line in two dimensinal view.  
+       
     dpi: int, default=300 
        Image resolution in dot-per-inch 
        
@@ -4811,7 +4815,7 @@ def plot_confidence_in(
                             view ='1d', figsize =(6, 3), fontsize =5, 
                             )
     """
-    # from .plotutils import _get_xticks_formatage 
+    from .plotutils import _get_xticks_formatage 
     
     # by default , we used the resistivity tensor and error at TE mode.
     # force using the error when resistivity or phase tensors are supplied 
@@ -4826,7 +4830,7 @@ def plot_confidence_in(
                        high_cf = (np.where ( ratio_0 >= .95  )[0] ,  
                                    '#15B01A','$conf. \geq 0.95$' ), 
                        # -- might be improve using tensor recovering 
-                       soft_cf = (np.where ( (ratio_0 < .95 ) &(ratio_0 >=.5 ))[0], 
+                       soft_cf = (np.where ((ratio_0 < .95 ) &(ratio_0 >=.5 ))[0], 
                                   '#FF81C0', '$0.5 \leq conf. < 0.95$'), 
                        # --may be deleted 
                        bad_cf= (np.where ( ratio_0 < .5 )[0], 
@@ -4836,8 +4840,8 @@ def plot_confidence_in(
     distance = distance or 1. 
     d= np.arange ( rerr.shape[1])  * distance 
     # format clabel for error 
-    clab="resistivity" if 'res' in tensor else (
-        'phase' if 'ph' in tensor else tensor )
+    clab=r"resistivity ($\Omega$.m)" if 'res' in tensor else (
+        r'phase ($\degree$)' if 'ph' in tensor else tensor )
     # --plot 
     if view =='2d': 
         from ..view import plot2d
@@ -4858,14 +4862,14 @@ def plot_confidence_in(
               )
         
     else: 
-        fig, ax = plt.subplots(figsize = figsize,  dpi = dpi )
-    
+        fig, ax = plt.subplots(figsize = figsize,  dpi = dpi ,
+                               )
         ax.plot(d , ratio_0  , 'ok-', markersize=2.,  #alpha = 0.5,
                 **plot_kws)
         if fbtw:
             # use the minum to extend the plot line 
             min_sf_ci = .5 if ratio_0.min() <=0.5 else ratio_0.min() 
-            
+            # -- confidence condition 
             ydict =dict(yh =np.repeat(.95  , len(ratio_0)), 
                         sh = np.repeat( min_sf_ci , len(ratio_0 ))
                         )
@@ -4874,8 +4878,9 @@ def plot_confidence_in(
             
             for ii, rat in enumerate (rr): 
                 if len(rat)==0: break 
-                ax.fill_between(d, ratio_0, ydict ['sh'] if ii!=0 else ydict ['yh'],
-                                facecolor = list( conf_props.values()) [ii][1], 
+                ax.fill_between(d, ratio_0, 
+                                ydict ['sh'] if ii!=0 else ydict ['yh'],
+                                facecolor = list( conf_props.values())[ii][1], 
                                 where = rat, 
                                 alpha = .3 , 
                                 )
@@ -4887,13 +4892,45 @@ def plot_confidence_in(
                 
         ax.set_xlabel ('Distance (m)', fontsize =1.2 * fontsize,
                        fontdict ={'weight': 'bold'})
-        ax.set_ylabel (f"Error in {clab}", fontsize = 1.2 * fontsize , 
+        ax.set_ylabel (f"Confidence ratio in {clab}", fontsize = 1.2 * fontsize , 
                        fontdict ={'weight': 'bold'}
                        )
         ax.tick_params (labelsize = fontsize)
+        ax.set_xlim ([ d.min(), d.max() ])
+        
+        # make twin axis to upload the stations 
+        #--> set second axis 
+        axe2 = ax.twiny() 
+        axe2.set_xticks(range(len(d)),minor=False )
+        
+        # set ticks params to reformat the size 
+        axe2.tick_params (  labelsize = fontsize)
+        # get xticks and format labels using the auto detection 
+    
+        _get_xticks_formatage(axe2, range(len(d)), fmt = 'E{:02}',  
+                              auto=True, 
+                              rotation=rotate_xlabel 
+                              )
+        
+        axe2.set_xlabel(top_label, fontdict ={
+            'size': fontsize ,
+            'weight': 'bold'}, )
         
     #--plot confidency 
     if view_ci: 
+        if view=='2d' and c_line: 
+           # get default line properties 
+           c= plot_kws.pop ('c', 'r') 
+           lw = plot_kws.pop ('lw', .5)
+           ls = plot_kws.pop ('ls', '-')
+           
+           ax.plot (d, ratio_0 *np.log10 (freqs).max() , 
+                    ls=ls, 
+                    c=c , 
+                    lw=lw, 
+                    label='Confidence line'
+                    )
+        
         for cfv, c , lab in conf_props.values (): 
             if len(cfv)==0: break 
             norm_coef  =  np.log10 (freqs).max() if view =='2d' else 1. 
@@ -4903,14 +4940,15 @@ def plot_confidence_in(
                           color= c,
                           label = lab, 
                           )
-            ax.legend() 
-        # _get_xticks_formatage(ax, [ f'S{i}' for i in range(len(ratio_0))], 
-        #                            rotate_xlabel, )
+            ax.legend(loc ='lower right' if view=='2d' else 'best') 
+
+    if savefig: 
+        plt.savefig(savefig, dpi =600 )
         
     return ax 
 
 
-def get_z_from_edi_objs ( edi_obj_list , /, ): 
+def getzfromedis ( edi_obj_list , /, ): 
     """ Get z object from Edi object. 
     Parameters 
     -----------
