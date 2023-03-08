@@ -16,15 +16,7 @@ exclude .readthedocs.yml
 exclude _demo_user_guide.py
 exclude pycsamt_user_guide/*
 exclude mpl.rcParams_infos.py 
-exclude data0.joblib
-exclude data.joblib
-exclude _svms_xgboost_.pkl
-exclude _svms_xgboost_k0.joblib
-exclude _svms_xgboost_.joblib
-exclude demo-project.ipynb
-exclude hlogs_project.ipynb
-exclude untitled0.py
-exclude untitled1.py
+exclude venv/
 
 
 global-exclude *.py[cod] __pycache__/* *.so *.dylib .coverage .coverage.* 

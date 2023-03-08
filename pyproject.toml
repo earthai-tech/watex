@@ -61,17 +61,17 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://watex.readthedocs.io"
-Documentation = "https://razorback.readthedocs.io"
-Source = "https://github.com/BRGM/razorback"
+Documentation = "https://watex.readthedocs.io"
+Source = "https://github.com/WEgeophysics/watex"
 
 [project.scripts]
-rzb = "razorback.cli:cli"
+wx = "watex.cli:cli"
 
 [tool.setuptools.dynamic]
-version = {attr = "razorback._version.version"}
+version = {attr = "watex.__init__.__version__"}
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["watex"]
 
 [tool.setuptools_scm]
 write_to = "src/razorback/_version.py"
