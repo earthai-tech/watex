@@ -4,36 +4,39 @@ import watex
 import os 
 
 try:
-    from setuptools import setup  
+    from setuptools import setup # find_packages
 except ImportError:
     setuptools = False
     #from distutils.core import setup
 else:
     setuptools = True
     
-with open(os.path.join(os.path.abspath('.'), 'README.md'), 'r', encoding ='utf8') as fm:
+with open(os.path.join(os.path.abspath('.'), 'README.md'), 'r', 
+          encoding ='utf8') as fm:
     LONG_DESCRIPTION =fm.read()
 
 setup_kwargs = {}
 
-# commands
-# setup_kwargs['entry_points'] = {
-#     'watex.commands': [
-#         'welcome-hello=watex.watex_cli:cli',
-#         ],
-#     'console_scripts':[
-#               # 'occambuildinputs=watex.cli.occambuildinputs:main'
-#                       ]
-#       }
-setup_kwargs['entry_points'] = {}                
+#commands
+setup_kwargs['entry_points'] = {
+    'watex.commands': [
+        'welcome-hello=watex.watex_cli:cli',
+        ],
+    'console_scripts':[
+              # 'occambuildinputs=watex.cli.occambuildinputs:main'
+              'wx = watex.cli:cli', 
+              'version = watex.cli:show_wx_version'
+                      ]
+      }
+# setup_kwargs['entry_points'] = {}                
 # But many people will not have setuptools installed, so we need to handle
 # the default Python installation, which only has Distutils:
-if setuptools is False:
-    # Different script specification style for ordinary Distutils:
-    setup_kwargs['scripts'] = [
-        s.split(' = ')[1].replace('.', '/').split(':')[0] + '.py' for s in 
-        setup_kwargs['entry_points']['console_scripts']]
-    del setup_kwargs['entry_points']
+# if setuptools is False:
+#     # Different script specification style for ordinary Distutils:
+#     setup_kwargs['scripts'] = [
+#         s.split(' = ')[1].replace('.', '/').split(':')[0] + '.py' for s in 
+#         setup_kwargs['entry_points']['console_scripts']]
+#     del setup_kwargs['entry_points']
 
 # "You must explicitly list all packages in packages: the Distutils will not
 # recursively scan your source tree looking for any directory with an
@@ -49,26 +52,28 @@ setup_kwargs['packages'] = [
     'watex.externals',
     'watex.geology',
     'watex.exlib',
-    'watex.cases'
+    'watex.cases', 
+    'watex.view'
      ]
 # force install watex. Once watex is installed , pyyaml and pyproj 
 # should already installed too. 
 setup_kwargs['install_requires'] = [
+    "click>=8.0.4",
     "scikit-learn>=1.1.2",
     "xgboost>=1.5.0",
     "seaborn>=0.12.0",
     "pyyaml>=5.0.0",
     "pycsamt>=1.0.0",
     "pyproj>=3.3.0",
-    "joblib>=3.5.0",
+    "joblib>=1.2.0",
     "openpyxl>=3.0.3",
     "h5py>=3.2.0",
     "tables>=3.6.0",
     "numpy>=1.23.0",
     "scipy>=1.9.0",
     "pandas>=1.4.0",
-    "matplotlib>=3.3.0",
-    "missingno>=1.1.2",
+    "matplotlib==3.2.0",
+    "missingno>=0.4.2",
     "pandas_profiling>=0.1.7",
     "pyjanitor>=0.1.7",
     "yellowbrick>=1.5.0",
@@ -78,7 +83,6 @@ setup_kwargs['install_requires'] = [
                                      
 setup_kwargs['python_requires'] ='>=3.9'
 
-# def setup_package(): 
 setup(
  	name="watex",
  	version=watex.__version__,
@@ -97,6 +101,7 @@ setup(
         "Installation guide" : "https://watex.readthedocs.io/en/latest/installation.html", 
         "User guide" : "https://watex.readthedocs.io/en/latest/user_guide.html",
         },
+    #packages=find_packages(),
  	include_package_data=True,
  	license="BSD 3-Clause LICENCE v3",
  	classifiers=[
@@ -116,7 +121,7 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: Unix",
         ],
-    keywords="hydrogeophysic, groundwater, machine learning, water , geophysic",
+    keywords="exploration, groundwater, machine learning, water , hydro-geophysic",
     zip_safe=True, 
     #package_dir={"": "watex"},  # Optional
  	# data_files=[('', ['watex/tools/epsg.npy',]),], #this will install datafiles in wearied palce such as ~/.local/

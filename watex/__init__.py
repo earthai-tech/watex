@@ -9,7 +9,7 @@ import logging
 import random
 import warnings 
  
-__version__='0.1.5' ; __author__= 'L.Kouadio'
+__version__='0.1.6' ; __author__= 'L.Kouadio'
 
 # set the package name for consistency checker 
 sys.path.insert(0, os.path.dirname(__file__))  
@@ -80,6 +80,8 @@ if _missing_dependencies:  # pragma: no cover
     )
 del _main_dependencies, _dependency, _missing_dependencies
 
+# import watex.commands 
+from watex import cli 
 # Suppress pandas future warnings
 with warnings.catch_warnings():
     warnings.filterwarnings(action='ignore', category=UserWarning)
@@ -229,6 +231,7 @@ parameter collections.
 # based on the documentation.
     
 __all__ = [ 
+    "cli", 
     "sklearn", 
     "XGBClassifier", 
     "nPCA", 
