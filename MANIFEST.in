@@ -4,10 +4,27 @@ graft docs
 
 include LICENSE.md
 include README.md
-
-include pycsamt/utils/epsg.npy
+include setup.py
+include MANIFEST.in 
+include LICENSE.md
+include COPYING.LESSER
+include README.md
+include watex/utils/epsg.npy
 include .travis.yml .readthedocs.yml 
 
-exclude docs/source/ipynb
+exclude .readthedocs.yml 
+exclude _demo_user_guide.py
+exclude pycsamt_user_guide/*
+exclude mpl.rcParams_infos.py 
+exclude data0.joblib
+exclude data.joblib
+exclude _svms_xgboost_.pkl
+exclude _svms_xgboost_k0.joblib
+exclude _svms_xgboost_.joblib
+exclude demo-project.ipynb
+exclude hlogs_project.ipynb
+exclude untitled0.py
+exclude untitled1.py
+
 
 global-exclude *.py[cod] __pycache__/* *.so *.dylib .coverage .coverage.* 

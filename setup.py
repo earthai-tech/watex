@@ -17,14 +17,15 @@ with open(os.path.join(os.path.abspath('.'), 'README.md'), 'r', encoding ='utf8'
 setup_kwargs = {}
 
 # commands
-# setup_kwargs['entry_points'] = {
-#     'watex.commands': [
-#         'welcome-hello=watex.watex_cli:cli',
-#         ],
-#     'console_scripts':[
-#               # 'occambuildinputs=watex.cli.occambuildinputs:main'
-#                       ]
-#       }
+setup_kwargs['entry_points'] = {
+    'watex.commands': [
+        'wx=watex.watex.cli:cli',
+        ],
+    'console_scripts':[
+        'version = watex.cli:show_wx_version', 
+        
+                    ]
+      }
 setup_kwargs['entry_points'] = {}                
 # But many people will not have setuptools installed, so we need to handle
 # the default Python installation, which only has Distutils:
@@ -49,11 +50,13 @@ setup_kwargs['packages'] = [
     'watex.externals',
     'watex.geology',
     'watex.exlib',
-    'watex.cases'
+    'watex.cases', 
+    'watex.view'
      ]
 # force install watex. Once watex is installed , pyyaml and pyproj 
 # should already installed too. 
 setup_kwargs['install_requires'] = [
+    "click>=8.0.5", 
     "scikit-learn>=1.1.2",
     "xgboost>=1.5.0",
     "seaborn>=0.12.0",
@@ -118,8 +121,9 @@ setup(
         ],
     keywords="hydrogeophysic, groundwater, machine learning, water , geophysic",
     zip_safe=True, 
-    #package_dir={"": "watex"},  # Optional
- 	# data_files=[('', ['watex/tools/epsg.npy',]),], #this will install datafiles in wearied palce such as ~/.local/
+    # package_dir={"": "watex"},  # Optional
+ 	# data_files=[('', ['watex/tools/epsg.npy',]),], 
+    # this will install datafiles in wearied place such as ~/.local/
     package_data={'watex': [
                             'utils/_openmp_helpers.pxd', 
                             'utils/espg.npy',
