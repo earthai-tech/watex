@@ -1,22 +1,33 @@
 
 graft docs
 
-
+include *.rst
+recursive-include docs *
+recursive-include examples *.txt *.py
+recursive-include watex *.c *.cpp *.h *.pyx *.pxd *.pxi *.tp
+recursive-include watex/datasets *.csv *.csv.gz *.rst *.jpg *.txt *.arff.gz *.json.gz *.zip *.pkl *.h5
+recursice-include watex/utils *.npy 
 include LICENSE.md
+include COPYING
 include README.md
+include pyproject.toml
+include MANIFEST.in
 include setup.py
-include MANIFEST.in 
-include LICENSE.md
-include COPYING.LESSER
-include README.md
 include watex/utils/epsg.npy
-include .travis.yml .readthedocs.yml 
 
+# exclude from sdist
+recursive-exclude asv_benchmarks *
+recursive-exclude examples *.png 
+recursive-exclude benchmarks *
+recursive-exclude build_tools *
+recursive-exclude maint_tools *
+recursive-exclude benchmarks *
+recursive-exclude .binder *
+recursive-exclude ci *
 exclude .readthedocs.yml 
-exclude _demo_user_guide.py
-exclude pycsamt_user_guide/*
-exclude mpl.rcParams_infos.py 
-exclude venv/
+exclude CODE_OF_CONDUCT.md
+exclude ISSUE_TEMPLATE.md
+exclude venv
 
 
-global-exclude *.py[cod] __pycache__/* *.so *.dylib .coverage .coverage.* 
+global-exclude *.py[cod] __pycache__/* *.so *.dylib .coveragerc tests/*

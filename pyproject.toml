@@ -1,80 +1,52 @@
 [build-system]
 requires = ["setuptools >= 61.0.0",
              "wheel", 
-             "setuptools_scm>=6.2"
+             "setuptools_scm>=6.2", 
+             "Cython>=0.29.33",
         ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "watex"
-description = 'Machine learning research in water exploration'
-authors = [
-    {name = "Laurent Kouadio", email = "etanoyau@gmail.com"},
-]
-license = {text = "BSD 3-Clause LICENCE v3"}
-classifiers = [
-    "License :: OSI Approved :: BSD 3-Clause LICENCE v3",
-    "Programming Language :: Python :: 3",
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: Developers",
-    # "Topic :: Software Development :: Build Tools",
-    "Topic :: Software Development",
-    'Topic :: Scientific/Engineering :: Geophysics',
-    'Topic :: Scientific/Engineering :: Geosciences',
-    'Programming Language :: C ',
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Operating System :: OS Independent",
-    "Operating System :: Microsoft :: Windows",
-    "Operating System :: POSIX",
-    "Operating System :: Unix",
-]
-readme = "README.md"
-dynamic = ["version"]
-requires-python = ">=3.9"
-target_version = ['py39', 'py310']
-dependencies = [
-    "click>=8.0.5", 
+dynamic = ["version",  "keywords"]
+dependencies=[
     "scikit-learn>=1.1.2",
     "xgboost>=1.5.0",
     "seaborn>=0.12.0",
     "pyyaml>=5.0.0",
     "pycsamt>=1.0.0",
     "pyproj>=3.3.0",
-    "joblib>=3.5.0",
+    "joblib>=1.2.0",
     "openpyxl>=3.0.3",
     "h5py>=3.2.0",
     "tables>=3.6.0",
-    "numpy>=1.23.0",
+    "numpy <=1.23.0",
     "scipy>=1.9.0",
     "pandas>=1.4.0",
-    "matplotlib>=3.3.0",
-    "missingno>=1.1.2",
+    "cython>=0.29.33", 
+    "matplotlib==3.5.2",
+    "missingno>=0.4.2",
     "pandas_profiling>=0.1.7",
     "pyjanitor>=0.1.7",
     "yellowbrick>=1.5.0",
     "mlxtend>=0.21",
-    "tqdm>=4.64.1",
-]
-
+    "tqdm <=4.64.1",
+    "threadpoolctl==3.1.0", 
+ ]
+ 
 [project.urls]
 Homepage = "https://watex.readthedocs.io"
 Documentation = "https://watex.readthedocs.io"
 Source = "https://github.com/WEgeophysics/watex"
 
-[project.scripts]
-wx = "watex.cli:cli"
+[project.optional-dependencies]
+cli = ["click"]
 
 [tool.setuptools.dynamic]
-version = {attr = "watex.__init__.__version__"}
-
-[tool.setuptools.packages.find]
-where = ["watex"]
+version = {attr = "watex._version.version"}
 
 [tool.setuptools_scm]
-write_to = "src/razorback/_version.py"
+write_to = "watex/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

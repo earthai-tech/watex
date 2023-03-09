@@ -16,15 +16,17 @@
 
 ##  Overview
 
-**_WATex_** is a Python library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
-    for reducing numerous losses during the hydro-geophysical exploration projects and encompasses 
-    the DC-resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), short-periods EM, geology 
-    and hydrogeology methods. From methodologies based on Machine Learning,  it allows to: 
-   - auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings and unsustainable boreholes;
+**_WATex_** is a Python-based library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
+    for reducing numerous losses during the hydro-geophysical exploration projects. It encompasses 
+    the Direct-current (DC) resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), 
+    short-periods electromagnetic (EM), geology and hydrogeology methods. From methodologies based on Machine Learning,  
+    it allows to: 
+   - auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings 
+     and unsustainable boreholes;
    - reduce the cost of permeability coefficient (k) data collection during the hydro-geophysical engineering projects,
    - predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
+   - recover the EM loss signals in area with huge interferences noises ...
    - etc.
-
 
 ## Documentation 
 
@@ -33,7 +35,33 @@ and flip through the [examples page](https://watex.readthedocs.io/en/latest/glr_
 [step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/applications/index.html#applications-step-by-step-guide) is elaborated for real-world 
 engineering problems such as computing DC parameters and predicting the k-parameter... 
 
-## Demo of the drilling location auto-detection 
+## Licence 
+
+**_WATex_** is under [3-Clause BSD](https://opensource.org/licenses/BSD-3-Clause) License.
+
+## System requirement
+
+* Python 3.9+
+
+## Installation 
+
+**_WATex_**  can be installed from ( [PyPI](https://pypi.org/) platform distribution as: 
+```bash 
+pip install watex
+```
+Furthermore, to get the latest development of the code, it is recommended to install it from source using: 
+
+```bash
+git clone https://github.com/WEgeophysics/watex.git 
+```
+The installation from [conda-forge](https://conda-forge.org/) ) distribution is coming soon.
+
+For step-by-step guide about the installation and how to manage the 
+dependencies, visit our [installation guide](https://watex.readthedocs.io/en/latest/installation.html) page.
+
+## Some demos 
+
+1. Drilling location auto-detection
 
 For this example, we randomly generate 50 stations of synthetic ERP resistivity data with ``minimum`` and ``maximum ``
 resistivity values equal to  ``1e1`` and ``1e4`` ohm.m  respectively as:
@@ -49,7 +77,6 @@ during the GWE. We may understand by ``suitable``, a location expecting to give 
 than 1m3/hr at least. 
 
 ```python
-
 robj=wx.ResistivityProfiling (auto=True ).fit(data ) 
 robj.sves_ 
 Out[1]: 'S025'
@@ -86,34 +113,80 @@ Note that before the drilling operations commence, make sure to carry out the DC
 another parameter called `ohmic-area` `` (ohmS)`` to detect the effectiveness of the existing fracture zone at that point. See more in 
 the software [documentation](https://watex.readthedocs.io/en/latest/).
   
-## Licence 
+2. Predict permeability coefficient ``k`` from logging dataset using MXS approach
+ 
+MXS stands for mixture learning strategy. It uses upstream unsupervised learning for 
+``k`` -aquifer similarity label prediction and the supervising learning for 
+final ``k``-value prediction. For our toy example, we use two boreholes data 
+stored in the software and merge them to compose a unique dataset. In addition, we dropped the 
+``remark`` observation which is subjective data not useful for ``k`` prediction as:
 
-**_WATex_** is under [3-Clause BSD](https://opensource.org/licenses/BSD-3-Clause) License.
-
-## Installation 
-
-**_WATex_** is not available in any distribution platforms yet ( [PyPI](https://pypi.org/)  and [conda-forge](https://conda-forge.org/) ). 
-However, your can install the package from source: 
-
-```bash
-git clone https://github.com/WEgeophysics/watex.git 
+```python
+h= wx.fetch_data("hlogs", key='*', drop_observations =True ) # returns log data object.
+h.feature_names
+Out[3]: Index(['hole_id', 'depth_top', 'depth_bottom', 'strata_name', 'rock_name',
+           'layer_thickness', 'resistivity', 'gamma_gamma', 'natural_gamma', 'sp',
+           'short_distance_gamma', 'well_diameter'],
+          dtype='object')
+hdata = h.frame 
 ```
-or simply visit the [installation guide](https://watex.readthedocs.io/en/latest/installation.html) page.
+``k`` is collected as continue values (m/darcies) and should be categorized for the 
+naive group of aquifer prediction (NGA) first. The latter is used to predict 
+upstream the  MXS target ``ymxs``.  Here, we used the default categorization 
+provided by the software and we expect in the area ``2`` minimum groups of 
+the aquifer. The code is given as: 
+```python 
+mxs = wx.MXS (kname ='k', n_groups =2).fit(hdata) 
+ymxs=mxs.predictNGA().makeyMXS(categorize_k=True, default_func=True)
+mxs.yNGA_ [62:74]
+Out[4]: array([1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2])
+ymxs[62:74]
+Out[5]: array([ 0,  0,  0,  0, 12, 12, 12, 12, 12, 12, 12, 12])
+```
+To understand the transformation from NGA to MXS target (``ymxs``), please, have a look 
+of the following [paper](http://dx.doi.org/10.2139/ssrn.4326365).
+Once the MXS target is predicted, we call the ``make_naive_pipe`` function, to 
+impute, scale, and transform the predictor ``X`` at once into a compressed sparse 
+matrix ready for final prediction using the [support vector machines](https://ieeexplore.ieee.org/document/708428) and 
+[random forest](https://www.ibm.com/topics/random-forest)as examples. Here we go: 
+``` python 
+X= hdata [h.feature_names]
+Xtransf = wx.make_naive_pipe (X, transform=True) 
+Xtransf 
+Out[6]: 
+<218x46 sparse matrix of type '<class 'numpy.float64'>'
+	with 2616 stored elements in Compressed Sparse Row format> 
+Xtrain, Xtest, ytrain, ytest = wx.sklearn.train_test_split (Xtransf, ymxs ) 
+ypred_k_svc= wx.sklearn.SVC().fit(Xtrain, ytrain).predict(Xtest)
+ypred_k_rf = wx.sklearn.RandomForestClassifier ().fit(Xtrain, ytrain).predict(Xtest)
+```
+We can now check the ``k`` prediction scores using ``accuracy_score`` function as: 
+```python 
+wx.sklearn.accuracy_score (ytest, ypred_k_svc)
+Out[7]: 0.9272727272727272
+wx.sklearn.accuracy_score (ytest, ypred_k_rf)
+Out[8]: 0.9636363636363636
+```
+As we can see, the results of ``k`` prediction are quite satisfactory for our 
+toy example using only two boreholes data. Note that things can become more 
+complex and interesting when using many boreholes data. For more in 
+depth, visit our [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html). 
 
-Installation via `pip`( [PyPI](https://pypi.org/) ) and `conda` ( [conda-forge](https://conda-forge.org/) ) is coming soon ... 
+3. EM tensors recovering and analyses
 
-## System requirement
-
-* Python 3.9+ 
-
+Flip through the following link for more examples about [EM tensor restoring](https://watex.readthedocs.io/en/latest/glr_examples/applications/plot_tensor_restoring.html#sphx-glr-glr-examples-applications-plot-tensor-restoring-py), 
+visualize the [confidence interval](https://watex.readthedocs.io/en/latest/glr_examples/utils/plot_confidence_in_data.html#sphx-glr-glr-examples-utils-plot-confidence-in-data-py) in resistivity data, 
+the [sknewness](https://watex.readthedocs.io/en/latest/glr_examples/methods/plot_phase_tensors.html#sphx-glr-glr-examples-methods-plot-phase-tensors-py) analysis plots  and else...
 
 ## Citations
 
 If the [software](https://doi.org/10.5281/zenodo.7553789) seemed useful to you in any published work, I will much appreciate to cite the paper below:
 
-> *Kouadio, K. L., Kouame, L. N., Drissa, C., Mi, B., Kouamelan, K. S., Gnoleba, S. P. D., et al. (2022). Groundwater Flow Rate Prediction from Geo‐Electrical Features using Support Vector Machines. Water Resources Research, (May 2022). https://doi.org/10.1029/2021wr031623*
+> *Kouadio, Kouao Laurent and Liu, Jianxin and Liu, Rong, Watex: Machine Learning Research in Hydro-Geophysics. Available at SSRN: https://ssrn.com/abstract=4348617 or http://dx.doi.org/10.2139/ssrn.4348617*
 
 In most situations where **_WATex_** is cited, a citation to [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) would also be appropriate.
+
+See also some [case history](https://watex.readthedocs.io/en/latest/citing.html) papers using **_WATex_**. 
 
 ## Contributions 
 

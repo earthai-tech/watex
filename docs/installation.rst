@@ -33,6 +33,18 @@ It is possible to install :code:`watex` from source, using anaconda prompt or GU
 
 .. _Miniforge3: https://github.com/conda-forge/miniforge#miniforge3 
 
+From PyPI 
+-------------
+
+:code:`watex` can be obtained from `PyPI <https://pypi.org/>`__ platform distribution as: 
+
+.. prompt:: bash $ 
+   
+   pip install watex
+
+Use ``pip install -U watex`` for window users instead. The installation from `conda-forge <https://conda-forge.org/>`__ distribution is coming soon.
+Furthermore, to get the latest development of the code, it is recommended to install it from source. 
+
 From source 
 -------------
 

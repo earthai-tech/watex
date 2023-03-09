@@ -30,7 +30,7 @@ def cli():
 @click.option ('-v','--version', 'version',   help ='show watex version')
 @click.option ('--show',  default=False, show_default= True,
                help ='show watex version and dependencies')
-def show_wx_version(version, show):
+def version(version, show):
     """ watex installed version.
     """
     if show: 
@@ -39,18 +39,18 @@ def show_wx_version(version, show):
         click.echo(f"watex {wx.__version__}")
     
 
-@cli.group()
-@click.option('-c', '--create', is_flag=True,
-    help="Create the local path if missing."
-)
-@click.pass_context
-def path(ctx, create):
-    """ Manipulate data path.
-    Data path is either global or local.
-    If the local path is not available, the global path is used instead.
-    The path commands depend on the current directory where they are executed.
-    """
-    ctx.obj = {'create': create}
+# @cli.group()
+# @click.option('-c', '--create', is_flag=True,
+#     help="Create the local path if missing."
+# )
+# @click.pass_context
+# def path(ctx, create):
+#     """ Manipulate data path.
+#     Data path is either global or local.
+#     If the local path is not available, the global path is used instead.
+#     The path commands depend on the current directory where they are executed.
+#     """
+#     ctx.obj = {'create': create}
 
 
 

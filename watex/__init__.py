@@ -9,8 +9,6 @@ import logging
 import random
 import warnings 
  
-__version__='0.1.6' ; __author__= 'L.Kouadio'
-
 # set the package name for consistency checker 
 sys.path.insert(0, os.path.dirname(__file__))  
 for p in ('.','..' ,'./watex'): 
@@ -26,12 +24,20 @@ if  __package__ is None:
 try: 
     conffile = os.path.join(
         os.path.dirname(__file__),  "watex/wlog.yml")
-
     if not os.path.isfile (conffile ): 
         raise 
 except: 
     conffile = os.path.join(
         os.path.dirname(__file__), "wlog.yml")
+
+# generated version by setuptools_scm 
+try:
+    from . import _version
+    __version__ = _version.version
+except ImportError:
+    __version__ = '0.1.7' 
+finally:
+    __author__= 'L.Kouadio'
 
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)
@@ -80,8 +86,6 @@ if _missing_dependencies:  # pragma: no cover
     )
 del _main_dependencies, _dependency, _missing_dependencies
 
-# import watex.commands 
-from watex import cli 
 # Suppress pandas future warnings
 with warnings.catch_warnings():
     warnings.filterwarnings(action='ignore', category=UserWarning)
@@ -192,6 +196,9 @@ try :
         )
 except ImportError :
     pass 
+try : 
+    from . import cli 
+except: pass 
 
 def setup_module(module):
     """Fixture for the tests to assure globally controllable seeding of RNGs"""
@@ -231,7 +238,6 @@ parameter collections.
 # based on the documentation.
     
 __all__ = [ 
-    "cli", 
     "sklearn", 
     "XGBClassifier", 
     "nPCA", 
@@ -311,6 +317,7 @@ __all__ = [
     "naive_scaler",  
     "make_naive_pipe", 
     "bi_selector", 
-    "show_versions", 
+    "show_versions",
+    "cli", 
     ]
 
