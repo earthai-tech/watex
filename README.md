@@ -45,7 +45,7 @@ engineering problems such as computing DC parameters and predicting the k-parame
 
 ## Installation 
 
-**_WATex_**  can be installed from ( [PyPI](https://pypi.org/) platform distribution as: 
+[_WATex_](https://pypi.org/project/watex/0.1.7/) can be installed from ( [PyPI](https://pypi.org/) platform distribution as: 
 ```bash 
 pip install watex
 ```
@@ -182,7 +182,7 @@ the [sknewness](https://watex.readthedocs.io/en/latest/glr_examples/methods/plot
 
 If the [software](https://doi.org/10.5281/zenodo.7553789) seemed useful to you in any published work, I will much appreciate to cite the paper below:
 
-> *Kouadio, Kouao Laurent and Liu, Jianxin and Liu, Rong, Watex: Machine Learning Research in Hydro-Geophysics. Available at SSRN: https://ssrn.com/abstract=4348617 or http://dx.doi.org/10.2139/ssrn.4348617*
+> *Kouadio, Kouao Laurent and Liu, Jianxin and Liu, Rong, watex: Machine learning research in water exploration. Available at SSRN:  http://dx.doi.org/10.2139/ssrn.4348617*
 
 In most situations where **_WATex_** is cited, a citation to [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) would also be appropriate.
 
