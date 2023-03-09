@@ -1,0 +1,16 @@
+v0.1.7 (March 09, 2023)
+----------------------------
+
+This is a minor change performed from ``v0.1.6`` and adaptations.  
+
+
+Adaptations and Features 
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Add new features with strike (:func:`watex.utils.plot_strike`) and confidence plots in the :term:`EDI` data 
+  (:func:`watex.utils.plot_confidence_in`). The latter is useful to know the signals to recover and useless
+  frequencies for deletion. 
+
+- add confidence interval plot (:func:`watex.utils.plot_confidence_in`). This is useful for data visualization before 
+  :term:`tensor`` recovering. It also show the status of the :term:`EM` data acquired at a specific area whether 
+  data is recoverable or not. If data is unrecoverable, a pure deletion is performed. 

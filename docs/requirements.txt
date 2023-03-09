@@ -8,7 +8,7 @@ sphinx-design
 sphinx-prompt
 sphinx-copybutton
 jupytext
-cython
+cython>=0.29.33
 matplotlib==3.5.2
 numpy
 scipy

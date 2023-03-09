@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools >= 61.0.0",
+             "wheel", 
+             "setuptools_scm>=6.2", 
+             "Cython>=0.29.33",
+        ]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "watex"
+dynamic = [ "version",  "keywords"]
+
+dependencies=[
+    "scikit-learn>=1.1.2",
+    "xgboost>=1.5.0",
+    "seaborn>=0.12.0",
+    "pyyaml>=5.0.0",
+    "pycsamt>=1.0.0",
+    "pyproj>=3.3.0",
+    "joblib>=1.2.0",
+    "openpyxl>=3.0.3",
+    "h5py>=3.2.0",
+    "tables>=3.6.0",
+    "numpy <=1.23.0",
+    "scipy>=1.9.0",
+    "pandas>=1.4.0",
+    "cython>=0.29.33", 
+    "matplotlib==3.5.2",
+    "missingno>=0.4.2",
+    "pandas_profiling>=0.1.7",
+    "pyjanitor>=0.1.7",
+    "yellowbrick>=1.5.0",
+    "mlxtend>=0.21",
+    "tqdm <=4.64.1",
+    "threadpoolctl==3.1.0", 
+ ]
+ 
+[project.urls]
+Homepage = "https://watex.readthedocs.io"
+Documentation = "https://watex.readthedocs.io"
+Source = "https://github.com/WEgeophysics/watex"
+
+[project.optional-dependencies]
+cli = ["click"]
+
+[tool.setuptools.dynamic]
+version = {attr = "watex._version.version"}
+
+[tool.setuptools_scm]
+write_to = "watex/_version.py"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+doctest_optionflags = "NORMALIZE_WHITESPACE IGNORE_EXCEPTION_DETAIL"
+addopts = "--doctest-glob='*.doctest'"
+exclude = '''
+/(
+    \.eggs         # exclude a few common directories in the
+  | \.git          # root of the project
+  | \.mypy_cache
+  | \.vscode
+  | build
+  | dist
+  | docs/tutorial
+  | docs/_build
+  | docs/glr_examples
+)/
+'''
