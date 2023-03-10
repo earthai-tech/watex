@@ -589,6 +589,7 @@ Functions
 	utils.get_profile_angle
 	utils.get_sections_from_depth
 	utils.get_strike
+	utils.get_target
 	utils.get_unique_section
 	utils.get_xs_xr_splits
 	utils.interpolate1d

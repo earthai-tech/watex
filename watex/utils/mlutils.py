@@ -83,7 +83,7 @@ from .funcutils import (
 )
 from .validator import ( 
     get_estimator_name , 
-    check_array 
+    check_array, 
     )
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -351,12 +351,17 @@ def exporttarget (df, tname, inplace = True):
     """
     df = _assert_all_types(df, pd.DataFrame)
     existfeatures(df, tname) # assert tname 
+    if is_iterable(tname, exclude_string=True): 
+        tname = list(tname)
+        
+    t = df [tname ] 
+    df.drop (tname, axis =1 , inplace =inplace )
     
-    return (df.pop(tname), df) if inplace else (df[tname], df ) 
+    return t, df
     
     
 def existfeatures (df, features, error='raise'): 
-    """Control whether the features exists or not  
+    """Control whether the features exist or not  
     
     :param df: a dataframe for features selections 
     :param features: list of features to select. Lits of features must be in the 
@@ -410,7 +415,7 @@ def selectfeatures (
     :param df: a dataframe for features selections 
     :param features: list of features to select. List of features must be in the 
         dataframe otherwise an error occurs. 
-    :param include: the type of data to retrieved in the dataframe `df`. Can  
+    :param include: the type of data to retrieve in the dataframe `df`. Can  
         be ``number``. 
     :param exclude: type of the data to exclude in the dataframe `df`. Can be 
         ``number`` i.e. only non-digits data will be keep in the data return.
@@ -1382,6 +1387,7 @@ def _assert_sl_target (target,  df=None, obj=None):
         targets = smart_format(
             df.columns if df.columns is not None else [''])
     else:targets =''
+    
     if target is None:
         nameObj=f'{obj.__class__.__name__}'if obj is not None else 'Base class'
         msg =''.join([
@@ -1418,7 +1424,7 @@ def _assert_sl_target (target,  df=None, obj=None):
             if not isinstance(target, (float,int)): 
                 msg =''.join([f"Wrong target value `{target}`!"
                               f" Object type is {type(df)!r}. Target columns", 
-                              "  index should be given instead."])
+                              " index should be given instead."])
                 warnings.warn(msg, category= UserWarning)
                 _logger.warning(msg)
                 target=None
@@ -1441,7 +1447,102 @@ def _assert_sl_target (target,  df=None, obj=None):
                 target =None
                 
             target = list(df.columns)[target] if is_dataframe else target
+            
     return target
+
+def get_target(
+    ar, /, 
+    tname, 
+    drop_target =True , 
+    columns =None,
+    as_frame=False 
+    ): 
+    """ Extract target from multidimensional array or dataframe.  
+    
+    Parameters 
+    ------------
+    ar: arraylike2d or pd.DataFrame 
+      Array that supposed to contain the target value. 
+      
+    tname: int/str, list of int/str 
+       index or the name of the target; if ``int`` is passed it should range 
+       ranged less than the columns number of the array i.e. a shape[1] in 
+       the case of np.ndarray. If the list of indexes or names are given, 
+       the return target should be in two dimensional array. 
+       
+    drop_target: bool, default=True 
+       Remove the target array in the 2D array or dataframe in the case 
+       the target exists and returns a data exluding the target array. 
+       
+    columns: list, default=False. 
+       composes the dataframe when the array is given rather than a dataframe. 
+       The list of column names must match the number of columns in the 
+       two dimensional array, otherwise an error occurs. 
+       
+    as_frame: bool, default=False, 
+       returns dataframe/series or the target rather than array when the array 
+       is supplied. This seems useful when column names are supplied. 
+       
+    Returns
+    --------
+    t, ar : array-like/pd.Series , array-like/pd.DataFrame 
+      Return the targets and the array/dataframe of the target. 
+      
+    Examples 
+    ---------
+    >>>> import numpy as np 
+    >>> import pandas as pd 
+    >>> from watex.utils.mtutils import get_target 
+    >>> ar = np.random.randn ( 3,  3 )
+    >>> df0 = pd.DataFrame ( ar, columns = ['x1', 'x2', 'tname'])
+    >>> df= df0.copy() 
+    >>> get_target (df, 'tname', drop_target= False )
+    (      tname
+     0 -0.542861
+     1  0.781198,
+              x1        x2     tname
+     0 -1.424061 -0.493320 -0.542861
+     1  0.416050 -1.156182  0.781198)
+    >>> get_target (df, [ 'tname', 'x1']) # drop is True by default
+    (      tname        x1
+     0 -0.542861 -1.424061
+     1  0.781198  0.416050,
+              x2
+     0 -0.493320
+     1 -1.156182)
+    >>> df = df0.copy() 
+    >>> # when array is passed 
+    >>> get_target (df.values , '2', drop_target= False )
+    (array([[-0.54286148],
+            [ 0.7811981 ]]),
+     array([[-1.42406091, -0.49331988, -0.54286148],
+            [ 0.41605005, -1.15618243,  0.7811981 ]]))
+    >>> get_target (df.values , 'tname') # raise error 
+    ValueError: 'tname' ['tname'] is not valid...
+    
+    """
+    emsg =("Array is passed.'tname' must be a list of indexes or column names"
+           " that fit the shape[axis=1] of the given array. Expect {}, got {}.")
+    emsgc =("'tname' {} {} not valid. Array is passed while columns are not "
+            "supplied. Expect 'tname' in the range of numbers betwen 0- {}")
+    is_arr=False 
+    tname =[ str(i) for i in is_iterable(
+        tname, exclude_string =True, transform =True)] 
+    
+    if isinstance (ar, np.ndarray): 
+        columns = columns or [str(i) for i in range(ar.shape[1])]
+        if len(columns) < ar.shape [1]: 
+            raise ValueError(emsg.format(ar.shape[1], len(tname)))
+        ar = pd.DataFrame (ar, columns = columns) 
+        if not existfeatures(ar, tname, error='ignore'): 
+            raise ValueError(emsgc.format(tname, "is" if len(tname)==1 else "are", 
+                                         len(columns)-1)
+                             )
+        is_arr=True if not as_frame else False 
+        
+    t, ar =exporttarget(ar, tname , inplace = drop_target ) 
+
+    return (t.values, ar.values ) if is_arr  else (t, ar) 
         
 def default_data_splitting(X, y=None, *,  test_size =0.2, target =None,
                            random_state=42, fetch_target =False,

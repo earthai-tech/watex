@@ -107,6 +107,7 @@ try :
         select_feature_importances, 
         make_naive_pipe, 
         bi_selector, 
+        get_target, 
         )
 except ImportError :pass 
 
@@ -194,6 +195,7 @@ __all__=[
         'remove_outliers', 
         'normalizer',
         'plot_strike',
+        'get_target', 
         ]
 
 
