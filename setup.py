@@ -28,7 +28,7 @@ MAINTAINER = "Laurent Kouadio"
 MAINTAINER_EMAIL = 'etanoyau@gmail.com'
 URL = "https://github.com/WEgeophysics/watex"
 DOWNLOAD_URL = "https://pypi.org/project/scikit-learn/#files"
-LICENSE = "BSD 3-Clause v3"
+LICENSE = "BSD 3-Clause"
 PROJECT_URLS = {
     "API Documentation"  : "https://watex.readthedocs.io/en/latest/api_references.html",
     "Home page" : "https://watex.readthedocs.io",
@@ -96,12 +96,12 @@ setup_kwargs['install_requires'] = [
     "xgboost>=1.5.0",
     "seaborn>=0.12.0",
     "pyyaml>=5.0.0",
-    "pycsamt>=1.0.0",
+    "pycsamt>=1.1.2",
     "pyproj>=3.3.0",
     "joblib>=1.2.0",
     "openpyxl>=3.0.3",
     "h5py>=3.2.0",
-    "tables>=3.6.0",
+    "tables>=3.6.1",
     "numpy <=1.23.0",
     "scipy>=1.9.0",
     "pandas>=1.4.0",

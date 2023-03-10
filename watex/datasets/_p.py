@@ -3,11 +3,11 @@
 """
 Make Dataset 
 ===============
-
 Automate the loading of dataset   
 
 """
 import os 
+from .dload import load_bagoue 
 from .rload import loadBagoueDataset
 from ..cases import  (
     BaseSteps, 
@@ -20,17 +20,13 @@ __all__ = [
     "_bagoue_data_preparer"
   ] 
 
-data_fn ='data/geodata/main.bagciv.data.csv'
-if not os.path.isfile (data_fn): 
-    data_fn = os.path.join (
-            os.path.dirname ( 
-                os.path.dirname (
-                    os.path.dirname (__file__))
-            ), 'data/geodata/main.bagciv.data.csv') 
-
-if not os.path.isfile(data_fn): 
-    data_fn= loadBagoueDataset ()
-        
+try: 
+    # load data from local 
+    data_fn = load_bagoue().frame 
+except: 
+    # remotely download the data 
+    if not os.path.isfile(data_fn): 
+        data_fn= loadBagoueDataset ()
     
 def _bagoue_data_preparer (): 
     """ Prepare the defaults case study data using 
@@ -83,7 +79,7 @@ def _bagoue_data_preparer ():
         hash=False
         )
     
-    prepareObj.stratifydata(data_fn ) 
+    prepareObj.stratifydata(data_fn) 
     _BAGDATA= prepareObj.data 
     _X =prepareObj.X.copy()             # strafified training set 
     _y =prepareObj.y.copy()             # stratified label 

@@ -870,8 +870,6 @@ def plot_confusion_matrix (yt, y_pred, view =True, ax=None, annot=True,  **kws )
     >>> ypred = pmo.predict(Xt) 
     >>> # now plot the score 
     >>> plot_confusion_matrix (yt , ypred )
-
-    
     """
     check_consistent_length (yt, y_pred)
     mat= confusion_matrix (yt, y_pred, **kws)

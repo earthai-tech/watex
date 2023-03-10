@@ -34,6 +34,15 @@ from tests import  (
     make_temp_dir 
     ) 
 
+# from watex.utils._dependency import import_optional_dependency 
+# from watex.utils.funcutils import is_installing 
+
+# use subprocess to install package 
+# try: 
+#     import_optional_dependency('mtpy')  
+# except : 
+#     is_installing('mtpy', DEVNULL=True) 
+    
 from tests.__init__ import reset_matplotlib, diff_files
 
 class TestElectrical (unittest.TestCase): 

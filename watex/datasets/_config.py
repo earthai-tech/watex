@@ -11,7 +11,8 @@ from the remote (repository or zenodo record )
  
 """
 import re
-
+from importlib import resources 
+from ._io import DMODULE 
 from ..property  import BagoueNotes
 from ..utils.funcutils import ( 
     smart_format 
@@ -54,8 +55,11 @@ for key in _BTAGS :
             )
           
 _BAG=dict()
+
 try : 
-    _BAG = loadDumpedOrSerializedData('watex/datasets/data/b.pkl') 
+    with resources.path (DMODULE, 'b.pkl') as p : 
+        data_file = str(p) # for consistency
+        _BAG = loadDumpedOrSerializedData(data_file) 
 except : 
     from ._p import ( 
         _bagoue_data_preparer 
@@ -75,7 +79,7 @@ except :
         _df1,
         _BAGDATA
     ) = list(_bagoue_data_preparer())[0]
-
+    
     _BAG =  {
         '_X':_X,
         '_y':_y,
@@ -136,7 +140,6 @@ _BVAL= dict (
         _BAG.get('_yp') 
         ), 
 )
-
 
 def _fetch_data(tag, data_names=[] ): 
     r=None

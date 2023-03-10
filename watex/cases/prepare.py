@@ -69,10 +69,9 @@ from .features import categorize_flow
 from ..utils.coreutils import _is_readable 
 from ..utils.funcutils import smart_format,to_numeric_dtypes
 from ..utils.mlutils import ( 
-    _assert_sl_target, 
     formatGenericObj,
     split_train_test_by_id,
-    selectfeatures
+    selectfeatures, 
     )
 
 _logger = watexlog().get_watex_logger(__name__)
@@ -259,13 +258,12 @@ class BaseSteps(object):
         test sets """
         if data is not None: 
             self.data_= data 
+        if self.tname_ is None: 
+            raise TypeError("Missing target name 'tname'. Data stratification"
+                            " cannot be performed.")
+            
+        self.X, self.y, *__ = self.stratifyFolds(self.data )
 
-        if self.data_ is not None: 
-            self.data = self.data_ 
-            self.tname_ =_assert_sl_target(self.tname_, self.data, self)
-            if self.tname_ is not None: 
-                self.X, self.y,*__ = self.stratifyFolds(self.data )
-                
         return self  
     
     def fit (self, 
@@ -548,7 +546,7 @@ class BaseSteps(object):
             sObj= StratifiedWithCategoryAdder(base_num_feature=self.tname, 
                                               test_size= self.test_size, 
                                               random_state = self.random_state,
-                                            return_train=self.return_train)
+                                              return_train=self.return_train)
             # return data with labels stratified
             # func_signature = inspect.signature(sObj)
             STRAT_PARAMS_VALUES = {k: v.default
@@ -567,8 +565,7 @@ class BaseSteps(object):
         if self.hash :
             # ensure data to remain consistent even multiples runs.
             # usefull pratice to always keep test set as unseen data.
-            _X , __X = split_train_test_by_id(data, 
-                                                  test_ratio=self.test_size)
+            _X , __X = split_train_test_by_id(data, test_ratio=self.test_size)
             if 'index' in list(_X.columns): 
                 self._logging.debug(
                     '`index` used for hashing training and test sets  are '
