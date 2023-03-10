@@ -28,7 +28,7 @@ MAINTAINER = "Laurent Kouadio"
 MAINTAINER_EMAIL = 'etanoyau@gmail.com'
 URL = "https://github.com/WEgeophysics/watex"
 DOWNLOAD_URL = "https://pypi.org/project/scikit-learn/#files"
-LICENSE = "BSD 3-Clause"
+LICENSE = "BSD-3-Clause"
 PROJECT_URLS = {
     "API Documentation"  : "https://watex.readthedocs.io/en/latest/api_references.html",
     "Home page" : "https://watex.readthedocs.io",
@@ -36,7 +36,7 @@ PROJECT_URLS = {
     "Installation guide" : "https://watex.readthedocs.io/en/latest/installation.html", 
     "User guide" : "https://watex.readthedocs.io/en/latest/user_guide.html",
 }
-KEYWORDS= "exploration, groundwater, machine learning, water , hydro-geophysic"
+KEYWORDS= "exploration, groundwater, machine learning, water, hydro-geophysic"
 # the commented metadata should be upload as
 # packages rather than data. See future release about 
 # setuptools: see https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
