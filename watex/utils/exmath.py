@@ -66,6 +66,7 @@ from .funcutils import (
     _assert_all_types, 
     _validate_name_in, 
     _isin, 
+    assert_ratio,
     drawn_boundaries, 
     fmt_text, 
     find_position_from_sa , 
@@ -5046,25 +5047,8 @@ def qc(
     >>> r, = wx.qc (data, tol=.1 )
     
     """
-    if isinstance (tol, str): 
-        tol = tol.replace('%', '')
-    try : 
-        tol = float (tol)
-    except TypeError : 
-        raise TypeError (f"Unable to convert {type(tol).__name__!r} "
-                         f"to float: {tol}")
-    except ValueError: 
-        raise ValueError(f"Expects 'float' not {type(tol).__name__!r}: "
-                         f"{(tol)!r}")
-    if tol ==0.: 
-        raise ValueError ("Expects a tolerance value  greater than "
-                          f"'0' and less than '1', got: '{tol}'")
-        
-    if 1 < tol <=100: 
-        tol /= 100. 
-    if tol > 100: 
-        raise ValueError ("Tolerance value should be greater than"
-                          f" '0' and less than '1', got: {tol}")
+    tol = assert_ratio(tol , bounds =(0, 1), exclude_value ='use lower bound',
+                         name ='tolerance', as_percent =True )
 
     # by default , we used the resistivity tensor and error at TE mode.
     # force using the error when resistivity or phase tensors are supplied 

@@ -160,11 +160,12 @@ ymxs[62:74]
 Out[5]: array([ 0,  0,  0,  0, 12, 12, 12, 12, 12, 12, 12, 12])
 ```
 To understand the transformation from NGA to MXS target (``ymxs``), please, have a look 
-of the following [paper](http://dx.doi.org/10.2139/ssrn.4326365).
+of the following [paper](http://dx.doi.org/10.2139/ssrn.4326365)
+.
 Once the MXS target is predicted, we call the ``make_naive_pipe`` function, to 
 impute, scale, and transform the predictor ``X`` at once into a compressed sparse 
 matrix ready for final prediction using the [support vector machines](https://ieeexplore.ieee.org/document/708428) and 
-[random forest](https://www.ibm.com/topics/random-forest)as examples. Here we go: 
+[random forest](https://www.ibm.com/topics/random-forest) as examples. Here we go: 
 ```python 
 X= hdata [h.feature_names]
 Xtransf = wx.make_naive_pipe (X, transform=True) 
