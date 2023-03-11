@@ -8,11 +8,14 @@
 
  [![Documentation Status](https://readthedocs.org/projects/watex/badge/?version=latest)](https://watex.readthedocs.io/en/latest/?badge=latest)
  ![GitHub](https://img.shields.io/github/license/WEgeophysics/watex?color=blue&label=Licence&logo=Github&logoColor=blue&style=flat-square)
- ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/WEgeophysics/watex?logo=appveyor)
  ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/WEgeophysics/watex/ci.yaml?label=CI%20-%20Build%20&logo=github&logoColor=g)
 [![Coverage Status](https://coveralls.io/repos/github/WEgeophysics/watex/badge.svg?branch=master)](https://coveralls.io/github/WEgeophysics/watex?branch=master)
  ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/WEgeophysics/watex?color=blue&include_prereleases&logo=python)
  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
+ ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/watex?color=orange&logo=pypi)
+ [![PyPI version](https://badge.fury.io/py/watex.svg)](https://badge.fury.io/py/watex)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/watex.svg)](https://anaconda.org/conda-forge/watex)
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/watex/badges/platforms.svg)](https://anaconda.org/conda-forge/watex)
 
 ##  Overview
 
@@ -37,41 +40,33 @@ engineering problems such as computing DC parameters and predicting the k-parame
 
 ## Licence 
 
-**_WATex_** is under [3-Clause BSD](https://opensource.org/licenses/BSD-3-Clause) License.
-
-## System requirement
-
-* Python 3.9+
+**_WATex_** is under [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) License. 
 
 ## Installation 
 
+The system requires preferably Python 3.9+. 
+
 * from *pip*
 
-[_WATex_](https://pypi.org/project/watex/0.1.7/) can be installed from ( [PyPI](https://pypi.org/) platform distribution as: 
+[_WATex_](https://pypi.org/project/watex/0.1.7/) can be installed from [PyPI](https://pypi.org/) platform distribution as: 
 ```bash 
 pip install watex
 ```
-Furthermore, to get the latest development of the code, it is recommended to install it from source using: 
+
+* from *conda* 
+
+The [installation](https://anaconda.org/conda-forge/watex)  from [conda-forge](https://conda-forge.org/) distribution channel can be achieved with :
+
+```bash 
+conda install -c conda-forge watex
+
+``` 
+ To get the latest development of the code, it is recommended to install it from source using: 
 
 ```bash
 git clone https://github.com/WEgeophysics/watex.git 
 ```
-* from *conda* 
-
-The installation from [conda-forge](https://conda-forge.org/) ) distribution channel can be achieved by 
-adding ``conda-forge`` to your channels with:
-
-```bash 
-conda config --add channels conda-forge
-conda config --set channel_priority strict
-
-```
-Once the ``conda-forge`` channel has been enabled, **_WATex_** can be installed with:
-```bash 
-conda install watex 
-
-``` 
-For step-by-step guide about the installation and how to manage the 
+Furthermore, for step-by-step guide about the installation and how to manage the 
 dependencies, visit our [installation guide](https://watex.readthedocs.io/en/latest/installation.html) page.
 
 ## Some demos 
@@ -85,6 +80,7 @@ resistivity values equal to  ``1e1`` and ``1e4`` ohm.m  respectively as:
 import watex as wx 
 data = wx.make_erp (n_stations=50, max_rho=1e4, min_rho=10., as_frame =True, seed =42 ) 
 ``` 
+
 * Naive auto-detection (NAD)
 
 The NAD automatically proposes a suitable location with NO restrictions (constraints) observed in the survey site
@@ -95,7 +91,6 @@ than 1m3/hr at least.
 robj=wx.ResistivityProfiling (auto=True ).fit(data ) 
 robj.sves_ 
 Out[1]: 'S025'
-
 ```
 The suitable drilling location is proposed at station ``S25`` (stored in the attribute ``sves_``). 
 
@@ -270,6 +265,4 @@ See also some [case history](https://watex.readthedocs.io/en/latest/citing.html)
 3. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny]( https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
 
 Developer: [_L. Kouadio_](https://wegeophysics.github.io/) <<etanoyau@gmail.com>>
-
-
 
