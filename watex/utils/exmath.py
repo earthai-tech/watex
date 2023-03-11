@@ -61,6 +61,7 @@ from .._typing import (
     EDIO,
     ZO
 )
+from .box import Boxspace 
 from .funcutils import (
     _assert_all_types, 
     _validate_name_in, 
@@ -4978,6 +4979,7 @@ def qc(
     tensor:str ='res', 
     return_data=False,
     to_log10: bool =False, 
+    return_qco:bool=False 
     )->Tuple[float, ArrayLike]: 
     """ Check the quality control in the collection of Z or EDI objects. 
     
@@ -5009,33 +5011,40 @@ def qc(
     to_log10: bool, default=True 
        convert the frequency value to log10. 
        
+    return qco: bool, default=False, 
+       retuns quality control object that wraps all usefull informations after 
+       control. The following attributes can be fetched as: 
+           
+       - rate_: the rate of the quality of the data  
+       - component_: The selected component where data is selected for analysis 
+         By default used either ``xy`` or ``yx``. 
+       - mode_: The :term:`EM` mode. Either the ['TE'|'TM'] modes 
+       - freqs_: The valid frequency in the data selected according to the 
+         `tol` parameters. Note that if ``interpolate_freq`` is ``True``, it 
+         is used instead. 
+       - invalid_freqs_: Useless frequency dropped in the data during control 
+       - data_: Valid tensor data either in TE or TM mode. 
+       
     Returns 
     -------
-    Tuple (float  )  or (float, array-like, shape (N, ))
-        return the quality control value and interpolated frequency if  
-        `return_freq`  is set to ``True`` otherwise return the
-        only the quality control ratio.
-  
+    Tuple (float  )  or (float, array-like, shape (N, )) or QCo
+        - return the quality control value and interpolated frequency if  
+         `return_freq`  is set to ``True`` otherwise return the
+         only the quality control ratio.
+        - return the the quality control object. 
         
     Examples 
     -----------
     >>> import watex as wx 
-    >>> edi_data = wx.fetch_data ('huayuan', samples =20, return_data =True )
-    >>> wx.qc (edi_data )
+    >>> data = wx.fetch_data ('huayuan', samples =20, return_data =True ,
+                              key='raw')
+    >>> r,= wx.qc (data)
+    r
+    Out[61]: 0.75
+    >>> r, = wx.qc (data, tol=.2 )
+    0.75
+    >>> r, = wx.qc (data, tol=.1 )
     
-
-        >>> from watex.methods.em import Processing
-        >>> pobj = Processing().fit('data/edis')
-        >>> f = pobj.getfullfrequency ()
-        >>> # len(f)
-        >>> # ... 55 # 55 frequencies 
-        >>> c,_ = pobj.qc ( tol = .4 ) # mean 60% to consider the data as
-        >>> # representatives 
-        >>> c  # the representative rate in the whole EDI- collection
-        >>> # ... 0.95 # the whole data at all stations is safe to 95%. 
-        >>> # now check the interpolated frequency 
-        >>> c, freq_new  = pobj.qc ( tol=.6 , return_freq =True)
-        
     """
     if isinstance (tol, str): 
         tol = tol.replace('%', '')
@@ -5061,26 +5070,36 @@ def qc(
     # force using the error when resistivity or phase tensors are supplied 
     tensor = str(tensor).lower() 
     try:
+        component, mode ='xy', 'TE'
         ar, f = get2dtensor(z_or_edis_obj_list, tensor =tensor,
-                            component ='xy', return_freqs=True )
+                            component =component, return_freqs=True )
     except : 
+       component, mode ='yx', 'TM'
        ar, f = get2dtensor(z_or_edis_obj_list, tensor =tensor,
-                           return_freqs=True, component ='yx', )
+                           return_freqs=True, component =component, 
+                           )
+       
     # compute the ratio of NaN in axis =0 
     nan_sum  =np.nansum(np.isnan(ar), axis =1) 
     rr= np.around ( nan_sum / ar.shape[1] , 2) 
+    
     # compute the ratio ck
     # ck = 1. -    rr[np.nonzero(rr)[0]].sum() / (
     #     1 if len(np.nonzero(rr)[0])== 0 else len(np.nonzero(rr)[0])) 
     ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
     
+    # now consider dirty data where the value is higher 
+    # than the tol parameter and safe otherwise. 
     index = reshape (np.argwhere (rr > tol))
     ar_new = np.delete (rr , index , axis = 0 ) 
     new_f = np.delete (f[:, None], index, axis =0 )
     # interpolate freq 
     if f[0] < f[-1]: 
-        f =f[::-1] # reverse the array 
+        f =f[::-1] # reverse the freq array 
         ar_new = ar_new [::-1] # or np.flipud(np.isnan(ar)) 
+        
+    # get the invalid freqs 
+    invalid_freqs= f[ ~np.isin (f, new_f) ]
     
     if interpolate_freq: 
         new_f = np.logspace(np.log10(new_f.min()) , np.log10(new_f.max()),
@@ -5098,18 +5117,36 @@ def qc(
         
     # for consistency, recovert frequency to array shape 0 
     new_f = reshape (new_f)
-    # Return frequency once interpolation or frequency conversion
+    
+    # Return frequency if interpolation or frequency conversion
     # is set to True 
     if ( interpolate_freq or to_log10 ): 
         return_freq =True 
+    # if return QCobj then block all returns  to True 
+    if return_qco: 
+        return_freq = return_data = True 
         
     data =[ np.around (ck, 2) ] 
     if return_freq: 
         data += [ new_f ]  
     if return_data :
         data += [ np.delete ( ar, index , axis =0 )] 
-
-    return tuple (data )
+        
+    data = tuple (data )
+    # make QCO object 
+    if return_qco: 
+        data = Boxspace( **dict (
+            tol=tol, 
+            tensor = tensor, 
+            component_= component, 
+            mode_=mode, 
+            rate_= float(np.around (ck, 2)), 
+            freqs_= new_f , 
+            invalid_freqs_=invalid_freqs, 
+            data_=  np.delete ( ar, index , axis =0 )
+            )
+        )
+    return data
  
    
     

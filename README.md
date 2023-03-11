@@ -76,7 +76,7 @@ dependencies, visit our [installation guide](https://watex.readthedocs.io/en/lat
 
 ## Some demos 
 
-#### Drilling location auto-detection
+1. **Drilling location auto-detection**
 
 For this example, we randomly generate 50 stations of synthetic ERP resistivity data with ``minimum`` and ``maximum ``
 resistivity values equal to  ``1e1`` and ``1e4`` ohm.m  respectively as:
@@ -128,7 +128,7 @@ Note that before the drilling operations commence, make sure to carry out the DC
 another parameter called `ohmic-area` `` (ohmS)`` to detect the effectiveness of the existing fracture zone at that point. See more in 
 the software [documentation](https://watex.readthedocs.io/en/latest/).
   
-#### Predict permeability coefficient ``k`` from logging dataset using MXS approach
+2. **Predict permeability coefficient ``k`` from logging dataset using MXS approach**
  
 MXS stands for mixture learning strategy. It uses upstream unsupervised learning for 
 ``k`` -aquifer similarity label prediction and the supervising learning for 
@@ -149,8 +149,8 @@ hdata = h.frame
 ``k`` is collected as continue values (m/darcies) and should be categorized for the 
 naive group of aquifer prediction (NGA). The latter is used to predict 
 upstream the  MXS target ``ymxs``.  Here, we used the default categorization 
-provided by the software and we expect in the area ``2`` minimum groups of 
-the aquifer. The code is given as: 
+provided by the software and we assume that in the area, there are at least ``2`` 
+groups of the aquifer. The code is given as: 
 ```python 
 mxs = wx.MXS (kname ='k', n_groups =2).fit(hdata) 
 ymxs=mxs.predictNGA().makeyMXS(categorize_k=True, default_func=True)
@@ -165,7 +165,7 @@ Once the MXS target is predicted, we call the ``make_naive_pipe`` function, to
 impute, scale, and transform the predictor ``X`` at once into a compressed sparse 
 matrix ready for final prediction using the [support vector machines](https://ieeexplore.ieee.org/document/708428) and 
 [random forest](https://www.ibm.com/topics/random-forest)as examples. Here we go: 
-``` python 
+```python 
 X= hdata [h.feature_names]
 Xtransf = wx.make_naive_pipe (X, transform=True) 
 Xtransf 
@@ -188,60 +188,64 @@ toy example using only two boreholes data. Note that things can become more
 interesting when using many boreholes data. For more in 
 depth, visit our [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html). 
 
-#### EM tensors recovering and analyses
+3. **EM tensors recovering and analyses**
 
 For a basic illustration, we fetch 20 audio-frequency magnetotelluric (AMT) data 
 stored as EDI objects collected in a `huayuan` area (Hunan province, China) with 
 multiple interferences noised as: 
 
-``` python 
-import numpy as np 
+```python 
 import watex as wx
-emo= wx.fetch_data ('huayuan', samples =20 , key='noised') # returns an EM -objets 
-edi_data = emo.data # get the array  of EDI objects  
+e= wx.fetch_data ('huayuan', samples =20 , key='noised') # returns an EM -objets 
+edi_data = e.data # get the array  of EDI objects  
 ``` 
-Before EM data restoration, we can analyse the quality control of the data and 
+Before EM data restoration, we can analyse the quality control (QC) of the data and 
 show the confidence interval that makes us confident about the data at each station. 
 By default the confidence test uses the errors in the resistivity tensor. Let's getting 
 started: 
 ```python 
-po= wx.EMProcessing ().fit(edi_data) # make a EM processing object 
-r= po.qc (tol =0.2 , return_ratio = True ) # consider good data from 80%.  
+po= wx.EMProcessing ().fit(edi_data)   # make a EM processing object 
+r= po.qc (tol =0.2 , return_ratio = True ) # consider good data from 80% significance.  
 r
+Out[9]: 0.75
 ``` 
 We can then visualizate the confidence interval at the 20 AMT stations as: 
 ```python 
 wx.plot_confidence_in(edi_data) 
 
 ``` 
-Alternatively, we can use the ``qc`` function more consistent to get the valid data and 
+Alternatively, we can use the ``qc`` function (more consistent) to get the valid data and 
 the interpolated frequencies. For instance, we want to known the number of frequencies dropped 
 during the control analysis. Just do it: 
 ```python 
-r, valid_freq, valid_data = wx.qc (edi_data, return_freq=True, return_data =True, interpolate_freq=False  ) 
-len(emo.freqs_) # number of frequency in noised data   
-
-len(valid_freq) # number of frequency in valid data after QC  
-emo.freqs_[ ~np.isin (emo.freqs_, valid_freq) ] # get the useless frequency/ies
+QCo= wx.qc (edi_data , tol=.2,  return_qco =True )  # returns the quality control object
+len(e.emo.freqs_)   # number of frequency in noised data   
+Out[10]: 56
+len(QCo.freqs_)     # number of frequency in valid data after QC  
+Out[11]: 53
+QCo.invalid_freqs_  # get the useless frequencies based on tol param so we can drop them into the EM data 
+Out[12]: array([8.19200e+04, 4.85294e+01, 5.62500e+00]) #  81920.0, 48.53 and 5.625 Hz 
 ```
-If we are not satisfy about the ``r=75%`` ratio in the data, we can process the impedance tensor 
-``Z`` restoration. Note that the threshold for the EM data to be restored is set to ``50%``; 
-Below this value, data is unrecoverable. A single line of code does this as:  
+The ``plot_confidence_in`` function allows to assert whether tensor values can be recovered 
+for these three frequencies at each station. Note that the threshold for the EM data 
+to be restored is set to ``50%``. Below this value, data is unrecoverable. 
+Furthermore, if our QC rate ``r=75%`` is not to be yet satisfactory in our AMT data, we can 
+process to the impedance tensor ``Z`` restoration as:  
 ```python 
-Z=po.zrestore(tensor ='z') # returns 3D tensors (Nfrequency, 2, 2), 2x2 for XX, XY, YX and YY components. 
+Z=po.zrestore() # returns 3D tensors (Nfrequency, 2, 2), 2x2 for XX, XY, YX and YY components. 
 ```
-Now, let's evaluate the new quality control ratio to verify its efficaciousness as: 
+Now, let's evaluate the new QC ratio to verify the recovering efficaciousness such as: 
 ```python 
 r, =wx.qc (Z)
-r 
+r
+Out[13]: 1.0
 ``` 
-Great! As we can see the tensor is restored at each station with 100% ratio and we notice 
-that the confidence line is above 95% in the alongside the 20 investigation sites and 
-compare to the previous plot. A lazy code snippet below can allow to visualize 
+Great! As we can see, the tensor is restored at each station with ``100%`` ratio and we notice 
+that the confidence line is above 95% in alongside the 20 investigation sites and 
+compare to the previous plot ( ``rate =75%``). The snippet below can allow to visualize 
 this improvement with the confidence interval as: 
 ```python 
 wx.plot_confidence_in(Z)  
-
 ```
 Besides, user can flip through the following links for more examples about [EM tensor restoring](https://watex.readthedocs.io/en/latest/glr_examples/applications/plot_tensor_restoring.html#sphx-glr-glr-examples-applications-plot-tensor-restoring-py),  
 the [sknewness](https://watex.readthedocs.io/en/latest/glr_examples/methods/plot_phase_tensors.html#sphx-glr-glr-examples-methods-plot-phase-tensors-py) analysis plots, 

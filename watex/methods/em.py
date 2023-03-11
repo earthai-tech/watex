@@ -1589,6 +1589,7 @@ class Processing (EM) :
         self,
         *, 
         tensor:str=None, 
+        component:str=None, 
         buffer: Tuple[float]=None, 
         method:str ='pd',
         **kws 
@@ -1751,7 +1752,8 @@ class Processing (EM) :
             tensor = str(tensor).lower() 
             tensor = 'res' if tensor =='true' else tensor 
             new_zObjs = get2dtensor(
-                new_zObjs, tensor = tensor , component = self.component, 
+                new_zObjs, tensor = tensor , 
+                component = component or self.component, 
                 )
             
         return new_zObjs 
