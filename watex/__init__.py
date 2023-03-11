@@ -182,7 +182,9 @@ from .utils import (
     plot_rf_feature_importances, 
     plot_logging, 
     plot_silhouette, 
-    plot_profiling, 
+    plot_profiling,
+    plot_confidence_in,
+    qc,
     )
 # may useful to fix 
 # circular import
@@ -288,6 +290,8 @@ __all__ = [
     "power", 
     "magnitude", 
     "sfi", 
+    "qc", 
+    "plot_confidence_in", 
     "ohmicArea", 
     "fittensor",
     "plotOhmicArea", 

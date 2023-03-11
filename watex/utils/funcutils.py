@@ -4938,11 +4938,101 @@ def get_confidence_ratio (
     
     return ratio 
     
+def assert_ratio(v, /, bounds: List[float] = None , exclude_value:float= None, 
+                 as_percent:bool =False , name:str ='rate', ): 
+    """ Assert rate value between a specific range. 
     
+    Parameters 
+    -----------
+    v: float, 
+       ratio value to assert 
+    bounds: list ( lower, upper) 
+       The range that value must  be included
+    exclude_value: float 
+       A value that ``v`` must not taken. Exclude it from the ``bounds``. 
+       Raise error otherwise. Note that  any other value will use the 
+       lower bound in `bounds` as exlusion. 
+       
+    as_percent: bool, default=False, 
+       Convert the value into a percentage. 
+    name: str, default='rate' 
+       the name of the value for assertion. 
+       
+    Returns
+    --------
+    v: float 
+       Asserted value. 
+       
+    Examples
+    ---------
+    >>> from watex.utils.funcutils import assert_ratio
+    >>> assert_ratio('2')
+    2.0
+    >>> assert_ratio(2 , bounds =(2, 8))
+    2.0
+    >>> assert_ratio(2 , bounds =(4, 8))
+    ValueError:...
+    >>> assert_ratio(2 , bounds =(1, 8), exclude_value =2 )
+    ValueError: ...
+    >>> assert_ratio(2 , bounds =(1, 8), exclude_value ='use bounds' )
+    2.0
+    >>> assert_ratio(2 , bounds =(0, 1) , as_percent =True )
+    0.02
+    >>> assert_ratio(2 , bounds =(0, 1) )
+    ValueError:
+    >>> assert_ratio(2 , bounds =(0, 1), exclude_value ='use lower bound',
+                         name ='tolerance', as_percent =True )
+    0.02
+    """ 
+    msg =("greater than '{}' and less than '{}'" )
     
-    
-    
-    
+    if isinstance (v, str): 
+        v = v.replace('%', '')
+    try : 
+        v = float (v)
+    except TypeError : 
+        raise TypeError (f"Unable to convert {type(v).__name__!r} "
+                         f"to float: {v}")
+    except ValueError: 
+        raise ValueError(f"Expects 'float' not {type(v).__name__!r}: "
+                         f"{(v)!r}")
+    # put value in percentage 
+    # if greater than 1. 
+    if as_percent: 
+        if 1 < v <=100: 
+            v /= 100. 
+          
+    bounds = bounds or []
+    low, up, *_ = list(bounds) + [ None, None]
+    e=("Expects a {} value {}, got: '{}'".format(
+            name , msg.format(low, up), v)) 
+    err = ValueError (e)
+
+    if len(bounds)!=0:
+        if ( 
+                low is not None  # use is not None since 0. is
+                and up is not None # consider as False value
+            and  (v < low or v > up)
+            ) :
+                raise err 
+        
+    if exclude_value is not None: 
+        try : 
+            low = float (str(exclude_value))
+        except : # use bounds
+            pass 
+        if low is None:
+            warnings.warn("Cannot exclude the lower value in the interval"
+                          " while `bounds` argument is not given.")
+        else:  
+            if v ==low: 
+                raise ValueError (e.replace (", got:", ' excluding') + ".")
+            
+    if as_percent and v > 100: 
+         raise ValueError ("{} value should be {}, got: '{}'".
+                           format(name.title(), msg.format(low, up), v  ))
+    return v 
+
     
     
     

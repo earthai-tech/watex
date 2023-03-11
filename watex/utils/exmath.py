@@ -61,10 +61,12 @@ from .._typing import (
     EDIO,
     ZO
 )
+from .box import Boxspace 
 from .funcutils import (
     _assert_all_types, 
     _validate_name_in, 
     _isin, 
+    assert_ratio,
     drawn_boundaries, 
     fmt_text, 
     find_position_from_sa , 
@@ -4513,7 +4515,7 @@ def get2dtensor(
            35.00516522, 59.91093054])
     """
 
-    name, m2 = _validate_tensor (tensor = tensor ,component = component, **kws)
+    name, m2 = _validate_tensor (tensor = tensor, component = component, **kws)
     if name =='_freq': 
         raise EMError ("Tensor from 'Frequency' is not allowed here."
                        " Use `make2d` method instead: 'watex.EM.make2d'")
@@ -4553,7 +4555,7 @@ def get2dtensor(
          'imag': mat2d.imag, 'complex':mat2d
          } 
     
-        mat2d = zdict [ kind]
+        mat2d = zdict [kind]
         
     return mat2d if not return_freqs else (mat2d, freqs  )
 
@@ -4758,6 +4760,9 @@ def plot_confidence_in(
     z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
         :class:`watex.externals.z.Z` 
         A collection of EDI- or Impedances tensors objects. 
+        
+    tensor: str, default='res'  
+        Tensor name. Can be [ resistivity|phase|z|frequency]
         
     view:str, default='1d'
        Type of plot. Can be ['1D'|'2D'] 
@@ -4965,8 +4970,168 @@ def getzfromedis ( edi_obj_list , /, ):
     return   edi_obj_list  if obj_type =='z' else [
         edi_obj_list[i].Z for i in range (len( edi_obj_list)  )] 
 
+def qc(
+    z_or_edis_obj_list: List [EDIO |ZO], 
+     /, 
+    tol: float= .5 , 
+    *, 
+    interpolate_freq:bool =False, 
+    return_freq: bool =False,
+    tensor:str ='res', 
+    return_data=False,
+    to_log10: bool =False, 
+    return_qco:bool=False 
+    )->Tuple[float, ArrayLike]: 
+    """ Check the quality control in the collection of Z or EDI objects. 
     
+    Analyse the data in the EDI collection and return the quality control value.
+    It indicates how percentage are the data to be representative.
+   
+    Parameters 
+    ----------
+    tol: float, default=.5 
+        the tolerance parameter. The value indicates the rate from which the 
+        data can be consider as meaningful. Preferably it should be less than
+        1 and greater than 0.  Default is ``.5`` means 50 %. Analysis becomes 
+        soft with higher `tol` values and severe otherwise. 
+        
+    interpolate_freq: bool, 
+        interpolate the valid frequency after removing the frequency which 
+        data threshold is under the ``1-tol``% goodness 
     
+    return_freq: bool, default=False 
+        returns the interpolated frequency.
+        
+    return_data: bool, default= False, 
+        returns the valid data from up to ``1-tol%`` goodness. 
+        
+    tensor: str, default='z'  
+        Tensor name. Can be [ resistivity|phase|z|frequency]. Impedance is
+        used for data quality assessment. 
+        
+    to_log10: bool, default=True 
+       convert the frequency value to log10. 
+       
+    return qco: bool, default=False, 
+       retuns quality control object that wraps all usefull informations after 
+       control. The following attributes can be fetched as: 
+           
+       - rate_: the rate of the quality of the data  
+       - component_: The selected component where data is selected for analysis 
+         By default used either ``xy`` or ``yx``. 
+       - mode_: The :term:`EM` mode. Either the ['TE'|'TM'] modes 
+       - freqs_: The valid frequency in the data selected according to the 
+         `tol` parameters. Note that if ``interpolate_freq`` is ``True``, it 
+         is used instead. 
+       - invalid_freqs_: Useless frequency dropped in the data during control 
+       - data_: Valid tensor data either in TE or TM mode. 
+       
+    Returns 
+    -------
+    Tuple (float  )  or (float, array-like, shape (N, )) or QCo
+        - return the quality control value and interpolated frequency if  
+         `return_freq`  is set to ``True`` otherwise return the
+         only the quality control ratio.
+        - return the the quality control object. 
+        
+    Examples 
+    -----------
+    >>> import watex as wx 
+    >>> data = wx.fetch_data ('huayuan', samples =20, return_data =True ,
+                              key='raw')
+    >>> r,= wx.qc (data)
+    r
+    Out[61]: 0.75
+    >>> r, = wx.qc (data, tol=.2 )
+    0.75
+    >>> r, = wx.qc (data, tol=.1 )
+    
+    """
+    tol = assert_ratio(tol , bounds =(0, 1), exclude_value ='use lower bound',
+                         name ='tolerance', as_percent =True )
+
+    # by default , we used the resistivity tensor and error at TE mode.
+    # force using the error when resistivity or phase tensors are supplied 
+    tensor = str(tensor).lower() 
+    try:
+        component, mode ='xy', 'TE'
+        ar, f = get2dtensor(z_or_edis_obj_list, tensor =tensor,
+                            component =component, return_freqs=True )
+    except : 
+       component, mode ='yx', 'TM'
+       ar, f = get2dtensor(z_or_edis_obj_list, tensor =tensor,
+                           return_freqs=True, component =component, 
+                           )
+       
+    # compute the ratio of NaN in axis =0 
+    nan_sum  =np.nansum(np.isnan(ar), axis =1) 
+    rr= np.around ( nan_sum / ar.shape[1] , 2) 
+    
+    # compute the ratio ck
+    # ck = 1. -    rr[np.nonzero(rr)[0]].sum() / (
+    #     1 if len(np.nonzero(rr)[0])== 0 else len(np.nonzero(rr)[0])) 
+    ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
+    
+    # now consider dirty data where the value is higher 
+    # than the tol parameter and safe otherwise. 
+    index = reshape (np.argwhere (rr > tol))
+    ar_new = np.delete (rr , index , axis = 0 ) 
+    new_f = np.delete (f[:, None], index, axis =0 )
+    # interpolate freq 
+    if f[0] < f[-1]: 
+        f =f[::-1] # reverse the freq array 
+        ar_new = ar_new [::-1] # or np.flipud(np.isnan(ar)) 
+        
+    # get the invalid freqs 
+    invalid_freqs= f[ ~np.isin (f, new_f) ]
+    
+    if interpolate_freq: 
+        new_f = np.logspace(np.log10(new_f.min()) , np.log10(new_f.max()),
+                            len(new_f))[::-1]
+        # since interpolation is already made in 
+        # log10, getback to normal by default 
+        # and set off to False
+        if not to_log10: 
+            new_f = np.power(10, new_f)
+            
+        to_log10=False  
+        
+    if to_log10: 
+        new_f = np.log10 ( new_f ) 
+        
+    # for consistency, recovert frequency to array shape 0 
+    new_f = reshape (new_f)
+    
+    # Return frequency if interpolation or frequency conversion
+    # is set to True 
+    if ( interpolate_freq or to_log10 ): 
+        return_freq =True 
+    # if return QCobj then block all returns  to True 
+    if return_qco: 
+        return_freq = return_data = True 
+        
+    data =[ np.around (ck, 2) ] 
+    if return_freq: 
+        data += [ new_f ]  
+    if return_data :
+        data += [ np.delete ( ar, index , axis =0 )] 
+        
+    data = tuple (data )
+    # make QCO object 
+    if return_qco: 
+        data = Boxspace( **dict (
+            tol=tol, 
+            tensor = tensor, 
+            component_= component, 
+            mode_=mode, 
+            rate_= float(np.around (ck, 2)), 
+            freqs_= new_f , 
+            invalid_freqs_=invalid_freqs, 
+            data_=  np.delete ( ar, index , axis =0 )
+            )
+        )
+    return data
+ 
    
     
    

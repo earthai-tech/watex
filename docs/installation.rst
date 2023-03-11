@@ -42,8 +42,35 @@ From PyPI
    
    pip install watex
 
-Use ``pip install -U watex`` for window users instead. The installation from `conda-forge <https://conda-forge.org/>`__ distribution is coming soon.
-Furthermore, to get the latest development of the code, it is recommended to install it from source. 
+Use ``pip install -U watex`` for window users instead. Furthermore, to get the latest development of the code, 
+it is recommended to install it :ref:`from source <from_source>`. 
+
+
+From conda-forge 
+-----------------
+
+Installing :code:`watex` from the `conda-forge <https://conda-forge.org/>`__ channel can be achieved by 
+adding ``conda-forge`` to your channels with:
+
+.. prompt:: bash 
+
+	conda config --add channels conda-forge
+    conda config --set channel_priority strict
+
+Once the ``conda-forge`` channel has been enabled, :code:`watex` can be installed with:
+
+.. prompt:: bash 
+
+	conda install watex 
+
+It is possible to list all of the versions of :code:`watex` available on your platform with:
+
+.. prompt:: bash 
+
+	conda search watex --channel conda-forge
+
+
+.. _from_source: 
 
 From source 
 -------------

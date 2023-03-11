@@ -3,10 +3,17 @@ v0.1.7 (March 09, 2023)
 
 This is a minor change performed from ``v0.1.6`` and adaptations.  
 
+Adaptations and features 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Add new features with strike (:func:`watex.utils.plot_strike`) and confidence plots in the :term:`EDI` data 
   (:func:`watex.utils.plot_confidence_in`). The latter is useful to know the signals to recover and useless
   frequencies for deletion. 
 
 - add confidence interval plot (:func:`watex.utils.plot_confidence_in`). This is useful for data visualization before 
-  :term:`tensor`` recovering. It also show the status of the :term:`EM` data acquired at a specific area whether 
+  :term:`tensor`` recovering. It also shows the status of the :term:`EM` data acquired at a specific area and whether 
   data is recoverable or not. If data is unrecoverable, a pure deletion is performed. 
+
+Bug fixes 
+~~~~~~~~~~~~~
+- Bug fixed in automating the :term:`Bagoue region` dataset preparation. The :func:`_assert_sl_target` is removed then the 
+  `AttributeError` generated from missing `X` in  :meth:`watex.cases.prepare.BaseSteps.stratifydata` is fixed. 

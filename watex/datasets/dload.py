@@ -791,19 +791,19 @@ def load_huayuan (
     if clear_cache: remove_data()
     
     emo, frame , feature_names= None ,  None , None 
-    valid_keys = {"pre-processed", 'raw'}
+    valid_keys = ("pre-processed", "raw", "noised", "dirty")
     if ( 'pre' in str(key).lower() 
        or 'pro' in str(key).lower()
        ): 
         key ='pre-processed'
         
-    key = key or "pre-processed" 
+    key = key or "pre-processed"
     # assertion error if key does not exist. 
-    msg = (f"Invalid key {key!r}. Expects {tuple (valid_keys)}")
-    assert str(key).lower() in {"pre-processed", "raw"}, msg
+    msg = (f"Invalid key {key!r}. Expects {valid_keys}")
+    assert str(key).lower() in valid_keys, msg
     
     DMOD = DMODULE + '.edis'
-    data_file ='raw.E.zip' if key=='raw' else 's.E.zip'
+    data_file ='raw.E.zip' if key in valid_keys[1:]  else 's.E.zip'
     with resources.path (DMOD, data_file) as p : 
         data_file = p 
         

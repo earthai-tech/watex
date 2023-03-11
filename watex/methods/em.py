@@ -1589,6 +1589,7 @@ class Processing (EM) :
         self,
         *, 
         tensor:str=None, 
+        component:str=None, 
         buffer: Tuple[float]=None, 
         method:str ='pd',
         **kws 
@@ -1751,7 +1752,8 @@ class Processing (EM) :
             tensor = str(tensor).lower() 
             tensor = 'res' if tensor =='true' else tensor 
             new_zObjs = get2dtensor(
-                new_zObjs, tensor = tensor , component = self.component, 
+                new_zObjs, tensor = tensor , 
+                component = component or self.component, 
                 )
             
         return new_zObjs 
@@ -1955,6 +1957,7 @@ class Processing (EM) :
         *, 
         return_freq: bool =False,
         return_ratio:bool=False, 
+        to_log10: bool=True, 
         )->Tuple[float, ArrayLike]: 
         """ Check the quality control of the collected EDIs. 
         
@@ -1972,7 +1975,9 @@ class Processing (EM) :
            return only the ratio of the representation of the data. 
            
            .. versionadded:: 0.1.5
-        
+        :param to_log10:bool, default=False
+           convert the interpolated frequency into a log10. 
+           
         :returns: Tuple (float , index )  or (float, array-like, shape (N, ))
             return the quality control value and interpolated frequency if  
             `return_freq`  is set to ``True`` otherwise return the index of useless 
@@ -2045,7 +2050,9 @@ class Processing (EM) :
         
         new_f = np.logspace(np.log10(new_f.min()) ,np.log10(new_f.max()),
                             len(new_f))[::-1]
-        
+        if not to_log10: 
+            new_f = np.power(10 , new_f)
+            
         return np.around (ck, 2) if return_ratio else (
             np.around (ck, 2), new_f   if return_freq else index )   
 

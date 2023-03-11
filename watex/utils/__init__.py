@@ -41,7 +41,8 @@ from .exmath import (
     linkage_matrix, 
     plotOhmicArea, 
     plot_confidence_in,
-    plot_sfi
+    plot_sfi, 
+    qc
     )
 from .funcutils import ( 
     reshape, 
@@ -196,6 +197,7 @@ __all__=[
         'normalizer',
         'plot_strike',
         'get_target', 
+        'qc'
         ]
 
 
