@@ -76,7 +76,7 @@ dependencies, visit our [installation guide](https://watex.readthedocs.io/en/lat
 
 ## Some demos 
 
-1. **Drilling location auto-detection**
+### 1. Drilling location auto-detection
 
 For this example, we randomly generate 50 stations of synthetic ERP resistivity data with ``minimum`` and ``maximum ``
 resistivity values equal to  ``1e1`` and ``1e4`` ohm.m  respectively as:
@@ -128,7 +128,7 @@ Note that before the drilling operations commence, make sure to carry out the DC
 another parameter called `ohmic-area` `` (ohmS)`` to detect the effectiveness of the existing fracture zone at that point. See more in 
 the software [documentation](https://watex.readthedocs.io/en/latest/).
   
-2. **Predict permeability coefficient ``k`` from logging dataset using MXS approach**
+### 2. Predict permeability coefficient ``k`` from logging dataset using MXS approach**
  
 MXS stands for mixture learning strategy. It uses upstream unsupervised learning for 
 ``k`` -aquifer similarity label prediction and the supervising learning for 
@@ -189,7 +189,7 @@ toy example using only two boreholes data. Note that things can become more
 interesting when using many boreholes data. For more in 
 depth, visit our [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html). 
 
-3. **EM tensors recovering and analyses**
+### 3. EM tensors recovering and analyses**
 
 For a basic illustration, we fetch 20 audio-frequency magnetotelluric (AMT) data 
 stored as EDI objects collected in a `huayuan` area (Hunan province, China) with 
