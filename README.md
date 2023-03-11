@@ -189,7 +189,7 @@ toy example using only two boreholes data. Note that things can become more
 interesting when using many boreholes data. For more in 
 depth, visit our [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html). 
 
-### 3. EM tensors recovering and analyses**
+### 3. EM tensors recovering and analyses
 
 For a basic illustration, we fetch 20 audio-frequency magnetotelluric (AMT) data 
 stored as EDI objects collected in a `huayuan` area (Hunan province, China) with 
