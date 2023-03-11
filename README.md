@@ -14,7 +14,7 @@
  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
  ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/watex?color=orange&logo=pypi)
  [![PyPI version](https://badge.fury.io/py/watex.svg)](https://badge.fury.io/py/watex)
- [![Anaconda-Server Badge](https://anaconda.org/conda-forge/watex/badges/version.svg)](https://anaconda.org/conda-forge/watex)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/watex.svg)](https://anaconda.org/conda-forge/watex)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/watex/badges/platforms.svg)](https://anaconda.org/conda-forge/watex)
 
 ##  Overview
