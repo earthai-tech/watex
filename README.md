@@ -19,17 +19,17 @@
 
 ##  Overview
 
-**_WATex_** is a Python-based library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
-    for reducing numerous losses during the hydro-geophysical exploration projects. It encompasses 
-    the Direct-current (DC) resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), 
-    short-periods electromagnetic (EM), geology and hydrogeology methods. From methodologies based on Machine Learning,  
-    it allows to: 
-   - auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings 
-     and unsustainable boreholes;
-   - reduce the cost of permeability coefficient (k) data collection during the hydro-geophysical engineering projects,
-   - predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
-   - recover the EM loss signals in area with huge interferences noises ...
-   - etc.
+*WATex* is a Python-based library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
+for reducing numerous losses during the hydro-geophysical exploration projects. It encompasses 
+the Direct-current (DC) resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), 
+short-periods electromagnetic (EM), geology and hydrogeology methods. From methodologies based on Machine Learning,  
+it allows to: 
+- auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings 
+  and unsustainable boreholes;
+- reduce the cost of permeability coefficient (k) data collection during the hydro-geophysical engineering projects,
+- predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
+- recover the EM loss signals in area with huge interferences noises ...
+- etc.
 
 ## Documentation 
 
@@ -40,7 +40,7 @@ engineering problems such as computing DC parameters and predicting the k-parame
 
 ## Licence 
 
-**_WATex_** is under [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) License. 
+*WATex* is under [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) License. 
 
 ## Installation 
 
@@ -59,9 +59,8 @@ The [installation](https://anaconda.org/conda-forge/watex)  from [conda-forge](h
 
 ```bash 
 conda install -c conda-forge watex
-
 ``` 
- To get the latest development of the code, it is recommended to install it from source using: 
+To get the latest development of the code, it is recommended to install it from source using: 
 
 ```bash
 git clone https://github.com/WEgeophysics/watex.git 
@@ -155,9 +154,8 @@ ymxs[62:74]
 Out[5]: array([ 0,  0,  0,  0, 12, 12, 12, 12, 12, 12, 12, 12])
 ```
 To understand the transformation from NGA to MXS target (``ymxs``), please, have a look 
-of the following [paper](http://dx.doi.org/10.2139/ssrn.4326365)
-.
-Once the MXS target is predicted, we call the ``make_naive_pipe`` function, to 
+of the following [paper](http://dx.doi.org/10.2139/ssrn.4326365).
+Once the MXS target is predicted, we call the ``make_naive_pipe`` function to 
 impute, scale, and transform the predictor ``X`` at once into a compressed sparse 
 matrix ready for final prediction using the [support vector machines](https://ieeexplore.ieee.org/document/708428) and 
 [random forest](https://www.ibm.com/topics/random-forest) as examples. Here we go: 
@@ -254,9 +252,9 @@ If the [software](https://doi.org/10.5281/zenodo.7553789) seemed useful to you i
 
 > *Kouadio, Kouao Laurent and Liu, Jianxin and Liu, Rong, watex: Machine learning research in water exploration. Available at SSRN:  http://dx.doi.org/10.2139/ssrn.4348617*
 
-In most situations where **_WATex_** is cited, a citation to [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) would also be appropriate.
+In most situations where *WATex* is cited, a citation to [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) would also be appropriate.
 
-See also some [case history](https://watex.readthedocs.io/en/latest/citing.html) papers using **_WATex_**. 
+See also some [case history](https://watex.readthedocs.io/en/latest/citing.html) papers using *WATex*. 
 
 ## Contributions 
 
