@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  Licence: BS3-clause 
+#  License: BSD-3-Clause
 #  Author: L. Kouadio
 """
 :term:`EDI` stands for Electrical Data Interchange. The :class:`Edi` class read and write an EDI file(*.edi)

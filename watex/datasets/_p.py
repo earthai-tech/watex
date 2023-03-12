@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+#  License: BSD-3-Clause
+#   Author: LKouadio <etanoyau@gmail.com>
 
 """
 Make Dataset 
@@ -22,11 +24,11 @@ __all__ = [
 
 try: 
     # load data from local 
-    data_fn = load_bagoue().frame 
+    DATA = load_bagoue().frame 
 except: 
     # remotely download the data 
-    if not os.path.isfile(data_fn): 
-        data_fn= loadBagoueDataset ()
+    if not os.path.isfile(DATA): 
+        DATA= loadBagoueDataset ()
     
 def _bagoue_data_preparer (): 
     """ Prepare the defaults case study data using 
@@ -79,7 +81,7 @@ def _bagoue_data_preparer ():
         hash=False
         )
     
-    prepareObj.stratifydata(data_fn) 
+    prepareObj.stratifydata(DATA) 
     _BAGDATA= prepareObj.data 
     _X =prepareObj.X.copy()             # strafified training set 
     _y =prepareObj.y.copy()             # stratified label 

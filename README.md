@@ -123,7 +123,7 @@ Note that before the drilling operations commence, make sure to carry out the DC
 another parameter called `ohmic-area` `` (ohmS)`` to detect the effectiveness of the existing fracture zone at that point. See more in 
 the software [documentation](https://watex.readthedocs.io/en/latest/).
   
-### 2. Predict permeability coefficient ``k`` from logging dataset using MXS approach**
+### 2. Predict permeability coefficient ``k`` from logging dataset using MXS approach
  
 MXS stands for mixture learning strategy. It uses upstream unsupervised learning for 
 ``k`` -aquifer similarity label prediction and the supervising learning for 

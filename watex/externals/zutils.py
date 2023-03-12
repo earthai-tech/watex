@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #       Authors: Lars Krieger, Jared R. Peacock & Alison Louise Kirkby
-#       Licence: GPL
+#       License: GPL
 #       Edited by LKouadio 
 # Original file can be found in  < https://github.com/MTgeophysics/mtpy.git>
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+#   License: BSD-3-Clause
+#   Author: LKouadio <etanoyau@gmail.com>
 """ 
 List of :code:`watex` exceptions for warning users. 
 """

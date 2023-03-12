@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause
+#   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created on Tue Oct  5 15:09:46 2021
 

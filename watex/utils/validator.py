@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# BSD 3-Clause License
+# BSD-3-Clause License
 # Copyright (c) 2022 The scikit-learn and watex developers.
 # All rights reserved.
 
