@@ -1,0 +1,10 @@
+v0.1.9 (March 15, 2023)
+--------------------------
+
+This is a minor change performed from ``v0.1.8`` and adaptations.  
+
+- Fix negative resistivity generation in :term:`VES` from :func:`watex.datasets.make_ves`. 
+  Use absolute instead.
+
+- Set a slice components property `_c_` as  a :class:`watex.view.TPlot` attribute used by all 
+  related methods. 

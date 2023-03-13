@@ -138,6 +138,12 @@ Geosciences concepts
         in the fractures obtained during/after the :term:`drilling` operations. It can be defined as the mass/volumetric of a :term:`water` 
         which passes per unit of time. We denoted mostly the unit as :math:`m^3/hr`. 
 
+    GDAL 
+        standas for Geospatial Data Abstraction Library (GDAL). It is a computer software library for reading 
+        and writing raster and vector geospatial data formats (e.g. shapefile), and is released under the 
+        permissive X/MIT style free software license by the Open Source Geospatial Foundation. See 
+        more in `GDAL.ORG <https://gdal.org/>`__.
+
     Geology
     Geological
         Geology is a branch of natural science concerned with Earth and other astronomical objects, the features or rocks of which it is 

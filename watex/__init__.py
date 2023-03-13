@@ -35,7 +35,7 @@ try:
     from . import _version
     __version__ = _version.version
 except ImportError:
-    __version__ = '0.1.8' 
+    __version__ = '0.1.9' 
 finally:
     __author__= 'L.Kouadio'
 

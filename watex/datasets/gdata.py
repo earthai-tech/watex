@@ -77,9 +77,10 @@ def make_erp (
         If ``False``, easting and northing are not computed and set to null. 
     
     raise_warning: bool, default=True, 
-        Raises warnings if GDAL is not set or the coordinates accurately status.
+        Raises warnings if :term:`GDAL` is not set or the coordinates 
+        accurately status.
         
-     as_frame: bool, default=False, 
+    as_frame: bool, default=False, 
          if ``True``, outputs the data into as a pandas dataframe, 
          :class:`~watex.utils.box.Boxspace` object otherwise. 
          
@@ -107,7 +108,7 @@ def make_erp (
     """
     
     stations = np.arange (0 , n_stations * step  , step ) 
-    resistivity  =np.linspace(min_rho, max_rho , n_stations)  
+    resistivity  =np.abs(np.linspace(min_rho, max_rho , n_stations) ) 
     
     if seed is not None:
         np.random.seed(seed)
@@ -238,7 +239,7 @@ def make_ves (
     np.random.shuffle(g) 
     
     f, *_ = fitfunc (AB, g, deg= iorder )
-    resistivity = f (AB )
+    resistivity = np.abs(f (AB ))
 
     d= {"AB":AB, "MN": MN, "resistivity":resistivity}
     

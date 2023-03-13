@@ -629,6 +629,7 @@ Functions
 	utils.power
 	utils.predict_NGA_labels
 	utils.projection_validator
+	utils.qc
 	utils.read_data
 	utils.reduce_samples
 	utils.remove_outliers

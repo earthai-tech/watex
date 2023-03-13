@@ -6,7 +6,7 @@ This is a minor change performed from ``v0.1.7`` and adaptations.
 - Bug fixed in automating the :term:`Bagoue region` dataset preparation. The :func:`_assert_sl_target` is removed then the 
   `AttributeError` generated from missing `X` in  :meth:`watex.cases.prepare.BaseSteps.stratifydata` is fixed.
 
-- add new QC :func:`watex.utils.qc` function applicable outside the EM processing QC method
+- add new QC :func:`watex.utils.qc` function applicable outside the :term:`EM` processing QC method
   :meth:`watex.methods.Processing.qc` for consistent EM analyses.
 
 - simplify the remote dataset path loader and BaseSteps :class:`watex.cases.BaseSteps` transformation using ``importlib.resources``. 

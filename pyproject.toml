@@ -8,7 +8,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "watex"
-dynamic = [  "version", "keywords"]
+version="0.1.9"
+dynamic = [  "keywords"]
 
 dependencies=[
     "scikit-learn>=1.1.2",

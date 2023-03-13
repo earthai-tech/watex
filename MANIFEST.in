@@ -1,19 +1,19 @@
 
-graft docs
-
 include *.rst
 recursive-include docs *
+recursive-include docs/_static *
 recursive-include examples *.txt *.py
 recursive-include watex *.c *.cpp *.h *.pyx *.pxd *.pxi *.tp
 recursive-include watex/datasets *.csv *.csv.gz *.rst *.jpg *.txt *.arff.gz *.json.gz *.zip *.pkl *.h5
 recursice-include watex/utils *.npy 
-include LICENSE.md
-include COPYING
+include LICENSE
 include README.md
 include pyproject.toml
 include MANIFEST.in
 include setup.py
+include setup.cfg
 include watex/utils/epsg.npy
+include .coveragerc
 
 # exclude from sdist
 recursive-exclude asv_benchmarks *
@@ -24,6 +24,7 @@ recursive-exclude maint_tools *
 recursive-exclude benchmarks *
 recursive-exclude .binder *
 recursive-exclude ci *
+
 exclude .readthedocs.yml 
 exclude CODE_OF_CONDUCT.md
 exclude ISSUE_TEMPLATE.md

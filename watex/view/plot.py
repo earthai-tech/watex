@@ -242,7 +242,14 @@ class TPlot (BasePlot):
         # set EM processing module 
         # as an attr
         setattr (self, "p_", p )
-
+        
+        # set component slices into a dict
+        self._c_= {
+              'xx': [slice (None, len(self.p_.freqs_)), 0 , 0] , 
+              'xy': [slice (None, len(self.p_.freqs_)), 0 , 1], 
+              'yx': [slice (None, len(self.p_.freqs_)), 1 , 0], 
+              'yy': [slice (None, len(self.p_.freqs_)), 1,  1] 
+        }
         return self
     
     @property 
@@ -291,16 +298,9 @@ class TPlot (BasePlot):
             sites =['S00'], colors =['o', 'ok--'])
         <AxesSubplot:title={'center':'Recovered tensor $|Z_{xy}|$'}, 
         xlabel='$Frequency [H_z]$', ylabel='$ App.resistivity \\quad xy \\quad [ \\Omega.m]$'>
-        
         """
         self.inspect 
-        _c= {
-              'xx': [slice (None, len(self.p_.freqs_)), 0 , 0] , 
-              'xy': [slice (None, len(self.p_.freqs_)), 0 , 1], 
-              'yx': [slice (None, len(self.p_.freqs_)), 1 , 0], 
-              'yy': [slice (None, len(self.p_.freqs_)), 1,  1] 
-        }
-        
+
         if isinstance (sites, str): 
             sites =[sites ] 
         if not is_iterable(sites): 
@@ -317,7 +317,7 @@ class TPlot (BasePlot):
         z_xy_rest = self.p_.zrestore() # no buffered data 
         # extracted the station at index 12, 27 for instance.
         zs = [ z_xy_rest[s].resistivity[
-            tuple (_c.get(self.component))] for s in site_index ]
+            tuple (self._c_.get(self.component))] for s in site_index ]
 
         ma = [ moving_average ( res2d_r[:,  s_ix  ]) for s_ix in site_index ]
 
@@ -674,13 +674,6 @@ class TPlot (BasePlot):
         """
         self.inspect 
         
-        _c= {
-              'xx': [slice (None, len(self.p_.freqs_)), 0 , 0] , 
-              'xy': [slice (None, len(self.p_.freqs_)), 0 , 1], 
-              'yx': [slice (None, len(self.p_.freqs_)), 1 , 0], 
-              'yy': [slice (None, len(self.p_.freqs_)), 1,  1] 
-        }
-
         if isinstance(site, str): 
             site =[site]
         site_index = station_id(site) 
@@ -698,7 +691,7 @@ class TPlot (BasePlot):
         zobjs = self.p_.zrestore() # with no buffer 
     
         zxy_restored = np.abs (zobjs[site_index].z [
-            tuple (_c.get(self.component))])#[:, 0, 1]) 
+            tuple (self._c_.get(self.component))])#[:, 0, 1]) 
         # Export the first raw object with missing Z at 
         # the dead dand in ediObjs collection
         z1 = np.abs(ediObjs[site_index].Z.z) 
@@ -707,7 +700,7 @@ class TPlot (BasePlot):
         indice_reffreq = np.argmax (list (map(lambda o: len(o.Z._freq), ediObjs)))
         reffreq = ediObjs [indice_reffreq].Z._freq 
         # >>> # use the real part of component xy for the test 
-        zxy = np.abs (z1[tuple (_c.get(self.component))])  #[:, 0, 1])  
+        zxy = np.abs (z1[tuple (self._c_.get(self.component))])  #[:, 0, 1])  
         # fit zxy to get the missing data in the dead band 
         zfit = fittensor(refreq= reffreq, compfreq= z1freq, z=zxy)
 
@@ -3872,7 +3865,7 @@ Examples
 TPlot.__doc__="""\
 Tensor plot from EM processing data.
 
-`TPlot` is a Tensor (Impedances , resistivity and phases ) plot class. 
+`TPlot` is a :term:`Tensor` (Impedances , resistivity and phases ) plot class. 
 Explore SEG ( Society of Exploration Geophysicist ) class data.  Plot recovery 
 tensors. `TPlot` methods returns an instancied object that inherits 
 from :class:`watex.property.Baseplots` ABC (Abstract Base Class) for 
