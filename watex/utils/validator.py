@@ -4,7 +4,6 @@
 # All rights reserved.
 
 # Utilities for input validation
-
 from functools import wraps
 import inspect 
 import types 
@@ -165,9 +164,21 @@ def _assert_z_or_edi_objs ( z_or_edis_obj_list, /):
         
     return obj_type 
        
-def assert_xy_in (x:str , y:str, *, data=None, asarray= True, to_frame =False, 
-                  columns = None, xy_numeric =False, **kws  ): 
-    """ Assert the name of x and y in the data
+def assert_xy_in (
+    x, 
+    y, *, 
+    data=None,
+    asarray=True, 
+    to_frame=False, 
+    columns= None, 
+    xy_numeric=False, 
+    **kws  
+    ): 
+    """
+    Assert the name of x and y in the given data. 
+    
+    Check whether string arguments passed to x and y are valid in the data, 
+    then retrieve the x and y array values. 
     
     Parameters 
     -----------
@@ -219,14 +230,14 @@ def assert_xy_in (x:str , y:str, *, data=None, asarray= True, to_frame =False,
     >>> assert_xy_in (x=x, y=data.y, asarray =False ) # return y like it was
     (array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864,
             0.15599452, 0.05808361]),
-     0    0
-     1    1
-     2    2
-     3    3
-     4    4
-     5    5
-     6    6
-     Name: y, dtype: int32)
+    0    0
+    1    1
+    2    2
+    3    3
+    4    4
+    5    5
+    6    6
+    Name: y, dtype: int32)
     """
     from .funcutils import exist_features
     if to_frame : 
@@ -427,7 +438,7 @@ def _validate_ves_operator (
 
 def is_valid_dc_data (d, /, method= "erp" , 
                       exception = TypeError, extra=""): 
-    """ Detect the kind of DC data passed  and raise error if data is not 
+    """ Detect the kind of DC data passed  and raises error if data is not 
     the appropriate DC data expected.
     
     Data must be Vertical Electrical Sounding (VES) or Electrical Resistivity 

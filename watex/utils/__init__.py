@@ -37,6 +37,7 @@ from .exmath import (
     get_full_frequency, 
     get_strike, 
     get_profile_angle, 
+    get_bearing, 
     moving_average, 
     linkage_matrix, 
     plotOhmicArea, 
@@ -199,6 +200,7 @@ __all__=[
         'plot_strike',
         'get_target', 
         'get_distance',
+        'get_bearing', 
         'qc'
         ]
 

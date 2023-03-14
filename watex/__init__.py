@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Licence:BSD 3-Clause
-# author: L. Kouadio <etanoyau@gmail.com>
+# Licence:BSD-3-Clause
+# Author: L. Kouadio <etanoyau@gmail.com>
 
 from __future__ import annotations 
 import os 
@@ -86,7 +86,9 @@ if _missing_dependencies:  # pragma: no cover
     )
 del _main_dependencies, _dependency, _missing_dependencies
 
-# Suppress pandas future warnings
+# Try to suppress pandas future warnings
+# and reduce verbosity.
+# Setup WATex public API  
 with warnings.catch_warnings():
     warnings.filterwarnings(action='ignore', category=UserWarning)
     import watex.exlib as sklearn 
@@ -217,17 +219,19 @@ def setup_module(module):
     random.seed(_random_seed)
    
 __doc__= """\
-A machine learning research package for hydrogeophysic 
-===========================================================
+A machine learning research in water exploration 
+==================================================
 
 :code:`watex` stands for *WAT-er EX-ploration*. Packages and/or modules are 
-written to solve real-engineering problems in the field of groundwater 
-exploration (GWE). Currently, Dealing with: 
+written to solve engineering problems in the field of groundwater 
+exploration (GWE). Currently, dealing with: 
     
-* `geophysical (from DC-Electrical to Electromagnetic)` 
-* `hydrogeology (from drilling to parameters calculation)`
-* `geology (for stratigraphic model generation)`
-* `predicting permeability coefficient (k), flow rate and else`,  
+* `geophysical (from DC-Electrical to Electromagnetic)`; 
+* `hydrogeology (from drilling to parameters calculation)`;
+* `hydrogeophysic (predicting permeability coefficient (k), flow rate)`; 
+* `EM (processing NSAMT noised data and recover missing tensors)`; 
+* `geology (for stratigraphic model generation)`;
+* `more...`
 
 `WATex`_ contributes to minimize the risk of unsucessfull drillings, 
 unustainable boreholes and could hugely reduce the cost of the hydrogeology 
@@ -236,7 +240,8 @@ parameter collections.
 .. _WATex: https://github.com/WEgeophysics/watex/
 
 """
-#  __all__ is used to display a few public API. the public API is determined
+#  __all__ is used to display a few public API. 
+# the public API is determined
 # based on the documentation.
     
 __all__ = [ 

@@ -2,7 +2,7 @@
 #   Licence:BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 """
-Manage station location data.
+Manage site data.
 """
 from __future__ import annotations 
 import copy 
@@ -29,9 +29,9 @@ from .utils.exmath import (
     get_bearing, 
     scalePosition, 
     )
-from .utils.funcutils import ( 
-    to_numeric_dtypes,
+from .utils.funcutils import (
     _assert_all_types, 
+    to_numeric_dtypes,
     ) 
 from .utils.gistools import (
     assert_elevation_value, 
@@ -46,19 +46,20 @@ from .utils.gistools import (
     )
 from .utils.validator import ( 
     _check_consistency_size , 
-    assert_xy_in, 
     _is_numeric_dtype , 
+    assert_xy_in, 
     ) 
 
 class Profile: 
     
     def __init__(
         self , 
-        epsg = None, 
-        datum = 'WGS84', 
-        reference_ellipsoid =23, 
+        *, 
+        utm_zone =None, 
         coordinate_system=None, 
-        utm_zone =None 
+        datum = 'WGS84', 
+        epsg = None, 
+        reference_ellipsoid =23, 
         ): 
         self.epsg=epsg 
         self.datum =datum 
@@ -91,8 +92,7 @@ class Profile:
         
         By default if the coordinate system is given as latitude/longitude 
         x, y are latitude and longitude respectively. 
-        
-        
+ 
         Parameters
         ------------
         x, y: ArrayLike 1d /str  
@@ -164,6 +164,7 @@ class Profile:
                 self.coordinate_system =='ll' 
         # set 0. to elevation 
         self.elev = elev or np.zeros_like( self.x, dtype = np.float32 ) 
+        self.elev = np.array (self.elev , dtype = np.float32 )
         
         if not _check_consistency_size (self.x , np.array( self.elev),
                                         error ='ignore'  ): 
@@ -271,9 +272,10 @@ class Profile:
         
         return d.mean()  if average_distance else d 
     
-    def scale_positions (self, view: bool =False  ): 
-        """ Shift position from distance """
-        
+    def scale_positions (self): 
+        """
+        Scale the position coordinates along x and y
+        """
         self.inspect 
         x, *_ = scalePosition(self.x ) 
         y, *_ = scalePosition(self.y )
@@ -287,14 +289,14 @@ class Profile:
         use_average_dist:bool=False, 
         ): 
         """
-        Correct the position coordinates. 
+        Shift the x and y  position coordinates from the step. 
          
         By default, it consider `x` and `y` as easting/latitude and 
         northing/longitude coordinates respectively. It latitude and longitude 
         are given, specify the parameter `is_latlon` to ``True``. 
         
         Parameters
-        ----------
+        ------------
         step: float, Optional 
            The positions separation. If not given, the average distance between 
            all positions should be used instead. 
@@ -333,7 +335,11 @@ class Profile:
         >>> from watex.utils.exmath import scale_positions 
         >>> east = [336698.731, 336714.574, 336730.305] 
         >>> north = [3143970.128, 3143957.934, 3143945.76]
-        >>> east_c , north_c= scale_positions (east, north, step =20, view =True  ) 
+        >>> p= Profile().fit (east, north)
+        >>> east_c , north_c= p.scale_positions (east, north, step =20) 
+        >>> east_c , north_c
+        (array([336686.69198337, 336702.53498337, 336718.26598337]),
+         array([3143986.09866306, 3143973.90466306, 3143961.73066306]))
         """
         self.inspect 
         
@@ -476,10 +482,6 @@ Profile class deals with the positions collected in the survey area.
 
 Parameters 
 ----------
-
-datum: string, default = 'WGS84'
-    well known datum ex. WGS84, NAD27, NAD83, etc.
-
 utm_zone: Optional, string
     zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
     of coordinates points in the survey area. It should be a string (##N or ##S)
@@ -494,13 +496,17 @@ coordinate_system: str, ['utm'|'dms'|'ll']
    degree-minutes-second (``dms`` or ``dd:mm:ss``) data, they must be 
    specify as coordinate system in order to accept the non-numerical data 
    before transforming to ``ll``. If ``data`` is passed to the :meth:`.fit`
-   method and ``dms`` is not specify, `x` and `y` values should be discared. 
+   method and ``dms`` is not specify, `x` and `y` values should be discared.
+   
+datum: string, default = 'WGS84'
+    well known datum ex. WGS84, NAD27, NAD83, etc.
 
 epsg: Optional, int
-    epsg number defining projection (see http://spatialreference.org/ref/ for moreinfo)
+    epsg number defining projection (
+        see http://spatialreference.org/ref/ for moreinfo)
     Overrides utm_zone if both are provided. 
 
-reference_ellipsoid: Optional, int 
+reference_ellipsoid: int, default=23 
     reference ellipsoids is derived from Peter H. Dana's website-
     http://www.utexas.edu/depts/grg/gcraft/notes/datum/elist.html
     Department of Geography, University of Texas at Austin

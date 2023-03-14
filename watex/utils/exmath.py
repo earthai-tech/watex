@@ -5252,7 +5252,9 @@ def scale_positions (
     >>> east = [336698.731, 336714.574, 336730.305] 
     >>> north = [3143970.128, 3143957.934, 3143945.76]
     >>> east_c , north_c= scale_positions (east, north, step =20, view =True  ) 
-      
+    >>> east_c , north_c
+    (array([336686.69198337, 336702.53498337, 336718.26598337]),
+     array([3143986.09866306, 3143973.90466306, 3143961.73066306]))
     """
     from ..site import Location
     
