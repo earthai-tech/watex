@@ -97,9 +97,12 @@ class Profile:
         ------------
         x, y: ArrayLike 1d /str  
            One dimensional arrays. `x` can be consider as the abscissa of the  
-           landmark and `y` as ordinates array.  If `x` or `y` is passed as string 
-           argument, `data` must be passed as `fit_params` keyword arguments 
-           and the name of `x` and `y` must be a column name of the `data`. 
+           landmark and `y` as ordinates array.  If `x` or `y` is passed as 
+           string argument, `data` must be passed as `fit_params` keyword 
+           arguments and the name of `x` and `y` must be a column name of 
+           the `data`. 
+           By default `x` and `y` are considered as `longitude` and `latitude` 
+           when ``dms`` or ``ll`` coordinate system is passed. 
   
         elev: ArrayLike 1d/str 
             Arraylike 1d of elevation at each positions. If not supplied 
@@ -214,7 +217,7 @@ class Profile:
         """
         self.inspect 
         
-        return get_bearing((self.x[0], self.y[0]) , ( self.x[-1], self.y[-1] ), 
+        return get_bearing((self.y[0], self.x[0]) , ( self.y[-1], self.x[-1] ), 
                            to_deg= to_degree 
                            ) 
     
@@ -262,7 +265,7 @@ class Profile:
         
         if self.coordinate_system =='ll': 
             x , y = Location.to_utm_in(
-                self.x, self.y, 
+                lats= self.y, lons =self.y, 
                 epsg = self.epsg , 
                 datum = self.datum , 
                 reference_ellipsoid= self.reference_ellipsoid
@@ -369,10 +372,10 @@ class Profile:
         if self.coordinate_system !='ll' and self.utm_zone is None: 
             warnings.warn(msg ) 
         if self.coordinate_system !='ll': 
-            xs , ys = Location.to_latlon_in(
+            ys , xs = Location.to_latlon_in(
                 self.x, self.y, utm_zone= self.utm_zone) 
       
-        b = self.bearing((xs[0] , ys[0]) , (xs[-1], ys[-1]),to_degree =False 
+        b = self.bearing((ys[0] , xs[0]) , (ys[-1], xs[-1]),to_degree =False 
                          ) # return bearing in rad.
      
         xx = self.x + ( d * np.cos (b))
@@ -461,8 +464,8 @@ class Profile:
         step = step or self.distance (average_distance= True )
         r = r or self.bearing() 
   
-        reflat = ( self.x [0], self.x[-1]) 
-        reflong = (self.y[0], self.y[-1])
+        reflat = ( self.y [0], self.y[-1]) 
+        reflong = (self.x[0], self.x[-1])
   
         isutm = False if self.coordinate_system =='ll' else True 
         return makeCoords(
@@ -480,6 +483,17 @@ class Profile:
 Profile.__doc__="""\
 Profile class deals with the positions collected in the survey area. 
 
+In principle, there is no exact solution  between longitude/latitude to 
+x/y coordinates. Indeed, there is no isometric map from the sphere to the 
+plane. Indeed, when you convert lon/lat coordinates from the sphere to x/y 
+coordinates in the plane, we cannot hope that all lengths will be preserved 
+by this operation. Therefore, we have to accept some kind of deformation. 
+For smallish parts of earth's surface, transverse Mercator is quite common.
+
+By default, we use ``x`` for `longitude` and ``y`` for `latitude`. This is 
+useful when data is passed as longitude-latitude (``ll``) or degree-minutes-
+seconds (``dms``) in the `fit` method.
+
 Parameters 
 ----------
 utm_zone: Optional, string
@@ -496,7 +510,7 @@ coordinate_system: str, ['utm'|'dms'|'ll']
    degree-minutes-second (``dms`` or ``dd:mm:ss``) data, they must be 
    specify as coordinate system in order to accept the non-numerical data 
    before transforming to ``ll``. If ``data`` is passed to the :meth:`.fit`
-   method and ``dms`` is not specify, `x` and `y` values should be discared.
+   method and ``dms`` is not specify, `x` and `y` values should be discarded.
    
 datum: string, default = 'WGS84'
     well known datum ex. WGS84, NAD27, NAD83, etc.
