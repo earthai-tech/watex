@@ -278,6 +278,8 @@ class Profile:
         x, *_ = scalePosition(self.x ) 
         y, *_ = scalePosition(self.y )
         
+        return x, y 
+    
     def shift_positions (
         self, 
         *, 
@@ -341,7 +343,7 @@ class Profile:
             " should be less accurate. Provide the UTM"
             " zone to improve the accuracy.")
         
-        if self.coordinate_system_ =='ll': 
+        if self.coordinate_system =='ll': 
             xs = np.array(copy.deepcopy(self.x)) 
             ys = np.array(copy.deepcopy(self.y))
 
