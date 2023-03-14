@@ -513,13 +513,21 @@ Examples
 >>> from watex.site import Profile  
 >>> xy = load_edis (samples =7 , as_frame =True , key ='latitude longitude') 
 >>> xy.head (2)
- 
+    longitude   latitude
+0  110.485833  26.051390
+1  110.486153  26.051794 
 >>> pro= Profile ().fit(xy.latitude, xy.longitude ) 
->>> pro.distance () 
+>>> pro.distance ()
+63.12282557384449 
 >>> pro.bearing () 
+35.4263711416628
 >>> pro.scale_positions () 
 >>> pro.shift_positions () 
-
+>>> pro.make_xy_coordinates( ) 
+(array([110.48583316, 110.48615319, 110.48647322, 110.48679325,
+       110.48711328, 110.48743331, 110.48775334]), 
+ array([26.05138954, 26.05179371, 26.05219788, 26.05260205, 26.05300622,
+       26.05341038, 26.05381455]))
 """
     
 class Location (object): 
