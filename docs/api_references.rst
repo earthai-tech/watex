@@ -526,6 +526,7 @@ Functions
    :template: class.rst
 
    site.Location
+   site.Profile
 
 .. _transformers_ref:
 
@@ -585,6 +586,8 @@ Functions
 	utils.get_aquifer_section
 	utils.get_aquifer_sections
 	utils.get_compressed_vector
+	utils.get_bearing
+	utils.get_distance
 	utils.get_full_frequency
 	utils.get_profile_angle
 	utils.get_sections_from_depth

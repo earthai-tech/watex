@@ -202,11 +202,11 @@ html_theme_options = {
             "icon": "fab fa-twitter",
             "type": "fontawesome",
         },
-            # {
-            #     "name": "PyPI",
-            #     "url": "https://pypi.org/project/watex", 
-            #     "icon": "fa-solid fa-box",
-            # },
+            {
+                "name": "PyPI",
+                "url": "https://pypi.org/project/watex", 
+                "icon": "fa-solid fa-box",
+            },
     ],
     "show_prev_next": False,
     "navbar_start": ["navbar-logo"],

@@ -24,6 +24,7 @@ from ..exceptions import (
 from ..externals.z import Z as EMz 
 from ..utils.funcutils import ( 
     _assert_all_types, 
+    assert_ratio,
     make_ids, 
     show_stats, 
     fit_by_ll, 
@@ -1998,27 +1999,9 @@ class Processing (EM) :
             >>> c, freq_new  = pobj.qc ( tol=.6 , return_freq =True)
             
         """
-        if isinstance (tol, str): 
-            tol = tol.replace('%', '')
-        try : 
-            tol = float (tol)
-        except TypeError : 
-            raise TypeError (f"Unable to convert {type(tol).__name__!r} "
-                             f"to float: {tol}")
-        except ValueError: 
-            raise ValueError(f"Expects 'float' not {type(tol).__name__!r}: "
-                             f"{(tol)!r}")
-        if tol ==0.: 
-            raise ValueError ("Expects a tolerance value  greater than "
-                              f"'0' and less than '1', got: '{tol}'")
-            
-        if 1 < tol <=100: 
-            tol /= 100. 
-        if tol > 100: 
-            raise ValueError ("Tolerance value should be greater than"
-                              f" '0' and less than '1', got: {tol}")
-
         self.inspect 
+        tol = assert_ratio(tol , bounds =(0, 1), exclude_value =0, 
+                           name ='tolerance', as_percent =True )
         
         f=self.freqs_.copy() 
      

@@ -4984,7 +4984,7 @@ def assert_ratio(v, /, bounds: List[float] = None , exclude_value:float= None,
                          name ='tolerance', as_percent =True )
     0.02
     """ 
-    msg =("greater than '{}' and less than '{}'" )
+    msg =("greater than {} and less than {}" )
     
     if isinstance (v, str): 
         v = v.replace('%', '')
@@ -5004,7 +5004,7 @@ def assert_ratio(v, /, bounds: List[float] = None , exclude_value:float= None,
           
     bounds = bounds or []
     low, up, *_ = list(bounds) + [ None, None]
-    e=("Expects a {} value {}, got: '{}'".format(
+    e=("Expects a {} value {}, got: {}".format(
             name , msg.format(low, up), v)) 
     err = ValueError (e)
 
@@ -5029,11 +5029,51 @@ def assert_ratio(v, /, bounds: List[float] = None , exclude_value:float= None,
                 raise ValueError (e.replace (", got:", ' excluding') + ".")
             
     if as_percent and v > 100: 
-         raise ValueError ("{} value should be {}, got: '{}'".
+         raise ValueError ("{} value should be {}, got: {}".
                            format(name.title(), msg.format(low, up), v  ))
     return v 
 
+def exist_features (df, features, error='raise'): 
+    """Control whether the features exist or not  
     
+    :param df: a dataframe for features selections 
+    :param features: list of features to select. Lits of features must be in the 
+        dataframe otherwise an error occurs. 
+    :param error: str - raise if the features don't exist in the dataframe. 
+        *default* is ``raise`` and ``ignore`` otherwise. 
+        
+    :return: bool 
+        assert whether the features exists 
+    """
+    isf = False  
+    
+    error= 'raise' if error.lower().strip().find('raise')>= 0  else 'ignore' 
+
+    if isinstance(features, str): 
+        features =[features]
+        
+    features = _assert_all_types(features, list, tuple, np.ndarray)
+    set_f =  set (features).intersection (set(df.columns))
+    if len(set_f)!= len(features): 
+        nfeat= len(features) 
+        msg = f"Feature{'s' if nfeat >1 else ''}"
+        if len(set_f)==0:
+            if error =='raise':
+                raise ValueError (f"{msg} {smart_format(features)} "
+                                  f"{'does not' if nfeat <2 else 'dont'}"
+                                  " exist in the dataframe")
+            isf = False 
+        # get the difference 
+        diff = set (features).difference(set_f) if len(
+            features)> len(set_f) else set_f.difference (set(features))
+        nfeat= len(diff)
+        if error =='raise':
+            raise ValueError(f"{msg} {smart_format(diff)} not found in"
+                             " the dataframe.")
+        isf = False  
+    else : isf = True 
+    
+    return isf    
     
     
     

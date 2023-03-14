@@ -47,6 +47,62 @@ except :
 
 _logger = watexlog.get_watex_logger(__name__)
 
+def assert_xy_coordinate_system (x, y ): 
+    """ Assert the coordinates system of x and y. 
+    
+    Parameters 
+    ------------
+    x, y : arraylike 1d 
+       Array of position coordinates x and y  
+    
+    Returns 
+    ---------
+    cs: str
+       Coordinates system  ['utm'| 'dms'|'ll'] as:
+       
+       -'ll' for longitude -latitude coordinate system 
+       - 'dms' for degree-minute-second (DD:MM:SS) coordinate system.
+       - 'utm' for 'UTM' coordinate system. 
+      
+    Note 
+    -------
+    Note that any other values that does not fit longitude-latitude ('ll') 
+    or Degree-minute-seconds ('DD:MM:SS') should be considered as 
+    'UTM' coordinate system. 
+       
+    Examples 
+    --------
+    >>> import numpy as np 
+    >>> np.random.seed (42 ) 
+    >>> from watex.utils.gistools import assert_xy_coordinate_system
+    >>> x, y = np.random.rand(7 ), np.arange (7 )
+    >>> assert_xy_coordinate_system (x, y)
+    'll'
+    >>> assert_xy_coordinate_system (x, y*180) 
+    'utm'
+    >>> x = ['28:24:43.08','28:24:42.69','28:24:42.31'] 
+    >>> y = ['109:19:58.34','109:19:58.93','109:19:59.51'] 
+    >>> assert_xy_coordinate_system (x, y) 
+    'dms'
+    """
+    def isdms (a ): 
+        return all ([':' in str (s) for s in a ] )
+        
+    cs ='utm'
+    x = np.array (x ) ; y = np.array (y) # for consistency 
+    
+    if ( 
+            isdms (x) or isdms (y) ) : 
+        cs ='dms'
+    
+    elif (
+             ( (x < 90).all () and  (y <180).all())
+          or (( x <180).all() and (y <90).all())
+          ): 
+        cs ='ll'
+    
+        
+    return cs 
 
 def _assert_minutes(minutes):
     assert 0 <= minutes < 60., \
@@ -91,7 +147,7 @@ def convert_position_str2float(position_str):
     >>> gis_tools.convert_position_str2float('-118:34:56.3')
     """
     
-    if position_str in [None, 'None']:
+    if str(position_str).lower() =='none':
         return None
     
     p_list = position_str.split(':')
@@ -694,7 +750,11 @@ def ll_to_utm(reference_ellipsoid, lat, lon):
     a = _ellipsoid[reference_ellipsoid][_equatorial_radius]
     ecc_squared = _ellipsoid[reference_ellipsoid][_eccentricity_squared]
     k0 = 0.9996
-
+    if isinstance (lat, str): 
+        lat = convert_position_str2float(lat) 
+    if isinstance (lon, str): 
+        lon = convert_position_str2float(lon) 
+        
     # Make sure the longitude is between -180.00 .. 179.9
     long_temp = (lon + 180) - int((lon + 180) / 360) * 360 - 180  # -180.00 .. 179.9
 

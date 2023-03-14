@@ -64,7 +64,10 @@ class ProcessingError(Exception):
     """Raises an Exception if the auto/data processing failed to be executed 
     properly."""
     pass
-
+class ProfileError(Exception):
+    """Raises an Exception if the arguments passed to the Profile object are 
+    mismatched or wrong."""
+    pass
 class ResistivityError(Exception):
     """Raises an Exception if the resistivity array is missing in the dataset 
     or the column name/index for restrieving the resistivity data is wrong."""

@@ -85,6 +85,7 @@ from .validator import (
     get_estimator_name , 
     check_array, 
     )
+
 _logger = watexlog().get_watex_logger(__name__)
 
 __all__=[ 

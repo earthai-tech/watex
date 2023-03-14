@@ -42,7 +42,8 @@ from .exmath import (
     plotOhmicArea, 
     plot_confidence_in,
     plot_sfi, 
-    qc
+    get_distance,
+    qc, 
     )
 from .funcutils import ( 
     reshape, 
@@ -197,6 +198,7 @@ __all__=[
         'normalizer',
         'plot_strike',
         'get_target', 
+        'get_distance',
         'qc'
         ]
 
