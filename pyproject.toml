@@ -12,7 +12,7 @@ version="0.1.9"
 dynamic = [  "keywords"]
 
 dependencies=[
-    "scikit-learn>=1.1.2",
+    "scikit-learn==1.1.2",
     "xgboost>=1.5.0",
     "seaborn>=0.12.0",
     "pyyaml>=5.0.0",

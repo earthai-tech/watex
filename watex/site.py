@@ -50,6 +50,8 @@ from .utils.validator import (
     assert_xy_in, 
     ) 
 
+__all__= ['Location', 'Profile']
+
 class Profile: 
     
     def __init__(
@@ -67,20 +69,6 @@ class Profile:
         self.utm_zone=utm_zone
         self.coordinate_system= coordinate_system
 
-    @property 
-    def inspect (self): 
-        """ Inspect object whether is fitted or not"""
-        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
-               " Call 'fit' with appropriate arguments before using"
-               " this method"
-               )
-        
-        if not hasattr (self, 'x'): 
-            raise NotFittedError(msg.format(
-                obj=self)
-            )
-        return 1 
-    
     def fit(
         self, 
         x:ArrayLike |str , 
@@ -215,9 +203,31 @@ class Profile:
            The value of bearing in degree ( default). 
            
         """
+        msg =(
+            "x, y are not in longitude/latitude format"
+            " while 'utm_zone' is not supplied. Correction"
+            " should be less accurate. Provide the UTM"
+            " zone to improve the accuracy.")
+        
         self.inspect 
         
-        return get_bearing((self.y[0], self.x[0]) , ( self.y[-1], self.x[-1] ), 
+        if self.coordinate_system =='ll': 
+            xs = np.array(copy.deepcopy(self.x)) 
+            ys = np.array(copy.deepcopy(self.y))
+        
+        if ( 
+                self.coordinate_system !='ll' 
+                and self.utm_zone is None) : 
+            warnings.warn(msg ) 
+            
+        self.utm_zone = self.utm_zone or '49R'    
+        if self.coordinate_system !='ll': 
+            # recompute value to lat/lon 
+            # from easting/northing
+            ys , xs = Location.to_latlon_in(
+                self.x, self.y, utm_zone= self.utm_zone) 
+        # compute bearing.     
+        return get_bearing((ys[0], xs[0]) , ( ys[-1], xs[-1] ), 
                            to_deg= to_degree 
                            ) 
     
@@ -243,7 +253,7 @@ class Profile:
         Returns 
         ---------
         d: Arraylike of shape (N-1) 
-          Is the distance between points. 
+          Is the distance between points or the average of all distances.  
         
         Examples 
         --------- 
@@ -289,10 +299,11 @@ class Profile:
         self, 
         *, 
         step:float= None, 
-        use_average_dist:bool=False, 
+        use_average_dist:bool=False,
+        angle:Optional[float]=None,
         ): 
         """
-        Shift the x and y  position coordinates from the step. 
+        Shift the x and y  position coordinates from the step and angle. 
          
         By default, it consider `x` and `y` as easting/latitude and 
         northing/longitude coordinates respectively. It latitude and longitude 
@@ -305,22 +316,10 @@ class Profile:
            all positions should be used instead. 
         use_average_dist: bool, default=False, 
            Use the distance computed between positions for the correction. 
-        utm_zone: str,  Optional (##N or ##S)
-           UTM zone in the form of number and North or South hemisphere. For
-           instance '10S' or '03N'. Note that if `x` and `y` are UTM coordinates,
-           the `utm_zone` must be provide to accurately correct the positions, 
-           otherwise the default value ``49R`` should be used which may lead to 
-           less accuracy. 
            
-        shift: bool, default=True,
-           Shift the coordinates from the units of `step`. This is the default 
-           behavor. If ``False``, the positions are just scaled. 
-        
-        view: bool, default=True 
-           Visualize the scaled positions 
-           
-        kws: dict, 
-           Keyword arguments passed to :meth:`~.distance`
+        angle: float, Optional 
+           Bearing angle in degree to shift the profile line . If ``None``, 
+           the ``bearing`` of `x` and `y` is used instead.
            
         Returns 
         --------
@@ -346,58 +345,51 @@ class Profile:
         """
         self.inspect 
         
-        msg =(
-            "x, y are not in longitude/latitude format"
-            " while 'utm_zone' is not supplied. Correction"
-            " should be less accurate. Provide the UTM"
-            " zone to improve the accuracy.")
-        
-        if self.coordinate_system =='ll': 
-            xs = np.array(copy.deepcopy(self.x)) 
-            ys = np.array(copy.deepcopy(self.y))
-
-        if step is None: 
-            warnings.warn("Step is not given. Average distance "
-                          "between points should be used instead.")
+        if ( not use_average_dist
+            and step is None 
+            ): 
+            warnings.warn("Step is not given. The mean-distance of"
+                          " positions should be used instead.")
             use_average_dist =True 
-        else:  
-            d = float (_assert_all_types(step, float, int, 
-                                         objname ='Step (m)'))
-        if use_average_dist: 
-            d = self.distance (
-                average_distance= use_average_dist) 
             
-        # compute bearing. 
-        self.utm_zone = self.utm_zone or '49R'
-        if self.coordinate_system !='ll' and self.utm_zone is None: 
-            warnings.warn(msg ) 
-        if self.coordinate_system !='ll': 
-            ys , xs = Location.to_latlon_in(
-                self.x, self.y, utm_zone= self.utm_zone) 
-      
-        b = self.bearing((ys[0] , xs[0]) , (ys[-1], xs[-1]),to_degree =False 
-                         ) # return bearing in rad.
+        if use_average_dist: 
+            step = self.distance (
+                average_distance= use_average_dist) 
+ 
+        step  = float (_assert_all_types(step, float, int, objname ='Step'))
+
+        if angle is not None: 
+            angle  = float (_assert_all_types(
+                step, float, int, objname ='Bearing angle (in degree)'))
+            
+            angle = np.deg2rad (angle %360)  
+            
+        angle = angle or self.bearing(to_degree =False ) # return bearing in rad.
      
-        xx = self.x + ( d * np.cos (b))
-        yy = self.y +  (d * np.sin(b))
+        xx = self.x + ( step * np.cos (angle))
+        yy = self.y +  (step  * np.sin(angle))
 
         return xx, yy 
     
     @staticmethod 
     def dms_to_ll (x:ArrayLike  , y:ArrayLike ): 
         """ Convert array x and y from DD:MM:SS to latlon. """
-
+        def f (o ): 
+            # faster than 
+            # x = np.array ( [ convert_position_str2float(i) for i in x ], 
+            #               dtype = np.float64)
+            # while apply_along not possible due to the string dtype during 
+            # the loop
+            # x = np.apply_along_axis(convert_position_str2float, 0, 
+            #                         np.array (x, dtype =str ))
+            return map ( lambda i: convert_position_str2float(i) , o)
+        
         if not _is_numeric_dtype(x , to_array =True ): 
            # reconvert object to str for consistency  
-           x = np.array ( [ convert_position_str2float(i) for i in x ], 
-                         dtype = np.float64)
-           # x = np.apply_along_axis(convert_position_str2float, 0, 
-           #                         np.array (x, dtype =str ))
+           x = np.array ( list (f (x)), dtype = np.float64 )
         if not _is_numeric_dtype(y , to_array =True): 
-           # y = np.apply_along_axis(convert_position_str2float, 0,  
-           #                         np.array (y, dtype =str ))
-           y = np.array ( [ convert_position_str2float(i) for i in y ], 
-                         dtype = np.float64)
+           y = np.array ( list (f (y)), dtype = np.float64 )
+          
         return x, y
     
 
@@ -480,6 +472,19 @@ class Profile:
             **kws
             ) 
     
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        if not hasattr (self, 'x'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
+    
 Profile.__doc__="""\
 Profile class deals with the positions collected in the survey area. 
 
@@ -497,9 +502,9 @@ seconds (``dms``) in the `fit` method.
 Parameters 
 ----------
 utm_zone: Optional, string
-    zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
-    of coordinates points in the survey area. It should be a string (##N or ##S)
-    in the form of number and North or South hemisphere, 10S or 03N
+   zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
+   of coordinates points in the survey area. It should be a string (##N or ##S)
+   in the form of number and North or South hemisphere, 10S or 03N
 coordinate_system: str, ['utm'|'dms'|'ll'] 
    The coordinate system in which the data points for the profile is collected. 
    If not given, the auto-detection will be triggered and find the  suitable 
@@ -513,35 +518,34 @@ coordinate_system: str, ['utm'|'dms'|'ll']
    method and ``dms`` is not specify, `x` and `y` values should be discarded.
    
 datum: string, default = 'WGS84'
-    well known datum ex. WGS84, NAD27, NAD83, etc.
+   well known datum ex. WGS84, NAD27, NAD83, etc.
 
 epsg: Optional, int
-    epsg number defining projection (
+   epsg number defining projection (
         see http://spatialreference.org/ref/ for moreinfo)
-    Overrides utm_zone if both are provided. 
+   Overrides utm_zone if both are provided. 
 
 reference_ellipsoid: int, default=23 
-    reference ellipsoids is derived from Peter H. Dana's website-
-    http://www.utexas.edu/depts/grg/gcraft/notes/datum/elist.html
-    Department of Geography, University of Texas at Austin
-    Internet: pdana@mail.utexas.edu . Default is ``23`` constrained to 
-    WGS84. 
+   reference ellipsoids is derived from Peter H. Dana's website-
+   http://www.utexas.edu/depts/grg/gcraft/notes/datum/elist.html
+   Department of Geography, University of Texas at Austin
+   Internet: pdana@mail.utexas.edu . Default is ``23`` constrained to 
+   WGS84. 
     
 Examples 
 --------- 
 >>> from watex.datasets import load_edis
 >>> from watex.site import Profile  
->>> xy = load_edis (samples =7 , as_frame =True , key ='latitude longitude') 
+>>> xy = load_edis (samples =17 , as_frame =True , key ='latitude longitude') 
 >>> xy.head (2)
     longitude   latitude
 0  110.485833  26.051390
 1  110.486153  26.051794 
 >>> pro= Profile ().fit(xy.latitude, xy.longitude ) 
 >>> pro.distance ()
-63.12282557384449 
+62.890276656978244
 >>> pro.bearing () 
-35.4263711416628
->>> pro.scale_positions () 
+35.4252016495945
 >>> pro.shift_positions () 
 >>> pro.make_xy_coordinates( ) 
 (array([110.48583316, 110.48615319, 110.48647322, 110.48679325,

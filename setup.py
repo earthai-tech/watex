@@ -64,7 +64,7 @@ setup_kwargs = dict()
 # commands
 setup_kwargs['entry_points'] = {
     'watex.commands': [
-        'wx=watex.watex.cli:cli',
+        'wx=watex.cli:cli',
         ],
     'console_scripts':[
         'version= watex.cli:version', 
@@ -91,31 +91,34 @@ setup_kwargs['packages'] = [
     'watex.externals._pkgs', 
      ]
 
-setup_kwargs['install_requires'] = [
-    "scikit-learn>=1.1.2",
-    "xgboost>=1.5.0",
-    "seaborn>=0.12.0",
-    "pyyaml>=5.0.0",
-    "pycsamt>=1.1.2",
-    "pyproj>=3.3.0",
-    "joblib>=1.2.0",
-    "openpyxl>=3.0.3",
-    "h5py>=3.2.0",
-    "tables>=3.6.1",
-    "numpy <=1.23.0",
+setup_kwargs['install_requires'] = [    
+    "numpy >=1.23.0",#<=
     "scipy>=1.9.0",
     "pandas>=1.4.0",
-    "cython>=0.29.33", 
-    "matplotlib==3.5.2",
-    "missingno>=0.4.2",
-    "pandas_profiling>=0.1.7",
-    "pyjanitor>=0.1.7",
-    "yellowbrick>=1.5.0",
-    "mlxtend>=0.21",
+    "cython>=0.29.33",
+    "pyyaml>=5.0.0", 
+    "openpyxl>=3.0.3",
+    "seaborn>=0.12.0", 
+    "xgboost>=1.5.0",
+    "pycsamt>=1.1.2",
+    "pyproj>=3.3.0",
+    
+    # "joblib>=1.2.0",
+    # "h5py>=3.2.0",
+    # "tables>=3.6.1",
+
+    # "missingno>=0.4.2",
+    # "pandas_profiling>=0.1.7",
+    # "pyjanitor>=0.1.7",
+    # "yellowbrick>=1.5.0",
+    # "mlxtend>=0.21",
     "tqdm <=4.64.1",
+    "scikit-learn==1.1.2",
     "threadpoolctl==3.1.0",
+    "matplotlib==3.5.2",
  ]
-                                     
+# numpy scipy pandas xgboost seaborn openpyxl  scikit-learn==1.2 
+                               
 setup_kwargs['python_requires'] ='>=3.9'
 
 setup(

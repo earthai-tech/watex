@@ -92,7 +92,7 @@ del _main_dependencies, _dependency, _missing_dependencies
 with warnings.catch_warnings():
     warnings.filterwarnings(action='ignore', category=UserWarning)
     import watex.exlib as sklearn 
-    from .exlib.optional import XGBClassifier
+    from .exlib.gbm import XGBClassifier
 
 from .analysis import ( 
     nPCA, 
@@ -200,9 +200,6 @@ try :
         )
 except ImportError :
     pass 
-try : 
-    from . import cli 
-except: pass 
 
 def setup_module(module):
     """Fixture for the tests to assure globally controllable seeding of RNGs"""
@@ -327,6 +324,5 @@ __all__ = [
     "make_naive_pipe", 
     "bi_selector", 
     "show_versions",
-    "cli", 
     ]
 
