@@ -7,4 +7,7 @@ This is a minor change performed from ``v0.1.8`` and adaptations.
   Use absolute instead.
 
 - Set a slice components property `_c_` as  a :class:`watex.view.TPlot` attribute used by all 
-  related methods. 
+  related methods.
+
+- update in the deprecated Numpy alaises: ``np.float``, ``np.complex`` for the builtin `float`,`complex`.
+  See  https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations

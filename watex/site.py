@@ -136,7 +136,15 @@ class Profile:
                suppress_cf= False 
             # suppress non numerical values 
             data = to_numeric_dtypes(data, pop_cat_features= suppress_cf)
-
+            # get elevation if string is given 
+            if isinstance (elev , str): 
+                elev = elev if elev in data.columns else None 
+                if elev is None: 
+                    warnings.warn(
+                        "Elevation {elev!r} not found in the dataframe")
+                if elev is not None: 
+                    elev = np.array (data[elev]) 
+        
         self.x, self.y = assert_xy_in( x , y, data = data )
         
        
@@ -154,7 +162,8 @@ class Profile:
                 # conversion succeeded. 
                 self.coordinate_system =='ll' 
         # set 0. to elevation 
-        self.elev = elev or np.zeros_like( self.x, dtype = np.float32 ) 
+        self.elev = elev if elev is not None else np.zeros_like(
+            self.x, dtype = np.float32 ) 
         self.elev = np.array (self.elev , dtype = np.float32 )
         
         if not _check_consistency_size (self.x , np.array( self.elev),
@@ -205,7 +214,7 @@ class Profile:
         """
         msg =(
             "x, y are not in longitude/latitude format"
-            " while 'utm_zone' is not supplied. Correction"
+            " while 'utm_zone' is not set. The bearing"
             " should be less accurate. Provide the UTM"
             " zone to improve the accuracy.")
         
@@ -456,7 +465,7 @@ class Profile:
         step = step or self.distance (average_distance= True )
         r = r or self.bearing() 
   
-        reflat = ( self.y [0], self.y[-1]) 
+        reflat = ( self.y[0], self.y[-1]) 
         reflong = (self.x[0], self.x[-1])
   
         isutm = False if self.coordinate_system =='ll' else True 

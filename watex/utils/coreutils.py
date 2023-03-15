@@ -2009,7 +2009,7 @@ def makeCoords(
         lon = np.zeros_like(reflon_ar) 
         lat = lon.copy() 
         
-        for kk , (lo, la) in enumerate (zip(reflat_ar, reflon_ar)): 
+        for kk , (lo, la) in enumerate (zip( reflon_ar, reflat_ar)): 
             try : 
                 with warnings.catch_warnings(): # ignore multiple warnings 
                     warnings.simplefilter('ignore')
@@ -2026,8 +2026,8 @@ def makeCoords(
                               " is less accurate than using GDAL.")
         
         if raise_warning:
-            warnings.warn("By default 'easting' and 'northing' are presumed to match"
-                          " the first and second argument respectively.") 
+            warnings.warn("By default,'easting/northing' are assumed to"
+                          " fit the 'longitude/latitude' respectively.") 
         
         reflat_ar, reflon_ar = lat , lon 
     

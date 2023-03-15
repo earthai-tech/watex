@@ -84,29 +84,48 @@ except ImportError:
 #-----
 
 def to_numeric_dtypes (
-        arr: NDArray | DataFrame, *, 
-        columns:List[str] = None, 
-        return_feature_types:bool =False , 
-        missing_values:float = np.nan, 
-        pop_cat_features:bool=False, 
-        verbose:bool= False, 
+    arr: NDArray | DataFrame, *, 
+    columns:List[str] = None, 
+    return_feature_types:bool =False , 
+    missing_values:float = np.nan, 
+    pop_cat_features:bool=False, 
+    sanitize_columns:bool=False, 
+    regex=None, 
+    verbose:bool= False,
     )-> DataFrame : 
     """ Convert array to dataframe and coerce arguments to appropriate dtypes. 
     
     Parameters 
     -----------
     arr: Ndarray or Dataframe, shape (M=samples, N=features)
-        Array of dataframe to create 
+        Array of dataframe to create
+        
     columns: list of str, optional 
         Usefull to create a dataframe when array is given. Be aware to fit the 
         number of array columns (shape[1])
+        
     return_feature_types: bool, default=False, 
         return the list of numerical and categorial features
     missing_values: float: 
         Replace the missing or empty string if exist in the dataframe.
+        
     pop_cat_features:bool, default=False, 
         remove removes the categorial features  from the DataFrame.
         
+    sanitize_columns: bool, default=False, 
+       remove undesirable character in the data columns using the default
+       argument of `regex` parameters. 
+       .. versionadded:: 0.1.9
+       
+    regex: `re` object,
+        Regular expresion object used to polish the data columns.
+        the default is:: 
+            
+        >>> import re 
+        >>> re.compile (r'[_#&.)(*@!_,;\s-]\s*', flags=re.IGNORECASE)
+          
+       .. versionadded:: 0.1.9
+       
     verbose: bool, default=False, 
         outputs a message by listing the categorial items dropped from 
         the dataframe if exists. 
@@ -141,6 +160,8 @@ def to_numeric_dtypes (
     df = pd.DataFrame (arr, columns =columns  
                        ) if isinstance (arr, np.ndarray) else arr 
     
+    if sanitize_columns: df = sanitize_frame_cols(df, regex=regex)  
+        
     nf,cf =[], []
     #replace empty string by Nan if NaN exist in dataframe  
     df= df.replace(r'^\s*$', missing_values, regex=True)

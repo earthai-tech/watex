@@ -100,8 +100,8 @@ class ResPhase(object):
                                                 0, self._z)
         self._phase = np.rad2deg(np.angle(self._z))
 
-        self._resistivity_err = np.zeros_like(self._resistivity, dtype=np.float)
-        self._phase_err = np.zeros_like(self._phase, dtype=np.float)
+        self._resistivity_err = np.zeros_like(self._resistivity, dtype=np.float64)
+        self._phase_err = np.zeros_like(self._phase, dtype=np.float64)
 
         # calculate resistivity and phase
         if self._z_err is not None:
@@ -113,8 +113,9 @@ class ResPhase(object):
                                 self._z[idx_f, ii, jj].real,
                                 self._z[idx_f, ii, jj].imag,
                                 self._z_err[idx_f, ii, jj])
-                        self._resistivity_err[idx_f, ii, jj] = \
-                            self._resistivity[idx_f, ii, jj] * r_err
+                        with np.errstate(all='ignore'): 
+                            self._resistivity_err[idx_f, ii, jj] = \
+                                self._resistivity[idx_f, ii, jj] * r_err
 
                         self._phase_err[idx_f, ii, jj] = phi_err
 
@@ -284,7 +285,7 @@ class Z(ResPhase):
     """
     Z class - generates an impedance tensor (Z) object.
 
-    Z is a complex array of the form (n_freq, 2, 2),
+    Z is a np.complex128 array of the form (n_freq, 2, 2),
     with indices in the following order:
 
         - Zxx: (0,0)
@@ -294,7 +295,7 @@ class Z(ResPhase):
 
     All errors are given as standard deviations (sqrt(VAR))
 
-    :param z_array: array containing complex impedance values
+    :param z_array: array containing np.complex128 impedance values
     :type z_array: numpy.ndarray(n_freq, 2, 2)
 
 
@@ -355,7 +356,7 @@ class Z(ResPhase):
         """
         Initialise an instance of the Z class.
 
-        :param z_array: array containing complex impedance values
+        :param z_array: array containing np.complex128 impedance values
         :type z_array: numpy.ndarray(n_freq, 2, 2)
 
         :param z_err_array: array containing error values (standard deviation)
@@ -377,14 +378,14 @@ class Z(ResPhase):
 
         if z_array is not None:
             if len(z_array.shape) == 2 and z_array.shape == (2, 2):
-                if z_array.dtype in ['complex', 'float', 'int']:
-                    self._z = np.zeros((1, 2, 2), 'complex')
+                if z_array.dtype in ['np.complex128', 'float', 'int']:
+                    self._z = np.zeros((1, 2, 2), 'np.complex128')
                     self._z[0] = z_array
 
         if z_err_array is not None:
             if len(z_err_array.shape) == 2 and z_err_array.shape == (2, 2):
-                if z_err_array.dtype in ['complex', 'float', 'int']:
-                    self._z_err = np.zeros((1, 2, 2), 'complex')
+                if z_err_array.dtype in ['np.complex128', 'float', 'int']:
+                    self._z_err = np.zeros((1, 2, 2), 'np.complex128')
                     self._z_err[0] = z_err_array
 
         self.rotation_angle = 0.
@@ -447,7 +448,7 @@ class Z(ResPhase):
         Set the attribute 'z'.
 
 
-        :param z_array: complex impedance tensor array
+        :param z_array: np.complex128 impedance tensor array
         :type z_array: np.ndarray(nfreq, 2, 2)
 
         Test for shape, but no test for consistency!
@@ -457,13 +458,13 @@ class Z(ResPhase):
 
         try:
             if len(z_array.shape) == 3 and z_array.shape[1:3] == (2, 2):
-                if z_array.dtype in ['complex', 'float', 'int']:
+                if z_array.dtype in ['np.complex128', 'float', 'int']:
                     self._z = z_array
         except IndexError:
             try:
                 if len(z_array.shape) == 2 and z_array.shape == (2, 2):
-                    if z_array.dtype in ['complex', 'float', 'int']:
-                        self._z = np.zeros((1, 2, 2), 'complex')
+                    if z_array.dtype in ['np.complex128', 'float', 'int']:
+                        self._z = np.zeros((1, 2, 2), 'np.complex128')
                         self._z[0] = z_array
             except IndexError:
                 self._logger.error('provided Z array does not have correct dimensions- Z unchanged')
@@ -748,11 +749,11 @@ class Z(ResPhase):
         :rtype: np.ndarray(2, 2, dtype='real')
 
 			:returns: impedance tensor with distorion removed
-        :rtype: np.ndarray(num_freq, 2, 2, dtype='complex')
+        :rtype: np.ndarray(num_freq, 2, 2, dtype='np.complex128')
 
 
 			:returns: impedance tensor error after distortion is removed
-        :rtype: np.ndarray(num_freq, 2, 2, dtype='complex')
+        :rtype: np.ndarray(num_freq, 2, 2, dtype='np.complex128')
 
 
     		:Example: ::
@@ -1071,7 +1072,7 @@ class Tipper(object):
 
     :param tipper_array: tipper array in the shape of [Tx, Ty]
                          *default* is None
-    :type tipper_array: np.ndarray((nf, 1, 2), dtype='complex')
+    :type tipper_array: np.ndarray((nf, 1, 2), dtype='np.complex128')
 
 
     :param tipper_err_array: array of estimated tipper errors
@@ -1176,7 +1177,7 @@ class Tipper(object):
 
         :param tipper_array: tipper array in the shape of [Tx, Ty]
                              *default* is None
-        :type tipper_array: np.ndarray((nf, 1, 2), dtype='complex')
+        :type tipper_array: np.ndarray((nf, 1, 2), dtype='np.complex128')
         """
 
         # check to see if the new tipper array is the same shape as the old
@@ -1187,7 +1188,7 @@ class Tipper(object):
                              '\n***Make new Tipper object***')
         if tipper_array is not None:
             if len(tipper_array.shape) == 3 and tipper_array.shape[1:3] == (1, 2):
-                if tipper_array.dtype in ['complex', 'float', 'int']:
+                if tipper_array.dtype in ['np.complex128', 'float', 'int']:
                     self._tipper = tipper_array
 
         # neeed to set the rotation angle such that it is an array
@@ -1308,7 +1309,7 @@ class Tipper(object):
                 return
         else:
 
-            tipper_new = np.zeros(r_array.shape, 'complex')
+            tipper_new = np.zeros(r_array.shape, 'np.complex128')
 
             if r_array.shape != phi_array.shape:
                 self._logger.error('Error - shape of "phi" array does not match shape ' + \
@@ -1553,7 +1554,7 @@ def correct4sensor_orientation(Z_prime, Bx=0, By=90, Ex=0, Ey=90,
                  => Z = T * Z' * U^(-1)
 
     :param Z_prime: impedance tensor to be adjusted
-    :dtype Z_prime: np.ndarray(num_freq, 2, 2, dtype='complex')
+    :dtype Z_prime: np.ndarray(num_freq, 2, 2, dtype='np.complex128')
 
 
     :param Bx: orientation of Bx relative to geographic north (0)
@@ -1578,7 +1579,7 @@ def correct4sensor_orientation(Z_prime, Bx=0, By=90, Ex=0, Ey=90,
     :type Z_prime_error: np.ndarray(Z_prime.shape)
 
     :returns: adjusted impedance tensor
-    :rtype: np.ndarray(Z_prime.shape, dtype='complex')
+    :rtype: np.ndarray(Z_prime.shape, dtype='np.complex128')
 
     :returns: impedance tensor standard deviation in
 					default orientation
@@ -1590,14 +1591,14 @@ def correct4sensor_orientation(Z_prime, Bx=0, By=90, Ex=0, Ey=90,
         if Z_prime.shape != (2, 2):
             raise
 
-        if Z_prime.dtype not in ['complex', 'float', 'int']:
+        if Z_prime.dtype not in ['np.complex128', 'float', 'int']:
             raise
 
         Z_prime = np.matrix(Z_prime)
 
     except:
         raise ValueError('ERROR - Z array not valid!' + \
-                                            'Must be 2x2 complex array')
+                                            'Must be 2x2 np.complex128 array')
 
     if Z_prime_error is not None:
         try:

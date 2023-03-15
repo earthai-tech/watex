@@ -23,7 +23,8 @@ from ..exceptions import (
 ) 
 from ..externals.z import Z as EMz 
 from ..utils.funcutils import ( 
-    _assert_all_types, 
+    _assert_all_types,
+    is_iterable,
     assert_ratio,
     make_ids, 
     show_stats, 
@@ -268,7 +269,87 @@ class EM(IsEdi):
             )
         return 1 
         
-    def fit (self, 
+    def _read_emo (self, d, / ): 
+        """ read, assert and EDI parse data. 
+        Parameters
+        ----------
+        d: string, list 
+           EDI path-like object when value is passed as string. 
+           List of EDI-file or EDI objects. 
+        """ 
+        
+        emsg =("Wrong EDI {}. More details about the SEG-EDI can be found"
+               " in <https://www.mtnet.info/docs/seg_mt_emap_1987.pdf> "
+               )
+        types =None # object 
+        rf =[] # count number of reading files.
+        
+        # when d is str; expect to be a path or file 
+        if isinstance (d, str): 
+            if os.path.isfile (d):
+                types = 'ef'# edifile 
+                if not self._assert_edi(d, False):
+                    raise EDIError(emsg.format('file'))
+                    
+                rf= [ d ] 
+                # now build an EDI object with valid EDI
+            elif os.path.isdir (d): 
+                types='ep' #edipath 
+                # count number of files. 
+                rf = os.listdir (d ) # collect all files in the path 
+                
+                d = sorted ([ os.path.join(d, edi ) 
+                             for edi in rf if edi.endswith ('.edi')])  
+            else: 
+                raise EDIError(emsg.format('object')) 
+                
+        self.data_ = is_iterable(d, exclude_string =True , transform =True )
+        try :
+            self.data_= sorted( self.data_) # sorted edi 
+        except : 
+            # skip TypeError: '<' not supported between instances 
+            # of 'Edi' and 'Edi'
+            pass 
+    
+        if not types: rf = self.data_ # if objects is set 
+        
+        # read EDI objects 
+        try: 
+            self.ediObjs_ = list(map(lambda o: self.is_valid(o), self.data_))  
+        except EDIError: 
+            objn = type(self.ediObjs_[0]).__name__
+            raise EMError (f"Expect a list of EDI objects. Got {objn!r}") 
+        
+        if self.verbose:
+            try:show_stats(rf, self.ediObjs_)
+            except: pass 
+        
+
+    def _get_tensor_and_err_values (self, attr ): 
+        """ Get tensor with error and put in dictionnary 
+        of station/tensor values.
+        
+        :param attr: attribute from Z objects.
+        :return: A 3D tensor (nfreq, 2, 2) and tensor at each station.  
+        :example: 
+            >>> import watex 
+            >>> test_edi= watex.datasets.load_edis (
+                samples =2 , return_data =True ) 
+            >>> et = watex.EM().fit(test_edi )
+            >>> et._get_tensor_and_err_values ('z')
+        """
+        self.inspect 
+        # ---> get impedances, phase tensor and
+        # resistivities values form ediobject
+        self._logging.info('Setting impedances and phases tensors and'
+                           'resistivity values from a collection ediobj')
+        t = [getattr (edi_obj.Z, attr ) for edi_obj in self.ediObjs_]
+        # put all station ( key) /values in
+        tdict = {key:value for key , value in zip (self.id, t)}
+        
+        return t, tdict
+    
+    def fit(self, 
              data: str|List[EDIO]
              )->"EM":
         """
@@ -294,92 +375,28 @@ class EM(IsEdi):
         def _fetch_headinfos (cobj,  attr): 
             """ Set attribute `attr` from collection object `cobj`."""
             return list(map (lambda o: getattr(o, attr), cobj))
-        
-        self._logging.info (
-            'Read, collect EDI-objects from <%s>'% self.__class__.__name__)
-        
-        rfiles =[] # count number of reading files.
-        self.data_ = data
-        # if ediObjs is not None: 
-        #     self.ediObjs_ = ediObjs 
-        if isinstance(self.data_, str): 
-            # single edi and get the path 
-            if os.path.isfile (self.data_): 
-                if not self._assert_edi(self.data_, False): 
-                    raise EDIError(" Unrecognized SEG- EDI-file. Follow the "
-                                   "[Wight, D.E., Drive, B., 1988.] to build a"
-                                   " correct EDI- file.")
-                #edipath = os.path.dirname (self.data_) 
-                rfiles=[os.path.dirname (self.data_)]
-                self.ediObjs_ = np.array ([self.is_valid(self.data_)]) 
-                #self.data_=[self.data_]
-                
-            elif os.path.dirname (self.data_): 
-                # path is given and read  
-                rfiles= os.listdir(self.data_) 
-                
-                self.data_= sorted ([ os.path.join(self.data_, edi ) 
-                    for edi in rfiles if edi.endswith ('.edi')])  
-     
-            else : 
-                raise EDIError (f"Object {self.data_!r} is not an EDI object.")
-
-        elif isinstance(self.data_, (tuple, list)): 
-            self.data_= sorted(self.data_)
-            rfiles = self.data_.copy() 
-
-        if self.data_ is not None:
-            try :
-                self.ediObjs_ = list(map(
-                    lambda o: self.is_valid(o), self.data_)) 
-            except: 
-                # in the case a single object is given at the param
-                # the list-of edifiles rather than ediObjs
-                self.ediObjs_ = list(map(
-                    lambda o: self.is_valid(o), [self.data_])) 
-                
-        # for consistency 
-        if self.ediObjs_ is not None:
-            if not isinstance (self.ediObjs_,(list,tuple, np.ndarray)): 
-                 self.ediObjs_ = [self.ediObjs_]
-        
-            rfiles = self.ediObjs_
-                
-            try:
-                self.ediObjs_ = list(map(
-                    lambda o: self.is_valid(o), self.ediObjs_)) 
-            except EDIError: 
-                raise EMError ("Expect a list of EDI objects not "
-                               f"{type(self.ediObjs_[0]).__name__!r}")
-            
+   
+        self._read_emo(data ) 
         # sorted ediObjs from latlong  
-        self.ediObjs_ , self.edinames = fit_by_ll(self.ediObjs_)
-        # reorganize  edis in lon lat order. 
-        self.edifiles = list(map(lambda o: o.edifile , self.ediObjs_))
+        self.ediObjs_ , self.edinames = fit_by_ll(
+            self.ediObjs_)
+        # reorganize  edis according 
+        # to lon lat order. 
+        self.edifiles = list(map(
+            lambda o: o.edifile , self.ediObjs_))
 
-        if self.verbose:
-            try:
-                show_stats(rfiles, self.ediObjs_)
-            except: pass 
-        
-        #--get coordinates values and correct lon_lat ------------
-        lat  = _fetch_headinfos(self.ediObjs_, 'lat')
-        lon  = _fetch_headinfos(self.ediObjs_, 'lon')
-        elev = _fetch_headinfos(self.ediObjs_, 'elev')
-        lon,*_ = scalePosition(lon) if len(self.ediObjs_)> 1 else lon 
-        lat,*_ = scalePosition(lat) if len(self.ediObjs_)> 1 else lat
-        # ---> get impedances, phase tensor and
-        # resistivities values form ediobject
-        self._logging.info('Setting impedances and phases tensors and'
-                           'resistivity values from a collection ediobj.')
-        zz= [edi_obj.Z.z for edi_obj in self.ediObjs_]
-        zz_err= [edi_obj.Z.z_err for edi_obj in self.ediObjs_]
-
-        rho= [edi_obj.Z.resistivity for edi_obj in self.ediObjs_]
-        rho_err= [edi_obj.Z.resistivity_err for edi_obj in self.ediObjs_]
-
-        phs= [edi_obj.Z.phase for edi_obj in self.ediObjs_]
-        phs_err= [edi_obj.Z.phase_err for edi_obj in self.ediObjs_]
+        #--get coordinates values 
+        # and correct lon_lat ---
+        lat  = _fetch_headinfos(
+            self.ediObjs_, 'lat')
+        lon  = _fetch_headinfos(
+            self.ediObjs_, 'lon')
+        elev = _fetch_headinfos(
+            self.ediObjs_, 'elev')
+        lon,*_ = scalePosition(
+            lon) if len(self.ediObjs_)> 1 else lon 
+        lat,*_ = scalePosition(
+            lat) if len(self.ediObjs_)> 1 else lat
         
         # Create the station ids 
         self.id = make_ids(self.ediObjs_, prefix='S')
@@ -387,24 +404,14 @@ class EM(IsEdi):
         self.longitude= lon 
         self.latitude= lat  
         self.elevation= elev
-        try : self.elevation= self.elevation.astype (np.float64)
+        try : 
+            self.elevation= self.elevation.astype (
+                np.float64)
         except :pass 
-        
+        self.stnames = self.edinames 
         # get frequency array from the first value of edifiles.
         self.freq_array = self.ediObjs_[0].Z.freq
 
-        #---> set into dictionnary the impdance and phase Tensors 
-        self._z = {key:value for key , value in zip (self.id, zz)}
-        self._z_err ={key:value for key , value in zip (self.id, zz_err)}
-
-        self._res = {key:value for key , value in zip (self.id, rho)} 
-        self._res_err ={key:value for key , value in zip (self.id, rho_err)}
-
-        self._phs ={key:value for key , value in zip (self.id, phs)}
-        self._phs_err ={key:value for key , value in zip (self.id, phs_err)}
-        
-        self.stnames = self.edinames 
-        
         self.freqs_ = self.getfullfrequency ()
         self.refreq_ = self.getreferencefrequency()
         
@@ -538,7 +545,8 @@ class EM(IsEdi):
                         break 
             except:
                 pass
-            return olist 
+            return olist
+        
         regex = re.compile('\d+', re.IGNORECASE)
         by = str(by).lower() 
         if by.find('survey')>=0 :
@@ -590,16 +598,17 @@ class EM(IsEdi):
                     len(self.ediObjs_), len(dataid),
                     f"{'is' if len(dataid)<=1 else 'are'}"))
        
-    
+        long, lat = self.longitude, self.latitude 
+        
         if make_coords: 
             if (reflong or reflat) is None: 
                 raise ValueError('Reflong and reflat params must not be None!')
-            self.longitude, self.latitude = makeCoords(
+            long, lat = makeCoords(
                reflong = reflong, reflat= reflat, nsites= len(self.ediObjs_),
                step = step , **kws) 
         # clean the old main Edi section info and 
         # and get the new values
-        if correct_ll or make_coords:
+        if correct_ll:
             londms,*_ = scalePosition(self.longitude)
             latdms,*_ = scalePosition(self.latitude) 
 
@@ -610,14 +619,16 @@ class EM(IsEdi):
             obj.Head.edi_header = None  
             obj.Head.dataid = did 
             obj.Info.ediinfo = None 
-            
+#XXX TODO. 
+            obj.Head.long = float(long[k])
+            obj.Head.lat = float(lat[k])
+            obj.Head.elev = float(self.elevation[k])
+                
             if correct_ll or make_coords:
-                obj.Head.long = float(self.longitude[k])
-                obj.Head.lat = float(self.latitude[k])
-                obj.Head.elev = float(self.elevation[k])
+
                 oc = obj.DefineMeasurement.define_measurement
                 oc= replace_reflatlon(oc, nval= latdms[k])
-                oc= replace_reflatlon(oc, nval= londms[k], kind='reflong')
+                oc= replace_reflatlon(oc, nval= londms[k],  kind='reflong')
                 oc = replace_reflatlon(oc, nval= self.elevation[k], 
                                        kind='refelev')
                 obj.DefineMeasurement.define_measurement = oc 
