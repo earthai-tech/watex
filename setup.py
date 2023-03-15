@@ -100,9 +100,8 @@ setup_kwargs['install_requires'] = [
     "openpyxl>=3.0.3",
     "seaborn>=0.12.0", 
     "xgboost>=1.5.0",
-    "pycsamt>=1.1.2",
     "pyproj>=3.3.0",
-    
+    "pycsamt>=1.1.2",
     # "joblib>=1.2.0",
     # "h5py>=3.2.0",
     # "tables>=3.6.1",
