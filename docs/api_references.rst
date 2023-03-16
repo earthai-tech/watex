@@ -512,8 +512,8 @@ Functions
    
 .. _sites_ref:
 
-:mod:`watex.site`: Site and Location  
-=====================================================
+:mod:`watex.site`: Location and Profile  
+=============================================
 
 .. automodule:: watex.site
    :no-members:

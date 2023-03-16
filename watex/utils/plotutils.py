@@ -3090,9 +3090,9 @@ def plot_strike (
             **kws
             )
         
-plot_strike.__doc__="""\ 
-plot the strike estimated from the invariants, phase tensor
-and the tipper in either a rose diagram of xy plot. 
+plot_strike.__doc__=""" 
+Plot the strike estimated from the invariants and phase tensor. 
+in a rose diagram of xy plot. 
 
 Parameters 
 ------------

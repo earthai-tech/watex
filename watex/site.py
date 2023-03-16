@@ -414,15 +414,15 @@ class Profile:
         ar: ArrayLike 1d, 
            Array containing the position coordinates for conversion. 
         func: Callable or str, default ='dms->ll'
-           Converter functions. They can be:: 
+            Converter functions. They can be: 
                
-             - :func:`~watex.utils.gistools.convert_position_str2float` 
-               for ``:dd:mm:ss``  to foat(long, lat) coordinates. If 
-               string is passed it should be ['dms2ll'|'dmstoll'|'dms-<ll']. 
-             - :func:`~watex.utils.gistools.convert_position_float2str` 
-               from float (long, lat) in decimal degree coordinates 
-               to ``dd:mm:ss``. When string is passed, it should be 
-               ['ll2dms'|'lltodms'|'ll->dms']
+            - :func:`~watex.utils.gistools.convert_position_str2float` 
+              for ``:dd:mm:ss``  to foat(long, lat) coordinates. If 
+              string is passed it should be ['dms2ll'|'dmstoll'|'dms-<ll']. 
+            - :func:`~watex.utils.gistools.convert_position_float2str` 
+              from float (long, lat) in decimal degree coordinates 
+              to ``dd:mm:ss``. When string is passed, it should be 
+              ['ll2dms'|'lltodms'|'ll->dms']
                
         Returns
         --------

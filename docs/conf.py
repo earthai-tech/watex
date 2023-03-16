@@ -182,6 +182,21 @@ html_css_files =  [f'css/custom.css?v={watex.__version__}']
 html_logo = "_static/logo.svg"
 html_favicon = "_static/favicon.ico"
 
+# Define the json_url for our version switcher.
+json_url = "https://watex.readthedocs.io/en/latest/_static/switcher.json"
+# Define the version we use for matching in the version switcher.
+version_match = os.environ.get("READTHEDOCS_VERSION")
+# If READTHEDOCS_VERSION doesn't exist, we're not on RTD
+# If it is an integer, we're in a PR build and the version isn't correct.
+if not version_match or version_match.isdigit():
+    json_url = "_static/switcher.json"
+        
+switcher_version = version_match or  version
+if ".dev" in version:
+    switcher_version = "dev"
+elif "rc" in version:
+    switcher_version = version.split("rc", maxsplit=1)[0] + " (rc)"
+
 html_theme_options = {
     "icon_links": [
         {
@@ -208,8 +223,13 @@ html_theme_options = {
                 "icon": "fa-solid fa-box",
             },
     ],
+     "switcher": {
+        "json_url": json_url, 
+        "version_match": switcher_version,
+     },
+     "check_switcher": False,      
     "show_prev_next": False,
-    "navbar_start": ["navbar-logo"],
+    "navbar_start": ["navbar-logo", "version-switcher"],
     "navbar_end":  ["navbar-icon-links"], # [ "theme-switcher"]
     "navbar_persistent": ["search-button"],
     "header_links_before_dropdown": 7,
