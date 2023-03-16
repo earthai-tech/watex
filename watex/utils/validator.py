@@ -262,6 +262,11 @@ def assert_xy_in (
     if isinstance (y, str): 
         exist_features(data, y) ; y = data [y]
         
+    if hasattr (x, '__len__') and not hasattr(x, '__array__'): 
+        x = np.array(x )
+    if hasattr (y, '__len__') and not hasattr(y, '__array__'): 
+        y = np.array(y )
+    
     if not _is_arraylike_1d(x ) or not _is_arraylike_1d (y): 
         raise ValueError ("Expects x and y as a one-dimensional array.")
    

@@ -14,7 +14,8 @@ import numpy as np
 from ._watexlog import watexlog 
 from ._typing import ( 
     Optional, 
-    ArrayLike, 
+    ArrayLike,
+    F
     )
 from .exceptions import ( 
     SiteError, 
@@ -32,6 +33,9 @@ from .utils.exmath import (
 from .utils.funcutils import (
     _assert_all_types, 
     to_numeric_dtypes,
+    _validate_name_in, 
+    interpolate_grid,
+    reshape,
     ) 
 from .utils.gistools import (
     assert_elevation_value, 
@@ -43,6 +47,7 @@ from .utils.gistools import (
     project_point_utm2ll,
     assert_xy_coordinate_system,
     convert_position_str2float, 
+    convert_position_float2str, 
     )
 from .utils.validator import ( 
     _check_consistency_size , 
@@ -154,7 +159,7 @@ class Profile:
         
         if self.coordinate_system =='dms' : 
             try : 
-                self.x, self.y = Profile.dms_to_ll(self.x, self.y) 
+                self.x, self.y = Profile.dms2ll(self.x, self.y) 
             except ValueError as e: 
                 raise ( emsg + str(e))
             else: 
@@ -352,8 +357,23 @@ class Profile:
         (array([336686.69198337, 336702.53498337, 336718.26598337]),
          array([3143986.09866306, 3143973.90466306, 3143961.73066306]))
         """
+        cs ={'ll': 'longitude/latitude', 
+             'dms': 'dd:mm:ss.ms'}
         self.inspect 
         
+        if self.coordinate_system !='utm': 
+            cse = cs.get('ll').title () if self.coordinate_system =='ll' else (
+                cs.get('dms').title()  if self.coordinate_system =='dms' else
+              self.coordinate_system .upper() )
+            warnings.warn((
+                "{0!r} coordinates system is detected. Shifting positions" 
+                " expects UTM coordinates. It is recommended to convert"
+                " positions data to UTM (ref:`watex.site.to_utm_in`) before"
+                " processing. The following with {0} coordinates"
+                " might lead to invalid results. Use at your own risk." 
+                ).format(cse)
+                          )
+            
         if ( not use_average_dist
             and step is None 
             ): 
@@ -381,27 +401,115 @@ class Profile:
         return xx, yy 
     
     @staticmethod 
-    def dms_to_ll (x:ArrayLike  , y:ArrayLike ): 
-        """ Convert array x and y from DD:MM:SS to latlon. """
-        def f (o ): 
-            # faster than 
-            # x = np.array ( [ convert_position_str2float(i) for i in x ], 
-            #               dtype = np.float64)
-            # while apply_along not possible due to the string dtype during 
-            # the loop
-            # x = np.apply_along_axis(convert_position_str2float, 0, 
-            #                         np.array (x, dtype =str ))
-            return map ( lambda i: convert_position_str2float(i) , o)
+    def f_ (ar , /,  func: str | F  = 'dms->ll'): 
+        """
+        Converter position function from dms to longitude/latitude degree 
+        decimal or vice versa.
         
+        Convert position from str (DD:MM:SS) to float (latitude/longitude)
+        and vice versa.
+        
+        Parameters 
+        -----------
+        ar: ArrayLike 1d, 
+           Array containing the position coordinates for conversion. 
+        func: Callable or str, default ='dms->ll'
+           Converter functions. They can be:: 
+               
+             - :func:`~watex.utils.gistools.convert_position_str2float` 
+               for ``:dd:mm:ss``  to foat(long, lat) coordinates. If 
+               string is passed it should be ['dms2ll'|'dmstoll'|'dms-<ll']. 
+             - :func:`~watex.utils.gistools.convert_position_float2str` 
+               from float (long, lat) in decimal degree coordinates 
+               to ``dd:mm:ss``. When string is passed, it should be 
+               ['ll2dms'|'lltodms'|'ll->dms']
+               
+        Returns
+        --------
+        generator obj. 
+           Map object composed of value converted. 
+        
+        """
+        if isinstance (func, str): 
+            f = _validate_name_in(func, defaults = (
+                'll2dms', 'lltodms', 'll->dms'), 
+                expect_name= convert_position_float2str 
+                ) 
+        if not callable (f): 
+            f = convert_position_str2float 
+            
+        # faster than 
+        # x = np.array ( [ convert_position_str2float(i) for i in x ], 
+        #               dtype = np.float64)
+        # while apply_along not possible due to the string dtype during 
+        # the loop
+        # x = np.apply_along_axis(convert_position_str2float, 0, 
+        #                         np.array (x, dtype =str ))
+        return map ( lambda i: f(i) , ar)
+    
+    @staticmethod 
+    def dms2ll (x:ArrayLike  , y:ArrayLike ): 
+        """ Convert array x and y from DD:MM:SS to degree decimal -longitude 
+        (x) and latitude (y). 
+        
+        Parameters
+        -----------
+        x, y: ArrayLike containing the degree-minutes-seconds (DMS) coordinates
+           positions.
+        Returns 
+        --------
+        x, y: Arraylike 
+           ArrayLike in degree decimal coordinates format. By default `x` and 
+           `y` are longitude and latitude respectively. 
+           
+        Examples
+        ---------
+        >>> 
+        >>> from watex.site import Profile 
+        >>> x=['20:15:35'] ; y =['7:45:8.5'] 
+        >>> Profile.dms2ll (x, y)
+        Out[83]: (array([20.25972222]), array([7.75236111]))
+        """
+ 
         if not _is_numeric_dtype(x , to_array =True ): 
            # reconvert object to str for consistency  
-           x = np.array ( list (f (x)), dtype = np.float64 )
+           x = np.array ( list ( Profile.f_(x)), dtype = np.float64 )
         if not _is_numeric_dtype(y , to_array =True): 
-           y = np.array ( list (f (y)), dtype = np.float64 )
+           y = np.array ( list (Profile.f_ (y)), dtype = np.float64 )
           
         return x, y
     
-
+    @staticmethod 
+    def ll2dms (x:ArrayLike  , y:ArrayLike ): 
+        """
+        Convert array x and y from degree decimal  to 
+        degree-minutes-seconds (DMS)
+        
+        Parameters 
+        -----------
+        x, y: ArrayLike containing the degree decimal position 
+           coordinates. 
+        
+        Returns 
+        --------
+        x, y: Arraylike 
+           ArrayLike in DD:MM:SS coordinates format.
+           
+        Examples
+        ---------
+        >>> from watex.site import Profile 
+        >>> x =[15.18 ] ; y =[19.60]
+        >>> Profile.ll2dms (x, y)
+        Out[84]: (array(['15:10:48.00'], dtype='<U11'), 
+                  array(['19:36:00.00'], dtype='<U11'))
+        """
+        if _is_numeric_dtype(x , to_array =True ):  
+           x = np.array ( list (Profile.f_ (x, 'll->dms')), dtype = str )
+        if _is_numeric_dtype(y , to_array =True): 
+           y = np.array ( list (Profile.f_ (y, 'll->dms')), dtype = str)
+          
+        return x, y
+    
     def make_xy_coordinates (
         self, 
         *, 
@@ -480,7 +588,85 @@ class Profile:
             is_utm= isutm, 
             **kws
             ) 
-    
+    def interpolate(
+        self, 
+        method ='linear', 
+        inplace =True, 
+        **kws
+        ): 
+        """
+        Interpolate x, y and elev ( if applicable).
+        
+        Parameters 
+        -----------
+        inplace: bool, default=True 
+           Erase existing value of x , y and elev with the interpolated one. 
+           If ``False`` , its return interpolated x, y and elev. 
+
+        method: bool, default='nearest', 
+           Method of interpolation. One of ['nearest'|'linear'|'cubic'] 
+         
+        kws: dict,
+           Additional keywords arguments passed to
+           :func:`~watex.utils.funcutils.interpolate_grid`. 
+           
+        Returns
+        --------
+        self|x, y, elev: :class:`~watex.site.Profile` or Arraylikes 
+           `:class:`.Profile` objects if `inplace` is ``True`` or 
+           interpolated x, y and elev. 
+           
+        See Also 
+        --------
+        watex.utils.funcutils.interpolate_grid: 
+            Interpolate two dimensional array. 
+            
+        Examples 
+        --------
+        >>> import numpy as np 
+        >>> from watex.site import Profile 
+        >>> x = [ 28, np.nan, 50, 60 ]
+        >>> y =[ np.nan, 1000, 2000, 3000]
+        >>> elev=[ 0, 1 , np.nan, np.nan]
+        >>> po = Profile().fit(x, y, elev )
+        >>> po.interpolate () 
+        >>> po.x 
+        array([28., 39., 50., 60.])
+        >>> po.y 
+        array([1000., 1000., 2000., 3000.])
+        >>> po.elev 
+        array([0., 1., 1., 1.])
+
+        """ 
+        emsg = ("Interpolation expects x, y and elev to have a consistent"
+                " size. sizes x, y and elev are {}, {} and {}.")
+        
+        self.inspect 
+        
+        try :
+            _check_consistency_size(self.x, self.y) 
+            _check_consistency_size(self.y, self.elev)
+        except: 
+            raise ProfileError(emsg.format(
+                len(self.x), len(self.y), len(self.elev )) )
+            
+        # make a grid data along axis =0 
+        ar = np.vstack ((self.x, self.y, self.elev ))
+        # interpolate is done along axis =0 so 
+        # for x, y and elev we may transpose 
+        # the data first and do the reverse 
+        # processing back for new x, y and z 
+        ar = interpolate_grid(ar, method = method , **kws) 
+        
+        x , y, elev = np.vsplit (ar  , 3 )
+        x, y, elev = reshape (x) , reshape (y), reshape (elev)
+        if inplace : 
+            self.x, self.y, self.elev = x, y, elev 
+            
+            return self 
+        
+        return x, y, elev 
+
     @property 
     def inspect (self): 
         """ Inspect object whether is fitted or not"""
@@ -493,6 +679,17 @@ class Profile:
                 obj=self)
             )
         return 1 
+    
+    def __repr__(self): 
+        """ Represent the output class format """
+        t_=("utm_zone" ,"coordinate_system","datum" ,
+            "epsg" ,"reference_ellipsoid" ) 
+        
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={getattr(self, k)!r}" for k in t_]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+    
     
 Profile.__doc__="""\
 Profile class deals with the positions collected in the survey area. 
@@ -550,12 +747,11 @@ Examples
     longitude   latitude
 0  110.485833  26.051390
 1  110.486153  26.051794 
->>> pro= Profile ().fit(xy.latitude, xy.longitude ) 
+>>> pro= Profile ().fit( xy.longitude, xy.latitude) 
 >>> pro.distance ()
 62.890276656978244
 >>> pro.bearing () 
 35.4252016495945
->>> pro.shift_positions () 
 >>> pro.make_xy_coordinates( ) 
 (array([110.48583316, 110.48615319, 110.48647322, 110.48679325,
        110.48711328, 110.48743331, 110.48775334]), 

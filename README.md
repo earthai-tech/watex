@@ -201,7 +201,7 @@ started:
 po= wx.EMProcessing ().fit(edi_data)   # make a EM processing object 
 r= po.qc (tol =0.2 , return_ratio = True ) # consider good data from 80% significance.  
 r
-Out[9]: 0.75
+Out[9]: 0.95
 ``` 
 We can then visualizate the confidence interval at the 20 AMT stations as: 
 ```python 
@@ -223,7 +223,7 @@ Out[12]: array([8.19200e+04, 4.85294e+01, 5.62500e+00]) #  81920.0, 48.53 and 5.
 The ``plot_confidence_in`` function allows to assert whether tensor values can be recovered 
 for these three frequencies at each station. Note that the threshold for the EM data 
 to be restored is set to ``50%``. Below this value, data is unrecoverable. 
-Furthermore, if our QC rate ``r=75%`` is not to be yet satisfactory in our AMT data, we can 
+Furthermore, if our QC rate ``r=95%`` is not to be yet satisfactory in our AMT data, we can 
 process to the impedance tensor ``Z`` restoration as:  
 ```python 
 Z=po.zrestore() # returns 3D tensors (Nfrequency, 2, 2), 2x2 for XX, XY, YX and YY components. 

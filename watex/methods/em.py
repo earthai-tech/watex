@@ -525,7 +525,7 @@ class EM(IsEdi):
         
         """
         def replace_reflatlon (  olist , nval, kind ='reflat'):
-            """ Replace Definemeaseurement Reflat and Reflong by the interpolated
+            """ Replace Definemeasurement Reflat and Reflong by the interpolated
             values.
             
             :param olist: old list composing the read EDI measurement infos.
@@ -619,13 +619,10 @@ class EM(IsEdi):
             obj.Head.edi_header = None  
             obj.Head.dataid = did 
             obj.Info.ediinfo = None 
-#XXX TODO. 
-            obj.Head.long = float(long[k])
-            obj.Head.lat = float(lat[k])
-            obj.Head.elev = float(self.elevation[k])
-                
             if correct_ll or make_coords:
-
+                obj.Head.long = float(long[k])
+                obj.Head.lat = float(lat[k])
+                obj.Head.elev = float(self.elevation[k])
                 oc = obj.DefineMeasurement.define_measurement
                 oc= replace_reflatlon(oc, nval= latdms[k])
                 oc= replace_reflatlon(oc, nval= londms[k],  kind='reflong')
@@ -2032,7 +2029,8 @@ class Processing (EM) :
         # compute the ratio ck
         # ck = 1. -    rr[np.nonzero(rr)[0]].sum() / (
         #     1 if len(np.nonzero(rr)[0])== 0 else len(np.nonzero(rr)[0])) 
-        ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
+        # ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
+        ck = 1 - nan_sum.sum() / (ar.shape [0] * ar.shape [1]) 
         
         index = reshape (np.argwhere (rr > tol))
         ar_new = np.delete (rr , index , axis = 0 ) 

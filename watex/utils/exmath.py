@@ -4717,7 +4717,7 @@ def compute_errors (
 def plot_confidence_in(
     z_or_edis_obj_list: List [EDIO |ZO], 
     /, 
-    tensor='res', 
+    tensor:str='res', 
     view:str='1d', 
     drop_outliers:bool=True, 
     distance:float=None, 
@@ -4764,7 +4764,7 @@ def plot_confidence_in(
         A collection of EDI- or Impedances tensors objects. 
         
     tensor: str, default='res'  
-        Tensor name. Can be [ resistivity|phase|z|frequency]
+        Tensor name. Can be [ 'resistivity'|'phase'|'z'|'frequency']
         
     view:str, default='1d'
        Type of plot. Can be ['1D'|'2D'] 
@@ -4952,10 +4952,13 @@ def plot_confidence_in(
     if savefig: 
         plt.savefig(savefig, dpi =600 )
         
+    # plot when image is saved and show otherwise 
+    plt.show() if not savefig else plt.close() 
+        
     return ax 
 
 
-def getzfromedis ( edi_obj_list , /, ): 
+def get_z_from( edi_obj_list , /, ): 
     """ Get z object from Edi object. 
     Parameters 
     -----------
@@ -5067,13 +5070,16 @@ def qc(
        
     # compute the ratio of NaN in axis =0 
     nan_sum  =np.nansum(np.isnan(ar), axis =1) 
+
     rr= np.around ( nan_sum / ar.shape[1] , 2) 
-    
+ 
     # compute the ratio ck
     # ck = 1. -    rr[np.nonzero(rr)[0]].sum() / (
     #     1 if len(np.nonzero(rr)[0])== 0 else len(np.nonzero(rr)[0])) 
-    ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
-    
+    # ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
+    ck = 1 - nan_sum[np.nonzero(rr)[0]].sum() / (
+        ar.shape [0] * ar.shape [1]) 
+  
     # now consider dirty data where the value is higher 
     # than the tol parameter and safe otherwise. 
     index = reshape (np.argwhere (rr > tol))
@@ -5088,8 +5094,10 @@ def qc(
     invalid_freqs= f[ ~np.isin (f, new_f) ]
     
     if interpolate_freq: 
-        new_f = np.logspace(np.log10(new_f.min()) , np.log10(new_f.max()),
-                            len(new_f))[::-1]
+        new_f = np.logspace(
+            np.log10(new_f.min()) , 
+            np.log10(new_f.max()),
+            len(new_f))[::-1]
         # since interpolation is already made in 
         # log10, getback to normal by default 
         # and set off to False

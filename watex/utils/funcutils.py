@@ -2653,6 +2653,10 @@ def fillNaN(arr, method ='ff'):
     https://pyquestions.com/most-efficient-way-to-forward-fill-nan-values-in-numpy-array
     
     """
+    
+    if not hasattr(arr, '__array__'): 
+        arr = np.array(arr)
+        
     def ffill (arr): 
         """ Forward fill."""
         idx = np.where (~mask, np.arange(mask.shape[1]), 0)
@@ -5099,12 +5103,100 @@ def exist_features (df, features, error='raise'):
     
     return isf    
     
+def interpolate_grid (
+    arr, / , 
+    method ='cubic', 
+    fill_value='auto', 
+    view = False,
+    ): 
+    """
+    Interpolate data containing missing values. 
+
+    Parameters 
+    -----------
+    arr: ArrayLike2D 
+       Two dimensional array for interpolation 
+    method: str, default='cubic'
+      kind of interpolation. It could be ['nearest'|'linear'|'cubic']. 
+     
+    fill_value: float, str, default='auto' 
+       Fill the interpolated grid at the egdes or surrounding NaN with 
+       a filled value. The ``auto`` fill use the forward and backward 
+       fill stragety. 
+       
+    view: bool, default=False, 
+       Quick visualize the interpolated grid. 
+       
+    Returns 
+    ---------
+    arri: ArrayLike2d 
+       Interpolated 2D grid. 
+       
+    See also 
+    ---------
+    spi.griddata: 
+        Scipy interpolate Grid data 
+    fillNaN: 
+        Fill missing data strategy. 
+        
+    Examples
+    ---------
+    >>> import numpy as np
+    >>> from watex.utils.funcutils import interpolate_grid 
+    >>> x = [28, np.nan, 50, 60] ; y = [np.nan, 1000, 2000, 3000]
+    >>> xy = np.vstack ((x, y)).T
+    >>> xyi = interpolate_grid (xy, view=True ) 
+    >>> xyi 
+    array([[  28.        ,   22.78880936,   50.        ,   60.        ],
+           [1000.        , 1000.        , 2000.        , 3000.        ]])
+
+    """
+
+    if not hasattr(arr, '__array__'): 
+        arr = np.array (arr) 
     
+    if arr.ndim==1: 
+        raise TypeError(
+            "Expect two dimensional array for grid interpolation.")
+        
+    # make x, y array for mapping 
+    x = np.arange(0, arr.shape[1])
+    y = np.arange(0, arr.shape[0])
+    #mask invalid values
+    arr= np.ma.masked_invalid(arr) 
+    xx, yy = np.meshgrid(x, y)
+    #get only the valid values
+    x1 = xx[~arr.mask]
+    y1 = yy[~arr.mask]
+    newarr = arr[~arr.mask]
     
+    arri = spi.griddata(
+        (x1, y1),
+        newarr.ravel(),
+        (xx, yy), 
+        method=method
+        )
     
-    
-    
-    
+    if fill_value =='auto': 
+        arri = fillNaN(arri, method ='both ')
+    else:
+        arri [np.isnan(arri)] = float( _assert_all_types(
+            fill_value, float, int, objname ="'fill_value'" )
+            ) 
+
+    if view : 
+        fig, ax  = plt.subplots (nrows = 1, ncols = 2 , sharey= True, )
+        ax[0].imshow(arr ,interpolation='nearest', label ='Raw Grid')
+        ax[1].imshow (arri, interpolation ='nearest', 
+                      label = 'Interpolate Grid')
+        
+        ax[0].set_title ('Raw Grid') 
+        ax[1].set_title ('Interpolate Grid') 
+        
+        plt.show () 
+        
+    return arri 
+
     
     
     
