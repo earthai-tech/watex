@@ -11,7 +11,7 @@
  ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/WEgeophysics/watex/ci.yaml?label=CI%20-%20Build%20&logo=github&logoColor=g)
 [![Coverage Status](https://coveralls.io/repos/github/WEgeophysics/watex/badge.svg?branch=master)](https://coveralls.io/github/WEgeophysics/watex?branch=master)
  ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/WEgeophysics/watex?color=blue&include_prereleases&logo=python)
- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg)](https://doi.org/10.5281/zenodo.7553789)
+ [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7744732.svg)](https://doi.org/10.5281/zenodo.7744732)
  ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/watex?color=orange&logo=pypi)
  [![PyPI version](https://badge.fury.io/py/watex.svg)](https://badge.fury.io/py/watex)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/watex.svg)](https://anaconda.org/conda-forge/watex)
