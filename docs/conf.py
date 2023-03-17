@@ -156,8 +156,8 @@ rst_epilog = """
 .. |simpleicons git| image:: https://img.shields.io/badge/--F05032?logo=git&logoColor=ffffff
    :target: http://git-scm.com 
    
-.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7553789.svg
-   :target: https://doi.org/10.5281/zenodo.7553789
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7744732.svg
+   :target: https://doi.org/10.5281/zenodo.7744732
    
 """ 
 # noqa
