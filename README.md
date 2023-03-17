@@ -248,9 +248,9 @@ the [filtering](https://watex.readthedocs.io/en/latest/methods.html#filtering-te
 
 ## Citations
 
-If the [software](https://doi.org/10.5281/zenodo.7553789) seemed useful to you in any published work, I will much appreciate to cite the paper below:
+If the [software](https://doi.org/10.1016/j.softx.2023.101367) seemed useful to you in any published work, we will appreciate to cite the paper below:
 
-> *Kouadio, Kouao Laurent and Liu, Jianxin and Liu, Rong, watex: Machine learning research in water exploration. Available at SSRN:  http://dx.doi.org/10.2139/ssrn.4348617*
+> *Kouadio, K.L., Liu, J., Liu, R., 2023. watex: machine learning research in water exploration. SoftwareX . 101367(2023). https://doi.org/10.1016/j.softx.2023.101367*
 
 In most situations where *WATex* is cited, a citation to [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) would also be appropriate.
 

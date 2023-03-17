@@ -77,10 +77,10 @@ def _validate_tensor(
     ('z', 'xy')
     >>> # when the component is missing 
     >>> _validate_tensor ('resx')
-    ValueError: 'Resistivity' component is missing. Use e.g. 'resistivity_xy' for 'xy' component
+    ValueError: 'Resistivity' component is missing...
     >>> # when the kind of Impendance tensor is wrongly inputted 
     >>> _validate_tensor ('zxy', kind ='reel')
-    ValueError: Unacceptable argument 'reel'. Expect 'modulus','imag', 'real', or 'complex'.
+    ValueError: Unacceptable argument 'reel'...
     
     """
     from ..exceptions import EMError 
@@ -148,15 +148,15 @@ def _assert_z_or_edi_objs ( z_or_edis_obj_list, /):
     from ..exceptions import EMError 
     
     if not hasattr (z_or_edis_obj_list, '__iter__'): 
-        raise TypeError("A collection of EDI or Zobjects should be in"
+        raise TypeError("A collection of EDI or Z objects should be in"
                         f" a list. Got {type(z_or_edis_obj_list).__name__!r}"
                         )
     obj_type = None 
     s_edi = set( [ isinstance ( z_or_edis_obj_list[i], ( Edi, Z) ) 
                   for i in range( len(z_or_edis_obj_list)) ]
                 )
-    if len(s_edi) !=1 or not  list(s_edi)[0]:
-        raise EMError("Expect EDI[watex.edi.Edi]  or Z[watex.externals.z.Z]"
+    if len(s_edi) !=1 or False in list(s_edi):
+        raise EMError("Expect EDI[watex.edi.Edi] or Z[watex.externals.z.Z]"
                       f" objects. Got {s_edi} objects.")
     else: 
         obj_type ='EDI' if isinstance ( 

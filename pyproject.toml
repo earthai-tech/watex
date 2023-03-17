@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "watex"
-version="0.1.9"
+version="0.1.8"
 dynamic = [  "keywords"]
 
 dependencies=[
@@ -22,8 +22,8 @@ dependencies=[
     "xgboost>=1.5.0",
     "pyproj>=3.3.0",
     "pycsamt>=1.1.2",
-    #
     "tqdm <=4.64.1",
+    "tables>=3.6.0",
     "scikit-learn==1.1.2",
     "threadpoolctl==3.1.0",
     "matplotlib==3.5.2",
@@ -40,7 +40,6 @@ missingno=["missingno>=0.4.2"]
 yellowbrick=["yellowbrick>=1.5.0"] 
 pyjanitor=["pyjanitor>=0.1.7"]
 mlxtend=["mlxtend>=0.21"]
-pandas_profiling=["pandas_profiling>=0.1.7"]
 
 [tool.setuptools.dynamic]
 version = {attr = "watex._version.version"}

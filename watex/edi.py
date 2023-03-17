@@ -1377,7 +1377,9 @@ class Head (object):
                         if item =='progvers':
 
                             itemvalue ='"{0}"'.format(
-                                getattr(Software(**{'name':'watex'}),'name'))
+                                getattr(Software(**{
+                                    'name':f'watex {__version__}'.upper()}),
+                                    'name'))
                             write_header.append(''.join(
                                 ['  {0}'.format(item.upper()),'=',
                                  itemvalue,'\n']))
@@ -2530,7 +2532,7 @@ class Source(object):
         for key in ['project', 'survey', 'sitename']: 
             self.__setattr__(key, None)
         self.creationdate= time.strftime('%Y-%M-%D - %H:%M:%S', time.gmtime())
-        self.creatingsoftware = 'watex'
+        self.creatingsoftware = f'WATEX {__version__}'
         self.Author = Person()
         self.Recipient =Person()
 

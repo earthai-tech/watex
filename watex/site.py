@@ -248,7 +248,7 @@ class Profile:
     def distance (self, *, average_distance: bool = True): 
         """Compute the distance between profile coordinates points.
         
-        Preferably, it used the UTM coordinates positions. By default 
+        Preferably, it uses the UTM coordinates positions. By default 
         the coordinate system is automatically detected. 
         
         Parameters 
@@ -299,13 +299,30 @@ class Profile:
         
         return d.mean()  if average_distance else d 
     
-    def scale_positions (self): 
+    def scale_positions (self, **sp_kws): 
         """
-        Scale the position coordinates along x and y
+        Scale the position coordinates along x and y.
+        
+        Parameters
+        -----------
+        sp_kws: dict 
+           Keyword arguments passed to :func:`~watex.utils.scalePosition`. 
+        Returns 
+        --------
+        x, y : Arraylikes 
+           Scaled positions 
+           
+        See also 
+        ---------
+        watex.utils.scalePositions: 
+            Scale positions using the `scipy` curve fit. 
+        watex.utils.exmath.scale_positions: 
+            Scale and shift positions using bearing. 
+            
         """
         self.inspect 
-        x, *_ = scalePosition(self.x ) 
-        y, *_ = scalePosition(self.y )
+        x, *_ = scalePosition(self.x , **sp_kws) 
+        y, *_ = scalePosition(self.y , **sp_kws)
         
         return x, y 
     
@@ -358,12 +375,12 @@ class Profile:
          array([3143986.09866306, 3143973.90466306, 3143961.73066306]))
         """
         cs ={'ll': 'longitude/latitude', 
-             'dms': 'dd:mm:ss.ms'}
+             'dms': 'dd:mm:ss'}
         self.inspect 
         
         if self.coordinate_system !='utm': 
             cse = cs.get('ll').title () if self.coordinate_system =='ll' else (
-                cs.get('dms').title()  if self.coordinate_system =='dms' else
+                cs.get('dms').upper()  if self.coordinate_system =='dms' else
               self.coordinate_system .upper() )
             warnings.warn((
                 "{0!r} coordinates system is detected. Shifting positions" 
@@ -1011,13 +1028,15 @@ class Location (object):
         kws: dict, 
            Keywords argument passed to :meth:`~watex.site.Location.to_utm`. 
            
-        Yield
-        -------
+        Returns
+        --------
         (easts, norths): Iterable object composed of easting and northing 
            coordinates. 
            
+        .. versionadded:: 0.1.8 
+        
         See Also
-        ------------
+        ----------
         watex.site.Location.to_utm: 
             Convert longitude and latitude value to easting and northing 
             coordinates. 
@@ -1074,7 +1093,9 @@ class Location (object):
         -------
         (lats, lons): Iterable object composed of latitude and longitude 
            coordinates. 
-           
+          
+        .. versionadded:: 0.1.8 
+        
         See Also
         ------------
         watex.site.Location.to_latlon: 

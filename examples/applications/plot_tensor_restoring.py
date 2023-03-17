@@ -79,7 +79,7 @@ wx.view.plot2d(z_yx,
 tro.qc (tol =.4 , return_ratio = True ) # we consider good data from .60% 
 
 # %% 
-# The output shows `61%` of data goodness. This score can be improved if the 
+# The output shows `94%` of data goodness. This score can be improved if the 
 # recovers the losses signal is triggered. However, If the user approves this 
 # ratio, there is a possibility of outputting the valid tensors  using the 
 # the method :meth:`watex.methods.em.Processing.getValidTensors` and set the 
@@ -91,7 +91,7 @@ tro.qc (tol =.4 , return_ratio = True ) # we consider good data from .60%
  
 # %% 
 # The next step consists to recover the missing signals since we assume that 
-# we are not satisfied with our qc value = 61% 
+# we are not satisfied with our qc value = 94% 
 
 # * Recovering missing signals  
 Z = tro.zrestore ( ) 

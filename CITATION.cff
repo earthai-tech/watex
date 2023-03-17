@@ -1,0 +1,16 @@
+cff-version: 0.1.7
+message: "We will appreciate to cite the following paper if watex is integral to a scientific publication:"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Kouadio"
+    given-names: "Kouao Laurent"
+    orcid: "https://orcid.org/0000-0001-7259-7254"
+  doi: "https://doi.org/10.1016/j.softx.2023.101367"
+  journal: "SoftwareX"
+  month: March
+  title: "watex: machine learning research in water exploration"
+  issue: 2023
+  volume: 101367
+  year: 2023
+  url: "https://doi.org/10.1016/j.softx.2023.101367"

@@ -591,8 +591,6 @@ def interpolate2d (
                          for ii in  range (arr2d.shape[1])])
     return arr2d 
 
-
-
 def dummy_basement_curve(
         func: F ,
         ks: float ,
@@ -3676,7 +3674,7 @@ def fittensor(
 def interpolate1d (
         arr:ArrayLike[DType[T]], 
         kind:str = 'slinear', 
-        method:str='mean', 
+        method:str=None, 
         order:Optional[int] = None, 
         fill_value:str ='extrapolate',
         limit:Tuple[float] =None, 
@@ -3708,7 +3706,7 @@ def interpolate1d (
         Note that the polynomial requires you to specify an `order` while 
         ``pad`` requires to specify the `limit`. Default is ``slinear``.
         
-    method: str, optional  
+    method: str, optional, default='mean' 
         Method of interpolation. Can be ``base`` for `scipy.interpolate.interp1d`
         ``mean`` or ``bff`` for scaling methods and ``pd``for pandas interpolation 
         methods. Note that the first method is fast and efficient when the number 
@@ -3797,7 +3795,7 @@ def interpolate1d (
                     'pandas strategy', 'data'], loc='best')
     
     """
-    method =str(method).strip().lower() 
+    method = method or 'mean'; method =str(method).strip().lower() 
     if method in ('pandas', 'pd', 'series', 'dataframe','df'): 
         method = 'pd' 
     elif method in ('interp1d', 'scipy', 'base', 'simpler', 'i1d'): 
