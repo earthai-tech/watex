@@ -19,7 +19,7 @@ Adapations and Features
 - Set a slice components property `_c_` as  a :class:`watex.view.TPlot` attribute used by all 
   related methods.
 
-- update in the deprecated Numpy alaises: ``np.float``, ``np.complex`` for the builtin `float`,`complex`.
+- update in the deprecated Numpy aliases: ``np.float``, ``np.complex`` for the builtin `float`,`complex`.
   See  https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
 
 - Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
