@@ -15,8 +15,8 @@ xy = load_edis(
     samples =7 
     ) 
 # degree-decimals 
-x = xy.latitude 
-y = xy.longitude 
+x = xy.longitude 
+y = xy.latitude 
 
 class TestProfile ( unittest.TestCase ): 
     """ Test site"""
@@ -34,10 +34,10 @@ class TestProfile ( unittest.TestCase ):
     def test_make_coordinates (self ): 
         """ Test how to generate a synthetic coordinates data """
         # use auto computation 
-        lat, lon = self.po.make_xy_coordinates() 
+        self.po.make_xy_coordinates() 
         # use manula commputation 
         
-        lat2, lon2 = self.po.make_xy_coordinates(
+        self.po.make_xy_coordinates(
             sep = 20 , r = 45 , to_dms = True  )
         # print( lat2, lon2)
         # self.assertEqual(':' in str(lat2[0]) , True )  
@@ -51,10 +51,10 @@ class TestLocation (unittest.TestCase ):
     
     def test_to_utm_in (self ) : 
         """ test coordinate arrays conversion to latlon """ 
-        xx , yy = self.loc.to_utm_in(x , y,  )
+        xx , yy = self.loc.to_utm_in(y, x,  )
         
         self.assertEqual (len(xx), len(x)) 
         self.assertEqual (len(yy), len(xx ))
         
 # if __name__=='__main__': 
-#     TestLocation ().test_to_utm_in() 
+#     TestProfile ().test_make_coordinates() 

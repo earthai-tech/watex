@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import re
 import functools 
+import warnings 
 import numpy as np 
 
 from .._watexlog import watexlog
@@ -18,8 +19,10 @@ from ..edi import Edi
 from ..exceptions import ( 
     EDIError, 
     TopModuleError, 
+    FrequencyError, 
     NotFittedError, 
     EMError,
+    
 ) 
 from ..externals.z import Z as EMz 
 from ..utils.funcutils import ( 
@@ -64,6 +67,7 @@ from .._typing import (
     NDArray, 
     DType,
     EDIO,
+    ZO, 
     T,
     F, 
     )
@@ -72,6 +76,7 @@ from ..utils._dependency import (
     )
 from ..utils.validator import ( 
     _validate_tensor, 
+    _assert_z_or_edi_objs
     )
 
 _logger = watexlog.get_watex_logger(__name__)
@@ -233,8 +238,8 @@ class EM(IsEdi):
                 
         try : 
             obj = _assert_all_types (
-                obj, IsEdi, objname="Wrong Edi-Objects or EDI-path, ")
-        except AttributeError: 
+                obj, IsEdi, objname="Wrong Edi-Objects or EDI-path,")
+        except ( TypeError, AttributeError): 
             # force checking instead
             obj = _assert_all_types (obj, Edi, objname="EDI")
             
@@ -877,39 +882,78 @@ class EM(IsEdi):
         return  self.freqs_ [mask].max() if not to_log10 else np.log10(
             self.freqs_ [mask].max())
     
-    def exportedis (
+    def _exportedi (self, ediObj: EDIO)-> "EDIO" :
+        """Isolated part for validate EDI for multiple EDI exports 
+        (:meth:`exportedis`). 
+        """
+        try : 
+            ediObj = self.is_valid(ediObj ) 
+        except : 
+            if isinstance (ediObj, str):
+                ediObj = Edi().fit(ediObj )
+                
+            if hasattr (ediObj, '__iter__'): 
+                ediObj = ediObj[0]
+                if  _assert_z_or_edi_objs(ediObj )!='EDI' :
+                    raise EDIError("Obj {ediObj!r} is not an EDI-object.")
+        return ediObj 
+       
+    def exportedis(
         self, 
-        ediObj: EDIO, 
-        new_Z: NDArray[DType[complex]], 
-        savepath:str =None, 
-        **kws
-        )-> "EDIO" :
-        """ Export new EDI files from the former object with  a given new  
-        impedance tensors. 
+        ediObjs: List [EDIO], 
+        new_Z: List [ZO], 
+        savepath = None, 
+        **kws 
+        ): 
+        """Export EDI files from multiples EDI or z objects
         
-        The export is assumed a new output EDI resulting from multiples 
-        corrections applications. 
+        Export new EDI file from the former object with  a given new  
+        impedance tensors. The export is assumed a new output EDI 
+        resulting from multiples corrections applications.
         
         Parameters 
         -----------
-        ediObj: str or  :class:`watex.edi.Edi` 
-            Full path to Edi file/object or object from `pycsamt`_ or `MTpy`_
-        
-        new_Z: ndarray (nfreq, 2, 2) 
-            Ndarray of impendance tensors Z. The tensor Z is 3D array composed of 
-            number of frequency `nfreq`and four components (``xx``, ``xy``, ``yx``,
+        ediObjs: list of string  :class:`watex.edi.Edi` 
+            Full path to Edi file/object or object from class:`EM` objects. 
+  
+        new_Z: list of ndarray (nfreq, 2, 2) 
+            A collection of Ndarray of impedance tensors Z. 
+            The tensor Z is 3D array composed of number of frequency 
+            `nfreq`and four components (``xx``, ``xy``, ``yx``,
             and ``yy``) in 2X2 matrices. The  tensor Z is a complex number. 
-        
+            
+        savepath:str, Optional 
+           Path to save a new EDI file. If ``None``, outputs to `_outputEDI_`
+           folder.
+           
         Returns 
         --------
-         ediObj from pycsamt.core.edi.Edi 
+         ediObj from watex.edi.Edi 
          
+        See Also
+        ---------
+        exportedi: 
+            Export single EDI from
+            
         """
+        ediObjs = is_iterable(
+            ediObjs , 
+            exclude_string =True , 
+            transform =True 
+            )
+        new_Z = is_iterable(
+            new_Z , 
+            exclude_string =True , 
+            transform =True 
+            )
         
-        ediObj = self.is_valid(ediObj)
-        ediObj.write_new_edifile( new_Z=new_Z, savepath = savepath , **kws)
-        return ediObj 
-    
+        for e, z  in zip (ediObjs, new_Z ): 
+            e= self._exportedi(e) 
+            e.write_new_edifile( 
+                new_Z=z,
+                savepath = savepath , 
+                **kws
+                )
         
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
@@ -1060,8 +1104,8 @@ class Processing (EM) :
         be considered as 'same' argument. Default is ``same``.     
        
     method: str, default ``slinear``
-        Interpolation technique to use. Can be ``nearest``or ``pad``. Refer to 
-        the documentation of :doc:`~.interpolate2d`. 
+        Interpolation technique to use. Can also be ``nearest``. Refer to 
+        the documentation of :func:`~.interpolate2d`. 
         
     out : str 
         Value to export. Can be ``sfactor``, ``tensor`` for corrections factor 
@@ -1224,12 +1268,10 @@ class Processing (EM) :
         cf = np.power(10, wf, dtype =float)/ np. power(10, log_rho2d) 
         
         rc = self.res2d_ * cf 
-        
         if self.out =='z': 
             rc = rhoa2z(rc, self.phs2d_, self.freq_s)
 
         return   cf if self.out =='sf' else rc   
-     
 
     def _make2dblobs (
         self, 
@@ -1552,8 +1594,7 @@ class Processing (EM) :
            anomaly in the southwestern United States. Ph.D. Thesis, MIT Press. Cambridge. 
            
         """
-        
-            
+
         self.inspect 
             
         self.method = str(method).lower()
@@ -1606,78 +1647,66 @@ class Processing (EM) :
         """ Fix the weak and missing signal at the 'dead-band`- and recover the 
         missing impedance tensor values. 
         
-        The function uses the complete frequency (frequency with clean data) collected 
-        thoughout the survey to recover by inter/extrapolating the missing or weak 
-        frequencies thereby restoring the impedance tensors at that 'dead-band'. Note 
-        that the 'dead- band' also known as 'attenuation -band' is where the AMT 
-        signal is weak or generally abscent. 
-    
-        One main problem in collecting |NSAMT| data is the signal level in the 
-        'attenuation band'. Compared to the |CSAMT| method (Wang and Tan, 2017; 
-        Zonge and Hughes, 1991),the natural signals are not under our control and 
-        suffer from frequency  ranges with little or no signal.  Most notably, the 
-        |NSAMT| 'dead-band' between approximately 1 kHz and 4 kHz, but also a signal 
-        low in the vicinityof 1 Hz where the transition to magnetospheric energy 
-        sources occurs (Goldak and Olson, 2015). In this band, natural source signals
-        are generally  absent. The EM energy is dissipated and often cultural |EM| 
-        noise fills the gap (Zonge, 2000). The response is extrapolated from results 
-        observed top frequencies( For instance at 20, 40, 250, and 500 Hz).Experience
-        indicates that the natural source signal level at 2000 Hz can be expected 
-        to approach 10-6 γ/√Hz (Zheng, 2010; Zonge, 2000).
-        
+        The function uses the complete frequency (frequency with clean data) 
+        collected thoughout the survey to recover by inter/extrapolating the 
+        missing or weak  frequencies thereby restoring the impedance tensors 
+        at that 'dead-band'. Note that the 'dead- band' also known as 
+        'attenuation -band' is where the AMT signal is weak or generally 
+        abscent. 
+ 
         Parameters 
         ----------
 
-        tensor: str, optional
-           Name of the :term:`tensor`. It can be [ resistivity|phase|z|frequency]. 
-           If the name of tensor is given, function  returns the tensor value
-           in two-dimensionals composed of (n_freq , n_sites) where 
-           ``n_freq=number of frequency`` and ``n_sations`` number of sites. 
-           Note that if the tensor is passed as boolean values ``True``, the 
-           ``resistivity`` tensor is exported by default and the ``component``
-           should be the component passed to :class:`Processing` at 
-           initialization. 
+        tensor: str, optional, ["resistivity"|"phase"|"z"|"frequency"]
+           Name of the :term:`tensor`. If the name of tensor is given, 
+           function  returns the tensor valuein two-dimensionals composed 
+           of (n_freq , n_sites) where ``n_freq=number of frequency`` 
+           and ``n_sations`` number of sites. Note that if the tensor is 
+           passed as boolean values ``True``, the ``resistivity`` tensor is 
+           exported by default and the ``component``should be the component 
+           passed to :class:`Processing` at initialization. 
           
         buffer: list [max, min] frequency in Hz
-            list of maximum and minimum frequencies. It must contain only two values.
-            If `None`, the max and min of the clean frequencies are selected. Moreover
-            the [min, max] frequency should not compulsory to fit the frequency range in 
-            the data. The given frequency can be interpolated to match the best 
-            closest frequencies in the data. 
+            list of maximum and minimum frequencies. It must contain only two 
+            values. If `None`, the max and min of the clean frequencies are 
+            selected. Moreover the [min, max] frequency should not compulsory 
+            to fit the frequency range in the data. The given frequency can 
+            be interpolated to match the best closest frequencies in the data. 
       
-        method: str, optional  
-            Method of interpolation. Can be ``base`` for `scipy.interpolate.interp1d`
-            ``mean`` or ``bff`` for scaling methods and ``pd`` for pandas interpolation 
-            methods. Note that the first method is fast and efficient when the number 
-            of NaN in the array if relatively few. It is less accurate to use the 
-            `base` interpolation when the data is composed of many missing values.
-            Alternatively, the scaled method(the  second one) is proposed to be the 
-            alternative way more efficient. Indeed, when ``mean`` argument is set, 
-            function replaces the NaN values by the nonzeros in the raw array and 
-            then uses the mean to fit the data. The result of fitting creates a smooth 
-            curve where the index of each NaN in the raw array is replaced by its 
-            corresponding values in the fit results. The same approach is used for
-            ``bff`` method. Conversely, rather than averaging the nonzeros values, 
-            it uses the backward and forward strategy  to fill the NaN before scaling.
-            ``mean`` and ``bff`` are more efficient when the data are composed of a
-            lot of missing values. When the interpolation `method` is set to `pd`, 
-            function uses the pandas interpolation but ended the interpolation with 
-            forward/backward NaN filling since the interpolation with pandas does
-            not deal with all NaN at the begining or at the end of the array. Default 
-            is ``pd``.
+        method: str, optional , default='pd' 
+            Method of Z interpolation. Use ``base`` for `scipy` interpolation, 
+            ``mean`` or ``bff`` for scaling methods and ``pd`` for pandas 
+            interpolation methods. Note that the first method is fast and 
+            efficient when the number of NaN in the array if relatively few. 
+            It is less accurate to use the `base` interpolation when the data 
+            is composed of many missing values. Alternatively, the scaled 
+            method(the  second one) is proposed to be the alternative way more 
+            efficient. Indeed, when ``mean`` argument is set, function replaces 
+            the NaN values by the nonzeros in the raw array and then uses the 
+            mean to fit the data. The result of fitting creates a smooth curve 
+            where the index of each NaN in the raw array is replaced by its 
+            corresponding values in the fit results. The same approach is used 
+            for ``bff`` method. Conversely, rather than averaging the nonzeros 
+            values, it uses the backward and forward strategy  to fill the 
+            NaN before scaling. ``mean`` and ``bff`` are more efficient when 
+            the data are composed of a lot of missing values. When the 
+            interpolation `method` is set to ``pd``, function uses the pandas 
+            interpolation but ended the interpolation with forward/backward 
+            NaN filling since the interpolation with pandas does not deal with 
+            all NaN at the begining or at the end of the array. 
             
-        fill_value: array-like or ``extrapolate``, optional
-            If a ndarray (or float), this value will be used to fill in for requested
-            points outside of the data range. If not provided, then the default is
-            NaN. The array-like must broadcast properly to the dimensions of the 
-            non-interpolation axes.
-            If a two-element tuple, then the first element is used as a fill value
-            for x_new < x[0] and the second element is used for x_new > x[-1]. 
-            Anything that is not a 2-element tuple (e.g., list or ndarray,
-            regardless of shape) is taken to be a single array-like argument meant 
-            to be used for both bounds as below, above = fill_value, fill_value.
-            Using a two-element tuple or ndarray requires bounds_error=False.
-            Default is ``extrapolate``. 
+        fill_value: array-like, str, optional, default='extrapolate', 
+            If a ndarray (or float), this value will be used to fill in for 
+            requested points outside of the data range. If not provided, 
+            then the default is NaN. The array-like must broadcast properly 
+            to the dimensions of the  non-interpolation axes. If two-element 
+            in tuple, then the first element is used as a fill value
+            for ``x_new < x[0]`` and the second element is used for 
+            ``x_new > x[-1]``. Anything that is not a 2-element tuple 
+            (e.g., list or ndarray,regardless of shape) is taken to be a 
+            single array-like argument meant to be used for both bounds as 
+            below, above = fill_value, fill_value. Using a two-element tuple 
+            or ndarray requires ``bounds_error=False``.
             
         kws: dict 
             Additional keyword arguments from :func:`~interpolate1d`. 
@@ -1687,8 +1716,30 @@ class Processing (EM) :
             Array-like of :class:`watex.external.z.Z` objects 
             Array collection of new Z impedances objects with dead-band tensor 
             recovered. :class:`watex.externals.z..Z` are ndarray (nfreq, 2, 2). 
-            2x2 matrices for components xx, xy and yx, yy. 
+            2x2 matrices for components xx, xy and yx, yy. If tensor given, 
+            it returns a collection of 2D tensor of each stations. 
     
+        More 
+        ------
+        One main problem in collecting |NSAMT| data is the signal level in the 
+        'attenuation band'. Compared to the |CSAMT| method (Wang and Tan, 2017; 
+        Zonge and Hughes, 1991),the natural signals are not under our control 
+        and suffer from frequency  ranges with little or no signal.  Most 
+        notably, the |NSAMT| 'dead-band' between approximately 1 kHz and 4 
+        kHz, but also a signal low in the vicinityof 1 Hz where the transition 
+        to magnetospheric energy sources occurs (Goldak and Olson, 2015). 
+        In this band, natural source signals are generally  absent. The EM 
+        energy is dissipated and often cultural |EM| noise fills the gap 
+        (Zonge, 2000). The response is extrapolated from results observed 
+        top frequencies( For instance at 20, 40, 250, and 500 Hz).Experience
+        indicates that the natural source signal level at 2000 Hz can be 
+        expected to approach 10-6 γ/√Hz (Zheng, 2010; Zonge, 2000).
+        
+        See Also
+        ----------
+        scipy.interpolate.interp1d: 
+            Interpolate 1D. 
+            
         References 
         ----------
         Goldak, D.K., Olson, R.W., 2015. New developments in |AMT| exploration :
@@ -1713,18 +1764,8 @@ class Processing (EM) :
                                             ) # with buffer 
         
         """
-        def z_transform (z , rfq, fq,  slice_= None): 
-            """ Route to do the same task for real, imaginary and error """
-            with np.errstate(all='ignore'):
-                z = reshape(z) 
-                z = fittensor(compfreq= fq, refreq =rfq, z = z  ) 
-                z = interpolate1d(arr=z , method = self.method, **kws )
-            return z [slice_] 
-            
         self.inspect 
-            
-        self.method = method 
-        
+
         # get the frequencies obj 
         zObjs = np.array (list(map(lambda o: o.Z, self.ediObjs_)) ,
                           dtype =object) 
@@ -1734,15 +1775,15 @@ class Processing (EM) :
         ix_max  = np.argmax(freqsize)
         # get the complete freq 
         cfreq = zObjs[ix_max]._freq  
-        
         # control the buffer and get the the range of frequency 
         buffer = self.controlFrequencyBuffer(cfreq, buffer)
         ix_buf,  = np.where ( np.isin (cfreq, buffer)) 
         ## index for slice the array in the case the buffer is set 
-        ix_s , ix_end = ix_buf ; ix_end += 1 ; slice_= slice (ix_s,  ix_end) 
+        ix_s , ix_end = ix_buf ; ix_end += 1 
+        slice_= slice (ix_s,  ix_end) 
         s_cfreq = cfreq [slice_] # slice frequency within the buffer 
         
-        # make a new Z objects 
+        # --> make a new Z objects 
         # make a new object 
         new_zObjs =np.zeros_like (zObjs, dtype =object )
         # loop to correct the Z impedance object values 
@@ -1752,8 +1793,14 @@ class Processing (EM) :
                         z_err_array=np.zeros((len(s_cfreq), 2, 2)),
                         freq=s_cfreq)
             new_Z = self._tfuncZtransformer(
-                ediObj, new_Z, tfunc= z_transform,
-                cfreq= cfreq, ix_s= ix_s, ix_end= ix_end 
+                ediObj, 
+                new_Z, 
+                tfunc= self._z_transform,
+                slice_= slice_, 
+                cfreq= cfreq, 
+                ix_s= ix_s, 
+                ix_end= ix_end, 
+                method=method, 
                 )
             new_zObjs[kk] = new_Z 
             
@@ -1766,15 +1813,41 @@ class Processing (EM) :
                 )
             
         return new_zObjs 
-
+    
+    def _z_transform (
+        self, 
+        z , 
+        rfq, 
+        fq,  
+        slice_= None, 
+        method= 'pd',  
+        **kws
+        ): 
+        """ Route to do the same task for real, imaginary and error.
+        
+        :param z: Impedance tensor z 
+        :param rfq: reference frequency in Hz 
+        :param fq: complete frequency in Hz
+        :param slice_: frequency buffer indexes 
+        :param method: tensor interpolation 
+        :param kws: additional keywords arguments from :func:`~interpolate1d`. 
+        """
+        with np.errstate(all='ignore'):
+            z = reshape(z) 
+            z = fittensor(compfreq= fq, refreq =rfq, z = z  ) 
+            z = interpolate1d(arr=z , method =method, **kws )
+        return z [slice_] 
+    
     def _tfuncZtransformer (
         self,  
         ediObj: EDIO , 
         new_Z: NDArray [DType[complex]], 
         tfunc: F, 
-        cfreq: ArrayLike, slice_: slice =None, 
+        cfreq: ArrayLike, 
+        slice_: slice =None, 
         ix_s: int = 0 , 
         ix_end: int  = -1, 
+        method: str ='pd', 
         )-> NDArray [DType[complex]]: 
         """ Loop and transform the previous tensor to a new tensor from a 
         transform function `tfunc`. 
@@ -1806,30 +1879,84 @@ class Processing (EM) :
                 with np.errstate(all='ignore'):
                     zfreq = ediObj.Z._freq
                     z_real = reshape(ediObj.Z.z[nz_index, ii, jj].real) 
-                    z_real = tfunc (z_real, rfq=cfreq, fq=zfreq, 
-                                          slice_=slice_ 
-                                          )
+                    z_real = tfunc (z_real, 
+                                    rfq=cfreq, 
+                                    fq=zfreq, 
+                                    slice_=slice_ , 
+                                    method =method, 
+                                    )
                     z_imag = reshape(ediObj.Z.z[nz_index, ii, jj].imag) 
-                    z_imag = tfunc (z_imag, rfq=cfreq, fq=zfreq, 
-                                          slice_=slice_ 
+                    
+                    z_imag = tfunc (z_imag, 
+                                    rfq=cfreq, 
+                                    fq=zfreq, 
+                                    slice_=slice_, 
+                                    method =method, 
                                           )
                     z_err = reshape(ediObj.Z.z_err[nz_index, ii, jj]) 
-                    z_err = tfunc (z_err, rfq=cfreq, fq=zfreq,
-                                         slice_=slice_ 
-                                         )
+                    z_err = tfunc (z_err, 
+                                   rfq=cfreq, 
+                                   fq=zfreq,
+                                    slice_=slice_ , 
+                                    method =method, 
+                                    )
                 # Use the new dimension of the z and slice z according 
                 # the buffer range. make the new index start at 0. 
                 new_nz_index = slice (
                     * np.array([ix_s, ix_end],dtype=np.int32)-ix_s)
-       
+     
                 new_Z.z[new_nz_index, ii, jj] = reshape(
                     z_real, 1)   + 1j * reshape(z_imag, 1) 
                 new_Z.z_err[new_nz_index, ii, jj] = reshape(z_err, 1)
-        
         # compute resistivity and phase for new Z object
         new_Z.compute_resistivity_phase()
         return new_Z 
     
+    # XXX TODO 
+    def zcorrections(
+        self, 
+        ediObjs,  
+        Z=None, 
+        ffilter ='ama' , 
+        export_edis =False
+        ): 
+        """Correct the multiple z values from EDo objects or z using 
+        tma , flma or ama filters. 
+        """
+        # --> make a new Z objects 
+        # get the frequencies obj 
+        warnings.warn("Z correction with all components at once does not work" 
+                      " yet. Should be available in the next release.")
+        return 
+    
+        # ---in developmenent 
+        f = get_full_frequency(Z ) 
+        objtype = _assert_z_or_edi_objs(Z ) 
+        if objtype =='EDI': 
+            ediObjs =self.get_z_from_edio(Z )
+        zObjs = np.array (list(map(lambda o: o.Z, ediObjs)) ,
+                          dtype =object) 
+        
+        # make a new object 
+        new_zObjs =np.zeros_like (zObjs, dtype =object )
+        # loop to correct the Z impedance object values 
+        for kk, ediObj in enumerate (ediObjs):
+            new_Z = EMz(z_array=np.zeros((len(f), 2, 2),
+                                           dtype='complex'),
+                        z_err_array=np.zeros((len(f), 2, 2)),
+                        freq=f)
+            new_Z = self._tfuncZtransformer(
+                ediObj, 
+                new_Z, 
+                tfunc= self._z_transform, 
+                cfreq= f, 
+ 
+                )
+            new_zObjs[kk] = new_Z 
+            
+        return new_zObjs
+   
+            
     @staticmethod 
     def freqInterpolation (
         y:ArrayLike[DType[T]] ,
@@ -1917,46 +2044,57 @@ class Processing (EM) :
         ... array([5.52631581e+07, 1.00000000e+00])
         
         """
+        msg =("Buffer for frequency expects two values ('max', 'min'). ")
         
-        if buffer is not None: 
-            if np.iterable(buffer): 
-                if 1 < len(buffer) > 2 :
-                    raise ValueError('Frequency buffer expects two values [max, min].'
-                                     f' But {"is" if len(buffer)==1 else "are"} given ')
-                if len(set(buffer))==1: 
-                    raise ValueError('Expect distinct values [max, min].'
-                                     f'{str(buffer[0])!r} is given in twice.')
-                    
-                for i, v in enumerate(buffer) : 
-                    
-                    if str(v).lower() =='min': 
-                        buffer[i] = freq.min() 
-                    elif str(v).lower() =='max': 
-                        buffer[i]= freq.max() 
-                    elif isinstance(v, str): 
-                        raise ValueError(f"Expect 'min' or 'max' not: {v!r}")
-                    # Find the absolute difference with each value   
-                    # Get the index of the smallest absolute difference
-                    arr_diff = np.abs(freq - v )
-                    buffer[i] = freq[arr_diff.argmin()]
-                
-                buffer = np.array(buffer) 
-                buffer.sort() ;  buffer = buffer [::-1]
-                
+        if not hasattr (freq, '__array__'): 
+            freq = np.array(freq , dtype = np.float64 )
+            
         if buffer is None: 
-            buffer = np.array([freq.max(), freq.min()])
+            return np.array([freq.max(), freq.min()])
             
-        if buffer.min() < freq.min(): 
-            raise ValueError(
-                f'Given value {round(buffer.min(), 4) } is out of frequency range.'
-                f' Expect a frequency greater than or equal to {round(freq.min(), 4)}'
+        if ( 
+                isinstance (buffer, str) 
+                or not hasattr(buffer , '__iter__')
+                ): 
+            raise ValueError(msg + f"But {type (buffer).__name__!r} is given")
+            
+        if len(buffer) < 2: 
+            raise FrequencyError (msg + f"Got {len(buffer)}.") 
+            
+        if len(buffer ) > 2: 
+            warnings.warn(msg + 
+                          f"Got {len(buffer)}. The frequencies"
+                          f" '({max(buffer), min(buffer)})' should be "
+                          "used as ('max', 'min') instead.")
+        
+            buffer = np.array ( [ max(buffer), min(buffer)] )
+        
+        if not hasattr(buffer, '__array__'): 
+            buffer = np.array ( buffer ) 
+            #buffer.sort() # for consistency 
+            
+        if ( 
+                buffer.min() < freq.min() 
+                or buffer.max () > freq.max()
+                ): 
+            raise FrequencyError (
+                f"Buffer frequency '{(buffer.max(), buffer.min())}'"
+                " is out of the range. Expect frequencies be"
+                f" within {(freq.min(),freq.max())}"
                 )
-            
-        if buffer.max() > freq.max() : 
-            raise ValueError(
-                f'Given value {round(buffer.max(),4)} is out of frequency range.'
-                f' Expect a frequency less than or equal {round(freq.max(),4)}')
-            
+        # The buffer does not need to fit the exact 
+        # frequency value in the frequency data. 
+        # Could Find the absolute difference with each value   
+        # Get the index of the smallest absolute difference. 
+        minf = freq  [ np.abs (freq - buffer.min()).argmin() ]  
+        maxf = freq  [ np.abs (freq - buffer.max()).argmin() ]  
+        buffer = np.array ( [ maxf , minf ] ) 
+        
+        # if min and max frequency are
+        # identical , raise error 
+        if len( set(buffer))  !=2: 
+            raise FrequencyError ("Frequency buffer ('max', 'min') should"
+                                  f" be distinct as possible. Got {buffer}")
         return buffer 
 
 
@@ -2176,8 +2314,23 @@ class Processing (EM) :
         return (self.ediObjs_, new_f , z_dict ), kws
 
   
-    
-  
+    @staticmethod 
+    def get_z_from_edio( edi_obj_list, /, ): 
+        """ Get z object from Edi object. 
+        Parameters 
+        -----------
+        z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
+            :class:`watex.externals.z.Z` 
+            A collection of EDI- or Impedances tensors objects. 
+        Returns
+        --------
+        Z: list of :class:`watex.externals.z.Z`
+           List of impedance tensor Objects. 
+          
+        """
+        obj_type  = _assert_z_or_edi_objs (edi_obj_list)
+        return   edi_obj_list  if obj_type =='z' else [
+            edi_obj_list[i].Z for i in range (len( edi_obj_list)  )] 
     
   
     

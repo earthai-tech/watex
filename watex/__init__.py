@@ -33,9 +33,9 @@ except:
 # generated version by setuptools_scm 
 try:
     from . import _version
-    __version__ = _version.version
+    __version__ = _version.version.split('.dev')[0]
 except ImportError:
-    __version__ = '0.1.9' 
+    __version__ = '0.1.8rc1' 
 finally:
     __author__= 'L.Kouadio'
 

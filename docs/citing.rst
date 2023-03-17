@@ -13,12 +13,12 @@ Here is a ready-made BibTeX entry:
 ::
 
     @article{Kouadio_Liu_Liu_2023b,
-    title={watex: Machine Learning Research in Hydro-Geophysics}, 
-    DOI={Available at SSRN: https://ssrn.com/abstract=4348617 or http://dx.doi.org/10.2139/ssrn.4348617}, 
+    title={watex: machine learning research in water exploration}, 
+    DOI={https://doi.org/10.1016/j.softx.2023.101367}, 
     journal={SoftwareX}, 
     author={Kouadio, Kouao Laurent and Liu, Jianxin and Liu, Rong}, 
     year={2023}, 
-    pages={6} 
+    pages={7} 
     }
 
 Moreover, :code:`watex` are used in real-world case study papers. For instance, it was used for  the :term:`flow` rate prediction 
