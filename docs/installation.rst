@@ -54,20 +54,55 @@ adding ``conda-forge`` to your channels with:
 
 .. prompt:: bash 
 
-	conda config --add channels conda-forge
+    conda config --add channels conda-forge
     conda config --set channel_priority strict
 
 Once the ``conda-forge`` channel has been enabled, :code:`watex` can be installed with:
 
 .. prompt:: bash 
 
-	conda install watex 
+    conda install watex 
 
 It is possible to list all of the versions of :code:`watex` available on your platform with:
 
 .. prompt:: bash 
 
-	conda search watex --channel conda-forge
+   conda search watex --channel conda-forge
+
+From mamba 
+------------
+
+The installation with `mamba <https://mamba.magna.com/downloads/software/>`__ derived from conda as: 
+
+.. prompt:: bash 
+
+    mamba install watex 
+
+It is possible to list all of the versions of :code:`watex` available on your platform with mamba as:
+
+.. prompt:: bash 
+
+    mamba search watex --channel conda-forge
+
+Alternatively, ``mamba`` repoquery may provide more information, for instance:
+
+* Search all versions available on your platform:
+  
+  .. prompt:: bash 
+  
+       mamba repoquery search watex --channel conda-forge
+
+* List packages depending on `watex`:
+  
+  .. prompt:: bash 
+  
+      mamba repoquery whoneeds watex --channel conda-forge
+
+* List dependencies of `watex`:
+
+   .. prompt:: bash
+   
+       mamba repoquery depends watex --channel conda-forge
 
 
 .. _from_source: 

@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-# BSD 3-Clause License
+# BSD-3-Clause License
 # Copyright (c) 2022 The scikit-learn and watex developers.
 # All rights reserved.
 
 # Utilities for input validation
-
 from functools import wraps
 import inspect 
 import types 
@@ -78,10 +77,10 @@ def _validate_tensor(
     ('z', 'xy')
     >>> # when the component is missing 
     >>> _validate_tensor ('resx')
-    ValueError: 'Resistivity' component is missing. Use e.g. 'resistivity_xy' for 'xy' component
-    >>> # when the kind of Impendance tensor is wronglu imputted 
+    ValueError: 'Resistivity' component is missing...
+    >>> # when the kind of Impendance tensor is wrongly inputted 
     >>> _validate_tensor ('zxy', kind ='reel')
-    ValueError: Unacceptable argument 'reel'. Expect 'modulus','imag', 'real', or 'complex'.
+    ValueError: Unacceptable argument 'reel'...
     
     """
     from ..exceptions import EMError 
@@ -149,15 +148,15 @@ def _assert_z_or_edi_objs ( z_or_edis_obj_list, /):
     from ..exceptions import EMError 
     
     if not hasattr (z_or_edis_obj_list, '__iter__'): 
-        raise TypeError("A collection of EDI or Zobjects should be in"
+        raise TypeError("A collection of EDI or Z objects should be in"
                         f" a list. Got {type(z_or_edis_obj_list).__name__!r}"
                         )
     obj_type = None 
     s_edi = set( [ isinstance ( z_or_edis_obj_list[i], ( Edi, Z) ) 
                   for i in range( len(z_or_edis_obj_list)) ]
                 )
-    if len(s_edi) !=1 or not  list(s_edi)[0]:
-        raise EMError("Expect EDI[watex.edi.Edi]  or Z[watex.externals.z.Z]"
+    if len(s_edi) !=1 or False in list(s_edi):
+        raise EMError("Expect EDI[watex.edi.Edi] or Z[watex.externals.z.Z]"
                       f" objects. Got {s_edi} objects.")
     else: 
         obj_type ='EDI' if isinstance ( 
@@ -165,6 +164,127 @@ def _assert_z_or_edi_objs ( z_or_edis_obj_list, /):
         
     return obj_type 
        
+def assert_xy_in (
+    x, 
+    y, *, 
+    data=None,
+    asarray=True, 
+    to_frame=False, 
+    columns= None, 
+    xy_numeric=False, 
+    **kws  
+    ): 
+    """
+    Assert the name of x and y in the given data. 
+    
+    Check whether string arguments passed to x and y are valid in the data, 
+    then retrieve the x and y array values. 
+    
+    Parameters 
+    -----------
+    x, y : Arraylike 1d or str, str  
+       One dimensional arrays. In principle if data is supplied, they must 
+       constitute series.  If `x` and `y` are given as string values, the 
+       `data` must be supplied. x and y names must be included in the  
+       dataframe otherwise an error raises. 
+       
+    data: pd.DataFrame, 
+       Data containing x and y names. Need to be supplied when x and y 
+       are given as string names. 
+    asarray: bool, default =True 
+       Returns x and y as array rather than series. 
+    to_frame: bool, default=False, 
+       Convert data to a dataframe using either the columns names or 
+       the input_names when the keyword parameter ``force=True``.
+    columns: list of str, Optional 
+       Name of columns to transform the array ( ``data``) to a dataframe. 
+    xy_numeric:bool, default=False
+       Convert x and y to numeric values. 
+    kws: dict, 
+       Keyword arguments passed to :func:`~.array_to_frame`. 
+       
+    Returns 
+    --------
+    x, y : Arraylike 
+       One dimensional array or pd.Series 
+      
+    Examples 
+    ---------
+    >>> import numpy as np 
+    >>> import pandas as pd 
+    >>> from watex.utils.validator import assert_xy_in 
+    >>> x, y = np.random.rand(7 ), np.arange (7 ) 
+    >>> data = pd.DataFrame ({'x': x, 'y':y} ) 
+    >>> assert_xy_in (x='x', y='y', data = data ) 
+    (array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864,
+            0.15599452, 0.05808361]),
+     array([0, 1, 2, 3, 4, 5, 6]))
+    >>> assert_xy_in (x=x, y=y) 
+    (array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864,
+            0.15599452, 0.05808361]),
+     array([0, 1, 2, 3, 4, 5, 6]))
+    >>> assert_xy_in (x=x, y=data.y) # y is a series 
+    (array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864,
+            0.15599452, 0.05808361]),
+     array([0, 1, 2, 3, 4, 5, 6]))
+    >>> assert_xy_in (x=x, y=data.y, asarray =False ) # return y like it was
+    (array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864,
+            0.15599452, 0.05808361]),
+    0    0
+    1    1
+    2    2
+    3    3
+    4    4
+    5    5
+    6    6
+    Name: y, dtype: int32)
+    """
+    from .funcutils import exist_features
+    if to_frame : 
+        data = array_to_frame(data , to_frame = True ,  input_name ='Data', 
+                              columns =columns , **kws)
+    if data is not None: 
+        if not hasattr (data, '__array__') and not hasattr(data, 'columns'): 
+            raise TypeError(f"Expect a dataframe. Got {type (data).__name__!r}")
+            
+    if  ( 
+            ( isinstance (x, str) or isinstance (y, str))  
+            and data is None) : 
+        raise TypeError("Data cannot be None when x and y have string"
+                        " arguments.")
+    if  ( 
+            (x is None or y is None) 
+            and data is None): 
+        raise TypeError ( "Missing x and y. NoneType not supported.") 
+        
+    if isinstance (x, str): 
+        exist_features(data , x ) ; x = data [x ]
+    if isinstance (y, str): 
+        exist_features(data, y) ; y = data [y]
+        
+    if hasattr (x, '__len__') and not hasattr(x, '__array__'): 
+        x = np.array(x )
+    if hasattr (y, '__len__') and not hasattr(y, '__array__'): 
+        y = np.array(y )
+    
+    if not _is_arraylike_1d(x ) or not _is_arraylike_1d (y): 
+        raise ValueError ("Expects x and y as a one-dimensional array.")
+   
+    check_consistent_length(x, y )
+    
+    if xy_numeric: 
+        if ( 
+                not _is_numeric_dtype(x, to_array =True ) 
+                or not _is_numeric_dtype(y, to_array=True )
+                ): 
+            raise ValueError ("x and y must be a numeric array.")
+            
+        x = x.astype (np.float64) 
+        y = y.astype (np.float64)
+        
+    return ( np.array(x), np.array (y) ) if asarray else (x, y )  
+
+    
 def _is_numeric_dtype (o, / , to_array =False ): 
     """ Determine whether the argument has a numeric datatype, when
     converted to a NumPy array.
@@ -323,7 +443,7 @@ def _validate_ves_operator (
 
 def is_valid_dc_data (d, /, method= "erp" , 
                       exception = TypeError, extra=""): 
-    """ Detect the kind of DC data passed  and raise error if data is not 
+    """ Detect the kind of DC data passed  and raises error if data is not 
     the appropriate DC data expected.
     
     Data must be Vertical Electrical Sounding (VES) or Electrical Resistivity 
@@ -1034,7 +1154,7 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X'):
         Series name or columns names for pandas.Series and DataFrame. 
         
     to_frame: str, default=False
-        If ``True`` , reconvert the array to frame using the columns orthewise 
+        If ``True`` , reconvert the array to frame using the columns ortherwise 
         no-action is performed and return the same array.
     input_name : str, default=""
         The data name used to construct the error message. 

@@ -7,6 +7,19 @@ html[data-theme=light]{
   --pst-color-link: rgb(74, 105, 145);
   --pst-color-inline-code: rgb(247, 147, 30); 
 }
+
+/* Style all links with a specific subset of versions */
+.version-switcher__container a[data-version="0.1.7"] {
+   background-color: red;
+}
+/*  Style all links with `stable` in the version name*/
+.version-switcher__container a[data-version-name*="stable"] {
+   background-color: green;
+}
+/* If the active version has the name "dev", style it*/
+.version-switcher__button[data-active-version-name*="dev"] {
+   background-color: var(--pst-color-secondary);
+}
 /* try to article to take the full width  */
 .bd-main .bd-content .bd-article-container {
     max-width: 100%;

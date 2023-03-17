@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause
+#   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Wed Jul 14 20:00:26 2021
+
 from __future__ import (
     print_function ,
     division, 

@@ -19,17 +19,17 @@
 
 ##  Overview
 
-**_WATex_** is a Python-based library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
-    for reducing numerous losses during the hydro-geophysical exploration projects. It encompasses 
-    the Direct-current (DC) resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), 
-    short-periods electromagnetic (EM), geology and hydrogeology methods. From methodologies based on Machine Learning,  
-    it allows to: 
-   - auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings 
-     and unsustainable boreholes;
-   - reduce the cost of permeability coefficient (k) data collection during the hydro-geophysical engineering projects,
-   - predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
-   - recover the EM loss signals in area with huge interferences noises ...
-   - etc.
+*WATex* is a Python-based library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
+for reducing numerous losses during the hydro-geophysical exploration projects. It encompasses 
+the Direct-current (DC) resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), 
+short-periods electromagnetic (EM), geology and hydrogeology methods. From methodologies based on Machine Learning,  
+it allows to: 
+- auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings 
+  and unsustainable boreholes;
+- reduce the cost of permeability coefficient (k) data collection during the hydro-geophysical engineering projects,
+- predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
+- recover the EM loss signals in area with huge interferences noises ...
+- etc.
 
 ## Documentation 
 
@@ -40,7 +40,7 @@ engineering problems such as computing DC parameters and predicting the k-parame
 
 ## Licence 
 
-**_WATex_** is under [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) License. 
+*WATex* is under [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) License. 
 
 ## Installation 
 
@@ -59,9 +59,8 @@ The [installation](https://anaconda.org/conda-forge/watex)  from [conda-forge](h
 
 ```bash 
 conda install -c conda-forge watex
-
 ``` 
- To get the latest development of the code, it is recommended to install it from source using: 
+To get the latest development of the code, it is recommended to install it from source using: 
 
 ```bash
 git clone https://github.com/WEgeophysics/watex.git 
@@ -123,7 +122,7 @@ Note that before the drilling operations commence, make sure to carry out the DC
 another parameter called `ohmic-area` `` (ohmS)`` to detect the effectiveness of the existing fracture zone at that point. See more in 
 the software [documentation](https://watex.readthedocs.io/en/latest/).
   
-### 2. Predict permeability coefficient ``k`` from logging dataset using MXS approach**
+### 2. Predict permeability coefficient ``k`` from logging dataset using MXS approach
  
 MXS stands for mixture learning strategy. It uses upstream unsupervised learning for 
 ``k`` -aquifer similarity label prediction and the supervising learning for 
@@ -155,9 +154,8 @@ ymxs[62:74]
 Out[5]: array([ 0,  0,  0,  0, 12, 12, 12, 12, 12, 12, 12, 12])
 ```
 To understand the transformation from NGA to MXS target (``ymxs``), please, have a look 
-of the following [paper](http://dx.doi.org/10.2139/ssrn.4326365)
-.
-Once the MXS target is predicted, we call the ``make_naive_pipe`` function, to 
+of the following [paper](http://dx.doi.org/10.2139/ssrn.4326365).
+Once the MXS target is predicted, we call the ``make_naive_pipe`` function to 
 impute, scale, and transform the predictor ``X`` at once into a compressed sparse 
 matrix ready for final prediction using the [support vector machines](https://ieeexplore.ieee.org/document/708428) and 
 [random forest](https://www.ibm.com/topics/random-forest) as examples. Here we go: 
@@ -184,7 +182,7 @@ toy example using only two boreholes data. Note that things can become more
 interesting when using many boreholes data. For more in 
 depth, visit our [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html). 
 
-### 3. EM tensors recovering and analyses**
+### 3. EM tensors recovering and analyses
 
 For a basic illustration, we fetch 20 audio-frequency magnetotelluric (AMT) data 
 stored as EDI objects collected in a `huayuan` area (Hunan province, China) with 
@@ -203,7 +201,7 @@ started:
 po= wx.EMProcessing ().fit(edi_data)   # make a EM processing object 
 r= po.qc (tol =0.2 , return_ratio = True ) # consider good data from 80% significance.  
 r
-Out[9]: 0.75
+Out[9]: 0.95
 ``` 
 We can then visualizate the confidence interval at the 20 AMT stations as: 
 ```python 
@@ -225,7 +223,7 @@ Out[12]: array([8.19200e+04, 4.85294e+01, 5.62500e+00]) #  81920.0, 48.53 and 5.
 The ``plot_confidence_in`` function allows to assert whether tensor values can be recovered 
 for these three frequencies at each station. Note that the threshold for the EM data 
 to be restored is set to ``50%``. Below this value, data is unrecoverable. 
-Furthermore, if our QC rate ``r=75%`` is not to be yet satisfactory in our AMT data, we can 
+Furthermore, if our QC rate ``r=95%`` is not to be yet satisfactory in our AMT data, we can 
 process to the impedance tensor ``Z`` restoration as:  
 ```python 
 Z=po.zrestore() # returns 3D tensors (Nfrequency, 2, 2), 2x2 for XX, XY, YX and YY components. 
@@ -250,13 +248,13 @@ the [filtering](https://watex.readthedocs.io/en/latest/methods.html#filtering-te
 
 ## Citations
 
-If the [software](https://doi.org/10.5281/zenodo.7553789) seemed useful to you in any published work, I will much appreciate to cite the paper below:
+If the [software](https://doi.org/10.1016/j.softx.2023.101367) seemed useful to you in any published work, we will appreciate to cite the paper below:
 
-> *Kouadio, Kouao Laurent and Liu, Jianxin and Liu, Rong, watex: Machine learning research in water exploration. Available at SSRN:  http://dx.doi.org/10.2139/ssrn.4348617*
+> *Kouadio, K.L., Liu, J., Liu, R., 2023. watex: machine learning research in water exploration. SoftwareX . 101367(2023). https://doi.org/10.1016/j.softx.2023.101367*
 
-In most situations where **_WATex_** is cited, a citation to [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) would also be appropriate.
+In most situations where *WATex* is cited, a citation to [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) would also be appropriate.
 
-See also some [case history](https://watex.readthedocs.io/en/latest/citing.html) papers using **_WATex_**. 
+See also some [case history](https://watex.readthedocs.io/en/latest/citing.html) papers using *WATex*. 
 
 ## Contributions 
 

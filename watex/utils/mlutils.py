@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause
+#   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 """
 Learning utilities for data transformation, 
@@ -85,6 +85,7 @@ from .validator import (
     get_estimator_name , 
     check_array, 
     )
+
 _logger = watexlog().get_watex_logger(__name__)
 
 __all__=[ 
@@ -146,7 +147,7 @@ _estimators ={
         'vtc': ['VotingClassifier','vtc', 'vot', 'voting'],
         'bag': ['BaggingClassifier', 'bag', 'bag', 'bagg'],
         'stc': ['StackingClassifier','stc', 'sta', 'stack'],
-    'xgboost': ['ExtremeGradientBoosting', 'xgboost', 'gboost', 'gbdm'], 
+    'xgboost': ['ExtremeGradientBoosting', 'xgboost', 'gboost', 'gbdm', 'xgb'], 
      'logit': ['LogisticRegression', 'logit', 'lr', 'logreg'], 
      'extree': ['ExtraTreesClassifier', 'extree', 'xtree', 'xtr']
         }  
@@ -492,7 +493,7 @@ def formatGenericObj(generic_obj :Iterable[T])-> T:
         
     """
     
-    return ['{0}{1}{2}'.format('`{', ii, '}`') for ii in range(
+    return ['{0}{1}{2}'.format('{', ii, '}') for ii in range(
                     len(generic_obj))]
 
 
@@ -553,8 +554,7 @@ def findDifferenceGenObject(gen_obj1: Iterable[Any],
         return objType(set(gen_obj1).difference(set(gen_obj2)))
     else: return 
    
-        
-    
+ 
     return set(gen_obj1).difference(set(gen_obj2))
     
 def featureExistError(superv_features: Iterable[T], 
@@ -620,16 +620,19 @@ def controlExistingEstimator(
         if estimator_name in v_ : 
             e, efx = k, v[0]
             break 
-    ef = list(map(lambda o: o[0], _estimators.values() ))
-    
+
     if e is None: 
-        _logger.error(
-            f'Default estimator `{estimator_name}` not found ! Expect:'
-            ' {}'.format(formatGenericObj(ef)).format(*ef))
-        warnings.warn(f'Default estimator `{estimator_name}` not available.'
-            ' Expect: {}'.format(formatGenericObj(ef)).format(*ef))
+        ef = map(lambda o: o[0], _estimators.values() )
         if raise_err: 
-            raise EstimatorError(f'Unsupport estimator {estimator_name!r}')
+            raise EstimatorError(f'Unsupport estimator {estimator_name!r}.'
+                                 f' Expect {smart_format(ef)}') 
+        ef =list(ef)
+        emsg = f"Default estimator {estimator_name!r} not found!" +\
+            (" Expect: {}".format(formatGenericObj(ef)
+                                  ).format(*ef))
+
+        warnings.warn(emsg)
+        
             
         return 
     
@@ -1620,7 +1623,7 @@ def fetchModel(
     *, 
     default: bool = True,
     name: Optional[str] = None,
-    storage='joblib', 
+    storage=None, 
 )-> object: 
     """ Fetch your data/model saved using Python pickle or joblib module. 
     
@@ -1658,9 +1661,14 @@ def fetchModel(
     if not os.path.isfile (file): 
         raise FileNotFoundError (f"File {file!r} not found. Please check"
                                  " your filename.")
-    st= storage
+    st = storage 
+    if storage is None: 
+        ex = os.path.splitext (file)[-1] 
+        storage = 'joblib' if ex =='.joblib' else 'pickle'
+
     storage = str(storage).lower().strip() 
-    assert storage not in {"joblib", "pickle"}, (
+    
+    assert storage in {"joblib", "pickle"}, (
         "Data pickling supports only the Python's built-in persistence"
         f" model'pickle' or 'joblib' as replacement of pickle: got{st!r}"
         )

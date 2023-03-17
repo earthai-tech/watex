@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  Licence: BS3-clause 
+#  License: BSD-3-Clause
 #  Author: L. Kouadio
 """
 :term:`EDI` stands for Electrical Data Interchange. The :class:`Edi` class read and write an EDI file(*.edi)
@@ -264,11 +264,11 @@ class Edi :
                 'None value found. Can not read data')
         
         # get frequency array and initialise z_array and Z_error 
-        freq_array = np.array(self.comp_dict['freq'], dtype =np.float)
+        freq_array = np.array(self.comp_dict['freq'], dtype =np.float64)
         z_array , z_error_array =  np.zeros(
-            (freq_array.size , 2 , 2),dtype =np.complex),\
+            (freq_array.size , 2 , 2),dtype =np.complex128),\
                             np.zeros ((freq_array.size , 2 , 2), 
-                                      dtype =np.float)
+                                      dtype =np.float64)
         
                                
         if freq_array [-1]  > freq_array [0]   : 
@@ -321,7 +321,7 @@ class Edi :
             self.Z.rotation_angle =np.array (self.comp_dict['zrot'])
             
         else : # fill  zeros value as Zrot 
-            self.Z.rotation_angle = np.zeros_like (freq_array, dtype =np.float) 
+            self.Z.rotation_angle = np.zeros_like (freq_array, dtype =np.float64) 
         self.Z.compute_resistivity_phase() # compute resistivity and phase 
         
         
@@ -332,14 +332,14 @@ class Edi :
                 break 
         if _flagTip ==True : 
             tip_array =np.zeros ((freq_array.size, 1, 2), dtype =np.complex) 
-            tip_error_array =np.zeros ((freq_array.size , 1, 2), dtype =np.float)
+            tip_error_array =np.zeros ((freq_array.size , 1, 2), dtype =np.float64)
             
             if 'trot' in self.comp_dict.keys(): 
                 self.Tip.rotation_angle=np.array(self.comp_dict['trot'])
             elif 'zrot' in self.comp_dict.keys(): 
                 self.Tip.rotation_angle = self.comp_dict ['zrot']
             else : 
-                self.Tipper.rotation_angle = np.zeros_like (freq_array, np.float)
+                self.Tipper.rotation_angle = np.zeros_like (freq_array, np.float64)
             
             for tkey in self.comp_dict.keys ():
                 if tkey == 'txr.exp': 
@@ -501,9 +501,9 @@ class Edi :
                     len(self.Z.rotation_angle) ==1:
                     self.Z.rotation_angle =np.full_like(self.Z.freq, 
                                                         self.Z.rotation_angle, 
-                                                        dtype=np.float)
+                                                        dtype=np.float64)
                     # self.Z.rotation_angle = np.zeros_like (self.Z.freq,
-                    #                                        dtype =np.float)
+                    #                                        dtype =np.float64)
             except : 
                 self._logging.error('Error in "edi-file" while setting '
                                     'rotation angle. ')
@@ -566,10 +566,10 @@ class Edi :
             # define rho and phase array 
             edi_rhophs_infolines =[self._data_head_com.format(
                 'Resistivities and phases'.upper())]
-            rho = np.zeros ((self.Z.freq.size , 2, 4), dtype=np.float)
-            phs = np.zeros ((self.Z.freq.size , 2, 4), dtype=np.float)
+            rho = np.zeros ((self.Z.freq.size , 2, 4), dtype=np.float64)
+            phs = np.zeros ((self.Z.freq.size , 2, 4), dtype=np.float64)
             if filtered_array is not None  :
-                frho = np.zeros ((self.Z.freq.size , 2, 4), dtype=np.float)
+                frho = np.zeros ((self.Z.freq.size , 2, 4), dtype=np.float64)
                 
                 frho [:, 1 , 0] = filtered_array[:, 0, 1]
                 frho [:, 0 , 1] = filtered_array[:, 1, 0]
@@ -630,7 +630,7 @@ class Edi :
             try :
                 edi_tip_rot_infolines =[self._data_head_com.format(
                     'tipper rotation angles'.upper())]
-                if  self.Tip.rotation_angle.dtype ==np.float : 
+                if  self.Tip.rotation_angle.dtype ==np.float64 : 
                     #fill tip_rot_value 
                     tip_rotation_value = np.repeat (
                         self.Tip.rotation_angle , self.Tip.freq.size) 
@@ -1377,7 +1377,9 @@ class Head (object):
                         if item =='progvers':
 
                             itemvalue ='"{0}"'.format(
-                                getattr(Software(**{'name':'watex'}),'name'))
+                                getattr(Software(**{
+                                    'name':f'watex {__version__}'.upper()}),
+                                    'name'))
                             write_header.append(''.join(
                                 ['  {0}'.format(item.upper()),'=',
                                  itemvalue,'\n']))
@@ -2530,7 +2532,7 @@ class Source(object):
         for key in ['project', 'survey', 'sitename']: 
             self.__setattr__(key, None)
         self.creationdate= time.strftime('%Y-%M-%D - %H:%M:%S', time.gmtime())
-        self.creatingsoftware = 'watex'
+        self.creatingsoftware = f'WATEX {__version__}'
         self.Author = Person()
         self.Recipient =Person()
 

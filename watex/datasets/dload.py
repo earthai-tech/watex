@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause, Author: LKouadio 
+#   License: BSD-3-Clause
+#   Author: LKouadio 
 
 """
 load different data as a function 

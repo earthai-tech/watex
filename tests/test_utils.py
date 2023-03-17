@@ -136,9 +136,9 @@ class TestTools(unittest.TestCase):
                         'Expected a sery of "[station , resistivity]" by got'
                         f'{col}')
                 
-if __name__=='__main__': 
+# if __name__=='__main__': 
 
-    unittest.main()
+#     unittest.main()
 
     
 

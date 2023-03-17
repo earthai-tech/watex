@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Create date: Wed Jul  7 22:23:02 2021 
-#   Licence:BSD 3-Clause
+#   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 
 from __future__ import ( 

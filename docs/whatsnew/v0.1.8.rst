@@ -1,0 +1,39 @@
+v0.1.8rc1 (March 17, 2023)
+--------------------------
+
+This is a minor change performed from ``v0.1.7`` and adaptations.  
+
+Adapations and Features
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- deprecate single :term:`EDI` export to multiple EDI outputs (:meth:`watex.methods.EM.exportedis`)
+
+- simplify the remote dataset path loader and BaseSteps :class:`watex.cases.BaseSteps` transformation using ``importlib.resources``.
+
+- add new QC :func:`watex.utils.qc` function applicable outside the :term:`EM` processing QC method
+  :meth:`watex.methods.Processing.qc` for consistent EM analyses.
+
+- Add multiple position coordinate transformations from UTM to latitude/longitude (:meth:`watex.site.Location.to_latlon_in`) and 
+  vice versa (:meth:`watex.site.Location.to_utm_in`).
+
+- Set a slice components property `_c_` as  a :class:`watex.view.TPlot` attribute used by all 
+  related methods.
+
+- update in the deprecated Numpy alaises: ``np.float``, ``np.complex`` for the builtin `float`,`complex`.
+  See  https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+
+- Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
+  supplement materials (methods) for data transformation. 
+
+
+Bug fixes
+~~~~~~~~~~~
+
+- Bug fixed in automating the :term:`Bagoue region` dataset preparation. The :func:`_assert_sl_target` is removed then the 
+  `AttributeError` generated from missing `X` in  :meth:`watex.cases.prepare.BaseSteps.stratifydata` is fixed.
+
+- fix bug when buffering the frequency when restoring the tensor :meth:`watex.methods.Processing.zrestore`. 
+
+- Fix negative resistivity generation in :term:`VES` from :func:`watex.datasets.make_ves`. 
+  Use absolute instead.
+

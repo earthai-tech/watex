@@ -13,7 +13,3 @@ Adaptations and features
   :term:`tensor`` recovering. It also shows the status of the :term:`EM` data acquired at a specific area and whether 
   data is recoverable or not. If data is unrecoverable, a pure deletion is performed. 
 
-Bug fixes 
-~~~~~~~~~~~~~
-- Bug fixed in automating the :term:`Bagoue region` dataset preparation. The :func:`_assert_sl_target` is removed then the 
-  `AttributeError` generated from missing `X` in  :meth:`watex.cases.prepare.BaseSteps.stratifydata` is fixed. 

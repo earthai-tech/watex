@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause
+#   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 
 from ..exlib.sklearn import (
@@ -14,7 +14,7 @@ from ..exlib.sklearn import (
     SVC, 
     VotingClassifier, 
     )
-from ..exlib.optional import XGBClassifier 
+from ..exlib.gbm import XGBClassifier 
 from ..utils.funcutils import get_params 
 
 __all__=['_pMODELS']

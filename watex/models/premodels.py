@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause
+#   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created on Tue May 17 11:30:51 2022
 
+from importlib import resources
 import warnings 
 from .._docstring import refglossary
 from .._watexlog import watexlog 
@@ -455,8 +456,12 @@ the fine tuned multiclassification targets not 'out-of-bag' parameters.
 
 """
 #-- Fetch the pretrained model data 
+# XXX pickling models should be removed next release 
+# 
+with resources.path ('watex.etc', 'p.models.pkl') as f : 
+    data_file = str(f) 
 try : 
-    _pDATA,  = fetchModel ('./watex/etc/p.models.pkl', default = False )
+    _pDATA,  = fetchModel (data_file, default = False )
 except: 
     # set to None if something goes wrong 
     _pDATA = None 

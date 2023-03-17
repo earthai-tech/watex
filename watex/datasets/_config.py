@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #   create date: Thu Sep 23 16:19:52 2021
 #   Author: L.Kouadio 
-#   Licence: BSD-3 clause
+#   License: BSD-3-Clause
 
 """
 Dataset 

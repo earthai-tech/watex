@@ -37,12 +37,14 @@ from .exmath import (
     get_full_frequency, 
     get_strike, 
     get_profile_angle, 
+    get_bearing, 
     moving_average, 
     linkage_matrix, 
     plotOhmicArea, 
     plot_confidence_in,
     plot_sfi, 
-    qc
+    get_distance,
+    qc, 
     )
 from .funcutils import ( 
     reshape, 
@@ -197,6 +199,8 @@ __all__=[
         'normalizer',
         'plot_strike',
         'get_target', 
+        'get_distance',
+        'get_bearing', 
         'qc'
         ]
 

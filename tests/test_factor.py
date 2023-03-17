@@ -24,5 +24,5 @@ class TestFactor (unittest.TestCase) :
         X, X_homo, X_hetero , n_components = make_scedastic_data ()  
         
                 
-if __name__=='__main__': 
-    unittest.main()
+# if __name__=='__main__': 
+#     unittest.main()

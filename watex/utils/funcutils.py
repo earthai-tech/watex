@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause
+#   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 
 from __future__ import ( 
@@ -84,29 +84,48 @@ except ImportError:
 #-----
 
 def to_numeric_dtypes (
-        arr: NDArray | DataFrame, *, 
-        columns:List[str] = None, 
-        return_feature_types:bool =False , 
-        missing_values:float = np.nan, 
-        pop_cat_features:bool=False, 
-        verbose:bool= False, 
+    arr: NDArray | DataFrame, *, 
+    columns:List[str] = None, 
+    return_feature_types:bool =False , 
+    missing_values:float = np.nan, 
+    pop_cat_features:bool=False, 
+    sanitize_columns:bool=False, 
+    regex=None, 
+    verbose:bool= False,
     )-> DataFrame : 
     """ Convert array to dataframe and coerce arguments to appropriate dtypes. 
     
     Parameters 
     -----------
     arr: Ndarray or Dataframe, shape (M=samples, N=features)
-        Array of dataframe to create 
+        Array of dataframe to create
+        
     columns: list of str, optional 
         Usefull to create a dataframe when array is given. Be aware to fit the 
         number of array columns (shape[1])
+        
     return_feature_types: bool, default=False, 
         return the list of numerical and categorial features
     missing_values: float: 
         Replace the missing or empty string if exist in the dataframe.
+        
     pop_cat_features:bool, default=False, 
         remove removes the categorial features  from the DataFrame.
         
+    sanitize_columns: bool, default=False, 
+       remove undesirable character in the data columns using the default
+       argument of `regex` parameters. 
+       .. versionadded:: 0.1.9
+       
+    regex: `re` object,
+        Regular expresion object used to polish the data columns.
+        the default is:: 
+            
+        >>> import re 
+        >>> re.compile (r'[_#&.)(*@!_,;\s-]\s*', flags=re.IGNORECASE)
+          
+       .. versionadded:: 0.1.9
+       
     verbose: bool, default=False, 
         outputs a message by listing the categorial items dropped from 
         the dataframe if exists. 
@@ -141,6 +160,8 @@ def to_numeric_dtypes (
     df = pd.DataFrame (arr, columns =columns  
                        ) if isinstance (arr, np.ndarray) else arr 
     
+    if sanitize_columns: df = sanitize_frame_cols(df, regex=regex)  
+        
     nf,cf =[], []
     #replace empty string by Nan if NaN exist in dataframe  
     df= df.replace(r'^\s*$', missing_values, regex=True)
@@ -2632,6 +2653,10 @@ def fillNaN(arr, method ='ff'):
     https://pyquestions.com/most-efficient-way-to-forward-fill-nan-values-in-numpy-array
     
     """
+    
+    if not hasattr(arr, '__array__'): 
+        arr = np.array(arr)
+        
     def ffill (arr): 
         """ Forward fill."""
         idx = np.where (~mask, np.arange(mask.shape[1]), 0)
@@ -4938,8 +4963,11 @@ def get_confidence_ratio (
     
     return ratio 
     
-def assert_ratio(v, /, bounds: List[float] = None , exclude_value:float= None, 
-                 as_percent:bool =False , name:str ='rate', ): 
+def assert_ratio(
+        v, /, bounds: List[float] = None , 
+        exclude_value:float= None, 
+        as_percent:bool =False , name:str ='rate' 
+        ): 
     """ Assert rate value between a specific range. 
     
     Parameters 
@@ -4984,7 +5012,7 @@ def assert_ratio(v, /, bounds: List[float] = None , exclude_value:float= None,
                          name ='tolerance', as_percent =True )
     0.02
     """ 
-    msg =("greater than '{}' and less than '{}'" )
+    msg =("greater than {} and less than {}" )
     
     if isinstance (v, str): 
         v = v.replace('%', '')
@@ -5004,7 +5032,7 @@ def assert_ratio(v, /, bounds: List[float] = None , exclude_value:float= None,
           
     bounds = bounds or []
     low, up, *_ = list(bounds) + [ None, None]
-    e=("Expects a {} value {}, got: '{}'".format(
+    e=("Expects a {} value {}, got: {}".format(
             name , msg.format(low, up), v)) 
     err = ValueError (e)
 
@@ -5029,18 +5057,146 @@ def assert_ratio(v, /, bounds: List[float] = None , exclude_value:float= None,
                 raise ValueError (e.replace (", got:", ' excluding') + ".")
             
     if as_percent and v > 100: 
-         raise ValueError ("{} value should be {}, got: '{}'".
+         raise ValueError ("{} value should be {}, got: {}".
                            format(name.title(), msg.format(low, up), v  ))
     return v 
 
+def exist_features (df, features, error='raise'): 
+    """Control whether the features exist or not  
     
+    :param df: a dataframe for features selections 
+    :param features: list of features to select. Lits of features must be in the 
+        dataframe otherwise an error occurs. 
+    :param error: str - raise if the features don't exist in the dataframe. 
+        *default* is ``raise`` and ``ignore`` otherwise. 
+        
+    :return: bool 
+        assert whether the features exists 
+    """
+    isf = False  
     
+    error= 'raise' if error.lower().strip().find('raise')>= 0  else 'ignore' 
+
+    if isinstance(features, str): 
+        features =[features]
+        
+    features = _assert_all_types(features, list, tuple, np.ndarray)
+    set_f =  set (features).intersection (set(df.columns))
+    if len(set_f)!= len(features): 
+        nfeat= len(features) 
+        msg = f"Feature{'s' if nfeat >1 else ''}"
+        if len(set_f)==0:
+            if error =='raise':
+                raise ValueError (f"{msg} {smart_format(features)} "
+                                  f"{'does not' if nfeat <2 else 'dont'}"
+                                  " exist in the dataframe")
+            isf = False 
+        # get the difference 
+        diff = set (features).difference(set_f) if len(
+            features)> len(set_f) else set_f.difference (set(features))
+        nfeat= len(diff)
+        if error =='raise':
+            raise ValueError(f"{msg} {smart_format(diff)} not found in"
+                             " the dataframe.")
+        isf = False  
+    else : isf = True 
     
+    return isf    
     
+def interpolate_grid (
+    arr, / , 
+    method ='cubic', 
+    fill_value='auto', 
+    view = False,
+    ): 
+    """
+    Interpolate data containing missing values. 
+
+    Parameters 
+    -----------
+    arr: ArrayLike2D 
+       Two dimensional array for interpolation 
+    method: str, default='cubic'
+      kind of interpolation. It could be ['nearest'|'linear'|'cubic']. 
+     
+    fill_value: float, str, default='auto' 
+       Fill the interpolated grid at the egdes or surrounding NaN with 
+       a filled value. The ``auto`` fill use the forward and backward 
+       fill stragety. 
+       
+    view: bool, default=False, 
+       Quick visualize the interpolated grid. 
+       
+    Returns 
+    ---------
+    arri: ArrayLike2d 
+       Interpolated 2D grid. 
+       
+    See also 
+    ---------
+    spi.griddata: 
+        Scipy interpolate Grid data 
+    fillNaN: 
+        Fill missing data strategy. 
+        
+    Examples
+    ---------
+    >>> import numpy as np
+    >>> from watex.utils.funcutils import interpolate_grid 
+    >>> x = [28, np.nan, 50, 60] ; y = [np.nan, 1000, 2000, 3000]
+    >>> xy = np.vstack ((x, y)).T
+    >>> xyi = interpolate_grid (xy, view=True ) 
+    >>> xyi 
+    array([[  28.        ,   22.78880936,   50.        ,   60.        ],
+           [1000.        , 1000.        , 2000.        , 3000.        ]])
+
+    """
+
+    if not hasattr(arr, '__array__'): 
+        arr = np.array (arr) 
     
+    if arr.ndim==1: 
+        raise TypeError(
+            "Expect two dimensional array for grid interpolation.")
+        
+    # make x, y array for mapping 
+    x = np.arange(0, arr.shape[1])
+    y = np.arange(0, arr.shape[0])
+    #mask invalid values
+    arr= np.ma.masked_invalid(arr) 
+    xx, yy = np.meshgrid(x, y)
+    #get only the valid values
+    x1 = xx[~arr.mask]
+    y1 = yy[~arr.mask]
+    newarr = arr[~arr.mask]
     
+    arri = spi.griddata(
+        (x1, y1),
+        newarr.ravel(),
+        (xx, yy), 
+        method=method
+        )
     
-    
+    if fill_value =='auto': 
+        arri = fillNaN(arri, method ='both ')
+    else:
+        arri [np.isnan(arri)] = float( _assert_all_types(
+            fill_value, float, int, objname ="'fill_value'" )
+            ) 
+
+    if view : 
+        fig, ax  = plt.subplots (nrows = 1, ncols = 2 , sharey= True, )
+        ax[0].imshow(arr ,interpolation='nearest', label ='Raw Grid')
+        ax[1].imshow (arri, interpolation ='nearest', 
+                      label = 'Interpolate Grid')
+        
+        ax[0].set_title ('Raw Grid') 
+        ax[1].set_title ('Interpolate Grid') 
+        
+        plt.show () 
+        
+    return arri 
+
     
     
     

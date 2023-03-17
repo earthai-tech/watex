@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Licence:BSD 3-Clause
-# author: LKouadio <etanoyau@gmail.com>
+# License: BSD-3-Clause
+# Author: LKouadio <etanoyau@gmail.com>
 
 """
 Base data preparation for case studies 

@@ -512,8 +512,8 @@ Functions
    
 .. _sites_ref:
 
-:mod:`watex.site`: Site and Location  
-=====================================================
+:mod:`watex.site`: Location and Profile  
+=============================================
 
 .. automodule:: watex.site
    :no-members:
@@ -526,6 +526,7 @@ Functions
    :template: class.rst
 
    site.Location
+   site.Profile
 
 .. _transformers_ref:
 
@@ -585,6 +586,8 @@ Functions
 	utils.get_aquifer_section
 	utils.get_aquifer_sections
 	utils.get_compressed_vector
+	utils.get_bearing
+	utils.get_distance
 	utils.get_full_frequency
 	utils.get_profile_angle
 	utils.get_sections_from_depth
@@ -629,6 +632,7 @@ Functions
 	utils.power
 	utils.predict_NGA_labels
 	utils.projection_validator
+	utils.qc
 	utils.read_data
 	utils.reduce_samples
 	utils.remove_outliers

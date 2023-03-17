@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#   Licence:BSD 3-Clause
+#   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
 """
 Utilities to process and compute parameters. Module for Algebra calculus.
@@ -86,11 +86,13 @@ from .validator import (
     _is_arraylike_1d, 
     _validate_ves_operator, 
     _assert_z_or_edi_objs, 
-    _validate_tensor, 
+    _validate_tensor,
     is_valid_dc_data,
     check_y,
-    check_array, 
+    check_array,
+    
     )
+
 try: import scipy.stats as spstats
 except: pass 
 
@@ -588,8 +590,6 @@ def interpolate2d (
                                         method ='pd', **kws), axis=0)
                          for ii in  range (arr2d.shape[1])])
     return arr2d 
-
-
 
 def dummy_basement_curve(
         func: F ,
@@ -3674,7 +3674,7 @@ def fittensor(
 def interpolate1d (
         arr:ArrayLike[DType[T]], 
         kind:str = 'slinear', 
-        method:str='mean', 
+        method:str=None, 
         order:Optional[int] = None, 
         fill_value:str ='extrapolate',
         limit:Tuple[float] =None, 
@@ -3706,7 +3706,7 @@ def interpolate1d (
         Note that the polynomial requires you to specify an `order` while 
         ``pad`` requires to specify the `limit`. Default is ``slinear``.
         
-    method: str, optional  
+    method: str, optional, default='mean' 
         Method of interpolation. Can be ``base`` for `scipy.interpolate.interp1d`
         ``mean`` or ``bff`` for scaling methods and ``pd``for pandas interpolation 
         methods. Note that the first method is fast and efficient when the number 
@@ -3795,7 +3795,7 @@ def interpolate1d (
                     'pandas strategy', 'data'], loc='best')
     
     """
-    method =str(method).strip().lower() 
+    method = method or 'mean'; method =str(method).strip().lower() 
     if method in ('pandas', 'pd', 'series', 'dataframe','df'): 
         method = 'pd' 
     elif method in ('interp1d', 'scipy', 'base', 'simpler', 'i1d'): 
@@ -4715,7 +4715,7 @@ def compute_errors (
 def plot_confidence_in(
     z_or_edis_obj_list: List [EDIO |ZO], 
     /, 
-    tensor='res', 
+    tensor:str='res', 
     view:str='1d', 
     drop_outliers:bool=True, 
     distance:float=None, 
@@ -4762,7 +4762,7 @@ def plot_confidence_in(
         A collection of EDI- or Impedances tensors objects. 
         
     tensor: str, default='res'  
-        Tensor name. Can be [ resistivity|phase|z|frequency]
+        Tensor name. Can be [ 'resistivity'|'phase'|'z'|'frequency']
         
     view:str, default='1d'
        Type of plot. Can be ['1D'|'2D'] 
@@ -4950,10 +4950,13 @@ def plot_confidence_in(
     if savefig: 
         plt.savefig(savefig, dpi =600 )
         
+    # plot when image is saved and show otherwise 
+    plt.show() if not savefig else plt.close() 
+        
     return ax 
 
 
-def getzfromedis ( edi_obj_list , /, ): 
+def get_z_from( edi_obj_list , /, ): 
     """ Get z object from Edi object. 
     Parameters 
     -----------
@@ -4982,7 +4985,8 @@ def qc(
     to_log10: bool =False, 
     return_qco:bool=False 
     )->Tuple[float, ArrayLike]: 
-    """ Check the quality control in the collection of Z or EDI objects. 
+    """
+    Check the quality control in the collection of Z or EDI objects. 
     
     Analyse the data in the EDI collection and return the quality control value.
     It indicates how percentage are the data to be representative.
@@ -5049,7 +5053,6 @@ def qc(
     """
     tol = assert_ratio(tol , bounds =(0, 1), exclude_value ='use lower bound',
                          name ='tolerance', as_percent =True )
-
     # by default , we used the resistivity tensor and error at TE mode.
     # force using the error when resistivity or phase tensors are supplied 
     tensor = str(tensor).lower() 
@@ -5065,13 +5068,16 @@ def qc(
        
     # compute the ratio of NaN in axis =0 
     nan_sum  =np.nansum(np.isnan(ar), axis =1) 
+
     rr= np.around ( nan_sum / ar.shape[1] , 2) 
-    
+ 
     # compute the ratio ck
     # ck = 1. -    rr[np.nonzero(rr)[0]].sum() / (
     #     1 if len(np.nonzero(rr)[0])== 0 else len(np.nonzero(rr)[0])) 
-    ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
-    
+    # ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
+    ck = 1 - nan_sum[np.nonzero(rr)[0]].sum() / (
+        ar.shape [0] * ar.shape [1]) 
+  
     # now consider dirty data where the value is higher 
     # than the tol parameter and safe otherwise. 
     index = reshape (np.argwhere (rr > tol))
@@ -5086,8 +5092,10 @@ def qc(
     invalid_freqs= f[ ~np.isin (f, new_f) ]
     
     if interpolate_freq: 
-        new_f = np.logspace(np.log10(new_f.min()) , np.log10(new_f.max()),
-                            len(new_f))[::-1]
+        new_f = np.logspace(
+            np.log10(new_f.min()) , 
+            np.log10(new_f.max()),
+            len(new_f))[::-1]
         # since interpolation is already made in 
         # log10, getback to normal by default 
         # and set off to False
@@ -5132,11 +5140,263 @@ def qc(
         )
     return data
  
-   
+def get_distance(
+    x: ArrayLike, 
+    y:ArrayLike , *, 
+    return_mean_dist:bool =False, 
+    is_latlon= False , 
+    **kws
+    ): 
+    """
+    Compute distance between points
     
-   
+    Parameters
+    ------------
+    x, y: ArrayLike 1d, 
+       One dimensional arrays. `x` can be consider as the abscissa of the  
+       landmark and `y` as ordinates array. 
+       
+    return_mean_dist: bool, default =False, 
+       Returns the average value of the distance between different points. 
+       
+    is_latlon: bool, default=False, 
+        Convert `x` and `y` latitude  and longitude coordinates values 
+        into UTM before computing the distance. `x`, `y` should be considered 
+        as ``easting`` and ``northing`` respectively. 
+        
+    kws: dict, 
+       Keyword arguments passed to :meth:`watex.site.Location.to_utm_in`
+       
+    Returns 
+    ---------
+    d: Arraylike of shape (N-1) 
+      Is the distance between points. 
+      
+    Examples 
+    --------- 
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import get_distance 
+    >>> x = np.random.rand (7) *10 
+    >>> y = np.abs ( np.random.randn (7) * 12 ) 
+    >>> get_distance (x, y) 
+    array([ 8.7665511 , 12.47545656,  8.53730212, 13.54998351, 14.0419387 ,
+           20.12086781])
+    >>> get_distance (x, y, return_mean_dist= True) 
+    12.91534996818084
+    """
+    x, y = _assert_x_y_positions (x, y, is_latlon , **kws  )
+    d = np.sqrt( np.diff (x) **2 + np.diff (y)**2 ) 
     
+    return d.mean()  if return_mean_dist else d 
+
+    
+def scale_positions (
+    x: ArrayLike, 
+    y:ArrayLike, 
+    *, 
+    is_latlon:bool=False, 
+    step:float= None, 
+    use_average_dist:bool=False, 
+    utm_zone:str= None, 
+    shift: bool=True, 
+    view:bool = False, 
+    **kws
+    ): 
+    """
+    Correct the position coordinates. 
+     
+    By default, it consider `x` and `y` as easting/latitude and 
+    northing/longitude coordinates respectively. It latitude and longitude 
+    are given, specify the parameter `is_latlon` to ``True``. 
+    
+    Parameters
+    ----------
+    x, y: ArrayLike 1d, 
+       One dimensional arrays. `x` can be consider as the abscissa of the  
+       landmark and `y` as ordinates array. 
+       
+    is_latlon: bool, default=False, 
+       Convert `x` and `y` latitude  and longitude coordinates values 
+       into UTM before computing the distance. `x`, `y` should be considered 
+       as ``easting`` and ``northing`` respectively. 
+           
+    step: float, Optional 
+       The positions separation. If not given, the average distance between 
+       all positions should be used instead. 
+    use_average_dist: bool, default=False, 
+       Use the distance computed between positions for the correction. 
+    utm_zone: str,  Optional (##N or ##S)
+       UTM zone in the form of number and North or South hemisphere. For
+       instance '10S' or '03N'. Note that if `x` and `y` are UTM coordinates,
+       the `utm_zone` must be provide to accurately correct the positions, 
+       otherwise the default value ``49R`` should be used which may lead to 
+       less accuracy. 
+       
+    shift: bool, default=True,
+       Shift the coordinates from the units of `step`. This is the default 
+       behavor. If ``False``, the positions are just scaled. 
+    
+    view: bool, default=True 
+       Visualize the scaled positions 
+       
+    kws: dict, 
+       Keyword arguments passed to :func:`~.get_distance` 
+    Returns 
+    --------
+    xx, yy: Arraylike 1d, 
+       The arrays of position correction from `x` and `y` using the 
+       bearing. 
+       
+    See Also 
+    ---------
+    watex.utils.exmath.get_bearing: 
+        Compute the  direction of one point relative to another point. 
+      
+    Examples
+    ---------
+    >>> from watex.utils.exmath import scale_positions 
+    >>> east = [336698.731, 336714.574, 336730.305] 
+    >>> north = [3143970.128, 3143957.934, 3143945.76]
+    >>> east_c , north_c= scale_positions (east, north, step =20, view =True  ) 
+    >>> east_c , north_c
+    (array([336686.69198337, 336702.53498337, 336718.26598337]),
+     array([3143986.09866306, 3143973.90466306, 3143961.73066306]))
+    """
+    from ..site import Location
+    
+    msg =("x, y are not in longitude/latitude format  while 'utm_zone' is not"
+          " supplied. Correction should be less accurate. Provide the UTM"
+          " zone to improve the accuracy.")
+    
+    if is_latlon: 
+        xs , ys = np.array(copy.deepcopy(x)) , np.array(copy.deepcopy(y))
+
+    x, y = _assert_x_y_positions( x, y, islatlon = is_latlon , **kws ) 
+    
+    if step is None: 
+        warnings.warn("Step is not given. Average distance between points"
+                      " should be used instead.")
+        use_average_dist =True 
+    else:  
+        d = float (_assert_all_types(step, float, int , objname ='Step (m)'))
+    if use_average_dist: 
+        d = get_distance(x, y, return_mean_dist=use_average_dist,  **kws) 
+        
+    # compute bearing. 
+    utm_zone = utm_zone or '49R'
+    if not is_latlon and utm_zone is None: 
+        warnings.warn(msg ) 
+    if not is_latlon: 
+        xs , ys = Location.to_latlon_in(x, y, utm_zone= utm_zone) 
+  
+    b = get_bearing((xs[0] , ys[0]) , (xs[-1], ys[-1]),
+                    to_deg =False ) # return bearing in rad.
+ 
+    xx = x + ( d * np.cos (b))
+    yy = y +  (d * np.sin(b))
+    if not shift: 
+        xx, *_ = scalePosition(x )
+        yy, *_ = scalePosition(y)
+        
+    if view: 
+        state = f"{'scaled' if not shift else 'shifted'}"
+        plt.plot (x, y , 'ok-', label =f"Un{state} positions") 
+        plt.plot (xx , yy , 'or:', label =f"{state.title()} positions")
+        plt.xlabel ('x') ; plt.ylabel ('y')
+        plt.legend()
+        plt.show () 
+        
+    return xx, yy 
+
+def _assert_x_y_positions (x, y , islatlon = False, is_utm=True,  **kws): 
+    """ Assert the position x and y and return array of x and y  """
+    from ..site import Location 
+    x = np.array(x, dtype = np.float64) 
+    y = np.array(y, np.float64)
+    for ii, ar in enumerate ([x, y]):
+        if not _is_arraylike_1d(ar):
+            raise TypeError (
+                f"Expect one-dimensional array for {'x' if ii==0 else 'y'!r}."
+                " Got {x.ndim}d.")
+        if len(ar) <= 1:
+            raise ValueError (f"A singleton array {'x' if ii==0 else 'y'!r} is"
+                              " not admitted. Expect at least two points"
+                              " A(x1, y1) and B(x2, y2)")
+    if islatlon: 
+        x , y = Location.to_utm_in(x, y, **kws)
+    return x, y 
    
+
+def get_bearing (latlon1, latlon2,  to_deg = True ): 
+    """
+    Calculate the bearing between two points. 
+     
+    A bearing can be defined as  a direction of one point relative 
+    to another point, usually given as an angle measured clockwise 
+    from north.
+    The formula of the bearing :math:`\beta` between two points 1(lat1 , lon1)
+    and 2(lat2, lon2) is expressed as below: 
+        
+    .. math:: 
+        \beta = atan2(sin(y_2-y_1)*cos(x_2), cos(x_1)*sin(x_2) – \
+                      sin(x_1)*cos(x_2)*cos(y_2-y_1))
+     
+    where: 
+       
+       - :math:`x_1`(lat1): the latitude of the first coordinate
+       - :math:`y_1`(lon1): the longitude of the first coordinate
+       - :math:`x_2`(lat2) : the latitude of the second coordinate
+       - :math:`y_2`(lon2): the longitude of the second coordinate
+    
+    Parameters 
+    ----------- 
+    latlon: Tuple ( latitude, longitude) 
+       A latitude and longitude coordinates of the first point in degree. 
+    latlon2: Tuple ( latitude, longitude) 
+       A latitude and longitude of coordinates of the second point in degree.  
+       
+    to_deg: bool, default=True 
+       Convert the bearing from radians to degree. 
+      
+    Returns 
+    ---------
+    b: Value of bearing in degree ( default). 
+    
+    See More 
+    ----------
+    See more details by clicking in the link below: 
+        https://mapscaping.com/how-to-calculate-bearing-between-two-coordinates/
+        
+    Examples 
+    ---------
+    >>> from watex.utils import get_bearing 
+    >>> latlon1 = (28.41196763902007, 109.3328724432221) # (lat, lon) point 1
+    >>> latlon2= (28.38756530909265, 109.36931920880758) # (lat, lon) point 2
+    >>> get_bearing (latlon1, latlon2 )
+    127.26739270447973 # in degree 
+    """
+    latlon1 = reshape ( np.array ( latlon1, dtype = np.float64)) 
+    latlon2 = reshape ( np.array ( latlon2, dtype = np.float64)) 
+    
+    if len(latlon1) <2 or len(latlon2) <2 : 
+        raise ValueError("Wrong coordinates values. Need two coordinates"
+                         " (latitude and longitude) of points 1 and 2.")
+    lat1 = np.deg2rad (latlon1[0]) ; lon1 = np.deg2rad(latlon1[1])
+    lat2 = np.deg2rad (latlon2[0]) ; lon2 = np.deg2rad(latlon2[1])
+    
+    b = np.arctan2 (
+        np.sin(lon2 - lon1 )* np.cos (lat2), 
+        np.cos (lat1) * np.sin(lat2) - np.sin (lat1) * np.cos (lat2) * np.cos (lon2 - lon1)
+                    )
+    if to_deg: 
+        # convert bearing to degree and make sure it 
+        # is positive between 360 degree 
+        b = ( np.rad2deg ( b) + 360 )% 360 
+        
+    return b 
+
+        
+    
     
    
     
