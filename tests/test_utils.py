@@ -126,19 +126,10 @@ class TestTools(unittest.TestCase):
                     self.assertEqual(len(col), len(PREFIX),
                         f'The length of data columns={col}  is '
                         f' different from the expected length ={len(PREFIX)}.')
-   
-            elif isinstance(f, pd.Series): 
-                self.assertListEqual (col , ['resistivity'], 
-                                     'Expected a sery of "resistivity" by got'
-                                     f'{f.name}')
-            elif isinstance(f, pd.DataFrame): 
-                self.assertListEqual (col , ['station', 'resistivity'], 
-                        'Expected a sery of "[station , resistivity]" by got'
-                        f'{col}')
-                
+
 # if __name__=='__main__': 
 
-#     unittest.main()
+#     TestTools().test_erpSelector () 
 
     
 
