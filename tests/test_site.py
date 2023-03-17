@@ -56,5 +56,5 @@ class TestLocation (unittest.TestCase ):
         self.assertEqual (len(xx), len(x)) 
         self.assertEqual (len(yy), len(xx ))
         
-if __name__=='__main__': 
-    TestProfile ().test_make_coordinates() 
+# if __name__=='__main__': 
+#     TestProfile ().test_make_coordinates() 
