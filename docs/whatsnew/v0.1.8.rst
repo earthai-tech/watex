@@ -1,7 +1,7 @@
 v0.1.8rc1 (March 17, 2023)
 --------------------------
 
-This is a minor change performed from ``v0.1.7`` and adaptations.  
+This release candidate is  a minor change performed from ``v0.1.7`` and adaptations.  
 
 Adapations and Features
 ~~~~~~~~~~~~~~~~~~~~~~~~~
