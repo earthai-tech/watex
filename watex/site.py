@@ -146,7 +146,7 @@ class Profile:
                 elev = elev if elev in data.columns else None 
                 if elev is None: 
                     warnings.warn(
-                        "Elevation {elev!r} not found in the dataframe")
+                        f"Elevation {elev!r} not found in the dataframe")
                 if elev is not None: 
                     elev = np.array (data[elev]) 
         
