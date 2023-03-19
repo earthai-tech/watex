@@ -26,7 +26,7 @@ in either a rose diagram of xy plot.
 import os 
 from watex.datasets import fetch_data 
 from watex.utils.plotutils import plot_strike 
-from watex.datasets._io import get_data # get edidata stored in cache
+from watex.datasets.io import get_data # get edidata stored in cache
 
 #%% 
 # Before we'll make a collection of :term:`EDI` data and call 

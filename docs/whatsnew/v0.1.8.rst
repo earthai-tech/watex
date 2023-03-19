@@ -1,39 +1,44 @@
-v0.1.8rc1 (March 17, 2023)
+v0.1.8 (March 17, 2023)
 --------------------------
 
-This release candidate is  a minor change performed from ``v0.1.7`` and adaptations.  
+This release is a minor change performed from ``v0.1.7`` and is a set of new features , adaptations and bug fixes for 
+improvement.   
 
-Adapations and Features
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Adaptations—Features and Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- deprecate single :term:`EDI` export to multiple EDI outputs (:meth:`watex.methods.EM.exportedis`)
+- |API change| The module ``_io`` from :mod:`watex.datasets` is henceforth changed to :mod:`watex.datasets.io` 
 
-- simplify the remote dataset path loader and BaseSteps :class:`watex.cases.BaseSteps` transformation using ``importlib.resources``.
+- |Deprecated| Export single :term:`EDI` was replace to multiple EDI outputs (:meth:`watex.methods.EM.exportedis`)
 
-- add new QC :func:`watex.utils.qc` function applicable outside the :term:`EM` processing QC method
+- |Enhancement| simplify the remote dataset path loader and BaseSteps :class:`watex.cases.BaseSteps` transformation using 
+  ``importlib.resources``.
+
+- |Feature| Add QC :func:`watex.utils.qc` function applicable outside the :term:`EM` processing QC method
   :meth:`watex.methods.Processing.qc` for consistent EM analyses.
 
-- Add multiple position coordinate transformations from UTM to latitude/longitude (:meth:`watex.site.Location.to_latlon_in`) and 
+- |Feature| Add multiple position coordinate transformations from UTM to latitude/longitude (:meth:`watex.site.Location.to_latlon_in`) and 
   vice versa (:meth:`watex.site.Location.to_utm_in`).
 
-- Set a slice components property `_c_` as  a :class:`watex.view.TPlot` attribute used by all 
+- |Enhancement| Set a slice components property `_c_` as  a :class:`watex.view.TPlot` attribute used by all 
   related methods.
 
-- update in the deprecated Numpy aliases: ``np.float``, ``np.complex`` for the builtin `float`,`complex`.
-  See  https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+- |Deprecated| Update in the deprecated Numpy aliases: ``np.float``, ``np.complex`` for the builtin ``float`,``complex``.
+  See  https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations . The ``np.float`` and ``np.complex`` in 
+  module :mod:`watex.edi` , :mod:`watex.externals.z` and :mod:`watex.externals.zutils` were change to ``np.float64``
+  and ``np.complex128``. 
 
-- Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
+- |Feature| Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
   supplement materials (methods) for data transformation. 
 
-
-Bug fixes
+Bug fixes 
 ~~~~~~~~~~~
 
-- Bug fixed in automating the :term:`Bagoue region` dataset preparation. The :func:`_assert_sl_target` is removed then the 
+- |Fix| Bug fixed in automating the :term:`Bagoue region` dataset preparation. The :func:`_assert_sl_target` is removed then the 
   `AttributeError` generated from missing `X` in  :meth:`watex.cases.prepare.BaseSteps.stratifydata` is fixed.
 
-- fix bug when buffering the frequency when restoring the tensor :meth:`watex.methods.Processing.zrestore`. 
+- |Fix| Buffering the frequency no more crashed when restoring the tensor  with :meth:`watex.methods.Processing.zrestore`. 
 
-- Fix negative resistivity generation in :term:`VES` from :func:`watex.datasets.make_ves`. 
-  Use absolute instead.
+- |Fix| Negative resistivity generation in :term:`VES` from :func:`watex.datasets.make_ves` is henceforth fixed.
+  Use absolute absolute instead.
 

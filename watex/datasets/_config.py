@@ -12,7 +12,7 @@ from the remote (repository or zenodo record )
 """
 import re
 from importlib import resources 
-from ._io import DMODULE 
+from .io import DMODULE 
 from ..property  import BagoueNotes
 from ..utils.funcutils import ( 
     smart_format 

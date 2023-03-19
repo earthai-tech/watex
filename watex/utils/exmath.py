@@ -4957,7 +4957,8 @@ def plot_confidence_in(
 
 
 def get_z_from( edi_obj_list , /, ): 
-    """ Get z object from Edi object. 
+    """Extract z object from Edi object.
+    
     Parameters 
     -----------
     z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \

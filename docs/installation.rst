@@ -100,9 +100,9 @@ Alternatively, ``mamba`` repoquery may provide more information, for instance:
 
 * List dependencies of `watex`:
 
-   .. prompt:: bash
+  .. prompt:: bash
    
-       mamba repoquery depends watex --channel conda-forge
+      mamba repoquery depends watex --channel conda-forge
 
 
 .. _from_source: 
