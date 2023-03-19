@@ -7,40 +7,39 @@ is built after fixing many minor bugs and improving the docstring documentation.
 
 New features 
 ~~~~~~~~~~~~~
-- Upload the :term:`SEG`- :term:`EDI` datasets. Henceforth, a sample of EDI data can be called for demonstration 
+- |Major change| Upload the :term:`SEG`- :term:`EDI` datasets. Henceforth, a sample of EDI data can be called for demonstration 
   rather than using the data in ``data/`` directory. Retrieving a sample of EDI is possible through the function 
   :func:`watex.datasets.load_edis`. 
  
-- Upload the possibility to generate the synthetic :term:`ERP` and :term:`VES` data thanks to :func:`watex.make_erp` and 
+- |Feature| Upload the possibility to generate the synthetic :term:`ERP` and :term:`VES` data thanks to :func:`watex.make_erp` and 
   :func:`watex.make_ves` respectively. 
 
-- Revised the EM module by implementing the :meth:`watex.methods.em.Processing.skew` methods for computing the geological structures 
+- |Enhancement| Revised the EM module by implementing the :meth:`watex.methods.em.Processing.skew` methods for computing the geological structures 
   dimensionality. This function is useful to determine which type of inversion to use for modeling :term:`NSAMT` data. 
   
-- Generated Hydrogeology module :mod:`watex.methods.hydro` from hydrogeological parameters computation from the 
+- |Enhancement| Generated Hydrogeology module :mod:`watex.methods.hydro` from hydrogeological parameters computation from the 
   :mod:`watex.utils.hydroutils` utility 
   
-- Many other utilities have been added in :mod:`watex.utils.funcutils` and :mod:`watex.utils.plotutils` for computation. 
+- |Major change| Many other utilities have been added in :mod:`watex.utils.funcutils` and :mod:`watex.utils.plotutils` for computation. 
 
-- Document all the :class:`watex.exceptions` module and reformat the :code:`WATex` API documentation 
+- |Enhancement| Document all the :class:`watex.exceptions` module and reformat the :code:`WATex` API documentation 
 
-- Add a profiling report in the gallery examples. See :ref:`sphx_glr_glr_examples_base_plot_profiling_report.py`. 
+- |Feature| Add a profiling report in the gallery examples. See :ref:`sphx_glr_glr_examples_base_plot_profiling_report.py`. 
 
+- |Major change| Replace the shorthand of ``fa`` with ``factor`` in the new version of factor analysis :mod:`watex.analysis.factor`. 
 
 Bug fixes
 ~~~~~~~~~~
-- Fix the typos in ``README.txt`` by changing the ``Analysis`` by ``Analyses`` since many analyses are performed with many scripts 
+- |Fix| Fix the typos in ``README.txt`` by changing the ``Analysis`` by ``Analyses`` since many analyses are performed with many scripts 
   in the :mod:`watex.analysis` module. 
  
-- Fix the bug in :func:`watex.view.biPlot`. Rename the ``xlabel`` and ``ylabel``. 
+- |Fix| Fix the bug in :func:`watex.view.biPlot`. Rename the ``xlabel`` and ``ylabel``. 
 
-- Fixed bug in :func:`watex.show_versions`  to output the hard dependencies and update the public API in ``watex.__init__``. 
+- |Fix| Fixed bug in :func:`watex.show_versions`  to output the hard dependencies and update the public API in ``watex.__init__``. 
 
-- Fixed bug in :term:`ERP` and :term:`VES` table for formatting the ERP and VES data sets documentation. 
+- |Fix| Fixed bug in :term:`ERP` and :term:`VES` table for formatting the ERP and VES data sets documentation. 
 
-- Replace the shorthand of ``fa`` with ``factor`` in the new version of factor analysis :mod:`watex.analysis.factor`. 
-
-- Fix the bug in :func:`watex.analysis.decomposition.linear_discriminant_analysis` mathematical formula in the docstrings. Henceforth 
+- |Fix| Fix the bug in :func:`watex.analysis.decomposition.linear_discriminant_analysis` mathematical formula in the docstrings. Henceforth 
   the function :func:`~watex.analysis.decomposition.linear_discriminant_analysis` returns weight factor of :term:`X` transformed as : 
 
   .. code-block:: python 
@@ -49,14 +48,14 @@ Bug fixes
              ...
              return X.dot(W) if return_X else W 
 
-- Fixed bug in :meth:`watex.base.Data.profilingReport`. Exception henceforth occurs if the optional dependency ``pandas-profiling``
+- |Fix| Fixed bug in :meth:`watex.base.Data.profilingReport`. Exception henceforth occurs if the optional dependency ``pandas-profiling``
   is not installed yet for report generation. 
   
-- Delete the module ``hua`` from datasets and replace by :mod:`watex.datasets.sets` for fast loading the inner datasets. 
+- |Deprecated| Delete the module ``hua`` from datasets and replace by :mod:`watex.datasets.sets` for fast loading the inner datasets. 
 
-- Move tensor exceptions ``ZError`` to the exceptions module :mod:`watex.exceptions` and revised the :term:`EM` exceptions errors 
+- |Major change| Move tensor exceptions ``ZError`` to the exceptions module :mod:`watex.exceptions` and revised the :term:`EM` exceptions errors 
   in the whole :mod:`watex.externals` module. 
 
-- Many other bugs were fixed in :mod:`watex.utils.plotutils` after several tests. 
+- |Fix| Many other bugs were fixed in :mod:`watex.utils.plotutils` after several tests. 
 
 

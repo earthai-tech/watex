@@ -6,28 +6,28 @@ This is a minor change performed from ``v0.1.4`` and bug fixes for issues identi
 Adaptations and Features 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Extend the article content to take the full-width in the `Home Page <https://watex.readthedocs.io/en/latest/index.html>`__ 
+- |Enhancement| Extend the article content to take the full-width in the `Home Page <https://watex.readthedocs.io/en/latest/index.html>`__ 
   (`Issue #144 <https://github.com/pydata/pydata-sphinx-theme/issues/1144>`__ ). Credit to 
   `Vincent Rouvreau <https://github.com/VincentRouvreau>`__ to workaround this issue by providing the script to 
   handle this. 
  
-- Add the project story and a simple testimonial to test the efficiency of the software in predicting the :term:`flow` during the 
+- |Feature| Add the project story and a simple testimonial to test the efficiency of the software in predicting the :term:`flow` during the 
   a :term:`drilling` operation performed in Tankesse area (see :func:`watex.datasets.load_tankesse`).  
 
-- Polishing the :ref:`methods <methods>` page of the documentation and fixing some typos. 
+- |Enhancement| Polishing the :ref:`methods <methods>` page of the documentation and fixing some typos. 
 
-- Add the :ref:`release notes <release>` for displaying the project historical changes. 
+- |Feature| Add the :ref:`release notes <release>` for displaying the project historical changes. 
 
-- Add the electronic :ref:`citations <citing>` from submitted papers in `Engineering Geology <https://www.sciencedirect.com/journal/engineering-geology>`__ for MXS (:class:`watex.methods.MXS`) and 
-  the software submission in `SoftwareX`_ journal.  
+- |Enhancement| Add the electronic :ref:`citations <citing>` from submitted papers in `Engineering Geology <https://www.sciencedirect.com/journal/engineering-geology>`__ for MXS (:class:`watex.methods.MXS`) and 
+  the software submission in `softwareX <https://www.sciencedirect.com/journal/softwarex>`__  journal.  
  
-- Add the :doc:`project story <../history/project_story>`  and move the :doc:`project mission and goals <../history/project_goals>` into 
+- |Feature| Add the :doc:`project story <../history/project_story>`  and move the :doc:`project mission and goals <../history/project_goals>` into 
   a single folder called :doc:`history <../history/index>`. 
  
-- Add new page named :doc:`five-minutes <../history/five_min_understanding>` for undertanding. This seems useful for an ease of comprehension of non-specialized readers/users about the :term:`geophysical` 
+- |Enhancement| Add new page named :doc:`five-minutes <../history/five_min_understanding>` for undertanding. This seems useful for an ease of comprehension of non-specialized readers/users about the :term:`geophysical` 
   :term:`DC` methods.
 
-- Aggregate and drop the null observations in the borehole datasets from :func:`watex.datasets.load_hlogs`. Henceforth both actions can be performed as a single task. The parameter ``key`` can be  set to ``*`` to 
+- |Enhancement| Aggregate and drop the null observations in the borehole datasets from :func:`watex.datasets.load_hlogs`. Henceforth both actions can be performed as a single task. The parameter ``key`` can be  set to ``*`` to 
   fetch all available logging data and concatenate them into a single frame. Whilst, the new parameter `drop_observations` set to ``True`` removes the ``remark`` column in the data. Indeed, the observation ("remark") column 
   sometimes does not contain  meaningful informations and can be annoying by calling the "drop" function  of the :term:`Pandas DataFrame` everytimes to drop it.  Here is the newest version implementation 
   to achieve a faster result into a single code line:
@@ -52,10 +52,10 @@ Adaptations and Features
 Bug fixes 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Bug fixed  in rewritting :term:`EDI` files using :meth:`watex.methods.em.EM.rewrite` method. ``todms`` passed as parameter to the function :func:`watex.utils.exmath.scalePosition` used to correct the 
+- |Fix| Bug fixed  in rewritting :term:`EDI` files using :meth:`watex.methods.em.EM.rewrite` method. ``todms`` passed as parameter to the function :func:`watex.utils.exmath.scalePosition` used to correct the 
   station positions is henceforth removed. Convertion to DD:MM:SS can be performed automatically when calling the :class:`watex.edi.DefineMeasurement` object. 
 
-- Bug fixed in selected the best drilling location when the resistivity data from :term:`ERP` is in  ``dtype=int``. ``np.nan`` is used to arease the restricted area found in the :term:`ERP` 
+- |Fix| Bug fixed in selected the best drilling location when the resistivity data from :term:`ERP` is in  ``dtype=int``. ``np.nan`` is used to arease the restricted area found in the :term:`ERP` 
   when constraints are passed since array with `dtype=int*` cannot be coerce with ``np.nan``. For consistency, the resistivity array of :term:`ERP` in :func:`watex.utils.erpSmartDetector` is 
   converted to `dtype=np.float64`.  Now error is gone whatever ``dtype=int*`` is passed as resistivity data. 
 

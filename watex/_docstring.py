@@ -10,6 +10,7 @@ __all__=[
     '_baseplot_params', 
     '_seealso_blurbs',
     '_core_returns', 
+    'wx_rst_epilog',
     '_core_params',
     'refglossary',
     '_core_docs',
@@ -758,7 +759,49 @@ _core_docs = dict(
     returns=DocstringComponents(_core_returns),
     seealso=DocstringComponents(_seealso_blurbs),
 )
-  
+ 
+"""
+.. currentmodule:: watex
+"""
+
+# Define replacements (used in whatsnew bullets)
+
+wx_rst_epilog ="""
+
+.. role:: raw-html(raw)
+   :format: html
+   
+.. |ohmS| replace:: Pseudo-area of the fractured zone 
+.. |sfi| replace:: Pseudo-fracturing index 
+.. |VES| replace:: Vertical Electrical Sounding 
+.. |ERP| replace:: Electrical Resistivity Profiling 
+.. |MT| replace:: Magnetotelluric 
+.. |AMT| replace:: Audio-Magnetotellurics 
+.. |CSAMT| replace:: Controlled Source |AMT| 
+.. |NSAMT| replace:: Natural Source |AMT| 
+.. |EM| replace:: electromagnetic
+.. |EMAP| replace:: |EM| array profiling
+.. |Fix| replace:: :bdg-danger:`Fix`
+.. |Enhancement| replace:: :bdg-info:`Enhancement`
+.. |Feature| replace:: :bdg-success:`Feature`
+.. |Major change| replace:: :bdg-primary:`Major change`
+.. |API change| replace:: :bdg-dark:`API change`
+.. |Deprecated| replace:: :bdg-warning:`Deprecated`
+
+.. |Open Source? Yes!| image:: https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github
+   :target: https://github.com/WEgeophysics/watex
+   
+.. |License BSD| image:: https://img.shields.io/github/license/WEgeophysics/watex?color=b&label=License&logo=github&logoColor=blue
+   :alt: GitHub
+   :target: https://github.com/WEgeophysics/watex/blob/master/LICENSE
+   
+.. |simpleicons git| image:: https://img.shields.io/badge/--F05032?logo=git&logoColor=ffffff
+   :target: http://git-scm.com 
+   
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7744732.svg
+   :target: https://doi.org/10.5281/zenodo.7744732
+   
+"""  
 
     
 

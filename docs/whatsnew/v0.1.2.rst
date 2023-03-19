@@ -4,30 +4,30 @@ v0.1.2 (July 15, 2022)
 This is a minor release with bug fixes for issues identified since ``v0.1.1``. In this release, most of the classes are renamed and 
 constructed following referring to Python `PEP8 <https://peps.python.org/pep-0008/>`__. 
 
-- Fixed a bug that appeared within the bootstrapping algorithm on 32-bit systems.
+- |Fix| Fixed a bug that appeared within the bootstrapping algorithm on 32-bit systems.
 
-- Fixed a bug where :class:`watex.cases.features.FeatureInspection` would crash on mixed categorical and numerical inputs. 
+- |Fix| Fixed a bug where :class:`watex.cases.features.FeatureInspection` would crash on mixed categorical and numerical inputs. 
   Now a crash is avoided and both data types.
 
-- Revised the whole module :mod:`watex.erp` as well as the detection of the conductive zone. 
+- |Enhancement| Revised the whole module :mod:`watex.methods.erp` as well as the detection of the conductive zone. 
 
-- Fixed a bug where the auto-detection shape of anomaly "H" is confused with "U". See the :ref:`DC -method <dc_resistivity>`. 
+- |Fix| Fixed a bug where the auto-detection shape of anomaly "H" is confused with "U". See the :ref:`DC -method <dc_resistivity>`. 
 
-- Fixed a bug where the term:`sfi` is wrong computed when the value of resistivity is relatively higher. 
+- |Fix| Fixed a bug where the term:`sfi` is wrong computed when the value of resistivity is relatively higher. 
 
-- Fixed a bug where :func:`despine` would cause an error when trying to trim spines on a matplotlib categorical axis.
+- |Fix| Fixed a bug where :func:`despine` would cause an error when trying to trim spines on a matplotlib categorical axis.
 
-- Adapted to a change in the auto-selection of the best anomaly that caused problems with multiple reading excel sheets.
+- |Enhancement| Adapted to a change in the auto-selection of the best anomaly that caused problems with multiple reading excel sheets.
 
-- Developed a :func:`watex.utils.funcutils.read_from_excelsheets` to parse multiple excel data from different localities at once.  
+- |Feature| Developed a :func:`watex.utils.funcutils.read_from_excelsheets` to parse multiple excel data from different localities at once.  
 
-- Deprecated several utility functions that are no longer used internally (``select_anomaly``, 
+- |Deprecated| Deprecated several utility functions that are no longer used internally (``select_anomaly``, 
   ``getminVal``, ``compute_lower_anomaly``, and ``define_conductive_zone``, ``compute_sfi``). 
   ``compute_sfi`` is henceforth replace by :func:`watex.sfi`
   
-- Fixed  bugs in :class:`watex.cases.processing.Preprocessing` and :class:`watex.cases.processing.Processing` and adapted to 
+- |Fix| Fixed  bugs in :class:`watex.cases.processing.Preprocessing` and :class:`watex.cases.processing.Processing` and adapted to 
   rearranged to accept other datasets whose objective is for predicting the :term:`groundwater` :term:`flow rate`. 
  
-- Fixed bugs :class:`watex.cases.modeling.BaseModel` especially in the method :meth:`watex.cases.modeling.BaseModel.get_learning_curve`
+- |Fix| Fixed bugs :class:`watex.cases.modeling.BaseModel` especially in the method :meth:`watex.cases.modeling.BaseModel.get_learning_curve`
   decoratored by :class:`watex.decorators.visualize_valearn_curve`. Henceforth returns the keyword arguments and are systematically 
   used to customize the validation curve from the base learning curve.

@@ -731,6 +731,7 @@ Functions
 	utils.exmath.get_anomaly_ratio
 	utils.exmath.get_profile_angle
 	utils.exmath.get_station_number 
+	utils.exmath.get_z_from
 	utils.exmath.invertVES
 	utils.exmath.plot_sfi
 	utils.exmath.savgol_coeffs

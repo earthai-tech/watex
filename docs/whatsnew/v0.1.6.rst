@@ -7,17 +7,17 @@ This is a minor change performed from ``v0.1.6-alpha`` and adaptations, bug fixe
 Adaptations and Features 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Add :func:`watex.utils.get2dtensor` for getting the tensor from 3D to 2D after signal 
+- |Feature| Add :func:`watex.utils.get2dtensor` for getting the tensor from 3D to 2D after signal 
   recovery with :meth:`watex.methods.Processing.zrestore`. 
 
-- Add skew visualization: :func:`watex.utils.plot_skew` for phase-sensitive visualization; :meth:`watex.view.TPlot.plotSkew` 
+- |Feature| Add skew visualization: :func:`watex.utils.plot_skew` for phase-sensitive visualization; :meth:`watex.view.TPlot.plotSkew` 
   for a consistent plot for phase-sensitive visualization
 
-- Visualizes the phase tensors with  :meth:`watex.view.TPlot.plot_phase_tensors`. 
+- |Enhancement| Visualizes the phase tensors with  :meth:`watex.view.TPlot.plot_phase_tensors`. 
 
-- Load Huayuan :term:`SEG`- :term:`EDI` datasets from :func:`watex.datasets.load_huayuan`. 
+- |Feature| Load Huayuan :term:`SEG`- :term:`EDI` datasets from :func:`watex.datasets.load_huayuan`. 
 
-- It is no longer useful to set the keyword parameter ``option``  of  :meth:`watex.methods.Processing.getValidTensors` to ``None`` every times to get the valid tensors.  The default implementation is 
+- |Enhancement| It is no longer useful to set the keyword parameter ``option``  of  :meth:`watex.methods.Processing.getValidTensors` to ``None`` every times to get the valid tensors.  The default implementation is 
   henceforth set to ``None`` and returns the valid tensors after the quality control ( See :meth:`watex.methods.Processing.qc` ). So, to export the valid tensors as :term:`EDI` files, 
   set explicitly the ``option`` to ``'write'`` instead.  For instance::
 
@@ -26,26 +26,26 @@ Adaptations and Features
   >>> Z = wx.EMProcessing().fit(edis).getValidTensors (tol =0.3 ) # outputs valid 3D new Impedance tensors with  >=70% assertion of data representativity 
   >>> wx.EMProcessing().fit(edis).getValidTensors (tol =0.3 , option ='write') # export tensors.  
 
-- Enable the skew dimensional plot with the combination with :class:`watex.methods.Processing` and :func:`watex.view.plot2d`. 
+- |Enhancement| Enable the skew dimensional plot with the combination with :class:`watex.methods.Processing` and :func:`watex.view.plot2d`. 
 
-- Add new features with strike (:func:`watex.utils.plot_strike`) and confidence plots in the :term:`EDI` data 
+- |Feature| Add new features with strike (:func:`watex.utils.plot_strike`) and confidence plots in the :term:`EDI` data 
   (:func:`watex.utils.plot_confidence_in`). The latter is useful to know the signals to recover and useless
   frequencies for deletion. 
   
 Bug fixes 
 ~~~~~~~~~~
 
-- Warn user when DC-parameters can be computed because of constraints (fixed ``AttributeError``
+- |Fix| Warn user when DC-parameters can be computed because of constraints (fixed ``AttributeError``
   in :meth:`watex.methods.ResistivityProfiling.summary`)
 
-- add ``openpyxl`` as the hard dependency at the initiliation of the package to avoid crashing 
+- |Fix| add ``openpyxl`` as the hard dependency at the initiliation of the package to avoid crashing 
   when :mod:`watex.geology` module is called. 
 
-- Bug fixed when calling the fine-tuned models from :class:`watex.GridSearchMultiple` objet. Henceforth models 
+- |Fix| Bug fixed when calling the fine-tuned models from :class:`watex.GridSearchMultiple` objet. Henceforth models 
   can be fetched as :class:`watex.utils.box.Boxspace` object that saves the estimator parameters, model names and 
   cv results. 
   
-- when building the :code:`watex` documentation, :meth:`watex.view.TPlot.plot_phase_tensors` calls MTpy imaging 
+- |Fix| when building the :code:`watex` documentation, :meth:`watex.view.TPlot.plot_phase_tensors` calls MTpy imaging 
   module which call matplotlib in turn to update MTpy propers colors. However, it does not recognize ``cmap_d`` in 
   the ``cmapdict.update(cm.cmap_d)`` of code line 252 by showing and ``AttributeError`` like below:
 
@@ -67,13 +67,13 @@ Bug fixes
   ``methods.plot_phase_tensors.py`` :meth:`watex.view.TPlot.plot_phase_tensors` object `tplot` rather than using the 
   matplotlib colormaps instead since  MTpy proper colors don't work. An error will raise in both case...
 
-- Bug fixed with :meth:`watex.view.TPlot.plot_phase_tensors` using Matplotlib version 3.5.3 max. The latest version will yield an 
+- |Fix| Bug fixed with :meth:`watex.view.TPlot.plot_phase_tensors` using Matplotlib version 3.5.3 max. The latest version will yield an 
   attribute error due to the use of `cmap_d` in updating MTpy proper colors ``cmapdict.update(cm.cmap_d)``. 
   
-- Bug fixed in loading the :func:`watex.models.displayCVTables` from :class:`watex.models.GridSearchMultiple`.  Use try -except instead to accept the 
+- |Fix| Bug fixed in loading the :func:`watex.models.displayCVTables` from :class:`watex.models.GridSearchMultiple`.  Use try -except instead to accept the 
   fine-tuned models directly from :class:`watex.exlib.GridSearchCV` or  :class:`watex.models.GridSearchMultiple` or :class:`watex.models.GridSearch`  
   
-- Bug fixed in the new implementation of quality control :meth:`watex.methods.Processing.qc`. No need to supply :term:`EDI` media-files or ``ediObjs`` as a positional argument since ``inspect`` 
+- |Fix| Bug fixed in the new implementation of quality control :meth:`watex.methods.Processing.qc`. No need to supply :term:`EDI` media-files or ``ediObjs`` as a positional argument since ``inspect`` 
   is used to assert whether the :class:`watex.methods.Processing` is called yet.
   
 

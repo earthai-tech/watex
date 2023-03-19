@@ -16,7 +16,7 @@ from warnings import warn
 from importlib import resources 
 import pandas as pd 
 from .._docstring import erp_doc, ves_doc 
-from ._io import csv_data_loader, _to_dataframe, DMODULE, get_data, remove_data 
+from .io import csv_data_loader, _to_dataframe, DMODULE, get_data, remove_data 
 from ..utils.coreutils import vesSelector, erpSelector 
 from ..utils.mlutils import split_train_test_by_id , existfeatures
 from ..utils.funcutils import ( 

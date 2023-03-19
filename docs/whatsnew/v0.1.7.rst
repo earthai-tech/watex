@@ -3,13 +3,22 @@ v0.1.7 (March 09, 2023)
 
 This is a minor change performed from ``v0.1.6`` and adaptations.  
 
-Adaptations and features 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Add new features with strike (:func:`watex.utils.plot_strike`) and confidence plots in the :term:`EDI` data 
+- |Feature| new features with strike (:func:`watex.utils.plot_strike`) and confidence plots in the :term:`EDI` data 
   (:func:`watex.utils.plot_confidence_in`). The latter is useful to know the signals to recover and useless
   frequencies for deletion. 
 
-- add confidence interval plot (:func:`watex.utils.plot_confidence_in`). This is useful for data visualization before 
+- |Feature| confidence interval plot (:func:`watex.utils.plot_confidence_in`). This is useful for data visualization before 
   :term:`tensor`` recovering. It also shows the status of the :term:`EM` data acquired at a specific area and whether 
   data is recoverable or not. If data is unrecoverable, a pure deletion is performed. 
 
+- |Feature| Extract :mod:`~watex.externals.z` object from :term:`EDI` using the :func:`watex.utils.exmath.get_z_from` function. 
+
+- |Enhancement| Setup the :code:`watex` version using ``setuptools_csm`` for version auto-generation. 
+
+- |Enhancement| Configure the commamd line interface in :mod:`watex.cli`  using ``cli`` module. 
+
+- |Enhancement| setup the default tolerate parameter (``tol``) in :meth:`watex.EMProcessing.qc` to hold the default value 
+  equals to ``0.5``. 
+  
+- |Feature| write tensor validators ``_validate_tensor`` and ``_assert_z_or_edi_objs`` from module :mod:`watex.utils.validator` to 
+  validate the tensors components and check the valid :mod:`watex.externals.z`  and :mod:`watex.edi` objects.   
