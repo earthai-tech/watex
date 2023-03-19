@@ -93,18 +93,18 @@ setup_kwargs['packages'] = [
 
 setup_kwargs['install_requires'] = [    
     "numpy >=1.23.0",#<=
-    "scipy>=1.9.0",
-    "pandas>=1.4.0",
-    "cython>=0.29.33",
-    "pyyaml>=5.0.0", 
-    "openpyxl>=3.0.3",
-    "seaborn>=0.12.0", 
-    "xgboost>=1.5.0",
-    "pyproj>=3.3.0",
-    "pycsamt>=1.1.2",
-    # "joblib>=1.2.0",
-    # "h5py>=3.2.0",
-    "tables>=3.6.1",
+    "scipy >=1.9.0",
+    "pandas >=1.4.0",
+    "cython >=0.29.33",
+    "pyyaml >=5.0.0", 
+    "openpyxl >=3.0.3",
+    "seaborn >=0.12.0", 
+    "xgboost >=1.7.3", # >=1.5.0
+    "pyproj >=3.3.0",
+    "pycsamt >=1.1.2",
+    # "joblib >=1.1.1", # >=1.2.0
+    # "h5py >=3.2.0",
+    "tables >=3.6.1",
 
     # "missingno>=0.4.2",
     # "pandas_profiling>=0.1.7",
@@ -112,9 +112,9 @@ setup_kwargs['install_requires'] = [
     # "yellowbrick>=1.5.0",
     # "mlxtend>=0.21",
     "tqdm <=4.64.1",
-    "scikit-learn==1.1.2",
-    "threadpoolctl==3.1.0",
-    "matplotlib==3.5.2",
+    "scikit-learn >=1.2.1", #==1.1.2"
+    "threadpoolctl >=2.2.0", #==3.1.0
+    "matplotlib ==3.5.3",
  ]
 # numpy scipy pandas xgboost seaborn openpyxl  scikit-learn==1.2 
                                
