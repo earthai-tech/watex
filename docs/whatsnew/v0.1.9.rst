@@ -1,13 +1,61 @@
-v0.1.9 (March 15, 2023)
+v0.1.9 (March 20, 2023)
 --------------------------
 
-This is a minor change performed from ``v0.1.8`` and adaptations.  
+This is a  change performed from ``v0.1.8``.  
 
-- Fix negative resistivity generation in :term:`VES` from :func:`watex.datasets.make_ves`. 
-  Use absolute instead.
+- |Major feature| Add impedance tensor multiple correction class (:class:`watex.methods.ZC`) and gives opportunity 
+  to export new :term:`tensor`` data into :term:`EDI` files if the argument ``out=True``. For instance: 
 
-- Set a slice components property `_c_` as  a :class:`watex.view.TPlot` attribute used by all 
-  related methods.
+  - :meth:`watex.methods.ZC.remove_static_shift` remove the static shift from correction factor from x and y using 
+    the spatial median filter 
 
-- update in the deprecated Numpy alaises: ``np.float``, ``np.complex`` for the builtin `float`,`complex`.
-  See  https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  - :meth:`watex.methods.ZC.remove_ss_emap` removes the static schift using the EMAP moving average filters such as:
+
+    - ``'ama'``: Adaptative moving average 
+    - ``'tma'``: Trimming moving-average 
+    - ``'flma'``: Fixed-length dipole moving average 
+  
+  - :meth:`watex.methods.ZC.remove_distorsion` removes distortion D form an observed impedance tensor Z. 
+
+  - :meth:`watex.methods.ZC.get_ss_correction_factors` computes the static shift correction factor from a station using a 
+    spatial median filter.
+
+- |Major Feature| Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
+    supplement materials (methods) for data transformation such as: 
+  - :meth:`watex.site.Profile.distance` computes the distance between profile coordinates points 
+
+  - :meth:`watex.site.bearing` computes the bearing between calculate bearing between two coordinates.
+
+  - :meth:`watex.site.Profile.scale_positions` scale the position coordinates along ``x`` and ``y``. This is useful in complex terrain ( 
+    high topography )
+
+  - :meth:`watex.site.Profile.shift_positions` shifts the ``x`` and ``y``  position coordinates from the step and angle.
+   
+  - :meth:`watex.site.Profile.dms2ll` transforms array ``x`` and ``y`` from DD:MM:SS to degree decimal -longitude (x) and latitude (y)
+
+  - :meth:`watex.site.Profile.ll2dms` does the revert process of :meth:`watex.site.Profile.dms2ll`
+  
+  - :meth:`watex.site.Profile.make_xy_coordinates` generates synthetic coordinates from references latitude and longitude 
+    from ``x`` and ``y``.
+
+  - :meth:`watex.site.Profile.interpolate` interpolates ``x``, ``y`` and ``elev`` ( if applicable).
+
+  
+- |Fix| Fix bug in updating :term:`tensor` in ``_zupdate`` class of module :mod:`watex.methods.em`. Set the `z` property attribute 
+  using the `_z`. Idem for `z_err` which henceforth uses `_z_err` in :class:`watex.externals.z.Z`  module. 
+
+
+- |Enhancement| Fix the dependencies when using ``scikit-learn >=1.1.2`` . No more longer uses the ``1.1.2`` version . Update to 
+  ``>=1.2.1`` to avoid the pickle warning at the beginning of package initialization . The following changes are made in the ``setup.py``
+ 
+  .. code-block:: python 
+
+    setup_kwargs['install_requires'] = [    
+    ... 
+    "numpy >=1.23.0",
+    "xgboost >=1.7.3", # rather than  >=1.5.0
+    "joblib >=1.1.1", # rather than  >=1.2.0
+    "scikit-learn >=1.2.1", # rather than ==1.1.2"
+    "threadpoolctl >=2.2.0", # rather than ==3.1.0
+    "matplotlib ==3.5.3",
+    ]

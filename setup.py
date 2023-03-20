@@ -27,7 +27,7 @@ with open('README.md', 'r', encoding ='utf8') as fm:
 MAINTAINER = "Laurent Kouadio"
 MAINTAINER_EMAIL = 'etanoyau@gmail.com'
 URL = "https://github.com/WEgeophysics/watex"
-DOWNLOAD_URL = "https://pypi.org/project/scikit-learn/#files"
+DOWNLOAD_URL = "https://pypi.org/project/watex/#files"
 LICENSE = "BSD-3-Clause"
 PROJECT_URLS = {
     "API Documentation"  : "https://watex.readthedocs.io/en/latest/api_references.html",
@@ -45,12 +45,8 @@ PACKAGE_DATA={
             'utils/_openmp_helpers.pxd', 
             'utils/espg.npy',
             'etc/*', 
-            # 'datasets/descr/*', 
-            # 'datasets/data/*', 
-            # 'datasets/data/edis/*', 
             'wlog.yml', 
             'wlogfiles/*.txt',
-            # '_build/*'
                 ], 
         "":["*.pxd",
             'data/*', 
@@ -105,7 +101,6 @@ setup_kwargs['install_requires'] = [
     # "joblib >=1.1.1", # >=1.2.0
     # "h5py >=3.2.0",
     "tables >=3.6.1",
-
     # "missingno>=0.4.2",
     # "pandas_profiling>=0.1.7",
     # "pyjanitor>=0.1.7",

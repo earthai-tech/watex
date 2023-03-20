@@ -28,9 +28,6 @@ Adaptations—Features and Improvements
   module :mod:`watex.edi` , :mod:`watex.externals.z` and :mod:`watex.externals.zutils` were change to ``np.float64``
   and ``np.complex128``. 
 
-- |Feature| Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
-  supplement materials (methods) for data transformation. 
-
 Bug fixes 
 ~~~~~~~~~~~
 

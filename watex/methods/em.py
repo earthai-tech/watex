@@ -22,6 +22,7 @@ from ..exceptions import (
     FrequencyError, 
     NotFittedError, 
     EMError,
+    ZError, 
     
 ) 
 from ..externals.z import Z as EMz 
@@ -83,6 +84,7 @@ _logger = watexlog.get_watex_logger(__name__)
 
 __all__ =['EM',
           'Processing',
+          'ZC',
           ]
 
 class EM(IsEdi): 
@@ -997,16 +999,27 @@ class _zupdate(EM):
             
             # pop the option argument if user provides it 
             option = kwargs.pop('option', None)
+            is3d = kwargs.pop ('is3d', False ) 
+            
             self.option  = str(option).lower()  or self.option 
             # create an empty array to collect each new Z object 
-            Zc = np.empty((len(ediObjs), ), dtype = object )
-            for kk in range  (len(ediObjs)):
-                # create a new Z object for each Edi
-                Z= self._make_zObj(kk,freq=freq, z_dict = z_dict  )
-                if self.option =='write': 
-                    self.exportedis(ediObj=ediObjs[kk] , new_Z=Z, 
-                                    **kwargs)
-                Zc[kk] =Z
+           
+            if not is3d:
+                # 
+                Zc = np.empty((len(ediObjs), ), dtype = object )
+                for kk in range  (len(ediObjs)):
+                    # create a new Z object for each Edi
+                    Z= self._make_zObj(kk,freq=freq, z_dict = z_dict  )
+                    # if self.option =='write': 
+                    #     self.exportedis(ediObjs=ediObjs[kk] , new_Z=Z, 
+                    #                     **kwargs)
+                    Zc[kk] =Z
+            else : 
+                # write corrected EDis with no loops 
+                Zc = z_dict 
+            
+            if self.option =='write': 
+                self.exportedis(ediObjs=ediObjs, new_Z=Zc, **kwargs) 
                 
             return Zc if self.option !='write' else None 
           
@@ -1042,13 +1055,13 @@ class _zupdate(EM):
         # dont raise any error if the component 
         # does not exist.
         if zxx is not None: 
-            Z.z[:, 0,  0] = reshape (zxx[:, kk], 1) 
+            Z._z[:, 0,  0] = reshape (zxx[:, kk], 1) 
         if zxy is not None: 
-            Z.z[:, 0,  1] = reshape (zxy[:, kk], 1)
+            Z._z[:, 0,  1] = reshape (zxy[:, kk], 1)
         if zyx is  not None: 
-            Z.z[:, 1,  0] = reshape (zyx[:, kk], 1) 
+            Z._z[:, 1,  0] = reshape (zyx[:, kk], 1) 
         if zyy is not None: 
-            Z.z[:, 1,  1] = reshape (zyy[:, kk], 1)
+            Z._z[:, 1,  1] = reshape (zyy[:, kk], 1)
             
         # set the z_err 
         zxx_err = z_dict.get('zxx_err') 
@@ -1057,16 +1070,17 @@ class _zupdate(EM):
         zyy_err = z_dict.get('zyy_err') 
         
         if zxx_err is not None: 
-            Z.z_err[:, 0,  0] = reshape (zxx_err[:, kk], 1) 
+            Z._z_err[:, 0,  0] = reshape (zxx_err[:, kk], 1) 
         if zxy_err is not None: 
-            Z.z_err[:, 0,  1] = reshape (zxy_err[:, kk], 1)
+            Z._z_err[:, 0,  1] = reshape (zxy_err[:, kk], 1)
         if zyx_err is not None: 
-            Z.z_err[:, 1,  0] = reshape (zyx_err[:, kk], 1) 
+            Z._z_err[:, 1,  0] = reshape (zyx_err[:, kk], 1) 
         if zyy_err is not None: 
-            Z.z_err[:, 1,  1] = reshape (zyy_err[:, kk], 1)
+            Z._z_err[:, 1,  1] = reshape (zyy_err[:, kk], 1)
         
-        Z.compute_resistivity_phase()
-        
+        Z.compute_resistivity_phase(
+            z_array = Z._z , z_err_array = Z._z_err, freq = freq )
+
         return Z 
         
 class Processing (EM) :
@@ -1077,8 +1091,9 @@ class Processing (EM) :
     
     Parameters 
     ----------
-    data: Path-like object or list  of  `pycsamt.core.edi.Edi` objects 
-        Collections of EDI-objects from `pycsamt`_ 
+    data: Path-like object or list  of  :class:watex.edi.Edi` or \
+        `pycsamt.core.edi.Edi` objects 
+        Collections of EDI-objects 
     
     freqs: array-like, shape (N)
         Frequency array. It should be the complete frequency used during the 
@@ -1210,7 +1225,8 @@ class Processing (EM) :
             self.res2d_, method =self.method)
         # get the index of the reference frequency  and collect 
         # the resistivity and phase at that frequency 
-        ix_rf = np.int(reshape (np.argwhere (self.freqs_==self.refreq_)))  
+        ix_rf = int(reshape (np.argwhere (self.freqs_==self.refreq_)))  
+
         # normalize log frequency and take the normalize ref freq 
         norm_f = (np.log10(self.freqs_) / np.linalg.norm(
             np.log10(self.freqs_)))
@@ -1269,9 +1285,9 @@ class Processing (EM) :
         
         rc = self.res2d_ * cf 
         if self.out =='z': 
-            rc = rhoa2z(rc, self.phs2d_, self.freq_s)
+            rc = rhoa2z(rc, self.phs2d_, self.freqs_)
 
-        return   cf if self.out =='sf' else rc   
+        return cf if self.out =='sf' else rc   
 
     def _make2dblobs (
         self, 
@@ -1911,52 +1927,7 @@ class Processing (EM) :
         # compute resistivity and phase for new Z object
         new_Z.compute_resistivity_phase()
         return new_Z 
-    
-    # XXX TODO 
-    def zcorrections(
-        self, 
-        ediObjs,  
-        Z=None, 
-        ffilter ='ama' , 
-        export_edis =False
-        ): 
-        """Correct the multiple z values from EDo objects or z using 
-        tma , flma or ama filters. 
-        """
-        # --> make a new Z objects 
-        # get the frequencies obj 
-        warnings.warn("Z correction with all components at once does not work" 
-                      " yet. Should be available in the next release.")
-        return 
-    
-        # ---in developmenent 
-        f = get_full_frequency(Z ) 
-        objtype = _assert_z_or_edi_objs(Z ) 
-        if objtype =='EDI': 
-            ediObjs =self.get_z_from_edio(Z )
-        zObjs = np.array (list(map(lambda o: o.Z, ediObjs)) ,
-                          dtype =object) 
-        
-        # make a new object 
-        new_zObjs =np.zeros_like (zObjs, dtype =object )
-        # loop to correct the Z impedance object values 
-        for kk, ediObj in enumerate (ediObjs):
-            new_Z = EMz(z_array=np.zeros((len(f), 2, 2),
-                                           dtype='complex'),
-                        z_err_array=np.zeros((len(f), 2, 2)),
-                        freq=f)
-            new_Z = self._tfuncZtransformer(
-                ediObj, 
-                new_Z, 
-                tfunc= self._z_transform, 
-                cfreq= f, 
- 
-                )
-            new_zObjs[kk] = new_Z 
-            
-        return new_zObjs
-   
-            
+
     @staticmethod 
     def freqInterpolation (
         y:ArrayLike[DType[T]] ,
@@ -2257,10 +2228,10 @@ class Processing (EM) :
         # -XX--
         try : 
             zxx = delete_useless_tensor(
-                self.make2d (self.ediObjs_, 'zxx'), no_ix) 
+                self.make2d ( 'zxx'), no_ix) 
             zxx = interpolate2d(zxx)
             zxx_err = delete_useless_tensor(
-                self.make2d (self.ediObjs_, 'zxx_err') , no_ix ) 
+                self.make2d ('zxx_err') , no_ix ) 
             zxx_err = interpolate2d (zxx_err )
         except :
             zxx = set_null(new_f, self.ediObjs_)
@@ -2269,10 +2240,10 @@ class Processing (EM) :
         # -XY--    
         try :
             zxy = delete_useless_tensor(
-                self.make2d (self.ediObjs_, 'zxy'), no_ix )  
+                self.make2d ( 'zxy'), no_ix )  
             zxy= interpolate2d( zxy)
             zxy_err = delete_useless_tensor( 
-                self.make2d (self.ediObjs_, 'zxy_err') , no_ix )
+                self.make2d ( 'zxy_err') , no_ix )
             zxy_err = interpolate2d(zxy_err)
         except: 
             zxy = set_null(new_f, self.ediObjs_)
@@ -2282,10 +2253,10 @@ class Processing (EM) :
         try:
         
             zyx = delete_useless_tensor( 
-                self.make2d (self.ediObjs_, 'zyx') , no_ix ) 
+                self.make2d ('zyx') , no_ix ) 
             zyx = interpolate2d(zyx)
             zyx_err = delete_useless_tensor(
-                self.make2d (self.ediObjs_, 'zyx_err') , no_ix ) 
+                self.make2d ( 'zyx_err') , no_ix ) 
             zyx_err = interpolate2d( zyx_err )
         except: 
             zyx = set_null(new_f, self.ediObjs_)
@@ -2294,10 +2265,10 @@ class Processing (EM) :
         # -YY--
         try:
             zyy = delete_useless_tensor(
-                self.make2d (self.ediObjs_, 'zyy'), no_ix ) 
+                self.make2d ( 'zyy'), no_ix ) 
             zyy = interpolate2d(zyy)
             zyy_err = delete_useless_tensor(
-                self.make2d (self.ediObjs_, 'zyy_err') , no_ix ) 
+                self.make2d ( 'zyy_err') , no_ix ) 
             zyy_err = interpolate2d(zyy_err)
             
         except :  
@@ -2305,15 +2276,75 @@ class Processing (EM) :
             zyy_err= zyy.copy() 
             
       
-        z_dict = { 'zxx': zxx ,'zxy': zxy ,
-                    'zyx': zyx,'zyy': zyy, 
-                    'zxx_err': zxx_err ,'zxy_err': zxy_err ,
-                    'zyx_err': zyx_err, 'zyy_err': zyy_err
+        z_dict = {
+            'zxx': zxx ,
+            'zxy': zxy ,
+            'zyx': zyx,
+            'zyy': zyy, 
+            'zxx_err': zxx_err ,
+            'zxy_err': zxy_err ,
+            'zyx_err': zyx_err, 
+            'zyy_err': zyy_err
             } 
         
         return (self.ediObjs_, new_f , z_dict ), kws
+      
+class ZC(EM): 
+    """Impedance tensor multiple EDI correction class. 
+    
+    Applied filters in a collections of :term:`EDI` objects. 
+    
+    Parameters 
+    ------------
+    
+    data: Path-like object or list  of  :class:watex.edi.Edi` or \
+        `pycsamt.core.edi.Edi` objects 
+        Collections of EDI-objects 
 
-  
+    window_size : int
+        the length of the window. Must be greater than 1 and preferably
+        an odd integer number. Default is ``5``
+        
+    c : int, default=2 
+        A window-width expansion factor that must be input to the filter 
+        adaptation process to control the roll-off characteristics
+        of the applied Hanning window. It is recommended to select `c` 
+        between ``1``  and ``4`` [1]_. 
+
+    References 
+    -----------
+    .. [1] Torres-Verdin and Bostick, 1992,  Principles of spatial surface 
+           electric field filtering in magnetotellurics: electromagnetic array 
+           profiling(EMAP), Geophysics, v57, p603-622.https://doi.org/10.1190/1.2400625
+           
+    Examples 
+    ----------
+    >>> import watex
+    >>> from watex.methods import ZC 
+    >>> edi_sample = watex.fetch_data ('edis', samples =17, return_data =True) 
+    >>> zo = ZC ().fit(edi_sample) 
+    >>> zo.ediObjs_[0].Z.resistivity[:, 0, 1][:10] # for xy components 
+    array([ 427.43690401,  524.87391142,  732.85475419, 1554.3189371 ,
+           3078.87621649, 1550.62680093,  482.64709443,  605.3153687 ,
+            499.49191936,  468.88692879])
+    >>> zss = zo.remove_static_shift(ss_fx =0.7 , ss_fy =0.85 )
+    >>> zss[0].resistivity[:, 0, 1][:10] # corrected xy components 
+    array([ 278.96395263,  319.11187959,  366.43170231,  672.24446295,
+           1344.20120487,  691.49270688,  260.25625996,  360.02452498,
+            305.97381587,  273.46251961])
+    """
+    def __init__(
+        self, 
+        window_size:int =5, 
+        c: int =2, 
+        **kws
+        ): 
+        super().__init__(**kws)
+        
+        self.filter = filter
+        self.window_size=window_size 
+        self.c=c 
+        
     @staticmethod 
     def get_z_from_edio( edi_obj_list, /, ): 
         """ Get z object from Edi object. 
@@ -2332,11 +2363,476 @@ class Processing (EM) :
         return   edi_obj_list  if obj_type =='z' else [
             edi_obj_list[i].Z for i in range (len( edi_obj_list)  )] 
     
-  
+    @_zupdate (option ='none')
+    def remove_ss_emap (
+            self, 
+            fltr ='ama', 
+            out= False, 
+            **kws
+            ): 
+        """
+        Filter Z to remove the static schift using the EMAP moving average 
+        filters. 
+        
+        Three available filters: 
+            
+            - 'ama': Adaptative moving average 
+            - 'tma': Trimming moving-average 
+            - 'flma': Fixed-length dipole moving average 
+        
+        Could export new Edi if the keyword argument `export` is set 
+        to ``True``
+        
+        Parameters 
+        ------------
+        flr: str , default='ama'
+           Type of filter to apply. Default is Adaptative moving-average of 
+           Torres-verdin [1]_. Can be ['ama'|'tma'|'flma']
+ 
+           The AMA filter estimates static-corrected apparent resistivities at 
+           a single reference frequency by calculating a profile of average 
+           impedances  along the length of the line. Sounding curves are 
+           then shifted so that they intersect the averaged profile. 
+           
+        out: bool , default =False, 
+           Output new filtered EDI. Otherwise return Z collections objects 
+           of corrected Tensors. 
+           
+        Returns 
+        ---------
+        Z: list of :class:`watex.externals.z` objects or None 
+           Return ``None`` by default (when export is set to ``False``) 
+         
+            
+        References 
+        -----------
+        .. [1] Torres-Verdin and Bostick, 1992,  Principles of spatial surface 
+               electric field filtering in magnetotellurics: electromagnetic array 
+               profiling(EMAP), Geophysics, v57, p603-622.https://doi.org/10.1190/1.2400625
+               
+        See Also 
+        ---------
+        remove_static_shift: 
+            Remove static shift using the spatial filter median and write 
+            a new edifile. 
+            
+        Examples 
+        ---------
+        >>> import watex 
+        >>> from watex.methods import ZC 
+        >>> edi_sample = watex.fetch_data ('edis', samples =17 , return_data =True ) 
+        >>> zo = ZC ().fit(edi_sample)
+        >>> zo.ediObjs_[0].Z.z[:, 0, 1][:7]
+        array([10002.46 +9747.34j , 11679.44 +8714.329j, 15896.45 +3186.737j,
+               21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
+                8908.448+5251.157j])
+        >>> zc[0].z[:, 0, 1] [:7]
+        array([10.08886765+9.83154376j, 11.78033448+8.78960895j,
+               16.03377371+3.21426607j, 21.95101282-4.57861929j,
+               28.45305051-8.56819159j, 19.70746763-2.42158403j,
+                8.98540488+5.29651986j])
+        """
+        self.inspect 
+        
+        p = Processing(out ='z ') 
+        p.ediObjs_ = self.ediObjs_
+        p.freqs_ = self.freqs_
+
+        flr = str(fltr).lower().strip() 
+        assert flr in {"ama", "tma", "flma"}, (
+            f"Filter {fltr!r} is not available. Expect"
+            " adaptative moving-average: 'ama',"
+            " trimming moving-average: 'tma' or"
+            " fixed-dipole length moving-average: 'flma'" 
+            )
+        # Gather the 2D into z objects
+        zd = dict () 
+        # correct all components if applicable 
+        for comp in ('xx', 'xy', 'yx', 'yy'): 
+            p.component = comp 
+            try: 
+                if flr=='tma': 
+                    zc = p.ama () 
+                elif flr=='flma': 
+                    zc = p.flma () 
+                else : 
+                    zc = p.ama () 
     
-  
+                zc_err = self.make2d (f"z{comp}_err") 
+                
+            except : 
+                # In the case some components 
+                # are missing, set to null 
+                zc = np.zeros (
+                    (len(self.freqs_), len(self.ediObjs_)),
+                    dtype = np.complex128)
+                zc_err= zc.copy() 
+            
+            zd[f'z{comp}'] = zc 
+            zd[f'z{comp}_err']=zc_err
+            
+        # manage edi -export 
+        option =kws.pop('option', None )
+        option = 'write' if out else None 
+        # reset  option 
+        kws.__setitem__('option', option ) 
+        
     
+        return (self.ediObjs_, self.freqs_ , zd ), kws
+   
+    @_zupdate (option ='none')
+    def remove_static_shift (
+        self, 
+        ss_fx:float =None, 
+        ss_fy:float= None, 
+        out:bool =False , 
+        rotate:float=0., 
+        **kws
+        ): 
+        """
+        Remove the static shift from correction factor from x and y. 
+        
+        The correction factors `ss_fx` and `ss_fy` are used for the 
+        resistivity in the x and y  components for static shift removal.
+        
+        Factors can be determined by using the :meth:`get_ss_correction_factors`
+        If ``None``, factors are found using the spatial median filter. 
+        Assume the original observed tensor Z is built by a static shift 
+        :math:`S` and an unperturbated "correct" :math:`Z_{0} :
+        
+        .. math::
   
+             Z = S * Z_{0}
+
+        therefore the correct Z will be: 
+        
+        .. math::
+            
+            Z_{0} = S^(-1) * Z
+
+        Parameters 
+        -------------
+        
+        ss_fx: float, Optional  
+           static shift factor to be applied to x components
+           (ie z[:, 0, :]).  This is assumed to be in resistivity scale. 
+           If None should be automatically computed using  the 
+           spatial median filter. 
+           
+        ss_fy: float, optional 
+           static shift factor to be applied to y components 
+           (ie z[:, 1, :]).  This is assumed to be in resistivity scale. If
+           ``None`` , should be computed using the spatial filter median. 
+        
+        rotate: float, default=0.  
+            Rotate Z array by angle alpha in degrees.  All angles are referenced
+            to geographic North, positive in clockwise direction.
+            (Mathematically negative!).
+            In non-rotated state, X refs to North and Y to East direction.
+            
+        out: bool , default =False, 
+           Output new filtered EDI. Otherwise return Z collections objects 
+           of corrected Tensors. 
+           
+        ss: dict, 
+           Additional kweyword arguments passed to 
+           :meth:`get_ss_correction_factors`
+           
+        Returns
+        --------
+        
+        ( static shift matrix,coorected_z) : np.ndarray ((2, 2)) or \
+            watex.externals.z.Z
+            If ``export`` is ``True`` export to new edis and returns 
+            nothing. 
+        
+        Note 
+        -----
+        The factors are in resistivity scale, so the entries of  the matrix 
+        "S" need to be given by their square-roots. 
+        
+        Examples 
+        ----------
+        >>> import watex 
+        >>> from watex.methods import ZC 
+        >>> edi_sample = watex.fetch_data ('edis', samples =17 , return_data =True ) 
+        >>> zo = ZC ().fit(edi_sample)
+        >>> zo.ediObjs_[0].Z.z[:, 0, 1][:7]
+        array([10002.46 +9747.34j , 11679.44 +8714.329j, 15896.45 +3186.737j,
+               21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
+                8908.448+5251.157j])
+        >>> zc = zo.remove_static_shift () 
+        >>> zc[0].z[:, 0, 1] [:7]
+        array([ 8028.46578676+7823.69394148j,  9374.49231974+6994.54856416j,
+               12759.27171475+2557.831671j  , 17468.06097719-3643.54946031j,
+               22642.21817697-6818.35022516j, 15682.70444455-1927.03534064j,
+                7150.35801004+4214.83658174j])
+        """
+        self.inspect 
+        
+        if (ss_fx is None or ss_fy is None ): 
+            ss_fx , ss_fy = self.get_ss_correction_factors(
+                **kws )
+            
+        ZObjs =[]
+        new_ediObjs =[]
+        for ii, ediObj in enumerate (self.ediObjs_): 
+            z0 = EMz(z_array=ediObj.Z.z , z_err_array = ediObj.Z.z_err, 
+                freq = ediObj.Z._freq 
+                ) 
+            if rotate: 
+                z0.rotate (rotate ) 
+            ss_cor, zcor = z0.remove_ss(reduce_res_factor_x=ss_fx, 
+                                         reduce_res_factor_y=ss_fy, 
+                                         )
+            z0._z = zcor 
+            ediObj.Z._z= zcor 
+            
+            ZObjs.append (z0 ) 
+            new_ediObjs.append (ediObj )
+            
+        # export data to 
+        # new edis 
+        
+        skws ={"is3d": True, 
+               "option": 'write' if out  else  None 
+               } 
+        
+        return ( new_ediObjs, 
+                self.freqs_, 
+                ZObjs ), skws 
+    
+    
+    @_zupdate (option ='none')
+    def remove_distorsion (
+        self,
+        distorsion: NDArray, 
+        /, 
+        error:NDArray=None, 
+        out =False, 
+        **kws, 
+        ):
+        """
+        Remove distortion D form an observed impedance tensor Z. 
+        
+        Allow to obtain the uperturbed "correct" :math:`Z_{0}` expressed as: 
+            
+        .. math:: 
+            
+           Z = D * Z_{0}
+
+
+        Parameters 
+        ----------
+        distortion_tensor: np.ndarray(2, 2, dtype=real) 
+           Real distortion tensor as a 2x2
+   
+        error: np.ndarray(2, 2, dtype=real), Optional 
+          Propagation of errors/uncertainties included 
+          
+        out: bool , default =False, 
+           Output new filtered EDI. Otherwise return Z collections objects 
+           of corrected Tensors. 
+
+        Returns 
+        ----------
+        d, new_z, new_z_err: NDArray ( 2 x2 , dtype =real )
+          - input distortion tensor
+          - impedance tensor with distorion removed
+          -  impedance tensor error after distortion is removed 
+          If ``export=True``, export to new EDI and return None. 
+          
+        Examples 
+        ---------
+        >>> import watex 
+        >>> from watex.methods import ZC 
+        >>> edi_sample = watex.fetch_data ('edis', samples =17 , return_data =True ) 
+        >>> zo = ZC ().fit(edi_sample)
+        >>> zo.ediObjs_[0].Z.z[:, 0, 1][:7]
+        array([10002.46 +9747.34j , 11679.44 +8714.329j, 15896.45 +3186.737j,
+               21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
+                8908.448+5251.157j])
+ 		>>> distortion = np.array([[1.2, .5],[.35, 2.1]])
+        >>> zc = zo.remove_distorsion (distortion)
+        >>> zc[0].z[:, 0, 1] [:7]
+ 		array([ 9724.52643923+9439.96503198j, 11159.25927505+8431.1101919j ,
+                14785.52643923+3145.38324094j, 19864.708742  -4265.80166311j,
+                25632.53518124-8304.88093817j, 17889.15373134-2484.60144989j,
+                 8413.19671642+4925.46660981j])
+        
+        """
+        self.inspect 
+        
+        distorsion = np.array (distorsion )
+        if distorsion.shape != (2, 2) :
+            raise ZError ("Wrong shape for distorsion. Expect shape="
+                          "(2, 2, dtype=real) for xx, xy, yx and yy components.")
+        ZObjs =[]
+        new_ediObjs =[]
+        for ii, ediObj in enumerate (self.ediObjs_): 
+            z0 = EMz(z_array=ediObj.Z.z , z_err_array = ediObj.Z.z_err, 
+                freq = ediObj.Z._freq 
+                ) 
+            d, new_z, new_z_err = z0.remove_distortion(
+                distortion_tensor=distorsion, distortion_err_tensor=error)
+            z0._z = new_z
+            z0._z_err = new_z_err
+            ediObj.Z._z= new_z 
+            ZObjs.append (z0 ) 
+            new_ediObjs.append (ediObj )
+            
+        # export data to 
+        # new edis 
+        
+        skws ={"is3d": True, 
+               "option": 'write' if out  else  None 
+               } 
+
+        return (new_ediObjs, 
+                self.freqs_, 
+                ZObjs ), skws 
+    
+    def get_ss_correction_factors(
+        self, 
+        /, 
+        r=1000., 
+        nfreq=21,
+        skipfreq=5, 
+        tol=.12
+        ) -> Tuple[float, float]:
+        """
+        Compute the  static shift correction factor from a station 
+        using a spatial median filter.  
+        
+        This will find those station within the given radius (meters).  
+        Then it will find the median static shift for the x and y modes 
+        and remove it, given that it is larger than the shift 
+        tolerance away from 1.  
+        
+        Parameters 
+        -------------
+        r: float, default=1000. 
+           radius to look for nearby stations, in meters.
+ 
+        nfreq: int, default=21 
+           number of frequencies calculate the median static shift.  
+           This is assuming the first frequency is the highest frequency.  
+           Cause usually highest frequencies are sampling a 1D earth.  
+    
+        skipfreq** : int, default=5 
+           number of frequencies to skip from the highest frequency.  
+           Sometimes the highest frequencies are not reliable due to noise 
+           or low signal in the :term:`AMT` deadband.  This allows you to 
+           skip those frequencies.
+                           
+    
+        tol: float, default=0.12
+           Tolerance on the median static shift correction.  If the data is 
+           noisy the correction factor can be biased away from 1.  Therefore 
+           the shift_tol is used to stop that bias.  If 
+           ``1-tol < correction < 1+tol`` then the correction factor is set 
+           to ``1``
+  
+        Returns
+        -------
+        (sx_x,  ss_y): (float, float)
+            static shift corrections factor for x and y modes
+    
+        Examples 
+        ---------
+        >>> import watex 
+        >>> from watex.methods import ZC 
+        >>> edi_sample = watex.fetch_data ('edis', samples =17 ,
+                                           return_data =True ) 
+        >>> zo = ZC ().fit(edi_sample).get_ss_correction_factors () 
+        Out[16]: (1.5522030221266643, 0.742682340427651)
+        
+        """
+        self.inspect 
+        # convert meters to decimal degrees so 
+        # we don't have to deal with zone
+        # changes
+        meter_to_deg_factor = 8.994423457456377e-06
+        dm_deg = r * meter_to_deg_factor
+
+        edi_obj_init= self.ediObjs_[0] 
+        edi_obj_init.Z.compute_resistivity_phase()
+
+        interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
+
+        # Find stations near by and store them in a list
+        emap_obj = []
+        # for kk, edi in enumerate(edi_list):
+        for kk, edi in enumerate (self.ediObjs_): 
+            edi_obj = edi
+            delta_d = np.sqrt((edi_obj_init.lat - edi_obj.lat) ** 2 +
+                          (edi_obj_init.lon - edi_obj.lon) ** 2)
+            if delta_d <= dm_deg:
+                edi_obj.delta_d = float(delta_d) / meter_to_deg_factor
+                emap_obj.append(edi_obj)
+
+        if len(emap_obj) == 0:
+            if self.verbose: 
+                print('No stations found within given '
+                      'radius {0:.2f} m'.format(r))
+            return 1.0, 1.0
+
+        # extract the resistivity values 
+        # from the near by stations
+        res_array = np.zeros((len(emap_obj), nfreq, 2, 2))
+        if self.verbose: 
+            print('These stations are within the given'
+                  ' {0} m radius:'.format(r))
+        for kk, emap_obj_kk in enumerate(emap_obj):
+            if self.verbose: 
+                
+                print('\t{0} --> {1:.1f} m'.format(
+                    emap_obj_kk.station, emap_obj_kk.delta_d))
+                
+            interp_idx = np.where((interp_freq >= emap_obj_kk.Z.freq.min()) &
+                              (interp_freq <= emap_obj_kk.Z.freq.max()))
+
+            interp_freq_kk = interp_freq[interp_idx]
+            Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk)
+            Z_interp.compute_resistivity_phase()
+            res_array[
+                kk,
+                interp_idx,
+                :,
+                :] = Z_interp.resistivity[
+                0:len(interp_freq_kk),
+                :,
+                :]
+
+        # compute the static shift of x-components
+        ss_x = edi_obj_init.Z.resistivity[
+            skipfreq:nfreq + skipfreq, 0, 1] / np.median(
+                res_array[:, :, 0, 1], axis=0)
+        ss_x = np.median(ss_x)
+
+        # check to see if the estimated static
+        # shift is within given tolerance
+        if  ( 
+                1 - tol < ss_x 
+                and ss_x < 1 + tol
+                ):
+            ss_x = 1.0
+
+        # compute the static shift of y-components
+        ss_y = edi_obj_init.Z.resistivity[
+            skipfreq:nfreq + skipfreq, 1, 0] / np.median(
+                res_array[:, :, 1, 0], axis=0)
+        ss_y = np.median(ss_y)
+
+        # check to see if the estimated static 
+        # shift is within given tolerance
+        if ( 
+                1 - tol < ss_y 
+                and ss_y < 1 + tol
+                ):
+            ss_y = 1.0
+
+        return ss_x, ss_y
     
   
     

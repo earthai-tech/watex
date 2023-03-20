@@ -296,9 +296,9 @@ class ArrayLike(Generic[T, D]):
     
     
 class NDArray(ArrayLike[T, DType [T]], Generic [T, D ]) :
-    """ NDarray has ``M``rows, ``N`` -columns, `Shape` and `DType` object. 
-    and Dtype. `Shape` is unbound for this class since it does not make since
-    to sepecify more integers. However, `DType` seems useful to provide. 
+    """NDarray has ``M``rows, ``N`` -columns, `Shape` and `DType` object. 
+    and Dtype. `Shape` is unbound for this class since it does not make sense
+    to specify more integers. However, `DType` seems useful to provide. 
     
     :Example: 
         >>> import numpy as np 
@@ -394,7 +394,7 @@ class EDIO(Generic [T]):
         ...      
         
 class ZO(Generic [T]): 
-    """ ZO stand for Impendance tensor Object. It is an Impendance tensor object 
+    """ ZO stand for Impedance tensor Object. It is an Impendance tensor object 
     built from :class:`watex.extenals.z.Z` or  :class:`pycsamt.core.z.Z` or 
     :class:`mtpy.core.z.Z`. It is a tridimensional data with 
     dimension equals to (n_freq, 2, 2) where `n_freq` equals to the number of 

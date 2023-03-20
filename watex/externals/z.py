@@ -729,7 +729,11 @@ class Z(ResPhase):
 
         return static_shift, z_corrected
 
-    def remove_distortion(self, distortion_tensor, distortion_err_tensor=None):
+    
+    def remove_distortion(
+            self, distortion_tensor, 
+            distortion_err_tensor=None
+            ):
         """
         Remove distortion D form an observed impedance tensor Z to obtain
         the uperturbed "correct" Z0:
