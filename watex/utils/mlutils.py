@@ -1327,9 +1327,10 @@ def loadDumpedOrSerializedData (filename:str, verbose=0):
         # Try DeSerializing using pickle module
         with open(filename, 'rb') as tod: 
             data= pickle.load (tod)
+            
         if verbose: 
-            _logger.info(f"Data from `{_filename!r} are well"
-                      " deserialized using Python pickle module.`!")
+            _logger.info(f"Data from `{_filename!r}` are well"
+                      " deserialized using Python pickle module!")
         
     is_none = data is None
     if is_none: 

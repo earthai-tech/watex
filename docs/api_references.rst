@@ -335,6 +335,7 @@ Classes
    methods.Processing 
    methods.ResistivityProfiling
    methods.VerticalSounding
+   methods.ZC
 
 
 Functions
@@ -391,7 +392,11 @@ Functions
 	methods.em.Processing.freqInterpolation 
 	methods.em.Processing.controlFrequencyBuffer 
 	methods.em.Processing.qc 
-	methods.em.Processing.getValidTensors 
+	methods.em.Processing.getValidTensors
+	methods.em.ZC.remove_distorsion
+	methods.em.ZC.remove_ss_emap
+	methods.em.ZC.remove_static_shift
+
 
 :mod:`~watex.methods.hydro`: Hydrogeology 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

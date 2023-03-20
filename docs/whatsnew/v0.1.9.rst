@@ -4,7 +4,7 @@ v0.1.9 (March 20, 2023)
 This is a  change performed from ``v0.1.8``.  
 
 - |Major feature| Add impedance tensor multiple correction class (:class:`watex.methods.ZC`) and gives opportunity 
-  to export new :term:`tensor`` data into :term:`EDI` files if the argument ``out=True``. For instance: 
+  to export new :term:`tensor` data into :term:`EDI` files if the argument ``out=True``. For instance: 
 
   - :meth:`watex.methods.ZC.remove_static_shift` remove the static shift from correction factor from x and y using 
     the spatial median filter 
@@ -20,11 +20,12 @@ This is a  change performed from ``v0.1.8``.
   - :meth:`watex.methods.ZC.get_ss_correction_factors` computes the static shift correction factor from a station using a 
     spatial median filter.
 
-- |Major Feature| Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
-    supplement materials (methods) for data transformation such as: 
+- |Major feature| Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
+  supplement materials (methods) for data transformation such as: 
+  
   - :meth:`watex.site.Profile.distance` computes the distance between profile coordinates points 
 
-  - :meth:`watex.site.bearing` computes the bearing between calculate bearing between two coordinates.
+  - :meth:`watex.site.Profile.bearing` computes the bearing between calculate bearing between two coordinates.
 
   - :meth:`watex.site.Profile.scale_positions` scale the position coordinates along ``x`` and ``y``. This is useful in complex terrain ( 
     high topography )
@@ -44,9 +45,16 @@ This is a  change performed from ``v0.1.8``.
 - |Fix| Fix bug in updating :term:`tensor` in ``_zupdate`` class of module :mod:`watex.methods.em`. Set the `z` property attribute 
   using the `_z`. Idem for `z_err` which henceforth uses `_z_err` in :class:`watex.externals.z.Z`  module. 
 
+- |Enhancement| Fix the dependencies when using ``scikit-learn >=1.2.1``. Data was new pickled in version ``1.2.1``. No more longer 
+  uses the ``1.1.2`` version . Update to ``>=1.2.1`` to avoid the pickle warning at the beginning of package initialization as:
+  
+  .. code-block:: default 
+     
+      UserWarning: Trying to unpickle estimator FeatureUnion from version 1.1.2 when using version 1.2.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+      https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+      warnings.warn(
 
-- |Enhancement| Fix the dependencies when using ``scikit-learn >=1.1.2`` . No more longer uses the ``1.1.2`` version . Update to 
-  ``>=1.2.1`` to avoid the pickle warning at the beginning of package initialization . The following changes are made in the ``setup.py``
+  The following changes are made in the ``setup.py``
  
   .. code-block:: python 
 

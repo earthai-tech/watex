@@ -22,9 +22,10 @@ dependencies=[
     "xgboost >=1.7.0",
     "pyproj >=3.3.0",
     "pycsamt >=1.1.2",
-    "tqdm <=4.64.1",
+    "tqdm >=4.64.1",
     "tables >=3.6.0",
     "scikit-learn >=1.2.1",
+    "joblib >=1.2.0",
     "threadpoolctl >=2.2.0",
     "matplotlib ==3.5.3",
  ]

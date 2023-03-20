@@ -110,8 +110,8 @@ def _bagoue_data_preparer ():
     # save the test set info in a savefile for the first run like::
     
     if not os.path.isfile ('watex/etc/__Xy.pkl'): 
-        #train_data =(_Xp,_yp )#_BAGDATA
-        dumpOrSerializeData(_BAGDATA, filename ='__Xy.pkl', to='joblib', 
+        train_data =(_Xp,_yp )#_BAGDATA
+        dumpOrSerializeData(train_data, filename ='__Xy.pkl', to='joblib', 
                                   savepath='watex/etc')
     if not os.path.isfile('watex/etc/__XTyT.pkl'): 
         test_data=(_XT, _yT)
@@ -134,11 +134,29 @@ def _bagoue_data_preparer ():
         _BAGDATA
         )
 #-------------------------------------------------------------------------    
-# store files in b.pkl file  
-# b = dict() 
-#     #df.to_hdf ( 'watex/datasets/data/b.h5', key =name,mode ='a' )
-# dumpOrSerializeData(b, filename ='b.pkl', to='joblib', 
-#                           savepath='watex/datasets/data')
+# store files in b.pkl file
+# import sklearn 
+# import watex 
+# from watex.datasets._p import _bagoue_data_preparer
+# import sklearn._min_dependencies as min_deps 
+# data = list(_bagoue_data_preparer ()) [0]
+# keys = [ '_X', '_y', '_X0', '_y0', '_XT', '_yT', '_Xc', '_Xp', '_yp', 
+#         '_pipeline', '_df0', '_df1', '_BAGDATA'] 
+# b = {} 
+# for k, v in zip ( keys, data ): 
+#     b[k]= v 
+
+# b['__sklearn_version__']=  [sklearn.__version__]
+# b['min_dependencies'] =  min_deps.tag_to_packages['install'] 
+# b['NUMPY_MIN_VERSION']= [min_deps.NUMPY_MIN_VERSION ]
+# b['SCIPY_MIN_VERSION']= [min_deps.SCIPY_MIN_VERSION] 
+# b['__watex_version__']= [watex.__version__]
+# b =[b] put the dict in the list to avoid pickling mirror 
+# # for name, value in zip (
+# # b = dict() 
+# #     #df.to_hdf ( 'watex/datasets/data/b.h5', key =name,mode ='a' )
+# dumpOrSerializeData(b, filename ='b2.pkl', to='joblib', 
+#                     savepath='watex/datasets/data')
 #--------------------------------------------------------------------------- 
     
     
