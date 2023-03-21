@@ -143,9 +143,10 @@ _BVAL= dict (
 )
 
 def _fetch_data(tag, data_names=[] ): 
+    PKGS ="watex.etc"
     r=None
     tag = str(tag)
-
+ 
     if _tag_checker(tag.lower()): 
         pm = 'analysed'
     elif _tag_checker(tag.lower(), ('mid','semi', 'preprocess', 'fit')):
@@ -163,13 +164,18 @@ def _fetch_data(tag, data_names=[] ):
         pm= pm.group() 
     
     if pm =='prepared': 
+        with resources.path (PKGS, '__Xy.pkl') as pkl : 
+            pkl_file = str(pkl)
+            
         r = loadingdefaultSerializedData (
-            'watex/etc/__Xy.pkl',  (_BAG.get('_Xp'), _BAG.get('_yp')),
+            pkl_file,  (_BAG.get('_Xp'), _BAG.get('_yp')),
             dtype='training' 
                 )
     elif pm =='test': 
+        with resources.path (PKGS, '__XTyT.pkl') as pkl : 
+            pkl_file = str(pkl)
         r, = loadingdefaultSerializedData (
-            'watex/etc/__XTyT.pkl', ( _BAG.get('_XT'),  _BAG.get('_yT')), 
+            pkl_file, ( _BAG.get('_XT'),  _BAG.get('_yT')), 
             dtype='test' ),
     else : 
         try : 
@@ -191,13 +197,13 @@ def loadingdefaultSerializedData (f, d0, dtype ='test'):
     """
     
     load_source ='serialized'
-    # try : 
-    X, y= loadDumpedOrSerializedData(f)
-    # except : 
-    #     _logger.error(f"Fetch data from {load_source!r} source failed. "
-    #                     " Use local 'config' source instead ...")
-    #     load_source='config'
-    #     X, y =d0
+    try : 
+         X, y= loadDumpedOrSerializedData(f)
+    except : 
+        _logger.error(f"Fetch data from {load_source!r} source failed. "
+                        " Use local 'config' source instead ...")
+        load_source='config'
+        X, y =d0
 
     return X, y
 
