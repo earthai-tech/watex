@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "watex"
-version="0.1.9"
+version="0.1.10"
 dynamic = [ "keywords"]
 
 dependencies=[
