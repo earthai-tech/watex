@@ -18,7 +18,7 @@ builtins.__WATEX_SETUP__ = True
 try: 
     import watex  # noqa
     VERSION = watex.__version__
-except: VERSION ='0.1.9'
+except: VERSION ='0.1.10'
 # set global variables 
 DISTNAME = "watex"
 DESCRIPTION= "Machine learning research in water exploration"
@@ -98,7 +98,7 @@ setup_kwargs['install_requires'] = [
     "xgboost >=1.7.3", 
     "pyproj >=3.3.0",
     "pycsamt >=1.1.2",
-    # "h5py >=3.2.0",
+    "h5py >=3.2.0",
     "tables >=3.6.1",
     "tqdm >=4.64.1",
     "scikit-learn >=1.2.1", 
