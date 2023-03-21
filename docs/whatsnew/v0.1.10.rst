@@ -1,0 +1,11 @@
+v0.1.10 (March 20, 2023)
+--------------------------
+
+This is a  change performed from ``v0.1.10``.  
+
+- |Fix| Bug fix for absolute path to :term:`Bagoue region` pickling data. We used the ``importlib`` 
+  module to handle the path to the pickled data. 
+  
+- |Fix| In :meth:`watex.methods.ZC.remove_static_sfift` , the :meth:`watex.externals.z.Z.compute_resistivity_phase` 
+  is initialized with the corrected impedance :term:`tensor` Z three dimensioanl array and number of frequency. 
+  
