@@ -18,7 +18,7 @@ builtins.__WATEX_SETUP__ = True
 try: 
     import watex  # noqa
     VERSION = watex.__version__
-except: VERSION ='0.1.8rc1'
+except: VERSION ='0.1.9rc1'
 # set global variables 
 DISTNAME = "watex"
 DESCRIPTION= "Machine learning research in water exploration"
@@ -88,13 +88,14 @@ setup_kwargs['packages'] = [
      ]
 
 setup_kwargs['install_requires'] = [    
-    "numpy >=1.23.0",
-    "scipy >=1.9.0",
+    "seaborn >=0.12.0", 
     "pandas >=1.4.0",
     "cython >=0.29.33",
+    "numpy >=1.23.0",
+    "scipy >=1.9.0",
     "pyyaml >=5.0.0", 
     "openpyxl >=3.0.3",
-    "seaborn >=0.12.0", 
+    
     "xgboost >=1.7.3", # >=1.5.0
     "pyproj >=3.3.0",
     "pycsamt >=1.1.2",
