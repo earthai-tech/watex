@@ -2589,8 +2589,9 @@ class ZC(EM):
             z0._z_err = ediObj.Z.z_err,  
             # recompute the resististivity and phase
             # for consistency 
-            z0.compute_resistivity_phase() 
-            
+            # z0.compute_resistivity_phase(z_array= zcor , 
+            #                              z_err_array=ediObj.Z.z_err
+            #                              )   
             ediObj.Z._z= zcor 
             
             ZObjs.append (z0 ) 
