@@ -8,7 +8,8 @@ Make Dataset
 Automate the loading of dataset   
 
 """
-import os 
+import os
+from importlib import resources  
 from .dload import load_bagoue 
 from .rload import loadBagoueDataset
 from ..cases import  (
@@ -35,6 +36,7 @@ def _bagoue_data_preparer ():
     :class:`watex.cases.prepare.BaseSteps` and main bagoue data file 
     collected on the local machine or the remote. 
     """
+    PKGS='watex.etc'
     # target or label name. 
     nameoftarget ='flow'
     # drop useless features
@@ -108,12 +110,16 @@ def _bagoue_data_preparer ():
     
     #  keep the test sets safe using  `dumpOrSerializeData` 
     # save the test set info in a savefile for the first run like::
-    
-    if not os.path.isfile ('watex/etc/__Xy.pkl'): 
+    with resources.path (PKGS, '__Xy.pkl') as pkl : 
+        pkl_file = str(pkl)
+    if not os.path.isfile (pkl_file): 
         train_data =(_Xp,_yp )#_BAGDATA
         dumpOrSerializeData(train_data, filename ='__Xy.pkl', to='joblib', 
                                   savepath='watex/etc')
-    if not os.path.isfile('watex/etc/__XTyT.pkl'): 
+    with resources.path (PKGS, '__XTyT.pkl') as pkl : 
+        pkl_file = str(pkl)
+        
+    if not os.path.isfile(pkl_file): 
         test_data=(_XT, _yT)
         dumpOrSerializeData(test_data, filename ='__XTyT.pkl', to='joblib', 
                               savepath='watex/etc')
