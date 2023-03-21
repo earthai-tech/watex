@@ -3,9 +3,11 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 
 """
-Plot templates 
-================
-Base plot for data exploratory and analysis 
+:mod:`~watex.utils.plot` is a set of base plots for :term:`tensor` 
+visualization, data exploratory and analyses. 
+T-E-Q Plots encompass the tensors plots (:class:`~watex.view.TPlot`) dealing 
+with :term:`EM` methods, Exploratory plots ( :class:`~watex.view.ExPlot`) and 
+Quick analyses (:class:`~watex.view.QuickPlot`) visualization. 
 """
 from __future__ import annotations 
 
@@ -2122,10 +2124,10 @@ class ExPlot (BasePlot):
             kind:str ='box',
             **kwd
         )->'ExPlot': 
-        """Visualize distributions using the box, boxen or violin plots
+        """Visualize distributions using the box, boxen or violin plots. 
         
         Parameters 
-        -------------
+        -----------
         xname, yname : vectors or keys in data
             Variables that specify positions on the x and y axes. Both are 
             the column names to consider. Shoud be items in the dataframe 
@@ -2140,7 +2142,8 @@ class ExPlot (BasePlot):
             
         Returns 
         -----------
-        {returns.self}
+        ``self``: `ExPlot` instance and returns ``self`` for easy 
+        method chaining.
         
         Example
         --------
@@ -2150,14 +2153,7 @@ class ExPlot (BasePlot):
         >>> p= ExPlot(tname='flow').fit(data)
         >>> p.plotbv(xname='flow', yname='sfi', kind='violin')
         
-        See also
-        ---------
-        {seealso.boxplot}
-        {seealso.violinplot}
-        """.format (
-            returns = _core_docs['returns'], 
-            seealso =_core_docs ['seealso']
-        )
+        """
     
         self.inspect 
         
@@ -2459,7 +2455,8 @@ class ExPlot (BasePlot):
             kind='binarize', 
             **kws
         )->'ExPlot': 
-        """ A histogram of continuous against the target of binary plot. 
+        """
+        A histogram of continuous against the target of binary plot. 
         
         Parameters 
         ----------
@@ -2484,13 +2481,9 @@ class ExPlot (BasePlot):
             Additional keyword arguments of  `seaborn displot`_ 
             
         Returns 
-        --------
-        {returns.self}
-
-        See also 
-        --------
-        {seealso.displot}
-        {seealso.histplot}
+        -----------
+        ``self``: `ExPlot` instance 
+            returns ``self`` for easy method chaining.
 
         Examples
         --------
@@ -2505,9 +2498,7 @@ class ExPlot (BasePlot):
                           neglabel = 'accept. boreholes'
                           )
         Out[95]: <'ExPlot':xname='sfi', yname=None , tname='flow'>
-        """.format( returns= _core_docs["returns"], 
-                    seealso=_core_docs["seealso"]
-                    )
+        """
      
         self.inspect 
             
@@ -3673,9 +3664,11 @@ class QuickPlot (BasePlot):
         return self 
           
     def scatteringfeatures(
-        self,features: List [str], *,
+        self,features: List [str], 
+        *,
         relplot_kws= None, 
-        **sns_kws ): 
+        **sns_kws 
+        ): 
         """
         Draw a scatter plot with possibility of several semantic features 
         groupings.
@@ -3713,11 +3706,12 @@ class QuickPlot (BasePlot):
             possible the `classes` for data inspection. Both str or dataframe
             need to provide the name of target. 
             
+        
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
-            
+          
         Notes 
         -------
         The argument for  `data` must be passed to `fit` method. `data` 
@@ -3725,12 +3719,7 @@ class QuickPlot (BasePlot):
         of the parameter `data` is to give a synopsis of the kind of data 
         the plot expected. An error will raise if force to pass `data` 
         argument as a keyword arguments. 
-        
-        Returns
-        -------
-        :class:`QuickPlot` instance
-            Returns ``self`` for easy method chaining.
-              
+            
         Examples
         ----------
         >>> from watex.view.plot import  QuickPlot 

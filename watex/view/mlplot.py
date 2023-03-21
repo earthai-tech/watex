@@ -3,15 +3,9 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 
 """
-Learning Plots
-===============
-
-Is a set of plot templates  for visualising the ML models.  It gives a 
-quick alternative for users to save their time for writting their own plot 
-scripts. However to have full control of the plot, it is recommended to write 
-your own plot scripts. 
-Note that this module can not handle all the plots that can offer the
-software.   
+:mod:`~watex.view.mlplot` is a set of plot templates for visualising and 
+inspecting the learning models.  It gives a quick depiction for users for 
+models visualization and evaluation with : :class:`~watex.view.EvalPlot`
 """
 from __future__ import annotations 
 import re
@@ -1182,11 +1176,6 @@ class EvalPlot(BasePlot):
         >>> b.litteral_classes = ['FR0', 'FR1', 'FR2', 'FR3']
         >>> b.plotConfusionMatrix(svc_clf, matshow_kws=matshow_kwargs, 
                                   kind='error', **plot_kws) 
-        
-        See also 
-        ---------
-        watex.utils.metrics.Metrics.confusion_matrix:  
-            Compute the confusion matrix  
         
         """
         self.inspect

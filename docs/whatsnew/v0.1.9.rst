@@ -15,7 +15,7 @@ This is a  change performed from ``v0.1.8``.
     - ``'tma'``: Trimming moving-average 
     - ``'flma'``: Fixed-length dipole moving average 
   
-  - :meth:`watex.methods.ZC.remove_distorsion` removes distortion D form an observed impedance tensor Z. 
+  - :meth:`watex.methods.ZC.remove_distortion` removes distortion D form an observed impedance tensor Z. 
 
   - :meth:`watex.methods.ZC.get_ss_correction_factors` computes the static shift correction factor from a station using a 
     spatial median filter.

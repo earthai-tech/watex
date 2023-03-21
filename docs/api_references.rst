@@ -393,7 +393,7 @@ Functions
 	methods.em.Processing.controlFrequencyBuffer 
 	methods.em.Processing.qc 
 	methods.em.Processing.getValidTensors
-	methods.em.ZC.remove_distorsion
+	methods.em.ZC.remove_distortion
 	methods.em.ZC.remove_ss_emap
 	methods.em.ZC.remove_static_shift
 
@@ -867,7 +867,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 **User guide:** See the :ref:`visualization <view>` section for further details.
 
 Classes
-~~~~~~~~~~~~
+~~~~~~~~~
 
 .. currentmodule:: watex
 
@@ -886,9 +886,6 @@ Functions
 
 :mod:`~watex.view.plot`: T-E-Q- Plots  
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-T-E-Q Plots encompass the tensors plots (:class:`~watex.view.TPlot`) dealing with :term:`EM` methods, Exploratory 
-plots ( :class:`~watex.view.ExPlot`) and Quick analyses (:class:`~watex.view.QuickPlot`) visualization. 
 
 .. automodule:: watex.view.plot 
    :no-members:
