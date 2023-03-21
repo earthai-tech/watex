@@ -67,3 +67,11 @@ This is a  change performed from ``v0.1.8``.
     "threadpoolctl >=2.2.0", # rather than ==3.1.0
     "matplotlib ==3.5.3",
     ]
+  
+- |Fix| In :func:`watex.utils.gistools.convert_position_float2str` fix the bug related to the use of ``type(position) is float`` 
+  in the validation of the position value( expected to be a float). ``type (position)`` is replaced by ``isinstance (position, float)``. 
+
+- |Fix| Bug fix in :meth:`watex.view.TPlot.plot_rhoa` when ``errorbar`` parameter is set to ``False``. No more crash , apparent resistivity plot 
+  could henceforth be possible either with ``errorbar=True`` or ``False``. 
+
+- |Feature| :meth:`watex.view.TPlot.plot_corrections` allows to visualize the static shift correction as well as the distortion. 

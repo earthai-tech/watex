@@ -249,8 +249,8 @@ def convert_position_float2str(position):
     >>> gis_tools.convert_position_float2str(-118.34563)
         
     """
-
-    assert type(position) is float, 'Given value is not a float'
+    assert isinstance (position, float), (
+        f"Given value '{position}' is not a float")
 
     deg = int(position)
     sign = 1

@@ -2385,7 +2385,7 @@ class ZC(EM):
         
         Parameters 
         ------------
-        flr: str , default='ama'
+        fltr: str , default='ama'
            Type of filter to apply. Default is Adaptative moving-average of 
            Torres-verdin [1]_. Can be ['ama'|'tma'|'flma']
  
@@ -2604,9 +2604,9 @@ class ZC(EM):
     
     
     @_zupdate (option ='none')
-    def remove_distorsion (
+    def remove_distortion (
         self,
-        distorsion: NDArray, 
+        distortion: NDArray, 
         /, 
         error:NDArray=None, 
         out =False, 
@@ -2653,7 +2653,7 @@ class ZC(EM):
                21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
                 8908.448+5251.157j])
  		>>> distortion = np.array([[1.2, .5],[.35, 2.1]])
-        >>> zc = zo.remove_distorsion (distortion)
+        >>> zc = zo.remove_distortion (distortion)
         >>> zc[0].z[:, 0, 1] [:7]
  		array([ 9724.52643923+9439.96503198j, 11159.25927505+8431.1101919j ,
                 14785.52643923+3145.38324094j, 19864.708742  -4265.80166311j,
@@ -2663,9 +2663,9 @@ class ZC(EM):
         """
         self.inspect 
         
-        distorsion = np.array (distorsion )
-        if distorsion.shape != (2, 2) :
-            raise ZError ("Wrong shape for distorsion. Expect shape="
+        distortion = np.array (distortion )
+        if distortion.shape != (2, 2) :
+            raise ZError ("Wrong shape for distortion. Expect shape="
                           "(2, 2, dtype=real) for xx, xy, yx and yy components.")
         ZObjs =[]
         new_ediObjs =[]
@@ -2674,7 +2674,7 @@ class ZC(EM):
                 freq = ediObj.Z._freq 
                 ) 
             d, new_z, new_z_err = z0.remove_distortion(
-                distortion_tensor=distorsion, distortion_err_tensor=error)
+                distortion_tensor=distortion, distortion_err_tensor=error)
             z0._z = new_z
             z0._z_err = new_z_err
             ediObj.Z._z= new_z 

@@ -877,17 +877,83 @@ Classes
    :template: class.rst
 
    view.ExPlot
+   view.EvalPlot
    view.QuickPlot
    view.TPlot 
-   view.EvalPlot
-   
+
 Functions
 ~~~~~~~~~~~~
+
+:mod:`~watex.view.plot`: T-E-Q- Plots  
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+T-E-Q Plots encompass the tensors plots (:class:`~watex.view.TPlot`) dealing with :term:`EM` methods, Exploratory 
+plots ( :class:`~watex.view.ExPlot`) and Quick analyses (:class:`~watex.view.QuickPlot`) visualization. 
+
+.. automodule:: watex.view.plot 
+   :no-members:
+   :no-inherited-members:
+
+**User guide:** See the :ref:`view  <view>` section for further details.
+
+.. currentmodule:: watex
 
 .. autosummary::
    :toctree: generated/
    :template: function.rst
 
+    view.ExPlot.plotbv
+	view.ExPlot.plotcutcomparison
+	view.ExPlot.plothist
+	view.ExPlot.plothistvstarget
+	view.ExPlot.plotjoint
+	view.ExPlot.plotmissing
+	view.ExPlot.plotpairgrid
+	view.ExPlot.plotpairwisecomparison
+	view.ExPlot.plotparallelcoords
+	view.ExPlot.plotradviz
+    view.ExPlot.plotscatter
+	view.QuickPlot.barcatdist
+	view.QuickPlot.corrmatrix
+	view.QuickPlot.discussingfeatures
+	view.QuickPlot.histcatdist
+	view.QuickPlot.joint2features
+	view.QuickPlot.multicatdist
+	view.QuickPlot.naiveviz
+	view.QuickPlot.numfeatures
+	view.QuickPlot.scatteringfeatures
+	view.TPlot.plotSkew
+	view.TPlot.plot_corrections
+	view.TPlot.plot_ctensor2d 
+	view.TPlot.plot_multi_recovery 
+	view.TPlot.plot_recovery 
+	view.TPlot.plot_phase_tensors 
+    view.TPlot.plot_rhoa
+	view.TPlot.plot_tensor2d
+	
+
+:mod:`~watex.view.mlplot`: Learning Plots
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+.. automodule:: watex.view.mlplot 
+   :no-members:
+   :no-inherited-members:
+
+**User guide:** See the :ref:`view  <view>` section for further details.
+
+.. currentmodule:: watex
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+    view.EvalPlot.plotPCA
+	view.EvalPlot.plotPR
+	view.EvalPlot.plotROC
+	view.EvalPlot.plotConfusionMatrix
     view.biPlot
 	view.plotDendrogram
 	view.plotDendroheat
