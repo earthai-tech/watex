@@ -3,9 +3,11 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 
 """
-Plot templates 
-================
-Base plot for data exploratory and analysis 
+:mod:`~watex.utils.plot` is a set of base plots for :term:`tensor` 
+visualization, data exploratory and analyses. 
+T-E-Q Plots encompass the tensors plots (:class:`~watex.view.TPlot`) dealing 
+with :term:`EM` methods, Exploratory plots ( :class:`~watex.view.ExPlot`) and 
+Quick analyses (:class:`~watex.view.QuickPlot`) visualization. 
 """
 from __future__ import annotations 
 
@@ -93,7 +95,10 @@ try :
 except: pass 
 
 try : 
-    from ..methods.em import Processing 
+    from ..methods.em import ( 
+        Processing, 
+        ZC  
+        )
 except: pass 
 
   
@@ -1091,10 +1096,16 @@ class TPlot (BasePlot):
           
         onto: str, default='period'
           Visualization on axis labell. can be ``'frequency'``. 
+          
         site: int,str, optional 
           index of name of the site to plot. `site` must be composed of 
           a position number. For instance ``'S13'``. If not provided, 
           a random station is selected instead. 
+          
+        seed : int, optional 
+           If site is not provided, seed fetches randomly a site. To fetch 
+           the same sime everytimes, it is better to set the seed value. 
+           
         how: str, default='py'
           The way the site is fetched for plot. For instance, in Python 
           indexing (default), the site is numbered from 0. For instance 
@@ -1138,51 +1149,17 @@ class TPlot (BasePlot):
         cpm = {'te': ["xy"] , 'tm': ["yx"], '*': ('xy', 'yx') }
         
         components = cpm.get(m)
-        res = self._check_component_validity('res', components)
-        phs = self._check_component_validity('phase', components)
-        if errorbar: 
-            res_err = self._check_component_validity(
-                'res_err', components)
-            phs_err = self._check_component_validity(
-                'phase_err', components)
         
-        terror =("{0!r} does not contain component {}. Provide the"
-                 " right component of the valid tensor.")
-        if res is None: 
-            raise EMError(terror.format('resistivity', components))
-        if phs is None: 
-            EMError(terror.format('phase', components))
-    
-        fp =  1/ self.p_.freqs_ if onto =='period' else self.p_.freqs_ 
-        
-        if seed: 
-            seed = _assert_all_types(seed , int, float, objname ='Seed')
-            np.random.seed (seed ) 
-           
-        if site is None:
-            site = np.random.choice (range (res[0].shape[1])) 
-           
-        s= copy.deepcopy(site)
-        site =re.search ('\d+', str(site), flags=re.IGNORECASE).group() 
-        try: 
-           site= int(site)
-        except TypeError: 
-            raise TypeError ("Missing position number. Station must be "
-                             f"prefixed with position, e.g. 'S7', got {s!r}")
-        
-        site = abs (site) + 1 if how !='py' else site 
-        
-        if site > res[0].shape [1] : 
-            raise ValueError ("Site position {} is out of the range. The total"
-                             f" number of sites/stations ={res[0].shape [1]}")
-            
-        try: 
-            plt.style.use ( style or 'default')
-        except : 
-            warnings.warn(
-                f"{style} is not available. Use `plt.style.available`"
-                " to get the list of available styles.")
-            plt.style.use ('default')
+        fp, res, phs, site, *s= self._validate_correction (
+                             components = components, 
+                             onto =onto , 
+                             errorbar = errorbar , 
+                             how = how, 
+                             seed = seed , 
+                             site = site , 
+                             style =style , 
+                             )  
+        s,  res_err, phs_err  = s 
     
         fig = plt.figure(self.fig_num , figsize= self.fig_size,
                          dpi = self.fig_dpi , # layout='constrained'
@@ -1212,8 +1189,17 @@ class TPlot (BasePlot):
                     phs_err, fill_value=np.nan) 
                 
         min_y =  np.nanmin(res[0][:, site])
-        for i, ( r, p, e, ep)  in enumerate (zip (
-                res, phs, res_err, phs_err )): 
+        
+        # add error bar data to main 
+        data = [res, phs ] 
+        data +=  [ res_err ,  phs_err ] if errorbar else []
+        
+        for i, sloop in enumerate (zip (* data )) : 
+            r, p, *sl = sloop 
+            
+            if len(sl) !=0 : 
+                e, ep = sl  # mean errorbar is set to True 
+            
             y =  reshape (r[:, site])
             if errorbar: 
                 plot_errorbar (ax1 , 
@@ -1233,7 +1219,6 @@ class TPlot (BasePlot):
                                fp, reshape (p[:, site]),
                                y_err = reshape (ep[:, site]), 
                                )
-            
             ax2.scatter( fp, 
                         reshape (p[:, site]),
                         marker =self.marker, 
@@ -1283,6 +1268,427 @@ class TPlot (BasePlot):
         
         return self 
     
+    def _validate_correction (
+        self, 
+        components , 
+        onto , 
+        errorbar , 
+        seed , 
+        site , 
+        how , 
+        style , 
+        ): 
+        """Isolated part to validate the :meth:`plot_corrections` and 
+        :meth:`plot_rhoa` arguments. 
+        
+        Parameters
+        ----------
+        
+        components: str ,
+           could be 'xx', 'xy', 'yx' or 'yy' 
+
+        onto: str, default='period'
+          Visualization on axis labell. can be ``'frequency'``.
+          
+        site: int,str, optional 
+          index of name of the site to plot. `site` must be composed of 
+          a position number. For instance ``'S13'``. If not provided, 
+          a random station is selected instead. 
+          
+        seed : int, optional 
+           Get the same site if site is not provided. `seed` fetches 
+           a random number of site. 
+           
+        how: str, default='py'
+          The way the site is fetched for plot. For instance, in Python 
+          indexing (default), the site is numbered from 0. For instance 
+          'site05' will fetch the data at index 4. If this positioning 
+          is not wished, set to 'None'.
+        
+        style:str, default='default'
+          Matplotlib style. 
+          
+        errorbar: bool, default=True 
+          display the error bar.
+          
+        Returns 
+        --------
+        ( fp, res, phs, site, s ,  res_err , phs_err) : Tuple 
+        
+          - fp: frequency array 
+          - res:  resistivity tensor collected at a specific components 
+          - phs: phase tensor collected at a specific component 
+          - site: The site number 
+          - s : position of the site 
+          - res_err: error in resistivity at a specific component 
+          - phs_err: error in phase at a specific components. 
+          
+        """ 
+        
+        res = self._check_component_validity('res', components)
+        phs = self._check_component_validity('phase', components)
+        
+        res_err , phs_err =[], []
+        if errorbar: 
+            res_err = self._check_component_validity(
+                'res_err', components)
+            phs_err = self._check_component_validity(
+                'phase_err', components)
+  
+        
+        terror =("{0!r} does not contain component {}. Provide the"
+                 " right component of the valid tensor.")
+        if res is None: 
+            raise EMError(terror.format('resistivity', components))
+        if phs is None: 
+            raise EMError(terror.format('phase', components))
+    
+        fp =  1/ self.p_.freqs_ if onto =='period' else self.p_.freqs_ 
+        
+        if seed: 
+            seed = _assert_all_types(seed , int, float, objname ='Seed')
+            np.random.seed (seed ) 
+           
+        if site is None:
+            site = np.random.choice (range (res[0].shape[1])) 
+           
+        s= copy.deepcopy(site)
+        site =re.search ('\d+', str(site), flags=re.IGNORECASE).group() 
+        try: 
+           site= int(site)
+        except TypeError: 
+            raise TypeError ("Missing position number. Station must be "
+                             f"prefixed with position, e.g. 'S7', got {s!r}")
+        
+        site = abs (site) + 1 if how !='py' else site 
+        
+        if site > res[0].shape [1] : 
+            raise ValueError (
+                f"Site position {site} is out of the range. The total"
+                f" number of sites/stations ={res[0].shape [1]}")
+            
+        try: 
+            plt.style.use ( style or 'default')
+        except : 
+            warnings.warn(
+                f"{style} is not available. Use `plt.style.available`"
+                " to get the list of available styles.")
+            plt.style.use ('default')
+
+       
+        return fp, res, phs, site, s ,  res_err , phs_err 
+ 
+ 
+    def plot_corrections(
+        self, 
+        fltr='ss',
+        ss_fx =None, 
+        ss_fy=None, 
+        r=1000., 
+        nfreq=21,
+        skipfreq=5, 
+        tol=.12,
+        rotate=0., 
+        distortion=None, 
+        distortion_err =None, 
+        mode ='TE', 
+        onto ='period', 
+        site =None, 
+        seed = None, 
+        how ='py', 
+        show_site=True,
+        survey= None, 
+        style=None, 
+        errorbar=True, 
+        **kws
+        ): 
+        """Plot apparent resistivity/phase curves and corrections.  
+        
+        Parameters 
+        ----------
+        fltr: str , default='ss'
+           Type of filter to apply. ``ss`` is used to remove the static 
+           shift using spatial median filter. Whereas ``dist`` is for 
+           distorsion removal. Note that `distortion` might be provided 
+           otherwise an error raises. 
+           
+        distortion_tensor: np.ndarray(2, 2, dtype=real) 
+           Real distortion tensor as a 2x2
+   
+        error: np.ndarray(2, 2, dtype=real), Optional 
+          Propagation of errors/uncertainties included
+          
+        ss_fx: float, Optional  
+           static shift factor to be applied to x components
+           (ie z[:, 0, :]).  This is assumed to be in resistivity scale. 
+           If None should be automatically computed using  the 
+           spatial median filter. 
+           
+        ss_fy: float, optional 
+           static shift factor to be applied to y components 
+           (ie z[:, 1, :]).  This is assumed to be in resistivity scale. If
+           ``None`` , should be computed using the spatial filter median.
+           
+        r: float, default=1000. 
+           radius to look for nearby stations, in meters.
+ 
+        nfreq: int, default=21 
+           number of frequencies calculate the median static shift.  
+           This is assuming the first frequency is the highest frequency.  
+           Cause usually highest frequencies are sampling a 1D earth.  
+    
+        skipfreq** : int, default=5 
+           number of frequencies to skip from the highest frequency.  
+           Sometimes the highest frequencies are not reliable due to noise 
+           or low signal in the :term:`AMT` deadband.  This allows you to 
+           skip those frequencies.
+     
+        tol: float, default=0.12
+           Tolerance on the median static shift correction.  If the data is 
+           noisy the correction factor can be biased away from 1.  Therefore 
+           the shift_tol is used to stop that bias.  If 
+           ``1-tol < correction < 1+tol`` then the correction factor is set 
+           to ``1``
+           
+        rotate: float, default=0.  
+            Rotate Z array by angle alpha in degrees.  All angles are referenced
+            to geographic North, positive in clockwise direction.
+            (Mathematically negative!).
+            In non-rotated state, X refs to North and Y to East direction. 
+            
+        mode: str, default='TE', 
+          Electromagnetic mode. Can be ['TM' |'both']. If ``both``, 
+          components `xy` and `yx` are expected in the data. 
+          
+        onto: str, default='period'
+          Visualization on axis labell. can be ``'frequency'``.
+          
+        site: int,str, optional 
+          index of name of the site to plot. `site` must be composed of 
+          a position number. For instance ``'S13'``. If not provided, 
+          a random station is selected instead. 
+          
+        seed : int, optional 
+           Get the same site if site is not provided. `seed` fetches 
+           a random number of site. T
+           
+        how: str, default='py'
+          The way the site is fetched for plot. For instance, in Python 
+          indexing (default), the site is numbered from 0. For instance 
+          'site05' will fetch the data at index 4. If this positioning 
+          is not wished, set to 'None'.
+          
+        show_site:bool, default=True, 
+          Display the number of site. 
+          
+        survey: str, optional 
+          Method used for the survey. e.g., 'AMT' for |AMT|. 
+         
+        style:str, default='default'
+          Matplotlib style. 
+          
+        errorbar: bool, default=True 
+          display the error bar.  
+          
+        kws: dict, 
+          Addfitional keywords arguments passed to 
+          Matplotlib.Axes.Scatter plots. 
+         
+        Examples
+        ---------
+        >>> import numpy as np 
+        >>> import watex as wx 
+        >>> edi_data = wx.fetch_data ('edis', return_data =True, samples =27)
+        >>> wx.TPlot(show_grid=True).fit(edi_data).plot_corrections (
+            seed =52, )
+        >>> distortion = np.array([[1.1 , 0.6 ],[0.23, 1.9 ]])
+        >>> wx.TPlot(show_grid=True).fit(edi_data).plot_corrections (
+             seed =52, mode ='tm', fltr ='dist', distortion =distortion 
+             )
+        """
+        self.inspect 
+    
+        m=_validate_name_in(mode,  'tm transverse-magnetic', expect_name='tm')
+        if not m: 
+            m='te' 
+        onto = _validate_name_in(onto, deep =True, defaults='periods', 
+                                 expect_name='period')
+
+        cpm = {'te': ["xy"] , 'tm': ["yx"]}
+       
+        components = cpm.get(m)
+        fp, res, phs, site, *s= self._validate_correction (
+                             components = components, 
+                             onto =onto , 
+                             errorbar = errorbar , 
+                             how = how, 
+                             seed = seed , 
+                             site = site , 
+                             style =style , 
+                             )  
+        s,  res_err, phs_err  = s 
+        
+        # Assert filters 
+        mc = _validate_name_in(fltr, defaults =('static shift', 'ss', '1'), 
+                               expect_name= 'ss')
+        if mc!='ss': 
+            mc = _validate_name_in(fltr, defaults=('distortion', 'dist', '2'), 
+                                   expect_name ='dist')
+            if not mc: 
+                raise ValueError(f"Wrong filter {fltr}. Expect `ss` or `dist`"
+                                 " for static shift or distortion plot.")
+           
+            if mc and distortion is None: 
+                raise TypeError("Distorsion cannot be None!")
+        
+        # -> compute the corrected values 
+        zo = ZC().fit(self.p_.ediObjs_)
+        
+        if mc =='ss': 
+            zc = zo.remove_static_shift (
+                ss_fx = ss_fx , 
+                ss_fy = ss_fx, 
+                nfreq = nfreq ,         
+                r=r, 
+                skipfreq=skipfreq , 
+                tol=tol, 
+                rotate = rotate, 
+                )
+        if mc =='dist': 
+            zc = zo.remove_distortion (
+                distortion , 
+                error = distortion_err 
+                )
+            
+        zc_res = [ z.resistivity[tuple (self._c_.get(components[0])) ] 
+                  for z in zc ] 
+        zc_res = [ np.log10(r) for r in zc_res ] # convert to log10 res 
+        # --> phase 
+        zc_phase = [ z.phase[tuple (self._c_.get(components[0])) ] 
+                  for z in zc ] 
+        # mofulo the phase to be 0 and 90 degree 
+        zc_phase = [ np.abs (p)%90  for p in zc_phase ] 
+        
+        # ----------------------end ---------------------------------
+        fig = plt.figure(self.fig_num , figsize= self.fig_size,
+                         dpi = self.fig_dpi , # layout='constrained'
+                         )
+
+        gs = GridSpec(3, 1, figure = fig ) 
+        
+        ax1 = fig.add_subplot (gs[:-1, 0 ])
+        ax2 = fig.add_subplot(gs [-1, 0 ], sharex = ax1 )
+        plt.setp(ax1.get_xticklabels(), visible=False)
+        
+        survey= survey or self.p_.survey_name 
+        if not survey: survey=''
+        
+        colors = [ '#069AF3', '#DC143C']
+        
+        #==plotlog10 --------
+        res= [ np.log10 (r) for r in res] ; fp = np.log10 (fp)
+     
+        
+        min_y =  np.nanmin(res[0][:, site])
+        
+        # add error bar data to main 
+        data = [res, phs ] 
+        data +=  [ res_err ,  phs_err ] if errorbar else []
+        
+        for i, sloop in enumerate (zip (* data )) : 
+            r, p, *sl = sloop 
+            
+            if len(sl) !=0 : 
+                e, ep = sl  # mean errorbar is set to True 
+                
+            y =  reshape (r[:, site])
+            yc =zc_res [site]
+            if errorbar: 
+                plot_errorbar (ax1 , 
+                               fp, 
+                               y,  
+                               y_err = reshape (e[:, site]),
+                               )
+            ax1.scatter (fp  , y, 
+                          marker =self.marker, 
+                          color =colors [i],
+                          edgecolors='k', 
+                          label = fr'{survey}$\rho_a${components[i]}',
+                          **kws 
+                          ) 
+            # res_corr 
+            ax1.scatter (fp  , yc, 
+                          marker ='*', 
+                          color="#FF00FF",
+                          edgecolors='k', 
+                          label = fr'{survey}$\rho_a${components[i]} {mc}',
+                          **kws 
+                          ) 
+            
+            if errorbar: 
+                plot_errorbar (ax2 , 
+                               fp, reshape (p[:, site]),
+                               y_err = reshape (ep[:, site]), 
+                               )
+            
+            ax2.scatter( fp, 
+                        reshape (p[:, site]),
+                        marker =self.marker, 
+                        color =colors [i] ,
+                        edgecolors='k', 
+                        label = f'{survey}$\phi${components[i]}',
+                        **kws
+                        ) 
+            # ----phase_cor 
+            ax2.scatter( fp, 
+                        zc_phase [site],
+                        marker ='*', 
+                        color="#FF00FF" ,
+                        edgecolors='k', 
+                        label = f'{survey}$\phi${components[i]} {mc}',
+                        **kws
+                        ) 
+            
+            min_y = np.nanmin (y) if np.nanmin (
+                y) < min_y else min_y 
+            try: 
+                ax1.legend(ncols = len(res)) 
+                ax2.legend(ncols = len(phs)) 
+            except: 
+                # For consistency in the case matplotlib  is < 3.3. 
+                ax1.legend() 
+                ax2.legend() 
+                
+        if show_site:
+            ax1.text (np.nanmin(fp),
+                      min_y,
+                      f'site {s}', 
+                      fontdict= dict (style ='italic',  bbox =dict(
+                           boxstyle='round',facecolor ='#CED9EF'), 
+                          alpha = 0.5 )
+                      )
+        
+        ax2.set_ylim ([0, 90 ])
+        xlabel = self.xlabel or ( 'Log$_{10}$Period($s$)' if onto=='period' 
+                                 else 'Frequency ($H_z$)') 
+        
+        ax2.set_xlabel(xlabel ) 
+        ax1.set_ylabel(self.ylabel or r'Log$_{10}\rho_a$($\Omega$.m)') 
+ 
+        ax2.set_ylabel('$\phi$($\degree$)')
+        
+        if self.show_grid :
+            for ax in (ax1, ax2 ): 
+                ax.grid (visible =True , alpha =self.galpha,
+                         which =self.gwhich, color =self.gc)
+          
+            
+        if self.savefig is not  None: 
+            plt.savefig (self.savefig, dpi = self.fig_dpi)
+            
+        plt.close () if self.savefig is not None else plt.show() 
+        
+        return self 
 
     def __repr__(self): 
         """ Represents the output class format """
@@ -1290,6 +1696,7 @@ class TPlot (BasePlot):
             [f"{k}={getattr(self, k)!r}" for k in self._t]) + '>' 
             ) 
         return  outm.format(self.__class__.__name__)
+    
     
 class ExPlot (BasePlot): 
     
@@ -1717,10 +2124,10 @@ class ExPlot (BasePlot):
             kind:str ='box',
             **kwd
         )->'ExPlot': 
-        """Visualize distributions using the box, boxen or violin plots
+        """Visualize distributions using the box, boxen or violin plots. 
         
         Parameters 
-        -------------
+        -----------
         xname, yname : vectors or keys in data
             Variables that specify positions on the x and y axes. Both are 
             the column names to consider. Shoud be items in the dataframe 
@@ -1735,7 +2142,8 @@ class ExPlot (BasePlot):
             
         Returns 
         -----------
-        {returns.self}
+        ``self``: `ExPlot` instance and returns ``self`` for easy 
+        method chaining.
         
         Example
         --------
@@ -1745,14 +2153,7 @@ class ExPlot (BasePlot):
         >>> p= ExPlot(tname='flow').fit(data)
         >>> p.plotbv(xname='flow', yname='sfi', kind='violin')
         
-        See also
-        ---------
-        {seealso.boxplot}
-        {seealso.violinplot}
-        """.format (
-            returns = _core_docs['returns'], 
-            seealso =_core_docs ['seealso']
-        )
+        """
     
         self.inspect 
         
@@ -2054,7 +2455,8 @@ class ExPlot (BasePlot):
             kind='binarize', 
             **kws
         )->'ExPlot': 
-        """ A histogram of continuous against the target of binary plot. 
+        """
+        A histogram of continuous against the target of binary plot. 
         
         Parameters 
         ----------
@@ -2079,13 +2481,9 @@ class ExPlot (BasePlot):
             Additional keyword arguments of  `seaborn displot`_ 
             
         Returns 
-        --------
-        {returns.self}
-
-        See also 
-        --------
-        {seealso.displot}
-        {seealso.histplot}
+        -----------
+        ``self``: `ExPlot` instance 
+            returns ``self`` for easy method chaining.
 
         Examples
         --------
@@ -2100,9 +2498,7 @@ class ExPlot (BasePlot):
                           neglabel = 'accept. boreholes'
                           )
         Out[95]: <'ExPlot':xname='sfi', yname=None , tname='flow'>
-        """.format( returns= _core_docs["returns"], 
-                    seealso=_core_docs["seealso"]
-                    )
+        """
      
         self.inspect 
             
@@ -3268,9 +3664,11 @@ class QuickPlot (BasePlot):
         return self 
           
     def scatteringfeatures(
-        self,features: List [str], *,
+        self,features: List [str], 
+        *,
         relplot_kws= None, 
-        **sns_kws ): 
+        **sns_kws 
+        ): 
         """
         Draw a scatter plot with possibility of several semantic features 
         groupings.
@@ -3308,11 +3706,12 @@ class QuickPlot (BasePlot):
             possible the `classes` for data inspection. Both str or dataframe
             need to provide the name of target. 
             
+        
         Returns
         -------
         :class:`QuickPlot` instance
             Returns ``self`` for easy method chaining.
-            
+          
         Notes 
         -------
         The argument for  `data` must be passed to `fit` method. `data` 
@@ -3320,12 +3719,7 @@ class QuickPlot (BasePlot):
         of the parameter `data` is to give a synopsis of the kind of data 
         the plot expected. An error will raise if force to pass `data` 
         argument as a keyword arguments. 
-        
-        Returns
-        -------
-        :class:`QuickPlot` instance
-            Returns ``self`` for easy method chaining.
-              
+            
         Examples
         ----------
         >>> from watex.view.plot import  QuickPlot 

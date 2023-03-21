@@ -59,7 +59,8 @@ _BAG=dict()
 try : 
     with resources.path (DMODULE, 'b.pkl') as p : 
         data_file = str(p) # for consistency
-        _BAG = loadDumpedOrSerializedData(data_file) 
+        _BAG = loadDumpedOrSerializedData(data_file)[0] 
+
 except : 
     from ._p import ( 
         _bagoue_data_preparer 
@@ -189,15 +190,14 @@ def loadingdefaultSerializedData (f, d0, dtype ='test'):
         Type of data to retreive.
     """
     
-    
     load_source ='serialized'
-    try : 
-        X, y= loadDumpedOrSerializedData(f)
-    except : 
-        _logger.error(f"Fetch data from {load_source!r} source failed. "
-                       " Use local 'config' source instead ...")
-        load_source='config'
-        X, y =d0
+    # try : 
+    X, y= loadDumpedOrSerializedData(f)
+    # except : 
+    #     _logger.error(f"Fetch data from {load_source!r} source failed. "
+    #                     " Use local 'config' source instead ...")
+    #     load_source='config'
+    #     X, y =d0
 
     return X, y
 
@@ -211,7 +211,6 @@ def _tag_checker (param, tag_id= ('analys', 'pca', 'dim','reduc')
    
     
 _fetch_data.__doc__ ="""\
-    
 Fetch dataset from 'tag'. A tag correspond to each level of data 
 processing. 
 

@@ -159,6 +159,7 @@ if not version_match or version_match.isdigit():
 switcher_version = version_match or  version
 if ".dev" in version:
     switcher_version = "dev"
+    
 elif "rc" in version:
     switcher_version = version.split("rc", maxsplit=1)[0] + " (rc)"
 
@@ -192,7 +193,7 @@ html_theme_options = {
         "json_url": json_url, 
         "version_match": switcher_version,
      },
-     "check_switcher": True,      
+    "check_switcher": True,      
     "show_prev_next": False,
     "navbar_start": ["navbar-logo", "version-switcher"],
     "navbar_end":  ["navbar-icon-links"], # [ "theme-switcher"]

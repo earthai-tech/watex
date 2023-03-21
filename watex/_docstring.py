@@ -784,6 +784,7 @@ wx_rst_epilog ="""
 .. |Fix| replace:: :bdg-danger:`Fix`
 .. |Enhancement| replace:: :bdg-info:`Enhancement`
 .. |Feature| replace:: :bdg-success:`Feature`
+.. |Major feature| replace:: :bdg-success:`Major feature`
 .. |Major change| replace:: :bdg-primary:`Major change`
 .. |API change| replace:: :bdg-dark:`API change`
 .. |Deprecated| replace:: :bdg-warning:`Deprecated`

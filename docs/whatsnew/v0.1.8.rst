@@ -20,16 +20,13 @@ Adaptations—Features and Improvements
 - |Feature| Add multiple position coordinate transformations from UTM to latitude/longitude (:meth:`watex.site.Location.to_latlon_in`) and 
   vice versa (:meth:`watex.site.Location.to_utm_in`).
 
-- |Enhancement| Set a slice components property `_c_` as  a :class:`watex.view.TPlot` attribute used by all 
+- |Enhancement| Set a slice components property ``_c_`` as  a :class:`watex.view.TPlot` attribute used by all 
   related methods.
 
-- |Deprecated| Update in the deprecated Numpy aliases: ``np.float``, ``np.complex`` for the builtin ``float`,``complex``.
+- |Deprecated| Update in the deprecated Numpy aliases: ``np.float``, ``np.complex`` for the builtin ``float``,``complex``.
   See  https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations . The ``np.float`` and ``np.complex`` in 
   module :mod:`watex.edi` , :mod:`watex.externals.z` and :mod:`watex.externals.zutils` were change to ``np.float64``
   and ``np.complex128``. 
-
-- |Feature| Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
-  supplement materials (methods) for data transformation. 
 
 Bug fixes 
 ~~~~~~~~~~~

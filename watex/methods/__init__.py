@@ -12,7 +12,8 @@ from .electrical import (
 
 from .em import ( 
     EM, 
-    Processing, 
+    Processing,
+    ZC, 
     )
 from .erp import ( 
     ERPCollection ,
@@ -33,6 +34,7 @@ __all__=[
     "DCProfiling", 
     "DCSounding",
     "Processing", 
+    "ZC", 
     "ERPCollection", 
     "ERP", 
     "Hydrogeology", 
