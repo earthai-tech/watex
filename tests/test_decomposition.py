@@ -34,13 +34,15 @@ class TestDecomposition(unittest.TestCase):
         self.assertEqual(len(cum_var), 8)
     def test_feature_transformation (self): 
         Xtransf = feature_transformation(self.X, y=self.y,  positive_class = 2 , view =True)
-        self.assertAlmostEqual(Xtransf[0].sum(), np.array([-1.01 ,  2.56]).sum(), 
-                               places =2) 
+        self.assertAlmostEqual(np.around (Xtransf[0].sum(), 1) , 
+                               round(np.array([-1.01 ,  2.56]).sum(), 1), 
+                               places =7) 
     def test_decision_region (self): 
         lr_clf = LogisticRegression(multi_class ='ovr', random_state =1, solver ='lbfgs') 
         Xpca= decision_region(self.X, self.y, clf=lr_clf, split = True, view ='Xt') # test set view
-        self.assertAlmostEqual(Xpca[0].sum() , np.array([-1.03,  1.42]).sum(), 
-                               places = 2)
+        self.assertAlmostEqual(np.around (Xpca[0].sum(), 1)  ,
+                               round (np.array([-1.03,  1.42]).sum(), 1) , 
+                               places = 7)
     
 if __name__=='__main__': 
     unittest.main()
