@@ -8,8 +8,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "watex"
-version="0.1.9rc2"
-dynamic = [  "keywords"]
+version="0.1.9"
+dynamic = [ "keywords"]
 
 dependencies=[
     "seaborn >=0.12.0", 
