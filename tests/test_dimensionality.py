@@ -72,8 +72,8 @@ class TestDimensionality(unittest.TestCase):
         nPCA (self.X, n_components=self.n_components)
         
 
-if __name__=='__main__': 
-    unittest.main()
+# if __name__=='__main__': 
+#     unittest.main()
     # TestDimensionality().test_incrementalPCA()
     
     
