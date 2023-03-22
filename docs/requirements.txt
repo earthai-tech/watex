@@ -39,6 +39,6 @@ yellowbrick
 plotly
 ipywidgets
 ipykernel
-pandas-profiling
+pandas-profiling==3.6.1
 
 
