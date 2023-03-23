@@ -2478,14 +2478,18 @@ def make_naive_pipe(
             )
     #-> Encode y if given
     if y is not None: 
-        if (label_encoding =='labelEncoder'  
-            or get_estimator_name(label_encoding) =='LabelEncoder'
-            ): 
-            enc =LabelEncoder()
-        elif  ( label_encoding =='LabelBinarizer' 
+        # if (label_encoding =='labelEncoder'  
+        #     or get_estimator_name(label_encoding) =='LabelEncoder'
+        #     ): 
+        #     enc =LabelEncoder()
+        if  ( label_encoding =='LabelBinarizer' 
                 or get_estimator_name(label_encoding)=='LabelBinarizer'
                ): 
             enc =LabelBinarizer(sparse_output=sparse_output)
+        else: 
+            label_encoding =='labelEncoder'
+            enc =LabelEncoder()
+            
         y= enc.fit_transform(y)
     #set features
     if num_features is not None: 

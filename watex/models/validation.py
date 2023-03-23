@@ -608,7 +608,7 @@ class BaseEvaluation:
                 inspect.getfullargspec(self.__init__)))
 
         sample_weight = float(
-            _assert_all_types(int, float, objname ="Sample weight"))
+            _assert_all_types(sample_weight, int, float, objname ="Sample weight"))
         if sample_weight <= 0 or sample_weight >1: 
             raise ValueError ("Sample weight must be range between 0 and 1,"
                               f" got {sample_weight}")
