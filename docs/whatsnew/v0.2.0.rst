@@ -77,7 +77,7 @@ This is major changes  performed from ``v0.1``.
       Zcol [5].freq[:7] 
       Out[3]: array([81920., 70000., 58800., 41600., 35000., 24700., 20800.])
  
--|Enhancement| Update :func:`watex.utils.get2dtensor` to be able to output the complex data type especially when impendance tensor Z 
+- |Enhancement| Update :func:`watex.utils.get2dtensor` to be able to output the complex data type especially when impendance tensor Z 
   is given. This avoid ``ComplexWarning`` casting wich only keep the ``real`` part. 
 
 - |Enhancement| in :meth:`watex.view.TPlot.plot_corrections`. Use the frequency of each site rather than the complete frequency of 
