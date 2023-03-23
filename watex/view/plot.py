@@ -1150,9 +1150,8 @@ class TPlot (BasePlot):
         
         components = cpm.get(m)
         
-        fp, res, phs, site, *s= self._validate_correction (
+        res, phs, site, *s= self._validate_correction (
                              components = components, 
-                             onto =onto , 
                              errorbar = errorbar , 
                              how = how, 
                              seed = seed , 
@@ -1177,8 +1176,14 @@ class TPlot (BasePlot):
         colors = [ '#069AF3', '#DC143C']
     
         #==plotlog10 --------
-        res= [ np.log10 (r) for r in res] ; fp = np.log10 (fp)
-   
+        res= [ np.log10 (r) for r in res] 
+        # the complete frequency 
+        fp = self.p_.freqs_
+        
+        fp =  1/ fp if onto =='period' else fp 
+        
+        fp =  np.log10 ( fp) 
+        
         if suppress_outliers: 
             res = remove_outliers(res, fill_value=np.nan) 
             phs = remove_outliers(phs, fill_value=np.nan) 
@@ -1216,8 +1221,9 @@ class TPlot (BasePlot):
                           ) 
             if errorbar: 
                 plot_errorbar (ax2 , 
-                               fp, reshape (p[:, site]),
-                               y_err = reshape (ep[:, site]), 
+                               fp, 
+                               reshape (p[:, site]),
+                               y_err = reshape (ep[:, site]),
                                )
             ax2.scatter( fp, 
                         reshape (p[:, site]),
@@ -1271,7 +1277,6 @@ class TPlot (BasePlot):
     def _validate_correction (
         self, 
         components , 
-        onto , 
         errorbar , 
         seed , 
         site , 
@@ -1342,9 +1347,7 @@ class TPlot (BasePlot):
             raise EMError(terror.format('resistivity', components))
         if phs is None: 
             raise EMError(terror.format('phase', components))
-    
-        fp =  1/ self.p_.freqs_ if onto =='period' else self.p_.freqs_ 
-        
+
         if seed: 
             seed = _assert_all_types(seed , int, float, objname ='Seed')
             np.random.seed (seed ) 
@@ -1376,7 +1379,7 @@ class TPlot (BasePlot):
             plt.style.use ('default')
 
        
-        return fp, res, phs, site, s ,  res_err , phs_err 
+        return res, phs, site, s ,  res_err , phs_err 
  
  
     def plot_corrections(
@@ -1517,9 +1520,8 @@ class TPlot (BasePlot):
         cpm = {'te': ["xy"] , 'tm': ["yx"]}
        
         components = cpm.get(m)
-        fp, res, phs, site, *s= self._validate_correction (
+        res, phs, site, *s= self._validate_correction (
                              components = components, 
-                             onto =onto , 
                              errorbar = errorbar , 
                              how = how, 
                              seed = seed , 
@@ -1586,8 +1588,13 @@ class TPlot (BasePlot):
         colors = [ '#069AF3', '#DC143C']
         
         #==plotlog10 --------
-        res= [ np.log10 (r) for r in res] ; fp = np.log10 (fp)
-     
+        res= [ np.log10 (r) for r in res] 
+        # to use frequency for individual site rather than 
+        # the complete frequency 
+        fp = self.p_.ediObjs_[site].Z._freq
+        fp =  1/ fp if onto =='period' else fp 
+        
+        fp =  np.log10 ( fp) 
         
         min_y =  np.nanmin(res[0][:, site])
         

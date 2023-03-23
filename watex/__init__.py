@@ -35,9 +35,7 @@ try:
     from . import _version
     __version__ = _version.version.split('.dev')[0]
 except ImportError:
-    __version__ = '0.1.10' 
-finally:
-    __author__= 'L.Kouadio'
+    __version__ = '0.2.0' 
 
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)
@@ -188,8 +186,6 @@ from .utils import (
     plot_confidence_in,
     qc,
     )
-# may useful to fix 
-# circular import
 try : 
     from .utils import ( 
         selectfeatures, 

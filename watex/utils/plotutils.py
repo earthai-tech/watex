@@ -3081,8 +3081,22 @@ def plot_strike (
     extra =("PlotStrike uses 'mtpy' or 'pycsamt' as dependency."
             )
     import_optional_dependency ('mtpy', extra = extra )
-    
+    #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     from mtpy.imaging.plotstrike import PlotStrike
+    from ..property import IsEdi
+    #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    
+    if os.path.isdir ( list_of_edis ): 
+        list_of_edis = [os.path.join( f) for f in os.listdir (list_of_edis)
+                        if str(f).lower().endswith ('.edi')]
+    if os.path.isfile (list_of_edis): 
+        list_of_edis =[list_of_edis ]
+        
+    # now check whether is valid EDI     
+    # list comprehension faster than
+    # tuple (map (lambda f:  IsEdi._assert_edi (f ), list_of_edis ) )
+    [ IsEdi._assert_edi (f ) for f in list_of_edis ] 
+    # suppress third party verbosity 
     with nullify_output():
         PlotStrike(
             fn_list=list_of_edis,
@@ -3096,8 +3110,14 @@ in a rose diagram of xy plot.
 
 Parameters 
 ------------
-edi_list: list, 
+list_of_edis: list, 
     full paths to .edi files to plot or list of :term:`EDI-files`. 
+    
+   .. versionchanged:: 0.2.0 
+      No need to provide a list of term:`EDI` files. Henceforth `list_of_edis`
+      accepts the EDI path-like object of single EDI file then asserts 
+      the validity of the EDI files afterward. 
+
 kind: int, default=2 
     Can be [ 1 | 2 ] where:
        

@@ -115,6 +115,7 @@ def to_numeric_dtypes (
     sanitize_columns: bool, default=False, 
        remove undesirable character in the data columns using the default
        argument of `regex` parameters. 
+       
        .. versionadded:: 0.1.9
        
     regex: `re` object,
@@ -254,7 +255,7 @@ def listing_items_format (
             print (o , end=' ') if inline else print(o)
         out += o + ('\n' if not inline else ' ') 
        
-    en= ', ' + endtext if inline else endtext
+    en= ' ' + endtext if inline else endtext
     if verbose: 
         print(en) if endtext !='' else None 
     out +=en 
@@ -2683,7 +2684,7 @@ def fillNaN(arr, method ='ff'):
     if method not in ('bf', 'ff', 'both'): 
         raise ValueError ("Expect a backward <'bf'>, forward <'ff'> fill "
                           f" or both <'bff'> not {method!r}")
-    mask = np.isnan (arr)  
+    mask = np.isnan (arr )  
     if method =='both': 
         arr = ffill(arr) ;
         #mask = np.isnan (arr)  
@@ -5197,6 +5198,150 @@ def interpolate_grid (
         
     return arri 
 
+    
+def random_selector (
+        arr:ArrayLike, / , value: float | ArrayLike, 
+        seed: int = None, shuffle =False ): 
+    """Randomly select the number of values in array. 
+    
+    Parameters
+    ------------
+    arr: ArrayLike 
+       Array of values 
+    value: float, arraylike 
+        If ``float`` value is passed, it indicates the number of values to 
+        select among the length of `ar`. If ``array`` is passed, it
+        should be self contain in the given array. However if ``string`` is 
+        given and contain the ``%``, it calculates the ratio of 
+        number to randomly selected. 
+    see: int, Optional 
+       Allow retrieving the identical value randomly selected in the given 
+       array. 
+       
+    suffle: bool, False 
+       If  ``True`` , shuffled the selected values. 
+       
+    Returns 
+    --------
+    arr: Array containing the selected values 
+     
+    Examples 
+    ----------
+    >>> import numpy as np 
+    >>> from watex.utils.funcutils import random_selector 
+    >>> dat= np.arange (42 ) 
+    >>> random_selector (dat , 7, seed = 42 ) 
+    array([0, 1, 2, 3, 4, 5, 6])
+    >>> random_selector ( dat, ( 23, 13 , 7))
+    array([ 7, 13, 23])
+    >>> random_selector ( dat , "7%", seed =42 )
+    array([0, 1])
+    >>> random_selector ( dat , "70%", seed =42 , shuffle =True )
+    array([ 0,  5, 20, 25, 13,  7, 22, 10, 12, 27, 23, 21, 16,  3,  1, 17,  8,
+            6,  4,  2, 19, 11, 18, 24, 14, 15,  9, 28, 26])
+    """
+    
+    msg = "Non-numerical is not allowed. Got {!r}."
+    
+    if seed: 
+        seed = _assert_all_types(seed , int, float, objname ='Seed')
+        np.random.seed (seed ) 
+       
+    v = copy.deepcopy(value )
+    
+    if not is_iterable( value, exclude_string= True ):
+        
+        value = str(value )
+        
+        if '%' in  value: 
+            try: 
+               value = float( value.replace ('%', '')) /100 
+            except : 
+                raise TypeError(msg.format(v))
+            # get the number 
+            value *= len(arr )
+                
+        
+        try : 
+            value = int(value )
+            
+        except :
+            raise TypeError (msg.format(v))
+    
+        if value > len(arr): 
+            raise ValueError(f"Number {value} is out of the range."
+                             f" Expect value less than {len(arr)}.")
+            
+        value = np.random.permutation(value ) 
+        
+    arr = np.array ( 
+        is_iterable( arr, exclude_string=True, transform =True )) 
+    
+    arr = arr.ravel() if arr.ndim !=1 else arr 
+
+    mask = _isin (arr, value , return_mask= True )
+    arr = arr [mask ] 
+    
+    if shuffle : np.random.shuffle (arr )
+
+    return arr
+
+        
+    
+    
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
