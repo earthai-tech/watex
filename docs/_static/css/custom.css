@@ -14,7 +14,7 @@ html[data-theme=light]{
 }
 /*  Style all links with `stable` in the version name*/
 .version-switcher__container a[data-version-name*="stable"] {
-   background-color: green;
+   background-color: #f1ad29;
 }
 /* If the active version has the name "dev", style it*/
 .version-switcher__button[data-active-version-name*="dev"] {

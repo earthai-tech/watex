@@ -3085,12 +3085,12 @@ def plot_strike (
     from mtpy.imaging.plotstrike import PlotStrike
     from ..property import IsEdi
     #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    
-    if os.path.isdir ( list_of_edis ): 
-        list_of_edis = [os.path.join( f) for f in os.listdir (list_of_edis)
-                        if str(f).lower().endswith ('.edi')]
-    if os.path.isfile (list_of_edis): 
-        list_of_edis =[list_of_edis ]
+    if isinstance ( list_of_edis, str): 
+        if os.path.isdir ( list_of_edis ): 
+            list_of_edis = [os.path.join( f) for f in os.listdir (list_of_edis)
+                            if str(f).lower().endswith ('.edi')]
+        if os.path.isfile (list_of_edis): 
+            list_of_edis =[list_of_edis ]
         
     # now check whether is valid EDI     
     # list comprehension faster than
