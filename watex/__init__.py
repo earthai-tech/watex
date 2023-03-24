@@ -151,7 +151,8 @@ from .utils import (
     plotAnomaly, 
     vesSelector, 
     erpSelector, 
-    read_data, 
+    read_data,
+    cleaner, 
     erpSmartDetector,
     type_,
     shape, 
@@ -320,5 +321,6 @@ __all__ = [
     "make_naive_pipe", 
     "bi_selector", 
     "show_versions",
+    "cleaner", 
     ]
 

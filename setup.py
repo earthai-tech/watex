@@ -103,8 +103,9 @@ setup_kwargs['install_requires'] = [
     "tqdm >=4.64.1",
     "scikit-learn >=1.2.1", 
     "joblib >=1.2.0",
-    "threadpoolctl >=2.2.0",
+    "threadpoolctl >=3.1.0",
     "matplotlib ==3.5.3",
+    "pytest"
  ]
                                
 setup_kwargs['python_requires'] ='>=3.9'

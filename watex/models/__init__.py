@@ -15,7 +15,8 @@ from .validation import (
     getSplitBestScores, 
     displayCVTables, 
     displayFineTunedResults, 
-    displayModelMaxDetails
+    displayModelMaxDetails, 
+    naive_evaluation, 
 
     )
 from .premodels import pModels 
@@ -31,5 +32,6 @@ __all__=[
     "displayCVTables", 
     "displayFineTunedResults", 
     "displayModelMaxDetails", 
+    "naive_evaluation", 
     "pModels"
     ]

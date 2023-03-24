@@ -23,6 +23,13 @@ class DatasetError(Exception):
     the prescipted details beforehand."""
     pass 
 
+class DCTypeError (Exception): 
+    """Raises exception when data passed to DC base class are not consistent.
+    DCType expect D-type for Dataframe , F-type for file object or P-type of 
+    pathlike object. 
+    
+    """
+    
 class EDIError(Exception):
     """Raises an Exception if the given SEG-Electrical Data Interchange data 
     does not fit the appropriate EDI-format. The correct SEG-EDI file building

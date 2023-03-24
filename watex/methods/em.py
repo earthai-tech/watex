@@ -1034,7 +1034,7 @@ class EM(IsEdi):
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
             f'{appender}{"" if rv is None else "?"}'
             )
-#XXX TODO
+        
 class _zupdate(EM): 
     """ A decorator for impedance tensor updating. 
     
@@ -1519,9 +1519,19 @@ class Processing (EM) :
                 zcr.append(np.convolve(zj[ii, :].real, w[::-1], 'same'))
                 zci.append(np.convolve(zj[ii, :].imag, w[::-1], 'same'))
             # and take the average 
-            zjr [ii, :] = np.average (np.vstack (zcr), axis = 0)
-            zji[ii, :] = np.average (np.vstack (zci), axis = 0)
-               
+            try : 
+                
+                zjr [ii, :] = np.average (np.vstack (zcr), axis = 0)
+                zji[ii, :] = np.average (np.vstack (zci), axis = 0)
+            except : 
+                # when  array dimensions is out of the concatenation 
+                # then shrunk it to match exactly the first array 
+                # thick append when window width is higher and the number of 
+                # the station 
+                shr_zrc = [ ar [: len(zcr[0])] for ar in zcr ]
+                shr_zrci = [ ar [: len(zci[0])] for ar in zci ]
+                zjr [ii, :] = np.average (np.vstack (shr_zrc), axis = 0)
+                zji[ii, :] = np.average (np.vstack (shr_zrci), axis = 0)
      
         zjc = zjr + 1j * zji 
         rc = z2rhoa(zjc, self.freqs_)  
@@ -2774,6 +2784,7 @@ class ZC(EM):
         array([10002.46 +9747.34j , 11679.44 +8714.329j, 15896.45 +3186.737j,
                21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
                 8908.448+5251.157j])
+        >>> zc = zo.remove_ss_emap() 
         >>> zc[0].z[:, 0, 1] [:7]
         array([10.08886765+9.83154376j, 11.78033448+8.78960895j,
                16.03377371+3.21426607j, 21.95101282-4.57861929j,

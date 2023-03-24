@@ -2819,7 +2819,8 @@ def naive_imputer (
     fill_value = None , 
     verbose = "deprecated",
     add_indicator = False,  
-    copy = True,  
+    copy = True, 
+    keep_empty_features=False, 
     **fit_params 
  ): 
     """ Imput missing values in the data. 
@@ -2869,14 +2870,20 @@ def naive_imputer (
         nullable integer dtypes with missing values, `missing_values`
         can be set to either `np.nan` or `pd.NA`.
 
-   
-
     fill_value : str or numerical value, default=None
         When strategy == "constant", fill_value is used to replace all
         occurrences of missing_values.
         If left to the default, fill_value will be 0 when imputing numerical
         data and "missing_value" for strings or object data types.
+        
+    keep_empty_features : bool, default=False
+        If True, features that consist exclusively of missing values when
+        `fit` is called are returned in results when `transform` is called.
+        The imputed value is always `0` except when `strategy="constant"`
+        in which case `fill_value` will be used instead.
 
+        .. versionadded:: 0.2.0
+         
     verbose : int, default=0
         Controls the verbosity of the imputer.
 
@@ -3025,7 +3032,9 @@ def naive_imputer (
                         fill_value = fill_value , 
                         verbose = verbose, 
                         add_indicator=False, 
-                        copy = copy )
+                        copy = copy, 
+                        keep_empty_features=keep_empty_features, 
+                        )
     try : 
         Xi = imp.fit_transform (X, y =y, **fit_params )
     except Exception as err :

@@ -52,6 +52,7 @@ from .funcutils import (
     smart_label_classifier, 
     remove_outliers,
     normalizer, 
+    cleaner, 
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -201,7 +202,8 @@ __all__=[
         'get_target', 
         'get_distance',
         'get_bearing', 
-        'qc'
+        'qc', 
+        'cleaner'
         ]
 
 

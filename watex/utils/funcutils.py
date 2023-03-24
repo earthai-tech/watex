@@ -3717,6 +3717,9 @@ def sanitize_frame_cols(
         and the name respectively will be polished and returns the same 
         dataframe.
         
+    func: F, callable 
+       Universal function used to clean the columns 
+       
     regex: `re` object,
         Regular expresion object. the default is:: 
             
@@ -5286,6 +5289,97 @@ def random_selector (
 
     return arr
 
+
+def cleaner (
+    data: DataFrame|NDArray,
+    / , 
+    columns:List[str]= None,
+    inplace:bool = False, 
+    labels: List[int|str] =None, 
+    func : F= None, 
+    mode:str ='clean', 
+    **kws
+    )->DataFrame | NDArray | None : 
+    """ Sanitize data in the data or columns by dropping specified labels 
+    from rows or columns. 
+    
+    If data is not a pandas dataframe, should be converted to 
+    dataframe and uses index to drop the labels. 
+    
+    Parameters 
+    -----------
+    data: pd.Dataframe or arraylike2D. 
+       Dataframe pandas or Numpy two dimensional arrays. If 2D array is 
+       passed, it should prior be converted to a daframe by default and 
+       drop row index from index parameters 
+       
+    columns: single label or list-like
+        Alternative to specifying axis (
+            labels, axis=1 is equivalent to columns=labels).
+
+    labels: single label or list-like
+      Index or column labels to drop. A tuple will be used as a single 
+      label and not treated as a list-like.
+
+    func: F, callable 
+        Universal function used to clean the columns. If performs only when 
+        `mode` is on ``clean`` option. 
+        
+    inplace: bool, default False
+        If False, return a copy. Otherwise, do operation 
+        inplace and return None.
+       
+    mode: str, default='clean' 
+       Options or mode of operation to do on the data. It could 
+       be ['clean'|'drop']. If ``drop``, it behaves like ``dataframe.drop`` 
+       of pandas. 
+       
+    Returns
+    --------
+    DataFrame, array2D  or None
+            DataFrame cleaned or without the removed index or column labels 
+            or None if inplace=True or array is data is passed as an array. 
+            
+    """
+    mode = _validate_name_in(mode , defaults =("drop", 'remove' ), 
+                      expect_name ='drop')
+    if not mode: 
+        return sanitize_frame_cols(
+            data, 
+            inplace = inplace, 
+            func = func 
+            ) 
+ 
+    objtype ='ar'
+    if not hasattr (data , '__array__'): 
+        data = np.array (data ) 
+        
+    if hasattr(data , "columns"): 
+        objtype = "pd" 
+    
+    if objtype =='ar': 
+        data = pd.DataFrame(data ) 
+        # block inplace to False and 
+        # return numpy ar 
+        inplace = False 
+    # if isinstance(columns , str): 
+    #     columns = str2columns(columns ) 
+    if columns is not None: 
+        columns = is_iterable(
+            columns, exclude_string=True ,
+            parse_string= True, 
+            transform =True )
+        
+    data = data.drop (labels = labels, 
+                      columns = columns, 
+                      inplace =inplace,  
+                       **kws 
+                       ) 
+    
+    return np.array ( data ) if objtype =='ar' else data 
+ 
+
+        
         
     
     
