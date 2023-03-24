@@ -39,7 +39,7 @@ def test_DCProfiling():
     robj1= ResistivityProfiling(auto=True, force =True ) # auto detection 
     robj1.fit('data/erp/testsafedata.xlsx') 
 
-    robj2= ResistivityProfiling(stations='S03', utm_zone='40S',
+    robj2= ResistivityProfiling(station='S03', utm_zone='40S',
                                 force =True ) 
     robj2.fit('data/erp/l11_gbalo.xlsx') 
     robj1, robj2= test_ResistivityProfiling() 
