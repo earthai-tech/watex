@@ -36,7 +36,12 @@ def test_ResistivityProfiling():
 @pytest.mark.skipif(os.path.isdir ('data/erp') is False ,
                     reason = 'DC data path does not exist')
 def test_DCProfiling(): 
-    
+    robj1= ResistivityProfiling(auto=True, force =True ) # auto detection 
+    robj1.fit('data/erp/testsafedata.xlsx') 
+
+    robj2= ResistivityProfiling(stations='S03', utm_zone='40S',
+                                force =True ) 
+    robj2.fit('data/erp/l11_gbalo.xlsx') 
     robj1, robj2= test_ResistivityProfiling() 
     dcobjs = DCProfiling()
     dcobjs.fit(robj1, robj2 ) 
@@ -149,12 +154,12 @@ def test_VerticalSounding():
     vObj.ohmic_area_
     # ... 349.6432550517697
     
-# if __name__=='__main__': 
+if __name__=='__main__': 
     
-#     test_DCProfiling
-#     test_VerticalSounding() 
-#     test_DCSounding() 
-#     test_ResistivityProfiling() 
+    test_DCProfiling
+    test_VerticalSounding() 
+    test_DCSounding() 
+    test_ResistivityProfiling() 
     
     
     

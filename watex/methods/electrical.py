@@ -26,7 +26,6 @@ from .._typing import  (
     F
     )
 from .._watexlog import watexlog 
-
 from ..decorators import refAppender 
 from ..utils._dependency import ( 
     import_optional_dependency )
@@ -241,8 +240,6 @@ class DCProfiling(ElectricalMethods)  :
         self.read_sheets=read_sheets
         self.force=force
         
-        
-        
     def fit(self, 
             *data : List[str] | List [DataFrame],
             **fit_params)-> "DCProfiling" : 
@@ -272,7 +269,7 @@ class DCProfiling(ElectricalMethods)  :
         drilling. 
    
         """
-        self._logging.info (f" {self.__class__.__name__!r} collects the "
+        self._logging.info (f"{self.__class__.__name__!r} collects the "
                             "resistivity objects ")
         
         ex=(f"{self.__class__.__name__!r} expects 'tqdm' to be installed."
@@ -1899,9 +1896,9 @@ def _validate_file_in (*data ):
         if ii==2: 
             s = [True if os.path.isfile(str(d)) else False  for d in data ] 
         
-        if len(set ( s))==2: # ['false', 'true']
+        if len(set ( s))==2: # {'false', 'true'}
             raise DCError(msg.format(o, s.count(True), len(data)))
-        #[ true] or ['false ]
+        # { true} or {'false }
         if len( set(s)) ==1 and s[0]: 
             return o 
     return 

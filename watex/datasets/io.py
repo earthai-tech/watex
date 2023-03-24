@@ -146,7 +146,7 @@ def csv_data_loader(
         data = data.astype (np.float)
     # reconvert target if problem is classification rather than regression 
     try : 
-        target =target.astype(np.int )
+        target =target.astype(int )
     except : pass  
     
     if descr_file is None:
