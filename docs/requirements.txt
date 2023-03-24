@@ -40,5 +40,6 @@ plotly
 ipywidgets
 ipykernel
 pandas-profiling==3.6.1
+pytest
 
 
