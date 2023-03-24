@@ -204,7 +204,6 @@ class DCProfiling(ElectricalMethods)  :
            'S001'], dtype='<U33')
     
     (3) -> Read data and all sheets, assumes all data are arranged in a sheets
-    
     >>> dcobjs.read_sheets=True
     >>> dcobjs.fit(datapath) 
     >>> dcobjs.nlines_ # here it assumes all the data are in single worksheets.
@@ -292,7 +291,10 @@ class DCProfiling(ElectricalMethods)  :
                 warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
                 
         if len(self.data_) ==0: 
-            raise ERPError("None ERP data detected. Please check your data.")
+            raise ERPError("None ERP data detected. Please check your data. If"
+                           " data is passed as a Path-like object (F|P-types),"
+                           " set ``force=True`` to constrain the readable DC-"
+                           " format. See documentation for details.")
         # makeids objects 
         self.ids_ = np.array(make_ids (self.survey_names_,'line',None, True)) 
         
@@ -1739,7 +1741,7 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
                     )
                 self.data_.append (dcObj.fit(o).summary(
                     keep_params=self.keep_params))
-   
+       
         except : 
             self.isnotvalid_.append(o)
             

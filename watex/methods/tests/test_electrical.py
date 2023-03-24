@@ -43,7 +43,7 @@ def test_DCProfiling():
                                 force =True ) 
     robj2.fit('data/erp/l11_gbalo.xlsx') 
     robj1, robj2= test_ResistivityProfiling() 
-    dcobjs = DCProfiling()
+    dcobjs = DCProfiling(force =True )
     dcobjs.fit(robj1, robj2 ) 
     dcobjs.sves_ 
     # ... array(['S036', 'S006'], dtype=object)
@@ -52,7 +52,7 @@ def test_DCProfiling():
     
     # (2) -> Read from a collection of excell data 
     
-    
+    #dcobjs = DCProfiling()
     dcobjs.read_sheets=True 
     dcobjs.fit(ERPPATH) 
     dcobjs.nlines_  # getting the number of survey lines 
@@ -69,7 +69,7 @@ def test_DCProfiling():
     #        'S001'], dtype='<U33')
     
     # (3) -> Read data and all sheets, assumes all data are arranged in a sheets
-    
+    #dcobjs = DCProfiling()
     dcobjs.read_sheets=True
     dcobjs.fit(ERPPATH) 
     dcobjs.nlines_ # here it assumes all the data are in single worksheets.
@@ -156,10 +156,10 @@ def test_VerticalSounding():
     
 if __name__=='__main__': 
     
-    test_DCProfiling
-    test_VerticalSounding() 
-    test_DCSounding() 
-    test_ResistivityProfiling() 
+    test_DCProfiling()
+    # test_VerticalSounding() 
+    # test_DCSounding() 
+    # test_ResistivityProfiling() 
     
     
     
