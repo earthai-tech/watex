@@ -23,7 +23,7 @@ class DatasetError(Exception):
     the prescipted details beforehand."""
     pass 
 
-class DCTypeError (Exception): 
+class DCError (Exception): 
     """Raises exception when data passed to DC base class are not consistent.
     DCType expect D-type for Dataframe , F-type for file object or P-type of 
     pathlike object. 

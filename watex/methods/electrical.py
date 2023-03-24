@@ -70,7 +70,7 @@ from ..exceptions import (
     VESError, 
     ERPError,
     StationError, 
-    DCTypeError, 
+    DCError, 
     )
 
 TQDM= False 
@@ -153,10 +153,12 @@ class DCProfiling(ElectricalMethods)  :
         
     force: bool, default=False, 
         By default, :class:`DCProfiling` expects users to provide either DC 
-        objects or pandas dataframe. This assumes users has already 
-        transform its data from sheets to data frame. If not the case, setting
+        objects or pandas dataframe. This assumes users have already 
+        transformed its data from sheets to data frame. If not the case, setting
         `force` to ``True`` constrains the algorithm to do the both tasks at
         once. 
+        
+        .. versionadded:: 0.2.0 
         
     fit_params: dict 
          Additional |ERP| keywords arguments  
@@ -225,7 +227,7 @@ class DCProfiling(ElectricalMethods)  :
         auto: bool = False,
         keep_params:bool=False, 
         read_sheets:bool=False, 
-        force:bool=True, 
+        force:bool=False, 
         **kws
         ):
         super().__init__(**kws)
@@ -756,10 +758,12 @@ class ResistivityProfiling(ElectricalMethods):
        
     force: bool, default=False, 
         By default, :class:`ResistivityProfiling` expects users to provide 
-         either DC objects or pandas dataframe. This assumes users has already 
-        transform its data from sheets to data frame. If not the case, setting
+         either DC objects or pandas dataframe. This supposes users have already 
+        transformed its data from sheets to data frame. If not the case, setting
         `force` to ``True`` constrains the algorithm to do the both tasks at
         once. 
+        
+        .. versionadded:: 0.2.0 
         
     kws: dict 
          Additional |ERP| keywords arguments  
@@ -1644,7 +1648,7 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
     is_df = _validate_file_in( *data )
     
     if is_df is None: 
-        raise DCTypeError(
+        raise DCError(
             "Unknow data type, Expect a path-like object, a"
            f" dataframe or a dc-object. Got {type(data).__name__!r}")
         
@@ -1873,7 +1877,8 @@ def _geterpattr (attr , dl ):
     
     
 def _validate_file_in (*data ): 
-    """ Validate file , path or dataframe """
+    """ Validate DC-types - file ( F-type ), path (P-type) or 
+    dataframe (D-type). """
     
     msg=("{0!r} is set as a priority DCtype. Expect DC data to have a"
          " consistent type. Only '{1}' data fit {0} while expecting"
@@ -1895,7 +1900,7 @@ def _validate_file_in (*data ):
             s = [True if os.path.isfile(str(d)) else False  for d in data ] 
         
         if len(set ( s))==2: # ['false', 'true']
-            raise DCTypeError(msg.format(o, s.count(True), len(data)))
+            raise DCError(msg.format(o, s.count(True), len(data)))
         #[ true] or ['false ]
         if len( set(s)) ==1 and s[0]: 
             return o 

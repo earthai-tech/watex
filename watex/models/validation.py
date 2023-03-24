@@ -42,7 +42,7 @@ from ..exceptions import (
 from ..utils.funcutils import ( 
     _assert_all_types, 
     get_params, 
-    save_job, 
+    savejob, 
     listing_items_format, 
     pretty_printer, 
 
@@ -401,7 +401,7 @@ class GridSearchMultiple:
         if self.savejob:
             msg += ('\Serialize the dict of fine-tuned '
                     f'parameters to `{self.filename}`.')
-            save_job (job= self.data_ , savefile = self.filename )
+            savejob (job= self.data_ , savefile = self.filename )
             _logger.info(f'Dumping models `{self.filename}`!')
             
             if self.verbose: 

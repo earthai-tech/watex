@@ -686,7 +686,7 @@ def repr_callable_obj(obj: F  , skip = None ):
     # inspect.formatargspec(*inspect.getfullargspec(cls_or_func))
     if not hasattr (obj, '__call__') and not hasattr(obj, '__dict__'): 
         raise TypeError (
-            f'Format only callabe objects: {type (obj).__name__!r}')
+            f'Format only callabe objects: Got {type (obj).__name__!r}')
         
     if hasattr (obj, '__call__'): 
         cls_or_func_signature = inspect.signature(obj)
@@ -1037,10 +1037,22 @@ def interpol_scipy (
         >>>  ss
     """
     
-    func_=spi.interp1d(x_value, y_value, kind=kind,fill_value=fill)
+    func_=spi.interp1d(
+        x_value, 
+        y_value, 
+        kind=kind,
+        fill_value=fill
+        )
     y_new=func_(x_new)
     if plot :
-        plt.plot(x_value, y_value,"o",x_new, y_new,"--")
+        plt.plot(
+        x_value,
+        y_value,
+        "o",
+        x_new,
+        y_new,
+        "--"
+        )
         plt.legend(["data", "linear","cubic"],loc="best")
         plt.show()
     
@@ -1702,8 +1714,15 @@ def load_serialized_data (filename, verbose=0):
     
     return data
 
-def save_job(job , savefile ,* ,  protocol =None,  append_versions=True , 
-             fix_imports= True, buffer_callback = None,   **job_kws): 
+def savejob(
+    job , 
+    savefile ,* ,  
+    protocol =None,  
+    append_versions=True , 
+    fix_imports= True, 
+    buffer_callback = None,   
+    **job_kws
+    ): 
     """ Quick save your job using 'joblib' or persistent Python pickle module
     
     Parameters 

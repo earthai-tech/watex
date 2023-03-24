@@ -1,4 +1,4 @@
-v0.2.10 (March 20, 2023)
+v0.2.0 (March 25, 2023)
 --------------------------
 
 This is major changes  performed from ``v0.1``.  
@@ -7,7 +7,7 @@ This is major changes  performed from ``v0.1``.
   to export new :term:`tensor` data into :term:`EDI` files if the argument ``out=True``. For instance: 
 
   - :meth:`watex.methods.ZC.remove_static_shift` remove the static shift from correction factor from x and y using 
-    the spatial median filter. In :meth:`watex.methods.ZC.remove_static_sfift` , the :meth:`watex.externals.z.Z.compute_resistivity_phase` 
+    the spatial median filter. In :meth:`watex.methods.ZC.remove_static_shift` , the :meth:`watex.externals.z.ResPhase.compute_resistivity_phase` 
     is initialized with the corrected impedance :term:`tensor` Z three dimensional array and number of frequency. 
   
   - :meth:`watex.methods.ZC.remove_ss_emap` removes the static schift using the EMAP moving average filters such as:
@@ -47,21 +47,22 @@ This is major changes  performed from ``v0.1``.
 - |Major Feature| New features for interpolation and drop bad frequencies at once to avoid a gynastic using Numpy 
   and :func:`watex.utils.get2dtensor`: 
 
-  - :meth:`watex.methods.Processing.interpolate_z`: Interpolate :term:`tensor` Z  and return new interpolated Z objects. Here is an example: 
+  - :meth:`watex.methods.Processing.interpolate_z`: Interpolate :term:`tensor` Z  and return new interpolated Z objects. Here is 
+    an example: 
 
-  .. code-block:: python 
+    .. code-block:: python 
 
-    import watex as wx 
-    sedis = wx.fetch_data ('huayuan', samples = 12 , return_data =True , key='raw') # collected twelve raw data from Huayuan 
-    p = wx.EMProcessing ().fit(sedis) 
-    # Let's visualize seven Z values at the first site component xy 
-    p.ediObjs_[0].Z.z[:, 0, 1][:7]
-    Out[1]: array([ 4165.6 +2070.13j,  7072.81+6892.41j,  8725.84+5874.15j,
+      import watex as wx 
+      sedis = wx.fetch_data ('huayuan', samples = 12 , return_data =True , key='raw') # collected twelve raw data from Huayuan 
+      p = wx.EMProcessing ().fit(sedis) 
+      # Let's visualize seven Z values at the first site component xy 
+      p.ediObjs_[0].Z.z[:, 0, 1][:7]
+      Out[1]: array([ 4165.6 +2070.13j,  7072.81+6892.41j,  8725.84+5874.15j,
                14771.8 -2831.28j, 21243.7 -6802.36j,  6381.48+3411.65j,
                 5927.85+5074.27j])
-    Zcol = p.interpolate_z (sedis)
-    Zcol [0].z[:, 0, 1 ][:7] # let visualize the seven interpolated Z 
-    Out[2]: array([ 4165.6 +2070.13j,  4165.6 +2070.13j,  7072.81+6892.41j,
+      Zcol = p.interpolate_z (sedis)
+      Zcol [0].z[:, 0, 1 ][:7] # let visualize the seven interpolated Z 
+      Out[2]: array([ 4165.6 +2070.13j,  4165.6 +2070.13j,  7072.81+6892.41j,
                 8725.84+5874.15j, 14771.8 -2831.28j, 21243.7 -6802.36j,
                 6381.48+3411.65j])
 
@@ -84,4 +85,9 @@ This is major changes  performed from ``v0.1``.
   the survey investigation since all sites could not have the same frequency length. This will fix the possible crash when plotting the raw 
   :term:`EDI` data. 
 
-  
+- |Feature| Add a quick model evalutation with :func:`watex.models.naive_evaluation`
+
+- |Enhancement| ``force`` parameters is henceforth passed to :class:`watex.methods.DCProfiling` and :class:`watex.methods.ResistivityProfiling` 
+  Indeed,  in principle :class:`watex.methods.DCProfiling` expects users to provide either :term:`DC` objects or pandas dataframe. This 
+  supposes that users have already transformed its data from sheets to a frame. If not the case, setting `force` to ``True`` 
+  henceforth constrains henceforth the algorithm to do the both tasks at once.
