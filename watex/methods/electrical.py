@@ -26,7 +26,6 @@ from .._typing import  (
     F
     )
 from .._watexlog import watexlog 
-
 from ..decorators import refAppender 
 from ..utils._dependency import ( 
     import_optional_dependency )
@@ -59,7 +58,8 @@ from ..utils.exmath import (
     )
 from ..utils.validator import ( 
     _is_valid_erp , 
-    _is_valid_ves, 
+    _is_valid_ves,
+    get_estimator_name, 
     )
 from ..property import( 
     ElectricalMethods
@@ -69,6 +69,7 @@ from ..exceptions import (
     VESError, 
     ERPError,
     StationError, 
+    DCError, 
     )
 
 TQDM= False 
@@ -149,6 +150,15 @@ class DCProfiling(ElectricalMethods)  :
         `read_sheets` is set to ``True`` and the file is not in excell format, 
         a TypError will raise. 
         
+    force: bool, default=False, 
+        By default, :class:`DCProfiling` expects users to provide either DC 
+        objects or pandas dataframe. This assumes users have already 
+        transformed its data from sheets to data frame. If not the case, setting
+        `force` to ``True`` constrains the algorithm to do the both tasks at
+        once. 
+        
+        .. versionadded:: 0.2.0 
+        
     fit_params: dict 
          Additional |ERP| keywords arguments  
          
@@ -194,7 +204,6 @@ class DCProfiling(ElectricalMethods)  :
            'S001'], dtype='<U33')
     
     (3) -> Read data and all sheets, assumes all data are arranged in a sheets
-    
     >>> dcobjs.read_sheets=True
     >>> dcobjs.fit(datapath) 
     >>> dcobjs.nlines_ # here it assumes all the data are in single worksheets.
@@ -216,6 +225,7 @@ class DCProfiling(ElectricalMethods)  :
         auto: bool = False,
         keep_params:bool=False, 
         read_sheets:bool=False, 
+        force:bool=False, 
         **kws
         ):
         super().__init__(**kws)
@@ -227,8 +237,7 @@ class DCProfiling(ElectricalMethods)  :
         self.auto=auto 
         self.keep_params=keep_params
         self.read_sheets=read_sheets
-        
-        
+        self.force=force
         
     def fit(self, 
             *data : List[str] | List [DataFrame],
@@ -259,7 +268,7 @@ class DCProfiling(ElectricalMethods)  :
         drilling. 
    
         """
-        self._logging.info (f" {self.__class__.__name__!r} collects the "
+        self._logging.info (f"{self.__class__.__name__!r} collects the "
                             "resistivity objects ")
         
         ex=(f"{self.__class__.__name__!r} expects 'tqdm' to be installed."
@@ -268,20 +277,24 @@ class DCProfiling(ElectricalMethods)  :
         
         #-> Initialize collection objects 
         # - collected the unreadable data; readable data  
-        self.isnotvalid_= list() ; self.data_= list() 
+        self.isnotvalid_= list() ; 
+        self.data_= list() 
         
         # check whether object is readable as ERP objs
         #  -> if not assume a path or file is given 
         
-        if not _readfromdcObjs (self, data):
-            _readfrompath (self, data, **fit_params)
+        if not _readfromdcObjs (self, *data ):
+            _readfrompath (self, *data, **fit_params)
             
         if self.verbose : 
             if len(self.isnotvalid_)!=0: 
                 warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
                 
         if len(self.data_) ==0: 
-            raise ERPError("None ERP data detected. Please check your data.")
+            raise ERPError("None ERP data detected. Please check your data. If"
+                           " data is passed as a Path-like object (F|P-types),"
+                           " set ``force=True`` to constrain the readable DC-"
+                           " format. See documentation for details.")
         # makeids objects 
         self.ids_ = np.array(make_ids (self.survey_names_,'line',None, True)) 
         
@@ -594,8 +607,12 @@ class DCSounding(ElectricalMethods) :
         
         # check whether object is readable as ERP objs
         #  -> if not assume a path or file is given 
-        if not _readfromdcObjs (self, data, VerticalSounding, VESError):
-            _readfrompath (self, data, VerticalSounding,  **fit_params)
+        if not _readfromdcObjs (self, *data, 
+                                dcmethod= VerticalSounding, 
+                                exception= VESError):
+            _readfrompath (self, *data, 
+                           dcmethod = VerticalSounding,  
+                           **fit_params)
             
         if self.verbose : 
             if len(self.isnotvalid_)!=0: 
@@ -737,6 +754,16 @@ class ResistivityProfiling(ElectricalMethods):
        Note that, commonly ``constraints`` is mostly needed when the 
        automatic detection is triggered. However, it can be `coerce` with the 
        explicit defined `station`. 
+       
+    force: bool, default=False, 
+        By default, :class:`ResistivityProfiling` expects users to provide 
+         either DC objects or pandas dataframe. This supposes users have already 
+        transformed its data from sheets to data frame. If not the case, setting
+        `force` to ``True`` constrains the algorithm to do the both tasks at
+        once. 
+        
+        .. versionadded:: 0.2.0 
+        
     kws: dict 
          Additional |ERP| keywords arguments  
          
@@ -763,6 +790,7 @@ class ResistivityProfiling(ElectricalMethods):
         auto: bool = False,
         constraints:list|dict=None,
         coerce: bool=False, 
+        force: bool=False, 
         **kws): 
         super().__init__(**kws) 
         
@@ -772,6 +800,7 @@ class ResistivityProfiling(ElectricalMethods):
         self.auto=auto
         self.constraints=constraints
         self.coerce=coerce
+        self.force=force
 
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
@@ -814,7 +843,7 @@ class ResistivityProfiling(ElectricalMethods):
         
         """
         columns = fit_params.pop('columns', None)
-        force =fit_params.pop("force", False)
+        # force =fit_params.pop("force", False)
         self._logging.info(f'`Fit` method from {self.__class__.__name__!r}'
                            ' is triggered ')
         if isinstance(data, str): 
@@ -823,7 +852,7 @@ class ResistivityProfiling(ElectricalMethods):
                                  f' got {type(data).__name__!r}'
                                  )
         
-        data = erpSelector(data, columns, force=force ) 
+        data = erpSelector(data, columns, force= self.force ) 
         if not _is_valid_erp(data): 
             raise ERPError("Invalid ERP data. Data must contain at least"
                            " 'resistivity' and 'station' position." )
@@ -1511,7 +1540,7 @@ class VerticalSounding (ElectricalMethods):
             )
         return 1 
     
-def _readfromdcObjs(self, data: List[object ] ,
+def _readfromdcObjs(self, *data: List[object ] ,
                      dcmethod:object=ResistivityProfiling ,  
                      exception: F = ERPError ): 
     """ Read metadata DC object
@@ -1527,17 +1556,17 @@ def _readfromdcObjs(self, data: List[object ] ,
 
     self._logging.info (f"Read a collection '{dcmethod.__name__!r}' objects")
     
+    objm = ( 'ResistivityProfiling', 'VerticalSounding')
     # assert whether the method is implemented 
-    if dcmethod.__name__  not in ( 'ResistivityProfiling', 
-                                  'VerticalSounding'):
+    if dcmethod.__name__  not in objm: 
         raise NotImplementedError(
         f"Method {dcmethod.__name__!r} is not implemented")
-        
-    if not isinstance( data, (list, tuple, np.ndarray)): 
-        data =[data]
-    # assert whether each element composing the data is ERP object  
-    s = set ([ isinstance (o, dcmethod) for o in data  ]) 
-    if len(s)!=1 or (len(s) ==1  and not tuple(s)[0]): 
+    
+    # assert whether each element composing the data is ERP object 
+    s = set ([ get_estimator_name(o) in objm for o in data ])
+    if len(s)!=1 or ( 
+            len(s) ==1  and not tuple(s)[0]
+            ): 
         return False 
     
     # show the progress bar        
@@ -1582,9 +1611,8 @@ def _readfromdcObjs(self, data: List[object ] ,
     return True 
 
     
-def _readfrompath (self, data: List[str | DataFrame ] ,
+def _readfrompath (self, *data: List[str | DataFrame ] ,
                    dcmethod: object= ResistivityProfiling, 
-                   force:bool=False, 
                    **kws ): 
     """ Read data from a file,  a path-like object or dataframe. 
     
@@ -1607,27 +1635,31 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
         raise NotImplementedError(
         f"Method {dcmethod.__name__!r} is not implemented")
         
-    is_df =False 
+    # is_df =False 
     ddict = dict() 
     regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
     
     self.survey_names_ = None  # initialize 
     
-    if isinstance(data, (str, pd.DataFrame) ): 
-        data = [data ]
-       
-    if isinstance(data[0], pd.DataFrame): 
-        is_df =True 
+    # if isinstance(data, (str, pd.DataFrame) ): 
+    #     data = [data ]
+    
+    is_df = _validate_file_in( *data )
+    
+    if is_df is None: 
+        raise DCError(
+            "Unknow data type, Expect a path-like object, a"
+           f" dataframe or a dc-object. Got {type(data).__name__!r}")
         
-    elif isinstance (data[0], str ):
-        if os.path.isfile (data[0]): 
-            pass 
-        elif os.path.isdir(data[0]): 
-            # if directory is given, read the file of the listdir
-            data = [os.path.join( data[0], d ) for d in os.listdir(data[0])] 
-        else : 
-            raise FileNotFoundError("File not found")
-       
+    if is_df =='P-type': 
+        data = [os.path.join( data[0], d ) for d in os.listdir(data[0])] 
+    elif is_df =='D-file': 
+        is_df=True 
+        
+    elif is_df =='F-type': 
+        pass 
+
+    if is_df in ("P-type", "F-type"): 
         if self.read_sheets: 
             _, ex = os.path.splitext( data[0])
             if ex != '.xlsx': 
@@ -1659,11 +1691,9 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
         # remove the extension and keep files names 
         self.survey_names_ = list(
             map(lambda o: o.split('.')[0], self.survey_names_)) 
-    else : 
-        raise TypeError("Unknow data type, Expect a path-like object, "
-                        " a dataframe or a dc-object.")
         
-    if is_df : 
+
+    if is_df=='D-type' : 
         name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
         self.survey_names_ = np.array(make_ids(
             data, name , None, True))
@@ -1693,8 +1723,9 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
                     dipole= self.dipole,
                     auto=True if self.stations[kk] is None else self.auto, 
                     utm_zone = self.utm_zone, 
+                    force=self.force
                     )
-                self.data_.append (dcObj.fit(o, force = force).summary(
+                self.data_.append (dcObj.fit(o).summary(
                     keep_params=self.keep_params))
                 self.stations[kk] = dcObj.sves_ 
                     
@@ -1706,11 +1737,11 @@ def _readfrompath (self, data: List[str | DataFrame ] ,
                     objective=self.objective,
                     rho0=self.rho0, 
                     h0=self.h0,
-                    strategy=self.strategy
+                    strategy=self.strategy, 
                     )
                 self.data_.append (dcObj.fit(o).summary(
                     keep_params=self.keep_params))
-   
+       
         except : 
             self.isnotvalid_.append(o)
             
@@ -1737,35 +1768,43 @@ def _parse_dc_args(self, dcmethod: object , **kws):
     :param kws: Additional keyword from 
         :func:`watex.utils.coreutils.parseDCArgs`. It refers to the 
         `station_delimiter` parameters. 
-    """  
+    """
+   
     flag=0
+    
     if dcmethod.__name__=='ResistivityProfiling': 
         sf , arg = self.stations , 'stations'
         flag=0
     elif dcmethod.__name__=='VerticalSounding': 
         sf, arg =self.search , 'search'
         flag=1
+    # write an error msg
+    msg =''.join([ 
+            f"### Number of {arg!r} does not fit the number of"
+            f" {'sites' if arg =='search' else 'stations'}. "
+            "Expect {0} but {1} {2} given."
+        ])
     
     if sf is None: 
-        sf= np.repeat ([45.], len(self.survey_names_)) if flag else np.repeat(
-            [None], len(self.survey_names_)) 
-        
+        sf= np.repeat ([45.] if  flag else [None], 
+                       len(self.survey_names_))  
+    
     elif sf is not None: 
+        
         if os.path.isfile (str(sf)): 
             sf=parseDCArgs(sf, arg=arg, **kws)
         elif isinstance (sf, str): 
             sf= [sf]
-        if isinstance(sf, (int , float)) and flag: 
+        elif ( 
+                isinstance(sf, (int , float)) 
+                and flag
+                ):
             sf= np.repeat ([sf], len(self.survey_names_))
-        
-        msg =''.join([ 
-                f"### Number of {arg!r} does not fit the number of"
-                f" {'sites' if arg =='search' else 'stations'}. "
-                "Expect {0} but {1} {2} given."
-            ])
-        
+
     if len(sf)!= len(self.survey_names_): 
+        
         self._logging.error (msg)
+        
         warnings.warn(msg.format(len(self.survey_names_),len(sf), 
             f"{'is' if len(sf)<2 else 'are'}") )
             
@@ -1834,6 +1873,41 @@ def _geterpattr (attr , dl ):
     #     'ignore', category=np.VisibleDeprecationWarning)  
     return np.array(list(map(lambda o : getattr(o, attr), dl )), 
                     dtype =object)     
+    
+    
+def _validate_file_in (*data ): 
+    """ Validate DC-types - file ( F-type ), path (P-type) or 
+    dataframe (D-type). """
+    
+    msg=("{0!r} is set as a priority DCtype. Expect DC data to have a"
+         " consistent type. Only '{1}' data fit {0} while expecting"
+         " '{2}'. Please check your data and use only a single DC-type:"
+         " D-type (Dataframe), F-type (File object) or P-type (Pathlike).")
+    
+    for ii, o in enumerate ( ('D-type', 'P-type', 'F-type') ): 
+        if ii ==0: 
+            s = [ True if ( 
+                hasattr ( d , '__array__') and hasattr (d, 'columns')) 
+                else False for d in data 
+              ]
+                
+        if ii==1: 
+            
+            s= [True if os.path.isdir ( str(d))  else False  for d in data ] 
+            
+        if ii==2: 
+            s = [True if os.path.isfile(str(d)) else False  for d in data ] 
+        
+        if len(set ( s))==2: # {'false', 'true'}
+            raise DCError(msg.format(o, s.count(True), len(data)))
+        # { true} or {'false }
+        if len( set(s)) ==1 and s[0]: 
+            return o 
+    return 
+
+        
+        
+    
     
     
     

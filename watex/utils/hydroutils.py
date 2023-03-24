@@ -371,8 +371,8 @@ def make_MXS_labels (
     return MXS 
 
 def predict_NGA_labels( 
-        X, / , n_clusters , random_state =0 , keep_label_0 = False,
-        return_cluster_centers =False, **kws 
+        X, / , n_clusters , random_state =0 , keep_label_0 = False, 
+        n_init="auto",return_cluster_centers =False,  **kws 
         ): 
     """
     Predict the Naive Group of Aquifer (NGA) labels. 
@@ -405,7 +405,19 @@ def predict_NGA_labels(
         `+1` is used to move forward all class labels thereby excluding 
         the '0' label. To force include 0 in the label, set `keep_label_0` 
         to ``True``. 
-
+        
+    n_init : 'auto' or int, default=10
+        Number of times the k-means algorithm is run with different centroid
+        seeds. The final results is the best output of `n_init` consecutive runs
+        in terms of inertia. Several runs are recommended for sparse
+        high-dimensional problems (see :ref:`kmeans_sparse_high_dim`).
+    
+        When `n_init='auto'`, the number of runs will be 10 if using
+        `init='random'`, and 1 if using `init='kmeans++'`.
+    
+        .. versionadded:: 0.2.0 
+           Added 'auto' option for `n_init`.
+    
     return_cluster_centers: bool, default=False, 
         export the array of clusters centers if ``True``. 
     kws: dict, 
@@ -422,7 +434,7 @@ def predict_NGA_labels(
     from ..exlib.sklearn import KMeans 
     #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ko= KMeans(n_clusters= n_clusters, random_state = random_state , 
-                  init="random", **kws
+                  init="random", n_init=n_init , **kws
                   )
     NGA=ko.fit_predict(X)
     if not keep_label_0:

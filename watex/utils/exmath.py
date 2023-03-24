@@ -76,6 +76,7 @@ from .funcutils import (
     find_feature_positions,
     find_close_position,
     smart_format,
+    is_iterable, 
     reshape,
     ismissing,
     fillNaN, 
@@ -87,6 +88,7 @@ from .validator import (
     _validate_ves_operator, 
     _assert_z_or_edi_objs, 
     _validate_tensor,
+    _is_numeric_dtype, 
     is_valid_dc_data,
     check_y,
     check_array,
@@ -580,15 +582,23 @@ def interpolate2d (
         arr2d = arr2d[:, None] # put on 
     if arr2d.shape[0] ==1: 
         arr2d = reshape (arr2d, axis=0)
-    arr2d = check_array(
-        arr2d, 
-        to_frame = False, 
-        input_name ="arr2d",
-        force_all_finite="allow-nan" 
+    
+    if not hasattr (arr2d , '__complex__'): 
+        arr2d = check_array(
+            arr2d, 
+            to_frame = False, 
+            input_name ="arr2d",
+            force_all_finite="allow-nan" ,
+            dtype =arr2d.dtype, 
+            )
+    arr2d  = np.hstack ([ 
+        reshape (interpolate1d(arr2d[:, ii], 
+                kind=method, 
+                method ='pd', 
+                 **kws), 
+                 axis=0)
+             for ii in  range (arr2d.shape[1])]
         )
-    arr2d  = np.hstack ([ reshape (interpolate1d(arr2d[:, ii], kind=method, 
-                                        method ='pd', **kws), axis=0)
-                         for ii in  range (arr2d.shape[1])])
     return arr2d 
 
 def dummy_basement_curve(
@@ -3614,22 +3624,33 @@ def fittensor(
     lead to missing tensor data. So the function will indicate where the tensor 
     data is missing and fit to the prior frequencies. 
     
-    :param refreq: Reference frequency - Should be the complete frequency 
-        collected in the field. 
+    Parameters 
+    ------------
+    refreq: ArrayLike 
+       Reference frequency - Should be the complete frequency collected 
+       in the field. 
         
-    :param comfreq: array-like, should the frequency of the survey area.
+    comfreq: array-like, 
+       The specific frequency collect in the site. Sometimes due to the 
+       interferences, the frequency at individual site could be different 
+       from the complete. However, the frequency values at the individual site 
+       must be included in the complete frequency `refreq`. 
     
-    :param z: array-like, should be the  tensor value (real or imaginary part ) 
-        at the component  xx, xy, yx, yy. 
+    z: array-like, 
+       should be the  tensor value (real or imaginary part ) at 
+       the component  xx, xy, yx, yy. 
         
-    :param fill_value: float 
-        Value to replace the missing data in tensors. Default is ``NaN``. 
+    fill_value: float . default='NaN'
+        Value to replace the missing data in tensors. 
         
-    :param return: new Z filled by invalid value `NaN` where the frequency is 
-        missing in the data. 
-    
-    
-    :example:
+    Returns
+    -------
+    Z: Arraylike 
+       new Z filled by invalid value `NaN` where the frequency is missing 
+       in the data. 
+
+    Examples 
+    ---------
     >>> import numpy as np 
     >>> from watex.utils.exmath import fittensor
     >>> refreq = np.linspace(7e7, 1e0, 20) # 20 frequencies as reference
@@ -3663,10 +3684,24 @@ def fittensor(
     
     """
     refreq = check_y (refreq, input_name="Reference array 'refreq'")
-    freqn, mask = ismissing(refarr= refreq , arr =compfreq, return_index='mask',
-                            fill_value = fill_value)
+    freqn, mask = ismissing(refarr= refreq , arr =compfreq, 
+                            return_index='mask',fill_value = fill_value
+                            )
     #mask_isin = np.isin(refreq, compfreq)
-    z_new = np.full_like(freqn, fill_value = fill_value) 
+    z_new = np.full_like(freqn, fill_value = fill_value, 
+                         dtype = z.dtype 
+                         ) 
+
+    if len(z_new[mask]) != len(reshape(z) ): 
+        raise EMError (
+            "Fitting tensor cannot be performed with inconsistent frequencies."
+            " Frequency in Z must be consistent for all investigated sites,"
+            " i.e. the frequencies values in Z must be included in the complete"
+            f" frequency array (`refreq`) for all sites. Got {len(z_new[mask])}"
+            " while expecting {len(reshape(z))}. If frequencies are inputted"
+            " manually, use `watex.utils.exmath.find_closest` to get the closest"
+            " frequencies from the input ones. "
+            )
     z_new[mask] = reshape(z) 
     
     return z_new 
@@ -3801,7 +3836,9 @@ def interpolate1d (
     elif method in ('interp1d', 'scipy', 'base', 'simpler', 'i1d'): 
         method ='base' 
     
-    arr = check_y(arr, allow_nan= True, to_frame= True ) 
+    if not hasattr (arr, '__complex__'): 
+        
+        arr = check_y(arr, allow_nan= True, to_frame= True ) 
     # check whether there is nan and masked invalid 
     # and take only the valid values 
     t_arr = arr.copy() 
@@ -3833,7 +3870,7 @@ def interpolate1d (
         arr_new [np.isnan(arr_new)]= yc[np.isnan(arr_new)]
         
     if method =='pd': 
-        t_arr= pd.Series (t_arr)
+        t_arr= pd.Series (t_arr, dtype = t_arr.dtype )
         t_arr = np.array(t_arr.interpolate(
             method =kind, order=order, limit = limit ))
         arr_new = reshape(fillNaN(t_arr, method= 'bff')) # for consistency 
@@ -4492,22 +4529,24 @@ def get2dtensor(
         tensor should be outputted. If ``real`` or``imag``, it returns only
         the specific one. Default is ``complex``.
 
+    return_freqs: Arraylike , 
+        If ``True`` , returns also the full frequency ranges. 
     kws: dict 
         Additional keywords arguments from :meth:`~EM.getfullfrequency `. 
     
     Returns 
     -------- 
-    name, m2: name of tensor and components 
+    mat2d: arraylike2d
         the matrix of number of frequency and number of Edi-collectes which 
         correspond to the number of the stations/sites. 
     
     Examples 
     ---------
     >>> from watex.datasets import load_huayuan
-    >>> from watex.methods import getTensor2d 
+    >>> from watex.methods import get2dtensor 
     >>> box= load_huayuan ( key ='raw', clear_cache = True, samples =7)
     >>> data = box.data 
-    >>> phase_yx = getTensor2d ( data, tensor ='phase', component ='yx')
+    >>> phase_yx = get2dtensor ( data, tensor ='phase', component ='yx')
     >>> phase_yx.shape 
     (56, 7)
     >>> phase_yx [0, :]
@@ -4539,11 +4578,11 @@ def get2dtensor(
     zl = [getattr( ediObj.Z if obj_type =='EDI' else ediObj,
                   f"{name}")[tuple (_c.get(m2))]
           for ediObj in z_or_edis_obj_list ]
-    
+
     try : 
         mat2d = np.vstack (zl ).T 
     except: 
-        zl = [fittensor(freqs, ediObj.Z.freq 
+        zl = [fittensor(freqs, ediObj.Z._freq 
                         if obj_type =='EDI' else ediObj.freq , v)
               for ediObj ,  v  in zip(z_or_edis_obj_list, zl)]
         # stacked the z values alomx axis=1. 
@@ -5190,7 +5229,6 @@ def get_distance(
     
     return d.mean()  if return_mean_dist else d 
 
-    
 def scale_positions (
     x: ArrayLike, 
     y:ArrayLike, 
@@ -5326,7 +5364,6 @@ def _assert_x_y_positions (x, y , islatlon = False, is_utm=True,  **kws):
     if islatlon: 
         x , y = Location.to_utm_in(x, y, **kws)
     return x, y 
-   
 
 def get_bearing (latlon1, latlon2,  to_deg = True ): 
     """
@@ -5397,8 +5434,86 @@ def get_bearing (latlon1, latlon2,  to_deg = True ):
     return b 
 
         
+def find_closest( arr, /, values ): 
+    """Get the closest value in array  from given values.
     
+    Parameters 
+    -----------
+    arr : Arraylike  
+       Array to find the values 
+       
+    values: float, arraylike 
     
+    Returns
+    --------
+    closest values in float or array containing in the given array.
+    
+    Examples
+    -----------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import find_closest
+    >>> find_closest (  [ 2 , 3, 4, 5] , ( 2.6 , 5.6 )  )
+    array([3., 5.])
+    >>> find_closest (  np.array ([[2 , 3], [ 4, 5]]), ( 2.6 , 5.6 ) )
+    array([3., 5.])
+    array([3., 5.])
+    """
+
+    arr = is_iterable(arr, exclude_string=True , transform =True  )
+    values = is_iterable(values , exclude_string=True  , transform =True ) 
+    
+    for ar, v in zip ( [ arr, values ], ['array', 'values']): 
+        if not _is_numeric_dtype(arr, to_array= True ) :
+            raise TypeError(f"Non-numerical {v} are not allowed.")
+        
+    arr = np.array (arr, dtype = np.float64 )
+    values = np.array (values, dtype = np.float64 ) 
+    
+    # ravel arr if ndim is not one-dimensional 
+    arr  = arr.ravel() if arr.ndim !=1 else arr 
+    # Could Find the absolute difference with each value   
+    # Get the index of the smallest absolute difference. 
+    
+    # --> Using map is less faster than list comprehension 
+    # close = np.array ( list(
+    #     map (lambda v: np.abs ( arr - v).argmin(), values )
+    #                   ), dtype = np.float64
+    #     )
+    return np.array ( [
+        arr [ np.abs ( arr - v).argmin()] for v in values ]
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
    
     
    

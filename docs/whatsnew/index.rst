@@ -8,6 +8,15 @@ This is the list of changes to :code:`watex` between each release. For full deta
 see the `commit logs <https://github.com/WEgeophysics/watex/commits/>`_.
 
 
+Version 0.2
+-------------
+
+.. toctree::
+   :maxdepth: 2
+   
+   v0.2.0
+
+
 Version 0.1
 -------------
 
@@ -25,3 +34,5 @@ Version 0.1
    v0.1.2
    v0.1.1
    v0.1.0
+
+

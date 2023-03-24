@@ -78,8 +78,11 @@ class ResPhase(object):
     def phase_err(self, phase_err_array):
         self._phase_err = phase_err_array
 
-    def compute_resistivity_phase(self, z_array=None, z_err_array=None,
-                                  freq=None):
+    def compute_resistivity_phase(self, 
+                                  z_array=None, 
+                                  z_err_array=None,
+                                  freq=None
+                                  ):
         """
         compute resistivity and phase from z and z_err
         """
@@ -108,7 +111,6 @@ class ResPhase(object):
             for idx_f in range(self.freq.size):
                 for ii in range(2):
                     for jj in range(2):
-
                         r_err, phi_err = z_error2r_phi_error(
                                 self._z[idx_f, ii, jj].real,
                                 self._z[idx_f, ii, jj].imag,

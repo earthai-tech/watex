@@ -52,6 +52,8 @@ from .funcutils import (
     smart_label_classifier, 
     remove_outliers,
     normalizer, 
+    cleaner, 
+    savejob
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -91,8 +93,6 @@ from .plotutils import (
     plot_skew, 
     plot_strike,
     )
-# to fix circular 
-# import
 try : 
     from .mlutils import ( 
         selectfeatures, 
@@ -201,7 +201,9 @@ __all__=[
         'get_target', 
         'get_distance',
         'get_bearing', 
-        'qc'
+        'qc', 
+        'cleaner', 
+        'savejob'
         ]
 
 

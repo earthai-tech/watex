@@ -48,6 +48,7 @@ from .property import (
 from .site import  Location
 
 _logger = watexlog.get_watex_logger(__name__)
+_wx_version_ = __version__[:-2] 
 
 __all__=["Edi"]
 
@@ -508,7 +509,8 @@ class Edi :
                 self._logging.error('Error in "edi-file" while setting '
                                     'rotation angle. ')
             else :
-                warnings.warn('Rotation angle is set to {0}'.format(
+                if self.verbose: 
+                    warnings.warn('Rotation angle is set to {0}'.format(
                     self.Z.rotation_angle[0]))
                 self._logging.info('Rotation angle is = {0}.'.format(
                     self.Z.rotation_angle[0]))
@@ -685,7 +687,13 @@ class Edi :
         with open (new_edifilename , 'w+', encoding = 'utf8') as fw : 
             fw.writelines(write_edilines)
             
-        self.savepath = cpath(self.savepath, '_outputEDI_')
+        # make a default path.
+        dpath= ( 
+            "_ediout.{}".format(datetime.datetime.utcnow().strftime(
+                            '%Y.%m.%d.%H.%M')
+                )
+            ) 
+        self.savepath = cpath(self.savepath, dpath)
 
         try : 
             shutil.move(new_edifilename, self.savepath )
@@ -1162,7 +1170,7 @@ class Head (object):
         self.loc =None 
         self.units ='m'
         self.stdvers='SEG 1.0'
-        self.progvers=f'watex {__version__}'[:-2]
+        self.progvers=f'watex {_wx_version_}'
         self.progdate =datetime.datetime.utcnow().strftime('%Y/%m/%d')
         self.coordsys ='Geomagnetic North'
         self.declination =None 
@@ -1378,7 +1386,7 @@ class Head (object):
 
                             itemvalue ='"{0}"'.format(
                                 getattr(Software(**{
-                                    'name':f'watex {__version__}'.upper()}),
+                                    'name':f'watex {_wx_version_}'.upper()}),
                                     'name'))
                             write_header.append(''.join(
                                 ['  {0}'.format(item.upper()),'=',
@@ -2532,7 +2540,7 @@ class Source(object):
         for key in ['project', 'survey', 'sitename']: 
             self.__setattr__(key, None)
         self.creationdate= time.strftime('%Y-%M-%D - %H:%M:%S', time.gmtime())
-        self.creatingsoftware = f'WATEX {__version__}'
+        self.creatingsoftware = f'WATEX {_wx_version_}'
         self.Author = Person()
         self.Recipient =Person()
 

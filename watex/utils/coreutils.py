@@ -505,6 +505,7 @@ def is_erp_dataframe (
         data :DataFrame ,
         dipolelength : Optional[float] = None, 
         force:bool=False, 
+        verbose=0. 
         ) -> DataFrame:
     """ Ckeck whether the dataframe contains the electrical resistivity 
     profiling (ERP) index properties. 
@@ -536,6 +537,9 @@ def is_erp_dataframe (
         will an invalid results especially when parameters computation are 
         needed.
         
+    verbose: int, 
+       Show the verbosity; outputs more messages if ``True``. 
+       
     Returns
     --------
     A new data with index properties.
@@ -569,10 +573,11 @@ def is_erp_dataframe (
         "To force reading unsafety data as ERP, set 'force' to ``True``.") 
     
     if force: 
-        warnings.warn("Force considering unsafety data as ERP data might"
-                      " lead to breaking code or invalid results during"
-                      " ERP parameters computation. Use at your own risk."
-                      )
+        if verbose: 
+            warnings.warn("Force considering unsafety data as ERP data might"
+                          " lead to breaking code or invalid results during"
+                          " ERP parameters computation. Use at your own risk."
+                          )
         data = _assert_all_types(data, pd.DataFrame, 
                  objname="ERP 'resistivity' and station measurement data" )
     else:
@@ -657,6 +662,7 @@ def erpSelector (
         f: str | NDArray | Series | DataFrame ,
         columns: str | List[str] = ..., 
         force:bool= False, 
+        verbose=0., 
         **kws:Any 
 ) -> DataFrame  : 
     """ Read and sanitize the data collected from the survey. 
@@ -687,6 +693,10 @@ def erpSelector (
         will use only the resistivity values in VES data. This will 
         will an invalid results especially when parameters computation are 
         needed.
+        
+    verbose: int, 
+       Show the verbosity; outputs more messages if ``True``. 
+       
     kws: dict
         Additional pandas `pd.read_csv` and `pd.read_excel` 
         methods keyword arguments. Be sure to provide the right argument. 
@@ -779,7 +789,7 @@ def erpSelector (
                     )
                 
     if isinstance(f, pd.DataFrame): 
-        f = is_erp_dataframe( f, force = force )
+        f = is_erp_dataframe( f, force = force , verbose =verbose )
     elif isinstance(f , pd.Series ): 
         f = is_erp_series(f)
     else : 

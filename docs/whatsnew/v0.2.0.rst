@@ -1,0 +1,93 @@
+v0.2.0 (March 25, 2023)
+--------------------------
+
+This is major changes  performed from ``v0.1``.  
+
+- |Major feature| Add impedance tensor multiple correction class (:class:`watex.methods.ZC`) and gives opportunity 
+  to export new :term:`tensor` data into :term:`EDI` files if the argument ``out=True``. For instance: 
+
+  - :meth:`watex.methods.ZC.remove_static_shift` remove the static shift from correction factor from x and y using 
+    the spatial median filter. In :meth:`watex.methods.ZC.remove_static_shift` , the :meth:`watex.externals.z.ResPhase.compute_resistivity_phase` 
+    is initialized with the corrected impedance :term:`tensor` Z three dimensional array and number of frequency. 
+  
+  - :meth:`watex.methods.ZC.remove_ss_emap` removes the static schift using the EMAP moving average filters such as:
+
+    - ``'ama'``: Adaptative moving average 
+    - ``'tma'``: Trimming moving-average 
+    - ``'flma'``: Fixed-length dipole moving average 
+  
+  - :meth:`watex.methods.ZC.remove_distortion` removes distortion D form an observed impedance tensor Z. 
+
+  - :meth:`watex.methods.ZC.get_ss_correction_factors` computes the static shift correction factor from a station using a 
+    spatial median filter.
+
+- |Major feature| Add new module ( :class:`watex.site.Profile`) in :mod:`watex.site` as supplement site data transformation. Gives
+  supplement materials (methods) for data transformation such as: 
+  
+  - :meth:`watex.site.Profile.distance` computes the distance between profile coordinates points 
+
+  - :meth:`watex.site.Profile.bearing` computes the bearing between calculate bearing between two coordinates.
+
+  - :meth:`watex.site.Profile.scale_positions` scale the position coordinates along ``x`` and ``y``. This is useful in complex terrain ( 
+    high topography )
+
+  - :meth:`watex.site.Profile.shift_positions` shifts the ``x`` and ``y``  position coordinates from the step and angle.
+   
+  - :meth:`watex.site.Profile.dms2ll` transforms array ``x`` and ``y`` from DD:MM:SS to degree decimal -longitude (x) and latitude (y)
+
+  - :meth:`watex.site.Profile.ll2dms` does the revert process of :meth:`watex.site.Profile.dms2ll`
+  
+  - :meth:`watex.site.Profile.make_xy_coordinates` generates synthetic coordinates from references latitude and longitude 
+    from ``x`` and ``y``.
+
+  - :meth:`watex.site.Profile.interpolate` interpolates ``x``, ``y`` and ``elev`` ( if applicable).
+
+- |Feature| :meth:`watex.view.TPlot.plot_corrections` allows to visualize the static shift correction as well as the distortion. 
+
+- |Major Feature| New features for interpolation and drop bad frequencies at once to avoid a gynastic using Numpy 
+  and :func:`watex.utils.get2dtensor`: 
+
+  - :meth:`watex.methods.Processing.interpolate_z`: Interpolate :term:`tensor` Z  and return new interpolated Z objects. Here is 
+    an example: 
+
+    .. code-block:: python 
+
+      import watex as wx 
+      sedis = wx.fetch_data ('huayuan', samples = 12 , return_data =True , key='raw') # collected twelve raw data from Huayuan 
+      p = wx.EMProcessing ().fit(sedis) 
+      # Let's visualize seven Z values at the first site component xy 
+      p.ediObjs_[0].Z.z[:, 0, 1][:7]
+      Out[1]: array([ 4165.6 +2070.13j,  7072.81+6892.41j,  8725.84+5874.15j,
+               14771.8 -2831.28j, 21243.7 -6802.36j,  6381.48+3411.65j,
+                5927.85+5074.27j])
+      Zcol = p.interpolate_z (sedis)
+      Zcol [0].z[:, 0, 1 ][:7] # let visualize the seven interpolated Z 
+      Out[2]: array([ 4165.6 +2070.13j,  4165.6 +2070.13j,  7072.81+6892.41j,
+                8725.84+5874.15j, 14771.8 -2831.28j, 21243.7 -6802.36j,
+                6381.48+3411.65j])
+
+  - :meth:`watex.methods.Processing.drop_frequencies`: drop useless frequencies in the :term:`EDI` or :term:`Z` objects using either the 
+    tolerance parameter `tol` from :meth:`watex.methods.Processing.qc` or :func:`watex.utils.qc` or by setting 
+    mannually the frequencies. Here is an example:
+
+    .. code-block:: python 
+
+      import watex as wx 
+      sedis = wx.fetch_data ('huayuan', samples = 12 , key='raw').data 
+      Zcol = wx.EMProcessing ().fit(sedis).drop_frequencies (freqs = [49800 , 29700]  )
+      Zcol [5].freq[:7] 
+      Out[3]: array([81920., 70000., 58800., 41600., 35000., 24700., 20800.])
+ 
+- |Enhancement| Update :func:`watex.utils.get2dtensor` to be able to output the complex data type especially when impendance tensor Z 
+  is given. This avoid ``ComplexWarning`` casting wich only keep the ``real`` part. 
+
+- |Enhancement| in :meth:`watex.view.TPlot.plot_corrections`. Use the frequency of each site rather than the complete frequency of 
+  the survey investigation since all sites could not have the same frequency length. This will fix the possible crash when plotting the raw 
+  :term:`EDI` data. 
+
+- |Feature| Add a quick model evalutation with :func:`watex.models.naive_evaluation`
+
+- |Enhancement| ``force`` parameters is henceforth passed to :class:`watex.methods.DCProfiling` and :class:`watex.methods.ResistivityProfiling` 
+  Indeed,  in principle :class:`watex.methods.DCProfiling` expects users to provide either :term:`DC` objects or pandas dataframe. This 
+  supposes that users have already transformed its data from sheets to a frame. If not the case, setting `force` to ``True`` 
+  henceforth constrains henceforth the algorithm to do the both tasks at once.

@@ -35,18 +35,21 @@ from .._typing import (
     Series,
     
     )
-from ..exceptions import EstimatorError 
+from ..exceptions import ( 
+    EstimatorError, 
+    NotFittedError, 
+    ) 
 from ..utils.funcutils import ( 
     _assert_all_types, 
     get_params, 
-    save_job, 
+    savejob, 
     listing_items_format, 
     pretty_printer, 
 
     )
 from ..utils.box import Boxspace 
 from ..utils.validator import ( 
-    check_X_y, 
+    check_X_y, check_array, 
     check_consistent_length, 
     get_estimator_name
     )
@@ -364,7 +367,7 @@ class GridSearchMultiple:
             msg += ( f"Cross-evaluatation the {estm_name} best model."
                     f" with KFold ={self.cv}"
                    )
-            bestim_best_scores, _ = quickscoring_cv_evaluation(
+            bestim_best_scores, _ = naive_evaluation(
                 best_model_clf, 
                 X,
                 y,
@@ -398,7 +401,7 @@ class GridSearchMultiple:
         if self.savejob:
             msg += ('\Serialize the dict of fine-tuned '
                     f'parameters to `{self.filename}`.')
-            save_job (job= self.data_ , savefile = self.filename )
+            savejob (job= self.data_ , savefile = self.filename )
             _logger.info(f'Dumping models `{self.filename}`!')
             
             if self.verbose: 
@@ -516,7 +519,6 @@ MODEL NAME = SGDClassifier
 BEST PARAM = {{}}
 BEST ESTIMATOR = SGDClassifier(random_state=42)
 
-
 Notes
 --------
 Call :func:`~.get_scorers` or use `sklearn.metrics.SCORERS.keys()` to get all
@@ -530,28 +532,29 @@ the metrics used to evaluate model errors. Can be any others metrics  in
 class BaseEvaluation: 
     def __init__(
         self, 
-        base_estimator: F,
+        estimator: F,
         cv: int = 4,  
         pipeline: List[F]= None, 
         prefit:bool=False, 
         scoring: str ='nmse',
         random_state: int=42, 
+        verbose: int=0, 
         ): 
         self._logging =watexlog().get_watex_logger(self.__class__.__name__)
         
-        self._base_estimator = base_estimator
+        self.estimator = estimator
         self.cv = cv 
         self.pipeline =pipeline
         self.prefit =prefit 
         self.scoring = scoring
         self.random_state=random_state
+        self.verbose=verbose 
 
-    @property 
-    def base_estimator (self): 
-        return self._base_estimator 
-    
-    @base_estimator.setter 
-    def base_estimator (self, base_est): 
+    def _check_callable_estimator (self, base_est ): 
+        """ Check wether the estimator is callable or not.
+        
+        If callable use the default parameter for initialization. 
+        """
         if not hasattr (base_est, 'fit'): 
             raise EstimatorError(
                 f"Wrong estimator {get_estimator_name(base_est)!r}. Each"
@@ -559,11 +562,12 @@ class BaseEvaluation:
                 " https://scikit-learn.org/stable/modules/classes.html API"
                 " reference to build your own estimator.") 
             
+        self.estimator  = base_est 
         if callable (base_est): 
-            base_est = base_est ()
+            self.estimator  = base_est () # use default initialization 
             
-        self._base_estimator =base_est 
-
+        return self.estimator 
+        
     def fit(self, X, y, sample_weight= .75 ): 
         
         """ Quick methods used to evaluate eastimator, display the 
@@ -595,47 +599,63 @@ class BaseEvaluation:
         `self` : :class:`~.BaseEvaluation` 
             :class:`~.BaseEvaluation` object. 
         """ 
-        X, y = check_X_y ( 
-            X,
-            y, 
-            to_frame =True, 
-            estimator= get_estimator_name(self._base_estimator)
+        # pass when pipeline is supplied. 
+        # we expect data be transform into numeric dtype 
+        dtype = object if self.pipeline is not None else "numeric"
+        X, y = check_X_y ( X,y, to_frame =True, dtype =dtype, 
+            estimator= get_estimator_name(self.estimator), 
             )
+        
+        self.estimator = self._check_callable_estimator(self.estimator )
         
         self._logging.info (
             'Quick estimation using the %r estimator with config %r arguments %s.'
-                %(repr(self.base_estimator),self.__class__.__name__, 
+                %(repr(self.estimator),self.__class__.__name__, 
                 inspect.getfullargspec(self.__init__)))
 
         sample_weight = float(
-            _assert_all_types(int, float, objname ="Sample weight"))
+            _assert_all_types(sample_weight, int, float, 
+                              objname ="Sample weight"))
         if sample_weight <= 0 or sample_weight >1: 
             raise ValueError ("Sample weight must be range between 0 and 1,"
                               f" got {sample_weight}")
-        
+            
+        # sampling train data. 
+        # use 75% by default of among data 
         n = int ( sample_weight * len(X)) 
         if hasattr (X, 'columns'): X = X.iloc [:n] 
         else : X=X[:n, :]
-        y = y[:n]
-        
+        y= y[:n]
+ 
+        if self.pipeline is not None: 
+            X =self.pipeline.fit_transform(X)
+            
         if not self.prefit: 
+            #for consistency 
+            if self.scoring is None: 
+                warnings.warn("'neg_mean_squared_error' scoring is used when"
+                              " scoring parameter is ``None``.")
+                self.scoring ='neg_mean_squared_error'
             self.scoring = "neg_mean_squared_error" if self.scoring in (
                 None, 'nmse') else self.scoring 
             
-            self.mse_, self.rmse_ , self.scores_ = self._fit(
-                        X, 
-                        y, 
-                        self.base_estimator , 
-                        cv_scores=True,
-                        scoring = self.scoring
-                        )
+            self.mse_, self.rmse_ , self.cv_scores_ = self._fit(
+                X, y, 
+                self.estimator, 
+                cv_scores=True,
+                scoring = self.scoring
+                )
             
         return self 
     
-    def _fit(self, X, y, estimator,  cv_scores=True, 
-                scoring ='neg_mean_squared_error' 
-                ): 
-        """ Fit data once verified and compute the ``rmse`` scores.
+    def _fit(self, 
+        X, 
+        y, 
+        estimator,  
+        cv_scores=True, 
+        scoring ='neg_mean_squared_error' 
+        ): 
+        """Fit data once verified and compute the ``rmse`` scores.
         
         Parameters 
         ----------
@@ -651,7 +671,7 @@ class BaseEvaluation:
         cv_scores: bool,default=True 
             compute the cross validations scores 
        
-        scoring: str, 
+        scoring: str, default='neg_mean_squared_error' 
             metric dfor scores evaluation. 
             Type of scoring for cross validation. Please refer to  
             :doc:`~.slkearn.model_selection.cross_val_score` for further 
@@ -665,7 +685,7 @@ class BaseEvaluation:
             - scores: Cross validation scores 
 
         """
-        
+        mse = rmse = None  
         def display_scores(scores): 
             """ Display scores..."""
             n=("scores:", "Means:", "RMSE scores:", "Standard Deviation:")
@@ -674,38 +694,24 @@ class BaseEvaluation:
                 pprint(k, v )
                 
         self._logging.info(
-            "Fit data with a supplied pipeline or purely estimator")
-        
-        if self.pipeline is not None: 
-            X =self.pipeline.fit_transform(X)
-            
-        elif self.pipeline is None: 
-            self.logging.info(
-                "Evaluation should be based on  purely the given"
-                " estimator {!r} since no pipeline is supplied"%(
-                                  get_estimator_name(self.base_estimator))
-                )
-            X =self.base_estimator.fit_transform(X)
-        
+            "Fit data with a supplied pipeline or using purely estimator")
+
         estimator.fit(X, y)
  
-        if self.verbose : 
-             pprint("predictions:\t", estimator.predict(X ))
-             pprint("Labels:\t\t", list(self.y))
-            
         y_pred = estimator.predict(X)
         
-        mse = mean_squared_error(y , y_pred)
-        rmse = np.sqrt(mse )
-        scores =None 
+        if self.scoring !='accuracy': # if regression task
+            mse = mean_squared_error(y , y_pred)
+            rmse = np.sqrt(mse)
+        scores = None 
         if cv_scores: 
             scores = cross_val_score(
-                estimator, X,y, cv=self.cv,scoring=self.scoring
+                estimator, X, y, cv=self.cv, scoring=self.scoring
                                      )
             if self.scoring == 'neg_mean_squared_error': 
-                rmse= np.sqrt(-self.scores)
+                rmse= np.sqrt(-scores)
             else: 
-                rmse= np.sqrt(self.scores)
+                rmse= np.sqrt(scores)
             if self.verbose:
                 if self.scoring =='neg_mean_squared_error': 
                     scores = -scores 
@@ -713,6 +719,53 @@ class BaseEvaluation:
                 
         return mse, rmse, scores 
     
+    def predict (self, X ): 
+        """ Quick prediction and get the scores.
+        
+        Parameters 
+        -----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Test set; Denotes data that is observed at testing and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+            
+        Returns 
+        -------
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            test predicted target. 
+        """
+        self.inspect 
+        
+        dtype = object if self.pipeline is not None else "numeric"
+        
+        X = check_array(X, accept_sparse= False, 
+                        input_name ='X', dtype= dtype, 
+                        estimator=get_estimator_name(self.estimator), 
+                        )
+        
+        if self.pipeline is not None: 
+            X= self.pipeline.fit_transform (X) 
+
+        return self.estimator.predict (X ) 
+    
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'cv_scores_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
+        
 BaseEvaluation.__doc__="""\
 Evaluation of dataset using a base estimator.
 
@@ -720,7 +773,7 @@ Quick evaluation of the data after preparing and pipeline constructions.
 
 Parameters 
 -----------
-base_estimator: Callable,
+estimator: Callable,
     estimator for trainset and label evaluating; something like a 
     class that implements a fit methods. Refer to 
     https://scikit-learn.org/stable/modules/classes.html
@@ -744,6 +797,35 @@ prefit: bool, default=False,
     again and ``True`` otherwise.
 {params.core.random_state}
         
+Examples 
+-------- 
+>>> import watex as wx 
+>>> from watex.datasets import load_bagoue 
+>>> from watex.models import BaseEvaluation 
+>>> X, y = load_bagoue (as_frame =True ) 
+>>> # categorizing the labels 
+>>> yc = wx.smart_label_classifier (y , values = [1, 3, 10 ], 
+                                 # labels =['FR0', 'FR1', 'FR2', 'FR4'] 
+                                 ) 
+>>> # drop the subjective columns ['num', 'name'] 
+>>> X = X.drop (columns = ['num', 'name']) 
+>>> # X = wx.cleaner (X , columns = 'num name', mode='drop') 
+>>> X.columns 
+Index(['shape', 'type', 'geol', 'east', 'north', 'power', 'magnitude', 'sfi',
+       'ohmS', 'lwi'],
+      dtype='object')
+>>> X =  wx.naive_imputer ( X, mode ='bi-impute') # impute data 
+>>> # create a pipeline for X 
+>>> pipe = wx.make_naive_pipe (X) 
+>>> Xtrain, Xtest, ytrain, ytest = wx.sklearn.train_test_split(X, yc) 
+>>> b = BaseEvaluation (estimator= wx.sklearn.RandomForestClassifier, 
+                        scoring = 'accuracy', pipeline = pipe)
+>>> b.fit(Xtrain, ytrain ) # accepts only array 
+>>> b.cv_scores_ 
+Out[174]: array([0.75409836, 0.72131148, 0.73333333, 0.78333333])
+>>> ypred = b.predict(Xtest)
+>>> scores = wx.sklearn.accuracy_score (ytest, ypred) 
+0.7592592592592593
 """.format (params=_param_docs,
 )
 
@@ -813,7 +895,7 @@ param_grid: list
     It can also be a base estimator or a composite estimor with pipeline. For 
     instance::
     clf =Pipeline([
-    ('kpca', KernelPCA(n_components=n_components))
+    ('kpca', KernelPCA(n_components=2))
     ('log_reg', LogisticRegression())
     ])
     
@@ -832,6 +914,10 @@ Examples
     kpca__gamma=np.linspace(0.03, 0.05, 10),
     kpca__kernel=["rbf", "sigmoid"]
     )]
+>>> clf =Pipeline([
+    ('kpca', KernelPCA(n_components=2)), 
+    ('log_reg', LogisticRegression())
+     ])
 >>> kpca_best_params =get_best_kPCA_params(
             X,y=y,scoring = 'accuracy',
             n_components= 2, clf=clf, 
@@ -1024,7 +1110,7 @@ def get_scorers (*, scorer:str=None, check_scorer:bool=False,
             
     return scorers 
               
-def quickscoring_cv_evaluation(
+def naive_evaluation(
         clf: F,
         X:NDArray,
         y:ArrayLike,
@@ -1042,7 +1128,7 @@ def quickscoring_cv_evaluation(
     
     return scores , scores.mean()
 
-quickscoring_cv_evaluation.__doc__="""\
+naive_evaluation.__doc__="""\
 Quick scores evaluation using cross validation. 
 
 Parameters
@@ -1069,6 +1155,18 @@ Returns
 ---------
 scores, mean_core: array_like, float 
     scaore after evaluation and mean of the score
+    
+Examples 
+---------
+>>> import watex as wx 
+>>> from watex.models.validation import naive_evaluation
+>>> X,  y = wx.fetch_data ('bagoue data prepared') 
+>>> clf = wx.sklearn.DecisionTreeClassifier() 
+>>> naive_evaluation(clf, X, y , cv =4 , display ='on' )
+clf=: DecisionTreeClassifier
+scores=: [0.6279 0.7674 0.7093 0.593 ]
+scores.mean=: 0.6744186046511629
+Out[57]: (array([0.6279, 0.7674, 0.7093, 0.593 ]), 0.6744186046511629)
 """
 # deprecated in scikit-learn 0.21 to 0.23 
 # from sklearn.externals import joblib 
