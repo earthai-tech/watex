@@ -619,7 +619,10 @@ class DCSounding(ElectricalMethods) :
                 warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
                 
         if len(self.data_) ==0: 
-            raise VESError("None VES data detected. Please check your data.")
+            raise VESError("Unknown VES data. It seems not match to VES."
+                           " Please check your data." )
+
+        # valid data, then cast it to keep only the valid data 
         self.ids_ = np.array(make_ids (self.survey_names_, 'site', None, True)) 
         
         # set each line as an object with attributes
@@ -631,13 +634,14 @@ class DCSounding(ElectricalMethods) :
             self.sites_[kk]= obj  # set site objects 
             
         # -> lines numbers 
+        # rather using sites_
         self.nsites_ = self.sites_.size 
         
         if self.verbose > 3: 
             print("Each line is an object class inherits from all attributes" 
                   " of DC-electrical sounding object. For instance the number"
                   " of ohmic areas computed of the first line can be fetched"
-                  "  as: <self.sit1.ohmic_area_> ")
+                  "  as: <self.site1.ohmic_area_> ")
             
         # can also retrieve an attributes in other ways 
         # make usefull attributess
@@ -1714,6 +1718,9 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
         # force pbar to hold the data value
         # if trouble occurs 
         pbar =data 
+       
+    # save  the invalid survey names 
+    unwanted_snames =[]
     # -> read the data and make dc Objs 
     for kk,  o  in enumerate (pbar)  :
         try :
@@ -1743,10 +1750,26 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
                     keep_params=self.keep_params))
        
         except : 
-            self.isnotvalid_.append(o)
             
+            self.isnotvalid_.append(o)
+            unwanted_snames.append(self.survey_names_[kk])
     #     pbar.update(kk) if TQDM else ''
     # (pbar.close (), print('-completed-') ) if TQDM else ''
+    
+    # let's keep the valid survey names 
+    # and pop the invalid names 
+    # reconvert survey names into an array 
+    self.survey_names_ = [ 
+        e for e in self.survey_names_ if e not in unwanted_snames] 
+    # # if D-type , rename survey line/or site 
+    # this will fit the number of site or line 
+    if is_df =='D-type': 
+        name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
+        self.survey_names_ = [
+            f"{name}{ii+1}" for ii in range (len(self.survey_names_))]
+        
+    self.survey_names_ = np.array(self.survey_names_ )
+    
     
     if self.verbose > 0:
         #show stats 
