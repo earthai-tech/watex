@@ -4,6 +4,7 @@
 
 import pytest 
 import os 
+import watex as wx 
 from watex.methods.electrical import ( 
     ResistivityProfiling, 
     DCProfiling  , VerticalSounding , 
@@ -30,7 +31,30 @@ def test_ResistivityProfiling():
     robj2.sves_ 
     # ... 'S006'
      # read the both objects
+     # test with constraints 
      
+    constraints_0 =['site2', 'station2', 'site', 'site10']
+    robjc1= ResistivityProfiling(constraints= constraints_0 , 
+                                auto=True) 
+    data1 = wx.make_erp (n_stations =9  ).frame 
+    data2 = wx.make_erp (n_stations = 52 , min_rhoa= 1e1 , max_rhoa =1e3, 
+                         ).frame 
+    robjc1.fit(data1)
+    print(robjc1.sves_ )
+     
+    robjc1.plotAnomaly()
+    constraints_1 ={'s0': 'building close to the drilling site ',
+                    "s25": 'heritage site, drilling prohibited',
+                    "s12": 'polluted area',
+                    " s35": 'RAS, in masrh area.'
+                    }
+    robjc1.constraints = constraints_1 
+    robjc1.utm_zone ='49R'
+    robjc1.coerce=True 
+    robjc1.fit(data2)
+    print(robjc1.sves_ )
+    robjc1.plotAnomaly()
+    
     return robj1, robj2
 
 @pytest.mark.skipif(os.path.isdir ('data/erp') is False ,
@@ -86,8 +110,7 @@ def test_DCProfiling():
                     reason = 'DC data path does not exist')
 def test_DCSounding () : 
     #(1) -> read a single DC Electrical Sounding file 
-    
-    
+
     dsobj = DCSounding ()  
     dsobj.search = 30. # start detecting the fracture zone from 30m depth.
     dsobj.fit('data/ves/ves_gbalo.xlsx')
@@ -142,6 +165,8 @@ def test_VerticalSounding():
     # ... (254.28891096053943, 95.35434409123027) 
     vobj.roots_ # different boundaries in pairs 
     # ... [array([45.        , 57.55255255]), array([ 96.91691692, 100.        ])]
+    print( vobj.summary(keep_params= True , return_table= True )) 
+    vobj.plotOhmicArea()
     data = vesSelector ('data/ves/ves_gbalo.csv', index_rhoa=3)
     vObj = VerticalSounding().fit(data)
     vObj.fractured_zone_ # AB/2 position from 45 to 100 m depth.
@@ -154,12 +179,15 @@ def test_VerticalSounding():
     vObj.ohmic_area_
     # ... 349.6432550517697
     
+    vObj.plotOhmicArea(fbtw=True )
+    
+    
 if __name__=='__main__': 
     
     test_DCProfiling()
-    # test_VerticalSounding() 
-    # test_DCSounding() 
-    # test_ResistivityProfiling() 
+    test_VerticalSounding() 
+    test_DCSounding() 
+    test_ResistivityProfiling() 
     
     
     
