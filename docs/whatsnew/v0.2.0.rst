@@ -78,7 +78,7 @@ This is major changes  performed from ``v0.1``.
       Zcol [5].freq[:7] 
       Out[3]: array([81920., 70000., 58800., 41600., 35000., 24700., 20800.])
  
-- |Enhancement| Update :func:`watex.utils.get2dtensor` to be able to output the complex data type especially when impendance tensor Z 
+- |Enhancement| Update :func:`watex.utils.get2dtensor` to be able to output the complex data type especially when impedance tensor Z 
   is given. This avoid ``ComplexWarning`` casting wich only keep the ``real`` part. 
 
 - |Enhancement| in :meth:`watex.view.TPlot.plot_corrections`. Use the frequency of each site rather than the complete frequency of 
@@ -90,4 +90,7 @@ This is major changes  performed from ``v0.1``.
 - |Enhancement| ``force`` parameters is henceforth passed to :class:`watex.methods.DCProfiling` and :class:`watex.methods.ResistivityProfiling` 
   Indeed,  in principle :class:`watex.methods.DCProfiling` expects users to provide either :term:`DC` objects or pandas dataframe. This 
   supposes that users have already transformed its data from sheets to a frame. If not the case, setting `force` to ``True`` 
-  henceforth constrains henceforth the algorithm to do the both tasks at once.
+  henceforth constrains the algorithm to do the both tasks at once.
+  
+- |Enhancement| in the appearence of literal code in :term:`WATex` documentation (`Issue #1267<https://github.com/pydata/pydata-sphinx-theme/issues/1267>`__)
+  credit to `Daniel McCloy <https://github.com/drammock>`__. Thanks for your constructive reply.
