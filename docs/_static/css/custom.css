@@ -63,6 +63,11 @@ code {
     word-break: normal;
 }
 
+code.literal {
+
+    background-color: unset; 
+    border: none; 
+}
 /* Light code block background */
 div.highlight pre {
     background-color: #fafafa !important;

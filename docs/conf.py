@@ -46,8 +46,8 @@ project = 'watex'
 copyright = f"2022-{time.strftime('%Y')}"
 author = 'K. Laurent Kouadio'
 # The full version, including alpha/beta/rc tags
-try : version = release = watex.__version__
-except : version = release = watex._version.version 
+try : version = release = watex._version.version
+except : version = release = watex.__version__
 
 # -- General configuration ---------------------------------------------------
 
