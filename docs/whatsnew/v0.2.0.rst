@@ -87,10 +87,10 @@ This is major changes  performed from ``v0.1``.
 
 - |Feature| Add a quick model evalutation with :func:`watex.models.naive_evaluation`
 
-- |Enhancement| ``force`` parameters is henceforth passed to :class:`watex.methods.DCProfiling` and :class:`watex.methods.ResistivityProfiling` 
-  Indeed,  in principle :class:`watex.methods.DCProfiling` expects users to provide either :term:`DC` objects or pandas dataframe. This 
+- |Enhancement| ``force`` parameter is now available to :class:`watex.methods.DCProfiling` and :class:`watex.methods.ResistivityProfiling` 
+  In principle :class:`watex.methods.DCProfiling` expects users to provide either :term:`DC` objects or pandas dataframe. This 
   supposes that users have already transformed its data from sheets to a frame. If not the case, setting `force` to ``True`` 
-  henceforth constrains the algorithm to do the both tasks at once.
+  henceforth coerces the algorithm to do the both tasks at once.
   
-- |Enhancement| in the appearance of literal code in :term:`WATex` documentation (`Issue #1267<https://github.com/pydata/pydata-sphinx-theme/issues/1267>`__)
+- |Enhancement| in the appearance of literal code in :term:`WATex` documentation ( `Issue #1267 <https://github.com/pydata/pydata-sphinx-theme/issues/1267>`__ )
   credit to `Daniel McCloy <https://github.com/drammock>`__. Thanks for your constructive reply.
