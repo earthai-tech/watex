@@ -583,6 +583,7 @@ Functions
 	utils.check_flow_objectivity
 	utils.classify_k
 	utils.correlatedfeatures
+	utils.cleaner
 	utils.defineConductiveZone
 	utils.erpSelector
 	utils.erpSmartDetector
@@ -607,6 +608,7 @@ Functions
 	utils.get_xs_xr_splits
 	utils.interpolate1d
 	utils.interpolate2d
+	utils.interpolate_grid
 	utils.label_importance
 	utils.labels_validator
 	utils.linkage_matrix
@@ -643,12 +645,14 @@ Functions
 	utils.predict_NGA_labels
 	utils.projection_validator
 	utils.qc
+	utils.random_selector
 	utils.read_data
 	utils.reduce_samples
 	utils.remove_outliers
 	utils.rename_labels_in
 	utils.reshape
 	utils.rhoa2z
+	utils.savejob
 	utils.scalePosition
 	utils.scaley
 	utils.select_base_stratum
