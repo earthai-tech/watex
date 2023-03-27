@@ -1,13 +1,13 @@
 [
   {
-    "name": "dev",
-    "version": "latest",
-    "url": "https://watex.readthedocs.io/en/latest/"
-  },
-  {
     "name": "0.2.0 (stable)",
     "version": "stable",
     "url": "https://watex.readthedocs.io/en/0.2.0/"
+  },
+  {
+    "name": "dev",
+    "version": "latest",
+    "url": "https://watex.readthedocs.io/en/latest/"
   },
   {
     "name": "0.1.9",

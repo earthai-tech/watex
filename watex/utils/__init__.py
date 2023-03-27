@@ -53,7 +53,9 @@ from .funcutils import (
     remove_outliers,
     normalizer, 
     cleaner, 
-    savejob
+    savejob, 
+    random_selector, 
+    interpolate_grid
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -203,7 +205,9 @@ __all__=[
         'get_bearing', 
         'qc', 
         'cleaner', 
-        'savejob'
+        'savejob', 
+        'random_selector', 
+        'interpolate_grid', 
         ]
 
 

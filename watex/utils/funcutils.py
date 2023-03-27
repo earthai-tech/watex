@@ -4177,9 +4177,10 @@ def map_specific_columns (
         return  X0   
     
 def is_depth_in (X, name, columns = None, error= 'ignore'): 
-    """ Assert wether depth exists in the columns.  If name is an 
-    integer value, it assumes to be the index in the columns of the dataframe
-    if not exist , a warming will be show to user. 
+    """ Assert wether depth exists in the data from column attributes.  
+    
+    If name is an integer value, it assumes to be the index in the columns 
+    of the dataframe if not exist , a warming will be show to user. 
     
     :param X: dataframe 
         dataframe containing the data for plotting 
