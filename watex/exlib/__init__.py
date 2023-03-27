@@ -1,8 +1,9 @@
 """ 
-'Exlib' sub-package is composed of third-party packages called for 
-:mod:`~watex.models` working with datasets. 
-Currently :code:`watex` uses scikit-learn and gradient boosting machine (GBM)
-especially (XGBoost) for prediction purpose. 
+'Exlib' sub-package is composed of best :term:`Machine Learning` libraries called for 
+:mod:`~watex.models` prediction with common datasets. 
+`scikit-learn <https://scikit-learn.org/>`__ and 
+`gradient boosting machine <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html>`__ (GBM)
+especially (XGBoost) are build as top module for general prediction purpose.
 
 """
 from .sklearn import ( 

@@ -320,14 +320,14 @@ class EM(IsEdi):
             # of 'Edi' and 'Edi'
             pass 
     
-        if not types: rf = self.data_ # if objects is set 
+        if not types: rf = self.data_ # if EDI-objects are set 
         
         # read EDI objects 
         try: 
             self.ediObjs_ = list(map(lambda o: self.is_valid(o), self.data_))  
         except EDIError: 
             objn = type(self.ediObjs_[0]).__name__
-            raise EMError (f"Expect a list of EDI objects. Got {objn!r}") 
+            raise EMError (f"Expect a collection of EDI objects. Got {objn!r}") 
         
         if self.verbose:
             try:show_stats(rf, self.ediObjs_)

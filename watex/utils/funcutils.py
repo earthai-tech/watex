@@ -5399,6 +5399,106 @@ def cleaner (
     return np.array ( data ) if objtype =='ar' else data 
  
 
+def rename_files (
+    src_files:str | List[str], /, 
+    dst_files:str | List[str], 
+    name:Optional[str]=None, 
+    extension:Optional[str] =None , 
+    how:str ='py', 
+    prefix:bool =True, 
+    keep_copy:bool=True, 
+    **kws 
+    ): 
+    """ Rename files in directory.
+    
+    
+    Parameters 
+    -----------
+    src_files: str, Path-like object 
+       Source files to rename 
+      
+    dst_files: str of PathLike object 
+       Destination files renamed. 
+       
+    extension: str, optional 
+       If a path is given in `src_files`, specifying the `extension` will just 
+       collect only files with this typical extensions. 
+       
+    name: str, optional 
+       If `dst_files` is passed as Path-object, name should be need 
+       for a change, otherwise, the number is incremented using the Python 
+       index counting defined by the parameter ``how=py` 
+        
+    how: str, default='py' 
+       The way to increment files when `dst_files` is given as a Path object. 
+       For instance, for a  ``name=E_survey`` and ``prefix==True``, the first 
+       file should be ``E_survey_00`` if ``how='py'`` otherwise it should be 
+       ``E_survey_01``.
+       
+    prefix: bool, default=True
+      Prefix is used to position the name before the number incrementation. 
+      If ``False`` and `name` is given, the number is positionning before the 
+      name. If ``True`` and not `prefix` for a ``name=E_survey``, it should be 
+      ``00_E_survey`` and ``01_E_survey``. 
+
+    keep_copy: bool, default=True 
+       Keep a copy of the source files. 
+       
+    kws: dict 
+       keyword arguments passed to `os.rename`. 
+
+    """ 
+    dest_dir =None 
+    extension = str(extension).lower()
+    
+    if os.path.isfile (src_files ): 
+        src_files = [src_files ] 
+        
+    elif os.path.isdir (src_files): 
+        src_path = src_files
+        ldir = os.listdir(src_path)
+        src_files = ldir if extension =='none' else [
+             f for f in ldir  if  f.endswith (extension) ]
+    
+        src_files = [  os.path.join(src_path, f )   for f in src_files  ] 
+        # get only the files 
+        src_files = [ f for f in src_files if os.path.isfile (f ) ]
+
+    else : 
+        raise FileNotFoundError(f"{src_files!r} not found.") 
+    
+    if os.path.isdir(dst_files): 
+        dest_dir = dst_files 
+        
+    dst_files = is_iterable(dst_files , exclude_string= True, transform =True ) 
+    
+    if dest_dir: 
+        if name is None: 
+            warnings.warn(
+                "Missing name for renaming file. Should use `None` instead.")
+            
+        name= str(name)
+        if prefix: 
+            dst_files =[ f"{str(name)}_" + (
+                f"{i:02}" if how=='py' else f"{i+1:02}") 
+                        for i in range (len(src_files))]
+        elif not prefix: 
+            dst_files =[ (f"{i:02}" if how=='py' else f"{i+1:02}"
+                        ) +f"_{str(name)}" 
+                        for i in range (len(src_files))]
+        
+        dst_files = [os.path.join(dest_dir , f) for f in dst_files ] 
+        
+
+    for f, nf in zip (src_files , dst_files): 
+        try: 
+           if keep_copy : shutil.copy (f, nf , **kws )
+           else : os.rename (f, nf , **kws )
+        except FileExistsError: 
+            os.remove(nf)
+            if keep_copy : shutil.copy (f, nf , **kws )
+            else : os.rename (f, nf , **kws )
+
         
         
     
