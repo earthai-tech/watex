@@ -24,10 +24,12 @@ def test_EM() :
     # second example to write 7 samples of edi from 
     # Edi objects inner datasets 
     #
-    
-    edi_sample = wx.fetch_data ('edis', key ='edi', samples =7, return_data =True ) 
+    edi_sample = wx.fetch_data ('edis', key ='edi', samples =7, 
+                                return_data =True ) 
     emobj = wx.EM ().fit(edi_sample)
-    emobj.rewrite(by='station', prefix='PS')
+    print(emobj.ediObjs_ )
+    # uncomment this to output EDI 
+    # emobj.rewrite(by='station', prefix='PS')
     
     
     edi_sample = wx.fetch_data ('edis', return_data=True, samples = 12 )
@@ -63,7 +65,6 @@ def test_EM() :
 @pytest.mark.skipif(os.path.isdir ('data/edis') is False ,
                     reason = 'EDI path does not exist')
 def test_Processing (): 
-
 
     # xxxxx Test filter xxxxxxxxxxxxxxxxxxxxxxxx
     edi_sample12 = wx.fetch_data ('edis', return_data=True, samples = 24 )
@@ -259,7 +260,7 @@ def test_ZC():
 # if __name__=='__main__': 
     
 #     test_ZC () 
-    # test_Processing() 
+#     test_Processing() 
 #     test_EM()
 
 

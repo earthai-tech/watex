@@ -8,18 +8,25 @@ html[data-theme=light]{
   --pst-color-inline-code: rgb(247, 147, 30); 
 }
 
-/* Style all links with a specific subset of versions */
+/* Style all links with a specific subset of versions rgb(41, 171, 226)
 .version-switcher__container a[data-version="0.1.7"] {
    background-color: red;
-}
+}*/
 /*  Style all links with `stable` in the version name*/
 .version-switcher__container a[data-version-name*="stable"] {
-   background-color: green;
+   background-color: #f1ad29;
 }
-/* If the active version has the name "dev", style it*/
+
+/* Tweak harsh version switcher border */
+#version_switcher .btn-group-sm > .btn, .btn-sm {
+    border-radius: 0.5rem;
+}
+
+/* If the active version has the name "dev", style 
 .version-switcher__button[data-active-version-name*="dev"] {
    background-color: var(--pst-color-secondary);
-}
+}it*/
+
 /* try to article to take the full width  */
 .bd-main .bd-content .bd-article-container {
     max-width: 100%;
@@ -51,11 +58,20 @@ input:focus {
 }
 
 code {
-  color: #222;
-  background-color: #ecf0f3;
-  word-break: normal;
+    color: rgb(41, 171, 226);
+    background-color: transparent;
+    word-break: normal;
 }
 
+code.literal {
+
+    background-color: unset; 
+    border: none; 
+}
+/* Light code block background */
+div.highlight pre {
+    background-color: #fafafa !important;
+}
 
 h4 .section-number, h5 .section-number, h6 .section-number {
   display: none;
@@ -244,6 +260,9 @@ nav {
   z-index: 3;
 }
 
+h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
+    background-color: transparent;
+}
 
 h4 .section-number, h5 .section-number, h6 .section-number {
   display: none;
@@ -261,6 +280,19 @@ dt:hover a.headerlink {
 
 strong {
   font-weight: bold;
+}
+
+a code {
+    color: inherit;
+}
+
+a code {
+    background-color: transparent;
+    font-weight: bold;
+    color: #2878A2;
+    border-radius: 0;
+    padding: 0;
+    white-space: nowrap;
 }
 
 /* gallery */

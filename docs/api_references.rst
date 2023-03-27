@@ -194,6 +194,7 @@ Functions
 	exceptions.ConfigError
 	exceptions.CoordinateError
 	exceptions.DatasetError
+	exceptions.DCError
 	exceptions.DepthError
 	exceptions.EDIError
 	exceptions.EMError
@@ -390,9 +391,12 @@ Functions
 	methods.em.Processing.skew 
 	methods.em.Processing.zrestore 
 	methods.em.Processing.freqInterpolation 
+	methods.em.Processing.interpolate_z
+	methods.em.Processing.drop_frequencies
 	methods.em.Processing.controlFrequencyBuffer 
-	methods.em.Processing.qc 
 	methods.em.Processing.getValidTensors
+	methods.em.Processing.qc 
+	methods.em.ZC.get_ss_correction_factors
 	methods.em.ZC.remove_distortion
 	methods.em.ZC.remove_ss_emap
 	methods.em.ZC.remove_static_shift
@@ -485,6 +489,7 @@ Functions
 	models.getSplitBestScores
 	models.get_best_kPCA_params
 	models.get_scorers
+	models.naive_evaluation
 
 
 .. _property_ref:

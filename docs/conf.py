@@ -153,12 +153,13 @@ json_url = "https://watex.readthedocs.io/en/latest/_static/switcher.json"
 version_match = os.environ.get("READTHEDOCS_VERSION")
 # If READTHEDOCS_VERSION doesn't exist, we're not on RTD
 # If it is an integer, we're in a PR build and the version isn't correct.
+
 if not version_match or version_match.isdigit():
     json_url = "_static/switcher.json"
         
 switcher_version = version_match or  version
 if ".dev" in version:
-    switcher_version = "dev"
+    switcher_version = version.split('.dev')[0] # dev
     
 elif "rc" in version:
     switcher_version = version.split("rc", maxsplit=1)[0] + " (rc)"
@@ -193,7 +194,7 @@ html_theme_options = {
         "json_url": json_url, 
         "version_match": switcher_version,
      },
-    "check_switcher": True,      
+    "check_switcher": False,      
     "show_prev_next": False,
     "navbar_start": ["navbar-logo", "version-switcher"],
     "navbar_end":  ["navbar-icon-links"], # [ "theme-switcher"]
@@ -204,10 +205,10 @@ html_theme_options = {
 
 html_context = {
     "default_mode": "light",
-    # "github_user": "WEgeophysics",
-    # "github_repo": "watex",
-    # "github_version": "master",
-    # "doc_path": "docs",
+    "github_user": "WEgeophysics",
+    "github_repo": "watex",
+    "github_version": "master",
+    "doc_path": "docs",
 }
 
 

@@ -26,7 +26,6 @@ from .._typing import  (
     F
     )
 from .._watexlog import watexlog 
-
 from ..decorators import refAppender 
 from ..utils._dependency import ( 
     import_optional_dependency )
@@ -70,7 +69,7 @@ from ..exceptions import (
     VESError, 
     ERPError,
     StationError, 
-    DCTypeError, 
+    DCError, 
     )
 
 TQDM= False 
@@ -153,10 +152,12 @@ class DCProfiling(ElectricalMethods)  :
         
     force: bool, default=False, 
         By default, :class:`DCProfiling` expects users to provide either DC 
-        objects or pandas dataframe. This assumes users has already 
-        transform its data from sheets to data frame. If not the case, setting
+        objects or pandas dataframe. This assumes users have already 
+        transformed its data from sheets to data frame. If not the case, setting
         `force` to ``True`` constrains the algorithm to do the both tasks at
         once. 
+        
+        .. versionadded:: 0.2.0 
         
     fit_params: dict 
          Additional |ERP| keywords arguments  
@@ -203,7 +204,6 @@ class DCProfiling(ElectricalMethods)  :
            'S001'], dtype='<U33')
     
     (3) -> Read data and all sheets, assumes all data are arranged in a sheets
-    
     >>> dcobjs.read_sheets=True
     >>> dcobjs.fit(datapath) 
     >>> dcobjs.nlines_ # here it assumes all the data are in single worksheets.
@@ -225,7 +225,7 @@ class DCProfiling(ElectricalMethods)  :
         auto: bool = False,
         keep_params:bool=False, 
         read_sheets:bool=False, 
-        force:bool=True, 
+        force:bool=False, 
         **kws
         ):
         super().__init__(**kws)
@@ -238,8 +238,6 @@ class DCProfiling(ElectricalMethods)  :
         self.keep_params=keep_params
         self.read_sheets=read_sheets
         self.force=force
-        
-        
         
     def fit(self, 
             *data : List[str] | List [DataFrame],
@@ -270,7 +268,7 @@ class DCProfiling(ElectricalMethods)  :
         drilling. 
    
         """
-        self._logging.info (f" {self.__class__.__name__!r} collects the "
+        self._logging.info (f"{self.__class__.__name__!r} collects the "
                             "resistivity objects ")
         
         ex=(f"{self.__class__.__name__!r} expects 'tqdm' to be installed."
@@ -293,7 +291,10 @@ class DCProfiling(ElectricalMethods)  :
                 warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
                 
         if len(self.data_) ==0: 
-            raise ERPError("None ERP data detected. Please check your data.")
+            raise ERPError("None ERP data detected. Please check your data. If"
+                           " data is passed as a Path-like object (F|P-types),"
+                           " set ``force=True`` to constrain the readable DC-"
+                           " format. See documentation for details.")
         # makeids objects 
         self.ids_ = np.array(make_ids (self.survey_names_,'line',None, True)) 
         
@@ -618,7 +619,10 @@ class DCSounding(ElectricalMethods) :
                 warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
                 
         if len(self.data_) ==0: 
-            raise VESError("None VES data detected. Please check your data.")
+            raise VESError("Unknown VES data. It seems not match to VES."
+                           " Please check your data." )
+
+        # valid data, then cast it to keep only the valid data 
         self.ids_ = np.array(make_ids (self.survey_names_, 'site', None, True)) 
         
         # set each line as an object with attributes
@@ -630,13 +634,14 @@ class DCSounding(ElectricalMethods) :
             self.sites_[kk]= obj  # set site objects 
             
         # -> lines numbers 
+        # rather using sites_
         self.nsites_ = self.sites_.size 
         
         if self.verbose > 3: 
             print("Each line is an object class inherits from all attributes" 
                   " of DC-electrical sounding object. For instance the number"
                   " of ohmic areas computed of the first line can be fetched"
-                  "  as: <self.sit1.ohmic_area_> ")
+                  "  as: <self.site1.ohmic_area_> ")
             
         # can also retrieve an attributes in other ways 
         # make usefull attributess
@@ -756,10 +761,12 @@ class ResistivityProfiling(ElectricalMethods):
        
     force: bool, default=False, 
         By default, :class:`ResistivityProfiling` expects users to provide 
-         either DC objects or pandas dataframe. This assumes users has already 
-        transform its data from sheets to data frame. If not the case, setting
+         either DC objects or pandas dataframe. This supposes users have already 
+        transformed its data from sheets to data frame. If not the case, setting
         `force` to ``True`` constrains the algorithm to do the both tasks at
         once. 
+        
+        .. versionadded:: 0.2.0 
         
     kws: dict 
          Additional |ERP| keywords arguments  
@@ -1644,7 +1651,7 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
     is_df = _validate_file_in( *data )
     
     if is_df is None: 
-        raise DCTypeError(
+        raise DCError(
             "Unknow data type, Expect a path-like object, a"
            f" dataframe or a dc-object. Got {type(data).__name__!r}")
         
@@ -1711,6 +1718,9 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
         # force pbar to hold the data value
         # if trouble occurs 
         pbar =data 
+       
+    # save  the invalid survey names 
+    unwanted_snames =[]
     # -> read the data and make dc Objs 
     for kk,  o  in enumerate (pbar)  :
         try :
@@ -1738,12 +1748,28 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
                     )
                 self.data_.append (dcObj.fit(o).summary(
                     keep_params=self.keep_params))
-   
+       
         except : 
-            self.isnotvalid_.append(o)
             
+            self.isnotvalid_.append(o)
+            unwanted_snames.append(self.survey_names_[kk])
     #     pbar.update(kk) if TQDM else ''
     # (pbar.close (), print('-completed-') ) if TQDM else ''
+    
+    # let's keep the valid survey names 
+    # and pop the invalid names 
+    # reconvert survey names into an array 
+    self.survey_names_ = [ 
+        e for e in self.survey_names_ if e not in unwanted_snames] 
+    # # if D-type , rename survey line/or site 
+    # this will fit the number of site or line 
+    if is_df =='D-type': 
+        name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
+        self.survey_names_ = [
+            f"{name}{ii+1}" for ii in range (len(self.survey_names_))]
+        
+    self.survey_names_ = np.array(self.survey_names_ )
+    
     
     if self.verbose > 0:
         #show stats 
@@ -1873,7 +1899,8 @@ def _geterpattr (attr , dl ):
     
     
 def _validate_file_in (*data ): 
-    """ Validate file , path or dataframe """
+    """ Validate DC-types - file ( F-type ), path (P-type) or 
+    dataframe (D-type). """
     
     msg=("{0!r} is set as a priority DCtype. Expect DC data to have a"
          " consistent type. Only '{1}' data fit {0} while expecting"
@@ -1894,9 +1921,9 @@ def _validate_file_in (*data ):
         if ii==2: 
             s = [True if os.path.isfile(str(d)) else False  for d in data ] 
         
-        if len(set ( s))==2: # ['false', 'true']
-            raise DCTypeError(msg.format(o, s.count(True), len(data)))
-        #[ true] or ['false ]
+        if len(set ( s))==2: # {'false', 'true'}
+            raise DCError(msg.format(o, s.count(True), len(data)))
+        # { true} or {'false }
         if len( set(s)) ==1 and s[0]: 
             return o 
     return 
