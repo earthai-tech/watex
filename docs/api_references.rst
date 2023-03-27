@@ -583,6 +583,7 @@ Functions
 	utils.check_flow_objectivity
 	utils.classify_k
 	utils.correlatedfeatures
+	utils.cleaner
 	utils.defineConductiveZone
 	utils.erpSelector
 	utils.erpSmartDetector
