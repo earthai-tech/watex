@@ -15,6 +15,7 @@ with warnings.catch_warnings():  # noqa
     HAS_GDAL = gdal_data_check(None)._gdal_data_found
     NEW_GDAL = False
 
+HAS_PROJ=False 
 if (not HAS_GDAL):
     try:
         import pyproj
@@ -24,14 +25,14 @@ else:
     import osgeo
     if hasattr(osgeo, '__version__') and int(osgeo.__version__[0]) >= 3:
         NEW_GDAL = True
-
+    HAS_PROJ=True 
 # Import pyproj and set ESPG_DICT 
 EPSG_DICT = {}
 try:
-    import pyproj
-    epsgfn = os.path.join(pyproj.pyproj_datadir, 'epsg')
-    f = open(epsgfn, 'r')
-    lines = f.readlines()
+    if HAS_PROJ: 
+        epsgfn = os.path.join(pyproj.pyproj_datadir, 'epsg')
+        f = open(epsgfn, 'r')
+        lines = f.readlines()
 
     for line in lines:
         if ('#' in line): continue

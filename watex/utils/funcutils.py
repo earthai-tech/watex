@@ -5402,7 +5402,7 @@ def cleaner (
 def rename_files (
     src_files:str | List[str], /, 
     dst_files:str | List[str], 
-    name:Optional[str]=None, 
+    basename:Optional[str]=None, 
     extension:Optional[str] =None , 
     how:str ='py', 
     prefix:bool =True, 
@@ -5410,8 +5410,7 @@ def rename_files (
     **kws 
     ): 
     """ Rename files in directory.
-    
-    
+
     Parameters 
     -----------
     src_files: str, Path-like object 
@@ -5424,7 +5423,7 @@ def rename_files (
        If a path is given in `src_files`, specifying the `extension` will just 
        collect only files with this typical extensions. 
        
-    name: str, optional 
+    basename: str, optional 
        If `dst_files` is passed as Path-object, name should be need 
        for a change, otherwise, the number is incremented using the Python 
        index counting defined by the parameter ``how=py` 
@@ -5472,19 +5471,21 @@ def rename_files (
         
     dst_files = is_iterable(dst_files , exclude_string= True, transform =True ) 
     
+    # get_extension of the source_files 
+    _, ex = os.path.splitext (src_files[0]) 
     if dest_dir: 
-        if name is None: 
+        if basename is None: 
             warnings.warn(
                 "Missing name for renaming file. Should use `None` instead.")
             
-        name= str(name)
+        basename= str(basename)
         if prefix: 
-            dst_files =[ f"{str(name)}_" + (
-                f"{i:02}" if how=='py' else f"{i+1:02}") 
+            dst_files =[ f"{str(basename)}_" + (
+                f"{i:02}" if how=='py' else f"{i+1:02}") + f"{ex}"
                         for i in range (len(src_files))]
         elif not prefix: 
             dst_files =[ (f"{i:02}" if how=='py' else f"{i+1:02}"
-                        ) +f"_{str(name)}" 
+                        ) +f"_{str(basename)}" +f"{ex}"
                         for i in range (len(src_files))]
         
         dst_files = [os.path.join(dest_dir , f) for f in dst_files ] 

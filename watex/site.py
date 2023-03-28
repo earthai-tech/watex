@@ -5,6 +5,8 @@
 Manage site data.
 """
 from __future__ import annotations 
+import os
+import shutil
 import copy 
 import re
 
@@ -36,6 +38,7 @@ from .utils.funcutils import (
     _validate_name_in, 
     interpolate_grid,
     reshape,
+    is_iterable
     ) 
 from .utils.gistools import (
     assert_elevation_value, 
@@ -43,7 +46,7 @@ from .utils.gistools import (
     assert_lon_value , 
     ll_to_utm, 
     utm_to_ll, 
-    project_points_ll2utm, 
+    project_point_ll2utm, 
     project_point_utm2ll,
     assert_xy_coordinate_system,
     convert_position_str2float, 
@@ -684,6 +687,128 @@ class Profile:
         
         return x, y, elev 
 
+    @staticmethod 
+    def out (
+        x:ArrayLike , 
+        y:ArrayLike, 
+        /, 
+        elev:ArrayLike =None, 
+        filename:str=None, 
+        basename:str=None , 
+        counter:bool= False , 
+        sep:str =None , 
+        savepath:str =None, 
+        extension:str ='.txt', 
+        how:str='py', 
+        verbose:int=0, 
+        ):
+        """Export coordinates data. 
+        
+        File to export should be ['name' | 'x' |'y' |'elev' ]. 
+        
+        Parameters 
+        -----------
+        x: Arraylike 
+           X-coordinate values to export. 
+           
+        y: ArrayLike, 
+          Y -coordinate values to export. 
+          
+        elev: ArrayLike, 
+           Elevation values to export. If not given should be null. 
+           
+        filename: str, 
+           Name of output file. 
+           
+        basename: str, default='Site'
+           Station/site name of each coordinate (x, y)  position. If not given 
+           should be ``site``. 
+           
+        counter: bool, default=False 
+            If ``True``, count the number site and prefix it. For instance of 
+            `42` sites with the ``basename=AMT``, the first counter site 
+            should be ``00_AMT for Python indexing (``how='py'``)
+            
+        sep: str, default =' ' 
+           the separator between site, x, y, elev. 
+           
+        savepath: str, 
+           Output file destination. Default is current directory. 
+           
+        extension: str, default='.txt'
+           The format of output coordinates files. If the `extension` is 
+           suffixed with the `filename`, it should be used instead. 
+           
+        how: str, default='py'
+          Way for counting the site/station. Any other value should starting 
+          counting the site from 1. 
+             
+        verbose:int, default=False 
+           show message to where the file is saved. 
+           
+        Examples 
+        ---------
+        >>> import numpy as np 
+        >>> import watex as wx 
+        >>> data = wx.make_erp (n_stations=24).frame 
+        >>> wx.site.Profile.out (data.easting, data.northing, verbose =True  )
+        >>> elev = np.random.permutation  (len(data.easting)) *100 
+        >>> wx.site.Profile.out (data.easting, data.northing, elev, 
+                                 filename ='coordinates.txt', basename ='AMT-E1', 
+                                 counter =True )
+        """
+       
+        x = np.array( is_iterable(
+            x, exclude_string =True, transform =True )) 
+        y = np.array( is_iterable(y , exclude_string =True, transform =True )) 
+        elev = np.array( is_iterable(elev , exclude_string =True, 
+                                     transform =True )) 
+        
+        _check_consistency_size(x, y )
+        
+        elev = elev if elev is not None else np.repeat([0.], len(x))
+        # for consitency 
+        _check_consistency_size(y, elev )
+        
+        basename = basename or 'Site'
+        basename = str (basename )
+        filename= filename or 'site'
+        filename = str(filename )
+        
+        sep = sep or " "
+        sep = str(sep )
+ 
+        # make site 
+        sites = [(( f"{ii:02}_" if how=='py' else f"{ii+1:02}_") 
+                  if counter else '')+ basename 
+                 for ii in range (len(x )) ]
+        writelines =[]
+        #x = x.astype (str) ; y = y.astype (str) ; elev= elev.astype (str)
+        for site, east, north , elev in zip ( sites, x, y, elev ): 
+            writelines.extend(
+                [site + sep + 
+                 f"{east:.3f}"  +sep +  
+                 f"{north:.3f}"+ sep + 
+                 f"{elev:.3f}"  + '\n' ]
+                )
+
+        filename, ex  = os.path.splitext(filename )
+        extension = extension if ex =='' else ex
+        
+        extension ='.'+ extension.replace ('.', '') # for consistency 
+        
+        with open (filename + extension, 'w',encoding='utf8') as df:
+            df.writelines(writelines)
+
+        if savepath : 
+            shutil.move (filename + extension, savepath )
+            
+        if verbose: 
+            print(f"--> File {filename+extension} is successfull written" + 
+                  (f"to {savepath}" if savepath else '.'))
+        
+    
+            
     @property 
     def inspect (self): 
         """ Inspect object whether is fitted or not"""
@@ -910,19 +1035,21 @@ class Location (object):
             self.reference_ellipsoid
      
         try : 
-            self.utm_zone, self.east, self.north= ll_to_utm(
-                reference_ellipsoid=self.reference_ellipsoid,
-                lat = self.lat, 
-                lon= self.lon)
-        
-        except :
-            self.east, self.north, self.utm_zone= project_points_ll2utm(
+            self.east, self.north, self.utm_zone= project_point_ll2utm(
                 lat = self.lat ,
                 lon= self.lon,
                 datum = self.datum , 
                 utm_zone = self.utm_zone ,
                 epsg= self.epsg 
                 ) 
+   
+        except :
+
+            self.utm_zone, self.east, self.north= ll_to_utm(
+                reference_ellipsoid=self.reference_ellipsoid,
+                lat = self.lat, 
+                lon= self.lon)
+        
             
         return float(self.east), float(self.north)
     
@@ -983,13 +1110,6 @@ class Location (object):
             self.reference_ellipsoid
                           
         try : 
-            self.lat, self.lon  = utm_to_ll(
-                reference_ellipsoid=self.reference_ellipsoid, 
-                northing = self.north , 
-                easting= self.east, 
-                zone= self.utm_zone 
-                                  ) 
-        except : 
             self.lat , self.lon = project_point_utm2ll(
                 easting = self.east,
                 northing= self.north, 
@@ -997,6 +1117,14 @@ class Location (object):
                 datum= self.datum, 
                 epsg= self.epsg 
                 ) 
+
+        except : 
+             self.lat, self.lon  = utm_to_ll(
+                reference_ellipsoid=self.reference_ellipsoid, 
+                northing = self.north , 
+                easting= self.east, 
+                zone= self.utm_zone 
+                                  ) 
             
         return self.lat, self.lon 
         
@@ -1051,7 +1179,8 @@ class Location (object):
             
         _check_consistency_size(lats, lons)
         lats = np.array(lats ) ; lons = np.array (lons )
-        easts = norths = np.zeros_like (lats , dtype = np.float64)
+        easts = np.zeros_like (lats , dtype = np.float64)
+        norths = np.zeros_like (lons , dtype = np.float64)
         for ii, (lat, lon) in enumerate (zip (lats, lons )) : 
             Loc = Location()
             x, y  = Loc.to_utm (lat, lon , utm_zone= utm_zone , **kws )

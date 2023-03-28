@@ -133,6 +133,7 @@ from . models import (
     GridSearch, 
     GridSearchMultiple,
     get_scorers, 
+    naive_evaluation, 
     pModels
     )
 
@@ -322,5 +323,6 @@ __all__ = [
     "bi_selector", 
     "show_versions",
     "cleaner", 
+    "naive_evaluation"
     ]
 

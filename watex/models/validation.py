@@ -66,7 +66,8 @@ __all__=[
     "getSplitBestScores", 
     "displayCVTables", 
     "displayFineTunedResults", 
-    "displayModelMaxDetails"
+    "displayModelMaxDetails", 
+    "naive_evaluation"
     ]
 
 _param_docs = DocstringComponents.from_nested_components(
