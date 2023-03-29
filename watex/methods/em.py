@@ -2716,7 +2716,6 @@ class ZC(EM):
         ): 
         super().__init__(**kws)
         
-        self.filter = filter
         self.window_size=window_size 
         self.c=c 
 
@@ -2867,7 +2866,7 @@ class ZC(EM):
         
         .. math::
             
-            Z_{0} = S^(-1) * Z
+            Z_{0} = S^{(-1)} * Z
 
         Parameters 
         -----------

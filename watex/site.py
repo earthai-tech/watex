@@ -258,20 +258,18 @@ class Profile:
         -----------
         average_distance: bool, default =True, 
            Returns the average value of the distance between different points. 
-           
-        is_latlon: bool, default=False, 
-            Convert `x` and `y` latitude  and longitude coordinates values 
-            into UTM before computing the distance. `x`, `y` should be considered 
-            as ``easting`` and ``northing`` respectively. 
-            
-        kws: dict, 
-           Keyword arguments passed to :meth:`watex.exmath.get_distance`
-           
+
         Returns 
         ---------
         d: Arraylike of shape (N-1) 
           Is the distance between points or the average of all distances.  
         
+        See Also 
+        ---------
+        watex.utils.exmath.get_distance: 
+            Get the distance from longitude/latitude or easting/northing 
+            coordinates. 
+            
         Examples 
         --------- 
         >>> import numpy as np 
@@ -310,6 +308,7 @@ class Profile:
         -----------
         sp_kws: dict 
            Keyword arguments passed to :func:`~watex.utils.scalePosition`. 
+           
         Returns 
         --------
         x, y : Arraylikes 
@@ -482,9 +481,8 @@ class Profile:
            ArrayLike in degree decimal coordinates format. By default `x` and 
            `y` are longitude and latitude respectively. 
            
-        Examples
+        Example
         ---------
-        >>> 
         >>> from watex.site import Profile 
         >>> x=['20:15:35'] ; y =['7:45:8.5'] 
         >>> Profile.dms2ll (x, y)
@@ -515,7 +513,7 @@ class Profile:
         x, y: Arraylike 
            ArrayLike in DD:MM:SS coordinates format.
            
-        Examples
+        Example
         ---------
         >>> from watex.site import Profile 
         >>> x =[15.18 ] ; y =[19.60]
@@ -553,12 +551,8 @@ class Profile:
         r: float or int 
             The rotate angle in degrees. Rotate the angle features 
             toward the direction of the projection profile. 
-            Default value use the :meth:`~.bearing` value in degrees.   
-            
-        utm_zone: string (##N or ##S)
-            utm zone in the form of number and North or South hemisphere, 
-            10S or 03N  Must be given if coordinate system is ``UTM``. 
-                          
+            Default value use the :meth:`~.bearing` value in degrees. 
+               
         todms: bool, Default=False
             Reconvert the longitude/latitude degree decimal values into 
             the DD:MM:SS. 
@@ -573,15 +567,27 @@ class Profile:
           
         See Also 
         --------
-        watex.utils.exmath: 
-            Create mutiple coordinates with different kinds 
+        watex.utils.coreutils.makeCoords: 
+            Create mutiple coordinates with different strategies using 
+            references latitude and longitude. 
             
         Examples 
         ----------
-        >>> from watex.utils.coreutils import makeCoords 
-        >>> rlons, rlats = makeCoords('110:29:09.00', '26:03:05.00', 
-        ...                                     nsites = 7, todms=True)
-        
+        >>> import watex as wx 
+        >>> # get two coordinates from random stations
+        >>> data = wx.make_erp (n_stations =2 ).frame 
+        >>> p = Profile ().fit(data.longitude, data.latitude)
+        >>> longs, lats = p.make_xy_coordinates(step =100 , todms =True )
+        >>> longs
+        Out[40]: array(['-99:13:48.11', '-99:13:48.11'], dtype='<U12')
+        >>> lats
+        array(['-85:31:37.57', '-85:31:37.57'], dtype='<U12')
+        >>> p = Profile ().fit(data.easting, data.northing)
+        >>> longs, lats = p.make_xy_coordinates(step =100 , todms =True )
+        >>> longs, lats
+        Out[43]: 
+        (array(['110:58:55.00', '110:58:55.00'], dtype='<U12'),
+         array(['4:32:10.96', '4:32:10.96'], dtype='<U10'))
         """
         def _auto ( v): 
             if str (v).lower().strip() in ('none', 'auto'): 
@@ -597,6 +603,8 @@ class Profile:
         reflong = (self.x[0], self.x[-1])
   
         isutm = False if self.coordinate_system =='ll' else True 
+        utm_zone =  kws.pop ('utm_zone', None ) or self.utm_zone 
+        
         return makeCoords(
             reflong, 
             reflat, 
@@ -604,10 +612,13 @@ class Profile:
             r= r ,  
             step =step , 
             todms=todms, 
-            utm_zone= self.utm_zone, 
+            utm_zone= utm_zone, 
             is_utm= isutm, 
+            datum=self.datum, 
+            espg=self.epsg
             **kws
             ) 
+    
     def interpolate(
         self, 
         method ='linear', 
@@ -805,7 +816,7 @@ class Profile:
             
         if verbose: 
             print(f"--> File {filename+extension} is successfull written" + 
-                  (f"to {savepath}" if savepath else '.'))
+                  (f"to {savepath}." if savepath else '.'))
         
     
             
@@ -838,7 +849,7 @@ Profile class deals with the positions collected in the survey area.
 
 In principle, there is no exact solution  between longitude/latitude to 
 x/y coordinates. Indeed, there is no isometric map from the sphere to the 
-plane. Indeed, when you convert lon/lat coordinates from the sphere to x/y 
+plane. when you convert lon/lat coordinates from the sphere to x/y 
 coordinates in the plane, we cannot hope that all lengths will be preserved 
 by this operation. Therefore, we have to accept some kind of deformation. 
 For smallish parts of earth's surface, transverse Mercator is quite common.
@@ -856,9 +867,9 @@ utm_zone: Optional, string
 coordinate_system: str, ['utm'|'dms'|'ll'] 
    The coordinate system in which the data points for the profile is collected. 
    If not given, the auto-detection will be triggered and find the  suitable 
-   coordinate system. However, it is recommended to provide for consistency. 
+   coordinate system. However, it is recommended to provide it for consistency. 
    Note that if `x` and `y` are composed of value less than 180 degrees 
-   for longitude and 90 degrees for latitude should be considered as ``ll`` 
+   for longitude and 90 degrees for latitude, it should be considered as  
    longitude-latitude (``ll``) coordinates system. If `x` and `y` are 
    degree-minutes-second (``dms`` or ``dd:mm:ss``) data, they must be 
    specify as coordinate system in order to accept the non-numerical data 
