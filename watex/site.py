@@ -124,6 +124,7 @@ class Profile:
         to keep the non-numerical values  in the data. 
         
         """
+        
         emsg =("'DD:MM:SS.ms' coordinate system is detected.")
         data = fit_params.pop('data', None) 
   
@@ -155,7 +156,20 @@ class Profile:
         
         self.x, self.y = assert_xy_in( x , y, data = data )
         
-       
+        # set x and y names useful for 
+        # plotting labels. 
+        self.xname_=None ; self.yname_=None 
+        if ( 
+                isinstance ( x, str ) 
+                or hasattr (x, "name" )
+                ) : 
+            self.xname_= x if isinstance ( x, str ) else x.name 
+        if ( 
+                isinstance ( y, str ) 
+                or hasattr (y, "name" )
+                ) : 
+           self.yname_= y if isinstance ( y, str ) else y.name 
+        
         if self.coordinate_system in ('none', 'auto'): 
             self.coordinate_system = assert_xy_coordinate_system (
                 self.x, self.y )
@@ -757,6 +771,9 @@ class Profile:
         verbose:int, default=False 
            show message to where the file is saved. 
            
+        .. versionadded:: 0.2.1 
+        
+        
         Examples 
         ---------
         >>> import numpy as np 
@@ -819,7 +836,51 @@ class Profile:
                   (f"to {savepath}." if savepath else '.'))
         
     
-            
+    def plot (
+        self, 
+        sites: ArrayLike[str]=None , 
+        basename:str ='S', 
+        coerce:bool=True,  
+        **kws): 
+        """ Base plot of the profile. 
+        
+        Parameters 
+        -----------
+        
+        sites: str, Arraylike 
+            The name of the sites that fits each position x, y
+ 
+        basename: str, default='S' 
+           the text to prefix the `site` position when the text is not given. 
+        
+        coerce:bool, default=True 
+           Force the plot despite the given sites do not match the number of  
+           positions `x` and `y`. If ``False``, number of positions must be 
+           consistent with x and y, otherwise error raises. 
+           
+        kws: dict, 
+           Additional keyword arguments passed to
+           :func:`~watex.utils.plotutils.plot_text`
+           
+        .. versionadded:: 0.2.1 
+        
+        
+        """
+        from .utils.plotutils import plot_text 
+        
+        self.inspect 
+        
+        return plot_text (
+            self.x, 
+            self.y , 
+            text = sites, 
+            coerce =coerce, 
+            basename=basename,
+            xlabel= self.xname_ or '', 
+            ylabel = self.yname_ or '', 
+            **kws 
+            )
+ 
     @property 
     def inspect (self): 
         """ Inspect object whether is fitted or not"""
