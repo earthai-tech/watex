@@ -130,6 +130,7 @@ def to_numeric_dtypes (
     verbose: bool, default=False, 
         outputs a message by listing the categorial items dropped from 
         the dataframe if exists. 
+        
     Returns 
     --------
     df or (df, nf, cf): Dataframe of values casted to numeric types 

@@ -1027,6 +1027,16 @@ class ResistivityProfiling(ElectricalMethods):
             Returns DC- profiling object or dataframe. 
         
         """
+        def make_param_table( uparams ): 
+            """ Make parameters table """
+            for k in uparams:
+                if hasattr( getattr(self, k , np.nan ), '__len__') and len(
+                        getattr(self, k , np.nan ))==0: 
+                  v = np.nan 
+                else: v = getattr(self, k , np.nan )
+                
+                yield  (f"{k[:-1] if k.endswith('_') else k }", v) 
+           
         self.inspect
         
         if self.constraints and not hasattr(self, 'constr_ix_'): 
@@ -1040,8 +1050,7 @@ class ResistivityProfiling(ElectricalMethods):
             'shape_','type_','sfi_')
         
         table_= pd.DataFrame (
-            {f"{k[:-1] if k.endswith('_') else k }": getattr(self, k , np.nan )
-             for k in usefulparams}, index=range(1)
+            dict( make_param_table(usefulparams)), index=range(1)
             )
         table_.station = self.sves_
         table_.set_index ('station', inplace =True)
@@ -1434,7 +1443,8 @@ class VerticalSounding (ElectricalMethods):
              'h0', 'search', 'max_depth_', 'ohmic_area_', 'nareas_')
         
         table_= pd.DataFrame (
-            {f"{k}": getattr(self, k , np.nan )
+            {f"{k}": np.nan if len( np.array( getattr(self, k , np.nan ))
+                                   )==0 else getattr(self, k , np.nan )
              for k in usefulparams}, index=range(1)
             )
         table_.area = self.area

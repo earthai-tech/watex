@@ -3133,6 +3133,7 @@ fig_num: int, default=1,
         
 font_size: float, default=10, 
    Figure size 
+   
 rot_z: float, default=0., 
    angle of rotation clockwise positive. 
 
@@ -3320,7 +3321,6 @@ def plot_text (
         
     x, y = assert_xy_in(x, y, data = data ) 
 
-    
     if text is None and not coerce: 
        raise TypeError ("Text cannot be plotted. To force plotting text with"
                         " the basename, set ``coerce=True``.")

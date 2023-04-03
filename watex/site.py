@@ -197,7 +197,7 @@ class Profile:
         
     def bearing (self, *, to_degree:bool = True ): 
         """
-        Compute the bearing between calculate bearing between two coordinates.
+        Compute the bearing between two coordinates.
         
         A bearing is a direction of one point relative to another point, 
         usually given as an angle measured clockwise from north. 
