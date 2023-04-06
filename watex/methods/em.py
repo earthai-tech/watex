@@ -50,7 +50,7 @@ from ..utils.exmath import (
     interpolate2d, 
     get_full_frequency, 
     find_closest, 
-    rhoa2z, 
+    rhophi2z, 
     z2rhoa, 
     mu0,
     )
@@ -1317,6 +1317,16 @@ class Processing (EM) :
             EMAP apparent  resistivity static shift corrected or static 
             correction factor or impedance tensor.
             
+        Example
+        --------
+        >>> import watex as wx
+        >>> import matplotlib.pyplot as plt 
+        >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
+        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> z_corrected = p.tma () # output z in complex dtype 
+        >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
+            [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
+            np.arange(len(p.ediObjs_)), np.abs( z_corrected[7,: ]) , 'or-')
         References 
         -----------
         .. [1] http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
@@ -1392,9 +1402,14 @@ class Processing (EM) :
         # compute the correction factor cf
         cf = np.power(10, wf, dtype =float)/ np. power(10, log_rho2d) 
         
-        rc = self.res2d_ * cf 
+        rc = self.res2d_ * cf
+        
+        # applied correction factor 
+        # to phase 
+        phc = self.phs2d_ * cf 
         if self.out =='z': 
-            rc = rhoa2z(rc, self.phs2d_, self.freqs_)
+            # rc = rhoa2z(rc, self.phs2d_, self.freqs_)
+            rc = rhophi2z(rc, phc, self.freqs_)
 
         return cf if self.out =='sf' else rc   
 
@@ -1451,7 +1466,7 @@ class Processing (EM) :
         
         return (self.res2d_ , self.phs2d_ , self.freqs_, self.c,
                 self.window_size, self.component, self.out) 
-    
+
     def ama (
         self, 
         )-> NDArray[DType[float]] :
@@ -1475,6 +1490,17 @@ class Processing (EM) :
             EMAP apparent  resistivity static shift corrected  or static 
             correction tensor 
             
+        Example
+        --------
+        >>> import watex as wx
+        >>> import matplotlib.pyplot as plt 
+        >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
+        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> z_corrected = p.ama () # output z in complex dtype 
+        >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
+            [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
+            np.arange(len(p.ediObjs_)), np.abs( z_corrected[7,: ]) , 'or-')
+        
         References 
         -----------
         .. [1] http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
@@ -1504,11 +1530,17 @@ class Processing (EM) :
                       for ii in range(self.window_size)])
         #print(w)
         zjr = np.zeros_like(self.res2d_) 
-        zji = zjr.copy() 
+        zji = zjr.copy()
+        # xxxxxxxxxxxxxxxxxxxxxxx
+        # do the same for the phase 
+        phase_c = np.zeros_like(self.phs2d_) 
         
         for ii in range (len(zj)): 
             w_exp = [ k * self.window_size for k in range(1, self.c +1 )]
             zcr=list(); zci = list()
+            
+            #xxxxxxxxxxx
+            phi = list() 
             # compute Zk(xk, w) iteratively
             # with adpatavive W expanded to 1 to c 
             for wind_k  in w_exp : 
@@ -1518,11 +1550,17 @@ class Processing (EM) :
                 # block mode to same to keep the same dimensions
                 zcr.append(np.convolve(zj[ii, :].real, w[::-1], 'same'))
                 zci.append(np.convolve(zj[ii, :].imag, w[::-1], 'same'))
+                
+                #xxxxxx
+                phi.append(np.convolve(self.phs2d_[ii, :], w[::-1], 'same'))
             # and take the average 
             try : 
                 
                 zjr [ii, :] = np.average (np.vstack (zcr), axis = 0)
                 zji[ii, :] = np.average (np.vstack (zci), axis = 0)
+                
+                #xxxxxxxxxxxx
+                phase_c[ii, :]= np.average (np.vstack (phi), axis = 0)
             except : 
                 # when  array dimensions is out of the concatenation 
                 # then shrunk it to match exactly the first array 
@@ -1533,12 +1571,21 @@ class Processing (EM) :
                 zjr [ii, :] = np.average (np.vstack (shr_zrc), axis = 0)
                 zji[ii, :] = np.average (np.vstack (shr_zrci), axis = 0)
      
+                #xxxxxxxxxxxxxxxxxxx
+                phs_zrc = [ ar [: len(phi[0])] for ar in phi ]
+                phase_c [ii, :]= np.average (np.vstack (phs_zrc), axis = 0)
+                
+                
         zjc = zjr + 1j * zji 
         rc = z2rhoa(zjc, self.freqs_)  
         if self.mode =='same': 
             rc[:, 0] = self.res2d_[:, 0]
             zjc[:, 0] = zj [:, 0]
-        
+            
+        if self.out =='z': 
+            # recompute z with the corrected phase
+            zjc = rhophi2z(rc, phi= phase_c, freq= self.freqs_)
+           
         return zjc if self.out =='z' else rc 
 
     def flma (
@@ -1562,8 +1609,18 @@ class Processing (EM) :
         rc or z : np.ndarray, shape  (N, M)
             EMAP apparent  resistivity static shift corrected  or static 
             correction impedance tensor. 
+            
+        Example 
+        --------
+        >>> import watex as wx
+        >>> import matplotlib.pyplot as plt 
+        >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
+        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> z_corrected = p.flma () # output z in complex dtype 
+        >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
+            [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
+            np.arange(len(p.ediObjs_)), np.abs( z_corrected[7,: ]) , 'or-')
         
-     
         References 
         -----------
         .. [1] http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
@@ -1591,19 +1648,28 @@ class Processing (EM) :
         
         zjr = np.zeros_like(self.res2d_) 
         zji = zjr.copy() 
+        # do the same for the phase 
+        phase_c = np.zeros_like(self.phs2d_) 
+        
         for ii in range(len(zjr)) :
             # block mode to same to keep the same array dimensions
             zjr[ii, :] = np.convolve(zj[ii, :].real, w[::-1], 'same')
             zji[ii, :] = np.convolve(zj[ii, :].imag, w[::-1], 'same')
+            # xxxxxxxxxxxxxxxxxxxxxxx
+            phase_c [ii, :] = np.convolve(
+                self.phs2d_[ii, :], w[::-1], 'same')
         # recover the static apparent resistivity from reference freq 
         zjc = zjr + 1j * zji 
-        rc = z2rhoa (zjc, self.freqs_) #np.abs(zjc)**2 / (omega0[:, None] * mu0 )
+        rc = z2rhoa (zjc, self.freqs_) # np.abs(zjc)**2 / (omega0[:, None] * mu0 )
         
         if self.mode =='same': 
             rc[:, 0]= self.res2d_[:, 0]
             zjc[:, 0]= zj [:, 0]
-        
-        return zjc if self.out =='z' else rc 
+        # recompute z 
+        if self.out =='z': 
+            rc = rhophi2z(rc, phi= phase_c, freq= self.freqs_)
+            
+        return rc 
     
     def skew(
         self,
@@ -1998,7 +2064,7 @@ class Processing (EM) :
         
         :note: the new tensor is composed of shape (cfreq, 2 , 2 ), 2 x2 matrices
             for the four component xx, xy, yx, yy . 
-        :return: NDArray of shpe (cfreq, 2 * 2 ), dtype = complex 
+        :return: NDArray of shape (cfreq, 2 * 2 ), dtype = complex 
         
         """
         for ii in range(2):

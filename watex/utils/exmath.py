@@ -8,7 +8,8 @@ from __future__ import annotations
 import copy 
 import inspect 
 import warnings 
-from math import factorial
+import cmath 
+from math import factorial, radians
 
 import numpy as np
 import pandas as pd 
@@ -88,11 +89,12 @@ from .validator import (
     _validate_ves_operator, 
     _assert_z_or_edi_objs, 
     _validate_tensor,
-    _is_numeric_dtype, 
+    _is_numeric_dtype,
+    check_consistency_size,
     is_valid_dc_data,
     check_y,
     check_array,
-    
+
     )
 
 try: import scipy.stats as spstats
@@ -398,6 +400,108 @@ def rhoa2z (
     z= np.sqrt(rhoa * omega0 * mu0 ) * (np.cos (
         np.deg2rad(phs)) + 1j * np.sin(np.deg2rad(phs)))
     
+    return z 
+
+def rhophi2z(rho, phi, freq):
+    """
+    Convert impedance-style information given in Rho/Phi format 
+    into complex valued Z.
+
+    Parameters 
+    -----------
+    rho: ArrayLike 1D/2D 
+       Resistivity array in :math:`\Omega.m`. If array is two-dimensional, 
+       it should be 2x2 array (real). 
+       
+    phi: ArrayLike 1D/2D 
+       Phase array in degree (:math:`\degree`). If array is two-dimensional, 
+       it should be 2x2 array (real). 
+
+    freq: float, arraylike 1d  
+      Frequency in Hz 
+    
+    Returns 
+    ---------
+    Z: Arraylike 1d or 2d , complex 
+       
+      Z dimension depends to the inputs array `rho` and `phi`. 
+
+    Examples 
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import rhophi2z 
+    >>> rhophi2z (823 , 25 , 500 )
+    array([1300.00682824+606.20313966j])
+    >>> rho = np.array ([[823, 700], [723, 526]] )
+    >>> phi = np.array ([[45, 50], [90, 180]]) 
+    >>> rhophi2z (rho, phi , freq= 500  ) 
+    array([[ 1.01427314e+03+1.01427314e+03j,  8.50328081e+02+1.01338154e+03j],
+           [ 8.23227764e-14+1.34443297e+03j, -1.14673449e+03+1.40434473e-13j]])
+    >>> rhophi2z (np.array ( [ 823, 700])  , np.array ([45, 50 ])  , [500, 700] )
+    array([1014.27313876+1014.27313876j, 1006.12175325+1199.04921402j])
+    >>> rho  = np.abs (np.random.randn (7, 3 ) * 100 )
+    >>> phi = np.abs ( np.random.randn (7, 3 ) *180 % 90 ) 
+    >>> freq = np.abs ( np.random.randn (7) * 100 )
+    >>> rhophi2z (rho   , phi  , freq )
+    
+    """
+    def _rhophi2z (r, p, f ): 
+        """ An isolated part of `rhophi2z """ 
+        abs_z  = np.sqrt(5 * f * r)
+        return cmath.rect(abs_z , radians(p))
+    
+    is_array2x2 =False 
+
+    rho = np.array ( 
+        is_iterable(rho, exclude_string= True ,
+                    transform =True )) 
+    phi = np.array (
+        is_iterable(phi, exclude_string= True , 
+                    transform =True )) 
+    freq = np.array (
+        is_iterable(freq, exclude_string= True , 
+                    transform =True )) 
+
+    if ( rho.shape == (2,2) or  phi.shape == (2,2)): 
+        n=None 
+        if rho.shape != (2,2): 
+            n, t  ='Resistivity', rho
+        elif phi.shape != (2,2): 
+            n , t ='Phase', phi
+        if n is not None: 
+            raise EMError ("Resistivity and Phase must be consistent."
+                           f" Expect 2 x2 array for {n}. Got {t.shape}")
+            
+        is_array2x2 = True 
+    if not ( _is_numeric_dtype(rho) and _is_numeric_dtype(phi)): 
+        raise EMError ('Resistivity and Phase arguments must be one (1D) or'
+                       ' two dimensional (2x2) arrays (real)') 
+
+    if is_array2x2 : 
+        z = np.zeros((2,2),'complex')
+        for i in range(2):
+            for j in range(2):
+                z[i, j ] = _rhophi2z(rho[i,j], phi[i,j], freq= freq )
+                # abs_z  = np.sqrt(5 * freq * rho[i,j])
+                # z[i,j] = cmath.rect(abs_z , radians(phi[i,j]))
+        return z 
+    
+    check_consistency_size(rho, phi, freq )
+    
+    if _is_arraylike_1d (phi ): 
+        z = np.zeros_like ( phi , dtype ='complex')
+        # when scalar is passed or 1d array is 
+        # given 
+        for ii in range ( len(phi)): #
+            z [ii] = _rhophi2z ( rho[ii], phi[ii], freq[:, None ][ii] )    
+    else:
+        # when non square matrix is given 
+        # range like freq and n_stations 
+        z = np.zeros(( len( freq), phi.shape [1]), dtype = 'complex')
+        for i in range (len(freq)): 
+            for j in range(phi.shape[1]) : 
+                z[i, j ] =  _rhophi2z(rho[i, j], phi[i,j], freq[i] ) 
+
     return z 
 
 def z2rhoa (
@@ -3698,7 +3802,7 @@ def fittensor(
             " Frequency in Z must be consistent for all investigated sites,"
             " i.e. the frequencies values in Z must be included in the complete"
             f" frequency array (`refreq`) for all sites. Got {len(z_new[mask])}"
-            " while expecting {len(reshape(z))}. If frequencies are inputted"
+            f" while expecting {len(reshape(z))}. If frequencies are inputted"
             " manually, use `watex.utils.exmath.find_closest` to get the closest"
             " frequencies from the input ones. "
             )

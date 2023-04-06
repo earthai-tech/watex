@@ -325,6 +325,16 @@ def _check_consistency_size (ar1, ar2 , /  , error ='raise') :
         
     return len(ar1)==len(ar2) 
 
+def check_consistency_size ( *arrays ): 
+    """ Check consistency of array and raises error otherwise."""
+    lengths = [len(X) for X in arrays if X is not None]
+    uniques = np.unique(lengths)
+    if len(uniques) > 1:
+        raise ValueError(
+            "Found input variables with inconsistent numbers of samples: %r"
+            % [int(l) for l in lengths]
+        )
+        
 def _is_buildin (o, /, mode ='soft'): 
     """ Returns 'True' wether the module is a Python buidling function. 
     
