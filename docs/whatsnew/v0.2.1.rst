@@ -1,0 +1,33 @@
+v0.2.1 (April 7, 2023)
+--------------------------
+
+This is minor changes  in ``v0.2.0``.  
+
+- |Feature| Add smoothing approaches from :mod:`watex.utils.exmath` for dropping or masking noised data in :term:`NSAMT` survey : 
+
+  - :func:`watex.utils.smooth1d` polished the one-dimensional data while  :func:`watex.utils.smoothing` smoothes data along a given axis in 
+    two-dimensional arrays. 
+
+  - :func:`watex.utils.rhophi2z` converts impedance-style information given in Rho/Phi format into complex valued Z. It is more consistent 
+    compared to :func:`watex.utils.exmath.rhoa2z`
+
+- |Feature| :func:`watex.utils.funcutils.rename_files` gives several approaches for quick renaming/shifting files especially when dealing with :term:`EDI` files. 
+
+- |Feature| Add new methods  in  :class:`watex.site.Profile`   from :mod:`watex.site` as supplement site data io and visualization. 
+  
+  - :meth:`watex.site.Profile.out` gives many ways for exporting coordinates data points including elevation
+
+  - :meth:`watex.site.Profile.plot` gives a base plot for data visualization.
+
+- |Fix| Bug fixed in :meth:`watex.methods.Processing.ama` computation. Rather than using the raw phase for recomputing the shifted data, it henceforth 
+  uses the coefficient factor calculated from the corrected apparent resistivities to recompute the new phase. Then use the new phase for recomputing 
+  the impendance tensor `z` in turn when the objective is to output new corrected impedance tensor from parameter ``out`` of :class:`watex.methods.Processing` class. 
+
+- |Enhancement| Improve the :term:`EMAP` filters by adding new parameters  ``drop_outliers`` and ``smooth`` for removing outliers and smoothing data along 
+  the frequencies axis using :meth:`watex.methods.Processing.tma` for trimming-moving average, :meth:`watex.methods.Processing.ama` for adaptative moving average based 
+  on ideas or Torres-Verdin  and :meth:`watex.methods.Processing.tma` for fixed length dipole-moving average. This efficiently deals with the static shift 
+  effect when interferences noises are strong enough.
+  
+- |Enhancement| Update :meth:`watex.method.ZC.remove_ss_emap`. Henceforth correct tensor data by applying the smoothing 
+  approached along the frequencies axis using the ``smooth`` and ``drop_outliers`` parameters. 
+

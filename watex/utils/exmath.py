@@ -446,7 +446,7 @@ def rhophi2z(rho, phi, freq):
     
     """
     def _rhophi2z (r, p, f ): 
-        """ An isolated part of `rhophi2z """ 
+        """ An isolated part of `rhophi2z """
         abs_z  = np.sqrt(5 * f * r)
         return cmath.rect(abs_z , radians(p))
     
@@ -481,7 +481,7 @@ def rhophi2z(rho, phi, freq):
         z = np.zeros((2,2),'complex')
         for i in range(2):
             for j in range(2):
-                z[i, j ] = _rhophi2z(rho[i,j], phi[i,j], freq= freq )
+                z[i, j ] = _rhophi2z(r = rho[i,j], p = phi[i,j], f = freq )
                 # abs_z  = np.sqrt(5 * freq * rho[i,j])
                 # z[i,j] = cmath.rect(abs_z , radians(phi[i,j]))
         return z 
@@ -489,6 +489,7 @@ def rhophi2z(rho, phi, freq):
     check_consistency_size(rho, phi, freq )
     
     if _is_arraylike_1d (phi ): 
+        
         z = np.zeros_like ( phi , dtype ='complex')
         # when scalar is passed or 1d array is 
         # given 
@@ -497,6 +498,7 @@ def rhophi2z(rho, phi, freq):
     else:
         # when non square matrix is given 
         # range like freq and n_stations 
+        
         z = np.zeros(( len( freq), phi.shape [1]), dtype = 'complex')
         for i in range (len(freq)): 
             for j in range(phi.shape[1]) : 
@@ -3715,6 +3717,253 @@ def scaley(
 
     return  yc, x ,  f  
 
+def smooth1d(
+    ar, /, 
+    drop_outliers:bool=True, 
+    ma:bool=True, 
+    absolute:bool=False, 
+    view:bool=False , 
+    x: ArrayLike=None, 
+    xlabel:str =None, 
+    ylabel:str =None, 
+    fig_size:tuple = ( 10, 5) 
+    )-> ArrayLike[float]: 
+    """ Smooth one-dimensional array. 
+    
+    Parameters 
+    -----------
+    ar: ArrayLike 1d 
+       Array of one-dimensional 
+    drop_outliers: bool, default=True 
+       Remove the outliers in the data before smoothing 
+    ma: bool, default=True, 
+       Use the moving average for smoothing array value. This seems more 
+       realistic.
+       
+    absolute: bool, default=False, 
+       keep postive the extrapolated scaled values. Indeed, when scaling data, 
+       negative value can be appear due to the polyfit function. to absolute 
+       this value, set ``absolute=True``. Note that converting to values to 
+       positive must be considered as the last option when values in the 
+       array must be positive.
+       
+    view: bool, default =False 
+       Display curves 
+    x: ArrayLike, optional 
+       Abscissa array for visualization. If given, it must be consistent 
+       with the given array `ar`. Raises error otherwise. 
+    xlabel: str, optional 
+       Label of x 
+    ylabel:str, optional 
+       label of y  
+    fig_size: tuple , default=(10, 5)
+       Matplotlib figure size
+       
+    Returns 
+    --------
+    yc: ArrayLike 
+       Smoothed array value. 
+       
+    Examples 
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import smooth1d 
+    >>> # add Guassian Noise 
+    >>> np.random.seed (42)
+    >>> ar = np.random.randn (20 ) * 20 + np.random.normal ( 20 )
+    >>> ar [:7 ]
+    array([6.42891445e+00, 3.75072493e-02, 1.82905357e+01, 2.92957265e+01,
+           6.20589038e+01, 2.26399535e+01, 1.12596434e+01])
+    >>> arc = smooth1d (ar, view =True , ma =False )
+    >>> arc [:7 ]
+    array([12.08603102, 15.29819907, 18.017749  , 20.27968322, 22.11900412,
+           23.5707141 , 24.66981557])
+    >>> arc = smooth1d (ar, view =True )# ma=True by default 
+    array([ 5.0071604 ,  5.90839339,  9.6264018 , 13.94679804, 17.67369252,
+           20.34922943, 22.00836725])
+    """
+    # convert data into an iterable object 
+    ar = np.array(
+        is_iterable(ar, exclude_string = True , transform =True )) 
+    
+    if not _is_arraylike_1d(ar): 
+        raise TypeError("Expect one-dimensional array. Use `watex.smoothing`"
+                        " for handling two-dimensional array.")
+    arr = ar.copy() 
+    if drop_outliers: 
+        arr = remove_outliers( arr, fill_value = np.nan  )
+    # Nan is not allow so fill NaN if exists in array 
+    # is arraylike 1d 
+    arr = reshape ( fillNaN( arr , method ='both') ) 
+    if ma: 
+        arr = moving_average(arr, method ='sma')
+    # if extrapolation give negative  values
+    # whether to keep as it was or convert to positive values. 
+    # note that converting to positive values is 
+    arr, *_  = scaley ( arr ) 
+    # if extrapolation gives negative values
+    # convert to positive values or keep it intact. 
+    # note that converting to positive values is 
+    # can be used as the last option when array 
+    # data must be positive.
+    if absolute: 
+        arr = np.abs (arr )
+    if view: 
+        x = np.arange ( len(ar )) if x is None else np.array (x )
+
+        check_consistency_size( x, ar )
+            
+        fig,  ax = plt.subplots (1, 1, figsize = fig_size)
+        ax.plot (x, 
+                 ar , 
+                 'ok-', 
+                 label ='raw curve'
+                 )
+        ax.plot (x, 
+                 arr, 
+                 c='#0A4CEE',
+                 marker = 'o', 
+                 label ='smooth curve'
+                 ) 
+        
+        ax.legend ( ) 
+        ax.set_xlabel (xlabel or '')
+        ax.set_ylabel ( ylabel or '') 
+        
+    return arr 
+
+def smoothing (
+    ar, /, 
+    drop_outliers = True ,
+    ma=True,
+    absolute =False,
+    axis = 0, 
+    view = False, 
+    fig_size =(7, 7), 
+    xlabel =None, 
+    ylabel =None , 
+    cmap ='binary'
+    ): 
+    """ Smooth data along axis. 
+    
+    Parameters 
+    -----------
+    ar: ArrayLike 1d or 2d 
+       One dimensional or two dimensional array. 
+       
+    drop_outliers: bool, default=True 
+       Remove the outliers in the data before smoothing along the given axis 
+       
+    ma: bool, default=True, 
+       Use the moving average for smoothing array value along axis. This seems 
+       more realistic rather than using only the scaling method. 
+       
+    absolute: bool, default=False, 
+       keep postive the extrapolated scaled values. Indeed, when scaling data, 
+       negative value can be appear due to the polyfit function. to absolute 
+       this value, set ``absolute=True``. Note that converting to values to 
+       positive must be considered as the last option when values in the 
+       array must be positive.
+       
+    axis: int, default=0 
+       Axis along with the data must be smoothed. The default is the along  
+       the row. 
+       
+    view: bool, default =False 
+       Visualize the two dimensional raw and smoothing grid. 
+       
+    xlabel: str, optional 
+       Label of x 
+       
+    ylabel:str, optional 
+    
+       label of y  
+    fig_size: tuple , default=(7, 5)
+       Matplotlib figure size 
+       
+    cmap: str, default='binary'
+       Matplotlib.colormap to manage the `view` color 
+      
+    Return 
+    --------
+    arr0: ArrayLike 
+       Smoothed array value. 
+    
+    Examples 
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import smoothing
+    >>> # add Guassian Noises 
+    >>> np.random.seed (42)
+    >>> ar = np.random.randn (20, 7 ) * 20 + np.random.normal ( 20, 7 )
+    >>> ar [:3, :3 ]
+    array([[ 31.5265026 ,  18.82693352,  34.5459903 ],
+           [ 36.94091413,  12.20273182,  32.44342041],
+           [-12.90613711,  10.34646896,   1.33559714]])
+    >>> arc = smoothing (ar, view =True , ma =False )
+    >>> arc [:3, :3 ]
+    array([[32.20356863, 17.18624398, 41.22258603],
+           [33.46353806, 15.56839464, 19.20963317],
+           [23.22466498, 13.8985316 ,  5.04748584]])
+    >>> arcma = smoothing (ar, view =True )# ma=True by default
+    >>> arcma [:3, :3 ]
+    array([[23.96547827,  8.48064226, 31.81490918],
+           [26.21374675, 13.33233065, 12.29345026],
+           [22.60143346, 16.77242118,  2.07931194]])
+    >>> arcma_1 = smoothing (ar, view =True, axis =1 )
+    >>> arcma_1 [:3, :3 ]
+    array([[18.74017857, 26.91532187, 32.02914421],
+           [18.4056216 , 21.81293014, 21.98535213],
+           [-1.44359989,  3.49228057,  7.51734762]])
+    """
+    ar = np.array ( 
+        is_iterable(ar, exclude_string = True , transform =True )
+        ) 
+    if ( 
+            str (axis).lower().find('1')>=0 
+            or str(axis).lower().find('column')>=0
+            ): 
+        axis = 1 
+    else : axis =0 
+    
+    if _is_arraylike_1d(ar): 
+        ar = reshape ( ar, axis = 0 ) 
+    # make a copy
+    # print(ar.shape )
+    arr = ar.copy() 
+    along_axis = arr.shape [1] if axis == 0 else len(ar) 
+    arr0 = np.zeros_like (arr)
+    for ix in range (along_axis): 
+        value = arr [:, ix ] if axis ==0 else arr[ix , :]
+        yc = smooth1d(value, drop_outliers = drop_outliers , 
+                      ma= ma, view =False , absolute =absolute 
+                      ) 
+        if axis ==0: 
+            arr0[:, ix ] = yc 
+        else : arr0[ix, :] = yc 
+        
+    if view: 
+        fig, ax  = plt.subplots (nrows = 1, ncols = 2 , sharey= True,
+                                 figsize = fig_size )
+        ax[0].imshow(arr ,interpolation='nearest', label ='Raw Grid', 
+                     cmap = cmap )
+        ax[1].imshow (arr0, interpolation ='nearest', label = 'Smooth Grid', 
+                      cmap =cmap  )
+        
+        ax[0].set_title ('Raw Grid') 
+        ax[0].set_xlabel (xlabel or '')
+        ax[0].set_ylabel ( ylabel or '')
+        ax[1].set_title ('Smooth Grid') 
+        ax[1].set_xlabel (xlabel or '')
+        ax[1].set_ylabel ( ylabel or '')
+        
+        plt.show () 
+        
+    if 1 in ar.shape: 
+        arr0 = reshape (arr0 )
+        
+    return arr0 
+    
 def fittensor(
     refreq:ArrayLike , 
     compfreq: ArrayLike ,
@@ -4008,7 +4257,7 @@ def moving_average (
     method: str 
         variant of moving-average. Can be ``sma``, ``cma``, ``wma`` and ``ema`` 
         for simple, cummulative, weight and exponential moving average. Default 
-        is ``wma``. 
+        is ``sma``. 
         
     mode: str
         returns the convolution at each point of overlap, with an output shape

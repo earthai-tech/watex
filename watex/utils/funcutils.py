@@ -5408,9 +5408,11 @@ def rename_files (
     how:str ='py', 
     prefix:bool =True, 
     keep_copy:bool=True, 
+    trailer:str='_', 
+    sortby: re |F=None, 
     **kws 
     ): 
-    """ Rename files in directory.
+    """Rename files in directory.
 
     Parameters 
     -----------
@@ -5434,7 +5436,7 @@ def rename_files (
        For instance, for a  ``name=E_survey`` and ``prefix==True``, the first 
        file should be ``E_survey_00`` if ``how='py'`` otherwise it should be 
        ``E_survey_01``.
-       
+     
     prefix: bool, default=True
       Prefix is used to position the name before the number incrementation. 
       If ``False`` and `name` is given, the number is positionning before the 
@@ -5444,11 +5446,21 @@ def rename_files (
     keep_copy: bool, default=True 
        Keep a copy of the source files. 
        
+    trailer: str, default='_', 
+       Item used to separate the basename for counter. 
+       
+    sortby: Regex or Callable, 
+       Key to sort the collection of the items when `src_files` is passed as 
+       a path-like object.  This is usefull to keep order as the origin files 
+       especially  when files includes a specific character.  Furthermore 
+       [int| float |'num'|'digit'] sorted the files according to the
+       number included in the filename if exists. 
+
     kws: dict 
        keyword arguments passed to `os.rename`. 
 
     """ 
-    dest_dir =None 
+    dest_dir =None ; trailer = str(trailer)
     extension = str(extension).lower()
     
     if os.path.isfile (src_files ): 
@@ -5456,10 +5468,19 @@ def rename_files (
         
     elif os.path.isdir (src_files): 
         src_path = src_files
-        ldir = os.listdir(src_path)
+        ldir = os.listdir(src_path) 
+
         src_files = ldir if extension =='none' else [
              f for f in ldir  if  f.endswith (extension) ]
     
+        if sortby: 
+            if sortby in ( int, float, 'num', 'number', 'digit'): 
+                src_files = sorted(ldir, key=lambda s:int( re.search(
+                    '\d+', s).group()) if re.search('\d+', s) else 0 )
+                
+            else: 
+                src_files = sorted(ldir, key=sortby)
+
         src_files = [  os.path.join(src_path, f )   for f in src_files  ] 
         # get only the files 
         src_files = [ f for f in src_files if os.path.isfile (f ) ]
@@ -5474,24 +5495,27 @@ def rename_files (
     
     # get_extension of the source_files 
     _, ex = os.path.splitext (src_files[0]) 
+    
+
     if dest_dir: 
         if basename is None: 
             warnings.warn(
-                "Missing name for renaming file. Should use `None` instead.")
+                "Missing basename for renaming file. Should use `None` instead.")
+            basename =''; trailer =''
             
         basename= str(basename)
         if prefix: 
-            dst_files =[ f"{str(basename)}_" + (
+            dst_files =[ f"{str(basename)}{trailer}" + (
                 f"{i:02}" if how=='py' else f"{i+1:02}") + f"{ex}"
                         for i in range (len(src_files))]
         elif not prefix: 
             dst_files =[ (f"{i:02}" if how=='py' else f"{i+1:02}"
-                        ) +f"_{str(basename)}" +f"{ex}"
+                        ) +f"{trailer}{str(basename)}" +f"{ex}"
                         for i in range (len(src_files))]
         
         dst_files = [os.path.join(dest_dir , f) for f in dst_files ] 
         
-
+   
     for f, nf in zip (src_files , dst_files): 
         try: 
            if keep_copy : shutil.copy (f, nf , **kws )

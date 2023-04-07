@@ -1413,8 +1413,16 @@ class TPlot (BasePlot):
            Type of filter to apply. ``ss`` is used to remove the static 
            shift using spatial median filter. Whereas ``dist`` is for 
            distorsion removal. Note that `distortion` might be provided 
-           otherwise an error raises. 
+           otherwise an error raises. Can also be ['tma'|'ama'|'flma'] for 
+           :term:`EMAP` filters. 
            
+           - ``tma`` for trimming moving-average 
+           - ``ama`` for adaptative moving-average 
+           - ``flma`` for fixed-length moving-average 
+           
+           .. versionadded: 0.2.1 
+               Added EMAP filters for correction visualization.
+  
         distortion_tensor: np.ndarray(2, 2, dtype=real) 
            Real distortion tensor as a 2x2
    
@@ -1440,7 +1448,7 @@ class TPlot (BasePlot):
            This is assuming the first frequency is the highest frequency.  
            Cause usually highest frequencies are sampling a 1D earth.  
     
-        skipfreq** : int, default=5 
+        skipfreq: int, default=5 
            number of frequencies to skip from the highest frequency.  
            Sometimes the highest frequencies are not reliable due to noise 
            or low signal in the :term:`AMT` deadband.  This allows you to 
@@ -1536,12 +1544,16 @@ class TPlot (BasePlot):
         if mc!='ss': 
             mc = _validate_name_in(fltr, defaults=('distortion', 'dist', '2'), 
                                    expect_name ='dist')
-            if not mc: 
-                raise ValueError(f"Wrong filter {fltr}. Expect `ss` or `dist`"
-                                 " for static shift or distortion plot.")
+        if mc not in ('dist', 'ss') : 
+            if str(fltr).lower() not in ( 'tma', 'ama', 'flma'): 
+                ff = ('ss', 'dist', 'tma', 'ama', 'flma')
+                raise ValueError(f"Wrong filter {fltr!r}. Expect"
+                                 f"{smart_format(ff, 'or')} for corrections."
+                                 )
+            else: mc = str (fltr).lower() 
            
-            if mc and distortion is None: 
-                raise TypeError("Distorsion cannot be None!")
+        if mc=='dist' and distortion is None: 
+            raise TypeError("Distorsion cannot be None!")
         
         # -> compute the corrected values 
         zo = ZC().fit(self.p_.ediObjs_)
@@ -1556,11 +1568,14 @@ class TPlot (BasePlot):
                 tol=tol, 
                 rotate = rotate, 
                 )
-        if mc =='dist': 
+        elif mc =='dist': 
             zc = zo.remove_distortion (
                 distortion , 
                 error = distortion_err 
                 )
+        
+        else: 
+            zc = zo.remove_ss_emap (fltr =mc )
             
         zc_res = [ z.resistivity[tuple (self._c_.get(components[0])) ] 
                   for z in zc ] 

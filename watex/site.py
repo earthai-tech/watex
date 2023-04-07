@@ -842,7 +842,7 @@ class Profile:
         basename:str ='S', 
         coerce:bool=True,  
         **kws): 
-        """ Base plot of the profile. 
+        """Base plot of the profile. 
         
         Parameters 
         -----------
