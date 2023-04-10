@@ -433,8 +433,8 @@ def _validate_ves_operator (
         if not _is_valid_ves(data): 
             raise exception( 
                 "Wrong VES data. Unable to find [AB|resistivity] in the "
-                " ghiven data. Refer to :class:`~.watex._docstring.ves_doc`"
-                " to see how to construct a proper VES data.")
+                " given data. Refer to :class:`~.watex._docstring.ves_doc`"
+                " to see how to build a proper VES data.")
         rhoa = np.array(data.resistivity )
         AB= np.array(data.AB) 
     

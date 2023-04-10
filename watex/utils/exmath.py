@@ -3734,8 +3734,10 @@ def smooth1d(
     -----------
     ar: ArrayLike 1d 
        Array of one-dimensional 
+       
     drop_outliers: bool, default=True 
        Remove the outliers in the data before smoothing 
+       
     ma: bool, default=True, 
        Use the moving average for smoothing array value. This seems more 
        realistic.
@@ -3789,6 +3791,10 @@ def smooth1d(
     if not _is_arraylike_1d(ar): 
         raise TypeError("Expect one-dimensional array. Use `watex.smoothing`"
                         " for handling two-dimensional array.")
+    if not _is_numeric_dtype(ar): 
+        raise ValueError (f"{ar.dtype.name!r} is not allowed. Expect a numeric"
+                          " array")
+        
     arr = ar.copy() 
     if drop_outliers: 
         arr = remove_outliers( arr, fill_value = np.nan  )
@@ -4313,8 +4319,8 @@ def moving_average (
     if window_size < 1:
         raise TypeError("window_size size must be a positive odd number")
     if  window_size > len(y):
-        raise TypeError("window_size is too large for averaging"
-                        f"Window must be greater than 0 and less than {len(y)}")
+        raise TypeError("window_size is too large for averaging. Window"
+                        f" must be greater than 0 and less than {len(y)}")
     
     method =str(method).lower().strip().replace ('-', ' ') 
     

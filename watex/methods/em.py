@@ -2594,7 +2594,7 @@ class Processing (EM) :
         Interpolated frequencies is useful to have all frequencies into the 
         same scale. 
         
-        .. versionadded:: v0.2.0 
+        .. versionadded:: 0.2.0 
         
         Parameters 
         ------------

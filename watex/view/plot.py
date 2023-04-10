@@ -1421,7 +1421,7 @@ class TPlot (BasePlot):
            - ``flma`` for fixed-length moving-average 
            
            .. versionadded: 0.2.1 
-               Added EMAP filters for correction visualization.
+               Applied EMAP filters for the visualization.
   
         distortion_tensor: np.ndarray(2, 2, dtype=real) 
            Real distortion tensor as a 2x2

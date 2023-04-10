@@ -4756,7 +4756,7 @@ def remove_outliers (
     """
     method = str(method).lower()
 
-    arr =np.array (ar)
+    arr =np.array (ar, dtype = float)
     
     if method =='iqr': 
         Q1 = np.percentile(arr[~np.isnan(arr)], 25,) 
