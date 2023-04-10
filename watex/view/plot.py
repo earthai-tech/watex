@@ -76,7 +76,7 @@ from ..utils.mlutils import (
     selectfeatures , 
     exporttarget 
     )
-from ..utils.plotutils import( 
+from ..utils.plotutils import(
     make_mpl_properties, 
      plot_errorbar
      )
@@ -1075,7 +1075,7 @@ class TPlot (BasePlot):
     def plot_rhoa(
         self, 
         mode ='TE', 
-        onto ='period', 
+        scale ='period', 
         site =None, 
         seed = None, 
         how ='py', 
@@ -1094,7 +1094,7 @@ class TPlot (BasePlot):
           Electromagnetic mode. Can be ['TM' |'both']. If ``both``, 
           components `xy` and `yx` are expected in the data. 
           
-        onto: str, default='period'
+        scale: str, default='period'
           Visualization on axis labell. can be ``'frequency'``. 
           
         site: int,str, optional 
@@ -1111,8 +1111,10 @@ class TPlot (BasePlot):
           indexing (default), the site is numbered from 0. For instance 
           'site05' will fetch the data at index 4. If this positioning 
           is not wished, set to 'None'.
+          
         show_site:bool, default=True, 
           Display the number of site. 
+          
         survey: str, optional 
           Method used for the survey. e.g., 'AMT' for |AMT|. 
          
@@ -1121,6 +1123,9 @@ class TPlot (BasePlot):
           
         errorbar: bool, default=True 
           display the error bar.  
+          
+        suppress_outliers: bool, default=False, 
+          Remove outliers in the data before plotting 
           
         kws: dict, 
           Addfitional keywords arguments passed to 
@@ -1132,6 +1137,7 @@ class TPlot (BasePlot):
         >>> edi_data = wx.fetch_data ('edis', return_data =True, samples =27)
         >>> wx.TPlot(show_grid=True).fit(edi_data).plot_rhoa (
             seed =52, mode ='*')
+        
         """
         self.inspect 
         
@@ -1143,7 +1149,7 @@ class TPlot (BasePlot):
         if not m: 
             m='te' 
 
-        onto = _validate_name_in(onto, deep =True, defaults='periods', 
+        scale = _validate_name_in(scale, deep =True, defaults='periods', 
                                  expect_name='period')
 
         cpm = {'te': ["xy"] , 'tm': ["yx"], '*': ('xy', 'yx') }
@@ -1155,11 +1161,15 @@ class TPlot (BasePlot):
                              errorbar = errorbar , 
                              how = how, 
                              seed = seed , 
-                             site = site , 
+                             sites = site, 
                              style =style , 
+                             n_sites = 1.
                              )  
         s,  res_err, phs_err  = s 
-    
+        # plot only single data 
+        site = site [0] ; s = s[0]
+        # get the single site 
+
         fig = plt.figure(self.fig_num , figsize= self.fig_size,
                          dpi = self.fig_dpi , # layout='constrained'
                          )
@@ -1180,7 +1190,7 @@ class TPlot (BasePlot):
         # the complete frequency 
         fp = self.p_.freqs_
         
-        fp =  1/ fp if onto =='period' else fp 
+        fp =  1/ fp if scale =='period' else fp 
         
         fp =  np.log10 ( fp) 
         
@@ -1238,6 +1248,7 @@ class TPlot (BasePlot):
             try: 
                 ax1.legend(ncols = len(res)) 
                 ax2.legend(ncols = len(phs)) 
+                
             except: 
                 # For consistency in the case matplotlib  is < 3.3. 
                 ax1.legend() 
@@ -1253,7 +1264,7 @@ class TPlot (BasePlot):
                       )
         
         ax2.set_ylim ([0, 90 ])
-        xlabel = self.xlabel or ( 'Log$_{10}$Period($s$)' if onto=='period' 
+        xlabel = self.xlabel or ( 'Log$_{10}$Period($s$)' if scale=='period' 
                                  else 'Frequency ($H_z$)') 
         
         ax2.set_xlabel(xlabel ) 
@@ -1274,14 +1285,357 @@ class TPlot (BasePlot):
         
         return self 
     
+    def plot_rhophi( 
+        self, 
+        sites =None,  
+        mode ='TE', 
+        scale ='period', 
+        seed = None, 
+        how ='py', 
+        show_site=True,
+        survey= None, 
+        style=None, 
+        errorbar=True, 
+        suppress_outliers=False, 
+        n_sites= 1, 
+        spad=.5, 
+        **kws
+        ): 
+        """ Plot resistivities and phases from mutiples stations. 
+        
+        Parameters 
+        ----------
+        mode: str, default='TE', 
+          Electromagnetic mode. Can be ['TM' |'both']. If ``both``, 
+          components `xy` and `yx` are expected in the data. 
+
+        sites: int,str, or list,  optional 
+          A collection of index of name of the site . Each `site` must be 
+          composed of a position number. For instance ``'S13'``. If not
+          provided, a random sites are selected instead using the `n_sites` 
+          parameter. 
+         
+        scale: str, default='period'
+          Visualization on axis labell. can be ``'frequency'``. 
+        seed : int, optional 
+           If site is not provided, seed fetches randomly a site. To fetch 
+           the same sime everytimes, it is better to set the seed value. 
+           
+        how: str, default='py'
+          The way the site is fetched for plot. For instance, in Python 
+          indexing (default), the site is numbered from 0. For instance 
+          'site05' will fetch the data at index 4. If this positioning 
+          is not wished, set to 'None'.
+          
+        show_site:bool, default=True, 
+          Display the number of site. 
+          
+        survey: str, optional 
+          Method used for the survey. e.g., 'AMT' for |AMT|. 
+         
+        style:str, default='default'
+          Matplotlib style. 
+          
+        errorbar: bool, default=True 
+          display the error bar.  
+          
+        suppress_outliers: bool, default=False, 
+          Remove outliers in the data before plotting 
+           
+        n_sites: int, default =1. 
+           Number of random sites to select for visualizing. It cannot work 
+           if the names of sites are given. 
+           
+        spad: float, default=.5, 
+          pad to display the station in the top of each section plot. 
+          
+          .. versionadded:: 0.2.1 
+             
+        kws: dict, 
+          Addfitional keywords arguments passed to 
+          Matplotlib.Axes.Scatter plots. 
+          
+        Examples
+        ---------
+        >>> import watex as wx 
+        >>> edi_data = wx.fetch_data ('edis', return_data =True, samples =27)
+        >>> wx.TPlot(show_grid=True).fit(edi_data).plot_rhophi (
+            seed =52, mode ='*', n_sites =3 )
+        """
+        
+        self.inspect 
+
+        m=_validate_name_in(mode,  ('*', 'both', 'tetm'), 
+                            expect_name='*')
+        
+        if m!='*':
+            m= _validate_name_in(mode, defaults = 'tm transverse-magnetic',
+                                     expect_name ='tm' )
+        if not m: 
+            m='te' 
+
+        scale = _validate_name_in(scale, deep =True, defaults='periods', 
+                                 expect_name='period')
+
+        cpm = {'te': ["xy"] , 'tm': ["yx"], '*': ('xy', 'yx') }
+        
+        components = cpm.get(m)
+        res, phs, sites, *s= self._validate_correction (
+                             components = components, 
+                             errorbar = errorbar , 
+                             how = how, 
+                             seed = seed , 
+                             sites = sites , 
+                             style =style , 
+                             n_sites = n_sites, 
+                             )  
+        s,  res_err, phs_err  = s 
+
+        survey= survey or self.p_.survey_name 
+        if not survey: survey=''
+        
+        #colors = [ '#069AF3', '#DC143C']
+        colors = [ '#0000FF', '#FF00FF']
+
+        #==plotlog10 --------
+        #xxxxxxxxxxxxxxxxxxxx
+        # res= [ np.log10 (r) for r in res] 
+        # the complete frequency 
+        fp = self.p_.freqs_
+        
+        fp =  1/ fp if scale =='period' else fp 
+        if suppress_outliers: 
+            res = remove_outliers(res, fill_value=np.nan) 
+            phs = remove_outliers(phs, fill_value=np.nan) 
+            if errorbar: 
+                res_err = remove_outliers(
+                    res_err, fill_value=np.nan) 
+                phs_err = remove_outliers(
+                    phs_err, fill_value=np.nan) 
+         
+        # make sites coordinates to place sites 
+        sy=  np.average ( [
+            ( np.nanmax(res[0][:, ii]) - np.nanmin(res[0][:, ii])) /2  
+            for ii in sites ] )
+        sy += spad 
+        sx = np.average (fp)
+                                
+ 
+        # add error bar data to main 
+        data = [res, phs ] 
+        data +=  [ res_err ,  phs_err ] if errorbar else []
+        
+        # make thoa and phase labels 
+        rlabels = [fr'{survey}$\rho_a${components[i]}' 
+                   for i in range (len(res))]
+        plabels = [f'{survey}$\phi${components[i]}' 
+                   for i in range(len(phs))]
+        
+        self._plot_grid_spec (
+                data = data , 
+                x= fp,  
+                sites =sites, 
+                errorbar =errorbar, 
+                colors = colors, 
+                xysites= ( sx, sy ),
+                show_site =show_site, 
+                scale =scale, 
+                rlabels = rlabels, 
+                plabels = plabels, 
+                **kws
+                )
+        
+
+        if self.savefig is not  None: 
+            plt.savefig (self.savefig, dpi = self.fig_dpi)
+            
+        plt.close () if self.savefig is not None else plt.show() 
+        
+        return self 
+    
+    def _plot_grid_spec (
+        self, 
+        data, 
+        x,  
+        sites =None, 
+        errorbar =False  , 
+        colors = None, 
+        show_site =False, 
+        scale =None, 
+        xysites = None, 
+        **kws
+        ): 
+        """ Plot multiple stations using the SpecGrid  
+        
+        Parameters 
+        -----------
+        data: list, 
+           A collection of resistivity, errors and phases 
+           
+        x: arraylike 
+          Arraylike one-dimensional for plotting data. It should be the 
+          frequency array 
+
+        sites: int,str, optional 
+          index of name of the site to plot. `site` must be composed of 
+          a position number. For instance ``'S13'``. If not provided, 
+          a random station is selected instead. 
+
+        errorbar: bool, default=True 
+          display the error bar.
+          
+        colors: str, list 
+          a collection of matplotlib colors 
+          
+        show_site: bool, default=False, 
+          Display the name of the site in each section 
+
+        style:str, default='classic'
+          Matplotlib style. 
+          
+        scale: str, default='period'
+          Visualization on axis labell. can be ``'frequency'``.
+        xysites: tuple , optional 
+          The coordinates to locate the text of each station. 
+ 
+        kws: dict, 
+           Additional keywords passed to matplotlib.scatter plot. 
+           Also to rename the labels of resistivy and phase, pass a list 
+           of rho and phase labels in parameters `rlabels` and `plabels` 
+           respectively. 
+           
+        Returns 
+        --------
+        axr, axp : list of Matplotlib.Axes 
+          A collection of Matplotlib axes of each stations 
+          
+        """
+        
+        rlabels = kws.pop('rlabels', None )
+        plabels = kws.pop('plabels', None )
+        
+        ncols = len (sites) if sites is not None else  1 
+        
+        fig = plt.figure(figsize = self.fig_size, dpi=self.fig_dpi)
+        gs = GridSpec(2, ncols or 1,
+                        wspace=0., #.3,
+                        left=.08,
+                        top=.85,
+                        bottom=.1,
+                        right=.98,
+                        hspace=.0,
+                        height_ratios=[ 1.5, 1.]
+                        ) #self.h_ratio[:2]
+        sharey = None
+        # make a list of axes 
+        # to return axes 
+        # for another plots 
+        axr, axp =[], []
+        for j, site in enumerate ( sites ): 
+            ax1 = fig.add_subplot (gs [ 0, j] , sharey = sharey) 
+            
+            if j==0: sharey = ax1 
+            
+            if errorbar: 
+                ax2 = fig.add_subplot (gs [1,  j] ) 
+                
+            for i, sloop in enumerate (zip (* data )) : 
+                r, p, *sl = sloop 
+    
+                if len(sl) !=0 : 
+                    e, ep = sl  # mean errorbar is set to True 
+                
+                y =  reshape (r[:, site])
+  
+                if errorbar: 
+                    plot_errorbar (ax1 , 
+                                   x, 
+                                   y,  
+                                   y_err = reshape (e[:, site]),
+                                   )
+                ax1.scatter (x  , y, 
+                              marker =self.marker if i==0 else 's', 
+                              color =colors [i],
+                              edgecolors='k', 
+                              label = '' if rlabels is None else rlabels[i],
+                              **kws 
+                              ) 
+                if errorbar: 
+                    plot_errorbar (ax2 , 
+                                   x, 
+                                   reshape (p[:, site]),
+                                   y_err = reshape (ep[:, site]),
+                                   )
+                    
+                ax2.scatter( x, 
+                            reshape (p[:, site]),
+                            marker =self.marker if i==0 else 's', 
+                            color =colors [i] ,
+                            edgecolors='k', 
+                            label ='' if plabels is None else plabels[i],
+                            **kws
+                            ) 
+      
+            # set ticks invisibale 
+            if j > 0: 
+                plt.setp(ax1.get_yticklabels(), visible=False)
+                plt.setp(ax2.get_yticklabels(), visible=False)
+                
+            # Put the legend in the last image
+            if j == len(sites)-1: 
+                try: 
+                    ax1.legend(ncols = len(r)) 
+                    ax2.legend(ncols = len(p)) 
+                except: 
+                    # For consistency in the case matplotlib  is < 3.3. 
+                    ax1.legend() 
+                    ax2.legend() 
+                 
+            ax1.set_xscale ('log') ;  ax1.set_yscale ('log') 
+            ax2.set_xscale ('log')
+            
+            if show_site:
+                ax1.text (xysites[0],
+                          xysites[1],
+                          f'site {site}', 
+                          horizontalalignment='center',
+                          verticalalignment='baseline',
+                          fontdict= dict (style ='italic',  bbox =dict(
+                                boxstyle='round',facecolor ='#CED9EF'), 
+                              alpha = 0.5 )
+                          )
+            
+            ax2.set_ylim ([0, 90 ])
+            
+            xlabel = self.xlabel or ( 'Period($s$)' if scale=='period' 
+                                     else 'Frequency ($H_z$)') 
+            
+            ax2.set_xlabel(xlabel ) 
+            
+            if j ==0 : 
+                # avoid reapeting this 
+                
+                ax1.set_ylabel(self.ylabel or r'$\rho_a$($\Omega$.m)') 
+                ax2.set_ylabel('$\phi$($\degree$)')
+            
+            if self.show_grid :
+                for ax in (ax1, ax2 ): 
+                    ax.grid (visible =True , alpha =self.galpha,
+                             which =self.gwhich, color =self.gc)
+               
+            axr.append( ax1);  axp.append (ax2)
+            
+        return axr, axp 
+
     def _validate_correction (
         self, 
         components , 
         errorbar , 
         seed , 
-        site , 
+        sites , 
         how , 
         style , 
+        n_sites, 
         ): 
         """Isolated part to validate the :meth:`plot_corrections` and 
         :meth:`plot_rhoa` arguments. 
@@ -1292,10 +1646,7 @@ class TPlot (BasePlot):
         components: str ,
            could be 'xx', 'xy', 'yx' or 'yy' 
 
-        onto: str, default='period'
-          Visualization on axis labell. can be ``'frequency'``.
-          
-        site: int,str, optional 
+        sites: int,str, optional 
           index of name of the site to plot. `site` must be composed of 
           a position number. For instance ``'S13'``. If not provided, 
           a random station is selected instead. 
@@ -1315,6 +1666,10 @@ class TPlot (BasePlot):
           
         errorbar: bool, default=True 
           display the error bar.
+          
+        n_sites: int, 
+          Number of sites to randomly diplay when sites is not given. 
+          
           
         Returns 
         --------
@@ -1347,29 +1702,11 @@ class TPlot (BasePlot):
             raise EMError(terror.format('resistivity', components))
         if phs is None: 
             raise EMError(terror.format('phase', components))
-
-        if seed: 
-            seed = _assert_all_types(seed , int, float, objname ='Seed')
-            np.random.seed (seed ) 
-           
-        if site is None:
-            site = np.random.choice (range (res[0].shape[1])) 
-           
-        s= copy.deepcopy(site)
-        site =re.search ('\d+', str(site), flags=re.IGNORECASE).group() 
-        try: 
-           site= int(site)
-        except TypeError: 
-            raise TypeError ("Missing position number. Station must be "
-                             f"prefixed with position, e.g. 'S7', got {s!r}")
-        
-        site = abs (site) + 1 if how !='py' else site 
-        
-        if site > res[0].shape [1] : 
-            raise ValueError (
-                f"Site position {site} is out of the range. The total"
-                f" number of sites/stations ={res[0].shape [1]}")
             
+        # assert sites 
+        sites, s = self._validate_sites(res, sites = sites, seed = seed , 
+                                        n_sites = n_sites , how = how )
+ 
         try: 
             plt.style.use ( style or 'default')
         except : 
@@ -1379,12 +1716,79 @@ class TPlot (BasePlot):
             plt.style.use ('default')
 
        
-        return res, phs, site, s ,  res_err , phs_err 
+        return res, phs, sites, s ,  res_err, phs_err 
  
- 
+    def _validate_sites (self, 
+            data, /, sites = None, seed = None, n_sites = 1, how ='py' 
+                         ): 
+        """ validate sites or choose random sites from number of stations 
+        in the survey data. 
+        
+        Parameters 
+        -----------
+        data: List of resistivity-error and phases 
+           A collection of resistivy , errors  and phases from 
+           EDI-objects 
+        sites: str, list 
+          A collection of sites to visualize. 
+          
+        seed : int,  
+          `seed` is used to reproduce the same stations when sites are not 
+           given.
+         
+        n_sites: int, default=1 
+          Number of sites to randomly selected for displaying. Note that it 
+          only works if sites are ``None``. 
+        how: str, default='py' 
+          The way to fetch and display sites. By default used the Python 
+          Indexing i.e the site starts with 0 
+          
+        Returns 
+        -------
+        S, s: Tuple 
+          Tuple of collection of sites and sites indexes. 
+          
+        """
+        
+        # assert sites 
+        if seed: 
+            seed = _assert_all_types(seed , int, float, objname ='Seed')
+            np.random.seed (seed ) 
+           
+        if sites is None:
+            n_sites = int(n_sites ) if n_sites else n_sites 
+            sites = np.random.permutation (range (data[0].shape[1])
+                                           )[:int (n_sites)]
+            # sites = [ np.random.choice (
+            #     range (res[0].shape[1])) for i in range (nsites)] 
+            
+        # make site as an iterabel objects 
+        sites = is_iterable(sites, exclude_string= True , transform =True )
+        
+        s= copy.deepcopy(sites)
+        sites = [ re.search ('\d+', str(site), flags=re.IGNORECASE).group()  
+                 for site in sites ] 
+        S = []
+        for ii, site in enumerate ( sites)  : 
+            try: 
+               site= int(site)
+            except TypeError: 
+                raise TypeError ("Missing position number. Station must be "
+                                 f"prefixed with position, e.g. 'S7', got {s[ii]!r}")
+            
+            site = abs (site) + 1 if how !='py' else site 
+            
+            if site > data[0].shape [1] : 
+                raise ValueError (
+                    f"Site position {site} is out of the range. The total"
+                    f" number of sites/stations ={data[0].shape [1]}")
+            S.append (site)
+            
+        return  S, s  
+    
     def plot_corrections(
         self, 
-        fltr='ss',
+        fltr='ama',
         ss_fx =None, 
         ss_fy=None, 
         r=1000., 
@@ -1395,21 +1799,29 @@ class TPlot (BasePlot):
         distortion=None, 
         distortion_err =None, 
         mode ='TE', 
-        onto ='period', 
-        site =None, 
+        scale ='period', 
+        sites =None, 
         seed = None, 
         how ='py', 
         show_site=True,
         survey= None, 
         style=None, 
-        errorbar=True, 
+        errorbar=True,
+        spad =.5, 
+        n_sites = 1, 
+        mcolors= None,
+        markers = None, 
         **kws
         ): 
         """Plot apparent resistivity/phase curves and corrections.  
         
+        .. versionchanged:: 0.2.1 
+           Can henceforth display multiple sites by providing the 
+           sites as a collection. 
+           
         Parameters 
         ----------
-        fltr: str , default='ss'
+        fltr: str , default='ama'
            Type of filter to apply. ``ss`` is used to remove the static 
            shift using spatial median filter. Whereas ``dist`` is for 
            distorsion removal. Note that `distortion` might be provided 
@@ -1471,10 +1883,10 @@ class TPlot (BasePlot):
           Electromagnetic mode. Can be ['TM' |'both']. If ``both``, 
           components `xy` and `yx` are expected in the data. 
           
-        onto: str, default='period'
+        scale: str, default='period'
           Visualization on axis labell. can be ``'frequency'``.
           
-        site: int,str, optional 
+        sites: int,str, optional 
           index of name of the site to plot. `site` must be composed of 
           a position number. For instance ``'S13'``. If not provided, 
           a random station is selected instead. 
@@ -1501,6 +1913,23 @@ class TPlot (BasePlot):
         errorbar: bool, default=True 
           display the error bar.  
           
+        spad: float, default=.5, 
+          pad to display the station in the top of each section plot. 
+          
+          .. versionadded:: 0.2.1 
+          
+        n_sites: int, default =1. 
+           Number of random sites to select for visualizing. It cannot work 
+           if the names of sites are given. 
+
+        mcolors: str, list, optional 
+           The list of colors for resistivy and phase. 
+           
+           
+        markers : str, list, optional 
+           The list of marker for resistivy and phase. 
+        markers = None, 
+        
         kws: dict, 
           Addfitional keywords arguments passed to 
           Matplotlib.Axes.Scatter plots. 
@@ -1522,22 +1951,23 @@ class TPlot (BasePlot):
         m=_validate_name_in(mode,  'tm transverse-magnetic', expect_name='tm')
         if not m: 
             m='te' 
-        onto = _validate_name_in(onto, deep =True, defaults='periods', 
+        scale = _validate_name_in(scale, deep =True, defaults='periods', 
                                  expect_name='period')
 
         cpm = {'te': ["xy"] , 'tm': ["yx"]}
        
         components = cpm.get(m)
-        res, phs, site, *s= self._validate_correction (
+        res, phs, sites, *s= self._validate_correction (
                              components = components, 
                              errorbar = errorbar , 
                              how = how, 
                              seed = seed , 
-                             site = site , 
-                             style =style , 
+                             sites = sites , 
+                             style =style ,
+                             n_sites = n_sites, 
                              )  
         s,  res_err, phs_err  = s 
-        
+        # plot only single correction so 
         # Assert filters 
         mc = _validate_name_in(fltr, defaults =('static shift', 'ss', '1'), 
                                expect_name= 'ss')
@@ -1557,7 +1987,6 @@ class TPlot (BasePlot):
         
         # -> compute the corrected values 
         zo = ZC().fit(self.p_.ediObjs_)
-        
         if mc =='ss': 
             zc = zo.remove_static_shift (
                 ss_fx = ss_fx , 
@@ -1579,7 +2008,7 @@ class TPlot (BasePlot):
             
         zc_res = [ z.resistivity[tuple (self._c_.get(components[0])) ] 
                   for z in zc ] 
-        zc_res = [ np.log10(r) for r in zc_res ] # convert to log10 res 
+        # zc_res = [ np.log10(r) for r in zc_res ] # convert to log10 res 
         # --> phase 
         zc_phase = [ z.phase[tuple (self._c_.get(components[0])) ] 
                   for z in zc ] 
@@ -1587,123 +2016,162 @@ class TPlot (BasePlot):
         zc_phase = [ np.abs (p)%90  for p in zc_phase ] 
         
         # ----------------------end ---------------------------------
-        fig = plt.figure(self.fig_num , figsize= self.fig_size,
-                         dpi = self.fig_dpi , # layout='constrained'
-                         )
 
-        gs = GridSpec(3, 1, figure = fig ) 
-        
-        ax1 = fig.add_subplot (gs[:-1, 0 ])
-        ax2 = fig.add_subplot(gs [-1, 0 ], sharex = ax1 )
-        plt.setp(ax1.get_xticklabels(), visible=False)
-        
         survey= survey or self.p_.survey_name 
         if not survey: survey=''
         
-        colors = [ '#069AF3', '#DC143C']
+        # set defaults colors  and markers 
+        
+        #colors = [ '#069AF3', '#DC143C']
+        colors = [] if mcolors is None else mcolors
+        c = is_iterable(colors , exclude_string =True , transform =True )
+        colors = list(c ) + [(0, .6, .3), (.9, 0, .8) ] 
+        
+        markers = [] if markers is None else markers 
+        m = is_iterable( markers , exclude_string =True , transform =True ) 
+        markers = list(m) + [ '+', 'x']
         
         #==plotlog10 --------
-        res= [ np.log10 (r) for r in res] 
         # to use frequency for individual site rather than 
         # the complete frequency 
-        fp = self.p_.ediObjs_[site].Z._freq
-        fp =  1/ fp if onto =='period' else fp 
-        
-        fp =  np.log10 ( fp) 
-        
-        min_y =  np.nanmin(res[0][:, site])
-        
+        fp = self.p_.ediObjs_[0].Z._freq
+        fp =  1/ fp if scale =='period' else fp 
+    
+        # min_y =  np.nanmin(res[0][:, site])
         # add error bar data to main 
         data = [res, phs ] 
         data +=  [ res_err ,  phs_err ] if errorbar else []
         
-        for i, sloop in enumerate (zip (* data )) : 
-            r, p, *sl = sloop 
+        sy=  np.average ( [
+            ( np.nanmax(res[0][:, ii]) - np.nanmin(res[0][:, ii])) /2  
+            for ii in sites ] )
+        sy += spad 
+        sx = np.average (fp)
+        
+        fig = plt.figure(figsize = self.fig_size, dpi=self.fig_dpi)
+        gs = GridSpec(2, len(sites),
+                        wspace=0., 
+                        left=.08,
+                        top=.85,
+                        bottom=.1,
+                        right=.98,
+                        hspace=.0,
+                        height_ratios=[ 1.5, 1.]
+                        ) 
+        sharey = None
+        for j , site in enumerate (sites ): 
             
-            if len(sl) !=0 : 
-                e, ep = sl  # mean errorbar is set to True 
-                
-            y =  reshape (r[:, site])
-            yc =zc_res [site]
-            if errorbar: 
-                plot_errorbar (ax1 , 
-                               fp, 
-                               y,  
-                               y_err = reshape (e[:, site]),
-                               )
-            ax1.scatter (fp  , y, 
-                          marker =self.marker, 
-                          color =colors [i],
-                          edgecolors='k', 
-                          label = fr'{survey}$\rho_a${components[i]}',
-                          **kws 
-                          ) 
-            # res_corr 
-            ax1.scatter (fp  , yc, 
-                          marker ='*', 
-                          color="#FF00FF",
-                          edgecolors='k', 
-                          label = fr'{survey}$\rho_a${components[i]} {mc}',
-                          **kws 
-                          ) 
+            ax1 = fig.add_subplot (gs [ 0, j] , sharey = sharey) 
+            
+            if j==0: sharey = ax1 
             
             if errorbar: 
-                plot_errorbar (ax2 , 
-                               fp, reshape (p[:, site]),
-                               y_err = reshape (ep[:, site]), 
-                               )
-            
-            ax2.scatter( fp, 
-                        reshape (p[:, site]),
-                        marker =self.marker, 
-                        color =colors [i] ,
-                        edgecolors='k', 
-                        label = f'{survey}$\phi${components[i]}',
-                        **kws
-                        ) 
-            # ----phase_cor 
-            ax2.scatter( fp, 
-                        zc_phase [site],
-                        marker ='*', 
-                        color="#FF00FF" ,
-                        edgecolors='k', 
-                        label = f'{survey}$\phi${components[i]} {mc}',
-                        **kws
-                        ) 
-            
-            min_y = np.nanmin (y) if np.nanmin (
-                y) < min_y else min_y 
-            try: 
-                ax1.legend(ncols = len(res)) 
-                ax2.legend(ncols = len(phs)) 
-            except: 
-                # For consistency in the case matplotlib  is < 3.3. 
-                ax1.legend() 
-                ax2.legend() 
+                ax2 = fig.add_subplot (gs [1,  j] )
                 
-        if show_site:
-            ax1.text (np.nanmin(fp),
-                      min_y,
-                      f'site {s}', 
-                      fontdict= dict (style ='italic',  bbox =dict(
-                           boxstyle='round',facecolor ='#CED9EF'), 
-                          alpha = 0.5 )
-                      )
-        
-        ax2.set_ylim ([0, 90 ])
-        xlabel = self.xlabel or ( 'Log$_{10}$Period($s$)' if onto=='period' 
-                                 else 'Frequency ($H_z$)') 
-        
-        ax2.set_xlabel(xlabel ) 
-        ax1.set_ylabel(self.ylabel or r'Log$_{10}\rho_a$($\Omega$.m)') 
- 
-        ax2.set_ylabel('$\phi$($\degree$)')
-        
-        if self.show_grid :
-            for ax in (ax1, ax2 ): 
-                ax.grid (visible =True , alpha =self.galpha,
-                         which =self.gwhich, color =self.gc)
-          
+            for i, sloop in enumerate (zip (* data )) : 
+                r, p, *sl = sloop 
+                
+                if len(sl) !=0 : 
+                    e, ep = sl  # mean errorbar is set to True 
+                    
+                y =  reshape (r[:, site])
+                if errorbar: 
+                    plot_errorbar (ax1 , 
+                                   fp, 
+                                   y,  
+                                   y_err = reshape (e[:, site]),
+                                   )
+                ax1.scatter (fp  , y, 
+                              marker =markers [i], 
+                              color =colors [i],
+                              edgecolors='k', 
+                              label = fr'{survey}$\rho_a${components[i]}',
+                              **kws 
+                              ) 
+                # res_corr 
+                ax1.scatter (fp, zc_res [site], 
+                              marker ='*', 
+                              color="#FF00FF",
+                              edgecolors='k', 
+                              label = fr'{survey}$\rho_a${components[i]} {mc}',
+                              **kws 
+                              ) 
+                
+                if errorbar: 
+                    plot_errorbar (ax2 , 
+                                   fp, reshape (p[:, site]),
+                                   y_err = reshape (ep[:, site]), 
+                                   )
+                
+                ax2.scatter( fp, 
+                            reshape (p[:, site]),
+                            marker =markers[i], 
+                            color =colors [i] ,
+                            edgecolors='k', 
+                            label = f'{survey}$\phi${components[i]}',
+                            **kws
+                            ) 
+                # ----phase_cor 
+                ax2.scatter( fp, 
+                            zc_phase [site],
+                            marker ='*', 
+                            color="#FF00FF" ,
+                            edgecolors='k', 
+                            label = f'{survey}$\phi${components[i]} {mc}',
+                            **kws
+                            ) 
+                
+            # set ticks invisibale 
+            if j > 0: 
+                plt.setp(ax1.get_yticklabels(), visible=False)
+                plt.setp(ax2.get_yticklabels(), visible=False)
+                
+            # Put the legend in the last images 
+            
+            if j == len(sites)-1: 
+                try: 
+                    ax1.legend(ncols = len(r)) 
+                    ax2.legend(ncols = len(p)) 
+                except: 
+                    # For consistency in the case matplotlib  is < 3.3. 
+                    ax1.legend() 
+                    ax2.legend() 
+
+            ax1.set_xscale ('log') ;  ax1.set_yscale ('log') 
+            ax2.set_xscale ('log')
+            
+            if show_site:
+                ax1.text (sx, 
+                          sy, 
+                          f'S{site}', 
+                          fontdict= dict (style ='italic',  bbox =dict(
+                               boxstyle='round',facecolor ='#CED9EF'), 
+                              alpha = 0.5 )
+                          )
+            
+            ax2.set_ylim ([0, 90 ])
+            xlabel = self.xlabel or ( 'Log$_{10}$Period($s$)' if scale=='period' 
+                                     else 'Frequency ($H_z$)') 
+
+            # fixing yticks with matplotlib.ticker "FixedLocator"
+            # xticks_loc =  ax2.get_xticks()
+            # ax2.xaxis.set_major_locator(mticker.FixedLocator(xticks_loc))
+            # ax2.set_xticklabels(['{:,.0f}'.format(np.log10(x)) 
+            #                      for x in xticks_loc])
+            ax2.set_xlabel(xlabel ) 
+  
+            if j ==0 : 
+                
+                ax1.set_ylabel(self.ylabel or r'$\rho_a$($\Omega$.m)') 
+                ax2.set_ylabel('$\phi$($\degree$)')
+                
+            if self.show_grid :
+                for ax in (ax1, ax2 ): 
+                    ax.grid (visible =True , alpha =self.galpha, 
+                             linestyle = self.gls, 
+                             which =self.gwhich, color =self.gc
+                             )
+    
             
         if self.savefig is not  None: 
             plt.savefig (self.savefig, dpi = self.fig_dpi)
@@ -1711,6 +2179,7 @@ class TPlot (BasePlot):
         plt.close () if self.savefig is not None else plt.show() 
         
         return self 
+    
 
     def __repr__(self): 
         """ Represents the output class format """

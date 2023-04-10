@@ -938,6 +938,7 @@ Functions
 	view.TPlot.plot_recovery 
 	view.TPlot.plot_phase_tensors 
     view.TPlot.plot_rhoa
+	view.TPlot.plot_rhophi
 	view.TPlot.plot_tensor2d
 	
 

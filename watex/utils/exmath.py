@@ -5869,10 +5869,6 @@ def find_closest( arr, /, values ):
 
 
 
-
-
-
-
    
     
    
