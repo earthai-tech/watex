@@ -819,7 +819,7 @@ class ElectricalMethods (ABC) :
                 MN: float = 20.,
                 arrangement: str  = 'schlumberger', 
                 area : str = None, 
-                projection: str ='UTM', 
+                projection: str ='lonlat', 
                 datum: str ='WGS84', 
                 epsg: int =None, 
                 utm_zone: str = None,  
@@ -1124,6 +1124,7 @@ class P:
         """
             
         dict_ = self.idictcpr if kind =='ves' else self.idicttags
+        
         for k, val in dict_.items(): 
             for s in val : 
                 if str(it).lower().find(s)>=0: 
@@ -1165,7 +1166,11 @@ class P:
             if hasattr(self.hl, '__iter__'):
                 for item in self.hl : 
                     v_.append( self._check_header_item(item, kind)) 
-                v_=list(filter((None).__ne__, v_))
+                # uncomment this for deprecating warning. Henceforth we use 
+                # lamba instead 
+                # v_=list(filter((None).__ne__, v_))
+                v_ = list(filter(lambda item: item is not None, v_))
+            
                 return None if len (v_) ==0 else v_
             
     @property 
@@ -1244,8 +1249,15 @@ class P:
         """ cpr stands for current-potentials and resistivity. They compose the
         main property values when collected the vertical electrical sounding 
         data."""
+        # return {f'{k.replace("_", "")}': v  for k , v in {
+        #     **self.ves_props, **{'resistivity': self.iresistivity}}.items()}
         return {f'{k.replace("_", "")}': v  for k , v in {
-            **self.ves_props, **{'resistivity': self.iresistivity}}.items()}
+            **self.ves_props, **{'resistivity': self.iresistivity, 
+                                 'longitude': self.ilon, 
+                                 'latitude': self.ilat, 
+                                 'easting': self.ieasting, 
+                                 'northing': self.inorthing }}.items()
+            }
                 
 
 class BagoueNotes: 
@@ -1461,18 +1473,20 @@ class Config:
         
         The following symbols can be used to create a matplotlib pattern. 
         
-        make _pattern:{'/', '\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
-                       
-            /   - diagonal hatching
-            \   - back diagonal
-            |   - vertical
-            -   - horizontal
-            +   - crossed
-            x   - crossed diagonal
-            o   - small circle
-            O   - large circle
-            .   - dots
-            *   - stars
+        .. code-block:: none
+        
+            make _pattern:{'/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
+                           
+                /   - diagonal hatching
+                \\   - back diagonal
+                |   - vertical
+                -   - horizontal
+                +   - crossed
+                x   - crossed diagonal
+                o   - small circle
+                O   - large circle
+                .   - dots
+                *   - stars
         """
         return  {
              "basement rocks" :      ['.+++++.', (.25, .5, .5)],

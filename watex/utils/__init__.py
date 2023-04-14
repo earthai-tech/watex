@@ -44,6 +44,9 @@ from .exmath import (
     plot_confidence_in,
     plot_sfi, 
     get_distance,
+    smooth1d, 
+    smoothing, 
+    rhophi2z, 
     qc, 
     )
 from .funcutils import ( 
@@ -207,7 +210,10 @@ __all__=[
         'cleaner', 
         'savejob', 
         'random_selector', 
-        'interpolate_grid', 
+        'interpolate_grid',
+        'smooth1d', 
+        'smoothing', 
+        'rhophi2z', 
         ]
 
 

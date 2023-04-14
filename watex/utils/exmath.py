@@ -8,7 +8,8 @@ from __future__ import annotations
 import copy 
 import inspect 
 import warnings 
-from math import factorial
+import cmath 
+from math import factorial, radians
 
 import numpy as np
 import pandas as pd 
@@ -88,11 +89,12 @@ from .validator import (
     _validate_ves_operator, 
     _assert_z_or_edi_objs, 
     _validate_tensor,
-    _is_numeric_dtype, 
+    _is_numeric_dtype,
+    check_consistency_size,
     is_valid_dc_data,
     check_y,
     check_array,
-    
+
     )
 
 try: import scipy.stats as spstats
@@ -398,6 +400,110 @@ def rhoa2z (
     z= np.sqrt(rhoa * omega0 * mu0 ) * (np.cos (
         np.deg2rad(phs)) + 1j * np.sin(np.deg2rad(phs)))
     
+    return z 
+
+def rhophi2z(rho, phi, freq):
+    """
+    Convert impedance-style information given in Rho/Phi format 
+    into complex valued Z.
+
+    Parameters 
+    -----------
+    rho: ArrayLike 1D/2D 
+       Resistivity array in :math:`\Omega.m`. If array is two-dimensional, 
+       it should be 2x2 array (real). 
+       
+    phi: ArrayLike 1D/2D 
+       Phase array in degree (:math:`\degree`). If array is two-dimensional, 
+       it should be 2x2 array (real). 
+
+    freq: float, arraylike 1d  
+      Frequency in Hz 
+    
+    Returns 
+    ---------
+    Z: Arraylike 1d or 2d , complex 
+       
+      Z dimension depends to the inputs array `rho` and `phi`. 
+
+    Examples 
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import rhophi2z 
+    >>> rhophi2z (823 , 25 , 500 )
+    array([1300.00682824+606.20313966j])
+    >>> rho = np.array ([[823, 700], [723, 526]] )
+    >>> phi = np.array ([[45, 50], [90, 180]]) 
+    >>> rhophi2z (rho, phi , freq= 500  ) 
+    array([[ 1.01427314e+03+1.01427314e+03j,  8.50328081e+02+1.01338154e+03j],
+           [ 8.23227764e-14+1.34443297e+03j, -1.14673449e+03+1.40434473e-13j]])
+    >>> rhophi2z (np.array ( [ 823, 700])  , np.array ([45, 50 ])  , [500, 700] )
+    array([1014.27313876+1014.27313876j, 1006.12175325+1199.04921402j])
+    >>> rho  = np.abs (np.random.randn (7, 3 ) * 100 )
+    >>> phi = np.abs ( np.random.randn (7, 3 ) *180 % 90 ) 
+    >>> freq = np.abs ( np.random.randn (7) * 100 )
+    >>> rhophi2z (rho   , phi  , freq )
+    
+    """
+    def _rhophi2z (r, p, f ): 
+        """ An isolated part of `rhophi2z """
+        abs_z  = np.sqrt(5 * f * r)
+        return cmath.rect(abs_z , radians(p))
+    
+    is_array2x2 =False 
+
+    rho = np.array ( 
+        is_iterable(rho, exclude_string= True ,
+                    transform =True )) 
+    phi = np.array (
+        is_iterable(phi, exclude_string= True , 
+                    transform =True )) 
+    freq = np.array (
+        is_iterable(freq, exclude_string= True , 
+                    transform =True )) 
+
+    if ( rho.shape == (2,2) or  phi.shape == (2,2)): 
+        n=None 
+        if rho.shape != (2,2): 
+            n, t  ='Resistivity', rho
+        elif phi.shape != (2,2): 
+            n , t ='Phase', phi
+        if n is not None: 
+            raise EMError ("Resistivity and Phase must be consistent."
+                           f" Expect 2 x2 array for {n}. Got {t.shape}")
+            
+        is_array2x2 = True 
+    if not ( _is_numeric_dtype(rho) and _is_numeric_dtype(phi)): 
+        raise EMError ('Resistivity and Phase arguments must be one (1D) or'
+                       ' two dimensional (2x2) arrays (real)') 
+
+    if is_array2x2 : 
+        z = np.zeros((2,2),'complex')
+        for i in range(2):
+            for j in range(2):
+                z[i, j ] = _rhophi2z(r = rho[i,j], p = phi[i,j], f = freq )
+                # abs_z  = np.sqrt(5 * freq * rho[i,j])
+                # z[i,j] = cmath.rect(abs_z , radians(phi[i,j]))
+        return z 
+    
+    check_consistency_size(rho, phi, freq )
+    
+    if _is_arraylike_1d (phi ): 
+        
+        z = np.zeros_like ( phi , dtype ='complex')
+        # when scalar is passed or 1d array is 
+        # given 
+        for ii in range ( len(phi)): #
+            z [ii] = _rhophi2z ( rho[ii], phi[ii], freq[:, None ][ii] )    
+    else:
+        # when non square matrix is given 
+        # range like freq and n_stations 
+        
+        z = np.zeros(( len( freq), phi.shape [1]), dtype = 'complex')
+        for i in range (len(freq)): 
+            for j in range(phi.shape[1]) : 
+                z[i, j ] =  _rhophi2z(rho[i, j], phi[i,j], freq[i] ) 
+
     return z 
 
 def z2rhoa (
@@ -1090,7 +1196,12 @@ def ohmicArea(
     # # if f-y < 0 => f< y so fitting curve is under the basement curve 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # make basement func f45 from oB
-    f45, *_ = fitfunc(oB, Y[oIx:])
+    
+    #  catch rankwarning if exists  
+    with warnings.catch_warnings():
+        warnings.filterwarnings(action='ignore', category=np.RankWarning)
+        f45, *_ = fitfunc(oB, Y[oIx:])
+        
     ff = f45 - f_rhotl  # f(x) -g(x)
 
     diff_arr= ff (xx)  # get the relative position f/g from oB
@@ -1266,21 +1377,24 @@ def type_ (erp: ArrayLike[DType[float]] ) -> str:
     elif len(set(status)) ==2: 
         yes_ix , = np.where (np.array(status) =='yes') 
         # take the remain index 
-        no_ix = np.array (status)[len(yes_ix):]
-        
+        # no_ix = np.array (status)[len(yes_ix):]
+        no_ix , = np.where ( np.array ( status)=='no')
         # check whether all indexes are sorted 
         sort_ix_yes = all(yes_ix[i] < yes_ix[i+1]
                       for i in range(len(yes_ix) - 1))
         sort_ix_no = all(no_ix[i] < no_ix[i+1]
                       for i in range(len(no_ix) - 1))
-        
+  
         # check whether their difference is 1 even sorted 
         if sort_ix_no == sort_ix_yes == True: 
             yes = set ([abs(yes_ix[i] -yes_ix[i+1])
                         for i in range(len(yes_ix)-1)])
             no = set ([abs(no_ix[i] -no_ix[i+1])
                         for i in range(len(no_ix)-1)])
-            if yes == no == {1}: 
+            if ( yes == no == {1} or 
+                # in the case unique consecutive 
+                # index is given like ['no', 'yes']
+                len(yes) ==len(no)==0): 
                 type_= 'CB2P'
                 
     return type_ 
@@ -3611,6 +3725,259 @@ def scaley(
 
     return  yc, x ,  f  
 
+def smooth1d(
+    ar, /, 
+    drop_outliers:bool=True, 
+    ma:bool=True, 
+    absolute:bool=False, 
+    view:bool=False , 
+    x: ArrayLike=None, 
+    xlabel:str =None, 
+    ylabel:str =None, 
+    fig_size:tuple = ( 10, 5) 
+    )-> ArrayLike[float]: 
+    """ Smooth one-dimensional array. 
+    
+    Parameters 
+    -----------
+    ar: ArrayLike 1d 
+       Array of one-dimensional 
+       
+    drop_outliers: bool, default=True 
+       Remove the outliers in the data before smoothing 
+       
+    ma: bool, default=True, 
+       Use the moving average for smoothing array value. This seems more 
+       realistic.
+       
+    absolute: bool, default=False, 
+       keep postive the extrapolated scaled values. Indeed, when scaling data, 
+       negative value can be appear due to the polyfit function. to absolute 
+       this value, set ``absolute=True``. Note that converting to values to 
+       positive must be considered as the last option when values in the 
+       array must be positive.
+       
+    view: bool, default =False 
+       Display curves 
+    x: ArrayLike, optional 
+       Abscissa array for visualization. If given, it must be consistent 
+       with the given array `ar`. Raises error otherwise. 
+    xlabel: str, optional 
+       Label of x 
+    ylabel:str, optional 
+       label of y  
+    fig_size: tuple , default=(10, 5)
+       Matplotlib figure size
+       
+    Returns 
+    --------
+    yc: ArrayLike 
+       Smoothed array value. 
+       
+    Examples 
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import smooth1d 
+    >>> # add Guassian Noise 
+    >>> np.random.seed (42)
+    >>> ar = np.random.randn (20 ) * 20 + np.random.normal ( 20 )
+    >>> ar [:7 ]
+    array([6.42891445e+00, 3.75072493e-02, 1.82905357e+01, 2.92957265e+01,
+           6.20589038e+01, 2.26399535e+01, 1.12596434e+01])
+    >>> arc = smooth1d (ar, view =True , ma =False )
+    >>> arc [:7 ]
+    array([12.08603102, 15.29819907, 18.017749  , 20.27968322, 22.11900412,
+           23.5707141 , 24.66981557])
+    >>> arc = smooth1d (ar, view =True )# ma=True by default 
+    array([ 5.0071604 ,  5.90839339,  9.6264018 , 13.94679804, 17.67369252,
+           20.34922943, 22.00836725])
+    """
+    # convert data into an iterable object 
+    ar = np.array(
+        is_iterable(ar, exclude_string = True , transform =True )) 
+    
+    if not _is_arraylike_1d(ar): 
+        raise TypeError("Expect one-dimensional array. Use `watex.smoothing`"
+                        " for handling two-dimensional array.")
+    if not _is_numeric_dtype(ar): 
+        raise ValueError (f"{ar.dtype.name!r} is not allowed. Expect a numeric"
+                          " array")
+        
+    arr = ar.copy() 
+    if drop_outliers: 
+        arr = remove_outliers( arr, fill_value = np.nan  )
+    # Nan is not allow so fill NaN if exists in array 
+    # is arraylike 1d 
+    arr = reshape ( fillNaN( arr , method ='both') ) 
+    if ma: 
+        arr = moving_average(arr, method ='sma')
+    # if extrapolation give negative  values
+    # whether to keep as it was or convert to positive values. 
+    # note that converting to positive values is 
+    arr, *_  = scaley ( arr ) 
+    # if extrapolation gives negative values
+    # convert to positive values or keep it intact. 
+    # note that converting to positive values is 
+    # can be used as the last option when array 
+    # data must be positive.
+    if absolute: 
+        arr = np.abs (arr )
+    if view: 
+        x = np.arange ( len(ar )) if x is None else np.array (x )
+
+        check_consistency_size( x, ar )
+            
+        fig,  ax = plt.subplots (1, 1, figsize = fig_size)
+        ax.plot (x, 
+                 ar , 
+                 'ok-', 
+                 label ='raw curve'
+                 )
+        ax.plot (x, 
+                 arr, 
+                 c='#0A4CEE',
+                 marker = 'o', 
+                 label ='smooth curve'
+                 ) 
+        
+        ax.legend ( ) 
+        ax.set_xlabel (xlabel or '')
+        ax.set_ylabel ( ylabel or '') 
+        
+    return arr 
+
+def smoothing (
+    ar, /, 
+    drop_outliers = True ,
+    ma=True,
+    absolute =False,
+    axis = 0, 
+    view = False, 
+    fig_size =(7, 7), 
+    xlabel =None, 
+    ylabel =None , 
+    cmap ='binary'
+    ): 
+    """ Smooth data along axis. 
+    
+    Parameters 
+    -----------
+    ar: ArrayLike 1d or 2d 
+       One dimensional or two dimensional array. 
+       
+    drop_outliers: bool, default=True 
+       Remove the outliers in the data before smoothing along the given axis 
+       
+    ma: bool, default=True, 
+       Use the moving average for smoothing array value along axis. This seems 
+       more realistic rather than using only the scaling method. 
+       
+    absolute: bool, default=False, 
+       keep postive the extrapolated scaled values. Indeed, when scaling data, 
+       negative value can be appear due to the polyfit function. to absolute 
+       this value, set ``absolute=True``. Note that converting to values to 
+       positive must be considered as the last option when values in the 
+       array must be positive.
+       
+    axis: int, default=0 
+       Axis along with the data must be smoothed. The default is the along  
+       the row. 
+       
+    view: bool, default =False 
+       Visualize the two dimensional raw and smoothing grid. 
+       
+    xlabel: str, optional 
+       Label of x 
+       
+    ylabel:str, optional 
+    
+       label of y  
+    fig_size: tuple , default=(7, 5)
+       Matplotlib figure size 
+       
+    cmap: str, default='binary'
+       Matplotlib.colormap to manage the `view` color 
+      
+    Return 
+    --------
+    arr0: ArrayLike 
+       Smoothed array value. 
+    
+    Examples 
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import smoothing
+    >>> # add Guassian Noises 
+    >>> np.random.seed (42)
+    >>> ar = np.random.randn (20, 7 ) * 20 + np.random.normal ( 20, 7 )
+    >>> ar [:3, :3 ]
+    array([[ 31.5265026 ,  18.82693352,  34.5459903 ],
+           [ 36.94091413,  12.20273182,  32.44342041],
+           [-12.90613711,  10.34646896,   1.33559714]])
+    >>> arc = smoothing (ar, view =True , ma =False )
+    >>> arc [:3, :3 ]
+    array([[32.20356863, 17.18624398, 41.22258603],
+           [33.46353806, 15.56839464, 19.20963317],
+           [23.22466498, 13.8985316 ,  5.04748584]])
+    >>> arcma = smoothing (ar, view =True )# ma=True by default
+    >>> arcma [:3, :3 ]
+    array([[23.96547827,  8.48064226, 31.81490918],
+           [26.21374675, 13.33233065, 12.29345026],
+           [22.60143346, 16.77242118,  2.07931194]])
+    >>> arcma_1 = smoothing (ar, view =True, axis =1 )
+    >>> arcma_1 [:3, :3 ]
+    array([[18.74017857, 26.91532187, 32.02914421],
+           [18.4056216 , 21.81293014, 21.98535213],
+           [-1.44359989,  3.49228057,  7.51734762]])
+    """
+    ar = np.array ( 
+        is_iterable(ar, exclude_string = True , transform =True )
+        ) 
+    if ( 
+            str (axis).lower().find('1')>=0 
+            or str(axis).lower().find('column')>=0
+            ): 
+        axis = 1 
+    else : axis =0 
+    
+    if _is_arraylike_1d(ar): 
+        ar = reshape ( ar, axis = 0 ) 
+    # make a copy
+    # print(ar.shape )
+    arr = ar.copy() 
+    along_axis = arr.shape [1] if axis == 0 else len(ar) 
+    arr0 = np.zeros_like (arr)
+    for ix in range (along_axis): 
+        value = arr [:, ix ] if axis ==0 else arr[ix , :]
+        yc = smooth1d(value, drop_outliers = drop_outliers , 
+                      ma= ma, view =False , absolute =absolute 
+                      ) 
+        if axis ==0: 
+            arr0[:, ix ] = yc 
+        else : arr0[ix, :] = yc 
+        
+    if view: 
+        fig, ax  = plt.subplots (nrows = 1, ncols = 2 , sharey= True,
+                                 figsize = fig_size )
+        ax[0].imshow(arr ,interpolation='nearest', label ='Raw Grid', 
+                     cmap = cmap )
+        ax[1].imshow (arr0, interpolation ='nearest', label = 'Smooth Grid', 
+                      cmap =cmap  )
+        
+        ax[0].set_title ('Raw Grid') 
+        ax[0].set_xlabel (xlabel or '')
+        ax[0].set_ylabel ( ylabel or '')
+        ax[1].set_title ('Smooth Grid') 
+        ax[1].set_xlabel (xlabel or '')
+        ax[1].set_ylabel ( ylabel or '')
+        
+        plt.show () 
+        
+    if 1 in ar.shape: 
+        arr0 = reshape (arr0 )
+        
+    return arr0 
+    
 def fittensor(
     refreq:ArrayLike , 
     compfreq: ArrayLike ,
@@ -3698,7 +4065,7 @@ def fittensor(
             " Frequency in Z must be consistent for all investigated sites,"
             " i.e. the frequencies values in Z must be included in the complete"
             f" frequency array (`refreq`) for all sites. Got {len(z_new[mask])}"
-            " while expecting {len(reshape(z))}. If frequencies are inputted"
+            f" while expecting {len(reshape(z))}. If frequencies are inputted"
             " manually, use `watex.utils.exmath.find_closest` to get the closest"
             " frequencies from the input ones. "
             )
@@ -3904,7 +4271,7 @@ def moving_average (
     method: str 
         variant of moving-average. Can be ``sma``, ``cma``, ``wma`` and ``ema`` 
         for simple, cummulative, weight and exponential moving average. Default 
-        is ``wma``. 
+        is ``sma``. 
         
     mode: str
         returns the convolution at each point of overlap, with an output shape
@@ -3960,8 +4327,8 @@ def moving_average (
     if window_size < 1:
         raise TypeError("window_size size must be a positive odd number")
     if  window_size > len(y):
-        raise TypeError("window_size is too large for averaging"
-                        f"Window must be greater than 0 and less than {len(y)}")
+        raise TypeError("window_size is too large for averaging. Window"
+                        f" must be greater than 0 and less than {len(y)}")
     
     method =str(method).lower().strip().replace ('-', ' ') 
     
@@ -5482,10 +5849,6 @@ def find_closest( arr, /, values ):
     return np.array ( [
         arr [ np.abs ( arr - v).argmin()] for v in values ]
         )
-
-
-
-
 
 
 

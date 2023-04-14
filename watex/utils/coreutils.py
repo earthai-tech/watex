@@ -101,6 +101,10 @@ def vesSelector(
     AB :ArrayLike |Series = None, 
     MN: ArrayLike|Series | List[float] =None, 
     index_rhoa: Optional[int]  = None, 
+    xy_coords: Tuple [float|int]=None, 
+    is_utm: bool= False, 
+    utm_zone: str =None,
+    epsg: int|str=None, 
     **kws
 ) -> DataFrame : 
     """ Assert the validity of |VES| data and return a sanitize dataframe. 
@@ -156,6 +160,30 @@ def vesSelector(
         than one, by default the first sounding curve is selected ie 
         `index_rhoa` equals to ``0``.
         
+    :param xy_coords: tuple (float, float) 
+       Coordinates of the sounding point. Must be ('longitude','latitude') or 
+       ('easting', 'northing'). If xy is `xy_coords` is given as 
+       ('easting' , 'northing'), specify ``is_utm=True`` so the conversion to 
+       ('longitude', 'latitude') should be triggered. If ``False``, a 
+       warnings occurs if values are greater than 180 and 90 degree for 
+       longitude and latitude respectively. 
+       Note that if the coordinates exists in the dataframe, its should 
+       takes the priority 
+       
+       .. versionadded:: 0.2.1 
+       
+    :param is_utm: bool, default= False, 
+       Allow conversion the ('easting', 'northing') coordinated from `xy_coords` 
+       to ('longitude', 'latitude') 
+       
+    :param utm_zone: default='49R' 
+       Is needed when `xy_coords` is passed as ('easting', 'northing') for 
+       conversion. 
+       
+    :param epsg: int, str , optional 
+       EPSG number defining projection. See http://spatialreference.org/ref/ 
+       for moreinfo. Overrides utm_zone if both are provided
+       
     :param kws: dict - Pandas dataframe reading additionals
         keywords arguments.
         
@@ -192,9 +220,17 @@ def vesSelector(
     index_rhoa =  0 if index_rhoa is None else index_rhoa 
     index_rhoa = int (_assert_all_types(
         index_rhoa, int, objname ="Resistivity column index"))
-    if data is not None: 
-        rhoa, AB, MN  =_validate_ves_data_if(data, index_rhoa, err, **kws)
     
+    # make  a copy of xy coordinates 
+    xy_coords_copy = copy.deepcopy(xy_coords)
+    if data is not None: 
+        rhoa, AB, MN, xy_coords =_validate_ves_data_if(
+            data, index_rhoa, err, **kws)
+        # in the case coordinates are not in the data 
+        # and passed explicitly then takes the copy       
+        if xy_coords is None: 
+            xy_coords = xy_coords_copy
+
     if rhoa is None: 
         raise ResistivityError(
             "Data validation aborted! Missing resistivity values.")
@@ -210,12 +246,86 @@ def vesSelector(
             " and the resistiviy values `rhoa` must be consistent."
             f" '{len(AB)}' and '{len(rhoa)}' were given."
                        )
-        
     sdata =pd.DataFrame(
         {'AB': AB, 'MN': MN, 'resistivity':rhoa},index =range(len(rhoa)))
     
+    # when xy_coords are directly retrieved 
+    # from dataframe . make the whole frame instead 
+    # including the sounding coordinates points.
+    if  ( 
+            hasattr (xy_coords , 'columns' ) and 
+            hasattr (xy_coords, '__array__')): 
+        sdata = pd.concat ( [ sdata , xy_coords ], axis = 1 )
+        xy_coords= None 
+      
+    if xy_coords is None: 
+        return sdata 
+  
+    xy_coords = is_iterable(
+        xy_coords, exclude_string= True , transform =True ) 
+    
+    if len(xy_coords)!=2: 
+        warnings.warn("Unexpected coordinates xy. xy should be a tuple" 
+                      f" of (longitude, latitude) values. Got {xy_coords}")
+        
+        xy_coords = None 
+        
+    if xy_coords is not None: 
+        try: 
+            xy_coords  = _convert_xy_coordinates(
+                *xy_coords, 
+                is_utm=is_utm, 
+                utm_zone = utm_zone , epsg =epsg 
+                )
+        except Exception as e: 
+            warnings.warn(str(e) + ". This error occurs probably because"
+                          " you passed wrong coordinates xy or the utm_zone"
+                          " is not set while using ('easting', 'northing')"
+                          " as sounding coordinates. Unable to convert UTM"
+                          " coordinates to longitude/latitude with missing"
+                          " EPSG or UTM zone number. Please check your" 
+                          " sounding coordinates.") 
+            xy_coords= None 
+            
+    if xy_coords is not None: 
+        sdata ['longitude']= xy_coords[0] 
+        sdata ['latitude']= xy_coords[-1]
+
     return sdata
  
+def _convert_xy_coordinates ( *xy, is_utm = False, as_frame =False, 
+                             utm_zone = '49R', epsg = None ):
+    """ manage coordinates and convert coordinates to longitude/latitude 
+    if UTM data ( 'easting', 'northing') is given.
+    
+    `xy` must be ('longitude' , 'latitude') coordinates. Turn ``is_utm==True``
+    when `xy` are in ( 'easting', 'northing') 
+    
+    An isolated part of `vesSelector`. Refer to documentation for params 
+    explanations. 
+    """
+    # fetch_random coordinate for sves
+    if is_utm : 
+        # so reverse it 
+        yx = project_point_utm2ll(*xy[::-1] , utm_zone = utm_zone , epsg= epsg 
+                                  ) 
+        xy = yx [::-1] # reverse back to longitude latitude 
+        
+        is_utm=False # conversion is done 
+        
+    # now validate longitude and latitude 
+    try: 
+        xy = ( assert_lon_value(xy [0]) , assert_lat_value(xy[1]))  
+    
+    except (TypeError, ValueError) as e: 
+        warnings.warn (str(e)+ ' Please check your sounding xy coordinates') 
+        xy = None 
+        
+    if as_frame and xy is not None : 
+        xy = pd.DataFrame ({'longitude':xy[0] , 'latitude': xy[-1]}, 
+                           index = range (1))
+    return xy 
+
 @docSanitizer()
 def fill_coordinates(
     data: DataFrame =None, 
@@ -266,8 +376,8 @@ def fill_coordinates(
         for moreinfo). Overrides utm_zone if both are provided
         
     utm_zone : string
-            zone number and 'S' or 'N' e.g. '55S'. Defaults to the
-            centre point of the provided points
+       zone number and 'S' or 'N' e.g. '55S'. Defaults to the
+       centre point of the provided points
     verbose: int,default=0 
         warning user if UTMZONE is not supplied when computing the 
         latitude/longitude from easting/northing 
@@ -1672,6 +1782,7 @@ def _assert_stations(
         ... ('S02', 1)
     """
     # in the case s is string: eg. "00", "pk01", "S001"
+    sta= copy.deepcopy(station)
     ix = 0
     stnl =P().istation 
     station = _assert_all_types(station, str, int, float)
@@ -1680,7 +1791,7 @@ def _assert_stations(
     regex = re.compile (r'\d+', flags= re.IGNORECASE)
     station = regex.findall (station)
     if len(station)==0: 
-        raise StationError (f"Wrong station name {station!r}. Station must be "
+        raise StationError (f"Wrong station name {sta!r}. Station must be "
                             f"prefixed by {smft(stnl +['S'], 'or')} e.g. "
                             "'S00' for the first station")
     else : station = int(station[0])
@@ -2024,10 +2135,10 @@ def makeCoords(
                 with warnings.catch_warnings(): # ignore multiple warnings 
                     warnings.simplefilter('ignore')
                     lat[kk], lon[kk] = project_point_utm2ll(
-                        easting= lo, northing=la, utm_zone=utm_zone, **kws)
+                        easting= la, northing=lo, utm_zone=utm_zone, **kws)
             except : 
                 lat[kk], lon[kk] = utm_to_ll(
-                    23, northing=la, easting=lo, zone=utm_zone)
+                    23, northing=lo, easting=la, zone=utm_zone)
                 
         if not HAS_GDAL : 
             if raise_warning:
@@ -2197,7 +2308,8 @@ def _validate_ves_data_if(data, index_rhoa , err , **kws):
         - rhoa: resistivity data 
         - AB : current electodes measurement values 
         - MN: potential electrodes measurement if exists in the data file. 
-        
+        - rxy: Accept the coordinates xy of the place where the sounding is 
+           taken. 
     """
     if isinstance(data, (str,  pathlib.PurePath)): 
         try : 
@@ -2218,11 +2330,14 @@ def _validate_ves_data_if(data, index_rhoa , err , **kws):
              " `~.load_semien.__doc__` can give a furher details about"
              " the VES data arrangement."
              )
-    try:data.columns = ncols
+    try:
+        data.columns = ncols
+        
     except : pass 
+
     data = is_valid_dc_data(data, method ="ves", exception =VESError, 
                             extra = err_msg)
-     
+
     try : 
         rhoa= data.resistivity 
     except : 
@@ -2255,8 +2370,12 @@ def _validate_ves_data_if(data, index_rhoa , err , **kws):
         AB= data.AB 
     except: 
         raise err
+        
+    ext = [ xy for xy in data.columns if xy in (
+        'longitude', 'latitude', 'easting', 'northing')]
+    rxy = None if len(ext)==0 else data [ext ] 
     
-    return rhoa, AB, MN 
+    return rhoa, AB, MN , rxy
 
 
 def _is_readable (
