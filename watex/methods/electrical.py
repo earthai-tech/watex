@@ -897,16 +897,15 @@ class ResistivityProfiling(ElectricalMethods):
         if self.auto and self.station is not None: 
             warnings.warn (
                 f"Station {self.station!r} is given while 'auto' is 'True'."
-                  " Only the auto-detection is used instead...", UserWarning)
+                  " The auto-detection takes the priority...", UserWarning)
                 
             self.station = None 
         
-        if self.station is None: 
+        if self.station is None:
+            cmsg = " and constraints" if self.constraints is None else ''
             if not self.auto: 
-                warnings.warn("Station number is missing and no constraint is"
-                              " supplied. By default the naive-auto-detection " 
-                              " should be triggered."
-                              )
+                warnings.warn(f"Missing Station number{cmsg}. The naive"
+                              " auto-detection is triggered instead.")
                 self.auto = True 
 
         if self.station is not None: 
@@ -1804,8 +1803,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
     # write an error msg
     msg =''.join([ 
             f"### Number of {arg!r} does not fit the number of"
-            f" {'sites' if arg =='search' else 'stations'}. "
-            "Expect {0} but {1} {2} given."
+            " data. Expect {0} but {1} {2} given."
         ])
     
     if sf is None: 
@@ -1825,11 +1823,11 @@ def _parse_dc_args(self, dcmethod: object , **kws):
             sf= np.repeat ([sf], len(self.survey_names_))
 
     if len(sf)!= len(self.survey_names_): 
+        fmsg = msg.format(len(self.survey_names_),len(sf), 
+            f"{'is' if len(sf)<2 else 'are'}")
+        self._logging.error (fmsg)
         
-        self._logging.error (msg)
-        
-        warnings.warn(msg.format(len(self.survey_names_),len(sf), 
-            f"{'is' if len(sf)<2 else 'are'}") )
+        warnings.warn(fmsg)
             
         if self.verbose > 3: 
             print("-->!Number of DC-resistivity data read sucessfully"
