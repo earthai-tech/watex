@@ -1,4 +1,4 @@
-v0.2.1 (April 7, 2023)
+v0.2.1 (April 17, 2023)
 --------------------------
 
 This is minor changes  in ``v0.2.0``.  
@@ -30,4 +30,24 @@ This is minor changes  in ``v0.2.0``.
   
 - |Enhancement| Update :meth:`watex.method.ZC.remove_ss_emap`. Henceforth correct tensor data by applying the smoothing 
   approached along the frequencies axis using the ``smooth`` and ``drop_outliers`` parameters. 
+
+- |Enhancement| `station` parameter is henceforth available and can be passed to ``auto`` to get the conductive zone from :term:`ERP` to plot 
+  the profiling using :func:`watex.utils.plotutils.plot_profiling`. In addion , dataframe can be used instead provided that it contains 
+  the `resistivity` column.
+
+- |Enhancement| update :func:`watex.datasets.make_erp` and :func:`watex.datasets.make_ves` . :term:`VES` points coordinates ( `xy`) is used to 
+  specify the location of the sounding points. 
+
+- |Enhancement| Since sounding locations is useful to build the whole :term:`DC` features, :func:`watex.utils.coreutils.vesSelector` accepts the coordinates 
+  location through the parameter `xy_coords`
+
+- |Enhancement| Likewise :meth:`watex.methods.VerticalSounding.summary` henceforth include the sounding points location ( longitude , latitude ) or 
+  (easting, northing ) and can be passed to the parameters `xycoords` if coordinates are not included in the dataframe. 
+
+- |Fix| bug in :func:`watex.utils.exmath.type_` to determine the type ``CB2P`` in the case unique consecutive 
+  indexes from type mecanism is given like ``['yes', 'no']``. 
+
+- |Feature| :class:`watex.methods.DCMagic` accepts the :term:`ERP`and :term:`VES` data at once and smartly differentiate the both then compute the 
+  relevant features and aggreate them into  :term:`DC` features that can be exported for training or validation. 
+
 

@@ -3659,7 +3659,7 @@ def is_iterable (
     """
     if (parse_string and not transform) and isinstance (y, str): 
         raise ValueError ("Cannot parse the given string. Set 'transform' to"
-                          " ``True`` otherwise use the 'str2columns' util"
+                          " ``True`` otherwise use the 'str2columns' utils"
                           " from 'watex.utils.funcutils' instead.")
     y = str2columns(y) if isinstance(y, str) and parse_string else y 
     
@@ -5525,8 +5525,145 @@ def rename_files (
             if keep_copy : shutil.copy (f, nf , **kws )
             else : os.rename (f, nf , **kws )
 
+def get_xy_coordinates (d, / , as_frame = False, drop_xy = False, 
+                        raise_exception = True, verbose=0 ): 
+    """Check whether the coordinate values exists in the data
+    
+    Parameters 
+    ------------
+    d: Dataframe 
+       Frame that is expected to contain the longitude/latitude or 
+       easting/northing coordinates.  Note if all types of coordinates are
+       included in the data frame, the longitude/latitude takes the 
+       priority. 
+    as_frame: bool, default= False, 
+       Returns the coordinates values if included in the data as a frame rather 
+       than computing the middle points of the line 
+    drop_xy: bool, default=False, 
+       Drop the coordinates in the data and return the data transformed inplace 
+       
+    raise_exception: bool, default=True 
+       raise error message if data is not a dataframe. If set to ``False``, 
+       exception is converted to a warning instead. To mute the warning set 
+       `raise_exception` to ``mute``
+       
+    verbose: int, default=0 
+      Send message whether coordinates are detected. 
+         
+    returns 
+    --------
+    xy, d, xynames: Tuple 
+      xy : tuple of float ( longitude, latitude) or (easting/northing ) 
+         if `as_frame` is set to ``True``. 
+      d: Dataframe transformed (coordinated removed )  or not
+      xynames: str, the name of coordinates detected. 
+      
+    Examples 
+    ----------
+    >>> import watex as wx 
+    >>> from watex.utils.funcutils import get_xy_coordinates 
+    >>> testdata = wx.make_erp ( n_stations =7, seed =42 ).frame 
+    >>> xy, d, xynames = get_xy_coordinates ( testdata,  )
+    >>> xy , xynames 
+    ((110.48627946874444, 26.051952363176344), ('longitude', 'latitude'))
+    >>> xy, d, xynames = get_xy_coordinates ( testdata, as_frame =True  )
+    >>> xy.head(2) 
+        longitude   latitude        easting      northing
+    0  110.485833  26.051389  448565.380621  2.881476e+06
+    1  110.485982  26.051577  448580.339199  2.881497e+06
+    >>> # remove longitude and  lat in data 
+    >>> testdata = testdata.drop (columns =['longitude', 'latitude']) 
+    >>> xy, d, xynames = get_xy_coordinates ( testdata, as_frame =True  )
+    >>> xy.head(2) 
+             easting      northing
+    0  448565.380621  2.881476e+06
+    1  448580.339199  2.881497e+06
+    >>> # note testdata should be transformed inplace when drop_xy is set to True
+    >>> xy, d, xynames = get_xy_coordinates ( testdata, drop_xy =True)
+    >>> xy, xynames 
+    ((448610.25612032827, 2881538.4380570543), ('easting', 'northing'))
+    >>> d.head(2)
+       station  resistivity
+    0      0.0          1.0
+    1     20.0        167.5
+    >>> testdata.head(2) # coordinates are henceforth been dropped 
+       station  resistivity
+    0      0.0          1.0
+    1     20.0        167.5
+    >>> xy, d, xynames = get_xy_coordinates ( testdata, drop_xy =True)
+    >>> xy, xynames 
+    (None, ())
+    >>> d.head(2)
+       station  resistivity
+    0      0.0          1.0
+    1     20.0        167.5
+
+    """   
+    
+    def get_value_in ( val, /, col , default): 
+        """ Get the value in the frame columns if `val` exists in """
+        x = list( filter ( lambda x: x.find (val)>=0 , col)
+                   )
+        if len(x) !=0: 
+            # now rename col  
+            d.rename (columns = {x[0]: str(default) }, inplace = True ) 
+            
+        return d
+
+    if not (
+            hasattr ( d, 'columns') and hasattr ( d, '__array__') 
+            ) : 
+        emsg = ("Expect dataframe containing coordinates longitude/latitude"
+                f" or easting/northing. Got {type (d).__name__!r}")
         
+        raise_exception = str(raise_exception).lower().strip() 
+        if raise_exception=='true': 
+            raise TypeError ( emsg )
         
+        if raise_exception  not in ('mute', 'silence'):  
+            warnings.warn( emsg )
+       
+        return d 
+    
+    # check whether coordinates exists in the data columns 
+    for name, tname in zip ( ('lat', 'lon', 'east', 'north'), 
+                     ( 'latitude', 'longitude', 'easting', 'northing')
+                     ) : 
+        d = get_value_in(name, col = d.columns , default = tname )
+       
+    # get the exist coodinates 
+    coord_columns  = []
+    for x, y in zip ( ( 'longitude', 'easting' ), ( 'latitude', 'northing')):
+        if ( x  in d.columns and y in d.columns ): 
+            coord_columns.extend  ( [x, y] )
+
+    
+    xy  = d[ coord_columns] if len(coord_columns)!=0 else None 
+    
+    if ( not as_frame 
+        and xy is not None ) : 
+        # take the middle of the line and if both types of 
+        # coordinates are supplied , take longitude and latitude 
+        # and drop easting and northing  
+        xy= tuple ( np.array (
+            xy )[~np.isnan( np.array ( xy ))].mean (axis = 0 )) [:2 ]
+  
+    xynames = tuple ( coord_columns)[:2]
+    if ( 
+            drop_xy  and len( coord_columns) !=0
+            ): 
+        # modifie the data inplace 
+        d.drop ( columns=coord_columns, inplace = True  )
+
+    if verbose: 
+        print("###", "No" if len(xynames)==0 else ( 
+            tuple (xy.columns) if as_frame else xy), "coordinates found.")
+        
+    return  xy , d , xynames 
+       
+        
+def smart_concatenator ( *d , groupby = None ): 
+    """Group """
     
     
         

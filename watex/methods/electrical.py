@@ -35,6 +35,8 @@ from ..utils.funcutils import (
     smart_strobj_recognition , 
     make_ids, 
     show_stats,
+    is_iterable, 
+    get_xy_coordinates, 
     )
 from ..utils.coreutils import (
     _assert_station_positions,
@@ -552,7 +554,7 @@ class DCSounding(ElectricalMethods) :
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
-        self.rho0=rho0, 
+        self.rho0=rho0 
         self.h0=h0
         self.strategy=strategy 
         self.keep_params=keep_params
@@ -1027,16 +1029,7 @@ class ResistivityProfiling(ElectricalMethods):
             Returns DC- profiling object or dataframe. 
         
         """
-        def make_param_table( uparams ): 
-            """ Make parameters table """
-            for k in uparams:
-                if hasattr( getattr(self, k , np.nan ), '__len__') and len(
-                        getattr(self, k , np.nan ))==0: 
-                  v = np.nan 
-                else: v = getattr(self, k , np.nan )
-                
-                yield  (f"{k[:-1] if k.endswith('_') else k }", v) 
-           
+ 
         self.inspect
         
         if self.constraints and not hasattr(self, 'constr_ix_'): 
@@ -1050,7 +1043,7 @@ class ResistivityProfiling(ElectricalMethods):
             'shape_','type_','sfi_')
         
         table_= pd.DataFrame (
-            dict( make_param_table(usefulparams)), index=range(1)
+            dict( _make_param_table(self, usefulparams)), index=range(1)
             )
         table_.station = self.sves_
         table_.set_index ('station', inplace =True)
@@ -1273,6 +1266,7 @@ class VerticalSounding (ElectricalMethods):
         vesorder: int = None, 
         typeofop: str = 'mean',
         objective: Optional[str] = 'coverall',
+        xycoords: tuple=None, 
         **kws
         ): 
         super().__init__(**kws) 
@@ -1282,9 +1276,10 @@ class VerticalSounding (ElectricalMethods):
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
-        self.rho0=rho0, 
+        self.rho0=rho0 
         self.h0=h0
         self.strategy=strategy
+        self.xycoords=xycoords
         
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
@@ -1357,8 +1352,37 @@ class VerticalSounding (ElectricalMethods):
         if self.verbose >= 7 : 
             print(f'Range {str(self.vesorder)!r} of resistivity data '
                   'should be selected as the main sounding data. ')
+        
         self.data_ = vesSelector(
-            data = data, index_rhoa= self.vesorder, **fit_params )
+            data = data, index_rhoa= self.vesorder,
+            is_utm= True if str(self.projection).lower() =='utm' else False, 
+            epsg = self.epsg, 
+            utm_zone= self.utm_zone or '49R', 
+            xy_coords = self.xycoords, 
+            **fit_params 
+            )
+        #xxxx add sves_coordinates xxxxxxxx 
+        # since xycoords value should be controlled in vesSelector. 
+        # if they are valid then data will hold longitude 
+        # and latitude. Now ascertain again if 
+        # easting and northing are in the data using 
+        # 
+        # if xy_sves coordinates is not supplied 
+        # check whether the coordinates can be found 
+        # in the dataframe. if dataframe  and coordinates
+        #  exist then get the coordinates and remove them from data 
+        self.xycoords, _, xynames = get_xy_coordinates (
+            self.data_, drop_xy = True , as_frame =False, 
+            raise_exception='mute')
+ 
+        if self.xycoords is None: 
+            self.xycoords = ( np.nan, np.nan )
+            xynames = ('longitude', 'latitude') 
+        for name, value  in zip ( xynames,  self.xycoords ) : 
+            setattr ( self, name + '_', value  )
+            
+        #xxxx end add sves_coordinates xxxxxxxx 
+                
         if not _is_valid_ves( self.data_): 
             raise VESError("Invalid VES data. Data must contain at least"
                            " 'resistivity' and 'AB/2' position." )
@@ -1415,6 +1439,7 @@ class VerticalSounding (ElectricalMethods):
             print("The Parameter numbers were successfully computed.") 
         return self 
     
+
     def summary(self,
                 keep_params: bool = False, 
                 return_table: bool =False, 
@@ -1435,26 +1460,30 @@ class VerticalSounding (ElectricalMethods):
          self or table_: :class:`~.VerticalSounding` or class:`pd.DataFrame` 
              Returns DC- Sounding object or dataframe. 
         """
-        
         self.inspect
-
+        coords_xy = ('easting_', 'northing_') if hasattr (
+            self, 'easting_') else ('longitude_', 'latitude_')
         usefulparams = (
             'area', 'AB','MN', 'arrangememt','utm_zone', 'objective', 'rho0',
-             'h0', 'search', 'max_depth_', 'ohmic_area_', 'nareas_')
+             'h0', 'search', 'max_depth_', 'ohmic_area_', 'nareas_',
+             * coords_xy)
         
         table_= pd.DataFrame (
-            {f"{k}": np.nan if len( np.array( getattr(self, k , np.nan ))
-                                   )==0 else getattr(self, k , np.nan )
-             for k in usefulparams}, index=range(1)
+            dict( _make_param_table(self, usefulparams)), index=range(1)
             )
+
         table_.area = self.area
         table_.set_index ('area', inplace =True)
-        table_.rename (columns= {
-            'max_depth_':'max_depth',
-            'ohmic_area_':'ohmic_area',
-            'nareas_':'nareas'
-                            },
-                           inplace =True)
+        # rcols ={k: k[:-1] for k in usefulparams if k.endswith ('_')} 
+        
+        table_.rename ( columns={k: k[:-1] for k in usefulparams 
+                                 if k.endswith ('_')}, inplace =True )
+        # table_.rename (columns= {
+        #     'max_depth_':'max_depth',
+        #     'ohmic_area_':'ohmic_area',
+        #     'nareas_':'nareas'
+        #                     },
+        #                    inplace =True)
         if keep_params: 
             table_.reset_index(inplace =True )
             table_.drop( 
@@ -1465,7 +1494,7 @@ class VerticalSounding (ElectricalMethods):
         self.table_ = table_ 
             
         return table_ if return_table else self  
-        
+       
     def plotOhmicArea (self, fbtw= False, **plot_kws ) : 
         """ Plot the ohmic-area from selected fractured zone.
         
@@ -1745,7 +1774,7 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
                 self.data_.append (dcObj.fit(o).summary(
                     keep_params=self.keep_params))
                 self.stations[kk] = dcObj.sves_ 
-                    
+
             elif dcmethod.__name__ =='VerticalSounding': 
                 dcObj = dcmethod(
                     search=self.search[kk], 
@@ -1763,7 +1792,10 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
             
             self.isnotvalid_.append(o)
             unwanted_snames.append(self.survey_names_[kk])
-    #     pbar.update(kk) if TQDM else ''
+            
+            
+        pbar.update(kk)  if TQDM else None 
+        
     # (pbar.close (), print('-completed-') ) if TQDM else ''
     
     # let's keep the valid survey names 
@@ -1893,6 +1925,16 @@ def _summary (self, return_table = True):
     
     return self.table_ if return_table else self  
 
+def _make_param_table( self, uparams ): 
+    """ Make parameters table """
+    for k in uparams:
+        if hasattr( getattr(self, k , np.nan ), '__len__') and len(
+                getattr(self, k , np.nan ))==0: 
+          v = np.nan 
+        else: v = getattr(self, k , np.nan )
+        
+        yield  (f"{k[:-1] if k.endswith('_') else k }", v) 
+
         
 def _geterpattr (attr , dl ): 
     """ Get attribute from the each DC-resistivity object and 
@@ -1939,6 +1981,7 @@ def _validate_file_in (*data ):
     return 
 
         
+
         
     
     

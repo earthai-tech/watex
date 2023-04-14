@@ -2586,7 +2586,10 @@ def plot_bar(x, y, wh= .8,  kind ='v', fig_size =(8, 6), savefig=None,
     
 def plot_profiling (
         erp, 
-        cz=None, *, 
+        /, 
+        station = None,  
+        cz=None, 
+        *, 
         style = 'classic', 
         fig_size = (10, 4), 
         cz_plot_kws= None,
@@ -2603,8 +2606,23 @@ def plot_profiling (
     Parameters 
     -----------
     erp: array_like 1d
-        The electrical resistivity profiling array. 
+        The electrical resistivity profiling array. If dataframe is passed, 
+        `resistivity` column must be included. 
         
+        .. versionchanged:: 0.2.1 
+           Can henceforth accept dataframe that contains resistivity values. 
+ 
+    station: str, int, optional 
+        Station is used to visualize the conductive zone in the `erp` profile. 
+        This seems useful if `cz` is not given. 
+        When `station='auto'` it automatically detect the best conductive zone 
+        assuming the very low resistivity in the profile and plot the 
+        conductive zone. To have the expected results, `station` position or 
+        `cz` must be given or the . 
+        
+       .. versionadded:: 0.2.1 
+           Can henceforth pass the station to plot the conductive zone. 
+           
     cz: array_like, optional, 
         The selected conductive zone. If ``None``, `cz` should not be plotted.
         
@@ -2635,15 +2653,32 @@ def plot_profiling (
     Examples 
     ----------
     >>> from watex.datasets import make_erp 
-    >>> from watex.utils import defineConductiveZone 
     >>> from watex.utils.plotutils import plot_profiling 
     >>> d= make_erp (n_stations =56, seed = 42)
     >>> plot_profiling  (d.resistivity)
-    
+    >>> # read the frame and get the resistivity values 
+    >>> plot_profiling (d.frame, station ='s07' ) 
+    <AxesSubplot:xlabel='Stations', ylabel='App.resistivity ($\\Omega.m$)'>
     """
     plt.style.use (style )
     
+    if hasattr ( erp , 'columns') and hasattr ( erp , '__array__'): 
+        if 'resistivity' not in  erp.columns : 
+            raise TypeError ("Missing resistivity column in the data.")
+        
+        erp = erp.resistivity 
+    
     erp = check_y (erp , input_name ="sample of ERP data")
+   
+    if station is not None: 
+        from .coreutils import defineConductiveZone 
+        
+        auto =False 
+        if str(station).lower().strip () =='auto': 
+            auto = True ; station =None 
+        cz, *_  = defineConductiveZone(
+            erp , station = station , auto= auto )
+    
     fig, ax = plt.subplots(1,1, figsize =fig_size)
     leg =[]
     
@@ -2654,7 +2689,8 @@ def plot_profiling (
     marker_kws = marker_kws or dict (marker ='o', c='#9EB3DD' )
     ax.scatter (np.arange(len(erp)), erp, **marker_kws )
     
-    leg.append(zl)
+    leg.append(zl)    
+        
     if cz is not None: 
         cz= check_y (cz, input_name ="Conductive zone 'cz'")
         z = np.ma.masked_values (erp, np.isin(erp, cz ))

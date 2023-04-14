@@ -288,7 +288,9 @@ class DType (Generic [T]):
         ...  
        
 class ArrayLike(Generic[T, D]): 
-    """ Arry Type here means the 1D array i.e singular column. """
+    """ Array Type here means the 1D array i.e singular column. 
+    For multi-dimensional array we used NDArray instead. 
+    """
     
     def __getitem__ (self, T) -> Union ['ArrayLike', T]: 
         """ Return Type of the given Type variable. """ 

@@ -1301,7 +1301,7 @@ class TPlot (BasePlot):
         spad=.5, 
         **kws
         ): 
-        """ Plot resistivities and phases from mutiples stations. 
+        """ Plot resistivities and phases from multiples stations. 
         
         Parameters 
         ----------
@@ -1762,7 +1762,7 @@ class TPlot (BasePlot):
             # sites = [ np.random.choice (
             #     range (res[0].shape[1])) for i in range (nsites)] 
             
-        # make site as an iterabel objects 
+        # make site as an iterable object 
         sites = is_iterable(sites, exclude_string= True , transform =True )
         
         s= copy.deepcopy(sites)
@@ -1773,8 +1773,8 @@ class TPlot (BasePlot):
             try: 
                site= int(site)
             except TypeError: 
-                raise TypeError ("Missing position number. Station must be "
-                                 f"prefixed with position, e.g. 'S7', got {s[ii]!r}")
+                raise TypeError ("Missing position number. Station must prefix"
+                                 f" with position, e.g. 'S7', got {s[ii]!r}")
             
             site = abs (site) + 1 if how !='py' else site 
             

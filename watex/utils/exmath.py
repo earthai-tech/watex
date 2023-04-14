@@ -1196,7 +1196,12 @@ def ohmicArea(
     # # if f-y < 0 => f< y so fitting curve is under the basement curve 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # make basement func f45 from oB
-    f45, *_ = fitfunc(oB, Y[oIx:])
+    
+    #  catch rankwarning if exists  
+    with warnings.catch_warnings():
+        warnings.filterwarnings(action='ignore', category=np.RankWarning)
+        f45, *_ = fitfunc(oB, Y[oIx:])
+        
     ff = f45 - f_rhotl  # f(x) -g(x)
 
     diff_arr= ff (xx)  # get the relative position f/g from oB
@@ -1372,21 +1377,24 @@ def type_ (erp: ArrayLike[DType[float]] ) -> str:
     elif len(set(status)) ==2: 
         yes_ix , = np.where (np.array(status) =='yes') 
         # take the remain index 
-        no_ix = np.array (status)[len(yes_ix):]
-        
+        # no_ix = np.array (status)[len(yes_ix):]
+        no_ix , = np.where ( np.array ( status)=='no')
         # check whether all indexes are sorted 
         sort_ix_yes = all(yes_ix[i] < yes_ix[i+1]
                       for i in range(len(yes_ix) - 1))
         sort_ix_no = all(no_ix[i] < no_ix[i+1]
                       for i in range(len(no_ix) - 1))
-        
+  
         # check whether their difference is 1 even sorted 
         if sort_ix_no == sort_ix_yes == True: 
             yes = set ([abs(yes_ix[i] -yes_ix[i+1])
                         for i in range(len(yes_ix)-1)])
             no = set ([abs(no_ix[i] -no_ix[i+1])
                         for i in range(len(no_ix)-1)])
-            if yes == no == {1}: 
+            if ( yes == no == {1} or 
+                # in the case unique consecutive 
+                # index is given like ['no', 'yes']
+                len(yes) ==len(no)==0): 
                 type_= 'CB2P'
                 
     return type_ 
