@@ -5234,16 +5234,16 @@ def random_selector (
        Array of values 
     value: float, arraylike 
         If ``float`` value is passed, it indicates the number of values to 
-        select among the length of `ar`. If ``array`` is passed, it
-        should be self contain in the given array. However if ``string`` is 
+        select among the length of `arr`. If array (``value``) is passed, it
+        should be self contain in the given ``arr`. However if ``string`` is 
         given and contain the ``%``, it calculates the ratio of 
         number to randomly selected. 
-    see: int, Optional 
+    seed: int, Optional 
        Allow retrieving the identical value randomly selected in the given 
        array. 
        
     suffle: bool, False 
-       If  ``True`` , shuffled the selected values. 
+       If  ``True`` , shuffle the selected values. 
        
     Returns 
     --------
@@ -5309,7 +5309,6 @@ def random_selector (
     if shuffle : np.random.shuffle (arr )
 
     return arr
-
 
 def cleaner (
     data: DataFrame|NDArray,
@@ -5637,17 +5636,15 @@ def get_xy_coordinates (d, / , as_frame = False, drop_xy = False,
         if ( x  in d.columns and y in d.columns ): 
             coord_columns.extend  ( [x, y] )
 
-    
     xy  = d[ coord_columns] if len(coord_columns)!=0 else None 
-    
+
     if ( not as_frame 
         and xy is not None ) : 
         # take the middle of the line and if both types of 
         # coordinates are supplied , take longitude and latitude 
         # and drop easting and northing  
-        xy= tuple ( np.array (
-            xy )[~np.isnan( np.array ( xy ))].mean (axis = 0 )) [:2 ]
-  
+        xy = tuple ( np.nanmean ( np.array ( xy ) , axis =0 )) [:2]
+
     xynames = tuple ( coord_columns)[:2]
     if ( 
             drop_xy  and len( coord_columns) !=0

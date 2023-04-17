@@ -327,8 +327,8 @@ Classes
    methods.AqSection
    methods.DCProfiling
    methods.DCSounding
+   methods.DCMagic
    methods.EM
-   methods.ERP
    methods.ERPCollection
    methods.Hydrogeology
    methods.MXS
@@ -363,7 +363,7 @@ Functions
 	methods.electrical.ResistivityProfiling.plotAnomaly 
 	methods.electrical.VerticalSounding.summary 
 	methods.electrical.VerticalSounding.plotOhmicArea
-    methods.electrical.VerticalSounding.invert 	
+    methods.electrical.VerticalSounding.invert 
 
 :mod:`~watex.methods.em`: EM - EMAP: short-periods Processing 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

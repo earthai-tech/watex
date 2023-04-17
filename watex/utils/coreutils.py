@@ -441,7 +441,7 @@ def fill_coordinates(
         xx = np.zeros_like(x); 
         yy = np.zeros_like(xx)
         for ii, (la, lo) in enumerate (zip(x, y)):
-            e , n, uz  = func (
+            e , n, *uz  = func (
                 la, lo, utm_zone = utm_zone, datum = datum, epsg =epsg 
                 ) 
             xx [ii] = e ; yy[ii] = n  
@@ -472,16 +472,23 @@ def fill_coordinates(
         'easting', data )
     north, n_isvalid  = _get_coordcomps(
         'northing', data )
-
+ 
     if lon_isvalid and lat_isvalid: 
-        try : 
-            east , north , uz = _set_coordinate_values(
-                lat.values, lon.values, func=project_point_ll2utm,
-                )
-        except :# pass if an error occurs 
-            pass 
-        else : 
-            data['easting'] = east ; data['northing'] = north 
+        # raise warning when all coordinates are valids 
+        if  ( e_isvalid and n_isvalid ): 
+            if verbose:
+                warnings.warn(
+                    "Data contains valid longitude/latitude and "
+                    "easting/northing. The latter should be overwritten.")
+        else: 
+            try : 
+                east , north , uz = _set_coordinate_values(
+                    lat.values, lon.values, func=project_point_ll2utm,
+                    )
+            except :# pass if an error occurs 
+                pass 
+            else : 
+                data['easting'] = east ; data['northing'] = north 
             
     elif e_isvalid and n_isvalid: 
         if utm_zone is None: 
@@ -491,15 +498,14 @@ def fill_coordinates(
                     ' calculus. `NoneType` can not be used as UTM zone number.'
                     ' Refer to the documentation.')
         try : 
-            lat , lon, utm_zone = _set_coordinate_values(
+            lat , lon, *_ = _set_coordinate_values(
                 east.values, north.values,
                 func = project_point_utm2ll,
                 )
         except : pass 
         else : 
             data['longitude'] = lon ;  data['latitude'] = lat 
-        
-    
+
     return data, utm_zone 
 
     
@@ -769,11 +775,13 @@ def is_erp_dataframe (
 
 
 def erpSelector (
-        f: str | NDArray | Series | DataFrame ,
-        columns: str | List[str] = ..., 
-        force:bool= False, 
-        verbose=0., 
-        **kws:Any 
+    f: str | NDArray | Series | DataFrame ,
+    columns: str | List[str] = ..., 
+    force:bool= False, 
+    utm_zone:str=None, 
+    epsg:int | str=None, 
+    verbose:int =0., 
+    **kws:Any 
 ) -> DataFrame  : 
     """ Read and sanitize the data collected from the survey. 
     
@@ -807,6 +815,17 @@ def erpSelector (
     verbose: int, 
        Show the verbosity; outputs more messages if ``True``. 
        
+    utm_zone : string, optional
+       zone number and 'S' or 'N' e.g. '55S'. Default to the
+       centre point of the provided points. If given, the longitude/latitude 
+       are computed from valid easting/northing coordinates. 
+       
+       .. versionadded::  0.2.1
+       
+    epsg: int
+        epsg number defining projection (see http://spatialreference.org/ref/ 
+        for moreinfo). Overrides utm_zone if both are provided
+       
     kws: dict
         Additional pandas `pd.read_csv` and `pd.read_excel` 
         methods keyword arguments. Be sure to provide the right argument. 
@@ -814,8 +833,7 @@ def erpSelector (
         the file to read is ``xlsx`` format will raise an error. Indeed, 
         `sep` parameter is acceptable for parsing the `.csv` file format
         only.
-        
-         
+   
     Returns 
     -------
     DataFrame with valuable column(s). 
@@ -899,7 +917,9 @@ def erpSelector (
                     )
                 
     if isinstance(f, pd.DataFrame): 
-        f = is_erp_dataframe( f, force = force , verbose =verbose )
+        f = is_erp_dataframe( f, force = force , verbose =verbose 
+                             )
+ 
     elif isinstance(f , pd.Series ): 
         f = is_erp_series(f)
     else : 
@@ -910,6 +930,19 @@ def erpSelector (
     if np.all(f.resistivity)==0: 
         raise ResistivityError('Resistivity values need to be supply.')
 
+    if utm_zone is not None: 
+        # compute the longitude latitude if 
+        # utm_zone is given. 
+        if ('easting' in f.columns and 'northing' in f.columns) and (
+                'longitude' in f.columns  and 'latitude' in f.columns): 
+            if  (
+                    np.all(f['longitude'])==0 
+                    and np.all(f['latitude'])==0
+                    ): 
+   
+                f, _ = fill_coordinates(f, utm_zone = utm_zone , 
+                                        epsg = epsg )
+                
     return f 
 
 def _fetch_prefix_index (

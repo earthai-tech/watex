@@ -10,7 +10,7 @@ from watex.methods.electrical import (
     DCProfiling  , VerticalSounding , 
     DCSounding
     )
-
+from watex.methods.erp import DCMagic
 from watex.utils import vesSelector 
 ERPPATH= r'data/erp'
 # @pytest.mark.skip(reason="no need of this testing")
@@ -181,13 +181,73 @@ def test_VerticalSounding():
     
     vObj.plotOhmicArea(fbtw=True )
     
+def test_DCMagic (): 
+    # test 
+    erp_data = wx.make_erp ( seed =33 ).frame  
+    ves_data = wx.make_ves (seed =42).frame 
+    v = wx.DCSounding ().fit(wx.make_ves (seed =10, as_frame =True, add_xy =True))
+    r = wx.DCProfiling().fit( wx.make_erp ( seed =77 , as_frame =True))
+    res= wx.methods.ResistivityProfiling(station='S4').fit(erp_data) 
+    ves= wx.methods.VerticalSounding(search=60).fit(ves_data)
+    # dc-ves  : 100%|################################| 1/1 [00:00<00:00, 111.13B/s]
+    # dc-erp  : 100%|################################| 1/1 [00:00<00:00, 196.77B/s]
+    m = DCMagic().fit(erp_data, ves_data, v, r, ves, res ) 
+    # dc-erp  : 100%|################################| 2/2 [00:00<00:00, 307.40B/s]
+    # dc-o:erp: 100%|################################| 1/1 [00:00<00:00, 499.74B/s]
+    # dc-ves  : 100%|################################| 2/2 [00:00<00:00, 222.16B/s]
+    # dc-o:ves: 100%|################################| 1/1 [00:00<00:00, 997.46B/s]
+    m.summary(keep_params =True)
+    #     longitude  latitude shape  ...       sfi  sves_resistivity  ohmic_area
+    # 0         NaN       NaN     W  ...  1.310417        707.609756  263.213572
+    # 1         NaN       NaN     K  ...  1.300024          1.000000  964.034554
+    # 2  109.332932  28.41193     U  ...  1.184614          1.000000  276.340744
+@pytest.mark.skipif(os.path.isdir ('data/ves'
+                                   ) is False  or os.path.isdir (
+                                       'data/erp') is False  ,
+                    reason = 'DC data path does not exist')    
+def test_DCMagic_ (): 
+    # test Magic method when aggreate multiple files from Path-like objects
+    m0 = DCMagic(verbose =True ).fit('data/erp', 'data/ves')
+    # dc-ves  : 100%|################################| 1/1 [00:00<00:00, 111.11B/s]
+    # dc-erp  : 100%|################################| 1/1 [00:00<00:00, 166.67B/s]
+    # dc-erp  : 100%|################################| 2/2 [00:00<00:00, 231.29B/s]
+    # dc-o:erp: 100%|################################| 1/1 [00:00<00:00, 498.79B/s]
+    # dc-ves  : 100%|################################| 2/2 [00:00<00:00, 203.20B/s]
+    # dc-o:ves: 100%|################################| 1/1 [00:00<00:00, 500.04B/s]
+    # dc-erp  : 100%|################################| 9/9 [00:00<00:00, 219.63B/s]
+    # dc-ves  : 100%|################################| 3/3 [00:00<00:00, 163.37B/s]
+    m0.summary(keep_params =True, force =True )
+    #     longitude  latitude shape  ...       sfi  sves_resistivity   ohmic_area
+    # 0         0.0       0.0     C  ...  1.050857              80.0          NaN
+    # 1         0.0       0.0     V  ...  0.076391              50.0          NaN
+    # 2         0.0       0.0     C  ...  0.035928            1101.0          NaN
+    # 3         0.0       0.0     V  ...  0.076391             500.0          NaN
+    # 4         0.0       0.0     V  ...  0.076391             500.0          NaN
+    # 5         0.0       0.0     V  ...  0.076391             500.0          NaN
+    # 6         0.0       0.0     V  ...  0.076391             500.0          NaN
+    # 7         0.0       0.0     V  ...  0.076391             500.0          NaN
+    # 8         0.0       0.0     V  ...  1.086559              93.0          NaN
+    # 9         NaN       NaN   NaN  ...       NaN               NaN   268.087715
+    # 10        NaN       NaN   NaN  ...       NaN               NaN   268.087715
+    # 11        NaN       NaN   NaN  ...       NaN               NaN  1183.364102
+    tab= m0.summary(keep_params =True, coerce =True )
+
+     #    longitude  latitude shape  ...       sfi  sves_resistivity   ohmic_area
+     # 0        0.0       0.0     C  ...  1.050857                80   268.087715
+     # 1        0.0       0.0     V  ...  0.076391                50   268.087715
+     # 2        0.0       0.0     C  ...  0.035928              1101  1183.364102
     
-if __name__=='__main__': 
+     # [3 rows x 9 columns]
+    print(tab)
     
-    test_DCProfiling()
-    test_VerticalSounding() 
-    test_DCSounding() 
-    test_ResistivityProfiling() 
+# if __name__=='__main__': 
+    
+#     test_DCProfiling()
+#     test_VerticalSounding() 
+#     test_DCSounding() 
+#     test_ResistivityProfiling() 
+#     test_DCMagic() 
+#     test_DCMagic_ () 
     
     
     
