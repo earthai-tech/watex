@@ -1,0 +1,60 @@
+v0.2.1 (April 20, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.0`` that shows fugs fixed, features and improvements.  
+
+- |Fix| bug in :func:`watex.utils.exmath.type_` to determine the type ``CB2P`` in the case unique consecutive 
+  indexes from type mecanism is given like ``['yes', 'no']``. 
+ 
+- |Fix| Bug fixed in :meth:`watex.methods.Processing.ama` computation. Rather than using the raw phase for recomputing the shifted data, it henceforth 
+  uses the coefficient factor calculated from the corrected apparent resistivities to recompute the new phase. Then use the new phase for recomputing 
+  the impendance tensor `z` in turn when the objective is to output new corrected impedance tensor from parameter ``out`` of :class:`watex.methods.Processing` class. 
+ 
+- |Feature| Add smoothing approaches from :mod:`watex.utils.exmath` for dropping or masking noised data in :term:`NSAMT` survey : 
+
+  - :func:`watex.utils.smooth1d` polishes the one-dimensional data while  :func:`watex.utils.smoothing` smoothes data along a given axis in 
+    two-dimensional arrays. 
+
+  - :func:`watex.utils.rhophi2z` converts impedance-style information given in Rho/Phi format into complex valued Z. It is more consistent 
+    compared to :func:`watex.utils.exmath.rhoa2z`
+
+- |Feature| :func:`watex.utils.funcutils.rename_files` gives several approaches for quick renaming/shifting files especially when dealing with :term:`EDI` files. 
+
+- |Feature| Add new methods  in  :class:`watex.site.Profile`   from :mod:`watex.site` as supplement site data io and visualization. 
+  
+  - :meth:`watex.site.Profile.out` gives many ways for exporting coordinates data points including elevation
+
+  - :meth:`watex.site.Profile.plot` gives a base plot for data visualization.
+
+- |Feature| :class:`watex.methods.DCMagic` accepts the :term:`ERP` and :term:`VES` data at once and smartly differentiate the both then compute the 
+  relevant features and aggreate them into  :term:`DC` features that can be exported for training or validation. 
+
+- |Feature| :meth:`watex.view.TPlot.plot_rhophi` plots corrected apparent resistivities using the :term:`EMAP` filters such as 
+  ``['tma'| 'ama'|'flma']`` or using the static shift (``ss``) or distorsion (``dist``) filters 
+    
+- |Enhancement| Improve the :term:`EMAP` filters by adding new parameters  ``drop_outliers`` and ``smooth`` for removing outliers and smoothing data along 
+  the frequencies axis using :meth:`watex.methods.Processing.tma` for trimming-moving average, :meth:`watex.methods.Processing.ama` for adaptative moving average based 
+  on ideas or Torres-Verdin  and :meth:`watex.methods.Processing.tma` for fixed length dipole-moving average. This efficiently deals with the static shift 
+  effect when interferences noises are strong enough.
+  
+- |Enhancement| Update :meth:`watex.methods.ZC.remove_ss_emap`. Henceforth correct tensor data by applying the smoothing 
+  approached along the frequencies axis using the ``smooth`` and ``drop_outliers`` parameters. 
+
+- |Enhancement| `station` parameter is henceforth available and can be passed to ``auto`` to get the conductive zone from :term:`ERP` to plot 
+  the profiling using :func:`watex.utils.plotutils.plot_profiling`. In addion , dataframe can be used instead provided that it contains 
+  the `resistivity` column.
+
+- |Enhancement| update :func:`watex.datasets.make_erp` and :func:`watex.datasets.make_ves` . :term:`VES` points coordinates ( `xy`) is used to 
+  specify the location of the sounding points. 
+
+- |Enhancement| Since sounding locations is useful to build the whole :term:`DC` features, :func:`watex.utils.coreutils.vesSelector` accepts the coordinates 
+  location through the parameter `xy_coords`
+
+- |Enhancement| Likewise :meth:`watex.methods.VerticalSounding.summary` henceforth includes the sounding points location ( longitude , latitude ) or 
+  (easting, northing ) and can be passed to the parameters `xycoords` if coordinates are not included in the dataframe. 
+
+
+
+
+
+

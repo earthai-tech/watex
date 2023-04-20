@@ -23,7 +23,6 @@ from .._typing import  (
     NDArray, 
     Series , 
     DataFrame,
-    F
     )
 from .._watexlog import watexlog 
 from ..decorators import refAppender 
@@ -35,6 +34,7 @@ from ..utils.funcutils import (
     smart_strobj_recognition , 
     make_ids, 
     show_stats,
+    get_xy_coordinates, 
     )
 from ..utils.coreutils import (
     _assert_station_positions,
@@ -282,10 +282,8 @@ class DCProfiling(ElectricalMethods)  :
         
         # check whether object is readable as ERP objs
         #  -> if not assume a path or file is given 
-        
-        if not _readfromdcObjs (self, *data ):
-            _readfrompath (self, *data, **fit_params)
-            
+        _readfromdcObjs (self, *data )
+
         if self.verbose : 
             if len(self.isnotvalid_)!=0: 
                 warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
@@ -552,7 +550,7 @@ class DCSounding(ElectricalMethods) :
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
-        self.rho0=rho0, 
+        self.rho0=rho0 
         self.h0=h0
         self.strategy=strategy 
         self.keep_params=keep_params
@@ -607,13 +605,8 @@ class DCSounding(ElectricalMethods) :
         
         # check whether object is readable as ERP objs
         #  -> if not assume a path or file is given 
-        if not _readfromdcObjs (self, *data, 
-                                dcmethod= VerticalSounding, 
-                                exception= VESError):
-            _readfrompath (self, *data, 
-                           dcmethod = VerticalSounding,  
-                           **fit_params)
-            
+        _readfromdcObjs (self, *data, dcmethod ="VerticalSounding"  )
+
         if self.verbose : 
             if len(self.isnotvalid_)!=0: 
                 warnings.warn (f"Found {len(self.isnotvalid_)} invalid data.")
@@ -855,17 +848,20 @@ class ResistivityProfiling(ElectricalMethods):
                 raise TypeError ( f'{data!r} object should be a file,'
                                  f' got {type(data).__name__!r}'
                                  )
-        
-        data = erpSelector(data, columns, force= self.force ) 
+        data = erpSelector(data, columns, force= self.force , 
+                           utm_zone= self.utm_zone, epsg = self.epsg 
+                           ) 
         if not _is_valid_erp(data): 
             raise ERPError("Invalid ERP data. Data must contain at least"
                            " 'resistivity' and 'station' position." )
             
         self.data_ = copy.deepcopy(data) 
-        
+        # for consistency compute easting/northing if 
+        # are missing. 
         self.data_, self.utm_zone = fill_coordinates(
             self.data_, utm_zone= self.utm_zone, datum = self.datum ,
-            epsg= self.epsg,verbose = self.verbose) 
+            epsg= self.epsg , verbose = self.verbose )
+        
         self.resistivity_ = self.data_.resistivity 
         # convert app.rho to the concrete value 
         # if log10 rho are provided.
@@ -897,16 +893,15 @@ class ResistivityProfiling(ElectricalMethods):
         if self.auto and self.station is not None: 
             warnings.warn (
                 f"Station {self.station!r} is given while 'auto' is 'True'."
-                  " Only the auto-detection is used instead...", UserWarning)
+                  " The auto-detection takes the priority...", UserWarning)
                 
             self.station = None 
         
-        if self.station is None: 
+        if self.station is None:
+            cmsg = " and constraints" if self.constraints is None else ''
             if not self.auto: 
-                warnings.warn("Station number is missing and no constraint is"
-                              " supplied. By default the naive-auto-detection " 
-                              " should be triggered."
-                              )
+                warnings.warn(f"Missing Station number{cmsg}. The naive"
+                              " auto-detection is triggered instead.")
                 self.auto = True 
 
         if self.station is not None: 
@@ -1020,13 +1015,14 @@ class ResistivityProfiling(ElectricalMethods):
             the main important params for prediction purpose. Otherwise, 
             returns all main DC-resistivity attributes 
         return_tables: bool, default=False, 
-            Returns atributes in a pandas dataframe. 
+            Returns attributes of parameters in a pandas dataframe. 
         Returns 
         --------
         self or table_: :class:`~.ResistivityProfiling` or class:`pd.DataFrame` 
             Returns DC- profiling object or dataframe. 
         
         """
+ 
         self.inspect
         
         if self.constraints and not hasattr(self, 'constr_ix_'): 
@@ -1040,8 +1036,7 @@ class ResistivityProfiling(ElectricalMethods):
             'shape_','type_','sfi_')
         
         table_= pd.DataFrame (
-            {f"{k[:-1] if k.endswith('_') else k }": getattr(self, k , np.nan )
-             for k in usefulparams}, index=range(1)
+            dict( _make_param_table(self, usefulparams)), index=range(1)
             )
         table_.station = self.sves_
         table_.set_index ('station', inplace =True)
@@ -1264,6 +1259,7 @@ class VerticalSounding (ElectricalMethods):
         vesorder: int = None, 
         typeofop: str = 'mean',
         objective: Optional[str] = 'coverall',
+        xycoords: tuple=None, 
         **kws
         ): 
         super().__init__(**kws) 
@@ -1273,9 +1269,10 @@ class VerticalSounding (ElectricalMethods):
         self.vesorder=vesorder 
         self.typeofop=typeofop
         self.objective=objective 
-        self.rho0=rho0, 
+        self.rho0=rho0 
         self.h0=h0
         self.strategy=strategy
+        self.xycoords=xycoords
         
         for key in list( kws.keys()): 
             setattr(self, key, kws[key])
@@ -1348,8 +1345,37 @@ class VerticalSounding (ElectricalMethods):
         if self.verbose >= 7 : 
             print(f'Range {str(self.vesorder)!r} of resistivity data '
                   'should be selected as the main sounding data. ')
+        
         self.data_ = vesSelector(
-            data = data, index_rhoa= self.vesorder, **fit_params )
+            data = data, index_rhoa= self.vesorder,
+            is_utm= True if str(self.projection).lower() =='utm' else False, 
+            epsg = self.epsg, 
+            utm_zone= self.utm_zone or '49R', 
+            xy_coords = self.xycoords, 
+            **fit_params 
+            )
+        #xxxx add sves_coordinates xxxxxxxx 
+        # since xycoords value should be controlled in vesSelector. 
+        # if they are valid then data will hold longitude 
+        # and latitude. Now ascertain again if 
+        # easting and northing are in the data using 
+        # 
+        # if xy_sves coordinates is not supplied 
+        # check whether the coordinates can be found 
+        # in the dataframe. if dataframe  and coordinates
+        #  exist then get the coordinates and remove them from data 
+        self.xycoords, _, xynames = get_xy_coordinates (
+            self.data_, drop_xy = True , as_frame =False, 
+            raise_exception='mute')
+ 
+        if self.xycoords is None: 
+            self.xycoords = ( np.nan, np.nan )
+            xynames = ('longitude', 'latitude') 
+        for name, value  in zip ( xynames,  self.xycoords ) : 
+            setattr ( self, name + '_', value  )
+            
+        #xxxx end add sves_coordinates xxxxxxxx 
+                
         if not _is_valid_ves( self.data_): 
             raise VESError("Invalid VES data. Data must contain at least"
                            " 'resistivity' and 'AB/2' position." )
@@ -1406,6 +1432,7 @@ class VerticalSounding (ElectricalMethods):
             print("The Parameter numbers were successfully computed.") 
         return self 
     
+
     def summary(self,
                 keep_params: bool = False, 
                 return_table: bool =False, 
@@ -1426,25 +1453,30 @@ class VerticalSounding (ElectricalMethods):
          self or table_: :class:`~.VerticalSounding` or class:`pd.DataFrame` 
              Returns DC- Sounding object or dataframe. 
         """
-        
         self.inspect
-
+        coords_xy = ('easting_', 'northing_') if hasattr (
+            self, 'easting_') else ('longitude_', 'latitude_')
         usefulparams = (
             'area', 'AB','MN', 'arrangememt','utm_zone', 'objective', 'rho0',
-             'h0', 'search', 'max_depth_', 'ohmic_area_', 'nareas_')
+             'h0', 'search', 'max_depth_', 'ohmic_area_', 'nareas_',
+             * coords_xy)
         
         table_= pd.DataFrame (
-            {f"{k}": getattr(self, k , np.nan )
-             for k in usefulparams}, index=range(1)
+            dict( _make_param_table(self, usefulparams)), index=range(1)
             )
+
         table_.area = self.area
         table_.set_index ('area', inplace =True)
-        table_.rename (columns= {
-            'max_depth_':'max_depth',
-            'ohmic_area_':'ohmic_area',
-            'nareas_':'nareas'
-                            },
-                           inplace =True)
+        # rcols ={k: k[:-1] for k in usefulparams if k.endswith ('_')} 
+        
+        table_.rename ( columns={k: k[:-1] for k in usefulparams 
+                                 if k.endswith ('_')}, inplace =True )
+        # table_.rename (columns= {
+        #     'max_depth_':'max_depth',
+        #     'ohmic_area_':'ohmic_area',
+        #     'nareas_':'nareas'
+        #                     },
+        #                    inplace =True)
         if keep_params: 
             table_.reset_index(inplace =True )
             table_.drop( 
@@ -1455,7 +1487,7 @@ class VerticalSounding (ElectricalMethods):
         self.table_ = table_ 
             
         return table_ if return_table else self  
-        
+       
     def plotOhmicArea (self, fbtw= False, **plot_kws ) : 
         """ Plot the ohmic-area from selected fractured zone.
         
@@ -1544,276 +1576,68 @@ class VerticalSounding (ElectricalMethods):
             )
         return 1 
     
-def _readfromdcObjs(self, *data: List[object ] ,
-                     dcmethod:object=ResistivityProfiling ,  
-                     exception: F = ERPError ): 
-    """ Read metadata DC object
+def _parse_dc_objs (
+        *data, method = 'ResistivityProfiling', ): 
+    """ Separate module objects objects if exists from the whole data
+    valid data.
     
-    A set of :class:`.ResistivityProfiling` objects.
-    
-    :param data: list-a collection of  DC-resistivity method 
-        objects
-    
-    :returns: bool- whether an object is readable as a DC-resistivity 
-        profiling or sounding object or not.``False`` otherwise.  
-    """
-
-    self._logging.info (f"Read a collection '{dcmethod.__name__!r}' objects")
-    
-    objm = ( 'ResistivityProfiling', 'VerticalSounding')
-    # assert whether the method is implemented 
-    if dcmethod.__name__  not in objm: 
-        raise NotImplementedError(
-        f"Method {dcmethod.__name__!r} is not implemented")
-    
-    # assert whether each element composing the data is ERP object 
-    s = set ([ get_estimator_name(o) in objm for o in data ])
-    if len(s)!=1 or ( 
-            len(s) ==1  and not tuple(s)[0]
-            ): 
-        return False 
-    
-    # show the progress bar        
-    pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
-                 desc ="dc-erp" if dcmethod.__name__ =='ResistivityProfiling'\
-                     else'dc-ves',
-                 ncols =77)
-    
-    for kk , o in enumerate(pbar) :
-        try: 
-            if isinstance (o, dcmethod ): 
-                self.data_.append(o) 
-
-        except : self.isnotvalid_.append(o) 
-        
-    #     pbar.update(kk) if TQDM else ''
-    # (pbar.close (), print('-completed-') ) if TQDM else ''
-    
-    if len(self.data_)==0 : 
-        warnings.warn("No DC-resistvity profiling data detected. Make a collection" 
-                      f" of profiling object using {dcmethod.__name__!r} class."
-                      )
-        raise exception("None DC-Resistivity profiling data found!"
-                       )
-        
-    #show stats 
-    if self.verbose > 0:
-        print()
-        show_stats (data , self.data_,
-                    obj = 'DC-ERP' if dcmethod.__name__=='ResistivityProfiling' \
-                        else 'DC-VES' ,
-                    lenl=79)
-        
-    # make a ids 
-    if self.verbose > 3 : 
-        print("Set the ids for each line e.g. line1 for the first line.")
-    
-    name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
-    self.survey_names_ = np.array(make_ids(
-        self.data_, name , None, True))
-    
-    return True 
-
-    
-def _readfrompath (self, *data: List[str | DataFrame ] ,
-                   dcmethod: object= ResistivityProfiling, 
-                   **kws ): 
-    """ Read data from a file,  a path-like object or dataframe. 
-    
-    It collects the list of |ERP| or |VES| files and create a DC -resistivity
-    object from a DC -resistivity method. 
-    
-    :param data: str or path-like object, 
-    
-    :param kws: Additional keyword from 
-        :func:`watex.utils.coreutils.parseStations`. It refers to the 
-        `station_delimiter` parameters. 
-        
-    """
-    self._logging.info (" {self.__class__.__name__!r} collects the "
-                        "resistivity objects ")
-    
-    # assert whether the method is implemented 
-    if dcmethod.__name__  not in ( 'ResistivityProfiling', 
-                                  'VerticalSounding'):
-        raise NotImplementedError(
-        f"Method {dcmethod.__name__!r} is not implemented")
-        
-    # is_df =False 
-    ddict = dict() 
-    regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
-    
-    self.survey_names_ = None  # initialize 
-    
-    # if isinstance(data, (str, pd.DataFrame) ): 
-    #     data = [data ]
-    
-    is_df = _validate_file_in( *data )
-    
-    if is_df is None: 
-        raise DCError(
-            "Unknow data type, Expect a path-like object, a"
-           f" dataframe or a dc-object. Got {type(data).__name__!r}")
-        
-    if is_df =='P-type': 
-        data = [os.path.join( data[0], d ) for d in os.listdir(data[0])] 
-    elif is_df =='D-file': 
-        is_df=True 
-        
-    elif is_df =='F-type': 
-        pass 
-
-    if is_df in ("P-type", "F-type"): 
-        if self.read_sheets: 
-            _, ex = os.path.splitext( data[0])
-            if ex != '.xlsx': 
-                raise TypeError ("Read multisheets expects an excel file "
-                                 f" extension <'.xlsx'> not: {ex!r}")
-            for d in data : 
-                try: 
-                    ddict.update ( **pd.read_excel (d , sheet_name =None))
-                except : pass 
-                    
-                #collect stations names
-            if len(ddict)==0 : 
-                raise ERPError ("Can'find the DC-resistitivity profiling data "
-                                )
-            self.survey_names_ = list(map(
-                lambda o: regex.sub('_', o).lower(), ddict.keys()))
-    
-            if self.verbose > 3: 
-                print(f"Number of the collected data from stations are"
-                      f" : {len(self.survey_names_)}")
-                
-            data = list(ddict.values ())
-        
-        # make a survey id from collection object 
-        if self.survey_names_ is None: 
-            self.survey_names_ = list(map(lambda o :regex.sub(
-                '_',  os.path.basename(o)), data ))
-            
-        # remove the extension and keep files names 
-        self.survey_names_ = list(
-            map(lambda o: o.split('.')[0], self.survey_names_)) 
-        
-
-    if is_df=='D-type' : 
-        name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
-        self.survey_names_ = np.array(make_ids(
-            data, name , None, True))
-    # populate and assert stations and search   
-    #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    # if list of station is not given for each file 
-    # note that here station is station where one expect to 
-    # locate a drilling drilling i.e. sves
-    _parse_dc_args(self, dcmethod,  **kws)
-
-    # show the progress bar
-    try: 
-        pbar = data if not TQDM else tqdm.tqdm(data ,ascii=True, unit='B',
-                     desc ="dc-erp" if dcmethod.__name__ =='ResistivityProfiling'\
-                         else'dc-ves',
-                     ncols =77)
-    except NameError: 
-        # force pbar to hold the data value
-        # if trouble occurs 
-        pbar =data 
+    Parameters 
+    -----------
+    data: list 
+       Collection of DC objects 
        
-    # save  the invalid survey names 
-    unwanted_snames =[]
-    # -> read the data and make dc Objs 
-    for kk,  o  in enumerate (pbar)  :
-        try :
-            if dcmethod.__name__=='ResistivityProfiling':
-                dcObj = dcmethod( 
-                    station = self.stations[kk] , 
-                    dipole= self.dipole,
-                    auto=True if self.stations[kk] is None else self.auto, 
-                    utm_zone = self.utm_zone, 
-                    force=self.force
-                    )
-                self.data_.append (dcObj.fit(o).summary(
-                    keep_params=self.keep_params))
-                self.stations[kk] = dcObj.sves_ 
-                    
-            elif dcmethod.__name__ =='VerticalSounding': 
-                dcObj = dcmethod(
-                    search=self.search[kk], 
-                    vesorder=self.vesorder,
-                    typeofop=self.typeofop,
-                    objective=self.objective,
-                    rho0=self.rho0, 
-                    h0=self.h0,
-                    strategy=self.strategy, 
-                    )
-                self.data_.append (dcObj.fit(o).summary(
-                    keep_params=self.keep_params))
+    method: str, 
+       Method of selection. 
+    return_diff: bool, default=False, 
+       Retuns the remain objects which are not DCProfiling or DCSounding 
        
-        except : 
-            
-            self.isnotvalid_.append(o)
-            unwanted_snames.append(self.survey_names_[kk])
-    #     pbar.update(kk) if TQDM else ''
-    # (pbar.close (), print('-completed-') ) if TQDM else ''
-    
-    # let's keep the valid survey names 
-    # and pop the invalid names 
-    # reconvert survey names into an array 
-    self.survey_names_ = [ 
-        e for e in self.survey_names_ if e not in unwanted_snames] 
-    # # if D-type , rename survey line/or site 
-    # this will fit the number of site or line 
-    if is_df =='D-type': 
-        name = 'line' if dcmethod.__name__=='ResistivityProfiling' else 'site'
-        self.survey_names_ = [
-            f"{name}{ii+1}" for ii in range (len(self.survey_names_))]
-        
-    self.survey_names_ = np.array(self.survey_names_ )
-    
-    
-    if self.verbose > 0:
-        #show stats 
-        print()
-        show_stats (data , self.data_,
-                    obj = 'DC-ERP' if dcmethod.__name__=='ResistivityProfiling' \
-                        else 'DC-VES' ,
-                    lenl=79)
-        
-    if self.verbose > 3: 
-            print(" Number of file unsucceful read is:"
-                  f" {len(self.isnotvalid_)}")
-            
+    Returns
+    --------
+    dc0, remain_data: Tuple of list 
+       A collection of selected DC objects from other objects objects 
+       
+    """ 
+    dco=[]
 
-def _parse_dc_args(self, dcmethod: object , **kws): 
+    dco = list(filter ( lambda o : get_estimator_name (
+        o)== method, data )
+               ) 
+    # get the remain data which are not a 
+    # DCObjects 
+    remain_data = list(filter (
+        lambda o: get_estimator_name(o) != method, data )
+        ) 
+
+    return dco, remain_data 
+
+
+def _parse_dc_args(self, dcmethod: str  ,survey_names=None,  **kws): 
     """ parse dc arguments to  fit the number of survey lines, populate
     and sanitize the attributes accordingly.
     
+    :param dcmethod:
     :param kws: Additional keyword from 
         :func:`watex.utils.coreutils.parseDCArgs`. It refers to the 
         `station_delimiter` parameters. 
     """
    
     flag=0
-    
-    if dcmethod.__name__=='ResistivityProfiling': 
+    if dcmethod =='ResistivityProfiling': 
         sf , arg = self.stations , 'stations'
         flag=0
-    elif dcmethod.__name__=='VerticalSounding': 
+    elif dcmethod =='VerticalSounding': 
         sf, arg =self.search , 'search'
         flag=1
     # write an error msg
     msg =''.join([ 
             f"### Number of {arg!r} does not fit the number of"
-            f" {'sites' if arg =='search' else 'stations'}. "
-            "Expect {0} but {1} {2} given."
+            " data. Expect {0} but {1} {2} given."
         ])
-    
+
     if sf is None: 
-        sf= np.repeat ([45.] if  flag else [None], 
-                       len(self.survey_names_))  
-    
+        sf= np.repeat ([45.] if  flag else [None], len(survey_names))  
+
     elif sf is not None: 
-        
         if os.path.isfile (str(sf)): 
             sf=parseDCArgs(sf, arg=arg, **kws)
         elif isinstance (sf, str): 
@@ -1822,14 +1646,14 @@ def _parse_dc_args(self, dcmethod: object , **kws):
                 isinstance(sf, (int , float)) 
                 and flag
                 ):
-            sf= np.repeat ([sf], len(self.survey_names_))
+            sf= np.repeat ([sf], len(survey_names))
 
-    if len(sf)!= len(self.survey_names_): 
+    if len(sf)!= len(survey_names): 
+        fmsg = msg.format(len(survey_names),len(sf), 
+            f"{'is' if len(sf)<2 else 'are'}")
+        self._logging.error (fmsg)
         
-        self._logging.error (msg)
-        
-        warnings.warn(msg.format(len(self.survey_names_),len(sf), 
-            f"{'is' if len(sf)<2 else 'are'}") )
+        warnings.warn(fmsg)
             
         if self.verbose > 3: 
             print("-->!Number of DC-resistivity data read sucessfully"
@@ -1839,7 +1663,7 @@ def _parse_dc_args(self, dcmethod: object , **kws):
                   )
                     
         raise StationError (msg.format(
-            len(self.survey_names_), len(sf) , f"{'is' if len(sf) <=1 else 'are'}",
+            len(survey_names), len(sf) , f"{'is' if len(sf) <=1 else 'are'}",
             ))
         
     if not flag: 
@@ -1847,7 +1671,8 @@ def _parse_dc_args(self, dcmethod: object , **kws):
     elif flag:
         self.search = sf 
         
-        
+    return survey_names 
+
 def _summary (self, return_table = True): 
     """ Isolated part of `summary` method of DC-resistivity method. 
     
@@ -1861,6 +1686,12 @@ def _summary (self, return_table = True):
         instanciated object otherwise.
     
     """
+    # check whether there is valid data 
+    if len( self.ids_)==0: 
+        warnings.warn("No DC objects to draw summary. Use <.isnotvalid_>"
+                      " attribute to get the list of non-valid data.")
+        return 
+    
     tables =[]
     vids_ =[]
     for sl in self.ids_: 
@@ -1882,6 +1713,16 @@ def _summary (self, return_table = True):
     self.table_.index = vids_
     
     return self.table_ if return_table else self  
+
+def _make_param_table( self, uparams ): 
+    """ Make parameters table """
+    for k in uparams:
+        if hasattr( getattr(self, k , np.nan ), '__len__') and len(
+                getattr(self, k , np.nan ))==0: 
+          v = np.nan 
+        else: v = getattr(self, k , np.nan )
+        
+        yield  (f"{k[:-1] if k.endswith('_') else k }", v) 
 
         
 def _geterpattr (attr , dl ): 
@@ -1927,9 +1768,220 @@ def _validate_file_in (*data ):
         if len( set(s)) ==1 and s[0]: 
             return o 
     return 
+   
+def _readfromdcObjs(self, *data , dcmethod:str = "ResistivityProfiling", 
+                    **fit_params) : 
+    """ Read multiple data with different kinds including the meta-DC-objects. 
+    
+    Read metadata DC object as a set of 
+    
+    :param data: list-a collection of  DC-resistivity method 
+        objects
+    :param dcmethod: str object of :class:`.ResistivityProfiling`  or 
+       :class:`.VerticalSounding` objects.
+      
+    :returns: bool- whether an object is readable as a DC-resistivity 
+        profiling or sounding object or not.``False`` otherwise.  
+        
+    """ 
+    
+    if hasattr (dcmethod , '__module__'): 
+        dcmethod= get_estimator_name(dcmethod )
+        
+    # separate DCobj from others files 
+    objs , others = _parse_dc_objs(*data , method = dcmethod) 
+    
+    # make temp line/sites if objects are given 
+    name = 'line' if dcmethod =='ResistivityProfiling' else 'site'
+    survey_names = [ name + "{kk +1}"  for i in range(len(objs))] 
+    surv_names=None 
+    if  len(others) !=0: 
+        others, surv_names = _readfrompath (
+            self, *others , dcmethod = dcmethod ,  **fit_params )
+        # # if D-type , rename survey line/or site 
+        # this will fit the number of site or line 
+        
+    survey_names += [] if surv_names is None else list(surv_names)
+            
+    data0 = objs + list(others )
+    try: 
+        bname = "{:<8}".format(
+            'dc-erp' if dcmethod =='ResistivityProfiling' else 'dc-ves')
+        pbar = data0 if not TQDM else tqdm.tqdm(data0 ,ascii=True, unit='B',
+                     desc =bname, ncols =77)
+    except NameError: 
+        # force pbar to hold the data value
+        # if trouble occurs 
+        pbar =data0 
 
+    unwanted_snames =[]
+    for kk,  o  in enumerate (pbar):
+        if get_estimator_name(o) == dcmethod:
+            if not hasattr ( o, 'table_'): 
+                o.summary(return_table =False )
+            self.data_.append( o) 
+            
+            pbar.update(kk) if TQDM else ''
+            continue 
+        # reset index kk by excluding the number of 
+        # DC objects.
+        ss= kk - len(objs) 
+        # -> read the data and make dc Objs 
+        try: 
+            if dcmethod =='ResistivityProfiling':
+                dcObj = ResistivityProfiling( 
+                    station = self.stations[ss] , 
+                    dipole= self.dipole,
+                    auto=True if self.stations[ss] is None else self.auto, 
+                    utm_zone = self.utm_zone, 
+                    force=self.force
+                    )
+                self.data_.append (dcObj.fit(o).summary(
+                    keep_params=self.keep_params))
+                self.stations[ss] = dcObj.sves_ 
+    
+            elif dcmethod =='VerticalSounding': 
+                
+                dcObj = VerticalSounding(
+                    search=self.search[ss], 
+                    vesorder=self.vesorder,
+                    typeofop=self.typeofop,
+                    objective=self.objective,
+                    rho0=self.rho0, 
+                    h0=self.h0,
+                    strategy=self.strategy, 
+                    )
+                self.data_.append (dcObj.fit(o).summary(
+                    keep_params=self.keep_params))
+        except : 
+            self.isnotvalid_.append(o)
+            # rather than keep the dataframe name, used the File names
+            # that are anot successfull read. 
+            unwanted_snames.append(surv_names[ss])
+            
+        pbar.update(kk)  if TQDM else None 
+
+    # let's keep the valid survey names 
+    # and pop the invalid names 
+    # reconvert survey names into an array 
+    # survey_names= [ 
+    #     e for e in survey_names if e not in unwanted_snames] 
+    survey_names = list(filter (
+        lambda s : s not in unwanted_snames, survey_names ))
+
+    name = 'line' if dcmethod=='ResistivityProfiling' else 'site'
+    self.survey_names_ = np.array(
+        make_ids(self.data_, name , None, True))
+
+    if self.verbose > 0:
+        #show stats 
+        print()
+        show_stats (data , self.data_,
+                    obj = 'DC-ERP' if dcmethod =='ResistivityProfiling' 
+                        else 'DC-VES' ,
+                    lenl=79)
         
+    if self.verbose > 3: 
+            print(" Number of file unsucceful read is:"
+                  f" {len(self.isnotvalid_)}")
+
+    
+def _readfrompath (self, *data: List[str | DataFrame ] , 
+                   dcmethod: object= "ResistivityProfiling", 
+                   **kws ): 
+    """ Read data from a file,  a path-like object or dataframe. 
+    
+    It collects the list of |ERP| or |VES| files and create a DC -resistivity
+    object from a DC -resistivity method. 
+    
+    :param data: str or path-like object, 
+    
+    :param kws: Additional keyword from 
+        :func:`watex.utils.coreutils.parseStations`. It refers to the 
+        `station_delimiter` parameters. 
         
+    """
+    self._logging.info (" {self.__class__.__name__!r} collects the "
+                        "resistivity objects ")
+    
+    # assert whether the method is implemented 
+    if dcmethod not in ( 'ResistivityProfiling', 'VerticalSounding'):
+        raise NotImplementedError(
+        f"Method {dcmethod!r} is not implemented")
+        
+    # is_df =False 
+    ddict = dict() 
+    regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
+    
+    survey_names = None  # initialize 
+    
+    # if isinstance(data, (str, pd.DataFrame) ): 
+    #     data = [data ]
+    
+    is_df = _validate_file_in( *data )
+    
+    if is_df is None: 
+        raise DCError(
+            "Unknow data type, Expect a path-like object, a"
+           f" dataframe or a dc-object. Got {type(data).__name__!r}")
+        
+    if is_df =='P-type': 
+        data = [os.path.join( data[0], d ) for d in os.listdir(data[0])] 
+    
+    elif is_df =='F-type': 
+        pass 
+
+    if is_df in ("P-type", "F-type"): 
+        if self.read_sheets: 
+            _, ex = os.path.splitext( data[0])
+            if ex != '.xlsx': 
+                raise TypeError ("Read multisheets expects an excel file "
+                                 f" extension <'.xlsx'> not: {ex!r}")
+            for d in data : 
+                try: 
+                    ddict.update ( **pd.read_excel (d , sheet_name =None))
+                except : pass 
+                    
+                #collect stations names
+            if len(ddict)==0 : 
+                raise ERPError ("Can'find the DC-resistitivity profiling data "
+                                )
+            survey_names = list(map(
+                lambda o: regex.sub('_', o).lower(), ddict.keys()))
+    
+            if self.verbose > 3: 
+                print(f"Number of the collected data from stations are"
+                      f" : {len(self.survey_names_)}")
+                
+            data = list(ddict.values ())
+        
+        # make a survey id from collection object 
+        if survey_names is None: 
+            survey_names = list(map(lambda o :regex.sub(
+                '_',  os.path.basename(o)), data ))
+            
+        # remove the extension and keep files names 
+        survey_names = list(
+            map(lambda o: o.split('.')[0], survey_names)) 
+    
+    if is_df =='D-type': 
+       name = 'line' if dcmethod =='ResistivityProfiling' else 'site'
+       survey_names = [ name + "{kk +1}"  for i in range(len(data))] 
+       
+    # populate and assert stations and search   
+    #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # if list of station is not given for each file 
+    # note that here station is station where one expect to 
+    # locate a drilling drilling i.e. sves
+    survey_names = _parse_dc_args(self, dcmethod, survey_names, **kws)
+
+    return data, survey_names 
+
+
+    
+
+
+  
     
     
     

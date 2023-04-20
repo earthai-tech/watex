@@ -16,6 +16,7 @@ true boreholes and well resistivity data in the survey area.
 import os
 import warnings
 import copy
+from importlib import resources
 import numpy as np
 
 from .._typing import NDArray 
@@ -1061,7 +1062,11 @@ def _ps_memory_management(obj=None, option='set'):
     It memorizes the model data for the first run and used it when calling it
     to  visualize the PS log at each station. Be aware to edit this script.
     """
+    DMOD = 'watex.etc'
     memory, memorypath='__memory.pkl', 'watex/etc'
+    with resources.path (DMOD, memory) as p : 
+         memory_file = str(p) # for consistency
+         
     mkeys= ('set', 'get', 'recover', 'fetch', set)
     if option not in mkeys: 
         raise ValueError('Wrong `option` argument. Acceptable '
@@ -1073,11 +1078,14 @@ def _ps_memory_management(obj=None, option='set'):
         psobj_token = __build_ps__token(obj)
         data = (psobj_token, list(obj.__dict__.items()))
         serialize_data ( data, memory, savepath= memorypath )
-
         return 
     
     elif option in ('get', 'recover', 'fetch'): 
-        memory_exists =  os.path.isfile(os.path.join(memorypath, memory))
+        try: 
+            memory_exists =  os.path.isfile(os.path.join(memorypath, memory))
+        except: 
+            memory_exists =  os.path.isfile(memory_file)
+            
         if not memory_exists: 
             _logger.error('No memory found. Run the GeoStrataModel class '
                           'beforehand to create your first model.')
@@ -1085,8 +1093,12 @@ def _ps_memory_management(obj=None, option='set'):
                           " GeoStrataModel model by running the class first.")
             raise  MemoryError("Memory not found. Use the GeoStrataModel class to "
                                "create your model first.")
-        psobj_token, data_ = load_serialized_data(
-            os.path.join(memorypath, memory))
+        try: 
+            psobj_token, data_ = load_serialized_data(
+                os.path.join(memorypath, memory))
+        except: 
+            psobj_token, data_ = load_serialized_data(memory_file )
+            
         data = dict(data_)
         # create PseudoStratigraphicObj from metaclass and inherits from 
         # dictattributes of GeoStrataModel class

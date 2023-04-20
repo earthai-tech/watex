@@ -50,7 +50,7 @@ The module is a set of feature extraction and selection, matrices decomposition 
 	
 .. _base_ref:
 
-:mod:`watex.base`: Base classes and functions
+:mod:`watex.base`: Base classes and Accessors
 =======================================================
 
 .. automodule:: watex.base
@@ -327,8 +327,8 @@ Classes
    methods.AqSection
    methods.DCProfiling
    methods.DCSounding
+   methods.DCMagic
    methods.EM
-   methods.ERP
    methods.ERPCollection
    methods.Hydrogeology
    methods.MXS
@@ -363,7 +363,7 @@ Functions
 	methods.electrical.ResistivityProfiling.plotAnomaly 
 	methods.electrical.VerticalSounding.summary 
 	methods.electrical.VerticalSounding.plotOhmicArea
-    methods.electrical.VerticalSounding.invert 	
+    methods.electrical.VerticalSounding.invert 
 
 :mod:`~watex.methods.em`: EM - EMAP: short-periods Processing 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -652,6 +652,7 @@ Functions
 	utils.rename_labels_in
 	utils.reshape
 	utils.rhoa2z
+	utils.rhophi2z
 	utils.savejob
 	utils.scalePosition
 	utils.scaley
@@ -660,6 +661,7 @@ Functions
 	utils.selectfeatures
 	utils.sfi
 	utils.shape
+	utils.smoothing
 	utils.split_train_test
 	utils.to_numeric_dtypes
 	utils.smart_label_classifier
@@ -752,6 +754,7 @@ Functions
 	utils.exmath.savgol_filter
 	utils.exmath.savitzky_golay1d 
 	utils.exmath.select_anomaly
+	utils.exmath.smooth1d 
 
 	
 :mod:`~watex.utils.coreutils`: Additional core-utilities
@@ -935,6 +938,7 @@ Functions
 	view.TPlot.plot_recovery 
 	view.TPlot.plot_phase_tensors 
     view.TPlot.plot_rhoa
+	view.TPlot.plot_rhophi
 	view.TPlot.plot_tensor2d
 	
 

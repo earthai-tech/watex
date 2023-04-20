@@ -3,6 +3,9 @@ v0.1.9 (March 20, 2023)
 
 This is a  change performed from ``v0.1.8``.  
 
+- |Fix| Bug fix for absolute path to :term:`Bagoue region` pickling data. We used the ``importlib`` 
+  module to handle the path to the pickled data. 
+  
 - |Fix| Fix bug in updating :term:`tensor` in ``_zupdate`` class of module :mod:`watex.methods.em`. Set the `z` property attribute 
   using the `_z`. Idem for `z_err` which henceforth uses `_z_err` in :class:`watex.externals.z.Z`  module. 
 
@@ -35,4 +38,3 @@ This is a  change performed from ``v0.1.8``.
 - |Fix| Bug fix in :meth:`watex.view.TPlot.plot_rhoa` when ``errorbar`` parameter is set to ``False``. No more crash , apparent resistivity plot 
   could henceforth be possible either with ``errorbar=True`` or ``False``. 
 
-- |Feature| :meth:`watex.view.TPlot.plot_corrections` allows to visualize the static shift correction as well as the distortion. 

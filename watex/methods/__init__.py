@@ -17,7 +17,8 @@ from .em import (
     )
 from .erp import ( 
     ERPCollection ,
-    ERP 
+    ERP , 
+    DCMagic
     )
 from .hydro import ( 
     Hydrogeology, 
@@ -42,4 +43,5 @@ __all__=[
     "AqSection", 
     "MXS", 
     "Logging", 
+    "DCMagic"
     ]

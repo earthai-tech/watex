@@ -50,9 +50,10 @@ from ..utils.exmath import (
     interpolate2d, 
     get_full_frequency, 
     find_closest, 
-    rhoa2z, 
+    rhophi2z, 
     z2rhoa, 
     mu0,
+    smoothing, 
     )
 from ..utils.coreutils import ( 
     makeCoords, 
@@ -320,14 +321,14 @@ class EM(IsEdi):
             # of 'Edi' and 'Edi'
             pass 
     
-        if not types: rf = self.data_ # if objects is set 
+        if not types: rf = self.data_ # if EDI-objects are set 
         
         # read EDI objects 
         try: 
             self.ediObjs_ = list(map(lambda o: self.is_valid(o), self.data_))  
         except EDIError: 
             objn = type(self.ediObjs_[0]).__name__
-            raise EMError (f"Expect a list of EDI objects. Got {objn!r}") 
+            raise EMError (f"Expect a collection of EDI objects. Got {objn!r}") 
         
         if self.verbose:
             try:show_stats(rf, self.ediObjs_)
@@ -1296,7 +1297,10 @@ class Processing (EM) :
 
     def tma (
         self,
-    )-> NDArray[DType[float]] :
+        smooth: bool = True, 
+        drop_outliers:bool = True, 
+        return_phi:bool =False, 
+    ) :
         
         """ A trimmed-moving-average filter to estimate average apparent
         resistivities at a single static-correction-reference frequency. 
@@ -1308,15 +1312,44 @@ class Processing (EM) :
         
         Parameters 
         ----------
-        data: path-like object or list  of  pycsamt.core.edi.Edi 
-            Collections of EDI-objects from `pycsamt`_ 
-    
+        smooth: bool, default=True, 
+           Smooth the tensor data along the frequencies. 
+        
+        drop_outliers: bool, default=True 
+           Suppress outliers in the data when smoothing data along 
+           the frequencies axis. Note that `drop_outliers` does not take 
+           effect if `smooth` is ``False``. 
+           
+        return_phi: bool, default=False, 
+           return corrected phase in degrees. Mostly the phase does not need 
+           to correct since it is not affected by the static shift effect. 
+           However, it can be as smooth phase curve when ``smooth=True``
+      
+        .. versionadded:: 0.2.1 
+           Polish the tensor data along the frequency axis remove noises 
+           and deal with the static shift effect when interferences noises 
+           are strong enough. 
+        
         Returns 
         -------
-        rc or cf: np.ndarray, shape  (N, M)
+        rc: np.ndarray, shape  (N, M)
             EMAP apparent  resistivity static shift corrected or static 
             correction factor or impedance tensor.
             
+        rc, phi_c: Tuple of shape (N, N) 
+           EMAP apparent resistivity and phase corrected. 
+
+        Example
+        --------
+        >>> import watex as wx
+        >>> import matplotlib.pyplot as plt 
+        >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
+        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> z_corrected = p.tma () # output z in complex dtype 
+        >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
+            [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
+            np.arange(len(p.ediObjs_)), np.abs( z_corrected[7,: ]) , 'or-')
+        
         References 
         -----------
         .. [1] http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
@@ -1392,11 +1425,30 @@ class Processing (EM) :
         # compute the correction factor cf
         cf = np.power(10, wf, dtype =float)/ np. power(10, log_rho2d) 
         
-        rc = self.res2d_ * cf 
+        rc = self.res2d_ * cf
+        if smooth: 
+            rc = smoothing( rc , 
+                           drop_outliers = drop_outliers, 
+                           # block moving average `ma` 
+                           # trick to True to prevent changes 
+                           # in smoothing function
+                           ma =True   
+                           )
+            # force resistivity to be positive 
+            # after smoothing if exists 
+            if (rc < 0).any(): 
+                rc = np.abs (rc )
+        # applied correction factor 
+        # to phase 
+        phc = self.phs2d_ * cf 
         if self.out =='z': 
-            rc = rhoa2z(rc, self.phs2d_, self.freqs_)
-
-        return cf if self.out =='sf' else rc   
+            # rc = rhoa2z(rc, self.phs2d_, self.freqs_)
+            rc = rhophi2z(rc, phc, self.freqs_)
+            
+        if smooth: 
+            phc = smoothing (phc , drop_outliers = drop_outliers 
+                             )    
+        return rc  if not return_phi else (rc, phc ) 
 
     def _make2dblobs (
         self, 
@@ -1405,7 +1457,6 @@ class Processing (EM) :
  
         :note: created to collect argument of EMAP filters. Refer to functions 
         :func:`~.tma`, :func:`~.flma` and :func:`~.ama` documentation. 
-            
         """
 
         self.component= str(self.component).lower().strip() 
@@ -1451,10 +1502,13 @@ class Processing (EM) :
         
         return (self.res2d_ , self.phs2d_ , self.freqs_, self.c,
                 self.window_size, self.component, self.out) 
-    
+
     def ama (
         self, 
-        )-> NDArray[DType[float]] :
+        smooth:bool =True, 
+        drop_outliers:bool=True, 
+        return_phi: bool=False, 
+        ):
         """ 
         Use an adaptive-moving-average filter to estimate average apparent 
         resistivities at a single static-correction-reference frequency.. 
@@ -1466,15 +1520,44 @@ class Processing (EM) :
         
         Parameters 
         ----------
-        data: path-like object or list  of  pycsamt.core.edi.Edi 
-            Collections of EDI-objects from `pycsamt`_ 
+        smooth: bool, default=True, 
+           Smooth the tensor data along the frequencies. 
+        
+        drop_outliers: bool, default=True 
+           Suppress outliers in the data when smoothing data along 
+           the frequencies axis. Note that `drop_outliers` does not take 
+           effect if `smooth` is ``False``.
+           
+        return_phi: bool, default=False, 
+           return corrected phase. Mostly the phase does not need to correct 
+           since it is not affected by the static shift effect. However, it 
+           can be as smooth phase curve when ``smooth=True``
+          
+        .. versionadded:: 0.2.1 
+           Polish the tensor data along the frequency axis remove noises 
+           and deal with the static shift effect when interferences noises 
+           are strong enough. 
             
         Returns 
         -------
-        rc or z: np.ndarray, shape  (N, M)
-            EMAP apparent  resistivity static shift corrected  or static 
-            correction tensor 
+        rc: np.ndarray, shape  (N, M)
+            EMAP apparent  resistivity static shift corrected or static 
+            correction factor or impedance tensor.
             
+        rc, phi_c: Tuple of shape (N, N) 
+           EMAP apparent resistivity and phase corrected. 
+            
+        Example
+        --------
+        >>> import watex as wx
+        >>> import matplotlib.pyplot as plt 
+        >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
+        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> z_corrected = p.ama () # output z in complex dtype 
+        >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
+            [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
+            np.arange(len(p.ediObjs_)), np.abs( z_corrected[7,: ]) , 'or-')
+        
         References 
         -----------
         .. [1] http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
@@ -1504,11 +1587,17 @@ class Processing (EM) :
                       for ii in range(self.window_size)])
         #print(w)
         zjr = np.zeros_like(self.res2d_) 
-        zji = zjr.copy() 
+        zji = zjr.copy()
+        # xxxxxxxxxxxxxxxxxxxxxxx
+        # do the same for the phase 
+        phase_c = np.zeros_like(self.phs2d_) 
         
         for ii in range (len(zj)): 
             w_exp = [ k * self.window_size for k in range(1, self.c +1 )]
             zcr=list(); zci = list()
+            
+            #xxxxxxxxxxx
+            phi = list() 
             # compute Zk(xk, w) iteratively
             # with adpatavive W expanded to 1 to c 
             for wind_k  in w_exp : 
@@ -1518,11 +1607,17 @@ class Processing (EM) :
                 # block mode to same to keep the same dimensions
                 zcr.append(np.convolve(zj[ii, :].real, w[::-1], 'same'))
                 zci.append(np.convolve(zj[ii, :].imag, w[::-1], 'same'))
+                
+                #xxxxxx
+                phi.append(np.convolve(self.phs2d_[ii, :], w[::-1], 'same'))
             # and take the average 
             try : 
                 
                 zjr [ii, :] = np.average (np.vstack (zcr), axis = 0)
                 zji[ii, :] = np.average (np.vstack (zci), axis = 0)
+                
+                #xxxxxxxxxxxx
+                phase_c[ii, :]= np.average (np.vstack (phi), axis = 0)
             except : 
                 # when  array dimensions is out of the concatenation 
                 # then shrunk it to match exactly the first array 
@@ -1533,17 +1628,41 @@ class Processing (EM) :
                 zjr [ii, :] = np.average (np.vstack (shr_zrc), axis = 0)
                 zji[ii, :] = np.average (np.vstack (shr_zrci), axis = 0)
      
+                #xxxxxxxxxxxxxxxxxxx
+                phs_zrc = [ ar [: len(phi[0])] for ar in phi ]
+                phase_c [ii, :]= np.average (np.vstack (phs_zrc), axis = 0)
+                    
         zjc = zjr + 1j * zji 
-        rc = z2rhoa(zjc, self.freqs_)  
+        rc = z2rhoa(zjc, self.freqs_) 
+        if smooth: 
+            # block moving average `ma` trick to True 
+            # and force resistivity value to be positive 
+            rc = smoothing( rc , 
+                           drop_outliers = drop_outliers, 
+                           ma =True , 
+                           )
+            if (rc < 0).any(): 
+                rc = np.abs (rc )
+
         if self.mode =='same': 
             rc[:, 0] = self.res2d_[:, 0]
-            zjc[:, 0] = zj [:, 0]
-        
-        return zjc if self.out =='z' else rc 
+            # zjc[:, 0] = zj [:, 0]
+            
+        if self.out =='z': 
+            # recompute z with the corrected phase
+            rc = rhophi2z(rc, phi= phase_c, freq= self.freqs_)
+            
+        if smooth : 
+            phase_c = smoothing ( phase_c, drop_outliers= drop_outliers )
+            
+        return  rc if not return_phi else ( rc, phase_c )
 
     def flma (
         self, 
-        )-> NDArray[DType[float]] :
+        smooth:bool=True, 
+        drop_outliers:bool=True, 
+        return_phi:bool=False 
+        ) :
         """ A fixed-length-moving-average filter to estimate average apparent
         resistivities at a single static-correction-reference frequency. 
         
@@ -1554,16 +1673,44 @@ class Processing (EM) :
         
         Parameters 
         ----------
-        data: path-like object or list  of  pycsamt.core.edi.Edi 
-            Collections of EDI-objects from `pycsamt`_ 
+        smooth: bool, default=True, 
+           Smooth the tensor data along the frequencies. 
+        
+        drop_outliers: bool, default=True 
+           Suppress outliers in the data when smoothing data along 
+           the frequencies axis. Note that `drop_outliers` does not take 
+           effect if `smooth` is ``False``. 
+        
+        return_phi: bool, default=False, 
+           return corrected phase in degrees. Mostly the phase does not need 
+           to correct since it is not affected by the static shift effect.
+           However, it can be as smooth phase curve when ``smooth=True``
+           
+        .. versionadded:: 0.2.1 
+           Polish the tensor data along the frequency axis remove noises 
+           and deal with the static shift effect when interferences noises 
+           are strong enough. 
    
         Returns 
         -------
-        rc or z : np.ndarray, shape  (N, M)
-            EMAP apparent  resistivity static shift corrected  or static 
-            correction impedance tensor. 
+        rc: np.ndarray, shape  (N, M)
+            EMAP apparent  resistivity static shift corrected or static 
+            correction factor or impedance tensor.
+            
+        rc, phi_c: Tuple of shape (N, N) 
+           EMAP apparent resistivity and phase corrected. 
+            
+        Example 
+        --------
+        >>> import watex as wx
+        >>> import matplotlib.pyplot as plt 
+        >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
+        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> z_corrected = p.flma () # output z in complex dtype 
+        >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
+            [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
+            np.arange(len(p.ediObjs_)), np.abs( z_corrected[7,: ]) , 'or-')
         
-     
         References 
         -----------
         .. [1] http://www.zonge.com/legacy/PDF_DatPro/Astatic.pdf
@@ -1591,19 +1738,42 @@ class Processing (EM) :
         
         zjr = np.zeros_like(self.res2d_) 
         zji = zjr.copy() 
+        # do the same for the phase 
+        phase_c = np.zeros_like(self.phs2d_) 
+        
         for ii in range(len(zjr)) :
             # block mode to same to keep the same array dimensions
             zjr[ii, :] = np.convolve(zj[ii, :].real, w[::-1], 'same')
             zji[ii, :] = np.convolve(zj[ii, :].imag, w[::-1], 'same')
+            # xxxxxxxxxxxxxxxxxxxxxxx
+            phase_c [ii, :] = np.convolve(
+                self.phs2d_[ii, :], w[::-1], 'same')
         # recover the static apparent resistivity from reference freq 
         zjc = zjr + 1j * zji 
-        rc = z2rhoa (zjc, self.freqs_) #np.abs(zjc)**2 / (omega0[:, None] * mu0 )
-        
+        rc = z2rhoa (zjc, self.freqs_) # np.abs(zjc)**2 / (omega0[:, None] * mu0 )
+        if smooth: 
+            # block moving average `ma` tip to True 
+            # to prevent an eventual changes in 
+            # next versions. 
+            rc = smoothing( rc , 
+                           drop_outliers = drop_outliers, 
+                           ma =True 
+                           )
+            # force resistivity to be positive 
+            # after smoothing if exists 
+            if (rc < 0).any(): 
+                rc = np.abs (rc )
         if self.mode =='same': 
             rc[:, 0]= self.res2d_[:, 0]
             zjc[:, 0]= zj [:, 0]
-        
-        return zjc if self.out =='z' else rc 
+        # recompute z 
+        if self.out =='z': 
+            rc = rhophi2z(rc, phi= phase_c, freq= self.freqs_)
+            
+        if smooth : 
+            phase_c = smoothing ( phase_c, drop_outliers= drop_outliers )
+            
+        return  rc if not return_phi else ( rc, phase_c )
     
     def skew(
         self,
@@ -1998,7 +2168,7 @@ class Processing (EM) :
         
         :note: the new tensor is composed of shape (cfreq, 2 , 2 ), 2 x2 matrices
             for the four component xx, xy, yx, yy . 
-        :return: NDArray of shpe (cfreq, 2 * 2 ), dtype = complex 
+        :return: NDArray of shape (cfreq, 2 * 2 ), dtype = complex 
         
         """
         for ii in range(2):
@@ -2424,7 +2594,7 @@ class Processing (EM) :
         Interpolated frequencies is useful to have all frequencies into the 
         same scale. 
         
-        .. versionadded:: v0.2.0 
+        .. versionadded:: 0.2.0 
         
         Parameters 
         ------------
@@ -2716,7 +2886,6 @@ class ZC(EM):
         ): 
         super().__init__(**kws)
         
-        self.filter = filter
         self.window_size=window_size 
         self.c=c 
 
@@ -2724,8 +2893,10 @@ class ZC(EM):
     @_zupdate (option ='none')
     def remove_ss_emap (
             self, 
-            fltr ='ama', 
-            out= False, 
+            fltr:str ='ama', 
+            out:bool= False, 
+            smooth:bool= True, 
+            drop_outliers:bool=True, 
             **kws
             ): 
         """
@@ -2755,6 +2926,21 @@ class ZC(EM):
         out: bool , default =False, 
            Output new filtered EDI. Otherwise return Z collections objects 
            of corrected Tensors. 
+           
+        smooth: bool, default=False, 
+           Smooth the tensor data along the frequencies. 
+        
+        .. versionadded: 0.2.1 
+        
+        drop_outliers: bool, default=True 
+           Suppress outliers in the data when smoothing data along 
+           the frequencies axis. Note that `drop_outliers` does not take 
+           effect if `smooth` is ``False``. 
+           
+        .. versionadded: 0.2.1 
+           Polish the tensor data along the frequency axis remove noises 
+           and deal with the static shift effect when interferences noises 
+           are strong enough. 
            
         Returns 
         ---------
@@ -2786,10 +2972,10 @@ class ZC(EM):
                 8908.448+5251.157j])
         >>> zc = zo.remove_ss_emap() 
         >>> zc[0].z[:, 0, 1] [:7]
-        array([10.08886765+9.83154376j, 11.78033448+8.78960895j,
-               16.03377371+3.21426607j, 21.95101282-4.57861929j,
-               28.45305051-8.56819159j, 19.70746763-2.42158403j,
-                8.98540488+5.29651986j])
+        array([12120.08320804+6939.9874753j , 13030.91462606+6522.58481295j,
+               15432.0206124 +4970.42806287j, 21899.60942244+3826.47476912j,
+               29109.17100085+4537.17072741j, 19252.07839732+4108.71578943j,
+                9473.20464326+4146.50327315j])
         """
         self.inspect 
         
@@ -2811,11 +2997,16 @@ class ZC(EM):
             p.component = comp 
             try: 
                 if flr=='tma': 
-                    zc = p.ama () 
+                    zc = p.ama (smooth = smooth , 
+                                drop_outliers= drop_outliers
+                                ) 
                 elif flr=='flma': 
-                    zc = p.flma () 
+                    zc = p.flma (smooth = smooth , 
+                                drop_outliers= drop_outliers) 
                 else : 
-                    zc = p.ama () 
+                    zc = p.ama (smooth = smooth , 
+                                drop_outliers= drop_outliers
+                                ) 
     
                 zc_err = self.make2d (f"z{comp}_err") 
                 
@@ -2867,7 +3058,7 @@ class ZC(EM):
         
         .. math::
             
-            Z_{0} = S^(-1) * Z
+            Z_{0} = S^{(-1)} * Z
 
         Parameters 
         -----------

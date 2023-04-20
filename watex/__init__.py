@@ -35,7 +35,7 @@ try:
     from . import _version
     __version__ = _version.version.split('.dev')[0]
 except ImportError:
-    __version__ = '0.2.0' 
+    __version__ = '0.2.1' 
 
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)
@@ -133,6 +133,7 @@ from . models import (
     GridSearch, 
     GridSearchMultiple,
     get_scorers, 
+    naive_evaluation, 
     pModels
     )
 
@@ -322,5 +323,6 @@ __all__ = [
     "bi_selector", 
     "show_versions",
     "cleaner", 
+    "naive_evaluation"
     ]
 

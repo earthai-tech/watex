@@ -2,12 +2,12 @@
 .. _base:
 
 ================================
-Base Assessors and Estimators 
+Base Accessors and Estimators 
 ================================
 
 .. currentmodule:: watex.base
 
-The following module is a set of classes and methods composed `assessors` ( :mod:`~watex.base.Data` 
+The following module is a set of classes and methods composed `accessors` ( :mod:`~watex.base.Data` 
 and :mod:`~watex.base.Missing`) and `inner-learners` or `estimators. The `assessors` are used for basic controls of the data 
 whereas the `inner-learners` are prediction algorithms implemented by :code:`watex`. In the following, the target value is 
 expected to be a linear combination of the features. In mathematical notation, if :math:`\hat{y}` is the predicted value, 

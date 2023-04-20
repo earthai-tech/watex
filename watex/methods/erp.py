@@ -75,10 +75,17 @@ import  shutil
 import numpy as np 
 import pandas as pd
 
+from ..decorators import deprecated 
 from .._watexlog import watexlog 
+from .._typing import  ( 
+    List, 
+    Optional, 
+    )
 from ..exceptions import ( 
     FileHandlingError,
     ERPError, 
+    NotFittedError,
+    DCError, 
     )
 from ..utils.exmath import ( 
     select_anomaly, 
@@ -94,6 +101,11 @@ from ..utils.funcutils import (
     savepath_, 
     get_boundaries, 
     wrap_infos, 
+    repr_callable_obj, 
+    smart_strobj_recognition,
+    get_xy_coordinates, 
+    listing_items_format, 
+
     )
 from ..utils.gistools import ( 
     ll_to_utm, 
@@ -102,9 +114,818 @@ from ..utils.gistools import (
     project_point_utm2ll 
     )
 
+from ..property import ElectricalMethods 
+from .electrical import ( 
+    DCProfiling , DCSounding, 
+    ) 
+from ..utils.coreutils import  ( 
+    _is_readable , 
+    vesSelector, 
+    erpSelector
+    )
+from ..utils.validator import get_estimator_name 
+
 _logger =watexlog.get_watex_logger(__name__)
 
 
+__all__=['DCMagic', 'ERPCollection'] 
+
+class DCMagic (ElectricalMethods ): 
+    """A super class that deals with ERP and VES objects to generate 
+    single DC features for prediction. 
+    
+    `DCMagic reads the :term:`VES` and :term:`ERP` data and compute the 
+    corresponding features through its `summary` method. Note the number of 
+    ERP profiles and sounding sites must be consistent as well as the  
+    coordinates at this points.  
+    The best practice to have full control of the computed parameters is to  
+    used the :class:`watex.methods.DCProfiling` and :class:`watex.methods.DCSounding`
+    to compute the parameters of each line and site with their coordinates 
+    and constraints then call the `fit` methods to read each objects. 
+    
+    
+    Parameters 
+    ----------
+    stations: list or str (path-like object )
+        list of station name where the drilling is expected to be located. It 
+        strongly linked to the name of used to specify the center position of 
+        each dipole when the survey data is collected. Each survey can have its 
+        own way for numbering the positions, howewer if the station is given 
+        it should be one ( presumed to be the suitable point for drilling) in 
+        the survey lines. Commonly it is called the `sves` which mean at this 
+        point, the DC-sounding will be operated. Be sure to provide the correct
+        station to compute the electrical parameters. 
+        
+        It is recommed to provide the positioning of the station expected to 
+        hold the drillings. However if `stations` is None, the auto-way for 
+        computing electrical features should be triggered. User can also 
+        provide the list of stations by hand. In that case, each station should
+        numbered from 1 not 0. For instance: 
+            
+            *  in a survey line of 20 positions. We considered the station 13 
+                as the best point to locate the drilling. Therefore the name  
+                of the station should be 'S13'. In other survey line (line2)
+                the second point of my survey is considered the suitable one 
+                to locate my drilling. Considering the two survey lines, the 
+                list of stations sould be '['S13', 'S2']
+                
+            * `stations` can also be arrange in a single to be parsed which 
+                refer to the string arguments. 
+            
+    dipole: float 
+        The dipole length used during the exploration area. If `dipole` value 
+        is set as keyword argument,i.e. the station name is overwritten and 
+        is henceforth named according to the  value of the dipole. For instance
+        for `dipole` equals to ``10m``, the first station should be ``S00``, 
+        the second ``S10`` , the third ``S20`` and so on. However, it is 
+        recommend to name the station using counting numbers rather than using 
+        the dipole  position.
+        
+    auto: bool 
+        Auto dectect the best conductive zone. If ``True``, the station 
+        position should be  the  `station` of the lower resistivity value 
+        in |ERP|. 
+        
+
+    read_sheets: bool, 
+        Read the data in sheets. Here its assumes the data  of each survey 
+        lines are arrange in a single excell worksheets. Note that if 
+        `read_sheets` is set to ``True`` and the file is not in excell format, 
+        a TypError will raise. 
+        
+    search: float , list of float
+        The collection of the depth in meters from which one expects to find a 
+        fracture zone outside of pollutions. Indeed, the `search` parameter is 
+        used to speculate about the expected groundwater in the fractured rocks 
+        under the average level of water inrush in a specific area. For 
+        instance in `Bagoue region`_ , the average depth of water inrush 
+        is around ``45m``.So the `search` can be specified via the water inrush 
+        average value. 
+        
+    rho0: float 
+        Value of the starting resistivity model. If ``None``, `rho0` should be
+        the half minumm value of the apparent resistivity  collected. Units is
+        in Ω.m not log10(Ω.m)
+        
+    h0: float 
+        Thickness  in meter of the first layers in meters.If ``None``, it 
+        should be the minimum thickess as possible ``1.m`` . 
+    
+    strategy: str 
+        Type of inversion scheme. The defaut is Hybrid Monte Carlo (HMC) known
+        as ``HMCMC``. Another scheme is Bayesian neural network approach (``BNN``). 
+        
+    vesorder: int 
+        The index to retrieve the resistivity data of a specific sounding point.
+        Sometimes the sounding data are composed of the different sounding 
+        values collected in the same survey area into different |ERP| line.
+        For instance:
+            
+            +------+------+----+----+----+----+----+
+            | AB/2 | MN/2 |SE1 | SE2| SE3| ...|SEn |
+            +------+------+----+----+----+----+----+
+            
+        Where `SE` are the electrical sounding data values  and `n` is the 
+        number of the sounding points selected. `SE1`, `SE2` and `SE3` are 
+        three  points selected for |VES| i.e. 3 sounding points carried out 
+        either in the same |ERP| or somewhere else. These sounding data are 
+        the resistivity data with a  specific numbers. Commonly the number 
+        are randomly chosen. It does not refer to the expected best fracture
+        zone selected after the prior-interpretation. After transformation 
+        via the function :func:`~watex.utils.coreutils.vesSelector`, the header  
+        of the data should hold the `resistivity`. For instance, refering to 
+        the table above, the data should be:
+            
+            +----+----+-------------+-------------+-------------+-----+
+            | AB | MN |resistivity  | resistivity | resistivity | ... |
+            +----+----+-------------+-------------+-------------+-----+
+        
+        Therefore, the `vesorder` is used to select the specific resistivity
+        values i.e. select the corresponding sounding number  of the |VES| 
+        expecting to locate the drilling operations or for computation. For 
+        esample, `vesorder`=1 should figure out: 
+            
+            +------+------+----+--------+----+----+------------+
+            | AB/2 | MN/2 |SE2 |  -->   | AB | MN |resistivity |
+            +------+------+----+--------+----+----+------------+
+        
+        If `vesorder` is ``None`` and the number of sounding curves are more 
+        than one, by default the first sounding curve is selected ie 
+        `rhoaIndex` equals to ``0``
+        
+    typeofop: str 
+        Type of operation to apply  to the resistivity 
+        values `rhoa` of the duplicated spacing points `AB`. The *default* 
+        operation is ``mean``. Sometimes at the potential electrodes ( `MN` ),the 
+        measurement of `AB` are collected twice after modifying the distance
+        of `MN` a bit. At this point, two or many resistivity values are 
+        targetted to the same distance `AB`  (`AB` still remains unchangeable 
+        while while `MN` is changed). So the operation consists whether to the 
+        average ( ``mean`` ) resistiviy values or to take the ``median`` values
+        or to ``leaveOneOut`` (i.e. keep one value of resistivity among the 
+        different values collected at the same point `AB` ) at the same spacing 
+        `AB`. Note that for the ``LeaveOneOut``, the selected 
+        resistivity value is randomly chosen.
+        
+    objective: str 
+        Type operation to output. By default, the function outputs the value
+        of pseudo-area in :math:`$ohm.m^2$`. However, for plotting purpose by
+        setting the argument to ``view``, its gives an alternatively outputs of
+        X and Y, recomputed and projected as weel as the X and Y values of the
+        expected fractured zone. Where X is the AB dipole spacing when imaging 
+        to the depth and Y is the apparent resistivity computed.
+
+    fit_params: dict 
+         Additional |ERP| keywords arguments  
+         
+    Attributes 
+    -----------
+    rtable_: pd.DataFrame 
+       :term:`ERP` table that contains the different parameters computed at 
+       the selected drilling points `sves`. 
+       
+    vtable_: pd.DataFrame 
+        :term:`VES` table that contains the different parameters computed at 
+        the selected drilling points. 
+        
+    table_:  pd.DataFrame 
+       The complete table that contains :term:`VES` and term`ERP` data
+       composing the DC-Features. 
+       
+    Examples
+    ---------
+    >>> import watex as wx 
+    >>> from watex.methods.erp import DCMagic
+    >>> erp_data = wx.make_erp ( seed =33 ).frame  
+    >>> ves_data = wx.make_ves (seed =42).frame 
+    >>> v = wx.DCSounding ().fit(wx.make_ves (seed =10, as_frame =True, add_xy =True))
+    >>> r = wx.DCProfiling().fit( wx.make_erp ( seed =77 , as_frame =True))
+    >>> res= wx.methods.ResistivityProfiling(station='S4').fit(erp_data) 
+    >>> ves= wx.methods.VerticalSounding(search=60).fit(ves_data)
+    dc-ves  : 100%|################################| 1/1 [00:00<00:00, 111.13B/s]
+    dc-erp  : 100%|################################| 1/1 [00:00<00:00, 196.77B/s]
+    >>> m = DCMagic().fit(erp_data, ves_data, v, r, ves, res ) 
+    dc-erp  : 100%|################################| 2/2 [00:00<00:00, 307.40B/s]
+    dc-o:erp: 100%|################################| 1/1 [00:00<00:00, 499.74B/s]
+    dc-ves  : 100%|################################| 2/2 [00:00<00:00, 222.16B/s]
+    dc-o:ves: 100%|################################| 1/1 [00:00<00:00, 997.46B/s]
+    >>> m.summary(keep_params =True)
+        longitude  latitude shape  ...       sfi  sves_resistivity  ohmic_area
+    0         NaN       NaN     W  ...  1.310417        707.609756  263.213572
+    1         NaN       NaN     K  ...  1.300024          1.000000  964.034554
+    2  109.332932  28.41193     U  ...  1.184614          1.000000  276.340744
+    """
+    
+    def __init__ (self, 
+        stations: List[str]= None,
+        dipole: float = 10.,
+        auto: bool = False,
+        read_sheets:bool=False, 
+        force:bool=False,
+        search:float=45.,
+        rho0:float=None, 
+        h0 :float=1., 
+        strategy:str='HMCMC',
+        vesorder:int=None, 
+        typeofop:str='mean',
+        objective: Optional[str] = 'coverall',
+        **kws
+        ):
+        super().__init__(**kws)
+
+        self.stations=stations 
+        self.dipole=dipole 
+        self.auto=auto 
+        self.read_sheets=read_sheets
+        self.search=search 
+        self.vesorder=vesorder 
+        self.typeofop=typeofop
+        self.objective=objective 
+        self.rho0=rho0, 
+        self.h0=h0
+        self.strategy=strategy 
+        self.read_sheets= read_sheets
+
+    def fit ( self, *data,  **fit_params ): 
+        """ Fit the DC- electrical profiling and sounding objects.  
+       
+        Fit the |ERP| and |VES| curves and computed the DC-parameters. 
+       
+        Parameters 
+        -----------
+        data:  list of path-like object, or DataFrames
+           When reading the |VES| objects , data should be in ([D|F|P-types]).
+           The string argument is a path-like object. It must be a valid file
+           wich encompasses the collected data on the field. It shoud be
+           composed for |VES|, spacing values `AB` and  the apparent resistivity 
+           values `rhoa`. By convention `AB` is half-space data i.e `AB/2`. 
+           So, if `data` is given, params `AB` and `rhoa` should be kept to
+           ``None``. If `AB` and `rhoa` is expected to be inputted, user must
+           set the `data`  to ``None`` values for API purpose. If not an error
+           will raise. Or the recommended way is to use the `vesSelector` tool
+           in :func:`watex.utils.vesSelector` to buid the |VES| data before 
+           feeding it to the algorithm. See the example below.
+           
+        fit_params: dict 
+           Does nothing here, just for API purpose. 
+    
+        Returns 
+        -------
+        self: `DCMAgic` instanced object for chaining method. 
+        """ 
+        def format_invalid_data(data, kind = 'Unrecognized objects'): 
+            fmterp_text = '|{0:<7}|{1:>45}|{2:>12}|{3:>14}|' 
+            print()
+            print('+'*83)
+            print(fmterp_text.format(
+                'N°', f'{kind}: {len(data):02}', 'Type',  'status'))
+            print('+'*83)
+            
+            if len(data)==0: 
+                print("|{:^81}|".format(" There is NO invalid data ")) 
+                print('-'*83)
+                return 
+            for ii, d in enumerate( data): 
+                if hasattr (d, '__module__'): 
+                    if hasattr ( d, '__qualname__'): 
+                        d = f"{d.__module__}.{d.__qualname__}"
+                    else: d = get_estimator_name( d )
+                print(fmterp_text.format(
+                    ii+1, d, type (d).__name__,'*Failed') )
+                
+            print('-'*83)
+            print()
+   
+        erp_data, ves_data , self.isnotvalid_ =  _parse_dc_data(
+            *data , vesorder = self.vesorder )
+    
+        # get the doc objects if exist in the data 
+        self.rtable_  = None ; self.vtable_ = None 
+        if len(erp_data)!=0:
+            dcp, _, erp_data = get_dc_objects(
+                *erp_data , return_diff= True )
+
+            if len(erp_data)!=0: 
+                # if DC ovbjects is given 
+                # dont need to fit again 
+                po= DCProfiling(stations= self.stations, 
+                                 dipole = self.dipole, 
+                                 auto = self.auto , 
+                                 read_sheets= self.read_sheets , 
+                                 keep_params = False , 
+                                 force = True 
+                                 ) 
+                po.fit(*erp_data )
+                self.rtable_= po.summary(return_table= True ) 
+                
+            if len(dcp)!=0:
+                self._make_table_if (*dcp ) 
+
+        if len(ves_data)!=0: 
+            # check whether there are some DC Sounding object 
+            # inside the collection 
+            _, dcv , ves_data = get_dc_objects(
+                *ves_data ,return_diff= True, method ='DCSounding') 
+            if len(ves_data)!=0: 
+                    # expect it will read Ves data 
+                vo= DCSounding(search= self.search , 
+                                rho0= self.rho0, 
+                                h0= self.h0, 
+                                vesorder = self.vesorder, 
+                                read_sheets = self.read_sheets , 
+                                typeofop=self.typeofop , 
+                                objective= self.objective ,
+                                keep_params= False, 
+                                    ) 
+                vo.fit(*ves_data )                
+                self.vtable_= vo.summary(return_table= True ) 
+            
+            if len(dcv)!=0:
+                self._make_table_if (
+                    *dcv, method = 'DCSounding', fit_attr='nareas_' ) 
+
+        if self.verbose: 
+            format_invalid_data (self.isnotvalid_)
+
+        # resert tables index 
+        self._reset_table_index ()
+        
+        return self 
+    
+    def summary (
+        self, 
+        *, 
+        force=False, 
+        coerce=False, 
+        return_table=True, 
+        keep_params=False, 
+        work_as=None, 
+        ): 
+        """ Retrieve sites details and aggregate the table to 
+        compose unique :term:`DC` features. 
+        
+        Parameters 
+        -----------
+        force: bool, default=True
+          In principle, number of profiles should be equals to number of sites
+          where the drilling operations is perfomed. ``Force`` allows to 
+          aggregate the dataframe even this condition is not met, otherwise, 
+          an error raises. 
+          
+        coerce: bool, default=True 
+          If coordinates data of sites are  missing in a profile/site, 
+          setting ``coerce`` to ``True`` will use the |ERP| coordinates 
+          by defaults.  
+            
+        force: bool, default=False, 
+          By default, :class:`DCProfiling` expects users to provide either DC 
+          objects or pandas dataframe. This assumes users have already 
+          transformed its data from sheets to data frame. If not the case, setting
+          `force` to ``True`` constraints the algorithm to do the both tasks at
+          once. 
+           
+        return_tables: bool, default=True, 
+          Returns DC-features in a pandas dataframe. 
+          
+        keep_params: bool, default=False, 
+            If ``True`` , keeps only the predicted parameters in the summary 
+            table, otherwise, returns returns all main DC-resistivity details 
+            of the site. 
+            
+        work_as: str, Optional 
+           Can be ['ERP' | 'VES']. When one of DC-methods such as :term:`VES`
+           or :term:`ERP` is not supplied. `summary` methods of `DCMagic` 
+           returns an   `DCError` because `DCMagic` expects each sounding 
+           point to have its profiling data. However to work like `DCSounding`
+           and `DCProfiling` in order to return the table of VES or ERP, 
+           the parameter `work_as` can be turn to `ERP` or `VES`.
+           
+        Returns 
+        --------
+        self or table_: :class:`~.DCMagic` or class:`pd.DataFrame` 
+          Returns DCMagic object or dataframe. 
+        
+        """
+        #xxxxxxxxxxxxxxxxxxx
+        self.inspect 
+        emsg =("Number of profiles and sites must be consistent. Got"
+               " '{0}' and '{1}' respectively. Indeed, each sounding"
+               " point is expected to be located in each individual"
+               " profile therefore the coordinates of sounding site"
+               " should fit the one used for positionning the drilling."
+               " When using different coordinates, it might lead to"
+               " unexpected results. To force performing a cross"
+               " merge, set parameter ``force=True`` or ``coerce=True`` to"
+               " truncate the data to fit the number of sounding points."
+               " Note that this is not recommended and will probably lead "
+               " to a bad DC-features arrangement. Use at your own risk.")
+        
+        main_params = ('longitude', 'latitude', 'shape', 'type', 'magnitude', 
+                       'power',  'sfi', 'sves_resistivity', 'ohmic_area')
+        #xxxxxxxxxxxxxxxxxxxx
+ 
+        if ( 
+                self.rtable_ is None 
+                or self.vtable_ is None
+            ): 
+            # behave like DCProfiling or DCSounding
+            # 'need' is used to indicate which kind of methods, 
+            # DCMagic must work as. 
+            need=None 
+            
+            if  self.rtable_ is None:
+    
+                if str(work_as).lower().strip() =='none':
+                    raise DCError ('.'.join(emsg.split('.')[:2]).format(
+                        0, len(self.vtable_) ) + 
+                        (". Missing profiling data that fits the numberof"
+                         f" each sounding points({len(self.vtable_)}). Use"
+                         " `watex.DCProfiling` for dealing with profilings"
+                         " data or set ``work_as='ves'``")
+                                   )
+                elif ( 
+                        str(work_as).lower().strip() .find ('ves')>=0 
+                        or str(work_as).lower().strip() .find('dcs')>=0
+                        ): 
+                    return self.vtable_ 
+                need = 'ves'
+            elif self.vtable_ is None:  
+                if str(work_as).lower().strip() =='none':
+                    raise DCError ('.'.join(emsg.split('.')[:2]).format(
+                        len(self.rtable_), 0 ) + 
+                        (". Missing vertical sounding data that fits the number"
+                        f" of sites of the profiling ({len(self.rtable_)}). Use"
+                        " `watex.DCSounding` for dealing with profilings data"
+                        " or set ``work_as='erp'``")
+                                   )
+                elif ( 
+                        str(work_as).lower().strip() .find ('erp')>=0 
+                        or str(work_as).lower().strip() .find('dcp')>=0
+                        ) : 
+                    return self.rtable_ 
+                need ='erp'
+                
+            raise ValueError(
+                "`work_as` expects arguments {0!r}. Got {1!r}".format(
+                    need if need  else "'ves' or 'erp'", work_as)
+                )
+            
+        # check whether the coordinates exist in both 
+        # tables. If not the case, coerce instead if set to 
+        # True 
+        for d , name in zip ( ( self.rtable_ , self.vtable_), 
+                             ('dc-erp', 'dc-ves')) : 
+            
+            xy_coords, _, xynames  = get_xy_coordinates(
+                d, as_frame =True, raise_exception='mute' )
+            
+            if xy_coords is None: 
+                if name =='dc-erp': 
+                    raise DCError("Missing sounding coordinates in the DC "
+                                  "profiling data. Please specify the coordinates"
+                                  " of station positions in DC readable data"
+                                  " formats (D|F|P-types)"
+                                  )
+                elif  name =='dc-ves' and not coerce: 
+                    msg = ("Missing sounding coordinates in VES. We assume each"
+                           " sounding point 'sves_' from  profiling fits the"
+                           " location where the drill is expected to be"
+                           " performed. The ERP coordinates should be used."
+                           " To avoid such behavior turn off  ``coerce=False``."
+                           )
+                    warnings.warn (msg)
+
+      
+        if len(self.vtable_ ) != len(self.rtable_): 
+            if force: 
+                self.table_ =  pd.merge (
+                    self.rtable_ , self.vtable_, on =['longitude', 'latitude'] , 
+                                         how ='outer')
+            elif coerce: 
+                # take the small length of tables
+                
+                sm_tab , tab_to = ( self.rtable_ , self.vtable_) if len(
+                    self.rtable_) < len(self.vtable_) else (
+                        (self.vtable_, self.rtable_) ) 
+                
+                trunc_rtab = tab_to.iloc [:len(sm_tab), :  ] 
+
+                self.table_ = pd.concat (
+                    [   # discarded the ERP and takes the VES coordinates
+                       trunc_rtab[['longitude', 'latitude']].reset_index(), 
+                       sm_tab.drop ( columns = ['longitude', 'latitude']
+                                          ).reset_index (), 
+                       trunc_rtab.drop ( columns = ['longitude', 'latitude']
+                                          ).reset_index (), 
+                     ]
+                    , axis =1 
+                    )
+                self.table_.drop(columns ='index', inplace =True ) 
+                
+                if self.verbose : 
+                    warnings.warn("Sites and profiles are not consistent."
+                                  " `coerce` will truncate the rows equals"
+                                  f" to {len(tab_to)} to fit the valid"
+                                  f" {len(trunc_rtab)} positionning sites.")
+                    
+            else: raise DCError (emsg.format(
+                len(self.rtable_), len(self.vtable_) ))
+            
+        else: 
+            if coerce: 
+                # then add /rername coordinates points to ves.
+                # using the ERP 
+                self.vtable_[['longitude', 'latitude']] =  self.rtable_ [
+                    ['longitude', 'latitude']]
+            # validate coordinates 
+            self._validate_xy_coordinates()
+            self.table_ = pd.concat (
+                [   # discarded the ERP and takes the VES coordinates
+                    self.vtable_[['longitude', 'latitude']].reset_index(), 
+                   self.rtable_.drop ( columns = ['longitude', 'latitude']
+                                      ).reset_index (), 
+                   self.vtable_.drop ( columns = ['longitude', 'latitude']
+                                      ).reset_index (), 
+                 ]
+                , axis =1 
+                )
+            self.table_.drop(columns ='index', inplace =True ) 
+
+        if keep_params: 
+            self.table_= self.table_[list(main_params)] 
+            
+        return self.table_ if return_table else self 
+    
+    def _validate_xy_coordinates (self): 
+        """ Validate whether coordinates are identical or are consistent."""
+        
+        incons_mgs = ("Inconsistent coordinates founds in {} sites."
+                      "ERP coordinates are discarded instead")
+        # convert longtude type to float for consistency 
+        self.rtable_ [['longitude', 'latitude']]= self.rtable_ [[
+            'longitude', 'latitude']].astype (float)
+        self.vtable_ [['longitude', 'latitude']] = self.vtable_ [
+            ['longitude', 'latitude']].astype (float) 
+        
+        def replace_to ( *, action ='forward'): 
+            """ Replace NaN value in coordinate by 0. and vice versa """
+            # in the array from ERP , if there is 0. Considers as NaN 
+            # and reverse back 
+            
+            self.rtable_[['longitude', 'latitude']]=self.rtable_[
+                ['longitude', 'latitude']].replace(
+                np.nan if action=='forward' else 0.  ,
+                0.if action=='forward' else np.nan  )
+            self.vtable_[['longitude', 'latitude']]=self.vtable_[
+                ['longitude', 'latitude']].replace(
+                np.nan if action=='forward' else 0.  ,
+                0.if action=='forward' else np.nan  )
+        # Replace NaN to 0. 
+        replace_to()
+        
+        # make the differences if equals to zero 
+        
+        ar = self.rtable_ [['longitude', 'latitude']].values - self.vtable_ [
+            ['longitude', 'latitude']].values
+        
+        if np.any(ar): 
+            # get index where there is inconsistent coordinates 
+            # numpy.flatnonzero(x == 0) when working with 1d array 
+            # to find zero 
+            incons_indices = list( np.nonzero ( ar )[0]) 
+            incons_mgs =incons_mgs.format(len(incons_indices))
+ 
+            # get the elements.
+            if self.verbose: 
+                items = ["line{0}/site{0}".format(i+1) for i in 
+                         incons_indices ] 
+                b, e = incons_mgs.split('.')
+                listing_items_format(
+                    items, b ,  endtext=e +".", inline =True )  
+            # else :  
+            #     warnings.warn(incons_mgs)
+            # discarded the lonlat from ERP to VES 
+
+        # Replace back  0. to NaN 
+        replace_to (action= 'reverse') 
+
+        return self 
+  
+    def _make_table_if (self, *dc , method = 'DCProfling', 
+                        fit_attr ='sves_'): 
+        """ Build object if DCProfiling or Sounding is passed
+        
+        Parameters 
+        ------------
+        dc: list 
+           A collection of DC objects 
+        method: str  
+           DC method ['DCSounding' | 'DCProfiling']
+        fit_attr: str, 
+           Fitted attribute to check whether object is fitted yet. 
+        
+        """ 
+        def tables (o,  table = None ):
+            """ get table if summary method is not fitted yet or 
+            concatenate table one to onother"""
+            if not hasattr ( do, 'table_'): 
+                o.summary(return_table = False )  
+               
+            if table is not None: 
+                table = pd.concat ( [ table , o.table_ ], axis = 0)
+                
+            else : table = do.table_ 
+            
+            return table 
+        
+        msg = ("{!r} object is detected while it is not fitted yet. You must"
+               " fit the object or remove the DC object from the collection"
+               " and simply pass the corresponding data as frame or a pathlike"
+               " object.")
+        # set tqdm 
+        try: 
+            import tqdm 
+            pbar =  tqdm.tqdm(dc ,ascii=True, unit='B', 
+                              desc ="dc-o" + (
+                                  ':erp' if fit_attr=='sves_' else ':ves'), 
+                              ncols =77)
+            has_tqdm =True 
+        except NameError: 
+            # force pbar to hold the data value
+            # if trouble occurs 
+            pbar =dc
+            has_tqdm=False 
+            
+        if len(dc) !=0:  
+            for ii, do in enumerate ( pbar) : 
+                if not hasattr (do, fit_attr): 
+                    raise NotFittedError(msg.format(method))
+                    
+                if not hasattr ( do, 'table_'): 
+                    do.summary(return_table = False ) 
+                    
+                # aggregate table with r_table if exists 
+                if get_estimator_name (do)== "DCProfiling": # --> ERP methods 
+                    self.rtable_ = tables ( do, self.rtable_ ) 
+                    
+                if get_estimator_name(do)=="DCSounding": 
+                    self.vtable_ = tables ( do, self.vtable_)
+
+                pbar.update(ii)  if has_tqdm else None 
+                
+        return self 
+    
+    def _reset_table_index ( self ): 
+        """ reset DC profiling and sounding tables indexes """
+        
+        if self.rtable_ is not None: 
+            self.rtable_.index = [f'line{k+1}' for k in range (
+                len(self.rtable_))]
+            
+        if self.vtable_ is not None: 
+            self.vtable_.index = [f'site{k+1}' for k in range (
+                len(self.vtable_))]
+            
+    def __repr__(self):
+        """ Pretty format for developers following the API... """
+        return repr_callable_obj(self)
+       
+    def __getattr__(self, name):
+        rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+        appender  = "" if rv is None else f'. Do you mean {rv!r}'
+        
+        if name =='table_': 
+            err_msg =(". Call 'summary' method to fetch attribute 'table_'")
+        else: err_msg =  f'{appender}{"" if rv is None else "?"}' 
+        
+        raise AttributeError (
+            f'{self.__class__.__name__!r} object has no attribute {name!r}'
+            f'{err_msg}'
+            )
+
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ("{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if ( 
+                not hasattr (self, 'rtable_') or not hasattr (self, 'vtable_')
+        ): 
+            raise NotFittedError(msg.format(obj=self)
+            )
+        return 1    
+    
+def _parse_dc_data (*data,vesorder =0  ): 
+    """ Select ERP and VES data """ 
+    
+    erp_data = [] 
+    ves_data = []
+    unreadf= []
+    # check wether a path-like object is supplied 
+    # then collect all the files and check whether 
+    # there are some ERP and VES data 
+    dtemp =[] # collect all files in different path. 
+    d0=[]
+    for d in data : 
+        if isinstance ( d, str ) and os.path.isdir ( d ): 
+            # collect all the data 
+            dtemp += [ os.path.join (d, f ) for f in os.listdir ( d )] 
+        else: d0.append (d ) 
+        
+    data = d0 + dtemp # new data
+    
+    for d in data : 
+        if isinstance ( d, str ): 
+            # assume there is a file object 
+            # check instead 
+            if os.path.isfile (d ):
+                try: 
+                    d = _is_readable(d, input_name= f'Data {d!r}')
+                except : 
+                    unreadf.append (os.path.basename (d) ) 
+                    continue 
+               
+        if hasattr ( d, '__array__') and hasattr ( d, 'columns'): 
+            # assume a pandas data frame is given 
+            # check instead 
+            try : 
+                ves_data.append ( vesSelector (d, index_rho= vesorder , 
+                                 input_name= f'Data {d!r}'))
+               # is_valid_dc_data(d, method ='ves')
+            except : 
+                try : 
+                    erp_data.append (erpSelector (d , force= True ) ) 
+                    #is_valid_dc_data(d )
+                except : 
+                    # save the file name and skip 
+                    unreadf.append (
+                        "Frame: [{d.shape[0]} rows x {d.shape[1]} columns]") 
+                    continue 
+                
+        # Assume DC object is given 
+        elif  get_estimator_name ( d) in (
+                'DCSounding', 'VerticalSounding') : 
+            ves_data.append ( d ) 
+            
+        elif  get_estimator_name ( d) in (
+                'DCProfiling', 'ResistivityProfiling'): 
+            erp_data.append ( d ) 
+
+        else: 
+            # if nothing fit VES or ERP 
+            # collect d instead as invalid data. 
+            unreadf.append (d ) 
+
+    return erp_data, ves_data , unreadf 
+
+def get_dc_objects (
+        *data, method = 'DCProfiling', return_diff=False, **kws  ): 
+    """ Get DC Profiling and DCSounding objects if exists in the whole 
+    valid data.
+    
+    Parameters 
+    -----------
+    data: list 
+       Collection of DC objects 
+       
+    method: str, 
+       Method of selection. 
+    return_diff: bool, default=False, 
+       Retuns the remain objects which are not DCProfiling or DCSounding 
+       
+    Returns
+    --------
+    dcp, dcv, remain_data: Tuple of list 
+    
+       A collection of selected DC Profiling and DCSounding objects 
+       
+     
+    """ 
+    
+    dcp=[]; dcv =[]
+    if method == 'DCProfiling': 
+        dcp = list(filter ( lambda o : get_estimator_name (
+            o)== 'DCProfiling', data )
+                   ) 
+    elif method =='DCSounding': 
+        dcv =  list(filter ( 
+            lambda o : get_estimator_name(o) =='DCSounding', data )
+            )
+    
+    if return_diff : 
+        # get the remain data which are not a 
+        # DCObjects 
+        remain_data = list(filter ( lambda o: get_estimator_name(o) not in (
+           ( "DCProfiling", "DCSounding")), data )
+            ) 
+
+    return dcp, dcv,  remain_data 
+
+@deprecated("Deprecated ERP class and should be removed in the next release." 
+            " Use 'watex.methods.DCMagic' instead.")
 class ERPCollection: 
     """
     Collection objects. The class collects all `erp` survey lines.
@@ -192,7 +1013,7 @@ class ERPCollection:
     
     Examples
     ---------
-    >>> from watex.methods.erp import ERP_collection 
+    >>> from watex.methods.erp import ERPCollection 
     >>> erpObjs =ERP_collection(listOferpfn= 'data/erp')
     >>> erpObjs.erpdf
     >>> erpObjs.survey_ids
@@ -359,27 +1180,28 @@ class ERPCollection:
         # create a dataframe object
         self._logging.info('Setting and `ERP` data array '
                            'and create pd.Dataframe')
-
-        self.erps_data= np.c_[
-                            self.survey_ids, 
-                            self.easts, 
-                            self.norths, 
-                            self.powers, 
-                            self.magnitudes, 
-                            self.shapes, 
-                            self.types, 
-                            self.sfis]
-        self.erpdf =pd.DataFrame(data = self.erps_data, 
-                                  columns=self.erpColums) 
-                                  
-        self.erpdf=self.erpdf.astype( {'east':np.float, 
-                                        'north': np.float, 
-                                        'power': np.float, 
-                                        'magnitude':np.float, 
-                                        'sfi':np.float})
-        
-        if self.export_data is True : 
-            self.exportErp()
+        try : 
+            self.erps_data= np.c_[
+                                self.survey_ids, 
+                                self.easts, 
+                                self.norths, 
+                                self.powers, 
+                                self.magnitudes, 
+                                self.shapes, 
+                                self.types, 
+                                self.sfis]
+            self.erpdf =pd.DataFrame(data = self.erps_data, 
+                                      columns=self.erpColums) 
+                                      
+            self.erpdf=self.erpdf.astype( {'east':np.float, 
+                                            'north': np.float, 
+                                            'power': np.float, 
+                                            'magnitude':np.float, 
+                                            'sfi':np.float})
+            
+            if self.export_data is True : 
+                self.exportErp()
+        except : pass 
             
     def get_property_infos(self, attr_name , objslist =None): 
         """
@@ -395,7 +1217,7 @@ class ERPCollection:
         :type objslist: list 
         
         :Example:
-            >>> from watex.methods.erp.ERP_collection as ERPcol
+            >>> from watex.methods.erp.ERPCollection as ERPcol
             >>> erpObjs =ERPcol(listOferpfn= 'data/erp', 
             ...                export_erpFeatures=True,
             ...                    filename='ykroS')
@@ -492,7 +1314,7 @@ class ERPCollection:
     @property 
     def selectedPoints (self): 
         """Keep on array the best selected anomaly points"""
-        return self.get_property_infos('selected_best_point_')
+        return self.get_property_infos('select_best_point_')
     @property
     def powers(self):
         """ Get the `power` of select anomaly from `erp`"""
@@ -750,8 +1572,8 @@ class ERP :
         self.sanitize_columns()
         
         if self.coord_flag ==1 : 
-            self._longitude= self.df['lon'].to_numpy()
-            self._latitude = self.df['lat'].to_numpy()
+            self._longitude= self.df['lon'].values 
+            self._latitude = self.df['lat'].values
             easting= np.zeros_like(self._longitude)
             northing = np.zeros_like (self._latitude)
 
@@ -776,7 +1598,7 @@ class ERP :
         # get informations from anomaly 
         if self.coord_flag ==0 : 
             # compute  latitude and longitude coordinates if not given 
-            self._latitude = np.zeros_like(self.df['east'].to_numpy())
+            self._latitude = np.zeros_like(self.df['east'].values)
             self._longitude = np.zeros_like(self._latitude)
             
             if self.utm_zone is None :
@@ -790,8 +1612,8 @@ class ERP :
                 
                 self.utm_zone = '30N'
             
-            for ii, (north, east) in enumerate(zip(self.df['north'].to_numpy(),
-                                                self.df['east'].to_numpy())): 
+            for ii, (north, east) in enumerate(zip(self.df['north'].values,
+                                                self.df['east'].values)): 
                 try : 
                     self._latitude [ii],\
                         self._longitude [ii] = utm_to_ll(23,
@@ -818,20 +1640,22 @@ class ERP :
                 
             self.auto=True 
             
-        if self.turn_on in ['off', False]: self.turn_on =False 
-        elif self.turn_on in ['on', True]: self.turn_on =True 
-        else : self.turn_on =False 
+        if self.turn_on in ['off', False]: 
+            self.turn_on =False 
+        elif self.turn_on in ['on', True]: 
+            self.turn_on =True 
+        else : 
+            self.turn_on =False 
         
     
         if self._dipoleLength is None : 
-            self._dipoleLength=(self.df['pk'].to_numpy().max()- \
-                self.df['pk'].to_numpy().min())/(len(
-                    self.df['pk'].to_numpy())-1)
+            self._dipoleLength=(max(self.df['pk']) - min(self.df['pk']))/(
+                len(self.df['pk'])-1)
                     
    
         self.aBestInfos= select_anomaly(
-                             rhoa_array= self.df['rhoa'].to_numpy(), 
-                             pos_array= self.df['pk'].to_numpy(), 
+                             rhoa_array= self.df['rhoa'].values, 
+                             pos_array= self.df['pk'].values, 
                              auto = self.auto, 
                              dipole_length=self._dipoleLength , 
                              pos_bounds=self.anom_boundaries, 
@@ -1029,9 +1853,9 @@ class ERP :
             ) ==self.posi_max)[0])
 
         self._anr = compute_anr(sfi = self.best_sfi,
-                                      rhoa_array = self.df['rhoa'].to_numpy(), 
-                                      pos_bound_indexes= [pos_min_index ,
-                                                          pos_max_index ])
+                                rhoa_array = self.df['rhoa'].to_numpy(), 
+                                pos_bound_indexes= [pos_min_index ,
+                                                    pos_max_index ])
         wrap_infos('Best cover   = {0} % of the whole ERP line'.
                         format(self._anr*100), 
                         on =self.turn_on) 
@@ -1072,23 +1896,29 @@ class ERP :
     def best_east(self): 
         """ Get the easting coordinates of selected anomaly"""
         
-        self._east = self.df['east'].to_numpy()[self.best_index]
+        self._east = self.df['east'][self.best_index]
         return self._east
     
     @property
     def best_north(self): 
         """ Get the northing coordinates of selected anomaly"""
-        self._north = self.df['north'].to_numpy()[self.best_index]
+        self._north = self.df['north'][self.best_index]
         return self._north
         
     @property 
     def best_index(self): 
-        """ Keeop the index of selected best anomaly """
+        """ Keep the index of selected best anomaly """
         v_= (np.where( self.df['pk'].to_numpy(
             )== self.select_best_point_)[0]) 
+        
         if len(v_)>1: 
             v_=v_[0]
-        return int(v_)
+        try : 
+            v_ = int(v_)
+        except : 
+            v_= np.nan 
+            pass 
+        return v_
             
     @property
     def best_lat(self): 

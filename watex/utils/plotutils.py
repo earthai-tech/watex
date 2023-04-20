@@ -39,11 +39,12 @@ from .funcutils import  (
 from .validator import  ( 
     _check_array_in  , 
     _is_cross_validated,
+    assert_xy_in, 
     get_estimator_name,
     check_array, 
     check_X_y,
     check_y,
-    check_consistent_length
+    check_consistent_length, 
     )
 from ._dependency import import_optional_dependency 
 from ..decorators import nullify_output
@@ -2585,7 +2586,10 @@ def plot_bar(x, y, wh= .8,  kind ='v', fig_size =(8, 6), savefig=None,
     
 def plot_profiling (
         erp, 
-        cz=None, *, 
+        /, 
+        station = None,  
+        cz=None, 
+        *, 
         style = 'classic', 
         fig_size = (10, 4), 
         cz_plot_kws= None,
@@ -2602,8 +2606,23 @@ def plot_profiling (
     Parameters 
     -----------
     erp: array_like 1d
-        The electrical resistivity profiling array. 
+        The electrical resistivity profiling array. If dataframe is passed, 
+        `resistivity` column must be included. 
         
+        .. versionchanged:: 0.2.1 
+           Can henceforth accept dataframe that contains resistivity values. 
+ 
+    station: str, int, optional 
+        Station is used to visualize the conductive zone in the `erp` profile. 
+        This seems useful if `cz` is not given. 
+        When `station='auto'` it automatically detect the best conductive zone 
+        assuming the very low resistivity in the profile and plot the 
+        conductive zone. To have the expected results, `station` position or 
+        `cz` must be given or the . 
+        
+       .. versionadded:: 0.2.1 
+           Can henceforth pass the station to plot the conductive zone. 
+           
     cz: array_like, optional, 
         The selected conductive zone. If ``None``, `cz` should not be plotted.
         
@@ -2634,15 +2653,32 @@ def plot_profiling (
     Examples 
     ----------
     >>> from watex.datasets import make_erp 
-    >>> from watex.utils import defineConductiveZone 
     >>> from watex.utils.plotutils import plot_profiling 
     >>> d= make_erp (n_stations =56, seed = 42)
     >>> plot_profiling  (d.resistivity)
-    
+    >>> # read the frame and get the resistivity values 
+    >>> plot_profiling (d.frame, station ='s07' ) 
+    <AxesSubplot:xlabel='Stations', ylabel='App.resistivity ($\\Omega.m$)'>
     """
     plt.style.use (style )
     
+    if hasattr ( erp , 'columns') and hasattr ( erp , '__array__'): 
+        if 'resistivity' not in  erp.columns : 
+            raise TypeError ("Missing resistivity column in the data.")
+        
+        erp = erp.resistivity 
+    
     erp = check_y (erp , input_name ="sample of ERP data")
+   
+    if station is not None: 
+        from .coreutils import defineConductiveZone 
+        
+        auto =False 
+        if str(station).lower().strip () =='auto': 
+            auto = True ; station =None 
+        cz, *_  = defineConductiveZone(
+            erp , station = station , auto= auto )
+    
     fig, ax = plt.subplots(1,1, figsize =fig_size)
     leg =[]
     
@@ -2653,7 +2689,8 @@ def plot_profiling (
     marker_kws = marker_kws or dict (marker ='o', c='#9EB3DD' )
     ax.scatter (np.arange(len(erp)), erp, **marker_kws )
     
-    leg.append(zl)
+    leg.append(zl)    
+        
     if cz is not None: 
         cz= check_y (cz, input_name ="Conductive zone 'cz'")
         z = np.ma.masked_values (erp, np.isin(erp, cz ))
@@ -3132,6 +3169,7 @@ fig_num: int, default=1,
         
 font_size: float, default=10, 
    Figure size 
+   
 rot_z: float, default=0., 
    angle of rotation clockwise positive. 
 
@@ -3227,10 +3265,143 @@ Examples
 >>> plot_strike(edi_fn_lst )
 
 """
+def plot_text (
+    x, y, 
+    text=None , 
+    data =None, 
+    coerce =False, 
+    basename ='S', 
+    fig_size =( 7, 7 ), 
+    show_line =False, 
+    step = None , 
+    xlabel ='', 
+    ylabel ='', 
+    color=None, 
+    show_leg =False,
+    linelabel='', 
+    markerlabel='', 
+    **text_kws
+    ): 
+    """ Plot text(s) indicating each position in the line. 
     
-  
+    Parameters 
+    -----------
+    x, y: str, float, Array-like 
+        The position to place the text. By default, this is in data 
+        coordinates. The coordinate system can be changed using the 
+        transform parameter.
+        
+    text: str, 
+        The text
+        
+    data: pd.DataFrame, 
+       Data containing x and y names. Need to be supplied when x and y 
+       are given as string names. 
+       
+    coerce:bool, default=False 
+       Force the plot despite the given textes do not match the number of  
+       positions `x` and `y`. If ``False``, number of positions must be 
+       consistent with x and y, otherwise error raises. 
+       
+    basename: str, default='S' 
+       the text to prefix the position when the text is not given. 
+       
+    fig_size: tuple, default=(7, 7) 
+       Matplotlib figure size.
+       
+    show_line: bool, default=False 
+       Display the line from x, y. 
+       
+    step: int,Optional 
+       The number of intermediate positions to skip in the plotting text. 
+       
+    xlabel, ylabel: str, Optional, 
+       The labels of x and y. 
+    color: str, Optional 
+       Line color if `show_line` is set to ``True``. 
+       
+    show_leg: bool, default=False 
+       Display the legend of line and marker labels. 
+       
+    linelabel, markerlabel: str, Optional 
+        The labels of the line and marker. 
+       
+    text_kws: dict, 
+       Keyword arguments passed to :meth:`matplotlib.axes.Axes.text`. 
+
+    Examples 
+    --------
+    >>> import watex as wx 
+    >>> data =wx.make_erp (as_frame =True, n_stations= 7 )
+    >>> x , y =[ 0, 1, 3 ], [2, 3, 6] 
+    >>> texto = ['AMT-E1147', 'AMT-E1148',  'AMT-E180']
+    >>> plot_text (x, y , text = texto)# no need to set  coerce, same length 
+    >>> data =wx.make_erp (as_frame =True, n_stations= 20 )
+    >>> x , y = data.easting, data.northing
+    >>> text1 = ['AMT-E1147', 'AMT-E1148',  'AMT-E180'] 
+    >>> plot_text (x, y , coerce =True , text = text1 , show_leg= True, 
+                   show_line=True, linelabel='E1-line', markerlabel= 'Site', 
+               basename ='AMT-E0' 
+               )
+    """
+    # assume x, y  series are passed 
+    if isinstance(x, str) or hasattr ( x, 'name'): 
+        xlabel = x  if isinstance(x, str) else x.name 
+        
+    if isinstance(y, str) or hasattr ( y, 'name'): 
+        ylabel = y  if isinstance(y, str) else y.name 
+        
+    if x is None and  y is None:
+        raise TypeError("x and y are needed for text plot. NoneType"
+                        " cannot be plotted.")    
+        
+    x, y = assert_xy_in(x, y, data = data ) 
+
+    if text is None and not coerce: 
+       raise TypeError ("Text cannot be plotted. To force plotting text with"
+                        " the basename, set ``coerce=True``.")
+
+    text = is_iterable(text , exclude_string= True , transform =True )
     
+    if ( len(text) != len(y) 
+        and not coerce) : 
+        raise ValueError("In principle text array and x/y must be consistent."
+                         f" Got {len(text)} and {len(y)}. To plot anyway,"
+                         " set ``coerce=True``.")
+    if coerce : 
+        basename =str(basename)
+        text += [f'{basename}{i+len(text):02}' for i in range (len(y) )]
+
+    if step is not None: 
+        step = _assert_all_types(step , float, int , objname ='Step') 
+        for ii in range(len(text)): 
+            if not ii% step ==0: 
+                text[ii]=''
+
+    fig, ax = plt.subplots(1,1, figsize =fig_size)
+    
+    # plot = ax.scatter if show_line else ax.plot 
+    ax_m = None 
+    if show_line: 
+        ax.plot (x, y , label = linelabel, color =color 
+                 ) 
+        
+    for ix, iy , name in zip (x, y, text ): 
+        ax.text ( ix , iy , name , **text_kws)
+        if name !='':
+           ax_m  = ax.scatter ( [ix], [iy] , marker ='o', color ='k', 
+                       )
   
+    ax.set_xlabel (xlabel)
+    ax.set_ylabel (ylabel) 
+    
+    ax_m.set_label ( markerlabel) if ax_m is not None else None 
+    
+    if show_leg : 
+        ax.legend () 
+    
+    
+
     
   
     
