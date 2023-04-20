@@ -1,7 +1,7 @@
 [  
   {
     "name": "dev",
-    "version": "v0.2.2",
+    "version": "0.2.2",
     "url": "https://watex.readthedocs.io/en/latest/"
   },
   {
@@ -11,22 +11,22 @@
   },
   {
     "name": "0.2.0",
-    "version": "v0.2.0",
+    "version": "0.2.0",
     "url": "https://watex.readthedocs.io/en/0.2.0/"
   },
   {
     "name": "0.1.9",
-    "version": "v0.1.9",
+    "version": "0.1.9",
     "url": "https://watex.readthedocs.io/en/0.1.9/"
   },
   {
     "name": "0.1.8",
-    "version": "v0.1.8",
+    "version": "0.1.8",
     "url": "https://watex.readthedocs.io/en/0.1.8/"
   },
   {
     "name": "0.1.7",
-    "version": "v0.1.7",
+    "version": "0.1.7",
     "url": "https://watex.readthedocs.io/en/0.1.7/"
   }
 ]
