@@ -642,6 +642,7 @@ class Profile:
         """
         Interpolate x, y and elev ( if applicable).
         
+        
         Parameters 
         -----------
         inplace: bool, default=True 
