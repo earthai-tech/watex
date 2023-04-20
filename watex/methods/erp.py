@@ -274,12 +274,7 @@ class DCMagic (ElectricalMethods ):
         X and Y, recomputed and projected as weel as the X and Y values of the
         expected fractured zone. Where X is the AB dipole spacing when imaging 
         to the depth and Y is the apparent resistivity computed.
-        
-    keep_params: bool, default=False, 
-        If ``True`` , keeps only the predicted parameters in the summary table, 
-        otherwise, returns the usefull details of the site like the depth 
-        AB/2 where the DC predicted area parameter is computed. 
-         
+
     fit_params: dict 
          Additional |ERP| keywords arguments  
          
@@ -334,7 +329,6 @@ class DCMagic (ElectricalMethods ):
         vesorder:int=None, 
         typeofop:str='mean',
         objective: Optional[str] = 'coverall',
-        keep_params:bool=False, 
         **kws
         ):
         super().__init__(**kws)
@@ -350,7 +344,6 @@ class DCMagic (ElectricalMethods ):
         self.rho0=rho0, 
         self.h0=h0
         self.strategy=strategy 
-        self.keep_params=keep_params
         self.read_sheets= read_sheets
 
     def fit ( self, *data,  **fit_params ): 
@@ -374,9 +367,7 @@ class DCMagic (ElectricalMethods ):
            feeding it to the algorithm. See the example below.
            
         fit_params: dict 
-           additional keywords arguments, specific to the readable files. 
-           Refer to :method:`watex.property.Config.parsers` . Use the key()
-           to get all the readables format. 
+           Does nothing here, just for API purpose. 
     
         Returns 
         -------
@@ -421,7 +412,7 @@ class DCMagic (ElectricalMethods ):
                                  dipole = self.dipole, 
                                  auto = self.auto , 
                                  read_sheets= self.read_sheets , 
-                                 keep_params = self.keep_params , 
+                                 keep_params = False , 
                                  force = True 
                                  ) 
                 po.fit(*erp_data )
@@ -444,6 +435,7 @@ class DCMagic (ElectricalMethods ):
                                 read_sheets = self.read_sheets , 
                                 typeofop=self.typeofop , 
                                 objective= self.objective ,
+                                keep_params= False, 
                                     ) 
                 vo.fit(*ves_data )                
                 self.vtable_= vo.summary(return_table= True ) 
@@ -460,9 +452,17 @@ class DCMagic (ElectricalMethods ):
         
         return self 
     
-    def summary (self , *, force = False, coerce =False, return_table = True, 
-                 keep_params = False): 
-        """ Aggregate the table to compose unique :term:`DC` features. 
+    def summary (
+        self, 
+        *, 
+        force=False, 
+        coerce=False, 
+        return_table=True, 
+        keep_params=False, 
+        work_as=None, 
+        ): 
+        """ Retrieve sites details and aggregate the table to 
+        compose unique :term:`DC` features. 
         
         Parameters 
         -----------
@@ -481,47 +481,103 @@ class DCMagic (ElectricalMethods ):
           By default, :class:`DCProfiling` expects users to provide either DC 
           objects or pandas dataframe. This assumes users have already 
           transformed its data from sheets to data frame. If not the case, setting
-          `force` to ``True`` constrains the algorithm to do the both tasks at
-           once. 
+          `force` to ``True`` constraints the algorithm to do the both tasks at
+          once. 
            
         return_tables: bool, default=True, 
           Returns DC-features in a pandas dataframe. 
           
         keep_params: bool, default=False, 
-          If `keep_params` is set to ``True``. Method should output only 
-          the main important params for prediction purpose. Otherwise, 
-          returns all main DC-resistivity attributes. 
-           
+            If ``True`` , keeps only the predicted parameters in the summary 
+            table, otherwise, returns returns all main DC-resistivity details 
+            of the site. 
             
+        work_as: str, Optional 
+           Can be ['ERP' | 'VES']. When one of DC-methods such as :term:`VES`
+           or :term:`ERP` is not supplied. `summary` methods of `DCMagic` 
+           returns an   `DCError` because `DCMagic` expects each sounding 
+           point to have its profiling data. However to work like `DCSounding`
+           and `DCProfiling` in order to return the table of VES or ERP, 
+           the parameter `work_as` can be turn to `ERP` or `VES`.
+           
         Returns 
         --------
         self or table_: :class:`~.DCMagic` or class:`pd.DataFrame` 
           Returns DCMagic object or dataframe. 
         
         """
+        #xxxxxxxxxxxxxxxxxxx
         self.inspect 
-        main_params = ('longitude', 'latitude', 'shape', 'type', 'magnitude', 
-                       'power',  'sfi', 'sves_resistivity', 'ohmic_area')
-
         emsg =("Number of profiles and sites must be consistent. Got"
-               f" '{len(self.rtable_)}' and '{len(self.vtable_)}' respectively."
-               " Indeed, each sounding point is expected to be located" 
-               " in each individual profile therefore the coordinates"
-               " of sounding site should fit the one used for positionning"
-               " the drilling. When using different coordinates, it might"
-               " lead to unexpected results. To force performing a cross"
+               " '{0}' and '{1}' respectively. Indeed, each sounding"
+               " point is expected to be located in each individual"
+               " profile therefore the coordinates of sounding site"
+               " should fit the one used for positionning the drilling."
+               " When using different coordinates, it might lead to"
+               " unexpected results. To force performing a cross"
                " merge, set parameter ``force=True`` or ``coerce=True`` to"
                " truncate the data to fit the number of sounding points."
                " Note that this is not recommended and will probably lead "
                " to a bad DC-features arrangement. Use at your own risk.")
         
+        main_params = ('longitude', 'latitude', 'shape', 'type', 'magnitude', 
+                       'power',  'sfi', 'sves_resistivity', 'ohmic_area')
+        #xxxxxxxxxxxxxxxxxxxx
+ 
+        if ( 
+                self.rtable_ is None 
+                or self.vtable_ is None
+            ): 
+            # behave like DCProfiling or DCSounding
+            # 'need' is used to indicate which kind of methods, 
+            # DCMagic must work as. 
+            need=None 
+            
+            if  self.rtable_ is None:
+    
+                if str(work_as).lower().strip() =='none':
+                    raise DCError ('.'.join(emsg.split('.')[:2]).format(
+                        0, len(self.vtable_) ) + 
+                        (". Missing profiling data that fits the numberof"
+                         f" each sounding points({len(self.vtable_)}). Use"
+                         " `watex.DCProfiling` for dealing with profilings"
+                         " data or set ``work_as='ves'``")
+                                   )
+                elif ( 
+                        str(work_as).lower().strip() .find ('ves')>=0 
+                        or str(work_as).lower().strip() .find('dcs')>=0
+                        ): 
+                    return self.vtable_ 
+                need = 'ves'
+            elif self.vtable_ is None:  
+                if str(work_as).lower().strip() =='none':
+                    raise DCError ('.'.join(emsg.split('.')[:2]).format(
+                        len(self.rtable_), 0 ) + 
+                        (". Missing vertical sounding data that fits the number"
+                        f" of sites of the profiling ({len(self.rtable_)}). Use"
+                        " `watex.DCSounding` for dealing with profilings data"
+                        " or set ``work_as='erp'``")
+                                   )
+                elif ( 
+                        str(work_as).lower().strip() .find ('erp')>=0 
+                        or str(work_as).lower().strip() .find('dcp')>=0
+                        ) : 
+                    return self.rtable_ 
+                need ='erp'
+                
+            raise ValueError(
+                "`work_as` expects arguments {0!r}. Got {1!r}".format(
+                    need if need  else "'ves' or 'erp'", work_as)
+                )
+            
         # check whether the coordinates exist in both 
         # tables. If not the case, coerce instead if set to 
         # True 
         for d , name in zip ( ( self.rtable_ , self.vtable_), 
                              ('dc-erp', 'dc-ves')) : 
+            
             xy_coords, _, xynames  = get_xy_coordinates(
-                d, as_frame =True )
+                d, as_frame =True, raise_exception='mute' )
             
             if xy_coords is None: 
                 if name =='dc-erp': 
@@ -572,7 +628,8 @@ class DCMagic (ElectricalMethods ):
                                   f" to {len(tab_to)} to fit the valid"
                                   f" {len(trunc_rtab)} positionning sites.")
                     
-            else: raise DCError (emsg)
+            else: raise DCError (emsg.format(
+                len(self.rtable_), len(self.vtable_) ))
             
         else: 
             if coerce: 
@@ -749,7 +806,7 @@ class DCMagic (ElectricalMethods ):
     @property 
     def inspect (self): 
         """ Inspect object whether is fitted or not"""
-        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+        msg = ("{obj.__class__.__name__} instance is not fitted yet."
                " Call 'fit' with appropriate arguments before using"
                " this method"
                )
@@ -757,8 +814,7 @@ class DCMagic (ElectricalMethods ):
         if ( 
                 not hasattr (self, 'rtable_') or not hasattr (self, 'vtable_')
         ): 
-            raise NotFittedError(msg.format(
-                obj=self)
+            raise NotFittedError(msg.format(obj=self)
             )
         return 1    
     

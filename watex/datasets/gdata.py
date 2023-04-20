@@ -181,7 +181,7 @@ def make_ves (
     order:str='-', 
     as_frame:bool=False, 
     seed:int=None, 
-    iorder:float=3, 
+    iorder:int=3, 
     xy = None, 
     is_utm=False, 
     add_xy:bool =False,  
@@ -222,10 +222,12 @@ def make_ves (
     seed: int, Optional,
         It allows reproducing the same data. If value is passed, it reproduces 
         the same data at that sample points. 
-    iorder: float, default=3 
-        Inflexion order. If ``None`` should compute using the length of  
-        extrema (local + global). Must be lower as possible to let the 
-        fitting VES curve more realistic. 
+        
+    iorder: int, default=3 
+        Inflexion order. It is a positive value greater than 0. If ``None``, it 
+        should be computed using the length of  extrema (local + global). 
+        It also might be lower as possible to let the fitting VES curve more 
+        realistic. 
         
     xy: tuple, optional  
        Coordinates point  ( easting, northing ) or (lon, lat) corresponding 
@@ -317,7 +319,14 @@ def make_ves (
         np.random.seed(seed )
         
     np.random.shuffle(g) 
+    iorder = int ( _assert_all_types(iorder, int, float, 
+                                     objname ="Inflexion order 'iorder'")
+                  )
     
+    if iorder <=0: 
+        raise ValueError ("Inflexion order 'iorder' expects a positive"
+                          f" number greater than 0. Got '{iorder}'.")
+        
     f, *_ = fitfunc (AB, g, deg= iorder )
     resistivity = np.abs(f (AB ))
 

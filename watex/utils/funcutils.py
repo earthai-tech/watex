@@ -5658,11 +5658,7 @@ def get_xy_coordinates (d, / , as_frame = False, drop_xy = False,
         
     return  xy , d , xynames 
        
-        
-def smart_concatenator ( *d , groupby = None ): 
-    """Group """
-    
-    
+
         
     
     
