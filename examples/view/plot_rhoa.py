@@ -32,15 +32,15 @@ tplot.plot_rhoa (site= 'E44', mode ='TM',survey='AMT', show_site =True ,
 # * Plot multiple sites 
 # It is also possible to plot multiple stations. For instance, we can plot 
 # three sites using the :meth:`watex.view.TPlot.plot_rhophi` 
-# by setting the parameters `n_sites` to ``3``as: 
+# by setting the parameters `n_sites` to ``3`` as: 
     
 tplot.gls =':' ; tplot.galpha=.8; tplot.gc ='k'
 tplot.plot_rhophi ( n_sites = 3 , mode = '*', show_site =True, seed =52 )
 
-#%% 
-# plot corrections 
+# %% 
+# * plot corrections 
 # It is possible to plot correction data using the EMAP filters such as 
-# [`tma`| `ama`|`flma`] or using the static shift (`ss`) or distorsion (`dist`) 
+# ``['tma'| 'ama'|'flma']`` or using the static shift (``ss``) or distorsion (``dist``) 
 # filters. Note that when `dist` is passed the distorsion must be be provided 
 # as 2x2 matrix. 
  
