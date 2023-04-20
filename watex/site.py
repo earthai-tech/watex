@@ -629,7 +629,7 @@ class Profile:
             utm_zone= utm_zone, 
             is_utm= isutm, 
             datum=self.datum, 
-            espg=self.epsg
+            espg=self.epsg,
             **kws
             ) 
     
@@ -641,6 +641,7 @@ class Profile:
         ): 
         """
         Interpolate x, y and elev ( if applicable).
+        
         
         Parameters 
         -----------
