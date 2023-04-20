@@ -806,6 +806,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.funcutils.pretty_printer
 	utils.funcutils.get_config_fname_from_varname
 	utils.funcutils.get_confidence_ratio
+	utils.funcutils.get_xy_coordinates
 	utils.funcutils.cparser_manager
 	utils.funcutils.parse_yaml
 	utils.funcutils.return_ctask
