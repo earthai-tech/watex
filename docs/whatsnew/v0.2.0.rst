@@ -1,7 +1,7 @@
 v0.2.0 (March 25, 2023)
 --------------------------
 
-This is major changes  performed from ``v0.1``.  
+These are major changes composed of new features and improvements from ``v0.1.9``.  
 
 - |Major feature| Add impedance tensor multiple correction class (:class:`watex.methods.ZC`) and gives opportunity 
   to export new :term:`tensor` data into :term:`EDI` files if the argument ``out=True``. For instance: 
@@ -42,8 +42,6 @@ This is major changes  performed from ``v0.1``.
 
   - :meth:`watex.site.Profile.interpolate` interpolates ``x``, ``y`` and ``elev`` ( if applicable).
 
-- |Feature| :meth:`watex.view.TPlot.plot_corrections` allows to visualize the static shift correction as well as the distortion. 
-
 - |Major Feature| New features for interpolation and drop bad frequencies at once to avoid a gynastic using Numpy 
   and :func:`watex.utils.get2dtensor`: 
 
@@ -77,15 +75,17 @@ This is major changes  performed from ``v0.1``.
       Zcol = wx.EMProcessing ().fit(sedis).drop_frequencies (freqs = [49800 , 29700]  )
       Zcol [5].freq[:7] 
       Out[3]: array([81920., 70000., 58800., 41600., 35000., 24700., 20800.])
- 
+
+- |Feature| :meth:`watex.view.TPlot.plot_corrections` allows to visualize the static shift correction as well as the distortion. 
+
+- |Feature| Add a quick model evalutation with :func:`watex.models.naive_evaluation`
+
 - |Enhancement| Update :func:`watex.utils.get2dtensor` to be able to output the complex data type especially when impedance tensor Z 
   is given. This avoid ``ComplexWarning`` casting wich only keep the ``real`` part. 
 
 - |Enhancement| in :meth:`watex.view.TPlot.plot_corrections`. Use the frequency of each site rather than the complete frequency of 
   the survey investigation since all sites could not have the same frequency length. This will fix the possible crash when plotting the raw 
   :term:`EDI` data. 
-
-- |Feature| Add a quick model evalutation with :func:`watex.models.naive_evaluation`
 
 - |Enhancement| ``force`` parameter is now available to :class:`watex.methods.DCProfiling` and :class:`watex.methods.ResistivityProfiling` 
   In principle :class:`watex.methods.DCProfiling` expects users to provide either :term:`DC` objects or pandas dataframe. This 
