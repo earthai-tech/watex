@@ -398,7 +398,7 @@ class DCMagic (ElectricalMethods ):
             print('-'*83)
             print()
    
-        erp_data, ves_data , self.isnotvalid_ =  _parse_dc_data(
+        erp_data, ves_data , self.isnotvalid_ =  parse_dc_data(
             *data , vesorder = self.vesorder, read_sheets= self.read_sheets  )
     
         # get the doc objects if exist in the data 
@@ -880,8 +880,27 @@ class DCMagic (ElectricalMethods ):
             )
         return 1    
     
-def _parse_dc_data (*data, vesorder =0, read_sheets = False  ): 
-    """ Select ERP and VES data """ 
+def parse_dc_data (*data: ..., vesorder:int =0, read_sheets: bool = False ): 
+    """ Select ERP and VES data
+    
+    Parameters 
+    -----------
+    data: List of Any objects 
+     List of ERP and VES data or objects 
+     
+    vesorder: int, default=0 
+      Index of sounding data in the data frame 
+      
+    read_sheets: bool, default=False 
+       Way to read the inner data sheets. Be sure to make each sheets name 
+       different. 
+    Returns 
+    --------
+    dcp, dcv, unread: 
+        - list of ERP data read successfully 
+        - list of VES data read successfully 
+        - list of unrecognized objects 
+    """ 
     
     erp_data = [] 
     ves_data = []
