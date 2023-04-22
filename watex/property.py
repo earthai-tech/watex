@@ -819,6 +819,7 @@ class ElectricalMethods (ABC) :
                 MN: float = 20.,
                 arrangement: str  = 'schlumberger', 
                 area : str = None, 
+
                 projection: str ='lonlat', 
                 datum: str ='WGS84', 
                 epsg: int =None, 

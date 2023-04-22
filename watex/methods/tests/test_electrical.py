@@ -201,6 +201,24 @@ def test_DCMagic ():
     # 0         NaN       NaN     W  ...  1.310417        707.609756  263.213572
     # 1         NaN       NaN     K  ...  1.300024          1.000000  964.034554
     # 2  109.332932  28.41193     U  ...  1.184614          1.000000  276.340744
+
+    data = wx.make_erp (seed =42 , n_stations =12, as_frame =True ) 
+    ro= wx.DCProfiling ().fit(data) 
+    print(ro.summary()) 
+
+    data_no_xy = wx.make_ves ( seed=0 , as_frame =True) 
+    vo = wx.methods.VerticalSounding (
+        xycoords = (110.486111,   26.05174)).fit(data_no_xy).summary()
+    print(vo.table_) 
+    dm = wx.methods.DCMagic ().fit(vo, ro ) 
+    print(dm.summary (like = ...)) 
+    #    dipole  longitude  latitude  ...  max_depth  ohmic_area  nareas
+    # 0      10  110.48611  26.05174  ...      109.0  690.063003       1
+    print(dm.summary (keep_params =True, like = ... )) 
+    #    longitude  latitude shape  ...       sfi  sves_resistivity  ohmic_area
+    # 0  110.48611  26.05174     C  ...  1.141844               1.0  690.063003
+    print(list( dm.table_.columns )) 
+    
 @pytest.mark.skipif(os.path.isdir ('data/ves'
                                    ) is False  or os.path.isdir (
                                        'data/erp') is False  ,

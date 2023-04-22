@@ -2585,18 +2585,18 @@ def plot_bar(x, y, wh= .8,  kind ='v', fig_size =(8, 6), savefig=None,
     plt.close () if savefig is not None else plt.show() 
     
 def plot_profiling (
-        erp, 
-        /, 
-        station = None,  
-        cz=None, 
-        *, 
-        style = 'classic', 
-        fig_size = (10, 4), 
-        cz_plot_kws= None,
-        marker_kws= None, 
-        savefig =None, 
-        **plot_kws
-        ): 
+    erp, 
+    /, 
+    station = None,  
+    cz=None, 
+    *, 
+    style = 'classic', 
+    fig_size = (10, 4), 
+    cz_plot_kws= None,
+    marker_kws= None, 
+    savefig =None, 
+    **plot_kws
+    ): 
     """ 
     Visualizes  the resistivity profiling of  ERP data. 
     
