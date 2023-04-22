@@ -1,4 +1,4 @@
-v0.2.2 (April 30, 2023)
+v0.2.2 (April 22, 2023)
 --------------------------
 
 These are minor changes  in ``v0.2.1`` that shows fugs fixed, features and improvements.  
