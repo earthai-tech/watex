@@ -226,14 +226,8 @@ def test_DCMagic ():
 def test_DCMagic_ (): 
     # test Magic method when aggreate multiple files from Path-like objects
     m0 = DCMagic(verbose =True ).fit('data/erp', 'data/ves')
-    # dc-ves  : 100%|################################| 1/1 [00:00<00:00, 111.11B/s]
-    # dc-erp  : 100%|################################| 1/1 [00:00<00:00, 166.67B/s]
-    # dc-erp  : 100%|################################| 2/2 [00:00<00:00, 231.29B/s]
-    # dc-o:erp: 100%|################################| 1/1 [00:00<00:00, 498.79B/s]
-    # dc-ves  : 100%|################################| 2/2 [00:00<00:00, 203.20B/s]
-    # dc-o:ves: 100%|################################| 1/1 [00:00<00:00, 500.04B/s]
-    # dc-erp  : 100%|################################| 9/9 [00:00<00:00, 219.63B/s]
-    # dc-ves  : 100%|################################| 3/3 [00:00<00:00, 163.37B/s]
+    # dc-erp  : 100%|##############################| 11/11 [00:00<00:00, 164.94B/s]
+    # dc-ves  : 100%|################################| 3/3 [00:00<00:00, 124.98B/s]
     m0.summary(keep_params =True, force =True )
     #     longitude  latitude shape  ...       sfi  sves_resistivity   ohmic_area
     # 0         0.0       0.0     C  ...  1.050857              80.0          NaN
@@ -258,14 +252,21 @@ def test_DCMagic_ ():
      # [3 rows x 9 columns]
     print(tab)
     
-# if __name__=='__main__': 
+    m1 = DCMagic(read_sheets=True , verbose =True).fit('data/erp', 'data/ves')
+    # dc-erp  : 100%|##############################| 17/17 [00:00<00:00, 200.75B/s]
+    # dc-ves  : 100%|#################################| 2/2 [00:00<00:00, 88.10B/s]
+    tab1= m1.summary(keep_params =True, coerce =True )
     
-#     test_DCProfiling()
-#     test_VerticalSounding() 
-#     test_DCSounding() 
-#     test_ResistivityProfiling() 
-#     test_DCMagic() 
-#     test_DCMagic_ () 
+    print(tab1)
+    
+if __name__=='__main__': 
+    
+    test_DCProfiling()
+    test_VerticalSounding() 
+    test_DCSounding() 
+    test_ResistivityProfiling() 
+    test_DCMagic() 
+    test_DCMagic_ () 
     
     
     

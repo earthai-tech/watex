@@ -1951,7 +1951,7 @@ def _readfrompath (self, *data: List[str | DataFrame ] ,
     
             if self.verbose > 3: 
                 print(f"Number of the collected data from stations are"
-                      f" : {len(self.survey_names_)}")
+                      f" : {len(survey_names)}")
                 
             data = list(ddict.values ())
         

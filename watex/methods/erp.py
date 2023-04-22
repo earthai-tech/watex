@@ -105,7 +105,8 @@ from ..utils.funcutils import (
     smart_strobj_recognition,
     get_xy_coordinates, 
     listing_items_format, 
-    twinning
+    twinning, 
+    read_worksheets,
 
     )
 from ..utils.gistools import ( 
@@ -398,7 +399,7 @@ class DCMagic (ElectricalMethods ):
             print()
    
         erp_data, ves_data , self.isnotvalid_ =  _parse_dc_data(
-            *data , vesorder = self.vesorder )
+            *data , vesorder = self.vesorder, read_sheets= self.read_sheets  )
     
         # get the doc objects if exist in the data 
         self.rtable_  = None ; self.vtable_ = None 
@@ -879,7 +880,7 @@ class DCMagic (ElectricalMethods ):
             )
         return 1    
     
-def _parse_dc_data (*data,vesorder =0  ): 
+def _parse_dc_data (*data, vesorder =0, read_sheets = False  ): 
     """ Select ERP and VES data """ 
     
     erp_data = [] 
@@ -891,13 +892,25 @@ def _parse_dc_data (*data,vesorder =0  ):
     dtemp =[] # collect all files in different path. 
     d0=[]
     for d in data : 
-        if isinstance ( d, str ) and os.path.isdir ( d ): 
-            # collect all the data 
-            dtemp += [ os.path.join (d, f ) for f in os.listdir ( d )] 
+        if isinstance ( d, str ): 
+            if os.path.isdir ( d ): 
+                # collect all the data 
+                dtemp += [ os.path.join (d, f ) for f in os.listdir ( d )] 
         else: d0.append (d ) 
         
     data = d0 + dtemp # new data
-    
+
+    # read sheets and make dataframe 
+    # be sure to make each sheets  different names.
+    if read_sheets: 
+        # get the excel sheets files 
+        xlsxfiles= [ sh for sh in data if isinstance (
+            sh, str ) and sh.endswith ('.xlsx') ]
+        if len( xlsxfiles) !=0: 
+            d0 = list(filter (lambda f : f not in xlsxfiles, data  ))
+            dtemp,_ = read_worksheets(*xlsxfiles)
+            data = d0 + dtemp  # new data
+
     for d in data : 
         if isinstance ( d, str ): 
             # assume there is a file object 
@@ -964,7 +977,7 @@ def get_dc_objects (
        A collection of selected DC Profiling and DCSounding objects 
     
     """ 
-    
+    remain_data = ...
     dcp=[]; dcv =[]
     if method == 'DCProfiling': 
         dcp = list(filter ( lambda o : get_estimator_name (

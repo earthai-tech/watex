@@ -5861,9 +5861,72 @@ def twinning(
             
     return data 
 
+def read_worksheets(*data): 
+    """ Read sheets and returns a list of DataFrames and sheet names. 
     
-        
+    Parameters 
+    -----------
+    data: list of str 
+      A collection of excel sheets files. Read only `.xlsx` files. Any other 
+      files raises an errors.  
     
+    Return
+    ------
+    data, sheet_names: Tuple of DataFrames and sheet_names 
+       A collection of DataFrame and sheets names. 
+       
+    Examples 
+    -----------
+    >>> import os 
+    >>> from watex.utils.funcutils import read_worksheets 
+    >>> sheet_file= r'F:\repositories\watex\data\erp\sheets\gbalo.xlsx'
+    >>> data, snames =  read_worksheets (sheet_file )
+    >>> snames 
+    ['l11', 'l10', 'l02'] 
+    >>> data, snames =  read_worksheets (os.path.dirname (sheet_file))
+    >>> snames 
+    ['l11', 'l10', 'l02', 'l12', 'l13']
+    
+    """
+    dtem = []
+    data = [o for o in data if isinstance ( o, str )]
+    
+    for o in data: 
+        if os.path.isdir (o): 
+            dlist = os.listdir (o)
+            # collect only the excell sheets 
+            p = [ os.path.join(o, f) for f in dlist if f.endswith ('.xlsx') ]
+            dtem .extend(p)
+        elif os.path.isfile (o):
+            _, ex = os.path.splitext( o)
+            if ex == '.xlsx': 
+                dtem.append(o)
+            
+    data = copy.deepcopy(dtem)
+    # if no excel sheets is found return None 
+    if len(data) ==0: 
+        return None, None 
+    
+    # make d dict to collect data 
+    ddict = dict() 
+    regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
+    
+    for d in data : 
+        try: 
+            ddict.update ( **pd.read_excel (d , sheet_name =None))
+        except : pass 
+
+    #collect stations names
+    if len(ddict)==0 : 
+        raise TypeError("Can'find the data to read.")
+
+    sheet_names = list(map(
+        lambda o: regex.sub('_', o).lower(), ddict.keys()))
+
+    data = list(ddict.values ()) 
+
+    return data, sheet_names      
+
     
     
     
