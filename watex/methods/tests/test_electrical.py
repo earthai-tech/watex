@@ -187,8 +187,8 @@ def test_DCMagic ():
     ves_data = wx.make_ves (seed =42).frame 
     v = wx.DCSounding ().fit(wx.make_ves (seed =10, as_frame =True, add_xy =True))
     r = wx.DCProfiling().fit( wx.make_erp ( seed =77 , as_frame =True))
-    res= wx.methods.ResistivityProfiling(station='S4').fit(erp_data) 
-    ves= wx.methods.VerticalSounding(search=60).fit(ves_data)
+    res= ResistivityProfiling(station='S4').fit(erp_data) 
+    ves= VerticalSounding(search=60).fit(ves_data)
     # dc-ves  : 100%|################################| 1/1 [00:00<00:00, 111.13B/s]
     # dc-erp  : 100%|################################| 1/1 [00:00<00:00, 196.77B/s]
     m = DCMagic().fit(erp_data, ves_data, v, r, ves, res ) 
@@ -201,6 +201,24 @@ def test_DCMagic ():
     # 0         NaN       NaN     W  ...  1.310417        707.609756  263.213572
     # 1         NaN       NaN     K  ...  1.300024          1.000000  964.034554
     # 2  109.332932  28.41193     U  ...  1.184614          1.000000  276.340744
+
+    data = wx.make_erp (seed =42 , n_stations =12, as_frame =True ) 
+    ro= wx.DCProfiling ().fit(data) 
+    print(ro.summary()) 
+
+    data_no_xy = wx.make_ves ( seed=0 , as_frame =True) 
+    vo = VerticalSounding (
+        xycoords = (110.486111,   26.05174)).fit(data_no_xy).summary()
+    print(vo.table_) 
+    dm = DCMagic ().fit(vo, ro ) 
+    print(dm.summary (like = ...)) 
+    #    dipole  longitude  latitude  ...  max_depth  ohmic_area  nareas
+    # 0      10  110.48611  26.05174  ...      109.0  690.063003       1
+    print(dm.summary (keep_params =True, like = ... )) 
+    #    longitude  latitude shape  ...       sfi  sves_resistivity  ohmic_area
+    # 0  110.48611  26.05174     C  ...  1.141844               1.0  690.063003
+    print(list( dm.table_.columns )) 
+    
 @pytest.mark.skipif(os.path.isdir ('data/ves'
                                    ) is False  or os.path.isdir (
                                        'data/erp') is False  ,
@@ -208,14 +226,8 @@ def test_DCMagic ():
 def test_DCMagic_ (): 
     # test Magic method when aggreate multiple files from Path-like objects
     m0 = DCMagic(verbose =True ).fit('data/erp', 'data/ves')
-    # dc-ves  : 100%|################################| 1/1 [00:00<00:00, 111.11B/s]
-    # dc-erp  : 100%|################################| 1/1 [00:00<00:00, 166.67B/s]
-    # dc-erp  : 100%|################################| 2/2 [00:00<00:00, 231.29B/s]
-    # dc-o:erp: 100%|################################| 1/1 [00:00<00:00, 498.79B/s]
-    # dc-ves  : 100%|################################| 2/2 [00:00<00:00, 203.20B/s]
-    # dc-o:ves: 100%|################################| 1/1 [00:00<00:00, 500.04B/s]
-    # dc-erp  : 100%|################################| 9/9 [00:00<00:00, 219.63B/s]
-    # dc-ves  : 100%|################################| 3/3 [00:00<00:00, 163.37B/s]
+    # dc-erp  : 100%|##############################| 11/11 [00:00<00:00, 164.94B/s]
+    # dc-ves  : 100%|################################| 3/3 [00:00<00:00, 124.98B/s]
     m0.summary(keep_params =True, force =True )
     #     longitude  latitude shape  ...       sfi  sves_resistivity   ohmic_area
     # 0         0.0       0.0     C  ...  1.050857              80.0          NaN
@@ -239,6 +251,13 @@ def test_DCMagic_ ():
     
      # [3 rows x 9 columns]
     print(tab)
+    
+    m1 = DCMagic(read_sheets=True , verbose =True).fit('data/erp', 'data/ves')
+    # dc-erp  : 100%|##############################| 17/17 [00:00<00:00, 200.75B/s]
+    # dc-ves  : 100%|#################################| 2/2 [00:00<00:00, 88.10B/s]
+    tab1= m1.summary(keep_params =True, coerce =True )
+    
+    print(tab1)
     
 # if __name__=='__main__': 
     

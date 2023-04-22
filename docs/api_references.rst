@@ -661,10 +661,11 @@ Functions
 	utils.selectfeatures
 	utils.sfi
 	utils.shape
+	utils.smart_label_classifier
 	utils.smoothing
 	utils.split_train_test
 	utils.to_numeric_dtypes
-	utils.smart_label_classifier
+	utils.twinning
 	utils.type_
 	utils.vesDataOperator
 	utils.vesSelector

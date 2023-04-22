@@ -58,7 +58,8 @@ from .funcutils import (
     cleaner, 
     savejob, 
     random_selector, 
-    interpolate_grid
+    interpolate_grid, 
+    twinning, 
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -214,6 +215,7 @@ __all__=[
         'smooth1d', 
         'smoothing', 
         'rhophi2z', 
+        'twinning'
         ]
 
 

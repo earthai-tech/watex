@@ -105,6 +105,8 @@ from ..utils.funcutils import (
     smart_strobj_recognition,
     get_xy_coordinates, 
     listing_items_format, 
+    twinning, 
+    read_worksheets,
 
     )
 from ..utils.gistools import ( 
@@ -396,8 +398,8 @@ class DCMagic (ElectricalMethods ):
             print('-'*83)
             print()
    
-        erp_data, ves_data , self.isnotvalid_ =  _parse_dc_data(
-            *data , vesorder = self.vesorder )
+        erp_data, ves_data , self.isnotvalid_ =  parse_dc_data(
+            *data , vesorder = self.vesorder, read_sheets= self.read_sheets  )
     
         # get the doc objects if exist in the data 
         self.rtable_  = None ; self.vtable_ = None 
@@ -455,64 +457,98 @@ class DCMagic (ElectricalMethods ):
     def summary (
         self, 
         *, 
-        force=False, 
-        coerce=False, 
-        return_table=True, 
-        keep_params=False, 
-        work_as=None, 
+        coerce:bool=False,  
+        force:bool=False, 
+        return_table:bool=True, 
+        keep_params:bool=False, 
+        like:str=..., 
         ): 
         """ Retrieve sites details and aggregate the table to 
         compose unique :term:`DC` features. 
         
         Parameters 
         -----------
-        force: bool, default=True
+        coerce: bool, default=True 
+          If coordinates data of sites are  missing in a profile/site, 
+          setting ``coerce`` to ``True`` will use the |ERP| coordinates 
+          to fit each |VES| sites by default or vice-versa. To avoid
+          an unexpected behavior, it is strongly recommended to provide the 
+          same sounding point coordinates used for the expecting drilling point 
+          passed in attribute `sves_` in term:`DC` profiles.  
+          
+        force: bool, default=False
           In principle, number of profiles should be equals to number of sites
           where the drilling operations is perfomed. ``Force`` allows to 
           aggregate the dataframe even this condition is not met, otherwise, 
           an error raises. 
-          
-        coerce: bool, default=True 
-          If coordinates data of sites are  missing in a profile/site, 
-          setting ``coerce`` to ``True`` will use the |ERP| coordinates 
-          by defaults.  
-            
-        force: bool, default=False, 
-          By default, :class:`DCProfiling` expects users to provide either DC 
-          objects or pandas dataframe. This assumes users have already 
-          transformed its data from sheets to data frame. If not the case, setting
-          `force` to ``True`` constraints the algorithm to do the both tasks at
-          once. 
            
-        return_tables: bool, default=True, 
-          Returns DC-features in a pandas dataframe. 
-          
+        return_table: bool, default=True, 
+          Returns DC-features in a pandas dataframe rather 
+          than :class:`DCMagic` object. 
+    
         keep_params: bool, default=False, 
-            If ``True`` , keeps only the predicted parameters in the summary 
-            table, otherwise, returns returns all main DC-resistivity details 
-            of the site. 
+          If ``True`` , keeps only the predicted parameters in the summary 
+          table, otherwise returns all main DC-resistivity details 
+          of the site. 
             
-        work_as: str, Optional 
-           Can be ['ERP' | 'VES']. When one of DC-methods such as :term:`VES`
-           or :term:`ERP` is not supplied. `summary` methods of `DCMagic` 
-           returns an   `DCError` because `DCMagic` expects each sounding 
-           point to have its profiling data. However to work like `DCSounding`
-           and `DCProfiling` in order to return the table of VES or ERP, 
-           the parameter `work_as` can be turn to `ERP` or `VES`.
+        like: str, Optional 
+          Can be ['ERP' | 'VES']. When one of DC-methods such as :term:`VES`
+          or :term:`ERP` is not supplied, `summary` method of `DCMagic` 
+          returns an  `DCError` because `DCMagic` expects each sounding 
+          point to have its profiling data with expected drilling point 
+          coordinates ( passed in attributes ``sves_``) explicity specified . 
+          However to constraint the :class:`DCMagic` works like `DCSounding` 
+          or `DCProfiling` in order to return the table of VES or ERP, 
+          the parameter `like` can be turn to `ERP` or `VES`.
+          
+          .. versionchanged:: 0.2.2 
+             Deprecated parameter ``work_as``. `like` parameter operates 
+             simmilary as `work_as` did.  
            
         Returns 
         --------
-        self or table_: :class:`~.DCMagic` or class:`pd.DataFrame` 
-          Returns DCMagic object or dataframe. 
+        self or table_: :class:`DCMagic` or DataFrame 
+          Returns DCMagic object or DataFrame of sites details. 
         
+        Examples 
+        ----------
+        >>> import watex as wx 
+        >>> data = wx.make_erp (seed =42 , n_stations =12, as_frame =True ) 
+        >>> ro= wx.DCProfiling ().fit(data) 
+        >>> ro.summary()
+               dipole   longitude  latitude  ...  shape  type       sfi
+        line1      10  110.486111  26.05174  ...      C    EC  1.141844
+        >>> data_no_xy = wx.make_ves ( seed=0 , as_frame =True) 
+        >>> vo = wx.methods.VerticalSounding (
+            xycoords = (110.486111,   26.05174)).fit(data_no_xy).summary()
+        >>> vo.table_
+                 AB    MN   arrangememt  ... nareas   longitude  latitude
+        area                             ...                             
+        None  200.0  20.0  schlumberger  ...      1  110.486111  26.05174
+        >>> dm = wx.methods.DCMagic ().fit(vo, ro ) 
+        >>> dm.summary () 
+           dipole  longitude  latitude  ...  max_depth  ohmic_area  nareas
+        0      10  110.48611  26.05174  ...      109.0  690.063003       1
+        >>> dm.summary (keep_params =True )
+           longitude  latitude shape  ...       sfi  sves_resistivity  ohmic_area
+        0  110.48611  26.05174     C  ...  1.141844               1.0  690.063003
+        >>> list( dm.table_.columns )
+        ['longitude',
+         'latitude',
+         'shape',
+         'type',
+         'magnitude',
+         'power',
+         'sfi',
+         'sves_resistivity',
+         'ohmic_area']
         """
-        #xxxxxxxxxxxxxxxxxxx
         self.inspect 
-        emsg =("Number of profiles and sites must be consistent. Got"
+        emsg =("The number of profiles and sites must be consistent. Got"
                " '{0}' and '{1}' respectively. Indeed, each sounding"
                " point is expected to be located in each individual"
-               " profile therefore the coordinates of sounding site"
-               " should fit the one used for positionning the drilling."
+               " profile therefore the coordinates of the sounding site"
+               " should fit the one used for positioning the drilling."
                " When using different coordinates, it might lead to"
                " unexpected results. To force performing a cross"
                " merge, set parameter ``force=True`` or ``coerce=True`` to"
@@ -522,52 +558,50 @@ class DCMagic (ElectricalMethods ):
         
         main_params = ('longitude', 'latitude', 'shape', 'type', 'magnitude', 
                        'power',  'sfi', 'sves_resistivity', 'ohmic_area')
-        #xxxxxxxxxxxxxxxxxxxx
- 
         if ( 
-                self.rtable_ is None 
-                or self.vtable_ is None
+                self.rtable_ is None or self.vtable_ is None
             ): 
             # behave like DCProfiling or DCSounding
             # 'need' is used to indicate which kind of methods, 
             # DCMagic must work as. 
             need=None 
             
+            if like  is ...: like =None 
+            
             if  self.rtable_ is None:
-    
-                if str(work_as).lower().strip() =='none':
+                if str(like).lower().strip() =='none':
                     raise DCError ('.'.join(emsg.split('.')[:2]).format(
                         0, len(self.vtable_) ) + 
                         (". Missing profiling data that fits the numberof"
                          f" each sounding points({len(self.vtable_)}). Use"
-                         " `watex.DCProfiling` for dealing with profilings"
-                         " data or set ``work_as='ves'``")
+                         " `watex.DCSounding` for dealing with sounding"
+                         " data or set parameter ``like='ves'``")
                                    )
                 elif ( 
-                        str(work_as).lower().strip() .find ('ves')>=0 
-                        or str(work_as).lower().strip() .find('dcs')>=0
+                        str(like).lower().strip() .find ('ves')>=0 
+                        or str(like).lower().strip() .find('dcs')>=0
                         ): 
                     return self.vtable_ 
                 need = 'ves'
             elif self.vtable_ is None:  
-                if str(work_as).lower().strip() =='none':
+                if str(like).lower().strip() =='none':
                     raise DCError ('.'.join(emsg.split('.')[:2]).format(
                         len(self.rtable_), 0 ) + 
                         (". Missing vertical sounding data that fits the number"
                         f" of sites of the profiling ({len(self.rtable_)}). Use"
-                        " `watex.DCSounding` for dealing with profilings data"
-                        " or set ``work_as='erp'``")
+                        " `watex.DCProfiling` for dealing with profiling data"
+                        " or set parameter ``like='erp'``")
                                    )
                 elif ( 
-                        str(work_as).lower().strip() .find ('erp')>=0 
-                        or str(work_as).lower().strip() .find('dcp')>=0
+                        str(like).lower().strip() .find ('erp')>=0 
+                        or str(like).lower().strip() .find('dcp')>=0
                         ) : 
                     return self.rtable_ 
                 need ='erp'
                 
             raise ValueError(
                 "`work_as` expects arguments {0!r}. Got {1!r}".format(
-                    need if need  else "'ves' or 'erp'", work_as)
+                    need if need  else "'ves' or 'erp'", like)
                 )
             
         # check whether the coordinates exist in both 
@@ -575,7 +609,6 @@ class DCMagic (ElectricalMethods ):
         # True 
         for d , name in zip ( ( self.rtable_ , self.vtable_), 
                              ('dc-erp', 'dc-ves')) : 
-            
             xy_coords, _, xynames  = get_xy_coordinates(
                 d, as_frame =True, raise_exception='mute' )
             
@@ -591,52 +624,84 @@ class DCMagic (ElectricalMethods ):
                            " sounding point 'sves_' from  profiling fits the"
                            " location where the drill is expected to be"
                            " performed. The ERP coordinates should be used."
-                           " To avoid such behavior turn off  ``coerce=False``."
+                           " Suppress this warning by turning ``coerce=True``."
                            )
                     warnings.warn (msg)
 
-      
         if len(self.vtable_ ) != len(self.rtable_): 
             if force: 
-                self.table_ =  pd.merge (
-                    self.rtable_ , self.vtable_, on =['longitude', 'latitude'] , 
-                                         how ='outer')
-            elif coerce: 
-                # take the small length of tables
-                
-                sm_tab , tab_to = ( self.rtable_ , self.vtable_) if len(
-                    self.rtable_) < len(self.vtable_) else (
-                        (self.vtable_, self.rtable_) ) 
-                
-                trunc_rtab = tab_to.iloc [:len(sm_tab), :  ] 
+                self.table_ = pd.merge(
+                    self.rtable_, self.vtable_ ,
+                    on = ['longitude', 'latitude'], 
+                    how ='outer')
+            elif not force and not coerce: 
+                raise DCError (emsg.format(
+                    len(self.rtable_), len(self.vtable_) ))
 
-                self.table_ = pd.concat (
-                    [   # discarded the ERP and takes the VES coordinates
-                       trunc_rtab[['longitude', 'latitude']].reset_index(), 
-                       sm_tab.drop ( columns = ['longitude', 'latitude']
-                                          ).reset_index (), 
-                       trunc_rtab.drop ( columns = ['longitude', 'latitude']
-                                          ).reset_index (), 
-                     ]
-                    , axis =1 
-                    )
-                self.table_.drop(columns ='index', inplace =True ) 
-                
-                if self.verbose : 
-                    warnings.warn("Sites and profiles are not consistent."
-                                  " `coerce` will truncate the rows equals"
-                                  f" to {len(tab_to)} to fit the valid"
-                                  f" {len(trunc_rtab)} positionning sites.")
-                    
-            else: raise DCError (emsg.format(
-                len(self.rtable_), len(self.vtable_) ))
-            
         else: 
-            if coerce: 
-                # then add /rername coordinates points to ves.
-                # using the ERP 
-                self.vtable_[['longitude', 'latitude']] =  self.rtable_ [
-                    ['longitude', 'latitude']]
+            self.table_ = twinning(self.rtable_, self.vtable_ ,
+                                   on = ['longitude', 'latitude'], 
+                                   decimals =5 ) 
+            if len( self.table_) ==0: 
+                if not coerce:
+                    warnings.warn (
+                        "Unable to find identical coordinates of sounding"
+                        " sites in the profiles. Set ``coerce=True`` to"
+                        " constraint the sounding points to fit the"
+                        " exact number of the expected drilling points"
+                        " ('sves') in the profiles. This is not recommended"
+                        " at least all data have the same DC-type and"
+                        " consistent sizes.")
+                return self.table_ 
+            
+        if coerce: 
+            self._alternative_coerce_merge () 
+      
+        if keep_params: 
+            self.table_= self.table_[list(main_params)] 
+            
+        return self.table_ if return_table else self 
+    
+    def _alternative_coerce_merge (self ): 
+        """Alternative way to coerce merge. It is not recommended at least  
+        your are sure that all data are the same DC-types( D|F|P-types). When 
+        the D-types is passed, data must be aranged using in the following 
+        order:: 
+            
+            data =( erp1, ves1, erp2, ves2 , erp3, ves3 , erp..., ves..) 
+            DCMagic().fit( *data) 
+            
+        An isolated part of `summary` method. 
+        """
+        if len(self.vtable_ ) != len(self.rtable_): 
+            # get the 
+            sm_tab , tab_to = ( self.rtable_ , self.vtable_) if len(
+                self.rtable_) < len(self.vtable_) else (
+                    (self.vtable_, self.rtable_) ) 
+            
+            trunc_rtab = tab_to.iloc [:len(sm_tab), :  ] 
+    
+            self.table_ = pd.concat (
+                [   # discarded the ERP and takes the VES coordinates
+                   trunc_rtab[['longitude', 'latitude']].reset_index(), 
+                   sm_tab.drop ( columns = ['longitude', 'latitude']
+                                      ).reset_index (), 
+                   trunc_rtab.drop ( columns = ['longitude', 'latitude']
+                                      ).reset_index (), 
+                 ], axis =1 
+                )
+
+            if self.verbose : 
+                warnings.warn("Sites and profiles are not consistent."
+                              " `coerce` will truncate the rows equals"
+                              f" to {len(tab_to)} to fit the valid"
+                              f" {len(trunc_rtab)} positionning sites.")
+        else : 
+            
+            # then add /rername coordinates points to ves.
+            # using the ERP 
+            self.vtable_[['longitude', 'latitude']] =  self.rtable_ [
+                ['longitude', 'latitude']].values
             # validate coordinates 
             self._validate_xy_coordinates()
             self.table_ = pd.concat (
@@ -649,13 +714,10 @@ class DCMagic (ElectricalMethods ):
                  ]
                 , axis =1 
                 )
+        
+        if 'index' in self.table_.columns: 
             self.table_.drop(columns ='index', inplace =True ) 
-
-        if keep_params: 
-            self.table_= self.table_[list(main_params)] 
-            
-        return self.table_ if return_table else self 
-    
+ 
     def _validate_xy_coordinates (self): 
         """ Validate whether coordinates are identical or are consistent."""
         
@@ -675,11 +737,11 @@ class DCMagic (ElectricalMethods ):
             self.rtable_[['longitude', 'latitude']]=self.rtable_[
                 ['longitude', 'latitude']].replace(
                 np.nan if action=='forward' else 0.  ,
-                0.if action=='forward' else np.nan  )
+                0.if action=='forward' else np.nan  ).values
             self.vtable_[['longitude', 'latitude']]=self.vtable_[
                 ['longitude', 'latitude']].replace(
                 np.nan if action=='forward' else 0.  ,
-                0.if action=='forward' else np.nan  )
+                0.if action=='forward' else np.nan  ).values
         # Replace NaN to 0. 
         replace_to()
         
@@ -818,8 +880,27 @@ class DCMagic (ElectricalMethods ):
             )
         return 1    
     
-def _parse_dc_data (*data,vesorder =0  ): 
-    """ Select ERP and VES data """ 
+def parse_dc_data (*data: ..., vesorder:int =0, read_sheets: bool = False ): 
+    """ Select ERP and VES data
+    
+    Parameters 
+    -----------
+    data: List of Any objects 
+     List of ERP and VES data or objects 
+     
+    vesorder: int, default=0 
+      Index of sounding data in the data frame 
+      
+    read_sheets: bool, default=False 
+       Way to read the inner data sheets. Be sure to make each sheets name 
+       different. 
+    Returns 
+    --------
+    dcp, dcv, unread: 
+        - list of ERP data read successfully 
+        - list of VES data read successfully 
+        - list of unrecognized objects 
+    """ 
     
     erp_data = [] 
     ves_data = []
@@ -830,13 +911,25 @@ def _parse_dc_data (*data,vesorder =0  ):
     dtemp =[] # collect all files in different path. 
     d0=[]
     for d in data : 
-        if isinstance ( d, str ) and os.path.isdir ( d ): 
-            # collect all the data 
-            dtemp += [ os.path.join (d, f ) for f in os.listdir ( d )] 
+        if isinstance ( d, str ): 
+            if os.path.isdir ( d ): 
+                # collect all the data 
+                dtemp += [ os.path.join (d, f ) for f in os.listdir ( d )] 
         else: d0.append (d ) 
         
     data = d0 + dtemp # new data
-    
+
+    # read sheets and make dataframe 
+    # be sure to make each sheets  different names.
+    if read_sheets: 
+        # get the excel sheets files 
+        xlsxfiles= [ sh for sh in data if isinstance (
+            sh, str ) and sh.endswith ('.xlsx') ]
+        if len( xlsxfiles) !=0: 
+            d0 = list(filter (lambda f : f not in xlsxfiles, data  ))
+            dtemp,_ = read_worksheets(*xlsxfiles)
+            data = d0 + dtemp  # new data
+
     for d in data : 
         if isinstance ( d, str ): 
             # assume there is a file object 
@@ -901,10 +994,9 @@ def get_dc_objects (
     dcp, dcv, remain_data: Tuple of list 
     
        A collection of selected DC Profiling and DCSounding objects 
-       
-     
-    """ 
     
+    """ 
+    remain_data = ...
     dcp=[]; dcv =[]
     if method == 'DCProfiling': 
         dcp = list(filter ( lambda o : get_estimator_name (

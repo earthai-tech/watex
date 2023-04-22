@@ -1,0 +1,23 @@
+v0.2.2 (April 22, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.1`` that shows fugs fixed, features and improvements.  
+
+- |Fix| set anomaly reference  in :func:`watex.utils.exmath.type_` equals to the length of :term:`ERP` line if profile is less than 7. 
+  Now bug is fixed for :term:`ERP` profile less than seven points. 
+
+- |Feature| Add :func:`watex.utils.twinning` function to find indentical object in all data and concatenate them  using merge 
+  intersection (`cross`) strategy.
+
+- |Enhancement| Remove legend warnings when no artists with labels found in :meth:`watex.view.TPlot.plotSkew` 
+
+- |Enhancement| Improve :class:`watex.exceptions.DCError` messages when the number of sites does not fits the number of given profiles and vice-versa 
+  in :meth:`watex.methods.DCMagic.summary`.
+
+- |Enhancement| Update the summary method of :meth:`watex.methods.DCMagic.summary` to smartly find the indentical coordinates ( longitude/latitude) in both 
+  :term:`ERP` and :term:`VES` before performing the :term:`DC` parameter aggregation.  
+
+
+
+
+

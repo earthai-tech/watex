@@ -5659,12 +5659,274 @@ def get_xy_coordinates (d, / , as_frame = False, drop_xy = False,
     return  xy , d , xynames 
        
 
+def twinning(
+    *d: DataFrame,  
+    on:str | List[str] = None, 
+    parse_on:bool=False, 
+    mode: str='strict', 
+    coerce:bool = False, 
+    force:bool =False, 
+    decimals: int = 7, 
+    raise_warn:bool =True 
+)-> DataFrame : 
+    """ Find indentical object in all data and concatenate them  using merge 
+     intersection (`cross`) strategy.
+    
+    Parameters 
+    ---------- 
+    d: List of DataFrames 
+       List of pandas DataFrames 
+    on: str, label or list 
+       Column or index level names to join on. These must be found in 
+       all DataFrames. If `on` is None and not merging on indexes then 
+       a concatenation along columns axis is performed in all DataFrames. 
+       Note that `on` works with `parse_on` if its argument is  a list of 
+       columns names passed into single litteral string. For instance:: 
+           
+        on ='longitude latitude' --[parse_on=True]-> ['longitude' , 'latitude'] 
         
+    parse_on: bool, default=False 
+       Parse `on` arguments if given as string and return_iterable objects. 
+       
+    mode: str, default='strict' 
+      Mode to the data. Can be ['soft'|'strict']. In ``strict`` mode, all the 
+      data passed must be a DataFrame, otherwise an error raises. in ``soft``
+      mode , ignore the non-DataFrame. Note that any other values should be 
+      in ``strict`` mode. 
+      
+    coerce: bool, default=False 
+       Truncate all DataFrame size to much the shorter one before performing 
+       the ``merge``. 
+        
+    force: bool, default=False, 
+       Force `on` items to be in the all DataFrames, This could be possible 
+       at least, `on` items should be in one DataFrame. If missing in all 
+       data, an error occurs.  
+ 
+    decimals: int, default=5 
+       Decimal is used for comparison between numeric labels in `on` columns 
+       items. If set, it rounds values of `on` items in all data before 
+       performing the merge. 
+       
+     raise_warn: bool, default=False 
+        Warn user to concatenate data along column axis if `on` is ``None``. 
+
+    Returns 
+    --------
+    data: DataFrames 
+      A DataFrame of the merged objects.
+      
+    Examples 
+    ----------
+    >>> import watex as wx 
+    >>> from watex.utils.funcutils import twinning 
+    >>> data = wx.make_erp (seed =42 , n_stations =12, as_frame =True ) 
+    >>> table1 = wx.DCProfiling ().fit(data).summary()
+    >>> table1 
+           dipole   longitude  latitude  ...  shape  type       sfi
+    line1      10  110.486111  26.05174  ...      C    EC  1.141844
+    >>> data_no_xy = wx.make_ves ( seed=0 , as_frame =True) 
+    >>> data_no_xy.head(2) 
+        AB   MN  resistivity
+    0  1.0  0.4   448.860148
+    1  2.0  0.4   449.060335
+    >>> data_xy = wx.make_ves ( seed =0 , as_frame =True , add_xy =True ) 
+    >>> data_xy.head(2) 
+        AB   MN  resistivity   longitude  latitude
+    0  1.0  0.4   448.860148  109.332931  28.41193
+    1  2.0  0.4   449.060335  109.332931  28.41193
+    >>> table = wx.methods.VerticalSounding (
+        xycoords = (110.486111,   26.05174)).fit(data_no_xy).summary() 
+    >>> table.table_
+             AB    MN   arrangememt  ... nareas   longitude  latitude
+    area                             ...                             
+    None  200.0  20.0  schlumberger  ...      1  110.486111  26.05174
+    >>> twinning (table1, table.table_,  ) 
+           dipole   longitude  latitude  ...  nareas   longitude  latitude
+    line1    10.0  110.486111  26.05174  ...     NaN         NaN       NaN
+    None      NaN         NaN       NaN  ...     1.0  110.486111  26.05174
+    >>> twinning (table1, table.table_, on =['longitude', 'latitude'] ) 
+    Empty DataFrame 
+    >>> # comments: Empty dataframe appears because , decimal is too large 
+    >>> # then consider values longitude and latitude differents 
+    >>> twinning (table1, table.table_, on =['longitude', 'latitude'], decimals =5 ) 
+        dipole  longitude  latitude  ...  max_depth  ohmic_area  nareas
+    0      10  110.48611  26.05174  ...      109.0  690.063003       1
+    >>> # Now is able to find existing dataframe with identical closer coordinates. 
     
+    """
+    from .validator import _is_numeric_dtype  
+
+    if str(mode).lower()=='soft': 
+        d = [ o for  o in d if hasattr (o, '__array__') and hasattr (o, 'columns') ]
     
+    is_same = set ( [ hasattr (o, '__array__') 
+                     and hasattr (o, 'columns') for o in d ] ) 
     
+    if len(is_same)!=1 or not list (is_same) [0]: 
+        types = [ type(o).__name__ for o in d ]
+        raise TypeError (
+            f"Expect DataFrame. Got {smart_format(types)}")
     
+    same_len = [len(o) for o in d] 
     
+    if len( set(same_len)) !=1 or not list(set(same_len))[0]: 
+        if not coerce: 
+            raise ValueError(
+                f"Data must be a consistent size. Got {smart_format(same_len)}"
+                " respectively. Set ``coerce=True`` to truncate the data"
+                " to match the shorter data length.")
+        # get the shorthest len 
+        min_index = min (same_len) 
+        d = [ o.iloc [:min_index, :  ]  for o in d ] 
+
+    if on is None:
+        if raise_warn: 
+            warnings.warn("'twin_items' are missing in the data. A simple merge"
+                          " along the columns axis should be performed.") 
+        
+        return pd.concat ( d, axis = 1 )
+    
+    # parse string 
+    on= is_iterable(on, exclude_string= True , 
+                    transform =True, parse_string= parse_on  
+                    )
+    
+    feature_exist = [
+        exist_features(o, on, error = 'ignore'
+                       ) for o in d ]  
+
+    if ( len( set (feature_exist) )!=1 
+        or not list(set(feature_exist)) [0]
+            ): 
+        if not force: 
+            raise ValueError(
+                f"Unable to fit the data. Items {smart_format(on)} are"
+                f" missing in the data columns. {smart_format(on)} must"
+                 " include in the data columns. Please check your data.")
+
+        # seek the value twin_items in the data and use if for all  
+        dtems =[] ;  repl_twd= None 
+        for o in d: 
+            # select one valid data that contain the 
+            # twin items
+            try : 
+                exist_features ( o, on ) 
+            except : 
+                pass 
+            else:
+                repl_twd = o [ on ]
+                break 
+            
+        if repl_twd is None: 
+            raise ValueError("To force data that have not consistent items."
+                             f" At least {smart_format(on)} items must"
+                             " be included in one DataFrame.")
+        # make add twin_data if 
+        for o in d : 
+            try : exist_features(o, on) 
+            except : 
+                a = o.copy()  
+                a [ on ] = repl_twd 
+            else : a = o.copy () 
+            
+            dtems.append(a)
+        # reinitialize d
+        d = dtems  
+    
+    # check whether values to merge are numerics 
+    # if True, use decimals to round values to consider 
+    # that identic 
+    # round value if value before performed merges 
+    # test single data with on 
+    is_num = _is_numeric_dtype (d[0][on] ) 
+    if is_num: 
+        decimals = int (_assert_all_types(
+            decimals, int, float, objname ='Decimals'))
+        d_ = []
+        for o in d : 
+            a = o.copy()  
+            a[on ] = np.around (o[ on ].values, decimals ) 
+            d_.append (a )
+        # not a numerick values so stop     
+        d =d_
+
+    # select both two  
+    data = pd.merge (* d[:2], on= on ) 
+    
+    if len(d[2:]) !=0: 
+        for ii, o in enumerate ( d[2:]) : 
+            data = pd.merge ( *[data, o] , on = on, suffixes= (
+                f"_x{ii+1}", f"_y{ii+1}")) 
+            
+    return data 
+
+def read_worksheets(*data): 
+    """ Read sheets and returns a list of DataFrames and sheet names. 
+    
+    Parameters 
+    -----------
+    data: list of str 
+      A collection of excel sheets files. Read only `.xlsx` files. Any other 
+      files raises an errors.  
+    
+    Return
+    ------
+    data, sheet_names: Tuple of DataFrames and sheet_names 
+       A collection of DataFrame and sheets names. 
+       
+    Examples 
+    -----------
+    >>> import os 
+    >>> from watex.utils.funcutils import read_worksheets 
+    >>> sheet_file= r'F:\repositories\watex\data\erp\sheets\gbalo.xlsx'
+    >>> data, snames =  read_worksheets (sheet_file )
+    >>> snames 
+    ['l11', 'l10', 'l02'] 
+    >>> data, snames =  read_worksheets (os.path.dirname (sheet_file))
+    >>> snames 
+    ['l11', 'l10', 'l02', 'l12', 'l13']
+    
+    """
+    dtem = []
+    data = [o for o in data if isinstance ( o, str )]
+    
+    for o in data: 
+        if os.path.isdir (o): 
+            dlist = os.listdir (o)
+            # collect only the excell sheets 
+            p = [ os.path.join(o, f) for f in dlist if f.endswith ('.xlsx') ]
+            dtem .extend(p)
+        elif os.path.isfile (o):
+            _, ex = os.path.splitext( o)
+            if ex == '.xlsx': 
+                dtem.append(o)
+            
+    data = copy.deepcopy(dtem)
+    # if no excel sheets is found return None 
+    if len(data) ==0: 
+        return None, None 
+    
+    # make d dict to collect data 
+    ddict = dict() 
+    regex = re.compile (r'[$& #@%^!]', flags=re.IGNORECASE)
+    
+    for d in data : 
+        try: 
+            ddict.update ( **pd.read_excel (d , sheet_name =None))
+        except : pass 
+
+    #collect stations names
+    if len(ddict)==0 : 
+        raise TypeError("Can'find the data to read.")
+
+    sheet_names = list(map(
+        lambda o: regex.sub('_', o).lower(), ddict.keys()))
+
+    data = list(ddict.values ()) 
+
+    return data, sheet_names      
+
     
     
     

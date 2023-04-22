@@ -1354,14 +1354,18 @@ def type_ (erp: ArrayLike[DType[float]] ) -> str:
     erp = _assert_all_types(erp, tuple, list, np.ndarray, pd.Series)
     erp = np.array (erp)
     erp= check_y(erp, to_frame =False, input_name="'erp'" )
+    
+    # anomaly_length/ by reference is set to 7  
+    anomaly_length = len(erp) if len(erp) <7 else 7 
     try : 
-        ssets = np.split(erp, len(erp)//7)
+        ssets = np.split(erp, len(erp)//anomaly_length)
     except ValueError: 
         # get_indices 
-        if len(erp) < 7: ssets =[erp ]
+        if len(erp) < anomaly_length: ssets =[erp ]
         else :
-            remains = len(erp) % 7 
-            indices = np.arange(7 , len(erp) - remains , 7)
+            remains = len(erp) % anomaly_length 
+            indices = np.arange(
+                anomaly_length , len(erp) - remains , anomaly_length)
             ssets = np.split(erp , indices )
     
     status =list()

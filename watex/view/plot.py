@@ -1015,7 +1015,7 @@ class TPlot (BasePlot):
                             linestyle="-",
                             label=f'threshold: $\mu={0.4 if m==2 else 0.3}$'
                             )
-                ax.legend() 
+                # plt.legend()
 
         # see phase sensitive trend 
         if show_average_sensistivity: 
@@ -1025,7 +1025,7 @@ class TPlot (BasePlot):
                     fontdict= dict (style ='italic',  bbox =dict(
                          boxstyle='round',facecolor ='#CED9EF'))
                      ) 
-        plt.legend()
+        
         ax.set_xscale('log')
         ax.set_xlabel('Period ($s$)' if mode=='period' 
                       else 'Frequency ($H_z$)' or self.xlabel )
@@ -1035,7 +1035,9 @@ class TPlot (BasePlot):
         plt.xlim ([ freqs.min() , freqs.max()] or self.xlim )
         
         plt.xlim() 
-
+        
+        if ct: ax.legend() 
+        
         if self.savefig is not  None: 
             plt.savefig (self.savefig, dpi = self.fig_dpi)
             

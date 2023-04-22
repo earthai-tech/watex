@@ -1656,7 +1656,6 @@ def _nan_constr (cs_ix , arr , return_indexed_arr =False ):
     
     return  index_in if return_indexed_arr else arr 
 
-#XXX OPTIMIZE 
 def defineConductiveZone(
     erp:ArrayLike| pd.Series | List[float] ,
     station: Optional [str|int] = None, 
