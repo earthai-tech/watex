@@ -153,6 +153,7 @@ Functions
 	datasets.load_hlogs
 	datasets.load_huayuan
 	datasets.load_iris
+	datasets.load_mxs
 	datasets.load_semien
 	datasets.load_tankesse
 	datasets.make_erp 
@@ -558,6 +559,7 @@ Functions
    transformers.CombinedAttributesAdder
    transformers.DataFrameSelector 
    transformers.FrameUnion
+   transformers.KMeansFeaturizer
    transformers.StratifiedUsingBaseCategory
    transformers.StratifiedWithCategoryAdder
    

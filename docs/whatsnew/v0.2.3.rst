@@ -1,0 +1,22 @@
+v0.2.3 (May 05, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.3`` that shows fugs fixed, features and improvements.  
+
+- |Fix| set anomaly reference  in :func:`watex.utils.exmath.type_` equals to the length of :term:`ERP` line if profile is less than 7. 
+  Now bug is fixed for :term:`ERP` profile less than seven points. 
+
+- |Feature| Add :func:`watex.datasets.load_mxs` load new datasets for performing the :term:`MXS`. 
+
+- |Feature| add transformers :class:`watex.transformers.KMeansFeaturizer` to transform numeric data into k-means cluster memberships. It runs k-means on the input data and converts 
+  each data point into the ID of the closest cluster.
+
+- |Enhancement| Supplement boreholes data are added to :func:`watex.datasets.load_hlogs`. They include boreholes ``'h805'`` ,``'h1102'`` ,``'h1405'``, ``'h2602'``,``'h803'``,
+``'h1104'``,``'h604'``,``'h2003'`` and  ``'h1602'``. 
+ 
+ 
+
+
+
+
+

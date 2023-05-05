@@ -11,7 +11,7 @@ parameters.
 .. note::
     For strong and clear demonstration as examples in many scripts, we use 
     the data 'hf.csv'. This data is a confident data so it is not available 
-    in the package. The idea consists to show how scripts will works if 
+    in the package. The idea consists to show how scripts will work if 
     many boreholes data are available. 
 
 """
@@ -151,9 +151,9 @@ def make_MXS_labels (
         combinaison with the true label of permeability coefficient 'k' and 
         the label of NGA to compose new similarity labels. For instance 
         
-        >>> true_labels=['k1', 'k2', 'k3'] ; NGA_labels =['II', 'I', 'UV']
+        >>> true_labels=['k1', 'k2', 'k3'] ; NGA_labels =['II', 'I', 'IV']
         >>> # gives 
-        >>> MXS_labels= ['k1_II', 'k2_I', 'k3_UV']
+        >>> MXS_labels= ['k1_II', 'k2_I', 'k3_IV']
     
         where the seperator `sep` is set to ``_``. This happens especially 
         when one of the label (NGA or true_labels) is not a numeric datatype 
@@ -175,14 +175,14 @@ def make_MXS_labels (
             is usefull for unbalanced class labels in `y_true`.
         - ``strict`` computes the importance of the label by the number of 
             occurence in the whole valid `y_true` i.e. under the total of 
-            occurence of all the labels that exist in the whole 'arra_aq'. 
+            occurence of all the labels that exist in the whole 'arr_aq'. 
             This can give a suitable anaylse results if the data is not 
             unbalanced for each labels in `y_pred`.
             
     trailer: str, default='*'
         The Mixture strategy marker to differentiate the existing class label  
         in 'y_true' with the predicted labels 'y_pred' especially when  
-        the the same class labels are also present the true label with the 
+        the same class labels are also present the true label with the 
         same label-identifier name. This usefull  to avoid any confusion  for
         both labels  in `y_true` and `y_pred` for better demarcation and 
         distinction. Note that if the `trailer`is set to ``None`` and both 
@@ -394,8 +394,8 @@ def predict_NGA_labels(
         an int to make the randomness deterministic.
    
     keep_label_0: bool, default=False
-        The prediction already include the label 0. However, including 0 in 
-        the predicted label refers to 'k=0' i.e. no permeability coefficient 
+        The prediction already includes the label 0. However, including 0 in 
+        the predicted label refers to 'k=0' i.e. permeability coefficient 
         equals to 0, which is not True in principle, because all rocks  have 
         a permeability coefficient 'k'. Here we considered 'k=0' as an undefined 
         permeability coefficient. Therefore, '0' , can be exclude since, it can 
@@ -547,7 +547,7 @@ aqname: str, optional,
     
 subjectivity: bool, default=False
     Considers each class label as a naive group of aquifer. Subjectivity 
-    occurs when no group of aquifer is not found in the data. Therefore, each 
+    occurs when a group of aquifer is not found in the data. Therefore, each 
     class label is considered as a naive group of aquifer. It is strongly 
     recommended to provide a default group passes to parameter `default_arr` 
     to substitute the group of aquifers for more pratical reason. For instance
@@ -555,13 +555,13 @@ subjectivity: bool, default=False
     columns. 
     
 default_arr: array-like, pd.Series 
-   Array used as deefault for subsitutue the group of aqquifer if the latter 
+   Array used as default to subsitute the group of aqquifer if the latter 
    is missing. This is an heuristic option because it might lead to breaking 
    code or invalid results.
    
 keep_label_0: bool, default=False
     The prediction already include the label 0. However, including 0 in 
-    the predicted label refers to 'k=0' i.e. no permeability coefficient 
+    the predicted label refers to 'k=0' i.e.  permeability coefficient 
     equals to 0, which is not True in principle, because all rocks  have 
     a permeability coefficient 'k'. Here we considered 'k=0' as an undefined 
     permeability coefficient. Therefore, '0' , can be exclude since, it can 
@@ -3236,8 +3236,8 @@ def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None,
         cmsg.format (_MXS_if_no.__name__, 'NO')
         
     if not is_iterable(slg): 
-        raise TypeError ("similarity group must be an iterable."
-                         " Got: {type(s).__name__!r}")
+        raise TypeError ("similarity group must be an iterable object."
+                         f" Got: {type(slg).__name__!r}")
  
     sim_groups = _name_mxs_labels(*slg, sep = sep, prefix =prefix )
     true_labels , group_labels = zip (*slg )

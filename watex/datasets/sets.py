@@ -17,6 +17,7 @@ _DTAGS=(
     "tankesse", 
     "boundiali",
     "hlogs", 
+    "mxs", 
     "huayuan", 
     "edis"
     )
@@ -30,7 +31,8 @@ from .dload import (
     load_boundiali,
     load_hlogs,
     load_huayuan, 
-    load_edis
+    load_edis, 
+    load_mxs, 
     ) 
 from .gdata import ( 
     make_erp , 
@@ -55,6 +57,7 @@ __all__=[
          "load_huayuan", 
          "fetch_data",
          "load_edis",
+         "load_mxs", 
          "make_erp" , 
          "make_ves", 
          "DATASET"

@@ -3400,7 +3400,75 @@ def plot_text (
     if show_leg : 
         ax.legend () 
     
+def plot_voronoi(
+    X, y, *, 
+    cluster_centers, ax= None,
+    show_vertices=False, 
+    line_colors='k',
+    line_width=1. ,
+    line_alpha=1.,   
+    fig_size = (7, 7), 
+    fig_title = ''
+    ):
+    """Plots the Voronoi diagram of the k-means clusters overlaid with 
+    the data
     
+    Parameters 
+    -----------
+    X, y : NDarray, Arraylike 1d 
+      Data training X and y. Must have the same length 
+    cluster_center: int, 
+       Cluster center. Cluster center can be obtain withe KMeans algorithms 
+    show_vertices : bool, optional
+        Add the Voronoi vertices to the plot.
+    line_colors : string, optional
+        Specifies the line color for polygon boundaries
+    line_width : float, optional
+        Specifies the line width for polygon boundaries
+    line_alpha : float, optional
+        Specifies the line alpha for polygon boundaries
+    point_size : float, optional
+        Specifies the size of points
+    ax: Matplotlib.Axes 
+       Maplotlib axes. If `None`, a axis is created instead. 
+       
+    fig_size: tuple, default = (7, 7) 
+       Size of the figures. 
+       
+    Return
+    -------
+    ax: Matplotlib.Axes 
+       Axes to support the figure
+       
+    Examples 
+    ---------
+    >>> from scipy.spatial import Voronoi, voronoi_plot_2d
+    >>> from sklearn.datasets import make_moons
+    >>> from sklearn.cluster import KMeans 
+    >>> from watex.utils.plotutils import plot_voronoi
+    >>> X, y = make_moons(n_samples=2000, noise=0.2)
+    >>> km = KMeans (n_init ='auto').fit(X, y ) 
+    >>> plot_voronoi ( X, y , cluster_centers = km.cluster_centers_) 
+    """
+    if ax is None: 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+        
+    from scipy.spatial import Voronoi, voronoi_plot_2d
+    
+    ax.scatter(X[:, 0], X[:, 1], c=y, cmap='Set1', alpha=0.2, 
+               label = 'Voronoi plot')
+    vor = Voronoi(cluster_centers)
+    voronoi_plot_2d(vor, ax=ax, show_vertices=show_vertices, 
+                    alpha=0.5, 
+                    line_colors=line_colors,
+                    line_width=line_width ,
+                    line_alpha=line_alpha,  
+                    )
+    #ax.legend() 
+    ax.set_title (fig_title , fontsize=20)
+    #fig.suptitle(fig_title, fontsize=20) 
+    
+    return ax 
 
     
   

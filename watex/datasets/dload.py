@@ -229,9 +229,23 @@ def load_hlogs (
     cf = as_frame 
     key = key or 'h502' 
     # assertion error if key does not exist. 
-    available_sets = {"h502", "h2601"}
-    msg = (f"key {key!r} does not exist yet, expect 'h502' or 'h2601'")
-    assert str(key).lower() in {"h502", "h2601", "*"}, msg
+    available_sets = {
+        "h502", 
+        "h2601", 
+        'h1102',
+        'h1104',
+        'h1405',
+        'h1602',
+        'h2003',
+        'h2602',
+        'h604',
+        'h803',
+        'h805'
+        }
+    is_keys = set ( list(available_sets) + ["*"])
+    msg = (f"key {key!r} does not exist. Expect data from borehole"
+           f" {smart_format(is_keys, 'or')}")
+    assert str(key).lower() in is_keys , msg
     
     data_file ='h.h5'
     with resources.path (DMODULE , data_file) as p : 
@@ -344,6 +358,11 @@ key: str, default='h502'
     Kind of logging data to fetch. Can also be the borehole ["h2601", "*"]. 
     If ``key='*'``, all the data is aggregated on a single frame of borehole. 
     .. versionadded:: 0.1.5
+    
+    .. versionadded:: 0.2.3. 
+       Add 08 new boreholes data from logging, strata , layer thicknesses and 
+       rock_names. 
+       
 drop_observations: bool, default='False'
     Drop the ``remark`` column in the logging data if set to ``True``.  
     .. versionadded:: 0.1.5
@@ -551,7 +570,6 @@ know their class name::
 array([0, 2, 0])
 >>> list(d.target_names)
 ['flow']   
-  
 """
 
 def load_iris(
@@ -934,10 +952,197 @@ Examples
 2  Edi( verbose=0 )  110.487134  26.053032  s.E02  S02
 """
         
+def load_mxs (
+    *,  return_X_y=False, 
+    as_frame =False, 
+    key =None,  
+    tag =None, 
+    tnames = None , 
+    data_names=None, 
+    split_X_y=False, 
+    **kws): 
+    import joblib, numpy as np 
     
+    drop_observations =kws.pop("drop_observations", False)
     
+    add = {"data": ('data', ) , '*': (
+        'X_train','X_test' , 'y_train','y_test' ), 
+        'target_map': { 0: '1',
+                       1: '11', 
+                       2: '2', 
+                       3: '2*', 
+                       4: '3', 
+                       5: '33'}
+        }
     
+    av= {"sparse": ('X_csr', 'ymxs_transf'), 
+         "scale": ('Xsc', 'ymxs_transf'), 
+         "train": ( 'X_train', 'y_train'), 
+         "test": ('X_test', 'y_test'), 
+         'numeric': ( 'Xnm', 'ymxs_transf'), 
+         'raw': ('X', 'y')
+         }
     
+    if key is None: 
+        key='data'
+        
+    data_file ='mxs.joblib'
+    with resources.path (DMODULE , data_file) as p : 
+        data_file = str(p)
+        
+    data_dict = joblib.load (data_file )
+    # assertion error if key does not exist. 
+    available_sets = set (list( av.keys() ) + list( add.keys()))
+
+    msg = (f"key {key!r} does not exist yet, expect"
+           f" {smart_format(available_sets, 'or')}")
+    assert str(key).lower() in available_sets , msg
+    
+    if split_X_y: 
+        return  tuple ([data_dict [k] for k in add ['*'] ] )
+    
+    # if for return X and y if k is not None 
+    if key is not None and key !="data": 
+        return_X_y = True 
+        
+    if return_X_y:
+        if key not in  av.keys():
+            key ='raw'
+        X, y =  tuple ( [ data_dict[k]  for k in av [key]] ) 
+        
+        return (  X, y )  if as_frame or key =='sparse' else (
+            np.array(X), np.array(y))
+        
+    data = data_dict.get(key)  
+    if drop_observations: 
+        data.drop (columns = "remark", inplace = True )
+        
+    frame = None
+    feature_names = list(data.columns [:12] ) 
+    target_columns = list(data.columns [12:])
+    
+    tnames = tnames or target_columns
+    # control the existence of the tnames to retreive
+
+    if as_frame:
+        frame, data, target = _to_dataframe(
+            data, feature_names = feature_names, tnames = tnames, 
+            target=data[tnames].values 
+            )
+        frame = to_numeric_dtypes(frame)
+
+    return Boxspace(
+        data=data.values,
+        target=data[tnames].values,
+        frame=data,
+        tnames=tnames,
+        target_names = target_columns,
+        target_map = add.get('target_map'), 
+        nga_labels = data_dict.get('nga_labels'), 
+        #XXX Add description 
+        DESCR= '', # fdescr,
+        feature_names=feature_names,
+        filename=data_file,
+        data_module=DMODULE,
+    )
+    
+load_mxs.__doc__="""\
+Load the dataset for implementing the mixture learning strategy (MXS).
+
+Dataset is composed of 11 boreholes merged with multiple-target thatcan be 
+used for a classification or regression problem.
+
+Parameters
+----------
+return_X_y : bool, default=False
+    If True, returns ``(data, target)`` instead of a Bowlspace object. See
+    below for more information about the `data` and `target` object.
+    
+as_frame : bool, default=False
+    If True, the data is a pandas DataFrame including columns with
+    appropriate dtypes (numeric). The target is
+    a pandas DataFrame or Series depending on the number of target columns.
+    If `return_X_y` is True, then (`data`, `target`) will be pandas
+    DataFrames or Series as described below.
+    .. versionadded:: 0.1.3
+split_X_y: bool, default=False,
+    If True, the data is splitted to hold the training set (X, y)  and the 
+    testing set (Xt, yt) with with test ratio fixed to 20 % 
+
+tnames: str, optional 
+    the name of the target to retreive. If ``None`` the full target columns 
+    are collected and compose a multioutput `y`. For a singular classification 
+    or regression problem, it is recommended to indicate the name of the target 
+    that is needed for the learning task. 
+(tag, data_names): None
+    `tag` and `data_names` do nothing. just for API purpose and to allow 
+    fetching the same data uing the func:`~watex.data.fetch_data` since the 
+    latter already holds `tag` and `data_names` as parameters. 
+key: str, default='data'
+    Kind of MXS data to fetch. Can also be: 
+        
+        - "sparse": for a compressed sparsed matric of train set X 
+        - "scale": returns a scaled X using the standardization strategy 
+        - "num": Exclusive numerical data and exclude the 'strata' feature.
+        - "test": test data `X` and `y` 
+        - "train": train data `X` and  `y` with preprocessing already performed
+        - "raw": for original dataset X and y  with no preprocessing 
+        - "data": Default when key is not supplied. It returns 
+          the :class:`Bowlspace` objects.
+        
+    When k is not supplied, "data" is used instead and return a 
+    :class:`Bowlspace` objects. where: 
+        - target_map: is the mapping of MXS labels in the target y. 
+        - nga_labels: is the y predicted for Naive Group of Aquifer. 
+
+drop_observations: bool, default='False'
+    Drop the ``remark`` column in the logging data if set to ``True``.  
+
+Returns
+---------
+data : :class:`~watex.utils.Boxspace`
+    Dictionary-like object, with the following attributes.
+    data : {ndarray, dataframe} 
+        The data matrix. If ``as_frame=True``, `data` will be a pandas DataFrame.
+    target: {ndarray, Series} 
+        The classification target. If `as_frame=True`, `target` will be
+        a pandas Series.
+    feature_names: list
+        The names of the dataset columns.
+    target_names: list
+        The names of target classes.
+    target_map: dict, 
+       is the mapping of MXS labels in the target y. 
+    nga_labels: arryalike 1D, 
+       is the y predicted for Naive Group of Aquifer. 
+    frame: DataFrame 
+        Only present when `as_frame=True`. DataFrame with `data` and
+        `target`.
+    DESCR: str
+        The full description of the dataset.
+    filename: str
+        The path to the location of the data.
+data, target: tuple if ``return_X_y`` is True
+    A tuple of two ndarray. The first containing a 2D array of shape
+    (n_samples, n_features) with each row representing one sample and
+    each column representing the features. The second ndarray of shape
+    (n_samples,) containing the target samples.
+    .. versionadded:: 0.1.2
+X, Xt, y, yt: Tuple if ``split_X_y`` is True 
+    A tuple of two ndarray (X, Xt). The first containing a 2D array of:
+ 
+Examples
+--------
+Let's say ,we do not have any idea of the columns that compose the target,
+thus, the best approach is to run the function without passing any parameters::
+
+>>> from watex.datasets.dload import load_mxs  
+>>> load_mxs (return_X_y= True, key ='sparse')
+(<1038x21 sparse matrix of type '<class 'numpy.float64'>'
+ 	with 8298 stored elements in Compressed Sparse Row format>,
+ array([1, 1, 1, ..., 5, 5, 5], dtype=int64))
+ 
+"""  
     
     
     
