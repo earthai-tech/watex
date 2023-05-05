@@ -187,8 +187,8 @@ def test_DCMagic ():
     ves_data = wx.make_ves (seed =42).frame 
     v = wx.DCSounding ().fit(wx.make_ves (seed =10, as_frame =True, add_xy =True))
     r = wx.DCProfiling().fit( wx.make_erp ( seed =77 , as_frame =True))
-    res= wx.methods.ResistivityProfiling(station='S4').fit(erp_data) 
-    ves= wx.methods.VerticalSounding(search=60).fit(ves_data)
+    res= ResistivityProfiling(station='S4').fit(erp_data) 
+    ves= VerticalSounding(search=60).fit(ves_data)
     # dc-ves  : 100%|################################| 1/1 [00:00<00:00, 111.13B/s]
     # dc-erp  : 100%|################################| 1/1 [00:00<00:00, 196.77B/s]
     m = DCMagic().fit(erp_data, ves_data, v, r, ves, res ) 
@@ -207,10 +207,10 @@ def test_DCMagic ():
     print(ro.summary()) 
 
     data_no_xy = wx.make_ves ( seed=0 , as_frame =True) 
-    vo = wx.methods.VerticalSounding (
+    vo = VerticalSounding (
         xycoords = (110.486111,   26.05174)).fit(data_no_xy).summary()
     print(vo.table_) 
-    dm = wx.methods.DCMagic ().fit(vo, ro ) 
+    dm = DCMagic ().fit(vo, ro ) 
     print(dm.summary (like = ...)) 
     #    dipole  longitude  latitude  ...  max_depth  ohmic_area  nareas
     # 0      10  110.48611  26.05174  ...      109.0  690.063003       1
@@ -259,14 +259,14 @@ def test_DCMagic_ ():
     
     print(tab1)
     
-if __name__=='__main__': 
+# if __name__=='__main__': 
     
-    test_DCProfiling()
-    test_VerticalSounding() 
-    test_DCSounding() 
-    test_ResistivityProfiling() 
-    test_DCMagic() 
-    test_DCMagic_ () 
+#     test_DCProfiling()
+#     test_VerticalSounding() 
+#     test_DCSounding() 
+#     test_ResistivityProfiling() 
+#     test_DCMagic() 
+#     test_DCMagic_ () 
     
     
     

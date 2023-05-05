@@ -282,8 +282,7 @@ def make_ves (
     >>> ves_data = make_ves (samples =50 , min_rho =10, max_rho =1e5 , 
                              as_frame =True, add_xy= True , 
                              xy = ( 3143965.855 , 336704.455) , 
-                             is_utm = True , utm_zone = 
-                             '49N', epsg =None)
+                             is_utm = True , utm_zone = '49N', epsg =None)
     >>> ves_data.head(2) 
     Out[316]: 
         AB   MN   resistivity   longitude   latitude
@@ -313,7 +312,8 @@ def make_ves (
 
     # make resistivity 
     g = np.linspace ( max_rho, min_rho , samples 
-                     ) if order =='-' else np.linspace (min_rho, max_rho , samples )
+                     ) if str(order) =='-' else np.linspace (
+                         min_rho, max_rho, samples )
     
     if seed is not None: 
         np.random.seed(seed )
@@ -407,7 +407,7 @@ def _manage_xy_coordinates (
                     ): 
                 warnings.warn ("GISError: Need to input either UTM zone or "
                                "EPSG number for an accurate conversion. Use "
-                               "default `49R` instead.")
+                               "default `29N` instead.")
                 
             # is given into longitude latitude 
             # so reverse it 
@@ -423,7 +423,7 @@ def _manage_xy_coordinates (
         # one site # turn off warnings about 
         # using the 
         x, y  = makeCoords (3143965.855 , 336704.455 , 
-                            utm_zone= utm_zone or '49R', 
+                            utm_zone= utm_zone or '29N',  
                             nsites= 7 , is_utm=True , 
                             raise_warning= False )
         sves_ix = np.random.choice ( np.arange ( len(x)))   

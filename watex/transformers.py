@@ -21,8 +21,8 @@ from .exlib.sklearn  import (
     StandardScaler,
     MinMaxScaler,
     OrdinalEncoder,
-    OneHotEncoder,
-    KMeans
+    OneHotEncoder, 
+    KMeans 
 )
  
 from ._watexlog import watexlog 
@@ -38,74 +38,206 @@ __docformat__='restructuredtext'
 
 _logger = watexlog().get_watex_logger(__name__)
 
+
+__all__= ['KMeansFeaturizer',
+          'StratifiedWithCategoryAdder',
+          'StratifiedUsingBaseCategory', 
+          'FrameUnion', 
+          'DataFrameSelector',
+          'CombinedAttributesAdder', 
+          'featurize_X'
+          ]
+
+def featurize_X (
+    X, y=None, *, 
+    n_clusters=7, 
+    target_scale = 5 ,
+    random_state=None, 
+    use_feature_importance =False , 
+    split_X_y = False, 
+    test_ratio = 0.2 , 
+    return_model =False  
+    ): 
+    """ Featurize X with the cluster based on the KMeans featurization
+    
+    Parameters 
+    -----------
+    n_clusters: int, default=7
+       Number of initial clusters
+    target_scale: float, default=5.0 
+       Apply appropriate scaling and include it in the input data to k-means.
+    use_feature_importance: bool, default =False 
+       If ``True``, PCA is computed to reduce down dimension to the most two 
+       importance components. 
+    random_state: int, Optional 
+       State for shuffling the data 
+    split_X_y: bool, default=False, 
+       Split the X, y into train data and test data  according to the test_size 
+    test_ratio: int, default=0.2 
+       ratio to keep for a test data. 
+       
+    return_model: bool, default =False 
+       If ``True`` return the KMeans featurization mode and the transformed X.
+       
+    Returns 
+    -------- 
+    X : NDArray shape ( M, 2N)
+      Array like train data X transformed  and test if `split_X_y` is set to 
+      ``True``. 
+      
+      
+    """ 
+    from scipt.sparse import hstack 
+    from watex.analysis import nPCA 
+    # reduce down feature to two. 
+    kmf_data = []
+    if use_feature_importance: 
+        X =nPCA (X, n_components = 2  ) 
+        
+    if split_X_y: 
+        X, test_data , y, y_test = train_test_split ( 
+            X, y ,test_size = test_ratio, random_state = random_state )
+    # create a kmeaturization with hint model     
+    kmf_hint = KMeansFeaturizer(
+        n_clusters=n_clusters, 
+        target_scale=target_scale, 
+        random_state = random_state, 
+        ).fit(X,y)
+    ### Use the k-means featurizer to generate cluster features
+    training_cluster_features = kmf_hint.transform(X)
+    ### Form new input features with cluster features
+    # training_with_cluster
+    Xkmf = hstack((X, training_cluster_features))
+    kmf_data.append(Xkmf)
+    kmf_data.append(y) 
+    if split_X_y: 
+        test_cluster_features = kmf_hint.transform(test_data)
+        test_with_cluster = hstack((test_data, test_cluster_features)) 
+        kmf_data.extend([test_with_cluster, y_test ] )
+    
+    return  tuple (kmf_data ) + (kmf_hint, ) if return_model else tuple(kmf_data )
+
 class KMeansFeaturizer:
     """Transforms numeric data into k-means cluster memberships.
- 
+     
     This transformer runs k-means on the input data and converts each data point
     into the ID of the closest cluster. If a target variable is present, it is 
     scaled and included as input to k-means in order to derive clusters that
     obey the classification boundary as well as group similar points together.
+    
+    Parameters 
+    -------------
+    n_clusters: int, default=7
+       Number of initial clusters
+    target_scale: float, default=5.0 
+       Apply appropriate scaling and include it in the input data to k-means.
+    use_feature_importance: bool, default =False 
+       If ``True``, PCA is computed to reduce down dimension to the most two 
+       importance components. 
+
+    random_state: int, Optional 
+       State for shuffling the data 
+    
+    Attributes 
+    -----------
+    km_model: KMeans featurization model used to transfor
+
+    Examples 
+    --------
+    (1) Use a common dataset 
+    >>> import matplotlib.pyplot as plt 
+    >>> from sklearn.datasets import make_moons
+    >>> from watex.utils.plotutils import plot_voronoi 
+    >>> from watex.datasets import load_mxs 
+    >>> X, y = make_moons(n_samples=5000, noise=0.2)
+    >>> kmf_hint = KMeansFeaturizer(n_clusters=50, target_scale=10).fit(X,y)
+    >>> kmf_no_hint = KMeansFeaturizer(n_clusters=50, target_scale=0).fit(X, y)
+    >>> fig, ax = plt.subplots(2,1, figsize =(7, 7)) 
+    >>> plot_voronoi ( X, y ,cluster_centers=kmf_hint.cluster_centers_, 
+                      fig_title ='KMeans with hint', ax = ax [0] )
+    >>> plot_voronoi ( X, y ,cluster_centers=kmf_no_hint.cluster_centers_, 
+                      fig_title ='KMeans No hint' , ax = ax[1])
+    Out[84]: <AxesSubplot:title={'center':'KMeans No hint'}>
+    
+    (2)  Use a concrete data set 
+    >>> X, y = load_mxs ( return_X_y =True, key ='numeric' ) 
+    >>> # get the most principal components 
+    >>> from watex.analysis import nPCA 
+    >>> Xpca =nPCA (X, n_components = 2  ) # veronoi plot expect two dimensional data 
+    >>> kmf_hint = KMeansFeaturizer(n_clusters=7, target_scale=10).fit(Xpca,y)
+    >>> kmf_no_hint = KMeansFeaturizer(n_clusters=7, target_scale=0).fit(Xpca, y)
+    >>> fig, ax = plt.subplots(2,1, figsize =(7, 7)) 
+    >>> plot_voronoi ( Xpca, y ,cluster_centers=kmf_hint.cluster_centers_, 
+                      fig_title ='KMeans with hint', ax = ax [0] )
+    >>> plot_voronoi ( Xpca, y ,cluster_centers=kmf_no_hint.cluster_centers_, 
+                      fig_title ='KMeans No hint' , ax = ax[1])
     """
  
     def __init__(
-            self, 
-            k=100, 
-            target_scale=5.0, 
-            random_state=None
-            ):
-        self.k = k
+        self, 
+        n_clusters=7, 
+        target_scale=5.0, 
+        random_state=None, 
+        use_feature_importance=False
+        ):
+        self.n_clusters = n_clusters
         self.target_scale = target_scale
         self.random_state = random_state
+        self.use_feature_importance=use_feature_importance
 
     def fit(self, X, y=None):
         """Runs k-means on the input data and finds centroids.
         """
+        if self.use_feature_importance: 
+            from watex.analysis import nPCA 
+            X =nPCA (X, n_components = 2  )
+            
         if y is None:
             # No target variable, just do plain k-means
-            km_model = KMeans(n_clusters=self.k,
+            km_model = KMeans(n_clusters=self.n_clusters,
             n_init=20,
             random_state=self.random_state)
             km_model.fit(X)
-         
+            
             self.km_model_ = km_model
             self.cluster_centers_ = km_model.cluster_centers_
             return self
-
+        
         # There is target information. Apply appropriate scaling and include
         # it in the input data to k-means. 
         data_with_target = np.hstack((X, y[:,np.newaxis]*self.target_scale))
         
         # Build a pre-training k-means model on data and target
-        km_model_pretrain = KMeans(n_clusters=self.k,
-        n_init=20,
-        random_state=self.random_state)
+        km_model_pretrain = KMeans(n_clusters=self.n_clusters,
+                            n_init=20,
+                            random_state=self.random_state
+                            )
         km_model_pretrain.fit(data_with_target)
- 
+
         # Run k-means a second time to get the clusters in the original space
         # without target info. Initialize using centroids found in pre-training.
         # Go through a single iteration of cluster assignment and centroid 
         # recomputation.
-        km_model = KMeans(n_clusters=self.k,
-        init=km_model_pretrain.cluster_centers_[:,:2],
-        n_init=1,
-        max_iter=1)
+        km_model = KMeans(n_clusters=self.n_clusters,
+                    init=km_model_pretrain.cluster_centers_[:,:-1] , 
+                    n_init=1,
+                    max_iter=1)
         km_model.fit(X)
-         
+        
         self.km_model = km_model
         self.cluster_centers_ = km_model.cluster_centers_
         
         return self
- 
+
     def transform(self, X, y=None):
         """Outputs the closest cluster ID for each input data point.
         """
         clusters = self.km_model.predict(X)
         return clusters[:,np.newaxis]
-    
+
     def fit_transform(self, X, y=None):
         self.fit(X, y)
         return self.transform(X, y)
-
 
 class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ): 
     """
