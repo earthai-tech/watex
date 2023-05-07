@@ -3,6 +3,9 @@ v0.2.3 (May 05, 2023)
 
 These are minor changes  in ``v0.2.3`` that shows fugs fixed, features and improvements.  
 
+- |API change| Change performed in :func:`watex.utils.funcutils.assert_ratio`. The parameter ``as_percent`` does no longer 
+  exist. It is changed to ``in_percent`.
+  
 - |Fix| set anomaly reference  in :func:`watex.utils.exmath.type_` equals to the length of :term:`ERP` line if profile is less than 7. 
   Now bug is fixed for :term:`ERP` profile less than seven points. 
 
@@ -11,8 +14,14 @@ These are minor changes  in ``v0.2.3`` that shows fugs fixed, features and impro
 - |Feature| add transformers :class:`watex.transformers.KMeansFeaturizer` to transform numeric data into k-means cluster memberships. It runs k-means on the input data and converts 
   each data point into the ID of the closest cluster.
 
-- |Enhancement| Supplement boreholes data are added to :func:`watex.datasets.load_hlogs`. They include boreholes ``'h805'`` ,``'h1102'`` ,``'h1405'``, ``'h2602'``,``'h803'``,
-``'h1104'``,``'h604'``,``'h2003'`` and  ``'h1602'``. 
+- |Feature| add :func:`watex.transformers.featurize_X` to transform predictor :math:`X` at once. It applies the K-Means featurization 
+  approach. Refer to :class:`watex.transformers.KMeansFeaturizer` 
+
+- |Feature| :func:`watex.utils.plotutils.plot_voronoi` plots the Voronoi diagram of the k-means clusters overlaid with 
+  the data
+  
+- |Enhancement| Supplement boreholes data are added to :func:`watex.datasets.load_hlogs`. They include boreholes ``'h805' ,'h1102' ,'h1405', 'h2602','h803',
+  'h1104', 'h604', 'h2003'`` and  ``'h1602'``. 
  
  
 

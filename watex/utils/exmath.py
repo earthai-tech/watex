@@ -5463,7 +5463,7 @@ def qc(
     
     """
     tol = assert_ratio(tol , bounds =(0, 1), exclude_value ='use lower bound',
-                         name ='tolerance', as_percent =True )
+                         name ='tolerance', in_percent =True )
     # by default , we used the resistivity tensor and error at TE mode.
     # force using the error when resistivity or phase tensors are supplied 
     tensor = str(tensor).lower() 

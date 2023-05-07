@@ -1050,9 +1050,6 @@ def plot_confusion_matrices (
         passed to ``fit()`` or ``score()``. The encoder disambiguates this mismatch
         ensuring that classes are labeled correctly in the visualization.
         
-    return_scores: bool, defaut=True, 
-        Returns a dictionnary of `accuracy`, `precision`, `recall` and `AUC`
-        scores. 
         
     annot: bool, default=True 
         Annotate the number of samples (right or wrong prediction ) in the plot. 
@@ -3402,7 +3399,8 @@ def plot_text (
     
 def plot_voronoi(
     X, y, *, 
-    cluster_centers, ax= None,
+    cluster_centers, 
+    ax= None,
     show_vertices=False, 
     line_colors='k',
     line_width=1. ,
@@ -3450,6 +3448,9 @@ def plot_voronoi(
     >>> km = KMeans (n_init ='auto').fit(X, y ) 
     >>> plot_voronoi ( X, y , cluster_centers = km.cluster_centers_) 
     """
+    X, y = check_X_y(X, y, )
+    cluster_centers = check_array(cluster_centers )
+    
     if ax is None: 
         fig, ax = plt.subplots(1,1, figsize =fig_size)
         

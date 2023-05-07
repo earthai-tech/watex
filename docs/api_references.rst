@@ -365,6 +365,7 @@ Functions
 	methods.electrical.VerticalSounding.summary 
 	methods.electrical.VerticalSounding.plotOhmicArea
     methods.electrical.VerticalSounding.invert 
+    methods.erp.DCMagic.summary
 
 :mod:`~watex.methods.em`: EM - EMAP: short-periods Processing 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -642,10 +643,12 @@ Functions
 	utils.plot_silhouette
 	utils.plot_skew
 	utils.plot_strike
+	utils.plot_voronoi
 	utils.plot_yb_confusion_matrix
 	utils.power
 	utils.predict_NGA_labels
 	utils.projection_validator
+	utils.random_sampling
 	utils.qc
 	utils.random_selector
 	utils.read_data
@@ -717,7 +720,6 @@ Functions
    :template: function.rst
 
 	utils.plotutils.plot_confusion_matrix
-	utils.plotutils.savefigure
 	utils.plotutils.make_mpl_properties
 	utils.plotutils.resetting_colorbar_bound
 	utils.plotutils.get_color_palette

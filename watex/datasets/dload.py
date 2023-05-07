@@ -24,7 +24,9 @@ from ..utils.funcutils import (
     smart_format, str2columns, 
     is_in_if, 
     reshape, 
-    zip_extractor 
+    zip_extractor , 
+    key_checker, 
+    random_sampling, 
     )
 from ..utils.box import Boxspace
 
@@ -243,19 +245,20 @@ def load_hlogs (
         'h805'
         }
     is_keys = set ( list(available_sets) + ["*"])
-    msg = (f"key {key!r} does not exist. Expect data from borehole"
-           f" {smart_format(is_keys, 'or')}")
-    assert str(key).lower() in is_keys , msg
+
+    key = key_checker(key, is_keys)
     
     data_file ='h.h5'
     with resources.path (DMODULE , data_file) as p : 
         data_file = p 
     if key =='*': 
-        data =  pd.concat( [ pd.read_hdf(data_file, key = k) 
-                            for k in available_sets ]) 
-    else:
-        data = pd.read_hdf(data_file, key = key)
+        key = available_sets
         
+    if isinstance (key, str): 
+        data = pd.read_hdf(data_file, key = key)
+    else: 
+        data =  pd.concat( [ pd.read_hdf(data_file, key = k) for k in key ]) 
+
     if drop_observations: 
         data.drop (columns = "remark", inplace = True )
         
@@ -360,7 +363,7 @@ key: str, default='h502'
     .. versionadded:: 0.1.5
     
     .. versionadded:: 0.2.3. 
-       Add 08 new boreholes data from logging, strata , layer thicknesses and 
+       Add 08 new boreholes data from logging, strata, layer thicknesses and 
        rock_names. 
        
 drop_observations: bool, default='False'
@@ -957,9 +960,11 @@ def load_mxs (
     as_frame =False, 
     key =None,  
     tag =None, 
+    samples=None, 
     tnames = None , 
     data_names=None, 
     split_X_y=False, 
+    seed = None, 
     **kws): 
     import joblib, numpy as np 
     
@@ -997,9 +1002,15 @@ def load_mxs (
     msg = (f"key {key!r} does not exist yet, expect"
            f" {smart_format(available_sets, 'or')}")
     assert str(key).lower() in available_sets , msg
+    # manage sampling 
+    # by default output 50% data 
+    samples= samples or .50 
     
     if split_X_y: 
-        return  tuple ([data_dict [k] for k in add ['*'] ] )
+        data = tuple ([data_dict [k] for k in add ['*'] ] )
+        data = ( random_sampling(d, samples = samples,
+                            random_state= seed  ) for d in data ) 
+        return  tuple (data )
     
     # if for return X and y if k is not None 
     if key is not None and key !="data": 
@@ -1009,7 +1020,10 @@ def load_mxs (
         if key not in  av.keys():
             key ='raw'
         X, y =  tuple ( [ data_dict[k]  for k in av [key]] ) 
-        
+
+        X = random_sampling(X, samples = samples,random_state= seed  )
+        y = random_sampling(y, samples = samples, random_state= seed
+                               )
         return (  X, y )  if as_frame or key =='sparse' else (
             np.array(X), np.array(y))
         
@@ -1023,7 +1037,9 @@ def load_mxs (
     
     tnames = tnames or target_columns
     # control the existence of the tnames to retreive
-
+    
+    data = random_sampling(data, samples = samples, random_state= seed  )
+    
     if as_frame:
         frame, data, target = _to_dataframe(
             data, feature_names = feature_names, tnames = tnames, 
@@ -1078,6 +1094,11 @@ tnames: str, optional
     `tag` and `data_names` do nothing. just for API purpose and to allow 
     fetching the same data uing the func:`~watex.data.fetch_data` since the 
     latter already holds `tag` and `data_names` as parameters. 
+    
+samples: int,optional 
+   Ratio or number of items from axis to fetch in the data. 
+   Default = .5 if `samples` is ``None``.
+
 key: str, default='data'
     Kind of MXS data to fetch. Can also be: 
         
@@ -1096,8 +1117,13 @@ key: str, default='data'
         - nga_labels: is the y predicted for Naive Group of Aquifer. 
 
 drop_observations: bool, default='False'
-    Drop the ``remark`` column in the logging data if set to ``True``.  
-
+    Drop the ``remark`` column in the logging data if set to ``True``. 
+    
+seed: int, array-like, BitGenerator, np.random.RandomState, \
+    np.random.Generator, optional
+   If int, array-like, or BitGenerator, seed for random number generator. 
+   If np.random.RandomState or np.random.Generator, use as given.
+   
 Returns
 ---------
 data : :class:`~watex.utils.Boxspace`
