@@ -965,6 +965,7 @@ def load_mxs (
     data_names=None, 
     split_X_y=False, 
     seed = None, 
+    shuffle=False, 
     **kws): 
     import joblib, numpy as np 
     
@@ -1009,7 +1010,7 @@ def load_mxs (
     if split_X_y: 
         data = tuple ([data_dict [k] for k in add ['*'] ] )
         data = ( random_sampling(d, samples = samples,
-                            random_state= seed  ) for d in data ) 
+                  random_state= seed , shuffle= shuffle ) for d in data ) 
         return  tuple (data )
     
     # if for return X and y if k is not None 
@@ -1021,8 +1022,10 @@ def load_mxs (
             key ='raw'
         X, y =  tuple ( [ data_dict[k]  for k in av [key]] ) 
 
-        X = random_sampling(X, samples = samples,random_state= seed  )
-        y = random_sampling(y, samples = samples, random_state= seed
+        X = random_sampling(X, samples = samples,random_state= seed , 
+                            shuffle= shuffle)
+        y = random_sampling(y, samples = samples, random_state= seed, 
+                            shuffle= shuffle
                                )
         return (  X, y )  if as_frame or key =='sparse' else (
             np.array(X), np.array(y))
@@ -1038,7 +1041,8 @@ def load_mxs (
     tnames = tnames or target_columns
     # control the existence of the tnames to retreive
     
-    data = random_sampling(data, samples = samples, random_state= seed  )
+    data = random_sampling(data, samples = samples, random_state= seed, 
+                           shuffle= shuffle)
     
     if as_frame:
         frame, data, target = _to_dataframe(
@@ -1123,6 +1127,9 @@ seed: int, array-like, BitGenerator, np.random.RandomState, \
     np.random.Generator, optional
    If int, array-like, or BitGenerator, seed for random number generator. 
    If np.random.RandomState or np.random.Generator, use as given.
+   
+shuffle: bool, default =False, 
+   If ``True``, borehole data should be shuffling before sampling. 
    
 Returns
 ---------

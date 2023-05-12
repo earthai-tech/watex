@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd 
 import matplotlib as mpl 
 from matplotlib.patches import Ellipse
+import matplotlib.colors as mcolors
 import matplotlib.transforms as transforms 
 import seaborn as sns 
 from scipy.cluster.hierarchy import ( 
@@ -130,10 +131,12 @@ def plot_logging (
     fill_value = None,  
     fig_size = (16, 7),
     fig_dpi = 300, 
-    colors = None,  
+    colors = None,
+    cs4_colors=False, 
     sns_style =False, 
     savefig = None,
     draw_spines=False, 
+    seed=None, 
     verbose=0, 
     **kws
     ): 
@@ -241,10 +244,22 @@ def plot_logging (
         the position to place the target plot `y` . By default the target plot 
         if given is located at the last position behind the logging plots. 
     
-    colors: list of Matplotlib.colors map, optional 
+    colors: str, list of Matplotlib.colors map, optional 
         The colors for plotting each columns of `X` except the depth. If not
-        given, default colors are auto-generated. 
-  
+        given, default colors are auto-generated.
+        
+        If `colors` is string and 'cs4'or 'xkcd' is included. 
+        Matplotlib.colors.CS4_COLORS or Matplotlib.colors.XKCD_COLORS 
+        should be used instead. In addition if the `'cs4'` or `'xkcd'` is  
+        suffixed by colons and integer value like ``cs4:4`` or ``xkcd:4``, the 
+        CS4 or XKCD colors should be used from index equals to ``4``. 
+        
+        .. versionadded:: 0.2.3 
+           Matplotlib.colors.CS4_COLORS or Matplotlib.colors.XKCD_COLORS can 
+           be used by setting `colors` to ``'cs4'`` or ``'xkcd'``. To reproduce 
+           the same CS4 or XKCD colors, set the `seed` parameter to a 
+           specific value. 
+        
     draw_spines: bool, tuple (-lim, +lim), default= False, 
         Only draw spine between the y-ticks. ``-lim`` and ``+lim`` are lower 
         and upper bound i.e. a range to draw the spines in y-axis. 
@@ -263,6 +278,12 @@ def plot_logging (
     sns_style: str, optional, 
         the seaborn style.
         
+    seed: int, optional 
+       Allow to reproduce the Matplotlib.colors.CS4_COLORS if `colors` is 
+       set to ``cs4``. 
+       
+       .. versionadded:: 0.2.3 
+       
     verbose: int, default=0 
         Output the number of categorial features dropped in the dataframe.  
         
@@ -351,15 +372,11 @@ def plot_logging (
     # toggle y 
     if y is not None: 
         X = _toggle_target_in(X, y, pos = posiy)
-    # we assume the first columns is dedicated for 
-    
-    m_cs = make_mpl_properties(X.shape[1])
-    if colors is not None: 
-        if not is_iterable(colors): 
-            colors =[colors]
-        colors += m_cs 
-    else :colors = m_cs 
-    
+        
+    #manage colors along colors 
+    colors = make_plot_colors (
+        X, colors = colors , axis = 1, seed = seed , chunk=False )
+
     fig, ax = plt.subplots (1, ncols = X.shape [1], sharey = True , 
                             figsize = fig_size )
     
@@ -423,6 +440,138 @@ def plot_logging (
         
     plt.close () if savefig is not None else plt.show() 
     
+def make_plot_colors(d , / , colors:str | list[str]=None , axis:int = 0, 
+                     seed:int  =None, chunk:bool =... ): 
+    """ Select colors according to the data size along axis 
+    
+    Parameters 
+    ----------
+    d: Arraylike 
+       Array data to slect colors according to the axis 
+    colors: str, list of Matplotlib.colors map, optional 
+        The colors for plotting each columns of `X` except the depth. If not
+        given, default colors are auto-generated.
+        If `colors` is string and 'cs4'or 'xkcd' is included. 
+        Matplotlib.colors.CS4_COLORS or Matplotlib.colors.XKCD_COLORS 
+        should be used instead. In addition if the `'cs4'` or `'xkcd'` is  
+        suffixed by colons and integer value like ``cs4:4`` or ``xkcd:4``, the 
+        CS4 or XKCD colors should be used from index equals to ``4``. 
+        
+        .. versionadded:: 0.2.3 
+           Matplotlib.colors.CS4_COLORS or Matplotlib.colors.XKCD_COLORS can 
+           be used by setting `colors` to ``'cs4'`` or ``'xkcd'``. To reproduce 
+           the same CS4 or XKCD colors, set the `seed` parameter to a 
+           specific value. 
+           
+    axis: int, default=0 
+       Axis along with the colors must be generated. By default colors is 
+       generated along the row axis 
+       
+    seed: int, optional 
+       Allow to reproduce the Matplotlib.colors.CS4_COLORS if `colors` is 
+       set to ``cs4``. 
+       
+    chunk: bool, default=True 
+       Chunk generated colors to fit the exact length of the `d` size 
+       
+    Returns 
+    -------
+    colors: list 
+       List of new generated colors 
+       
+    Examples 
+    --------
+    >>> import numpy as np 
+    >>> from watex.utils.plotutils import make_plot_colors
+    >>> ar = np.random.randn (7, 2) 
+    >>> make_plot_colors (ar )
+    ['g', 'gray', 'y', 'blue', 'orange', 'purple', 'lime']
+    >>> make_plot_colors (ar , axis =1 ) 
+    Out[6]: ['g', 'gray']
+    >>> make_plot_colors (ar , axis =1 , colors ='cs4')
+    ['#F0F8FF', '#FAEBD7']
+    >>> len(make_plot_colors (ar , axis =1 , colors ='cs4', chunk=False))
+    150
+    >>> make_plot_colors (ar , axis =1 , colors ='cs4:4')
+    ['#F0FFFF', '#F5F5DC']
+    """
+    
+    # get the data size where colors must be fitted. 
+    # note colors should match either the row axis or colurms axis 
+    axis = str(axis).lower() 
+    if 'columns1'.find (axis)>=0: 
+        axis =1 
+    else: axis =0
+    
+    # manage the array 
+    d= is_iterable( d, exclude_string=True, transform=True)
+    if not hasattr (d, '__array__'): 
+        d = np.array(d ) 
+    
+    axis_length = len(d) if len(d.shape )==1 else d.shape [axis]
+    m_cs = make_mpl_properties(axis_length )
+    
+     #manage colors 
+    # we assume the first columns is dedicated for 
+    if ( 
+            isinstance (colors, str) and 
+            ( 
+                "cs4" in str(colors).lower() 
+                 or 'xkcd' in str(colors).lower() 
+                 )
+            ): 
+        #initilize colors infos
+        c = copy.deepcopy(colors)
+        if 'cs4' in str(colors).lower() : 
+            DCOLORS = mcolors.CSS4_COLORS
+        else: 
+            # remake the dcolors my removing the xkcd: in the keys: 
+            DCOLORS = dict(( (k.replace ('xkcd:', ''), c) 
+                            for k, c in mcolors.XKCD_COLORS.items()))  
+        
+        key_colors = list(DCOLORS.keys ())
+        colors = list(DCOLORS.values() )
+        
+        shuffle_cs4=True 
+        
+        cs4_start= None
+        #------
+        if ':' in str(c).lower():
+            cs4_start = str(c).lower().split(':')[-1]
+        #try to converert into integer 
+        try: 
+            cs4_start= int (cs4_start)
+        except : 
+            if str(cs4_start).lower() in key_colors: 
+                cs4_start= key_colors.index (cs4_start)
+                shuffle_cs4=False
+            else: 
+                pass 
+        
+        else: shuffle_cs4=False # keep CS4 and dont shuffle 
+        
+        cs4_start= cs4_start or 0
+        
+        if shuffle_cs4: 
+            np.random.seed (seed )
+            colors = list(np.random.choice(colors  , len(m_cs)))
+        else: 
+            if cs4_start > len(colors)-1: 
+                cs4_start = 0 
+    
+            colors = colors[ cs4_start:]
+    
+    if colors is not None: 
+        if not is_iterable(colors): 
+            colors =[colors]
+        colors += m_cs 
+    else :
+        colors = m_cs 
+        
+    # shrunk data to map the exact colors 
+    chunk =True if chunk is ... else False 
+    return colors[:axis_length] if chunk else colors 
+
 
 def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
     r"""Plot quantifying the quality  of clustering silhouette 

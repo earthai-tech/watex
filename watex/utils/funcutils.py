@@ -4226,6 +4226,7 @@ def is_depth_in (X, name, columns = None, error= 'ignore'):
     :return: X, depth 
         Dataframe without the depth columns and depth values.
     """
+    
     X= _assert_all_types( X, pd.DataFrame )
     if columns is not None: 
         columns = list(columns)
@@ -6034,7 +6035,8 @@ def random_sampling (
     d, / , 
     samples:int = None  , 
     replace:bool = False , 
-    random_state:int = None 
+    random_state:int = None, 
+    shuffle=True, 
     ): 
     """ Sampling data. 
     
@@ -6047,7 +6049,7 @@ def random_sampling (
        Ratio or number of items from axis to return. 
        Default = 1 if `samples` is ``None``.
        
-    replace: bool, default False
+    replace: bool, default=False
        Allow or disallow sampling of the same row more than once. 
        
     random_state: int, array-like, BitGenerator, np.random.RandomState, \
@@ -6113,7 +6115,7 @@ def random_sampling (
         # data frame 
         return d.sample ( n= n , frac=samples , replace = replace ,
                          random_state = random_state  
-                     )
+                     ) if shuffle else d.iloc [ :n , ::] 
     
     np.random.seed ( random_state)
     if scipy.sparse.issparse(d) : 
@@ -6121,15 +6123,18 @@ def random_sampling (
             warnings.warn("coo_matrix does not support indexing. It should be "
                           "to convert it to a CSR matrix")
             d = d.tocsr() 
+            
         return d [ np.random.choice(
-            np.arange(d.shape[0]), n, replace=replace )]
+            np.arange(d.shape[0]), n, replace=replace )] if shuffle else d [
+                [ i for i in range (n)]]
+                
         #d = d[idx ]
         
     # manage the data 
     if not hasattr(d, '__array__'): 
         d = np.array (d ) 
         
-    idx = np.random.randint( len(d), size = n )
+    idx = np.random.randint( len(d), size = n ) if shuffle else [ i for i in range(n)]
     if len(d.shape )==1: d =d[idx ]
     else: d = d[idx , :]
         
