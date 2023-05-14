@@ -34,7 +34,7 @@ These are minor changes  in ``v0.2.0`` that shows fugs fixed, features and impro
     
 - |Enhancement| Improve the :term:`EMAP` filters by adding new parameters  ``drop_outliers`` and ``smooth`` for removing outliers and smoothing data along 
   the frequencies axis using :meth:`watex.methods.Processing.tma` for trimming-moving average, :meth:`watex.methods.Processing.ama` for adaptative moving average based 
-  on ideas or Torres-Verdin  and :meth:`watex.methods.Processing.tma` for fixed length dipole-moving average. This efficiently deals with the static shift 
+  on ideas or Torres-Verdin  and :meth:`watex.methods.Processing.flma` for fixed length dipole-moving average. This efficiently deals with the static shift 
   effect when interferences noises are strong enough.
   
 - |Enhancement| Update :meth:`watex.methods.ZC.remove_ss_emap`. Henceforth correct tensor data by applying the smoothing 

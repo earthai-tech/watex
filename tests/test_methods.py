@@ -97,7 +97,7 @@ class TestHydro (unittest.TestCase ):
     """ Test Hydrogeological module"""
     
     #*** Get the data **** 
-    HDATA = load_hlogs(key ='*', drop_observations =True ).frame 
+    HDATA = load_hlogs(key ='h502 h2601', drop_observations =True ).frame 
     
 
     def test_mxs (self  ): 

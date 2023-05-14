@@ -21,11 +21,15 @@ from .exlib.sklearn  import (
     StandardScaler,
     MinMaxScaler,
     OrdinalEncoder,
-    OneHotEncoder 
+    OneHotEncoder, 
+    KMeans 
 )
  
 from ._watexlog import watexlog 
-from .utils.funcutils import parse_attrs , to_numeric_dtypes
+from .utils.funcutils import ( 
+    _assert_all_types, 
+    parse_attrs , to_numeric_dtypes
+    )
 from .utils.mlutils import (  
     discretizeCategoriesforStratification, 
     stratifiedUsingDiscretedCategories, 
@@ -37,24 +41,273 @@ __docformat__='restructuredtext'
 
 _logger = watexlog().get_watex_logger(__name__)
 
+
+__all__= ['KMeansFeaturizer',
+          'StratifiedWithCategoryAdder',
+          'StratifiedUsingBaseCategory', 
+          'FrameUnion', 
+          'DataFrameSelector',
+          'CombinedAttributesAdder', 
+          'featurize_X'
+          ]
+
+def featurize_X (
+    X, y=None, *, 
+    n_clusters=7, 
+    target_scale = 5 ,
+    random_state=None, 
+    n_components=None, 
+    split_X_y = False, 
+    test_ratio = 0.2 , 
+    shuffle=True, 
+    return_model =False  
+    ): 
+    """ Featurize X with the cluster based on the KMeans featurization
+    
+    Parameters 
+    -----------
+    X, y : 
+    n_clusters: int, default=7
+       Number of initial clusters
+    target_scale: float, default=5.0 
+       Apply appropriate scaling and include it in the input data to k-means.
+    n_components: int, optional
+       Number of components for reduced down the predictor X. It uses the PCA 
+       to reduce down dimension to the importance components. 
+    random_state: int, Optional 
+       State for shuffling the data 
+    split_X_y: bool, default=False, 
+       Split the X, y into train data and test data  according to the test_size 
+    test_ratio: int, default=0.2 
+       ratio to keep for a test data. 
+       
+    shuffle: bool, default=True
+       Suffling the data set. 
+       
+    return_model: bool, default =False 
+       If ``True`` return the KMeans featurization mode and the transformed X.
+       
+    Returns 
+    -------- 
+    X : NDArray shape ( M, 2N)
+      Array like train data X transformed  and test if `split_X_y` is set to 
+      ``True``. 
+      
+    """ 
+    from scipy import sparse 
+    from watex.analysis import nPCA 
+    # reduce down feature to two. 
+    kmf_data = []
+    if n_components: 
+        X =nPCA (X, n_components = n_components  ) 
+        
+    if split_X_y: 
+        X, test_data , y, y_test = train_test_split ( 
+            X, y ,test_size = test_ratio, random_state = random_state ,
+            shuffle =shuffle)
+    # create a kmeaturization with hint model     
+    kmf_hint = KMeansFeaturizer(
+        n_clusters=n_clusters, 
+        target_scale=target_scale, 
+        random_state = random_state, 
+        ).fit(X,y)
+    ### Use the k-means featurizer to generate cluster features
+    training_cluster_features = kmf_hint.transform(X)
+    ### Form new input features with cluster features
+    # training_with_cluster
+    Xkmf = sparse.hstack((X, sparse.coo_matrix (training_cluster_features) ))
+    kmf_data.append(Xkmf)
+    kmf_data.append(y) 
+    if split_X_y: 
+        test_cluster_features = kmf_hint.transform(test_data)
+        test_with_cluster = sparse.hstack(
+            (test_data, sparse.coo_matrix (test_cluster_features)))
+        
+        kmf_data.insert(1,test_with_cluster )
+        kmf_data.append( y_test)
+    
+    return  tuple (kmf_data ) + (kmf_hint, ) if return_model else tuple(kmf_data )
+
+class KMeansFeaturizer:
+    """Transforms numeric data into k-means cluster memberships.
+     
+    This transformer runs k-means on the input data and converts each data point
+    into the ID of the closest cluster. If a target variable is present, it is 
+    scaled and included as input to k-means in order to derive clusters that
+    obey the classification boundary as well as group similar points together.
+    
+    Parameters 
+    -------------
+    n_clusters: int, default=7
+       Number of initial clusters
+    target_scale: float, default=5.0 
+       Apply appropriate scaling and include it in the input data to k-means.
+    n_components: int, optional
+       Number of components for reducted down the predictor. It uses the PCA 
+       to reduce down dimension to the importance components. 
+
+    random_state: int, Optional 
+       State for shuffling the data 
+    
+    Attributes 
+    -----------
+    km_model: KMeans featurization model used to transfor
+
+    Examples 
+    --------
+    (1) Use a common dataset 
+    >>> import matplotlib.pyplot as plt 
+    >>> from sklearn.datasets import make_moons
+    >>> from watex.utils.plotutils import plot_voronoi 
+    >>> from watex.datasets import load_mxs 
+    >>> X, y = make_moons(n_samples=5000, noise=0.2)
+    >>> kmf_hint = KMeansFeaturizer(n_clusters=50, target_scale=10).fit(X,y)
+    >>> kmf_no_hint = KMeansFeaturizer(n_clusters=50, target_scale=0).fit(X, y)
+    >>> fig, ax = plt.subplots(2,1, figsize =(7, 7)) 
+    >>> plot_voronoi ( X, y ,cluster_centers=kmf_hint.cluster_centers_, 
+                      fig_title ='KMeans with hint', ax = ax [0] )
+    >>> plot_voronoi ( X, y ,cluster_centers=kmf_no_hint.cluster_centers_, 
+                      fig_title ='KMeans No hint' , ax = ax[1])
+    Out[84]: <AxesSubplot:title={'center':'KMeans No hint'}>
+    
+    (2)  Use a concrete data set 
+    >>> X, y = load_mxs ( return_X_y =True, key ='numeric' ) 
+    >>> # get the most principal components 
+    >>> from watex.analysis import nPCA 
+    >>> Xpca =nPCA (X, n_components = 2  ) # veronoi plot expect two dimensional data 
+    >>> kmf_hint = KMeansFeaturizer(n_clusters=7, target_scale=10).fit(Xpca,y)
+    >>> kmf_no_hint = KMeansFeaturizer(n_clusters=7, target_scale=0).fit(Xpca, y)
+    >>> fig, ax = plt.subplots(2,1, figsize =(7, 7)) 
+    >>> plot_voronoi ( Xpca, y ,cluster_centers=kmf_hint.cluster_centers_, 
+                      fig_title ='KMeans with hint', ax = ax [0] )
+    >>> plot_voronoi ( Xpca, y ,cluster_centers=kmf_no_hint.cluster_centers_, 
+                      fig_title ='KMeans No hint' , ax = ax[1])
+    """
+    def __init__(
+        self, 
+        n_clusters=7, 
+        target_scale=5.0, 
+        random_state=None, 
+        n_components=None
+        ):
+        self.n_clusters = n_clusters
+        self.target_scale = target_scale
+        self.random_state = random_state
+        self.n_components=n_components
+
+    def fit(self, X, y=None):
+        """Runs k-means on the input data and finds and updated centroids.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Training vector, where `n_samples` is the number of samples and
+            `n_features` is the number of features.
+
+        y : array-like of shape (n_samples,)
+            Target vector relative to X.
+            
+        Returns
+        -------
+        self
+            Fitted estimator.
+        """
+        if self.n_components: 
+            self.n_components = int (_assert_all_types(
+                self.n_components, int, float,objname ="'n_components'"))
+            from watex.analysis import nPCA 
+            X =nPCA (X, n_components = self.n_components )
+            
+        if y is None:
+            # No target variable, just do plain k-means
+            km_model = KMeans(n_clusters=self.n_clusters,
+            n_init=20,
+            random_state=self.random_state)
+            km_model.fit(X)
+            
+            self.km_model_ = km_model
+            self.cluster_centers_ = km_model.cluster_centers_
+            return self
+        
+        # There is target information. Apply appropriate scaling and include
+        # it in the input data to k-means. 
+        data_with_target = np.hstack((X, y[:,np.newaxis]*self.target_scale))
+        
+        # Build a pre-training k-means model on data and target
+        km_model_pretrain = KMeans(n_clusters=self.n_clusters,
+                            n_init=20,
+                            random_state=self.random_state
+                            )
+        km_model_pretrain.fit(data_with_target)
+
+        # Run k-means a second time to get the clusters in the original space
+        # without target info. Initialize using centroids found in pre-training.
+        # Go through a single iteration of cluster assignment and centroid 
+        # recomputation.
+        km_model = KMeans(n_clusters=self.n_clusters,
+                    init=km_model_pretrain.cluster_centers_[:,:-1] , #[:, :-1]
+                    n_init=1,
+                    max_iter=1)
+        km_model.fit(X)
+        
+        self.km_model = km_model
+        self.cluster_centers_ = km_model.cluster_centers_
+        
+        return self
+
+    def transform(self, X):
+        """Outputs the closest cluster ID for each input data point.
+        
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            New data to predict.
+
+        Returns
+        -------
+        labels : ndarray of shape (n_samples,)
+            Index of the cluster each sample belongs to.
+        """
+        clusters = self.km_model.predict(X)
+        return clusters[:,np.newaxis]
+
+    def fit_transform(self, X, y=None):
+        """ Fit and transform the data 
+        
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Training vector, where `n_samples` is the number of samples and
+            `n_features` is the number of features.
+
+        y : array-like of shape (n_samples,)
+            Target vector relative to X.
+            
+        Returns
+        -------
+        labels : ndarray of shape (n_samples,)
+            Index of the cluster each sample belongs to. 
+        
+        """
+        self.fit(X, y)
+        return self.transform(X, y)
+
 class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ): 
     """
     Stratified sampling transformer based on new generated category 
     from numerical attributes and return stratified trainset and test set.
     
-    Arguments 
+    Parameters  
     ---------- 
-    *base_num_feature*: str, 
+    base_num_feature: str, 
         Numerical features to categorize. 
         
-    *threshold_operator*: float, 
+    threshold_operator: float, 
         The coefficient to divised the numerical features value to 
         normalize the data 
         
-    *max_category*: Maximum value fits a max category to gather all 
+    max_category: Maximum value fits a max category to gather all 
         value greather than.
         
-    *return_train*: bool, 
+    return_train: bool, 
         Return the whole stratified trainset if set to ``True``.
         usefull when the dataset is not enough. It is convenient to 
         train all the whole trainset rather than a small amount of 
@@ -89,14 +342,16 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
         
     """
     
-    def __init__(self,
-                 base_num_feature=None,
-                 threshold_operator = 1.,
-                 return_train=False,
-                 max_category=3,
-                 n_splits=1, 
-                 test_size=0.2, 
-                 random_state=42):
+    def __init__(
+        self,
+        base_num_feature=None,
+        threshold_operator = 1.,
+        return_train=False,
+        max_category=3,
+        n_splits=1, 
+        test_size=0.2, 
+        random_state=42
+        ):
         
         self._logging= watexlog().get_watex_logger(self.__class__.__name__)
         
@@ -112,12 +367,28 @@ class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ):
         self.statistics_=None 
         
     def fit(self, X, y=None): 
-        """ Fit method """
+        """
+        Does nothin just for scikit-learn API purpose. 
+        """
         return self
     
     def transform(self, X, y=None):
         """Transform data and populate inspections attributes 
-            from hyperparameters."""
+            from hyperparameters.
+            
+         Parameters
+         ----------
+         X : {array-like, sparse matrix} of shape (n_samples, n_features)
+             New data to predict.
+
+         y: Ignored
+            Keep just for API purpose. 
+
+         Returns
+         -------
+         X : {array-like, sparse matrix} of shape (n_samples, n_features)
+             New data transformed.   
+        """
 
         if self.base_num_feature is not None:
             in_c= 'temf_'
@@ -206,15 +477,15 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
     
     Arguments 
     ----------
-    *base_column*: str or int, 
+    base_column: str or int, 
         Hyperparameters and can be index of the base mileage(category)
         for stratifications. If `base_column` is None, will return 
         the purely random sampling.
         
-    *test_size*: float 
+    test_size: float 
         Size to put in the test set.
         
-    *random_state*: shuffled number of instance in the overall dataset. 
+    random_state: shuffled number of instance in the overall dataset. 
         default is ``42``.
     
     Usage 
@@ -255,15 +526,32 @@ class StratifiedUsingBaseCategory( BaseEstimator, TransformerMixin ):
         self.base_items_= None 
         
     def fit(self, X, y=None): 
-        """ Fit method and populated isnpections attributes 
-        from hyperparameters."""
+        """ Does nothing , just for API purpose. 
+        """
         return self
     
     def transform(self, X, y=None):
-        """ return dataset `trainset` and `testset` using stratified sampling. 
+        """ 
+        Split dataset into `trainset` and `testset` using stratified sampling. 
         
         If `base_column` not given will return the `trainset` and `testset` 
         using purely random sampling.
+        {array-like, sparse matrix} of shape (n_samples, n_features)
+            New data to predict.
+            
+        Parameters 
+        -----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Training vector, where `n_samples` is the number of samples and
+            `n_features` is the number of features.
+
+        y : Ignored
+
+        Returns 
+        --------
+        strat_train_set, strat_test_set : NDArray, ( n_samples , n_features) 
+            train set and test set stratified 
+        
         """
         if self.base_column is None: 
             self.stratified = False 
@@ -413,13 +701,36 @@ class CategorizeFeatures(BaseEstimator, TransformerMixin ):
         self.base_columns_ix_=None 
   
     def fit(self, X, y=None):
-
+        """ 
+        Parameters 
+        ----------
+        
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+            
+        Returns 
+        --------
+        ``Self`: Instanced object for methods chaining 
+        
+        """
         return self
     
     def transform(self, X, y=None) :
         """ Transform the data and return new array. Can straightforwardly
         call :meth:`~.sklearn.TransformerMixin.fit_transform` inherited 
-        from scikit_learn."""
+        from scikit_learn.
+        
+        """
         
         self.base_columns_ = [n_[0] for  n_ in self.num_columns_properties]
         self.in_values_ = [n_[1][0] for  n_ in self.num_columns_properties]
@@ -849,10 +1160,39 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
         self.select_type = select_type 
         
     def fit(self, X, y=None): 
+        """ 
+        Select the Data frame 
+        
+        Parameters 
+        ----------
+        X:  Ndarray ( M x N matrix where ``M=m-samples``, & ``N=n-features``)
+            Training set; Denotes data that is observed at training and 
+            prediction time, used as independent variables in learning. 
+            When a matrix, each sample may be represented by a feature vector, 
+            or a vector of precomputed (dis)similarity with each training 
+            sample. :code:`X` may also not be a matrix, and may require a 
+            feature extractor or a pairwise metric to turn it into one  before 
+            learning a model.
+        y: array-like, shape (M, ) ``M=m-samples``, 
+            train target; Denotes data that may be observed at training time 
+            as the dependent variable in learning, but which is unavailable 
+            at prediction time, and is usually the target of prediction. 
+        
+        Returns 
+        --------
+        self: `DataFrameSelector` instance 
+            returns ``self`` for easy method chaining.
+        
+        """
         return self
     
-    def transform(self, X, y=None): 
-        """ Transform data and return numerical or categorial values."""
+    def transform(self, X): 
+        """ Transform data and return numerical or categorial values.
+        
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Training vector, where `n_samples` is the number of samples and
+            `n_features` is the number of features.
+        """
        
         if isinstance(self.attribute_names, str): 
             self.attribute_names =[self.attribute_names]
@@ -970,16 +1310,18 @@ class FrameUnion (BaseEstimator, TransformerMixin) :
     >>> X= frameObj.fit_transform(X_)
         
     """  
-    def __init__(self,
-                 num_attributes =None , 
-                 cat_attributes =None,
-                 scale =True,
-                 imput_data=True,
-                 encode =True, 
-                 param_search ='auto', 
-                 strategy ='median', 
-                 scale_mode ='StandardScaler', 
-                 encode_mode ='OrdinalEncoder' ): 
+    def __init__(
+        self,
+        num_attributes =None , 
+        cat_attributes =None,
+        scale =True,
+        imput_data=True,
+        encode =True, 
+        param_search ='auto', 
+        strategy ='median', 
+        scale_mode ='StandardScaler', 
+        encode_mode ='OrdinalEncoder'
+        ): 
         
         self._logging = watexlog().get_watex_logger(self.__class__.__name__)
         
@@ -1000,12 +1342,29 @@ class FrameUnion (BaseEstimator, TransformerMixin) :
         self.cat_attributes_=None 
         self.attributes_=None 
         
-    def fit(self, X): 
+    def fit(self, X, y=None): 
+        """
+        Does nothing. Just for scikit-learn purpose. 
+        """
         return self
     
-    def transform(self, X, y=None): 
+    def transform(self, X): 
         """ Transform data and return X numerical and categorial encoded 
-        values."""
+        values.
+        
+        Parameters
+        -----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Training vector, where `n_samples` is the number of samples and
+            `n_features` is the number of features.
+            
+        Returns 
+        --------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            transformed arraylike, where `n_samples` is the number of samples and
+            `n_features` is the number of features.
+            
+        """
         
         if self.scale_mode.lower().find('stand')>=0: 
             self.scale_mode = 'StandardScaler'

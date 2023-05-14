@@ -153,6 +153,7 @@ Functions
 	datasets.load_hlogs
 	datasets.load_huayuan
 	datasets.load_iris
+	datasets.load_mxs
 	datasets.load_semien
 	datasets.load_tankesse
 	datasets.make_erp 
@@ -364,6 +365,7 @@ Functions
 	methods.electrical.VerticalSounding.summary 
 	methods.electrical.VerticalSounding.plotOhmicArea
     methods.electrical.VerticalSounding.invert 
+    methods.erp.DCMagic.summary
 
 :mod:`~watex.methods.em`: EM - EMAP: short-periods Processing 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -558,6 +560,7 @@ Functions
    transformers.CombinedAttributesAdder
    transformers.DataFrameSelector 
    transformers.FrameUnion
+   transformers.KMeansFeaturizer
    transformers.StratifiedUsingBaseCategory
    transformers.StratifiedWithCategoryAdder
    
@@ -636,14 +639,17 @@ Functions
 	utils.plot_pca_components
 	utils.plot_regularization_path
 	utils.plot_rf_feature_importances
+	utils.plot_roc_curves
 	utils.plot_sbs_feature_selection
 	utils.plot_silhouette
 	utils.plot_skew
 	utils.plot_strike
+	utils.plot_voronoi
 	utils.plot_yb_confusion_matrix
 	utils.power
 	utils.predict_NGA_labels
 	utils.projection_validator
+	utils.random_sampling
 	utils.qc
 	utils.random_selector
 	utils.read_data
@@ -715,7 +721,6 @@ Functions
    :template: function.rst
 
 	utils.plotutils.plot_confusion_matrix
-	utils.plotutils.savefigure
 	utils.plotutils.make_mpl_properties
 	utils.plotutils.resetting_colorbar_bound
 	utils.plotutils.get_color_palette

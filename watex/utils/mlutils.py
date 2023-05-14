@@ -3192,7 +3192,6 @@ def naive_scaler(
         X_sc = pd.DataFrame( X_sc , columns = sc.feature_names_in_)  
     return X_sc 
 
-
     
 
 

@@ -14,6 +14,7 @@ import copy
 import json
 import h5py
 import yaml
+import scipy
 import joblib
 import pickle
 import shutil
@@ -63,7 +64,6 @@ _msg0 = ''.join([
 )
 
 try:
-    import scipy
     scipy_version = [int(ss) for ss in scipy.__version__.split('.')]
     if scipy_version[0] == 0:
         if scipy_version[1] < 14:
@@ -1719,7 +1719,8 @@ def savejob(
     job , 
     savefile ,* ,  
     protocol =None,  
-    append_versions=True , 
+    append_versions=True, 
+    append_date=True, 
     fix_imports= True, 
     buffer_callback = None,   
     **job_kws
@@ -1730,12 +1731,14 @@ def savejob(
     -----------
     job: Any 
         Anything to save, preferabaly a models in dict 
+        
     savefile: str, or path-like object 
          name of file to store the model
          The *file* argument must have a write() method that accepts a
          single bytes argument. It can thus be a file object opened for
          binary writing, an io.BytesIO instance, or any other custom
          object that meets this interface.
+         
     append_versions: bool, default =True 
         Append the version of Joblib module or Python Pickle module following 
         by the scikit-learn, numpy and also pandas versions. This is useful 
@@ -1743,7 +1746,12 @@ def savejob(
         modules have been upgraded. This could avoid bottleneck when data 
         have been stored for long times and user has forgotten the date and 
         versions at the time the file was saved. 
-    
+        
+    append_date: bool, default=True, 
+       Append the date  of the day to the filename. 
+       
+       .. versionadded:: 0.2.3
+       
     protocol: int, optional 
         The optional *protocol* argument tells the pickler to use the
         given protocol; supported protocols are 0, 1, 2, 3, 4 and 5.
@@ -1781,21 +1789,38 @@ def savejob(
     savefile: str, 
         returns the filename
     """
+    def remove_extension(fn, ex): 
+        """Remove extension either joblib or pickle """
+        return fn.replace (ex, '')
+    
     import sklearn 
     
     versions = 'sklearn_v{0}.numpy_v{1}.pandas_v{2}'.format( 
         sklearn.__version__, np.__version__, pd.__version__) 
     date = datetime.datetime.now() 
     
-    savefile +=".{}".format(date) 
+    savefile =str(savefile) 
+    if ( 
+            '.joblib' in savefile or '.pkl' in savefile
+            ): 
+        ex = '.joblib' if savefile.find('.joblib')>=0 else '.pkl'
+        savefile = remove_extension(savefile ,  ex )
+        
+    if append_date: 
+        savefile +=".{}".format(date) 
+        
     if append_versions : 
         savefile += ".{}"+ versions 
     try : 
-        savefile= savefile.format(".joblib_v{}.".format(joblib.__version__))
+        if append_versions: 
+            savefile += ".joblib_v{}.".format(joblib.__version__)
+            
         joblib.dump(job, f'{savefile}.joblib', **job_kws)
         
-    except :  
-        savefile= savefile.format(".pickle_v{}.pkl".format(pickle.__version__))
+    except : 
+        if append_versions: 
+            savefile +=".pickle_v{}.pkl".format(pickle.__version__)
+            
         with open(savefile, 'wb') as wfile: 
             pickle.dump( job, wfile, protocol= protocol, 
                         fix_imports=fix_imports , 
@@ -4201,6 +4226,7 @@ def is_depth_in (X, name, columns = None, error= 'ignore'):
     :return: X, depth 
         Dataframe without the depth columns and depth values.
     """
+    
     X= _assert_all_types( X, pd.DataFrame )
     if columns is not None: 
         columns = list(columns)
@@ -4991,7 +5017,7 @@ def get_confidence_ratio (
 def assert_ratio(
         v, /, bounds: List[float] = None , 
         exclude_value:float= None, 
-        as_percent:bool =False , name:str ='rate' 
+        in_percent:bool =False , name:str ='rate' 
         ): 
     """ Assert rate value between a specific range. 
     
@@ -5006,8 +5032,12 @@ def assert_ratio(
        Raise error otherwise. Note that  any other value will use the 
        lower bound in `bounds` as exlusion. 
        
-    as_percent: bool, default=False, 
-       Convert the value into a percentage. 
+    in_percent: bool, default=False, 
+       Convert the value into a percentage.
+       
+       .. versionchanged:: 0.2.3 
+          `as_percent` parameter is changed to `in_percent`. 
+          
     name: str, default='rate' 
        the name of the value for assertion. 
        
@@ -5029,17 +5059,19 @@ def assert_ratio(
     ValueError: ...
     >>> assert_ratio(2 , bounds =(1, 8), exclude_value ='use bounds' )
     2.0
-    >>> assert_ratio(2 , bounds =(0, 1) , as_percent =True )
+    >>> assert_ratio(2 , bounds =(0, 1) , in_percent =True )
     0.02
     >>> assert_ratio(2 , bounds =(0, 1) )
     ValueError:
     >>> assert_ratio(2 , bounds =(0, 1), exclude_value ='use lower bound',
-                         name ='tolerance', as_percent =True )
+                         name ='tolerance', in_percent =True )
     0.02
     """ 
     msg =("greater than {} and less than {}" )
     
+    
     if isinstance (v, str): 
+        if "%" in v: in_percent=True 
         v = v.replace('%', '')
     try : 
         v = float (v)
@@ -5051,7 +5083,7 @@ def assert_ratio(
                          f"{(v)!r}")
     # put value in percentage 
     # if greater than 1. 
-    if as_percent: 
+    if in_percent: 
         if 1 < v <=100: 
             v /= 100. 
           
@@ -5081,7 +5113,7 @@ def assert_ratio(
             if v ==low: 
                 raise ValueError (e.replace (", got:", ' excluding') + ".")
             
-    if as_percent and v > 100: 
+    if in_percent and v > 100: 
          raise ValueError ("{} value should be {}, got: {}".
                            format(name.title(), msg.format(low, up), v  ))
     return v 
@@ -5926,14 +5958,306 @@ def read_worksheets(*data):
     data = list(ddict.values ()) 
 
     return data, sheet_names      
+ 
+def key_checker ( keys: str , /,  valid_keys, regex = None, 
+                   pattern = None ): 
+    """check whether a give key exists in valid_keys and return a list if 
+    many keys are found.
+    
+    Parameters 
+    -----------
+    keys: str, list of str 
+       Key value to find in the valid_keys 
+       
+    valid_keys: list 
+       List of valid keys by default. 
+       
+    regex: `re` object,  
+        Regular expresion object. the default is:: 
+            
+            >>> import re 
+            >>> re.compile (r'[_#&*@!_,;\s-]\s*', flags=re.IGNORECASE)
+            
+    pattern: str, default = '[_#&*@!_,;\s-]\s*'
+        The base pattern to split the text into a columns
+        
+    Returns 
+    --------
+    keys: str, list , 
+      List of keys that exists in the `valid_keys`. 
+      
+    Examples
+    --------
+    
+    >>> from watex.utils.funcutils import key_checker
+    >>> key_checker('h502', valid_keys= ['h502', 'h253','h2601'])  
+    Out[68]: 'h502'
+    >>> key_checker('h502+h2601', valid_keys= ['h502', 'h253','h2601'])
+    Out[69]: ['h502', 'h2601']
+    >>> key_checker('h502 h2601', valid_keys= ['h502', 'h253','h2601'])
+    Out[70]: ['h502', 'h2601']
+    >>> key_checker(['h502',  'h2601'], valid_keys= ['h502', 'h253','h2601'])
+    Out[73]: ['h502', 'h2601']
+    >>> key_checker(['h502',  'h2602'], valid_keys= ['h502', 'h253','h2601'])
+    UserWarning: key 'h2602' is missing in ['h502', 'h2602']
+    Out[82]: 'h502'
+    """
+    _keys = copy.deepcopy(keys)
+    valid_keys = is_iterable(valid_keys , exclude_string =True, transform =True )
+    if isinstance ( keys, str): 
+        pattern = pattern or '[_#&@!_+,;\s-]\s*'
+        keys = str2columns (keys, regex = regex , pattern=pattern )
+    # If iterbale object , save obj 
+    # to improve error 
+    kkeys = copy.deepcopy(keys)
+    # for consistency 
+    keys = [ k for k in keys if ''.join(
+        [ str(i) for i in valid_keys] ).find(k)>=0 ]
+    
+    # assertion error if key does not exist. 
+    if len(keys)==0: 
+        verb1, verb2 = ('', 'es') if len(kkeys)==1 else ('s', '') 
+        msg = (f"key{verb1} {_keys!r} do{verb2} not exist."
+               f" Expect {smart_format(valid_keys, 'or')}")
+        raise KeyError ( msg )
+        
+    if len(keys) != len(kkeys):
+        miss_keys = is_in_if ( kkeys, keys , return_diff= True , error ='ignore')
+        miss_keys, verb = (miss_keys[0], 'is') if len( miss_keys) ==1 else ( 
+            miss_keys, 'are')
+        warnings.warn(f"key{'' if verb=='is' else 's'} {miss_keys!r} {verb}"
+                      f" missing in {_keys}")
+    keys = keys[0] if len(keys)==1 else keys 
+    
+    return keys 
 
+def random_sampling (
+    d, / , 
+    samples:int = None  , 
+    replace:bool = False , 
+    random_state:int = None, 
+    shuffle=True, 
+    ): 
+    """ Sampling data. 
+    
+    Parameters 
+    ----------
+    d: {array-like, sparse matrix} of shape (n_samples, n_features)
+      Data for sampling, where `n_samples` is the number of samples and
+      `n_features` is the number of features.
+    samples: int,optional 
+       Ratio or number of items from axis to return. 
+       Default = 1 if `samples` is ``None``.
+       
+    replace: bool, default=False
+       Allow or disallow sampling of the same row more than once. 
+       
+    random_state: int, array-like, BitGenerator, np.random.RandomState, \
+        np.random.Generator, optional
+       If int, array-like, or BitGenerator, seed for random number generator. 
+       If np.random.RandomState or np.random.Generator, use as given.
+       
+    Returns 
+    ----------
+    d: {array-like, sparse matrix} of shape (n_samples, n_features)
+    samples data based on the given samples. 
+    
+    Examples
+    ---------
+    >>> from watex.utils.funcutils import random_sampling 
+    >>> from watex.datasets import load_hlogs 
+    >>> data= load_hlogs().frame
+    >>> random_sampling( data, samples = 7 ).shape 
+    (7, 27)
+    """
+    n= None ; is_percent = False
+    orig= copy.deepcopy(samples )
+    if not hasattr(d, "__iter__"): 
+        d = is_iterable(d, exclude_string= True, transform =True )
+    
+    if ( 
+            samples is None 
+            or str(samples) in ('1', '*')
+            ): 
+        samples =1. 
+        
+    if "%" in str(samples): 
+        samples = samples.replace ("%", '')
+        is_percent=True 
+    # assert value for consistency. 
+    try: 
+        samples = float( samples)
+    except: 
+        raise TypeError("Wrong value for 'samples'. Expect an integer."
+                        f" Got {type (orig).__name__!r}")
+
+    if samples <=1 or is_percent: 
+        samples  = assert_ratio(
+            samples , bounds = (0, 1), exclude_value= 'use lower bound', 
+            in_percent= True )
+        
+        n = int ( samples * ( d.shape[0] if scipy.sparse.issparse(d)
+                 else len(d))) 
+    else: 
+        # data frame 
+        n= int(samples)
+        
+    # reset samples and use number of samples instead    
+    samples =None  
+    # get the total length of d
+    dlen = ( d.shape[0] if scipy.sparse.issparse(d) else len(d))
+    # if number is greater than the length 
+    # block to the length so to retrieve all 
+    # value no matter the arangement. 
+    if n > dlen: 
+        n = dlen
+    if hasattr (d, 'columns') or hasattr (d, 'name'): 
+        # data frame 
+        return d.sample ( n= n , frac=samples , replace = replace ,
+                         random_state = random_state  
+                     ) if shuffle else d.iloc [ :n , ::] 
+    
+    np.random.seed ( random_state)
+    if scipy.sparse.issparse(d) : 
+        if scipy.sparse.isspmatrix_coo(d): 
+            warnings.warn("coo_matrix does not support indexing. It should be "
+                          "to convert it to a CSR matrix")
+            d = d.tocsr() 
+            
+        return d [ np.random.choice(
+            np.arange(d.shape[0]), n, replace=replace )] if shuffle else d [
+                [ i for i in range (n)]]
+                
+        #d = d[idx ]
+        
+    # manage the data 
+    if not hasattr(d, '__array__'): 
+        d = np.array (d ) 
+        
+    idx = np.random.randint( len(d), size = n ) if shuffle else [ i for i in range(n)]
+    if len(d.shape )==1: d =d[idx ]
+    else: d = d[idx , :]
+        
+    return d 
+
+
+def make_obj_consistent_if ( 
+        item= ... , default = ..., size =None, from_index: bool =True ): 
+    """Combine default values to item to create default consistent iterable objects if 
+    the size of item does not fit the number of expected iterable objects.     
+    
+    Parameters 
+    ------------
+    item : Any 
+       Object to construct it default values 
+       
+    default: Any 
+       Value to hold in the case the items does not match the size of given items 
+       
+    size: int, Optional 
+      Number of items to return. 
+      
+    from_index: bool, default=True 
+       make an item size to match the exact size of given items 
+       
+    Returns 
+    -------
+       item: Iterable object that contain default values. 
+       
+    Examples 
+    ----------
+    >>> from watex.utils.funcutils import make_obj_consistent_if
+    >>> from watex.exlib import SVC, LogisticRegression, XGBClassifier 
+    >>> classifiers = ["SVC", "LogisticRegression", "XGBClassifier"] 
+    >>> classifier_names = ['SVC', 'LR'] 
+    >>> make_obj_consistent_if (classifiers, default = classifier_names ) 
+    ['SVC', 'LogisticRegression', 'XGBClassifier']
+    >>> make_obj_consistent_if (classifier_names, from_index =False  )
+    ['SVC', 'LR']
+    >>> >>> make_obj_consistent_if ( classifier_names, 
+                                     default= classifiers, size =3 , 
+                                     from_index =False  )
+    ['SVC', 'LR', 'SVC']
+    
+    """
+    if default==... or None : default =[]
+    # for consistency 
+    default = list( is_iterable (default, exclude_string =True, transform =True ) ) 
+    
+    if item not in ( ...,  None) : 
+         item = list( is_iterable( item , exclude_string =True , transform = True ) ) 
+    else: item = [] 
+    
+    item += default[len(item):] if from_index else default 
+    
+    if size is not None: 
+        size = int (_assert_all_types(size, int, float, objname = "Item 'size'") )
+        item = item [:size]
+        
+    return item
     
     
+def replace_data(X, y =None, n_times: int  = 1, axis = 0, reset_index :bool =...  ): 
+    """ Replace items in data :math:`n` times 
     
+    Parameters 
+    ----------
+    X: Arraylike 1D or pd.DataFrame 
+      Data to replace. Note Sparse matrices is not allowed. Use 
+      :func:`random_sampling` instead. 
+    y: Arraylike 1d. 
+       Preferably one dimensional data. 
+       
+    n_times: int, 
+      Number of times all items should be replaced in data. 
+      
+    reset_index: bool, default=False. 
+      If ``True`` and dataframe,Index is reset and dropped. 
+      
+    Returns 
+    --------
+    X or (X, y)  : Tuple of data replaced
+       Tuple is returned if y is passed. 
     
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.funcutils import replace_data
+    >>> X, y = np.random.randn ( 7, 2 ), np.arange(7)
+    >>> X.shape, y.shape 
+    ((7, 2), (7,))
+    >>> X_new, y_new = replace_data (X, y, n_times =10 )
+    >>> X_new.shape , y_new.shape
+    Out[158]: ((70, 2), (70,))
+    """
     
+    n = n_times or 1 
+    n= int (_assert_all_types(n, int, float, objname ='n_times'))
     
+    def concat_data ( ar ,): 
+        if hasattr ( ar, 'columns') or hasattr ( ar, 'series'): 
+            d = pd.concat (  [ ar for i in range(n)], axis = axis ) 
+            if reset_index: 
+                d.reset_index (drop =True, inplace =True  )
+                
+        else: d = np.concatenate ([ ar for i in range(n)], axis = axis  )
+        return d 
     
+    X = is_iterable(X, exclude_string =True, transform = True )
+    
+    if y is not None: 
+        y = is_iterable( y, exclude_string= True, transform= True)
+    
+    if not hasattr (X, '__array__'): 
+        X = np.array(X)
+        
+    if not hasattr (y, '__array__') and y is not None : 
+        y = np.array(y)
+
+    return concat_data ( X) if y is None else (
+            concat_data( X) , concat_data(y))
+        
+        
     
     
     

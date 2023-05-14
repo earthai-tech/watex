@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd 
 import matplotlib as mpl 
 from matplotlib.patches import Ellipse
+import matplotlib.colors as mcolors
 import matplotlib.transforms as transforms 
 import seaborn as sns 
 from scipy.cluster.hierarchy import ( 
@@ -28,9 +29,10 @@ from ..exceptions import (
     PlotError, 
     )
 from .funcutils import  ( 
-    is_iterable, 
     _assert_all_types,
+    is_iterable, 
     to_numeric_dtypes, 
+    make_obj_consistent_if, 
     str2columns, 
     is_in_if, 
     is_depth_in, 
@@ -45,6 +47,7 @@ from .validator import  (
     check_X_y,
     check_y,
     check_consistent_length, 
+    check_is_fitted 
     )
 from ._dependency import import_optional_dependency 
 from ..decorators import nullify_output
@@ -57,7 +60,8 @@ try:
         MinMaxScaler, 
         SimpleImputer, 
         KMeans, 
-        silhouette_samples
+        silhouette_samples, 
+        roc_curve
         ) 
 except : pass 
  
@@ -130,10 +134,12 @@ def plot_logging (
     fill_value = None,  
     fig_size = (16, 7),
     fig_dpi = 300, 
-    colors = None,  
+    colors = None,
+    cs4_colors=False, 
     sns_style =False, 
     savefig = None,
     draw_spines=False, 
+    seed=None, 
     verbose=0, 
     **kws
     ): 
@@ -241,10 +247,22 @@ def plot_logging (
         the position to place the target plot `y` . By default the target plot 
         if given is located at the last position behind the logging plots. 
     
-    colors: list of Matplotlib.colors map, optional 
+    colors: str, list of Matplotlib.colors map, optional 
         The colors for plotting each columns of `X` except the depth. If not
-        given, default colors are auto-generated. 
-  
+        given, default colors are auto-generated.
+        
+        If `colors` is string and 'cs4'or 'xkcd' is included. 
+        Matplotlib.colors.CS4_COLORS or Matplotlib.colors.XKCD_COLORS 
+        should be used instead. In addition if the `'cs4'` or `'xkcd'` is  
+        suffixed by colons and integer value like ``cs4:4`` or ``xkcd:4``, the 
+        CS4 or XKCD colors should be used from index equals to ``4``. 
+        
+        .. versionadded:: 0.2.3 
+           Matplotlib.colors.CS4_COLORS or Matplotlib.colors.XKCD_COLORS can 
+           be used by setting `colors` to ``'cs4'`` or ``'xkcd'``. To reproduce 
+           the same CS4 or XKCD colors, set the `seed` parameter to a 
+           specific value. 
+        
     draw_spines: bool, tuple (-lim, +lim), default= False, 
         Only draw spine between the y-ticks. ``-lim`` and ``+lim`` are lower 
         and upper bound i.e. a range to draw the spines in y-axis. 
@@ -263,6 +281,12 @@ def plot_logging (
     sns_style: str, optional, 
         the seaborn style.
         
+    seed: int, optional 
+       Allow to reproduce the Matplotlib.colors.CS4_COLORS if `colors` is 
+       set to ``cs4``. 
+       
+       .. versionadded:: 0.2.3 
+       
     verbose: int, default=0 
         Output the number of categorial features dropped in the dataframe.  
         
@@ -351,15 +375,11 @@ def plot_logging (
     # toggle y 
     if y is not None: 
         X = _toggle_target_in(X, y, pos = posiy)
-    # we assume the first columns is dedicated for 
-    
-    m_cs = make_mpl_properties(X.shape[1])
-    if colors is not None: 
-        if not is_iterable(colors): 
-            colors =[colors]
-        colors += m_cs 
-    else :colors = m_cs 
-    
+        
+    #manage colors along colors 
+    colors = make_plot_colors (
+        X, colors = colors , axis = 1, seed = seed , chunk=False )
+
     fig, ax = plt.subplots (1, ncols = X.shape [1], sharey = True , 
                             figsize = fig_size )
     
@@ -423,6 +443,139 @@ def plot_logging (
         
     plt.close () if savefig is not None else plt.show() 
     
+def make_plot_colors(d , / , colors:str | list[str]=None , axis:int = 0, 
+                     seed:int  =None, chunk:bool =... ): 
+    """ Select colors according to the data size along axis 
+    
+    Parameters 
+    ----------
+    d: Arraylike 
+       Array data to select colors according to the axis 
+    colors: str, list of Matplotlib.colors map, optional 
+        The colors for plotting each columns of `X` except the depth. If not
+        given, default colors are auto-generated.
+        If `colors` is string and 'cs4'or 'xkcd' is included. 
+        Matplotlib.colors.CS4_COLORS or Matplotlib.colors.XKCD_COLORS 
+        should be used instead. In addition if the `'cs4'` or `'xkcd'` is  
+        suffixed by colons and integer value like ``cs4:4`` or ``xkcd:4``, the 
+        CS4 or XKCD colors should be used from index equals to ``4``. 
+        
+        .. versionadded:: 0.2.3 
+           Matplotlib.colors.CS4_COLORS or Matplotlib.colors.XKCD_COLORS can 
+           be used by setting `colors` to ``'cs4'`` or ``'xkcd'``. To reproduce 
+           the same CS4 or XKCD colors, set the `seed` parameter to a 
+           specific value. 
+           
+    axis: int, default=0 
+       Axis along with the colors must be generated. By default colors is 
+       generated along the row axis 
+       
+    seed: int, optional 
+       Allow to reproduce the Matplotlib.colors.CS4_COLORS if `colors` is 
+       set to ``cs4``. 
+       
+    chunk: bool, default=True 
+       Chunk generated colors to fit the exact length of the `d` size 
+       
+    Returns 
+    -------
+    colors: list 
+       List of new generated colors 
+       
+    Examples 
+    --------
+    >>> import numpy as np 
+    >>> from watex.utils.plotutils import make_plot_colors
+    >>> ar = np.random.randn (7, 2) 
+    >>> make_plot_colors (ar )
+    ['g', 'gray', 'y', 'blue', 'orange', 'purple', 'lime']
+    >>> make_plot_colors (ar , axis =1 ) 
+    Out[6]: ['g', 'gray']
+    >>> make_plot_colors (ar , axis =1 , colors ='cs4')
+    ['#F0F8FF', '#FAEBD7']
+    >>> len(make_plot_colors (ar , axis =1 , colors ='cs4', chunk=False))
+    150
+    >>> make_plot_colors (ar , axis =1 , colors ='cs4:4')
+    ['#F0FFFF', '#F5F5DC']
+    """
+    
+    # get the data size where colors must be fitted. 
+    # note colors should match either the row axis or colurms axis 
+    axis = str(axis).lower() 
+    if 'columns1'.find (axis)>=0: 
+        axis =1 
+    else: axis =0
+    
+    # manage the array 
+    d= is_iterable( d, exclude_string=True, transform=True)
+    if not hasattr (d, '__array__'): 
+        d = np.array(d ) 
+    
+    axis_length = len(d) if len(d.shape )==1 else d.shape [axis]
+    m_cs = make_mpl_properties(axis_length )
+    
+     #manage colors 
+    # we assume the first columns is dedicated for 
+    if colors ==...: colors =None 
+    if ( 
+            isinstance (colors, str) and 
+            ( 
+                "cs4" in str(colors).lower() 
+                 or 'xkcd' in str(colors).lower() 
+                 )
+            ): 
+        #initilize colors infos
+        c = copy.deepcopy(colors)
+        if 'cs4' in str(colors).lower() : 
+            DCOLORS = mcolors.CSS4_COLORS
+        else: 
+            # remake the dcolors my removing the xkcd: in the keys: 
+            DCOLORS = dict(( (k.replace ('xkcd:', ''), c) 
+                            for k, c in mcolors.XKCD_COLORS.items()))  
+        
+        key_colors = list(DCOLORS.keys ())
+        colors = list(DCOLORS.values() )
+        
+        shuffle_cs4=True 
+        
+        cs4_start= None
+        #------
+        if ':' in str(c).lower():
+            cs4_start = str(c).lower().split(':')[-1]
+        #try to converert into integer 
+        try: 
+            cs4_start= int (cs4_start)
+        except : 
+            if str(cs4_start).lower() in key_colors: 
+                cs4_start= key_colors.index (cs4_start)
+                shuffle_cs4=False
+            else: 
+                pass 
+        
+        else: shuffle_cs4=False # keep CS4 and dont shuffle 
+        
+        cs4_start= cs4_start or 0
+        
+        if shuffle_cs4: 
+            np.random.seed (seed )
+            colors = list(np.random.choice(colors  , len(m_cs)))
+        else: 
+            if cs4_start > len(colors)-1: 
+                cs4_start = 0 
+    
+            colors = colors[ cs4_start:]
+    
+    if colors is not None: 
+        if not is_iterable(colors): 
+            colors =[colors]
+        colors += m_cs 
+    else :
+        colors = m_cs 
+        
+    # shrunk data to map the exact colors 
+    chunk =True if chunk is ... else False 
+    return colors[:axis_length] if chunk else colors 
+
 
 def plot_silhouette (X, labels, metric ='euclidean',savefig =None , **kwds ):
     r"""Plot quantifying the quality  of clustering silhouette 
@@ -1050,9 +1203,6 @@ def plot_confusion_matrices (
         passed to ``fit()`` or ``score()``. The encoder disambiguates this mismatch
         ensuring that classes are labeled correctly in the visualization.
         
-    return_scores: bool, defaut=True, 
-        Returns a dictionnary of `accuracy`, `precision`, `recall` and `AUC`
-        scores. 
         
     annot: bool, default=True 
         Annotate the number of samples (right or wrong prediction ) in the plot. 
@@ -3400,10 +3550,218 @@ def plot_text (
     if show_leg : 
         ax.legend () 
     
+def plot_voronoi(
+    X, y, *, 
+    cluster_centers, 
+    ax= None,
+    show_vertices=False, 
+    line_colors='k',
+    line_width=1. ,
+    line_alpha=1.,   
+    fig_size = (7, 7), 
+    fig_title = ''
+    ):
+    """Plots the Voronoi diagram of the k-means clusters overlaid with 
+    the data
     
+    Parameters 
+    -----------
+    X, y : NDarray, Arraylike 1d 
+      Data training X and y. Must have the same length 
+    cluster_center: int, 
+       Cluster center. Cluster center can be obtain withe KMeans algorithms 
+    show_vertices : bool, optional
+        Add the Voronoi vertices to the plot.
+    line_colors : string, optional
+        Specifies the line color for polygon boundaries
+    line_width : float, optional
+        Specifies the line width for polygon boundaries
+    line_alpha : float, optional
+        Specifies the line alpha for polygon boundaries
+    point_size : float, optional
+        Specifies the size of points
+    ax: Matplotlib.Axes 
+       Maplotlib axes. If `None`, a axis is created instead. 
+       
+    fig_size: tuple, default = (7, 7) 
+       Size of the figures. 
+       
+    Return
+    -------
+    ax: Matplotlib.Axes 
+       Axes to support the figure
+       
+    Examples 
+    ---------
+    >>> from sklearn.datasets import make_moons
+    >>> from sklearn.cluster import KMeans 
+    >>> from watex.utils.plotutils import plot_voronoi
+    >>> X, y = make_moons(n_samples=2000, noise=0.2)
+    >>> km = KMeans (n_init ='auto').fit(X, y ) 
+    >>> plot_voronoi ( X, y , cluster_centers = km.cluster_centers_) 
+    """
+    X, y = check_X_y(X, y, )
+    cluster_centers = check_array(cluster_centers )
+    
+    if ax is None: 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+        
+    from scipy.spatial import Voronoi, voronoi_plot_2d
+    
+    ax.scatter(X[:, 0], X[:, 1], c=y, cmap='Set1', alpha=0.2, 
+               label = 'Voronoi plot')
+    vor = Voronoi(cluster_centers)
+    voronoi_plot_2d(vor, ax=ax, show_vertices=show_vertices, 
+                    alpha=0.5, 
+                    line_colors=line_colors,
+                    line_width=line_width ,
+                    line_alpha=line_alpha,  
+                    )
+    #ax.legend() 
+    ax.set_title (fig_title , fontsize=20)
+    #fig.suptitle(fig_title, fontsize=20) 
+    
+    return ax 
+ 
+    
+def _make_axe_multiple ( n, ncols = 3 , fig_size =None, fig =None, ax= ... ): 
+    """ Make multiple subplot axes from number of objects. """
+    if is_iterable (n): 
+       n = len(n) 
+     
+    nrows = n // ncols + ( n % ncols ) 
+    if nrows ==0: 
+       nrows =1 
+       
+    if ax in ( ... , None) : 
+        fig, ax = plt.subplots (nrows, ncols, figsize = fig_size )  
+    
+    return fig , ax 
+    
+def plot_roc_curves (
+   clfs, /, 
+   X, y, 
+   names =..., 
+   colors =..., 
+   ncols = 3, 
+   all=False,
+   ax = None,  
+   fig_size=( 7, 7), 
+   **roc_kws ): 
+    """ Quick plot of Receiving Operating Characterisctic (ROC) of fitted models 
+    
+    Parameters 
+    ------------
+    clfs: list, 
+       list of models for ROC evaluation. Model should be a scikit-learn 
+       or  XGBoost estimators 
+       
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training instances to cluster. It must be noted that the data
+        will be converted to C ordering, which will cause a memory
+        copy if the given data is not C-contiguous.
+        If a sparse matrix is passed, a copy will be made if it's not in
+        CSR format.
+    
+    y : ndarray or Series of length (n_samples, )
+        An array or series of target or class values. Preferably, the array 
+        represent the test class labels data for error evaluation.  
+    
+    colors : str, list 
+       Colors to specify each model plot. 
+       
+    ncols: int, default=3 
+       Number of plot to be placed inline before skipping to the next column. 
+       This is feasible if `many` is set to ``True``. 
+       
+    all: str, default=False 
+       if ``True``, plot each ROC model separately 
+     
+    names: list, 
+       List of model names. If not given, a raw name of the model is passed 
+       instead.
+       
+    kws: dict,
+        keyword argument of :func:`sklearn.metrics.roc_curve 
+        
+    Return
+    -------
+    ax: Axes.Subplot. 
+    
+    Examples 
+    --------
+    >>> from watex.utils.plotutils import plot_roc_curves 
+    >>> from sklearn.datasets import make_moons 
+    >>> from watex.exlib import train_test_split, KNeighborsClassifier, SVC ,
+    XGBClassifier, LogisticRegression 
+    >>> X, y = make_moons (n_samples=2000, noise=0.2)
+    >>> X, Xt, y, yt = train_test_split (X, y, test_size=0.2) 
+    >>> clfs = [ m().fit(X, y) for m in ( KNeighborsClassifier, SVC , 
+                                         XGBClassifier, LogisticRegression)]
+    >>> plot_roc_curves(clfs, Xt, yt)
+    Out[66]: <AxesSubplot:xlabel='False Positive Rate (FPR)', ylabel='True Positive Rate (FPR)'>
+    >>> plot_roc_curves(clfs, Xt, yt,all=True, ncols = 4 , fig_size = (10, 4))
+    """
+    from .validator import  get_estimator_name
+    
+    def plot_roc(model, data, labels):
+        if hasattr(model, "decision_function"):
+            predictions = model.decision_function(data)
+        else:
+            predictions = model.predict_proba(data)[:,1]
+            
+        fpr, tpr, _ = roc_curve(labels, predictions, **roc_kws )
+        
+        return fpr, tpr
+    
+    if not is_iterable ( clfs): 
+       clfs = is_iterable ( clfs, exclude_string =True , transform =True ) 
+       
+    # make default_colors 
+    colors = make_plot_colors(clfs, colors = colors )
+    # save the name of models 
+    names = make_obj_consistent_if ( names , [ get_estimator_name(m) for m in clfs ]) 
 
+    # check whether the model is fitted 
+    if all: 
+        fig, ax = _make_axe_multiple ( clfs, ncols = ncols , ax = ax, fig_size = fig_size 
+                                  ) 
+        
+    else: 
+        if ax is None: 
+            fig, ax = plt.subplots (1, 1, figsize = fig_size )  
     
-  
+    for k, ( model, name)  in enumerate (zip (clfs, names )): 
+        check_is_fitted(model )
+        fpr, tpr = plot_roc(model, X, y)
+
+        if hasattr (ax, '__len__'): 
+            if len(ax.shape)>1: 
+                i, j  =  k // ncols , k % ncols 
+                axe = ax [i, j]
+            else: axe = ax[k]
+        else: axe = ax 
+            
+
+        axe.plot(fpr, tpr, label=name, color = colors[k]  )
+        
+        if all: 
+            axe.plot([0, 1], [0, 1], 'k--') 
+            axe.legend ()
+            axe.set_xlabel ("False Positive Rate (FPR)")
+            axe.set_ylabel ("True Positive Rate (FPR)")
+        # else: 
+        #     ax.plot(fpr, tpr, label=name, color = colors[k])
+            
+    if not all: 
+        ax.plot([0, 1], [0, 1], 'k--') # AUC =.5 
+        ax.set_xlabel ("False Positive Rate (FPR)")
+        ax.set_ylabel ("True Positive Rate (FPR)")
+        ax.legend() 
+        
+    return ax 
+        
+
     
   
     

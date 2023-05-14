@@ -60,6 +60,8 @@ from .funcutils import (
     random_selector, 
     interpolate_grid, 
     twinning, 
+    random_sampling, 
+    replace_data
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -76,7 +78,7 @@ from .hydroutils import (
     find_aquifer_groups, 
     find_similar_labels, 
     classify_k, 
-    label_importance
+    label_importance,
     )
 
 from .plotutils import ( 
@@ -98,6 +100,8 @@ from .plotutils import (
     plot_profiling, 
     plot_skew, 
     plot_strike,
+    plot_voronoi, 
+    plot_roc_curves
     )
 try : 
     from .mlutils import ( 
@@ -215,7 +219,11 @@ __all__=[
         'smooth1d', 
         'smoothing', 
         'rhophi2z', 
-        'twinning'
+        'twinning', 
+        'random_sampling', 
+        'plot_voronoi', 
+        'plot_roc_curves', 
+        'replace_data'
         ]
 
 

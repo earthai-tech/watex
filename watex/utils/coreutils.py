@@ -1998,19 +1998,19 @@ def _assert_file (
  
 
 def makeCoords(
-        reflong: str | Tuple[float], 
-        reflat: str | Tuple[float], 
-        nsites: int ,  
-        *,  
-        r: int =45.,
-        utm_zone: Optional[str] =None,   
-        step: Optional[str|float] ='1km', 
-        order: str = '+', 
-        todms: bool =False, 
-        is_utm: bool  =False,
-        raise_warning: bool=True, 
-        **kws
-  )-> Tuple[ArrayLike[DType[float]]]: 
+  reflong: str | Tuple[float], 
+  reflat: str | Tuple[float], 
+  nsites: int ,  
+  *,  
+  r: int =45.,
+  utm_zone: Optional[str] =None,   
+  step: Optional[str|float] ='1km', 
+  order: str = '+', 
+  todms: bool =False, 
+  is_utm: bool  =False,
+  raise_warning: bool=True, 
+  **kws
+)-> Tuple[ArrayLike[DType[float]]]: 
     """ Generate multiple stations coordinates (longitudes, latitudes)
     from a reference station/site.
     

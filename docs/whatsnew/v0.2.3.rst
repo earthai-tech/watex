@@ -1,0 +1,39 @@
+v0.2.3 (May 13, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.2`` that shows fugs fixed, features and improvements.  
+
+- |API change| Change performed in :func:`watex.utils.funcutils.assert_ratio`. The parameter ``as_percent`` does no longer 
+  exist. It is depreated and modified to ``in_percent``.
+  
+- |Fix| Bug fixed in concatening sring argument passed to `titles` parameter in :func:`watex.view.plotLearningInspections`. Henceforth, 
+  no need to put only single model in litteral string. However for a single model training, :func:`watex.view.plotLearningInspection`
+  is prefered instead. Note the ``'s'`` at the end of the former function. 
+  
+- |Fix| Bug fixed in :func:`watex.utils.plot_logging` when  parameter :math:`X` is not passed as a DataFrame. Henceforth, a column 
+  of random item  is generated and is used to build a temporray DataFrame for plotting. 
+
+- |Feature| Add :func:`watex.datasets.load_mxs` load new datasets for performing the :term:`MXS`. `shuffle` parameter is needed to be 
+  triggered to ``True`` for shuffling data before any splitting. By edfaultt it's set to ``False``. 
+
+- |Feature| add transformers :class:`watex.transformers.KMeansFeaturizer` to transform numeric data into k-means cluster memberships. It runs k-means on the input data and converts 
+  each data point into the ID of the closest cluster.
+
+- |Feature| add :func:`watex.transformers.featurize_X` to transform predictor :math:`X` at once. It applies the K-Means featurization 
+  approach. Refer to :class:`watex.transformers.KMeansFeaturizer` 
+
+- |Feature| :func:`watex.utils.plotutils.plot_voronoi` plots the Voronoi diagram of the k-Means clusters overlaid with 
+  the data.
+  
+- |Feature| new function :func:`watex.utils.plot_roc_curves` for visualizing the Receiving Operating Characterisctic (ROC) curves either 
+  into a single plot ( used by default) or individual plot for each model by setting the parameter ``all=True``. 
+  
+- |Enhancement| Supplement boreholes data are added to :func:`watex.datasets.load_hlogs`. They include boreholes ``'h805' ,'h1102' ,'h1405', 'h2602','h803',
+  'h1104', 'h604', 'h2003'`` and  ``'h1602'``. 
+ 
+ 
+
+
+
+
+
