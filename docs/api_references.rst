@@ -639,6 +639,7 @@ Functions
 	utils.plot_pca_components
 	utils.plot_regularization_path
 	utils.plot_rf_feature_importances
+	utils.plot_roc_curves
 	utils.plot_sbs_feature_selection
 	utils.plot_silhouette
 	utils.plot_skew

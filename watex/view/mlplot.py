@@ -2789,14 +2789,14 @@ def _plotSilhouette (X, labels, metric ='euclidean', **kwds ):
     plt.show() 
     
 def plotLearningInspections (
-        models:List[object] , 
-        X:NDArray, y:ArrayLike,  
-        fig_size:Tuple[int] = ( 22, 18 ) , 
-        cv: int = None, 
-        savefig:Optional[str] = None, 
-        titles = None, 
-        subplot_kws =None, 
-        **kws 
+    models:List[object] , 
+    X:NDArray, y:ArrayLike,  
+    fig_size:Tuple[int] = ( 22, 18 ) , 
+    cv: int = None, 
+    savefig:Optional[str] = None, 
+    titles = None, 
+    subplot_kws =None, 
+    **kws 
   ): 
     """ Inspect multiple models from their learning curves. 
     
@@ -2836,7 +2836,9 @@ def plotLearningInspections (
     savefig: str, default =None , 
         the path to save the figures. Argument is passed to matplotlib.Figure 
         class. 
-        
+    titles: str, list 
+       List of model names if changes are needed. If ``None``, model names 
+       are used by default. 
     kws: dict, 
         Additional keywords argument passed to :func:`plotLearningInspection`. 
         
@@ -2860,10 +2862,10 @@ def plotLearningInspections (
     >>> plotLearningInspections (models , X, y, ylim=(0.7, 1.01) )
     
     """
-    if not is_iterable( models) : 
-        models =[models ] 
-    if not is_iterable (titles ): 
-        titles =[titles] 
+    models = is_iterable(models, exclude_string= True, transform =True )
+    titles = list(is_iterable( 
+        titles , exclude_string= True, transform =True )) 
+
     if len(titles ) != len(models): 
         titles = titles + [None for i in range (len(models)- len(titles))]
     # set the cross-validation to 4 

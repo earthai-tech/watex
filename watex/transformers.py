@@ -59,6 +59,7 @@ def featurize_X (
     n_components=None, 
     split_X_y = False, 
     test_ratio = 0.2 , 
+    shuffle=True, 
     return_model =False  
     ): 
     """ Featurize X with the cluster based on the KMeans featurization
@@ -80,6 +81,9 @@ def featurize_X (
     test_ratio: int, default=0.2 
        ratio to keep for a test data. 
        
+    shuffle: bool, default=True
+       Suffling the data set. 
+       
     return_model: bool, default =False 
        If ``True`` return the KMeans featurization mode and the transformed X.
        
@@ -99,7 +103,8 @@ def featurize_X (
         
     if split_X_y: 
         X, test_data , y, y_test = train_test_split ( 
-            X, y ,test_size = test_ratio, random_state = random_state )
+            X, y ,test_size = test_ratio, random_state = random_state ,
+            shuffle =shuffle)
     # create a kmeaturization with hint model     
     kmf_hint = KMeansFeaturizer(
         n_clusters=n_clusters, 
@@ -116,8 +121,10 @@ def featurize_X (
     if split_X_y: 
         test_cluster_features = kmf_hint.transform(test_data)
         test_with_cluster = sparse.hstack(
-            (test_data, sparse.coo_matrix (test_cluster_features))) 
-        kmf_data.extend([test_with_cluster, y_test ] )
+            (test_data, sparse.coo_matrix (test_cluster_features)))
+        
+        kmf_data.insert(1,test_with_cluster )
+        kmf_data.append( y_test)
     
     return  tuple (kmf_data ) + (kmf_hint, ) if return_model else tuple(kmf_data )
 

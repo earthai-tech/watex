@@ -105,10 +105,10 @@ dt:hover a.headerlink {
   font-size: 100%;
 }
 
-/*  re-define header values */ 
+/*  re-define header values ##83D4EA*/ 
 h1 {
   color: #000000;
-  background-color: #83D4EA;
+  background-color: #cde8ef;
   padding: 0.5rem;
   border-radius: 1.3rem 0;
   text-align: center;

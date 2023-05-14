@@ -29,9 +29,10 @@ from ..exceptions import (
     PlotError, 
     )
 from .funcutils import  ( 
-    is_iterable, 
     _assert_all_types,
+    is_iterable, 
     to_numeric_dtypes, 
+    make_obj_consistent_if, 
     str2columns, 
     is_in_if, 
     is_depth_in, 
@@ -46,6 +47,7 @@ from .validator import  (
     check_X_y,
     check_y,
     check_consistent_length, 
+    check_is_fitted 
     )
 from ._dependency import import_optional_dependency 
 from ..decorators import nullify_output
@@ -58,7 +60,8 @@ try:
         MinMaxScaler, 
         SimpleImputer, 
         KMeans, 
-        silhouette_samples
+        silhouette_samples, 
+        roc_curve
         ) 
 except : pass 
  
@@ -447,7 +450,7 @@ def make_plot_colors(d , / , colors:str | list[str]=None , axis:int = 0,
     Parameters 
     ----------
     d: Arraylike 
-       Array data to slect colors according to the axis 
+       Array data to select colors according to the axis 
     colors: str, list of Matplotlib.colors map, optional 
         The colors for plotting each columns of `X` except the depth. If not
         given, default colors are auto-generated.
@@ -513,6 +516,7 @@ def make_plot_colors(d , / , colors:str | list[str]=None , axis:int = 0,
     
      #manage colors 
     # we assume the first columns is dedicated for 
+    if colors ==...: colors =None 
     if ( 
             isinstance (colors, str) and 
             ( 
@@ -3589,7 +3593,6 @@ def plot_voronoi(
        
     Examples 
     ---------
-    >>> from scipy.spatial import Voronoi, voronoi_plot_2d
     >>> from sklearn.datasets import make_moons
     >>> from sklearn.cluster import KMeans 
     >>> from watex.utils.plotutils import plot_voronoi
@@ -3619,9 +3622,146 @@ def plot_voronoi(
     #fig.suptitle(fig_title, fontsize=20) 
     
     return ax 
-
+ 
     
-  
+def _make_axe_multiple ( n, ncols = 3 , fig_size =None, fig =None, ax= ... ): 
+    """ Make multiple subplot axes from number of objects. """
+    if is_iterable (n): 
+       n = len(n) 
+     
+    nrows = n // ncols + ( n % ncols ) 
+    if nrows ==0: 
+       nrows =1 
+       
+    if ax in ( ... , None) : 
+        fig, ax = plt.subplots (nrows, ncols, figsize = fig_size )  
+    
+    return fig , ax 
+    
+def plot_roc_curves (
+   clfs, /, 
+   X, y, 
+   names =..., 
+   colors =..., 
+   ncols = 3, 
+   all=False,
+   ax = None,  
+   fig_size=( 7, 7), 
+   **roc_kws ): 
+    """ Quick plot of Receiving Operating Characterisctic (ROC) of fitted models 
+    
+    Parameters 
+    ------------
+    clfs: list, 
+       list of models for ROC evaluation. Model should be a scikit-learn 
+       or  XGBoost estimators 
+       
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training instances to cluster. It must be noted that the data
+        will be converted to C ordering, which will cause a memory
+        copy if the given data is not C-contiguous.
+        If a sparse matrix is passed, a copy will be made if it's not in
+        CSR format.
+    
+    y : ndarray or Series of length (n_samples, )
+        An array or series of target or class values. Preferably, the array 
+        represent the test class labels data for error evaluation.  
+    
+    colors : str, list 
+       Colors to specify each model plot. 
+       
+    ncols: int, default=3 
+       Number of plot to be placed inline before skipping to the next column. 
+       This is feasible if `many` is set to ``True``. 
+       
+    all: str, default=False 
+       if ``True``, plot each ROC model separately 
+     
+    names: list, 
+       List of model names. If not given, a raw name of the model is passed 
+       instead.
+       
+    kws: dict,
+        keyword argument of :func:`sklearn.metrics.roc_curve 
+        
+    Return
+    -------
+    ax: Axes.Subplot. 
+    
+    Examples 
+    --------
+    >>> from watex.utils.plotutils import plot_roc_curves 
+    >>> from sklearn.datasets import make_moons 
+    >>> from watex.exlib import train_test_split, KNeighborsClassifier, SVC ,
+    XGBClassifier, LogisticRegression 
+    >>> X, y = make_moons (n_samples=2000, noise=0.2)
+    >>> X, Xt, y, yt = train_test_split (X, y, test_size=0.2) 
+    >>> clfs = [ m().fit(X, y) for m in ( KNeighborsClassifier, SVC , 
+                                         XGBClassifier, LogisticRegression)]
+    >>> plot_roc_curves(clfs, Xt, yt)
+    Out[66]: <AxesSubplot:xlabel='False Positive Rate (FPR)', ylabel='True Positive Rate (FPR)'>
+    >>> plot_roc_curves(clfs, Xt, yt,all=True, ncols = 4 , fig_size = (10, 4))
+    """
+    from .validator import  get_estimator_name
+    
+    def plot_roc(model, data, labels):
+        if hasattr(model, "decision_function"):
+            predictions = model.decision_function(data)
+        else:
+            predictions = model.predict_proba(data)[:,1]
+            
+        fpr, tpr, _ = roc_curve(labels, predictions, **roc_kws )
+        
+        return fpr, tpr
+    
+    if not is_iterable ( clfs): 
+       clfs = is_iterable ( clfs, exclude_string =True , transform =True ) 
+       
+    # make default_colors 
+    colors = make_plot_colors(clfs, colors = colors )
+    # save the name of models 
+    names = make_obj_consistent_if ( names , [ get_estimator_name(m) for m in clfs ]) 
+
+    # check whether the model is fitted 
+    if all: 
+        fig, ax = _make_axe_multiple ( clfs, ncols = ncols , ax = ax, fig_size = fig_size 
+                                  ) 
+        
+    else: 
+        if ax is None: 
+            fig, ax = plt.subplots (1, 1, figsize = fig_size )  
+    
+    for k, ( model, name)  in enumerate (zip (clfs, names )): 
+        check_is_fitted(model )
+        fpr, tpr = plot_roc(model, X, y)
+
+        if hasattr (ax, '__len__'): 
+            if len(ax.shape)>1: 
+                i, j  =  k // ncols , k % ncols 
+                axe = ax [i, j]
+            else: axe = ax[k]
+        else: axe = ax 
+            
+
+        axe.plot(fpr, tpr, label=name, color = colors[k]  )
+        
+        if all: 
+            axe.plot([0, 1], [0, 1], 'k--') 
+            axe.legend ()
+            axe.set_xlabel ("False Positive Rate (FPR)")
+            axe.set_ylabel ("True Positive Rate (FPR)")
+        # else: 
+        #     ax.plot(fpr, tpr, label=name, color = colors[k])
+            
+    if not all: 
+        ax.plot([0, 1], [0, 1], 'k--') # AUC =.5 
+        ax.set_xlabel ("False Positive Rate (FPR)")
+        ax.set_ylabel ("True Positive Rate (FPR)")
+        ax.legend() 
+        
+    return ax 
+        
+
     
   
     

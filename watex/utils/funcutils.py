@@ -6141,8 +6141,123 @@ def random_sampling (
     return d 
 
 
+def make_obj_consistent_if ( 
+        item= ... , default = ..., size =None, from_index: bool =True ): 
+    """Combine default values to item to create default consistent iterable objects if 
+    the size of item does not fit the number of expected iterable objects.     
+    
+    Parameters 
+    ------------
+    item : Any 
+       Object to construct it default values 
+       
+    default: Any 
+       Value to hold in the case the items does not match the size of given items 
+       
+    size: int, Optional 
+      Number of items to return. 
+      
+    from_index: bool, default=True 
+       make an item size to match the exact size of given items 
+       
+    Returns 
+    -------
+       item: Iterable object that contain default values. 
+       
+    Examples 
+    ----------
+    >>> from watex.utils.funcutils import make_obj_consistent_if
+    >>> from watex.exlib import SVC, LogisticRegression, XGBClassifier 
+    >>> classifiers = ["SVC", "LogisticRegression", "XGBClassifier"] 
+    >>> classifier_names = ['SVC', 'LR'] 
+    >>> make_obj_consistent_if (classifiers, default = classifier_names ) 
+    ['SVC', 'LogisticRegression', 'XGBClassifier']
+    >>> make_obj_consistent_if (classifier_names, from_index =False  )
+    ['SVC', 'LR']
+    >>> >>> make_obj_consistent_if ( classifier_names, 
+                                     default= classifiers, size =3 , 
+                                     from_index =False  )
+    ['SVC', 'LR', 'SVC']
+    
+    """
+    if default==... or None : default =[]
+    # for consistency 
+    default = list( is_iterable (default, exclude_string =True, transform =True ) ) 
+    
+    if item not in ( ...,  None) : 
+         item = list( is_iterable( item , exclude_string =True , transform = True ) ) 
+    else: item = [] 
+    
+    item += default[len(item):] if from_index else default 
+    
+    if size is not None: 
+        size = int (_assert_all_types(size, int, float, objname = "Item 'size'") )
+        item = item [:size]
+        
+    return item
     
     
+def replace_data(X, y =None, n_times: int  = 1, axis = 0, reset_index :bool =...  ): 
+    """ Replace items in data :math:`n` times 
+    
+    Parameters 
+    ----------
+    X: Arraylike 1D or pd.DataFrame 
+      Data to replace. Note Sparse matrices is not allowed. Use 
+      :func:`random_sampling` instead. 
+    y: Arraylike 1d. 
+       Preferably one dimensional data. 
+       
+    n_times: int, 
+      Number of times all items should be replaced in data. 
+      
+    reset_index: bool, default=False. 
+      If ``True`` and dataframe,Index is reset and dropped. 
+      
+    Returns 
+    --------
+    X or (X, y)  : Tuple of data replaced
+       Tuple is returned if y is passed. 
+    
+    Examples
+    ---------
+    >>> import numpy as np 
+    >>> from watex.utils.funcutils import replace_data
+    >>> X, y = np.random.randn ( 7, 2 ), np.arange(7)
+    >>> X.shape, y.shape 
+    ((7, 2), (7,))
+    >>> X_new, y_new = replace_data (X, y, n_times =10 )
+    >>> X_new.shape , y_new.shape
+    Out[158]: ((70, 2), (70,))
+    """
+    
+    n = n_times or 1 
+    n= int (_assert_all_types(n, int, float, objname ='n_times'))
+    
+    def concat_data ( ar ,): 
+        if hasattr ( ar, 'columns') or hasattr ( ar, 'series'): 
+            d = pd.concat (  [ ar for i in range(n)], axis = axis ) 
+            if reset_index: 
+                d.reset_index (drop =True, inplace =True  )
+                
+        else: d = np.concatenate ([ ar for i in range(n)], axis = axis  )
+        return d 
+    
+    X = is_iterable(X, exclude_string =True, transform = True )
+    
+    if y is not None: 
+        y = is_iterable( y, exclude_string= True, transform= True)
+    
+    if not hasattr (X, '__array__'): 
+        X = np.array(X)
+        
+    if not hasattr (y, '__array__') and y is not None : 
+        y = np.array(y)
+
+    return concat_data ( X) if y is None else (
+            concat_data( X) , concat_data(y))
+        
+        
     
     
     

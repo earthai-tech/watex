@@ -60,7 +60,8 @@ from .funcutils import (
     random_selector, 
     interpolate_grid, 
     twinning, 
-    random_sampling
+    random_sampling, 
+    replace_data
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -99,7 +100,8 @@ from .plotutils import (
     plot_profiling, 
     plot_skew, 
     plot_strike,
-    plot_voronoi
+    plot_voronoi, 
+    plot_roc_curves
     )
 try : 
     from .mlutils import ( 
@@ -219,7 +221,9 @@ __all__=[
         'rhophi2z', 
         'twinning', 
         'random_sampling', 
-        'plot_voronoi'
+        'plot_voronoi', 
+        'plot_roc_curves', 
+        'replace_data'
         ]
 
 
