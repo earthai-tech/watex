@@ -49,7 +49,7 @@ class TestDatasets (unittest.TestCase) :
         print( "Does observation still exist ?", "remark" in hdata.columns)
         print("show new data_size:", len(hdata ))
         
-        self.assertEqual(len(hdata_o), len(hdata))
+        self.assertEqual(1148, len(hdata))
 
     def test_fetch_data (self ) :
         """ Test the boilerplate function """

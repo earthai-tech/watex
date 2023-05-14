@@ -8,7 +8,7 @@ These are minor changes  in ``v0.2.2`` that shows fugs fixed, features and impro
   
 - |Fix| Bug fixed in concatening sring argument passed to `titles` parameter in :func:`watex.view.plotLearningInspections`. Henceforth, 
   no need to put only single model in litteral string. However for a single model training, :func:`watex.view.plotLearningInspection`
-  is prefered instead. Note the ``s`` at the end of the former function. 
+  is prefered instead. Note the ``'s'`` at the end of the former function. 
   
 - |Fix| Bug fixed in :func:`watex.utils.plot_logging` when  parameter :math:`X` is not passed as a DataFrame. Henceforth, a column 
   of random item  is generated and is used to build a temporray DataFrame for plotting. 

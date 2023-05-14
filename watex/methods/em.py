@@ -2412,7 +2412,7 @@ class Processing (EM) :
         """
         self.inspect 
         tol = assert_ratio(tol , bounds =(0, 1), exclude_value =0, 
-                           name ='tolerance', as_percent =True )
+                           name ='tolerance', in_percent =True )
         
         f=self.freqs_.copy() 
      
