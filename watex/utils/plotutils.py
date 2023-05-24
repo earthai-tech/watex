@@ -3552,7 +3552,7 @@ def plot_text (
     
 def plot_voronoi(
     X, y, *, 
-    cluster_centers, 
+    cluster_centers,
     ax= None,
     show_vertices=False, 
     line_colors='k',
