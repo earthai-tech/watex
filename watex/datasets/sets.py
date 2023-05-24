@@ -67,7 +67,7 @@ def fetch_data (tag, **kws):
     tag = _parse_tags(tag, multi_kind_dataset='bagoue')
     func= _fetch_data if fi else None 
     funcs= (load_bagoue , load_gbalo, load_iris, load_semien, load_tankesse , 
-            load_boundiali, load_hlogs, load_huayuan, load_edis ) 
+            load_boundiali, load_hlogs, load_huayuan, load_edis, load_mxs ) 
     funcns = list (map(lambda f: f.__name__.replace('load_', ''), funcs))
     if tag in (funcns): 
         func = funcs[funcns.index (tag)] 
@@ -167,9 +167,8 @@ def _parse_tags (tag, multi_kind_dataset ='bagoue'):
             
             warn(f"Fetching {multi_kind_dataset.title()!r} data without"
                  " explicitly prefixing the kind of data with the area"
-                 " name will raise an error in future. Henceforth, "
-                f" the argument should be '{tag}' instead.", 
-                 FutureWarning 
+                 " name will raise an error. In future, the argument"
+                f" should be '{tag}' instead.", FutureWarning 
                  )
     elif len(t) >1 : 
         # only the multi kind dataset is allowed 
@@ -197,6 +196,8 @@ WATex dataset is composed of different kind of data for software implementation.
     - FLOW RATE FEATURES data computed from Bagoue ERP and VES data. 
         Refer to paper :doi:`https://doi.org/10.1029/2021wr031623`. 
     - COMMON MACHINE LEARNING popular data sets such IRIS. 
+    - EDI datasets from huayaun county in China, Hunan Province. 
+    - HLOGS and MXS data  for Hongliu coal mine raw and preprocessed borehole data. 
 """
     
 DATASET= type ("DATASET", (), {"KIND": _DTAGS, 

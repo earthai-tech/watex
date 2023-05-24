@@ -33,14 +33,14 @@ from .._watexlog import watexlog
 _logger = watexlog().get_watex_logger(__name__ )
 
 __all__=[
-    "Base", 
+    "GeoBase", 
     "set_agso_properties", 
     "mapping_stratum", 
     "fetching_data_from_repo", 
     "get_agso_properties"
     ] 
 
-class Base: 
+class GeoBase: 
     """
     Base class of container of geological informations  for stratigraphy model  
     log creation of exploration area.

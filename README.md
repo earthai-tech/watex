@@ -132,7 +132,7 @@ stored in the software and merge them to compose a unique dataset. In addition, 
 
 ```python
 import watex as wx
-h= wx.fetch_data("hlogs", key='*', drop_observations =True ) # returns log data object.
+h= wx.fetch_data("hlogs", key='h502 h2601', drop_observations =True ) # returns log data object.
 h.feature_names
 Out[3]: Index(['hole_id', 'depth_top', 'depth_bottom', 'strata_name', 'rock_name',
            'layer_thickness', 'resistivity', 'gamma_gamma', 'natural_gamma', 'sp',

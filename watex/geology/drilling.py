@@ -14,17 +14,456 @@ from .._typing import (
     NDArray, 
     DataFrame, 
 )
+from ..exceptions import NotFittedError 
 from .geology import ( 
     Geology 
     )
-
+from ..utils.coreutils import ( 
+    _is_readable, 
+    makeCoords 
+    ) 
 from .core import (
     get_agso_properties 
     )
+from ..utils.funcutils import ( 
+    _assert_all_types, 
+    to_numeric_dtypes , 
+    smart_strobj_recognition, 
+    convert_value_in 
+
+    )
+from ..utils.geotools import get_random_thickness
 from ..utils._dependency import import_optional_dependency 
+from ..utils.validator import check_array 
+from ..utils.box import data2Box 
+from ..site import Profile 
 
 #XXX TODO module is in progress 
 # not finish yet link Borehole to Geology 
+class DSBoreholes : 
+    def __init__(
+        self, 
+        area =None,
+        holeid=None, 
+        projection ='ll', 
+        utm_zone =None, 
+        encoding ='utf-8', 
+        datum ='WGS84', 
+        epsg=None, 
+        reference_ellipsoide =23, 
+        verbose= False ): 
+        
+        self.area =area 
+        self.holeid=holeid  
+        self.projection= projection 
+        self.utm_zone=utm_zone 
+        self.reference_ellipsoide= reference_ellipsoide 
+        self.datum=datum 
+        self.encoding= encoding #'utf-16-be'
+        self.epsg =epsg 
+        self.verbose= verbose 
+            
+    def fit ( self, data , ylat=None, xlon =None, **fit_params): 
+        
+        columns = fit_params.pop ("columns", None  )
+        data = _is_readable(data, as_frame =True, 
+                            input_name= 'b', 
+                            columns = columns, 
+                            encoding =self.encoding 
+                            )
+        
+        data = check_array (
+            data, 
+            force_all_finite= "allow-nan", 
+            dtype =object , 
+            input_name="Data", 
+            to_frame=True, 
+            )
+        
+        self.longitude_ =None 
+        self.latitude_ =None 
+        
+        if ( xlon is not None 
+            and ylat is not None
+            ): 
+            p = Profile (utm_zone = self.utm_zone , 
+                         coordinate_system= self.projection, 
+                         datum= self.datum , 
+                         epsg= self.epsg, 
+                         reference_ellipsoid=self.reference_ellipsoid 
+                         ) 
+            p.fit (x = xlon , y = ylat , data = data ) 
+  
+            if self.interp_coords: 
+               p.interpolate ()
+               
+            self.longitude_ = p.x 
+            self.latitude_ = p.y 
+            
+        miss_coord=None 
+        if ( xlon is None and ylat is not None 
+                ) : miss_coord ='longitude or x'
+        if ( ylat is None and xlon is not None 
+                  ): miss_coord ='latitude or y'
+        if miss_coord is not None: 
+            raise TypeError (
+                "Coordinate data cannot be None. Missing {miss_coord!r}.")
+            
+        # For consistency, Check the datatypes, sanitize columns 
+        # and drop all NaN columns and row values
+        data, nf, cf = to_numeric_dtypes(
+            data , 
+            return_feature_types= True, 
+            verbose =self.verbose, 
+            sanitize_columns= True, 
+            fill_pattern='_', 
+            **fit_params 
+            )
+
+        self.feature_names_in_ = nf + cf 
+        
+        if len(cf )!=0:
+            # sanitize the categorical values 
+            for c in cf : 
+                data[c] = data[c].str.strip() 
+            
+        
+        for name in data.columns : 
+            setattr (self, name, data[name])
+            
+        # set depth attributes 
+        if 'depth'  in self.feature_names_in_: 
+            self.depth_= data[self.dname]
+            
+        self.data_ = data.copy() 
+        
+        use_col =False 
+        if self.holeid is not None: 
+            use_col = True 
+        else: self.holeid ='hole'
+            
+        self.hole = data2Box ( self.data_ , name =self.holeid, 
+                              use_colname= use_col
+                      )
+        
+        return self  
+    
+    def make_coordinates (
+            self, 
+            reflong, 
+            reflat ,  
+            step ='5m', 
+            todms=False, 
+             r= 45, 
+             **kws
+             ): 
+        
+        self.inspect
+        
+        nsites = len(self.data_ )
+        isutm = False if self.coordinate_system =='ll' else True 
+        utm_zone =  kws.pop ('utm_zone', None ) or self.utm_zone 
+        
+        self.longitude_, self.latitude_= makeCoords(
+            reflong, 
+            reflat, 
+            nsites =nsites, 
+            r= r ,  
+            step =step , 
+            todms=todms, 
+            utm_zone= utm_zone, 
+            is_utm= isutm, 
+            datum=self.datum, 
+            espg=self.epsg,
+            **kws
+            ) 
+        
+        return self    
+        
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        _t = ("name", "dname", "projection", "utm_zone", "encoding", "datum", 
+              "epsg", "reference_ellipsoid" ,"interp_coords", "verbose")
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={ False if getattr(self, k)==... else  getattr(self, k)!r}" 
+             for k in _t]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+       
+    
+    def __getattr__(self, name):
+       rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+       appender  = "" if rv is None else f'. Do you mean {rv!r}'
+       
+       err_msg =  f'{appender}{"" if rv is None else "?"}' 
+       
+       raise AttributeError (
+           f'{self.__class__.__name__!r} object has no attribute {name!r}'
+           f'{err_msg}'
+           )
+
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'hole'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1  
+    
+    
+class DSBorehole: 
+    
+    def __init__ (
+        self,
+        name=None, 
+        projection ='ll', 
+        utm_zone =None, 
+        encoding ='utf-8', 
+        datum ='WGS84', 
+        epsg=None, 
+        reference_ellipsoid =23,
+        interp_coords=False, 
+        dname: str=None, 
+        verbose= 0, 
+        # xlon =None, ylat=None,
+        **kws
+        ): 
+        
+        self.name=name
+        self.dname=dname 
+        self.projection= projection 
+        self.utm_zone=utm_zone 
+        self.reference_ellipsoid= reference_ellipsoid 
+        self.datum=datum 
+        self.encoding= encoding #'utf-16-be'
+        self.epsg =epsg 
+        self.interp_coords=interp_coords
+        self.verbose= verbose 
+   
+    def fit(self, data,  **fit_params ):
+        """ Fit Borehole data and populate attribute data. 
+        
+        By default if the projection is given as latitude/longitude 
+        xlon, ylat are longitude and latitude respectively. 
+ 
+        Parameters
+        ------------
+        data: pd.DataFrame or Path-like object. 
+           Data containing `xlon` and `y` values as series. Then if `xlon` and `y`
+           are given as string argument, their names must be included in the 
+           data columns. Otherwise an error will raise. 
+           
+        xlon, ylat: ArrayLike 1d /str  , optional 
+           One dimensional arrays. `xlon` can be consider as the abscissa of   
+           the landmark and `ylat` as ordinates array.  If `xlon` or `ylat` is  
+           passed as string argument, `data` must be passed as `fit_params` 
+           keyword arguments and the name of `xlon` and `y` must be a column 
+           name of the `data`. 
+           By default `xlon` and `ylat` are considered as `longitude` and 
+           `latitude` when ``dms`` or ``ll`` coordinate system is passed. 
+  
+        elev: ArrayLike 1d/str 
+            Arraylike 1d of elevation at each positions. If not supplied 
+            should be set to null at each points. If given, it must be  
+            consistent with `xlon` and `ylat`. 
+
+        Return 
+        ---------
+        self : Instanced object 
+            Instanced object for chaining method. 
+            
+        Note 
+        -------
+        When `data` is supplied and `xlon` and `ylat` are given by their names 
+        existing in the dataframe columns, by default, the non-numerical 
+        data are removed. However, if `y` and `x` are given in DD:MM:SS in 
+        the dataframe, the coordinate system must explicitly set to ``dms`
+        to keep the non-numerical values in the data. 
+        
+        
+        """
+        columns = fit_params.pop ("columns", None  )
+        data = _is_readable(data, as_frame =True, 
+                            input_name= 'b', 
+                            columns = columns, 
+                            encoding =self.encoding 
+                            )
+        
+        data = check_array (
+            data, 
+            force_all_finite= "allow-nan", 
+            dtype =object , 
+            input_name="Data", 
+            to_frame=True, 
+            )
+        
+        data, nf, cf = to_numeric_dtypes(
+            data , 
+            return_feature_types= True, 
+            verbose =self.verbose, 
+            sanitize_columns= True, 
+            fill_pattern='_', 
+            **fit_params 
+            )
+
+        self.feature_names_in_ = nf + cf 
+        
+        if len(cf )!=0:
+            # sanitize the categorical values 
+            for c in cf : 
+                data[c] = data[c].str.strip() 
+            
+        
+        for name in data.columns : 
+            setattr (self, name, data[name])
+            
+        # set depth attributes 
+        self.depth_= None 
+        
+        if self.dname is not None: 
+            if self.dname not in self.feature_names_in_: 
+                self.dname ='depth' 
+        
+        if self.dname  in self.feature_names_in_: 
+            self.depth_= data[self.dname]
+            
+        self.data_ = data.copy() 
+        
+        return self 
+    
+    
+    def set_depth ( 
+        self ,z0=0.,  max_depth =None, 
+        ): 
+        """ Set the a random depth if depth is not given.
+        
+        To fetch the depth, use attribute `depth_`. Note that if the depth 
+        exist, calling `set_depth` will arase the former depth value. Use 
+        in cautioness. 
+        
+        Parameters 
+        -----------
+        z0: float, default=0.
+         The surface reference. Preferably, it is set to null. 
+         
+        max_depth: float, default=700. 
+          The maximum depth. Depth size must fit the length of the data in 
+          meters. Default depth is fixed to 700 meters. 
+          
+        Return
+        -------
+        self: Instanced object 
+            Instanced object for chaining method. 
+        
+        """
+        self.inspect 
+        z0 = convert_value_in (z0 )
+        
+        max_depth = 700. if not max_depth else max_depth 
+
+        max_depth = float( _assert_all_types ( max_depth, int, float, 
+                                              objname = 'Maximum-depth')) 
+ 
+        self.depth_ = pd.Series ( np.linspace ( z0, max_depth, len(self.data_) 
+                                               ), name ='depth')
+        # append depth data 
+        # self.data_.insert (0 , 'depth', self.depth_, allow_duplicates =True)
+        self.data_ = pd.concat ([ self.depth_, self.data_], axis = 1, 
+                                ignore_index =True )
+
+        return self 
+    
+    def set_thickness(self, h0= 1 , **kws ): 
+        """ Set a random layer thickness from borehole refering to the depth.
+        
+        To fetch the thickness, use attribute `layer_thickness_`. 
+        
+        Parameters 
+        -----------
+        h0: int, default='1m' 
+          Thickness of the first layer. 
+          
+        shuffle: bool, default=True 
+          Shuffle the random generated thicknesses. 
+
+        dirichlet_dis: bool, default=False 
+          Draw samples from the Dirichlet distribution. A Dirichlet-distributed 
+          random variable can be seen as a multivariate generalization of a 
+          Beta distribution. The Dirichlet distribution is a conjugate prior 
+          of a multinomial distribution in Bayesian inference.
+          
+        random_state: int, array-like, BitGenerator, np.random.RandomState, \
+             np.random.Generator, optional
+          If int, array-like, or BitGenerator, seed for random number generator. 
+          If np.random.RandomState or np.random.Generator, use as given.
+          
+        unit: str, default='m' 
+          The reference unit for generated layer thicknesses. Default is 
+          ``meters``
+        
+        Return
+        -------
+        self: Instanced object 
+            Instanced object for chaining method. 
+        
+        """
+        self.inspect 
+        
+        if self.depth_ is None:
+            self.set_depth () 
+            
+        thickness = get_random_thickness  ( self.depth_, **kws)
+        
+        self.layer_thickness_= pd.Series (thickness, name='layer_thickness' )
+        self.data_ = pd.concat ([  self.data_,  self.layer_thickness_], 
+                                axis = 1, ignore_index =True )
+        
+        return self 
+    
+
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        _t = ("name", "dname", "projection", "utm_zone", "encoding", "datum", 
+              "epsg", "reference_ellipsoid" ,"interp_coords", "verbose")
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={ False if getattr(self, k)==... else  getattr(self, k)!r}" 
+             for k in _t]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+       
+    
+    def __getattr__(self, name):
+       rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+       appender  = "" if rv is None else f'. Do you mean {rv!r}'
+       
+       err_msg =  f'{appender}{"" if rv is None else "?"}' 
+       
+       raise AttributeError (
+           f'{self.__class__.__name__!r} object has no attribute {name!r}'
+           f'{err_msg}'
+           )
+
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'data_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1
+    
+     
 class Borehole(Geology): 
     """
     Focused on Wells and `Borehole` offered to the population. To use the data
@@ -74,7 +513,6 @@ class Borehole(Geology):
         self._logging.info ("fit {self.__class__.__name__!r} for corresponding"
                             "attributes. ")
     
-            
         return self
     
 class Drill(Geology):

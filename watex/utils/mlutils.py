@@ -2643,10 +2643,11 @@ def select_feature_importances (
     ): 
     """
     Select feature importance  based on a user-specified threshold 
-    after model fitting, which is useful if one want to use 
-    `RandomForestClassifier` as a feature selector and intermediate step in 
-    scikit-learn ``Pipeline`` object, which allows us to connect different 
-    processing steps  with an estimator. 
+    after model fitting. 
+    
+    This is useful if one want to use `RandomForestClassifier` as a feature 
+    selector and intermediate step in scikit-learn ``Pipeline`` object, which 
+    allows us to connect different processing steps  with an estimator. 
   
     Parameters 
     ----------

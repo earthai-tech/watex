@@ -85,12 +85,16 @@ except ImportError:
 
 def to_numeric_dtypes (
     arr: NDArray | DataFrame, *, 
-    columns:List[str] = None, 
+    columns:List[str, ...] = None, 
     return_feature_types:bool =False , 
     missing_values:float = np.nan, 
     pop_cat_features:bool=False, 
     sanitize_columns:bool=False, 
-    regex=None, 
+    regex: re | str =None, 
+    fill_pattern: str=None, 
+    drop_nan_columns: bool=True, 
+    reset_index:bool= False, 
+    drop_index: bool=True, 
     verbose:bool= False,
     )-> DataFrame : 
     """ Convert array to dataframe and coerce arguments to appropriate dtypes. 
@@ -127,6 +131,27 @@ def to_numeric_dtypes (
           
        .. versionadded:: 0.1.9
        
+    fill_pattern: str, default='' 
+        pattern to replace the non-alphabetic character in each item of 
+        columns.  
+        
+    drop_nan_columns: bool, default=True 
+       Remove all columns filled by NaN values. 
+        
+       .. versionadded: 0.2.4
+          By default, it auto-removes columns with all NaN values. To 
+          deactive this functionality, set it to ``False``. 
+          
+    reset_index: bool, default=False 
+       Reset the index of the dataframe. 
+       
+       .. versionadded: 0.2.4
+       
+    drop_index: bool, default=True, 
+       Drop index in the dataframe after reseting. 
+       
+       .. versionadded: 0.2.4
+       
     verbose: bool, default=False, 
         outputs a message by listing the categorial items dropped from 
         the dataframe if exists. 
@@ -156,15 +181,26 @@ def to_numeric_dtypes (
         dtype: object
         
     """
-    if isinstance (arr, np.ndarray) and columns is None: 
-        warnings.warn("Array is given while columns is not supplied.")
-    # reconvert data to frame 
-    df = pd.DataFrame (arr, columns =columns  
-                       ) if isinstance (arr, np.ndarray) else arr 
-    
-    if sanitize_columns: df = sanitize_frame_cols(df, regex=regex)  
+    from .validator import _is_numeric_dtype
+
+    if hasattr ( arr, '__array__') and hasattr ( arr, 'columns'): 
+        df = arr.copy()
+        if columns is not None: 
+            if verbose: 
+                print("Dataframe is passed. Columns should be replaced.")
+            df =pd.DataFrame ( np.array ( arr), columns =columns )
+            
+    else: df = pd.DataFrame (arr, columns =columns  ) 
         
-    nf,cf =[], []
+    # sanitize columns 
+    if sanitize_columns: 
+        # Pass in the case columns are all integer values. 
+        if not _is_numeric_dtype(df.columns , to_array=True): 
+           # for consistency reconvert to str 
+           df.columns = df.columns.astype(str) 
+           df = sanitize_frame_cols(
+               df, regex=regex, fill_pattern=fill_pattern ) 
+
     #replace empty string by Nan if NaN exist in dataframe  
     df= df.replace(r'^\s*$', missing_values, regex=True)
     
@@ -174,11 +210,31 @@ def to_numeric_dtypes (
         try: 
             df= df.astype(
                 {serie:np.float64})
+        except:continue
+    
+    # drop nan  columns if exists 
+    if drop_nan_columns: 
+        if verbose: 
+            nan_columns = df.columns [ df.isna().all()].tolist() 
+            print("No NaN column found.") if len(
+                nan_columns)==0 else listing_items_format (nan_columns, 
+                    "NaN columns found in the data",
+                    " ", inline =True, lstyle='.')                               
+        # drop rows and columns with NaN values everywhere.                                                   
+        df.dropna ( axis=1, how='all', inplace =True)
+        df.dropna ( axis=0, how='all', inplace =True)
+    
+    # reset_index of the dataframe
+    # This is useful after droping rows
+    if reset_index: 
+        df.reset_index (inplace =True, drop = drop_index )
+    # collect numeric and non-numeric data 
+    nf, cf =[], []    
+    for serie in df.columns: 
+        if _is_numeric_dtype(df[serie], to_array =True ): 
             nf.append(serie)
-        except:
-            cf.append(serie)
-            continue
-        
+        else: cf.append(serie)
+
     if pop_cat_features: 
         [ df.pop(item) for item in cf ] 
         if verbose: 
@@ -5701,7 +5757,7 @@ def twinning(
     decimals: int = 7, 
     raise_warn:bool =True 
 )-> DataFrame : 
-    """ Find indentical object in all data and concatenate them  using merge 
+    """ Find indentical object in all data and concatenate them using merge 
      intersection (`cross`) strategy.
     
     Parameters 
@@ -5710,7 +5766,7 @@ def twinning(
        List of pandas DataFrames 
     on: str, label or list 
        Column or index level names to join on. These must be found in 
-       all DataFrames. If `on` is None and not merging on indexes then 
+       all DataFrames. If `on` is ``None`` and not merging on indexes then 
        a concatenation along columns axis is performed in all DataFrames. 
        Note that `on` works with `parse_on` if its argument is  a list of 
        columns names passed into single litteral string. For instance:: 
@@ -5723,7 +5779,7 @@ def twinning(
     mode: str, default='strict' 
       Mode to the data. Can be ['soft'|'strict']. In ``strict`` mode, all the 
       data passed must be a DataFrame, otherwise an error raises. in ``soft``
-      mode , ignore the non-DataFrame. Note that any other values should be 
+      mode, ignore the non-DataFrame. Note that any other values should be 
       in ``strict`` mode. 
       
     coerce: bool, default=False 
@@ -5779,8 +5835,8 @@ def twinning(
     None      NaN         NaN       NaN  ...     1.0  110.486111  26.05174
     >>> twinning (table1, table.table_, on =['longitude', 'latitude'] ) 
     Empty DataFrame 
-    >>> # comments: Empty dataframe appears because , decimal is too large 
-    >>> # then consider values longitude and latitude differents 
+    >>> # comments: Empty dataframe appears because, decimal is too large 
+    >>> # then it considers values longitude and latitude differents 
     >>> twinning (table1, table.table_, on =['longitude', 'latitude'], decimals =5 ) 
         dipole  longitude  latitude  ...  max_depth  ohmic_area  nareas
     0      10  110.48611  26.05174  ...      109.0  690.063003       1
@@ -5851,8 +5907,8 @@ def twinning(
                 break 
             
         if repl_twd is None: 
-            raise ValueError("To force data that have not consistent items."
-                             f" At least {smart_format(on)} items must"
+            raise ValueError("To force data that have not consistent items,"
+                             f" at least {smart_format(on)} items must"
                              " be included in one DataFrame.")
         # make add twin_data if 
         for o in d : 
@@ -6108,7 +6164,7 @@ def random_sampling (
     dlen = ( d.shape[0] if scipy.sparse.issparse(d) else len(d))
     # if number is greater than the length 
     # block to the length so to retrieve all 
-    # value no matter the arangement. 
+    # value no matter the arrangement. 
     if n > dlen: 
         n = dlen
     if hasattr (d, 'columns') or hasattr (d, 'name'): 
@@ -6120,8 +6176,8 @@ def random_sampling (
     np.random.seed ( random_state)
     if scipy.sparse.issparse(d) : 
         if scipy.sparse.isspmatrix_coo(d): 
-            warnings.warn("coo_matrix does not support indexing. It should be "
-                          "to convert it to a CSR matrix")
+            warnings.warn("coo_matrix does not support indexing. Conversion"
+                          " should be performed in CSR matrix")
             d = d.tocsr() 
             
         return d [ np.random.choice(
@@ -6258,9 +6314,62 @@ def replace_data(X, y =None, n_times: int  = 1, axis = 0, reset_index :bool =...
             concat_data( X) , concat_data(y))
         
         
+def convert_value_in (v, /, unit ='m'): 
+    """Convert value based on the reference unit.
     
+    Parameters 
+    ------------
+    v: str, float, int, 
+      value to convert 
+    unit: str, default='m'
+      Reference unit to convert value in. Default is 'meters'. Could be 
+      'kg' or else. 
+      
+    Returns
+    -------
+    v: float, 
+       Value converted. 
+       
+    Examples 
+    ---------
+    >>> from watex.utils.funcutils import convert_value_in 
+    >>> convert_value_in (20) 
+    20.0
+    >>> convert_value_in ('20mm') 
+    20000.0
+    >>> convert_value_in ('20kg', unit='g') 
+    0.02
+    >>> convert_value_in ('20') 
+    20.0
+    >>> convert_value_in ('20m', unit='g')
+    ValueError: Unknwon unit 'm'...
+    """
+    c= { 'k':1e3 , 
+        'h':1e2 , 
+        'dc':1e1 , 
+        '':1e0 , 
+        'd':1e-1, 
+        'c':1e-2 , 
+        'm':1e-3  
+        }
+    c = {k +str(unit).lower(): v for k, v in c.items() }
+
+    v = str(v).lower()  
+
+    regex = re.findall(r'[a-zA-Z]', v) 
     
+    if len(regex) !=0: 
+        unit = ''.join( regex ) 
+        v = v.replace (unit, '')
+
+    if unit not in c.keys(): 
+        raise ValueError (
+            f"Unknwon unit {unit!r}. Expect {smart_format(c.keys(), 'or' )}."
+            f" Or rename the `unit` parameter maybe to {unit[-1]!r}.")
     
+    return float ( v)/ (c.get(unit) or 1e0) 
+
+
     
     
     

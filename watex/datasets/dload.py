@@ -442,7 +442,7 @@ thus, the best approach is to run the function without passing any parameters::
 
 def load_bagoue(
         *, return_X_y=False, as_frame=False, split_X_y=False, test_size =.3 , 
-        tag=None , data_names=None,
+        tag=None , data_names=None, **kws
  ):
     cf = as_frame 
     data_file = "bagoue.csv"
@@ -1010,14 +1010,16 @@ def load_mxs (
     if split_X_y: 
         data = tuple ([data_dict [k] for k in add ['*'] ] )
         data = ( random_sampling(d, samples = samples,
-                  random_state= seed , shuffle= shuffle ) for d in data ) 
+                  random_state= seed , shuffle= shuffle ) 
+                  for d in data 
+                ) 
         return  tuple (data )
     
+    # Append Xy to Boxspace if 
+    # return_X_y is not set explicitly.
+    Xy = dict() 
     # if for return X and y if k is not None 
     if key is not None and key !="data": 
-        return_X_y = True 
-        
-    if return_X_y:
         if key not in  av.keys():
             key ='raw'
         X, y =  tuple ( [ data_dict[k]  for k in av [key]] ) 
@@ -1027,16 +1029,24 @@ def load_mxs (
         y = random_sampling(y, samples = samples, random_state= seed, 
                             shuffle= shuffle
                                )
-        return (  X, y )  if as_frame or key =='sparse' else (
-            np.array(X), np.array(y))
         
+        if return_X_y: 
+            return (  X, y )  if as_frame or key =='sparse' else (
+                np.array(X), np.array(y))
+        
+        # if return_X_y is not True 
+        Xy ['X']=X ; Xy ['y']=y 
+        # Initialize key to 'data' to 
+        # append the remain data 
+        key ='data'
+
     data = data_dict.get(key)  
     if drop_observations: 
         data.drop (columns = "remark", inplace = True )
         
     frame = None
-    feature_names = list(data.columns [:12] ) 
-    target_columns = list(data.columns [12:])
+    feature_names = list(data.columns [:13] ) 
+    target_columns = list(data.columns [13:])
     
     tnames = tnames or target_columns
     # control the existence of the tnames to retreive
@@ -1064,6 +1074,7 @@ def load_mxs (
         feature_names=feature_names,
         filename=data_file,
         data_module=DMODULE,
+        **Xy
     )
     
 load_mxs.__doc__="""\
