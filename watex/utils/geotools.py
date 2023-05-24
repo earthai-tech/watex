@@ -920,9 +920,6 @@ def print_running_line_prop(obj, inversion_software='Occam2D') :
      for i in ['model', 'iter', 'mesh', 'data']]) )
     print('~'*108)
 
-
-
-
 def map_bottom (bottom, data, origin=None): 
     """Reduce the plot map from the top assumes to start at 0. to the
     bottom value.

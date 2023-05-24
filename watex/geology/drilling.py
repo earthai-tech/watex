@@ -3,55 +3,130 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created on Thu Sep 29 08:30:12 2022 
 
-from __future__ import ( 
-    print_function , annotations)
-
+from __future__ import print_function , annotations
 import os 
 from warnings import warn 
 import numpy as np 
 import pandas as pd 
-from .._typing import ( 
-    NDArray, 
-    DataFrame, 
-)
+
+from .core import get_agso_properties 
+from .geology import Geology
+from .._typing import NDArray, DataFrame
 from ..exceptions import NotFittedError 
-from .geology import ( 
-    Geology 
-    )
-from ..utils.coreutils import ( 
-    _is_readable, 
-    makeCoords 
-    ) 
-from .core import (
-    get_agso_properties 
-    )
+from ..site import Profile 
+from ..utils._dependency import import_optional_dependency 
+from ..utils.box import data2Box 
+from ..utils.coreutils import _is_readable, makeCoords 
 from ..utils.funcutils import ( 
     _assert_all_types, 
     to_numeric_dtypes , 
     smart_strobj_recognition, 
     convert_value_in 
-
     )
 from ..utils.geotools import get_random_thickness
-from ..utils._dependency import import_optional_dependency 
 from ..utils.validator import check_array 
-from ..utils.box import data2Box 
-from ..site import Profile 
 
-#XXX TODO module is in progress 
-# not finish yet link Borehole to Geology 
-class DSBoreholes : 
+class DSBoreholes :
+    """
+    Class deals with many boreholes dataset. 
+    
+    By default if the projection is given as latitude/longitude 
+    lon, ylat are longitude and latitude respectively. 
+
+    Parameters
+    ------------
+    area: str
+       Name of area where the data collection is made. 
+      
+    holeid: str, optional 
+       The name of column of the boreholes collections ID. Note that if 
+       given, it should exist in the borehole datasets. 
+      
+    lon, lat: ArrayLike 1d /str  , optional 
+       One dimensional arrays. `xlon` can be consider as the abscissa of   
+       the landmark and `ylat` as ordinates array.  If `xlon` or `ylat` is  
+       passed as string argument, `data` must be passed as `fit_params` 
+       keyword arguments and the name of `xlon` and `y` must be a column 
+       name of the `data`. 
+       By default `xlon` and `ylat` are considered as `longitude` and 
+       `latitude` when ``dms`` or ``ll`` coordinate system is passed.
+       
+    utm_zone: Optional, string
+       zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
+       of coordinates points in the survey area. It should be a string (##N or ##S)
+       in the form of number and North or South hemisphere, 10S or 03N
+       
+    projection: str, ['utm'|'dms'|'ll'] 
+       The coordinate system in which the data points for the profile is collected. 
+       If not given, the auto-detection will be triggered and find the  suitable 
+       coordinate system. However, it is recommended to provide it for consistency. 
+       Note that if `x` and `y` are composed of value less than 180 degrees 
+       for longitude and 90 degrees for latitude, it should be considered as  
+       longitude-latitude (``ll``) coordinates system. If `x` and `y` are 
+       degree-minutes-second (``dms`` or ``dd:mm:ss``) data, they must be 
+       specify as coordinate system in order to accept the non-numerical data 
+       before transforming to ``ll``. If ``data`` is passed to the :meth:`.fit`
+       method and ``dms`` is not specify, `x` and `y` values should be discarded.
+       
+    datum: string, default = 'WGS84'
+       well known datum ex. WGS84, NAD27, NAD83, etc.
+
+    epsg: Optional, int
+       epsg number defining projection (
+            see http://spatialreference.org/ref/ for moreinfo)
+       Overrides utm_zone if both are provided. 
+
+    encoding: str, default ='utf8'
+       Default encoding for parsing data. Can also be ['utf-16-be'] for 
+       reading bytes characters. 
+       
+    interp_coords: bool, default=False 
+       Interpolate position coordinates.
+      
+    reference_ellipsoid: int, default=23 
+       reference ellipsoids is derived from Peter H. Dana's website-
+       http://www.utexas.edu/depts/grg/gcraft/notes/datum/elist.html
+       Department of Geography, University of Texas at Austin
+       Internet: pdana@mail.utexas.edu . Default is ``23`` constrained to 
+       WGS84. 
+       
+    verbose: int, default=0 
+       Output messages. 
+      
+    Attributes 
+    ----------
+    lon_, lat_: Arraylike, 
+       longitude/latitude of coordinates arrays. 
+       
+    `holeid.<data_column>`: :class:`~watex.utils.box.Boxspace` 
+       Each borehole, commonly which ID correspond to  each row. Each row
+       can be fetched as 'holeID'. If `holeid` is nt specified, the string 
+       literal `hole+index of data` composed the borehole object. 
+       
+    Notes 
+    ------
+    When `data` is supplied and `lon` and `lat` are given by their names 
+    existing in the dataframe columns, by default, the non-numerical 
+    data are removed. However, if `y` and `x` are given in DD:MM:SS in 
+    the dataframe, the coordinate system must explicitly set to ``dms`
+    to keep the non-numerical values in the data. 
+    
+    """
     def __init__(
         self, 
-        area =None,
-        holeid=None, 
-        projection ='ll', 
-        utm_zone =None, 
-        encoding ='utf-8', 
-        datum ='WGS84', 
-        epsg=None, 
-        reference_ellipsoide =23, 
-        verbose= False ): 
+        area:str=None,
+        holeid:str=None,
+        lat:str=None, 
+        lon:str=None, 
+        projection:str ='ll', 
+        utm_zone:str=None, 
+        datum:str='WGS84', 
+        epsg:int=None, 
+        encoding:str='utf-8', 
+        interp_coords:bool=False, 
+        reference_ellipsoide:int=23, 
+        verbose:bool=False 
+        ): 
         
         self.area =area 
         self.holeid=holeid  
@@ -59,12 +134,31 @@ class DSBoreholes :
         self.utm_zone=utm_zone 
         self.reference_ellipsoide= reference_ellipsoide 
         self.datum=datum 
-        self.encoding= encoding #'utf-16-be'
+        self.encoding= encoding 
         self.epsg =epsg 
+        self.interp_coords=interp_coords
+        self.lon=lon 
+        self.lat=lat 
         self.verbose= verbose 
             
-    def fit ( self, data , ylat=None, xlon =None, **fit_params): 
+    def fit ( self, data, **fit_params): 
+        """ Fit Hole data set and populate attributes. 
         
+        Parameters 
+        ----------
+        data: Path-like Object or DataFrame 
+          Hole data. 
+          
+        fit_params: dict,
+          Keyword arguments passed to :func:`watex.to_numeric_dtypes` to 
+          sanitize the data. 
+          
+        Return 
+        ------
+        self: :class:`DSBoreholes`
+          Instanced object for chaining methods. 
+          
+        """
         columns = fit_params.pop ("columns", None  )
         data = _is_readable(data, as_frame =True, 
                             input_name= 'b', 
@@ -79,12 +173,10 @@ class DSBoreholes :
             input_name="Data", 
             to_frame=True, 
             )
+        self.lon_=None; self.lat_=None 
         
-        self.longitude_ =None 
-        self.latitude_ =None 
-        
-        if ( xlon is not None 
-            and ylat is not None
+        if ( self.lon is not None 
+            and self.lat is not None
             ): 
             p = Profile (utm_zone = self.utm_zone , 
                          coordinate_system= self.projection, 
@@ -92,24 +184,15 @@ class DSBoreholes :
                          epsg= self.epsg, 
                          reference_ellipsoid=self.reference_ellipsoid 
                          ) 
-            p.fit (x = xlon , y = ylat , data = data ) 
+            p.fit (x = self.lon, y = self.lat, data = data ) 
   
             if self.interp_coords: 
                p.interpolate ()
                
-            self.longitude_ = p.x 
-            self.latitude_ = p.y 
+            self.lon_= p.x 
+            self.lat_= p.y 
             
-        miss_coord=None 
-        if ( xlon is None and ylat is not None 
-                ) : miss_coord ='longitude or x'
-        if ( ylat is None and xlon is not None 
-                  ): miss_coord ='latitude or y'
-        if miss_coord is not None: 
-            raise TypeError (
-                "Coordinate data cannot be None. Missing {miss_coord!r}.")
-            
-        # For consistency, Check the datatypes, sanitize columns 
+        # For consistency, Check the datatype, sanitize columns 
         # and drop all NaN columns and row values
         data, nf, cf = to_numeric_dtypes(
             data , 
@@ -127,13 +210,12 @@ class DSBoreholes :
             for c in cf : 
                 data[c] = data[c].str.strip() 
             
-        
         for name in data.columns : 
             setattr (self, name, data[name])
             
         # set depth attributes 
         if 'depth'  in self.feature_names_in_: 
-            self.depth_= data[self.dname]
+            self.depth_= data['depth']
             
         self.data_ = data.copy() 
         
@@ -142,29 +224,71 @@ class DSBoreholes :
             use_col = True 
         else: self.holeid ='hole'
             
-        self.hole = data2Box ( self.data_ , name =self.holeid, 
-                              use_colname= use_col
+        self.hole = data2Box ( 
+            self.data_ , 
+            name =self.holeid, 
+            use_colname= use_col
                       )
         
         return self  
     
     def make_coordinates (
-            self, 
-            reflong, 
-            reflat ,  
-            step ='5m', 
-            todms=False, 
-             r= 45, 
-             **kws
-             ): 
+        self, 
+        reflong, 
+        reflat,  
+        step ='5m', 
+        todms=False, 
+        r= 45, 
+        **kws
+         ): 
+        """ Generate longitude and latitude coordinates for boreholes. 
         
+        It assumes boreholes are  aligned along the same axis. 
+     
+        Parameters 
+        -----------
+        reflong: float or string or list of [start, stop]
+            Reference longitude  in degree decimal or in DD:MM:SS for 
+            the first site considered as the origin of the landmark.
+            
+        reflat: float or string or list of [start, stop]
+            Reference latitude in degree decimal or in DD:MM:SS for the 
+            reference site considered as the landmark origin. If value is 
+            given in a list, it can containt the start point and the 
+            stop point. 
+            
+        step: float or str 
+            Offset or the distance of seperation between different sites 
+            in meters. If the value is given as string type, except 
+            the ``km``, it should be considered as a ``m`` value. Only 
+            meters and kilometers are accepables.
+            
+        r: float or int 
+            The rotate angle in degrees. Rotate the angle features 
+            toward the direction of the projection profile. 
+            Default value use the :meth:`~.bearing` value in degrees. 
+               
+        todms: bool, Default=False
+            Reconvert the longitude/latitude degree decimal values into 
+            the DD:MM:SS. 
+     
+        kws: dict, 
+           Additional keywords of :func:`~watex.utils.exmath.makeCoords`.   
+           
+        Returns 
+        --------
+        self: Instanced object 
+        
+          Instanced object for method chaining.
+        
+        """
         self.inspect
         
         nsites = len(self.data_ )
-        isutm = False if self.coordinate_system =='ll' else True 
+        isutm = False if self.projection =='ll' else True 
         utm_zone =  kws.pop ('utm_zone', None ) or self.utm_zone 
         
-        self.longitude_, self.latitude_= makeCoords(
+        self.lon_, self.lat_= makeCoords(
             reflong, 
             reflat, 
             nsites =nsites, 
@@ -218,21 +342,86 @@ class DSBoreholes :
     
     
 class DSBorehole: 
+    """ Class delas with Borehole datasets. 
     
+    Parameters
+    ------------
+    name: str
+       Name or ID of the borehole. 
+      
+    dname: str, optional 
+       Depth column name. If `depth` is specify an attribute `depth_` should 
+       be created. Depth specification is usefull for log plotting of machine
+       training.
+       
+    utm_zone: Optional, string
+       zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
+       of coordinates points in the survey area. It should be a string (##N or ##S)
+       in the form of number and North or South hemisphere, 10S or 03N
+       
+    projection: str, ['utm'|'dms'|'ll'] 
+       The coordinate system in which the data points for the profile is collected. 
+       If not given, the auto-detection will be triggered and find the  suitable 
+       coordinate system. However, it is recommended to provide it for consistency. 
+       Note that if `x` and `y` are composed of value less than 180 degrees 
+       for longitude and 90 degrees for latitude, it should be considered as  
+       longitude-latitude (``ll``) coordinates system. If `x` and `y` are 
+       degree-minutes-second (``dms`` or ``dd:mm:ss``) data, they must be 
+       specify as coordinate system in order to accept the non-numerical data 
+       before transforming to ``ll``. If ``data`` is passed to the :meth:`.fit`
+       method and ``dms`` is not specify, `x` and `y` values should be discarded.
+       
+    datum: string, default = 'WGS84'
+       well known datum ex. WGS84, NAD27, NAD83, etc.
+
+    epsg: Optional, int
+       epsg number defining projection (
+            see http://spatialreference.org/ref/ for moreinfo)
+       Overrides utm_zone if both are provided. 
+
+    reference_ellipsoid: int, default=23 
+       reference ellipsoids is derived from Peter H. Dana's website-
+       http://www.utexas.edu/depts/grg/gcraft/notes/datum/elist.html
+       Department of Geography, University of Texas at Austin
+       Internet: pdana@mail.utexas.edu . Default is ``23`` constrained to 
+       WGS84. 
+        
+    encoding: str, default ='utf8'
+       Default encoding for parsing data. Can also be ['utf-16-be'] for 
+       reading bytes characters. 
+       
+    lonlat: Tuple, Optional 
+       longitude/latitude for borehole coordinates. The location where the 
+       borehole is performed. 
+      
+    verbose: int, default=0 
+       Output messages. 
+      
+    Attributes
+    -----------
+    depth_: Series 
+       Depth array if `dname` is specified. 
+    data_: Pandas DataFrame
+       Sanitized dataframe. 
+    
+    Note 
+    ------
+    Each columns of the dataframe is an attribute. Note that all the non-
+    alphabetic letters is removed and replace by '_'. 
+    
+    """
     def __init__ (
         self,
-        name=None, 
-        projection ='ll', 
-        utm_zone =None, 
-        encoding ='utf-8', 
-        datum ='WGS84', 
-        epsg=None, 
-        reference_ellipsoid =23,
-        interp_coords=False, 
-        dname: str=None, 
-        verbose= 0, 
-        # xlon =None, ylat=None,
-        **kws
+        name:str=None, 
+        dname: str=None,
+        projection:str='ll', 
+        utm_zone:str=None, 
+        datum:str ='WGS84', 
+        epsg:int=None, 
+        reference_ellipsoid:int=23,
+        encoding:str ='utf-8', 
+        lonlat:tuple =None, 
+        verbose:int= 0, 
         ): 
         
         self.name=name
@@ -241,9 +430,8 @@ class DSBorehole:
         self.utm_zone=utm_zone 
         self.reference_ellipsoid= reference_ellipsoid 
         self.datum=datum 
-        self.encoding= encoding #'utf-16-be'
+        self.encoding= encoding
         self.epsg =epsg 
-        self.interp_coords=interp_coords
         self.verbose= verbose 
    
     def fit(self, data,  **fit_params ):
@@ -259,41 +447,15 @@ class DSBorehole:
            are given as string argument, their names must be included in the 
            data columns. Otherwise an error will raise. 
            
-        xlon, ylat: ArrayLike 1d /str  , optional 
-           One dimensional arrays. `xlon` can be consider as the abscissa of   
-           the landmark and `ylat` as ordinates array.  If `xlon` or `ylat` is  
-           passed as string argument, `data` must be passed as `fit_params` 
-           keyword arguments and the name of `xlon` and `y` must be a column 
-           name of the `data`. 
-           By default `xlon` and `ylat` are considered as `longitude` and 
-           `latitude` when ``dms`` or ``ll`` coordinate system is passed. 
-  
-        elev: ArrayLike 1d/str 
-            Arraylike 1d of elevation at each positions. If not supplied 
-            should be set to null at each points. If given, it must be  
-            consistent with `xlon` and `ylat`. 
-
         Return 
         ---------
         self : Instanced object 
             Instanced object for chaining method. 
             
-        Note 
-        -------
-        When `data` is supplied and `xlon` and `ylat` are given by their names 
-        existing in the dataframe columns, by default, the non-numerical 
-        data are removed. However, if `y` and `x` are given in DD:MM:SS in 
-        the dataframe, the coordinate system must explicitly set to ``dms`
-        to keep the non-numerical values in the data. 
-        
-        
         """
         columns = fit_params.pop ("columns", None  )
-        data = _is_readable(data, as_frame =True, 
-                            input_name= 'b', 
-                            columns = columns, 
-                            encoding =self.encoding 
-                            )
+        data = _is_readable(data, as_frame =True, input_name= 'b', 
+                columns = columns, encoding =self.encoding )
         
         data = check_array (
             data, 
