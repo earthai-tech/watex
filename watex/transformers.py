@@ -52,7 +52,8 @@ __all__= ['KMeansFeaturizer',
           ]
 
 def featurize_X (
-    X, y=None, *, 
+    X, 
+    y=None, *, 
     n_clusters=7, 
     target_scale = 5 ,
     random_state=None, 
@@ -66,9 +67,18 @@ def featurize_X (
     
     Parameters 
     -----------
-    X, y : 
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features. 
+        Note ttaht when `n_components` is set, sparse matrix for `X` is not 
+        acceptable. 
+
+    y : array-like of shape (n_samples,)
+        Target vector relative to X.
+        
     n_clusters: int, default=7
        Number of initial clusters
+       
     target_scale: float, default=5.0 
        Apply appropriate scaling and include it in the input data to k-means.
     n_components: int, optional
@@ -151,11 +161,11 @@ class KMeansFeaturizer:
     
     Attributes 
     -----------
-    km_model: KMeans featurization model used to transfor
+    km_model: KMeans featurization model used to transform
 
     Examples 
     --------
-    (1) Use a common dataset 
+    >>> # (1) Use a common dataset 
     >>> import matplotlib.pyplot as plt 
     >>> from sklearn.datasets import make_moons
     >>> from watex.utils.plotutils import plot_voronoi 
@@ -168,9 +178,8 @@ class KMeansFeaturizer:
                       fig_title ='KMeans with hint', ax = ax [0] )
     >>> plot_voronoi ( X, y ,cluster_centers=kmf_no_hint.cluster_centers_, 
                       fig_title ='KMeans No hint' , ax = ax[1])
-    Out[84]: <AxesSubplot:title={'center':'KMeans No hint'}>
-    
-    (2)  Use a concrete data set 
+    <AxesSubplot:title={'center':'KMeans No hint'}>
+    >>> # (2)  Use a concrete data set 
     >>> X, y = load_mxs ( return_X_y =True, key ='numeric' ) 
     >>> # get the most principal components 
     >>> from watex.analysis import nPCA 

@@ -321,6 +321,9 @@ def plot_logging (
     # keep only the numerical features.
     X = to_numeric_dtypes(X, pop_cat_features=True, verbose = verbose ) 
     
+    # drop collumns if all all Nan values 
+    X= X.dropna(axis=1,how='all')
+    
     if y is not None: 
        if isinstance (y, (list, tuple)): 
            # in the case a lst is given 

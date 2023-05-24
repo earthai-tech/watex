@@ -5307,7 +5307,7 @@ def plot_confidence_in(
                 
         ax.set_xlabel ('Distance (m)', fontsize =1.2 * fontsize,
                        fontdict ={'weight': 'bold'})
-        ax.set_ylabel (f"Confidence ratio in {clab}", fontsize = 1.2 * fontsize , 
+        ax.set_ylabel ("Confidence ratio x100 (%)", fontsize = 1.2 * fontsize , 
                        fontdict ={'weight': 'bold'}
                        )
         ax.tick_params (labelsize = fontsize)
