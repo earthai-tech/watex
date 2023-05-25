@@ -30,8 +30,18 @@ class DSBoreholes :
     """
     Class deals with many boreholes dataset. 
     
+    DSBoreholes works with the data set composed of multiple borehole data. 
+    The data columns are the all attributes of the object and any 
+    non-alphateic character is replaced by ``_``. For instance, a column name 
+    ``layer thickness`` should have an attribute named ``layer_thickness``. 
+    Each borehole (row) data become its own object which encompasses all 
+    columns as attributes. To have full control of how data must be 
+    retrieved, ``holeid`` parameter must be set. For instance, to retrieve 
+    the borehole with ID equals to `bx02`, after fitting the class with 
+    appropriate parameters, attibute `hole depth` ( if exist in the data) can  
+    be retrieved as ``self.hole.bx02.hole_depth``. 
+    
     By default if the projection is given as latitude/longitude 
-    lon, ylat are longitude and latitude respectively. 
 
     Parameters
     ------------
@@ -98,7 +108,7 @@ class DSBoreholes :
     lon_, lat_: Arraylike, 
        longitude/latitude of coordinates arrays. 
        
-    `holeid.<data_column>`: :class:`~watex.utils.box.Boxspace` 
+    `hole.<holeid>.<data_column>`: :class:`~watex.utils.box.Boxspace` 
        Each borehole, commonly which ID correspond to  each row. Each row
        can be fetched as 'holeID'. If `holeid` is nt specified, the string 
        literal `hole+index of data` composed the borehole object. 
@@ -170,7 +180,7 @@ class DSBoreholes :
             data, 
             force_all_finite= "allow-nan", 
             dtype =object , 
-            input_name="Data", 
+            input_name="Boreholes data", 
             to_frame=True, 
             )
         self.lon_=None; self.lat_=None 
@@ -232,7 +242,7 @@ class DSBoreholes :
         
         return self  
     
-    def make_coordinates (
+    def set_coordinates (
         self, 
         reflong, 
         reflat,  
@@ -343,6 +353,10 @@ class DSBoreholes :
     
 class DSBorehole: 
     """ Class delas with Borehole datasets. 
+    
+    :class:`watex.geology.drilling.DSBorehole` works with data collected in 
+    a single borehole. For instance, it could follow the arrangement of 
+    ``h502`` data in :func:`watex.datasets.load_hlogs`
     
     Parameters
     ------------
@@ -461,7 +475,7 @@ class DSBorehole:
             data, 
             force_all_finite= "allow-nan", 
             dtype =object , 
-            input_name="Data", 
+            input_name="Borehe data", 
             to_frame=True, 
             )
         

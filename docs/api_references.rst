@@ -280,15 +280,18 @@ Classes
    :toctree: generated/
    :template: class.rst
 
-   geology.core.Base
+   geology.core.GeoBase
    geology.database.DBSetting
    geology.database.GeoDataBase
    geology.drilling.Borehole
    geology.drilling.Drill
+   geology.drilling.DSBorehole
+   geology.drilling.DSBoreholes
    geology.geology.Geology
    geology.geology.Structural
    geology.geology.Structures
    geology.stratigraphic.GeoStrataModel 
+   
 
 Functions
 ~~~~~~~~~~~~

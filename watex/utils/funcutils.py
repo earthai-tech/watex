@@ -93,6 +93,7 @@ def to_numeric_dtypes (
     regex: re | str =None, 
     fill_pattern: str=None, 
     drop_nan_columns: bool=True, 
+    how:str='all', 
     reset_index:bool= False, 
     drop_index: bool=True, 
     verbose:bool= False,
@@ -132,7 +133,7 @@ def to_numeric_dtypes (
        .. versionadded:: 0.1.9
        
     fill_pattern: str, default='' 
-        pattern to replace the non-alphabetic character in each item of 
+        Pattern to replace the non-alphabetic character in each item of 
         columns.  
         
     drop_nan_columns: bool, default=True 
@@ -141,7 +142,11 @@ def to_numeric_dtypes (
        .. versionadded: 0.2.4
           By default, it auto-removes columns with all NaN values. To 
           deactive this functionality, set it to ``False``. 
-          
+         
+    how: str, default='all'
+       Drop also the NaN row data. The row data which is composed entirely  
+       with NaN or Null values.
+       
     reset_index: bool, default=False 
        Reset the index of the dataframe. 
        
@@ -222,7 +227,8 @@ def to_numeric_dtypes (
                     " ", inline =True, lstyle='.')                               
         # drop rows and columns with NaN values everywhere.                                                   
         df.dropna ( axis=1, how='all', inplace =True)
-        df.dropna ( axis=0, how='all', inplace =True)
+        if str(how).lower()=='all': 
+            df.dropna ( axis=0, how='all', inplace =True)
     
     # reset_index of the dataframe
     # This is useful after droping rows
@@ -6199,8 +6205,11 @@ def random_sampling (
 
 def make_obj_consistent_if ( 
         item= ... , default = ..., size =None, from_index: bool =True ): 
-    """Combine default values to item to create default consistent iterable objects if 
-    the size of item does not fit the number of expected iterable objects.     
+    """Combine default values to item to create default consistent iterable 
+    objects. 
+    
+    This is valid if  the size of item does not fit the number of 
+    expected iterable objects.     
     
     Parameters 
     ------------
