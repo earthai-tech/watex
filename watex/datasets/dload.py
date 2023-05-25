@@ -971,14 +971,17 @@ def load_mxs (
     
     drop_observations =kws.pop("drop_observations", False)
     
+    target_map= { 
+        0: '1',
+        1: '11*', 
+        2: '2', 
+        3: '2*', 
+        4: '3', 
+        5: '33*'
+        }
+    
     add = {"data": ('data', ) , '*': (
         'X_train','X_test' , 'y_train','y_test' ), 
-        'target_map': { 0: '1',
-                       1: '11', 
-                       2: '2', 
-                       3: '2*', 
-                       4: '3', 
-                       5: '33'}
         }
     
     av= {"sparse": ('X_csr', 'ymxs_transf'), 
@@ -1067,7 +1070,7 @@ def load_mxs (
         frame=data,
         tnames=tnames,
         target_names = target_columns,
-        target_map = add.get('target_map'), 
+        target_map = target_map, 
         nga_labels = data_dict.get('nga_labels'), 
         #XXX Add description 
         DESCR= '', # fdescr,
