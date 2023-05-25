@@ -28,8 +28,8 @@ from watex.datasets import load_hlogs
 # * load `load_hlogs` to get explicitly the features names and target names 
 box = load_hlogs () 
 # combine our test data 
-data  = load_hlogs().frame + load_hlogs(key= 'h2601').frame  
- 
+# data  = load_hlogs().frame + load_hlogs(key= 'h2601').frame  
+data = load_hlogs (key ='*').frame 
 X0, y0 = data [box.feature_names] , data [box.target_names ] 
 # make copies for safety 
 X, y = X0.copy() , y0.copy() 
@@ -61,10 +61,12 @@ from watex.utils import to_numeric_dtypes
 from watex.utils import naive_scaler 
 
 # pop_cat_features auto-drop the only categorial features
-Xpca = to_numeric_dtypes (data_imputed , pop_cat_features= True , verbose =True ) 
+Xpca = to_numeric_dtypes (data_imputed , pop_cat_features= True,
+                          reset_index=True, drop_index =True,
+                          verbose =True) 
 #  Scale the data  by default 
 Xpca_scaled = naive_scaler( Xpca )  
-
+Xpca_scaled_columns = list( Xpca_scaled.columns )
 # * Call the normal PCA and plot all components set to None
 
 from watex.analysis import nPCA 
@@ -142,9 +144,12 @@ from watex.exlib.sklearn import RandomForestClassifier
 from watex.utils import plot_rf_feature_importances 
 
 # add the strata_name to the remaining features 
-strata_column =  pd.Series ( X ['strata_name'].astype ('category').cat.codes , name ='strata_name' )  
-X_for_fi = pd.concat( [ strata_column , Xpca_scaled ], axis =1 ) 
-# plot importance with the predicted label ykm  
+strata_column =  pd.Series ( X ['strata_name'].astype ('category').cat.codes , name ='strata_name' ) 
+strata_column.index = range (len(strata_column))  # reindexing
+
+X_for_fi = pd.concat( [ strata_column , Xpca_scaled ], axis =1, ignore_index=True ) 
+# # plot importance with the predicted label ykm  
+X_for_fi=pd.DataFrame ( X_for_fi.values, columns= ['strata_name'] + Xpca_scaled_columns)
 plot_rf_feature_importances (RandomForestClassifier(), X_for_fi , y =ykm ) 
 
 # %%

@@ -3,7 +3,7 @@ v0.2.4 (May 25, 2023)
 
 These are minor changes  in ``v0.2.3`` that shows fugs fixed, features and improvements.  
 
-- |API change| Change performed in :mod:`watex.geology.core`. The  class ``Base`` is renamed as :class:`watex.geology.GeoBase`. 
+- |API change| Change performed in :mod:`watex.geology.core`. The  class ``Base`` is renamed as :class:`watex.geology.core.GeoBase`. 
 
 - |Fix| Bug fixed in :func:`watex.utils.plot_logging` when  imputing NaN values in the data. Indeed, henceforth all the column of the data 
   that is composed entirely with NaN is removed automatically. This fixes the bug occurs in when the scaled  feature dimension are higher than the 
@@ -27,7 +27,7 @@ These are minor changes  in ``v0.2.3`` that shows fugs fixed, features and impro
   iterable objects.  This is valid if  the size of item does not fit the number of expected iterable objects. Commonly this work in synergy with 
   :func:`watex.utils.funcutils.random_sampling`. 
 
-- |Feature| :func:`watex.utils.funcutils.pconvert_value_in` converts value based on the reference unit. Mostly used the known SI units like 
+- |Feature| :func:`watex.utils.funcutils.convert_value_in` converts value based on the reference unit. Mostly used the known SI units like 
   `meters (m) `, `grammes (g) `etc.
   
 - |Enhancement| Supplement boreholes data are added to :func:`watex.datasets.load_hlogs`. They include boreholes ``'h805' ,'h1102' ,'h1405', 'h2602','h803',

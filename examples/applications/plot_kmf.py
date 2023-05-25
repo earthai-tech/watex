@@ -19,14 +19,20 @@ force model to generalization
 #%% 
 # We start by importing the required modules 
 import matplotlib.pyplot as plt
-
+import scipy 
+import sklearn 
 from sklearn.datasets import make_moons
 from watex.transformers import featurize_X,  KMeansFeaturizer
-from watex.exlib import train_test_split 
+from watex.exlib import train_test_split, XGBClassifier
 from watex.utils import plot_voronoi 
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingClassifier
+from watex.datasets import load_mxs 
 
 # %% 
+# Use common Moon datasets 
+# ============================================
 # * Build models with a common data sets. (e.g. Moons dataset) 
 # We generate 8000 samples of dataset where we divided as 50% training and 50% testing 
 # For reproducing the same samples of data, we fixed the `seed`. 
@@ -64,11 +70,78 @@ plot_voronoi ( X0_train, y0_train,cluster_centers=kmf_no_hint.cluster_centers_,
 # missed span too much of the space between the two classes. Commonly KMF demonstrates 
 # its usefulness when cluster boundaries align with class boundaries much more closely. 
 
+#%% 
 
+# Use concrete log data for KMF implementation 
+# ============================================ 
+# In this test case for implementing the K-Featurization (KMF) surrogate booster 
+# we use the hongliu 11 borehole data for application. We will separate the data into 
+# 80% training and 20% testing . Note that the hyperparameter should be fixed to 
+# avoid the learning process. We used the LogisticRegression, and Gradient 
+# boosting as the model for testing. We also fixed the random scale for 
+# reproducing the same data.  
+seed =25
+X, y = load_mxs ( key ='scale', return_X_y= True, samples ="*" , seed = seed)
 
+# *  make binary datasets 
+# construct the binary data sets from the target mapping 
+# then splitting the data. 
+# {0: '1', 1: '11*', 2: '2', 3: '2*', 4: '3', 5: '33*'}
+y [y <=2]= 0 ; y [y >0 ]=1 
+training_data, test_data, training_labels, test_labels = train_test_split (
+    X, y , test_size =.2 ) 
 
+# * Call KMeansFeaturizer to featurize the data X 
+kmf_hint = KMeansFeaturizer(n_clusters=100, target_scale=10).fit(training_data,
+training_labels)
+kmf_no_hint = KMeansFeaturizer(n_clusters=100, target_scale=0).fit(training_data,
+training_labels
+)
+# Use the k-means featurizer to generate cluster features
+training_cluster_features = kmf_hint.transform(training_data)
+test_cluster_features = kmf_hint.transform(test_data)
+# Form new input features with cluster features
+training_with_cluster = scipy.sparse.hstack(
+    (training_data,scipy.sparse.coo_matrix(training_cluster_features)))
+test_with_cluster = scipy.sparse.hstack(
+    (test_data, scipy.sparse.coo_matrix(test_cluster_features)))
 
+# %% Build models 
+# * Build the classifiers as example of Logistic regression ad XGBClassifiers 
+lr_cluster = LogisticRegression(random_state=seed).fit(training_with_cluster,
+training_labels)
+xgb_cluster = XGBClassifier(max_depth =13 , 
+                            n_estimators =50 , 
+                            learning_rate = 0.09, 
+               booster = 'gbtree').fit(training_with_cluster,training_labels  )
+classifier_names = [
+                'LR',
+                'Boosted Trees']
+classifiers = [LogisticRegression(random_state=seed),
+            GradientBoostingClassifier(n_estimators=10, learning_rate=1.0,
+            max_depth=5)]
 
+# * Plot ROC curves for demonstration 
+for model in classifiers:
+    model.fit(training_data, training_labels)
+# Helper function to evaluate classifier performance using ROC
+def test_roc(model, data, labels):
+    if hasattr(model, "decision_function"):
+        predictions = model.decision_function(data)
+    else:
+        predictions = model.predict_proba(data)[:,1]
+    fpr, tpr, _ = sklearn.metrics.roc_curve(labels, predictions)
+    return fpr, tpr
+
+plt.figure()
+fpr_cluster, tpr_cluster = test_roc(xgb_cluster, test_with_cluster, test_labels)
+plt.plot(fpr_cluster, tpr_cluster, 'r-', label='LR with KMF')
+for i, model in enumerate(classifiers):
+    fpr, tpr = test_roc(model, test_data, test_labels)
+    plt.plot(fpr, tpr, label=classifier_names[i])
+ 
+plt.plot([0, 1], [0, 1], 'k--')
+plt.legend() 
 
 
 
