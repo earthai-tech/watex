@@ -1998,8 +1998,8 @@ def _assert_file (
  
 
 def makeCoords(
-  reflong: str | Tuple[float, ...], 
-  reflat: str | Tuple[float, ...], 
+  reflong: str | Tuple[float], 
+  reflat: str | Tuple[float], 
   nsites: int ,  
   *,  
   r: int =45.,

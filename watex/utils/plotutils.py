@@ -3650,7 +3650,6 @@ def plot_roc_curves (
    all=False,
    ax = None,  
    fig_size=( 7, 7), 
-   
    **roc_kws ): 
     """ Quick plot of Receiving Operating Characterisctic (ROC) of fitted models 
     

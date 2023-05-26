@@ -6,7 +6,6 @@
 import itertools
 import numpy as np
 import pandas as pd 
-from .._typing import List 
 
 class Boxspace(dict):  
     """Is a container object exposing keys as attributes.
@@ -212,7 +211,7 @@ def data2Box(
     name: str = None, 
     use_colname: bool =False, 
     keep_col_data: bool =True, 
-    columns: List [str, ...] =None 
+    columns: list [str] =None 
     ): 
     """ Transform each data rows as Boxspace object. 
     
