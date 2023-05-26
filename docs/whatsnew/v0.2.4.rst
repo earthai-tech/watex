@@ -1,0 +1,61 @@
+v0.2.4 (May 26, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.3`` that shows fugs fixed, features and improvements.  
+
+- |API change| Change performed in :mod:`watex.geology.core`. The  class ``Base`` is renamed as :class:`watex.geology.core.GeoBase`. 
+
+- |Fix| Bug fixed in :func:`watex.utils.plot_logging` when  imputing NaN values in the data. Indeed, henceforth all the column of the data 
+  that is composed entirely with NaN is removed automatically. This fixes the bug occurs in when the scaled  feature dimension are higher than the 
+  original ones.  
+
+- |Fix| Bug fixed in :func:`watex.utils.to_numeric_dtypes` when sanitizing the dataframe with integer columns. In such case, the data sanitizing
+  is not possible. It henceforth passes rather than raising error. However when column are mixed ( numeric and string ), all should be 
+  converted to string before sanitization. 
+
+- |Feature| :class:`watex.geology.drilling.DSBorehole`  works with data collected in a single borehole. For instance, the arrangement 
+  of ``h502`` data in :func:`watex.datasets.load_hlogs`. Data columns are the all attributes of the object and any non-alphateic character 
+  is replaced by ``_``. For instance, a column name ``layer thickness`` should have an attribute named ``layer_thickness``.
+ 
+- |Feature| :class:`watex.geology.drilling.DSBoreholes` works similarly as :class:`watex.geology.drilling.DSBorehole` but uses multiple 
+  borehole data. note the ``'s'`` at the end of the class. Here, each borehole (row) is an object which encompasses all columns as attributes.
+  To have full control of how data must be retrieved as an object, ``holeid`` parameter must be set. For instance, to retrieve the borehole 
+  with ID equals to `bx02`, after fitting the class with appropriate parameters, attibute `hole depth` ( if exist in the data) can be retrieved 
+  as ``self.hole.bx02.hole_depth``. 
+
+- |Feature| Add :func:`watex.utils.funcutils.replace_data` to replace items in the data `n-` times. This is useful for data duplication 
+
+- |Feature| add :class:`watex.utils.funcutils.make_obj_consistent_if`. Function combine default values to item to create default consistent 
+  iterable objects.  This is valid if  the size of item does not fit the number of expected iterable objects. Commonly this work in synergy with 
+  :func:`watex.utils.funcutils.random_sampling`. 
+
+- |Feature| :func:`watex.utils.funcutils.convert_value_in` converts value based on the reference unit. Mostly used the known SI units like 
+  `meters (m) `, `grammes (g)` etc.
+  
+- |Enhancement| Supplement boreholes data are added to :func:`watex.datasets.load_hlogs`. They include boreholes ``'h805' ,'h1102' ,'h1405', 'h2602','h803',
+  'h1104', 'h604', 'h2003'`` and  ``'h1602'``. 
+ 
+- |Enhancement| Function :func:`watex.utils.to_numeric_dtypes` accepts `drop_nan_columns` passed as ``True`` by default with dropped the NaN rows 
+  and NaN columns in the data. Moreover, ``reset_index`` and ``drop_index`` are available to new data index management. 
+
+- |Enhancement| Function :func:`watex.datasets.load_mxs` enforces attribute ``X`` and ``y`` when object is retrieved. For instance, fetching the 
+  the training set scaled ``X`` should be: 
+
+  .. code-block:: python 
+
+     >>> import watex as wx 
+     >>> X_scaled = wx.datasets.load_mxs (key ='scale').X 
+     >>> # or by merely calling the boilerplate `fetch_data` function as 
+     >>> X_scaled =wx.fetch_data ('mxs', key ='scale').X 
+
+  It also accepts `test_ratio` to split the training and test sets via  ``split_X_y=True``. Note that ``return_X_y=True``  is not necessary when 
+  `split_X_y` is set to ``True``. 
+
+- |Enhancement | :class:`watex.transformers.featurize_X` accepts `model` as parameter. It is  useful to featurize the test data separately 
+  from the train data to avoid leakage information. If `sparse` parameter is set to ``True``, the training and testing data are outputted in sparse coordinates format 
+  or compressed sparse row format that is controlled by the `sparsity` parameter. 
+
+
+
+
+

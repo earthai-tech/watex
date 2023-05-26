@@ -2029,7 +2029,7 @@ def makeCoords(
     reflat: float or string or list of [start, stop]
         Reference latitude in degree decimal or in DD:MM:SS for the reference  
         site considered as the landmark origin. If value is given in a list, 
-        it can containt the start point and the stop point. 
+        it can contain the start point and the stop point. 
         
     nsites: int or float 
         Number of site to generate the coordinates onto. 

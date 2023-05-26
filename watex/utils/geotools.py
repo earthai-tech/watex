@@ -19,10 +19,115 @@ import matplotlib.gridspec as GridSpec
 from .funcutils import ( 
     smart_format, 
     station_id, 
+    convert_value_in 
     )
-from ..exceptions import StrataError 
+from ..exceptions import StrataError, DepthError  
 from .._watexlog import watexlog 
 _logger = watexlog().get_watex_logger(__name__ )
+
+def get_random_thickness(
+    depth, / , 
+    n_layers=None, 
+    h0= 1 , 
+    shuffle = True , 
+    dirichlet_dist=False, 
+    random_state= None, 
+    unit ='m'
+): 
+    """ Generate a random thickness value for number of layers 
+    in deeper. 
+    
+    Parameters 
+    -----------
+    depth: ArrayLike, float 
+       Depth data. If ``float`` the number of layers `n_layers` must 
+       be specified. Otherwise an error occurs. 
+    n_layers: int, Optional 
+       Number of layers that fit the samples in depth. If depth is passed 
+       as an ArrayLike, `n_layers` is ignored instead. 
+    h0: int, default='1m' 
+      Thickness of the first layer. 
+      
+    shuffle: bool, default=True 
+      Shuffle the random generated thicknesses. 
+
+    dirichlet_dis: bool, default=False 
+      Draw samples from the Dirichlet distribution. A Dirichlet-distributed 
+      random variable can be seen as a multivariate generalization of a 
+      Beta distribution. The Dirichlet distribution is a conjugate prior 
+      of a multinomial distribution in Bayesian inference.
+      
+    random_state: int, array-like, BitGenerator, np.random.RandomState, \
+         np.random.Generator, optional
+      If int, array-like, or BitGenerator, seed for random number generator. 
+      If np.random.RandomState or np.random.Generator, use as given.
+      
+    unit: str, default='m' 
+      The reference unit for generated layer thicknesses. Default is 
+      ``meters``
+      
+    Return 
+    ------ 
+    thickness: Arraylike of shape (n_layers, )
+      ArrayLike of shape equals to the number of layers.
+      
+    Examples
+    ---------
+    >>> from watex.utils.geotools import get_random_thickness 
+    >>> get_random_thickness (7, 10, random_state =42  )
+    array([0.41865079, 0.31785714, 1.0234127 , 1.12420635, 0.51944444,
+           0.92261905, 0.6202381 , 0.8218254 , 0.72103175, 1.225     ])
+    >>> get_random_thickness (7, 10, random_state =42 , dirichlet_dist=True )
+    array([1.31628992, 0.83342521, 1.16073915, 1.03137592, 0.79986286,
+           0.8967135 , 0.97709521, 1.34502617, 1.01632075, 0.62315132])
+    """
+
+    if hasattr (depth , '__array__'): 
+        max_depth = max( depth )
+        n_layers = len(depth )
+        
+    else: 
+        try: 
+            max_depth = float( depth )
+        except: 
+            raise DepthError("Depth must be a numeric or arraylike of float."
+                             f"Got {type (depth).__name__!r}")
+
+    if n_layers is None: 
+        raise DepthError ("'n_layers' is needed when depth is not an arraylike.")
+
+    layer0 = copy.deepcopy(h0)
+
+    try: 
+        h0= convert_value_in (h0 , unit=unit)
+    except : 
+        raise TypeError(f"Invalid thickness {layer0}. The thickness for each"
+                        f" stratum should be numeric.Got {type(layer0).__name__!r}")
+
+    thickness = np.linspace  (h0 , max_depth, n_layers) 
+    thickness /= max_depth 
+    # add remain data value to depth. 
+    if  round ( max_depth - thickness.sum(), 2)!=0: 
+        
+        thickness +=  np.linspace (h0, abs (max_depth - thickness.sum()),
+                                   n_layers )/thickness.sum()
+    if dirichlet_dist: 
+        if random_state: 
+            np.random.seed (random_state )
+        if n_layers < 32: 
+            thickness= np.random.dirichlet (
+                np.ones ( n_layers), size =n_layers) 
+            thickness= np.sum (thickness, axis = 0 )
+        else: 
+            thickness= np.random.dirichlet (thickness) 
+            thickness *= max_depth  
+    
+    if shuffle: 
+        ix = np.random.permutation (
+            np.arange ( len(thickness)))
+        thickness= thickness[ix ]
+  
+    return thickness 
 
 
 def lns_and_tres_split(ix,  lns, tres):
@@ -814,9 +919,6 @@ def print_running_line_prop(obj, inversion_software='Occam2D') :
         i, os.path.basename( str(getattr(obj, f'{i}_fn'))))  
      for i in ['model', 'iter', 'mesh', 'data']]) )
     print('~'*108)
-
-
-
 
 def map_bottom (bottom, data, origin=None): 
     """Reduce the plot map from the top assumes to start at 0. to the

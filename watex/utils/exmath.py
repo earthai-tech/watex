@@ -5307,7 +5307,7 @@ def plot_confidence_in(
                 
         ax.set_xlabel ('Distance (m)', fontsize =1.2 * fontsize,
                        fontdict ={'weight': 'bold'})
-        ax.set_ylabel (f"Confidence ratio in {clab}", fontsize = 1.2 * fontsize , 
+        ax.set_ylabel ("Confidence ratio x100 (%)", fontsize = 1.2 * fontsize , 
                        fontdict ={'weight': 'bold'}
                        )
         ax.tick_params (labelsize = fontsize)
@@ -5485,10 +5485,13 @@ def qc(
     # compute the ratio ck
     # ck = 1. -    rr[np.nonzero(rr)[0]].sum() / (
     #     1 if len(np.nonzero(rr)[0])== 0 else len(np.nonzero(rr)[0])) 
-    # ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
-    ck = 1 - nan_sum[np.nonzero(rr)[0]].sum() / (
+    # ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr)
+    
+    # using np.nonzero(rr) seems deprecated 
+    # ck = 1 - nan_sum[np.nonzero(rr)[0]].sum() / (
+    #     ar.shape [0] * ar.shape [1]) 
+    ck = 1 - nan_sum[rr[0]].sum() / (
         ar.shape [0] * ar.shape [1]) 
-  
     # now consider dirty data where the value is higher 
     # than the tol parameter and safe otherwise. 
     index = reshape (np.argwhere (rr > tol))

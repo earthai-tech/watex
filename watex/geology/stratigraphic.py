@@ -26,7 +26,7 @@ from ..decorators import (
     )
 from ..exceptions import NotFittedError
 from .core import (
-    Base 
+    GeoBase 
     )
 from .database import ( 
     GeoDataBase,
@@ -70,7 +70,7 @@ _logger = watexlog().get_watex_logger(__name__ )
 __all__=["GeoStrataModel"]
 
 #XXXTODO: add MODEM construction block  in progress 
-class GeoStrataModel(Base):
+class GeoStrataModel(GeoBase):
 
     def __init__(
         self, 

@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 #   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-"""
-Created on Thu Oct 13 14:52:26 2022
+#   created on Thu Oct 13 14:52:26 2022
 
-@author: Daniel
-"""
+import itertools
+import numpy as np
+import pandas as pd 
+from .._typing import List 
+
 class Boxspace(dict):  
     """Is a container object exposing keys as attributes.
     
@@ -205,4 +207,169 @@ class _Group:
     
         return ''.join (ag) 
     
+def data2Box(
+    data, /,  
+    name: str = None, 
+    use_colname: bool =False, 
+    keep_col_data: bool =True, 
+    columns: List [str] =None 
+    ): 
+    """ Transform each data rows as Boxspace object. 
+    
+    Parameters 
+    -----------
+    data: DataFrame 
+      Data to transform as an object 
+      
+    columns: list of str, 
+      List of str item used to construct the dataframe if tuple or list 
+      is passed. 
+      
+    name: str, optional 
+       The object name. When string argument is given, the index value of 
+       the data is is used to prefix the name data unless the `use_column_name`
+       is set to ``True``. 
+       
+    use_colname: bool, default=False 
+       If ``True`` the name must be in columns. Otherwise an error raises. 
+       However, when ``use_colname=true``, It is recommended to make sure 
+       whether each item in column data is distinct i.e. is unique, otherwise, 
+       some data will be erased. The number of object should be less than 
+       the data size along rows axis. 
+       
+    keep_col_data: bool, default=True 
+      Keep in the data the column that is used to construct the object name.
+      Otherwise, column data whom object created from column name should 
+      be dropped. 
+      
+    Return
+    --------
+    Object: :class:`.BoxSpace`, n_objects = data.size 
+       Object that composed of many other objects where the number is equals 
+       to data size. 
+       
+    Examples
+    --------- 
+    >>> from watex.utils.box import data2Box 
+    >>> o = data2Box ([2, 3, 4], name = 'borehole')
+    >>> o.borehole0
+    {'0': 2}
+    >>> o = data2Box ({"x": [2, 3, 4], "y":[8, 7, 5]}, name = 'borehole')
+    >>> o.borehole0.y
+    8
+    >>> from watex.utils.box import data2Box 
+    >>> o = data2Box ([2, 3, 4], name = 'borehole', columns ='id') 
+    >>> o.borehole0.id
+    2
+    >>> o = data2Box ({"x": [2, 3, 4], "y":[8, 7, 5], 
+                       "code": ['h2', 'h7', 'h12'] }, name = 'borehole')
+    >>> o.borehole1.code
+    'h7'
+    >>> o = data2Box ({"x": [2, 3, 4], "y":[8, 7, 5], "code": ['h2', 'h7', 'h12'] }, 
+                      name = 'code', use_colname= True )
+    >>> o.h7.code
+    'h7'
+    >>> o = data2Box ({"x": [2, 3, 4], "y":[8, 7, 5], "code": ['h2', 'h7', 'h12'] 
+                       }, name = 'code', use_colname= True, keep_col_data= False  )
+    >>> o.h7.code # code attribute does no longer exist 
+    AttributeError: code
+    """
+    from .validator import _is_numeric_dtype 
+    from .funcutils import is_iterable 
+    
+    if columns is not None: 
+        columns = is_iterable (
+            columns, exclude_string= True , transform =True  )
+   
+    if ( 
+            not hasattr ( data , 'columns') 
+            or hasattr ( data, '__iter__')
+            ): 
+        data = pd.DataFrame ( data, columns = columns )
+        
+    if not hasattr(data, '__array__'): 
+            raise TypeError (
+                f"Object accepts only DataFrame. Got {type(data).__name__}")
 
+    if columns is not None: 
+        # rename columns if given 
+        data = pd.DataFrame(np.array( data), columns = columns )
+        
+    if name is not None: 
+        # Name must be exists in the dataframe. 
+        if use_colname:  
+            if name not in data.columns:  
+                raise ValueError (
+                    f"Name {name!r} must exist in the data columns.")
+            
+            name =  data [name] if keep_col_data else data.pop ( name )
+            
+    # make name column if not series 
+    if not hasattr ( name, 'name'):
+        # check whether index is numeric then prefix with index 
+        index = data.index 
+        if _is_numeric_dtype(index, to_array= True ): 
+            index = index.astype (str)
+            if name is None:
+                name ='obj'
+        
+        name = list(map(''.join, itertools.zip_longest(
+            [name  for i in range ( len(index ))], index)))
+        
+    # for consistency # reconvert name to str 
+    name = np.array (name ).astype ( str )
+    
+    obj = dict() 
+    for i in range ( len(data)): 
+        v = Boxspace( **dict ( zip ( data.columns.astype (str),
+                                    data.iloc [i].values )))
+        obj [ name[i]] = v 
+        
+    return Boxspace( **obj )
+
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            

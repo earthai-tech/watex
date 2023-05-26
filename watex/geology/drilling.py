@@ -3,28 +3,643 @@
 #   Author: LKouadio <etanoyau@gmail.com>
 #   Created on Thu Sep 29 08:30:12 2022 
 
-from __future__ import ( 
-    print_function , annotations)
-
+from __future__ import print_function , annotations
 import os 
 from warnings import warn 
 import numpy as np 
 import pandas as pd 
-from .._typing import ( 
-    NDArray, 
-    DataFrame, 
-)
-from .geology import ( 
-    Geology 
-    )
 
-from .core import (
-    get_agso_properties 
-    )
+from .core import get_agso_properties 
+from .geology import Geology
+from .._typing import NDArray, DataFrame
+from ..exceptions import NotFittedError 
+from ..site import Profile 
 from ..utils._dependency import import_optional_dependency 
+from ..utils.box import data2Box 
+from ..utils.coreutils import _is_readable, makeCoords 
+from ..utils.funcutils import ( 
+    _assert_all_types, 
+    to_numeric_dtypes , 
+    smart_strobj_recognition, 
+    convert_value_in 
+    )
+from ..utils.geotools import get_random_thickness
+from ..utils.validator import check_array 
 
-#XXX TODO module is in progress 
-# not finish yet link Borehole to Geology 
+class DSBoreholes :
+    """
+    Class deals with many boreholes dataset. 
+    
+    DSBoreholes works with the data set composed of multiple borehole data. 
+    The data columns are the all attributes of the object and any 
+    non-alphateic character is replaced by ``_``. For instance, a column name 
+    ``layer thickness`` should have an attribute named ``layer_thickness``. 
+    Each borehole (row) data become its own object which encompasses all 
+    columns as attributes. To have full control of how data must be 
+    retrieved, ``holeid`` parameter must be set. For instance, to retrieve 
+    the borehole with ID equals to `bx02`, after fitting the class with 
+    appropriate parameters, attibute `hole depth` ( if exist in the data) can  
+    be retrieved as ``self.hole.bx02.hole_depth``. 
+    
+    By default if the projection is given as latitude/longitude 
+
+    Parameters
+    ------------
+    area: str
+       Name of area where the data collection is made. 
+      
+    holeid: str, optional 
+       The name of column of the boreholes collections ID. Note that if 
+       given, it should exist in the borehole datasets. 
+      
+    lon, lat: ArrayLike 1d /str  , optional 
+       One dimensional arrays. `xlon` can be consider as the abscissa of   
+       the landmark and `ylat` as ordinates array.  If `xlon` or `ylat` is  
+       passed as string argument, `data` must be passed as `fit_params` 
+       keyword arguments and the name of `xlon` and `y` must be a column 
+       name of the `data`. 
+       By default `xlon` and `ylat` are considered as `longitude` and 
+       `latitude` when ``dms`` or ``ll`` coordinate system is passed.
+       
+    utm_zone: Optional, string
+       zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
+       of coordinates points in the survey area. It should be a string (##N or ##S)
+       in the form of number and North or South hemisphere, 10S or 03N
+       
+    projection: str, ['utm'|'dms'|'ll'] 
+       The coordinate system in which the data points for the profile is collected. 
+       If not given, the auto-detection will be triggered and find the  suitable 
+       coordinate system. However, it is recommended to provide it for consistency. 
+       Note that if `x` and `y` are composed of value less than 180 degrees 
+       for longitude and 90 degrees for latitude, it should be considered as  
+       longitude-latitude (``ll``) coordinates system. If `x` and `y` are 
+       degree-minutes-second (``dms`` or ``dd:mm:ss``) data, they must be 
+       specify as coordinate system in order to accept the non-numerical data 
+       before transforming to ``ll``. If ``data`` is passed to the :meth:`.fit`
+       method and ``dms`` is not specify, `x` and `y` values should be discarded.
+       
+    datum: string, default = 'WGS84'
+       well known datum ex. WGS84, NAD27, NAD83, etc.
+
+    epsg: Optional, int
+       epsg number defining projection (
+            see http://spatialreference.org/ref/ for moreinfo)
+       Overrides utm_zone if both are provided. 
+
+    encoding: str, default ='utf8'
+       Default encoding for parsing data. Can also be ['utf-16-be'] for 
+       reading bytes characters. 
+       
+    interp_coords: bool, default=False 
+       Interpolate position coordinates.
+      
+    reference_ellipsoid: int, default=23 
+       reference ellipsoids is derived from Peter H. Dana's website-
+       http://www.utexas.edu/depts/grg/gcraft/notes/datum/elist.html
+       Department of Geography, University of Texas at Austin
+       Internet: pdana@mail.utexas.edu . Default is ``23`` constrained to 
+       WGS84. 
+       
+    verbose: int, default=0 
+       Output messages. 
+      
+    Attributes 
+    ----------
+    lon_, lat_: Arraylike, 
+       longitude/latitude of coordinates arrays. 
+       
+    `hole.<holeid>.<data_column>`: :class:`~watex.utils.box.Boxspace` 
+       Each borehole, commonly which ID correspond to  each row. Each row
+       can be fetched as 'holeID'. If `holeid` is nt specified, the string 
+       literal `hole+index of data` composed the borehole object. 
+       
+    Notes 
+    ------
+    When `data` is supplied and `lon` and `lat` are given by their names 
+    existing in the dataframe columns, by default, the non-numerical 
+    data are removed. However, if `y` and `x` are given in DD:MM:SS in 
+    the dataframe, the coordinate system must explicitly set to ``dms`
+    to keep the non-numerical values in the data. 
+    
+    """
+    def __init__(
+        self, 
+        area:str=None,
+        holeid:str=None,
+        lat:str=None, 
+        lon:str=None, 
+        projection:str ='ll', 
+        utm_zone:str=None, 
+        datum:str='WGS84', 
+        epsg:int=None, 
+        encoding:str='utf-8', 
+        interp_coords:bool=False, 
+        reference_ellipsoide:int=23, 
+        verbose:bool=False 
+        ): 
+        
+        self.area =area 
+        self.holeid=holeid  
+        self.projection= projection 
+        self.utm_zone=utm_zone 
+        self.reference_ellipsoide= reference_ellipsoide 
+        self.datum=datum 
+        self.encoding= encoding 
+        self.epsg =epsg 
+        self.interp_coords=interp_coords
+        self.lon=lon 
+        self.lat=lat 
+        self.verbose= verbose 
+            
+    def fit ( self, data, **fit_params): 
+        """ Fit Hole data set and populate attributes. 
+        
+        Parameters 
+        ----------
+        data: Path-like Object or DataFrame 
+          Hole data. 
+          
+        fit_params: dict,
+          Keyword arguments passed to :func:`watex.to_numeric_dtypes` to 
+          sanitize the data. 
+          
+        Return 
+        ------
+        self: :class:`DSBoreholes`
+          Instanced object for chaining methods. 
+          
+        """
+        columns = fit_params.pop ("columns", None  )
+        data = _is_readable(data, as_frame =True, 
+                            input_name= 'b', 
+                            columns = columns, 
+                            encoding =self.encoding 
+                            )
+        
+        data = check_array (
+            data, 
+            force_all_finite= "allow-nan", 
+            dtype =object , 
+            input_name="Boreholes data", 
+            to_frame=True, 
+            )
+        self.lon_=None; self.lat_=None 
+        
+        if ( self.lon is not None 
+            and self.lat is not None
+            ): 
+            p = Profile (utm_zone = self.utm_zone , 
+                         coordinate_system= self.projection, 
+                         datum= self.datum , 
+                         epsg= self.epsg, 
+                         reference_ellipsoid=self.reference_ellipsoid 
+                         ) 
+            p.fit (x = self.lon, y = self.lat, data = data ) 
+  
+            if self.interp_coords: 
+               p.interpolate ()
+               
+            self.lon_= p.x 
+            self.lat_= p.y 
+            
+        # For consistency, Check the datatype, sanitize columns 
+        # and drop all NaN columns and row values
+        data, nf, cf = to_numeric_dtypes(
+            data , 
+            return_feature_types= True, 
+            verbose =self.verbose, 
+            sanitize_columns= True, 
+            fill_pattern='_', 
+            **fit_params 
+            )
+
+        self.feature_names_in_ = nf + cf 
+        
+        if len(cf )!=0:
+            # sanitize the categorical values 
+            for c in cf : 
+                data[c] = data[c].str.strip() 
+            
+        for name in data.columns : 
+            setattr (self, name, data[name])
+            
+        # set depth attributes 
+        if 'depth'  in self.feature_names_in_: 
+            self.depth_= data['depth']
+            
+        self.data_ = data.copy() 
+        
+        use_col =False 
+        if self.holeid is not None: 
+            use_col = True 
+        else: self.holeid ='hole'
+            
+        self.hole = data2Box ( 
+            self.data_ , 
+            name =self.holeid, 
+            use_colname= use_col
+                      )
+        
+        return self  
+    
+    def set_coordinates (
+        self, 
+        reflong, 
+        reflat,  
+        step ='5m', 
+        todms=False, 
+        r= 45, 
+        **kws
+         ): 
+        """ Generate longitude and latitude coordinates for boreholes. 
+        
+        It assumes boreholes are  aligned along the same axis. 
+     
+        Parameters 
+        -----------
+        reflong: float or string or list of [start, stop]
+            Reference longitude  in degree decimal or in DD:MM:SS for 
+            the first site considered as the origin of the landmark.
+            
+        reflat: float or string or list of [start, stop]
+            Reference latitude in degree decimal or in DD:MM:SS for the 
+            reference site considered as the landmark origin. If value is 
+            given in a list, it can containt the start point and the 
+            stop point. 
+            
+        step: float or str 
+            Offset or the distance of seperation between different sites 
+            in meters. If the value is given as string type, except 
+            the ``km``, it should be considered as a ``m`` value. Only 
+            meters and kilometers are accepables.
+            
+        r: float or int 
+            The rotate angle in degrees. Rotate the angle features 
+            toward the direction of the projection profile. 
+            Default value use the :meth:`~.bearing` value in degrees. 
+               
+        todms: bool, Default=False
+            Reconvert the longitude/latitude degree decimal values into 
+            the DD:MM:SS. 
+     
+        kws: dict, 
+           Additional keywords of :func:`~watex.utils.exmath.makeCoords`.   
+           
+        Returns 
+        --------
+        self: Instanced object 
+        
+          Instanced object for method chaining.
+        
+        """
+        self.inspect
+        
+        nsites = len(self.data_ )
+        isutm = False if self.projection =='ll' else True 
+        utm_zone =  kws.pop ('utm_zone', None ) or self.utm_zone 
+        
+        self.lon_, self.lat_= makeCoords(
+            reflong, 
+            reflat, 
+            nsites =nsites, 
+            r= r ,  
+            step =step , 
+            todms=todms, 
+            utm_zone= utm_zone, 
+            is_utm= isutm, 
+            datum=self.datum, 
+            espg=self.epsg,
+            **kws
+            ) 
+        
+        return self    
+        
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        _t = ("name", "dname", "projection", "utm_zone", "encoding", "datum", 
+              "epsg", "reference_ellipsoid" ,"interp_coords", "verbose")
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={ False if getattr(self, k)==... else  getattr(self, k)!r}" 
+             for k in _t]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+       
+    
+    def __getattr__(self, name):
+       rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+       appender  = "" if rv is None else f'. Do you mean {rv!r}'
+       
+       err_msg =  f'{appender}{"" if rv is None else "?"}' 
+       
+       raise AttributeError (
+           f'{self.__class__.__name__!r} object has no attribute {name!r}'
+           f'{err_msg}'
+           )
+
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'hole'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1  
+    
+    
+class DSBorehole: 
+    """ Class delas with Borehole datasets. 
+    
+    :class:`watex.geology.drilling.DSBorehole` works with data collected in 
+    a single borehole. For instance, it could follow the arrangement of 
+    ``h502`` data in :func:`watex.datasets.load_hlogs`
+    
+    Parameters
+    ------------
+    name: str
+       Name or ID of the borehole. 
+      
+    dname: str, optional 
+       Depth column name. If `depth` is specify an attribute `depth_` should 
+       be created. Depth specification is usefull for log plotting of machine
+       training.
+       
+    utm_zone: Optional, string
+       zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
+       of coordinates points in the survey area. It should be a string (##N or ##S)
+       in the form of number and North or South hemisphere, 10S or 03N
+       
+    projection: str, ['utm'|'dms'|'ll'] 
+       The coordinate system in which the data points for the profile is collected. 
+       If not given, the auto-detection will be triggered and find the  suitable 
+       coordinate system. However, it is recommended to provide it for consistency. 
+       Note that if `x` and `y` are composed of value less than 180 degrees 
+       for longitude and 90 degrees for latitude, it should be considered as  
+       longitude-latitude (``ll``) coordinates system. If `x` and `y` are 
+       degree-minutes-second (``dms`` or ``dd:mm:ss``) data, they must be 
+       specify as coordinate system in order to accept the non-numerical data 
+       before transforming to ``ll``. If ``data`` is passed to the :meth:`.fit`
+       method and ``dms`` is not specify, `x` and `y` values should be discarded.
+       
+    datum: string, default = 'WGS84'
+       well known datum ex. WGS84, NAD27, NAD83, etc.
+
+    epsg: Optional, int
+       epsg number defining projection (
+            see http://spatialreference.org/ref/ for moreinfo)
+       Overrides utm_zone if both are provided. 
+
+    reference_ellipsoid: int, default=23 
+       reference ellipsoids is derived from Peter H. Dana's website-
+       http://www.utexas.edu/depts/grg/gcraft/notes/datum/elist.html
+       Department of Geography, University of Texas at Austin
+       Internet: pdana@mail.utexas.edu . Default is ``23`` constrained to 
+       WGS84. 
+        
+    encoding: str, default ='utf8'
+       Default encoding for parsing data. Can also be ['utf-16-be'] for 
+       reading bytes characters. 
+       
+    lonlat: Tuple, Optional 
+       longitude/latitude for borehole coordinates. The location where the 
+       borehole is performed. 
+      
+    verbose: int, default=0 
+       Output messages. 
+      
+    Attributes
+    -----------
+    depth_: Series 
+       Depth array if `dname` is specified. 
+    data_: Pandas DataFrame
+       Sanitized dataframe. 
+    
+    Note 
+    ------
+    Each columns of the dataframe is an attribute. Note that all the non-
+    alphabetic letters is removed and replace by '_'. 
+    
+    """
+    def __init__ (
+        self,
+        name:str=None, 
+        dname: str=None,
+        projection:str='ll', 
+        utm_zone:str=None, 
+        datum:str ='WGS84', 
+        epsg:int=None, 
+        reference_ellipsoid:int=23,
+        encoding:str ='utf-8', 
+        lonlat:tuple =None, 
+        verbose:int= 0, 
+        ): 
+        
+        self.name=name
+        self.dname=dname 
+        self.projection= projection 
+        self.utm_zone=utm_zone 
+        self.reference_ellipsoid= reference_ellipsoid 
+        self.datum=datum 
+        self.encoding= encoding
+        self.epsg =epsg 
+        self.verbose= verbose 
+   
+    def fit(self, data,  **fit_params ):
+        """ Fit Borehole data and populate attribute data. 
+        
+        By default if the projection is given as latitude/longitude 
+        xlon, ylat are longitude and latitude respectively. 
+ 
+        Parameters
+        ------------
+        data: pd.DataFrame or Path-like object. 
+           Data containing `xlon` and `y` values as series. Then if `xlon` and `y`
+           are given as string argument, their names must be included in the 
+           data columns. Otherwise an error will raise. 
+           
+        Return 
+        ---------
+        self : Instanced object 
+            Instanced object for chaining method. 
+            
+        """
+        columns = fit_params.pop ("columns", None  )
+        data = _is_readable(data, as_frame =True, input_name= 'b', 
+                columns = columns, encoding =self.encoding )
+        
+        data = check_array (
+            data, 
+            force_all_finite= "allow-nan", 
+            dtype =object , 
+            input_name="Borehe data", 
+            to_frame=True, 
+            )
+        
+        data, nf, cf = to_numeric_dtypes(
+            data , 
+            return_feature_types= True, 
+            verbose =self.verbose, 
+            sanitize_columns= True, 
+            fill_pattern='_', 
+            **fit_params 
+            )
+
+        self.feature_names_in_ = nf + cf 
+        
+        if len(cf )!=0:
+            # sanitize the categorical values 
+            for c in cf : 
+                data[c] = data[c].str.strip() 
+            
+        
+        for name in data.columns : 
+            setattr (self, name, data[name])
+            
+        # set depth attributes 
+        self.depth_= None 
+        
+        if self.dname is not None: 
+            if self.dname not in self.feature_names_in_: 
+                self.dname ='depth' 
+        
+        if self.dname  in self.feature_names_in_: 
+            self.depth_= data[self.dname]
+            
+        self.data_ = data.copy() 
+        
+        return self 
+    
+    
+    def set_depth ( 
+        self ,z0=0.,  max_depth =None, 
+        ): 
+        """ Set the a random depth if depth is not given.
+        
+        To fetch the depth, use attribute `depth_`. Note that if the depth 
+        exist, calling `set_depth` will arase the former depth value. Use 
+        in cautioness. 
+        
+        Parameters 
+        -----------
+        z0: float, default=0.
+         The surface reference. Preferably, it is set to null. 
+         
+        max_depth: float, default=700. 
+          The maximum depth. Depth size must fit the length of the data in 
+          meters. Default depth is fixed to 700 meters. 
+          
+        Return
+        -------
+        self: Instanced object 
+            Instanced object for chaining method. 
+        
+        """
+        self.inspect 
+        z0 = convert_value_in (z0 )
+        
+        max_depth = 700. if not max_depth else max_depth 
+
+        max_depth = float( _assert_all_types ( max_depth, int, float, 
+                                              objname = 'Maximum-depth')) 
+ 
+        self.depth_ = pd.Series ( np.linspace ( z0, max_depth, len(self.data_) 
+                                               ), name ='depth')
+        # append depth data 
+        # self.data_.insert (0 , 'depth', self.depth_, allow_duplicates =True)
+        self.data_ = pd.concat ([ self.depth_, self.data_], axis = 1, 
+                                ignore_index =True )
+
+        return self 
+    
+    def set_thickness(self, h0= 1 , **kws ): 
+        """ Set a random layer thickness from borehole refering to the depth.
+        
+        To fetch the thickness, use attribute `layer_thickness_`. 
+        
+        Parameters 
+        -----------
+        h0: int, default='1m' 
+          Thickness of the first layer. 
+          
+        shuffle: bool, default=True 
+          Shuffle the random generated thicknesses. 
+
+        dirichlet_dis: bool, default=False 
+          Draw samples from the Dirichlet distribution. A Dirichlet-distributed 
+          random variable can be seen as a multivariate generalization of a 
+          Beta distribution. The Dirichlet distribution is a conjugate prior 
+          of a multinomial distribution in Bayesian inference.
+          
+        random_state: int, array-like, BitGenerator, np.random.RandomState, \
+             np.random.Generator, optional
+          If int, array-like, or BitGenerator, seed for random number generator. 
+          If np.random.RandomState or np.random.Generator, use as given.
+          
+        unit: str, default='m' 
+          The reference unit for generated layer thicknesses. Default is 
+          ``meters``
+        
+        Return
+        -------
+        self: Instanced object 
+            Instanced object for chaining method. 
+        
+        """
+        self.inspect 
+        
+        if self.depth_ is None:
+            self.set_depth () 
+            
+        thickness = get_random_thickness  ( self.depth_, **kws)
+        
+        self.layer_thickness_= pd.Series (thickness, name='layer_thickness' )
+        self.data_ = pd.concat ([  self.data_,  self.layer_thickness_], 
+                                axis = 1, ignore_index =True )
+        
+        return self 
+    
+
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        _t = ("name", "dname", "projection", "utm_zone", "encoding", "datum", 
+              "epsg", "reference_ellipsoid" ,"interp_coords", "verbose")
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={ False if getattr(self, k)==... else  getattr(self, k)!r}" 
+             for k in _t]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+       
+    
+    def __getattr__(self, name):
+       rv = smart_strobj_recognition(name, self.__dict__, deep =True)
+       appender  = "" if rv is None else f'. Do you mean {rv!r}'
+       
+       err_msg =  f'{appender}{"" if rv is None else "?"}' 
+       
+       raise AttributeError (
+           f'{self.__class__.__name__!r} object has no attribute {name!r}'
+           f'{err_msg}'
+           )
+
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'data_'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1
+    
+     
 class Borehole(Geology): 
     """
     Focused on Wells and `Borehole` offered to the population. To use the data
@@ -74,7 +689,6 @@ class Borehole(Geology):
         self._logging.info ("fit {self.__class__.__name__!r} for corresponding"
                             "attributes. ")
     
-            
         return self
     
 class Drill(Geology):

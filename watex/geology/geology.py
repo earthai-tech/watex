@@ -9,7 +9,7 @@ import numpy as np
 
 import pandas as pd
 from .core import (
-    Base, 
+    GeoBase, 
     get_agso_properties 
     )
 from ..utils.funcutils import ( 
@@ -85,7 +85,7 @@ class Geology:
         pass
  
                
-class Structures(Base): 
+class Structures(GeoBase): 
     """
     This class is an auxilliary class to supplement geodatabase , 
     if the GeodataBase doesnt reply  to SQL request  , then use this class
@@ -279,7 +279,7 @@ class Structures(Base):
             f'{appender}{"" if rv is None else "?"}'
             )        
         
-class Structural(Base) :
+class Structural(GeoBase) :
     """
     Geology strutural conventions class.
     

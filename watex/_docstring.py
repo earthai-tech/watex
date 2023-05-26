@@ -763,7 +763,7 @@ _core_docs = dict(
 """
 .. currentmodule:: watex
 """
-
+#.. |API change| replace:: :bdg-dark:`API change`
 # Define replacements (used in whatsnew bullets)
 
 wx_rst_epilog ="""
@@ -786,7 +786,7 @@ wx_rst_epilog ="""
 .. |Feature| replace:: :bdg-success:`Feature`
 .. |Major feature| replace:: :bdg-success:`Major feature`
 .. |Major change| replace:: :bdg-primary:`Major change`
-.. |API change| replace:: :bdg-dark:`API change`
+.. |API change| replace:: :bdg-warning:`API change`
 .. |Deprecated| replace:: :bdg-warning:`Deprecated`
 
 .. |Open Source? Yes!| image:: https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github

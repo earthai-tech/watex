@@ -23,7 +23,6 @@ from ..exceptions import (
     NotFittedError, 
     EMError,
     ZError, 
-    
 ) 
 from ..externals.z import Z as EMz 
 from ..utils.funcutils import ( 

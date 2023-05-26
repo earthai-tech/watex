@@ -28,8 +28,6 @@ These are minor changes  in ``v0.2.2`` that shows fugs fixed, features and impro
 - |Feature| new function :func:`watex.utils.plot_roc_curves` for visualizing the Receiving Operating Characterisctic (ROC) curves either 
   into a single plot ( used by default) or individual plot for each model by setting the parameter ``all=True``. 
   
-- |Enhancement| Supplement boreholes data are added to :func:`watex.datasets.load_hlogs`. They include boreholes ``'h805' ,'h1102' ,'h1405', 'h2602','h803',
-  'h1104', 'h604', 'h2003'`` and  ``'h1602'``. 
  
  
 

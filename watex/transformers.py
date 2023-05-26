@@ -6,12 +6,13 @@
 """
 Gives some efficient tools for data manipulation and transformation.
 """
-from __future__ import division 
+from __future__ import division, annotations  
 
 import inspect
 import warnings 
 import numpy as np 
 import pandas as pd 
+from scipy import sparse 
 # from pandas.api.types import is_integer_dtype
 from .exlib.sklearn  import ( 
     StratifiedShuffleSplit, 
@@ -26,9 +27,13 @@ from .exlib.sklearn  import (
 )
  
 from ._watexlog import watexlog 
+from ._typing import F 
+from .exceptions import EstimatorError
 from .utils.funcutils import ( 
     _assert_all_types, 
-    parse_attrs , to_numeric_dtypes
+    parse_attrs , 
+    to_numeric_dtypes,
+    assert_ratio 
     )
 from .utils.mlutils import (  
     discretizeCategoriesforStratification, 
@@ -36,6 +41,7 @@ from .utils.mlutils import (
     existfeatures 
     )
 from .utils.hydroutils import categorize_flow 
+from .utils.validator import get_estimator_name 
 
 __docformat__='restructuredtext'
 
@@ -51,82 +57,6 @@ __all__= ['KMeansFeaturizer',
           'featurize_X'
           ]
 
-def featurize_X (
-    X, y=None, *, 
-    n_clusters=7, 
-    target_scale = 5 ,
-    random_state=None, 
-    n_components=None, 
-    split_X_y = False, 
-    test_ratio = 0.2 , 
-    shuffle=True, 
-    return_model =False  
-    ): 
-    """ Featurize X with the cluster based on the KMeans featurization
-    
-    Parameters 
-    -----------
-    X, y : 
-    n_clusters: int, default=7
-       Number of initial clusters
-    target_scale: float, default=5.0 
-       Apply appropriate scaling and include it in the input data to k-means.
-    n_components: int, optional
-       Number of components for reduced down the predictor X. It uses the PCA 
-       to reduce down dimension to the importance components. 
-    random_state: int, Optional 
-       State for shuffling the data 
-    split_X_y: bool, default=False, 
-       Split the X, y into train data and test data  according to the test_size 
-    test_ratio: int, default=0.2 
-       ratio to keep for a test data. 
-       
-    shuffle: bool, default=True
-       Suffling the data set. 
-       
-    return_model: bool, default =False 
-       If ``True`` return the KMeans featurization mode and the transformed X.
-       
-    Returns 
-    -------- 
-    X : NDArray shape ( M, 2N)
-      Array like train data X transformed  and test if `split_X_y` is set to 
-      ``True``. 
-      
-    """ 
-    from scipy import sparse 
-    from watex.analysis import nPCA 
-    # reduce down feature to two. 
-    kmf_data = []
-    if n_components: 
-        X =nPCA (X, n_components = n_components  ) 
-        
-    if split_X_y: 
-        X, test_data , y, y_test = train_test_split ( 
-            X, y ,test_size = test_ratio, random_state = random_state ,
-            shuffle =shuffle)
-    # create a kmeaturization with hint model     
-    kmf_hint = KMeansFeaturizer(
-        n_clusters=n_clusters, 
-        target_scale=target_scale, 
-        random_state = random_state, 
-        ).fit(X,y)
-    ### Use the k-means featurizer to generate cluster features
-    training_cluster_features = kmf_hint.transform(X)
-    ### Form new input features with cluster features
-    # training_with_cluster
-    Xkmf = sparse.hstack((X, sparse.coo_matrix (training_cluster_features) ))
-    kmf_data.append(Xkmf)
-    kmf_data.append(y) 
-    if split_X_y: 
-        test_cluster_features = kmf_hint.transform(test_data)
-        test_with_cluster = sparse.hstack(
-            (test_data, sparse.coo_matrix (test_cluster_features)))
-        
-        kmf_data.insert(1,test_with_cluster )
-        kmf_data.append( y_test)
-    
-    return  tuple (kmf_data ) + (kmf_hint, ) if return_model else tuple(kmf_data )
 
 class KMeansFeaturizer:
     """Transforms numeric data into k-means cluster memberships.
@@ -151,11 +81,11 @@ class KMeansFeaturizer:
     
     Attributes 
     -----------
-    km_model: KMeans featurization model used to transfor
+    km_model: KMeans featurization model used to transform
 
     Examples 
     --------
-    (1) Use a common dataset 
+    >>> # (1) Use a common dataset 
     >>> import matplotlib.pyplot as plt 
     >>> from sklearn.datasets import make_moons
     >>> from watex.utils.plotutils import plot_voronoi 
@@ -168,9 +98,8 @@ class KMeansFeaturizer:
                       fig_title ='KMeans with hint', ax = ax [0] )
     >>> plot_voronoi ( X, y ,cluster_centers=kmf_no_hint.cluster_centers_, 
                       fig_title ='KMeans No hint' , ax = ax[1])
-    Out[84]: <AxesSubplot:title={'center':'KMeans No hint'}>
-    
-    (2)  Use a concrete data set 
+    <AxesSubplot:title={'center':'KMeans No hint'}>
+    >>> # (2)  Use a concrete data set 
     >>> X, y = load_mxs ( return_X_y =True, key ='numeric' ) 
     >>> # get the most principal components 
     >>> from watex.analysis import nPCA 
@@ -250,8 +179,8 @@ class KMeansFeaturizer:
                     max_iter=1)
         km_model.fit(X)
         
-        self.km_model = km_model
-        self.cluster_centers_ = km_model.cluster_centers_
+        self.km_model_ = km_model
+        self.cluster_centers_ = self.km_model_.cluster_centers_
         
         return self
 
@@ -268,7 +197,7 @@ class KMeansFeaturizer:
         labels : ndarray of shape (n_samples,)
             Index of the cluster each sample belongs to.
         """
-        clusters = self.km_model.predict(X)
+        clusters = self.km_model_.predict(X)
         return clusters[:,np.newaxis]
 
     def fit_transform(self, X, y=None):
@@ -290,6 +219,16 @@ class KMeansFeaturizer:
         self.fit(X, y)
         return self.transform(X, y)
 
+    def __repr__(self):
+        """ Pretty format for guidance following the API... """
+        _t = ("n_clusters", "target_scale", "random_state", "n_components")
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={ False if getattr(self, k)==... else  getattr(self, k)!r}" 
+             for k in _t]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+    
+    
 class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ): 
     """
     Stratified sampling transformer based on new generated category 
@@ -1437,6 +1376,185 @@ class FrameUnion (BaseEstimator, TransformerMixin) :
             
         return X
         
+def featurize_X (
+    X, 
+    y =None, *, 
+    n_clusters:int=7, 
+    target_scale:float= 5 ,
+    random_state:F|int=None, 
+    n_components: int=None,  
+    model: F =None, 
+    split_X_y:bool = False,
+    test_ratio:float|str= .2 , 
+    shuffle:bool=True, 
+    return_model:bool=...,
+    to_sparse: bool=..., 
+    sparsity:str ='coo' 
+    ): 
+    """ Featurize X with the cluster based on the KMeans featurization
+    
+    Parameters 
+    -----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features. 
+        Note ttaht when `n_components` is set, sparse matrix for `X` is not 
+        acceptable. 
+
+    y : array-like of shape (n_samples,)
+        Target vector relative to X.
+        
+    n_clusters: int, default=7
+       Number of initial clusters
+       
+    target_scale: float, default=5.0 
+       Apply appropriate scaling and include it in the input data to k-means.
+    n_components: int, optional
+       Number of components for reduced down the predictor X. It uses the PCA 
+       to reduce down dimension to the importance components. 
+       
+    model: :class:`KMeansFeaturizer`. 
+       KMeasFeaturizer model. Model can be provided to featurize the 
+       test data seperated from the train data. 
+       
+       .. versionadded:: 0.2.4 
+       
+    random_state: int, Optional 
+       State for shuffling the data 
+       
+    split_X_y: bool, default=False, 
+       Split the X, y into train data and test data  according to the test_size 
+       
+    test_ratio: int, default=0.2 
+       ratio to keep for a test data. 
+       
+    shuffle: bool, default=True
+       Suffling the data set. 
+       
+    return_model: bool, default =False 
+       If ``True`` return the KMeans featurization mode and the transformed X.
+       
+    to_sparse: bool, default=False 
+       Convert X data to sparse matrix, by default the sparse matrix is 
+       coordinates matrix (COO) 
+       
+    sparsity:str, default='coo'
+       Kind of sparse matrix use to convert `X`. It can be ['csr'|'coo']. Any 
+       other values with return a coordinates matrix unless `to_sparse` is 
+       turned to ``False``. 
+ 
+       .. versionadded:: 0.2.4 
+ 
+    Returns 
+    -------- 
+    X, y : NDArray shape (m_samples, n_features +1) or \
+        shape (m_samples, n_sparse_features)
+        Returns NDArray of m_features plus the clusters features from KMF 
+        feturization procedures. The `n_sparse_features` is created if 
+        `to_sparse` is set to ``True``. 
+   X, y, KMFmodel: NDarray and KMF models 
+       Returns transformed array X and y and model if   ``return_model`` is 
+       set to ``True``. 
+   
+      Array like train data X transformed  and test if `split_X_y` is set to 
+      ``True``. 
+    
+    Examples 
+    --------
+    >>> import numpy as np 
+    >>> from watex.transformers import featurize_X 
+    >>> X = np.random.randn (12 , 7 ) ; y = np.arange(12 )
+    >>> y[ y < 6 ]= 0 ; y [y >0 ]= 1  # for binary data 
+    >>> Xtransf , _ = featurize_X (X, to_sparse =False)
+    >>> X.shape, Xtransf.shape 
+    ((12, 7), (12, 8))
+    >>> Xtransf, y  = featurize_X (X,y,  to_sparse =True )
+    >>> Xtransf , y
+    (<12x8 sparse matrix of type '<class 'numpy.float64'>'
+     	with 93 stored elements in COOrdinate format>,
+     array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]))
+    >>> featurize_X (X,y,  to_sparse =True, split_X_y=True  )
+    (<9x8 sparse matrix of type '<class 'numpy.float64'>'
+     	with 71 stored elements in COOrdinate format>,
+     <3x8 sparse matrix of type '<class 'numpy.float64'>'
+     	with 24 stored elements in COOrdinate format>,
+     array([0, 1, 1, 0, 0, 0, 0, 1, 1]),
+     array([0, 1, 1]))
+    >>> *_, kmf_model = featurize_X (X,y,  to_sparse =True, return_model =True)
+    >>> kmf_model 
+    <'KMeansFeaturizer':n_clusters=7, target_scale=5, random_state=None, 
+    n_components=None>
+    """ 
+    # set False to value use 
+    # ellipsis...
+    if return_model is ...:
+        return_model =False 
+    if to_sparse is ...:
+        to_sparse =False 
+    
+    # if sparse convert X  to sparse matrix 
+    if to_sparse: 
+        d_sparsity  = dict ( csr =  sparse.csr_matrix , 
+            coo=  sparse.coo_matrix ) 
+        sparse_func = sparse.coo_matrix  if str(sparsity) not in (
+            'coo', 'csr')  else d_sparsity.get (sparsity ) 
+    
+    # reduce down feature to two. 
+    kmf_data = []
+    if n_components: 
+        from watex.analysis import nPCA 
+        X =nPCA (X, n_components = n_components  ) 
+        
+    if split_X_y: 
+        X, test_data , y, y_test = train_test_split ( 
+            X, y ,test_size = assert_ratio(test_ratio) , 
+            random_state = random_state ,
+            shuffle =shuffle)
+        
+    # create a kmeaturization with hint model
+    if model: 
+        if get_estimator_name(model ) !='KMeansFeaturizer': 
+            raise EstimatorError(
+                "Wrong model estimator. Expect 'KMeansFeaturizer'"
+                f" as the valid estimator. Got {get_estimator_name (model)!r}")
+            
+        if callable ( model ): 
+            model = model (n_clusters=n_clusters, 
+            target_scale=target_scale, 
+            random_state = random_state)
+    else: 
+        model = KMeansFeaturizer(
+            n_clusters=n_clusters, 
+            target_scale=target_scale, 
+            random_state = random_state, 
+            ).fit(X,y)
+        
+    ### Use the k-means featurizer to generate cluster features
+    transf_cluster = model.transform(X)
+    ### Form new input features with cluster features
+    # training_with_cluster
+    
+    Xkmf = np.concatenate (
+        (X, transf_cluster), axis =1 )
+    if to_sparse: 
+        Xkmf= sparse_func(Xkmf )
+
+    kmf_data.append(Xkmf)
+    kmf_data.append(y) 
+    if split_X_y: 
+
+        transf_test_cluster= model.transform(test_data)
+        test_with_cluster = np.concatenate (
+            (test_data, transf_test_cluster),axis =1 )
+        if sparse: 
+            test_with_cluster= sparse_func(test_with_cluster)
+ 
+        kmf_data.insert(1,test_with_cluster )
+        kmf_data.append( y_test)
+
+        
+    return  tuple (kmf_data ) + (model, ) \
+        if return_model else tuple(kmf_data )
 
 
 

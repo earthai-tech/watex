@@ -18,7 +18,9 @@ from .geology import (
     Structural, 
     )
 from .drilling import ( 
-    Borehole 
+    Borehole , 
+    DSBorehole, 
+    DSBoreholes, 
     )
 from .stratigraphic import  GeoStrataModel
 
@@ -28,5 +30,6 @@ __all__=[
     'Structural', 
     'Borehole', 
     'GeoStrataModel', 
-    
+    'DSBorehole', 
+    'DSBoreholes',
     ]

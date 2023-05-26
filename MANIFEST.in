@@ -4,7 +4,7 @@ recursive-include docs *
 recursive-include docs/_static *
 recursive-include examples *.txt *.py
 recursive-include watex *.c *.cpp *.h *.pyx *.pxd *.pxi *.tp
-recursive-include watex/datasets *.csv *.csv.gz *.rst *.jpg *.txt *.arff.gz *.json.gz *.zip *.pkl *.h5
+recursive-include watex/datasets *.csv *.csv.gz *.rst *.jpg *.txt *.arff.gz *.json.gz *.zip *.pkl *.h5 *.joblib
 recursice-include watex/utils *.npy 
 include LICENSE
 include README.md
@@ -26,6 +26,7 @@ recursive-exclude benchmarks *
 recursive-exclude .binder *
 recursive-exclude ci *
 recursive-exclude data * 
+recursive-exclude docs *.jpg *.mp4 *.png 
 
 exclude .readthedocs.yml 
 exclude CODE_OF_CONDUCT.md

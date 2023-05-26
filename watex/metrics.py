@@ -40,7 +40,14 @@ from .exlib.sklearn import (
     accuracy_score, 
     confusion_matrix as cfsmx ,
     )
-from .utils.validator import get_estimator_name 
+from .utils.validator import ( 
+    get_estimator_name, 
+    _is_numeric_dtype 
+    ) 
+from .utils.funcutils import ( 
+    is_iterable, 
+    _assert_all_types 
+    )
 
 _logger = watexlog().get_watex_logger(__name__)
 
@@ -79,7 +86,90 @@ _param_docs = DocstringComponents.from_nested_components(
     metric=DocstringComponents(_metrics_params ), 
     )
 
-# ------
+
+def information_value (Xp:ArrayLike, /,  Np:ArrayLike, Sp:ArrayLike, *, 
+                       return_tot :bool = ... ): 
+    """The information value (InV) constructs with the influencing factors 
+    landslide areas and calculates the sensitivity of each influencing 
+    factor.
+    
+    InV method is a statistical approach for the prediction of spatial events
+    on the basis of associated parameters and landslide relationships [1]_. 
+    The inV :math:`I_i` of each causative factor :math:`X_i` can be 
+    expressed as: 
+        
+    .. math:: 
+        
+        I_i= \log \frac{\frac{S_i}{N_i}{\frac{S}{N}} 
+                        
+    where :math:`S_i`  is the landslide pixel number in the presence of a 
+    causative factor ܺ:math:`X_i`, :math:`N_i` is the number of pixels 
+    associated with causative factor ܺ:math:`X_i` . :math:`S` is the total 
+    number of landslide pixels, and:math:`N` is the total number of pixels in 
+    the study area. Then, the overall information value :math:`I` can be 
+    calculated by:
+        
+    .. math:: 
+        
+        I_i= \sum{i=1}{n} \log \frac{\frac{S_i}{N_i}}{\frac{S}{N}}
+        
+    Thus Negative and positive values of :math:\I_i` irrepresent the relevant  
+    and relevant correlation between the presence of a certain causative factor 
+    and landslide event, respectively. The stronger the correlation is, the 
+    higher the value of :math:`I_i`. See more details in the paper of Chen 
+    Tao with the following :doi:`https://doi.org/10.1007/s11629-019-5839-3` .
+    
+    
+    Parameters 
+    ----------
+    
+    Xp: Arraylike, Shape (n_samples ) of pixels 
+       Causative factor. 
+       
+    Sp: Arraylike ,Shape of (n_samples) of pixels  
+        The landslide pixel number in the presence of a causative factor 
+        :math:`X_i`.
+    Np: Arraylike, Shape of n_samples of pixels 
+       Number of pixels associated to the causative factor :math:`X_i`. 
+       
+    return_tot: bool, default=False 
+      Returns the overall information value. 
+
+    Returns 
+    ---------
+    I: Arraylike 
+       Information value of caustive factor :math:`X_p`. 
+       
+    
+    References 
+    ------------
+    .. [1] Sarkar S, Kanungo D, Patra A (2006) GIS Based Landslide 
+           Susceptibility Mapping - A Case Study in Indian Himalaya in 
+           Disaster Mitigation of Debris Flows, Slope Failures and 
+           Landslides, Universal Academic Press, Tokyo, 617-624 
+    """
+    if not _is_numeric_dtype(Xp, to_array= True ): 
+        raise TypeError ("Causative factor expect a numeric array."
+                         f" Got {np.array(Xp).dtype!r}")
+    Xp = np.array ( is_iterable(Xp , transform =True ))
+    
+    if Np: Np = _assert_all_types(Np , float , int, 
+                                  objname= "Number of pixel 'Ni'")
+
+    I = np.zeros_like ( Xp , dtype = float )
+
+    for i in len(Xp ): 
+        Ii = _information_value ( Sp[i], Np[i], Sp, Np )
+        # Ii = np.log10 ( ( Sp[i] / Np[i])/( len(Sp)/len(Np) ))
+        I[i]= Ii 
+    return I if not return_tot else np.sum (I )
+    
+
+def _information_value ( Si, Ni, S, N ): 
+    """ Compute the information value :math:`I_i` of each causative factor
+    :math:`X_i` """
+    return np.log10 ( Si/Ni * ( S/ N )) 
+
 
 def get_metrics(): 
     """
