@@ -6119,6 +6119,7 @@ def random_sampling (
        If int, array-like, or BitGenerator, seed for random number generator. 
        If np.random.RandomState or np.random.Generator, use as given.
        
+    split_Xy: 
     Returns 
     ----------
     d: {array-like, sparse matrix} of shape (n_samples, n_features)
@@ -6132,6 +6133,7 @@ def random_sampling (
     >>> random_sampling( data, samples = 7 ).shape 
     (7, 27)
     """
+
     n= None ; is_percent = False
     orig= copy.deepcopy(samples )
     if not hasattr(d, "__iter__"): 
@@ -6178,7 +6180,7 @@ def random_sampling (
         return d.sample ( n= n , frac=samples , replace = replace ,
                          random_state = random_state  
                      ) if shuffle else d.iloc [ :n , ::] 
-    
+        
     np.random.seed ( random_state)
     if scipy.sparse.issparse(d) : 
         if scipy.sparse.isspmatrix_coo(d): 

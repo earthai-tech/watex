@@ -11,7 +11,8 @@ Inspired from the machine learning popular dataset loading
 Created on Thu Oct 13 16:26:47 2022
 @author: Daniel
 """
-
+import scipy 
+import numpy as np
 from warnings import warn 
 from importlib import resources 
 import pandas as pd 
@@ -26,7 +27,8 @@ from ..utils.funcutils import (
     reshape, 
     zip_extractor , 
     key_checker, 
-    random_sampling, 
+    random_sampling,
+    assert_ratio
     )
 from ..utils.box import Boxspace
 
@@ -965,10 +967,11 @@ def load_mxs (
     data_names=None, 
     split_X_y=False, 
     seed = None, 
-    shuffle=False, 
+    shuffle=False,
+    test_ratio=.2,  
     **kws): 
-    import joblib, numpy as np 
-    
+    import joblib
+
     drop_observations =kws.pop("drop_observations", False)
     
     target_map= { 
@@ -1011,12 +1014,21 @@ def load_mxs (
     samples= samples or .50 
     
     if split_X_y: 
+        from ..exlib import train_test_split
         data = tuple ([data_dict [k] for k in add ['*'] ] )
-        data = ( random_sampling(d, samples = samples,
-                  random_state= seed , shuffle= shuffle ) 
-                  for d in data 
-                ) 
-        return  tuple (data )
+        # concatenate the CSR matrix 
+        X_csr = scipy.sparse.csc_matrix (np.concatenate (
+            (data[0].toarray(), data[1].toarray()))) 
+        y= np.concatenate ((data[-2], data[-1]))
+        # resampling 
+        data = (random_sampling(d, samples = samples,random_state= seed , 
+                                shuffle= shuffle) for d in (X_csr, y ) 
+                )
+        # split now
+        return train_test_split (*tuple ( data ),random_state = seed, 
+                                 test_size =assert_ratio (test_ratio),
+                                 shuffle = shuffle)
+  
     
     # Append Xy to Boxspace if 
     # return_X_y is not set explicitly.
@@ -1081,10 +1093,10 @@ def load_mxs (
     )
     
 load_mxs.__doc__="""\
-Load the dataset for implementing the mixture learning strategy (MXS).
+Load the dataset after implementing the mixture learning strategy (MXS).
 
-Dataset is composed of 11 boreholes merged with multiple-target thatcan be 
-used for a classification or regression problem.
+Dataset is composed of 11 boreholes merged with multiple-target that can be 
+used for a classification problem.
 
 Parameters
 ----------
@@ -1098,7 +1110,7 @@ as_frame : bool, default=False
     a pandas DataFrame or Series depending on the number of target columns.
     If `return_X_y` is True, then (`data`, `target`) will be pandas
     DataFrames or Series as described below.
-    .. versionadded:: 0.1.3
+
 split_X_y: bool, default=False,
     If True, the data is splitted to hold the training set (X, y)  and the 
     testing set (Xt, yt) with with test ratio fixed to 20 % 
@@ -1145,6 +1157,10 @@ seed: int, array-like, BitGenerator, np.random.RandomState, \
 shuffle: bool, default =False, 
    If ``True``, borehole data should be shuffling before sampling. 
    
+test_ratio: float, default is 0.2 i.e. 20% (X, y)
+    The ratio to split the data into training (X, y) and testing (Xt, yt) set 
+    respectively.
+    
 Returns
 ---------
 data : :class:`~watex.utils.Boxspace`
@@ -1180,11 +1196,8 @@ X, Xt, y, yt: Tuple if ``split_X_y`` is True
  
 Examples
 --------
-Let's say ,we do not have any idea of the columns that compose the target,
-thus, the best approach is to run the function without passing any parameters::
-
 >>> from watex.datasets.dload import load_mxs  
->>> load_mxs (return_X_y= True, key ='sparse')
+>>> load_mxs (return_X_y= True, key ='sparse', samples ='*')
 (<1038x21 sparse matrix of type '<class 'numpy.float64'>'
  	with 8298 stored elements in Compressed Sparse Row format>,
  array([1, 1, 1, ..., 5, 5, 5], dtype=int64))

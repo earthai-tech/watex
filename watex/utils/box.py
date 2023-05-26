@@ -213,7 +213,7 @@ def data2Box(
     keep_col_data: bool =True, 
     columns: list [str, ...] =None 
     ): 
-    """ Transform each data rown as Boxspace object. 
+    """ Transform each data rows as Boxspace object. 
     
     Parameters 
     -----------
@@ -299,7 +299,7 @@ def data2Box(
         if use_colname:  
             if name not in data.columns:  
                 raise ValueError (
-                    "Name {name!r} must exist in the data columns.")
+                    f"Name {name!r} must exist in the data columns.")
             
             name =  data [name] if keep_col_data else data.pop ( name )
             

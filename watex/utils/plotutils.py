@@ -510,7 +510,7 @@ def make_plot_colors(d , / , colors:str | list[str]=None , axis:int = 0,
     # manage the array 
     d= is_iterable( d, exclude_string=True, transform=True)
     if not hasattr (d, '__array__'): 
-        d = np.array(d ) 
+        d = np.array(d, dtype =object ) 
     
     axis_length = len(d) if len(d.shape )==1 else d.shape [axis]
     m_cs = make_mpl_properties(axis_length )
