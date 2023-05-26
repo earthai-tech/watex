@@ -212,7 +212,7 @@ def data2Box(
     name: str = None, 
     use_colname: bool =False, 
     keep_col_data: bool =True, 
-    columns: list [str] =None 
+    columns: List [str] =None 
     ): 
     """ Transform each data rows as Boxspace object. 
     
