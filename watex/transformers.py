@@ -6,7 +6,7 @@
 """
 Gives some efficient tools for data manipulation and transformation.
 """
-from __future__ import division 
+from __future__ import division, annotations  
 
 import inspect
 import warnings 
