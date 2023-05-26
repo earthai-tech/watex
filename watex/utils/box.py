@@ -6,6 +6,7 @@
 import itertools
 import numpy as np
 import pandas as pd 
+from .._typing import List 
 
 class Boxspace(dict):  
     """Is a container object exposing keys as attributes.
