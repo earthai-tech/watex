@@ -833,7 +833,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.funcutils.make_arr_consistent
 	utils.funcutils.ismissing
 	utils.funcutils.reshape
-	utils.funcutils.save_job
+	utils.funcutils.savejob
 	utils.funcutils.load_serialized_data
 	utils.funcutils.serialize_data
 	utils.funcutils.sanitize_unicode_string
