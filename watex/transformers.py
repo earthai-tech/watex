@@ -1387,10 +1387,9 @@ def featurize_X (
     split_X_y:bool = False,
     test_ratio:float|str= .2 , 
     shuffle:bool=True, 
-    sparsity:str ='coo', 
     return_model:bool=...,
     to_sparse: bool=..., 
-   
+    sparsity:str ='coo' 
     ): 
     """ Featurize X with the cluster based on the KMeans featurization
     
