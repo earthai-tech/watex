@@ -5485,10 +5485,13 @@ def qc(
     # compute the ratio ck
     # ck = 1. -    rr[np.nonzero(rr)[0]].sum() / (
     #     1 if len(np.nonzero(rr)[0])== 0 else len(np.nonzero(rr)[0])) 
-    # ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr) 
-    ck = 1 - nan_sum[np.nonzero(rr)[0]].sum() / (
+    # ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr)
+    
+    # using np.nonzero(rr) seems deprecated 
+    # ck = 1 - nan_sum[np.nonzero(rr)[0]].sum() / (
+    #     ar.shape [0] * ar.shape [1]) 
+    ck = 1 - nan_sum[rr[0]].sum() / (
         ar.shape [0] * ar.shape [1]) 
-  
     # now consider dirty data where the value is higher 
     # than the tol parameter and safe otherwise. 
     index = reshape (np.argwhere (rr > tol))

@@ -86,7 +86,7 @@ class TestElectrical (unittest.TestCase):
         
         vesobj = VerticalSounding(search = self.search ).fit(self.ves_data ) 
         dcobj = DCSounding(search = self.search ).fit(self.ves_data )
-        self.assertAlmostEquals(vesobj.ohmic_area_, dcobj.site1.ohmic_area_)
+        self.assertAlmostEqual(vesobj.ohmic_area_, dcobj.site1.ohmic_area_)
         
         dcobj.summary(return_table =True)
         vesobj.summary(return_table= True ) 
@@ -193,7 +193,7 @@ class TestEM (unittest.TestCase):
 
 class TestProcessing (unittest.TestCase): 
     # output the edis data as array_like 1d 
-    edi_data = load_edis (key='edi' , return_data =True, samples = 17 )
+    edi_data = load_edis (key='edi' , return_data =True, samples = 30 )
     pobj = Processing().fit(edi_data)
     
     def test_processing (self ): 
