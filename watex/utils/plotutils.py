@@ -3731,11 +3731,13 @@ def plot_roc_curves (
     # make default_colors 
     colors = make_plot_colors(clfs, colors = colors )
     # save the name of models 
-    names = make_obj_consistent_if ( names , [ get_estimator_name(m) for m in clfs ]) 
+    names = make_obj_consistent_if (
+        names , [ get_estimator_name(m) for m in clfs ]) 
 
     # check whether the model is fitted 
     if all: 
-        fig, ax = _make_axe_multiple ( clfs, ncols = ncols , ax = ax, fig_size = fig_size 
+        fig, ax = _make_axe_multiple ( 
+            clfs, ncols = ncols , ax = ax, fig_size = fig_size 
                                   ) 
         
     else: 
