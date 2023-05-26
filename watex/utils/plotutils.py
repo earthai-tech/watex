@@ -61,7 +61,8 @@ try:
         SimpleImputer, 
         KMeans, 
         silhouette_samples, 
-        roc_curve
+        roc_curve, 
+        roc_auc_score, 
         ) 
 except : pass 
  
@@ -3645,9 +3646,11 @@ def plot_roc_curves (
    names =..., 
    colors =..., 
    ncols = 3, 
+   get_score=False, 
    all=False,
    ax = None,  
    fig_size=( 7, 7), 
+   
    **roc_kws ): 
     """ Quick plot of Receiving Operating Characterisctic (ROC) of fitted models 
     
@@ -3675,6 +3678,11 @@ def plot_roc_curves (
        Number of plot to be placed inline before skipping to the next column. 
        This is feasible if `many` is set to ``True``. 
        
+    get_score: bool,default=True
+      Append the Area Under the curve to legend. 
+      
+      .. versionadded:: 0.2.4 
+      
     all: str, default=False 
        if ``True``, plot each ROC model separately 
      
@@ -3693,8 +3701,8 @@ def plot_roc_curves (
     --------
     >>> from watex.utils.plotutils import plot_roc_curves 
     >>> from sklearn.datasets import make_moons 
-    >>> from watex.exlib import train_test_split, KNeighborsClassifier, SVC ,
-    XGBClassifier, LogisticRegression 
+    >>> from watex.exlib import ( train_test_split, KNeighborsClassifier, SVC ,
+    XGBClassifier, LogisticRegression ) 
     >>> X, y = make_moons (n_samples=2000, noise=0.2)
     >>> X, Xt, y, yt = train_test_split (X, y, test_size=0.2) 
     >>> clfs = [ m().fit(X, y) for m in ( KNeighborsClassifier, SVC , 
@@ -3705,15 +3713,18 @@ def plot_roc_curves (
     """
     from .validator import  get_estimator_name
     
-    def plot_roc(model, data, labels):
+    def plot_roc(model, data, labels, get_score =False ):
         if hasattr(model, "decision_function"):
             predictions = model.decision_function(data)
         else:
             predictions = model.predict_proba(data)[:,1]
             
         fpr, tpr, _ = roc_curve(labels, predictions, **roc_kws )
-        
-        return fpr, tpr
+        auc_score = None 
+        if get_score: 
+            auc_score = roc_auc_score ( labels, predictions,)
+            
+        return fpr, tpr , auc_score
     
     if not is_iterable ( clfs): 
        clfs = is_iterable ( clfs, exclude_string =True , transform =True ) 
@@ -3734,7 +3745,7 @@ def plot_roc_curves (
     
     for k, ( model, name)  in enumerate (zip (clfs, names )): 
         check_is_fitted(model )
-        fpr, tpr = plot_roc(model, X, y)
+        fpr, tpr, auc_score = plot_roc(model, X, y, get_score)
 
         if hasattr (ax, '__len__'): 
             if len(ax.shape)>1: 
@@ -3744,7 +3755,9 @@ def plot_roc_curves (
         else: axe = ax 
             
 
-        axe.plot(fpr, tpr, label=name, color = colors[k]  )
+        axe.plot(fpr, tpr, label=name + ('' if auc_score is None 
+                                         else f"AUC={round(auc_score, 3) }") , 
+                 color = colors[k]  )
         
         if all: 
             axe.plot([0, 1], [0, 1], 'k--') 

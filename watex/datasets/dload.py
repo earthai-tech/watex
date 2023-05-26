@@ -904,7 +904,7 @@ savepath: str,
    the default cache is used.
    
 clear_cache:bool, default=False 
-   Clear the cache before storing the new EDI files. For instanceif at the first
+   Clear the cache before storing the new EDI files. For instance, if at the first
    turn all edis is fetched. At the second run, if samples is given, It does 
    not have effect. All the EDI files will be retrieved. Thus, to get the 
    the number of samples for EDI, `clear_cache` should be useful by setting to 
