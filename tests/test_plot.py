@@ -5,25 +5,19 @@ Created on Sun Oct  9 19:06:11 2022
 @author: Daniel
 """
 
-# import datetime
 import  unittest 
-# import pytest
-# import pandas as pd 
 import  matplotlib.pyplot as plt 
 from watex.view.plot import ( 
     ExPlot , 
-    # QuickPlot 
     )
 from watex.datasets import load_bagoue 
 from watex.utils import naive_imputer 
 from tests import  ( 
-    # TEST_TEMP_DIR,  
     make_temp_dir 
     ) 
 
 from tests.__init__ import ( 
     reset_matplotlib,
-    # watexlog 
     ) 
 class TestExPlot(unittest.TestCase):
     """
@@ -38,7 +32,6 @@ class TestExPlot(unittest.TestCase):
         - select_best_point
         - select_best_value
     """
-    #data = pd.read_csv ( 'data/geodata/main.bagciv.data.csv' ) 
     data = naive_imputer ( load_bagoue().frame , mode ='bi-impute') 
     p = ExPlot(tname ='flow').fit(data)
     p.fig_size = (12, 4)
@@ -52,11 +45,6 @@ class TestExPlot(unittest.TestCase):
         reset_matplotlib()
         cls._temp_dir = make_temp_dir(cls.__name__)
         
-    # def setUp(self): 
-        
-    #     if not os.path.isdir(TEST_TEMP_DIR):
-    #         print('--> outdir not exist , set to None !')
-    #         watexlog.get_watex_logger().error('Outdir does not exist !')
     def test_plotparallelcoords (self): 
         self.p.plotparallelcoords(pkg ='yb')
         
@@ -114,9 +102,7 @@ class TestExPlot(unittest.TestCase):
             self.p.plotmissing(kind =k, sample =300 )
         plt.close () 
         
-        
 # if __name__=='__main__': 
-#     # TestExPlot().test_plotpairwisecomparizon()
 #     unittest.main()  
         
         

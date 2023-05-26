@@ -1484,7 +1484,6 @@ def featurize_X (
     >>> kmf_model 
     <'KMeansFeaturizer':n_clusters=7, target_scale=5, random_state=None, 
     n_components=None>
-    
     """ 
     # set False to value use 
     # ellipsis...

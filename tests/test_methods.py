@@ -248,7 +248,6 @@ def compare_diff_files(refout, refexp):
 
 
 # if __name__=='__main__':
-
 #     unittest.main()
     
     
