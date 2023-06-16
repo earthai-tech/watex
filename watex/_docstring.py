@@ -212,6 +212,8 @@ refglossary =type ('refglossary', (), dict (
 
 .. _pycsamt: https://github.com/WEgeophysics/pycsamt
 
+.. _Oasis montaj: https://www.seequent.com/products-solutions/geosoft-oasis-montaj/extensions/
+
 .. |ohmS| replace:: Pseudo-area of the fractured zone 
 .. |sfi| replace:: Pseudo-fracturing index 
 .. |VES| replace:: Vertical Electrical Sounding 

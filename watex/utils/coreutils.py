@@ -55,6 +55,7 @@ from .funcutils import (
     _assert_all_types,
     accept_types,
     read_from_excelsheets,
+    to_numeric_dtypes, 
     reshape, 
     is_iterable, 
     is_in_if
@@ -2274,28 +2275,61 @@ def parseDCArgs(fn :str ,
 
 
 def read_data (
-        f:str | pathlib.PurePath, 
-        **read_kws
+    f:str | pathlib.PurePath, 
+    sanitize: bool= ..., 
+    reset_index: bool=..., 
+    verbose: bool= ..., 
+    **read_kws
  ) -> DataFrame: 
     """ Assert and read specific files and url allowed by the package
     
-    Readable files are systematically convert to a pandas dataframe frame.  
+    Readable files are systematically convert to a data frame.  
     
     Parameters 
     -----------
-    f : str, Path-like object 
-        File path or Pathlib object. Must contain a valid file name  and 
-        should be a readable file or url    
-    read_kws: dict, 
-        Additional keywords arguments passed to pandas readable file keywords. 
+    f: str, Path-like object 
+       File path or Pathlib object. Must contain a valid file name  and 
+       should be a readable file or url 
         
+    sanitize: bool, default=False, 
+       Push a minimum sanitization of the data such as: 
+           - replace a non-alphabeti+c column items with pattern '_' 
+           - cast data values to numeric values if applicable 
+           - drop full NaN columns and rows in the data 
+    reset_index: bool, default=False, 
+      Reset index if full NaN columns are dropped after sanitization. 
+      
+      .. versionadded:: 0.2.5
+          Apply minimum data sanitization after reading data. 
+          
+    read_kws: dict, 
+       Additional keywords arguments passed to pandas readable file keywords. 
+        
+    
     Returns 
     -------
     f: :class:`pandas.DataFrame` 
         A dataframe with head contents by default.  
+        
     """
+    if sanitize is ...: 
+        sanitize = False 
+
+    def min_sanitizer ( d, /):
+        """ Apply a minimum sanitization to the data `d`."""
+        d = to_numeric_dtypes(
+            d, sanitize_columns= True, drop_nan_columns= True, 
+            reset_index= False if reset_index is ... else reset_index, 
+            verbose = False if verbose  is ... else verbose , 
+            fill_pattern='_', drop_index = True,  
+                              )
+        return d 
+        
     if isinstance (f, pd.DataFrame): 
-        return f 
+        if sanitize: 
+            f = min_sanitizer (f)
+            
+        return  f 
     
     cpObj= Config().parsers 
     f= _check_readable_file(f)
@@ -2312,6 +2346,9 @@ def read_data (
         raise FileHandlingError (
             f" Can not parse the file : {os.path.basename (f)!r}")
 
+    if sanitize: 
+        f = min_sanitizer (f)
+        
     return f 
     
 def _check_readable_file (f): 
@@ -2379,6 +2416,8 @@ def _validate_ves_data_if(data, index_rhoa , err , **kws):
         # In the case, we got a multiple resistivity values 
         # corresponding to the different sounding values 
         index_rhoa = index_rhoa or 0 
+        # for consistency 
+        index_rhoa = int (index_rhoa )
         if ( not _is_arraylike_1d( rhoa) 
              and (
                  index_rhoa >= rhoa.shape[1]

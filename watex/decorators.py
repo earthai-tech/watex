@@ -30,7 +30,7 @@ _logger = watexlog.get_watex_logger(__name__)
 
 __docformat__='restructuredtext'
 
-      
+
 class temp2d: 
     """ Two dimensional plot template 
     

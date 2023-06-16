@@ -149,8 +149,7 @@ class Profile:
             if isinstance (elev , str): 
                 elev = elev if elev in data.columns else None 
                 if elev is None: 
-                    warnings.warn(
-                        f"Elevation {elev!r} not found in the dataframe")
+                    warnings.warn("Elevation not found in the dataframe")
                 if elev is not None: 
                     elev = np.array (data[elev]) 
         
@@ -647,7 +646,8 @@ class Profile:
         -----------
         inplace: bool, default=True 
            Erase existing value of x , y and elev with the interpolated one. 
-           If ``False`` , its return interpolated x, y and elev. 
+           If ``False`` , it returns interpolated x, y and elev and 
+           keep the previous attributes x, y and elev untouchable.
 
         method: bool, default='nearest', 
            Method of interpolation. One of ['nearest'|'linear'|'cubic'] 
@@ -809,7 +809,7 @@ class Profile:
  
         # make site 
         sites = [(( f"{ii:02}_" if how=='py' else f"{ii+1:02}_") 
-                  if counter else '')+ basename 
+                  if counter else '') + basename 
                  for ii in range (len(x )) ]
         writelines =[]
         #x = x.astype (str) ; y = y.astype (str) ; elev= elev.astype (str)
@@ -1249,11 +1249,16 @@ class Location (object):
         
         if lats is None or lons is None: 
             raise TypeError (emsg) 
-            
+        # For consistency, check iterable values 
+        
+        lats = is_iterable(lats, exclude_string= True, transform =True ) 
+        lons = is_iterable(lons, exclude_string= True, transform= True )
+        
         _check_consistency_size(lats, lons)
         lats = np.array(lats ) ; lons = np.array (lons )
         easts = np.zeros_like (lats , dtype = np.float64)
         norths = np.zeros_like (lons , dtype = np.float64)
+        
         for ii, (lat, lon) in enumerate (zip (lats, lons )) : 
             Loc = Location()
             x, y  = Loc.to_utm (lat, lon , utm_zone= utm_zone , **kws )
@@ -1312,6 +1317,11 @@ class Location (object):
         if easts is None or norths is None: 
             raise TypeError (emsg) 
             
+        # For consistency, check iterable values 
+        easts = is_iterable(easts, exclude_string= True,  transform =True ) 
+        norths = is_iterable(norths, transform= True , exclude_string =True 
+                             )
+        
         _check_consistency_size(easts, norths)
         easts = np.array(easts ) ; norths = np.array (norths )
         lats_lons =[]

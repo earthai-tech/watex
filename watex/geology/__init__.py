@@ -21,6 +21,7 @@ from .drilling import (
     Borehole , 
     DSBorehole, 
     DSBoreholes, 
+    DSDrill
     )
 from .stratigraphic import  GeoStrataModel
 
@@ -32,4 +33,5 @@ __all__=[
     'GeoStrataModel', 
     'DSBorehole', 
     'DSBoreholes',
+    'DSDrill'
     ]

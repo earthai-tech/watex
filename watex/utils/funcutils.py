@@ -45,6 +45,7 @@ from .._typing import (
     DataFrame, 
     Sub,
     NDArray, 
+    Text, 
     )
 from ..property import P
 from ..exceptions import ( 
@@ -102,20 +103,22 @@ def to_numeric_dtypes (
     
     Parameters 
     -----------
-    arr: Ndarray or Dataframe, shape (M=samples, N=features)
-        Array of dataframe to create
+    arr: Ndarray or Dataframe, shape (m_samples, n_features)
+        Array of dataframe to create, to sanitize or to auto-detect
+        feature categories ( numerical or categorical).
         
     columns: list of str, optional 
         Usefull to create a dataframe when array is given. Be aware to fit the 
         number of array columns (shape[1])
         
     return_feature_types: bool, default=False, 
-        return the list of numerical and categorial features
-    missing_values: float: 
+        return the list of numerical and categorial features.
+    
+    missing_values: float, default='NaN' 
         Replace the missing or empty string if exist in the dataframe.
         
     pop_cat_features:bool, default=False, 
-        remove removes the categorial features  from the DataFrame.
+        remove the categorial features  from the DataFrame.
         
     sanitize_columns: bool, default=False, 
        remove undesirable character in the data columns using the default
@@ -3706,7 +3709,10 @@ def random_state_validator(seed):
 def is_iterable (
         y, /, exclude_string= False, transform = False , parse_string =False, 
         )->bool | list: 
-    """ Asserts iterable object and returns 'True' or 'False' 
+    """ Asserts iterable object and returns 'True' or 'False'
+    
+    Function can also transform a non-iterable object to an iterable if 
+    `transform` is set to ``True``.
     
     :param y: any, object to be asserted 
     :param exclude_string: bool, does not consider string as an iterable 
@@ -6021,8 +6027,13 @@ def read_worksheets(*data):
 
     return data, sheet_names      
  
-def key_checker ( keys: str , /,  valid_keys, regex = None, 
-                   pattern = None ): 
+def key_checker (
+    keys: str , /,  
+    valid_keys:List[str, ...], 
+    regex:re = None, 
+    pattern:str = None , 
+    deep_search:bool =...
+    ): 
     """check whether a give key exists in valid_keys and return a list if 
     many keys are found.
     
@@ -6043,6 +6054,12 @@ def key_checker ( keys: str , /,  valid_keys, regex = None,
     pattern: str, default = '[_#&*@!_,;\s-]\s*'
         The base pattern to split the text into a columns
         
+    deep_search: bool, default=False 
+       If deep-search, the key finder is no sensistive to lower/upper case 
+       or whether a numeric data is included. 
+       
+       .. versionadded:: 0.2.5 
+       
     Returns 
     --------
     keys: str, list , 
@@ -6063,7 +6080,14 @@ def key_checker ( keys: str , /,  valid_keys, regex = None,
     >>> key_checker(['h502',  'h2602'], valid_keys= ['h502', 'h253','h2601'])
     UserWarning: key 'h2602' is missing in ['h502', 'h2602']
     Out[82]: 'h502'
+    >>> key_checker(['502',  'H2601'], valid_keys= ['h502', 'h253','h2601'], 
+                    deep_search=True )
+    Out[57]: ['h502', 'h2601']
+    
     """
+    if deep_search is ...: 
+        deep_search =False 
+    
     _keys = copy.deepcopy(keys)
     valid_keys = is_iterable(valid_keys , exclude_string =True, transform =True )
     if isinstance ( keys, str): 
@@ -6072,6 +6096,13 @@ def key_checker ( keys: str , /,  valid_keys, regex = None,
     # If iterbale object , save obj 
     # to improve error 
     kkeys = copy.deepcopy(keys)
+    
+    if deep_search: 
+        keys = key_search(keys, default_keys= valid_keys,deep=True, 
+                          raise_exception= True,
+                          )
+        
+        return keys[0] if len(keys)==1 else keys 
     # for consistency 
     keys = [ k for k in keys if ''.join(
         [ str(i) for i in valid_keys] ).find(k)>=0 ]
@@ -6249,22 +6280,30 @@ def make_obj_consistent_if (
     """
     if default==... or None : default =[]
     # for consistency 
-    default = list( is_iterable (default, exclude_string =True, transform =True ) ) 
+    default = list( is_iterable (default, exclude_string =True,
+                                 transform =True ) ) 
     
     if item not in ( ...,  None) : 
-         item = list( is_iterable( item , exclude_string =True , transform = True ) ) 
+         item = list( is_iterable( item , exclude_string =True ,
+                                  transform = True ) ) 
     else: item = [] 
     
     item += default[len(item):] if from_index else default 
     
     if size is not None: 
-        size = int (_assert_all_types(size, int, float, objname = "Item 'size'") )
+        size = int (_assert_all_types(size, int, float,
+                                      objname = "Item 'size'") )
         item = item [:size]
         
     return item
     
     
-def replace_data(X, y =None, n_times: int  = 1, axis = 0, reset_index :bool =...  ): 
+def replace_data(
+    X, y =None, 
+    n_times: int  = 1, 
+    axis = 0, 
+    reset_index :bool =...  
+    ): 
     """ Replace items in data :math:`n` times 
     
     Parameters 
@@ -6380,8 +6419,147 @@ def convert_value_in (v, /, unit ='m'):
     
     return float ( v)/ (c.get(unit) or 1e0) 
 
-
+def split_list(lst, val):
+    """Module to extract a slice of elements from the list 
     
+    Parameters 
+    ------------
+    lst: list, 
+      List composed of item elements 
+    val: int, 
+      Number of item to group by default. 
+      
+    Returns 
+    --------
+    group with slide items 
+    
+    Examples
+    --------
+    >>> from watex.utils.funcutils import split_list
+    >>> lst = [1, 2, 3, 4, 5, 6, 7, 8]
+    >>> val = 3
+    >>> print(split_list(lst, val))
+    [[1, 2, 3], [4, 5, 6], [7, 8]]
+ 
+    """
+    lst = is_iterable(lst , exclude_string =True , transform =True ) 
+    val = int ( _assert_all_types(val, int, float )) 
+    
+    return [list(group) for key, group in itertools.groupby(
+        lst, lambda x: (x-1)//val)]
+
+
+def key_search (
+    keys: str, /, 
+    default_keys: Text | List[str], 
+    regex =None, 
+    pattern =None, 
+    deep =...,
+    raise_exception:bool=...
+    ): 
+    """Find key in a list of default keys and select the best match. 
+    
+    Parameters 
+    -----------
+    keys: str or list 
+       The string or a list of key. When multiple keys is passed as a string, 
+       use the space for key separating. 
+       
+    default_keys: str or list 
+       The likehood key to find. Can be a litteral text. When a litteral text 
+       is passed, it is better to provide the regex in order to skip some 
+       character to parse the text properly. 
+       
+    regex: `re` object,  
+        Regular expresion object. Regex is important to specify the kind
+        of data to parse. the default is:: 
+            
+            >>> import re 
+            >>> re.compile (r'[_#&*@!_,;\s-]\s*', flags=re.IGNORECASE)
+            
+    pattern: str, default = '[_#&*@!_,;\s-]\s*'
+        The base pattern to split the text into a columns. Pattern is 
+        important especially when some character are considers as a part of 
+        word but they are not a separator. For example a data columns with 
+        a name `'DH_Azimuth'`, if a pattern is not explicitely provided, 
+        the default pattern will parse as two separated word which is far 
+        from the expected results. 
+        
+    deep: bool, default=False 
+       Not sensistive to uppercase. 
+       
+    raise_exception: bool, default=False 
+       raise error when key is not find. 
+       
+    Return 
+    -------
+    list: list of valid keys or None if not find ( default) 
+    
+    
+    Examples
+    ---------
+    >>> from watex.utils.funcutils import key_search 
+    >>> key_search('h502-hh2601', default_keys= ['h502', 'h253','HH2601'])
+    Out[44]: ['h502']
+    >>> from watex.utils.funcutils import key_search 
+    >>> key_search('h502-hh2601', default_keys= ['h502', 'h253','HH2601'], 
+                   deep=True)
+    Out[46]: ['h502', 'HH2601']
+    >>> key_search('253', default_keys= ("I m here to find key among h502,
+                                             h253 and HH2601"))
+    Out[53]: ['h253'] 
+
+    """
+    if deep is ...: 
+        deep=False
+    if raise_exception is ...: 
+        raise_exception=False 
+    
+    if is_iterable(keys , exclude_string= True ): 
+        keys = ' '.join ( [str(k) for k in keys ]) 
+        
+    # for consisteny checker 
+    pattern = pattern or '[_#&@!_+,;\s-]\s*'
+    keys = str2columns ( keys , regex = regex , pattern = pattern ) 
+    kinit = copy.deepcopy(keys)
+    if is_iterable ( default_keys , exclude_string=True ): 
+        default_keys = ' '. join ( [ str(k) for k in default_keys ])
+        
+    # make a copy
+    dk_init =  str2columns(
+        default_keys, regex =regex , pattern = pattern )
+
+    if deep: 
+        keys= [str(it).lower() for it in keys  ]
+        default_keys = default_keys.lower() 
+
+    valid_keys =[]
+    for key in keys: 
+        vk = re.findall(rf'\b\w*{key}\w*\b', default_keys)
+        valid_keys.extend( vk )
+
+    # if deep take the real values in defaults keys. 
+    if deep and len(vk)!=0: 
+        # remake a list based on the parsing regex 
+        default_keys= str2columns(
+            default_keys, regex =regex , pattern = pattern )
+        for ii, vk in enumerate ( valid_keys) : 
+            ix = default_keys.index ( vk )
+            valid_keys [ii] = dk_init[ix ]
+
+    if raise_exception and len(valid_keys)==0: 
+        kverb ='s' if len(kinit)> 1 else ''
+        raise KeyError (f"key{kverb} {smart_format(kinit)} not found."
+                          f" Expect {smart_format(dk_init, 'or')}")
+    
+    return None if len(valid_keys)==0 else valid_keys 
+
+
+        
+    
+    
+
+
     
     
     

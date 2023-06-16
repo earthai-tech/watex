@@ -6,25 +6,639 @@
 Is a set of utilities that deal with geological rocks, strata and 
 stratigraphic details for log construction. 
 """
+from __future__ import annotations 
 import os
+import re 
 import itertools
 import warnings
 import copy 
 
+from .._typing import ( 
+    List, 
+    Tuple, 
+    ArrayLike, 
+    Any
+    )
 import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as GridSpec
 
 from .funcutils import ( 
+    _assert_all_types, 
     smart_format, 
     station_id, 
-    convert_value_in 
+    convert_value_in, 
+    str2columns, 
+    is_iterable
     )
 from ..exceptions import StrataError, DepthError  
 from .._watexlog import watexlog 
 _logger = watexlog().get_watex_logger(__name__ )
 
+def smart_thickness_ranker ( 
+    t: str | List[Any, ...], /,  
+    depth:float=None, 
+    regex:re= None, 
+    sep:str= ':-', 
+    surface_value:float=0.,  
+    mode:str='strict', 
+    return_thickness:bool=...,
+    verbose:bool=..., 
+    )-> Tuple[ArrayLike]: 
+    """Compute the layer thicknesses and rank strata accordingly.
+    
+    Grub from the litteral string the layer depth range to find the ranking 
+    of layer thickness. 
+    
+    Parameters 
+    -----------
+    t: str, or List of Any  
+       Litteral string that containing the data arrangement. The kind of data
+       to provide for thickness arrangement are:
+           
+      - t-value: Compose only with the layer thickness values. For instance 
+        ``t= "10 20 7 58"`` indicates four layers with layer thicknesses 
+        equals to 10, 20, 7 and 58 ( meters) respectively. 
+        
+      - tb-range: compose only with thickness range at each depth. For instance
+        ``t= "0-10 10-30 40-47 101-159"``. Note the character used to separate 
+        thickness range is ``'-'``. Any other character must be specified using 
+        the parameter `sep`. Here, the top(roof) and bottom(wall) of the layers
+        are 0  (top) and 10 (bottom), 10 and 30, 40 and 47 , and 101 and 159 
+        for stratum 1, 2, 3 and 4 respectively.
+        
+      - mixed: Mixed data kind is composed of the both `t-value` and `tb-range`.
+        When this kind of data is provied, to smartly parse the data, user 
+        must set the operation `mode` to ``soft``. However, to avoid any 
+        unexpected result, it is suggested to used either `t-value` or 
+        `tb-range` layer thickness naming.
+        
+    depth: float, optional 
+        Depth is mostly used when `t-value` thickness arrangement is provided. 
+        It add additional layer at the bottom the  given thickness 
+        and recompute the last layer thickness. Howewer for a sampling as 
+        geochemistry sampling, depth specification is not necessary. 
+       
+    regex: `re` object,
+       Regular expresion object used to parse the litteral string `v`. If not 
+       given, the default is:: 
+            
+       >>> import re 
+       >>> re.compile (r'[_#&.)(*@!_,;\s-]\s*', flags=re.IGNORECASE)
+          
+    sep:str, default= ':-'
+       The character used to separate two layer thickness ranged from top to 
+       bottom. Any other character must be specified. Here is an example:: 
+           
+           >>> sep ='10-35' or sep='10:35'
+       
+    surface_value: float, default=0. 
+      The top value of the first layer. The default is the sea level. For 
+      instance, if the first layer `l0` is ``10m`` thick, the top (roof) and 
+      the bottom(wall) of `l0` should be ``0-10`` for ``surface_value=0.``. 
+      
+    return_thickness: bool, default=False 
+      If ``True``, return the calculated thickness of each stratum. 
+      
+    mode: str, default='strict' 
+      Control the layer thickness ranking. It can be ['soft'|'strict']. Any 
+      other value should be in 'soft' mode. Indeed, the mode is used to 
+      retrieve, arrange and compute the layer thicknesses. For instance, 
+      in ``strict`` mode, any bad arrangement or misimputed layer thicknesses 
+      should raise an error. However, in 'soft', the bad arrangements
+      are systematically dropped especially when top and bottom values of 
+      the layers are null.
+      
+   verbose: bool, default=False 
+      Warn user about the layer ranking and thickness calculation. 
+  
+    Returns 
+    --------
+    dh_from, dh_to| thickness: Tuple of Arraylike 
+      - dh_from: Arraylike of each layer roof ( top) 
+      - dh_to: Arraylike of each layer wall ( bottom) 
+      - thickness: Arraylike of composed of each stratum thickness. Values 
+        are returned if ``returun_thickness=True``. 
+        
+    Examples 
+    --------
+    >>> from watex.utils.geotools import smart_thickness_ranker
+    >>> smart_thickness_ranker ("10 15 70 125")
+    (array([ 0., 10., 25., 95.]), array([ 10.,  25.,  95., 220.]))
+    >>> smart_thickness_ranker ("10 15 70 125", depth =300, 
+                                return_thickness= True)
+    (array([  0.,  10.,  25.,  95., 220.]),
+     array([ 10.,  25.,  95., 220., 300.]),
+     array([ 10.,  15.,  70., 125.,  80.]))
+    >>> smart_thickness_ranker ("10-15 70-125")
+    (array([10., 70.]), array([ 15., 125.]))
+    >>> smart_thickness_ranker ("10-15 70-125", depth =300)
+    (array([ 10.,  70., 125.]), array([ 15., 125., 300.]))
+    >>> smart_thickness_ranker ("7 10-15 13 70-125 ",mode='soft')
+    (array([ 0., 10., 15., 70.]), array([  7.,  15.,  28., 125.]))
+    >>> smart_thickness_ranker ("7 10-15 13 70-125 ",depth =300, mode='soft',
+                                return_thickness=True)
+    (array([  0.,  10.,  15.,  70., 125.]),
+     array([  7.,  15.,  28., 125., 300.]),
+     array([  7.,   5.,  13.,  55., 175.]))
+    """
+    # set ellipsis to false 
+    if return_thickness is ...: 
+        return_thickness =False 
+    if verbose is ...:
+        verbose=False 
+    
+    mode=str(mode).lower().strip() 
+    # check iterbale object 
+    # convert items to strings 
+    if is_iterable ( t, exclude_string= True ): 
+        t=  ' '.join ( [str(it) for it in t ])
+    # for consistency reconvert to string 
+    t = str(t) 
+    
+    # check whether there is a mixture types.
+    # whether the thickness separator is included 
+    # in the default parsing characters then remove
+    # it before transforming the litteral string to 
+    # columns.
+    tr = str2columns(t, regex =re.compile (
+        re.sub(rf"[{sep}]", "", rf'[#&*@!,;\s{sep}]\s*'), flags=re.IGNORECASE))
+
+    # check whether all values are passed 
+    # as layer thickness t-values or tb-range
+    count =[]
+    data_kind ="t-value" 
+    
+    for it in tr : 
+        try: float ( it)
+        except:continue 
+        else:count.append(it ) 
+        
+    if len(count)==0: 
+        # assume all values are given as 
+        # a layer top-bottom range 
+        data_kind="tb-range" 
+    elif len(count) != len(tr): 
+        data_kind="mixed"
+        
+    if data_kind=="mixed": 
+        # if mode is strict, mixing is not 
+        # tolerable
+        msg = ("Mixed thickness entries is detected. The ranking may yield" 
+               " to unexpected results." ) 
+        if mode=='strict': 
+            raise StrataError(msg + " It is recommended to use for each"
+                " stratum either the top-bottom naming <tb-range> or only"
+                " thickness value <t-value>.")
+            
+        if verbose: 
+            warnings.warn(msg + 
+            " In soft mode, the smart parser will be used to rank the layer"
+            " thicknesses however it cannot handle any bad arrangement."
+            " Use at your own risk.") 
+        
+        t = _make_thick_range (t, sep =sep  )
+        # go to top-bottom range. 
+        data_kind="tb-range"
+        
+    if data_kind=="tb-range": 
+        from_to, thickness = get_thick_from_range(t, 
+                              sep = sep , 
+                              mode=mode ,
+                              raise_warn=verbose, 
+                              )
+        
+        from_to  = np.vstack (from_to) 
+        dh_from , dh_to =from_to [:, 0 ], from_to [:, 1 ]
+        
+        if depth is not None: 
+            depth =_assert_all_types(
+                depth, int, float , objname='Well/hole depth')
+            
+            if dh_to[-1] >= depth: 
+                if mode=='strict': 
+                    raise StrataError (
+                        f"Depth {depth} cannot be less than the last layer"
+                        f" bottom depth {dh_to[-1]}. Please check your the"
+                        " range of values used to specify the strata"
+                        " thickness 'top-bottom'. "
+                        )  
+            else: 
+                # add depth and compute 
+                # the thickness at the bottom 
+                dh_from = np.append( dh_from , dh_to[-1]) 
+                dh_to = np.append (dh_to, depth )
+                thickness = np.append ( thickness , depth - dh_from[-1])
+            
+    else: 
+        dh_from, dh_to , thickness = get_thick_from_values(
+                                    tr, depth=depth, raise_warn=verbose, 
+                                    surface_value= surface_value, 
+                                    mode= mode, 
+                                 )
+    
+    return ( dh_from, dh_to, thickness
+            ) if return_thickness else (dh_from, dh_to)
+
+def get_thick_from_values(
+    thick:List[float], 
+    depth:float=None,
+    surface_value:float =0., 
+    mode:str='strict', 
+    raise_warn:bool =... , 
+    )->Tuple[ArrayLike]: 
+    """ Compute thickness when only thick is given. 
+    
+    Here it is respectful of tthe <t-value> data kind. For t-range data, 
+    refer to :func:`get_thick_from_range`. 
+
+    Parameters 
+    ------------
+    thick: List,
+      The list of layer thickness. 
+      
+    depth: float, optional 
+       The maximum depth of the borehole. Useful when it comes to describes 
+       the stratigraphic log in the borehole. However, it is not necessary 
+       when it comes for geochemistry sampling. 
+       
+    surface_value: float, default=0. 
+      The level of the the sea by default. It correspond to the depth of the 
+      roof (top) of the first layers.
+      
+    mode: str, default='strict' 
+      Control the layer thickness ranking. It can be ['soft'|'strict']. Any 
+      other value should be in 'soft' mode. Here the ``strict`` mode yields 
+      an error when the total sum of the thickness is greater than the 
+      given depth. However in ``soft`` mode, the depth is merely replaced 
+      by the total thick  depth. 
+      
+    raise_warn: bool, default=False 
+      warn user when the given depth is less than the total layer thicknesses. 
+      
+    Returns 
+    --------
+    dh_from, dh_to , thickness: Tuple of Arraylike 
+      - dh_from: the array of layer roof (top) depth values 
+      - dh_to: The array of layer wall ( bottom) depth values 
+      - thickness: The calculated thickness of each layer. 
+      
+    Examples
+    ---------
+    >>> from watex.utils.geotools import _parse_only_thick 
+    >>> _parse_only_thick ([12 , 20, 26, 50 ], depth = 205 )
+    Out[63]: 
+    (array([  0.,  12.,  32.,  58., 108.]),
+     array([ 12.,  32.,  58., 108., 205.]),
+     array([12., 20., 26., 50., 97.]))
+    
+    """
+    if raise_warn is ...: 
+        raise_warn=False 
+    
+    if isinstance( thick, str): 
+        thick= str2columns(thick)
+    
+    try: thick = np.array ([ convert_value_in (t)  for t in thick] 
+                           ).astype (float)
+    except: raise TypeError ("Value for thickness ranking should be numeric."
+                             f" Got {np.array(thick).dtype.name!r}")
+    
+    if depth is not None: 
+        depth = convert_value_in(depth )
+        if thick.sum() > depth: 
+            msg=(f"Expect maximum depth equal to {thick.sum()}. Got {depth}.") 
+            if mode=='strict': 
+                raise DepthError(msg)
+            if raise_warn: 
+                warnings.warn( msg )
+            
+            depth =None 
+            # depth = thick.sum() 
+    # check_thickness and reset depth if 
+    # start always  the layer demarcation from 0 
+    # at the surface 
+    cum_and_depth = list(np.cumsum (thick ))  + [depth] if depth is not None\
+        else np.cumsum (thick ) 
+        
+    from_to = np.array ( [surface_value] + list( cum_and_depth) )    
+    
+    dh_from, dh_to  = from_to [: -1 ], from_to [ 1: ]
+    # append NA to the rocks name 
+    # ad_NA = [ 'NA' for i in range ( len(from_to) )]
+    # dh_samples +=ad_NA 
+    thickness = np.diff (dh_from ) 
+    if depth is not None: 
+        # rather than using np.nan 
+        thickness = np.append ( thickness, depth - dh_from.max() )
+    # dh_samples = dh_samples[: len(dh_from)] 
+
+    return dh_from, dh_to , thickness
+
+def get_thick_from_range( 
+    rthick:str, / , 
+    sep:str=":-" , 
+    flatten_range:bool=False , 
+    mode:str='strict', 
+    raise_warn: bool=True, 
+    )-> Tuple[List[ArrayLike], ArrayLike]: 
+    """Computes the thickness from depth range passed in litteral string.
+    
+    Collect values where thickness range is explicitly specified then  
+    compute the thickness. Note that if `sep` is not supplied or empty, value 
+    can yield an expected bad thickness calculation. 
+    Note that when the layer thicknesses are given as numeric values only, 
+    uses :func:`get_thick_from_values` instead.
+
+    Parameters 
+    -----------
+    rthick: str 
+      Text value of thick range composed of layer thickness declaration. 
+      Each layer depth range must be separated with spaces. For instance 
+      the depth range of layer A and B should be:: 
+           
+          v='42-52 63-85'
+          
+      where ``'42-52'`` is the layer A thickness range with 42 (m) as the top 
+      and 52(m) the bottom i.e. the thickness of layer A equals to 10m. Idem, 
+      the thickness of layer B equals to 22(m) with top starts at 
+      63 (m) and end at 85 (m) (bottom). 
+      
+    sep: str, default=':-' 
+      The separator used to differenciate the top and bottom values of 
+      the layer. For example:: 
+           
+          sep =':-' --> '25:50' or '25-50' 
+           
+      where 25 and 50 corresponds to top (roof) and bottom ( wall) of the 
+      layer/stratum respectively. Both ``'':-'`` are valid to make this 
+      distinction. Any other character can be used provided that it is specified
+      as an argument of `sep`parameter. 
+      
+    flatten: bool, default=False, 
+      If ``True`` return the value of layer top and bottom into a single 
+      list. For example:: 
+          
+         ['20-33', '58:125']-> [['20', '33'], ['58', '125']] -->\
+              ['20', '33', '58', '125']
+      
+    mode: str, bool ='strict'
+      Mode to retrieve, arrange and compute the layer thicknesses.
+      In ``strict`` mode, any bad arrangement of misimputed of thickness 
+      values should raise an error. However, in 'soft', the bad arrangement
+      is systematically dropped especially when top and bottom values of 
+      the layers are null. 
+       
+    raise_warn: bool, default=True 
+      Warn user about the layer ranking and thickness calculation. 
+      
+    Returns 
+    -------- 
+    thick_range : List of layer thickness flattened or not 
+    thickness: list - The calculated thickness of each stratum. 
+    
+    Examples
+    ----------
+    >>> from watex.utils.geotools import get_thick_from_range 
+    >>> get_thick_from_range ('20-33 58:125', sep =':-') 
+    Out[88]:
+    ([array([20., 33.]), array([ 58., 125.])], [13.0, 67.0])
+    >>> # when mixed values  are given 
+    >>> get_thick_from ( "99 0-15 15.2-18.8 40.0-70.7", mode='soft')
+    Out[89]: 
+    ([array([ 0., 15.]), array([15.2, 18.8]), array([40. , 70.7])],
+     [15.0, 3.6000000000000014, 30.700000000000003])
+    """ 
+    rthick = str(rthick) # for consistency 
+    # we assume that value given here is compose of separator 
+    # mean each layer is given from top bottom. 
+    # any other values should not be considers.
+    # e.g. layer A : 25-35 --> Top ( 25m), bottom (35m)-> thick = 10 meters. 
+
+    thick_range_str = re.findall(rf"\d+(?:\.\d+)?[{sep}]\d+(?:\.\d+)?",
+                             rthick, flags= re.IGNORECASE )
+    # then break each of them and compute thickness 
+    if len(thick_range_str)==0: 
+        raise StrataError ("Stratum thicknesses expect numerical values."
+                          f" Got {rthick!r}")
+    sep_thick_range= [ str2columns ( it, regex = re.compile (
+        rf'[{sep}]', flags = re.IGNORECASE )) for it in thick_range_str]
+
+    # use lambda to transform value in float 
+    try : 
+        thickness = list ( map ( lambda x : np.diff ( np.array ( x).astype (
+            float))[0] , sep_thick_range )
+            ) 
+    except BaseException as e : 
+        raise TypeError (str(e) + ". Value range should be numeric separated"
+                         " by a non-alphanumeric character which is explicitly"
+                         " specify through the `sep` parameter.")
+
+    thick_range, thickness =_thick_range_asserter ( 
+        thickness= thickness , 
+        depth_range= sep_thick_range, 
+        litteral_string= thick_range_str, 
+        mode=mode, 
+        raise_warn= raise_warn, 
+        )
+    if flatten_range : 
+        thick_range = list( itertools.chain ( *thick_range )) 
+        
+    return thick_range, thickness 
+
+def _make_thick_range ( v ,/,  sep='-:' , tostr=True )-> str| list : 
+    """ Make thick range from mixed thickness types. 
+    
+    Parameters 
+    ------------
+    v: str, 
+       Value of mixed thickness types. The mixed types is composed of 
+       layer thickness trend ( bottom - top) and the thick range (top to bottom)
+       separated by the thickness separator `sep`. 
+       
+    sep: str, default='-:'
+      The character used to separated layer top (roof) and bottom (wall) 
+      
+    tostr: bool, default=True 
+      returns range value as a litteral string separated by a space 
+      otherwise keep it in a list.
+  
+    Return
+    --------
+    thcik_range: list 
+      List of string composed of layer thickness ranges. 
+      
+    Examples
+    ---------
+    >>> from watex.utils.geotools import _make_thick_range 
+    >>> _make_thick_range ("99 0-15 15.2-18.8 55 40.0-70.7")
+    Out[97]: '0-99.0 0-15 15.2-18.8 18.8-73.8 40.0-70.7'
+    >>> _make_thick_range ("99 0-15 15.2-18.8 55 40.0-70.7", tostr=False)
+    Out[98]: ['0-99.0', '0-15', '15.2-18.8', '18.8-73.8', '40.0-70.7']  
+    >>> 
+    
+    """
+    v= str(v)
+    default_pattern = rf'[#&*@!,;\s{sep}]\s*'  
+    # remove the pattern use to identify top-bottom 
+    # layer into the default pattern.
+    default_pattern = re.sub(rf"[{sep}]", "", default_pattern) 
+    thick_range = str2columns(
+        v, regex =re.compile ( default_pattern, flags=re.IGNORECASE) )
+
+    # Now construct thick ranges 
+    for k, item   in enumerate( thick_range): 
+        try : 
+            item = float( item)
+        except: 
+            continue 
+        else: 
+            if k==0: 
+                thick_range[0] = f'0-{item}'
+            else: 
+                # get the previous values
+                # split it and take second value 
+                # convert it to float and add to the given one
+                split_value = str2columns(
+                    thick_range[k-1], regex = re.compile (
+                        rf'[{sep}]', flags=re.IGNORECASE))
+                # compute the layer bottom and set 
+                # the thick range. 
+                bv= float( split_value[-1]) + item
+                thick_range[k]= f"{split_value[-1]}-{bv}"
+  
+    return ' '.join (thick_range ) if tostr else thick_range 
+      
+def _thick_range_asserter (
+        thickness, 
+        depth_range, 
+        litteral_string, 
+        mode='strict', 
+        raise_warn=True 
+        ): 
+    """ Assert whether the thick range is correctly prompted. 
+    
+    An isolated part of :func:`get_thick_from`. Note that depth range 
+    expected to be separated by non-alphanumeric character. 
+    
+    Parameters 
+    -----------
+    thickness: list , 
+       Thickness of the depth range. Length is equal to the number of layer 
+       depth ranges. 
+    depth_range: list of list
+       The depth range ( without the thickness separator) in a sub-list. For 
+       instance the depth range of two layers can be:: 
+           
+           [ [ 0, 10], [10, 20 ]]
+           
+    litteral_string: list of str, 
+       The list of the string that compose the depth range including the 
+       thickness separator. For instance, the litteral string of two 
+       layers with a separator ('-')should be::
+           
+           [ [0-10 ], [10-20 ]]
+           
+    mode: str, bool ='strict'
+       Mode to retrieve, arrange and compute the layer thicknesses.
+       In ``strict`` mode, any bad arrangement of misimputed of thickness 
+       values should raise an error. However, in 'soft', some a bad arrangement
+       is dropped especially when top and bottom values of the layers are 
+       null. 
+       
+    raise_warn: bool, default=True
+      Warn user about the layer arrangement and thickness calculation. 
+      
+    Returns 
+    -------- 
+    depth_range, thickness: List of array, list of float 
+        Valid depth ranges and layer thickness computed from depth range. 
+
+    Examples 
+    ----------
+    >>> from watex.utils.geotools import _thick_range_asserter
+    >>> _thick_range_asserter ( thickness=[10 , 20 ], 
+                               depth_range=[ [ 0, 10], [10, 30 ]], 
+                               litteral_string=[ "0-10" , "10-30" ] 
+                               )
+    >>> Out[9]: ([array([ 0., 10.]), array([10., 30.])], [10, 20])
+    >>> _thick_range_asserter ( thickness=[10 , -20 ], 
+                               depth_range=[ [ 0, 10], [30, 10 ]], 
+                               litteral_string=[ "0-10" , "30-10" ] 
+                               )
+    StrataError: (...)Please check the following stratum: '30-10' 
+    >>> _thick_range_asserter ( thickness=[10 , 0 ], 
+                               depth_range=[ [ 0, 10], [10, 10 ]], 
+                               litteral_string=[ "0-10" , "10-10" ] , 
+                               mode='soft'
+                               )
+    UserWarning: (...) layer should be dropped.
+    Out[16]: ([array([ 0., 10.])], [10])
+    """
+    # first check whether thickness is equal to zero 
+    # that means the top and bottom is a sampe 
+
+    idx0, = np.where  ( np.array ( thickness )==0. )
+    idx_neg, = np.where  ( np.array ( thickness ) < 0. ) 
+    
+    if len(idx_neg)!=0: 
+        neg_thick = [litteral_string[ii] for ii in idx_neg  ]
+        sname="strata" if len(idx_neg) > 1 else 'stratum'
+        raise StrataError("Bad arrangement of stratum thicknesses. The Layer"
+                          " roof(top) cannot be greater than the wall(bottom)."
+                          f" Please check the following {sname}:"
+                          f" {smart_format(neg_thick)} ")
+    if len(idx0 ) !=0 : 
+        bad_thick = [litteral_string[ii] for ii in idx0  ]
+        if mode=='strict': 
+            raise StrataError("Layer thickness from top to bottom cannot be equal"
+                              " to null. Please check the following thickness"
+                              f" range: {smart_format(bad_thick)}")
+        
+        if raise_warn: 
+            warnings.warn ("A layer with thickness equals to null is detected at"
+                           f" at {smart_format(bad_thick)}. In soft mode, layer"
+                           " should be dropped.")
+        
+        [ thickness.pop (i) for i in idx0 ] 
+        [ depth_range.pop (i) for i in idx0] 
+        
+    # now check whether thcinkess are ordered given. 
+    # for consisteny convert values to float 
+    depth_range = list ( map ( lambda x: np.array(x).astype (float),
+                              depth_range)) 
+    #then ravel depth range 
+    dr =  list( itertools.chain ( *depth_range ))
+
+    if ''.join( np.array(dr).astype(str) ) != ''.join(
+            [str(d) for d in sorted(dr)]) : 
+        # then iterate to find the bad 
+        bad_arrangement = []
+        msg= "Bad layer arrangement is observed at thickness ranges: {}"
+        for k  in range ( len(dr)-1): 
+            if dr[k] > dr [k +1]: 
+                bad_arrangement.append ( str(dr[k]) +'-'+ str(dr[k+1]))
+        
+        if mode=='strict': 
+            raise StrataError ( msg.format( smart_format ( bad_arrangement)) )
+        else: 
+            if raise_warn: 
+                warnings.warn( msg.format( smart_format ( bad_arrangement)) + 
+                              ". The automatic-arrangement is used instead.")
+            dr = sorted ( dr ) 
+            # splitback since it work in pair 
+            depth_range = [ list(ar) for ar in np.split(
+                np.array(dr), len(dr )//2 )] 
+            
+            # then recompute the thickness 
+            thickness = list ( map ( lambda x : np.diff ( np.array ( x).astype (
+                float))[0] , depth_range )
+                ) 
+    # round thickness 
+    return depth_range, list(map ( lambda x: round (x, 3), thickness ))  
+
+    
 def get_random_thickness(
     depth, / , 
     n_layers=None, 

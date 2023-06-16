@@ -1,0 +1,35 @@
+v0.2.5 (June 26, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.4`` that shows fugs fixed, features and improvements.  
+
+- |Fix| Fix AttributeError of ``interp_coords`` passed to :class:`watex.geology.DSBorehole`. ``interp_coords`` is removed from :class:`watex.geology.DSBorehole`
+  and only available when using :class:`watex.geology.DSBoreholes`. 
+
+- |Fix| :meth:`watex.site.Location.to_latlon_in` and :meth:`watex.site.Location.to_utm_in` henceforth accept a single float value for convertion 
+  operation. 
+
+- |Feature| :func:`watex.utils.get_azimuth` computes azimuth from the coordinate locations ( latitude,  longitude) or using easting/northing 
+
+- |Feature| :func:`watex.utils..smart_thickness_ranker` computes the layer thicknesses and rank strata accordingly.
+
+- |Feature| :class:`watex.geology.drilling.DSDrill` manages the drilling datasets. The class extracts, read and writes the drlling data. 
+  The arrangement of the data follows the `oasis montag <https://www.seequent.com/products-solutions/geosoft-oasis-montaj/>`_ software arrangement 
+  such as `collar`, `geology` and `geochemistry samples`. 
+
+- |Feature| :func:`watex.utils.geotools.get_thick_from` computes the layer thickness using the depth range (top-bottom) passed as a litteral string.
+
+- |Enhancement| :class:`watex.geology.DSBorehole` has new method called :meth:`watex.geology.DSBorehole.set_strata` to randomly 
+  generated strata layers with their corresponding electrical properties. 
+
+- |Enhancement| :func:`watex.utils.coreutils.read_data` accepts `sanitize` as parameter. It allows sanitization data using minimum cleaning 
+  tips like replace non-ASCI characters by ``'_'`` in each colum items if applicablem cast data values to numeric when a serie value is 
+  convertible and drop full NaN columns and rows in the data. 
+
+- |Enhancement| :func:`watex.utils.plotutils.plot_text` henceforth returns Matplotlib.Axes and accept additionals parameters like `mcolor` and `lcolor`
+  for markers and line colors. 
+
+
+
+
+

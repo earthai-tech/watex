@@ -1398,7 +1398,7 @@ def featurize_X (
     X : {array-like, sparse matrix} of shape (n_samples, n_features)
         Training vector, where `n_samples` is the number of samples and
         `n_features` is the number of features. 
-        Note ttaht when `n_components` is set, sparse matrix for `X` is not 
+        Note that when `n_components` is set, sparse matrix for `X` is not 
         acceptable. 
 
     y : array-like of shape (n_samples,)
@@ -1409,13 +1409,14 @@ def featurize_X (
        
     target_scale: float, default=5.0 
        Apply appropriate scaling and include it in the input data to k-means.
+       
     n_components: int, optional
        Number of components for reduced down the predictor X. It uses the PCA 
-       to reduce down dimension to the importance components. 
+       to reduce down dimension to the importance features. 
        
     model: :class:`KMeansFeaturizer`. 
        KMeasFeaturizer model. Model can be provided to featurize the 
-       test data seperated from the train data. 
+       test data separated from the train data. 
        
        .. versionadded:: 0.2.4 
        
@@ -1423,7 +1424,8 @@ def featurize_X (
        State for shuffling the data 
        
     split_X_y: bool, default=False, 
-       Split the X, y into train data and test data  according to the test_size 
+       Split the X, y into train data and test data  according to the test 
+       size 
        
     test_ratio: int, default=0.2 
        ratio to keep for a test data. 
@@ -1452,12 +1454,19 @@ def featurize_X (
         Returns NDArray of m_features plus the clusters features from KMF 
         feturization procedures. The `n_sparse_features` is created if 
         `to_sparse` is set to ``True``. 
-   X, y, KMFmodel: NDarray and KMF models 
+   X, y, model: NDarray and KMF models 
        Returns transformed array X and y and model if   ``return_model`` is 
        set to ``True``. 
    
       Array like train data X transformed  and test if `split_X_y` is set to 
       ``True``. 
+    X, Xtest, y, ytest: NDArray (KMF), ArrayLike 
+       Split tuple is returned when `split_X_y=True``.
+       
+    Note
+    -----
+    Everytimes ``return_model=True``, KMF model (:class:`KMeansFeaturizer`) 
+    is appended to the return results. 
     
     Examples 
     --------
@@ -1494,9 +1503,10 @@ def featurize_X (
     
     # if sparse convert X  to sparse matrix 
     if to_sparse: 
+        sparsity= str(sparsity).lower().strip() 
         d_sparsity  = dict ( csr =  sparse.csr_matrix , 
             coo=  sparse.coo_matrix ) 
-        sparse_func = sparse.coo_matrix  if str(sparsity) not in (
+        sparse_func = sparse.coo_matrix  if sparsity not in (
             'coo', 'csr')  else d_sparsity.get (sparsity ) 
     
     # reduce down feature to two. 

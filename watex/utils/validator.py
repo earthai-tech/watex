@@ -413,7 +413,7 @@ def _validate_ves_operator (
         kept to ``None``.
     ensure_2d: bool, default=False, 
         If ``True`` return array-like of two dimensional where the first and 
-        second cimunns are AB and rhoa respectively. 
+        second columns are AB and rhoa respectively. 
     as_frame: bool, default=False
         If ``True``, returns a pd.dataframe of AB and rhoa columns. 
         
@@ -527,7 +527,7 @@ def _check_array_in(obj, /, arr_name):
     Parameters
     ----------
     obj : object 
-       Object that is expect to contain the array attribute.
+       Object that is expected to contain the array attribute.
     Returns
     -------
     X : array
@@ -1225,7 +1225,7 @@ def _check_estimator_name(estimator):
 
 def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X'): 
     """ Set array back to frame, reconvert the Numpy array to pandas series 
-    or dataframe.
+    or dataframe. 
     
     Parameters 
     ----------

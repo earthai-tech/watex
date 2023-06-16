@@ -248,7 +248,7 @@ def load_hlogs (
         }
     is_keys = set ( list(available_sets) + ["*"])
 
-    key = key_checker(key, is_keys)
+    key = key_checker(key, is_keys, deep_search=True )
     
     data_file ='h.h5'
     with resources.path (DMODULE , data_file) as p : 
@@ -359,10 +359,10 @@ tnames: str, optional
     `tag` and `data_names` do nothing. just for API purpose and to allow 
     fetching the same data uing the func:`~watex.data.fetch_data` since the 
     latter already holds `tag` and `data_names` as parameters. 
+    
 key: str, default='h502'
     Kind of logging data to fetch. Can also be the borehole ["h2601", "*"]. 
     If ``key='*'``, all the data is aggregated on a single frame of borehole. 
-    .. versionadded:: 0.1.5
     
     .. versionadded:: 0.2.3. 
        Add 08 new boreholes data from logging, strata, layer thicknesses and 
@@ -1028,8 +1028,6 @@ def load_mxs (
         return train_test_split (*tuple ( data ),random_state = seed, 
                                  test_size =assert_ratio (test_ratio),
                                  shuffle = shuffle)
-  
-    
     # Append Xy to Boxspace if 
     # return_X_y is not set explicitly.
     Xy = dict() 
@@ -1044,7 +1042,6 @@ def load_mxs (
         y = random_sampling(y, samples = samples, random_state= seed, 
                             shuffle= shuffle
                                )
-        
         if return_X_y: 
             return (  X, y )  if as_frame or key =='sparse' else (
                 np.array(X), np.array(y))
@@ -1090,7 +1087,7 @@ def load_mxs (
         filename=data_file,
         data_module=DMODULE,
         **Xy
-    )
+        )
     
 load_mxs.__doc__="""\
 Load the dataset after implementing the mixture learning strategy (MXS).
@@ -1113,10 +1110,10 @@ as_frame : bool, default=False
 
 split_X_y: bool, default=False,
     If True, the data is splitted to hold the training set (X, y)  and the 
-    testing set (Xt, yt) with with test ratio fixed to 20 % 
+    testing set (Xt, yt) based on to the `test_ratio` value.
 
 tnames: str, optional 
-    the name of the target to retreive. If ``None`` the full target columns 
+    the name of the target to retrieve. If ``None`` the full target columns 
     are collected and compose a multioutput `y`. For a singular classification 
     or regression problem, it is recommended to indicate the name of the target 
     that is needed for the learning task. 
@@ -1132,7 +1129,7 @@ samples: int,optional
 key: str, default='data'
     Kind of MXS data to fetch. Can also be: 
         
-        - "sparse": for a compressed sparsed matric of train set X 
+        - "sparse": for a compressed sparsed row matrix format of train set X. 
         - "scale": returns a scaled X using the standardization strategy 
         - "num": Exclusive numerical data and exclude the 'strata' feature.
         - "test": test data `X` and `y` 
@@ -1190,9 +1187,11 @@ data, target: tuple if ``return_X_y`` is True
     (n_samples, n_features) with each row representing one sample and
     each column representing the features. The second ndarray of shape
     (n_samples,) containing the target samples.
-    .. versionadded:: 0.1.2
+
 X, Xt, y, yt: Tuple if ``split_X_y`` is True 
-    A tuple of two ndarray (X, Xt). The first containing a 2D array of:
+    A tuple of two ndarray (X, Xt). The first containing a 2D array of
+    training and test data whereas `y` and `yt` are training and test labels.
+    The number of samples are based on the `test_ratio`. 
  
 Examples
 --------

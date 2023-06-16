@@ -3428,10 +3428,13 @@ def plot_text (
     step = None , 
     xlabel ='', 
     ylabel ='', 
-    color=None, 
+    color= 'k', 
+    mcolor='k', 
+    lcolor=None, 
     show_leg =False,
     linelabel='', 
     markerlabel='', 
+    ax=None, 
     **text_kws
     ): 
     """ Plot text(s) indicating each position in the line. 
@@ -3469,7 +3472,14 @@ def plot_text (
        
     xlabel, ylabel: str, Optional, 
        The labels of x and y. 
-    color: str, Optional 
+       
+    color: str, default='k', 
+       Text color.
+       
+    mcolor: str, default='k', 
+       Marker color. 
+       
+    lcolor: str, Optional 
        Line color if `show_line` is set to ``True``. 
        
     show_leg: bool, default=False 
@@ -3478,9 +3488,18 @@ def plot_text (
     linelabel, markerlabel: str, Optional 
         The labels of the line and marker. 
        
+    ax: Matplotlib.Axes, optional 
+       Support plot to another axes 
+       
+       .. versionadded:: 0.2.5 
+       
     text_kws: dict, 
        Keyword arguments passed to :meth:`matplotlib.axes.Axes.text`. 
 
+    Return 
+    -------
+    ax: Matplotlib axes 
+    
     Examples 
     --------
     >>> import watex as wx 
@@ -3530,18 +3549,20 @@ def plot_text (
             if not ii% step ==0: 
                 text[ii]=''
 
-    fig, ax = plt.subplots(1,1, figsize =fig_size)
+    if ax is None: 
+        
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
     
     # plot = ax.scatter if show_line else ax.plot 
     ax_m = None 
     if show_line: 
-        ax.plot (x, y , label = linelabel, color =color 
+        ax.plot (x, y , label = linelabel, color =lcolor 
                  ) 
         
     for ix, iy , name in zip (x, y, text ): 
-        ax.text ( ix , iy , name , **text_kws)
+        ax.text ( ix , iy , name , color = color,  **text_kws)
         if name !='':
-           ax_m  = ax.scatter ( [ix], [iy] , marker ='o', color ='k', 
+           ax_m  = ax.scatter ( [ix], [iy] , marker ='o', color =mcolor, 
                        )
   
     ax.set_xlabel (xlabel)
@@ -3551,6 +3572,9 @@ def plot_text (
     
     if show_leg : 
         ax.legend () 
+        
+    return ax 
+
     
 def plot_voronoi(
     X, y, *, 
@@ -3622,7 +3646,6 @@ def plot_voronoi(
     #ax.legend() 
     ax.set_title (fig_title , fontsize=20)
     #fig.suptitle(fig_title, fontsize=20) 
-    
     return ax 
  
     
@@ -3646,8 +3669,8 @@ def plot_roc_curves (
    names =..., 
    colors =..., 
    ncols = 3, 
-   get_score=False, 
-   all=False,
+   score=False, 
+   kind="inone",
    ax = None,  
    fig_size=( 7, 7), 
    **roc_kws ): 
@@ -3669,7 +3692,21 @@ def plot_roc_curves (
     y : ndarray or Series of length (n_samples, )
         An array or series of target or class values. Preferably, the array 
         represent the test class labels data for error evaluation.  
-    
+        
+    names: list, 
+       List of model names. If not given, a raw name of the model is passed 
+       instead.
+     
+    kind: str, default='inone' 
+       If ``['individual'|'2'|'single']``, plot each ROC model separately. 
+       Any other value, group of ROC curves into a single plot. 
+       
+       .. versionchanged:: 0.2.5 
+          Parameter `all` is deprecated and replaced by `kind`. It henceforth 
+          accepts arguments ``allinone|1|grouped`` or ``individual|2|single``
+          for plotting mutliple ROC curves in one or separate each ROC curves 
+          respecively. 
+          
     colors : str, list 
        Colors to specify each model plot. 
        
@@ -3677,18 +3714,14 @@ def plot_roc_curves (
        Number of plot to be placed inline before skipping to the next column. 
        This is feasible if `many` is set to ``True``. 
        
-    get_score: bool,default=True
-      Append the Area Under the curve to legend. 
+    score: bool,default=True
+      Append the Area Under the curve score to the legend. 
       
       .. versionadded:: 0.2.4 
       
     all: str, default=False 
        if ``True``, plot each ROC model separately 
-     
-    names: list, 
-       List of model names. If not given, a raw name of the model is passed 
-       instead.
-       
+
     kws: dict,
         keyword argument of :func:`sklearn.metrics.roc_curve 
         
@@ -3708,11 +3741,13 @@ def plot_roc_curves (
                                          XGBClassifier, LogisticRegression)]
     >>> plot_roc_curves(clfs, Xt, yt)
     Out[66]: <AxesSubplot:xlabel='False Positive Rate (FPR)', ylabel='True Positive Rate (FPR)'>
-    >>> plot_roc_curves(clfs, Xt, yt,all=True, ncols = 4 , fig_size = (10, 4))
+    >>> plot_roc_curves(clfs, Xt, yt,kind='2', ncols = 4 , fig_size = (10, 4))
     """
     from .validator import  get_estimator_name
     
-    def plot_roc(model, data, labels, get_score =False ):
+    kind = '2' if str(kind).lower() in 'individual2single' else '1'
+
+    def plot_roc(model, data, labels, score =False ):
         if hasattr(model, "decision_function"):
             predictions = model.decision_function(data)
         else:
@@ -3720,7 +3755,7 @@ def plot_roc_curves (
             
         fpr, tpr, _ = roc_curve(labels, predictions, **roc_kws )
         auc_score = None 
-        if get_score: 
+        if score: 
             auc_score = roc_auc_score ( labels, predictions,)
             
         return fpr, tpr , auc_score
@@ -3735,7 +3770,7 @@ def plot_roc_curves (
         names , [ get_estimator_name(m) for m in clfs ]) 
 
     # check whether the model is fitted 
-    if all: 
+    if kind=='2': 
         fig, ax = _make_axe_multiple ( 
             clfs, ncols = ncols , ax = ax, fig_size = fig_size 
                                   ) 
@@ -3746,7 +3781,7 @@ def plot_roc_curves (
     
     for k, ( model, name)  in enumerate (zip (clfs, names )): 
         check_is_fitted(model )
-        fpr, tpr, auc_score = plot_roc(model, X, y, get_score)
+        fpr, tpr, auc_score = plot_roc(model, X, y, score)
 
         if hasattr (ax, '__len__'): 
             if len(ax.shape)>1: 
@@ -3754,13 +3789,12 @@ def plot_roc_curves (
                 axe = ax [i, j]
             else: axe = ax[k]
         else: axe = ax 
-            
 
         axe.plot(fpr, tpr, label=name + ('' if auc_score is None 
                                          else f"AUC={round(auc_score, 3) }") , 
                  color = colors[k]  )
         
-        if all: 
+        if kind=='2': 
             axe.plot([0, 1], [0, 1], 'k--') 
             axe.legend ()
             axe.set_xlabel ("False Positive Rate (FPR)")
@@ -3768,7 +3802,7 @@ def plot_roc_curves (
         # else: 
         #     ax.plot(fpr, tpr, label=name, color = colors[k])
             
-    if not all: 
+    if kind!='2': 
         ax.plot([0, 1], [0, 1], 'k--') # AUC =.5 
         ax.set_xlabel ("False Positive Rate (FPR)")
         ax.set_ylabel ("True Positive Rate (FPR)")
