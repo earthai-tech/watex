@@ -1637,7 +1637,7 @@ class DSDrill :
             
         dh_xlon, dh_ylat = list(coords) 
         if self.projection =='ll': 
-            dh_ylat, dh_xlon = Location.to_utm_in(dh_xlon, dh_ylat, 
+            dh_ylat, dh_xlon = Location.to_utm_in(dh_ylat, dh_xlon, 
                utm_zone= self.utm_zone)
             dh_ylat, dh_xlon= dh_ylat[0], dh_xlon[0] 
             
@@ -1984,13 +1984,13 @@ class DSDrill :
           be supplied. 
           
         utm_zone:str, 
-           zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
-           of coordinates points in the survey area. It should be a string 
-           (##N or ##S)in the form of number and North or South hemisphere, 
-           10S or 03N. if :attr:`~DSdrill.utm_zone` is already set, it is not 
-           need to reset again. Resetting new `utm_zone` will erase the value 
-           of the former attribute. However for azimuth calculation, utm zone 
-           cannot be None otherwise the process is aborted. 
+          zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
+          of coordinates points in the survey area. It should be a string 
+          (##N or ##S)in the form of number and North or South hemisphere, 
+          10S or 03N. if :attr:`~DSdrill.utm_zone` is already set, it is not 
+          need to reset again. Resetting new `utm_zone` will erase the value 
+          of the former attribute. However for azimuth calculation, utm zone 
+          cannot be None otherwise the process is aborted. 
  
         Returns 
         ---------
@@ -2029,8 +2029,6 @@ class DSDrill :
           DH_Hole   DH_East  DH_North  DH_RH  ...  DH_Azimuth  DH_PlanDepth    DH_Decr  Mask
         0   DXT03  297856.0  352145.0   0.25  ...         NaN       wandx01  hole-test   RAS
         1    TOXG  125869.0  235645.0   2.30  ...         2.3          wxzu       None   RAS
-
-        [2 rows x 12 columns]
         """
         if compute_azimuth is ...: 
             compute_azimuth=False 
@@ -2040,19 +2038,16 @@ class DSDrill :
                 if self.projection !='utm': 
                     warn("Projection should be set to 'UTM' for azimuth"
                          " calculation.")
-                    
             self.projection='utm'
             
             if utm_zone is ...: 
                 utm_zone =None 
-            
             self.utm_zone = utm_zone or self.utm_zone 
             
             if self.utm_zone is None: 
                 if self.verbose: 
-                    warn("Unknow 'utm_zone'. Process for azimuth recalculation"
-                         " is aborted.")
-                    
+                    warn("Unknow 'utm_zone'. Process for azimuth"
+                         " recalculation aborted.")
                 compute_azimuth=False 
                 
         # Enter data 
