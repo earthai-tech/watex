@@ -6419,7 +6419,7 @@ def convert_value_in (v, /, unit ='m'):
     
     return float ( v)/ (c.get(unit) or 1e0) 
 
-def split_list(lst, val):
+def split_list(lst, val, fill_value=None ):
     """Module to extract a slice of elements from the list 
     
     Parameters 
@@ -6442,11 +6442,18 @@ def split_list(lst, val):
     [[1, 2, 3], [4, 5, 6], [7, 8]]
  
     """
+
     lst = is_iterable(lst , exclude_string =True , transform =True ) 
     val = int ( _assert_all_types(val, int, float )) 
-    
-    return [list(group) for key, group in itertools.groupby(
-        lst, lambda x: (x-1)//val)]
+    try: 
+        sl= [list(group) for key, group in itertools.groupby(
+                lst, lambda x: (x-1)//val)]
+    except: 
+        # when string is given 
+        sl= list(itertools.zip_longest(
+            *(iter(lst),)*val,fillvalue =fill_value),)
+    return sl 
+
 
 
 def key_search (
@@ -6554,13 +6561,53 @@ def key_search (
     
     return None if len(valid_keys)==0 else valid_keys 
 
-
+def repeat_item_insertion(text, /, pos, item ='', fill_value=''): 
+    """ Insert character in  text according from it position. 
+    
+    Parameters
+    -----------
+    v: text
+       Text 
+    pos: int 
+      position where the item must be insert. 
+    item: str, 
+      Item to insert at each position. 
+    fill_value: str, 
+      Does nothing special; fill the the last position. 
+    Returns
+    --------
+    text: str, 
+      New construct object. 
+      
+    Examples
+    ----------
+    >>> from watex.utils.funcutils import repeat_item_insertion
+    >>> repeat_item_insertion ( '0125356.45', pos=2, item=':' ) 
+    Out[65]: '01:25:35:6.45'
+    >>> repeat_item_insertion ( 'Function inserts car in text.', pos=10, item='TK' )
+    Out[69]: 'Function iTKnserts carTK in text.'
+    """
+    pos= _assert_all_types(pos, int, float, 
+                           objname=f'Position for {item} insertion')
+    # for consistency
+    lst = list( str(text)) 
+    # checher whether there is a decimal then remove it 
+    dec_part=[]
+    ent_part= lst
+    for i, it in enumerate ( lst)  :
+        if it =='.': 
+            ent_part, dec_part  = lst [:i],  lst[i:]
+            break 
+    # now split list
+    value = split_list(ent_part, val= pos , fill_value=fill_value) 
+    #value = split_list ( ent_part, 2)
+    #[[1, 2, 3], [4, 5, 6], [7, 8]]
+    join_lst= list (map ( lambda s : ''.join( s), value))
+    #[123, 456, 78]
+    #join with mark 
+    return f'{str(item)}'.join(join_lst) +''.join(dec_part)
         
-    
-    
 
-
-    
     
     
     

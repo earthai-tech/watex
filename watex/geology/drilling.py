@@ -242,6 +242,8 @@ class DSBoreholes:
         
         use_col =False 
         if self.holeid is not None: 
+#XXX Mnage the key search to find it in the data frame columns 
+            # the the corresponding key in data columns 
             use_col = True 
         else: self.holeid ='hole'
             
