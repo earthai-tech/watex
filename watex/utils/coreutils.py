@@ -2353,7 +2353,8 @@ def read_data (
     
 def _check_readable_file (f): 
     """ Return file name from path objects """
-    msg =(f"Expects a Path-like object or URL, got: {type(f).__name__!r} ")
+    msg =(f"Expects a Path-like object or URL. Please, check your"
+          f" file: {os.path.basename(f)!r}")
     if not os.path.isfile (f): # force pandas read html etc 
         if not ('http://'  in f or 'https://' in f ):  
             raise TypeError (msg)

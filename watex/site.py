@@ -979,21 +979,31 @@ class Location (object):
     def __init__(
         self, 
         lat= None, 
-        lon=None, 
+        lon=None,
+        elev=None, 
+        datum='WGS84', 
+        epsg=None,
+        reference_ellipsoid=23,
+        utm_zone=None, 
         **kwds
         ) :
         self._logging = watexlog.get_watex_logger(
             self.__class__.__name__)
         self._lat = lat 
         self._lon = lon 
+        self._utm_zone=utm_zone
+        self._elev=elev
         
-        self.datum = kwds.pop('datum', 'WGS84') 
-        self.epsg = kwds.pop('epsg' , None) 
-        self.reference_ellipsoid = kwds.pop('reference_ellipsoid', 23)
-        self._utm_zone =kwds.pop('utm_zone', None) 
-        self._elev = kwds.pop('elev', None)
+        self.datum=datum
+        self.epsg=epsg 
+        self.reference_ellipsoid=reference_ellipsoid
+        
         self._east= None 
         self._north =None 
+        
+        for key in list(kwds.keys()) : 
+            setattr (self, key, kwds[key])
+            
     @property 
     def utm_zone (self): 
         return self._utm_zone
@@ -1101,9 +1111,7 @@ class Location (object):
             
         self.epsg = epsg or self.epsg 
         self.datum = datum  or self.datum 
-        if not self.datum:  
-            self.datum = 'WGS84'
-
+        
         self.reference_ellipsoid = reference_ellipsoid or \
             self.reference_ellipsoid
      
@@ -1177,7 +1185,6 @@ class Location (object):
         if utm_zone is not None : 
             self._utm_zone =utm_zone 
             
-        self.datum = 'WGS84'
         self.datum = datum or self.datum 
         self.reference_ellipsoid = reference_ellipsoid or \
             self.reference_ellipsoid
@@ -1206,6 +1213,7 @@ class Location (object):
         lats:ArrayLike, 
         lons:ArrayLike, 
         *, 
+        data=None, 
         utm_zone:str =None, 
         datum: str=None, 
         **kws 
@@ -1219,10 +1227,16 @@ class Location (object):
            Array composed of latitude values 
         lons: ArrayLike 1d, 
            Array composed of longitude values. 
- 
+           
+        data: pd.dataFrame
+           Accepts dataframe containing the latitude and longitude coordinates
+           by specifying the columns through 'lats' and 'lons' columns. 
+           
+           .. versionadded:: 0.2.5
+           
         utm_zone: Optional, string
-            zone number and 'S' or 'N' e.g. '55S'. Defaults to the centre point
-            of the provided points, 
+           zone number and 'S' or 'N' e.g. '55S'. Defaults to the centre point
+           of the provided points, 
         datum: string
             well known datum ex. WGS84, NAD27, NAD83, etc.
             
@@ -1243,12 +1257,20 @@ class Location (object):
             coordinates. 
             
         """
+        if ( 
+                isinstance (lats, str ) 
+                or isinstance ( lons, str) 
+                and data is None): 
+            raise TypeError ("Data can't be None when latitude or longitude"
+                             " has a string argumemt.")
+        if data is not None: 
+            lats, lons = assert_xy_in(lats, lons , data = data )      
         
-        emsg = ("longitude" if lons is None else 'latitude') if (
-            lats is None or lons is None) else "Both longitude and latitude"
+        emsg = ("longitude is " if lons is None else 'latitude is') if (
+            lats is None or lons is None) else "Both longitude and latitude are"
         
         if lats is None or lons is None: 
-            raise TypeError (emsg) 
+            raise TypeError (emsg + "missing.") 
         # For consistency, check iterable values 
         
         lats = is_iterable(lats, exclude_string= True, transform =True ) 
@@ -1272,6 +1294,7 @@ class Location (object):
         easts:ArrayLike, 
         norths:ArrayLike, 
         *, 
+        data=None,
         utm_zone:str, 
         datum: str=None, 
         **kws 
@@ -1290,6 +1313,13 @@ class Location (object):
         utm_zone: Optional, string
            zone number and 'S' or 'N' e.g. '55S'. Defaults to the centre point
            of the provided points, 
+           
+        data: pd.dataFrame
+           Accepts dataframe containing the easting and northing coordinates
+           by specifying the columns through 'easts' and 'lats' columns. 
+           
+           .. versionadded:: 0.2.5
+           
         datum: string
            well known datum ex. WGS84, NAD27, NAD83, etc.
             
@@ -1310,12 +1340,21 @@ class Location (object):
            coordinates. 
             
         """
-        
-        emsg = ("easting" if easts is None else 'northing') if (
-            easts is None or norths is None) else "Both easting and northing"
+        if ( 
+                isinstance (easts, str ) 
+                or isinstance ( norths, str) 
+                and data is None): 
+            raise TypeError ("Data can't be None when easting or northing"
+                             " has a string argumemt.")
+        if data is not None: 
+            easts , norths = assert_xy_in(easts, norths, data = data )
+            
+        emsg = ("easting is" if easts is None else 'northing is') if (
+            easts is None or norths is None) else (
+                "Both easting and northing are")
         
         if easts is None or norths is None: 
-            raise TypeError (emsg) 
+            raise TypeError (emsg + " missing.") 
             
         # For consistency, check iterable values 
         easts = is_iterable(easts, exclude_string= True,  transform =True ) 

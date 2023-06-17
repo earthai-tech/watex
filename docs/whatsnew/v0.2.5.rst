@@ -29,6 +29,9 @@ These are minor changes  in ``v0.2.4`` that shows fugs fixed, features and impro
 - |Enhancement| :func:`watex.utils.plotutils.plot_text` henceforth returns Matplotlib.Axes and accept additionals parameters like `mcolor` and `lcolor`
   for markers and line colors. 
 
+- |Enhancement| :meth:`watex.site.Location.to_utm_in` and :meth:`watex.site.Location.to_latlon_in` accepts data parameter expecting a pandas dataframe 
+  containing either the longitude/latitude or easting/northing coordinates. 
+
 
 
 
