@@ -145,7 +145,7 @@ class DSBoreholes:
         epsg:int=None, 
         encoding:str='utf-8', 
         interp_coords:bool=False, 
-        reference_ellipsoide:int=23, 
+        reference_ellipsoid:int=23, 
         verbose:bool=False 
         ): 
         
@@ -153,7 +153,7 @@ class DSBoreholes:
         self.holeid=holeid  
         self.projection= projection 
         self.utm_zone=utm_zone 
-        self.reference_ellipsoide= reference_ellipsoide 
+        self.reference_ellipsoid= reference_ellipsoid 
         self.datum=datum 
         self.encoding= encoding 
         self.epsg =epsg 
@@ -841,10 +841,7 @@ class DSBorehole:
                     random_state =None, shuffle =True 
                     ): 
         """ Create strata associated to each depth.  
-        
         An isolated part of :meth:`set_strata`. 
-        
-        
         """
         self.inspect 
         
@@ -1309,7 +1306,8 @@ class DSDrill :
           0          S01  477205.6935  ...       pup  Boudin Axis
           1          S02  477261.7258  ...       pup          pzs
         """
-        
+        # initialize Drill properties 
+        self.collar_=None ; self.geology_=None; self.samples_=None 
         if ( isinstance ( data, str ) 
             and os.path.isfile ( data)
             and str(data).endswith ('.xlsx')
@@ -1370,8 +1368,9 @@ class DSDrill :
            
         Examples
         ---------
-        >>> from watex.geology.drilling import Drill 
-        >>> dr = Drill().fit(xlsx_data)
+        >>> from watex.geology.drilling import DSDrill 
+        >>> xlsx_data= 'data/drill/nbleDH.xlsx'
+        >>> dr = DSDrill().fit(xlsx_data)
         >>> dr2 = dr.get_collar (dr.collar_, reset_collar= True )
         >>> dr2.collar_
           DH_Hole (ID)      DH_East     DH_North  ...  DH_PlanDepth  DH_Decr  Mask 
@@ -1456,8 +1455,9 @@ class DSDrill :
            
         Examples
         ---------
-        >>> from watex.geology.drilling import Drill 
-        >>> dr = Drill().fit(xlsx_data)
+        >>> from watex.geology.drilling import DSDrill
+        >>> xlsx_data= 'data/drill/nbleDH.xlsx'
+        >>> dr = DSDrill().fit(xlsx_data)
         >>> dr.get_geology (dr.geology_, reset_geology=True ).geology_
           DH_Hole     Thick01  ...                    Rock03  Rock04
         0     S01    0.200000  ...  carbonate iron formation    ROCK
@@ -1524,8 +1524,9 @@ class DSDrill :
            
         Examples
         ---------
-        >>> from watex.geology.drilling import Drill 
-        >>> dr = Drill().fit(xlsx_data)
+        >>> from watex.geology.drilling import DSDrill 
+        >>> xlsx_data= 'data/drill/nbleDH.xlsx'
+        >>> dr = DSDrill().fit(xlsx_data)
         >>> dr.get_geosamples (dr.samples_, reset_samples= True ).samples_
           DH_Hole  Thick01     Thick02  ...             sample02  sample03     sample04
         0     S01     10.0   98.627769  ...                  prt       pup  Boudin Axis

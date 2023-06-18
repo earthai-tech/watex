@@ -2273,7 +2273,6 @@ def parseDCArgs(fn :str ,
     return np.array(sdata )if arg=='station' else reshape (np.array(
         sdata ).astype(float))
 
-
 def read_data (
     f:str | pathlib.PurePath, 
     sanitize: bool= ..., 
@@ -2293,8 +2292,8 @@ def read_data (
         
     sanitize: bool, default=False, 
        Push a minimum sanitization of the data such as: 
-           - replace a non-alphabeti+c column items with pattern '_' 
-           - cast data values to numeric values if applicable 
+           - replace a non-alphabetic column items with a pattern '_' 
+           - cast data values to numeric if applicable 
            - drop full NaN columns and rows in the data 
     reset_index: bool, default=False, 
       Reset index if full NaN columns are dropped after sanitization. 
@@ -2305,7 +2304,6 @@ def read_data (
     read_kws: dict, 
        Additional keywords arguments passed to pandas readable file keywords. 
         
-    
     Returns 
     -------
     f: :class:`pandas.DataFrame` 

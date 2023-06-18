@@ -116,7 +116,7 @@ class Profile:
            Object of Profile. 
            
         Note 
-        -------
+        ------
         When `data` is supplied and `x` and `y` are given by their names 
         existing in the dataframe columns, by default, the non-numerical 
         data are removed. However, if `y` and `x` are given in DD:MM:SS in 
@@ -177,7 +177,7 @@ class Profile:
             try : 
                 self.x, self.y = Profile.dms2ll(self.x, self.y) 
             except ValueError as e: 
-                raise ( emsg + str(e))
+                raise ValueError( emsg + str(e))
             else: 
                 # initialize the system to ll if 
                 # conversion succeeded. 
@@ -480,7 +480,7 @@ class Profile:
         return map ( lambda i: f(i) , ar)
     
     @staticmethod 
-    def dms2ll (x:ArrayLike  , y:ArrayLike ): 
+    def dms2ll (x:ArrayLike|str  , y:ArrayLike|str , *,  data=None): 
         """ Convert array x and y from DD:MM:SS to degree decimal -longitude 
         (x) and latitude (y). 
         
@@ -490,10 +490,17 @@ class Profile:
            positions.
         Returns 
         --------
-        x, y: Arraylike 
+        x, y: Arraylike or str
            ArrayLike in degree decimal coordinates format. By default `x` and 
            `y` are longitude and latitude respectively. 
+           If `x` and `y` has a string argument, data must be provided, 
+           otherwise an error raises. 
            
+        data: pd.DataFrame 
+          DataFrame containg the position x and y. 
+          
+          .. versionadded:: 0.2.5 
+          
         Example
         ---------
         >>> from watex.site import Profile 
@@ -501,7 +508,16 @@ class Profile:
         >>> Profile.dms2ll (x, y)
         Out[83]: (array([20.25972222]), array([7.75236111]))
         """
- 
+        if ( 
+                (isinstance (x, str) 
+                or isinstance (y, str)) 
+                and data is None
+                ): 
+            raise TypeError(
+                "Data can't be None when x or y has a string argument.")
+        if data is not None: 
+            x, y = assert_xy_in(x, y, data=data )
+            
         if not _is_numeric_dtype(x , to_array =True ): 
            # reconvert object to str for consistency  
            x = np.array ( list ( Profile.f_(x)), dtype = np.float64 )
@@ -511,21 +527,28 @@ class Profile:
         return x, y
     
     @staticmethod 
-    def ll2dms (x:ArrayLike  , y:ArrayLike ): 
+    def ll2dms (x:ArrayLike|str  , y:ArrayLike|str , *, data=None ): 
         """
         Convert array x and y from degree decimal  to 
         degree-minutes-seconds (DMS)
         
         Parameters 
         -----------
-        x, y: ArrayLike containing the degree decimal position 
-           coordinates. 
+        x, y: ArrayLike or str 
+           Arrays containing the degree decimal position coordinates.
+           If `x` and `y` has a string argument, data must be provided,
+           otherwise an error raises
         
         Returns 
         --------
         x, y: Arraylike 
            ArrayLike in DD:MM:SS coordinates format.
-           
+          
+        data: pd.DataFrame 
+          DataFrame containg the position x and y.
+          
+          .. versionadded:: 0.2.5
+          
         Example
         ---------
         >>> from watex.site import Profile 
@@ -534,6 +557,14 @@ class Profile:
         Out[84]: (array(['15:10:48.00'], dtype='<U11'), 
                   array(['19:36:00.00'], dtype='<U11'))
         """
+        if ( (isinstance (x, str) 
+              or isinstance (y, str)) 
+              and data is None): 
+            raise TypeError(
+                "Data can't be None when x or y has a string argument.")
+            
+        if data is not None: 
+            x, y = assert_xy_in(x, y, data=data )
         if _is_numeric_dtype(x , to_array =True ):  
            x = np.array ( list (Profile.f_ (x, 'll->dms')), dtype = str )
         if _is_numeric_dtype(y , to_array =True): 
@@ -1258,8 +1289,8 @@ class Location (object):
             
         """
         if ( 
-                isinstance (lats, str ) 
-                or isinstance ( lons, str) 
+                (isinstance (lats, str ) 
+                or isinstance ( lons, str) )
                 and data is None): 
             raise TypeError ("Data can't be None when latitude or longitude"
                              " has a string argumemt.")
@@ -1340,10 +1371,9 @@ class Location (object):
            coordinates. 
             
         """
-        if ( 
-                isinstance (easts, str ) 
-                or isinstance ( norths, str) 
-                and data is None): 
+        if (  ( isinstance (easts, str ) 
+            or isinstance ( norths, str) )
+            and data is None): 
             raise TypeError ("Data can't be None when easting or northing"
                              " has a string argumemt.")
         if data is not None: 
