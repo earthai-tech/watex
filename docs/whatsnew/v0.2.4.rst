@@ -51,7 +51,7 @@ These are minor changes  in ``v0.2.3`` that shows fugs fixed, features and impro
   It also accepts `test_ratio` to split the training and test sets via  ``split_X_y=True``. Note that ``return_X_y=True``  is not necessary when 
   `split_X_y` is set to ``True``. 
 
-- |Enhancement | :class:`watex.transformers.featurize_X` accepts `model` as parameter. It is  useful to featurize the test data separately 
+- |Enhancement| :class:`watex.transformers.featurize_X` accepts `model` as parameter. It is  useful to featurize the test data separately 
   from the train data to avoid leakage information. If `sparse` parameter is set to ``True``, the training and testing data are outputted in sparse coordinates format 
   or compressed sparse row format that is controlled by the `sparsity` parameter. 
 
