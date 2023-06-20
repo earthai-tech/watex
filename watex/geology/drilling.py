@@ -29,6 +29,7 @@ from ..utils.funcutils import (
     sanitize_frame_cols, 
     str2columns,
     key_search, 
+    ellipsis2false
     )
 from ..utils.geotools import build_random_thickness, smart_thickness_ranker
 from ..utils.validator import check_array 
@@ -60,7 +61,29 @@ class DSBoreholes:
       
     holeid: str, optional 
        The name of column of the boreholes collections ID. Note that if 
-       given, it should exist in the borehole datasets. 
+       given, it must exist in the borehole datasets. Note that if 
+       hole ID is not specified, each borehole can be fetched from a attribute
+       hole count from 0 to n_samples. For instance, the borehole number 12
+       can be collected using:: 
+           
+           >>> b = DSBoreholes ().fit(<borehole_data>)
+           >>> b.hole.hole11 
+           
+      where 12 is the 12em position as Python index starts with 0. 
+      However when holeid is specified, the `hole` attribute is replaced 
+      by each value of the `hole_id` column as: 
+          
+          >>> borehole_data['hole_id'][:3]
+          0    B0092
+          1    B0093
+          2    B0094
+          Name: hole_id, dtype: object
+          >>> b.hole.B0092 
+          >>> b.hole.B0094 
+          
+      where ``B0092`` or ``B0094`` are the borehole in the columns ``hole_id``. 
+      Note that ``hole_id`` can be any other names at least it is explicitly 
+      specified as a argument of the ``holeid` parameter. 
       
     lon, lat: ArrayLike 1d /str  , optional 
        One dimensional arrays. `xlon` can be consider as the abscissa of   
@@ -131,6 +154,91 @@ class DSBoreholes:
     the dataframe, the coordinate system must explicitly set to ``dms`
     to keep the non-numerical values in the data. 
     
+    Examples
+    ---------
+    >>> import watex as wx 
+    >>> from watex.geology import DSBoreholes 
+    >>> bs_data = wx.fetch_data ('nlogs', key='hydro', samples=12 ,
+                                 as_frame=True )
+    >>> bs=DSBoreholes ().fit(bs_data)
+    >>> bs.holeid
+    Out[61]: 'hole'
+    >>> # when the default object hole is set as:
+    >>> bs.hole # outputs a Boxspace object each borehole can be retrieved 
+    >>> # as hole object count from 0. to number or rows -1. Here is an 
+    >>> example of fetching the hole 11. 
+    >>> bs.hole.hole10
+    Out[62]:
+    {'hole_id': 'B0103',
+     'uniform_number': 1.1343e+16,
+     'original_number': 'Guangzhou multi-element urban geological survey drilling 19ZXXSW11',
+     'lon': '113:43:00.99',
+     'lat': '23:16:17.23',
+     'longitude': 113.71694166666668,
+     'latitude': 23.271452777777775,
+     'east': 2577207.0,
+     'north': 19778060.0,
+     'easting': 2577207.276,
+     'northing': 19778177.29,
+     'coordinate_system': 'Xian 90',
+     'elevation': 22.0,
+     'final_hole_depth': 60.1,
+     'quaternary_thickness': 45.8,
+     'aquifer_thickness': 18.1,
+     'top_section_depth': 42.0,
+     'bottom_section_depth': 60.1,
+     'groundwater_type': 'igneous rock fissure water',
+     'static_water_level': 2.36,
+     'drawdown': 28.84,
+     'water_inflow': 0.08,
+     'unit_water_inflow': 0.003,
+     'filter_pipe_diameter': 0.16,
+     'water_inflow_in_m3_d': 2.94}
+    >>> # when we specified the hole ID to the column that compose the ID like: 
+    >>> bs=DSBoreholes (holeid ='hole_id').fit(bs_data)
+    >>> bs.hole.B0103
+    Out[63]:
+    {'hole_id': 'B0103',
+     'uniform_number': 1.1343e+16,
+     'original_number': 'Guangzhou multi-element urban geological survey drilling 19ZXXSW11',
+     'lon': '113:43:00.99',
+     'lat': '23:16:17.23',
+     'longitude': 113.71694166666668,
+     'latitude': 23.271452777777775,
+     'east': 2577207.0,
+     'north': 19778060.0,
+     'easting': 2577207.276,
+     'northing': 19778177.29,
+     'coordinate_system': 'Xian 90',
+     'elevation': 22.0,
+     'final_hole_depth': 60.1,
+     'quaternary_thickness': 45.8,
+     'aquifer_thickness': 18.1,
+     'top_section_depth': 42.0,
+     'bottom_section_depth': 60.1,
+     'groundwater_type': 'igneous rock fissure water',
+     'static_water_level': 2.36,
+     'drawdown': 28.84,
+     'water_inflow': 0.08,
+     'unit_water_inflow': 0.003,
+     'filter_pipe_diameter': 0.16,
+     'water_inflow_in_m3_d': 2.94}
+    >>> # each columns can be fetched as 
+    >>> bs.quaternary_thickness
+    Out[64]: 
+    0     40.5
+    1     12.3
+    2     25.5
+    3     40.0
+    4     35.0
+    5     47.0
+    6     34.0
+    7     40.4
+    8     15.1
+    9     17.2
+    10    45.8
+    11    47.0
+    Name: quaternary_thickness, dtype: float64
     """
     def __init__(
         self, 
@@ -265,7 +373,7 @@ class DSBoreholes:
          ): 
         """ Generate longitude and latitude coordinates for boreholes. 
         
-        It assumes boreholes are  aligned along the same axis. 
+        It assumes boreholes are aligned along the same axis. 
      
         Parameters 
         -----------
@@ -302,7 +410,22 @@ class DSBoreholes:
         self: Instanced object 
         
           Instanced object for method chaining.
-        
+          
+        Examples
+        ---------
+        >>> bs_data = wx.fetch_data ('nlogs', key='ns', samples=7,
+                                     as_frame=True )
+        >>> bs=DSBoreholes ().fit(bs_data)
+        >>> bs.set_coordinates(reflong= 113.4, reflat=22.56, step ='10m')
+        >>> bs.set_coordinates(reflong= 113.4, reflat=22.56, step ='10m')
+        >>> bs.lat_
+        Out[71]: 
+        array([22.56      , 22.56009391, 22.56018782, 22.56028174, 22.56037565,
+               22.56046956, 22.56056347])
+        >>> bs.lon_
+        Out[72]: 
+        array([113.4       , 113.40007436, 113.40014871, 113.40022307,
+               113.40029742, 113.40037178, 113.40044614])
         """
         self.inspect
         
@@ -328,8 +451,10 @@ class DSBoreholes:
         
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
-        _t = ("name", "dname", "projection", "utm_zone", "encoding", "datum", 
-              "epsg", "reference_ellipsoid" ,"interp_coords", "verbose")
+        _t = ("area", "holeid", "lat", "lon", "projection", "utm_zone", 
+              "encoding", "datum", "epsg", "reference_ellipsoid" ,
+              "interp_coords", "verbose")
+
         outm = ( '<{!r}:' + ', '.join(
             [f"{k}={ False if getattr(self, k)==... else  getattr(self, k)!r}" 
              for k in _t]) + '>' 
@@ -361,7 +486,6 @@ class DSBoreholes:
                 obj=self)
             )
         return 1  
-    
     
 class DSBorehole: 
     """ Class delas with Borehole datasets. 
@@ -435,6 +559,54 @@ class DSBorehole:
     Each columns of the dataframe is an attribute. Note that all the non-
     alphabetic letters is removed and replace by '_'. 
     
+    Examples
+    ----------
+    >>> import watex as wx 
+    >>> from watex.geology import DSBorehole 
+    >>> hdata= wx.fetch_data ('hlogs',samples = 12 ).frame
+    >>> b = DSBorehole (hole='H502').fit(hdata)
+    >>> b.feature_names_in_
+    Out[77]: 
+    ['depth_top',
+     'depth_bottom',
+     'layer_thickness',
+     'resistivity',
+     'gamma_gamma',
+     'natural_gamma',
+     'sp',
+     'short_distance_gamma',
+     'well_diameter',
+     'aquifer_thickness',
+     'hole_depth_before_pumping',
+     'hole_depth_after_pumping',
+     'hole_depth_loss',
+     'depth_starting_pumping',
+     'pumping_depth_at_the_end',
+     'pumping_depth',
+     'section_aperture',
+     'k',
+     'kp',
+     'r',
+     'rp',
+     'hole_id',
+     'strata_name',
+     'rock_name',
+     'aquifer_group',
+     'pumping_level']
+    >>> b.strata_name
+    Out[78]: 
+    0                       topsoil
+    1                        gravel
+    2                      mudstone
+    3                     siltstone
+    4                      mudstone
+              
+    176                        coal
+    177                   siltstone
+    178    coarse-grained sandstone
+    179      fine-grained sandstone
+    180    coarse-grained sandstone
+    Name: strata_name, Length: 181, dtype: object
     """
     def __init__ (
         self,
@@ -557,6 +729,43 @@ class DSBorehole:
         -------
         self: Instanced object 
             Instanced object for chaining method. 
+            
+        Examples 
+        -------- 
+        >>> import watex as wx 
+        >>> from watex.geology import DSBorehole 
+        >>> hdata= wx.fetch_data ('hlogs').frame
+        >>> b = DSBorehole (hole='H502').fit(hdata)
+        >>> b.set_depth () 
+        >>> b.depth_
+        Out[82]: 
+        0        0.000000
+        1        3.888889
+        2        7.777778
+        3       11.666667
+        4       15.555556
+           
+        176    684.444444
+        177    688.333333
+        178    692.222222
+        179    696.111111
+        180    700.000000
+        Name: depth, Length: 181, dtype: float64
+        >>> b.set_depth (max_depth = 900, reset_depth= True )
+        >>> b.depth_
+        Out[85]: 
+        0        0.0
+        1        5.0
+        2       10.0
+        3       15.0
+        4       20.0
+         
+        176    880.0
+        177    885.0
+        178    890.0
+        179    895.0
+        180    900.0
+        Name: depth, Length: 181, dtype: float64
         """
         
         check_results = self._check_object_in(
@@ -569,7 +778,6 @@ class DSBorehole:
         
         
         return self 
-
 
     def _set_depth ( 
         self ,z0=0.,  max_depth =None, 
@@ -636,19 +844,18 @@ class DSBorehole:
                 return "objectexists" 
         
             try: 
-                self.data_.drop (self.data_[name].name,
-                                 inplace =True, axis =1 )
-            except KeyError as key_error: 
-                warn( str(key_error) +f". {name!r} does no longer exist in"
-                     " the borehole data. Check the data column names.")
+                self.data_.drop (columns = name , inplace =True, axis =1 )
+            except KeyError: 
+                warn(f"{name!r} does no longer exist in the borehole data."
+                     " Check the data column names.")
 
     def set_thickness ( 
         self,
         h0= 1 , 
-        dirichlet_dist=False,
-        shuffle = True,
-        reset_layer_thickness=False,
-        reset_depth=..., 
+        shuffle: bool = True,
+        dirichlet_dist: bool=...,
+        reset_layer_thickness: bool=...,
+        reset_depth: bool=..., 
          ): 
         """
         Generate a random layer thickness from borehole refering to the 
@@ -662,15 +869,15 @@ class DSBorehole:
         h0: int, default='1m' 
           Thickness of the first layer. 
           
+        shuffle: bool, default=True 
+          Shuffle the random generated thicknesses. 
+          
         dirichlet_dis: bool, default=False 
           Draw samples from the Dirichlet distribution. A Dirichlet-distributed 
           random variable can be seen as a multivariate generalization of a 
           Beta distribution. The Dirichlet distribution is a conjugate prior 
           of a multinomial distribution in Bayesian inference.
-          
-        shuffle: bool, default=True 
-          Shuffle the random generated thicknesses. 
-          
+   
         reset_layer_thickness: bool, default=False, 
           Set new layer thicknesses to the existing stratum. If ``True`` and 
           the data included layer thicknesses, the latter should be dropped in 
@@ -696,8 +903,46 @@ class DSBorehole:
         -------
         self: Instanced object 
             Instanced object for chaining method. 
-        
+            
+        Examples 
+        ----------
+        >>> import watex as wx 
+        >>> from watex.geology import DSBorehole 
+        >>> hdata= wx.fetch_data ('hlogs').frame
+        >>> b = DSBorehole (hole='H502').fit(hdata)
+        >>> b.set_thickness () 
+        >>> b.layer_thickness_ 
+        0      5.410380
+        1      2.068812
+        2      0.398028
+        3      6.352873
+        4      6.395714
+          
+        176    3.396871
+        177    0.012463
+        178    7.124004
+        179    7.038323
+        180    3.439711
+        Name: layer_thickness, Length: 181, dtype: float64
+        >>> b.set_thickness (dirichlet_dist=True, reset_layer_thickness=True 
+                             ).layer_thickness_
+        Out[89]: 
+        0       0.681640
+        1       1.986043
+        2       6.413090
+        3       5.305284
+        4       0.000144
+           
+        176     4.119242
+        177    12.161252
+        178     1.809102
+        179     0.408810
+        180     4.281848
+        Name: layer_thickness, Length: 181, dtype: float64
         """
+        dirichlet_dist, reset_layer_thickness,reset_depth = ellipsis2false(
+            dirichlet_dist, reset_layer_thickness,reset_depth )
+        
         check_results = self._check_object_in(
             'layer_thickness', reset_layer_thickness )
             
@@ -776,10 +1021,10 @@ class DSBorehole:
         
         return self 
     
-    def set_strata (self, add_electrical_properties =False, 
-                    random_state =None, shuffle =True , 
-                    reset_strata=False , 
-                    reset_electrical_properties =... 
+    def set_strata (self, add_electrical_properties :bool=False, 
+                    random_state =None, shuffle :bool=True , 
+                    reset_strata :bool=... , 
+                    reset_electrical_properties :bool=... 
                     ): 
         """ Generate a pseudo strata associated to each depth in the borehole
         data. 
@@ -814,13 +1059,60 @@ class DSBorehole:
         Examples 
         --------
         >>> import watex as wx 
-        >>> data = wx.make_erp ().frame 
-        >>> from watex.geology.drilling import DSBorehole 
-        >>> b= DSBorehole ().fit(data)
+        >>> from watex.geology import DSBorehole 
+        >>> hdata= wx.fetch_data ('hlogs', key='h803').frame
+        >>> b = DSBorehole (hole='H803').fit(hdata)
         >>> b.set_strata () 
-        >>> b.data_.columns 
+        >>> b.strata_
+        Out[122]: 
+        0                tourmalinite
+        1                        silt
+        2                         mud
+        3         volcaniclastic rock
+        4                ore minerals
+                 
+        129    sulphide-rich material
+        130                 argillite
+        131                  graphite
+        132            high-Mg basalt
+        133                     shale
+        Name: strata, Length: 134, dtype: object
+        >>> b.set_strata (add_electrical_properties= True, reset_strata= True)
+        >>> b.strata_
+        Out[123]: 
+        0              phyllite
+        1               syenite
+        2              laterite
+        3             saprolite
+        4          psammopelite
+              
+        129               chert
+        130           granulite
+        131    pyroclastic rock
+        132         lamprophyre
+        133          ignimbrite
+        Name: strata, Length: 134, dtype: object
+
+        b.strata_electrical_properties_
+        Out[124]: 
+        0        0.0
+        1        0.0
+        2        0.0
+        3      330.6
+        4        0.0
+         
+        129      0.0
+        130      0.0
+        131      0.0
+        132      0.0
+        133      0.0
+        Name: strata_electrical_properties, Length: 134, dtype: float64
+        >>> 
         """
         self.inspect 
+        
+        reset_strata, reset_electrical_properties= ellipsis2false(
+            reset_strata, reset_electrical_properties)
         
         for attr, action  in zip ( ('strata', 'strata_electrical_properties'), 
                                   ( reset_strata, reset_electrical_properties)
@@ -829,7 +1121,7 @@ class DSBorehole:
                 attr, action )
             if check_results =="objectexists": 
                 return self 
- 
+            
         self._set_strata (add_electrical_properties = add_electrical_properties, 
                       random_state = random_state, shuffle =shuffle , 
                       )

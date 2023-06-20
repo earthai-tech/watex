@@ -30,7 +30,8 @@ from .funcutils import (
     station_id, 
     convert_value_in, 
     str2columns, 
-    is_iterable
+    is_iterable, 
+    ellipsis2false, 
     )
 from ..exceptions import StrataError, DepthError  
 from .._watexlog import watexlog 
@@ -144,11 +145,8 @@ def smart_thickness_ranker (
      array([  7.,   5.,  13.,  55., 175.]))
     """
     # set ellipsis to false 
-    if return_thickness is ...: 
-        return_thickness =False 
-    if verbose is ...:
-        verbose=False 
-    
+    return_thickness, verbose = ellipsis2false(return_thickness, verbose)
+
     mode=str(mode).lower().strip() 
     # check iterbale object 
     # convert items to strings 

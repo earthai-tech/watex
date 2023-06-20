@@ -82,25 +82,33 @@ except ImportError:
     
     interp_import = False
     
-#-----
 
 def to_numeric_dtypes (
-    arr: NDArray | DataFrame, *, 
-    columns:List[str, ...] = None, 
-    return_feature_types:bool =False , 
-    missing_values:float = np.nan, 
-    pop_cat_features:bool=False, 
-    sanitize_columns:bool=False, 
-    regex: re | str =None, 
+    arr: NDArray|DataFrame, *, 
+    columns: List[str, ...]=None, 
+    return_feature_types: bool=... , 
+    missing_values: float=np.nan, 
+    pop_cat_features: bool=..., 
+    sanitize_columns: bool=..., 
+    regex: re|str=None, 
     fill_pattern: str=None, 
     drop_nan_columns: bool=True, 
-    how:str='all', 
-    reset_index:bool= False, 
+    how: str='all', 
+    reset_index: bool=..., 
     drop_index: bool=True, 
-    verbose:bool= False,
+    verbose: bool=...,
     )-> DataFrame : 
     """ Convert array to dataframe and coerce arguments to appropriate dtypes. 
     
+    Function includes additional tools to manipulate the transformed data 
+    such as: 
+    
+    - `pop_cat_features` to remove the categorical attributes, 
+    - `sanitize_columns` to clean the columns of the dataframe by removing 
+      the undesirable characters, 
+    - `drop_nan_columns` to drop all the columns and/or rows that contains 
+      full NaN, ...
+ 
     Parameters 
     -----------
     arr: Ndarray or Dataframe, shape (m_samples, n_features)
@@ -191,6 +199,13 @@ def to_numeric_dtypes (
     """
     from .validator import _is_numeric_dtype
     
+    # pass ellipsis argument to False 
+    ( sanitize_columns, reset_index, verbose, return_feature_types, 
+     pop_cat_features ) = ellipsis2false(
+        sanitize_columns, reset_index, verbose, return_feature_types, 
+        pop_cat_features
+        )
+   
     if not is_iterable (arr, exclude_string=True): 
         raise TypeError("Expect array. Got {type (arr).__name__!r}")
 
@@ -6091,9 +6106,8 @@ def key_checker (
     Out[57]: ['h502', 'h2601']
     
     """
-    if deep_search is ...: 
-        deep_search =False 
-    
+    deep_search, =ellipsis2false(deep_search)
+
     _keys = copy.deepcopy(keys)
     valid_keys = is_iterable(valid_keys , exclude_string =True, transform =True )
     if isinstance ( keys, str): 
@@ -6520,10 +6534,7 @@ def key_search (
     Out[53]: ['h253'] 
 
     """
-    if deep is ...: 
-        deep=False
-    if raise_exception is ...: 
-        raise_exception=False 
+    deep, raise_exception = ellipsis2false(deep, raise_exception)
     
     if is_iterable(keys , exclude_string= True ): 
         keys = ' '.join ( [str(k) for k in keys ]) 
@@ -6827,8 +6838,7 @@ def storeOrwritehdf5 (
     2   ec                granites     v
     >>> # compute using func 
     >>> def test_func ( a, times  , to_percent=False ): 
-          return ( a * times / 100)   if to_percent else ( a *times )
-      
+            return ( a * times / 100)   if to_percent else ( a *times )
     >>> data.sfi[:5]
     0    0.388909
     1    1.340127
@@ -6852,8 +6862,7 @@ def storeOrwritehdf5 (
     3    0.053457
     4    0.004795
     Name: sfi, dtype: float64
-    
-    >>> # write data to hdf5 and outputs to directory 
+    >>> # write data to hdf5 and outputs to current directory 
     >>> storeOrwritehdf5 ( d, key='test0', path_or_buf= 'test_data.h5', 
                           kind ='store')
     >>> # export data to csv 
@@ -6868,16 +6877,15 @@ def storeOrwritehdf5 (
     
     if sanitize_columns is ...: 
         sanitize_columns=False 
-    d = to_numeric_dtypes(
-        d, columns=columns, sanitize_columns=sanitize_columns , 
-        fill_pattern='_')
+    d = to_numeric_dtypes(d, columns=columns,sanitize_columns=sanitize_columns, 
+                          fill_pattern='_')
    
     # get categorical variables 
     if ( sanitize_columns 
         or func is not None
         ): 
         d, _, cf = to_numeric_dtypes(d, return_feature_types= True )
-        #( strip then pass to lower case) 
+        #( strip then pass to lower case all non-numerical data) 
         # for minimum sanitization  
         for cat in cf : 
             d[cat]= d[cat].str.lower()
@@ -6916,6 +6924,29 @@ def storeOrwritehdf5 (
         
     return d if kind not in ("store", "export") else None 
 
+def ellipsis2false( *parameters  ): 
+    """ Turn all parameter arguments to False if ellipsis.
+    
+    Note that the output arguments must be in the same order like the 
+    positional arguments. 
+ 
+    :param parameters: tuple 
+       List of parameters  
+    :return: tuple, same list of parameters passed ellipsis to ``False``. 
+       For a single parameters, uses the trailing comma for collecting 
+       the parameters 
+       
+    :example: 
+        >>> from watex.utils.funcutils import ellipsis2false 
+        >>> var, = ellipsis2false (...)
+        >>> var 
+        False
+        >>> data, sep , verbose = ellipsis2false ([2,3, 4], ',', ...)
+        >>> verbose 
+        False 
+    """
+    return tuple ( ( False  if param is  ... else param  
+                    for param in parameters) )  
    
     
 

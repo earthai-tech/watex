@@ -16,7 +16,7 @@ from watex.geology import (
                     reason = 'Drill data path does not exist')
 def test_DSBoreholes (): 
     # read borehole data from Nasnhang 
-    nsh_data = wx.read_data ( 'data/drill/nhlogs.csv')
+    nsh_data = wx.fetch_data ('nlogs', key='hydrogeological', as_frame=True)
     bs = DSBoreholes().fit(nsh_data)
     print(bs.data_.shape)
     # interpolate coordiantes 
@@ -34,6 +34,88 @@ def test_DSBoreholes ():
     print(bs2.lat_ ) 
     print(bs2.lon_ )
     
+    # one more test 
+    bs_data = wx.fetch_data ('nlogs', key='hydro', samples=12 ,
+                                 as_frame=True )
+    bs=DSBoreholes ().fit(bs_data)
+    bs.holeid
+    # Out[61]: 'hole'
+    # when the default object hole is set as:
+    bs.hole # outputs a Boxspace object each borehole can be retrieved 
+    # as hole object count from 0. to number or rows -1. Here is an 
+    # example of fetching the hole 11. 
+    print(bs.hole.hole10) 
+    # Out[62]:
+    # {'hole_id': 'B0103',
+    #  'uniform_number': 1.1343e+16,
+    #  'original_number': 'Guangzhou multi-element urban geological survey drilling 19ZXXSW11',
+    #  'lon': '113:43:00.99',
+    #  'lat': '23:16:17.23',
+    #  'longitude': 113.71694166666668,
+    #  'latitude': 23.271452777777775,
+    #  'east': 2577207.0,
+    #  'north': 19778060.0,
+    #  'easting': 2577207.276,
+    #  'northing': 19778177.29,
+    #  'coordinate_system': 'Xian 90',
+    #  'elevation': 22.0,
+    #  'final_hole_depth': 60.1,
+    #  'quaternary_thickness': 45.8,
+    #  'aquifer_thickness': 18.1,
+    #  'top_section_depth': 42.0,
+    #  'bottom_section_depth': 60.1,
+    #  'groundwater_type': 'igneous rock fissure water',
+    #  'static_water_level': 2.36,
+    #  'drawdown': 28.84,
+    #  'water_inflow': 0.08,
+    #  'unit_water_inflow': 0.003,
+    #  'filter_pipe_diameter': 0.16,
+    #  'water_inflow_in_m3_d': 2.94}
+    # when we specified the hole ID to the column that compose the ID like: 
+    bs=DSBoreholes (holeid ='hole_id').fit(bs_data)
+    print(bs.hole.B0103) 
+    # Out[63]:
+    # {'hole_id': 'B0103',
+    #  'uniform_number': 1.1343e+16,
+    #  'original_number': 'Guangzhou multi-element urban geological survey drilling 19ZXXSW11',
+    #  'lon': '113:43:00.99',
+    #  'lat': '23:16:17.23',
+    #  'longitude': 113.71694166666668,
+    #  'latitude': 23.271452777777775,
+    #  'east': 2577207.0,
+    #  'north': 19778060.0,
+    #  'easting': 2577207.276,
+    #  'northing': 19778177.29,
+    #  'coordinate_system': 'Xian 90',
+    #  'elevation': 22.0,
+    #  'final_hole_depth': 60.1,
+    #  'quaternary_thickness': 45.8,
+    #  'aquifer_thickness': 18.1,
+    #  'top_section_depth': 42.0,
+    #  'bottom_section_depth': 60.1,
+    #  'groundwater_type': 'igneous rock fissure water',
+    #  'static_water_level': 2.36,
+    #  'drawdown': 28.84,
+    #  'water_inflow': 0.08,
+    #  'unit_water_inflow': 0.003,
+    #  'filter_pipe_diameter': 0.16,
+    #  'water_inflow_in_m3_d': 2.94}
+    # each columns can be fetched as 
+    print(bs.quaternary_thickness) 
+    # Out[64]: 
+    # 0     40.5
+    # 1     12.3
+    # 2     25.5
+    # 3     40.0
+    # 4     35.0
+    # 5     47.0
+    # 6     34.0
+    # 7     40.4
+    # 8     15.1
+    # 9     17.2
+    # 10    45.8
+    # 11    47.0
+    # Name: quaternary_thickness, dtype: float64
 def test_DSBorehole (): 
     # read Boreholes data fetch from hlogs 
     hdata = wx.fetch_data ('hlogs', keys ='h2601').frame
@@ -46,7 +128,104 @@ def test_DSBorehole ():
     b.data_.columns 
     b.set_thickness()
     b.set_depth(reset_depth= True )
-    
+    # one more test 
+    b = DSBorehole (hole='H502').fit(hdata)
+    b.feature_names_in_
+    b.strata_name
+    # Out[78]: 
+    # 0                       topsoil
+    # 1                        gravel
+    # 2                      mudstone
+    # 3                     siltstone
+    # 4                      mudstone
+              
+    # 176                        coal
+    # 177                   siltstone
+    # 178    coarse-grained sandstone
+    # 179      fine-grained sandstone
+    # 180    coarse-grained sandstone
+    # Name: strata_name, Length: 181, dtype: object
+    b.set_depth () 
+    print(b.depth_) 
+    # Out[82]: 
+    # 0        0.000000
+    # 1        3.888889
+    # 2        7.777778
+    # 3       11.666667
+    # 4       15.555556
+       
+    # 176    684.444444
+    # 177    688.333333
+    # 178    692.222222
+    # 179    696.111111
+    # 180    700.000000
+    # Name: depth, Length: 181, dtype: float64
+    b.set_depth (max_depth = 900, reset_depth= True )
+    print(b.depth_) 
+    # Out[85]: 
+    # 0        0.0
+    # 1        5.0
+    # 2       10.0
+    # 3       15.0
+    # 4       20.0
+     
+    # 176    880.0
+    # 177    885.0
+    # 178    890.0
+    # 179    895.0
+    # 180    900.0
+    # Name: depth, Length: 181, dtype: float64
+    # generate random thickness 
+    b.set_thickness () 
+    b.layer_thickness_ 
+    b.set_thickness (dirichlet_dist=True, reset_layer_thickness=True 
+                         ).layer_thickness_
+    # Out[89]: 
+    # 0       0.681640
+    # 1       1.986043
+    # 2       6.413090
+    # 3       5.305284
+    # 4       0.000144
+       
+    # 176     4.119242
+    # 177    12.161252
+    # 178     1.809102
+    # 179     0.408810
+    # 180     4.281848
+    # Name: layer_thickness, Length: 181, dtype: float64
+    hdata= wx.fetch_data ('hlogs', key='h803').frame
+    b = DSBorehole (hole='H803').fit(hdata)
+    b.set_strata () 
+    b.strata_
+    b.set_strata (add_electrical_properties= True, reset_strata= True)
+    print(b.strata_) 
+    # Out[123]: 
+    # 0              phyllite
+    # 1               syenite
+    # 2              laterite
+    # 3             saprolite
+    # 4          psammopelite
+          
+    # 129               chert
+    # 130           granulite
+    # 131    pyroclastic rock
+    # 132         lamprophyre
+    # 133          ignimbrite
+    # Name: strata, Length: 134, dtype: object
+    print(b.strata_electrical_properties_)
+    # Out[124]: 
+    # 0        0.0
+    # 1        0.0
+    # 2        0.0
+    # 3      330.6
+    # 4        0.0
+     
+    # 129      0.0
+    # 130      0.0
+    # 131      0.0
+    # 132      0.0
+    # 133      0.0
+    # Name: strata_electrical_properties, Length: 134, dtype: float64
 @pytest.mark.skipif(os.path.isdir ('data/drill') is False ,
                     reason = 'Drill data path does not exist')
 def test_DSDrill(): 
@@ -121,8 +300,7 @@ def test_DSDrill():
     #  'sample03': 'pup',
     #  'sample04': 'pzs'}
 
-if __name__=='__main__': 
-    
-    test_DSBoreholes()
-    test_DSBorehole()
-    test_DSDrill()
+# if __name__=='__main__': 
+#     test_DSBoreholes()
+#     test_DSBorehole()
+#     test_DSDrill()

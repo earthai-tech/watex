@@ -5974,7 +5974,6 @@ def get_bearing (latlon1, latlon2,  to_deg = True ):
         
     return b 
 
-        
 def find_closest( arr, /, values ): 
     """Get the closest value in array  from given values.
     

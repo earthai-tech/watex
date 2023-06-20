@@ -228,7 +228,7 @@ soundings performed with the prefix '`SE`' is 4.
 def load_hlogs (
         *,  return_X_y=False, as_frame =False, key =None,  split_X_y=False, 
         test_size =.3 , tag =None, tnames = None , data_names=None, 
-        **kws): 
+         **kws): 
     
     drop_observations =kws.pop("drop_observations", False)
     
@@ -453,12 +453,12 @@ def load_nlogs (
     tnames=None , 
     data_names=None, 
     samples=None, 
-    seed = None, 
-    shuffle = False, 
+    seed =None, 
+    shuffle =False, 
     **kws
     ): 
     
-    cf = as_frame 
+     
     key = key or 'b0' 
     # assertion error if key does not exist. 
     available_sets = {
@@ -484,7 +484,8 @@ def load_nlogs (
     samples = samples or "*"
     data = random_sampling(data, samples = samples, random_state= seed, 
                             shuffle= shuffle) 
-    frame = None
+
+    # set up features and target names
     feature_names = (list( data.columns [:21 ])  + [
         'filter_pipe_diameter']) if key=='b0' else list(
             filter(lambda item: item!='ground_height_distance',data.columns)
@@ -503,18 +504,14 @@ def load_nlogs (
                f"{smart_format(target_columns, 'or')}")
         raise ValueError(str(error).replace(
             'Features'.replace('s', ''), 'Target(s)')+msg)
-    if  ( 
-            split_X_y
-            or return_X_y
-            ) : 
-        as_frame =True 
         
-    if as_frame:
-        frame, data, target = _to_dataframe(
-            data, feature_names = feature_names, tnames = tnames, 
-            target=data[tnames].values 
-            )
-        frame = to_numeric_dtypes(frame)
+    # read dataframe and separate data to target. 
+    frame, data, target = _to_dataframe(
+        data, feature_names = feature_names, tnames = tnames, 
+        target=data[tnames].values 
+        )
+    # for consistency, re-cast values to numeric 
+    frame = to_numeric_dtypes(frame)
         
     if split_X_y: 
         X, Xt = split_train_test_by_id (
@@ -526,24 +523,25 @@ def load_nlogs (
         yt = Xt[tnames]
         Xt.drop(columns =target_columns, inplace =True)
         
-        return  (X, Xt, y, yt ) if cf else (
+        return  (X, Xt, y, yt ) if as_frame else (
             X.values, Xt.values, y.values , yt.values )
     
+    
     if return_X_y: 
-        data , target = data.values, target.values
-        
-    if ( 
-            return_X_y 
-            or cf
-            ) : return data, target 
+        return (data.values, target.values) if not as_frame else (
+            data, target) 
+    
+    # return frame if as_frame simply 
+    if as_frame: 
+        return frame 
     
     fdescr = description_loader(
         descr_module=DESCR,descr_file=f"nanshang{'+'if key=='ns' else ''}.rst")
-    
+
     return Boxspace(
         data=data.values,
-        target=data[tnames].values,
-        frame=data,
+        target=target.values,
+        frame=frame,
         tnames=tnames,
         target_names = target_columns,
         DESCR= fdescr,
