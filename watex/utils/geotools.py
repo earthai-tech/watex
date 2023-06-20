@@ -639,7 +639,7 @@ def _thick_range_asserter (
     return depth_range, list(map ( lambda x: round (x, 3), thickness ))  
 
     
-def get_random_thickness(
+def build_random_thickness(
     depth, / , 
     n_layers=None, 
     h0= 1 , 
@@ -687,11 +687,11 @@ def get_random_thickness(
       
     Examples
     ---------
-    >>> from watex.utils.geotools import get_random_thickness 
-    >>> get_random_thickness (7, 10, random_state =42  )
+    >>> from watex.utils.geotools import build_random_thickness 
+    >>> build_random_thickness (7, 10, random_state =42  )
     array([0.41865079, 0.31785714, 1.0234127 , 1.12420635, 0.51944444,
            0.92261905, 0.6202381 , 0.8218254 , 0.72103175, 1.225     ])
-    >>> get_random_thickness (7, 10, random_state =42 , dirichlet_dist=True )
+    >>> build_random_thickness (7, 10, random_state =42 , dirichlet_dist=True )
     array([1.31628992, 0.83342521, 1.16073915, 1.03137592, 0.79986286,
            0.8967135 , 0.97709521, 1.34502617, 1.01632075, 0.62315132])
     """

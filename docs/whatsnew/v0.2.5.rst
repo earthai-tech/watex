@@ -9,15 +9,22 @@ These are minor changes  in ``v0.2.4`` that shows fugs fixed, features and impro
 - |Fix| :meth:`watex.site.Location.to_latlon_in` and :meth:`watex.site.Location.to_utm_in` henceforth accept a single float value for convertion 
   operation. 
 
+- |Major Feature| :class:`watex.geology.drilling.DSDrill` manages the drilling datasets. The class extracts, read and writes the drlling data. 
+  The arrangement of the data follows the `oasis montag <https://www.seequent.com/products-solutions/geosoft-oasis-montaj/>`_ software arrangement 
+  such as `collar`, `geology` and `geochemistry samples`. 
+
 - |Feature| :func:`watex.utils.get_azimuth` computes azimuth from the coordinate locations ( latitude,  longitude) or using easting/northing 
 
 - |Feature| :func:`watex.utils..smart_thickness_ranker` computes the layer thicknesses and rank strata accordingly.
 
-- |Feature| :class:`watex.geology.drilling.DSDrill` manages the drilling datasets. The class extracts, read and writes the drlling data. 
-  The arrangement of the data follows the `oasis montag <https://www.seequent.com/products-solutions/geosoft-oasis-montaj/>`_ software arrangement 
-  such as `collar`, `geology` and `geochemistry samples`. 
+- |Feature| :func:`watex.utils.geotools.get_thick_from_range` computes the layer thickness using the depth range (top-bottom) passed as a litteral string.
+  Its sibling is :func:`watex.utils.geotools.get_thick_from_values` which computes thickness based on only thick -values.
 
-- |Feature| :func:`watex.utils.geotools.get_thick_from` computes the layer thickness using the depth range (top-bottom) passed as a litteral string.
+- |Feature| :func:`watex.utils.storeOrwritehdf5` polishes and store data to hdf5 or write data to csv file. 
+
+- |Feature| Nanshang project datasets loaded. It composed of engineering and hydrogeological drillings. For retrieving the engineering data, 
+  user must pass the argument ``ns`` to the parameter `key` and ``b0`` for hydrogeological drillings. User can call the dataset using 
+  :func:`watex.datasets.load_nlogs` or pass ``nlogs`` as an argument to the positional parameter `tag` of :func:`watex.datasets.fetch_data`. 
 
 - |Enhancement| :class:`watex.geology.DSBorehole` has new method called :meth:`watex.geology.DSBorehole.set_strata` to randomly 
   generated strata layers with their corresponding electrical properties. 

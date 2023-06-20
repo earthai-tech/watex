@@ -1,6 +1,6 @@
-.. _iris_dataset:
+.. _huayuan_dataset:
 
-Iris plants dataset
+_huayuan_dataset 
 --------------------
 
 **Data Set Characteristics:**

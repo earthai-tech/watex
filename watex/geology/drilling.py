@@ -30,7 +30,7 @@ from ..utils.funcutils import (
     str2columns,
     key_search, 
     )
-from ..utils.geotools import get_random_thickness, smart_thickness_ranker
+from ..utils.geotools import build_random_thickness, smart_thickness_ranker
 from ..utils.validator import check_array 
 
 __all__=["DSBoreholes","DSBorehole" , "DSDrill", "Drill", "Borehole"]
@@ -42,8 +42,7 @@ class DSBoreholes:
     
     DSBoreholes works with the data set composed of multiple borehole data. 
     The data columns are the all attributes of the object and any 
-    non-alphateic character is 
-    by ``_``. For instance, a column name 
+    non-alphateic character is by ``_``. For instance, a column name 
     ``layer thickness`` should have an attribute named ``layer_thickness``. 
     Each borehole (row) data become its own object which encompasses all 
     columns as attributes. To have full control of how data must be 
@@ -242,8 +241,8 @@ class DSBoreholes:
         
         use_col =False 
         if self.holeid is not None: 
-#XXX Mnage the key search to find it in the data frame columns 
-            # the the corresponding key in data columns 
+        # Manage the key search to find it in the data frame 
+        # columns the the corresponding key in data columns 
             use_col = True 
         else: self.holeid ='hole'
             
@@ -760,7 +759,7 @@ class DSBorehole:
         if self.depth_ is None:
             self.set_depth (reset_depth = reset_depth ) 
     
-        thickness = get_random_thickness  (
+        thickness = build_random_thickness  (
             self.depth_, h0= h0 , 
             dirichlet_dist= dirichlet_dist, 
             shuffle = shuffle, 
@@ -1116,8 +1115,8 @@ class _drill_builder:
 class DSDrill : 
     """ Drill data set class. 
     
-    :class:`DSDrill` reads, constructs the well/hole, geology and 
-    geochemistry samples into a data set for transforming geophysics, 
+    :class:`DSDrill` reads, constructs the well/hole (drillhole:DH), geology  
+    and geochemistry samples into a data set for transforming geophysics, 
     geology, GIS, and geochemistry data collecting in a survey area into a 
     three dimensional representation with `Oasis montaj`_. 
     Deal with drillhole menu of Oasis Montaj software. Build data and 
@@ -1464,7 +1463,7 @@ class DSDrill :
         1     S02  174.429396  ...                       GRT    ROCK
         >>> dr.holeid # id hole is autodetected if not given
         Out[62]: 'DH_Hole'
-        >>> # retreive the hole ID S01 
+        >>> # retreive the hole ID of S01  drilling.
         >>> dr.geology.S01
         {'DH_Hole': 'S01',
          'Thick01': 0.2,

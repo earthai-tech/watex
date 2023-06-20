@@ -17,7 +17,8 @@ from warnings import warn
 from importlib import resources 
 import pandas as pd 
 from .._docstring import erp_doc, ves_doc 
-from .io import csv_data_loader, _to_dataframe, DMODULE, get_data, remove_data 
+from .io import (csv_data_loader, _to_dataframe, DMODULE, 
+    get_data, remove_data, description_loader, DESCR) 
 from ..utils.coreutils import vesSelector, erpSelector 
 from ..utils.mlutils import split_train_test_by_id , existfeatures
 from ..utils.funcutils import ( 
@@ -28,7 +29,8 @@ from ..utils.funcutils import (
     zip_extractor , 
     key_checker, 
     random_sampling,
-    assert_ratio
+    assert_ratio, 
+    
     )
 from ..utils.box import Boxspace
 
@@ -317,7 +319,7 @@ def load_hlogs (
         frame=data,
         tnames=tnames,
         target_names = target_columns,
-        #XXX Add description 
+        # XXX Add description 
         DESCR= '', # fdescr,
         feature_names=feature_names,
         filename=data_file,
@@ -441,7 +443,239 @@ thus, the best approach is to run the function without passing any parameters::
 ... ['pumping_level', 'aquifer_thickness']
  
 """
+def load_nlogs (
+    *,  return_X_y=False, 
+    as_frame =False, 
+    key =None, 
+    split_X_y=False, 
+    test_ratio=.3 , 
+    tag=None, 
+    tnames=None , 
+    data_names=None, 
+    samples=None, 
+    seed = None, 
+    shuffle = False, 
+    **kws
+    ): 
+    
+    cf = as_frame 
+    key = key or 'b0' 
+    # assertion error if key does not exist. 
+    available_sets = {
+        "b0", 
+        "ns", 
+        "hydrogeological", 
+        "engineering", 
+        }
+    is_keys = set ( list(available_sets))
+    key = key_checker(key, is_keys, deep_search=True )
+    key = "b0" if key in ("b0", "hydrogeological") else (
+        "ns" if key in ("ns",  "engineering") else key )
+    
+    assert key in (is_keys), (
+        f"wrong key {key!r}. Expect {smart_format(is_keys, 'or')}")
+    
+    data_file =f"nlogs{'+' if key=='ns' else ''}.csv" 
+    with resources.path (DMODULE , data_file) as p : 
+        data_file = p 
 
+    data = to_numeric_dtypes( pd.read_csv(data_file )) 
+
+    samples = samples or "*"
+    data = random_sampling(data, samples = samples, random_state= seed, 
+                            shuffle= shuffle) 
+    frame = None
+    feature_names = (list( data.columns [:21 ])  + [
+        'filter_pipe_diameter']) if key=='b0' else list(
+            filter(lambda item: item!='ground_height_distance',data.columns)
+            ) 
+    target_columns = ['static_water_level', 'drawdown', 'water_inflow', 
+                      'unit_water_inflow', 'water_inflow_in_m3_d'
+                      ] if key=='b0' else  ['ground_height_distance']
+    
+    tnames = tnames or target_columns
+    # control the existence of the tnames to retreive
+    try : 
+        existfeatures(data[target_columns] , tnames)
+    except Exception as error: 
+        # get valueError message and replace Feature by target 
+        msg = (". Acceptable target values are:"
+               f"{smart_format(target_columns, 'or')}")
+        raise ValueError(str(error).replace(
+            'Features'.replace('s', ''), 'Target(s)')+msg)
+    if  ( 
+            split_X_y
+            or return_X_y
+            ) : 
+        as_frame =True 
+        
+    if as_frame:
+        frame, data, target = _to_dataframe(
+            data, feature_names = feature_names, tnames = tnames, 
+            target=data[tnames].values 
+            )
+        frame = to_numeric_dtypes(frame)
+        
+    if split_X_y: 
+        X, Xt = split_train_test_by_id (
+            data = frame , test_ratio= assert_ratio(test_ratio), 
+            keep_colindex= False )
+        
+        y = X[tnames] 
+        X.drop(columns =target_columns, inplace =True)
+        yt = Xt[tnames]
+        Xt.drop(columns =target_columns, inplace =True)
+        
+        return  (X, Xt, y, yt ) if cf else (
+            X.values, Xt.values, y.values , yt.values )
+    
+    if return_X_y: 
+        data , target = data.values, target.values
+        
+    if ( 
+            return_X_y 
+            or cf
+            ) : return data, target 
+    
+    fdescr = description_loader(
+        descr_module=DESCR,descr_file=f"nanshang{'+'if key=='ns' else ''}.rst")
+    
+    return Boxspace(
+        data=data.values,
+        target=data[tnames].values,
+        frame=data,
+        tnames=tnames,
+        target_names = target_columns,
+        DESCR= fdescr,
+        feature_names=feature_names,
+        filename=data_file,
+        data_module=DMODULE,
+    )
+
+load_nlogs.__doc__="""\
+Load the Nanshang Engineering and hydrogeological drilling dataset.
+
+Dataset contains multi-target and can be used for a classification or 
+regression problem.
+
+Parameters
+----------
+return_X_y : bool, default=False
+    If True, returns ``(data, target)`` instead of a Bowlspace object. See
+    below for more information about the `data` and `target` object.
+
+as_frame : bool, default=False
+    If True, the data is a pandas DataFrame including columns with
+    appropriate dtypes (numeric). The target is
+    a pandas DataFrame or Series depending on the number of target columns.
+    If `return_X_y` is True, then (`data`, `target`) will be pandas
+    DataFrames or Series as described below.
+
+split_X_y: bool, default=False,
+    If True, the data is splitted to hold the training set (X, y)  and the 
+    testing set (Xt, yt) with the according to the test size ratio.  
+test_ratio: float, default is {{.3}} i.e. 30% (X, y)
+    The ratio to split the data into training (X, y)  and testing (Xt, yt) set 
+    respectively. 
+tnames: str, optional 
+    the name of the target to retreive. If ``None`` the full target columns 
+    are collected and compose a multioutput `y`. For a singular classification 
+    or regression problem, it is recommended to indicate the name of the target 
+    that is needed for the learning task. 
+(tag, data_names): None
+    `tag` and `data_names` do nothing. just for API purpose and to allow 
+    fetching the same data uing the func:`~watex.data.fetch_data` since the 
+    latter already holds `tag` and `data_names` as parameters. 
+    
+key: str, default='b0'
+    Kind of drilling data to fetch. Can also be the borehole ["ns"]. The 
+    ``ns`` data refer mostly to engineering drilling whereas the ``b0`` refers 
+    to pure hydrogeological drillings. In the former case, the 
+    ``'ground_height_distance'`` attribute used to control soil settlement is 
+    the target while the latter targets fit the water inflow, the drawdown and 
+    the static water level.
+    
+samples: int,optional 
+   Ratio or number of items from axis to fetch in the data. fetch all data if 
+   `samples` is ``None``.  
+   
+seed: int, array-like, BitGenerator, np.random.RandomState, \
+    np.random.Generator, optional
+   If int, array-like, or BitGenerator, seed for random number generator. 
+   If np.random.RandomState or np.random.Generator, use as given.
+   
+shuffle: bool, default =False, 
+   If ``True``, borehole data should be shuffling before sampling. 
+Returns
+---------
+data : :class:`~watex.utils.Boxspace`
+    Dictionary-like object, with the following attributes.
+    data : {ndarray, dataframe} 
+        The data matrix. If ``as_frame=True``, `data` will be a pandas DataFrame.
+    target: {ndarray, Series} 
+        The classification target. If `as_frame=True`, `target` will be
+        a pandas Series.
+    feature_names: list
+        The names of the dataset columns.
+    target_names: list
+        The names of target classes.
+    frame: DataFrame 
+        Only present when `as_frame=True`. DataFrame with `data` and
+        `target`.
+        .. versionadded:: 0.1.1
+    DESCR: str
+        The full description of the dataset.
+    filename: str
+        The path to the location of the data.
+        .. versionadded:: 0.1.2
+data, target: tuple if ``return_X_y`` is True
+    A tuple of two ndarray. The first containing a 2D array of shape
+    (n_samples, n_features) with each row representing one sample and
+    each column representing the features. The second ndarray of shape
+    (n_samples,) containing the target samples.
+    .. versionadded:: 0.1.2
+X, Xt, y, yt: Tuple if ``split_X_y`` is True 
+    A tuple of two ndarray (X, Xt). The first containing a 2D array of:
+        
+    .. math:: 
+        
+        \\text{shape}(X, y) =  1-  \\text{test_ratio} * (n_{samples}, n_{features}) *100
+        
+        \\text{shape}(Xt, yt)= \\text{test_ratio} * (n_{samples}, n_{features}) *100
+    
+    where each row representing one sample and each column representing the 
+    features. The second ndarray of shape(n_samples,) containing the target 
+    samples.
+     
+Examples
+--------
+Let's say ,we do not have any idea of the columns that compose the target,
+thus, the best approach is to run the function without passing any parameters 
+and then `DESCR` attributes to get the unit of each attribute::
+
+>>> from watex.datasets.dload import load_nlogs
+>>> b= load_nlogs()
+>>> b.target_names
+Out[241]: 
+['static_water_level',
+ 'drawdown',
+ 'water_inflow',
+ 'unit_water_inflow',
+ 'water_inflow_in_m3_d']
+>>> b.DESCR
+... (...)
+>>> # Let's say we are interested of the targets 'drawdown' and 
+>>> # 'static_water_level' and returns `y' 
+>>> _, y = load_nlogs (as_frame=True, # return as frame X and y
+                       tnames =['drawdown','static_water_level'], 
+                       )
+>>> list(y.columns)
+... ['drawdown', 'static_water_level']
+>>> y.head(2) 
+   drawdown  static_water_level
+0     70.03                4.21
+1      7.38                3.60
+"""
 def load_bagoue(
         *, return_X_y=False, as_frame=False, split_X_y=False, test_size =.3 , 
         tag=None , data_names=None, **kws

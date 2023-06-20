@@ -190,6 +190,9 @@ def to_numeric_dtypes (
         
     """
     from .validator import _is_numeric_dtype
+    
+    if not is_iterable (arr, exclude_string=True): 
+        raise TypeError("Expect array. Got {type (arr).__name__!r}")
 
     if hasattr ( arr, '__array__') and hasattr ( arr, 'columns'): 
         df = arr.copy()
@@ -3982,7 +3985,10 @@ def to_hdf5(d, /, fn, objname =None, close =True,  **hdf5_kws):
     if hasattr (d, '__array__') and hasattr (d, "columns"): 
         # assert whether pytables is installed 
         import_optional_dependency ('tables') 
-        store = pd.HDFStore(str(fn) +'.h5' ,  **hdf5_kws)
+        # remove extension if exist.
+        fn = str(fn).replace ('.h5', "").replace(".hdf5", "")
+        # then store. 
+        store = pd.HDFStore(fn +'.h5' ,  **hdf5_kws)
         objname = objname or 'data'
         store[ str(objname) ] = d 
 
@@ -6706,7 +6712,211 @@ def numstr2dms (
         else ':'.join([deg, mm, sec]) 
 
     
+def storeOrwritehdf5 (
+    d, /, 
+    key:str= None, 
+    mode:str='a',  
+    kind: str=None, 
+    path_or_buf:str= None, 
+    encoding:str="utf8", 
+    csv_sep: str=",",
+    index: bool=..., 
+    columns: str |List[Any, ...]=None, 
+    sanitize_columns:bool=...,  
+    func: F= None, 
+    args: tuple=(), 
+    applyto: str|List[Any, ...]=None, 
+    **func_kwds, 
+    )->None|DataFrame: 
+    """ Store data to hdf5 or write data to csv file. 
     
+    Note that by default, the data is not store nor write and 
+    return data if frame or transform the Path-Like object to data frame. 
+
+    Parameters 
+    -----------
+    d: Dataframe, shape (m_samples, n_features)
+        data to store or write or sanitize.
+    key:str
+       Identifier for the group in the store.
+       
+    mode: {'a', 'w', 'r+'}, default 'a'
+       Mode to open file:
+    
+       - 'w': write, a new file is created (an existing file with the 
+                                          same name would be deleted).
+       - 'a': append, an existing file is opened for reading and writing, 
+         and if the file does not exist it is created.
+       - 'r+': similar to 'a', but the file must already exist.
+       
+    kind: str, {'store', 'write', None} , default=None 
+       Type of task to perform: 
+           
+       - 'store': Store data to hdf5
+       - 'write': export data to csv file.
+       - None: construct a dataframe if array is passed or sanitize it. 
+
+    path_or_buf: str or pandas.HDFStore, or str, path object, file-like \
+        object, or None, default=None 
+       File path or HDFStore object. String, path object
+       (implementing os.PathLike[str]), or file-like object implementing 
+       a write() function. If ``write=True`` and  None, the result is returned 
+       as a string. If a non-binary file object is passed, it should be 
+       opened with newline=" ", disabling universal newlines. If a binary 
+       file object is passed, mode might need to contain a 'b'.
+      
+    encoding: str, default='utf8'
+       A string representing the encoding to use in the output file, 
+       Encoding is not supported if path_or_buf is a non-binary file object. 
+
+    csv_sep: str, default=',', 
+       String of length 1. Field delimiter for the output file.
+       
+    index: bool, index =False, 
+       Write data to csv with index or not. 
+       
+    columns: list of str, optional 
+        Usefull to create a dataframe when array is passed. Be aware to fit 
+        the number of array columns (shape[1])
+        
+    sanitize_columns: bool, default=False, 
+       remove undesirable character in the data columns using the default
+       argument of `regex` parameters and fill pattern to underscore '_'. 
+       The default regex implementation is:: 
+           
+           >>> import re 
+           >>> re.compile (r'[_#&.)(*@!,;\s-]\s*', flags=re.IGNORECASE)
+           
+    func: callable, Optional 
+       A custom sanitizing function and apply to each columns of the dataframe.
+       If provide, the expected columns must be listed to `applyto` parameter.
+       
+    args: tuple, optional 
+       Positional arguments of the sanitizing columns 
+       
+    applyto: str or list of str, Optional 
+       The list of columns to apply the function ``func``. To apply the 
+       function to all columns, use the ``*`` instead. 
+       
+    func_kwds: dict, 
+       Keywords arguments of the sanitizing function ``func``. 
+       
+    Return 
+    -------
+    None or d: None of dataframe. 
+      returns None if `kind` is set to ``write`` or ``store`` otherwise 
+      return the dataframe. 
+  
+    Examples
+    --------
+    >>> from watex.utils.funcutils import storeOrwritehdf5
+    >>> from watex.datasets import load_bagoue 
+    >>> data = load_bagoue().frame 
+    >>> data.geol[:5]
+    0    VOLCANO-SEDIM. SCHISTS
+    1                  GRANITES
+    2                  GRANITES
+    3                  GRANITES
+    4          GEOSYN. GRANITES
+    Name: geol, dtype: object
+    >>> data = storeOrwritehdf5 ( data, sanitize_columns = True)
+    >>> data[['type', 'geol', 'shape']] # put all to lowercase
+      type                    geol shape
+    0   cp  volcano-sedim. schists     w
+    1   ec                granites     v
+    2   ec                granites     v
+    >>> # compute using func 
+    >>> def test_func ( a, times  , to_percent=False ): 
+          return ( a * times / 100)   if to_percent else ( a *times )
+      
+    >>> data.sfi[:5]
+    0    0.388909
+    1    1.340127
+    2    0.446594
+    3    0.763676
+    4    0.068501
+    Name: sfi, dtype: float64
+    >>> d = storeOrwritehdf5 ( data,  func = test_func, args =(7,), applyto='sfi')
+    >>> d.sfi[:5] 
+    0    2.722360
+    1    9.380889
+    2    3.126156
+    3    5.345733
+    4    0.479507
+    Name: sfi, dtype: float64
+    >>> storeOrwritehdf5 ( data,  func = test_func, args =(7,),
+                          applyto='sfi', to_percent=True).sfi[:5]
+    0    0.027224
+    1    0.093809
+    2    0.031262
+    3    0.053457
+    4    0.004795
+    Name: sfi, dtype: float64
+    
+    >>> # write data to hdf5 and outputs to directory 
+    >>> storeOrwritehdf5 ( d, key='test0', path_or_buf= 'test_data.h5', 
+                          kind ='store')
+    >>> # export data to csv 
+    >>> storeOrwritehdf5 ( d, key='test0', path_or_buf= 'test_data', 
+                          kind ='export')
+    """
+    kind= key_search (str(kind), default_keys=(
+        "none", "store", "write", "export", "tocsv"), 
+        raise_exception=True , deep=True)[0]
+    
+    kind = "export" if kind in ('write', 'tocsv') else kind 
+    
+    if sanitize_columns is ...: 
+        sanitize_columns=False 
+    d = to_numeric_dtypes(
+        d, columns=columns, sanitize_columns=sanitize_columns , 
+        fill_pattern='_')
+   
+    # get categorical variables 
+    if ( sanitize_columns 
+        or func is not None
+        ): 
+        d, _, cf = to_numeric_dtypes(d, return_feature_types= True )
+        #( strip then pass to lower case) 
+        # for minimum sanitization  
+        for cat in cf : 
+            d[cat]= d[cat].str.lower()
+            d[cat]= d[cat].str.strip()
+            
+    if func is not None: 
+        if not callable(func): 
+            raise TypeError(
+                f"Expect a callable for `func`. Got {type(func).__name__!r}")
+
+        if applyto is None:
+            raise ValueError("Need to specify the data column to apply"
+                             f"{func.__name__!r} to.")
+        
+        applyto = is_iterable( applyto, exclude_string=True,
+                               transform =True ) if applyto !="*" else d.columns 
+        # check whether the applyto columns are in data columns 
+        exist_features(d, applyto)
+        
+        # map each colum 
+        for col in applyto: 
+            d [col]=d[col].apply( func, args=args, **func_kwds )
+
+    # store in h5 file. 
+    if kind=='store':
+        if path_or_buf is None: 
+            print("Destination file is missing. Use 'data.h5' instead outputs"
+                  f" in the current directory {os.getcwd()}")
+            path_or_buf= 'data.h5'
+ 
+        d.to_hdf ( path_or_buf , key =key, mode =mode )
+    # export to csv file
+    if kind=="export": 
+        d.to_csv(path_or_buf, encoding = encoding  , sep=csv_sep , 
+                 index =False if index is ... else index   )
+        
+    return d if kind not in ("store", "export") else None 
+
+   
     
 
     

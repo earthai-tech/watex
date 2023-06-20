@@ -48,6 +48,8 @@ from .exmath import (
     smoothing, 
     rhophi2z, 
     qc, 
+    get_azimuth, 
+    
     )
 from .funcutils import ( 
     reshape, 
@@ -61,7 +63,12 @@ from .funcutils import (
     interpolate_grid, 
     twinning, 
     random_sampling, 
-    replace_data
+    replace_data, 
+    storeOrwritehdf5
+    )
+from .geotools import ( 
+    smart_thickness_ranker , 
+    build_random_thickness
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -123,6 +130,7 @@ try :
         get_target, 
         )
 except ImportError :pass 
+
 
 __all__=[
         'plotAnomaly', 
@@ -223,7 +231,11 @@ __all__=[
         'random_sampling', 
         'plot_voronoi', 
         'plot_roc_curves', 
-        'replace_data'
+        'replace_data', 
+        'storeOrwritehdf5', 
+        'get_azimuth', 
+        'smart_thickness_ranker', 
+        'build_random_thickness'
         ]
 
 

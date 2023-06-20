@@ -94,7 +94,6 @@ from .validator import (
     check_y,
     check_array,
     assert_xy_in
-
     )
 
 try: import scipy.stats as spstats
@@ -237,9 +236,7 @@ def get_azimuth (
                    )
     # to deg 
     z = np.around ( np.rad2deg ( np.arctan2(list(dx) , list(dy) ) ), 3)  
-    
     azim = z.copy() 
-    
     if extrapolate: 
         # use mean azimum of the total area zone and 
         # recompute the position by interpolation 

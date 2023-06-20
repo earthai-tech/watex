@@ -188,6 +188,7 @@ from .utils import (
     plot_confidence_in,
     qc,
     )
+
 try : 
     from .utils import ( 
         selectfeatures, 
