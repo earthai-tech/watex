@@ -250,7 +250,7 @@ def load_hlogs (
         }
     is_keys = set ( list(available_sets) + ["*"])
 
-    key = key_checker(key, is_keys, deep_search=True )
+    key = key_checker(key, is_keys)
     
     data_file ='h.h5'
     with resources.path (DMODULE , data_file) as p : 

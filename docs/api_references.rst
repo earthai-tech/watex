@@ -154,6 +154,7 @@ Functions
 	datasets.load_huayuan
 	datasets.load_iris
 	datasets.load_mxs
+	datasets.load_nlogs
 	datasets.load_semien
 	datasets.load_tankesse
 	datasets.make_erp 
