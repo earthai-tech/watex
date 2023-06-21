@@ -133,7 +133,11 @@ class GeoDatabaseError(Exception):
     """ Raises an Exception if the database failed to respond. The request is 
     aborted. """
     pass
-
+class ModelError(Exception): 
+    """ Raises an Exception when the requierements for building Geo/Model are
+    are wrong not truly passed. Error also raises when Model construction 
+    is going to fail."""
+    pass
 class ERPError(Exception):
     """Raises an Exception if data passed is not a  valid Electrical Resistivity
     Profiling. Note that 'station' and 'resistivity' must figure out in the 

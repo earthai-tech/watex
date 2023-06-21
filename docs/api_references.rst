@@ -307,7 +307,6 @@ Functions
 	geology.core.fetching_data_from_repo
 	geology.core.set_agso_properties
 
-	
 .. _methods_ref:
 
 :mod:`watex.methods`:  Methods
@@ -648,6 +647,7 @@ Functions
 	utils.plot_rf_feature_importances
 	utils.plot_roc_curves
 	utils.plot_sbs_feature_selection
+	utils.plot_stratalog
 	utils.plot_silhouette
 	utils.plot_skew
 	utils.plot_strike

@@ -6405,9 +6405,9 @@ def convert_value_in (v, /, unit ='m'):
     >>> convert_value_in (20) 
     20.0
     >>> convert_value_in ('20mm') 
-    20000.0
-    >>> convert_value_in ('20kg', unit='g') 
     0.02
+    >>> convert_value_in ('20kg', unit='g') 
+    20000.0
     >>> convert_value_in ('20') 
     20.0
     >>> convert_value_in ('20m', unit='g')
@@ -6436,7 +6436,7 @@ def convert_value_in (v, /, unit ='m'):
             f"Unknwon unit {unit!r}. Expect {smart_format(c.keys(), 'or' )}."
             f" Or rename the `unit` parameter maybe to {unit[-1]!r}.")
     
-    return float ( v)/ (c.get(unit) or 1e0) 
+    return float ( v) * (c.get(unit) or 1e0) 
 
 def split_list(lst:List[Any, ...],/,  val:int, fill_value:Any=None ):
     """Module to extract a slice of elements from the list 

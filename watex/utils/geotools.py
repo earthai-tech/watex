@@ -13,6 +13,8 @@ import itertools
 import warnings
 import copy 
 
+from ..property import Config 
+
 from .._typing import ( 
     List, 
     Tuple, 
@@ -33,9 +35,90 @@ from .funcutils import (
     is_iterable, 
     ellipsis2false, 
     )
+from .exmath import find_closest 
+
 from ..exceptions import StrataError, DepthError  
 from .._watexlog import watexlog 
 _logger = watexlog().get_watex_logger(__name__ )
+
+
+def find_similar_structures(
+        *resistivities,  return_values: bool=...):
+    """
+    Find similar geological structures from electrical rock properties 
+    stored in configure data. 
+    
+    Parameters 
+    ------------
+    resistivities: float 
+       Array of geological rocks resistivities 
+       
+    return_values: bool, default=False, 
+       return the closest resistivities of the close structures with 
+       similar resistivities. 
+       
+    Returns 
+    --------
+    structures , str_res: list 
+      List of similar structures that fits each resistivities. 
+      returns also the closest resistivities if `return_values` is set 
+      to ``True``.
+    
+    Examples
+    ---------
+    >>> from watex.utils.geotools import find_similar_structures
+    >>> find_similar_structures (2 , 10, 100 , return_values =True)
+    Out[206]: 
+    (['sedimentary rocks', 'metamorphic rocks', 'clay'], [1.0, 10.0, 100.0])
+    """
+    if return_values is ...: 
+        return_values =False 
+    
+    def get_single_structure ( res): 
+        """ get structure name and it correspoinding values """
+        n, v = [], []
+        for names, rows in zip ( stc_names, stc_values):
+            # sort values 
+            rs = sorted (rows)
+            if rs[0] <= res and res <= rs[1]: 
+            #if rows[0] <= res <= rows[1]: 
+                n.append ( names ); v.append (rows )
+                
+        if len(n)==0: 
+            return "*Struture not found", np.nan  
+        
+        v_values = np.array ( v , dtype = float ) 
+        
+        close_val  = find_closest ( v_values , res )
+        close_index, _= np.where ( v_values ==close_val) 
+        # take the first close values 
+        close_index = close_index [0] if len(close_index ) >1 else close_index 
+        close_name = str ( n[int (close_index )]) 
+        # remove the / and take the first  structure 
+        close_name = close_name.split("/")[0] if close_name.find(
+            "/")>=0 else close_name 
+        
+        return close_name, close_val 
+
+    #---------------------------
+    # make array of names structures names and values 
+    dict_conf =  Config().geo_rocks_properties 
+    stc_values = np.array (list( dict_conf.values()))
+    stc_names = np.array ( list(dict_conf.keys() ))
+
+    try : 
+        np.array (resistivities) .astype (float)
+    except : 
+        raise TypeError("Resistivities array expects numeric values."
+                        f" Got {np.array (resistivities).dtype.name!r}") 
+        
+    structures = [] ;  str_res =[]
+    for res in resistivities: 
+        struct, value = get_single_structure(res )
+        structures.append ( struct) ; str_res.append (float(value) )
+
+    return ( structures , str_res ) if  return_values else structures 
+
 
 def smart_thickness_ranker ( 
     t: str | List[Any, ...], /,  
@@ -801,25 +884,27 @@ def get_closest_gap (value, iter_obj, status ='isin',
                          "whether rock name exists in the database, "
                          f"otherwise use arguments {out_database_args}.")
 
-    for i, v in enumerate(iter_obj):
-        if condition_status : 
-            if v==skip_value:continue # skip 
-        if status=='isin': 
-            try: iter(value)
-            except :e_min = abs(v - value)
-            else : e_min = np.abs(v - np.array(value)).min() 
-        # reverse option: loop all the database 
-        elif status=='isoff':
-            try: iter(v)
-            except :e_min = abs(value - v)
-            else :e_min = np.abs(value - np.array(v)).min() 
+    with warnings.catch_warnings():
+        warnings.filterwarnings(action='ignore', category=RuntimeWarning)
+        for i, v in enumerate(iter_obj):
+            if condition_status : 
+                if v==skip_value:continue # skip 
+            if status=='isin': 
+                try: iter(value)
+                except :e_min = abs(v - value)
+                else : e_min = np.abs(v - np.array(value)).min() 
+            # reverse option: loop all the database 
+            elif status=='isoff':
+                try: iter(v)
+                except :e_min = abs(value - v)
+                else :e_min = np.abs(value - np.array(v)).min() 
+                    
+            if e_min <= minbuff : 
+                if status =='isoff':
+                    ix_close_res = (i,  value) # index and value in database  
+                else:ix_close_res = (i,  v)  # index and value in TRES 
                 
-        if e_min <= minbuff : 
-            if status =='isoff':
-                ix_close_res = (i,  value) # index and value in database  
-            else:ix_close_res = (i,  v)  # index and value in TRES 
-            
-            minbuff = e_min 
+                minbuff = e_min 
         
     return ix_close_res
 
@@ -1065,11 +1150,11 @@ def get_s_thicknesses(grouped_z, grouped_s, display_s =True, station=None):
     thick =[]
     thick_range =[]
     for k , zg in enumerate(grouped_z): 
-        th = abs(max(zg) - b) # for consistency 
+        th = round (abs(max(zg) - b), 5)  # for consistency 
         thick.append( th) 
-        str_=f"{b} ----- "
-        b= max(zg)
-        thick_range.append(str_ + f"{b}")
+        str_=f"{b:^7} ----- "
+        b= round (max(zg), 3) 
+        thick_range.append(str_ + f"{b:^7}")
     
     doi = grouped_z[-1][-1]
     if sum(thick) == doi: 
@@ -1113,7 +1198,7 @@ def display_s_infos( s_list, s_range, s_thick, **kws):
     print(headinfos)
     print(linestyle *mullines)
     for i, (sn, sthr, sth) in enumerate(zip(s_list, s_range, s_thick)):
-        print(headtemp.format(f"{i+1}.", sn, sthr, sth))
+        print(headtemp.format(f"{i+1}.", sn, sthr, sth ))
         
     print(linestyle *mullines)
     
@@ -1302,53 +1387,81 @@ def annotate_log (ax, thick, layers,*, ylims=None, colors=None,
     return ax 
 
 
-def pseudostratigraphic_log (thick, layers, station, *,
-                    zoom =None, hatch=None, color=None, **annot_kws) : 
-    """ Make the pseudostratigraphic log with annotate figure.
+def plot_stratalog(
+    thick, 
+    layers, 
+    station, *,
+    zoom =None, 
+    hatch=None, 
+    color=None, 
+    fig_size=(10, 4),
+    **annot_kws
+): 
+    """ Make the stratalog log with annotate figure.
     
-    :param thick: list of the thicknesses of the layers 
-    :param layers: list of the name of layers
-    :param hatch: list of the layer patterns
-    :param color: list of the layer colors
-    :parm zoom: float, list. If float value is given, it considered as a 
-            zoom ratio and it should be ranged between 0 and 1. 
-            For isntance: 
-                - 0.25 --> 25% plot start from 0. to max depth * 0.25 m.
-                
-            Otherwise if values given are in the list, they should be
-            composed of two items which are the `top` and `bottom` of
-            the plot.  For instance: 
-                - [10, 120] --> top =10m and bottom = 120 m.
-                
-            Note that if the length of `zoom` list is greater than 2, 
-             the function will return all the plot and 
-             no errors should raised. 
-
-    :Example: 
-        >>> from watex.utils.geotools as GU   
-        >>> layers= ['$(i)$', 'granite', '$(i)$', 'granite']
-        >>> thicknesses= [59.0, 150.0, 590.0, 200.0]
-        >>> hatch =['//.', '.--', '+++.', 'oo+.']
-        >>> color =[(0.5019607843137255, 0.0, 1.0), 'b', (0.8, 0.6, 1.), 'lime']
-        >>> GU.pseudostratigraphic_log (thicknesses, layers, hatch =hatch ,
-        ...                   color =color, station='S00')
-        >>>  GU.pseudostratigraphic_log ( thicknesses,
-                                         layers,
-                                         hatch =hatch, zoom =0.25,
-                                         color =color, station='S00')
+    Parameters 
+    ------------
+    thick, layer, hatch, colors: list, 
+       list of the layers thicknesses , names, patterns and colors. 
+       
+    zoom: float, list 
+       If float value is given, it considered as a 
+       zoom ratio and it should be ranged between 0 and 1. 
+       For isntance: 
+           
+       - 0.25 --> 25% plot start from 0. to max depth * 0.25 m.
+            
+       Otherwise if values given are in the list, they should be
+       composed of two items which are the `top` and `bottom` of
+       the plot.  For instance: 
+           
+       - [10, 120] --> top =10m and bottom = 120 m.
+            
+       Note that if the length of `zoom` list is greater than 2, 
+       the function will return all the plot and 
+       no errors should raised. 
+             
+      fig_size: tuple, default=(10, 4)
+        Figure size 
+        
+    Examples 
+    ---------
+    >>> import watex.utils.geotools as GU   
+    >>> layers= ['$(i)$', 'granite', '$(i)$', 'granite']
+    >>> thicknesses= [59.0, 150.0, 590.0, 200.0]
+    >>> hatch =['//.', '.--', '+++.', 'oo+.']
+    >>> color =[(0.5019607843137255, 0.0, 1.0), 'b', (0.8, 0.6, 1.), 'lime']
+    >>> GU.plot_stratalog (thicknesses, layers, hatch =hatch ,
+                       color =color, station='S00')
+    >>> GU.plot_stratalog ( thicknesses,layers,hatch =hatch, 
+                            zoom =0.25, color =color, station='S00')
     """
 
     is_the_same, typea_status, typeb_status= _assert_list_len_and_item_type(
         thick, layers,typea =(int, float, np.ndarray),typeb =str)
     if not is_the_same: 
-        raise TypeError("Layers' thicknesses and layer names lists must have "
-                        "the same. But {len(thick)} and {len(layers)} were given.")
+        # try to shrunk values 
+        diff_thick = len(thick) - len(layers) 
+        if abs (diff_thick)>2: 
+            raise TypeError("Layer thicknesses and layer names must be consistent."
+                            f". Got {len(thick)} and {len(layers)} respectively.")
+        else: 
+            # tolerate one layer 
+            # by shruunking data 
+            if diff_thick < 0: 
+                layers = layers [: len(thick)]
+            else: 
+                thick = thick [: len(layers)]
+                
     if not typea_status: # try to convert to float
         try : 
             thick =[float(f) for f in thick ]
-        except :raise ValueError("Could not convert to float."
-                                 " Please check your thickness values.")
-    if not  typeb_status: layers =[str(s) for s in layers] 
+        except :raise TypeError(
+                "Layer thickness expect numeric value."
+                f" Got {np.array(thick).dtype.name!r}")
+        
+    if not  typeb_status: 
+        layers =[str(s) for s in layers] 
     
     # get the dfault layers properties hatch and colors 
     # change the `none` values if exists to the default values
@@ -1361,8 +1474,8 @@ def pseudostratigraphic_log (thick, layers, station, *,
         ylims, thick, layers, hatch, color = zoom_processing(zoom=zoom, 
              data= thick, layers =layers, hatches =hatch,colors =color)
     #####################################
-    fig = plt.figure( f"PseudoLog of Station ={station.upper()}",
-                     figsize = (10,14), 
+    fig = plt.figure( f"Log of Station ={station.upper()}",
+                     figsize = fig_size, 
                       # dpi =300 
                      )
     plt.clf()
@@ -1406,7 +1519,7 @@ def pseudostratigraphic_log (thick, layers, station, *,
   
         axis.set_xticks([]) 
         
-    fig.suptitle( f"PseudoStratigraphic log of Station ={station.upper()}",
+    fig.suptitle( f"Strata log of Station ={station.upper()}",
                 ha='center',
         fontsize= 7* 2., 
         verticalalignment='center', 
@@ -1415,6 +1528,7 @@ def pseudostratigraphic_log (thick, layers, station, *,
         y=0.90)
     
     plt.show()
+    
 
 def _assert_list_len_and_item_type(lista, listb, typea=None, typeb=None):
     """ Assert two lists and items type composed the lists 
@@ -1521,14 +1635,14 @@ def set_default_hatch_color_values(hatch, color, dhatch='.--',
     if fs==1: color = tuple(color)
     return hatch, color 
 
-def print_running_line_prop(obj, inversion_software='Occam2D') :
+def print_running_line_prop(obj, inversion_software='modelling softw.') :
     """ print the file  in stdout which is currently used
     " for pseudostratigraphic  plot when extracting station for the plot. """
     
     print('{:~^108}'.format(
         f' Survey Line: {inversion_software} files properties '))
     print('|' + ''.join([ "{0:<5} = {1:<17}|".format(
-        i, os.path.basename( str(getattr(obj, f'{i}_fn'))))  
+        i, os.path.basename( str(getattr(obj, f'{i}_fn', 'NA'))))  
      for i in ['model', 'iter', 'mesh', 'data']]) )
     print('~'*108)
 

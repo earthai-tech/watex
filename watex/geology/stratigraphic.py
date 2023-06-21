@@ -19,12 +19,18 @@ import copy
 from importlib import resources
 import numpy as np
 
-from .._typing import NDArray 
+from .._typing import ( 
+    NDArray, List 
+    )
 from .._watexlog import watexlog 
 from ..decorators import (
     gplot2d
     )
-from ..exceptions import NotFittedError
+from ..exceptions import ( 
+    NotFittedError, 
+    ModelError, 
+    DepthError,
+    )
 from .core import (
     GeoBase 
     )
@@ -38,6 +44,9 @@ from ..utils.funcutils import (
     concat_array_from_list,
     parse_json, 
     parse_yaml,
+    is_iterable, 
+    convert_value_in, 
+    ellipsis2false
     )
 from ..utils.geotools import (
     _sanitize_db_items,
@@ -48,9 +57,10 @@ from ..utils.geotools import (
     fit_stratum_property, 
     get_s_thicknesses, 
     print_running_line_prop, 
-    pseudostratigraphic_log,
+    plot_stratalog,
     get_closest_gap,
-    lns_and_tres_split, 
+    lns_and_tres_split,
+    find_similar_structures
     
     )
 from ..utils._dependency import ( 
@@ -69,211 +79,417 @@ _logger = watexlog().get_watex_logger(__name__ )
 
 __all__=["GeoStrataModel"]
 
-#XXXTODO: add MODEM construction block  in progress 
-class GeoStrataModel(GeoBase):
 
+class GeoStrataModel(GeoBase):
+    """
+    Create a stratigraphic model from inversion models blocks. 
+
+    The Inversion model block is two dimensional array of shape 
+    (n_vertical_nodes, n_horizontal_nodes ). Can use external packages to
+     build blocks and provide the 2Dblock into `crm` parameter. 
+
+    The challenge of this class  is firstly to delineate with much accuracy 
+    the existing layer boundary (top and bottom) and secondly,to predict the 
+    stratigraphy log before the drilling operations at each station. Moreover, 
+    it's a better way to select the right drilling locationand also to estimate 
+    the thickness of existing layer such as water table layer as well as to 
+    figure out the water reservoir rock in the case of groundwater exploration. 
+
+    Note that if the model blocks is build from external softwares. User can
+    provided model usefull details into the keyword arguments of the `fit` 
+    methods. For instance the `model_station_locations`, `model_depth`, 
+    `model_x_nodes` etc. See more details in `fit` method docstring. 
+
+    Parameters 
+    ----------
+    area:str, optional 
+      The name of the area where the survey is done. 
+
+    beta:  int,  default=5              
+            Value to  divide into the CRM blocks to improve 
+            the computation times.                       
+    n_epochs:  int,  default=100
+       Number of iterations for new resistivity model construction (NM). 
+            
+    ptol: float, default=.1   
+       the error value to tolerate during NM construction between the `tres` 
+       values given and the calculated resistivity in `crm`. Higher is the 
+       error, less is the accuracy. 
+     
+    eta: float, default=1e4 
+       It is the learning rate for gradient descent computing to reach its 
+       convergence. If `kind` is  set to `polynomial` the default value should 
+       be  set`1e-8`.  
+          
+    kind: str , default='linear'        
+       Kind of model function to compute the best fit model to replace the
+       value in `crm` . Can be 'linear' or 'polynomial'. if `polynomial` is 
+       set, specify the `degree`.
+        
+    degree: int, default=1
+         Polynomial function degree to implement gradient descent algorithm. 
+         If `kind` is set to `Polynomial` the default `degree` is ``3.`` 
+         
+    z0: float, default=0. 
+       The elevation at the first stations. Note here, we consider that no
+       topography is included and the default is the level of the sea. If 
+       the `model_depth`if provided in the `fit_params`, no need to specify. 
+       
+    max_depth: float, default=700 
+      The maximum depth for building the block. by default, the unit is in 
+      meters. If `model_depth` is given, no need to provide. 
+      
+    step: float, default=50 
+       The step between stations. Here the unit is in meters. If the 
+       `model_station_locations` if given through the `fit_params`, no need to 
+       specified. 
+       
+    doi: default='1km' 
+       the depth of investigation of the skin-depth. By default without any 
+       unit suffix, it should be in meters. 
+       
+    tolog10: bool, default=False 
+       Convert the true values of layer resistivities to log10. 
+
+    verbose: bool, default=False  
+      Output messages and warn users. 
+
+    Attributes
+    -----------
+    nm_: Ndarray of ( n_depth , n_stations )     
+        The New resistivity model (NM) matrix with the same dimension 
+        with `crm` model blocks.
+    nmSites_: ArrayLike 
+       The recomputed station locations of the new resistivity model (NM)
+    crmSites_: ArrayLike, 
+       The recomputed stations locations of the model-calculated resistivity 
+       (CRM)
+       
+    Examples
+    ----------
+    >>> import numpy as np 
+    >>> from watex.geology.stratigraphic import GeoStrataModel
+    >>> 
+    >>> # (1):  Using the CRM without any inversion specified files. 
+    >>> 
+    >>> # test while files 
+    >>> np.random.seed (42)
+    >>> # generate a model calculated resistivity, layers and true 
+    >>> # resistivities values
+    >>> crm = np.abs( np.random.randn (215 , 70 ) *1000 )
+    >>> tres = np.linspace (crm.min() +1  , crm.max() +1 , 12 ) # 
+    >>> layers = ['granites', 'gneiss', 'sedim.']
+    >>> gs= GeoStrataModel (tres = tres, layers =layers, to_log10 =True )
+    >>> gs.fit(crm).buildNM(display_infos =True )
+    >>> print( gs.nm.shape) 
+    >>> gs.strataModel () # plot strata model, by default kind ='NM'
+    >>> gs.plotStrata ('s7')  # plot strata log at station S7 
+    >>> 
+    >>> # (2): Works with occam2d inversion files if 'pycsamt' or 'mtpy' is installed
+    >>> # will call the module Geodrill from pycsamt to make occam2d 2D resistivity
+    >>> # block for our demo. It presumes pycsamt is installed. 
+    >>> 
+    >>> from pycsamt.geodrill.geocore import Geodrill 
+    >>> path=r'data/inversfiles/inver_res/K4' # path to inversion files 
+    >>> inversion_files = {'model_fn':'Occam2DModel', 
+    ...                   'mesh_fn': 'Occam2DMesh',
+    ...                    "iter_fn":'ITER27.iter',
+    ...                   'data_fn':'OccamDataFile.dat'
+    ...                    }
+    >>> tres =[10, 66, 70, 180, 1000, 2000, 3000, 7000, 15000 ] 
+    >>> layers =['river water', 'fracture zone', 'granite']
+    >>> inversion_files = {key:os.path.join(path, vv) for key,
+                    vv in inversion_files.items()}
+    >>> gdrill= Geodrill (**inversion_files, 
+                         input_resistivities=input_resistivity_values
+                         )
+    >>> # we can collect the 'model_res' and occam2d inversion usefull 
+    >>> # 'attributes' from  `gdrill object` and passed to the 'GeoStrataModel' 
+    >>> # then fit_params keyword arguments method as 
+    >>> geosObj = GeoStrataModel(ptol =0.1).fit(
+                         crm = gdrill.model_res , 
+                         model_x_nodes=gdrill.model_x_nodes, 
+                         model_stations= gdrill.station_names,
+                         model_depth= gdrill.geo_depth, 
+                         model_station_locations= gdrill.station_locations,
+                         data_fn = gdrill.data_fn , 
+                         mesh_fn=gdrill.mesh_fn, 
+                         iter_fn= gdrill.iter_fn
+                         model_depth= gdrill.geo_depth)
+    >>> geosObj.buildNM () 
+    >>> zmodel = geosObj._zmodel
+    >>> geosobj.nm_ # resistivity 2D model block is constructed 
+
+    Notes
+    ------
+    Modules work properly with occam2d inversion files if 'pycsamt' or 'mtpy' is 
+    installed and  inherits the `Base package` which works with occam2d  model.
+    Occam2d inversion files are also acceptables for building model blocks. 
+    However the MODEM resistivity files development is still ongoing.
+    
+    """
     def __init__(
         self, 
-        beta=5, 
-        ptol=0.1 , 
-        n_epochs=100, 
-        tres=None,
-        eta=1e-4, 
-        kind='linear', 
-        degree=1, 
-        build=False, 
+        area:str=None, 
+        beta: int=5,  
+        n_epochs: int=100, 
+        ptol: float=0.1 , 
+        eta: float=1e-4, 
+        kind: str='linear', 
+        degree: int=1,
+        z0: float=0., 
+        max_depth: float=700., 
+        step: float=50., 
+        doi: str='1km',
+        tolog10: bool=False,
+        verbose: bool=False,
         **kwargs
         ):
         super().__init__( **kwargs)
 
-        self._beta =beta 
-        self._ptol =ptol 
-        self._n_epochs = n_epochs
-        self._tres = tres
-        self._eta = eta
-        self._kind =kind
-        self._degree = degree
-        self._b = build
-        
+        self.area=area
+        self.z0=z0
+        self.step=step
+        self.max_depth=max_depth 
+        self.beta=beta 
+        self.ptol=ptol 
+        self.n_epochs=n_epochs
+        self.eta=eta
+        self.kind=kind
+        self.degree=degree
+        self.tolog10=tolog10
+        self.doi=convert_value_in(doi)
+
+        self._tres=None 
         self.s0 =None 
         self._zmodel =None
-        self.nm= None 
-        self.z =None
-        self.nmSites=None
-        self.crmSites=None 
+        self.nm_= None 
+        self._z =None
+        self.nmSites_=None
+        self.crmSites_=None 
 
         for key in list(kwargs.keys()): 
             setattr(self, key, kwargs[key])
-            
-    def fit(self, crm: NDArray =None, beta =5 , ptol= 0.1, **kws): 
+
+    def fit(self, crm: NDArray, tres: List[float]=None,
+            layers: List[str]=None, **fit_params): 
         """ 
-        Fit, populate attributes and construct the new stratigraphic 
-        model (NM)
+        Check, populate attributes and rebuild the model-calculated 
+        resistivity (CRM). 
         
         Parameters 
         ------------
         crm : ndarray of shape(n_vertical_nodes, n_horizontal_nodes ),  
-            Array-like of inversion two dimensional model blocks. Note that 
-            the `n_vertical_nodes` is the node from the surface to the depth 
-            while `n_horizontal_nodes` must include the station location 
-            (sites/stations) 
-            
-        beta:  int,                
-                Value to  divide into the CRM blocks to improve 
-                the computation times. default is`5`                               
-        n_epochs:  int,  
-                Number of iterations. default is `100`
-        ptols: float,   
-                Existing tolerance error between the `tres` values given and 
-                the calculated resistivity in `crm` 
+           Array-like of inversion two dimensional model blocks. Note that 
+           the `n_vertical_nodes` is the node from the surface to the depth 
+           while `n_horizontal_nodes` must include the station location 
+           (sites/stations) 
+           
+        tres: List, Arraylike of float, 
+           Layer true values of resistivity collected in the survey area.
+           refer to [1]_ for more details. Resistivity is preferable to  
+           be distinct. 
+
+        layers: list or ArrayLike of str 
+           The name of layers collected in the survey area. Their corresponding
+           resistivity values are the argument of `tres`. Mostly, it refers to 
+           the geological informations of collected in the area. 
+                
+        fit_params: dict, 
+           If a keyword argument refering to inversion model details, it 
+           should be prefixed by the keyword `model_` such as the the
+           following attributes: 
+               
+           - `model_depth`: Arraylike shape (n_depth, ) of the model. It is  
+             the depth the surface to the bottom of each layer that 
+             composed the pseudo-boreholes. It refer to the n_vertical nodes. 
+           - `model_resistivities`: ArrayLike of shape ( y_nodes , x_nodes ). 
+             It is array of model block composed of resistivity values of  
+             vertical nodes and horizontal nodes. It is the model-calculated 
+             resistivity. No need if the value is passed to `crm` parameter. 
+           - `model_x_nodes`: ArrayLike of shape (x_nodes, ) is  the  
+             horizontal nodes of the model block. 
+           - `model_station_locations`: Arraylike of offset of valid stations 
+             locations. It might truly refers to the number of investigated 
+             stations. 
+           - `model_stations`: List or Arrylike of the stations names of 
+             the investigated area. It might be consistent with the 
+             `model_station_locations`. 
+           - `model_rms`: Root-Mean-Squared values of the models after 
+             inversion. By default , the target is set to ``1.0``. 
+           - `model_roughness`: Roughness of the models. This is an optional 
+             parameters and using when OCCAM2D software is used to invert the 
+             data. 
+             
+           Model files can also be includes. In that case, the attributes must 
+           suffixes with `_fn`. Some useful model files can be `model`, `mesh`
+           `data` and `iter`. For instance to set the data file to a keyword 
+           arguments it sould be ``data_fn=xxxx`` whether the new data attribute 
+           should be retrived as `data_fn`. Note that: 
+               
+           - `model_fn` is the model files after inversions 
+           - `data_fn` is the data files before inversions 
+           - `iter_fn` is the iteration results files if applicable with 
+              the kind of inversion software used 
+           - `mesh_fn` is the mesh files construct for forward modeling. 
+
         Return 
         --------
         ``self``: :class:`watex.geology.stratigraphic.GeoStrataModel`. 
             return `self` for methods chaining. 
         
+        References 
+        -----------
+        .. [1] Kouadio, L. K., Liu, R., Malory, A. O., Liu, W., Liu, C., A novel 
+               approach for water reservoir mapping using controlled source 
+               audio - frequency magnetotelluric in Xingning area , Hunan 
+               Province, China. Geophys. Prospect., 
+               https://doi.org/10.1111/1365-2478.1338
         """
-        for key in list(kws.keys()): 
-            setattr(self, key, kws[key])
-            
-        if crm is not None: 
-            self.crm=crm 
-        # expect the bock is build from 
-        # external modeling softwares 
-        if hasattr (self, "input_resistivities"):  
-            if self.input_resistivities: 
-                self.tres = self.input_resistivities
-        if hasattr (self, 'model_res'): 
-            if self.model_res is not None : 
-                self.crm = self.model_res 
-                self.s0= np.zeros_like(self.model_res)
+        self.crm = crm 
+        self.layers=layers 
+        self.tres = tres 
+        
+        if self.layers is None or self.tres is None: 
+            msgn= "Layers are missing. " if self.layers is None else (
+                "The layers true resistivities (TRES) are missing. " if 
+                self.tres is None else '')
+            raise ModelError (f"{msgn}Layers and their corresponding"
+                              " resistivities(TRES) are expected for building"
+                              " the new discrete resistivity model(NM)."
+                              )
+        self.layers = is_iterable(
+            self.layers , exclude_string= True, transform =True )
+        self.tres = is_iterable(self.tres, exclude_string= True, transform =True 
+                                )
+        
+        self.set_inversion_model_attr(**fit_params)
+    
+        self.s0= np.zeros_like(self.crm )
             
         if self.crm is not None: 
             self._makeBlock()
-            
-        self.build 
-        
+
         return self
     
-    @property 
-    def inspect (self): 
-        """ Inspect object whether is fitted or not"""
-        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
-               " Call 'fit' with appropriate arguments before using"
-               " this method"
-               )
+    def buildNM (self, return_NM: bool= ..., display_infos: bool=... ):
+        """ Build New discrete resistivity from the model-calculated 
+        resistivity CRM 
+        Trigger the NM build and return the NM building option
         
-        if not hasattr (self, 'crm'): 
-            raise NotFittedError(msg.format(
-                obj=self)
-            )
-        return 1 
+        """
+        return_NM, display_infos = ellipsis2false(return_NM, display_infos)
+        
+        self.inspect 
+        
+        return self._createNM( return_NM= return_NM, 
+                              display_infos= display_infos ) 
     
-    @property 
-    def n_epochs(self): 
-        """ Iteration numbers"""
-        return self._n_epochs 
-    @n_epochs.setter 
-    def n_epochs(self, n_iterations): 
-        """ n_epochs must be in integers value and greater than 0"""
-        try : 
-            self._n_epochs = int(n_iterations)
-        except: 
-             TypeError('Iteration number must be `integer`') 
-        else: 
-            if self._n_epochs  <=0: 
-                self._logging.debug(
-                 " Unaceptable iteration value! Must be a positive value not "
-                f"{'a negative value.' if self._n_epochs <0 else 'equal to 0.'}")
-                warnings.warn(f" {self._n_epochs} is unaceptable value."
-                          " Could be resset to the default value=100.")
-                self._n_epochs = 100 
-                
-    @property 
-    def beta (self): 
-        """ Block constructor param"""
-        return self._beta 
-    @beta.setter 
-    def beta(self, beta0 ):
-        """ Block constructor must be integer value."""
-        try : 
-            self._beta = int(beta0)
-        except Exception: 
-            raise TypeError
-        else: 
-            if self._beta <=0 :
-                self._logging.debug(
-                    f'{self._beta} is unaceptable. Could resset to 5.')
-                warnings.warn(
-                    f'`{self._beta}` is unaceptable. Could resset to 5.')
-                self._beta= 5
-    @property 
-    def ptol(self) :
-        """ Tolerance parameter """
-        return self._ptol 
-    @ptol.setter 
-    def ptol(self, ptol0): 
-        """ Tolerance parameter must be different to zero and includes 
-        between 0 and 1"""
-        try : 
-            self._ptol =float(ptol0)
-        except Exception :
-            raise TypeError ('Tolerance parameter `ptol` should be '
-                             f'a float number not {type (ptol0)!r}.')
-        else : 
-            if 0 >= self._ptol >1: 
-                self._logging.debug(f"Tolerance value `{self._ptol}` is "
-                  "{'greater' if self._ptol >1 else 'is unacceptable value'}`."
-                    "Could resset to 10%")
-                warnings.warn(
-                    f'Tolerance value `{self._ptol}` is unacceptable value.'
-                    'Could resset to 10%')
-                self._ptol = 0.1
-    @property 
-    def tres(self): 
-        """ Input true resistivity"""
-        return self._tres 
-    @tres.setter 
-    def tres(self, ttres):
-        """ Convert Tres to log 10 resistivity """
-        try : 
-            self._tres =[np.log10(t) for t in ttres]
-        except : 
-            raise ValueError('Unable to convert TRES values') 
+    def set_inversion_model_attr ( self, **model_params): 
+        """ Set inversion model parameters as attributes. Note all related 
+        to the raw inversion model strats with attribte `model_xxx ` while 
+        all related to files must must suffixed with `_fn`. For instances 
+        the folling data such ['model', 'iter', 'data' , 'mesh']  can be 
+        added as keywords arguments where `_fn` is suffixed to each names.
         
-    @property 
-    def build (self): 
-        """ Trigger the NM build and return the NM building option """
+        Parameters 
+        -----------
+        model_parameters: dict 
+          Keyword arguments from inversion model parameters. The useful 
+          attributes passed to accurathe model creation are: 
         
-        ntres ='True resistivity values'
-        nln ='collected layer names (True)'
-        mes =''.join([
-            '{0} {1} not defined. Unable to triggered the NM construction. '
-            'Please, provide the list/array of {2} of survey area.'])
-         
-        if self._b:
-            if (self.tres and self.input_layers ) is None: 
-                warnings.warn(mes.format(
-                    'TRES and LN', 'are', ntres +'and'+nln))
-                self._b=False 
-            elif self.tres is None and self.input_layers is not None: 
-                warnings.warn(mes.format('TRES', 'is', ntres))
-                self._b=False 
-            elif self.input_layers is None and self.tres is not None: 
-                warnings.warn(mes.format('LN', 'is', nln))
-                self._b=False 
-                
-            if not self._b:
-                self._logging.debug ( "Build is set to TRUE, however,"
-                    '{0}'.mes.format(
-                        f'{"TRES" if self.tres is None else "LN"}',
-                        'is', f'{ntres if self.tres is None else nln}')
-                )
-                
-        if self._b: 
-            self._createNM()
+          - model_depth: Arraylike shape (n_depth, ) of the model, mostly 
+            refer to the vertical nodes. 
+          - model_resistivities: ArrayLike of shape ( y_nodes , x_nodes ). It 
+            is array of model block composed of resistivity values of vertical 
+            nodels and horizontal nodes. It is the model-calculated resistivity. 
+            It is usefull to pass the same argument as `crm` parameters. 
+          - model_x_nodes: ArrayLike of shape (x_nodes, ) is  the horizontal 
+            nodes of the model block. 
+          - model_station_locations: Arraylike of offset of valid stations 
+            locations. It might truly refers to the number of investigated 
+            stations. 
+          - model_stations: List or Arraylike of the stations names of 
+            the investigated area. It might be consistent with the 
+            `model_station_locations`. 
+          - model_rms: Root-Mean-Squared values of the models after inversion. 
+            By default , the target is set to ``1.0``. 
+          - model_roughness: Roughness of the models. This is an optional 
+            parameters and using when OCCAM2D software is used to invert the 
+            data.
+            
+          Model files can also be includes. In that case, the attributes must 
+          suffixes with `_fn`. Some useful model files can be `model`, `mesh`
+          `data` and `iter`. For instance to set the data file to a keyword 
+          arguments it sould be ``data_fn=xxxx`` whether the new data attribute 
+          should be retrived as `data_fn`. Note that: 
+            
+          - `model_fn` is the model files after inversions 
+          - `data_fn` is the data files before inversions 
+          - `iter_fn` is the iteration results files if applicable with 
+            the kind of inversion software used 
+          - `mesh_fn` is the mesh files construct for forward modeling. 
+
+        """
+        model_depth = model_params.pop("model_depth", None  )
+        model_resistivities = model_params.pop(
+            'model_resistivities', None)
+        model_x_nodes = model_params.pop ('model_x_nodes', None)
+        model_station_locations = model_params.pop (
+            'model_station_locations', None )
+        model_stations = model_params.pop("model_stations", None)
+        model_rms = model_params.pop("model_rms", 1.)
+        model_roughness = model_params.pop("model_roughness", 0.2 )
         
+        if model_resistivities is not None: 
+            self.crm = model_resistivities 
+            
+        if model_depth is not None: 
+            model_depth = np.array ( model_depth, dtype = float)
+            
+            if len(model_depth )!= len(self.crm): 
+                raise DepthError ("Model depth and model-calculated resistivity"
+                                  " (CRM) must be a consistent size. Got"
+                                  f" {len(model_depth)} and {len(self.crm)}.")
+            self.model_depth= model_depth 
+        
+        if not hasattr (self, 'model_depth'): 
+            # create a pseudo depth
+            self.model_depth = np.linspace (self.z0, self.max_depth, len(self.crm))
+            
+        if model_resistivities is not None: 
+            self.model_resistivities = model_resistivities 
+            
+        if model_x_nodes is not None: 
+            self.model_x_nodes = model_x_nodes 
+    
+        if model_station_locations is not None: 
+            self.model_station_locations= model_station_locations
+            
+        if not hasattr ( self, 'model_station_locations' ): 
+            self.model_station_locations = np.arange (
+                0 , self.crm.shape [1])* self.step 
+            
+        if not hasattr (self, 'model_x_nodes'): 
+            self.model_x_nodes = self.model_station_locations 
+            
+        if not hasattr ( self, "model_resistivities"): 
+            self.model_resistivities = self.crm 
+            
+        if model_stations is not None: 
+            self.model_stations= model_stations 
+            
+        if not hasattr ( self, 'model_stations'): 
+            self.model_stations = [f'S{i:02}' for i in range (
+                len(self.model_station_locations)) ]
+            
+        self.model_rms = model_rms 
+        self.model_roughness = model_roughness 
    
- 
+        # Append other attributes such as data, model, iter, mesh files 
+        for key in model_params.keys () : 
+            setattr ( self, key , model_params[key])
+
     def _createNM(self, crm =None, beta =5 , ptol= 0.1, **kws): 
         """ Create NM through the differents steps of NM creatings. 
         
@@ -310,18 +526,20 @@ class GeoStrataModel(GeoBase):
                 h_=[]
             return r_, hres 
         
-        iln =kws.pop('input_layers', None)
+        iln =kws.pop('layers', None)
         tres =kws.pop('tres', None)
         subblocks =kws.pop('subblocks', None)
         disp= kws.pop('display_infos', True)
         n_epochs = kws.pop('n_epochs', None)
         hinfos =kws.pop('headerinfos',
                         ' Layers [auto=automatic]')
+        return_NM= kws.pop( 'return_NM', False  )
+        
         if subblocks is not None: 
             self.subblocks = subblocks
         
         if iln is not None: 
-            self.input_layers = iln 
+            self.layers = iln 
         if tres is not None: 
             self.tres = tres 
         
@@ -337,11 +555,9 @@ class GeoStrataModel(GeoBase):
         self.s0 , errors=[], []
         #step1 : SOFMINERROR 
         if TQDM : 
-            pbar =tqdm.tqdm(total= 3,
-                             ascii=True,unit='B',
-                             desc ='geostrata', 
-                             ncols =77)
-            
+            pbar =tqdm.tqdm(total= 3,ascii=True,unit='B',
+                             desc ='build-NM', ncols =77)
+       
         for ii in range(len(self.subblocks)):
             s1, error = self._softMinError(subblocks= self.subblocks[ii])
             self.s0.append(s1)
@@ -364,52 +580,62 @@ class GeoStrataModel(GeoBase):
                 arp_.append(autorock_properties)
                 self.s0[ii]=s3       
         # Assembly the blocks 
-        self.nm = np.concatenate((self.s0))
-        self.z=self.nm[:, 0]
-        self.nm = self.nm[:, 1:]
+        self.nm_ = np.concatenate((self.s0))
+        self._z=self.nm_[:, 0]
+        self.nm_ = self.nm_[:, 1:]
         
         if TQDM : 
             pbar.update(3)
-            print(' process completed')
+            # print(' process completed')
             pbar.close()
             
         # make site blocks 
-        self.nmSites= makeBlockSites(x_nodes=self.model_x_nodes, 
-                        station_location= self.station_location, 
-                             block_model=self.nm )
-        self.crmSites = makeBlockSites(x_nodes=self.model_x_nodes, 
-                            station_location= self.station_location, 
-                             block_model=self.model_res)
+        self.nmSites_= makeBlockSites(x_nodes=self.model_x_nodes, 
+                        station_location= self.model_station_locations, 
+                             block_model=self.nm_ )
+        self.crmSites_ = makeBlockSites(x_nodes=self.model_x_nodes, 
+                            station_location= self.model_station_locations, 
+                             block_model=self.model_resistivities)
 
         #Update TRES and LN 
         gammaL, gammarho = s__auto_rocks(arp_) 
         
-        if self.input_layers is not None: 
-            print_layers = self.input_layers  + [ ' {0} (auto)'.format(l) 
+        if self.layers is not None: 
+            print_layers = self.layers  + [ ' {0} (auto)'.format(l) 
                                                  for l in gammaL ]
-            self.input_layers = self.input_layers + gammaL
+            self.layers = self.layers + gammaL
         # keep the auto_layer found     
         self.auto_layers =gammaL
-        self.tres = list(np.power(10,self._tres))  + list (np.power(10, 
-                  np.array([float(rv) for rv in gammarho])))
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', category=RuntimeWarning)
+            # reconvert to power10 since database value is 
+            # not in log10
+            if self.tolog10: 
+                self.tres = list(np.power(10,self._tres))  + list (
+                    np.power(10, np.array([float(rv) for rv in gammarho])))
+            else: self.tres = list(self.tres) + [
+                float(rv) for rv in gammarho]
+            
         # display infos 
         if disp:
             display_infos(infos=print_layers,
                           header= hinfos)
         #STEP 4: Train ANN: (still in development) to predict your 
         #layer: No need to plot the NM 
-        
         # copy main attributes for pseudostratigraphic plot purpose 
         import copy 
         for name , attrval in zip(['TRES', 'LNS'], 
-                              [self.tres , self.input_layers]):
+                              [self.tres , self.layers]):
             setattr(self, name, copy.deepcopy(attrval))
         # memorize data 
         _ps_memory_management(self)
         
-        return self.nm
-
+        # turn off log10 to False
+        # to not convert any more data 
+        self.tolog10 =False 
         
+        return self.nm_ if return_NM else self 
+    
     def _softMinError(self, subblocks=None, **kws ): 
         """
         Replace the calculated resistivity by the true resistivity 
@@ -473,16 +699,16 @@ class GeoStrataModel(GeoBase):
         
         eta = kwargs.pop('eta', None)
         if eta is not None: 
-            self._eta = eta 
+            self.eta = eta 
         n_epochs =kwargs.pop('n_epochs', None)
         if n_epochs is not None: 
             self.n_epochs = n_epochs 
         kind = kwargs.pop('kind', None)
         if kind is not None:
-            self._kind = kind 
+            self.kind = kind 
         degree = kwargs.pop('degree', None) 
         if degree is not None: 
-            self._degree = degree 
+            self.degree = degree 
         
         buffer =self.ptol +1  #bufferr error 
         _z= s0[:, 0]
@@ -492,9 +718,9 @@ class GeoStrataModel(GeoBase):
         error =[]
         for ii in range(s0.shape[0]): # hnodes N
             F, *_= self.gradient_descent(z=_z,s=subblocks[ii,:],
-                                         alpha= self._eta,
+                                         alpha= self.eta,
                                          n_epochs= self.n_epochs, 
-                                         kind= self._kind)
+                                         kind= self.kind)
             for jj in range(s0.shape[1]): # znodes V
                  if s0[ii, jj] ==0. : 
                     rp =F[jj]
@@ -515,7 +741,7 @@ class GeoStrataModel(GeoBase):
         return s0, error 
         
     @staticmethod    
-    def gradient_descent(z, s, alpha, n_epochs, **kws): 
+    def gradient_descent(z, s, alpha, n_epochs,raise_warn=False,  **kws): 
         """ Gradient descent algorithm to  fit the best model parameter. 
         
         :param z: vertical nodes containing the values of depth V
@@ -547,6 +773,7 @@ class GeoStrataModel(GeoBase):
         kind_=kws.pop('kind', 'linear')
         kind_degree = kws.pop('degree', 1)
         
+        
         if kind_degree >1 : kind_='poly'
         
         if kind_.lower() =='linear': 
@@ -556,7 +783,8 @@ class GeoStrataModel(GeoBase):
                 _logger.debug(
                     'The model function is set to `Polynomial`. '
                     'The degree must be greater than 1. Degree wil reset to 2.')
-                warnings.warn('Polynomial degree must be greater than 1.'
+                if raise_warn:
+                    warnings.warn('Polynomial degree must be greater than 1.'
                               'Value is ressetting to `2`.')
                 kind_degree = 2
             try : 
@@ -581,10 +809,13 @@ class GeoStrataModel(GeoBase):
             def init_weights (x, y): 
                 """ Init weights by calculating the scope of the function along 
                  the vertical nodes axis for each columns. """
-                for j in range(x.shape[1]-1): 
-                    a= (y.max()-y.min())/(x[:, j].max()-x[:, j].min())
-                    w[j]=a
-                w[-1] = y.mean()
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(action='ignore', 
+                                            category=RuntimeWarning)
+                    for j in range(x.shape[1]-1): 
+                        a= (y.max()-y.min())/(x[:, j].max()-x[:, j].min())
+                        w[j]=a
+                    w[-1] = y.mean()
                 return w   # return weights 
         
             for i in range(degree):
@@ -650,29 +881,29 @@ class GeoStrataModel(GeoBase):
         from number of vertical nodes generated by the first `beta` value applied 
         to the `crm`."""
 
-        self.zmodel = np.concatenate((self.geo_depth.reshape(
-            self.geo_depth.shape[0], 1),  self.model_res), axis =1) 
+        self.zmodel_ = np.concatenate((self.model_depth.reshape(
+            self.model_depth.shape[0], 1),  self.model_resistivities), axis =1) 
                                     
-        vv = self.zmodel[-1, 0] / self.beta 
-        for ii, nodev in enumerate(self.zmodel[:, 0]): 
+        vv = self.zmodel_[-1, 0] / self.beta 
+        for ii, nodev in enumerate(self.zmodel_[:, 0]): 
             if nodev >= vv: 
                 npts = ii       # collect number of points got.
                 break 
         self._subblocks =[]
         
         bp, jj =npts, 0
-        if len(self.zmodel[:, 0]) <= npts: 
-            self._subblocks.append(self.zmodel)
+        if len(self.zmodel_[:, 0]) <= npts: 
+            self._subblocks.append(self.zmodel_)
         else: 
-            for ii , row in enumerate(self.zmodel) : 
+            for ii , row in enumerate(self.zmodel_) : 
                 if ii == bp: 
-                    _tp = self.zmodel[jj:ii, :]
+                    _tp = self.zmodel_[jj:ii, :]
                     self._subblocks.append(_tp )
                     bp +=npts
                     jj=ii
                     
-                if len(self.zmodel[jj:, 0])<= npts: 
-                    self._subblocks.append(self.zmodel[jj:, :])
+                if len(self.zmodel_[jj:, 0])<= npts: 
+                    self._subblocks.append(self.zmodel_[jj:, :])
                     break 
                 
         return self._subblocks 
@@ -716,8 +947,7 @@ class GeoStrataModel(GeoBase):
         def _findGeostructures(_res): 
             """ Find the layer from database and keep the ceiled value of 
             `_res` calculated resistivities"""
-            
-            structures = self.get_structure(_res)
+            structures = find_similar_structures(_res)
             if len(structures) !=0 or structures is not None:
                 if structures[0].find('/')>=0 : 
                     ln = structures[0].split('/')[0].lower() 
@@ -771,17 +1001,19 @@ class GeoStrataModel(GeoBase):
         _temptres , _templn =[], []
         subblocks=subblocks[:, 1:].T
 
-        for ii in range(s0.shape[0]): # hnodes N
-            for jj in range(s0.shape[1]): # znodes V
-                if s0[ii, jj] ==0. : 
-                    lnames, lcres =_findGeostructures(
-                        np.power(10, subblocks[ii, jj]))
-                    _temptres.append(np.log10(lcres))
-                    _templn.append(lnames)
-
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', category=RuntimeWarning)
+            for ii in range(s0.shape[0]): # hnodes N
+                for jj in range(s0.shape[1]): # znodes V
+                    if s0[ii, jj] ==0. : 
+                        lnames, lcres =_findGeostructures(
+                            np.power(10, subblocks[ii, jj]))
+                        _temptres.append(np.log10(lcres))
+                        _templn.append(lnames)
+    
         auto_rocks_names_res, automatics_resistivities =\
             _normalizeAutoresvalues(_templn,_temptres )
-        
+            
         for ii in range(s0.shape[0]): # hnodes N
            for jj in range(s0.shape[1]): # znodes V
                if s0[ii, jj] ==0. :
@@ -789,13 +1021,12 @@ class GeoStrataModel(GeoBase):
                        subblocks[ii, jj] == automatics_resistivities[0,:][k]
                        s0[ii, jj]= automatics_resistivities[1,:][k]
                        break 
-        
-                                   
+                      
         s0= np.concatenate((_z.reshape(_z.shape[0], 1), s0.T), axis =1) 
         
         # display infos 
         if disp:
-            display_infos(infos=self.input_layers,
+            display_infos(infos=self.layers,
                           header= hinfos)
         
         return  s0, auto_rocks_names_res
@@ -866,7 +1097,7 @@ class GeoStrataModel(GeoBase):
             >>> from watex.geology.stratigraphic import GeostrataModel
             >>> geosObj = GeostrataModel().fit(**inversion_files,
                                   input_resistivities=input_resistivity_values, 
-                                  input_layers=input_layer_names)
+                                  layers=input_layer_names)
             >>> geosObj.strataModel(kind='nm', misfit_G =False)
         """
         m_='watex.geology.GeostrataModel.strataModel'
@@ -886,40 +1117,42 @@ class GeoStrataModel(GeoBase):
         misfit_percentage = kwargs.pop('in_percent', True)
         
         kind = _assert_model_type(kind)
-        if self.nm is None: 
+        if self.nm_ is None: 
             self._createNM()  
                 
         if kind =='nm':
-            data = self.nmSites 
+            data = self.nmSites_ 
         if kind =='crm': 
-            data = self.crmSites
+            data = self.crmSites_
 
       # compute model_misfit
-        if misfit_G is True : 
-            if kind =='crm': 
-                warnings.warn(
-                    "By default, the plot should be the stratigraphic"
-                    " misfit<misfit_G>.")
+        if misfit_G: 
+            if kind =='crm':
+                if self.verbose:
+                    warnings.warn(
+                        "By default, the plot should be the stratigraphic"
+                        " misfit<misfit_G>.")
     
             self._logging.info('Visualize the stratigraphic misfit.')
-            data = compute_misfit(rawb=self.crmSites , 
-                                  newb= self.nmSites, 
+            data = compute_misfit(rawb=self.crmSites_ , newb= self.nmSites_, 
                                   percent = misfit_percentage)
             
-            print('{0:-^77}'.format('StrataMisfit info'))
-            print('** {0:<37} {1} {2} {3}'.format(
-                'Misfit max ','=',data.max()*100., '%' ))                      
-            print('** {0:<37} {1} {2} {3}'.format(
-                'Misfit min','=',data.min()*100., '%' ))                          
-            print('-'*77)
+            if self.verbose:
+                print('{0:-^77}'.format('StrataMisfit info'))
+                print('** {0:<37} {1} {2} {3}'.format(
+                    'Misfit max ','=',data.max()*100., '%' ))                      
+                print('** {0:<37} {1} {2} {3}'.format(
+                    'Misfit min','=',data.min()*100., '%' ))                          
+                print('-'*77)
             
-        warnings.warn(
-            f'Data stored from {m_!r} should be moved on binary drive and'
-            ' method arguments should be keywordly only.', FutureWarning)
-        
-        return (data, self.station_names, self.station_location,
-            self.geo_depth, self.doi, depth_scale, self.model_rms, 
-            self.model_roughness, misfit_G ) 
+        if self.verbose:
+            warnings.warn(
+                f'Data stored from {m_!r} should be moved on binary drive and'
+                ' method arguments should be keywordly only.', FutureWarning)
+            
+        return (data, self.model_stations, self.model_station_locations,
+            self.model_depth, self.doi, depth_scale, self.model_rms, 
+            self.model_roughness, misfit_G )
     
 
     @staticmethod
@@ -940,7 +1173,7 @@ class GeoStrataModel(GeoBase):
         >>> from watex.geology.stratigraphic import GeoStrataModel 
         >>> import watex.utils.geotools as GU 
         >>> geosObj = GeoStrataModel().fit( input_resistivities=TRES, 
-        ...              input_layers=LNS,**INVERS_KWS)
+        ...              layers=LNS,**INVERS_KWS)
         >>> geosObj._strataPropertiesOfSite(geosObj,station= 'S05')
         """
         
@@ -955,27 +1188,28 @@ class GeoStrataModel(GeoBase):
         # assert the station, get it appropriate index and take the tres 
         # at that index 
         if station is None: 
-            stns = ["S{:02}".format(i) for i in range(obj.nmSites.shape[1])]
+            stns = ["S{:02}".format(i) for i in range(obj.nmSites_.shape[1])]
             obj._logging.error('None station is found. Please select one station'
                                 f' between {smart_format(stns)}')
-            warnings.warn("NoneType can not be read as station name."
-                            " Please provide your station name. list of sites" 
-                             f" are {smart_format(stns)}")
+            if obj.verbose:
+                warnings.warn("NoneType can not be read as station name."
+                                " Please provide your station name. list of " 
+                                 f" sites are {smart_format(stns)}")
             raise ValueError("NoneType can not be read as station name."
                              " Please provide your station name.")
         
-        if  obj.nmSites is None: 
+        if  obj.nmSites_ is None: 
                 obj._createNM()
         
         try : 
             id0= int(station.lower().replace('s', ''))
         except : 
-            id_ =assert_station(id= station, nm = obj.nmSites)
+            id_ =assert_station(id= station, nm = obj.nmSites_)
             station_ = 'S{0:02}'.format(id_)
         else : 
-            id_ =assert_station(id= id0 + 1, nm = obj.nmSites)
+            id_ =assert_station(id= id0 + 1, nm = obj.nmSites_)
             station_ = 'S{0:02}'.format(id0)
-        obj.logS = obj.nmSites[:, id_] 
+        obj.logS = obj.nmSites_[:, id_] 
      
         # assert the input  given layers and tres 
         is_the_same_length, msg  = assert_len_lns_tres(
@@ -991,13 +1225,13 @@ class GeoStrataModel(GeoBase):
             # find the pseudoTRES and LNS for unknowrocks or layers
             msg +=  "Unknow layers should be ignored."   
             _logger.debug(msg)
-            warnings.warn(msg)
+            warnings.warn(msg) if obj.verbose else None
             
             pslns, pstres, ps_lnstres =  fit_tres(
                                             obj.LNS, obj.TRES, 
                                             obj.auto_layers)
         # now build the fitting rocks 
-        fitted_rocks =fit_rocks(logS_array= obj.nmSites[:,id_],
+        fitted_rocks =fit_rocks(logS_array= obj.nmSites_[:,id_],
                                    lns_=pslns , tres_=pstres)
         # set the raws fitted rocks 
         import copy
@@ -1009,7 +1243,7 @@ class GeoStrataModel(GeoBase):
         
         # fit stratum property 
         sg, _, zg, _= fit_stratum_property (obj.fitted_rocks,
-                                obj.z, obj.logS)
+                                obj._z, obj.logS)
         obj.log_thicknesses, obj.log_layers,\
             obj.coverall = get_s_thicknesses( 
             zg, sg,display_s= display_s, station = station_ )
@@ -1021,8 +1255,8 @@ class GeoStrataModel(GeoBase):
         return obj
     
     @staticmethod
-    def plotPseudostratigraphic(station, zoom=None, annotate_kws=None, **kws):
-        """ Build the pseudostratigraphic log. 
+    def plotStrata(station, zoom=None, annotate_kws=None, **kws):
+        """ Build the Stratalog. 
         :param station: station to visualize the plot.
         :param zoom: float  represented as visualization ratio
             ex: 0.25 --> 25% view from top =0.to 0.25* investigation depth 
@@ -1033,10 +1267,10 @@ class GeoStrataModel(GeoBase):
                                     3000, 7000, 15000 ] 
             >>> input_layer_names =['river water', 'fracture zone', 'granite']
             # Run it to create your model block alfter that you can only use 
-            #  `plotPseudostratigraphic` only
+            #  `plotStrata` only
             # >>> obj= quick_read_geomodel(lns = input_layer_names, 
             #                             tres = input_resistivity_values)
-            >>> plotPseudostratigraphic(station ='S00')
+            >>> plotStrata(station ='S00')
         
         """
         
@@ -1047,12 +1281,56 @@ class GeoStrataModel(GeoBase):
         obj = GeoStrataModel._strataPropertiesOfSite (obj,station=station,
                                                        **kws )
         # plot the logs with attributes 
-        pseudostratigraphic_log (obj.log_thicknesses, obj.log_layers,station,
+        plot_stratalog (obj.log_thicknesses, obj.log_layers, station,
                                     hatch =obj.hatch ,zoom=zoom,
                                     color =obj.color, **annotate_kws)
         print_running_line_prop(obj)
         
         return obj 
+
+    @property 
+    def tres(self): 
+        """ Input true resistivity"""
+        return self._tres 
+    @tres.setter 
+    def tres(self, ttres):
+        """ Convert Tres to log 10 resistivity if tolog10 is set to ``True``. """
+        ttres = is_iterable (ttres, transform =True )
+        
+        try : 
+            self._tres =[np.log10(t) for t in ttres] if self.tolog10 else [ 
+                float(t) for t in ttres]
+        except : 
+            raise ValueError("TRES expect values to be numeric."
+                             f"Got {np.array(ttres).dtype.name !r}")
+    @property 
+    def inspect (self): 
+        """ Inspect object whether is fitted or not"""
+        msg = ( "{obj.__class__.__name__} instance is not fitted yet."
+               " Call 'fit' with appropriate arguments before using"
+               " this method"
+               )
+        
+        if not hasattr (self, 'crm'): 
+            raise NotFittedError(msg.format(
+                obj=self)
+            )
+        return 1 
+    
+    
+    def __repr__(self):
+        """ Pretty format for programmer guidance following the API... """
+        _t = ("area", "tres", "layers", "beta", "ptol", "n_epochs", "eta",
+               "kind", "degree", "z0" ,"step", "max_depth", "verbose")
+
+        outm ='<{!r}:' + ', '.join( [
+            "{}={}".format( k,   False if getattr(self, k)==... else (
+                    "[...]" if len( is_iterable(getattr (
+                        self, k),exclude_string=True, transform=True))>3
+                 else str (getattr(self, k)))) 
+            for k in _t]) + '>' 
+            
+        return  outm.format(self.__class__.__name__)
     
 def _ps_memory_management(obj=None, option='set'): 
     """ Manage the running times for stratigraphic model construction.
@@ -1089,6 +1367,7 @@ def _ps_memory_management(obj=None, option='set'):
         if not memory_exists: 
             _logger.error('No memory found. Run the GeoStrataModel class '
                           'beforehand to create your first model.')
+
             warnings.warn("No memory found. You need to build your "
                           " GeoStrataModel model by running the class first.")
             raise  MemoryError("Memory not found. Use the GeoStrataModel class to "
@@ -1108,7 +1387,6 @@ def _ps_memory_management(obj=None, option='set'):
         
         return psobj
                                 
-        
 def makeBlockSites(station_location, x_nodes, block_model): 
     """ Build block that contains only the station locations values
     
@@ -1241,14 +1519,14 @@ def __build_ps__token(obj):
     edit anything here. Force editing is your own risk."""
     import random 
     random.seed(42)
-    __c =''.join([ i for i in  [''.join([str(c) for c in obj.crmSites.shape]), 
-     ''.join([str(n) for n in obj.nmSites.shape]),
-    ''.join([l for l in obj.input_layers]) + str(len(obj.input_layers)), 
+    __c =''.join([ i for i in  [''.join([str(c) for c in obj.crmSites_.shape]), 
+     ''.join([str(n) for n in obj.nmSites_.shape]),
+    ''.join([l for l in obj.layers]) + str(len(obj.layers)), 
     str(len(obj.tres))] + [''.join(
-        [str(i) for i in [obj._eta, obj.beta, obj.doi,obj.n_epochs,
-                          obj.ptol, str(obj.z.max())]])]])
-    __c = ''.join(random.sample(__c, len(__c))).replace(' ', '')                                               
-    n= ''.join([str(getattr(obj, f'{l}'+'_fn'))
+        [str(i) for i in [obj.eta, obj.beta, obj.doi,obj.n_epochs,
+                          obj.ptol, str(obj._z.max())]])]])
+    __c = ''.join(random.sample(__c, len(__c))).replace(' ', '')  
+    n= ''.join([str(getattr(obj, f'{l}'+'_fn', str(obj.area).lower() ))
                          for l in ['model', 'iter', 'mesh', 'data']])
     n = ''.join([s.lower() 
                  for s in random.sample(n, len(n))]
@@ -1256,6 +1534,7 @@ def __build_ps__token(obj):
     
     return ''.join([n, __c]).replace('.', '')
         
+    
 def fit_tres(lns, tres, autorocks, force=False, **kws): 
     """ Read and get the resistivity values from tres that match the 
      the given layers.
@@ -1370,13 +1649,24 @@ def fit_tres(lns, tres, autorocks, force=False, **kws):
         
     # create for each tres its pseudorock name 
     # and pseudorock value
-    pseudo_lns = [a [0] for a in newTRES] + rlns 
-    pseudo_tres = [b[1] for b in newTRES] + rtres 
+    # print(newTRES)
+    # print(rlns, rtres )
+    pseudo_lns, pseudo_tres=[], [] 
+    for value  in newTRES: 
+        if hasattr (value , '__iter__'): 
+            pseudo_lns.append (value[0] )
+            pseudo_tres.append (value[1] )
+        else :
+            pseudo_lns .append (None)
+            pseudo_tres.append (np.nan )
+            
+    pseudo_lns +=rlns
+    pseudo_tres += rtres 
+    # pseudo_lns = [a [0] for a in newTRES] + rlns 
+    # pseudo_tres = [b[1] for b in newTRES] + rtres 
     newTRES += [(a, b) for a , b in zip(rlns, rtres)]
     
     return pseudo_lns , pseudo_tres , newTRES 
-
-
 
 def quick_read_geomodel(lns=None, tres=None):
     """Quick read and build the geostratigraphy model (NM) 
@@ -1387,7 +1677,7 @@ def quick_read_geomodel(lns=None, tres=None):
     :Example: 
         >>> import watex.geology.stratigraphic as GM 
         >>> obj= GM.quick_read_geomodel()
-        >>> GC.fit_tres(obj.input_layers, obj.tres, obj.auto_layer_names)
+        >>> GC.fit_tres(obj.layers, obj.tres, obj.auto_layer_names)
     """
     PATH = 'data/occam2D'
     k_ =['model', 'iter', 'mesh', 'data']
@@ -1417,161 +1707,8 @@ def quick_read_geomodel(lns=None, tres=None):
                          f" inversion {smart_format(k_)} files.")
         
     geosObj = GeoStrataModel( input_resistivities=tres, 
-                      input_layers=lns,**INVERS_KWS)
+                      layers=lns,**INVERS_KWS)
     geosObj._createNM()
     
     return geosObj 
 
-GeoStrataModel.__doc__="""\
-Create a stratigraphic model from inversion models blocks. 
-
-The Inversion model block is two dimensional array of shape 
-(n_vertical_nodes, n_horizontal_nodes ). Can use external packages 
-to build blocks and provide the 2Dblock into `crm` parameter. 
-
-The challenge of this class  is firstly to delineate with much 
-accuracy the existing layer boundary (top and bottom) and secondly,
-to predict the stratigraphy log before the drilling operations at each 
-station. Moreover, it’s a better way to select the right drilling location
-and also to estimate the thickness of existing layer such as water table 
-layer as well as to figure out the water reservoir rock in the case of 
-groundwater exploration. 
-
-Note that if the model blocks is build from externam softwares. You may as  
-in the keywordsr argumments of `GeoStrataModel` the following attributes: 
-    
-    - model_res : 2D resitivity model of (n_vertical_nodes, n_horizontal_nodes)
-        If `crm` is given , no need to provided it. 
-    - geo_depth: Is the depth the surface to the bottom of each layer that 
-        composed the pseudo-boreholes. Note the N-vertical nodes values 
-    - input_resistivities: list of input resistivities. If the `tres` is passed 
-        not need to given. 
-        
-Parameters 
-----------
-crm : ndarray of shape(n_vertical_nodes, n_horizontal_nodes ),  
-    Array-like of inversion two dimensional model blocks. Note that 
-    the `n_vertical_nodes` is the node from the surface to the depth 
-    while `n_horizontal_nodes` must include the station location 
-    (sites/stations) 
-    
-beta:  int,                
-        Value to  divide into the CRM blocks to improve 
-        the computation times. default is`5`                               
-n_epochs:  int,  
-        Number of iterations. default is `100`
-tres:  array_like, 
-        Truth values of resistivities. Refer to 
-        :class:`~.geodrill.Geodrill` for more details
-ptols: float,   
-        Existing tolerance error between the `tres` values given and 
-        the calculated resistivity in `crm` 
-input_layers: list or array_like  
-        True input_layers names : geological 
-        informations of collected in the area.
-            
-kind: str         
-    Kind of model function to compute the best fit model to replace the
-    value in `crm` . Can be 'linear' or 'polynomial'. if `polynomial` is 
-    set, specify the `degree. Default is 'linear'. 
-    
-alpha: float , 
-    Learning rate for gradient descent computing.  *Default* is ``1e+4`` 
-    for linear. If `kind` is  set to `polynomial` the default value should 
-    be `1e-8`. 
-degree: int,
-     Polynomial function degree to implement gradient descent algorithm. 
-     If `kind` is set to `Polynomial` the default `degree` is ``3.`` and 
-     details sequences 
-**nm**:  ndarray     
-    The NM matrix with the same dimension with `crm` model blocks. 
-
-
-Examples
-----------
->>> from watex.geology.stratigraphic import GeoStrataModel 
->>> # Works with occam2d inversion files if 'pycsamt' or 'mtpy' is installed
->>> # will call the module Geodrill from pycsamt to make occam2d 2D resistivity
->>> # block for our demo. It presumes pycsamt is installed. 
->>> from pycsamt.geodrill.geocore import Geodrill 
->>> path=r'data/inversfiles/inver_res/K4' # path to inversion files 
->>> inversion_files = {'model_fn':'Occam2DModel', 
-...                   'mesh_fn': 'Occam2DMesh',
-...                    "iter_fn":'ITER27.iter',
-...                   'data_fn':'OccamDataFile.dat'
-...                    }
->>> input_resistivity_values =[10, 66, 70, 180, 1000, 2000, 
-...                           3000, 50, 7] 
->>> input_resistivity_values =[10, 66, 70, 180, 1000, 2000, 
-...                               3000, 7000, 15000 ] 
->>> input_layer_names =['river water', 'fracture zone', 'granite']
->>> inversion_files = {key:os.path.join(path, vv) for key,
-                vv in inversion_files.items()}
->>> gdrill= Geodrill (**inversion_files, 
-                     input_resistivities=input_resistivity_values
-                     )
->>> # we can collect the 'model_res' and 'geo_depth_attributes' from 
->>> # `gdrill object` and passed to 'GeoStrataModel' fit method as 
->>> geosObj = GeoStrataModel(ptol =0.1).fit(crm = model_res , 
-                     input_resistivities=gdrill.input_resistivity_values
-                     geo_depth= gdrill.geo_depth )
->>> zmodel = geosObj._zmodel
->>> geosObj.nm # resistivity 2D model block is constructed 
-
-Notes
-------
-Modules work properly with occam2d inversion files if 'pycsamt' or 'mtpy' is 
-installed and  inherits the `Base package` which works with occam2d  model.
-Occam2d inversion files are also acceptables for building model blocks. 
-However the MODEM resistivity files development is still ongoing 
-
-"""
-# def assert_len_layers_with_resistivities(
-#         real_layer_names:str or list, real_layer_resistivities: float or list ): 
-#     """
-#     Assert the length of of the real resistivites with their
-#     corresponding layers. If the length of resistivities is larger than 
-#     the layer's names list of array, the best the remained resistivities
-#     should be topped up to match the same length. Otherwise if the length 
-#     of layers is larger than the resistivities array or list, layer'length
-#     should be reduced to fit the length of the given resistivities.
-    
-#     Parameters
-#     ----------
-#         * real_layer_names: array_like, list 
-#                     list of input layer names as real 
-#                     layers names encountered in area 
-                    
-#         * real_layer_resistivities :array_like , list 
-#                     list of resistivities get on survey area
-                
-#     Returns 
-#     --------
-#         list 
-#             real_layer_names,  new list of input layers 
-#     """
-#     # for consistency put on string if user provide a digit
-#     real_layer_names =[str(ly) for ly in real_layer_names]      
-    
-#     if len(real_layer_resistivities) ==len(real_layer_names): 
-#         return real_layer_names
-    
-#     elif len(real_layer_resistivities) > len(real_layer_names): 
-#          # get the last value of resistivities  to match the structures
-#          # names and its resistivities 
-#         sec_res = real_layer_resistivities[len(real_layer_names):]        
-#        # fetch the name of structure 
-#         geos =Geodrill.get_structure(resistivities_range=sec_res) 
-#         if len(geos)>1 : tm = 's'
-#         else :tm =''
-#         print(f"---> Temporar{'ies' if tm=='s' else 'y'} "
-#               f"{len(geos)} geological struture{tm}."
-#               f" {'were' if tm =='s' else 'was'} added."
-#               " Uncertained layers should be ignored.")
-        
-#         real_layer_names.extend(geos)       
-#         return real_layer_names 
-#     elif len(real_layer_names) > len(real_layer_resistivities): 
-#         real_layer_names = real_layer_names[:len(real_layer_resistivities)]        
-#         return real_layer_names
-    

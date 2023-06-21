@@ -68,7 +68,8 @@ from .funcutils import (
     )
 from .geotools import ( 
     smart_thickness_ranker , 
-    build_random_thickness
+    build_random_thickness, 
+    plot_stratalog, 
     )
 from .hydroutils import ( 
     select_base_stratum , 
@@ -235,7 +236,8 @@ __all__=[
         'storeOrwritehdf5', 
         'get_azimuth', 
         'smart_thickness_ranker', 
-        'build_random_thickness'
+        'build_random_thickness',
+        'plot_stratalog'
         ]
 
 
