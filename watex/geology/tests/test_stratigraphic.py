@@ -13,12 +13,12 @@ def test_GeoStrataModel ():
     layers = ['granites', 'gneiss', 'sedim.']
     crm = np.abs( np.random.randn (21, 7) *100 )
     tres = np.linspace (crm.min() , crm.max(), 7)  
-    gs= GeoStrataModel ( to_log10 =True )
+    gs= GeoStrataModel ( to_log10 =True, max_depth = 300 )
     gs.fit(crm, tres = tres, layers =layers ).buildNM()
     gs.nm_.shape 
     gs.strataModel () 
     gs.strataModel (kind ='crm') 
-    gs.strataModel (kind ='crm', misfit_G =True) 
+    gs.strataModel (kind ='nm', misfit_G =True) 
     gs.plotStrata ('s02') 
     
     # test while files 
@@ -26,7 +26,7 @@ def test_GeoStrataModel ():
     crm = np.abs( np.random.randn (215 , 70 ) *1000 )
     tres = np.linspace (crm.min() +1  , crm.max() +1 , 12 )  
     layers = ['permafrost', 'gneiss', 'dolomite', 'clay', 'limestone', 'shale']
-    gs= GeoStrataModel (to_log10 =True )
+    gs= GeoStrataModel (to_log10 =True, max_depth = 120  )
     gs.fit(crm, tres = tres, layers =layers ).buildNM(display_infos =True )
     print( gs.nm_.shape) 
     gs.strataModel () 

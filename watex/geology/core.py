@@ -74,7 +74,6 @@ class GeoBase:
     raw model map which seems to be close to the reality  when `step descent` 
     parameter is not too small at all. 
 
-
     """
     
     def __init__(self, verbose: int =0 , **kwargs):
@@ -239,7 +238,6 @@ def get_agso_properties(config_file =None, orient ='series'):
         " or delete the properties files located in <`{1}`> directory."])
     
     pd_pos_read = Config().parsers 
- 
     ext='none'
     if config_file is None: 
         config_file = os.path.join(os.path.realpath('.'), os.path.join(

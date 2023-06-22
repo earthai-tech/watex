@@ -12,20 +12,21 @@ import re
 import itertools
 import warnings
 import copy 
+import numpy as np
+import pandas as pd 
 
-from ..property import Config 
-
+from .._watexlog import watexlog 
 from .._typing import ( 
     List, 
     Tuple, 
     ArrayLike, 
     Any
     )
-import numpy as np
-import pandas as pd 
+from ..exceptions import ( 
+    StrataError, DepthError )
+from ..property import Config 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as GridSpec
-
 from .funcutils import ( 
     _assert_all_types, 
     smart_format, 
@@ -36,9 +37,6 @@ from .funcutils import (
     ellipsis2false, 
     )
 from .exmath import find_closest 
-
-from ..exceptions import StrataError, DepthError  
-from .._watexlog import watexlog 
 _logger = watexlog().get_watex_logger(__name__ )
 
 

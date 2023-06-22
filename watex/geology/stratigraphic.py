@@ -536,11 +536,11 @@ class GeoStrataModel(GeoBase):
                 h_=[]
             return r_, hres 
         
-        iln =kws.pop('layers', None)
-        tres =kws.pop('tres', None)
+        # iln =kws.pop('layers', None)
+        # tres =kws.pop('tres', None)
         subblocks =kws.pop('subblocks', None)
         disp= kws.pop('display_infos', True)
-        n_epochs = kws.pop('n_epochs', None)
+        # n_epochs = kws.pop('n_epochs', None)
         hinfos =kws.pop('headerinfos',
                         ' Layers [auto=automatic]')
         return_NM= kws.pop( 'return_NM', False  )
@@ -548,19 +548,19 @@ class GeoStrataModel(GeoBase):
         if subblocks is not None: 
             self.subblocks = subblocks
         
-        if iln is not None: 
-            self.layers = iln 
-        if tres is not None: 
-            self.tres = tres 
+        # if iln is not None: 
+        #     self.layers = iln 
+        # if tres is not None: 
+        #     self.tres = tres 
         
-        if crm is not None:
-            self.crm = crm 
-        if beta is not None: 
-            self.beta = beta 
-        if ptol is not None:
-            self.ptol = ptol 
-        if n_epochs is not None: 
-            self.n_epochs = n_epochs 
+        # if crm is not None:
+        #     self.crm = crm 
+        # if beta is not None: 
+        #     self.beta = beta 
+        # if ptol is not None:
+        #     self.ptol = ptol 
+        # if n_epochs is not None: 
+        #     self.n_epochs = n_epochs 
             
         self.s0 , errors=[], []
         #step1 : SOFMINERROR 
@@ -1673,6 +1673,7 @@ def fit_tres(lns, tres, autorocks, force=False, **kws):
     # print(newTRES)
     # print(rlns, rtres )
     pseudo_lns, pseudo_tres=[], [] 
+    
     for value  in newTRES: 
         if hasattr (value , '__iter__'): 
             pseudo_lns.append (value[0] )
