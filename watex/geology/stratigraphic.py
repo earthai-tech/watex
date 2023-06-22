@@ -6,7 +6,7 @@
 """
 Stratigraphic 
 ==============
-Construct layers model from given layers properties such as density , porosity 
+Construct layers model from given layers properties such as density, porosity 
 permeability, transmissivity, resistivity , patches and so on ... 
 Build Statigraphic model from Inversion models blocks. This should be used to 
 predict the log under each station as well as the thicknesses from the collected 
@@ -82,7 +82,7 @@ __all__=["GeoStrataModel"]
 
 class GeoStrataModel(GeoBase):
     """
-    Create a stratigraphic model from inversion models blocks. 
+    Create a stratigraphic model from 2D inversion models blocks. 
 
     The Inversion model block is two dimensional array of shape 
     (n_vertical_nodes, n_horizontal_nodes ). Can use external packages to
@@ -93,7 +93,8 @@ class GeoStrataModel(GeoBase):
     stratigraphy log before the drilling operations at each station. Moreover, 
     it's a better way to select the right drilling locationand also to estimate 
     the thickness of existing layer such as water table layer as well as to 
-    figure out the water reservoir rock in the case of groundwater exploration. 
+    figure out the water reservoir rock in the case of groundwater 
+    exploration [1]_. 
 
     Note that if the model blocks is build from external softwares. User can
     provided model usefull details into the keyword arguments of the `fit` 
@@ -185,9 +186,10 @@ class GeoStrataModel(GeoBase):
     >>> gs.strataModel () # plot strata model, by default kind ='NM'
     >>> gs.plotStrata ('s7')  # plot strata log at station S7 
     >>> 
-    >>> # (2): Works with occam2d inversion files if 'pycsamt' or 'mtpy' is installed
-    >>> # will call the module Geodrill from pycsamt to make occam2d 2D resistivity
-    >>> # block for our demo. It presumes pycsamt is installed. 
+    >>> # (2): Works with occam2d inversion files if 'pycsamt' or 'mtpy' 
+    >>> # is installed. It will call the module Geodrill from pycsamt to 
+    >>> make occam2d 2D resistivity block for our demo.
+    >>> # It presumes pycsamt is installed. 
     >>> 
     >>> from pycsamt.geodrill.geocore import Geodrill 
     >>> path=r'data/inversfiles/inver_res/K4' # path to inversion files 
@@ -204,10 +206,12 @@ class GeoStrataModel(GeoBase):
                          input_resistivities=input_resistivity_values
                          )
     >>> # we can collect the 'model_res' and occam2d inversion usefull 
-    >>> # 'attributes' from  `gdrill object` and passed to the 'GeoStrataModel' 
-    >>> # then fit_params keyword arguments method as 
+    >>> # 'attributes' from  `gdrill object` and passed to the 
+    >>> # 'GeoStrataModel' then fit_params keyword arguments method as 
     >>> geosObj = GeoStrataModel(ptol =0.1).fit(
-                         crm = gdrill.model_res , 
+                         crm = gdrill.model_res ,
+                         tres=gdrill.input_resistivities, 
+                         layers=gdrill.input_layer_names, 
                          model_x_nodes=gdrill.model_x_nodes, 
                          model_stations= gdrill.station_names,
                          model_depth= gdrill.geo_depth, 
@@ -215,18 +219,26 @@ class GeoStrataModel(GeoBase):
                          data_fn = gdrill.data_fn , 
                          mesh_fn=gdrill.mesh_fn, 
                          iter_fn= gdrill.iter_fn
-                         model_depth= gdrill.geo_depth)
+                         model_fn= gdrill.model_fn)
     >>> geosObj.buildNM () 
     >>> zmodel = geosObj._zmodel
-    >>> geosobj.nm_ # resistivity 2D model block is constructed 
+    >>> geosobj.nm_ # New constructed resistivity 2D model block
 
     Notes
     ------
-    Modules work properly with occam2d inversion files if 'pycsamt' or 'mtpy' is 
-    installed and  inherits the `Base package` which works with occam2d  model.
-    Occam2d inversion files are also acceptables for building model blocks. 
-    However the MODEM resistivity files development is still ongoing.
+    Modules work properly with occam2d inversion files if 'pycsamt' or 'mtpy' 
+    is installed and  inherits the `GeoBase` class which works with geological
+    structures and properties. Furhermore, Occam2d inversion files are also 
+    acceptables for building model blocks. However the MODEM resistivity 
+    files development is still ongoing.
     
+    References 
+    -----------
+    .. [1] Kouadio, L. K., Liu, R., Malory, A. O., Liu, W., Liu, C., A novel 
+           approach for water reservoir mapping using controlled source 
+           audio - frequency magnetotelluric in Xingning area , Hunan 
+           Province, China. Geophys. Prospect., 
+           https://doi.org/10.1111/1365-2478.1338
     """
     def __init__(
         self, 
@@ -245,7 +257,7 @@ class GeoStrataModel(GeoBase):
         verbose: bool=False,
         **kwargs
         ):
-        super().__init__( **kwargs)
+        super().__init__( verbose= verbose, **kwargs)
 
         self.area=area
         self.z0=z0
@@ -267,9 +279,6 @@ class GeoStrataModel(GeoBase):
         self._z =None
         self.nmSites_=None
         self.crmSites_=None 
-
-        for key in list(kwargs.keys()): 
-            setattr(self, key, kwargs[key])
 
     def fit(self, crm: NDArray, tres: List[float]=None,
             layers: List[str]=None, **fit_params): 
@@ -439,7 +448,7 @@ class GeoStrataModel(GeoBase):
             'model_station_locations', None )
         model_stations = model_params.pop("model_stations", None)
         model_rms = model_params.pop("model_rms", 1.)
-        model_roughness = model_params.pop("model_roughness", 0.2 )
+        model_roughness = model_params.pop("model_roughness", 42. )
         
         if model_resistivities is not None: 
             self.crm = model_resistivities 
@@ -486,8 +495,9 @@ class GeoStrataModel(GeoBase):
         self.model_rms = model_rms 
         self.model_roughness = model_roughness 
    
-        # Append other attributes such as data, model, iter, mesh files 
-        for key in model_params.keys () : 
+        # Append other attributes such as data, model, iter, mesh files
+        # suffixed with `_fn` like `data_fn=xxx`.
+        for key in list(model_params.keys ()) : 
             setattr ( self, key , model_params[key])
 
     def _createNM(self, crm =None, beta =5 , ptol= 0.1, **kws): 
@@ -596,7 +606,6 @@ class GeoStrataModel(GeoBase):
         self.crmSites_ = makeBlockSites(x_nodes=self.model_x_nodes, 
                             station_location= self.model_station_locations, 
                              block_model=self.model_resistivities)
-
         #Update TRES and LN 
         gammaL, gammarho = s__auto_rocks(arp_) 
         
@@ -621,9 +630,8 @@ class GeoStrataModel(GeoBase):
             display_infos(infos=print_layers,
                           header= hinfos)
         #STEP 4: Train ANN: (still in development) to predict your 
-        #layer: No need to plot the NM 
+        #l ayer: No need to plot the NM  (Need huge amount of data)
         # copy main attributes for pseudostratigraphic plot purpose 
-        import copy 
         for name , attrval in zip(['TRES', 'LNS'], 
                               [self.tres , self.layers]):
             setattr(self, name, copy.deepcopy(attrval))
@@ -672,11 +680,22 @@ class GeoStrataModel(GeoBase):
                          kind='linear', **kwargs ): 
         """The second step introduces the model function F=W∙Z  where W
         contains the weights of parameters number and Z is V×2 matrix 
-        that contains a “bias” column. If the parameter number P equal to two, 
-        the model function f(z)=∑_(p=1)^P▒〖w_(p-1) z^(p-1) 〗   becomes a
-        linear function with 〖f_1〗^((1) ) (z)=  wz+r_0  with w_1=w and w_0=r_0
-        he gradient descent algorithm  is used to find the best parameters w
-        and r_0  that  minimizes the  MSE loss function  J .
+        that contains a "bias" column. If the parameter number P equal to two, 
+        the model function:
+            
+        .. math:: 
+            
+            f(z)= \sum_{p=1}^{P} [w_{p-1} z ^{p-1}]
+            
+        becomes alinear function with: 
+            
+        .. math::
+            
+            f_1^{(1)} (z) = wz+r_0 \qual \text{with} w_1=w \aqual \text{and} w_0=r_0
+            
+        Indeed, the gradient descent algorithm  is used to find the 
+        best parameters :math:`w` and :math:`r_0`  that  minimizes the  
+        MSE loss function  :math:`J`.
         
         :param subblocks: `crm` block  
         :param s0: blocks from the first step :meth:`~._sofminError`
@@ -1320,8 +1339,8 @@ class GeoStrataModel(GeoBase):
     
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
-        _t = ("area", "tres", "layers", "beta", "ptol", "n_epochs", "eta",
-               "kind", "degree", "z0" ,"step", "max_depth", "verbose")
+        _t = ("area", "beta", "n_epochs","ptol",  "eta","kind", "degree",
+              "z0" , "max_depth","step","doi", "tolog10", "verbose")
 
         outm ='<{!r}:' + ', '.join( [
             "{}={}".format( k,   False if getattr(self, k)==... else (
@@ -1370,8 +1389,8 @@ def _ps_memory_management(obj=None, option='set'):
 
             warnings.warn("No memory found. You need to build your "
                           " GeoStrataModel model by running the class first.")
-            raise  MemoryError("Memory not found. Use the GeoStrataModel class to "
-                               "create your model first.")
+            raise  MemoryError("Memory not found. Run the `buildNM` method"
+                               " to create your model first.")
         try: 
             psobj_token, data_ = load_serialized_data(
                 os.path.join(memorypath, memory))
@@ -1515,8 +1534,10 @@ def fit_default_layer_properties(layers, dbproperties_= ['hatch', 'colorMPL']):
     return tuple(r_props)    
  
 def __build_ps__token(obj):
-    """ Build a special token for each GeoStrataModel model. Please don't 
-    edit anything here. Force editing is your own risk."""
+    """ Build a special token for each GeoStrataModel model. Memory uses 
+    each model token to fetch the strata log at each station without 
+    any model recomputation. Please don't edit anything here at least you
+    knwow what your are doing. Force editing is your own risk."""
     import random 
     random.seed(42)
     __c =''.join([ i for i in  [''.join([str(c) for c in obj.crmSites_.shape]), 

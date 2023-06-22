@@ -81,6 +81,9 @@ class GeoBase:
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         self.verbose= verbose 
         
+        for key in list(kwargs.keys()): 
+            setattr(self, key, kwargs[key])
+            
 #++++ configure the geological rocks from files:AGSO & AGSO.STCODES +++++++++++
 __agso_properties =dict(
     GIT_REPO = 'https://github.com/WEgeophysics/watex', 
