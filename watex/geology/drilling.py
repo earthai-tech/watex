@@ -29,7 +29,7 @@ from ..utils.funcutils import (
     sanitize_frame_cols, 
     str2columns,
     key_search, 
-    ellipsis2false
+    ellipsis2false, 
     )
 from ..utils.geotools import build_random_thickness, smart_thickness_ranker
 from ..utils.validator import check_array 
@@ -683,17 +683,16 @@ class DSBorehole:
             for c in cf : 
                 data[c] = data[c].str.strip() 
             
-        
         for name in data.columns : 
             setattr (self, name, data[name])
             
         # set depth attributes 
         self.depth_= None 
         
-        if self.dname is not None: 
-            if self.dname not in self.feature_names_in_: 
-                self.dname ='depth' 
-        
+        if self.dname is None: 
+            if 'depth' in self.feature_names_in_: 
+                self.dname= 'depth'
+   
         if self.dname  in self.feature_names_in_: 
             self.depth_= data[self.dname]
             
@@ -701,12 +700,12 @@ class DSBorehole:
         
         return self 
     
-    def set_depth ( self, z0=0. , max_depth =None, reset_depth =...): 
+    def set_depth ( self, z0=0. , max_depth =None, reset_depth: bool =...): 
         """Set the a random depth if depth is not supplied in the Borehole 
         data
         
         To fetch the depth, use attribute `depth_`. Note that if the depth 
-        exists, calling `set_depth` will arase the former depth value. Use 
+        exists, calling `set_depth` will erase the former depth value. Use 
         in cautioness. 
         
         Parameters 
@@ -767,6 +766,7 @@ class DSBorehole:
         180    900.0
         Name: depth, Length: 181, dtype: float64
         """
+        if reset_depth is ...: reset_depth =False 
         
         check_results = self._check_object_in(
             'depth', reset_depth )
@@ -775,8 +775,6 @@ class DSBorehole:
             return self 
         
         self._set_depth ( z0=z0 , max_depth = max_depth )
-        
-        
         return self 
 
     def _set_depth ( 
@@ -804,9 +802,7 @@ class DSBorehole:
         self.inspect
    
         z0 = convert_value_in (z0 )
-        
-        max_depth = 700. if not max_depth else max_depth 
-
+        max_depth =  max_depth or 700.
         max_depth = float( _assert_all_types ( max_depth, int, float, 
                                               objname = 'Maximum-depth')) 
  
@@ -822,13 +818,13 @@ class DSBorehole:
         
         return self 
     
-    def _check_object_in ( self, name, reset_obj = ... , warn_msg =None ): 
+    def _check_object_in ( self, name, reset_obj:bool= ... , warn_msg:bool=...
+                          ): 
         """ Check  object in the Borehole data and remove if object exists 
         provided that `reset_obj` is set to ``True``. """ 
         
-        if reset_obj is ...:
-            reset_obj = False 
-        
+        reset_obj, warn_msg = ellipsis2false(reset_obj, warn_msg)
+ 
         if ( hasattr ( self, name + '_' ) 
             and name in self.data_.columns 
             ) : 
@@ -841,6 +837,10 @@ class DSBorehole:
                      " to ``True``.")
                 warn(msg) if not warn_msg else warn(warn_msg)
                 
+                # for consistency reset value if None 
+                if  getattr (self, name + '_') is None: 
+                    setattr  (self, name + '_', self.data_[name] ) 
+                    
                 return "objectexists" 
         
             try: 
@@ -856,6 +856,7 @@ class DSBorehole:
         dirichlet_dist: bool=...,
         reset_layer_thickness: bool=...,
         reset_depth: bool=..., 
+        **kws
          ): 
         """
         Generate a random layer thickness from borehole refering to the 
@@ -947,13 +948,13 @@ class DSBorehole:
             'layer_thickness', reset_layer_thickness )
             
         if check_results =="objectexists": 
-            
             return self 
         
         self._set_thickness ( h0= h0 , 
         dirichlet_dist=dirichlet_dist,
         shuffle = shuffle,
-        reset_depth=reset_depth 
+        reset_depth=reset_depth, 
+        **kws
         )
 
         return self 
@@ -963,7 +964,7 @@ class DSBorehole:
         h0= 1 , 
         dirichlet_dist=False,
         shuffle = True,
-        reset_depth=..., 
+        reset_depth: bool=..., 
         **kws 
         ): 
         """ Set a random layer thickness from borehole refering to the depth.
@@ -989,6 +990,13 @@ class DSBorehole:
           If int, array-like, or BitGenerator, seed for random number generator. 
           If np.random.RandomState or np.random.Generator, use as given.
           
+        z0: float, default=0.
+         The surface reference. Preferably, it is set to null. 
+         
+        depth: float, default=700. 
+          The maximum depth. Depth size must fit the length of the data in 
+          meters. Default depth is fixed to 700 meters.
+          
         unit: str, default='m' 
           The reference unit for generated layer thicknesses. Default is 
           ``meters``
@@ -1002,10 +1010,12 @@ class DSBorehole:
         self.inspect 
         
         if self.depth_ is None:
+            # construct depath 
             self.set_depth (reset_depth = reset_depth ) 
-    
+        
+        
         thickness = build_random_thickness  (
-            self.depth_, h0= h0 , 
+            self.depth_ , h0= h0 , 
             dirichlet_dist= dirichlet_dist, 
             shuffle = shuffle, 
             **kws
