@@ -35,7 +35,7 @@ try:
     from . import _version
     __version__ = _version.version.split('.dev')[0]
 except ImportError:
-    __version__ = '0.2.4' 
+    __version__ = '0.2.5' 
 
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)
@@ -188,6 +188,7 @@ from .utils import (
     plot_confidence_in,
     qc,
     )
+
 try : 
     from .utils import ( 
         selectfeatures, 

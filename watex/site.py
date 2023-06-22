@@ -116,7 +116,7 @@ class Profile:
            Object of Profile. 
            
         Note 
-        -------
+        ------
         When `data` is supplied and `x` and `y` are given by their names 
         existing in the dataframe columns, by default, the non-numerical 
         data are removed. However, if `y` and `x` are given in DD:MM:SS in 
@@ -149,8 +149,7 @@ class Profile:
             if isinstance (elev , str): 
                 elev = elev if elev in data.columns else None 
                 if elev is None: 
-                    warnings.warn(
-                        f"Elevation {elev!r} not found in the dataframe")
+                    warnings.warn("Elevation not found in the dataframe")
                 if elev is not None: 
                     elev = np.array (data[elev]) 
         
@@ -178,7 +177,7 @@ class Profile:
             try : 
                 self.x, self.y = Profile.dms2ll(self.x, self.y) 
             except ValueError as e: 
-                raise ( emsg + str(e))
+                raise ValueError( emsg + str(e))
             else: 
                 # initialize the system to ll if 
                 # conversion succeeded. 
@@ -481,7 +480,7 @@ class Profile:
         return map ( lambda i: f(i) , ar)
     
     @staticmethod 
-    def dms2ll (x:ArrayLike  , y:ArrayLike ): 
+    def dms2ll (x:ArrayLike|str  , y:ArrayLike|str , *,  data=None): 
         """ Convert array x and y from DD:MM:SS to degree decimal -longitude 
         (x) and latitude (y). 
         
@@ -491,10 +490,17 @@ class Profile:
            positions.
         Returns 
         --------
-        x, y: Arraylike 
+        x, y: Arraylike or str
            ArrayLike in degree decimal coordinates format. By default `x` and 
            `y` are longitude and latitude respectively. 
+           If `x` and `y` has a string argument, data must be provided, 
+           otherwise an error raises. 
            
+        data: pd.DataFrame 
+          DataFrame containg the position x and y. 
+          
+          .. versionadded:: 0.2.5 
+          
         Example
         ---------
         >>> from watex.site import Profile 
@@ -502,7 +508,16 @@ class Profile:
         >>> Profile.dms2ll (x, y)
         Out[83]: (array([20.25972222]), array([7.75236111]))
         """
- 
+        if ( 
+                (isinstance (x, str) 
+                or isinstance (y, str)) 
+                and data is None
+                ): 
+            raise TypeError(
+                "Data can't be None when x or y has a string argument.")
+        if data is not None: 
+            x, y = assert_xy_in(x, y, data=data )
+            
         if not _is_numeric_dtype(x , to_array =True ): 
            # reconvert object to str for consistency  
            x = np.array ( list ( Profile.f_(x)), dtype = np.float64 )
@@ -512,21 +527,28 @@ class Profile:
         return x, y
     
     @staticmethod 
-    def ll2dms (x:ArrayLike  , y:ArrayLike ): 
+    def ll2dms (x:ArrayLike|str  , y:ArrayLike|str , *, data=None ): 
         """
         Convert array x and y from degree decimal  to 
         degree-minutes-seconds (DMS)
         
         Parameters 
         -----------
-        x, y: ArrayLike containing the degree decimal position 
-           coordinates. 
+        x, y: ArrayLike or str 
+           Arrays containing the degree decimal position coordinates.
+           If `x` and `y` has a string argument, data must be provided,
+           otherwise an error raises
         
         Returns 
         --------
         x, y: Arraylike 
            ArrayLike in DD:MM:SS coordinates format.
-           
+          
+        data: pd.DataFrame 
+          DataFrame containg the position x and y.
+          
+          .. versionadded:: 0.2.5
+          
         Example
         ---------
         >>> from watex.site import Profile 
@@ -535,6 +557,14 @@ class Profile:
         Out[84]: (array(['15:10:48.00'], dtype='<U11'), 
                   array(['19:36:00.00'], dtype='<U11'))
         """
+        if ( (isinstance (x, str) 
+              or isinstance (y, str)) 
+              and data is None): 
+            raise TypeError(
+                "Data can't be None when x or y has a string argument.")
+            
+        if data is not None: 
+            x, y = assert_xy_in(x, y, data=data )
         if _is_numeric_dtype(x , to_array =True ):  
            x = np.array ( list (Profile.f_ (x, 'll->dms')), dtype = str )
         if _is_numeric_dtype(y , to_array =True): 
@@ -647,7 +677,8 @@ class Profile:
         -----------
         inplace: bool, default=True 
            Erase existing value of x , y and elev with the interpolated one. 
-           If ``False`` , its return interpolated x, y and elev. 
+           If ``False`` , it returns interpolated x, y and elev and 
+           keep the previous attributes x, y and elev untouchable.
 
         method: bool, default='nearest', 
            Method of interpolation. One of ['nearest'|'linear'|'cubic'] 
@@ -809,7 +840,7 @@ class Profile:
  
         # make site 
         sites = [(( f"{ii:02}_" if how=='py' else f"{ii+1:02}_") 
-                  if counter else '')+ basename 
+                  if counter else '') + basename 
                  for ii in range (len(x )) ]
         writelines =[]
         #x = x.astype (str) ; y = y.astype (str) ; elev= elev.astype (str)
@@ -979,21 +1010,31 @@ class Location (object):
     def __init__(
         self, 
         lat= None, 
-        lon=None, 
+        lon=None,
+        elev=None, 
+        datum='WGS84', 
+        epsg=None,
+        reference_ellipsoid=23,
+        utm_zone=None, 
         **kwds
         ) :
         self._logging = watexlog.get_watex_logger(
             self.__class__.__name__)
         self._lat = lat 
         self._lon = lon 
+        self._utm_zone=utm_zone
+        self._elev=elev
         
-        self.datum = kwds.pop('datum', 'WGS84') 
-        self.epsg = kwds.pop('epsg' , None) 
-        self.reference_ellipsoid = kwds.pop('reference_ellipsoid', 23)
-        self._utm_zone =kwds.pop('utm_zone', None) 
-        self._elev = kwds.pop('elev', None)
+        self.datum=datum
+        self.epsg=epsg 
+        self.reference_ellipsoid=reference_ellipsoid
+        
         self._east= None 
         self._north =None 
+        
+        for key in list(kwds.keys()) : 
+            setattr (self, key, kwds[key])
+            
     @property 
     def utm_zone (self): 
         return self._utm_zone
@@ -1101,9 +1142,7 @@ class Location (object):
             
         self.epsg = epsg or self.epsg 
         self.datum = datum  or self.datum 
-        if not self.datum:  
-            self.datum = 'WGS84'
-
+        
         self.reference_ellipsoid = reference_ellipsoid or \
             self.reference_ellipsoid
      
@@ -1177,7 +1216,6 @@ class Location (object):
         if utm_zone is not None : 
             self._utm_zone =utm_zone 
             
-        self.datum = 'WGS84'
         self.datum = datum or self.datum 
         self.reference_ellipsoid = reference_ellipsoid or \
             self.reference_ellipsoid
@@ -1206,6 +1244,7 @@ class Location (object):
         lats:ArrayLike, 
         lons:ArrayLike, 
         *, 
+        data=None, 
         utm_zone:str =None, 
         datum: str=None, 
         **kws 
@@ -1219,10 +1258,16 @@ class Location (object):
            Array composed of latitude values 
         lons: ArrayLike 1d, 
            Array composed of longitude values. 
- 
+           
+        data: pd.dataFrame
+           Accepts dataframe containing the latitude and longitude coordinates
+           by specifying the columns through 'lats' and 'lons' columns. 
+           
+           .. versionadded:: 0.2.5
+           
         utm_zone: Optional, string
-            zone number and 'S' or 'N' e.g. '55S'. Defaults to the centre point
-            of the provided points, 
+           zone number and 'S' or 'N' e.g. '55S'. Defaults to the centre point
+           of the provided points, 
         datum: string
             well known datum ex. WGS84, NAD27, NAD83, etc.
             
@@ -1243,17 +1288,30 @@ class Location (object):
             coordinates. 
             
         """
+        if ( 
+                (isinstance (lats, str ) 
+                or isinstance ( lons, str) )
+                and data is None): 
+            raise TypeError ("Data can't be None when latitude or longitude"
+                             " has a string argumemt.")
+        if data is not None: 
+            lats, lons = assert_xy_in(lats, lons , data = data )      
         
-        emsg = ("longitude" if lons is None else 'latitude') if (
-            lats is None or lons is None) else "Both longitude and latitude"
+        emsg = ("longitude is " if lons is None else 'latitude is') if (
+            lats is None or lons is None) else "Both longitude and latitude are"
         
         if lats is None or lons is None: 
-            raise TypeError (emsg) 
-            
+            raise TypeError (emsg + "missing.") 
+        # For consistency, check iterable values 
+        
+        lats = is_iterable(lats, exclude_string= True, transform =True ) 
+        lons = is_iterable(lons, exclude_string= True, transform= True )
+        
         _check_consistency_size(lats, lons)
         lats = np.array(lats ) ; lons = np.array (lons )
         easts = np.zeros_like (lats , dtype = np.float64)
         norths = np.zeros_like (lons , dtype = np.float64)
+        
         for ii, (lat, lon) in enumerate (zip (lats, lons )) : 
             Loc = Location()
             x, y  = Loc.to_utm (lat, lon , utm_zone= utm_zone , **kws )
@@ -1267,6 +1325,7 @@ class Location (object):
         easts:ArrayLike, 
         norths:ArrayLike, 
         *, 
+        data=None,
         utm_zone:str, 
         datum: str=None, 
         **kws 
@@ -1285,6 +1344,13 @@ class Location (object):
         utm_zone: Optional, string
            zone number and 'S' or 'N' e.g. '55S'. Defaults to the centre point
            of the provided points, 
+           
+        data: pd.dataFrame
+           Accepts dataframe containing the easting and northing coordinates
+           by specifying the columns through 'easts' and 'lats' columns. 
+           
+           .. versionadded:: 0.2.5
+           
         datum: string
            well known datum ex. WGS84, NAD27, NAD83, etc.
             
@@ -1305,13 +1371,26 @@ class Location (object):
            coordinates. 
             
         """
-        
-        emsg = ("easting" if easts is None else 'northing') if (
-            easts is None or norths is None) else "Both easting and northing"
+        if (  ( isinstance (easts, str ) 
+            or isinstance ( norths, str) )
+            and data is None): 
+            raise TypeError ("Data can't be None when easting or northing"
+                             " has a string argumemt.")
+        if data is not None: 
+            easts , norths = assert_xy_in(easts, norths, data = data )
+            
+        emsg = ("easting is" if easts is None else 'northing is') if (
+            easts is None or norths is None) else (
+                "Both easting and northing are")
         
         if easts is None or norths is None: 
-            raise TypeError (emsg) 
+            raise TypeError (emsg + " missing.") 
             
+        # For consistency, check iterable values 
+        easts = is_iterable(easts, exclude_string= True,  transform =True ) 
+        norths = is_iterable(norths, transform= True , exclude_string =True 
+                             )
+        
         _check_consistency_size(easts, norths)
         easts = np.array(easts ) ; norths = np.array (norths )
         lats_lons =[]

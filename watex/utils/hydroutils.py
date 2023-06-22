@@ -101,13 +101,11 @@ __all__=[
     "transmissibility", 
     "categorize_target", 
     ]
-
 #-----------------------
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"], 
     )
 #------------------------
-
 def make_MXS_labels (
     y_true, 
     y_pred, 
@@ -1205,8 +1203,7 @@ def _get_s_occurence (
     c = list(zip (sm.keys(), sm.values ())) 
     
     return  bs,  r , c
-
-            
+         
 def get_compressed_vector(
     d, /, 
     sname,  
@@ -1289,6 +1286,7 @@ def get_compressed_vector(
         )
     sname = _assert_all_types(sname, str , "'sname' ( strata column name )")
     
+    strategy= str(strategy).lower().strip() 
     assert strategy in {'mean', 'average', 'naive'}, "Supports only strategy "\
         f"'mean', 'average' or 'naive'; got {strategy!r}"
     if stratum is None: 
@@ -1684,8 +1682,7 @@ def _get_invalid_indexes  ( d, /, valid_indexes, in_arange =False ):
             len(ix )!=0 and len(set(ix))>1)  ] # (181, 181 )
     
     return invix 
-
-    
+  
 def get_xs_xr_splits (
     data, 
     /,
@@ -2204,7 +2201,6 @@ Example
 ... [197.12, 369.71] # section starts from 197.12 -> 369.71 m 
 >>> get_aquifer_section (data , zname ='depth', kname ='k', return_index=True) 
 ... ([16, 29], [197.12, 369.71]) # upper and lower-> position 16 and 29.
-
 
 """.format(
     params=_param_docs,
@@ -3284,7 +3280,7 @@ def _MXS_if_yes (context , /, slg , y_pred, y_true,  sep=None,  prefix= None,
     
     return y_mxs , group_classes_ , group_labels , sim_groups 
 
-@deprecated("Function is henceforth deprecated. Note use anymore in"
+@deprecated("Function is henceforth deprecated. No use anymore in"
             " MXS strategy implementation. It has been replaced by"
             " :func:`~._mixture_num_label_if_0_in` more stable."
             " It should be removed soon in a future realease. ")

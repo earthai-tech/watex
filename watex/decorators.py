@@ -30,7 +30,7 @@ _logger = watexlog.get_watex_logger(__name__)
 
 __docformat__='restructuredtext'
 
-      
+
 class temp2d: 
     """ Two dimensional plot template 
     
@@ -1976,10 +1976,10 @@ class gplot2d(object):
             if self.depth_scale is not None :
                 self.depth_scale= str(self.depth_scale).lower() 
 
-            if self.depth_scale not in ["km", "m"]: 
-                mess ="Depth scale =`{}` is unacceptable value."\
-                    " Should be convert to 'm'.".format(self.depth_scale)
-                warnings.warn(mess)
+            if self.depth_scale not in ("km", "m"): 
+                mess = ("Depth scale expects 'm' or 'km'. By default 'm'"
+                    " is used instead. Got {}").format(self.depth_scale)
+                # warnings.warn(mess)
                 self.depth_scale= "m"
                 self._logging.debug (mess)
             
@@ -2001,12 +2001,16 @@ class gplot2d(object):
                 
             # ----populate special attributes from model or misfit ------------
             if self.reason =='model': 
-                occam_model_resistiviy_obj, occam_data_station_names, *m = func(
-                    *args, **kwargs)
-                occam_data_station_offsets, occam_model_depth_offsets, *ddrms= m
-                self.doi, self.depth_scale, self.model_rms, *rmisf = ddrms 
-                self.model_roughness, plot_misfit = rmisf
                 
+                # (data, self.model_stations, self.model_station_locations,
+                #     self.model_depth, self.doi, depth_scale, self.model_rms, 
+                #     self.model_roughness, misfit_G )
+                ( occam_model_resistiviy_obj, occam_data_station_names, 
+                 occam_data_station_offsets, occam_model_depth_offsets, 
+                 self.doi, self.depth_scale, self.model_rms, 
+                 self.model_roughness, plot_misfit ) = func(
+                     *args, **kwargs)
+                    
                 self.doi = occam_model_depth_offsets.max()
                 #     self.doi = occam_model_depth_offsets.max()
                 # --> check doi value provided, and convert to default unit {meters}  

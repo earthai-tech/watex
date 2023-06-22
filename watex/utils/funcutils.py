@@ -45,6 +45,7 @@ from .._typing import (
     DataFrame, 
     Sub,
     NDArray, 
+    Text, 
     )
 from ..property import P
 from ..exceptions import ( 
@@ -81,41 +82,51 @@ except ImportError:
     
     interp_import = False
     
-#-----
 
 def to_numeric_dtypes (
-    arr: NDArray | DataFrame, *, 
-    columns:List[str, ...] = None, 
-    return_feature_types:bool =False , 
-    missing_values:float = np.nan, 
-    pop_cat_features:bool=False, 
-    sanitize_columns:bool=False, 
-    regex: re | str =None, 
+    arr: NDArray|DataFrame, *, 
+    columns: List[str, ...]=None, 
+    return_feature_types: bool=... , 
+    missing_values: float=np.nan, 
+    pop_cat_features: bool=..., 
+    sanitize_columns: bool=..., 
+    regex: re|str=None, 
     fill_pattern: str=None, 
     drop_nan_columns: bool=True, 
-    how:str='all', 
-    reset_index:bool= False, 
+    how: str='all', 
+    reset_index: bool=..., 
     drop_index: bool=True, 
-    verbose:bool= False,
+    verbose: bool=...,
     )-> DataFrame : 
     """ Convert array to dataframe and coerce arguments to appropriate dtypes. 
     
+    Function includes additional tools to manipulate the transformed data 
+    such as: 
+    
+    - `pop_cat_features` to remove the categorical attributes, 
+    - `sanitize_columns` to clean the columns of the dataframe by removing 
+      the undesirable characters, 
+    - `drop_nan_columns` to drop all the columns and/or rows that contains 
+      full NaN, ...
+ 
     Parameters 
     -----------
-    arr: Ndarray or Dataframe, shape (M=samples, N=features)
-        Array of dataframe to create
+    arr: Ndarray or Dataframe, shape (m_samples, n_features)
+        Array of dataframe to create, to sanitize or to auto-detect
+        feature categories ( numerical or categorical).
         
     columns: list of str, optional 
         Usefull to create a dataframe when array is given. Be aware to fit the 
         number of array columns (shape[1])
         
     return_feature_types: bool, default=False, 
-        return the list of numerical and categorial features
-    missing_values: float: 
+        return the list of numerical and categorial features.
+    
+    missing_values: float, default='NaN' 
         Replace the missing or empty string if exist in the dataframe.
         
     pop_cat_features:bool, default=False, 
-        remove removes the categorial features  from the DataFrame.
+        remove the categorial features  from the DataFrame.
         
     sanitize_columns: bool, default=False, 
        remove undesirable character in the data columns using the default
@@ -187,6 +198,16 @@ def to_numeric_dtypes (
         
     """
     from .validator import _is_numeric_dtype
+    
+    # pass ellipsis argument to False 
+    ( sanitize_columns, reset_index, verbose, return_feature_types, 
+     pop_cat_features ) = ellipsis2false(
+        sanitize_columns, reset_index, verbose, return_feature_types, 
+        pop_cat_features
+        )
+   
+    if not is_iterable (arr, exclude_string=True): 
+        raise TypeError("Expect array. Got {type (arr).__name__!r}")
 
     if hasattr ( arr, '__array__') and hasattr ( arr, 'columns'): 
         df = arr.copy()
@@ -3706,7 +3727,10 @@ def random_state_validator(seed):
 def is_iterable (
         y, /, exclude_string= False, transform = False , parse_string =False, 
         )->bool | list: 
-    """ Asserts iterable object and returns 'True' or 'False' 
+    """ Asserts iterable object and returns 'True' or 'False'
+    
+    Function can also transform a non-iterable object to an iterable if 
+    `transform` is set to ``True``.
     
     :param y: any, object to be asserted 
     :param exclude_string: bool, does not consider string as an iterable 
@@ -3976,7 +4000,10 @@ def to_hdf5(d, /, fn, objname =None, close =True,  **hdf5_kws):
     if hasattr (d, '__array__') and hasattr (d, "columns"): 
         # assert whether pytables is installed 
         import_optional_dependency ('tables') 
-        store = pd.HDFStore(str(fn) +'.h5' ,  **hdf5_kws)
+        # remove extension if exist.
+        fn = str(fn).replace ('.h5', "").replace(".hdf5", "")
+        # then store. 
+        store = pd.HDFStore(fn +'.h5' ,  **hdf5_kws)
         objname = objname or 'data'
         store[ str(objname) ] = d 
 
@@ -6021,8 +6048,13 @@ def read_worksheets(*data):
 
     return data, sheet_names      
  
-def key_checker ( keys: str , /,  valid_keys, regex = None, 
-                   pattern = None ): 
+def key_checker (
+    keys: str , /,  
+    valid_keys:List[str, ...], 
+    regex:re = None, 
+    pattern:str = None , 
+    deep_search:bool =...
+    ): 
     """check whether a give key exists in valid_keys and return a list if 
     many keys are found.
     
@@ -6043,6 +6075,12 @@ def key_checker ( keys: str , /,  valid_keys, regex = None,
     pattern: str, default = '[_#&*@!_,;\s-]\s*'
         The base pattern to split the text into a columns
         
+    deep_search: bool, default=False 
+       If deep-search, the key finder is no sensistive to lower/upper case 
+       or whether a numeric data is included. 
+       
+       .. versionadded:: 0.2.5 
+       
     Returns 
     --------
     keys: str, list , 
@@ -6063,7 +6101,13 @@ def key_checker ( keys: str , /,  valid_keys, regex = None,
     >>> key_checker(['h502',  'h2602'], valid_keys= ['h502', 'h253','h2601'])
     UserWarning: key 'h2602' is missing in ['h502', 'h2602']
     Out[82]: 'h502'
+    >>> key_checker(['502',  'H2601'], valid_keys= ['h502', 'h253','h2601'], 
+                    deep_search=True )
+    Out[57]: ['h502', 'h2601']
+    
     """
+    deep_search, =ellipsis2false(deep_search)
+
     _keys = copy.deepcopy(keys)
     valid_keys = is_iterable(valid_keys , exclude_string =True, transform =True )
     if isinstance ( keys, str): 
@@ -6072,6 +6116,13 @@ def key_checker ( keys: str , /,  valid_keys, regex = None,
     # If iterbale object , save obj 
     # to improve error 
     kkeys = copy.deepcopy(keys)
+    
+    if deep_search: 
+        keys = key_search(keys, default_keys= valid_keys,deep=True, 
+                          raise_exception= True,
+                          )
+        
+        return keys[0] if len(keys)==1 else keys 
     # for consistency 
     keys = [ k for k in keys if ''.join(
         [ str(i) for i in valid_keys] ).find(k)>=0 ]
@@ -6249,22 +6300,30 @@ def make_obj_consistent_if (
     """
     if default==... or None : default =[]
     # for consistency 
-    default = list( is_iterable (default, exclude_string =True, transform =True ) ) 
+    default = list( is_iterable (default, exclude_string =True,
+                                 transform =True ) ) 
     
     if item not in ( ...,  None) : 
-         item = list( is_iterable( item , exclude_string =True , transform = True ) ) 
+         item = list( is_iterable( item , exclude_string =True ,
+                                  transform = True ) ) 
     else: item = [] 
     
     item += default[len(item):] if from_index else default 
     
     if size is not None: 
-        size = int (_assert_all_types(size, int, float, objname = "Item 'size'") )
+        size = int (_assert_all_types(size, int, float,
+                                      objname = "Item 'size'") )
         item = item [:size]
         
     return item
     
     
-def replace_data(X, y =None, n_times: int  = 1, axis = 0, reset_index :bool =...  ): 
+def replace_data(
+    X, y =None, 
+    n_times: int  = 1, 
+    axis = 0, 
+    reset_index :bool =...  
+    ): 
     """ Replace items in data :math:`n` times 
     
     Parameters 
@@ -6324,7 +6383,6 @@ def replace_data(X, y =None, n_times: int  = 1, axis = 0, reset_index :bool =...
     return concat_data ( X) if y is None else (
             concat_data( X) , concat_data(y))
         
-        
 def convert_value_in (v, /, unit ='m'): 
     """Convert value based on the reference unit.
     
@@ -6347,9 +6405,9 @@ def convert_value_in (v, /, unit ='m'):
     >>> convert_value_in (20) 
     20.0
     >>> convert_value_in ('20mm') 
-    20000.0
-    >>> convert_value_in ('20kg', unit='g') 
     0.02
+    >>> convert_value_in ('20kg', unit='g') 
+    20000.0
     >>> convert_value_in ('20') 
     20.0
     >>> convert_value_in ('20m', unit='g')
@@ -6378,14 +6436,520 @@ def convert_value_in (v, /, unit ='m'):
             f"Unknwon unit {unit!r}. Expect {smart_format(c.keys(), 'or' )}."
             f" Or rename the `unit` parameter maybe to {unit[-1]!r}.")
     
-    return float ( v)/ (c.get(unit) or 1e0) 
+    return float ( v) * (c.get(unit) or 1e0) 
 
+def split_list(lst:List[Any, ...],/,  val:int, fill_value:Any=None ):
+    """Module to extract a slice of elements from the list 
+    
+    Parameters 
+    ------------
+    lst: list, 
+      List composed of item elements 
+    val: int, 
+      Number of item to group by default. 
+      
+    Returns 
+    --------
+    group with slide items 
+    
+    Examples
+    --------
+    >>> from watex.utils.funcutils import split_list
+    >>> lst = [1, 2, 3, 4, 5, 6, 7, 8]
+    >>> val = 3
+    >>> print(split_list(lst, val))
+    [[1, 2, 3], [4, 5, 6], [7, 8]]
+ 
+    """
+
+    lst = is_iterable(lst , exclude_string =True , transform =True ) 
+    val = int ( _assert_all_types(val, int, float )) 
+    try: 
+        sl= [list(group) for key, group in itertools.groupby(
+                lst, lambda x: (x-1)//val)]
+    except: 
+        # when string is given 
+        sl= list(itertools.zip_longest(
+            *(iter(lst),)*val,fillvalue =fill_value),)
+    return sl 
+
+def key_search (
+    keys: str, /, 
+    default_keys: Text | List[str], 
+    regex :re=None, 
+    pattern :str=None, 
+    deep: bool =...,
+    raise_exception:bool=...
+    ): 
+    """Find key in a list of default keys and select the best match. 
+    
+    Parameters 
+    -----------
+    keys: str or list 
+       The string or a list of key. When multiple keys is passed as a string, 
+       use the space for key separating. 
+       
+    default_keys: str or list 
+       The likehood key to find. Can be a litteral text. When a litteral text 
+       is passed, it is better to provide the regex in order to skip some 
+       character to parse the text properly. 
+       
+    regex: `re` object,  
+        Regular expresion object. Regex is important to specify the kind
+        of data to parse. the default is:: 
+            
+            >>> import re 
+            >>> re.compile (r'[_#&*@!_,;\s-]\s*', flags=re.IGNORECASE)
+            
+    pattern: str, default = '[_#&*@!_,;\s-]\s*'
+        The base pattern to split the text into a columns. Pattern is 
+        important especially when some character are considers as a part of 
+        word but they are not a separator. For example a data columns with 
+        a name `'DH_Azimuth'`, if a pattern is not explicitely provided, 
+        the default pattern will parse as two separated word which is far 
+        from the expected results. 
+        
+    deep: bool, default=False 
+       Not sensistive to uppercase. 
+       
+    raise_exception: bool, default=False 
+       raise error when key is not find. 
+       
+    Return 
+    -------
+    list: list of valid keys or None if not find ( default) 
+    
+    
+    Examples
+    ---------
+    >>> from watex.utils.funcutils import key_search 
+    >>> key_search('h502-hh2601', default_keys= ['h502', 'h253','HH2601'])
+    Out[44]: ['h502']
+    >>> from watex.utils.funcutils import key_search 
+    >>> key_search('h502-hh2601', default_keys= ['h502', 'h253','HH2601'], 
+                   deep=True)
+    Out[46]: ['h502', 'HH2601']
+    >>> key_search('253', default_keys= ("I m here to find key among h502,
+                                             h253 and HH2601"))
+    Out[53]: ['h253'] 
+
+    """
+    deep, raise_exception = ellipsis2false(deep, raise_exception)
+    
+    if is_iterable(keys , exclude_string= True ): 
+        keys = ' '.join ( [str(k) for k in keys ]) 
+        
+    # for consisteny checker 
+    pattern = pattern or '[_#&@!_+,;\s-]\s*'
+    keys = str2columns ( keys , regex = regex , pattern = pattern ) 
+    kinit = copy.deepcopy(keys)
+    if is_iterable ( default_keys , exclude_string=True ): 
+        default_keys = ' '. join ( [ str(k) for k in default_keys ])
+        
+    # make a copy
+    dk_init =  str2columns(
+        default_keys, regex =regex , pattern = pattern )
+
+    if deep: 
+        keys= [str(it).lower() for it in keys  ]
+        default_keys = default_keys.lower() 
+
+    valid_keys =[]
+    for key in keys: 
+        vk = re.findall(rf'\b\w*{key}\w*\b', default_keys)
+        valid_keys.extend( vk )
+
+    # if deep take the real values in defaults keys. 
+    if deep and len(vk)!=0: 
+        # remake a list based on the parsing regex 
+        default_keys= str2columns(
+            default_keys, regex =regex , pattern = pattern )
+        for ii, vk in enumerate ( valid_keys) : 
+            ix = default_keys.index ( vk )
+            valid_keys [ii] = dk_init[ix ]
+
+    if raise_exception and len(valid_keys)==0: 
+        kverb ='s' if len(kinit)> 1 else ''
+        raise KeyError (f"key{kverb} {smart_format(kinit)} not found."
+                          f" Expect {smart_format(dk_init, 'or')}")
+    
+    return None if len(valid_keys)==0 else valid_keys 
+
+def repeat_item_insertion(text, /, pos, item ='', fill_value=''): 
+    """ Insert character in  text according from it position. 
+    
+    Parameters
+    -----------
+    v: text
+       Text 
+    pos: int 
+      position where the item must be insert. 
+    item: str, 
+      Item to insert at each position. 
+    fill_value: str, 
+      Does nothing special; fill the the last position. 
+    Returns
+    --------
+    text: str, 
+      New construct object. 
+      
+    Examples
+    ----------
+    >>> from watex.utils.funcutils import repeat_item_insertion
+    >>> repeat_item_insertion ( '0125356.45', pos=2, item=':' ) 
+    Out[65]: '01:25:35:6.45'
+    >>> repeat_item_insertion ( 'Function inserts car in text.', pos=10, item='TK' )
+    Out[69]: 'Function iTKnserts carTK in text.'
+    """
+    pos= _assert_all_types(pos, int, float, 
+                           objname=f'Position for {item} insertion')
+    # for consistency
+    lst = list( str(text)) 
+    # checher whether there is a decimal then remove it 
+    dec_part=[]
+    ent_part= lst
+    for i, it in enumerate ( lst)  :
+        if it =='.': 
+            ent_part, dec_part  = lst [:i],  lst[i:]
+            break 
+    # now split list
+    value = split_list(ent_part, val= pos , fill_value=fill_value) 
+    #value = split_list ( ent_part, 2)
+    #[[1, 2, 3], [4, 5, 6], [7, 8]]
+    join_lst= list (map ( lambda s : ''.join( s), value))
+    #[123, 456, 78]
+    #join with mark 
+    return f'{str(item)}'.join(join_lst) +''.join(dec_part)
+        
+def numstr2dms (
+    sdigit: str, /, 
+    sanitize: bool=True, 
+    func: F=None, 
+    args: tuple=(),  
+    regex: re=None,   
+    pattern: str=None, 
+    return_values: bool=..., 
+    **kws
+    ): 
+    """ Convert numerical digit string to DD:MM:SS
+    
+    Note that the any string digit for Minutes and seconds must be composed
+    of two values i.e the function accepts at least six digits, otherwise an 
+    error occurs. For instance the value between [0-9] must be prefixed by 0 
+    beforehand. Here is an example for designating 1degree-1min-1seconds::
+        
+        sdigit= 1'1'1" --> 01'01'01 or 010101
+        
+    where ``010101`` is the right arguments for ``111``. 
+    
+    Parameters
+    -----------
+    sdigit: str, 
+      Digit string composing of unique values. 
+    func: Callable, 
+      Function uses to parse digit. Function must return a string values. 
+      Any other values should be convert to str 
+      
+    args: tuple
+      Function `func` positional arguments 
+      
+    regex: `re` object,  
+        Regular expresion object. Regex is important to specify the kind
+        of data to parse. the default is:: 
+            
+            >>> import re 
+            >>> re.compile (r'[_#&@!+,;:"\'\s-]\s*', flags=re.IGNORECASE) 
+            
+    pattern: str, default = '[_#&@!+,;:"\'\s-]\s*'
+      Specific pattern for sanitizing sdigit. For instance remove undesirable 
+      non-character. 
+      
+    sanitize:bool=default=True 
+       Remove undesirable character using the default argument of `pattern`
+       parameter. 
+       
+    return_values: bool, default=False, 
+       return the DD:MM:SS into a tuple of (DD,MM,SS)
+    
+    Returns 
+    -------
+    sdigit/tuple: str, tuple 
+      DD:MM:SS or tuple of ( DD, MM, SS) 
+      
+    Examples
+    --------
+    >>> from watex.utils.funcutils import numstr2dms
+    >>> numstr2dms ("1134132.08")
+    Out[17]: '113:41:32.08
+    >>> numstr2dms ("13'41'32.08")
+    Out[18]: '13:41:32.08'
+    >>> numstr2dms ("11:34:13:2.08", return_values=True)
+    Out[19]: (113.0, 41.0, 32.08)
+            
+    """
+    # remove any character from the string digit
+    if return_values is ...:return_values=False 
+    sdigit= str(sdigit)
+    
+    if sanitize: 
+        pattern = pattern or '[_#&@!+,;:"\'\s-]\s*'
+        sdigit = re.sub(pattern , "", str(sdigit), flags=re.IGNORECASE)
+        
+    try : float (sdigit)
+    except: raise ValueError ("Wrong value. Expects a string-digit or digit."
+                              f" Got {sdigit!r}")
+    if callable (func): 
+        sdigit= func (sdigit, *args, **kws )
+        
+    # In the case there is'
+    decimal ='0'
+    # remove decimal
+    sdigit_list  = str(sdigit).split(".")
+    
+    if len(sdigit_list)==2: 
+        sdigit, decimal =sdigit_list
+        
+    if len(sdigit) < 6: 
+        raise ValueError(f"DMS expects at list six digits(DD:MM:SS)."
+                         f" Got {sdigit!r}")
+        
+    sec , sdigit = sdigit[-2:] , sdigit [:-2]
+    mm , sdigit = sdigit[-2:], sdigit [:-2]
+    deg = sdigit # the remain part 
+    # conca second ecimal 
+    sec +=f".{decimal}" 
+    
+    return tuple (map ( float, [deg, mm, sec]) ) if return_values \
+        else ':'.join([deg, mm, sec]) 
 
     
+def storeOrwritehdf5 (
+    d, /, 
+    key:str= None, 
+    mode:str='a',  
+    kind: str=None, 
+    path_or_buf:str= None, 
+    encoding:str="utf8", 
+    csv_sep: str=",",
+    index: bool=..., 
+    columns: str |List[Any, ...]=None, 
+    sanitize_columns:bool=...,  
+    func: F= None, 
+    args: tuple=(), 
+    applyto: str|List[Any, ...]=None, 
+    **func_kwds, 
+    )->None|DataFrame: 
+    """ Store data to hdf5 or write data to csv file. 
     
+    Note that by default, the data is not store nor write and 
+    return data if frame or transform the Path-Like object to data frame. 
+
+    Parameters 
+    -----------
+    d: Dataframe, shape (m_samples, n_features)
+        data to store or write or sanitize.
+    key:str
+       Identifier for the group in the store.
+       
+    mode: {'a', 'w', 'r+'}, default 'a'
+       Mode to open file:
     
+       - 'w': write, a new file is created (an existing file with the 
+                                          same name would be deleted).
+       - 'a': append, an existing file is opened for reading and writing, 
+         and if the file does not exist it is created.
+       - 'r+': similar to 'a', but the file must already exist.
+       
+    kind: str, {'store', 'write', None} , default=None 
+       Type of task to perform: 
+           
+       - 'store': Store data to hdf5
+       - 'write': export data to csv file.
+       - None: construct a dataframe if array is passed or sanitize it. 
+
+    path_or_buf: str or pandas.HDFStore, or str, path object, file-like \
+        object, or None, default=None 
+       File path or HDFStore object. String, path object
+       (implementing os.PathLike[str]), or file-like object implementing 
+       a write() function. If ``write=True`` and  None, the result is returned 
+       as a string. If a non-binary file object is passed, it should be 
+       opened with newline=" ", disabling universal newlines. If a binary 
+       file object is passed, mode might need to contain a 'b'.
+      
+    encoding: str, default='utf8'
+       A string representing the encoding to use in the output file, 
+       Encoding is not supported if path_or_buf is a non-binary file object. 
+
+    csv_sep: str, default=',', 
+       String of length 1. Field delimiter for the output file.
+       
+    index: bool, index =False, 
+       Write data to csv with index or not. 
+       
+    columns: list of str, optional 
+        Usefull to create a dataframe when array is passed. Be aware to fit 
+        the number of array columns (shape[1])
+        
+    sanitize_columns: bool, default=False, 
+       remove undesirable character in the data columns using the default
+       argument of `regex` parameters and fill pattern to underscore '_'. 
+       The default regex implementation is:: 
+           
+           >>> import re 
+           >>> re.compile (r'[_#&.)(*@!,;\s-]\s*', flags=re.IGNORECASE)
+           
+    func: callable, Optional 
+       A custom sanitizing function and apply to each columns of the dataframe.
+       If provide, the expected columns must be listed to `applyto` parameter.
+       
+    args: tuple, optional 
+       Positional arguments of the sanitizing columns 
+       
+    applyto: str or list of str, Optional 
+       The list of columns to apply the function ``func``. To apply the 
+       function to all columns, use the ``*`` instead. 
+       
+    func_kwds: dict, 
+       Keywords arguments of the sanitizing function ``func``. 
+       
+    Return 
+    -------
+    None or d: None of dataframe. 
+      returns None if `kind` is set to ``write`` or ``store`` otherwise 
+      return the dataframe. 
+  
+    Examples
+    --------
+    >>> from watex.utils.funcutils import storeOrwritehdf5
+    >>> from watex.datasets import load_bagoue 
+    >>> data = load_bagoue().frame 
+    >>> data.geol[:5]
+    0    VOLCANO-SEDIM. SCHISTS
+    1                  GRANITES
+    2                  GRANITES
+    3                  GRANITES
+    4          GEOSYN. GRANITES
+    Name: geol, dtype: object
+    >>> data = storeOrwritehdf5 ( data, sanitize_columns = True)
+    >>> data[['type', 'geol', 'shape']] # put all to lowercase
+      type                    geol shape
+    0   cp  volcano-sedim. schists     w
+    1   ec                granites     v
+    2   ec                granites     v
+    >>> # compute using func 
+    >>> def test_func ( a, times  , to_percent=False ): 
+            return ( a * times / 100)   if to_percent else ( a *times )
+    >>> data.sfi[:5]
+    0    0.388909
+    1    1.340127
+    2    0.446594
+    3    0.763676
+    4    0.068501
+    Name: sfi, dtype: float64
+    >>> d = storeOrwritehdf5 ( data,  func = test_func, args =(7,), applyto='sfi')
+    >>> d.sfi[:5] 
+    0    2.722360
+    1    9.380889
+    2    3.126156
+    3    5.345733
+    4    0.479507
+    Name: sfi, dtype: float64
+    >>> storeOrwritehdf5 ( data,  func = test_func, args =(7,),
+                          applyto='sfi', to_percent=True).sfi[:5]
+    0    0.027224
+    1    0.093809
+    2    0.031262
+    3    0.053457
+    4    0.004795
+    Name: sfi, dtype: float64
+    >>> # write data to hdf5 and outputs to current directory 
+    >>> storeOrwritehdf5 ( d, key='test0', path_or_buf= 'test_data.h5', 
+                          kind ='store')
+    >>> # export data to csv 
+    >>> storeOrwritehdf5 ( d, key='test0', path_or_buf= 'test_data', 
+                          kind ='export')
+    """
+    kind= key_search (str(kind), default_keys=(
+        "none", "store", "write", "export", "tocsv"), 
+        raise_exception=True , deep=True)[0]
     
+    kind = "export" if kind in ('write', 'tocsv') else kind 
     
+    if sanitize_columns is ...: 
+        sanitize_columns=False 
+    d = to_numeric_dtypes(d, columns=columns,sanitize_columns=sanitize_columns, 
+                          fill_pattern='_')
+   
+    # get categorical variables 
+    if ( sanitize_columns 
+        or func is not None
+        ): 
+        d, _, cf = to_numeric_dtypes(d, return_feature_types= True )
+        #( strip then pass to lower case all non-numerical data) 
+        # for minimum sanitization  
+        for cat in cf : 
+            d[cat]= d[cat].str.lower()
+            d[cat]= d[cat].str.strip()
+            
+    if func is not None: 
+        if not callable(func): 
+            raise TypeError(
+                f"Expect a callable for `func`. Got {type(func).__name__!r}")
+
+        if applyto is None:
+            raise ValueError("Need to specify the data column to apply"
+                             f"{func.__name__!r} to.")
+        
+        applyto = is_iterable( applyto, exclude_string=True,
+                               transform =True ) if applyto !="*" else d.columns 
+        # check whether the applyto columns are in data columns 
+        exist_features(d, applyto)
+        
+        # map each colum 
+        for col in applyto: 
+            d [col]=d[col].apply( func, args=args, **func_kwds )
+
+    # store in h5 file. 
+    if kind=='store':
+        if path_or_buf is None: 
+            print("Destination file is missing. Use 'data.h5' instead outputs"
+                  f" in the current directory {os.getcwd()}")
+            path_or_buf= 'data.h5'
+ 
+        d.to_hdf ( path_or_buf , key =key, mode =mode )
+    # export to csv file
+    if kind=="export": 
+        d.to_csv(path_or_buf, encoding = encoding  , sep=csv_sep , 
+                 index =False if index is ... else index   )
+        
+    return d if kind not in ("store", "export") else None 
+
+def ellipsis2false( *parameters  ): 
+    """ Turn all parameter arguments to False if ellipsis.
+    
+    Note that the output arguments must be in the same order like the 
+    positional arguments. 
+ 
+    :param parameters: tuple 
+       List of parameters  
+    :return: tuple, same list of parameters passed ellipsis to ``False``. 
+       For a single parameters, uses the trailing comma for collecting 
+       the parameters 
+       
+    :example: 
+        >>> from watex.utils.funcutils import ellipsis2false 
+        >>> var, = ellipsis2false (...)
+        >>> var 
+        False
+        >>> data, sep , verbose = ellipsis2false ([2,3, 4], ',', ...)
+        >>> verbose 
+        False 
+    """
+    return tuple ( ( False  if param is  ... else param  
+                    for param in parameters) )  
+   
+    
+
     
     
     

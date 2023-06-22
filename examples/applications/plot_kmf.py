@@ -9,12 +9,15 @@ enforce the model to generalization
 # License: BSD-3-clause
 # Author: L.Kouadio 
 #%% 
-# KMeans Featurisation ( KMF) is a surrogate booster to predict permeability 
-# coefficient (k) before any drilling construction. Indeed, KMF creates a 
-# compressed spatial index of the data which can be fed into the model for ease 
-# of learning and enforce the model capability of generalization. A new 
-# predictor based on model stacking technique is built with full target k 
-# which balances the spatial distribution of k-labels by clustering the original data. 
+# KMeans Featurisation ( KMF) is a surrogate booster use to enforce model 
+# to generalization with an optimal score. Here, the example focuses on predicting 
+# the permeability coefficient (K) also known as Hydraulic conductivity in 
+# civil engineering. K is collected during the pumping set for a successful 
+# drilling construction. Indeed, KMF creates a compressed spatial index 
+# can be fed into the model for ease  of the data which of learning and enforce
+# the model capability of generalization. A new predictor based on model
+# stacking technique is built with full target K which balances the
+#  spatial distribution of k-labels by clustering the original data. 
 
 #%% 
 # We start by importing the required modules 
@@ -24,12 +27,12 @@ import scipy
 import numpy as np 
 
 from sklearn.datasets import make_moons
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import GradientBoostingClassifier
-from watex.datasets import load_mxs 
+from sklearn.linear_model import LogisticRegression
 
+from watex.datasets import load_mxs
+from watex.exlib import train_test_split, XGBClassifier, roc_auc_score,roc_curve 
 from watex.transformers import featurize_X,  KMeansFeaturizer
-from watex.exlib import train_test_split, XGBClassifier, roc_auc_score,roc_curve
 from watex.utils import plot_voronoi, plot_roc_curves, replace_data
 
 # %% 
@@ -156,9 +159,9 @@ roc_visualization(Xtrain= training_data,
 
 clfs = copy.deepcopy([classifiers[-1]]) 
 clfs_cluster = [m.fit( training_with_cluster, training_labels) for m in clfs ]
-ax = plot_roc_curves(clfs_cluster, test_with_cluster, test_labels, all=True, ncols = 2, 
+ax = plot_roc_curves(clfs_cluster, test_with_cluster, test_labels, kind='2', ncols = 2, 
                 fig_size = (10, 4), names = ['Boostree with KMF '], 
-                colors =['orange', 'r'], get_score =True )
+                colors =['orange', 'r'], score =True )
 
 for i, model in enumerate(clfs):
     model.fit(training_data, training_labels)

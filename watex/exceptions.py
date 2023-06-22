@@ -27,8 +27,10 @@ class DCError (Exception):
     """Raises exception when data passed to DC base class are not consistent.
     DCType expect D-type for Dataframe , F-type for file object or P-type of 
     pathlike object. 
-    
     """
+class DrillError (Exception): 
+    """Raises exception when any component that composes the Drilling property 
+    or column name is missing in the given data."""
     
 class EDIError(Exception):
     """Raises an Exception if the given SEG-Electrical Data Interchange data 
@@ -131,7 +133,11 @@ class GeoDatabaseError(Exception):
     """ Raises an Exception if the database failed to respond. The request is 
     aborted. """
     pass
-
+class ModelError(Exception): 
+    """ Raises an Exception when the requierements for building Geo/Model are
+    are wrong not truly passed. Error also raises when Model construction 
+    is going to fail."""
+    pass
 class ERPError(Exception):
     """Raises an Exception if data passed is not a  valid Electrical Resistivity
     Profiling. Note that 'station' and 'resistivity' must figure out in the 

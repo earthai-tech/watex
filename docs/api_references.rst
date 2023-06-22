@@ -154,6 +154,7 @@ Functions
 	datasets.load_huayuan
 	datasets.load_iris
 	datasets.load_mxs
+	datasets.load_nlogs
 	datasets.load_semien
 	datasets.load_tankesse
 	datasets.make_erp 
@@ -306,7 +307,6 @@ Functions
 	geology.core.fetching_data_from_repo
 	geology.core.set_agso_properties
 
-	
 .. _methods_ref:
 
 :mod:`watex.methods`:  Methods
@@ -585,6 +585,7 @@ Functions
    :template: function.rst
 
     utils.bi_selector
+	utils.build_random_thickness
 	utils.cattarget
 	utils.check_flow_objectivity
 	utils.classify_k
@@ -602,12 +603,14 @@ Functions
 	utils.get2dtensor
 	utils.get_aquifer_section
 	utils.get_aquifer_sections
+	utils.get_azimuth 
 	utils.get_compressed_vector
 	utils.get_bearing
 	utils.get_distance
 	utils.get_full_frequency
 	utils.get_profile_angle
 	utils.get_sections_from_depth
+	utils.smart_thickness_ranker
 	utils.get_strike
 	utils.get_target
 	utils.get_unique_section
@@ -644,6 +647,7 @@ Functions
 	utils.plot_rf_feature_importances
 	utils.plot_roc_curves
 	utils.plot_sbs_feature_selection
+	utils.plot_stratalog
 	utils.plot_silhouette
 	utils.plot_skew
 	utils.plot_strike
@@ -867,6 +871,8 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.geotools.base_log
 	utils.geotools.fit_rocks
 	utils.geotools.fit_stratum_property
+	utils.geotools.get_thick_from_range 
+	utils.geotools.get_thick_from_values 
 	utils.geotools.get_s_thicknesses
 	utils.geotools.grouped_items
 	utils.geotools.lns_and_tres_split
@@ -875,6 +881,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.geotools.set_default_hatch_color_values
 	utils.geotools.smart_zoom
 	utils.geotools.zoom_processing
+	
 
 .. _view_ref:
 

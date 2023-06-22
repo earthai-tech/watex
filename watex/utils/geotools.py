@@ -6,26 +6,719 @@
 Is a set of utilities that deal with geological rocks, strata and 
 stratigraphic details for log construction. 
 """
+from __future__ import annotations 
 import os
+import re 
 import itertools
 import warnings
 import copy 
-
 import numpy as np
 import pandas as pd 
+
+from .._watexlog import watexlog 
+from .._typing import ( 
+    List, 
+    Tuple, 
+    ArrayLike, 
+    Any
+    )
+from ..exceptions import ( 
+    StrataError, DepthError )
+from ..property import Config 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as GridSpec
-
 from .funcutils import ( 
+    _assert_all_types, 
     smart_format, 
     station_id, 
-    convert_value_in 
+    convert_value_in, 
+    str2columns, 
+    is_iterable, 
+    ellipsis2false, 
     )
-from ..exceptions import StrataError, DepthError  
-from .._watexlog import watexlog 
+from .exmath import find_closest 
 _logger = watexlog().get_watex_logger(__name__ )
 
-def get_random_thickness(
+
+def find_similar_structures(
+        *resistivities,  return_values: bool=...):
+    """
+    Find similar geological structures from electrical rock properties 
+    stored in configure data. 
+    
+    Parameters 
+    ------------
+    resistivities: float 
+       Array of geological rocks resistivities 
+       
+    return_values: bool, default=False, 
+       return the closest resistivities of the close structures with 
+       similar resistivities. 
+       
+    Returns 
+    --------
+    structures , str_res: list 
+      List of similar structures that fits each resistivities. 
+      returns also the closest resistivities if `return_values` is set 
+      to ``True``.
+    
+    Examples
+    ---------
+    >>> from watex.utils.geotools import find_similar_structures
+    >>> find_similar_structures (2 , 10, 100 , return_values =True)
+    Out[206]: 
+    (['sedimentary rocks', 'metamorphic rocks', 'clay'], [1.0, 10.0, 100.0])
+    """
+    if return_values is ...: 
+        return_values =False 
+    
+    def get_single_structure ( res): 
+        """ get structure name and it correspoinding values """
+        n, v = [], []
+        for names, rows in zip ( stc_names, stc_values):
+            # sort values 
+            rs = sorted (rows)
+            if rs[0] <= res and res <= rs[1]: 
+            #if rows[0] <= res <= rows[1]: 
+                n.append ( names ); v.append (rows )
+                
+        if len(n)==0: 
+            return "*Struture not found", np.nan  
+        
+        v_values = np.array ( v , dtype = float ) 
+        
+        close_val  = find_closest ( v_values , res )
+        close_index, _= np.where ( v_values ==close_val) 
+        # take the first close values 
+        close_index = close_index [0] if len(close_index ) >1 else close_index 
+        close_name = str ( n[int (close_index )]) 
+        # remove the / and take the first  structure 
+        close_name = close_name.split("/")[0] if close_name.find(
+            "/")>=0 else close_name 
+        
+        return close_name, close_val 
+
+    #---------------------------
+    # make array of names structures names and values 
+    dict_conf =  Config().geo_rocks_properties 
+    stc_values = np.array (list( dict_conf.values()))
+    stc_names = np.array ( list(dict_conf.keys() ))
+
+    try : 
+        np.array (resistivities) .astype (float)
+    except : 
+        raise TypeError("Resistivities array expects numeric values."
+                        f" Got {np.array (resistivities).dtype.name!r}") 
+        
+    structures = [] ;  str_res =[]
+    for res in resistivities: 
+        struct, value = get_single_structure(res )
+        structures.append ( struct) ; str_res.append (float(value) )
+
+    return ( structures , str_res ) if  return_values else structures 
+
+
+def smart_thickness_ranker ( 
+    t: str | List[Any, ...], /,  
+    depth:float=None, 
+    regex:re= None, 
+    sep:str= ':-', 
+    surface_value:float=0.,  
+    mode:str='strict', 
+    return_thickness:bool=...,
+    verbose:bool=..., 
+    )-> Tuple[ArrayLike]: 
+    """Compute the layer thicknesses and rank strata accordingly.
+    
+    Grub from the litteral string the layer depth range to find the ranking 
+    of layer thickness. 
+    
+    Parameters 
+    -----------
+    t: str, or List of Any  
+       Litteral string that containing the data arrangement. The kind of data
+       to provide for thickness arrangement are:
+           
+      - t-value: Compose only with the layer thickness values. For instance 
+        ``t= "10 20 7 58"`` indicates four layers with layer thicknesses 
+        equals to 10, 20, 7 and 58 ( meters) respectively. 
+        
+      - tb-range: compose only with thickness range at each depth. For instance
+        ``t= "0-10 10-30 40-47 101-159"``. Note the character used to separate 
+        thickness range is ``'-'``. Any other character must be specified using 
+        the parameter `sep`. Here, the top(roof) and bottom(wall) of the layers
+        are 0  (top) and 10 (bottom), 10 and 30, 40 and 47 , and 101 and 159 
+        for stratum 1, 2, 3 and 4 respectively.
+        
+      - mixed: Mixed data kind is composed of the both `t-value` and `tb-range`.
+        When this kind of data is provied, to smartly parse the data, user 
+        must set the operation `mode` to ``soft``. However, to avoid any 
+        unexpected result, it is suggested to used either `t-value` or 
+        `tb-range` layer thickness naming.
+        
+    depth: float, optional 
+        Depth is mostly used when `t-value` thickness arrangement is provided. 
+        It add additional layer at the bottom the  given thickness 
+        and recompute the last layer thickness. Howewer for a sampling as 
+        geochemistry sampling, depth specification is not necessary. 
+       
+    regex: `re` object,
+       Regular expresion object used to parse the litteral string `v`. If not 
+       given, the default is:: 
+            
+       >>> import re 
+       >>> re.compile (r'[_#&.)(*@!_,;\s-]\s*', flags=re.IGNORECASE)
+          
+    sep:str, default= ':-'
+       The character used to separate two layer thickness ranged from top to 
+       bottom. Any other character must be specified. Here is an example:: 
+           
+           >>> sep ='10-35' or sep='10:35'
+       
+    surface_value: float, default=0. 
+      The top value of the first layer. The default is the sea level. For 
+      instance, if the first layer `l0` is ``10m`` thick, the top (roof) and 
+      the bottom(wall) of `l0` should be ``0-10`` for ``surface_value=0.``. 
+      
+    return_thickness: bool, default=False 
+      If ``True``, return the calculated thickness of each stratum. 
+      
+    mode: str, default='strict' 
+      Control the layer thickness ranking. It can be ['soft'|'strict']. Any 
+      other value should be in 'soft' mode. Indeed, the mode is used to 
+      retrieve, arrange and compute the layer thicknesses. For instance, 
+      in ``strict`` mode, any bad arrangement or misimputed layer thicknesses 
+      should raise an error. However, in 'soft', the bad arrangements
+      are systematically dropped especially when top and bottom values of 
+      the layers are null.
+      
+   verbose: bool, default=False 
+      Warn user about the layer ranking and thickness calculation. 
+  
+    Returns 
+    --------
+    dh_from, dh_to| thickness: Tuple of Arraylike 
+      - dh_from: Arraylike of each layer roof ( top) 
+      - dh_to: Arraylike of each layer wall ( bottom) 
+      - thickness: Arraylike of composed of each stratum thickness. Values 
+        are returned if ``returun_thickness=True``. 
+        
+    Examples 
+    --------
+    >>> from watex.utils.geotools import smart_thickness_ranker
+    >>> smart_thickness_ranker ("10 15 70 125")
+    (array([ 0., 10., 25., 95.]), array([ 10.,  25.,  95., 220.]))
+    >>> smart_thickness_ranker ("10 15 70 125", depth =300, 
+                                return_thickness= True)
+    (array([  0.,  10.,  25.,  95., 220.]),
+     array([ 10.,  25.,  95., 220., 300.]),
+     array([ 10.,  15.,  70., 125.,  80.]))
+    >>> smart_thickness_ranker ("10-15 70-125")
+    (array([10., 70.]), array([ 15., 125.]))
+    >>> smart_thickness_ranker ("10-15 70-125", depth =300)
+    (array([ 10.,  70., 125.]), array([ 15., 125., 300.]))
+    >>> smart_thickness_ranker ("7 10-15 13 70-125 ",mode='soft')
+    (array([ 0., 10., 15., 70.]), array([  7.,  15.,  28., 125.]))
+    >>> smart_thickness_ranker ("7 10-15 13 70-125 ",depth =300, mode='soft',
+                                return_thickness=True)
+    (array([  0.,  10.,  15.,  70., 125.]),
+     array([  7.,  15.,  28., 125., 300.]),
+     array([  7.,   5.,  13.,  55., 175.]))
+    """
+    # set ellipsis to false 
+    return_thickness, verbose = ellipsis2false(return_thickness, verbose)
+
+    mode=str(mode).lower().strip() 
+    # check iterbale object 
+    # convert items to strings 
+    if is_iterable ( t, exclude_string= True ): 
+        t=  ' '.join ( [str(it) for it in t ])
+    # for consistency reconvert to string 
+    t = str(t) 
+    
+    # check whether there is a mixture types.
+    # whether the thickness separator is included 
+    # in the default parsing characters then remove
+    # it before transforming the litteral string to 
+    # columns.
+    tr = str2columns(t, regex =re.compile (
+        re.sub(rf"[{sep}]", "", rf'[#&*@!,;\s{sep}]\s*'), flags=re.IGNORECASE))
+
+    # check whether all values are passed 
+    # as layer thickness t-values or tb-range
+    count =[]
+    data_kind ="t-value" 
+    
+    for it in tr : 
+        try: float ( it)
+        except:continue 
+        else:count.append(it ) 
+        
+    if len(count)==0: 
+        # assume all values are given as 
+        # a layer top-bottom range 
+        data_kind="tb-range" 
+    elif len(count) != len(tr): 
+        data_kind="mixed"
+        
+    if data_kind=="mixed": 
+        # if mode is strict, mixing is not 
+        # tolerable
+        msg = ("Mixed thickness entries is detected. The ranking may yield" 
+               " to unexpected results." ) 
+        if mode=='strict': 
+            raise StrataError(msg + " It is recommended to use for each"
+                " stratum either the top-bottom naming <tb-range> or only"
+                " thickness value <t-value>.")
+            
+        if verbose: 
+            warnings.warn(msg + 
+            " In soft mode, the smart parser will be used to rank the layer"
+            " thicknesses however it cannot handle any bad arrangement."
+            " Use at your own risk.") 
+        
+        t = _make_thick_range (t, sep =sep  )
+        # go to top-bottom range. 
+        data_kind="tb-range"
+        
+    if data_kind=="tb-range": 
+        from_to, thickness = get_thick_from_range(t, 
+                              sep = sep , 
+                              mode=mode ,
+                              raise_warn=verbose, 
+                              )
+        
+        from_to  = np.vstack (from_to) 
+        dh_from , dh_to =from_to [:, 0 ], from_to [:, 1 ]
+        
+        if depth is not None: 
+            depth =_assert_all_types(
+                depth, int, float , objname='Well/hole depth')
+            
+            if dh_to[-1] >= depth: 
+                if mode=='strict': 
+                    raise StrataError (
+                        f"Depth {depth} cannot be less than the last layer"
+                        f" bottom depth {dh_to[-1]}. Please check your the"
+                        " range of values used to specify the strata"
+                        " thickness 'top-bottom'. "
+                        )  
+            else: 
+                # add depth and compute 
+                # the thickness at the bottom 
+                dh_from = np.append( dh_from , dh_to[-1]) 
+                dh_to = np.append (dh_to, depth )
+                thickness = np.append ( thickness , depth - dh_from[-1])
+            
+    else: 
+        dh_from, dh_to , thickness = get_thick_from_values(
+                                    tr, depth=depth, raise_warn=verbose, 
+                                    surface_value= surface_value, 
+                                    mode= mode, 
+                                 )
+    
+    return ( dh_from, dh_to, thickness
+            ) if return_thickness else (dh_from, dh_to)
+
+def get_thick_from_values(
+    thick:List[float], 
+    depth:float=None,
+    surface_value:float =0., 
+    mode:str='strict', 
+    raise_warn:bool =... , 
+    )->Tuple[ArrayLike]: 
+    """ Compute thickness when only thick is given. 
+    
+    Here it is respectful of tthe <t-value> data kind. For t-range data, 
+    refer to :func:`get_thick_from_range`. 
+
+    Parameters 
+    ------------
+    thick: List,
+      The list of layer thickness. 
+      
+    depth: float, optional 
+       The maximum depth of the borehole. Useful when it comes to describes 
+       the stratigraphic log in the borehole. However, it is not necessary 
+       when it comes for geochemistry sampling. 
+       
+    surface_value: float, default=0. 
+      The level of the the sea by default. It correspond to the depth of the 
+      roof (top) of the first layers.
+      
+    mode: str, default='strict' 
+      Control the layer thickness ranking. It can be ['soft'|'strict']. Any 
+      other value should be in 'soft' mode. Here the ``strict`` mode yields 
+      an error when the total sum of the thickness is greater than the 
+      given depth. However in ``soft`` mode, the depth is merely replaced 
+      by the total thick  depth. 
+      
+    raise_warn: bool, default=False 
+      warn user when the given depth is less than the total layer thicknesses. 
+      
+    Returns 
+    --------
+    dh_from, dh_to , thickness: Tuple of Arraylike 
+      - dh_from: the array of layer roof (top) depth values 
+      - dh_to: The array of layer wall ( bottom) depth values 
+      - thickness: The calculated thickness of each layer. 
+      
+    Examples
+    ---------
+    >>> from watex.utils.geotools import _parse_only_thick 
+    >>> _parse_only_thick ([12 , 20, 26, 50 ], depth = 205 )
+    Out[63]: 
+    (array([  0.,  12.,  32.,  58., 108.]),
+     array([ 12.,  32.,  58., 108., 205.]),
+     array([12., 20., 26., 50., 97.]))
+    
+    """
+    if raise_warn is ...: 
+        raise_warn=False 
+    
+    if isinstance( thick, str): 
+        thick= str2columns(thick)
+    
+    try: thick = np.array ([ convert_value_in (t)  for t in thick] 
+                           ).astype (float)
+    except: raise TypeError ("Value for thickness ranking should be numeric."
+                             f" Got {np.array(thick).dtype.name!r}")
+    
+    if depth is not None: 
+        depth = convert_value_in(depth )
+        if thick.sum() > depth: 
+            msg=(f"Expect maximum depth equal to {thick.sum()}. Got {depth}.") 
+            if mode=='strict': 
+                raise DepthError(msg)
+            if raise_warn: 
+                warnings.warn( msg )
+            
+            depth =None 
+            # depth = thick.sum() 
+    # check_thickness and reset depth if 
+    # start always  the layer demarcation from 0 
+    # at the surface 
+    cum_and_depth = list(np.cumsum (thick ))  + [depth] if depth is not None\
+        else np.cumsum (thick ) 
+        
+    from_to = np.array ( [surface_value] + list( cum_and_depth) )    
+    
+    dh_from, dh_to  = from_to [: -1 ], from_to [ 1: ]
+    # append NA to the rocks name 
+    # ad_NA = [ 'NA' for i in range ( len(from_to) )]
+    # dh_samples +=ad_NA 
+    thickness = np.diff (dh_from ) 
+    if depth is not None: 
+        # rather than using np.nan 
+        thickness = np.append ( thickness, depth - dh_from.max() )
+    # dh_samples = dh_samples[: len(dh_from)] 
+
+    return dh_from, dh_to , thickness
+
+def get_thick_from_range( 
+    rthick:str, / , 
+    sep:str=":-" , 
+    flatten_range:bool=False , 
+    mode:str='strict', 
+    raise_warn: bool=True, 
+    )-> Tuple[List[ArrayLike], ArrayLike]: 
+    """Computes the thickness from depth range passed in litteral string.
+    
+    Collect values where thickness range is explicitly specified then  
+    compute the thickness. Note that if `sep` is not supplied or empty, value 
+    can yield an expected bad thickness calculation. 
+    Note that when the layer thicknesses are given as numeric values only, 
+    uses :func:`get_thick_from_values` instead.
+
+    Parameters 
+    -----------
+    rthick: str 
+      Text value of thick range composed of layer thickness declaration. 
+      Each layer depth range must be separated with spaces. For instance 
+      the depth range of layer A and B should be:: 
+           
+          v='42-52 63-85'
+          
+      where ``'42-52'`` is the layer A thickness range with 42 (m) as the top 
+      and 52(m) the bottom i.e. the thickness of layer A equals to 10m. Idem, 
+      the thickness of layer B equals to 22(m) with top starts at 
+      63 (m) and end at 85 (m) (bottom). 
+      
+    sep: str, default=':-' 
+      The separator used to differenciate the top and bottom values of 
+      the layer. For example:: 
+           
+          sep =':-' --> '25:50' or '25-50' 
+           
+      where 25 and 50 corresponds to top (roof) and bottom ( wall) of the 
+      layer/stratum respectively. Both ``'':-'`` are valid to make this 
+      distinction. Any other character can be used provided that it is specified
+      as an argument of `sep`parameter. 
+      
+    flatten: bool, default=False, 
+      If ``True`` return the value of layer top and bottom into a single 
+      list. For example:: 
+          
+         ['20-33', '58:125']-> [['20', '33'], ['58', '125']] -->\
+              ['20', '33', '58', '125']
+      
+    mode: str, bool ='strict'
+      Mode to retrieve, arrange and compute the layer thicknesses.
+      In ``strict`` mode, any bad arrangement of misimputed of thickness 
+      values should raise an error. However, in 'soft', the bad arrangement
+      is systematically dropped especially when top and bottom values of 
+      the layers are null. 
+       
+    raise_warn: bool, default=True 
+      Warn user about the layer ranking and thickness calculation. 
+      
+    Returns 
+    -------- 
+    thick_range : List of layer thickness flattened or not 
+    thickness: list - The calculated thickness of each stratum. 
+    
+    Examples
+    ----------
+    >>> from watex.utils.geotools import get_thick_from_range 
+    >>> get_thick_from_range ('20-33 58:125', sep =':-') 
+    Out[88]:
+    ([array([20., 33.]), array([ 58., 125.])], [13.0, 67.0])
+    >>> # when mixed values  are given 
+    >>> get_thick_from ( "99 0-15 15.2-18.8 40.0-70.7", mode='soft')
+    Out[89]: 
+    ([array([ 0., 15.]), array([15.2, 18.8]), array([40. , 70.7])],
+     [15.0, 3.6000000000000014, 30.700000000000003])
+    """ 
+    rthick = str(rthick) # for consistency 
+    # we assume that value given here is compose of separator 
+    # mean each layer is given from top bottom. 
+    # any other values should not be considers.
+    # e.g. layer A : 25-35 --> Top ( 25m), bottom (35m)-> thick = 10 meters. 
+
+    thick_range_str = re.findall(rf"\d+(?:\.\d+)?[{sep}]\d+(?:\.\d+)?",
+                             rthick, flags= re.IGNORECASE )
+    # then break each of them and compute thickness 
+    if len(thick_range_str)==0: 
+        raise StrataError ("Stratum thicknesses expect numerical values."
+                          f" Got {rthick!r}")
+    sep_thick_range= [ str2columns ( it, regex = re.compile (
+        rf'[{sep}]', flags = re.IGNORECASE )) for it in thick_range_str]
+
+    # use lambda to transform value in float 
+    try : 
+        thickness = list ( map ( lambda x : np.diff ( np.array ( x).astype (
+            float))[0] , sep_thick_range )
+            ) 
+    except BaseException as e : 
+        raise TypeError (str(e) + ". Value range should be numeric separated"
+                         " by a non-alphanumeric character which is explicitly"
+                         " specify through the `sep` parameter.")
+
+    thick_range, thickness =_thick_range_asserter ( 
+        thickness= thickness , 
+        depth_range= sep_thick_range, 
+        litteral_string= thick_range_str, 
+        mode=mode, 
+        raise_warn= raise_warn, 
+        )
+    if flatten_range : 
+        thick_range = list( itertools.chain ( *thick_range )) 
+        
+    return thick_range, thickness 
+
+def _make_thick_range ( v ,/,  sep='-:' , tostr=True )-> str| list : 
+    """ Make thick range from mixed thickness types. 
+    
+    Parameters 
+    ------------
+    v: str, 
+       Value of mixed thickness types. The mixed types is composed of 
+       layer thickness trend ( bottom - top) and the thick range (top to bottom)
+       separated by the thickness separator `sep`. 
+       
+    sep: str, default='-:'
+      The character used to separated layer top (roof) and bottom (wall) 
+      
+    tostr: bool, default=True 
+      returns range value as a litteral string separated by a space 
+      otherwise keep it in a list.
+  
+    Return
+    --------
+    thcik_range: list 
+      List of string composed of layer thickness ranges. 
+      
+    Examples
+    ---------
+    >>> from watex.utils.geotools import _make_thick_range 
+    >>> _make_thick_range ("99 0-15 15.2-18.8 55 40.0-70.7")
+    Out[97]: '0-99.0 0-15 15.2-18.8 18.8-73.8 40.0-70.7'
+    >>> _make_thick_range ("99 0-15 15.2-18.8 55 40.0-70.7", tostr=False)
+    Out[98]: ['0-99.0', '0-15', '15.2-18.8', '18.8-73.8', '40.0-70.7']  
+    >>> 
+    
+    """
+    v= str(v)
+    default_pattern = rf'[#&*@!,;\s{sep}]\s*'  
+    # remove the pattern use to identify top-bottom 
+    # layer into the default pattern.
+    default_pattern = re.sub(rf"[{sep}]", "", default_pattern) 
+    thick_range = str2columns(
+        v, regex =re.compile ( default_pattern, flags=re.IGNORECASE) )
+
+    # Now construct thick ranges 
+    for k, item   in enumerate( thick_range): 
+        try : 
+            item = float( item)
+        except: 
+            continue 
+        else: 
+            if k==0: 
+                thick_range[0] = f'0-{item}'
+            else: 
+                # get the previous values
+                # split it and take second value 
+                # convert it to float and add to the given one
+                split_value = str2columns(
+                    thick_range[k-1], regex = re.compile (
+                        rf'[{sep}]', flags=re.IGNORECASE))
+                # compute the layer bottom and set 
+                # the thick range. 
+                bv= float( split_value[-1]) + item
+                thick_range[k]= f"{split_value[-1]}-{bv}"
+  
+    return ' '.join (thick_range ) if tostr else thick_range 
+      
+def _thick_range_asserter (
+        thickness, 
+        depth_range, 
+        litteral_string, 
+        mode='strict', 
+        raise_warn=True 
+        ): 
+    """ Assert whether the thick range is correctly prompted. 
+    
+    An isolated part of :func:`get_thick_from`. Note that depth range 
+    expected to be separated by non-alphanumeric character. 
+    
+    Parameters 
+    -----------
+    thickness: list , 
+       Thickness of the depth range. Length is equal to the number of layer 
+       depth ranges. 
+    depth_range: list of list
+       The depth range ( without the thickness separator) in a sub-list. For 
+       instance the depth range of two layers can be:: 
+           
+           [ [ 0, 10], [10, 20 ]]
+           
+    litteral_string: list of str, 
+       The list of the string that compose the depth range including the 
+       thickness separator. For instance, the litteral string of two 
+       layers with a separator ('-')should be::
+           
+           [ [0-10 ], [10-20 ]]
+           
+    mode: str, bool ='strict'
+       Mode to retrieve, arrange and compute the layer thicknesses.
+       In ``strict`` mode, any bad arrangement of misimputed of thickness 
+       values should raise an error. However, in 'soft', some a bad arrangement
+       is dropped especially when top and bottom values of the layers are 
+       null. 
+       
+    raise_warn: bool, default=True
+      Warn user about the layer arrangement and thickness calculation. 
+      
+    Returns 
+    -------- 
+    depth_range, thickness: List of array, list of float 
+        Valid depth ranges and layer thickness computed from depth range. 
+
+    Examples 
+    ----------
+    >>> from watex.utils.geotools import _thick_range_asserter
+    >>> _thick_range_asserter ( thickness=[10 , 20 ], 
+                               depth_range=[ [ 0, 10], [10, 30 ]], 
+                               litteral_string=[ "0-10" , "10-30" ] 
+                               )
+    >>> Out[9]: ([array([ 0., 10.]), array([10., 30.])], [10, 20])
+    >>> _thick_range_asserter ( thickness=[10 , -20 ], 
+                               depth_range=[ [ 0, 10], [30, 10 ]], 
+                               litteral_string=[ "0-10" , "30-10" ] 
+                               )
+    StrataError: (...)Please check the following stratum: '30-10' 
+    >>> _thick_range_asserter ( thickness=[10 , 0 ], 
+                               depth_range=[ [ 0, 10], [10, 10 ]], 
+                               litteral_string=[ "0-10" , "10-10" ] , 
+                               mode='soft'
+                               )
+    UserWarning: (...) layer should be dropped.
+    Out[16]: ([array([ 0., 10.])], [10])
+    """
+    # first check whether thickness is equal to zero 
+    # that means the top and bottom is a sampe 
+
+    idx0, = np.where  ( np.array ( thickness )==0. )
+    idx_neg, = np.where  ( np.array ( thickness ) < 0. ) 
+    
+    if len(idx_neg)!=0: 
+        neg_thick = [litteral_string[ii] for ii in idx_neg  ]
+        sname="strata" if len(idx_neg) > 1 else 'stratum'
+        raise StrataError("Bad arrangement of stratum thicknesses. The Layer"
+                          " roof(top) cannot be greater than the wall(bottom)."
+                          f" Please check the following {sname}:"
+                          f" {smart_format(neg_thick)} ")
+    if len(idx0 ) !=0 : 
+        bad_thick = [litteral_string[ii] for ii in idx0  ]
+        if mode=='strict': 
+            raise StrataError("Layer thickness from top to bottom cannot be equal"
+                              " to null. Please check the following thickness"
+                              f" range: {smart_format(bad_thick)}")
+        
+        if raise_warn: 
+            warnings.warn ("A layer with thickness equals to null is detected at"
+                           f" at {smart_format(bad_thick)}. In soft mode, layer"
+                           " should be dropped.")
+        
+        [ thickness.pop (i) for i in idx0 ] 
+        [ depth_range.pop (i) for i in idx0] 
+        
+    # now check whether thcinkess are ordered given. 
+    # for consisteny convert values to float 
+    depth_range = list ( map ( lambda x: np.array(x).astype (float),
+                              depth_range)) 
+    #then ravel depth range 
+    dr =  list( itertools.chain ( *depth_range ))
+
+    if ''.join( np.array(dr).astype(str) ) != ''.join(
+            [str(d) for d in sorted(dr)]) : 
+        # then iterate to find the bad 
+        bad_arrangement = []
+        msg= "Bad layer arrangement is observed at thickness ranges: {}"
+        for k  in range ( len(dr)-1): 
+            if dr[k] > dr [k +1]: 
+                bad_arrangement.append ( str(dr[k]) +'-'+ str(dr[k+1]))
+        
+        if mode=='strict': 
+            raise StrataError ( msg.format( smart_format ( bad_arrangement)) )
+        else: 
+            if raise_warn: 
+                warnings.warn( msg.format( smart_format ( bad_arrangement)) + 
+                              ". The automatic-arrangement is used instead.")
+            dr = sorted ( dr ) 
+            # splitback since it work in pair 
+            depth_range = [ list(ar) for ar in np.split(
+                np.array(dr), len(dr )//2 )] 
+            
+            # then recompute the thickness 
+            thickness = list ( map ( lambda x : np.diff ( np.array ( x).astype (
+                float))[0] , depth_range )
+                ) 
+    # round thickness 
+    return depth_range, list(map ( lambda x: round (x, 3), thickness ))  
+
+    
+def build_random_thickness(
     depth, / , 
     n_layers=None, 
     h0= 1 , 
@@ -73,11 +766,11 @@ def get_random_thickness(
       
     Examples
     ---------
-    >>> from watex.utils.geotools import get_random_thickness 
-    >>> get_random_thickness (7, 10, random_state =42  )
+    >>> from watex.utils.geotools import build_random_thickness 
+    >>> build_random_thickness (7, 10, random_state =42  )
     array([0.41865079, 0.31785714, 1.0234127 , 1.12420635, 0.51944444,
            0.92261905, 0.6202381 , 0.8218254 , 0.72103175, 1.225     ])
-    >>> get_random_thickness (7, 10, random_state =42 , dirichlet_dist=True )
+    >>> build_random_thickness (7, 10, random_state =42 , dirichlet_dist=True )
     array([1.31628992, 0.83342521, 1.16073915, 1.03137592, 0.79986286,
            0.8967135 , 0.97709521, 1.34502617, 1.01632075, 0.62315132])
     """
@@ -189,25 +882,27 @@ def get_closest_gap (value, iter_obj, status ='isin',
                          "whether rock name exists in the database, "
                          f"otherwise use arguments {out_database_args}.")
 
-    for i, v in enumerate(iter_obj):
-        if condition_status : 
-            if v==skip_value:continue # skip 
-        if status=='isin': 
-            try: iter(value)
-            except :e_min = abs(v - value)
-            else : e_min = np.abs(v - np.array(value)).min() 
-        # reverse option: loop all the database 
-        elif status=='isoff':
-            try: iter(v)
-            except :e_min = abs(value - v)
-            else :e_min = np.abs(value - np.array(v)).min() 
+    with warnings.catch_warnings():
+        warnings.filterwarnings(action='ignore', category=RuntimeWarning)
+        for i, v in enumerate(iter_obj):
+            if condition_status : 
+                if v==skip_value:continue # skip 
+            if status=='isin': 
+                try: iter(value)
+                except :e_min = abs(v - value)
+                else : e_min = np.abs(v - np.array(value)).min() 
+            # reverse option: loop all the database 
+            elif status=='isoff':
+                try: iter(v)
+                except :e_min = abs(value - v)
+                else :e_min = np.abs(value - np.array(v)).min() 
+                    
+            if e_min <= minbuff : 
+                if status =='isoff':
+                    ix_close_res = (i,  value) # index and value in database  
+                else:ix_close_res = (i,  v)  # index and value in TRES 
                 
-        if e_min <= minbuff : 
-            if status =='isoff':
-                ix_close_res = (i,  value) # index and value in database  
-            else:ix_close_res = (i,  v)  # index and value in TRES 
-            
-            minbuff = e_min 
+                minbuff = e_min 
         
     return ix_close_res
 
@@ -453,11 +1148,11 @@ def get_s_thicknesses(grouped_z, grouped_s, display_s =True, station=None):
     thick =[]
     thick_range =[]
     for k , zg in enumerate(grouped_z): 
-        th = abs(max(zg) - b) # for consistency 
+        th = round (abs(max(zg) - b), 5)  # for consistency 
         thick.append( th) 
-        str_=f"{b} ----- "
-        b= max(zg)
-        thick_range.append(str_ + f"{b}")
+        str_=f"{b:^7} ----- "
+        b= round (max(zg), 3) 
+        thick_range.append(str_ + f"{b:^7}")
     
     doi = grouped_z[-1][-1]
     if sum(thick) == doi: 
@@ -501,7 +1196,7 @@ def display_s_infos( s_list, s_range, s_thick, **kws):
     print(headinfos)
     print(linestyle *mullines)
     for i, (sn, sthr, sth) in enumerate(zip(s_list, s_range, s_thick)):
-        print(headtemp.format(f"{i+1}.", sn, sthr, sth))
+        print(headtemp.format(f"{i+1}.", sn, sthr, sth ))
         
     print(linestyle *mullines)
     
@@ -690,53 +1385,81 @@ def annotate_log (ax, thick, layers,*, ylims=None, colors=None,
     return ax 
 
 
-def pseudostratigraphic_log (thick, layers, station, *,
-                    zoom =None, hatch=None, color=None, **annot_kws) : 
-    """ Make the pseudostratigraphic log with annotate figure.
+def plot_stratalog(
+    thick, 
+    layers, 
+    station, *,
+    zoom =None, 
+    hatch=None, 
+    color=None, 
+    fig_size=(10, 4),
+    **annot_kws
+): 
+    """ Make the stratalog log with annotate figure.
     
-    :param thick: list of the thicknesses of the layers 
-    :param layers: list of the name of layers
-    :param hatch: list of the layer patterns
-    :param color: list of the layer colors
-    :parm zoom: float, list. If float value is given, it considered as a 
-            zoom ratio and it should be ranged between 0 and 1. 
-            For isntance: 
-                - 0.25 --> 25% plot start from 0. to max depth * 0.25 m.
-                
-            Otherwise if values given are in the list, they should be
-            composed of two items which are the `top` and `bottom` of
-            the plot.  For instance: 
-                - [10, 120] --> top =10m and bottom = 120 m.
-                
-            Note that if the length of `zoom` list is greater than 2, 
-             the function will return all the plot and 
-             no errors should raised. 
-
-    :Example: 
-        >>> from watex.utils.geotools as GU   
-        >>> layers= ['$(i)$', 'granite', '$(i)$', 'granite']
-        >>> thicknesses= [59.0, 150.0, 590.0, 200.0]
-        >>> hatch =['//.', '.--', '+++.', 'oo+.']
-        >>> color =[(0.5019607843137255, 0.0, 1.0), 'b', (0.8, 0.6, 1.), 'lime']
-        >>> GU.pseudostratigraphic_log (thicknesses, layers, hatch =hatch ,
-        ...                   color =color, station='S00')
-        >>>  GU.pseudostratigraphic_log ( thicknesses,
-                                         layers,
-                                         hatch =hatch, zoom =0.25,
-                                         color =color, station='S00')
+    Parameters 
+    ------------
+    thick, layer, hatch, colors: list, 
+       list of the layers thicknesses , names, patterns and colors. 
+       
+    zoom: float, list 
+       If float value is given, it considered as a 
+       zoom ratio and it should be ranged between 0 and 1. 
+       For isntance: 
+           
+       - 0.25 --> 25% plot start from 0. to max depth * 0.25 m.
+            
+       Otherwise if values given are in the list, they should be
+       composed of two items which are the `top` and `bottom` of
+       the plot.  For instance: 
+           
+       - [10, 120] --> top =10m and bottom = 120 m.
+            
+       Note that if the length of `zoom` list is greater than 2, 
+       the function will return all the plot and 
+       no errors should raised. 
+             
+      fig_size: tuple, default=(10, 4)
+        Figure size 
+        
+    Examples 
+    ---------
+    >>> import watex.utils.geotools as GU   
+    >>> layers= ['$(i)$', 'granite', '$(i)$', 'granite']
+    >>> thicknesses= [59.0, 150.0, 590.0, 200.0]
+    >>> hatch =['//.', '.--', '+++.', 'oo+.']
+    >>> color =[(0.5019607843137255, 0.0, 1.0), 'b', (0.8, 0.6, 1.), 'lime']
+    >>> GU.plot_stratalog (thicknesses, layers, hatch =hatch ,
+                       color =color, station='S00')
+    >>> GU.plot_stratalog ( thicknesses,layers,hatch =hatch, 
+                            zoom =0.25, color =color, station='S00')
     """
 
     is_the_same, typea_status, typeb_status= _assert_list_len_and_item_type(
         thick, layers,typea =(int, float, np.ndarray),typeb =str)
     if not is_the_same: 
-        raise TypeError("Layers' thicknesses and layer names lists must have "
-                        "the same. But {len(thick)} and {len(layers)} were given.")
+        # try to shrunk values 
+        diff_thick = len(thick) - len(layers) 
+        if abs (diff_thick)>2: 
+            raise TypeError("Layer thicknesses and layer names must be consistent."
+                            f". Got {len(thick)} and {len(layers)} respectively.")
+        else: 
+            # tolerate one layer 
+            # by shruunking data 
+            if diff_thick < 0: 
+                layers = layers [: len(thick)]
+            else: 
+                thick = thick [: len(layers)]
+                
     if not typea_status: # try to convert to float
         try : 
             thick =[float(f) for f in thick ]
-        except :raise ValueError("Could not convert to float."
-                                 " Please check your thickness values.")
-    if not  typeb_status: layers =[str(s) for s in layers] 
+        except :raise TypeError(
+                "Layer thickness expect numeric value."
+                f" Got {np.array(thick).dtype.name!r}")
+        
+    if not  typeb_status: 
+        layers =[str(s) for s in layers] 
     
     # get the dfault layers properties hatch and colors 
     # change the `none` values if exists to the default values
@@ -749,8 +1472,8 @@ def pseudostratigraphic_log (thick, layers, station, *,
         ylims, thick, layers, hatch, color = zoom_processing(zoom=zoom, 
              data= thick, layers =layers, hatches =hatch,colors =color)
     #####################################
-    fig = plt.figure( f"PseudoLog of Station ={station.upper()}",
-                     figsize = (10,14), 
+    fig = plt.figure( f"Log of Station ={station.upper()}",
+                     figsize = fig_size, 
                       # dpi =300 
                      )
     plt.clf()
@@ -794,7 +1517,7 @@ def pseudostratigraphic_log (thick, layers, station, *,
   
         axis.set_xticks([]) 
         
-    fig.suptitle( f"PseudoStratigraphic log of Station ={station.upper()}",
+    fig.suptitle( f"Strata log of Station ={station.upper()}",
                 ha='center',
         fontsize= 7* 2., 
         verticalalignment='center', 
@@ -803,6 +1526,7 @@ def pseudostratigraphic_log (thick, layers, station, *,
         y=0.90)
     
     plt.show()
+    
 
 def _assert_list_len_and_item_type(lista, listb, typea=None, typeb=None):
     """ Assert two lists and items type composed the lists 
@@ -909,14 +1633,14 @@ def set_default_hatch_color_values(hatch, color, dhatch='.--',
     if fs==1: color = tuple(color)
     return hatch, color 
 
-def print_running_line_prop(obj, inversion_software='Occam2D') :
+def print_running_line_prop(obj, inversion_software='modelling softw.') :
     """ print the file  in stdout which is currently used
     " for pseudostratigraphic  plot when extracting station for the plot. """
     
     print('{:~^108}'.format(
         f' Survey Line: {inversion_software} files properties '))
     print('|' + ''.join([ "{0:<5} = {1:<17}|".format(
-        i, os.path.basename( str(getattr(obj, f'{i}_fn'))))  
+        i, os.path.basename( str(getattr(obj, f'{i}_fn', 'NA'))))  
      for i in ['model', 'iter', 'mesh', 'data']]) )
     print('~'*108)
 
