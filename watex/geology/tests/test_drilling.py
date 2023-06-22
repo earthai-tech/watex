@@ -226,6 +226,17 @@ def test_DSBorehole ():
     # 132      0.0
     # 133      0.0
     # Name: strata_electrical_properties, Length: 134, dtype: float64
+    
+    # test nlogs 
+    ndata = wx.fetch_data ('nlogs', as_frame =True, key='ns', samples =12 ) 
+    bo = DSBorehole ().fit(ndata) 
+    # compute layer thickness 
+    bo.set_thickness ()
+    print(bo.depth_) 
+    bo.set_strata(add_electrical_properties= True , random_state=42 ) 
+    print(bo.strata_)
+    print(bo.strata_electrical_properties_)
+    
 @pytest.mark.skipif(os.path.isdir ('data/drill') is False ,
                     reason = 'Drill data path does not exist')
 def test_DSDrill(): 

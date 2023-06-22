@@ -227,9 +227,9 @@ def get_azimuth (
         xlon = np.deg2rad (xlon ) ; ylat = np.deg2rad ( ylat)
     
     dx = map (lambda ii: np.cos ( ylat[ii]) * np.sin( ylat [ii+1 ]) - 
-                     np.sin(ylat[ii]) * np.cos( ylat[ii+1]) * np.cos (xlon[ii+1]- xlon[ii]), 
-                     range (len(xlon)-1)
-                     )
+        np.sin(ylat[ii]) * np.cos( ylat[ii+1]) * np.cos (xlon[ii+1]- xlon[ii]), 
+        range (len(xlon)-1)
+        )
     dy = map( lambda ii: np.cos (ylat[ii+1])* np.sin( xlon[ii+1]- xlon[ii]), 
                    range ( len(xlon)-1)
                    )
