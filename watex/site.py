@@ -191,7 +191,6 @@ class Profile:
                                         error ='ignore'  ): 
             raise ProfileError ("Elevation and x or y must be consistent."
                               f" Got {len(x)} and {len(elev)}") 
-
         return self 
         
     def bearing (self, *, to_degree:bool = True ): 

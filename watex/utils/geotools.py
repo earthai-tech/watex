@@ -784,7 +784,7 @@ def build_random_thickness(
             max_depth = float( depth )
         except: 
             raise DepthError("Depth must be a numeric or arraylike of float."
-                             f"Got {type (depth).__name__!r}")
+                             f" Got {type (depth).__name__!r}")
 
     if n_layers is None: 
         raise DepthError ("'n_layers' is needed when depth is not an arraylike.")
