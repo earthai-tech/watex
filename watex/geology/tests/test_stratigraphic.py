@@ -33,5 +33,5 @@ def test_GeoStrataModel ():
     gs.plotStrata ('s33') 
     
     
-if __name__=='__main__': 
-    test_GeoStrataModel()
+# if __name__=='__main__': 
+#     test_GeoStrataModel()

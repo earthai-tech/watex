@@ -76,12 +76,13 @@ from .funcutils import (
     remove_outliers, 
     find_feature_positions,
     find_close_position,
+    ellipsis2false,    
     smart_format,
     is_iterable, 
     reshape,
     ismissing,
     fillNaN, 
-    spi,            
+    spi,       
 )
 from .validator import ( 
     _is_arraylike_1d, 
@@ -193,10 +194,8 @@ def get_azimuth (
     
     mode = str(mode).lower() 
     projection= str(projection).lower()
-    if view is ...: view =False 
-    if extrapolate is ...: 
-        extrapolate=False 
-    # in the case data is given 
+    extrapolate, view = ellipsis2false (extrapolate, view)
+
     xlon , ylat = assert_xy_in(xlon , ylat , data = data )
     
     if ( 
@@ -901,7 +900,6 @@ def dummy_basement_curve(
     
     return func45, beta 
 
-
 def find_limit_for_integration(
         ix_arr: ArrayLike[DType[int]],
         b0: List[T] =[]
@@ -935,7 +933,6 @@ def find_limit_for_integration(
         b0.append(oc); b0.append(v)
         
     return b0 
-
 
 def find_bound_for_integration(
         ix_arr: ArrayLike[DType[int]],
@@ -975,7 +972,6 @@ def find_bound_for_integration(
     array_init = ix_arr[int(max(index)) +1:]
     return b0 if len(
         array_init)==0 else find_bound_for_integration(array_init, b0)
- 
     
 def fitfunc(
         x: ArrayLike[T], 
@@ -1416,7 +1412,6 @@ def ohmicArea(
 
     return rv
  
-
 def _type_mechanism (
         cz: ArrayLike |List[float],
         dipolelength : float =10.
@@ -1839,7 +1834,6 @@ def scalePosition(
         
     return ydata_new, popt, pcov 
 
-
 def __sves__ (
         s_index: int  , 
         cz: ArrayLike | List[float], 
@@ -1877,7 +1871,6 @@ def __sves__ (
             side = sid ; break 
         
     return (rho_ls, side), (rmax_ls , rmax_rs )
-
 
 def detect_station_position (
         s : Union[str, int] ,
@@ -2120,7 +2113,6 @@ def sfi (
         
     return (sfi_ , components) if return_components else sfi_ 
 
-
 def plot_sfi(
     cz: Sub[ArrayLike],
     p: Sub[SP[ArrayLike]] = None, 
@@ -2313,8 +2305,7 @@ def _manage_colors (c, default = ['ok', 'ob-', 'r-']):
     c = list(c) +  default 
     
     return c [:3] # return 3colors 
-
-        
+     
 @refAppender(refglossary.__doc__)
 def plot_ (
     *args : List [Union [str, ArrayLike, ...]],
@@ -2474,16 +2465,13 @@ def plot_ (
     fig.suptitle(**fig_title_kws)
     plt.legend (leg, loc ='best') if leg  else plt.legend ()
     plt.show ()
-        
-    
+   
 def quickplot (arr: ArrayLike | List[float], dl:float  =10)-> None: 
     """Quick plot to see the anomaly"""
     
     plt.plot(np.arange(0, len(arr) * dl, dl), arr , ls ='-', c='k')
     plt.show() 
-    
-    
-
+ 
 def magnitude (cz:Sub[ArrayLike[float, DType[float]]] ) -> float: 
     r""" 
     Compute the magnitude of selected conductive zone. 
@@ -2524,7 +2512,6 @@ def power (p:Sub[SP[ArrayLike, DType [int]]] | List[int] ) -> float :
     """
     return np.abs(p.min()- p.max()) 
 
-
 def _find_cz_bound_indexes (
     erp: Union[ArrayLike[float, DType[float]], List[float], pd.Series],
     cz: Union [Sub[ArrayLike], List[float]] 
@@ -2557,7 +2544,6 @@ def _find_cz_bound_indexes (
     
     return cz_indexes [0] , cz_indexes [-1] 
 
-
 def convert_distance_to_m(
         value:T ,
         converter:float =1e3,
@@ -2582,8 +2568,7 @@ def convert_distance_to_m(
                )
             
     return value
-    
-    
+       
 def get_station_number (
         dipole:float,
         distance:float , 
@@ -2716,7 +2701,6 @@ def define_conductive_zone (
     
     return  conductive_zone, conductive_zone[stn], ix_stn 
     
-
 #FR0: #CED9EF # (206, 217, 239)
 #FR1: #9EB3DD # (158, 179, 221)
 #FR2: #3B70F2 # (59, 112, 242) #repl rgb(52, 54, 99)
@@ -2877,7 +2861,6 @@ def compute_sfi (
 
         sfi = - np.sqrt(2)
   
-    
     return sfi
   
 def get_anomaly_ratio(erp: ArrayLike, czposix=None, cz = None, 

@@ -2984,7 +2984,6 @@ def plot_skew (
     >>> edi_sk = wx.fetch_data ("edis", return_data =True , samples = 20 ) 
     >>> plot_skew (edi_sk) 
     >>> plot_skew (edi_sk, threshold_line= True) 
-    
     """
     if style is not None:
         plt.style.use (style )
@@ -3017,7 +3016,6 @@ def plot_skew (
     #---manage threshold line ------
     thr_code = {"bahr": [1] , "swift":[ 2] , 'both':[1, 2] }
 
-        
     if threshold_line is not None: 
         if str(threshold_line).lower() in ("*", "both"): 
             threshold_line = 'both'
@@ -3300,7 +3298,7 @@ in a rose diagram of xy plot.
 Parameters 
 ------------
 list_of_edis: list, 
-    full paths to .edi files to plot or list of :term:`EDI-files`. 
+    full paths to .edi files to plot or list of :term:`EDI` files. 
     
    .. versionchanged:: 0.2.0 
       No need to provide a list of term:`EDI` files. Henceforth `list_of_edis`
