@@ -22,6 +22,7 @@ import warnings
 import datetime
 import shutil 
 import sqlite3 as sq3 
+from importlib import resources
 # from pg8000 import DBAPI
 from ..exceptions import ( 
     GeoDatabaseError, 
@@ -33,11 +34,9 @@ from .geology import (
     )
 from .._watexlog import watexlog 
 _logger = watexlog().get_watex_logger(__name__ )
-
-# let set the systeme path find memory dataBase
-for p in ('.', '..', '../..', 'watex/etc'): 
-    # for consistency, force system to find the database path.
-    sys.path.insert(0, os.path.abspath(p))  
+#for consistency, force system to find the database path
+# from absolute path 
+sys.path.insert(0, "..") 
 
 class GeoDataBase (object): 
     """
@@ -64,15 +63,15 @@ class GeoDataBase (object):
                           '*', '\-', '\+', '\o', '\O', '\.', '\*'] 
     #use '\\' rather than '\'.
     # latter , it will be deprecated to FGDC geological map symbolization. 
-    
     codef = ['code','label','__description','pattern', 'pat_size',	
              'pat_density','pat_thickness','rgb','electrical_props', 
-                 'hatch', 'colorMPL', 'FGDC' ]
+              'hatch', 'colorMPL', 'FGDC' ]
 
-    # locate the geodataBase
-    geoDataBase = os.path.join(
-        os.path.abspath('watex/etc'),'memory.sq3')
- 
+    # let set the systeme path find memory dataBase
+    DMOD = 'watex.etc' ; memory='memory.sq3'
+    with resources.path (DMOD, memory) as p : 
+         geoDataBase = str(p) # for consistency
+
     # :memory: is faster but we chose the static option :~.sq3 
     # in sql_DB contains drill holes and wells Tables 
 
@@ -96,9 +95,10 @@ class GeoDataBase (object):
                 db_host=os.path.dirname(self.geoDataBase), 
                                       db_name ='memory.sq3')
         except : 
-            mess =''.join(['Connection to geoDataBase failed! Sorry we can ',
-                           'not give a suitable reply for your request!', 
-                    'It would  be process with "geological structural class." !'])
+            mess =''.join([
+                'Connection to geoDataBase failed. Sorry, we can',
+                ' not give a suitable reply for your request', 
+                'It would  be process with "geological structural class." !'])
             
             warnings.warn(mess)
             self.success= 0

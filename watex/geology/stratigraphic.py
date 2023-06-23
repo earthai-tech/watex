@@ -1354,15 +1354,14 @@ class GeoStrataModel(GeoBase):
 def _ps_memory_management(obj=None, option='set'): 
     """ Manage the running times for stratigraphic model construction.
     
-    The script allows to avoid running several times the GeoStrataModel model
-    construction to retrieve the pseudostratigraphic (PS) log at each station.  
+    The script allows to avoid running several times the GeoStrataModel
+     model construction to retrieve the stratigraphic log at each station.  
     It memorizes the model data for the first run and used it when calling it
-    to  visualize the PS log at each station. Be aware to edit this script.
+    to  visualize the strata log at each station. Be aware to edit this script.
     """
-    DMOD = 'watex.etc'
-    memory, memorypath='__memory.pkl', 'watex/etc'
-    with resources.path (DMOD, memory) as p : 
-         memory_file = str(p) # for consistency
+    MMOD = 'watex.etc'; memory='__memory.pkl'
+    with resources.path (MMOD, memory) as mfile : 
+         memory_file = str(mfile) # for consistency
          
     mkeys= ('set', 'get', 'recover', 'fetch', set)
     if option not in mkeys: 
@@ -1371,32 +1370,22 @@ def _ps_memory_management(obj=None, option='set'):
         
     if option in ('set', set): 
         if obj is None: 
-            raise TypeError('NoneType object can not be set.') 
+            raise TypeError('NoneType object cannot be set. Provide the'
+                            " model object to 'obj' parameter.") 
         psobj_token = __build_ps__token(obj)
         data = (psobj_token, list(obj.__dict__.items()))
-        serialize_data ( data, memory, savepath= memorypath )
+        serialize_data ( data, memory, savepath= os.path.dirname (memory_file))
         return 
-    
     elif option in ('get', 'recover', 'fetch'): 
-        try: 
-            memory_exists =  os.path.isfile(os.path.join(memorypath, memory))
-        except: 
-            memory_exists =  os.path.isfile(memory_file)
-            
+        memory_exists =  os.path.isfile(memory_file)
         if not memory_exists: 
-            _logger.error('No memory found. Run the GeoStrataModel class '
-                          'beforehand to create your first model.')
-
-            warnings.warn("No memory found. You need to build your "
+            _logger.error('No memory found. Run the GeoStrataModel class'
+                          ' beforehand to create your first model.')
+            warnings.warn("No memory found. You need to build your"
                           " GeoStrataModel model by running the class first.")
             raise  MemoryError("Memory not found. Run the `buildNM` method"
                                " to create your model first.")
-        try: 
-            psobj_token, data_ = load_serialized_data(
-                os.path.join(memorypath, memory))
-        except: 
-            psobj_token, data_ = load_serialized_data(memory_file )
-            
+        psobj_token, data_ = load_serialized_data(memory_file )
         data = dict(data_)
         # create PseudoStratigraphicObj from metaclass and inherits from 
         # dictattributes of GeoStrataModel class

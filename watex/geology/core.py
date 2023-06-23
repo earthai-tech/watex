@@ -16,6 +16,7 @@ import warnings
 import shutil 
 from six.moves import urllib 
 from pprint import pprint 
+from importlib import resources
 
 from ..utils.funcutils import ( 
     smart_format, 
@@ -84,10 +85,13 @@ class GeoBase:
             setattr(self, key, kwargs[key])
             
 #++++ configure the geological rocks from files:AGSO & AGSO.STCODES +++++++++++
+EMOD = 'watex.etc' ; buffer_file = 'AGSO.csv'
+with resources.path (EMOD, buffer_file) as buff : 
+     props_buf  = str(buff) 
 __agso_properties =dict(
     GIT_REPO = 'https://github.com/WEgeophysics/watex', 
     GIT_ROOT ='https://raw.githubusercontent.com/WEgeophysics/watex/master/',
-    props_dir = 'watex/etc/',
+    props_dir = os.path.dirname (props_buf),
     props_files = ['AGSO.csv', 'AGSO_STCODES.csv'], 
     props_codes = ['code', 'label', 'name', 'pattern','size',
             'density', 'thickness', 'color']
