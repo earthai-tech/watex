@@ -1,0 +1,33 @@
+v0.2.6 (June 23, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.5`` that shows fugs fixed.  
+
+- |Fix| :class:`watex.geology.database` implements Python ``importlib.resources`` path  to fix errors when passing from Window 
+  to Linux system to fetch the dababase memory properly.  
+
+- |Fix| Fix AttributeError of ``curs`` from :class:`watex.geology.database.DBSetting` relate to determining 
+  the path to the database as: 
+
+  .. code-block:: default 
+  
+    Trraceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+    File "/home/daniel/anaconda3/envs/watex-project/lib/python3.10
+    (...) 
+       _gammaVal = _dbObj._retreive_databasecolumns(properties)
+    File "/home/daniel/anaconda3/envs/watex-project/lib/python3.10/site-packages/watex/geology/database.py", line 183, in _retreive_databasecolumns
+    manage = self.manage_geoDataBase.curs.execute(
+     AttributeError: 'DBSetting' object has no attribute 'curs'
+
+  Python importlib.resources is used instead. 
+
+- |Fix| Memory management of :class:`watex.geology.GeoStrataModel` uses ``importlib.resources`` to fix geo-memory path; likewise for  
+  the AGSO properties (:func:`watex.geology.core.get_agso_properties`) for collecting base geological structures from database.
+  
+
+
+
+
+
+

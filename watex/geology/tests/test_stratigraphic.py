@@ -32,6 +32,15 @@ def test_GeoStrataModel ():
     gs.strataModel () 
     gs.plotStrata ('s33') 
     
+    # ine test more 
+    crm =np.abs ( np.random.randn( 20, 12 ) ) * 1000
+    tres = np.linspace ( crm.min() *2, crm.max() , 7) 
+    layers = ['migmatites', 'gneiss', 'basement']
+
+    gm = GeoStrataModel().fit( crm = crm , tres =tres , layers = layers ) 
+    gm.buildNM()
+    gm.plotStrata ('07') 
+    gm.plotStrata ('02') 
     
 # if __name__=='__main__': 
 #     test_GeoStrataModel()
