@@ -10,6 +10,7 @@ These are minor changes  in ``v0.2.5`` that shows fugs fixed.
   the path to the database as: 
 
   .. code-block:: default 
+  
     Trraceback (most recent call last):
         File "<stdin>", line 1, in <module>
     File "/home/daniel/anaconda3/envs/watex-project/lib/python3.10
