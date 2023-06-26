@@ -1351,8 +1351,9 @@ class _drill_builder:
         )
     )
     
-    def __init__(self, kind=None, **kws ): 
+    def __init__(self, kind=None, mode ='build', **kws ): 
         self.kind =kind 
+        self.mode=mode 
         
     def __call__(self, func  ): 
   
@@ -1363,57 +1364,72 @@ class _drill_builder:
             """Builder function. 
             Fetch data from the output of former function. 
             """
-            obj , values, return_obj   = self._func (*args, **kwargs) 
-            
+
             if self.kind not in ('collar', 'geology', 'samples', 'elevation'): 
                 raise DrillError (
                     "Wrong argument of kind. Expect ('collar', 'geology',"
                     f" 'samples','elevation'). Got {self.kind!r}") 
-            kind_values = dict ( collar = self.code.collar , 
+                
+            self.kind_values = dict ( collar = self.code.collar , 
                                 geology= self.code.geology , 
                                 samples = self.code.samples, 
                                 elevation= self.code.elevation 
                                 )
-            columns =self.init_code +  kind_values.get(self.kind)
-            data = to_numeric_dtypes(
-                values, columns =columns, 
-                drop_nan_columns=False 
-                )
-            if ( 
-                    hasattr(obj, '_compute_azimuth') 
-                    and self.kind=='collar'
-                    and len(data)>1 
-                    ) : 
-                try: 
-                    east, north = key_search(
-                       'east north', 
-                        default_keys=data.columns, 
-                        deep=True, 
-                        # ignore underscore '_' 
-                        pattern ='[#&@!+,;\s-]\s*' 
-                        )
-                    azim_value = get_azimuth(
-                        data[east], 
-                        data[north],
-                        projection ='utm', 
-                        extrapolate=True, 
-                        )
-                    azimuth = key_search(
-                       'azim', 
-                        default_keys= data.columns, 
-                        deep=True , 
-                        pattern ='[#&@!+,;\s-]\s*'
-                        )[0]
-                    data[azimuth]= azim_value 
-                except BaseException as e: 
-                    if obj.verbose: warn( str(e))
-
-            setattr (obj , self.kind +'_', data )
+             
+            if str(self.mode)=='build': 
+                return  self._build (self, *args, **kwargs)
             
-            return obj if not return_obj else getattr (obj, self.kind +'_')
-        
+            elif str(self.mode)=='write': 
+                ... 
+
         return new_func
     
+    def _build (self, *args, **kwargs): 
+        """ Step by ste build mod """
+        obj , values, return_obj   = self._func (*args, **kwargs)  
+        
+        columns =self.init_code +  self.kind_values.get(self.kind)
+        data = to_numeric_dtypes(
+            values, columns =columns, 
+            drop_nan_columns=False 
+            )
+        if ( 
+                hasattr(obj, '_compute_azimuth') 
+                and self.kind=='collar'
+                and len(data)>1 
+                ) : 
+            try: 
+                east, north = key_search(
+                   'east north', 
+                    default_keys=data.columns, 
+                    deep=True, 
+                    # ignore underscore '_' 
+                    pattern ='[#&@!+,;\s-]\s*' 
+                    )
+                azim_value = get_azimuth(
+                    data[east], 
+                    data[north],
+                    projection ='utm', 
+                    extrapolate=True, 
+                    )
+                azimuth = key_search(
+                   'azim', 
+                    default_keys= data.columns, 
+                    deep=True , 
+                    pattern ='[#&@!+,;\s-]\s*'
+                    )[0]
+                data[azimuth]= azim_value 
+            except BaseException as e: 
+                if obj.verbose: warn( str(e))
+
+        setattr (obj , self.kind +'_', data )
+        
+        return obj if not return_obj else getattr (obj, self.kind +'_')
+        
+    def _read_dh (self, *args, **kwargs): 
+        """ Read DH files """
+        
+        
 class DSDrill : 
     """ Drill data set class. 
     
