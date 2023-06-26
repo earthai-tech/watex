@@ -1938,8 +1938,11 @@ class DSDrill :
         if len(coords) !=2: 
             raise ValueError (f"Need {dh_hole} both coordinates x/longitude "
                               f"and y/latitude. Got {len(coords)}")
-            
-        dh_xlon, dh_ylat = list(coords) 
+        try : 
+            dh_xlon, dh_ylat = list(coords.astype (float)) 
+        except: raise TypeError ("Coordinates should be numeric."
+                                 f" Got {coords.dtype.name!r}")
+        
         if self.projection =='ll': 
             dh_ylat, dh_xlon = Location.to_utm_in(dh_ylat, dh_xlon, 
                utm_zone= self.utm_zone)
