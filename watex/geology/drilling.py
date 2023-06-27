@@ -10,7 +10,10 @@ from warnings import warn
 import numpy as np 
 import pandas as pd 
 
-from .core import get_agso_properties 
+from .core import ( 
+    get_agso_properties ,
+    GeoBase 
+    )
 from .geology import Geology
 from .stratigraphic import GeoStrataModel 
 from .._typing import NDArray, DataFrame
@@ -30,6 +33,8 @@ from ..utils.funcutils import (
     str2columns,
     key_search, 
     ellipsis2false, 
+    exist_features, 
+    smart_format, 
     )
 from ..utils.geotools import build_random_thickness, smart_thickness_ranker
 from ..utils.validator import check_array 
@@ -655,48 +660,8 @@ class DSBorehole:
             Instanced object for chaining method. 
             
         """
-        columns = fit_params.pop ("columns", None  )
-        data = _is_readable(data, as_frame =True, input_name= 'b', 
-                columns = columns, encoding =self.encoding )
-        
-        data = check_array (
-            data, 
-            force_all_finite= "allow-nan", 
-            dtype =object , 
-            input_name="Borehe data", 
-            to_frame=True, 
-            )
-        
-        data, nf, cf = to_numeric_dtypes(
-            data , 
-            return_feature_types= True, 
-            verbose =self.verbose, 
-            sanitize_columns= True, 
-            fill_pattern='_', 
-            **fit_params 
-            )
-
-        self.feature_names_in_ = nf + cf 
-        
-        if len(cf )!=0:
-            # sanitize the categorical values 
-            for c in cf : 
-                data[c] = data[c].str.strip() 
-            
-        for name in data.columns : 
-            setattr (self, name, data[name])
-            
-        # set depth attributes 
-        self.depth_= None 
-        
-        if self.dname is None: 
-            if 'depth' in self.feature_names_in_: 
-                self.dname= 'depth'
-   
-        if self.dname  in self.feature_names_in_: 
-            self.depth_= data[self.dname]
-            
-        self.data_ = data.copy() 
+        _fit( self, data = data, drop_nan_columns=False,
+             ** fit_params  )
         
         return self 
     
@@ -1240,82 +1205,115 @@ class DSBorehole:
                " Call 'fit' with appropriate arguments before using"
                " this method"
                )
-        
         if not hasattr (self, 'data_'): 
             raise NotFittedError(msg.format(
                 obj=self)
             )
         return 1
-    
-     
-class Borehole(Geology): 
-    """
-    Focused on Wells and `Borehole` offered to the population. To use the data
-    for prediction purpose, each `Borehole` provided must be referenced on 
-    coordinates values or provided the same as the one used on `ves` or `erp` 
-    file. 
-    
-    """
-    def __init__(
-        self,
-        lat:float = None, 
-        lon:float = None, 
-        area:str = None, 
-        status:str =None, 
-        depth:float = None, 
-        base_depth:float =None, 
-        geol:str=None, 
-        staticlevel:float =None, 
-        airlift:float =None, 
-        id=None, 
-        qmax =None, 
-        **kwds
-        ): 
-       super().__init__(**kwds)
-        
-       self.lat=lat 
-       self.lon=lon 
-       self.area=area 
-       self.status=status 
-       self.depth=depth 
-       self.base_depth=base_depth 
-       self.geol=geol 
-       self.staticlevel=staticlevel 
-       self.airlift =airlift 
-       self.id=id 
-       self.qmax=qmax 
-       
-       for key in list(kwds.keys()): 
-           setattr (self, key, kwds[key])
 
+class _drill_builder (GeoBase): 
+    """Decorator to handle the drillhole properties. 
     
-    def fit(self,
-            data: str |DataFrame | NDArray 
-        )-> object: 
-        """ Fit Borehole data and populate the corrsponding attributes"""
+    Decorator build the collar, geology, geochemistry samples as well as the 
+    elevation. When drillholes property is unknwow, set the ``mode=get`` 
+    applied to a wrapper that accepts only `kind` as parameter. For instance, 
+    fetching the geochemistry property samples should be::
         
-        self._logging.info ("fit {self.__class__.__name__!r} for corresponding"
-                            "attributes. ")
-    
-        return self
-
-class _drill_builder: 
-    """ Decorator to handle the mannual collar, geology , geochemistry samples 
-    and drilling elevation data building. 
+        >>> from watex.geology.drilling import _drill_builder
+        >>> def prop_wrapper (kind): 
+               return kind 
+        >>> _drill_builder (mode ='get') (prop_wrapper) ('samples')
+        Out[1]: 
+        ('DH_Hole',
+         'DH_East',
+         'DH_North',
+         'DH_RH',
+         'DH_From',
+         'DH_To',
+         'Sample',
+         'Mask')
     
     Parameters 
     -----------
     kind: str, ['collar'| 'geology'| 'samples'|'elevation']
        Kind of data to build 
     
+    mode: str , ['build'|'fit'|'get'], default='build'
+       Action to perform.  
+       - `build` constructs drillhole manually 
+       - `fit` contruct drillhole from the fitted data 
+       - `get` outputs a drillhole property attributes. 
+       
     Returns
     --------
     well/hole data: pd.DataFrame
        Well/hole, geology and samples data set constructed based on the 
-       Oasis montaj property drill codes available. 
+       Oasis montaj property drill codes available or fitted data.  
        
-    See more about the Oasis Montaj from Seequent here: 
+    Note 
+    ------
+    The drillhole property follow the `Oasis montaj` software module
+    `drillhole`. See more about the Oasis Montaj from Seequent here: 
         https://www.seequent.com/products-solutions/geosoft-oasis-montaj/extensions/
+        
+    Examples 
+    ----------
+    >>> from watex.geology.drilling import _drill_builder
+    >>> from watex.datasets import load_nlogs 
+    >>> sample_data = load_nlogs( key='ns', as_frame=True ) 
+    >>> def get_props (kind ): 
+           return kind 
+    >>> props= _drill_builder (mode ='get')( get_props )
+    >>> props ('collar')
+    ('DH_Hole',
+     'DH_East',
+     'DH_North',
+     'DH_RH',
+     'DH_Top',
+     'DH_Bottom',
+     'DH_Dip',
+     'Elevation',
+     'DH_Azimuth',
+     'DH_PlanDepth',
+     'DH_Decr',
+     'Mask') 
+    >>> props('geology') 
+    Out[2]: ('DH_Hole', 'DH_East', 'DH_North', 'DH_RH', 'DH_From', 'DH_To', 'Rock', 'Mask')
+    >>> # view the data columns first 
+    >>> sample_data.columns 
+    Out[3]: 
+    Index(['hole_id', 'year', 'drilling_type', 'longitude', 'latitude', 'easting',
+           'northing', 'ground_height_distance', 'depth', 'opening_date',
+           'end_date'],
+          dtype='object')
+    >>> sample_data.head(2) 
+    Out[4]: 
+      hole_id    year  ... opening_date    end_date
+    0  NSGC01  2018.0  ...   2018-07-31  2018-08-01
+    1  NSGC03  2018.0  ...   2018-07-09  2018-07-11
+    [2 rows x 11 columns]
+    >>> # construct wrapper function
+    >>> def make_dh ( *dh_params) : 
+           return dh_params   
+    >>> # construct data to make properties
+    >>> props = {"hole_id": "hole","easting":"east", "northing":"north",
+                 "depth": "depth"}
+    >>> fit_props= _drill_builder (mode='fit')( make_dh)
+    >>> obj = type ( "do_nothing", (), {}) # make a fake object 
+    >>> dh_data = fit_props (obj, sample_data,True, props, 'collar')
+    >>> dh_data.head(2) 
+    Out[5]: 
+      DH_Hole    DH_East    DH_North DH_RH  ... DH_Azimuth DH_PlanDepth DH_Decr Mask
+    0  NSGC01  2519305.0  19752788.0   NaN  ...        NaN        58.75     NaN  NaN
+    1  NSGC03  2517234.0  19755621.0   NaN  ...        NaN       200.71     NaN  NaN
+    [2 rows x 12 columns]
+    >>> # Now turn to 'geology' the kind parameter.
+    >>> dh_data = fit_props (obj, sample_data,True, props, 'geology')
+    >>> dh_data.head(2) 
+    Out[6]: 
+      DH_Hole    DH_East    DH_North DH_RH DH_From DH_To Rock Mask
+    0  NSGC01  2519305.0  19752788.0   NaN     NaN   NaN  NaN  NaN
+    1  NSGC03  2517234.0  19755621.0   NaN     NaN   NaN  NaN  NaN
     """
     init_code= ("DH_Hole",	"DH_East",	"DH_North", "DH_RH" ) 
     code = Boxspace ( 
@@ -1329,34 +1327,43 @@ class _drill_builder:
             "DH_PlanDepth",	
             "DH_Decr",	
             "Mask"
-            ), 
+            ),
+        # for geology
         geology= (
             "DH_From",	
             "DH_To",
             "Rock",	
             "Mask"
             ),
-       # for geochemistry sampling
+        # for geochemistry sampling
         samples = (
             "DH_From",	
             "DH_To",	
             "Sample",		
             "Mask"
             ),
-       # elevation 
+        # elevation 
         elevation=(
          'Elevation',
          'DH_RL',
          'DH_Dip'
+            )
         )
-    )
     
-    def __init__(self, kind=None, mode ='build', **kws ): 
+    def __init__(
+        self, 
+        kind: str=None, 
+        mode: str='build', 
+        constraint_structures: 
+        bool=False, 
+        **kws ):
+        super().__init__(**kws)
+        
         self.kind =kind 
         self.mode=mode 
-        
+        self.constraint_structures=constraint_structures 
+
     def __call__(self, func  ): 
-  
         self._func = func 
         
         @functools.wraps(self._func ) 
@@ -1364,33 +1371,46 @@ class _drill_builder:
             """Builder function. 
             Fetch data from the output of former function. 
             """
-
-            if self.kind not in ('collar', 'geology', 'samples', 'elevation'): 
-                raise DrillError (
-                    "Wrong argument of kind. Expect ('collar', 'geology',"
-                    f" 'samples','elevation'). Got {self.kind!r}") 
-                
             self.kind_values = dict ( collar = self.code.collar , 
                                 geology= self.code.geology , 
                                 samples = self.code.samples, 
                                 elevation= self.code.elevation 
                                 )
-             
-            if str(self.mode)=='build': 
-                return  self._build (self, *args, **kwargs)
+            if str(self.mode).lower()=='build': 
+                if self.kind not in ('collar', 'geology', 'samples', 
+                                     'elevation'): 
+                    raise DrillError (
+                        "Wrong argument of kind. Expect ('collar', 'geology',"
+                        f" 'samples','elevation'). Got {self.kind!r}") 
+                return  self._buildDH (*args, **kwargs)
             
-            elif str(self.mode)=='write': 
-                ... 
-
+            elif str(self.mode).lower()=='fit': 
+                return self._fitDH(*args, **kwargs)
+            
+            elif str(self.mode).lower() =='get': 
+                kind = self._func (*args, **kwargs)  
+                return self.init_code +  self.kind_values.get(kind)
         return new_func
     
-    def _build (self, *args, **kwargs): 
-        """ Step by ste build mod """
-        obj , values, return_obj   = self._func (*args, **kwargs)  
+    def _buildDH (self, *args, **kwargs): 
+        """ Step by step construct drilling collar, geology and samples.
         
-        columns =self.init_code +  self.kind_values.get(self.kind)
+        Parameters
+        -----------
+        args: tuple, 
+          Positional arguments of wrapped function. 
+        kwargs: dict, 
+           Keyword arguments of wrapped function. 
+        
+        Returns
+        --------
+        obj or data: Instanced object or pd.dataframe 
+           returns Instanced object or a dataframe.
+        """
+        obj , values, return_data   = self._func (*args, **kwargs)  
+        self._columns =self.init_code +  self.kind_values.get(self.kind)
         data = to_numeric_dtypes(
-            values, columns =columns, 
+            values, columns =self._columns, 
             drop_nan_columns=False 
             )
         if ( 
@@ -1424,12 +1444,67 @@ class _drill_builder:
 
         setattr (obj , self.kind +'_', data )
         
-        return obj if not return_obj else getattr (obj, self.kind +'_')
+        return  getattr (obj, self.kind +'_') if return_data else obj 
         
-    def _read_dh (self, *args, **kwargs): 
-        """ Read DH files """
+    def _fitDH(self, *args, **kwargs): 
+        """ Fit data and set the drillhole property values. 
         
+        The property names must be included in the fitted data.
         
+        Parameters
+        -----------
+        args: tuple, 
+          Positional arguments of wrapped function. 
+        kwargs: dict, 
+           Keyword arguments of wrapped function. 
+        
+        Returns
+        --------
+        obj or data: Instanced object or pd.dataframe 
+           returns Instanced object or a dataframe. 
+        """
+        
+        obj, data, return_data, props, kind  = self._func (*args, **kwargs)
+        
+        self._columns =self.init_code +  self.kind_values.get(kind)
+        # construct template for coll 
+        d = pd.DataFrame (data = np.full ( ( len(data), len(self._columns)), 
+                                          fill_value= np.nan, dtype=object),
+                          columns = self._columns )
+        if props is None: 
+            warn("Missing properties. Can't fit the data values"
+                 f" to the {kind} properties.")
+            
+        else: # get shrunked data with valid
+            try: 
+                exist_features(data, list (props.keys())  )
+            except KeyError as key_error: 
+                raise KeyError(str(key_error) + 
+                               ". Missing property names in the data.")
+                
+            data_shrunked = data [ list(props.keys() )].copy() 
+            # re-verify key to match the exact default _keys 
+            pnames =dict()
+            for key , value in props.items(): 
+                valid_value = key_search(value, default_keys = self._columns, 
+                                   parse_keys= False , deep =True )
+                if valid_value is not None: 
+                    pnames [key] = valid_value [0]
+                    
+            # rename data_skhrunked columns 
+            data_shrunked.rename ( columns= pnames, inplace =True )
+            for key in list(d.columns): 
+                for pkey in  list(data_shrunked.columns): 
+                    if key ==pkey:
+                        d[key] = np.array(data_shrunked[pkey])
+                        break 
+
+        setattr (obj , kind +'_', d )
+        
+        return ( getattr (obj, kind +'_') if return_data 
+                else obj 
+                )
+
 class DSDrill : 
     """ Drill data set class. 
     
@@ -1460,7 +1535,7 @@ class DSDrill :
        
     projection: str, ['utm'|'dms'|'ll'] 
        The coordinate system in which the data points for the profile is collected. 
-       If not given, the auto-detection will be triggered and find the  suitable 
+       If not given, the auto-detection will be triggered and find the suitable 
        coordinate system. However, it is recommended to provide it for consistency. 
        Note that if `x` and `y` are composed of value less than 180 degrees 
        for longitude and 90 degrees for latitude, it should be considered as  
@@ -1489,13 +1564,13 @@ class DSDrill :
        Internet: pdana@mail.utexas.edu . Default is ``23`` constrained to 
        WGS84. 
         
-   propety_names: dict, 
+   properties: dict, 
       Data column can not fit the Drilling property columns. In that case. 
       Mapping the property names is usefull to specify the columns in the 
       original data that fits the :class:`DSDrill` property codes. For 
       instance:: 
           
-          property_names ={"hole name": 'DH_Hole', 
+          properties ={"hole name": 'DH_Hole', 
                            "easting": 'DH_East', 
                            "northing": 'DH_Northing'
                            }
@@ -1575,20 +1650,22 @@ class DSDrill :
         encoding ='utf-8', 
         epsg=None, 
         reference_ellipsoid =23, 
-        property_names =None, 
+        properties =None, 
         verbose=0 ): 
         
         self.holeid=holeid
         self.area=area 
-        self.projection = projection 
-        self.utm_zone= utm_zone 
+        self.projection=projection 
+        self.utm_zone=utm_zone 
         self.dname=dname 
         self.encoding=encoding 
         self.datum=datum 
         self.epsg=epsg 
         self.reference_ellipsoid=reference_ellipsoid
-        self.property_names=property_names 
+        self.properties=properties
         self.verbose=verbose
+        
+        self._kind=None 
 
     def fit (self, data =None, **fit_params ): 
         """ Fit drill data to build 
@@ -1634,8 +1711,18 @@ class DSDrill :
         # NaN columns here can be useful especially 
         # when column name is one of drillimg 
         # property
-        _fit( self, data = data, drop_nan_columns=False, ** fit_params  )
-
+        _fit( self, data = data, drop_nan_columns=False,
+             input_name ='DH', ** fit_params  )
+        
+        if self.properties is not None: 
+            if not isinstance ( self.properties, dict ): 
+                if self.verbose:
+                    warn(f"Properties {self.properties} are ignored."
+                         " Expect a dictionnary of key/values in pair."
+                         f" Got {type(self.properties).__name__!r}")
+                
+            else: self.data_.rename (columns = self.properties, inplace =True ) 
+                
         return self 
     
     def _fit_sheets( self, d ): 
@@ -1969,7 +2056,7 @@ class DSDrill :
         return dh_hole, dh_xlon, dh_ylat, dh_rh
            
     @_drill_builder ( kind ='geology')
-    def build_geology( self,  *, return_geology=False, hole_elevation=0. ): 
+    def build_geology( self,  *, return_data=False, hole_elevation=0. ): 
         """Build manually the geology data of collected drilling area.
         
         :meth:`build_geology` collect the rocks or strata names collected 
@@ -2001,7 +2088,7 @@ class DSDrill :
         
         Parameters 
         -----------
-        return_geology: bool, default=False, 
+        return_data: bool, default=False, 
           Return the geology dataset rather than object (``False``) after 
           entering the appropriate argumments. Note that even ``True``, 
           the geology data set can be retrieved via the attribute ``geology_``.
@@ -2098,11 +2185,11 @@ class DSDrill :
         return ( 
             self,  
             np.vstack ( getter ), 
-            return_geology
+            return_data
             )
     
     @_drill_builder ( kind ='samples')
-    def build_geosamples( self, *, return_samples=False ): 
+    def build_geosamples( self, *, return_data=False ): 
         """Build manually the geochemistry samples of  area.
         
         :meth:`build_geosamples` collect the geochemistry samples in the 
@@ -2147,7 +2234,7 @@ class DSDrill :
         
         Parameters 
         -----------
-        return_samples: bool, default=False, 
+        return_data: bool, default=False, 
           Return the samples dataset rather than object (``False``) after 
           prompted the appropriate argumments. Note that even ``True``, 
           the geosample data set can be retrieved via the attribute 
@@ -2242,14 +2329,16 @@ class DSDrill :
         return ( 
             self, 
             np.vstack ( getter ), 
-            return_samples 
+            return_data 
             )
     
     @_drill_builder ( kind ='collar')
-    def build_collar( self, *, return_collar=False, 
-                     compute_azimuth:bool=..., 
-                     utm_zone: str=..., 
-                     ): 
+    def build_collar( 
+        self, *, 
+        return_data=False, 
+        compute_azimuth:bool=..., 
+        utm_zone: str=..., 
+        ): 
         """ Build manually the collar data of collected drilling area.
         
         Collar data is composed of well/hole description and usefull
@@ -2296,7 +2385,7 @@ class DSDrill :
         
         Parameters 
         -----------
-        return_collar: bool, default=False, 
+        return_data: bool, default=False, 
           Return the collar dataset rather than object (``False``) after 
           entering the appropriate argumments. Note that even ``True``, 
           the collar data set can be retrieved via the attribute ``collar_``.
@@ -2391,14 +2480,13 @@ class DSDrill :
                 dh_dip=90.
             dh_elevation = input (f"Enter {dh_hole} elevation in meters [0.]:")
             if str(dh_elevation).strip().lower()=='': 
-                dh_bottom= 0.
+                dh_elevation= 0.
             dh_azimuth= input (f"Enter {dh_hole} azimuth [Optional]:")
             
             dh_plan_depth=input (f"Enter {dh_hole} plan-depth [Optional]:")
             dh_plan_descr=input (f"Enter {dh_hole} description [Optional]:")
             dh_mask=input (f"Enter valuable comments about {dh_hole}"
                            " [Optional]:")
-            
             v= init_data + (convert_value_in(dh_top),
                             convert_value_in(dh_bottom),
                             convert_value_in(dh_dip), 
@@ -2418,14 +2506,154 @@ class DSDrill :
         
         return ( self, 
                 np.vstack ( getter ), 
-                return_collar
+                return_data
                 )
+    @_drill_builder(mode ='get')
+    def get_properties (self, kind: str ): 
+        """ Get a specific drillhole properties. 
+        
+        Parameters 
+        -----------
+        kind: str, {"collar", "geology", "samples"}
+          Kind of drillhole properties to fetch.
+          
+        Returns
+        -------
+        properties: Tuple 
+           Tuple of properties 
+           
+        Examples 
+        -----------
+        >>> from watex.geology import DSDrill 
+        >>> DSDrill ().get_properties (kind='geology')
+        ('DH_Hole', 'DH_East', 'DH_North', 'DH_RH', 'DH_From', 'DH_To', 'Rock', 'Mask')
+        """
+        self.kind = kind 
+        
+        return self.kind 
+    
+    @_drill_builder(mode ='fit')
+    def set_drillholes (
+        self, 
+        kind:str , 
+        properties: dict=None, 
+        return_data: bool = False,
+        ): 
+        """ Transform the data and fit to the corresponding drillholes. 
+        
+        `kind` is used to specified the type of drillhole to build. The `DH_`
+        used to prefix the drillhole properties can be omitted when 
+        specifying the properties. 
+        
+        Parameters
+        ------------
+        kind: str, {"collar", "geology", "samples"}
+           Kind of drillhole to build. 
+           
+        properties: dict, 
+           A mapper that uses to replace the column names from data to 
+           the values of the drillholes. If properties is not specified 
+           drillhole data returns NaN columns. 
+           
+        Returns 
+        ----------
+        self, data : Object instanced and pd.DataFrame 
+           :class:`DSDrill` Object instanced or drillholes data set 
+           rebuild. Unmatch properties names should be replaced by NaN 
+           
+        Examples 
+        ---------
+        >>> import watex as wx
+        >>> from watex.geology import DSDrill 
+        >>> ndata = wx.fetch_data ('nlogs', samples =12, as_frame = True ) 
+        >>> dr = DSDrill ().fit(ndata) 
+        >>> dr.data_.head(2) 
+        Out[26]: 
+          hole_id  uniform_number  ... filter_pipe_diameter water_inflow_in_m3_d
+        0   B0092    1.133960e+16  ...                0.120               15.249
+        1   B0093    1.133110e+16  ...                0.125              114.474
+        [2 rows x 25 columns]
+        >>> # try list data column names and find the suitable columns that 
+        >>> # could fit the drillholes properies. 
+        >>> dr.data_.columns
+        Out[27]: 
+        Index(['hole_id', 'uniform_number', 'original_number', 'lon', 'lat',
+               'longitude', 'latitude', 'east', 'north', 'easting', 'northing',
+               'coordinate_system', 'elevation', 'final_hole_depth',
+               'quaternary_thickness', 'aquifer_thickness', 'top_section_depth',
+               'bottom_section_depth', 'groundwater_type', 'static_water_level',
+               'drawdown', 'water_inflow', 'unit_water_inflow', 'filter_pipe_diameter',
+               'water_inflow_in_m3_d'],
+              dtype='object')
+        >>> To get properties, one needs to call get properties to have an idea 
+        >>> # before setting the columns that match the properties as 
+        >>> DSDrill ().get_properties (kind='collar')
+        Out[29]: 
+        ('DH_Hole',
+         'DH_East',
+         'DH_North',
+         'DH_RH',
+         'DH_Top',
+         'DH_Bottom',
+         'DH_Dip',
+         'Elevation',
+         'DH_Azimuth',
+         'DH_PlanDepth',
+         'DH_Decr',
+         'Mask')
+        >>> # Then we can match each data columns to the properties as:
+        >>> properties = {"hole_id": "DH_Hole", "easting": 'DH_East',
+                          "northing": 'DH_North', "top_section_depth": "DH_Top", 
+                          "bottom_section_depth": "DH_Bottom", 
+                          "final_hole_depth": 'DH_PlanDepth'}
+        >>> dr.set_drillholes (kind='collar', properties = properties)
+        >>> dr.collar_ 
+        Out[30]: 
+           DH_Hole      DH_East     DH_North  ... DH_PlanDepth  DH_Decr  Mask
+        0    B0092  2509081.067  19774192.36  ...       200.14      NaN   NaN
+        1    B0093  2576045.247  19757910.23  ...        50.00      NaN   NaN
+        2    B0094  2579349.264  19763695.25  ...        47.00      NaN   NaN
+        3    B0095  2568832.229  19760491.25  ...        59.40      NaN   NaN
+        4    B0096  2566131.227  19765367.27  ...        42.00      NaN   NaN
+        5    B0097  2568517.240  19770396.28  ...        50.70      NaN   NaN
+        6    B0098  2583506.276  19763770.24  ...        50.00      NaN   NaN
+        7    B0099  2576326.263  19770189.27  ...        50.00      NaN   NaN
+        8    B0101  2567480.246  19777199.30  ...        60.00      NaN   NaN
+        9    B0102  2583420.292  19775988.28  ...        50.00      NaN   NaN
+        10   B0103  2577207.276  19778177.29  ...        60.10      NaN   NaN
+        11   B0106  2519089.079  19758966.30  ...        48.10      NaN   NaN
+        [12 rows x 12 columns]
+           
+        """
+        self. inspect ; self.kind = kind 
+        
+        self.properties = properties or self.properties
+        
+        return ( self,  
+                self.data_ , 
+                return_data, 
+                self.properties, 
+                self.kind 
+                )
+    @property 
+    def kind (self ): 
+        """return valid  value of drillhole kind. 
+        Expect ['collar'|'geology'|'samples']"""
+        return self._kind 
+    
+    @kind.setter 
+    def kind (self, kk ): 
+        """Assert value of kind """
+        valid_keys = {'collar', 'geology', "samples" }
+        assert  str(kk).lower() in valid_keys, (
+            f"Wrong value of kind. Expect {smart_format(valid_keys, 'or')}"
+            f" Got {kk!r}")
+        self._kind = str(kk).lower().strip() 
 
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
         _t = ("area", "holeid", "dname", "projection", "utm_zone", "encoding", 
-              "datum", "epsg", "reference_ellipsoid" , "property_names", 
-              "verbose")
+              "datum", "epsg", "reference_ellipsoid" , "properties", "verbose")
         outm = ( '<{!r}:' + ', '.join(
             [f"{k}={ False if getattr(self, k)==... else  getattr(self, k)!r}" 
              for k in _t]) + '>' 
@@ -2458,6 +2686,61 @@ class DSDrill :
             )
         return 1
     
+    
+    
+     
+class Borehole(Geology): 
+    """
+    Focused on Wells and `Borehole` offered to the population. To use the data
+    for prediction purpose, each `Borehole` provided must be referenced on 
+    coordinates values or provided the same as the one used on `ves` or `erp` 
+    file. 
+    
+    """
+    def __init__(
+        self,
+        lat:float = None, 
+        lon:float = None, 
+        area:str = None, 
+        status:str =None, 
+        depth:float = None, 
+        base_depth:float =None, 
+        geol:str=None, 
+        staticlevel:float =None, 
+        airlift:float =None, 
+        id=None, 
+        qmax =None, 
+        **kwds
+        ): 
+       super().__init__(**kwds)
+        
+       self.lat=lat 
+       self.lon=lon 
+       self.area=area 
+       self.status=status 
+       self.depth=depth 
+       self.base_depth=base_depth 
+       self.geol=geol 
+       self.staticlevel=staticlevel 
+       self.airlift =airlift 
+       self.id=id 
+       self.qmax=qmax 
+       
+       
+       for key in list(kwds.keys()): 
+           setattr (self, key, kwds[key])
+
+    
+    def fit(self,
+            data: str |DataFrame | NDArray 
+        )-> object: 
+        """ Fit Borehole data and populate the corrsponding attributes"""
+        
+        self._logging.info ("fit {self.__class__.__name__!r} for corresponding"
+                            "attributes. ")
+    
+        return self
+
 
 class Drill(Geology):
     """
@@ -3219,14 +3502,17 @@ class Drill(Geology):
                       format(os.path.basename(
                       '.'.join([self.daTA[0][:-1],'xlsx'])), self.savepath))
                     
-                    
-                    
-def _fit( o, /, data =None, drop_nan_columns =True,  **fit_params ): 
+#xxx utilities xxxxx          
+def _fit( o, /, 
+    data =None, 
+    drop_nan_columns =True, 
+    input_name ='b',  
+    **fit_params 
+)->object: 
     """ Fit borehole and drill data and populate usefull attributes """
     columns = fit_params.pop ("columns", None  )
     
-    
-    data = _is_readable(data, as_frame =True, input_name= 'DH', 
+    data = _is_readable(data, as_frame =True, input_name= input_name, 
             columns = columns, encoding =o.encoding )
     
     data = check_array (
@@ -3246,7 +3532,6 @@ def _fit( o, /, data =None, drop_nan_columns =True,  **fit_params ):
         drop_nan_columns=drop_nan_columns, 
         **fit_params 
         )
-
     o.feature_names_in_ = nf + cf 
     if len(cf )!=0:
         # sanitize the categorical values 
@@ -3261,7 +3546,7 @@ def _fit( o, /, data =None, drop_nan_columns =True,  **fit_params ):
     o.depth_= None 
     
     if o.dname is not None: 
-        if o.dname not in o.feature_names_in_: 
+        if 'depth' in o.feature_names_in_: 
             o.dname ='depth' 
     
     if o.dname  in o.feature_names_in_: 
@@ -3271,4 +3556,3 @@ def _fit( o, /, data =None, drop_nan_columns =True,  **fit_params ):
     
     return o 
 
- 

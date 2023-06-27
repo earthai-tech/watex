@@ -6476,10 +6476,11 @@ def split_list(lst:List[Any, ...],/,  val:int, fill_value:Any=None ):
 def key_search (
     keys: str, /, 
     default_keys: Text | List[str], 
+    parse_keys: bool=True, 
     regex :re=None, 
     pattern :str=None, 
     deep: bool =...,
-    raise_exception:bool=...
+    raise_exception:bool=..., 
     ): 
     """Find key in a list of default keys and select the best match. 
     
@@ -6494,6 +6495,11 @@ def key_search (
        is passed, it is better to provide the regex in order to skip some 
        character to parse the text properly. 
        
+    parse_keys: bool, default=True 
+       Parse litteral string using default `pattern` and `regex`. 
+       
+       .. versionadded:: 0.2.7 
+        
     regex: `re` object,  
         Regular expresion object. Regex is important to specify the kind
         of data to parse. the default is:: 
@@ -6518,62 +6524,70 @@ def key_search (
     Return 
     -------
     list: list of valid keys or None if not find ( default) 
-    
-    
+
     Examples
     ---------
     >>> from watex.utils.funcutils import key_search 
     >>> key_search('h502-hh2601', default_keys= ['h502', 'h253','HH2601'])
     Out[44]: ['h502']
-    >>> from watex.utils.funcutils import key_search 
     >>> key_search('h502-hh2601', default_keys= ['h502', 'h253','HH2601'], 
                    deep=True)
     Out[46]: ['h502', 'HH2601']
     >>> key_search('253', default_keys= ("I m here to find key among h502,
                                              h253 and HH2601"))
     Out[53]: ['h253'] 
-
+    >>> key_search ('east', default_keys= ['DH_East', 'DH_North']  , deep =True,)
+    Out[37]: ['East']
+    key_search ('east', default_keys= ['DH_East', 'DH_North'], 
+                deep =True,parse_keys= False)
+    Out[39]: ['DH_East']
     """
-    deep, raise_exception = ellipsis2false(deep, raise_exception)
+    deep, raise_exception, parse_keys = ellipsis2false(
+        deep, raise_exception, parse_keys)
+    # make a copy of original keys 
     
-    if is_iterable(keys , exclude_string= True ): 
-        keys = ' '.join ( [str(k) for k in keys ]) 
-        
-    # for consisteny checker 
-    pattern = pattern or '[_#&@!_+,;\s-]\s*'
-    keys = str2columns ( keys , regex = regex , pattern = pattern ) 
     kinit = copy.deepcopy(keys)
-    if is_iterable ( default_keys , exclude_string=True ): 
-        default_keys = ' '. join ( [ str(k) for k in default_keys ])
+    if parse_keys: 
+        if is_iterable(keys , exclude_string= True ): 
+            keys = ' '.join ( [str(k) for k in keys ]) 
+             # for consisteny checker 
+        pattern = pattern or '[#&@!_+,;\s-]\s*'
+        keys = str2columns ( keys , regex = regex , pattern = pattern ) 
+            
+        if is_iterable ( default_keys , exclude_string=True ): 
+            default_keys = ' '. join ( [ str(k) for k in default_keys ])
+            # make a copy
+        default_keys =  str2columns(
+            default_keys, regex =regex , pattern = pattern )
+    else : 
+        keys = is_iterable(
+        keys, exclude_string = True, transform =True )
+        default_keys = is_iterable ( 
+            default_keys, exclude_string=True, transform =True )
         
-    # make a copy
-    dk_init =  str2columns(
-        default_keys, regex =regex , pattern = pattern )
-
+    dk_init = copy.deepcopy(default_keys )
+    # if deep convert all keys to lower 
     if deep: 
         keys= [str(it).lower() for it in keys  ]
-        default_keys = default_keys.lower() 
+        default_keys = [str(it).lower() for it in default_keys  ]
 
     valid_keys =[]
-    for key in keys: 
-        vk = re.findall(rf'\b\w*{key}\w*\b', default_keys)
-        valid_keys.extend( vk )
-
-    # if deep take the real values in defaults keys. 
-    if deep and len(vk)!=0: 
-        # remake a list based on the parsing regex 
-        default_keys= str2columns(
-            default_keys, regex =regex , pattern = pattern )
-        for ii, vk in enumerate ( valid_keys) : 
-            ix = default_keys.index ( vk )
-            valid_keys [ii] = dk_init[ix ]
-
+    for key in keys : 
+        for ii, dkey in enumerate (default_keys) : 
+            vk = re.findall(rf'\b\w*{key}\w*\b', dkey)
+            # if deep take the real values in defaults keys.
+            if len(vk) !=0: 
+                if deep:  valid_keys.append( dk_init[ii] )
+                else: valid_keys.extend( vk)
+                break 
+            
     if raise_exception and len(valid_keys)==0: 
         kverb ='s' if len(kinit)> 1 else ''
         raise KeyError (f"key{kverb} {smart_format(kinit)} not found."
                           f" Expect {smart_format(dk_init, 'or')}")
     
     return None if len(valid_keys)==0 else valid_keys 
+
 
 def repeat_item_insertion(text, /, pos, item ='', fill_value=''): 
     """ Insert character in  text according from it position. 

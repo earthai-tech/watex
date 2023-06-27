@@ -1,0 +1,22 @@
+v0.2.7 (July 02, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.6`` that shows fugs fixed.  
+
+- |Fix| Bug in geographical coordinates when values are given in string in :meth:`watex.geology.DSDrill_build_geology`.  Henceforth, all 
+  numerical arguments are casted to numeric values brefore the drillholes construction. 
+
+- |Enhancement| :func:`watex.utils.read_data` is now able to read data in `txt` format. 
+
+- |Enhancement| :class:`watex.geology.DSDrill` implements :meth:`watex.watex.geology.DSDrill.set_drillholes` to construct the drilling with 
+  valid data passed to the ``fit`` method. The drillholes construction expects argument supplied to the ``properties``parameter. 
+  However, :meth:`watex.geology.DSDrill.get_properties` can be used  and to get the drillholes parameters before providing the 
+  property arguments.  
+
+  
+
+
+
+
+
+

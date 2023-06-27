@@ -58,7 +58,8 @@ from .funcutils import (
     to_numeric_dtypes, 
     reshape, 
     is_iterable, 
-    is_in_if
+    is_in_if, 
+    ellipsis2false, 
     ) 
 from .gistools import (
     assert_lat_value,
@@ -2274,10 +2275,13 @@ def parseDCArgs(fn :str ,
         sdata ).astype(float))
 
 def read_data (
-    f:str | pathlib.PurePath, 
+    f: str|pathlib.PurePath, 
     sanitize: bool= ..., 
     reset_index: bool=..., 
     verbose: bool= ..., 
+    comments: str="#", 
+    delimiter: str=None, 
+    columns: List[str]=None, 
     **read_kws
  ) -> DataFrame: 
     """ Assert and read specific files and url allowed by the package
@@ -2300,6 +2304,18 @@ def read_data (
       
       .. versionadded:: 0.2.5
           Apply minimum data sanitization after reading data. 
+     
+    comments: str or sequence of str or None, default='#'
+       The characters or list of characters used to indicate the start 
+       of a comment. None implies no comments. For backwards compatibility, 
+       byte strings will be decoded as 'latin1'. 
+
+    delimiter: str,   optional
+       The character used to separate the values. For backwards compatibility, 
+       byte strings will be decoded as 'latin1'. The default is whitespace.
+       
+       .. versionadded:: 0.2.7 
+          Capable to read text data. 
           
     read_kws: dict, 
        Additional keywords arguments passed to pandas readable file keywords. 
@@ -2310,23 +2326,37 @@ def read_data (
         A dataframe with head contents by default.  
         
     """
-    if sanitize is ...: 
-        sanitize = False 
-
     def min_sanitizer ( d, /):
         """ Apply a minimum sanitization to the data `d`."""
-        d = to_numeric_dtypes(
-            d, sanitize_columns= True, drop_nan_columns= True, 
-            reset_index= False if reset_index is ... else reset_index, 
-            verbose = False if verbose  is ... else verbose , 
-            fill_pattern='_', drop_index = True,  
-                              )
-        return d 
+        return to_numeric_dtypes(
+            d, sanitize_columns= True, 
+            drop_nan_columns= True, 
+            reset_index=reset_index, 
+            verbose = verbose , 
+            fill_pattern='_', 
+            drop_index = True
+            )
+        
+    sanitize, reset_index, verbose = ellipsis2false (
+        sanitize, reset_index, verbose )
+    if ( 
+            isinstance ( f, str ) 
+            and str(os.path.splitext(f)[1]).lower()=='.txt'
+            ): 
+        f = np.loadtxt (f, comments =comments,delimiter =delimiter )
+        if columns is not None: 
+            columns = is_iterable(columns, exclude_string= True, 
+                                  transform =True, parse_string =True 
+                                  )
+            if len( columns )!= f.shape [1]: 
+                warnings.warn(f"Columns expect {f.shape[1]} attributes."
+                              " Got {len(columns)}")
+            
+        f = pd.DataFrame(f, columns=columns )
         
     if isinstance (f, pd.DataFrame): 
         if sanitize: 
             f = min_sanitizer (f)
-            
         return  f 
     
     cpObj= Config().parsers 
@@ -2343,7 +2373,6 @@ def read_data (
     except: 
         raise FileHandlingError (
             f" Can not parse the file : {os.path.basename (f)!r}")
-
     if sanitize: 
         f = min_sanitizer (f)
         
