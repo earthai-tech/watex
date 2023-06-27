@@ -10,7 +10,6 @@ The core module deals with  geological data, the structural infos
 and borehole data.
 
 """
-
 import os
 import warnings
 import shutil 
@@ -59,6 +58,7 @@ AGSO_PROPERTIES =dict(
             'density', 'thickness', 'color']
     )
 #++++ end configuration +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 class GeoBase: 
     """
     Base class of container of geological informations  for stratigraphy model  

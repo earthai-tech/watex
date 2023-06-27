@@ -1110,19 +1110,15 @@ class DSBorehole:
         An isolated part of :meth:`set_strata`. 
         """
         self.inspect 
-        
         # use default columns [electrical, _description] properties 
         e_props, strata = GeoStrataModel._getProperties() 
         # compute the mean with electrical properties 
-        
         if add_electrical_properties: 
             e_props = list (map ( lambda x : np.mean ( x ) if hasattr (
                 x, '__iter__') else x , e_props ))
     
             e_props = np.array(e_props ) 
-            
         strata= np.array(strata )
-
         if shuffle: 
             ixs = np.random.permutation (
                 np.arange ( len(e_props)))
@@ -1134,14 +1130,11 @@ class DSBorehole:
         if random_state: 
                 np.random.seed (random_state )
         #shuffle again 
-        
         if shuffle: 
             ix = np.random.permutation (
                 np.arange ( len(self.data_)))
         else: ix = np.arange ( len(self.data_))
-        
         strata= strata[ix ]
-        
         if add_electrical_properties: 
             e_props = e_props [ix ]
             
@@ -1151,15 +1144,12 @@ class DSBorehole:
                               values= e_props)
     
         return self 
-    
-            
+
     def _set_info_in (self,  name , values , insert_index =None ): 
         """ Setup new information as an attribute and data into the data """
-        
         # if series is given 
         if not hasattr ( values, 'name'): 
             values = pd.Series ( values, name= name  )
-            
         setattr (self, name + '_', values )
         
         # add new attribute to the data 
@@ -1168,12 +1158,10 @@ class DSBorehole:
                            axis =1 , ignore_index =True)
             # for consistency 
             d.columns = list(self.data_.columns) + [name] 
-            
             self.data_ = d.copy() 
         else: 
             self.data_.insert (insert_index, 
                                column =name, value =values.values )
-        
         return self 
 
     def __repr__(self):
@@ -1414,10 +1402,10 @@ class _drill_builder (GeoBase):
             drop_nan_columns=False 
             )
         if ( 
-                hasattr(obj, '_compute_azimuth') 
-                and self.kind=='collar'
-                and len(data)>1 
-                ) : 
+            hasattr(obj, '_compute_azimuth') 
+            and self.kind=='collar'
+            and len(data)>1 
+            ) : 
             try: 
                 east, north = key_search(
                    'east north', 
@@ -1500,7 +1488,6 @@ class _drill_builder (GeoBase):
                         break 
 
         setattr (obj , kind +'_', d )
-        
         return ( getattr (obj, kind +'_') if return_data 
                 else obj 
                 )
