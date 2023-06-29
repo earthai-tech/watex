@@ -3,10 +3,19 @@ v0.2.7 (July 02, 2023)
 
 These are minor changes  in ``v0.2.6`` that shows fugs fixed.  
 
+- |API change| ``fetch_data_from_repo`` previously  located in :mod:`watex.geology.core` is deprecated and replaced by 
+  :func:`watex.utils.baseutils.get_remote_data`. 
+
 - |Fix| Bug in geographical coordinates when values are given in string in :meth:`watex.geology.DSDrill_build_geology`.  Henceforth, all 
   numerical arguments are casted to numeric values brefore the drillholes construction. 
 
-- |Enhancement| :func:`watex.utils.read_data` is now able to read data in `txt` format. 
+- |Feature| :func:`watex.utils.baseutils.save_or_load` for saving or loading Numpy arrays. Idem for :func:`watex.utils.baseutils.array2hdf5` 
+  for loading or  writing array to hdf5. 
+
+- |Feature| :meth:`watex.geology.core.GeoBase.find_properties` to find rock/structural properties or constraint the geological info 
+  to fit the rock in AGSO database. 
+
+- |Enhancement| :func:`watex.utils.read_data` is now able to read data in `txt` and numpy  formats (`.npy` and `.npz`). 
 
 - |Enhancement| :class:`watex.geology.DSDrill` implements :meth:`watex.watex.geology.DSDrill.set_drillholes` to construct the drilling with 
   valid data passed to the ``fit`` method. The drillholes construction expects argument supplied to the ``properties``parameter. 

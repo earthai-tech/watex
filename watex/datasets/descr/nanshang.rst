@@ -8,6 +8,8 @@ Nashang district boreholes dataset
     :Province: Guangdong 
     :City: Guangzhou
     :UTM zone: 49Q 
+    :EPSG: 21419
+    :Projection:Xian 80-94/Beijing 1954-19° Belt
 
 **Data Set Characteristics:**
 

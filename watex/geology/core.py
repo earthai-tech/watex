@@ -12,21 +12,17 @@ and borehole data.
 """
 import os
 import warnings
-import shutil 
-from six.moves import urllib 
-from pprint import pprint 
 from importlib import resources
 import numpy as np 
 
+from ..utils.baseutils import get_remote_data
 from ..utils.funcutils import ( 
     ellipsis2false, 
     smart_format, 
     is_iterable,
     key_search, 
-    sPath,
     )
-from ..utils._dependency import ( 
-    import_optional_dependency )
+
 from ..property import (
     Config 
     )
@@ -41,7 +37,6 @@ __all__=[
     "GeoBase", 
     "set_agso_properties", 
     "mapping_stratum", 
-    "fetching_data_from_repo", 
     "get_agso_properties"
     ] 
                                   
@@ -182,7 +177,6 @@ class GeoBase:
         Out[10]: array(['grd', 'blt', 'mig', 'sdst', 'tuf', 'NA'], dtype='<U16')
         """
         constraint, keep_acronyms= ellipsis2false(constraint, keep_acronyms)
-        
         kind = str(kind).lower().strip() 
         if 'geology'.find (kind) >=0: kind ='geology'
             
@@ -224,14 +218,12 @@ class GeoBase:
                     data[kk] = str(key).lower() if keep_acronyms else value
                     found = True 
                     break
-            # if none item is found then 
+            # if item not found then 
             # property data.
             if not found:
                 if fill_value is not None:
                     data[kk] = fill_value
-                
             found =False 
-            
         return data 
     
 def set_agso_properties (download_files = True ): 
@@ -253,9 +245,10 @@ def set_agso_properties (download_files = True ):
     if len(mf)==0: download_files=False 
     if download_files: 
         for file_r in mf:
-            success = fetching_data_from_repo(props_files = file_r, 
+            success = get_remote_data(props_files = file_r, 
                       savepath = os.path.join(
-                          os.path.realpath('.'), AGSO_PROPERTIES['props_dir'])
+                          os.path.realpath('.'),
+                          AGSO_PROPERTIES['props_dir']), 
                       )
             if not success:
                 msg_ = ''.join([ "Unable to retreive the geostructure ",
@@ -295,63 +288,8 @@ def mapping_stratum(download_files =True):
         rock_and_structural_props.append(
             dict(map( lambda x: mfunc_(x), agso_data[1:])))
      
-    return   tuple(rock_and_structural_props)
+    return  tuple(rock_and_structural_props)
 
-def fetching_data_from_repo(repo_file, savepath =None ): 
-    """ Try to retrieve data from github repository.
-    
-    :param repo_file: str or Path-like object 
-        Give the full path from the repository root to the file name.
-        For instance, we want to retrieve the file 'AGSO.csv' which is located 
-        in <watex/etc/> directory then the full path 
-        is: --> 'watex/etc/AGSO.csv'
-        
-    :return:`status`: Either ``False` for failed downloading 
-            or ``True`` for successfully downloading
-    """
-    fmsg =['... 1rst attempt...','... 2nd attempt...','... 3rd attempt...']
-    status=False 
-    git_repo = AGSO_PROPERTIES['GIT_REPO']
-    git_root = AGSO_PROPERTIES['GIT_ROOT']
-    
-    # Install bar progression
-    import_optional_dependency ("tqdm")
-    from tqdm.notebook  import trange 
-    # max attempts =3 :  
-    print("---> Please wait while fetching"
-          f" {repo_file!r} from {git_repo!r}...")
-    for k in trange(3, ascii=True, desc ='geotools', ncols =107):
-    #for i in tqdm(range(3), ascii=True, desc ='WEgeophysics', ncols =107):
-        for _ in trange(1, ascii=True ,desc =fmsg [k],ncols =107):
-            try :
-                urllib.request.urlretrieve(git_root,  repo_file )
-            except: 
-                try :
-                    with urllib.request.urlopen(git_root) as response:
-                        with open( repo_file,'wb') as out_file:
-                            data = response.read() # a `bytes` object
-                            out_file.write(data)
-        
-                except TimeoutError: 
-                    if k ==2: 
-                        print("---> Established connection failed "
-                           " because connected host has failed to respond.")
-                except:pass 
-            else : status=True
-
-        if status: break
-
-    if status: print(f"---> Downloading {repo_file!r} from {git_repo!r} "
-                 "was successfully done!")
-    else: print(f"---> Failed to download {repo_file!r} from {git_repo!r}!")
-    # now move the file to the right place and create path if dir not exists
-    if savepath is not None: 
-        if not os.path.isdir(savepath): 
-            sPath (savepath)
-        shutil.move(os.path.realpath(repo_file), savepath )
-    if not status:pprint(connect_reason )
-    
-    return status
 
 def get_agso_properties(config_file =None, orient ='series'): 
     """ Get the geostructures files from <'watex/etc/'> and 
@@ -375,7 +313,7 @@ def get_agso_properties(config_file =None, orient ='series'):
         >>> code_descr={key:value for key , value in zip (data["CODE"],
                         data['__DESCRIPTION'])}
     """
-    msg= ''.join(["<`{0}`> is the software property file. Please don't move "
+    msg= ''.join(["<`{0}`> is the software property file. Please don't move"
         " or delete the properties files located in <`{1}`> directory."])
     
     pd_pos_read = Config().parsers 
@@ -409,17 +347,4 @@ def get_agso_properties(config_file =None, orient ='series'):
         del agso_rock_props['name']
         
     return  agso_rock_props
-
-##############connection git error ##########################
-connect_reason ="""<ConnectionRefusedError><No connection could  '
-            be made because the target machine actively refused it>.
-            There are some possible reasons for that:
-         1. The server is not running. Hence it wont listen to that port. 
-             If it's a service you may want to restart the service.
-         2. The server is running but that port is blocked by Windows Firewall
-             or other firewall. You can enable the program to go through 
-             firewall in the Inbound list.
-        3. There is a security program on your PC, i.e a Internet Security 
-            or Antivirus that blocks several ports on your PC.
-        """  
-#+++++ end  AGSO & AGSO.STCODES configuration +++++++++++++++++++++++++++++++++
+ 

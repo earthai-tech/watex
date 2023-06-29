@@ -49,6 +49,7 @@ from ..exceptions import (
     VESError, 
     FileHandlingError
 )
+from .baseutils import save_or_load
 from .funcutils import (
     smart_format as smft,
     _isin , 
@@ -2278,10 +2279,11 @@ def read_data (
     f: str|pathlib.PurePath, 
     sanitize: bool= ..., 
     reset_index: bool=..., 
-    verbose: bool= ..., 
     comments: str="#", 
     delimiter: str=None, 
-    columns: List[str]=None, 
+    columns: List[str]=None,
+    npz_objkey: str= None, 
+    verbose: bool= ..., 
     **read_kws
  ) -> DataFrame: 
     """ Assert and read specific files and url allowed by the package
@@ -2299,6 +2301,7 @@ def read_data (
            - replace a non-alphabetic column items with a pattern '_' 
            - cast data values to numeric if applicable 
            - drop full NaN columns and rows in the data 
+           
     reset_index: bool, default=False, 
       Reset index if full NaN columns are dropped after sanitization. 
       
@@ -2310,13 +2313,24 @@ def read_data (
        of a comment. None implies no comments. For backwards compatibility, 
        byte strings will be decoded as 'latin1'. 
 
-    delimiter: str,   optional
+    delimiter: str, optional
        The character used to separate the values. For backwards compatibility, 
        byte strings will be decoded as 'latin1'. The default is whitespace.
-       
+
+    npz_objkey: str, optional 
+       Dataset key to indentify array in multiples array storages in '.npz' 
+       format.  If key is not set during 'npz' storage, ``arr_0`` should 
+       be used. 
+      
        .. versionadded:: 0.2.7 
-          Capable to read text data. 
+          Capable to read text and numpy formats ('.npy' and '.npz') data. Note
+          that when data is stored in compressed ".npz" format, provided the 
+          '.npz' object key  as argument of parameter `npz_objkey`. If None, 
+          only the first array should be read and ``npz_objkey='arr_0'``. 
           
+    verbose: bool, default=0 
+       Outputs message for user guide. 
+       
     read_kws: dict, 
        Additional keywords arguments passed to pandas readable file keywords. 
         
@@ -2325,6 +2339,15 @@ def read_data (
     f: :class:`pandas.DataFrame` 
         A dataframe with head contents by default.  
         
+    See Also 
+    ---------
+    np.loadtxt: 
+        load text file.  
+    np.load 
+       Load uncompressed or compressed numpy `.npy` and `.npz` formats. 
+    watex.utils.baseutils.save_or_load: 
+        Save or load numpy arrays.
+       
     """
     def min_sanitizer ( d, /):
         """ Apply a minimum sanitization to the data `d`."""
@@ -2336,14 +2359,19 @@ def read_data (
             fill_pattern='_', 
             drop_index = True
             )
-        
     sanitize, reset_index, verbose = ellipsis2false (
         sanitize, reset_index, verbose )
-    if ( 
-            isinstance ( f, str ) 
-            and str(os.path.splitext(f)[1]).lower()=='.txt'
+    if ( isinstance ( f, str ) 
+            and str(os.path.splitext(f)[1]).lower()in (
+                '.txt', '.npy', '.npz')
             ): 
-        f = np.loadtxt (f, comments =comments,delimiter =delimiter )
+        f = save_or_load(f, task = 'load', comments=comments, 
+                         delimiter=delimiter )
+        # if extension is .npz
+        if isinstance(f, np.lib.npyio.NpzFile):
+            npz_objkey = npz_objkey or "arr_0"
+            f = f[npz_objkey] 
+
         if columns is not None: 
             columns = is_iterable(columns, exclude_string= True, 
                                   transform =True, parse_string =True 
@@ -2370,9 +2398,9 @@ def read_data (
     except FileNotFoundError:
         raise FileNotFoundError (
             f"No such file in directory: {os.path.basename (f)!r}")
-    except: 
+    except BaseException as e : 
         raise FileHandlingError (
-            f" Can not parse the file : {os.path.basename (f)!r}")
+            f"Cannot parse the file : {os.path.basename (f)!r}. "+  str(e))
     if sanitize: 
         f = min_sanitizer (f)
         

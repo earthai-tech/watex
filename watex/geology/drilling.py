@@ -36,7 +36,10 @@ from ..utils.funcutils import (
     exist_features, 
     smart_format, 
     )
-from ..utils.geotools import build_random_thickness, smart_thickness_ranker
+from ..utils.geotools import ( 
+    build_random_thickness, 
+    smart_thickness_ranker
+    )
 from ..utils.validator import check_array 
 
 __all__=["DSBoreholes","DSBorehole" , "DSDrill", "Drill", "Borehole"]
@@ -1202,15 +1205,16 @@ class DSBorehole:
 class _drill_builder (GeoBase): 
     """Decorator to handle the drillhole properties. 
     
-    Decorator build the collar, geology, geochemistry samples as well as the 
+    Decorator builds the collar, geology, geochemistry samples as well as the 
     elevation. When drillholes property is unknwow, set the ``mode=get`` 
-    applied to a wrapper that accepts only `kind` as parameter. For instance, 
-    fetching the geochemistry property samples should be::
+    applied to a wrapper that accepts only `kind` as parameter to get the 
+    valid properties. For instance, fetching the geochemistry property 
+    attributes should be::
         
         >>> from watex.geology.drilling import _drill_builder
         >>> def prop_wrapper (kind): 
                return kind 
-        >>> _drill_builder (mode ='get') (prop_wrapper) ('samples')
+        >>> _drill_builder (mode ='get')(prop_wrapper) ('samples')
         Out[1]: 
         ('DH_Hole',
          'DH_East',
@@ -1224,23 +1228,23 @@ class _drill_builder (GeoBase):
     Parameters 
     -----------
     kind: str, ['collar'| 'geology'| 'samples'|'elevation']
-       Kind of data to build 
+       Kind of drillhole data to build 
     
     mode: str , ['build'|'fit'|'get'], default='build'
        Action to perform.  
        - `build` constructs drillhole manually 
-       - `fit` contruct drillhole from the fitted data 
+       - `fit` contructs drillhole from the fitted data 
        - `get` outputs a drillhole property attributes. 
        
     Returns
     --------
     well/hole data: pd.DataFrame
-       Well/hole, geology and samples data set constructed based on the 
-       Oasis montaj property drill codes available or fitted data.  
+       Well/hole, geology and samples data set constructed referring to the 
+       Oasis montaj property drillhole codes.  
        
     Note 
     ------
-    The drillhole property follow the `Oasis montaj` software module
+    The drillhole property follows the `Oasis montaj` software module
     `drillhole`. See more about the Oasis Montaj from Seequent here: 
         https://www.seequent.com/products-solutions/geosoft-oasis-montaj/extensions/
         
@@ -1267,23 +1271,23 @@ class _drill_builder (GeoBase):
      'Mask') 
     >>> props('geology') 
     Out[2]: ('DH_Hole', 'DH_East', 'DH_North', 'DH_RH', 'DH_From', 'DH_To', 'Rock', 'Mask')
-    >>> # view the data columns first 
+    >>> # view the data columns  
     >>> sample_data.columns 
     Out[3]: 
     Index(['hole_id', 'year', 'drilling_type', 'longitude', 'latitude', 'easting',
            'northing', 'ground_height_distance', 'depth', 'opening_date',
            'end_date'],
           dtype='object')
-    >>> sample_data.head(2) 
+    >>> sample_data [['hole_id', 'easting', 'northing', 'depth']].head(2) 
     Out[4]: 
-      hole_id    year  ... opening_date    end_date
-    0  NSGC01  2018.0  ...   2018-07-31  2018-08-01
-    1  NSGC03  2018.0  ...   2018-07-09  2018-07-11
-    [2 rows x 11 columns]
-    >>> # construct wrapper function
+      hole_id    easting    northing   depth
+    0  NSGC01  2519305.0  19752788.0   58.75
+    1  NSGC03  2517234.0  19755621.0  200.71
+    >>> # construct wrapper function and fed to the decorator
     >>> def make_dh ( *dh_params) : 
            return dh_params   
-    >>> # construct data to make properties
+    >>> # construct attributes data to make the properties. Note that `DH_` 
+    >>> # prefixed to drillhole attribute can be skipped as: 
     >>> props = {"hole_id": "hole","easting":"east", "northing":"north",
                  "depth": "depth"}
     >>> fit_props= _drill_builder (mode='fit')( make_dh)
@@ -1295,7 +1299,8 @@ class _drill_builder (GeoBase):
     0  NSGC01  2519305.0  19752788.0   NaN  ...        NaN        58.75     NaN  NaN
     1  NSGC03  2517234.0  19755621.0   NaN  ...        NaN       200.71     NaN  NaN
     [2 rows x 12 columns]
-    >>> # Now turn to 'geology' the kind parameter.
+    
+    >>> # Now turn to 'geology' the kind parameter to see.
     >>> dh_data = fit_props (obj, sample_data,True, props, 'geology')
     >>> dh_data.head(2) 
     Out[6]: 

@@ -135,7 +135,7 @@ def csv_data_loader(
         #XXX TODO: move the target[i] to try exception if target is str 
         for i, ir in enumerate(data_file):
             try : 
-                data[i] = np.asarray(ir[:-1], dtype=np.float64)
+                data[i] = np.asarray(ir[:-1], dtype=float)
             except ValueError: 
                 data[i] = np.asarray(ir[:-1], dtype ='<U99' ) # dont convert anything 
                 cat_feature_exist = True # mean cat feature exists
@@ -143,7 +143,7 @@ def csv_data_loader(
             
     if not cat_feature_exist: 
         # reconvert the datatype to float 
-        data = data.astype (np.float)
+        data = data.astype (float)
     # reconvert target if problem is classification rather than regression 
     try : 
         target =target.astype(int )

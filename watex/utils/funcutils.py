@@ -6962,15 +6962,11 @@ def ellipsis2false( *parameters  ):
     return tuple ( ( False  if param is  ... else param  
                     for param in parameters) )  
    
-    
 
     
     
     
-    
-    
-    
-    
+ 
     
     
     

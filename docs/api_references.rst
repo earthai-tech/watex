@@ -304,7 +304,6 @@ Functions
 	geology.geology.setstructures 
 	geology.core.get_agso_properties
 	geology.core.mapping_stratum
-	geology.core.fetching_data_from_repo
 	geology.core.set_agso_properties
 
 .. _methods_ref:
