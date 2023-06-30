@@ -1202,7 +1202,7 @@ class DSBorehole:
             )
         return 1
 
-class _drill_builder (GeoBase): 
+class _drill_builder: 
     """Decorator to handle the drillhole properties. 
     
     Decorator builds the collar, geology, geochemistry samples as well as the 
@@ -1347,14 +1347,10 @@ class _drill_builder (GeoBase):
         self, 
         kind: str=None, 
         mode: str='build', 
-        constraint_structures: 
-        bool=False, 
         **kws ):
-        super().__init__(**kws)
-        
-        self.kind =kind 
+
+        self.kind=kind 
         self.mode=mode 
-        self.constraint_structures=constraint_structures 
 
     def __call__(self, func  ): 
         self._func = func 
@@ -1375,14 +1371,17 @@ class _drill_builder (GeoBase):
                     raise DrillError (
                         "Wrong argument of kind. Expect ('collar', 'geology',"
                         f" 'samples','elevation'). Got {self.kind!r}") 
-                return  self._buildDH (*args, **kwargs)
-            
+                    
+                out = self._buildDH (*args, **kwargs)
             elif str(self.mode).lower()=='fit': 
-                return self._fitDH(*args, **kwargs)
-            
+                out= self._fitDH(*args, **kwargs)
+                
             elif str(self.mode).lower() =='get': 
-                kind = self._func (*args, **kwargs)  
-                return self.init_code +  self.kind_values.get(kind)
+                self.kind = self._func (*args, **kwargs)  
+                out= self.init_code +  self.kind_values.get(self.kind)
+            
+            return out 
+        
         return new_func
     
     def _buildDH (self, *args, **kwargs): 
@@ -1400,7 +1399,7 @@ class _drill_builder (GeoBase):
         obj or data: Instanced object or pd.dataframe 
            returns Instanced object or a dataframe.
         """
-        obj , values, return_data   = self._func (*args, **kwargs)  
+        obj , values, return_data  = self._func (*args, **kwargs)  
         self._columns =self.init_code +  self.kind_values.get(self.kind)
         data = to_numeric_dtypes(
             values, columns =self._columns, 
@@ -1436,7 +1435,6 @@ class _drill_builder (GeoBase):
                 if obj.verbose: warn( str(e))
 
         setattr (obj , self.kind +'_', data )
-        
         return  getattr (obj, self.kind +'_') if return_data else obj 
         
     def _fitDH(self, *args, **kwargs): 
@@ -1457,16 +1455,15 @@ class _drill_builder (GeoBase):
            returns Instanced object or a dataframe. 
         """
         
-        obj, data, return_data, props, kind  = self._func (*args, **kwargs)
-        
-        self._columns =self.init_code +  self.kind_values.get(kind)
+        obj, data, return_data, props, self.kind  = self._func (*args, **kwargs)
+        self._columns =self.init_code +  self.kind_values.get(self.kind)
         # construct template for coll 
         d = pd.DataFrame (data = np.full ( ( len(data), len(self._columns)), 
                                           fill_value= np.nan, dtype=object),
                           columns = self._columns )
         if props is None: 
             warn("Missing properties. Can't fit the data values"
-                 f" to the {kind} properties.")
+                 f" to the {self.kind} properties.")
             
         else: # get shrunked data with valid
             try: 
@@ -1492,12 +1489,12 @@ class _drill_builder (GeoBase):
                         d[key] = np.array(data_shrunked[pkey])
                         break 
 
-        setattr (obj , kind +'_', d )
-        return ( getattr (obj, kind +'_') if return_data 
+        setattr (obj , self.kind +'_', d )
+        return ( getattr (obj, self.kind +'_') if return_data 
                 else obj 
                 )
 
-class DSDrill : 
+class DSDrill (GeoBase) : 
     """ Drill data set class. 
     
     :class:`DSDrill` reads, constructs the well/hole (drillhole:DH), geology  
@@ -1643,7 +1640,9 @@ class DSDrill :
         epsg=None, 
         reference_ellipsoid =23, 
         properties =None, 
-        verbose=0 ): 
+        **kwd
+        ): 
+        super().__init__( **kwd)
         
         self.holeid=holeid
         self.area=area 
@@ -1655,9 +1654,7 @@ class DSDrill :
         self.epsg=epsg 
         self.reference_ellipsoid=reference_ellipsoid
         self.properties=properties
-        self.verbose=verbose
-        
-        self._kind=None 
+
 
     def fit (self, data =None, **fit_params ): 
         """ Fit drill data to build 
@@ -1796,7 +1793,6 @@ class DSDrill :
                 " To force resetting collar data,"
                 " set `reset_collar=True` instead."
                 ) 
-        
         if data is not None: 
             if hasattr(self, 'collar_'): 
                 warn(cmsg ) if not reset_collar else None 
@@ -1950,13 +1946,12 @@ class DSDrill :
             if hasattr(self, 'samples_'): 
                 warn(cmsg ) if not reset_samples else None 
      
-            geosamples = _is_readable(data, as_frame =True, 
-                                        input_name='Sample_', 
-                                        **kws)
-                
+            geosamples = _is_readable(
+                data, as_frame =True, 
+                input_name='Sample_', 
+                **kws)
             if reset_samples: 
                 self.samples_= geosamples 
-                
         if ( 
                 data is None 
                 and not hasattr (self, 'samples_')
@@ -2048,7 +2043,12 @@ class DSDrill :
         return dh_hole, dh_xlon, dh_ylat, dh_rh
            
     @_drill_builder ( kind ='geology')
-    def build_geology( self,  *, return_data=False, hole_elevation=0. ): 
+    def build_geology(
+        self,  *, 
+        return_data=False, 
+        hole_elevation=0., 
+        **kwd 
+        ): 
         """Build manually the geology data of collected drilling area.
         
         :meth:`build_geology` collect the rocks or strata names collected 
@@ -2181,7 +2181,7 @@ class DSDrill :
             )
     
     @_drill_builder ( kind ='samples')
-    def build_geosamples( self, *, return_data=False ): 
+    def build_geosamples( self, *, return_data=False , **kwd): 
         """Build manually the geochemistry samples of  area.
         
         :meth:`build_geosamples` collect the geochemistry samples in the 
@@ -2235,7 +2235,7 @@ class DSDrill :
         Returns 
         ---------
         self, geosample dataset: :class:`DSDrill` or pd.DataFrame. 
-           Return object when ``return_samples=False`` and DataFrame otherwise. 
+           Return object when ``return_data=False`` and DataFrame otherwise. 
            
         Examples 
         ---------
@@ -2330,17 +2330,18 @@ class DSDrill :
         return_data=False, 
         compute_azimuth:bool=..., 
         utm_zone: str=..., 
+        **kwd
         ): 
         """ Build manually the collar data of collected drilling area.
         
         Collar data is composed of well/hole description and usefull
         informations. 
         
-        :meth:`build_geology` collect the rocks or strata names collected 
-        during the drilling operations or well contructions.  
-        The collection of the information will build a geology dataset 
+        :meth:`build_collar collect each drillhole informations  during the 
+        drilling operations or well contructions.  
+        The total of the information will build a collar dataset 
         which can be used to Oasis Montaj software modeling. Below is an 
-        example of geology data set construction. 
+        example of collar data set construction. 
         This is some explanation of the prompt: 
             
         - well/hole ID: Is the name or ID of the rocks or strata collected 
@@ -2351,7 +2352,7 @@ class DSDrill :
           the building 
           object to ``utm`` like:: 
               
-              >>> DSDrill (projection='utm').build_geology (return_geology =True )
+              >>> DSDrill (projection='utm').build_collar (return_data =True )
               
         - radius (m): Is the radius of the hole/well
         - surface-level: The level of the well/hole compared to the level of 
@@ -2398,8 +2399,8 @@ class DSDrill :
  
         Returns 
         ---------
-        self, geology dataset: :class:`DSDrill` or pd.DataFrame. 
-           Return object when ``return_geology=False`` and DataFrame otherwise. 
+        self, collar dataset: :class:`DSDrill` or pd.DataFrame. 
+           Return object when ``return_data=False`` and DataFrame otherwise. 
            
         Examples 
         ---------
@@ -2493,9 +2494,7 @@ class DSDrill :
             end = input('Tap "exit|0" to terminate or "Enter" to continue:') 
             if str(end).lower ().strip() in ( '0', 'exit'): 
                 break 
-            
         setattr ( self, '_compute_azimuth', compute_azimuth )
-        
         return ( self, 
                 np.vstack ( getter ), 
                 return_data
@@ -2520,9 +2519,186 @@ class DSDrill :
         >>> DSDrill ().get_properties (kind='geology')
         ('DH_Hole', 'DH_East', 'DH_North', 'DH_RH', 'DH_From', 'DH_To', 'Rock', 'Mask')
         """
-        self.kind = kind 
+        return self._assert_kind_value(kind )
+    
+    def build_drillholes( 
+        self, 
+        kind: str, 
+        return_data: bool= ..., 
+        hole_elevation=0., 
+        compute_azimuth:bool=..., 
+        utm_zone: str=..., 
+        ): 
+        """Build drillholes ['collar|'geology'|'samples'] mannually through 
+        the parameter `kind`.
         
-        return self.kind 
+        All the drillholes have the common attributes such as: 
+  
+        - ``DH_Hole`` - well/hole , rock or sample ID: Is the ID of  the
+          geochemistry samples, rocks/strata or well/holes collected in 
+          the area 
+        - ``"DH_East"`` and ``"DH_North"``- coordinates (xlon, xlat): is the 
+          geographical coordinates where the drilling operation is performed. 
+          Expect projection is ``ll``. To enter the UTM coordinates, set the 
+          projection in the building object to ``utm`` like:: 
+              
+              >>> DSDrill (projection='utm').build_collar (return_data =True )
+              
+        - ``"DH_RH"`` - radius (m): Is the radius of the hole/well
+        - ``Mask``- mask/comments: Is any comments aboud the samples/geology 
+          or  well/hole.
+          
+        Besides, there are some other specific attributes related to each 
+        drillhole. For instance, the following attributes are required for: 
+            
+        - collar: 
+            
+          - ``"DH_Top"`` - surface-level: The level of the well/hole 
+            compared to the level of the sea. By default it is set to null 
+            as the level of the sea. 
+          - ``"DH_Bottom"`` - depth: depth of the well/hole in meters. 
+          - ``"DH_Dip"`` - dip: dip in degree of the well/hole. 
+          - ``"Elevation"`` - elevation: elevation value of the well/hole 
+            in meters. Default is no topography i.e. equal null. 
+          - ``"DH_Azimuth"`` - azimuth: azimuth value in degrees. If not 
+            given explicitely, it can be calculated using the utm coordinates 
+            provided that the parameter `compute_azimuth` is set to ``True`` 
+            and `utm_zone` is also provided. In this case, we assume that 
+            all well/hole collected belongs to the same area. Furthermore, 
+            azimuth calculation will cancel if one of the above condition 
+            is not met and if only a single borehole is supplied. 
+          - ``"DH_PlanDepth"`` - plan-depth: Is a litteral string to give at 
+            which stage a section in a borehole is performed. Note that 
+            this is optional parameter  and can be skipped. It has no more 
+            influence about the collar construction.
+      
+          - ``DH_descr`` - description: Give a short description of well/hole 
+            mostly about the drilling settlment. 
+  
+        - geology: 
+            
+          - ``"DH_From"`` and ``"DH_To"`` is computed from the layer 
+            thicknesses i.e. the thickness of each strata in the whole. Note  
+            that when many thicknesses are supplied, it may correspond to 
+            each layer. Thus, the number of thicknesses must equal to the 
+            number of layers. 
+          
+          - ``"Rock"`` - the rock/layer names. It should be equals to the 
+            number of layer thicknesses. If not the case, ``NA`` should be
+             used to indicate the missing layer/rock name in the geology 
+             dataset. 
+    
+        - samples: 
+        
+          - ``"DH_From"`` and ``"DH_To"`` - samples thickness: Ask about the 
+            thickness of the samples in the whole. Note that when many 
+            thickness are supplied, it means the same sample is collected at 
+            different depth. There are two kind of data to supply: 
+    
+          - t-value: Compose only with the layer thickness values. For 
+            instance ``t= "10 20 7 58"`` indicates four samples with 
+            thicknesses equals to 10, 20, 7 and 58 ( meters) respectively. 
+          - tb-range: compose only with thickness range at each depth. For 
+            instance ``t= "0-10 10-30 40-47 101-159"``. Note the character  
+            used to separate thickness range is ``'-'``. Here, the top(roof)
+            and bottom(wall) of the sample are 0  (top) and 10 (bottom), 
+            10 and 30, 40 and 47 , and 101 and 159 for the same sample. 
+          - Note that any mixed types is not acceptable and willraises 
+            error. To verify whether the expected samples values is  
+            acceptable or not, use the following 
+            :func:`watex.utils.geotools.get_thick_from_range` 
+            or :func:`watex.utils.geotools.get_thick_from_values` functions.
+         
+          - ``"Sample"`` - sample name: Is the name of samples collected 
+            refereing to the different depth. In principle, the number of 
+            samples thickness must equals to the number of samples. If not 
+            the case, ``NA`` should be used to indicate the missing samples 
+            in the geosamples dataset. 
+              
+        Parameters 
+        ------------
+        kind: str 
+          kind of drillhole to build. It could be ['collar|'geology'|'samples']
+          Until now, 'elevation' drillhole is not built yet. 
+
+        return_data: bool, default=False, 
+          Return the geology dataset rather than object (``False``) after 
+          entering the appropriate argumments. Note that even ``True``, 
+          the geology data set can be retrieved via the attribute ``geology_``.
+          
+        hole_elevation: float, default=0, 
+          The elevation or the level of surface of the well/hole compared to 
+          the level of sea. Note that elevation must be negative value on the 
+          top of the air for layer/strat calculation. 
+         
+        compute_azimuth: bool, default=False 
+          Recompute the azimuth using the UTM coordinates. Note that projection
+          need to be turned in 'utm' as well as the 'utm_zone' needs also to 
+          be supplied.
+            
+        utm_zone:str, 
+          zone number and 'S' or 'N' e.g. '55S'. Default to the centre point
+          of coordinates points in the survey area. It should be a string 
+          (##N or ##S)in the form of number and North or South hemisphere, 
+          10S or 03N. if :attr:`~DSdrill.utm_zone` is already set, it is not 
+          need to reset again. Resetting new `utm_zone` will erase the value 
+          of the former attribute. However for azimuth calculation, utm zone 
+          cannot be None otherwise the process is aborted. 
+
+        Returns 
+        ---------
+        self, collar/geology/geochemistry samples dataset:\
+            :class:`DSDrill` or pd.DataFrame. 
+           Return object when ``return_data=False`` and DataFrame otherwise.
+
+        Examples 
+        ----------
+        >>> from watex.geology import DSDrill
+        >>> DSDrill().build_drillholes ('collar', return_data=True) 
+        Enter the well/hole ID:Dh00
+        Enter DH00 coordinates (x/lon, y/lat):11 15
+        Enter DH00 radius in meters [Optional]:0.2
+        Enter DH00 surface-level <top> in meters[0.]:
+        Enter DH00 depth <bottom> in meters[700.]:
+        Enter DH00 dip in degrees [-90]:
+        Enter DH00 elevation in meters [0.]:12
+        Enter DH00 azimuth [Optional]:
+        Enter DH00 plan-depth [Optional]:
+        Enter DH00 description [Optional]:
+        Enter valuable comments about DH00 [Optional]:testDh
+        Tap "exit|0" to terminate or "Enter" to continue:0
+        Out[16]: 
+          DH_Hole       DH_East       DH_North  ...  DH_PlanDepth  DH_Decr    Mask
+        0    DH00  1.659298e+06  715053.016841  ...           NaN      NaN  testDh
+        >>> DSDrill().build_drillholes('geology')
+        Enter the well/hole ID:Geo00
+        Enter GEO00 coordinates (x/lon, y/lat):11 15
+        Enter GEO00 radius in meters [Optional]:2
+        Enter the GEO00 depth in meters: 60
+        Enter each stratum thickness of GEO00 [top-->bottom] in meters:12
+        Enter the layer/rock names of GEO00 [top-->bottom]:sand
+        Enter valuable comments about GEO00 [Optional]:test-geo
+        Tap "exit|0" to terminate or "Enter" to continue:0
+        Out[19]: 
+          DH_Hole       DH_East       DH_North  DH_RH  DH_From  DH_To  Rock      Mask
+        0   GEO00  1.659298e+06  715053.016841    2.0      0.0   12.0  sand  test-geo
+        1   GEO00  1.659298e+06  715053.016841    2.0     12.0   60.0    NA  test-geo
+        
+        """
+        return_data, compute_azimuth = ellipsis2false( 
+            return_data, compute_azimuth )
+        kind = self._assert_kind_value( kind ) 
+        
+        func = {"geology": self.build_geology,
+                "collar": self.build_collar, 
+                "samples": self.build_geosamples 
+                }
+        return func.get( kind ) ( 
+            return_data =return_data, 
+            hole_elevation=hole_elevation, 
+            compute_azimuth=compute_azimuth,
+            utm_zone= utm_zone, 
+            )
     
     @_drill_builder(mode ='fit')
     def set_drillholes (
@@ -2617,40 +2793,150 @@ class DSDrill :
         [12 rows x 12 columns]
            
         """
-        self. inspect ; self.kind = kind 
-        
+        self. inspect
+        kind = self._assert_kind_value (kind )
         self.properties = properties or self.properties
         
         return ( self,  
                 self.data_ , 
                 return_data, 
                 self.properties, 
-                self.kind 
+                kind 
                 )
-    @property 
-    def kind (self ): 
-        """return valid  value of drillhole kind. 
-        Expect ['collar'|'geology'|'samples']"""
-        return self._kind 
-    
-    @kind.setter 
-    def kind (self, kk ): 
-        """Assert value of kind """
-        valid_keys = {'collar', 'geology', "samples" }
+
+    def fit_structures(
+        self, kind : str, 
+        keep_acronyms: bool=..., 
+        fill_value: str =None, 
+        inplace: bool=..., 
+        ): 
+        """ Set the geology or  geochemistry samples to fit the AGSO database 
+        structures.
+        
+        Parameters 
+        ------------
+        kind: str, { "geology", "samples"}
+           Kind of structure to be fitted.
+           
+        keep_acronym: bool, default=False, 
+           Use the acronym of the structural and geological database 
+           info to replace the full geological/structural name. 
+           
+        fill_value: str, optional 
+           If None, the undetermined structured are not replaced. They are 
+           kept in the data. However, if the fill_value is provided, the 
+           missing structure from data is replaced by the fill_value. 
+           
+        inplace: bool, default=False 
+          If ``True``, modifies the geology or samples dataset inplace and 
+          return None 
+      
+        Returns
+        --------
+        data: pd.DataFrame 
+           Geology or Geochemistry fitted data. Data are modified in place 
+           if ``True``  and return ``None``. 
+           
+        Examples 
+        ---------
+        >>> from watex.geology import DSDrill 
+        >>> dr = DSDrill()
+        >>> dr.build_drillholes (kind='geology', return_data =True )
+        Enter the well/hole ID:GEO02
+        Enter GEO02 coordinates (x/lon, y/lat):12 26
+        Enter GEO02 radius in meters [Optional]:3.6
+        Enter the GEO02 depth in meters: 26
+        Enter each stratum thickness of GEO02 [top-->bottom] in meters:7
+        Enter the layer/rock names of GEO02 [top-->bottom]:limestone
+        Enter valuable comments about GEO02 [Optional]:test
+        Tap "exit|0" to terminate or "Enter" to continue:
+        Enter the well/hole ID:GEO03
+        Enter GEO03 coordinates (x/lon, y/lat):12 15
+        Enter GEO03 radius in meters [Optional]:3.10
+        Enter the GEO03 depth in meters: 36
+        Enter each stratum thickness of GEO03 [top-->bottom] in meters:12 10
+        Enter the layer/rock names of GEO03 [top-->bottom]:sand tuff
+        Enter valuable comments about GEO03 [Optional]:test2
+        Tap "exit|0" to terminate or "Enter" to continue:0
+        Out[1]: 
+          DH_Hole       DH_East       DH_North  DH_RH  DH_From  DH_To       Rock   Mask
+        0   GEO02  2.879133e+06  199681.925199    3.6      0.0    7.0  limestone  test1
+        1   GEO02  2.879133e+06  199681.925199    3.6      7.0   26.0         NA  test1
+        2   GEO03  1.660514e+06  177349.038212    3.1      0.0   12.0       sand  test2
+        3   GEO03  1.660514e+06  177349.038212    3.1     12.0   22.0       tuff  test2
+        4   GEO03  1.660514e+06  177349.038212    3.1     22.0   36.0         NA  test2
+        >>> dr.fit_structures('geology')
+        Out[2]: 
+          DH_Hole       DH_East       DH_North  ...  DH_To                      Rock   Mask
+        0   GEO02  2.879133e+06  199681.925199  ...    7.0                 limestone  test1
+        1   GEO02  2.879133e+06  199681.925199  ...   26.0  carbonate iron formation  test1
+        2   GEO03  1.660514e+06  177349.038212  ...   12.0                 sandstone  test2
+        3   GEO03  1.660514e+06  177349.038212  ...   22.0                      tuff  test2
+        4   GEO03  1.660514e+06  177349.038212  ...   36.0  carbonate iron formation  test2
+
+        """
+        keep_acronyms, inplace = ellipsis2false(keep_acronyms, inplace)
+        kind= self._assert_kind_value( kind) 
+        
+        if kind not in {"geology", "samples"}: 
+            if self.verbose: 
+                warn("Only 'geology' and geochemistry 'samples' are allowed "
+                     "to be fitted.")
+            return 
+        if not hasattr ( self, f"{kind}_"): 
+            raise DrillError(f"Missing '{kind}_' dataset. {kind.title()}"
+                             f" cannot fitted. Set or build the {kind}"
+                             " data first.")
+            
+        d = getattr ( self, f"{kind}_").copy()  
+ 
+        if kind =='geology': 
+            value = self.find_properties(
+                data = d.Rock ,
+                constraint=True, 
+                keep_acronyms=keep_acronyms, 
+                fill_value= fill_value , 
+                )
+            d.Rock = np.array( value )
+        elif kind=='samples': 
+            value = self.find_properties(
+                data = d.Samples ,
+                constraint=True, 
+                keep_acronyms=keep_acronyms, 
+                fill_value= fill_value , 
+                kind='samples', 
+                )
+            d.Samples = np.array( value )
+            
+        if inplace: 
+            setattr (self, f"{kind}_", d )
+            d =None # reset to None 
+            
+        return d
+        
+    def _assert_kind_value (self, kk ): 
+        """Assert value of kind. 
+        Function returns valid  value of drillhole kind. Expect 
+        ['collar'|'geology'|'samples']"""
+        
+        valid_keys = {'collar', 'geology', "samples", "elevation" }
+        kk = key_search (kk, default_keys= valid_keys, deep=True )
+        if kk is not None: 
+            kk = kk[0] # take the first valid item 
         assert  str(kk).lower() in valid_keys, (
             f"Wrong value of kind. Expect {smart_format(valid_keys, 'or')}"
             f" Got {kk!r}")
-        self._kind = str(kk).lower().strip() 
+        return str(kk).lower().strip() 
 
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
         _t = ("area", "holeid", "dname", "projection", "utm_zone", "encoding", 
               "datum", "epsg", "reference_ellipsoid" , "properties", "verbose")
-        outm = ( '<{!r}:' + ', '.join(
+        outm = ", ".join(
             [f"{k}={ False if getattr(self, k)==... else  getattr(self, k)!r}" 
-             for k in _t]) + '>' 
-            ) 
-        return  outm.format(self.__class__.__name__)
+             for k in _t]) + ">" 
+
+        return "<{!r}:".format(self.__class__.__name__ ) + outm 
        
     
     def __getattr__(self, name):

@@ -3795,8 +3795,8 @@ def str2columns (text, /, regex=None , pattern = None):
         Regular expresion object. the default is:: 
             
             >>> import re 
-            >>> re.compile (r'[_#&*@!_,;\s-]\s*', flags=re.IGNORECASE) 
-    pattern: str, default = '[_#&*@!_,;\s-]\s*'
+            >>> re.compile (r'[#&*@!_,;\s-]\s*', flags=re.IGNORECASE) 
+    pattern: str, default = '[#&*@!_,;\s-]\s*'
         The base pattern to split the text into a columns
         
     Returns
@@ -3807,7 +3807,7 @@ def str2columns (text, /, regex=None , pattern = None):
     ---------
     >>> from watex.utils.funcutils import str2columns 
     >>> text = ('this.is the text to split. It is an: example of; splitting str - to text.')
-    >>> tsplitted= str2columns (text ) 
+    >>> str2columns (text )  
     ... ['this',
          'is',
          'the',
@@ -3825,9 +3825,9 @@ def str2columns (text, /, regex=None , pattern = None):
          'text']
 
     """
-    pattern = pattern or  r'[_#&.*@!_,;\s-]\s*'
+    pattern = pattern or  r'[#&.*@!_,;\s-]\s*'
     regex = regex or re.compile (pattern, flags=re.IGNORECASE) 
-    text= list(filter (None, regex.split(text)))
+    text= list(filter (None, regex.split(str(text))))
     return text 
     
     
@@ -6116,17 +6116,19 @@ def key_checker (
     # If iterbale object , save obj 
     # to improve error 
     kkeys = copy.deepcopy(keys)
-    
     if deep_search: 
-        keys = key_search(keys, default_keys= valid_keys,deep=True, 
-                          raise_exception= True,
-                          )
-        
+        keys = key_search(
+            keys, 
+            default_keys= valid_keys,
+            deep=True, 
+            raise_exception= True,
+            regex =regex, 
+            pattern=pattern 
+            )
         return keys[0] if len(keys)==1 else keys 
     # for consistency 
     keys = [ k for k in keys if ''.join(
         [ str(i) for i in valid_keys] ).find(k)>=0 ]
-    
     # assertion error if key does not exist. 
     if len(keys)==0: 
         verb1, verb2 = ('', 'es') if len(kkeys)==1 else ('s', '') 
@@ -6938,17 +6940,19 @@ def storeOrwritehdf5 (
         
     return d if kind not in ("store", "export") else None 
 
-def ellipsis2false( *parameters  ): 
+def ellipsis2false( *parameters , default_value: Any=False ): 
     """ Turn all parameter arguments to False if ellipsis.
     
     Note that the output arguments must be in the same order like the 
     positional arguments. 
  
     :param parameters: tuple 
-       List of parameters  
-    :return: tuple, same list of parameters passed ellipsis to ``False``. 
-       For a single parameters, uses the trailing comma for collecting 
-       the parameters 
+       List of parameters 
+    :param default_value: Any, 
+       Value by default that might be take the ellipsis. 
+    :return: tuple, same list of parameters passed ellipsis to 
+       ``default_value``. By default, it returns ``False``. For a single 
+       parameters, uses the trailing comma for collecting the parameters 
        
     :example: 
         >>> from watex.utils.funcutils import ellipsis2false 
@@ -6959,7 +6963,7 @@ def ellipsis2false( *parameters  ):
         >>> verbose 
         False 
     """
-    return tuple ( ( False  if param is  ... else param  
+    return tuple ( ( default_value  if param is  ... else param  
                     for param in parameters) )  
    
 

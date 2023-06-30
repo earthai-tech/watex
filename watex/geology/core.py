@@ -116,6 +116,7 @@ class GeoBase:
         constraint: bool, default=False 
            fit the geological or structual info to match the AGSO geology 
            or structural database infos. 
+           
         keep_acronym: bool, default=False, 
            Use the acronym of the structural and geological database 
            info to replace the full geological/structural name. 

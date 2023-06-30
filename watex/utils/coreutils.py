@@ -2378,7 +2378,7 @@ def read_data (
                                   )
             if len( columns )!= f.shape [1]: 
                 warnings.warn(f"Columns expect {f.shape[1]} attributes."
-                              " Got {len(columns)}")
+                              f" Got {len(columns)}")
             
         f = pd.DataFrame(f, columns=columns )
         

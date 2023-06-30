@@ -1284,7 +1284,6 @@ def set_array_back (X, *,  to_frame=False, columns = None, input_name ='X'):
                 columns = columns [0]
                 
             X= pd.Series (X, name =columns )
-            
         else: 
             # columns is str , reconvert to a list 
             # and check whether the columns match 

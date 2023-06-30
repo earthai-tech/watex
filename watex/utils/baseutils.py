@@ -32,7 +32,7 @@ from ._dependency import (
 
 
 def array2hdf5 (
-    filename:str, /, 
+    filename: str, /, 
     arr: NDArray=None , 
     dataname: str='data',  
     task: str='store', 
@@ -100,10 +100,10 @@ def array2hdf5 (
             data = pd.DataFrame ( data , columns = columns )
             
     return data if task=='load' else None 
-
-    
+   
 def lowertify (*values, strip = True, return_origin: bool =... ): 
     """ Strip and convert value to lowercase. 
+    
     :param value: str , value to convert 
     :return: value in lowercase and original value. 
     
@@ -250,7 +250,8 @@ def save_or_load(
             arr = np.load(fname,**kws )
          
     return arr if task=='load' else None 
-      
+ 
+#XXX TODO      
 def request_data (
     url:str, /, 
     task: str='get',
@@ -283,10 +284,11 @@ def request_data (
     
     """
     import_optional_dependency('requests' ) 
-    
-    
     import requests 
-    as_text, as_json, stream = ellipsis2false( as_text, as_json,  stream )
+    
+    as_text, as_json, stream, raise_status, save2file = ellipsis2false(
+        as_text, as_json,  stream, raise_status , save2file)
+    
     if task=='post': 
         r = requests.post(url, data =data , **kws)
     else: r = requests.get(url, stream = stream , **kws)

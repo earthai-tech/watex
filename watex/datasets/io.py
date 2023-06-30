@@ -89,7 +89,6 @@ def _to_dataframe(data, tnames=None , feature_names =None, target =None ):
     else : 
         # read with pandas config parsers including the target 
         df = _is_readable(data)  
-        
     # if tnames are given convert the array 
     # of target  to a target frame 
     if  ( 
