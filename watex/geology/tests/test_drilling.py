@@ -241,7 +241,6 @@ def test_DSBorehole ():
                     reason = 'Drill data path does not exist')
 def test_DSDrill(): 
     # read drill data 
-    
     dr = DSDrill().fit('data/drill/nbleDH.xlsx')
     dr.geology_ 
     dr.collar_ 
