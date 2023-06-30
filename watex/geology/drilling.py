@@ -2544,44 +2544,7 @@ class Drill(Geology):
                     'DH_RL':None,
                     }        
         
-        # if self.auto is False and self.wfilename is None :
-            
-        #     self.daTA=func.build_wellData (add_azimuth=self.compute_azimuth, 
-        #                                     utm_zone=self.utm_zone,
-        #                                     report_path = self.savepath, 
-        #                                     )
-        #     self.wdata=self.daTA[1]
-            
-        #     self.wdico["DH_East"]   =   self.wdata[:,1]
-        #     self.wdico["DH_North"]  =   self.wdata[:,2]
-        #     self.wdico["DH_Hole"]   =   self.wdata[:,0]
-        #     self.wdico['DH_Dip']    =   self.wdata[:,4]
-        #     self.wdico['DH_Bottom'] =   self.wdata[:,3]
-        #     self.wdico['DH_Decr'] =   self.wdata[:,7]
-        #     self.wdico['DH_PlanDepth'] =   self.wdata[:,6]
-        #     self.wdico["DH_Azimuth"] =   self.wdata[:,5]
-            
-        #     self._f=0
-
-
-        # elif  self.wfilename is not None :
-            
-        #     self.daTA=func.parse_wellData(filename=self.wfilename,
-        #                                   include_azimuth=False,
-        #                                   utm_zone=self.utm_zone)
-        #     self.wdata=self.daTA[1]
-        #     self.wdico.__setitem__("DH_East", self.wdata[:,1])
-        #     self.wdico.__setitem__("DH_North", self.wdata[:,2])
-        #     self.wdico.__setitem__("DH_Hole", self.wdata[:,0])
-        #     self.wdico.__setitem__('DH_Dip', self.wdata[:,3])
-        #     self.wdico.__setitem__('DH_PlanDepth', self.wdata[:,8])
-        #     self.wdico.__setitem__("DH_Azimuth", self.wdata[:,5])
-        #     self.wdico.__setitem__('DH_Decr', self.wdata[:,9])
-        #     self.wdico.__setitem__('DH_Bottom', self.wdata[:,7])
-            
-        #     self._f=1
-            
-
+ 
         #set Mask and set dr_rh
         self.mask=np.full((self.wdata.shape[0]),self.mask,dtype='<U12')
         # print(self.mask.shape)
