@@ -476,7 +476,6 @@ def load_nlogs (
           "ns" if key in ("ns",  "engineering") else ( 
           "ls" if key in ("ls", "subsidence") else key )
         )
-    
     assert key in (is_keys), (
         f"wrong key {key!r}. Expect {smart_format(is_keys, 'or')}")
     
@@ -484,24 +483,18 @@ def load_nlogs (
     if key in ("b0", "ns"):  
         data_file =f"nlogs{'+' if key=='ns' else ''}.csv" 
     else: data_file = "n.npz"
-    
     with resources.path (DMODULE , data_file) as p : 
         data_file = str(p)
   
-    data , feature_names, target_columns= _get_subsidence_data(
-        data_file, years = years or "2022",
-        drop_display_rate= drop_display_rate )
-    
-    # cast values to numeric 
-    data = to_numeric_dtypes( data) 
-    
-    samples = samples or "*"
-    data = random_sampling(data, samples = samples, random_state= seed, 
-                            shuffle= shuffle) 
-    # since target and columns are alread set 
-    # for land subsidence data, then 
-    # go for "ns" and "b0"
-    if key !='ls': 
+    if key=='ls': 
+        data , feature_names, target_columns= _get_subsidence_data(
+            data_file, years = years or "2022",
+            drop_display_rate= drop_display_rate )
+    else: 
+        data = pd.read_csv( data_file )
+        # since target and columns are alread set 
+        # for land subsidence data, then 
+        # go for "ns" and "b0" to
         # set up features and target names
         feature_names = (list( data.columns [:21 ])  + [
             'filter_pipe_diameter']) if key=='b0' else list(
@@ -512,10 +505,17 @@ def load_nlogs (
                           'unit_water_inflow', 'water_inflow_in_m3_d'
                           ] if key=='b0' else  ['ground_height_distance']
     
+    # cast values to numeric 
+    data = to_numeric_dtypes( data) 
+    samples = samples or "*"
+    data = random_sampling(data, samples = samples, random_state= seed, 
+                            shuffle= shuffle) 
+    # reverify the tnames if given 
+    # target columns 
     tnames = tnames or target_columns
     # control the existence of the tnames to retreive
     try : 
-        existfeatures(data[target_columns] , tnames)
+        existfeatures(data[target_columns], tnames)
     except Exception as error: 
         # get valueError message and replace Feature by target 
         msg = (". Acceptable target values are:"
