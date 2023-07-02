@@ -942,8 +942,7 @@ def cpath (savepath=None , dpath=None):
     """
     if dpath is None:
         file, _= os.path.splitext(os.path.basename(__file__))
-        dpath = ''.join(['_', file,
-                         '_']) #.replace('.py', '')
+        dpath = ''.join(['_', file,'_']) #.replace('.py', '')
     if savepath is None : 
         savepath  = os.path.join(os.getcwd(), dpath)
         try:os.mkdir(savepath)
@@ -3672,11 +3671,9 @@ def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
     
     cfile = os.path.join(savepath, cfile)
     
-    msg = ''.join([
-    f'--> Data was successfully stored to {os.path.basename(cfile)!r}', 
-        f' and saved to {os.path.realpath(cfile)!r}.']
-        )
-        
+    msg = (f'--> {os.path.basename(cfile)!r} data was successfully' 
+          f' saved to {os.path.realpath(cfile)!r}.')
+ 
     return cfile, msg
 
 def print_cmsg(cfile:str, todo:str='load', config:str='YAML') -> str: 
@@ -6582,7 +6579,7 @@ def key_search (
                 if deep:  valid_keys.append( dk_init[ii] )
                 else: valid_keys.extend( vk)
                 break 
-            
+
     if raise_exception and len(valid_keys)==0: 
         kverb ='s' if len(kinit)> 1 else ''
         raise KeyError (f"key{kverb} {smart_format(kinit)} not found."

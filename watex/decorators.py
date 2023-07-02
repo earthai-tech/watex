@@ -13,6 +13,7 @@ import warnings
 import datetime 
 from contextlib import contextmanager
 import numpy as np
+import pandas as pd
 import  matplotlib.pyplot as plt 
 import matplotlib as mpl 
 import matplotlib.cm as cm 
@@ -30,6 +31,151 @@ _logger = watexlog.get_watex_logger(__name__)
 
 __docformat__='restructuredtext'
 
+
+class export_data: 
+    def __init__(
+        self, 
+        type ='frame',  
+        encoding:str='utf8',  
+        **kws  
+        ): 
+        self.type = type 
+        self.encoding=encoding  
+        for key in list(kws.keys()): 
+            setattr(self, key, kws[key])
+
+    def __call__(self, func ): 
+        self._func = func 
+        
+        @functools.wraps(self._func)
+        def wrapper_func ( *args, **kwds): 
+            """ Decorated function for writting data."""
+            from .utils.funcutils import move_cfile 
+            dfs,fname, kind, savepath, kws = self._func (*args, **kwds)
+
+            #if format is None 
+            # export to csv 
+            kind = kind or '.csv'
+            # check wether extension is included in the  
+            # filename then update the file_format: 
+            name, ex = os.path.splitext ( fname )
+            if ex !="" and "." in str(ex).lower(): 
+                kind = str(ex).lower() 
+                fname = name 
+         
+            if str(self.type).lower() =='frame': 
+                writerfunc = self.out_frame 
+            else: writerfunc= self.out_others 
+   
+            fnames = writerfunc (
+                dfs, 
+                fname, 
+                kind, 
+                savepath , 
+                **kws  
+                )
+            for  fname in fnames: 
+                move_cfile ( fname, savepath )
+
+        return wrapper_func 
+        
+    def out_frame (
+        self, 
+        dfs , 
+        fname, 
+        kind, 
+        savepath , 
+        **kwds 
+        ): 
+        """Export dataframes.
+        
+        Parameters 
+        -----------
+        dfs: dp.DataFrame or list  
+           Dataframe or list of dataframes 
+        fname: str, 
+          name of the file to  exported 
+        kind: str, 
+          format to write.
+        savepath: str, 
+        Path to directory to save file. Default is current directory 
+        """
+        from .property import Config
+        from .utils.funcutils import key_search
+        
+        # check whether data is on list or tuples 
+        if not isinstance ( dfs, ( list, tuple)): 
+            dfs =[dfs]
+        # check whether all data are on frame. 
+        # If not remove then
+        dfs = list( filter ( lambda df: hasattr (df, "__array__") 
+                            and hasattr(df, 'columns'), dfs ))
+        if len(dfs)==0: 
+            raise TypeError("NoneType cannot be written.")
+            
+        valid_formats = list( Config.writers(pd.DataFrame ).keys()) 
+        kind = key_search(kind, default_keys= valid_formats, 
+                          parse_keys=False, 
+                          raise_exception= True ) [0]
+        # if multiple formats are given
+        fnames=[]
+        for kk, df in enumerate (dfs) : 
+            if kind =='.xlsx': 
+                fname =+".xlsx" 
+                with pd.ExcelWriter( fname +'.xlsx') as writer :
+                        df.to_excel(writer, **kwds)
+            else:
+                # append iteration number to 
+                # differentiate file  
+                fname +=f"{kk}.{kind}" if len(dfs)> 1 else f".{kind}"
+                Config.writers(df ).get(kind )(fname, **kwds ) 
+            fnames.append (fname)
+
+        return fnames 
+
+    def out_others (
+        self, 
+        dfs, 
+        fname, 
+        kind, 
+        savepath ,  
+        **kwds
+        ): 
+        """Export others files. Can be text or any other types of sequences
+        format.
+        """
+        fnames=[]
+        kind = str(kind).replace (".", "") 
+        with open(fname, fname + f'.{kind}', mode ='w' ,
+                  encoding=self.encoding) as f:
+            for df in dfs:
+                if hasattr ('__array__'): 
+                    f.writelines(df) 
+                else:  f.write ( df)
+                
+                fnames.append(fname + f".{kind}")
+             
+        return fnames 
+    
+export_data.__doc__="""\
+Decorator to export data into different kind of format. 
+
+When the type is set to ``frame`` the file format should be mentionned 
+into the wrapper function so to export accordingly. 
+
+Parameters 
+--------------
+type: str, {"frame", "text"}
+   kind of data to export 
+
+encoding: str, optional
+  A string representing the encoding to use in the output file, 
+  defaults to "utf-8". encoding is not supported if path_or_buf 
+  is a non-binary file object.
+  
+"""        
+        
+     
 
 class temp2d: 
     """ Two dimensional plot template 
@@ -614,8 +760,6 @@ class writef2(object):
                     self.df.to_excel(self.refout , sheet_name='{0}'.format(
                         self.refout[: int(len(self.refout)/2)]),
                             index=self.writedfIndex) 
-                             
-                         
             # savepath 
             generatedfile = '_watex{}_'.format(
                     datetime.datetime.now().time()).replace(':', '.')
@@ -635,6 +779,7 @@ class writef2(object):
                           format(self.refout, self.savepath))
                     
             return func(*args, **kwargs)
+        
         return decorated_func 
         
 class writef(object): 

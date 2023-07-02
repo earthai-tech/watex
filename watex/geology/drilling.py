@@ -16,7 +16,8 @@ from .core import (
     )
 from .geology import Geology
 from .stratigraphic import GeoStrataModel 
-from .._typing import NDArray, DataFrame
+from .._typing import Any, NDArray, DataFrame
+from ..decorators import export_data 
 from ..exceptions import NotFittedError, DrillError
 from ..site import Profile, Location 
 from ..utils._dependency import import_optional_dependency 
@@ -2912,7 +2913,64 @@ class DSDrill (GeoBase) :
             d =None # reset to None 
             
         return d
+    
+    @export_data(type ='frame', encoding ='utf8')
+    def out (
+        self, kind: str, 
+        fname: str=None,   
+        format:str=".xlsx", 
+        savepath: str=None, 
+        **outkws: Any 
+    ): 
+        """ Export the drillhole. 
         
+        Parameters 
+        -------------
+        kind: str, {"geology", "collar", "samples", "*", "data"}
+          Kind of data to export. If ``"*"``, the geology, collar and 
+          samples are exported in single excel sheets or csv formats if 
+          `format` is set to ``.xlsx`` or ``.csv`` respectively.
+          
+         fname: str, 
+            Full path to filename.  If `fname` is None, the filename used the 
+            `kind` name. 
+        format: str, default=".xlsx" 
+          Extension to export the file. Note that if the  filename `fname` 
+          includes the file extension, it should be used. 
+        savepath: str, optional 
+          Path to locate the files. 
+          
+        Outkws: dict, 
+          Keywords arguments passed to other pandas exportable readable 
+          formats. 
+          
+        Examples 
+        ----------
+        >>> from watex.geology import DSDrill 
+        >>> from watex.datasets import load_nlogs 
+        >>> ndata = load_nlogs(samples =7 , as_frame =True)
+        >>> dr =DSDrill(projection='utm').fit(ndata)
+        >>> dr.out( kind="data")
+        """
+        if kind !="*": 
+            kind = key_search(kind, deep=True, raise_exception=True, 
+                              default_keys=('geology', 'collar', 
+                                            'samples', 'data')
+                              )
+        else: kind = ['collar', 'geology', 'samples']
+        
+        dfs = [getattr (self, f"{ki}_", None) for ki in kind]
+        # remove None if exists in dfs 
+        dfs = list ( filter (lambda o: o is not None, dfs )) 
+        
+        fname =fname or ( kind[0] if kind!="*" else "dhdata")
+        return ( dfs, 
+                fname, 
+                format, 
+                savepath, 
+                outkws
+                )  
+
     def _assert_kind_value (self, kk ): 
         """Assert value of kind. 
         Function returns valid  value of drillhole kind. Expect 
@@ -2963,9 +3021,7 @@ class DSDrill (GeoBase) :
             )
         return 1
     
-    
-    
-     
+
 class Borehole(Geology): 
     """
     Focused on Wells and `Borehole` offered to the population. To use the data

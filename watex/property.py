@@ -1363,7 +1363,6 @@ class BagoueNotes:
         key:val  for key, val in zip(bagkeys, bagvalues)
                     }
 
-
 class Config: 
     
     """ Container of property elements. 
@@ -1411,9 +1410,33 @@ class Config:
                  ".fwf" : pd.read_fwf, 
                  ".pkl" : pd.read_pickle, 
                  ".sas" : pd.read_sas, 
-                 ".spss": pd.read_spss, 
+                 ".spss": pd.read_spss,
+                 # ".orc" : pd.read_orc, 
                  }
         
+    @staticmethod
+    def writers (object): 
+        """ Write frame formats."""
+        return {".csv"    : object.to_csv, 
+                ".hdf"    : object.to_hdf, 
+                ".sql"    : object.to_sql, 
+                ".dict"   : object.to_dict, 
+                ".xlsx"   : object.to_excel, 
+                ".json"   : object.to_json, 
+                ".html"   : object.to_html , 
+                ".feather": object.to_feather, 
+                ".tex"    : object.to_latex, 
+                ".stata"  : object.to_stata, 
+                ".gbq"    : object.to_gbq, 
+                ".rec"    : object.to_records, 
+                ".str"    : object.to_string, 
+                ".clip"   : object.to_clipboard, 
+                ".md"     : object.to_markdown, 
+                ".parq"   : object.to_parquet, 
+                # ".orc"    : object.to_orc, 
+                ".pkl"    : object.to_pickle 
+                }
+    
     @staticmethod 
     def arrangement(a: int | str ): 
         """ Assert whether the given arrangement is correct. 
