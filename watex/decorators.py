@@ -31,7 +31,6 @@ _logger = watexlog.get_watex_logger(__name__)
 
 __docformat__='restructuredtext'
 
-
 class export_data: 
     def __init__(
         self, 
@@ -52,7 +51,6 @@ class export_data:
             """ Decorated function for writting data."""
             from .utils.funcutils import move_cfile 
             dfs,fname, kind, savepath, kws = self._func (*args, **kwds)
-
             #if format is None 
             # export to csv 
             kind = kind or '.csv'
@@ -75,7 +73,7 @@ class export_data:
                 **kws  
                 )
             for  fname in fnames: 
-                move_cfile ( fname, savepath )
+                move_cfile (fname, savepath , dpath ='_out')
 
         return wrapper_func 
         
@@ -115,20 +113,18 @@ class export_data:
             
         valid_formats = list( Config.writers(pd.DataFrame ).keys()) 
         kind = key_search(kind, default_keys= valid_formats, 
-                          parse_keys=False, 
-                          raise_exception= True ) [0]
+                          parse_keys=False, raise_exception= True )[0]
         # if multiple formats are given
         fnames=[]
-        for kk, df in enumerate (dfs) : 
+        for kk, df in enumerate (dfs): 
             if kind =='.xlsx': 
-                fname =+".xlsx" 
                 with pd.ExcelWriter( fname +'.xlsx') as writer :
                         df.to_excel(writer, **kwds)
             else:
                 # append iteration number to 
                 # differentiate file  
-                fname +=f"{kk}.{kind}" if len(dfs)> 1 else f".{kind}"
-                Config.writers(df ).get(kind )(fname, **kwds ) 
+                fname +=f"{kk}{kind}" if len(dfs)> 1 else f"{kind}"
+                Config.writers(df ).get(kind )(fname, **kwds) 
             fnames.append (fname)
 
         return fnames 
@@ -174,8 +170,6 @@ encoding: str, optional
   is a non-binary file object.
   
 """        
-        
-     
 
 class temp2d: 
     """ Two dimensional plot template 
