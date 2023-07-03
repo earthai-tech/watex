@@ -3216,9 +3216,7 @@ class ExPlot (BasePlot):
         return  "<{0!r}:xname={1!r}, yname={2!r} , tname={3!r}>".format(
             self.__class__.__name__, self.xname_ , self.yname_ , self.tname 
             )
-
-
-                       
+              
 class QuickPlot (BasePlot): 
     def __init__(
         self,  

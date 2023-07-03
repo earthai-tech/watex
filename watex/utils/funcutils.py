@@ -933,16 +933,16 @@ def make_introspection(Obj: object , subObj: Sub[object])->None:
         if not hasattr(Obj, key) and key  != ''.join(['__', str(key), '__']):
             setattr(Obj, key, value)
             
-def cpath (savepath=None , dpath=None): 
+def cpath (savepath: str=None , dpath: str='_default_path_'): 
     """ Control the existing path and create one of it does not exist.
     
     :param savepath: Pathlike obj, str 
     :param dpath: str, default pathlike obj
-    
     """
-    if dpath is None:
-        file, _= os.path.splitext(os.path.basename(__file__))
-        dpath = ''.join(['_', file,'_']) #.replace('.py', '')
+    # if dpath is None:
+    #     #file, _= os.path.splitext(os.path.basename(__file__))
+    #     #dpath = ''.join(['_', file,'_']) #.replace('.py', '')
+    #     dpath ='_dpath_'
     if savepath is None : 
         savepath  = os.path.join(os.getcwd(), dpath)
         try:os.mkdir(savepath)
@@ -3530,10 +3530,13 @@ def parse_yaml (yml_fn:str =None, data=None,
 
     return data 
  
-def cparser_manager (cfile,
-                     savepath =None, 
-                     todo:str ='load', dpath=None,
-                     verbose =0, **pkws): 
+def cparser_manager (
+    cfile,
+    savepath =None, 
+    todo:str ='load', 
+    dpath=None,
+    verbose =0, 
+    **pkws): 
     """ Save and output message according to the action. 
     
     :param cfile: name of the configuration file
@@ -3548,7 +3551,7 @@ def cparser_manager (cfile,
     if savepath is not None:
         if savepath =='default': 
             savepath = None 
-        yml_fn,_= move_cfile(cfile,savepath, dpath=dpath)
+        yml_fn,_= move_cfile(cfile, savepath, dpath=dpath)
     if verbose > 0: 
         print_cmsg(yml_fn, todo, **pkws)
         
@@ -3653,7 +3656,11 @@ def pretty_printer(
     for i in p: 
         print(i)
  
-def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
+def move_cfile (
+    cfile:str , 
+    savepath:Optional[str]=None, 
+    **ckws
+    ) :
     """ Move file to its savepath and output message. 
     
     If path does not exist, should create one to save data.
@@ -3665,7 +3672,7 @@ def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
         - configuration file 
         - out message 
     """
-    savepath = cpath(savepath, **ckws)
+    savepath = cpath(savepath, **ckws) 
     try :shutil.move(cfile, savepath)
     except: warnings.warn("It seems the path already exists!")
     
@@ -6573,7 +6580,8 @@ def key_search (
     valid_keys =[] 
     for key in keys : 
         for ii, dkey in enumerate (default_keys) : 
-            vk = re.findall(rf'\b\w*{key}\w*\b', dkey)
+            vk = re.findall(rf'\w*{key}\w*', dkey)
+            # rather than rf'\b\w*{key}\w*\b'
             # if deep take the real values in defaults keys.
             if len(vk) !=0: 
                 if deep: valid_keys.append( dk_init[ii] )
@@ -6584,10 +6592,8 @@ def key_search (
         ): 
         kverb ='s' if len(kinit)> 1 else ''
         raise KeyError (f"key{kverb} {kinit!r} not found."
-                        f" Expect {smart_format(dk_init, 'or')}")
-    
+                       f" Expect {smart_format(dk_init, 'or')}")
     return None if len(valid_keys)==0 else valid_keys 
-
 
 def repeat_item_insertion(text, /, pos, item ='', fill_value=''): 
     """ Insert character in  text according from it position. 

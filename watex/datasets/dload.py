@@ -451,7 +451,7 @@ def load_nlogs (
     split_X_y=False, 
     test_ratio=.3 , 
     tag=None, 
-    tnames=None , 
+    tnames=None, 
     data_names=None, 
     samples=None, 
     seed =None, 
@@ -487,9 +487,14 @@ def load_nlogs (
         data_file = str(p)
   
     if key=='ls': 
+        # use tnames and years 
+        # interchangeability 
+        years = tnames or years 
         data , feature_names, target_columns= _get_subsidence_data(
             data_file, years = years or "2022",
             drop_display_rate= drop_display_rate )
+        # reset tnames to fit the target columns
+        tnames=target_columns 
     else: 
         data = pd.read_csv( data_file )
         # since target and columns are alread set 
@@ -504,7 +509,6 @@ def load_nlogs (
         target_columns = ['static_water_level', 'drawdown', 'water_inflow', 
                           'unit_water_inflow', 'water_inflow_in_m3_d'
                           ] if key=='b0' else  ['ground_height_distance']
-    
     # cast values to numeric 
     data = to_numeric_dtypes( data) 
     samples = samples or "*"
@@ -517,9 +521,9 @@ def load_nlogs (
     try : 
         existfeatures(data[target_columns], tnames)
     except Exception as error: 
-        # get valueError message and replace Feature by target 
-        msg = (". Acceptable target values are:"
-               f"{smart_format(target_columns, 'or')}")
+        # get valueError message and replace Feature by target
+        verb ="s are" if len(target_columns) > 2 else " is"
+        msg = (f" Valid target{verb}: {smart_format(target_columns, 'or')}")
         raise ValueError(str(error).replace(
             'Features'.replace('s', ''), 'Target(s)')+msg)
         
@@ -589,27 +593,35 @@ as_frame : bool, default=False
 
 split_X_y: bool, default=False,
     If True, the data is splitted to hold the training set (X, y)  and the 
-    testing set (Xt, yt) with the according to the test size ratio.  
+    testing set (Xt, yt) with the according to the test size ratio. 
+    
 test_ratio: float, default is {{.3}} i.e. 30% (X, y)
     The ratio to split the data into training (X, y)  and testing (Xt, yt) set 
     respectively. 
+    
 tnames: str, optional 
     the name of the target to retreive. If ``None`` the full target columns 
     are collected and compose a multioutput `y`. For a singular classification 
     or regression problem, it is recommended to indicate the name of the target 
-    that is needed for the learning task. 
+    that is needed for the learning task. When collecting data for land 
+    subsidence with ``key="ls"``, `tnames` and `years` are used 
+    interchangeability. 
+    
 (tag, data_names): None
     `tag` and `data_names` do nothing. just for API purpose and to allow 
     fetching the same data uing the func:`~watex.data.fetch_data` since the 
     latter already holds `tag` and `data_names` as parameters. 
     
 key: str, default='b0'
-    Kind of drilling data to fetch. Can also be the borehole ["ns"]. The 
+    Kind of drilling data to fetch. Can also be the borehole ["ns", "ls"]. The 
     ``ns`` data refer mostly to engineering drilling whereas the ``b0`` refers 
     to pure hydrogeological drillings. In the former case, the 
     ``'ground_height_distance'`` attribute used to control soil settlement is 
     the target while the latter targets fit the water inflow, the drawdown and 
-    the static water level.
+    the static water level. The "ls" key is used for collection the times 
+    series land subsidence data from 2015-2018. It should be used in combinaison
+    with the `years` parameter for collecting the specific year data. The 
+    default land-subsidence data is ``2022``. 
     
 years: str, default="2022" 
    the year of land subsidence. Note that land subsidence data are collected 
@@ -618,8 +630,8 @@ years: str, default="2022"
    can be used for selecting all years data. 
    
    .. versionadded:: 0.2.7 
-      Years of Nanshan land subsidence data collected. Use key `ls` and 
-      `years` for retrieving the subsidence data at each year. 
+      Years of Nanshan land subsidence data collected are added. Use key 
+      `ls` and `years` for retrieving the subsidence data of each year. 
       
 samples: int,optional 
    Ratio or number of items from axis to fetch in the data. fetch all data if 

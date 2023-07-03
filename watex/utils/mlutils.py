@@ -323,8 +323,7 @@ def correlatedfeatures(
         )
 
     return  c_df.style.format({corr :"{:2.f}"}) if fmt else c_df 
-
-                           
+                      
 def exporttarget (df, tname, inplace = True): 
     """ Extract target and modified data in place or not . 
     
@@ -359,8 +358,7 @@ def exporttarget (df, tname, inplace = True):
     df.drop (tname, axis =1 , inplace =inplace )
     
     return t, df
-    
-    
+
 def existfeatures (df, features, error='raise'): 
     """Control whether the features exist or not  
     
@@ -388,8 +386,8 @@ def existfeatures (df, features, error='raise'):
         if len(set_f)==0:
             if error =='raise':
                 raise ValueError (f"{msg} {smart_format(features)} "
-                                  f"{'does not' if nfeat <2 else 'dont'}"
-                                  " exist in the dataframe")
+                                  f"{'is' if nfeat <2 else 'are'}"
+                                  " missing in the data attributes.")
             isf = False 
         # get the difference 
         diff = set (features).difference(set_f) if len(
