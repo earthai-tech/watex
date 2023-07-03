@@ -114,7 +114,7 @@ class export_data:
             raise TypeError("NoneType cannot be written.")
             
         valid_formats = list( Config.writers(pd.DataFrame ).keys()) 
-        kind = key_search(kind, default_keys= valid_formats, 
+        kind = key_search([kind], default_keys= valid_formats, 
                           parse_keys=False, 
                           raise_exception= True ) [0]
         # if multiple formats are given

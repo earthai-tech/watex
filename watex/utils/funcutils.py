@@ -6570,20 +6570,21 @@ def key_search (
         keys= [str(it).lower() for it in keys  ]
         default_keys = [str(it).lower() for it in default_keys  ]
 
-    valid_keys =[]
+    valid_keys =[] 
     for key in keys : 
         for ii, dkey in enumerate (default_keys) : 
             vk = re.findall(rf'\b\w*{key}\w*\b', dkey)
             # if deep take the real values in defaults keys.
             if len(vk) !=0: 
-                if deep:  valid_keys.append( dk_init[ii] )
-                else: valid_keys.extend( vk)
-                break 
-
-    if raise_exception and len(valid_keys)==0: 
+                if deep: valid_keys.append( dk_init[ii] )
+                else:valid_keys.extend( vk)
+                break     
+    if ( raise_exception 
+        and len(valid_keys)==0
+        ): 
         kverb ='s' if len(kinit)> 1 else ''
-        raise KeyError (f"key{kverb} {smart_format(kinit)} not found."
-                          f" Expect {smart_format(dk_init, 'or')}")
+        raise KeyError (f"key{kverb} {kinit!r} not found."
+                        f" Expect {smart_format(dk_init, 'or')}")
     
     return None if len(valid_keys)==0 else valid_keys 
 
