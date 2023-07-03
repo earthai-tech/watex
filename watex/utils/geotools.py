@@ -2079,4 +2079,44 @@ def _assert_model_type(kind):
             "for stratigraphyic model and `crm` for occam2d model. ")
     return kind 
     
- 
+def display_ginfos(
+    infos,
+    inline='-', 
+    size =70,  
+    header ='Automatic rocks',  
+    **kws):
+    """ Display unique element on list of array infos.
+    
+    :param infos: Iterable object to display. 
+    :param header: Change the `header` to other names. 
+    :Example: 
+        >>> from watex.geology.stratigraphic import display_infos
+        >>> ipts= ['river water', 'fracture zone', 'granite', 'gravel',
+             'sedimentary rocks', 'massive sulphide', 'igneous rocks', 
+             'gravel', 'sedimentary rocks']
+        >>> display_infos('infos= ipts,header='TestAutoRocks', 
+                          size =77, inline='~')
+    """
+
+    if isinstance(infos, str ): 
+        infos =[infos]
+        
+    infos = list(set(infos))
+    print(inline * size )
+    mes= '{0}({1:02})'.format(header.capitalize(),
+                                  len(infos))
+    mes = '{0:^70}'.format(mes)
+    print(mes)
+    print(inline * size )
+    am=''
+    for ii in range(len(infos)): 
+        if (ii+1) %2 ==0: 
+            am = am + '{0:>4}.{1:<30}'.format(ii+1, infos[ii].capitalize())
+            print(am)
+            am=''
+        else: 
+            am ='{0:>4}.{1:<30}'.format(ii+1, infos[ii].capitalize())
+            if ii ==len(infos)-1: 
+                print(am)
+    print(inline * size )
+     

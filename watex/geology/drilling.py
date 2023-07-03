@@ -2705,11 +2705,11 @@ class DSDrill (GeoBase) :
         self, 
         kind:str , 
         properties: dict=None, 
-        return_data: bool = False,
+        return_data: bool=False,
         ): 
         """ Transform the data and fit to the corresponding drillholes. 
         
-        `kind` is used to specified the type of drillhole to build. The `DH_`
+        `kind` is used to specify the type of drillhole to build. The `DH_`
         used to prefix the drillhole properties can be omitted when 
         specifying the properties. 
         
@@ -2723,6 +2723,10 @@ class DSDrill (GeoBase) :
            the values of the drillholes. If properties is not specified 
            drillhole data returns NaN columns. 
            
+        return_data: bool, default=False 
+          Out the drillhole data. Otherwise returns the drillhole object 
+          :class:`DSDrill`. 
+          
         Returns 
         ----------
         self, data : Object instanced and pd.DataFrame 
@@ -2754,7 +2758,7 @@ class DSDrill (GeoBase) :
                'water_inflow_in_m3_d'],
               dtype='object')
         >>> To get properties, one needs to call get properties to have an idea 
-        >>> # before setting the columns that match the properties as 
+        >>> # before setting the columns to fit the properties as 
         >>> DSDrill ().get_properties (kind='collar')
         Out[29]: 
         ('DH_Hole',
@@ -2803,7 +2807,6 @@ class DSDrill (GeoBase) :
                 self.properties, 
                 kind 
                 )
-
     def fit_structures(
         self, kind : str, 
         keep_acronyms: bool=..., 
@@ -2873,7 +2876,6 @@ class DSDrill (GeoBase) :
         2   GEO03  1.660514e+06  177349.038212  ...   12.0                 sandstone  test2
         3   GEO03  1.660514e+06  177349.038212  ...   22.0                      tuff  test2
         4   GEO03  1.660514e+06  177349.038212  ...   36.0  carbonate iron formation  test2
-
         """
         keep_acronyms, inplace = ellipsis2false(keep_acronyms, inplace)
         kind= self._assert_kind_value( kind) 
@@ -2887,7 +2889,6 @@ class DSDrill (GeoBase) :
             raise DrillError(f"Missing '{kind}_' dataset. {kind.title()}"
                              f" cannot fitted. Set or build the {kind}"
                              " data first.")
-            
         d = getattr ( self, f"{kind}_").copy()  
  
         if kind =='geology': 
@@ -2954,19 +2955,29 @@ class DSDrill (GeoBase) :
         >>> dr.out(fname = 'test_data.csv', kind ="data")
         
         """
+       
         if kind !="*": 
             kind = key_search(kind, deep=True, raise_exception=True, 
                               default_keys=('geology', 'collar', 
-                                            'samples', 'data')
-                              )
+                                            'samples', 'data'))
         else: kind = ['collar', 'geology', 'samples']
+        # name of data  to overwrite the 
+        # filename if not given or overwrite 
+        # the sheetnames if .xlxs is required 
+        nameof= kind.copy() 
+
         dfs = [getattr (self, f"{ki}_", None) for ki in kind]
         # remove None if exists in dfs 
         dfs = list ( filter (lambda o: o is not None, dfs )) 
         if len(dfs)==0: 
             raise TypeError("NoneType cannot be exported. Please check"
                             " your data.")
-        fname =fname or ( kind[0] if kind!="*" else "dhdata")
+        # rename data is needed since the current directory 
+        # hold the name data. This prevent moving the software 
+        # data directory files 
+        _fname = kind[0] if kind[0] !="data" else "data0" 
+        fname =fname or (_fname if kind!="*" else "dhdata")
+                         
         # check whether there is a dot.
         # remove it and add to the biginning
         format = "." + str(format).lower(
@@ -2975,7 +2986,8 @@ class DSDrill (GeoBase) :
         return ( dfs, 
                 fname, 
                 format, 
-                savepath, 
+                savepath,
+                nameof, 
                 outkws
                 )  
 

@@ -3674,8 +3674,11 @@ def move_cfile (
     """
     savepath = cpath(savepath, **ckws) 
     try :shutil.move(cfile, savepath)
-    except: warnings.warn("It seems the path already exists!")
-    
+    except: 
+        shutil.copy2 (cfile, savepath )
+        os.remove (cfile)
+        # delete file 
+        # warnings.warn("It seems the path already exists!")
     cfile = os.path.join(savepath, cfile)
     
     msg = (f'--> {os.path.basename(cfile)!r} data was successfully' 

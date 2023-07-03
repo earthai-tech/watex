@@ -10,6 +10,7 @@ The core module deals with  geological data, the structural infos
 and borehole data.
 
 """
+from __future__ import annotations 
 import os
 import warnings
 from importlib import resources
@@ -22,7 +23,9 @@ from ..utils.funcutils import (
     is_iterable,
     key_search, 
     )
-
+from ..utils.geotools import ( 
+    find_similar_structures, 
+    )
 from ..property import (
     Config 
     )
@@ -31,6 +34,8 @@ from ..exceptions import (
     GeoPropertyError, 
     )
 from .._watexlog import watexlog 
+from .._typing import List 
+
 _logger = watexlog().get_watex_logger(__name__ )
 
 __all__=[
@@ -227,6 +232,83 @@ class GeoBase:
             found =False 
         return data 
     
+    @staticmethod
+    def getProperties(properties =['electrical_props', '__description'], 
+                       sproperty ='electrical_props'): 
+        """ Connect database and retrieve the 'Eprops'columns and 'LayerNames'
+        
+        :param properties: DataBase columns.
+        :param sproperty : property to sanitize. Mainly used for the properties
+            in database composed of double parenthesis. Property value 
+            should be removed and converted to tuple of float values.
+        :returns:
+            - `_gammaVal`: the `properties` values put on list. 
+                The order of the retrieved values is function of 
+                the `properties` disposal.
+        """
+        #------------------------------------
+        from .database import GeoDataBase
+        #-----------------------------------
+        def _fs (v): 
+            """ Sanitize value and put on list 
+            :param v: value 
+            :Example:
+                
+                >>> _fs('(416.9, 100000.0)'))
+                ...[416.9, 100000.0]
+            """
+            try : 
+                v = float(v)
+            except : 
+                v = tuple([float (ss) for ss in 
+                         v.replace('(', '').replace(')', '').split(',')])
+            return v
+        # connect to geodataBase 
+        try : 
+            _dbObj = GeoDataBase()
+        except: 
+            _logger.debug('Connection to database failed!')
+        else:
+            _gammaVal = _dbObj._retreive_databasecolumns(properties)
+            if sproperty in properties: 
+                indexEprops = properties.index(sproperty )
+                try:
+                    _gammaVal [indexEprops] = list(map(lambda x:_fs(x),
+                                                   _gammaVal[indexEprops]))
+                except TypeError:
+                    _gammaVal= list(map(lambda x:_fs(x),
+                                         _gammaVal))
+        return _gammaVal
+    
+    @staticmethod
+    def findGeostructures(
+        res: float|List[float, ...], /, 
+        db_properties=['electrical_props', '__description']
+        ): 
+        """ Find the layer from database and keep the ceiled value of 
+        `_res` calculated resistivities"""
+     
+        structures = find_similar_structures(res)
+        if len(structures) !=0 or structures is not None:
+            if structures[0].find('/')>=0 : 
+                ln = structures[0].split('/')[0].lower() 
+            else: ln = structures[0].lower()
+            return ln, res
+        else: 
+            valEpropsNames = GeoBase.getProperties(db_properties)
+            indeprops = db_properties.index('electrical_props')
+            for ii, elecp_value  in enumerate(valEpropsNames[indeprops]): 
+                if elecp_value ==0.: continue 
+                elif elecp_value !=0 : 
+                    try : 
+                        iter(elecp_value)
+                    except : pass 
+                    else : 
+                        if  min(elecp_value)<= res<= max(elecp_value):
+                            ln= valEpropsNames[indeprops][ii]
+                            return ln, res
+
+#---------------------------CORE Utilities ------------------------------------
 def set_agso_properties (download_files = True ): 
     """ Set the rocks and their properties from inner files located in 
         < 'watex/etc/'> folder."""
@@ -291,7 +373,6 @@ def mapping_stratum(download_files =True):
      
     return  tuple(rock_and_structural_props)
 
-
 def get_agso_properties(config_file =None, orient ='series'): 
     """ Get the geostructures files from <'watex/etc/'> and 
     set the properties according to the desire type. When `orient` is 
@@ -348,4 +429,7 @@ def get_agso_properties(config_file =None, orient ='series'):
         del agso_rock_props['name']
         
     return  agso_rock_props
- 
+
+
+
+    

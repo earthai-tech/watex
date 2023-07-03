@@ -966,8 +966,7 @@ class GeoDataBase (object):
         self.manage_geoDataBase.commit()
         self.manage_geoDataBase.closeDB()
 
-           
-            
+
 class DBSetting(object) : 
     """
     build a datable postgre Sql  from dict_app.py  simple way to make a transit

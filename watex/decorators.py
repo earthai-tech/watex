@@ -50,28 +50,31 @@ class export_data:
         def wrapper_func ( *args, **kwds): 
             """ Decorated function for writting data."""
             from .utils.funcutils import move_cfile 
-            dfs,fname, kind, savepath, kws = self._func (*args, **kwds)
+            dfs,fname, file_format, savepath, nameof, kws = self._func (
+                *args, **kwds)
             #if format is None 
             # export to csv 
-            kind = kind or '.csv'
+            file_format = file_format or '.csv'
             # check wether extension is included in the  
             # filename then update the file_format: 
             name, ex = os.path.splitext ( fname )
             if ex !="" and "." in str(ex).lower(): 
-                kind = str(ex).lower() 
-                fname = name 
-         
+                file_format = str(ex).lower() 
+                
+            fname = fname or name 
             if str(self.type).lower() =='frame': 
                 writerfunc = self.out_frame 
             else: writerfunc= self.out_others 
-   
+            
             fnames = writerfunc (
                 dfs, 
                 fname, 
-                kind, 
+                file_format, 
                 savepath , 
+                nameof,
                 **kws  
                 )
+            
             for  fname in fnames: 
                 move_cfile (fname, savepath , dpath ='_out')
 
@@ -81,8 +84,9 @@ class export_data:
         self, 
         dfs , 
         fname, 
-        kind, 
-        savepath , 
+        file_format,
+        savepath,
+        nameof=None, 
         **kwds 
         ): 
         """Export dataframes.
@@ -93,8 +97,11 @@ class export_data:
            Dataframe or list of dataframes 
         fname: str, 
           name of the file to  exported 
-        kind: str, 
-          format to write.
+        file_format: str, 
+          format of expected file to write.
+        nameof: list 
+          list of data to write. It is used to rename filename 
+          if not given. However, It is used for sheet naming
         savepath: str, 
         Path to directory to save file. Default is current directory 
         """
@@ -112,44 +119,52 @@ class export_data:
             raise TypeError("NoneType cannot be written.")
             
         valid_formats = list( Config.writers(pd.DataFrame ).keys()) 
-        kind = key_search(kind, default_keys= valid_formats, 
+        file_format = key_search(file_format, default_keys= valid_formats, 
                           parse_keys=False, raise_exception= True )[0]
         # if multiple formats are given
         fnames=[]
-        for kk, df in enumerate (dfs): 
-            if kind =='.xlsx': 
-                with pd.ExcelWriter( fname +'.xlsx') as writer :
-                        df.to_excel(writer, **kwds)
-            else:
+        if file_format==".xlsx": 
+            fname +='.xlsx'
+            with pd.ExcelWriter( fname) as writer :
+                for df, name in zip (dfs, nameof): 
+                    df.to_excel(writer, sheet_name =name, **kwds)
+            fnames.append(fname)
+        else: 
+            for df, name  in zip (dfs, nameof): 
                 # append iteration number to 
                 # differentiate file  
-                fname +=f"{kk}{kind}" if len(dfs)> 1 else f"{kind}"
-                Config.writers(df ).get(kind )(fname, **kwds) 
-            fnames.append (fname)
-
+                namep = ( f".{name}{file_format}" if len(dfs)> 1 
+                         else f"{file_format}") 
+                fname +=namep 
+                Config.writers(df ).get(file_format )(fname, **kwds) 
+                # append filename and remove 
+                # older name.
+                fnames.append (fname)
+                fname= fname.replace (namep , "")
         return fnames 
 
     def out_others (
         self, 
         dfs, 
         fname, 
-        kind, 
-        savepath ,  
+        file_format, 
+        savepath , 
+        nameof=None, 
         **kwds
         ): 
         """Export others files. Can be text or any other types of sequences
         format.
         """
         fnames=[]
-        kind = str(kind).replace (".", "") 
-        with open(fname, fname + f'.{kind}', mode ='w' ,
+        file_format = str(file_format).replace (".", "") 
+        with open(fname, fname + f'.{file_format}', mode ='w' ,
                   encoding=self.encoding) as f:
             for df in dfs:
                 if hasattr ('__array__'): 
                     f.writelines(df) 
                 else:  f.write ( df)
                 
-                fnames.append(fname + f".{kind}")
+                fnames.append(fname + f".{file_format}")
              
         return fnames 
     

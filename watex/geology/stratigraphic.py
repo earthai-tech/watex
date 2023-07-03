@@ -34,14 +34,15 @@ from ..exceptions import (
 from .core import (
     GeoBase 
     )
-from .database import ( 
-    GeoDataBase,
-    )
+# from .database import ( 
+#     GeoDataBase,
+#     )
+from ..utils.exmath import gradient_descent 
 from ..utils.funcutils import ( 
     serialize_data, 
     load_serialized_data,
     smart_format, 
-    concat_array_from_list,
+    # concat_array_from_list,
     parse_json, 
     parse_yaml,
     is_iterable, 
@@ -60,7 +61,8 @@ from ..utils.geotools import (
     plot_stratalog,
     get_closest_gap,
     lns_and_tres_split,
-    find_similar_structures
+    # find_similar_structures, 
+    display_ginfos
     
     )
 from ..utils._dependency import ( 
@@ -180,11 +182,25 @@ class GeoStrataModel(GeoBase):
     >>> crm = np.abs( np.random.randn (215 , 70 ) *1000 )
     >>> tres = np.linspace (crm.min() +1  , crm.max() +1 , 12 ) # 
     >>> layers = ['granites', 'gneiss', 'sedim.']
-    >>> gs= GeoStrataModel (tres = tres, layers =layers, to_log10 =True )
-    >>> gs.fit(crm).buildNM(display_infos =True )
-    >>> print( gs.nm.shape) 
+    >>> gs= GeoStrataModel( to_log10 =True )
+    >>> gs.fit(crm, tres = tres, layers =layers).buildNM(display_infos =True )
+    >>> print( gs.nm_.shape)
+    build-NM: 18B [00:01, 12.60B/s]
+    ----------------------------------------------------------------------
+                          layers [auto=automatic](13)                     
+    ----------------------------------------------------------------------
+       1. hard rock (auto)                2. clay (auto)                  
+       3. conglomerate (auto)             4. sedimentary rock (auto)      
+       5. gravel (auto)                   6. igneous rock (auto)          
+       7. fresh water (auto)              8.Sedim.                        
+       9.Gneiss                          10. *struture not found (auto)   
+      11. saprolite (auto)               12. duricrust (auto)             
+      13.Granites                      
+    ----------------------------------------------------------------------
+    (215, 70) 
     >>> gs.strataModel () # plot strata model, by default kind ='NM'
     >>> gs.plotStrata ('s7')  # plot strata log at station S7 
+    Out[7]: watex.geology.stratigraphic.PseudoStratigraphic
     >>> 
     >>> # (2): Works with occam2d inversion files if 'pycsamt' or 'mtpy' 
     >>> # is installed. It will call the module Geodrill from pycsamt to 
@@ -279,7 +295,7 @@ class GeoStrataModel(GeoBase):
         self._z =None
         self.nmSites_=None
         self.crmSites_=None 
-
+        
     def fit(self, crm: NDArray, tres: List[float]=None,
             layers: List[str]=None, **fit_params): 
         """ 
@@ -358,7 +374,10 @@ class GeoStrataModel(GeoBase):
         self.crm = crm 
         self.layers=layers 
         self.tres = tres 
-        
+   
+        if self.tolog10: 
+            self._tres = np.log10 (self._tres)
+            
         if self.layers is None or self.tres is None: 
             msgn= "Layers are missing. " if self.layers is None else (
                 "The layers true resistivities (TRES) are missing. " if 
@@ -513,10 +532,10 @@ class GeoStrataModel(GeoBase):
         :param ptol: Error tolerance parameters 
   
         """
-        def s__auto_rocks (listOfauto_rocks): 
+        def s_auto_rocks (listOfauto_rocks): 
             """ Automatick rocks collected during the step 3
-            :param listOfauto_rocks: List of automatic rocks from differents
-             subblocks. 
+            :param listOfauto_rocks: List of automatic rocks from 
+             differents subblocks. 
              
             :returns:rocks sanitized and resistivities. 
             """
@@ -536,8 +555,6 @@ class GeoStrataModel(GeoBase):
                 h_=[]
             return r_, hres 
         
-        # iln =kws.pop('layers', None)
-        # tres =kws.pop('tres', None)
         subblocks =kws.pop('subblocks', None)
         disp= kws.pop('display_infos', True)
         # n_epochs = kws.pop('n_epochs', None)
@@ -548,20 +565,6 @@ class GeoStrataModel(GeoBase):
         if subblocks is not None: 
             self.subblocks = subblocks
         
-        # if iln is not None: 
-        #     self.layers = iln 
-        # if tres is not None: 
-        #     self.tres = tres 
-        
-        # if crm is not None:
-        #     self.crm = crm 
-        # if beta is not None: 
-        #     self.beta = beta 
-        # if ptol is not None:
-        #     self.ptol = ptol 
-        # if n_epochs is not None: 
-        #     self.n_epochs = n_epochs 
-            
         self.s0 , errors=[], []
         #step1 : SOFMINERROR 
         if TQDM : 
@@ -585,7 +588,7 @@ class GeoStrataModel(GeoBase):
         #Step 3: USING DATABASE 
         for ii in range(len(self.s0)):
             if 0 in self.s0[ii][:, :]: 
-                s3, autorock_properties= self._createAutoLayer(
+                s3, autorock_properties= self._createAutoLayers(
                     subblocks=self.subblocks[ii], s0=self.s0[ii]  )
                 arp_.append(autorock_properties)
                 self.s0[ii]=s3       
@@ -607,7 +610,7 @@ class GeoStrataModel(GeoBase):
                             station_location= self.model_station_locations, 
                              block_model=self.model_resistivities)
         #Update TRES and LN 
-        gammaL, gammarho = s__auto_rocks(arp_) 
+        gammaL, gammarho = s_auto_rocks(arp_) 
         
         if self.layers is not None: 
             print_layers = self.layers  + [ ' {0} (auto)'.format(l) 
@@ -627,8 +630,7 @@ class GeoStrataModel(GeoBase):
             
         # display infos 
         if disp:
-            display_infos(infos=print_layers,
-                          header= hinfos)
+            display_ginfos(infos=print_layers, header= hinfos)
         #STEP 4: Train ANN: (still in development) to predict your 
         #l ayer: No need to plot the NM  (Need huge amount of data)
         # copy main attributes for pseudostratigraphic plot purpose 
@@ -675,9 +677,15 @@ class GeoStrataModel(GeoBase):
         s0= np.concatenate((_z.reshape(_z.shape[0], 1), s0.T), axis =1)
         return s0, error 
 
-
-    def _hardMinError(self, tres=None, subblocks=None, s0=None, ptol = None,
-                         kind='linear', **kwargs ): 
+    def _hardMinError(
+        self, 
+        tres=None, 
+        subblocks=None, 
+        s0=None, 
+        ptol = None,
+        kind='linear', 
+        **kwargs 
+        ): 
         """The second step introduces the model function F=W∙Z  where W
         contains the weights of parameters number and Z is V×2 matrix 
         that contains a "bias" column. If the parameter number P equal to two, 
@@ -736,7 +744,7 @@ class GeoStrataModel(GeoBase):
         subblocks=subblocks[:, 1:].T
         error =[]
         for ii in range(s0.shape[0]): # hnodes N
-            F, *_= self.gradient_descent(z=_z,s=subblocks[ii,:],
+            F, *_= gradient_descent(z=_z,s=subblocks[ii,:],
                                          alpha= self.eta,
                                          n_epochs= self.n_epochs, 
                                          kind= self.kind)
@@ -759,120 +767,6 @@ class GeoStrataModel(GeoBase):
         s0= np.concatenate((_z.reshape(_z.shape[0], 1), s0.T), axis =1)    
         return s0, error 
         
-    @staticmethod    
-    def gradient_descent(z, s, alpha, n_epochs,raise_warn=False,  **kws): 
-        """ Gradient descent algorithm to  fit the best model parameter. 
-        
-        :param z: vertical nodes containing the values of depth V
-        :param s: vertical vector containin the resistivity values 
-        :param alpha: step descent parameter or learning rate. 
-                    *Default* is ``0.01`
-        :param n_epochs: number of iterations. *Default* is ``100``
-                        Can be changed to other values
-        :returns:
-            - `F`: New model values with the best `W` parameters found.
-            - `W`: vector containing the parameters fits 
-            - `cost_history`: Containing the error at each Itiretaions. 
-            
-        :Example:
-            
-            >>> z= np.array([0, 6, 13, 20, 29 ,39, 49, 59, 69, 89, 109, 129, 
-                             149, 179])
-            >>> res= np.array( [1.59268,1.59268,2.64917,3.30592,3.76168,
-                                4.09031,4.33606, 4.53951,4.71819,4.90838,
-                  5.01096,5.0536,5.0655,5.06767])
-            >>> fz, weights, cost_history = gradient_descent(z=z, s=res,
-                                                 n_epochs=10,
-                                                 alpha=1e-8,
-                                                 degree=2)
-            >>> import matplotlib.pyplot as plt 
-            >>> plt.scatter (z, res)
-            >>> plt.plot(z, fz)
-        """
-        kind_=kws.pop('kind', 'linear')
-        kind_degree = kws.pop('degree', 1)
-        
-        
-        if kind_degree >1 : kind_='poly'
-        
-        if kind_.lower() =='linear': 
-            kind_degree = 1 
-        elif kind_.lower().find('poly')>=0 : 
-            if kind_degree <=1 :
-                _logger.debug(
-                    'The model function is set to `Polynomial`. '
-                    'The degree must be greater than 1. Degree wil reset to 2.')
-                if raise_warn:
-                    warnings.warn('Polynomial degree must be greater than 1.'
-                              'Value is ressetting to `2`.')
-                kind_degree = 2
-            try : 
-                kind_degree= int(kind_degree)
-            except Exception :
-                raise ValueError(f'Could not `{kind_degree}` convert to integer.')
-                
-        
-        def kindOfModel(degree, x, y) :
-            """ Generate kind of model. If degree is``1`` The linear subset 
-             function will use. If `degree` is greater than 2,  Matrix will 
-             generate using the polynomail function.
-             
-            :param x: X values must be the vertical nodes values 
-            :param y: S values must be the resistivity of subblocks at node x 
-            
-             """
-            c= []
-            deg = degree 
-            w = np.zeros((degree+1, 1)) # initialize weights 
-            
-            def init_weights (x, y): 
-                """ Init weights by calculating the scope of the function along 
-                 the vertical nodes axis for each columns. """
-                with warnings.catch_warnings():
-                    warnings.filterwarnings(action='ignore', 
-                                            category=RuntimeWarning)
-                    for j in range(x.shape[1]-1): 
-                        a= (y.max()-y.min())/(x[:, j].max()-x[:, j].min())
-                        w[j]=a
-                    w[-1] = y.mean()
-                return w   # return weights 
-        
-            for i in range(degree):
-                c.append(x ** deg)
-                deg= deg -1 
-        
-            if len(c)> 1: 
-                x= concat_array_from_list(c, concat_axis=1)
-                x= np.concatenate((x, np.ones((x.shape[0], 1))), axis =1)
-        
-            else: x= np.vstack((x, np.ones(x.shape))).T # initialize z to V*2
-        
-            w= init_weights(x=x, y=y)
-            return x, w  # Return the matrix x and the weights vector w 
-        
-        
-        def model(Z, W): 
-            """ Model function F= Z.W where `Z` id composed of vertical nodes 
-            values and `bias` columns and `W` is weights numbers."""
-            return Z.dot(W)
-        
-        # generate function with degree 
-        Z, W = kindOfModel(degree=kind_degree,  x=z, y=s)
-        
-        # Compute the gradient descent 
-        cost_history = np.zeros(n_epochs)
-        s=s.reshape((s.shape[0], 1))
-        
-        for ii in range(n_epochs): 
-            with np.errstate(all='ignore'): # rather than divide='warn'
-                #https://numpy.org/devdocs/reference/generated/numpy.errstate.html
-                W= W - (Z.T.dot(Z.dot(W)-s)/ Z.shape[0]) * alpha 
-                cost_history[ii]= (1/ 2* Z.shape[0]) * np.sum((Z.dot(W) -s)**2)
-            
-        F= model(Z=Z, W=W)     # generate the new model with the best weights 
-                 
-        return F,W, cost_history
-     
     @classmethod 
     def geoArgumentsParser(cls, config_file =None): 
         """ Read and parse the `GeoStrataModel` arguments files from 
@@ -937,164 +831,7 @@ class GeoStrataModel(GeoBase):
         """ keep subblocks as :class:`~GeoStrataModel` property"""
         
         self._subblocks = subblks 
-        
-    def _createAutoLayer(self, subblocks=None, s0=None,
-                          ptol = None,**kws):
-        """ 
-        The third step of replacement using the geological database. 
-        
-        The third step consists to find the rock  γ_L in the Γ with the 
-         ceiled mean value γ_ρ  in E_props column is close to the calculated 
-        resistivity r_11. Once the rock γ_L  is found,the calculated 
-        resistivity r_11 is replaced by γ_ρ. Therefore, the rock γ_L is
-         considered as an automatic layer. At the same time,the TRES and LN
-         is updated by adding   GeoStratigraphy_ρ  and  γ_L respectively to 
-         the existing given data. 
-         
-        """
-        db_properties = kws.pop('properties',['electrical_props', 
-                                              '__description'] )
-        tres = kws.pop('tres', None)
-        disp = kws.pop('display_infos', False)
-        hinfos = kws.pop('header', 'Automatic layers')
-        
-        if tres is not None :
-            self.tres = tres 
-        if ptol is not None: 
-            self.ptol = ptol 
-        
-        def _findGeostructures(_res): 
-            """ Find the layer from database and keep the ceiled value of 
-            `_res` calculated resistivities"""
-            structures = find_similar_structures(_res)
-            if len(structures) !=0 or structures is not None:
-                if structures[0].find('/')>=0 : 
-                    ln = structures[0].split('/')[0].lower() 
-                else: ln = structures[0].lower()
-                return ln, _res
-            else: 
-                valEpropsNames = self._getProperties(db_properties)
-                indeprops = db_properties.index('electrical_props')
-                for ii, elecp_value  in enumerate(valEpropsNames[indeprops]): 
-                    if elecp_value ==0.: continue 
-                    elif elecp_value !=0 : 
-                        try : 
-                            iter(elecp_value)
-                        except : pass 
-                        else : 
-                            if  min(elecp_value)<= _res<= max(elecp_value):
-                                ln= valEpropsNames[indeprops][ii]
-                                return ln, _res
-                    
-        def _normalizeAutoresvalues(listOfstructures,listOfvalues):                            
-            """ Find the different structures that exist and
-            harmonize value. and return an array of originated values and 
-            the harmonize values and the number of automatics layer found as 
-            well as their harmonized resistivity values. 
-            """
-            autolayers = list(set(listOfstructures))
-            hvalues= np.zeros((len(autolayers,)))
-            
-            temp=[]
-            for ii , autol in enumerate(autolayers): 
-                for jj, _alay in enumerate(listOfstructures):
-                    if _alay ==autol: 
-                        temp.append(listOfvalues[jj])
-                hvalues[ii]= np.array(list(set(temp))).mean()
-                temp=[]
-            
-            # build values array containes the res and the harmonize values 
-            h= np.zeros((len(listOfvalues),))
-            for ii, (name, values) in enumerate(zip (listOfstructures,
-                                     listOfvalues)):
-                for jj, hnames in enumerate(autolayers) : 
-                    if name == hnames: 
-                        h[ii]= hvalues[jj]
-            
-            finalres= np.vstack((np.array(listOfvalues),h) )
-            finalln = np.vstack((np.array(autolayers), hvalues))
-            return  finalln, finalres 
-            
-        _z= s0[:, 0]
-        s0 = s0[:, 1:].T
-        _temptres , _templn =[], []
-        subblocks=subblocks[:, 1:].T
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings(action='ignore', category=RuntimeWarning)
-            for ii in range(s0.shape[0]): # hnodes N
-                for jj in range(s0.shape[1]): # znodes V
-                    if s0[ii, jj] ==0. : 
-                        lnames, lcres =_findGeostructures(
-                            np.power(10, subblocks[ii, jj]))
-                        _temptres.append(np.log10(lcres))
-                        _templn.append(lnames)
-    
-        auto_rocks_names_res, automatics_resistivities =\
-            _normalizeAutoresvalues(_templn,_temptres )
-            
-        for ii in range(s0.shape[0]): # hnodes N
-           for jj in range(s0.shape[1]): # znodes V
-               if s0[ii, jj] ==0. :
-                   for k in range(automatics_resistivities.shape[1]): 
-                       subblocks[ii, jj] == automatics_resistivities[0,:][k]
-                       s0[ii, jj]= automatics_resistivities[1,:][k]
-                       break 
-                      
-        s0= np.concatenate((_z.reshape(_z.shape[0], 1), s0.T), axis =1) 
-        
-        # display infos 
-        if disp:
-            display_infos(infos=self.layers,
-                          header= hinfos)
-        
-        return  s0, auto_rocks_names_res
-        
-    @staticmethod
-    def _getProperties(properties =['electrical_props', '__description'], 
-                       sproperty ='electrical_props'): 
-        """ Connect database and retrieve the 'Eprops'columns and 'LayerNames'
-        
-        :param properties: DataBase columns.
-        :param sproperty : property to sanitize. Mainly used for the properties
-            in database composed of double parenthesis. Property value 
-            should be removed and converted to tuple of float values.
-        :returns:
-            - `_gammaVal`: the `properties` values put on list. 
-                The order of the retrieved values is function of 
-                the `properties` disposal.
-        """
-        def _fs (v): 
-            """ Sanitize value and put on list 
-            :param v: value 
-            :Example:
-                
-                >>> _fs('(416.9, 100000.0)'))
-                ...[416.9, 100000.0]
-            """
-            try : 
-                v = float(v)
-            except : 
-                v = tuple([float (ss) for ss in 
-                         v.replace('(', '').replace(')', '').split(',')])
-            return v
-        # connect to geodataBase 
-        try : 
-            _dbObj = GeoDataBase()
-        except: 
-            _logger.debug('Connection to database failed!')
-        else:
-            _gammaVal = _dbObj._retreive_databasecolumns(properties)
-            if sproperty in properties: 
-                indexEprops = properties.index(sproperty )
-                try:
-                    _gammaVal [indexEprops] = list(map(lambda x:_fs(x),
-                                                   _gammaVal[indexEprops]))
-                except TypeError:
-                    _gammaVal= list(map(lambda x:_fs(x),
-                                         _gammaVal))
-        return _gammaVal 
-       
     @gplot2d(reason='model',cmap='jet_r', plot_style ='pcolormesh',
              show_grid=False )
     def strataModel(self, kind ='nm', **kwargs): 
@@ -1173,7 +910,56 @@ class GeoStrataModel(GeoBase):
             self.model_depth, self.doi, depth_scale, self.model_rms, 
             self.model_roughness, misfit_G )
     
+    def _createAutoLayers(self, tres =None, layers =None, subblocks=None, 
+                         s0=None, ptol = None,  **kws):
+        """ 
+        The third step of replacement using the geological database. 
+        
+        The third step consists to find the rock  γ_L in the Γ with the 
+         ceiled mean value γ_ρ  in E_props column is close to the calculated 
+        resistivity r_11. Once the rock γ_L  is found,the calculated 
+        resistivity r_11 is replaced by γ_ρ. Therefore, the rock γ_L is
+         considered as an automatic layer. At the same time,the TRES and LN
+         is updated by adding   GeoStratigraphy_ρ  and  γ_L respectively to 
+         the existing given data. 
+         
+        """
+        # tres = kws.pop('tres', None)
+        disp = kws.pop('display_infos', False)
+        hinfos = kws.pop('header', 'Automatic layers')
+  
+        _z= s0[:, 0]
+        s0 = s0[:, 1:].T
+        _temptres , _templn =[], []
+        subblocks=subblocks[:, 1:].T
 
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', category=RuntimeWarning)
+            for ii in range(s0.shape[0]): # hnodes N
+                for jj in range(s0.shape[1]): # znodes V
+                    if s0[ii, jj] ==0. : 
+                        lnames, lcres =self.findGeostructures(
+                            np.power(10, subblocks[ii, jj]))
+                        _temptres.append(np.log10(lcres))
+                        _templn.append(lnames)
+    
+        auto_rocks_names_res, automatics_resistivities =\
+            _normalizeAutoresvalues(_templn,_temptres )
+            
+        for ii in range(s0.shape[0]): # hnodes N
+           for jj in range(s0.shape[1]): # znodes V
+               if s0[ii, jj] ==0. :
+                   for k in range(automatics_resistivities.shape[1]): 
+                       subblocks[ii, jj] == automatics_resistivities[0,:][k]
+                       s0[ii, jj]= automatics_resistivities[1,:][k]
+                       break 
+                      
+        s0= np.concatenate((_z.reshape(_z.shape[0], 1), s0.T), axis =1) 
+        # display infos 
+        if disp: display_ginfos(infos=layers,header= hinfos)
+        
+        return  s0, auto_rocks_names_res
+    
     @staticmethod
     def _strataPropertiesOfSite(obj, station =None, display_s=True): 
         """ Build all properties of strata under each station.  
@@ -1313,15 +1099,15 @@ class GeoStrataModel(GeoBase):
         return self._tres 
     @tres.setter 
     def tres(self, ttres):
-        """ Convert Tres to log 10 resistivity if tolog10 is set to ``True``. """
+        """ Convert Tres to log 10 resistivity if tolog10 is set to ``True``."""
         ttres = is_iterable (ttres, transform =True )
-        
         try : 
-            self._tres =[np.log10(t) for t in ttres] if self.tolog10 else [ 
-                float(t) for t in ttres]
-        except : 
-            raise ValueError("TRES expect values to be numeric."
-                             f"Got {np.array(ttres).dtype.name !r}")
+            ttres = np.array( ttres, dtype = float) 
+        except: 
+            raise TypeError (
+                f"TRES expect numeric values. Got {np.array(ttres).dtype.name !r} ")
+        self._tres = list (ttres ) 
+        
     @property 
     def inspect (self): 
         """ Inspect object whether is fitted or not"""
@@ -1436,47 +1222,6 @@ def makeBlockSites(station_location, x_nodes, block_model):
     stationblock = np.concatenate((_tema), axis=1)
     
     return stationblock 
-  
-
-def display_infos(infos, **kws):
-    """ Display unique element on list of array infos.
-    
-    :param infos: Iterable object to display. 
-    :param header: Change the `header` to other names. 
-    :Example: 
-        >>> from watex.geology.stratigraphic import display_infos
-        >>> ipts= ['river water', 'fracture zone', 'granite', 'gravel',
-             'sedimentary rocks', 'massive sulphide', 'igneous rocks', 
-             'gravel', 'sedimentary rocks']
-        >>> display_infos('infos= ipts,header='TestAutoRocks', 
-                          size =77, inline='~')
-    """
-
-    inline =kws.pop('inline', '-')
-    size =kws.pop('size', 70)
-    header =kws.pop('header', 'Automatic rocks')
-
-    if isinstance(infos, str ): 
-        infos =[infos]
-        
-    infos = list(set(infos))
-    print(inline * size )
-    mes= '{0}({1:02})'.format(header.capitalize(),
-                                  len(infos))
-    mes = '{0:^70}'.format(mes)
-    print(mes)
-    print(inline * size )
-    am=''
-    for ii in range(len(infos)): 
-        if (ii+1) %2 ==0: 
-            am = am + '{0:>4}.{1:<30}'.format(ii+1, infos[ii].capitalize())
-            print(am)
-            am=''
-        else: 
-            am ='{0:>4}.{1:<30}'.format(ii+1, infos[ii].capitalize())
-            if ii ==len(infos)-1: 
-                print(am)
-    print(inline * size )
     
 def fit_default_layer_properties(layers, dbproperties_= ['hatch', 'colorMPL']): 
     """ Get the default layers properties  implemented in database. 
@@ -1509,7 +1254,7 @@ def fit_default_layer_properties(layers, dbproperties_= ['hatch', 'colorMPL']):
     if 'name' or'__description' not in  dbproperties_: 
         dbproperties_.insert(0, 'name')
     
-    __gammaProps = GeoStrataModel._getProperties(dbproperties_)
+    __gammaProps = GeoBase.getProperties(dbproperties_)
     
     r_props =[['none' for i in layers] for j in range(len(__gammaProps)-1)]
     for k  , l in enumerate(layers): 
@@ -1613,7 +1358,7 @@ def fit_tres(lns, tres, autorocks, force=False, **kws):
     #           loop DB layers names 
     #           if layer is found then get it index 
     lns0 =[ln.lower().replace('_', ' ') for ln in lns0 ]
-    _gammaRES, _gammaLN = GeoStrataModel._getProperties(**kws)
+    _gammaRES, _gammaLN = GeoBase.getProperties(**kws)
 
     newTRES =[None for i in tres0]
     temp=list()
@@ -1723,3 +1468,31 @@ def quick_read_geomodel(lns=None, tres=None):
     
     return geosObj 
 
+def _normalizeAutoresvalues(listOfstructures,listOfvalues):                            
+    """ Find the different structures that exist and
+    harmonize value. and return an array of originated values and 
+    the harmonize values and the number of automatics layer found as 
+    well as their harmonized resistivity values. 
+    """
+    autolayers = list(set(listOfstructures))
+    hvalues= np.zeros((len(autolayers,)))
+    
+    temp=[]
+    for ii , autol in enumerate(autolayers): 
+        for jj, _alay in enumerate(listOfstructures):
+            if _alay ==autol: 
+                temp.append(listOfvalues[jj])
+        hvalues[ii]= np.array(list(set(temp))).mean()
+        temp=[]
+    
+    # build values array containes the res and the harmonize values 
+    h= np.zeros((len(listOfvalues),))
+    for ii, (name, values) in enumerate(zip (listOfstructures,
+                              listOfvalues)):
+        for jj, hnames in enumerate(autolayers) : 
+            if name == hnames: 
+                h[ii]= hvalues[jj]
+    
+    finalres= np.vstack((np.array(listOfvalues),h) )
+    finalln = np.vstack((np.array(autolayers), hvalues))
+    return  finalln, finalres 
