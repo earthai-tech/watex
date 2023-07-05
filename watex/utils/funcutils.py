@@ -3733,7 +3733,7 @@ def random_state_validator(seed):
 
 def is_iterable (
         y, /, exclude_string= False, transform = False , parse_string =False, 
-        )->bool | list: 
+)->bool | list: 
     """ Asserts iterable object and returns 'True' or 'False'
     
     Function can also transform a non-iterable object to an iterable if 
@@ -3746,7 +3746,7 @@ def is_iterable (
         puts `y` in a list object. 
     :param parse_string: bool, parse string and convert the list of string 
         into iterable object is the `y` is a string object and containg the 
-        word separator character '[_#&.*@!_,;\s-]'. Refer to the function 
+        word separator character '[#&.*@!_,;\s-]'. Refer to the function 
         :func:`~watex.utils.funcutils.str2columns` documentation.
         
     :returns: 
@@ -3836,8 +3836,7 @@ def str2columns (text, /, regex=None , pattern = None):
     regex = regex or re.compile (pattern, flags=re.IGNORECASE) 
     text= list(filter (None, regex.split(str(text))))
     return text 
-    
-    
+       
 def sanitize_frame_cols(
         d, /, func:F = None , regex=None, pattern:str = None, 
         fill_pattern:str =None, inplace:bool =False 
@@ -3993,8 +3992,7 @@ def to_hdf5(d, /, fn, objname =None, close =True,  **hdf5_kws):
     >>> h502 = store ['h502'] 
     >>> h502.columns[:3] 
     ... Index(['hole_number', 'depth_top', 'depth_bottom'], dtype='object')
-    
-    
+
     """
     store =None 
     if ( 

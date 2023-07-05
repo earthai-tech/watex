@@ -893,9 +893,16 @@ def plot_regularization_path (
     plt.close () if savefig is not None else plt.show() 
     
 def plot_rf_feature_importances (
-        clf, X=None, y=None, fig_size = (8, 4),savefig =None,   
-        n_estimators= 500, verbose =0 , sns_style =None,  **kws 
-        ): 
+    clf, 
+    X=None, 
+    y=None, 
+    fig_size = (8, 4),
+    savefig =None,   
+    n_estimators= 500, 
+    verbose =0 , 
+    sns_style =None,  
+    **kws 
+    ): 
     """
     Plot features importance with RandomForest.  
     
@@ -1279,6 +1286,7 @@ def plot_learning_curves(
     cv =None, 
     train_sizes= None, 
     baseline_score =0.4,
+    scoring=None, 
     convergence_line =True, 
     fig_size=(20, 6),
     sns_style =None, 
@@ -1338,6 +1346,11 @@ def plot_learning_curves(
          
     baseline_score: floatm default=.4 
         base score to start counting in score y-axis  (score)
+        
+    scoring : str or callable, default=None
+        A str (see model evaluation documentation) or
+        a scorer callable object / function with signature
+        ``scorer(estimator, X, y)``.
         
     convergence_line: bool, default=True 
         display the convergence line or not that indicate the level of bias 
@@ -1420,6 +1433,7 @@ def plot_learning_curves(
             y, 
             train_sizes = np.linspace(0.1, 1, 50),
             cv=cv, 
+            scoring=scoring, 
             **kws
             )
         ax.plot(N, np.mean(train_lc, 1), 

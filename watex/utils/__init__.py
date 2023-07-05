@@ -129,6 +129,8 @@ try :
         make_naive_pipe, 
         bi_selector, 
         get_target, 
+        resampling, 
+        bin_counting, 
         )
 except ImportError :pass 
 
@@ -237,7 +239,9 @@ __all__=[
         'get_azimuth', 
         'smart_thickness_ranker', 
         'build_random_thickness',
-        'plot_stratalog'
+        'plot_stratalog', 
+        "resampling", 
+        "bin_counting", 
         ]
 
 
