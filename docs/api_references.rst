@@ -584,6 +584,7 @@ Functions
    :template: function.rst
 
     utils.bi_selector
+    utils.bin_counting
 	utils.build_random_thickness
 	utils.cattarget
 	utils.check_flow_objectivity
@@ -662,6 +663,7 @@ Functions
 	utils.reduce_samples
 	utils.remove_outliers
 	utils.rename_labels_in
+	utils.resampling
 	utils.reshape
 	utils.rhoa2z
 	utils.rhophi2z

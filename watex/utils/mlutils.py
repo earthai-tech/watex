@@ -265,7 +265,7 @@ def resampling(
     Out[43]: ((224, 8), (224,))
     
     """
-    msg =(" `imblearn` is the shorthand of thepackage 'imbalanced-learn'."
+    msg =(" `imblearn` is the shorthand of the package 'imbalanced-learn'."
           " Use `pip install imbalanced-learn` instead.")
     import_optional_dependency ("imblearn", extra = msg )
     kind = str(kind).lower() 
@@ -293,17 +293,17 @@ def bin_counting(
     data: DataFrame, 
     bin_columns: str|List[str, ...], 
     tname:str|Series[int], 
-    pos_label="N+", 
+    odds="N+", 
     return_counts: bool=...,
-    uselog: bool=..., 
+    tolog: bool=..., 
     ): 
-    
     """ Bin counting categorical variable and turn it into probabilistic 
     ratio.
     
     Bin counting is one of the perennial rediscoveries in machine learning. 
     It has been reinvented and used in a variety of applications, from ad 
-    click-through rate prediction to hardware branch prediction [1]_, 
+    click-through rate prediction to hardware branch prediction [1]_, [2]_ 
+    and [3]_.
     
     Given an input variable X and a target variable Y, the odds ratio is 
     defined as:
@@ -313,6 +313,11 @@ def bin_counting(
         odds ratio = \frac{ P(Y = 1 | X = 1)/ P(Y = 0 | X = 1)}{
             P(Y = 1 | X = 0)/ P(Y = 0 | X = 0)}
           
+    Probability ratios can easily become very small or very large. The log 
+    transform again comes to our rescue. Anotheruseful property of the 
+    logarithm is that it turns a division into a subtraction. To turn 
+    bin statistic probability value to log, set ``uselog=True``.
+    
     Parameters 
     -----------
     data: dataframe 
@@ -322,24 +327,25 @@ def bin_counting(
        The columns to applied the bin_countings 
        
     tname: str, pd.Series
-      the target name for which the counting is operated. If series, it 
+      The target name for which the counting is operated. If series, it 
       must have the same length as the data. 
       
-    pos_label: str , {"N+", "N-", "log_N+"}: 
-        the ratio of bin counting to fill the categorical. ``N+`` and ``N-`` 
-        are positive and negative probabilistic computing. Whereas 
-        the ``log_N+`` is the logarithme ratio useful when value are smaller. 
+    odds: str , {"N+", "N-", "log_N+"}: 
+        The odds ratio of bin counting to fill the categorical. ``N+`` and  
+        ``N-`` are positive and negative probabilistic computing. Whereas the
+        ``log_N+`` is the logarithm odds ratio useful when value are smaller 
+        or larger. 
         
     return_counts: bool, default=True 
       return the bin counting dataframes. 
   
-    uselog: bool, default=False, 
-    
-      Use the log ratio in output data. Indeed, Probability ratios can easily 
-      become very small or very large. For instance, there willbe users who 
-      almost never click on ads, and perhaps users who click on ads much
-      more frequently than not.) The log transform again comes to our rescue. 
-      Another useful property of the logarithm is that it turns a division 
+    tolog: bool, default=False, 
+      Apply the logarithm to the output data ratio. Indeed, Probability ratios 
+      can easily  become very small or very large. For instance, there will be 
+      users who almost never click on ads, and perhaps users who click on ads 
+      much more frequently than not.) The log transform again comes to our  
+      rescue. Another useful property of the logarithm is that it turns a 
+      division 
 
     Returns 
     --------
@@ -354,23 +360,46 @@ def bin_counting(
     >>> # target binarize 
     >>> y [y <=1] = 0;  y [y > 0]=1 
     >>> X.head(2) 
-    Out[18]: 
+    Out[7]: 
           power  magnitude       sfi      ohmS       lwi  shape  type  geol
     0  0.191800  -0.140799 -0.426916  0.386121  0.638622    4.0   1.0   3.0
     1 -0.430644  -0.114022  1.678541 -0.185662 -0.063900    3.0   2.0   2.0
     >>>  bin_counting (X , bin_columns= 'geol', tname =y).head(2)
-    Out[19]: 
-          power  magnitude       sfi      ohmS  ...  shape  type      geol  bintarget
-    0  0.191800  -0.140799 -0.426916  0.386121  ...    4.0   1.0  0.656716          1
-    1 -0.430644  -0.114022  1.678541 -0.185662  ...    3.0   2.0  0.219251          0
+    Out[8]: 
+          power  magnitude       sfi      ohmS  ...  shape  type      geol  bin_target
+    0  0.191800  -0.140799 -0.426916  0.386121  ...    4.0   1.0  0.656716           1
+    1 -0.430644  -0.114022  1.678541 -0.185662  ...    3.0   2.0  0.219251           0
     [2 rows x 9 columns]
     >>>  bin_counting (X , bin_columns= ['geol', 'shape', 'type'], tname =y).head(2)
-    Out[20]: 
-          power  magnitude       sfi  ...      type      geol  bintarget
-    0  0.191800  -0.140799 -0.426916  ...  0.267241  0.656716          1
-    1 -0.430644  -0.114022  1.678541  ...  0.385965  0.219251          0
+    Out[10]: 
+          power  magnitude       sfi  ...      type      geol  bin_target
+    0  0.191800  -0.140799 -0.426916  ...  0.267241  0.656716           1
+    1 -0.430644  -0.114022  1.678541  ...  0.385965  0.219251           0
     [2 rows x 9 columns]
-    
+    >>> df = pd.DataFrame ( pd.concat ( [X, pd.Series ( y, name ='flow')],
+                                       axis =1))
+    >>> bin_counting (df , bin_columns= ['geol', 'shape', 'type'], 
+                      tname ="flow", tolog=True).head(2)
+    Out[12]: 
+          power  magnitude       sfi      ohmS  ...     shape      type      geol  flow
+    0  0.191800  -0.140799 -0.426916  0.386121  ...  0.828571  0.364706  1.913043     1
+    1 -0.430644  -0.114022  1.678541 -0.185662  ...  0.364865  0.628571  0.280822     0
+    >>> bin_counting (df , bin_columns= ['geol', 'shape', 'type'],odds ="N-", 
+                      tname =y, tolog=True).head(2)
+    Out[13]: 
+          power  magnitude       sfi  ...      geol  flow  bin_target
+    0  0.191800  -0.140799 -0.426916  ...  0.522727     1           1
+    1 -0.430644  -0.114022  1.678541  ...  3.560976     0           0
+    [2 rows x 10 columns]
+    >>> bin_counting (df , bin_columns= "geol",tname ="flow", tolog=True,
+                      return_counts= True )
+    Out[14]: 
+         flow  no_flow  total_flow        N+        N-     logN+     logN-
+    3.0    44       23          67  0.656716  0.343284  1.913043  0.522727
+    2.0    41      146         187  0.219251  0.780749  0.280822  3.560976
+    0.0    18       43          61  0.295082  0.704918  0.418605  2.388889
+    1.0     9       20          29  0.310345  0.689655  0.450000  2.222222
+
     References 
     -----------
     .. [1] Yeh, Tse-Yu, and Yale N. Patt. Two-Level Adaptive Training Branch 
@@ -391,7 +420,7 @@ def bin_counting(
     
     if not _is_numeric_dtype(data, to_array= True): 
         raise TypeError ("Expect data with encoded categorical variables."
-                         " Please your data.")
+                         " Please check your data.")
     if hasattr ( tname, '__array__'): 
         check_consistent_length( data, tname )
         if not _is_arraylike_1d(tname): 
@@ -399,12 +428,12 @@ def bin_counting(
                  "Only one dimensional array is allowed for the target.")
         # create fake bin target 
         if not hasattr ( tname, 'name'): 
-            tname = pd.Series (tname, name ='bintarget')
+            tname = pd.Series (tname, name ='bin_target')
         # concatenate target 
         data= pd.concat ( [ data, tname], axis = 1 )
         tname = tname.name  # take the name 
         
-    return_counts, uselog = ellipsis2false(return_counts, uselog)    
+    return_counts, tolog = ellipsis2false(return_counts, tolog)    
     bin_columns= is_iterable( bin_columns, exclude_string= True, 
                                  transform =True )
     tname = str(tname) ; #bin_column = str(bin_column)
@@ -412,45 +441,60 @@ def bin_counting(
     
     existfeatures(data, features =bin_columns + [tname] )
     d= data.copy() 
-    
+   
     for bin_column in bin_columns: 
         d, tc  = _single_counts(d , bin_column, tname, 
-                           pos_label =pos_label, 
-                           uselog=uselog, 
+                           odds =odds, 
+                           tolog=tolog, 
                            return_counts= return_counts
                            )
     
         target_all_counts.append (tc) 
-            
+    # lowering the computation time 
     if return_counts: 
         d = ( target_all_counts if len(target_all_counts) >1 
                  else target_all_counts [0]
                  ) 
+
     return d
 
 def _single_counts ( 
-        d,/,  bin_column, tname, pos_label = "N+",
-        uselog= False, return_counts = False ): 
+        d,/,  bin_column, tname, odds = "N+",
+        tolog= False, return_counts = False ): 
     """ An isolated part of bin counting. 
     Compute single bin_counting. """
+    # polish pos_label 
+    od = copy.deepcopy( odds) 
+    # reconvert log and removetrailer
+    odds= str(odds).upper().replace ("_", "")
+    # just separted for 
+    keys = ('N-', 'N+', 'lOGN+')
+    msg = ("Odds ratio or log Odds ratio expects"
+           f" {smart_format(('N-', 'N+', 'logN+'), 'or')}. Got {od!r}")
+    # check wther log is included 
+    if odds.find('LOG')>=0: 
+        tolog=True # then remove log 
+        odds= odds.replace ("LOG", "")
+
+    if odds not in keys: 
+        raise ValueError (msg) 
+    # If tolog, then reconstructs
+    # the odds_labels
+    if tolog: 
+        odds= f"log{odds}"
+    
     target_counts= _target_counting(
         d.filter(items=[bin_column, tname]),
     bin_column , tname =tname, 
     )
-    target_all, target_bin_counts = _bin_counting(target_counts, tname)
+    target_all, target_bin_counts = _bin_counting(target_counts, tname, odds)
     # Check to make sure we have all the devices
     target_all.sort_values(by = f'total_{tname}', ascending=False)  
     if return_counts: 
         return d, target_all 
-    # just separted for 
-    # reducing the computation time 
-    pos_label= str(pos_label).upper () 
-    if pos_label not in ("N-", "N+", "log_N+"): 
-        pos_label="N+"
-    if uselog: 
-        pos_label ='log_N+'
+   
     # zip index with ratio 
-    lr = list(zip (target_bin_counts.index, target_bin_counts[pos_label ])
+    lr = list(zip (target_bin_counts.index, target_bin_counts[odds])
          )
     ybin = np.array ( d[bin_column])# replace value with ratio 
     for (value , ratio) in lr : 
@@ -480,11 +524,11 @@ def _target_counting(d, / ,  bin_column, tname ):
     
     return counts
 
-def _bin_counting (counts, tname ):
+def _bin_counting (counts, tname, odds="N+" ):
     """ Bin counting application to the target. 
     :param counts: pd.Series. Target counts 
     :param tname: str target name. 
-    
+    :param odds: str, label to bin-compute
     """
     counts['N+'] = ( counts[tname]
                     .astype('int64')
@@ -495,12 +539,16 @@ def _bin_counting (counts, tname ):
                     .astype('int64')
                     .divide(counts[f'total_{tname}'].astype('int64'))
                     )
-   
-    counts['log_N+'] = counts['N+'].divide(counts['N-'])
+    
+    items2filter= ['N+', 'N-']
+    if str(odds).find ('log')>=0: 
+        counts['logN+'] = counts['N+'].divide(counts['N-'])
+        counts ['logN-'] = counts ['N-'].divide ( counts['N+'])
+        items2filter.extend (['logN+', 'logN-'])
     # If we wanted to only return bin-counting properties, 
     # we would filter here
-    bin_counts = counts.filter(items= ['N+', 'N-', 'log_N+'])
-    
+    bin_counts = counts.filter(items= items2filter)
+
     return counts, bin_counts  
      
 def evalModel(
@@ -560,7 +608,6 @@ def evalModel(
         the model score or the predicted y if `predict` is set to ``True``. 
         
     """
-
     score = None 
     if X.ndim ==1: 
         X = X.reshape(-1, 1) 
