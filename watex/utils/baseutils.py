@@ -178,7 +178,7 @@ def save_or_load(
         The character used to separate the values. For backwards compatibility, 
         byte strings will be decoded as 'latin1'. The default is whitespace.
         
-    **kws: np.save ,np.savetext,  np.load , np.loadtxt 
+    kws: np.save ,np.savetext,  np.load , np.loadtxt 
        Additional keywords arguments for saving and loading data. 
        
     Return 

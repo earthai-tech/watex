@@ -18,7 +18,7 @@ builtins.__WATEX_SETUP__ = True
 try: 
     import watex  # noqa
     VERSION = watex.__version__
-except: VERSION ='0.2.6'
+except: VERSION ='0.2.7'
 # set global variables 
 DISTNAME = "watex"
 DESCRIPTION= "Machine learning research in water exploration"
@@ -36,7 +36,7 @@ PROJECT_URLS = {
     "Installation guide" : "https://watex.readthedocs.io/en/latest/installation.html", 
     "User guide" : "https://watex.readthedocs.io/en/latest/user_guide.html",
 }
-KEYWORDS= "exploration, groundwater, machine learning, water, hydro-geophysic"
+KEYWORDS= "exploration, groundwater, machine learning, water, hydro-geophysics"
 # the commented metadata should be upload as
 # packages rather than data. See future release about 
 # setuptools: see https://packaging.python.org/en/latest/specifications/declaring-project-metadata/

@@ -97,7 +97,7 @@ def find_similar_structures(
             "/")>=0 else close_name 
         
         return close_name, close_val 
-
+    
     #---------------------------
     # make array of names structures names and values 
     dict_conf =  Config().geo_rocks_properties 
@@ -167,7 +167,7 @@ def smart_thickness_ranker (
        given, the default is:: 
             
        >>> import re 
-       >>> re.compile (r'[_#&.)(*@!_,;\s-]\s*', flags=re.IGNORECASE)
+       >>> re.compile (r'[_#&.)(*@!,;\s-]\s*', flags=re.IGNORECASE)
           
     sep:str, default= ':-'
        The character used to separate two layer thickness ranged from top to 
