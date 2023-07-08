@@ -4827,8 +4827,12 @@ def remove_outliers (
     
     Parameters 
     -----------
-    ar: Arraylike, 
-       Array containing outliers to remove 
+    ar: Arraylike, pd.dataframe 
+       Arraylike  containing outliers to remove. 
+       
+       .. versionadded:: 0.2.7 
+          Accepts dataframe and can remove outliers using the `z_score`. 
+          
     method: str, default='IQR'
       The selected approach to remove the outliers. It can be
       ['IQR'|'Z-score']. See Above for outlier explanations.  Note that 
@@ -4875,7 +4879,12 @@ def remove_outliers (
            -0.56228753,         nan]) 
     """
     method = str(method).lower()
-
+    if ( 
+            hasattr ( ar, "__array__") 
+            and hasattr (ar, 'columns')
+            ): 
+        return _remove_outliers( ar, n_std= threshold )
+    
     arr =np.array (ar, dtype = float)
     
     if method =='iqr': 
@@ -4904,6 +4913,29 @@ def remove_outliers (
                   ]  if np.ndim (arr) > 1 else arr [~np.isnan(arr)]
 
     return arr 
+
+def _remove_outliers(data, n_std=3):
+    """Remouve outliers from a dataframe."""
+    # separate cat feature and numeric features 
+    # if exists 
+    df, numf, catf = to_numeric_dtypes(
+        data , return_feature_types= True,  drop_nan_columns =True )
+    # get on;y the numeric 
+    df = df[numf]
+    for col in df.columns:
+        # print('Working on column: {}'.format(col))
+        mean = df[col].mean()
+        sd = df[col].std()
+        df = df[(df[col] <= mean+(n_std*sd))]
+    # get the index and select only the index 
+    index = df.index 
+    # get the data by index then 
+    # concatename 
+    df_cat = data [catf].iloc [ index ]
+    df = pd.concat ( [df_cat, df ], axis = 1 )
+    
+    return df
+
 
 def normalizer ( arr, /, method ='naive'): 
     """ Normalize values to be between 0 and 1. 
@@ -5652,7 +5684,7 @@ def rename_files (
 
 def get_xy_coordinates (d, / , as_frame = False, drop_xy = False, 
                         raise_exception = True, verbose=0 ): 
-    """Check whether the coordinate values exists in the data
+    """Check whether the coordinate values exist in the data
     
     Parameters 
     ------------
