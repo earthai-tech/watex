@@ -3427,7 +3427,7 @@ def naive_imputer (
     imp = SimpleImputer(strategy= strategy , 
                         missing_values= missing_values , 
                         fill_value = fill_value , 
-                        verbose = verbose, 
+                        # verbose = verbose, 
                         add_indicator=False, 
                         copy = copy, 
                         keep_empty_features=keep_empty_features, 

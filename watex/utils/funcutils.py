@@ -4694,7 +4694,7 @@ def zip_extractor(
     savepath: str, optional 
        Path to store the decompressed archived files.
     ftype: str, 
-       Is the extension of a specific file to decompressed. Indeed, if the 
+       Is the extension of a the specific file to decompress. Indeed, if the 
        archived files contains many different data formats, specifying the 
        data type would retrieved this specific files from the whole 
        files archieved. 
