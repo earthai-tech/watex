@@ -228,7 +228,6 @@ class KMeansFeaturizer:
             ) 
         return  outm.format(self.__class__.__name__)
     
-    
 class StratifiedWithCategoryAdder( BaseEstimator, TransformerMixin ): 
     """
     Stratified sampling transformer based on new generated category 

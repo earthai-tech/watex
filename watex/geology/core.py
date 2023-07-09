@@ -10,36 +10,54 @@ The core module deals with  geological data, the structural infos
 and borehole data.
 
 """
-
+from __future__ import annotations 
 import os
 import warnings
-import shutil 
-from six.moves import urllib 
-from pprint import pprint 
 from importlib import resources
+import numpy as np 
 
+from ..utils.baseutils import get_remote_data
 from ..utils.funcutils import ( 
+    ellipsis2false, 
     smart_format, 
-    sPath,
+    is_iterable,
+    key_search, 
     )
-from ..utils._dependency import ( 
-    import_optional_dependency )
+from ..utils.geotools import ( 
+    find_similar_structures, 
+    )
 from ..property import (
     Config 
     )
+from ..utils.validator import _is_arraylike_1d 
 from ..exceptions import ( 
     GeoPropertyError, 
     )
 from .._watexlog import watexlog 
+from .._typing import List 
+
 _logger = watexlog().get_watex_logger(__name__ )
 
 __all__=[
     "GeoBase", 
     "set_agso_properties", 
     "mapping_stratum", 
-    "fetching_data_from_repo", 
     "get_agso_properties"
     ] 
+                                  
+#++++ configure the geological rocks from AGSO DataBase +++++++++++++++++++++++
+EMOD = 'watex.etc' ; buffer_file = 'AGSO.csv'
+with resources.path (EMOD, buffer_file) as buff : 
+     props_buf  = str(buff) 
+AGSO_PROPERTIES =dict(
+    GIT_REPO = 'https://github.com/WEgeophysics/watex', 
+    GIT_ROOT ='https://raw.githubusercontent.com/WEgeophysics/watex/master/',
+    props_dir = os.path.dirname (props_buf),
+    props_files = ['AGSO.csv', 'AGSO_STCODES.csv'], 
+    props_codes = ['code', 'label', 'name', 'pattern','size',
+            'density', 'thickness', 'color']
+    )
+#++++ end configuration +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class GeoBase: 
     """
@@ -74,9 +92,7 @@ class GeoBase:
     the layers disposal (thcikness and contact) in underground than the 
     raw model map which seems to be close to the reality  when `step descent` 
     parameter is not too small at all. 
-
     """
-    
     def __init__(self, verbose: int =0 , **kwargs):
         self._logging = watexlog.get_watex_logger(self.__class__.__name__)
         self.verbose= verbose 
@@ -84,29 +100,225 @@ class GeoBase:
         for key in list(kwargs.keys()): 
             setattr(self, key, kwargs[key])
             
-#++++ configure the geological rocks from files:AGSO & AGSO.STCODES +++++++++++
-EMOD = 'watex.etc' ; buffer_file = 'AGSO.csv'
-with resources.path (EMOD, buffer_file) as buff : 
-     props_buf  = str(buff) 
-__agso_properties =dict(
-    GIT_REPO = 'https://github.com/WEgeophysics/watex', 
-    GIT_ROOT ='https://raw.githubusercontent.com/WEgeophysics/watex/master/',
-    props_dir = os.path.dirname (props_buf),
-    props_files = ['AGSO.csv', 'AGSO_STCODES.csv'], 
-    props_codes = ['code', 'label', 'name', 'pattern','size',
-            'density', 'thickness', 'color']
-    )
+    @staticmethod 
+    def find_properties(
+        data=None, *, 
+        constraint: bool=..., 
+        keep_acronyms: bool=..., 
+        fill_value: str=None, 
+        kind: str='geology', 
+        attribute :str='code', 
+        property: str='description',
+        ): 
+        """ Find rock/structural properties or constraint the geological info 
+        to fit the rock in AGSO database.
+        
+        Parameters 
+        -----------
+        data: Arraylike one-dimensional or pd.Series, optional 
+           Arraylike containing the geological or structural informations. 
+           
+        constraint: bool, default=False 
+           fit the geological or structual info to match the AGSO geology 
+           or structural database infos. 
+           
+        keep_acronym: bool, default=False, 
+           Use the acronym of the structural and geological database 
+           info to replace the full geological/structural name. 
+           
+        fill_value: str, optional 
+           If None, the undetermined structured are not replaced. They are 
+           kept in the data. However, if the fill_value is provided, the 
+           missing structure from data is replaced by the fill_value. 
+           
+         kind: str,  default='geology'
+           Is the type of geo-data to fetch in the database. It can be 
+           ['geology'|'samples'|'structural']. Any other values except 
+           the 'geology' will returns the structural samples. 
+           
+        attribute: str, default='code'
+          The name of attribute to collect as the keys. It can be 
+          - 'code', 'label', 'description', 'pattern' or  
+          - 'pat_size', 'pat_density', 'pat_thickness', 'color'
+        
+        property: str, default='description' 
+          The name of property to collect as the values. By default is 
+          the geological or structural mames. 
+          
+        Returns 
+        ---------
+        - attributes/property: tuple (str ) 
+           A key, value in pair of the attribute and property fetched 
+           in the AGSO database. 
+        - data constrainted. Pd.series or array
+           Data with items fitted with the property names in the AGSO 
+           database. 
+           
+        Examples
+        ---------
+        >>> from watex.geology.core import GeoBase 
+        >>> GeoBase.find_properties () [:7]
+        Out[7]: 
+        (('AGLT', 'argillite'),
+         ('ALUV', 'alluvium'),
+         ('AMP', 'amphibolite'),
+         ('ANS', 'anorthosite'),
+         ('ANT', 'andesite'),
+         ('APL', 'aplite'),
+         ('ARKS', 'arkose'))
+        >>> # make data 
+        >>> geodata =['gran', 'basalt', 'migmatite', 'sand', 'tuff']
+        >>> GeoBase.find_properties (geodata, constraint =True )
+        Out[8]: 
+        array(['granodior', 'basalt', 'migmatite', 'sandstone', 'tuff'],
+              dtype='<U9')
+        >>> geodata +=['Unknow structure']
+        >>> GeoBase.find_properties (geodata, constraint =True,
+                                        fill_value='NA' )
+        Out[9]: 
+        array(['granodiorite', 'basalt', 'migmatite', 'sandstone', 'tuff', 'NA'],
+              dtype='<U16')
+        >>> GeoBase.find_properties (geodata, constraint =True,
+                                        fill_value='NA' , keep_acronyms=True )
+        Out[10]: array(['grd', 'blt', 'mig', 'sdst', 'tuf', 'NA'], dtype='<U16')
+        """
+        constraint, keep_acronyms= ellipsis2false(constraint, keep_acronyms)
+        kind = str(kind).lower().strip() 
+        if 'geology'.find (kind) >=0: kind ='geology'
+            
+        fname = buffer_file if kind =='geology' else 'AGSO_STCODES.csv'
+        path_file =  os.path.join( AGSO_PROPERTIES.get("props_dir"), fname) 
+        _agso_data=get_agso_properties(path_file)
+        dp =list ()
+        for cod  in ( attribute, property ): 
+            d = key_search (str( cod), 
+                            default_keys= list(_agso_data.keys()), 
+                            deep= True, 
+                            parse_keys= False, 
+                            raise_exception= True 
+                    )
+            dp.append (d[0])
+        # unpack attribute and properties 
+        attribute , property = dp 
+        attribute = attribute.upper(); property = str(property).upper() 
+        prop_data={key:value for key , value in zip (
+            _agso_data[attribute], _agso_data[property])}
+        if not constraint: 
+            return tuple (prop_data.items() )
+        
+        if data is None: 
+            raise TypeError (
+                "Data cannot be None when constraint is set to ``True``")
+        # for consistency 
+        data = np.array (
+            is_iterable (data , exclude_string= True, transform= True) ) 
+        if not  _is_arraylike_1d(data ): 
+            raise GeoPropertyError (
+                "Geology or Geochemistry samples expects"
+               f" one dimensional array. Got shape ={data.shape}")
+                
+        found=False # flags if structure is found
+        for kk, item in enumerate ( data) : 
+            for key,  value in prop_data.items(): 
+                if str(value).lower().find (str(item).lower() )>=0: 
+                    data[kk] = str(key).lower() if keep_acronyms else value
+                    found = True 
+                    break
+            # if item not found then 
+            # property data.
+            if not found:
+                if fill_value is not None:
+                    data[kk] = fill_value
+            found =False 
+        return data 
+    
+    @staticmethod
+    def getProperties(properties =['electrical_props', '__description'], 
+                       sproperty ='electrical_props'): 
+        """ Connect database and retrieve the 'Eprops'columns and 'LayerNames'
+        
+        :param properties: DataBase columns.
+        :param sproperty : property to sanitize. Mainly used for the properties
+            in database composed of double parenthesis. Property value 
+            should be removed and converted to tuple of float values.
+        :returns:
+            - `_gammaVal`: the `properties` values put on list. 
+                The order of the retrieved values is function of 
+                the `properties` disposal.
+        """
+        #------------------------------------
+        from .database import GeoDataBase
+        #-----------------------------------
+        def _fs (v): 
+            """ Sanitize value and put on list 
+            :param v: value 
+            :Example:
+                
+                >>> _fs('(416.9, 100000.0)'))
+                ...[416.9, 100000.0]
+            """
+            try : 
+                v = float(v)
+            except : 
+                v = tuple([float (ss) for ss in 
+                         v.replace('(', '').replace(')', '').split(',')])
+            return v
+        # connect to geodataBase 
+        try : 
+            _dbObj = GeoDataBase()
+        except: 
+            _logger.debug('Connection to database failed!')
+        else:
+            _gammaVal = _dbObj._retreive_databasecolumns(properties)
+            if sproperty in properties: 
+                indexEprops = properties.index(sproperty )
+                try:
+                    _gammaVal [indexEprops] = list(map(lambda x:_fs(x),
+                                                   _gammaVal[indexEprops]))
+                except TypeError:
+                    _gammaVal= list(map(lambda x:_fs(x),
+                                         _gammaVal))
+        return _gammaVal
+    
+    @staticmethod
+    def findGeostructures(
+        res: float|List[float, ...], /, 
+        db_properties=['electrical_props', '__description']
+        ): 
+        """ Find the layer from database and keep the ceiled value of 
+        `_res` calculated resistivities"""
+     
+        structures = find_similar_structures(res)
+        if len(structures) !=0 or structures is not None:
+            if structures[0].find('/')>=0 : 
+                ln = structures[0].split('/')[0].lower() 
+            else: ln = structures[0].lower()
+            return ln, res
+        else: 
+            valEpropsNames = GeoBase.getProperties(db_properties)
+            indeprops = db_properties.index('electrical_props')
+            for ii, elecp_value  in enumerate(valEpropsNames[indeprops]): 
+                if elecp_value ==0.: continue 
+                elif elecp_value !=0 : 
+                    try : 
+                        iter(elecp_value)
+                    except : pass 
+                    else : 
+                        if  min(elecp_value)<= res<= max(elecp_value):
+                            ln= valEpropsNames[indeprops][ii]
+                            return ln, res
 
+#---------------------------CORE Utilities ------------------------------------
 def set_agso_properties (download_files = True ): 
     """ Set the rocks and their properties from inner files located in 
         < 'watex/etc/'> folder."""
         
     msg= ''.join([
         "Please don't move or delete the properties files located in", 
-        f" <`{__agso_properties['props_dir']}`> directory."])
+        f" <`{AGSO_PROPERTIES['props_dir']}`> directory."])
     mf =list()
-    __agso= [ os.path.join(os.path.realpath(__agso_properties['props_dir']),
-                           f) for f in __agso_properties['props_files']]
+    __agso= [ os.path.join(os.path.realpath(AGSO_PROPERTIES['props_dir']),
+                           f) for f in AGSO_PROPERTIES['props_files']]
     for f in __agso: 
         agso_exists = os.path.isfile(f)
         if not agso_exists: 
@@ -116,14 +328,15 @@ def set_agso_properties (download_files = True ):
     if len(mf)==0: download_files=False 
     if download_files: 
         for file_r in mf:
-            success = fetching_data_from_repo(props_files = file_r, 
+            success = get_remote_data(props_files = file_r, 
                       savepath = os.path.join(
-                          os.path.realpath('.'), __agso_properties['props_dir'])
+                          os.path.realpath('.'),
+                          AGSO_PROPERTIES['props_dir']), 
                       )
             if not success:
                 msg_ = ''.join([ "Unable to retreive the geostructure ",
                       f"{os.path.basename(file_r)!r} property file from",
-                      f" {__agso_properties['GIT_REPO']!r}."])
+                      f" {AGSO_PROPERTIES['GIT_REPO']!r}."])
                 warnings.warn(f"Geological structure file {file_r} "
                               f"is missing. {msg_}") 
                 _logger.warn( msg_)
@@ -144,11 +357,11 @@ def mapping_stratum(download_files =True):
     :return: Rocks and structures data  in two diferent dictionnaries
     """
     # get code description _index 
-    ix_= __agso_properties['props_codes'].index('name')
+    ix_= AGSO_PROPERTIES['props_codes'].index('name')
     def mfunc_(d): 
         """ Set individual layer in dict of properties """
         _p= {c: k.lower() if c not in ('code', 'label', 'name') else k 
-                 for c,  k in zip(__agso_properties['props_codes'], d) }
+                 for c,  k in zip(AGSO_PROPERTIES['props_codes'], d) }
         id_= d[ix_].replace('/', '_').replace(
             ' ', '_').replace('"', '').replace("'", '').lower()
         return id_, _p 
@@ -158,63 +371,7 @@ def mapping_stratum(download_files =True):
         rock_and_structural_props.append(
             dict(map( lambda x: mfunc_(x), agso_data[1:])))
      
-    return   tuple(rock_and_structural_props)
-
-def fetching_data_from_repo(repo_file, savepath =None ): 
-    """ Try to retrieve data from github repository.
-    
-    :param repo_file: str or Path-like object 
-        Give the full path from the repository root to the file name.
-        For instance, we want to retrieve the file 'AGSO.csv' which is located 
-        in <watex/etc/> directory then the full path 
-        is: --> 'watex/etc/AGSO.csv'
-        
-    :return:`status`: Either ``False` for failed downloading 
-            or ``True`` for successfully downloading
-    """
-    fmsg =['... 1rst attempt...','... 2nd attempt...','... 3rd attempt...']
-    status=False 
-    git_repo = __agso_properties['GIT_REPO']
-    git_root = __agso_properties['GIT_ROOT']
-    
-    # Install bar progression
-    import_optional_dependency ("tqdm")
-    from tqdm.notebook  import trange 
-    # max attempts =3 :  
-    print("---> Please wait while fetching"
-          f" {repo_file!r} from {git_repo!r}...")
-    for k in trange(3, ascii=True, desc ='geotools', ncols =107):
-    #for i in tqdm(range(3), ascii=True, desc ='WEgeophysics', ncols =107):
-        for _ in trange(1, ascii=True ,desc =fmsg [k],ncols =107):
-            try :
-                urllib.request.urlretrieve(git_root,  repo_file )
-            except: 
-                try :
-                    with urllib.request.urlopen(git_root) as response:
-                        with open( repo_file,'wb') as out_file:
-                            data = response.read() # a `bytes` object
-                            out_file.write(data)
-        
-                except TimeoutError: 
-                    if k ==2: 
-                        print("---> Established connection failed "
-                           " because connected host has failed to respond.")
-                except:pass 
-            else : status=True
-
-        if status: break
-
-    if status: print(f"---> Downloading {repo_file!r} from {git_repo!r} "
-                 "was successfully done!")
-    else: print(f"---> Failed to download {repo_file!r} from {git_repo!r}!")
-    # now move the file to the right place and create path if dir not exists
-    if savepath is not None: 
-        if not os.path.isdir(savepath): 
-            sPath (savepath)
-        shutil.move(os.path.realpath(repo_file), savepath )
-    if not status:pprint(connect_reason )
-    
-    return status
+    return  tuple(rock_and_structural_props)
 
 def get_agso_properties(config_file =None, orient ='series'): 
     """ Get the geostructures files from <'watex/etc/'> and 
@@ -223,8 +380,8 @@ def get_agso_properties(config_file =None, orient ='series'):
     properties name and values are the properties items.
     
     :param config_file: Path_Like or str 
-        Can be any property file provided hat its obey the disposal of 
-        property files found in   `__agso_properties`.
+        Can be any property file provided that its obey the disposal of 
+        property files found in   `AGSO_PROPERTIES`.
     :param orient: string value, ('dict', 'list', 'series', 'split',
         'records’, ''index') Defines which dtype to convert
         Columns(series into).For example, 'list' would return a 
@@ -233,29 +390,29 @@ def get_agso_properties(config_file =None, orient ='series'):
         https://www.geeksforgeeks.org/python-pandas-dataframe-to_dict/
         
     :Example: 
-        >>> import watex.utils.geotools as GU
+        >>> import watex.geology.core import get_agso_properties
         >>> data=get_agso_properties('watex/etc/AGSO_STCODES.csv')
         >>> code_descr={key:value for key , value in zip (data["CODE"],
-                                                       data['__DESCRIPTION'])}
+                        data['__DESCRIPTION'])}
     """
-    msg= ''.join(["<`{0}`> is the software property file. Please don't move "
+    msg= ''.join(["<`{0}`> is the software property file. Please don't move"
         " or delete the properties files located in <`{1}`> directory."])
     
     pd_pos_read = Config().parsers 
     ext='none'
     if config_file is None: 
         config_file = os.path.join(os.path.realpath('.'), os.path.join(
-                       __agso_properties['props_dir'],
-                       __agso_properties ['props_files'][0]))
+                       AGSO_PROPERTIES['props_dir'],
+                       AGSO_PROPERTIES ['props_files'][0]))
     if config_file is not None: 
         is_config = os.path.isfile(config_file)
         if not is_config : 
-            if os.path.basename(config_file) in __agso_properties['props_files']:
+            if os.path.basename(config_file) in AGSO_PROPERTIES['props_files']:
                 _logger.error(f"Unable to find  the geostructure property" 
                               f"{os.path.basename(config_file)!r} file."
                               )
                 warnings.warn(msg.format(os.path.basename(config_file) , 
-                                         __agso_properties['props_dir']))
+                                         AGSO_PROPERTIES['props_dir']))
             raise FileExistsError(f"File `{config_file}`does not exist")
             
         _, ext = os.path.splitext(config_file)
@@ -273,16 +430,6 @@ def get_agso_properties(config_file =None, orient ='series'):
         
     return  agso_rock_props
 
-##############connection git error ##########################
-connect_reason ="""<ConnectionRefusedError><No connection could  '
-            be made because the target machine actively refused it>.
-            There are some possible reasons for that:
-         1. The server is not running. Hence it wont listen to that port. 
-             If it's a service you may want to restart the service.
-         2. The server is running but that port is blocked by Windows Firewall
-             or other firewall. You can enable the program to go through 
-             firewall in the Inbound list.
-        3. There is a security program on your PC, i.e a Internet Security 
-            or Antivirus that blocks several ports on your PC.
-        """  
-#+++++ end  AGSO & AGSO.STCODES configuration +++++++++++++++++++++++++++++++++
+
+
+    

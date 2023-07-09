@@ -1095,8 +1095,10 @@ def get_scorers (*, scorer:str=None, check_scorer:bool=False,
             ` scorer` is not ``None``, or the tuple of scikit-metrics. 
             :mod:`sklearn.metrics`
     """
-    from sklearn import metrics 
-    scorers = tuple(metrics.SCORERS.keys()) 
+    from sklearn import metrics
+    try:
+        scorers = tuple(metrics.SCORERS.keys()) 
+    except: scorers = tuple (metrics.get_scorer_names()) 
     
     if check_scorer and scorer is None: 
         raise ValueError ("Can't check the scorer while the scorer is None."

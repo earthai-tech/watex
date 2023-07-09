@@ -933,17 +933,16 @@ def make_introspection(Obj: object , subObj: Sub[object])->None:
         if not hasattr(Obj, key) and key  != ''.join(['__', str(key), '__']):
             setattr(Obj, key, value)
             
-def cpath (savepath=None , dpath=None): 
+def cpath (savepath: str=None , dpath: str='_default_path_'): 
     """ Control the existing path and create one of it does not exist.
     
     :param savepath: Pathlike obj, str 
     :param dpath: str, default pathlike obj
-    
     """
-    if dpath is None:
-        file, _= os.path.splitext(os.path.basename(__file__))
-        dpath = ''.join(['_', file,
-                         '_']) #.replace('.py', '')
+    # if dpath is None:
+    #     #file, _= os.path.splitext(os.path.basename(__file__))
+    #     #dpath = ''.join(['_', file,'_']) #.replace('.py', '')
+    #     dpath ='_dpath_'
     if savepath is None : 
         savepath  = os.path.join(os.getcwd(), dpath)
         try:os.mkdir(savepath)
@@ -3531,10 +3530,13 @@ def parse_yaml (yml_fn:str =None, data=None,
 
     return data 
  
-def cparser_manager (cfile,
-                     savepath =None, 
-                     todo:str ='load', dpath=None,
-                     verbose =0, **pkws): 
+def cparser_manager (
+    cfile,
+    savepath =None, 
+    todo:str ='load', 
+    dpath=None,
+    verbose =0, 
+    **pkws): 
     """ Save and output message according to the action. 
     
     :param cfile: name of the configuration file
@@ -3549,7 +3551,7 @@ def cparser_manager (cfile,
     if savepath is not None:
         if savepath =='default': 
             savepath = None 
-        yml_fn,_= move_cfile(cfile,savepath, dpath=dpath)
+        yml_fn,_= move_cfile(cfile, savepath, dpath=dpath)
     if verbose > 0: 
         print_cmsg(yml_fn, todo, **pkws)
         
@@ -3654,7 +3656,11 @@ def pretty_printer(
     for i in p: 
         print(i)
  
-def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
+def move_cfile (
+    cfile:str , 
+    savepath:Optional[str]=None, 
+    **ckws
+    ) :
     """ Move file to its savepath and output message. 
     
     If path does not exist, should create one to save data.
@@ -3666,17 +3672,18 @@ def move_cfile (cfile:str , savepath:Optional[str]=None, **ckws):
         - configuration file 
         - out message 
     """
-    savepath = cpath(savepath, **ckws)
+    savepath = cpath(savepath, **ckws) 
     try :shutil.move(cfile, savepath)
-    except: warnings.warn("It seems the path already exists!")
-    
+    except: 
+        shutil.copy2 (cfile, savepath )
+        os.remove (cfile)
+        # delete file 
+        # warnings.warn("It seems the path already exists!")
     cfile = os.path.join(savepath, cfile)
     
-    msg = ''.join([
-    f'--> Data was successfully stored to {os.path.basename(cfile)!r}', 
-        f' and saved to {os.path.realpath(cfile)!r}.']
-        )
-        
+    msg = (f'--> {os.path.basename(cfile)!r} data was successfully' 
+          f' saved to {os.path.realpath(cfile)!r}.')
+ 
     return cfile, msg
 
 def print_cmsg(cfile:str, todo:str='load', config:str='YAML') -> str: 
@@ -3726,7 +3733,7 @@ def random_state_validator(seed):
 
 def is_iterable (
         y, /, exclude_string= False, transform = False , parse_string =False, 
-        )->bool | list: 
+)->bool | list: 
     """ Asserts iterable object and returns 'True' or 'False'
     
     Function can also transform a non-iterable object to an iterable if 
@@ -3739,7 +3746,7 @@ def is_iterable (
         puts `y` in a list object. 
     :param parse_string: bool, parse string and convert the list of string 
         into iterable object is the `y` is a string object and containg the 
-        word separator character '[_#&.*@!_,;\s-]'. Refer to the function 
+        word separator character '[#&.*@!_,;\s-]'. Refer to the function 
         :func:`~watex.utils.funcutils.str2columns` documentation.
         
     :returns: 
@@ -3795,8 +3802,8 @@ def str2columns (text, /, regex=None , pattern = None):
         Regular expresion object. the default is:: 
             
             >>> import re 
-            >>> re.compile (r'[_#&*@!_,;\s-]\s*', flags=re.IGNORECASE) 
-    pattern: str, default = '[_#&*@!_,;\s-]\s*'
+            >>> re.compile (r'[#&*@!_,;\s-]\s*', flags=re.IGNORECASE) 
+    pattern: str, default = '[#&*@!_,;\s-]\s*'
         The base pattern to split the text into a columns
         
     Returns
@@ -3807,7 +3814,7 @@ def str2columns (text, /, regex=None , pattern = None):
     ---------
     >>> from watex.utils.funcutils import str2columns 
     >>> text = ('this.is the text to split. It is an: example of; splitting str - to text.')
-    >>> tsplitted= str2columns (text ) 
+    >>> str2columns (text )  
     ... ['this',
          'is',
          'the',
@@ -3825,12 +3832,11 @@ def str2columns (text, /, regex=None , pattern = None):
          'text']
 
     """
-    pattern = pattern or  r'[_#&.*@!_,;\s-]\s*'
+    pattern = pattern or  r'[#&.*@!_,;\s-]\s*'
     regex = regex or re.compile (pattern, flags=re.IGNORECASE) 
-    text= list(filter (None, regex.split(text)))
+    text= list(filter (None, regex.split(str(text))))
     return text 
-    
-    
+       
 def sanitize_frame_cols(
         d, /, func:F = None , regex=None, pattern:str = None, 
         fill_pattern:str =None, inplace:bool =False 
@@ -3986,8 +3992,7 @@ def to_hdf5(d, /, fn, objname =None, close =True,  **hdf5_kws):
     >>> h502 = store ['h502'] 
     >>> h502.columns[:3] 
     ... Index(['hole_number', 'depth_top', 'depth_bottom'], dtype='object')
-    
-    
+
     """
     store =None 
     if ( 
@@ -4666,12 +4671,12 @@ def hex_to_rgb (c, /):
     return tuple(int(c[i:i+2], 16) for i in (0, 2, 4)) 
 
 def zip_extractor(
-        zip_file ,
-        samples ='*', 
-        ftype=None,  
-        savepath = None,
-        pwd=None,  
-    ): 
+    zip_file ,
+    samples ='*', 
+    ftype=None,  
+    savepath = None,
+    pwd=None,  
+): 
     """ Extract  ZIP archive objects. 
     
     Can extract all or a sample objects when the number of object is passed 
@@ -4689,7 +4694,7 @@ def zip_extractor(
     savepath: str, optional 
        Path to store the decompressed archived files.
     ftype: str, 
-       Is the extension of a specific file to decompressed. Indeed, if the 
+       Is the extension of a the specific file to decompress. Indeed, if the 
        archived files contains many different data formats, specifying the 
        data type would retrieved this specific files from the whole 
        files archieved. 
@@ -4822,8 +4827,12 @@ def remove_outliers (
     
     Parameters 
     -----------
-    ar: Arraylike, 
-       Array containing outliers to remove 
+    ar: Arraylike, pd.dataframe 
+       Arraylike  containing outliers to remove. 
+       
+       .. versionadded:: 0.2.7 
+          Accepts dataframe and can remove outliers using the `z_score`. 
+          
     method: str, default='IQR'
       The selected approach to remove the outliers. It can be
       ['IQR'|'Z-score']. See Above for outlier explanations.  Note that 
@@ -4870,7 +4879,12 @@ def remove_outliers (
            -0.56228753,         nan]) 
     """
     method = str(method).lower()
-
+    if ( 
+            hasattr ( ar, "__array__") 
+            and hasattr (ar, 'columns')
+            ): 
+        return _remove_outliers( ar, n_std= threshold )
+    
     arr =np.array (ar, dtype = float)
     
     if method =='iqr': 
@@ -4899,6 +4913,28 @@ def remove_outliers (
                   ]  if np.ndim (arr) > 1 else arr [~np.isnan(arr)]
 
     return arr 
+
+def _remove_outliers(data, n_std=3):
+    """Remouve outliers from a dataframe."""
+    # separate cat feature and numeric features 
+    # if exists 
+    df, numf, catf = to_numeric_dtypes(
+        data , return_feature_types= True,  drop_nan_columns =True )
+    # get on;y the numeric 
+    df = df[numf]
+    for col in df.columns:
+        # print('Working on column: {}'.format(col))
+        mean = df[col].mean()
+        sd = df[col].std()
+        df = df[(df[col] <= mean+(n_std*sd))]
+    # get the index and select only the index 
+    index = df.index 
+    # get the data by index then 
+    # concatename 
+    df_cat = data [catf].iloc [ index ]
+    df = pd.concat ( [df_cat, df ], axis = 1 )
+    
+    return df
 
 def normalizer ( arr, /, method ='naive'): 
     """ Normalize values to be between 0 and 1. 
@@ -5647,7 +5683,7 @@ def rename_files (
 
 def get_xy_coordinates (d, / , as_frame = False, drop_xy = False, 
                         raise_exception = True, verbose=0 ): 
-    """Check whether the coordinate values exists in the data
+    """Check whether the coordinate values exist in the data
     
     Parameters 
     ------------
@@ -6116,17 +6152,19 @@ def key_checker (
     # If iterbale object , save obj 
     # to improve error 
     kkeys = copy.deepcopy(keys)
-    
     if deep_search: 
-        keys = key_search(keys, default_keys= valid_keys,deep=True, 
-                          raise_exception= True,
-                          )
-        
+        keys = key_search(
+            keys, 
+            default_keys= valid_keys,
+            deep=True, 
+            raise_exception= True,
+            regex =regex, 
+            pattern=pattern 
+            )
         return keys[0] if len(keys)==1 else keys 
     # for consistency 
     keys = [ k for k in keys if ''.join(
         [ str(i) for i in valid_keys] ).find(k)>=0 ]
-    
     # assertion error if key does not exist. 
     if len(keys)==0: 
         verb1, verb2 = ('', 'es') if len(kkeys)==1 else ('s', '') 
@@ -6476,10 +6514,11 @@ def split_list(lst:List[Any, ...],/,  val:int, fill_value:Any=None ):
 def key_search (
     keys: str, /, 
     default_keys: Text | List[str], 
+    parse_keys: bool=True, 
     regex :re=None, 
     pattern :str=None, 
     deep: bool =...,
-    raise_exception:bool=...
+    raise_exception:bool=..., 
     ): 
     """Find key in a list of default keys and select the best match. 
     
@@ -6494,6 +6533,11 @@ def key_search (
        is passed, it is better to provide the regex in order to skip some 
        character to parse the text properly. 
        
+    parse_keys: bool, default=True 
+       Parse litteral string using default `pattern` and `regex`. 
+       
+       .. versionadded:: 0.2.7 
+        
     regex: `re` object,  
         Regular expresion object. Regex is important to specify the kind
         of data to parse. the default is:: 
@@ -6518,61 +6562,69 @@ def key_search (
     Return 
     -------
     list: list of valid keys or None if not find ( default) 
-    
-    
+
     Examples
     ---------
     >>> from watex.utils.funcutils import key_search 
     >>> key_search('h502-hh2601', default_keys= ['h502', 'h253','HH2601'])
     Out[44]: ['h502']
-    >>> from watex.utils.funcutils import key_search 
     >>> key_search('h502-hh2601', default_keys= ['h502', 'h253','HH2601'], 
                    deep=True)
     Out[46]: ['h502', 'HH2601']
     >>> key_search('253', default_keys= ("I m here to find key among h502,
                                              h253 and HH2601"))
     Out[53]: ['h253'] 
-
+    >>> key_search ('east', default_keys= ['DH_East', 'DH_North']  , deep =True,)
+    Out[37]: ['East']
+    key_search ('east', default_keys= ['DH_East', 'DH_North'], 
+                deep =True,parse_keys= False)
+    Out[39]: ['DH_East']
     """
-    deep, raise_exception = ellipsis2false(deep, raise_exception)
+    deep, raise_exception, parse_keys = ellipsis2false(
+        deep, raise_exception, parse_keys)
+    # make a copy of original keys 
     
-    if is_iterable(keys , exclude_string= True ): 
-        keys = ' '.join ( [str(k) for k in keys ]) 
-        
-    # for consisteny checker 
-    pattern = pattern or '[_#&@!_+,;\s-]\s*'
-    keys = str2columns ( keys , regex = regex , pattern = pattern ) 
     kinit = copy.deepcopy(keys)
-    if is_iterable ( default_keys , exclude_string=True ): 
-        default_keys = ' '. join ( [ str(k) for k in default_keys ])
+    if parse_keys: 
+        if is_iterable(keys , exclude_string= True ): 
+            keys = ' '.join ( [str(k) for k in keys ]) 
+             # for consisteny checker 
+        pattern = pattern or '[#&@!_+,;\s-]\s*'
+        keys = str2columns ( keys , regex = regex , pattern = pattern ) 
+            
+        if is_iterable ( default_keys , exclude_string=True ): 
+            default_keys = ' '. join ( [ str(k) for k in default_keys ])
+            # make a copy
+        default_keys =  str2columns(
+            default_keys, regex =regex , pattern = pattern )
+    else : 
+        keys = is_iterable(
+        keys, exclude_string = True, transform =True )
+        default_keys = is_iterable ( 
+            default_keys, exclude_string=True, transform =True )
         
-    # make a copy
-    dk_init =  str2columns(
-        default_keys, regex =regex , pattern = pattern )
-
+    dk_init = copy.deepcopy(default_keys )
+    # if deep convert all keys to lower 
     if deep: 
         keys= [str(it).lower() for it in keys  ]
-        default_keys = default_keys.lower() 
+        default_keys = [str(it).lower() for it in default_keys  ]
 
-    valid_keys =[]
-    for key in keys: 
-        vk = re.findall(rf'\b\w*{key}\w*\b', default_keys)
-        valid_keys.extend( vk )
-
-    # if deep take the real values in defaults keys. 
-    if deep and len(vk)!=0: 
-        # remake a list based on the parsing regex 
-        default_keys= str2columns(
-            default_keys, regex =regex , pattern = pattern )
-        for ii, vk in enumerate ( valid_keys) : 
-            ix = default_keys.index ( vk )
-            valid_keys [ii] = dk_init[ix ]
-
-    if raise_exception and len(valid_keys)==0: 
+    valid_keys =[] 
+    for key in keys : 
+        for ii, dkey in enumerate (default_keys) : 
+            vk = re.findall(rf'\w*{key}\w*', dkey)
+            # rather than rf'\b\w*{key}\w*\b'
+            # if deep take the real values in defaults keys.
+            if len(vk) !=0: 
+                if deep: valid_keys.append( dk_init[ii] )
+                else:valid_keys.extend( vk)
+                break     
+    if ( raise_exception 
+        and len(valid_keys)==0
+        ): 
         kverb ='s' if len(kinit)> 1 else ''
-        raise KeyError (f"key{kverb} {smart_format(kinit)} not found."
-                          f" Expect {smart_format(dk_init, 'or')}")
-    
+        raise KeyError (f"key{kverb} {kinit!r} not found."
+                       f" Expect {smart_format(dk_init, 'or')}")
     return None if len(valid_keys)==0 else valid_keys 
 
 def repeat_item_insertion(text, /, pos, item ='', fill_value=''): 
@@ -6924,17 +6976,19 @@ def storeOrwritehdf5 (
         
     return d if kind not in ("store", "export") else None 
 
-def ellipsis2false( *parameters  ): 
+def ellipsis2false( *parameters , default_value: Any=False ): 
     """ Turn all parameter arguments to False if ellipsis.
     
     Note that the output arguments must be in the same order like the 
     positional arguments. 
  
     :param parameters: tuple 
-       List of parameters  
-    :return: tuple, same list of parameters passed ellipsis to ``False``. 
-       For a single parameters, uses the trailing comma for collecting 
-       the parameters 
+       List of parameters 
+    :param default_value: Any, 
+       Value by default that might be take the ellipsis. 
+    :return: tuple, same list of parameters passed ellipsis to 
+       ``default_value``. By default, it returns ``False``. For a single 
+       parameters, uses the trailing comma for collecting the parameters 
        
     :example: 
         >>> from watex.utils.funcutils import ellipsis2false 
@@ -6945,18 +6999,14 @@ def ellipsis2false( *parameters  ):
         >>> verbose 
         False 
     """
-    return tuple ( ( False  if param is  ... else param  
+    return tuple ( ( default_value  if param is  ... else param  
                     for param in parameters) )  
    
-    
 
     
     
     
-    
-    
-    
-    
+ 
     
     
     

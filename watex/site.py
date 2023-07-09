@@ -1171,7 +1171,8 @@ class Location (object):
         north:float= None, 
         utm_zone:str=None, 
         reference_ellipsoid:int=None , 
-        datum:str = None 
+        datum:str = None, 
+        epsg: int= None, 
         ): 
         """
         Project coodinate on longitude latitude once  data are utm at  given
@@ -1190,6 +1191,10 @@ class Location (object):
         
         datum: string, default ='WGS84'
             well known datum ex. WGS84, NAD27, etc.
+            
+        epsg: Optional, int
+            epsg number defining projection (see http://spatialreference.org/ref/ for moreinfo)
+            Overrides utm_zone if both are provided    
             
         reference_ellipsoid: Optional, int 
             reference ellipsoids is derived from Peter H. Dana's website-
@@ -1215,7 +1220,9 @@ class Location (object):
         if utm_zone is not None : 
             self._utm_zone =utm_zone 
             
+        self.epsg = epsg or self.epsg 
         self.datum = datum or self.datum 
+        
         self.reference_ellipsoid = reference_ellipsoid or \
             self.reference_ellipsoid
                           
@@ -1227,7 +1234,6 @@ class Location (object):
                 datum= self.datum, 
                 epsg= self.epsg 
                 ) 
-
         except : 
              self.lat, self.lon  = utm_to_ll(
                 reference_ellipsoid=self.reference_ellipsoid, 
@@ -1325,7 +1331,7 @@ class Location (object):
         norths:ArrayLike, 
         *, 
         data=None,
-        utm_zone:str, 
+        utm_zone:str=None, 
         datum: str=None, 
         **kws 
         ):

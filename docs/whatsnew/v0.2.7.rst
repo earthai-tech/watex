@@ -1,0 +1,43 @@
+v0.2.7 (July 09, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.6`` that shows fugs fixed.  
+
+- |API change| ``fetch_data_from_repo`` previously  located in :mod:`watex.geology.core` is deprecated and replaced by 
+  :func:`watex.utils.baseutils.get_remote_data`. 
+
+- |Fix| Bug in geographical coordinates when values are given in string in :meth:`watex.geology.DSDrill.build_geology`.  Henceforth, all 
+  numerical arguments are casted to numeric values brefore the drillholes construction. 
+
+- |Fix| :func:`watex.utils.funcutils.str2columns` henceforth converts `text` value to string before parsing. 
+
+- |Feature| :func:`watex.utils.baseutils.save_or_load` for saving or loading Numpy arrays. Idem for :func:`watex.utils.baseutils.array2hdf5` 
+  for loading or  writing array to hdf5. 
+
+- |Feature| :func:`watex.utils.bin_counting` counts categorical variable and turn it into probabilistic ratio. 
+
+- |Feature| :func:`watex.utils.resampling` combines Random Oversampling and Undersampling 
+
+- |Feature| :meth:`watex.geology.core.GeoBase.find_properties` to find rock/structural properties or constraint the geological info 
+  to fit the rock in AGSO database. 
+
+- |Feature| :meth:`watex.geology.DSDrill.build_drillholes` can be used to build a specific drillhole manually through the parameter `kind`. 
+
+- |Enhancement| :func:`watex.utils.read_data` is now able to read data in `txt` and numpy  formats (`.npy` and `.npz`). 
+
+- |Enhancement| Add Nanshan land subsidence data. :func:`watex.datasets.load_nlogs` accepts henceforth ``ls`` for land subsidence as an argument 
+  for collection the subsidence data. The parameter `years` can be used accordingly to get the year of the subsidence. 
+  
+- |Enhancement| :class:`watex.geology.DSDrill` implements :meth:`watex.geology.DSDrill.set_drillholes` to construct the drilling with 
+  valid data passed to the ``fit`` method. The drillholes construction expects argument supplied to the ``properties`` parameter. 
+  However, :meth:`watex.geology.DSDrill.get_properties` can be used  and to get the drillholes parameters before providing the 
+  property arguments.  
+
+- |Enhancement| :func:`watex.utils.remove_outliers` accepts dataframe and removes outliers using `z-score`. 
+  
+
+
+
+
+
+

@@ -19,8 +19,9 @@ import pandas as pd
 from .._docstring import erp_doc, ves_doc 
 from .io import (csv_data_loader, _to_dataframe, DMODULE, 
     get_data, remove_data, description_loader, DESCR) 
-from ..utils.coreutils import vesSelector, erpSelector 
-from ..utils.mlutils import split_train_test_by_id , existfeatures
+from ..utils.coreutils import ( 
+    vesSelector, erpSelector, read_data)   
+from ..utils.mlutils import split_train_test_by_id, existfeatures
 from ..utils.funcutils import ( 
     to_numeric_dtypes , 
     smart_format, str2columns, 
@@ -30,7 +31,6 @@ from ..utils.funcutils import (
     key_checker, 
     random_sampling,
     assert_ratio, 
-    
     )
 from ..utils.box import Boxspace
 
@@ -447,18 +447,19 @@ def load_nlogs (
     *,  return_X_y=False, 
     as_frame =False, 
     key =None, 
+    years=None, 
     split_X_y=False, 
     test_ratio=.3 , 
     tag=None, 
-    tnames=None , 
+    tnames=None, 
     data_names=None, 
     samples=None, 
     seed =None, 
     shuffle =False, 
     **kws
     ): 
-    
-     
+
+    drop_display_rate = kws.pop("drop_display_rate", True)
     key = key or 'b0' 
     # assertion error if key does not exist. 
     available_sets = {
@@ -466,42 +467,63 @@ def load_nlogs (
         "ns", 
         "hydrogeological", 
         "engineering", 
+        "subsidence", 
+        "ls"
         }
     is_keys = set ( list(available_sets))
     key = key_checker(key, is_keys, deep_search=True )
     key = "b0" if key in ("b0", "hydrogeological") else (
-        "ns" if key in ("ns",  "engineering") else key )
-    
+          "ns" if key in ("ns",  "engineering") else ( 
+          "ls" if key in ("ls", "subsidence") else key )
+        )
     assert key in (is_keys), (
         f"wrong key {key!r}. Expect {smart_format(is_keys, 'or')}")
     
-    data_file =f"nlogs{'+' if key=='ns' else ''}.csv" 
+    # read datafile
+    if key in ("b0", "ns"):  
+        data_file =f"nlogs{'+' if key=='ns' else ''}.csv" 
+    else: data_file = "n.npz"
     with resources.path (DMODULE , data_file) as p : 
-        data_file = p 
-
-    data = to_numeric_dtypes( pd.read_csv(data_file )) 
-
+        data_file = str(p)
+  
+    if key=='ls': 
+        # use tnames and years 
+        # interchangeability 
+        years = tnames or years 
+        data , feature_names, target_columns= _get_subsidence_data(
+            data_file, years = years or "2022",
+            drop_display_rate= drop_display_rate )
+        # reset tnames to fit the target columns
+        tnames=target_columns 
+    else: 
+        data = pd.read_csv( data_file )
+        # since target and columns are alread set 
+        # for land subsidence data, then 
+        # go for "ns" and "b0" to
+        # set up features and target names
+        feature_names = (list( data.columns [:21 ])  + [
+            'filter_pipe_diameter']) if key=='b0' else list(
+                filter(lambda item: item!='ground_height_distance',
+                       data.columns)
+                ) 
+        target_columns = ['static_water_level', 'drawdown', 'water_inflow', 
+                          'unit_water_inflow', 'water_inflow_in_m3_d'
+                          ] if key=='b0' else  ['ground_height_distance']
+    # cast values to numeric 
+    data = to_numeric_dtypes( data) 
     samples = samples or "*"
     data = random_sampling(data, samples = samples, random_state= seed, 
                             shuffle= shuffle) 
-
-    # set up features and target names
-    feature_names = (list( data.columns [:21 ])  + [
-        'filter_pipe_diameter']) if key=='b0' else list(
-            filter(lambda item: item!='ground_height_distance',data.columns)
-            ) 
-    target_columns = ['static_water_level', 'drawdown', 'water_inflow', 
-                      'unit_water_inflow', 'water_inflow_in_m3_d'
-                      ] if key=='b0' else  ['ground_height_distance']
-    
+    # reverify the tnames if given 
+    # target columns 
     tnames = tnames or target_columns
     # control the existence of the tnames to retreive
     try : 
-        existfeatures(data[target_columns] , tnames)
+        existfeatures(data[target_columns], tnames)
     except Exception as error: 
-        # get valueError message and replace Feature by target 
-        msg = (". Acceptable target values are:"
-               f"{smart_format(target_columns, 'or')}")
+        # get valueError message and replace Feature by target
+        verb ="s are" if len(target_columns) > 2 else " is"
+        msg = (f" Valid target{verb}: {smart_format(target_columns, 'or')}")
         raise ValueError(str(error).replace(
             'Features'.replace('s', ''), 'Target(s)')+msg)
         
@@ -525,8 +547,7 @@ def load_nlogs (
         
         return  (X, Xt, y, yt ) if as_frame else (
             X.values, Xt.values, y.values , yt.values )
-    
-    
+
     if return_X_y: 
         return (data.values, target.values) if not as_frame else (
             data, target) 
@@ -534,9 +555,10 @@ def load_nlogs (
     # return frame if as_frame simply 
     if as_frame: 
         return frame 
-    
+    # upload the description file.
+    descr_suffix= {"b0": '', "ns":"+", "ls":"++"}
     fdescr = description_loader(
-        descr_module=DESCR,descr_file=f"nanshang{'+'if key=='ns' else ''}.rst")
+        descr_module=DESCR,descr_file=f"nanshang{descr_suffix.get(key)}.rst")
 
     return Boxspace(
         data=data.values,
@@ -549,7 +571,7 @@ def load_nlogs (
         filename=data_file,
         data_module=DMODULE,
     )
-
+ 
 load_nlogs.__doc__="""\
 Load the Nanshang Engineering and hydrogeological drilling dataset.
 
@@ -571,28 +593,46 @@ as_frame : bool, default=False
 
 split_X_y: bool, default=False,
     If True, the data is splitted to hold the training set (X, y)  and the 
-    testing set (Xt, yt) with the according to the test size ratio.  
+    testing set (Xt, yt) with the according to the test size ratio. 
+    
 test_ratio: float, default is {{.3}} i.e. 30% (X, y)
     The ratio to split the data into training (X, y)  and testing (Xt, yt) set 
     respectively. 
+    
 tnames: str, optional 
     the name of the target to retreive. If ``None`` the full target columns 
     are collected and compose a multioutput `y`. For a singular classification 
     or regression problem, it is recommended to indicate the name of the target 
-    that is needed for the learning task. 
+    that is needed for the learning task. When collecting data for land 
+    subsidence with ``key="ls"``, `tnames` and `years` are used 
+    interchangeability. 
+    
 (tag, data_names): None
     `tag` and `data_names` do nothing. just for API purpose and to allow 
     fetching the same data uing the func:`~watex.data.fetch_data` since the 
     latter already holds `tag` and `data_names` as parameters. 
     
 key: str, default='b0'
-    Kind of drilling data to fetch. Can also be the borehole ["ns"]. The 
+    Kind of drilling data to fetch. Can also be the borehole ["ns", "ls"]. The 
     ``ns`` data refer mostly to engineering drilling whereas the ``b0`` refers 
     to pure hydrogeological drillings. In the former case, the 
     ``'ground_height_distance'`` attribute used to control soil settlement is 
     the target while the latter targets fit the water inflow, the drawdown and 
-    the static water level.
+    the static water level. The "ls" key is used for collection the times 
+    series land subsidence data from 2015-2018. It should be used in combinaison
+    with the `years` parameter for collecting the specific year data. The 
+    default land-subsidence data is ``2022``. 
     
+years: str, default="2022" 
+   the year of land subsidence. Note that land subsidence data are collected 
+   from 2015 to 2022. For instance to select two years subsidence, use 
+   space between years like ``years ="2015 2022"``. The star ``*`` argument 
+   can be used for selecting all years data. 
+   
+   .. versionadded:: 0.2.7 
+      Years of Nanshan land subsidence data collected are added. Use key 
+      `ls` and `years` for retrieving the subsidence data of each year. 
+      
 samples: int,optional 
    Ratio or number of items from axis to fetch in the data. fetch all data if 
    `samples` is ``None``.  
@@ -604,6 +644,15 @@ seed: int, array-like, BitGenerator, np.random.RandomState, \
    
 shuffle: bool, default =False, 
    If ``True``, borehole data should be shuffling before sampling. 
+   
+drop_display_rate: bool, default=True 
+  Display the rate is used for image visualization. To increase the image 
+  pixels. 
+  
+  .. versionadded: 0.2.7 
+    Drop rate for pixels increasing during visualization of land 
+    subsidence. 
+
 Returns
 ---------
 data : :class:`~watex.utils.Boxspace`
@@ -665,14 +714,23 @@ Out[241]:
 >>> # Let's say we are interested of the targets 'drawdown' and 
 >>> # 'static_water_level' and returns `y' 
 >>> _, y = load_nlogs (as_frame=True, # return as frame X and y
-                       tnames =['drawdown','static_water_level'], 
-                       )
+                       tnames =['drawdown','static_water_level'], )
 >>> list(y.columns)
 ... ['drawdown', 'static_water_level']
 >>> y.head(2) 
    drawdown  static_water_level
 0     70.03                4.21
 1      7.38                3.60
+>>> # let say we want subsidence data of 2015 and 2018 with the 
+>>> # diplay resolution rate. Because the display is removed, we must set  
+>>> # it to False so keep it included in the data. 
+>>> n= load_nlogs (key ='ls', samples = 3 , years = "2015 2018 disp",
+                   drop_display_rate =False )
+>>> n.frame  
+        easting      northing   longitude  ...      2015       2018  disp_rate
+0  2.531191e+06  1.973515e+07  113.291328  ... -0.494959 -27.531837  -7.352538
+1  2.531536e+06  1.973519e+07  113.291847  ... -1.104473 -21.852705  -7.999145
+2  2.531479e+06  1.973520e+07  113.291847  ... -1.139404 -22.022655  -7.894940
 """
 def load_bagoue(
         *, return_X_y=False, as_frame=False, split_X_y=False, test_size =.3 , 
@@ -1218,7 +1276,6 @@ def load_mxs (
     add = {"data": ('data', ) , '*': (
         'X_train','X_test' , 'y_train','y_test' ), 
         }
-    
     av= {"sparse": ('X_csr', 'ymxs_transf'), 
          "scale": ('Xsc', 'ymxs_transf'), 
          "train": ( 'X_train', 'y_train'), 
@@ -1229,7 +1286,6 @@ def load_mxs (
     
     if key is None: 
         key='data'
-        
     data_file ='mxs.joblib'
     with resources.path (DMODULE , data_file) as p : 
         data_file = str(p)
@@ -1294,10 +1350,8 @@ def load_mxs (
     
     tnames = tnames or target_columns
     # control the existence of the tnames to retreive
-    
     data = random_sampling(data, samples = samples, random_state= seed, 
                            shuffle= shuffle)
-    
     if as_frame:
         frame, data, target = _to_dataframe(
             data, feature_names = feature_names, tnames = tnames, 
@@ -1434,7 +1488,71 @@ Examples
  array([1, 1, 1, ..., 5, 5, 5], dtype=int64))
  
 """  
+def _get_subsidence_data (
+        data_file, /, 
+        years: str="2022", 
+        drop_display_rate: bool=... 
+        ): 
+    """Read, parse features and target for Nanshan land subsidence data
     
+    Parameters 
+    ------------
+    data_file: str, Pathlike object 
+       Full path to the object to read.
+    years: str, default=2022 
+        year of subsidence data collected. To collect the value of subsidence 
+        of all years, set ``years="*"``
+        
+    drop_display_rate: bool, default=False, 
+       Rate of display for visualisation in Goldern software. 
+       
+    Returns 
+    --------
+    data, feature_names, target_columns: pd.DataFrame, list
+      DataFrame and list of features and targets. 
+   
+    """
+    columns =['easting',
+             'northing',
+             'longitude',
+             'latitude',
+             '2015',
+             '2016',
+             '2017',
+             '2018',
+             '2019',
+             '2020',
+             '2021',
+             '2022',
+             'disp_rate'
+             ]
+    data = read_data ( data_file, columns = columns )
+    if drop_display_rate: 
+        data.pop('disp_rate')
+        columns =columns [: -1]
+        # remove display rate if exists while 
+        # it is set to True
+        if isinstance ( years, str): 
+           years = years.replace ("disp", "").replace (
+               "_", ' ').replace ("rate", "")
+        elif hasattr ( years, '__iter__'): 
+            # maybe list etc 
+            years = [str(i) for i in years if not (str(i).find(
+                "disp") >= 0 or str(i).find("rate")>= 0) ] 
+
+    if years !="*": 
+        years = key_checker (years, valid_keys= data.columns ,
+                     pattern =r'[#&*@!,;\s-]\s*', deep_search=True)
+        years = [years] if isinstance ( years, str) else years 
+    else : 
+        years = columns[4:] # target columns 
+    # recheck duplicates and remove it  
+    years = sorted(set ((str(y) for y in years)))
+    feature_names = columns[: 4 ]
+    target_columns = years 
+    data = data [ feature_names + target_columns ]
+    
+    return  data,  feature_names, target_columns     
     
     
     

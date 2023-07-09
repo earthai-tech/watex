@@ -304,7 +304,6 @@ Functions
 	geology.geology.setstructures 
 	geology.core.get_agso_properties
 	geology.core.mapping_stratum
-	geology.core.fetching_data_from_repo
 	geology.core.set_agso_properties
 
 .. _methods_ref:
@@ -585,6 +584,7 @@ Functions
    :template: function.rst
 
     utils.bi_selector
+    utils.bin_counting
 	utils.build_random_thickness
 	utils.cattarget
 	utils.check_flow_objectivity
@@ -663,6 +663,7 @@ Functions
 	utils.reduce_samples
 	utils.remove_outliers
 	utils.rename_labels_in
+	utils.resampling
 	utils.reshape
 	utils.rhoa2z
 	utils.rhophi2z

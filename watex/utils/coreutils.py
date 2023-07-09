@@ -49,6 +49,7 @@ from ..exceptions import (
     VESError, 
     FileHandlingError
 )
+from .baseutils import save_or_load
 from .funcutils import (
     smart_format as smft,
     _isin , 
@@ -58,7 +59,8 @@ from .funcutils import (
     to_numeric_dtypes, 
     reshape, 
     is_iterable, 
-    is_in_if
+    is_in_if, 
+    ellipsis2false, 
     ) 
 from .gistools import (
     assert_lat_value,
@@ -2274,9 +2276,13 @@ def parseDCArgs(fn :str ,
         sdata ).astype(float))
 
 def read_data (
-    f:str | pathlib.PurePath, 
+    f: str|pathlib.PurePath, 
     sanitize: bool= ..., 
     reset_index: bool=..., 
+    comments: str="#", 
+    delimiter: str=None, 
+    columns: List[str]=None,
+    npz_objkey: str= None, 
     verbose: bool= ..., 
     **read_kws
  ) -> DataFrame: 
@@ -2295,12 +2301,36 @@ def read_data (
            - replace a non-alphabetic column items with a pattern '_' 
            - cast data values to numeric if applicable 
            - drop full NaN columns and rows in the data 
+           
     reset_index: bool, default=False, 
       Reset index if full NaN columns are dropped after sanitization. 
       
       .. versionadded:: 0.2.5
           Apply minimum data sanitization after reading data. 
+     
+    comments: str or sequence of str or None, default='#'
+       The characters or list of characters used to indicate the start 
+       of a comment. None implies no comments. For backwards compatibility, 
+       byte strings will be decoded as 'latin1'. 
+
+    delimiter: str, optional
+       The character used to separate the values. For backwards compatibility, 
+       byte strings will be decoded as 'latin1'. The default is whitespace.
+
+    npz_objkey: str, optional 
+       Dataset key to indentify array in multiples array storages in '.npz' 
+       format.  If key is not set during 'npz' storage, ``arr_0`` should 
+       be used. 
+      
+       .. versionadded:: 0.2.7 
+          Capable to read text and numpy formats ('.npy' and '.npz') data. Note
+          that when data is stored in compressed ".npz" format, provided the 
+          '.npz' object key  as argument of parameter `npz_objkey`. If None, 
+          only the first array should be read and ``npz_objkey='arr_0'``. 
           
+    verbose: bool, default=0 
+       Outputs message for user guide. 
+       
     read_kws: dict, 
        Additional keywords arguments passed to pandas readable file keywords. 
         
@@ -2309,24 +2339,52 @@ def read_data (
     f: :class:`pandas.DataFrame` 
         A dataframe with head contents by default.  
         
+    See Also 
+    ---------
+    np.loadtxt: 
+        load text file.  
+    np.load 
+       Load uncompressed or compressed numpy `.npy` and `.npz` formats. 
+    watex.utils.baseutils.save_or_load: 
+        Save or load numpy arrays.
+       
     """
-    if sanitize is ...: 
-        sanitize = False 
-
     def min_sanitizer ( d, /):
         """ Apply a minimum sanitization to the data `d`."""
-        d = to_numeric_dtypes(
-            d, sanitize_columns= True, drop_nan_columns= True, 
-            reset_index= False if reset_index is ... else reset_index, 
-            verbose = False if verbose  is ... else verbose , 
-            fill_pattern='_', drop_index = True,  
-                              )
-        return d 
+        return to_numeric_dtypes(
+            d, sanitize_columns= True, 
+            drop_nan_columns= True, 
+            reset_index=reset_index, 
+            verbose = verbose , 
+            fill_pattern='_', 
+            drop_index = True
+            )
+    sanitize, reset_index, verbose = ellipsis2false (
+        sanitize, reset_index, verbose )
+    if ( isinstance ( f, str ) 
+            and str(os.path.splitext(f)[1]).lower()in (
+                '.txt', '.npy', '.npz')
+            ): 
+        f = save_or_load(f, task = 'load', comments=comments, 
+                         delimiter=delimiter )
+        # if extension is .npz
+        if isinstance(f, np.lib.npyio.NpzFile):
+            npz_objkey = npz_objkey or "arr_0"
+            f = f[npz_objkey] 
+
+        if columns is not None: 
+            columns = is_iterable(columns, exclude_string= True, 
+                                  transform =True, parse_string =True 
+                                  )
+            if len( columns )!= f.shape [1]: 
+                warnings.warn(f"Columns expect {f.shape[1]} attributes."
+                              f" Got {len(columns)}")
+            
+        f = pd.DataFrame(f, columns=columns )
         
     if isinstance (f, pd.DataFrame): 
         if sanitize: 
             f = min_sanitizer (f)
-            
         return  f 
     
     cpObj= Config().parsers 
@@ -2340,10 +2398,9 @@ def read_data (
     except FileNotFoundError:
         raise FileNotFoundError (
             f"No such file in directory: {os.path.basename (f)!r}")
-    except: 
+    except BaseException as e : 
         raise FileHandlingError (
-            f" Can not parse the file : {os.path.basename (f)!r}")
-
+            f"Cannot parse the file : {os.path.basename (f)!r}. "+  str(e))
     if sanitize: 
         f = min_sanitizer (f)
         

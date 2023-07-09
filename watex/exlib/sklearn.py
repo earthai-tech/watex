@@ -150,6 +150,7 @@ from sklearn.metrics import (
     roc_curve, 
     silhouette_samples, 
     make_scorer,
+    matthews_corrcoef, 
 )  
 from sklearn.model_selection import ( 
     train_test_split , 
@@ -222,6 +223,7 @@ __all__=[
     'roc_curve',
     'silhouette_samples', 
     'make_scorer',
+    'matthews_corrcoef', 
     'train_test_split' , 
     'validation_curve', 
     'StratifiedShuffleSplit' , 

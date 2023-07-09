@@ -142,7 +142,7 @@ _BVAL= dict (
         ), 
 )
 
-def _fetch_data(tag, data_names=[] ): 
+def _fetch_data(tag, data_names=[] , **kws): 
     PKGS ="watex.etc"
     r=None
     tag = str(tag)

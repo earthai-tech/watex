@@ -6005,10 +6005,134 @@ def find_closest( arr, /, values ):
     return np.array ( [
         arr [ np.abs ( arr - v).argmin()] for v in values ]
         )
+  
+def gradient_descent(
+    z: ArrayLike, 
+    s:ArrayLike, 
+    alpha:float=.01, 
+    n_epochs:int= 100,
+    kind:str="linear", 
+    degree:int=1, 
+    raise_warn:bool=False, 
+    ): 
+    """ Gradient descent algorithm to  fit the best model parameter.
+    
+    Model can be changed to polynomial if degree is greater than 1. 
+    
+    Parameters 
+    -----------
+    z: arraylike, 
+       vertical nodes containing the values of depth V
+    s: Arraylike, 
+       vertical vector containin the resistivity values 
+    alpha: float,
+       step descent parameter or learning rate. *Default* is ``0.01`
+    n_epochs: int, 
+       number of iterations. *Default* is ``100``. Can be changed to other values
+    kind: str, {"linear", "poly"}, default= 'linear'
+      Type of model to fit. Linear model is selected as the default. 
+    degree: int, default=1 
+       As the linear model is selected as the default since the degree is set 
+       to ``1``
+    Returns 
+    ---------
+    - `F`: New model values with the best `W` parameters found.
+    - `W`: vector containing the parameters fits 
+    - `cost_history`: Containing the error at each Itiretaions. 
+        
+    Examples 
+    -----------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import gradient_descent
+    >>> z= np.array([0, 6, 13, 20, 29 ,39, 49, 59, 69, 89, 109, 129, 
+                     149, 179])
+    >>> res= np.array( [1.59268,1.59268,2.64917,3.30592,3.76168,
+                        4.09031,4.33606, 4.53951,4.71819,4.90838,
+          5.01096,5.0536,5.0655,5.06767])
+    >>> fz, weights, cost_history = gradient_descent(
+        z=z, s=res,n_epochs=10,alpha=1e-8,degree=2)
+    >>> import matplotlib.pyplot as plt 
+    >>> plt.scatter (z, res)
+    >>> plt.plot(z, fz)
+    """
+    
+    #Assert degree
+    try :degree= abs(int(degree)) 
+    except:raise TypeError(f"Degree is integer. Got {type(degree).__name__!r}")
+    
+    if degree >1 :
+        kind='poly'
+        
+    kind = str(kind).lower()    
+    if kind.lower() =='linear': 
+        # block degree to one.
+        degree = 1 
+    elif kind.find('poly')>=0 : 
+        if degree <=1 :
+            warnings.warn(
+                "Polynomial function expects degree greater than 1."
+                f" Got {degree!r}. Value is resetting to minimum equal 2."
+                      ) if raise_warn else None 
+            degree = 2
+    # generate function with degree 
+    Z, W = _kind_of_model(degree=degree,  x=z, y=s)
+    
+    # Compute the gradient descent 
+    cost_history = np.zeros(n_epochs)
+    s=s.reshape((s.shape[0], 1))
+    
+    for ii in range(n_epochs): 
+        with np.errstate(all='ignore'): # rather than divide='warn'
+            #https://numpy.org/devdocs/reference/generated/numpy.errstate.html
+            W= W - (Z.T.dot(Z.dot(W)-s)/ Z.shape[0]) * alpha 
+            cost_history[ii]= (1/ 2* Z.shape[0]) * np.sum((Z.dot(W) -s)**2)
+       
+    # Model function F= Z.W where `Z` id composed of vertical nodes 
+    # values and `bias` columns and `W` is weights numbers.
+    F= Z.dot(W) # model(Z=Z, W=W)     # generate the new model with the best weights 
+             
+    return F,W, cost_history
 
+def _kind_of_model(degree, x, y) :
+    """ 
+    An isolated part of gradient descent computing. 
+    Generate kind of model. If degree is``1`` The linear subset 
+    function will use. If `degree` is greater than 2,  Matrix will 
+    generate using the polynomail function.
+     
+    :param x: X values must be the vertical nodes values 
+    :param y: S values must be the resistivity of subblocks at node x 
+    
+    """
+    c= []
+    deg = degree 
+    w = np.zeros((degree+1, 1)) # initialize weights 
+    
+    def init_weights (x, y): 
+        """ Init weights by calculating the scope of the function along 
+         the vertical nodes axis for each columns. """
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', 
+                                    category=RuntimeWarning)
+            for j in range(x.shape[1]-1): 
+                a= (y.max()-y.min())/(x[:, j].max()-x[:, j].min())
+                w[j]=a
+            w[-1] = y.mean()
+        return w   # return weights 
 
+    for i in range(degree):
+        c.append(x ** deg)
+        deg= deg -1 
 
+    if len(c)> 1: 
+        x= concat_array_from_list(c, concat_axis=1)
+        x= np.concatenate((x, np.ones((x.shape[0], 1))), axis =1)
 
+    else: x= np.vstack((x, np.ones(x.shape))).T # initialize z to V*2
+
+    w= init_weights(x=x, y=y)
+    return x, w  # Return the matrix x and the weights vector w 
+    
 
 
 
