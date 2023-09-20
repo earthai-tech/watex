@@ -4671,12 +4671,12 @@ def hex_to_rgb (c, /):
     return tuple(int(c[i:i+2], 16) for i in (0, 2, 4)) 
 
 def zip_extractor(
-        zip_file ,
-        samples ='*', 
-        ftype=None,  
-        savepath = None,
-        pwd=None,  
-    ): 
+    zip_file ,
+    samples ='*', 
+    ftype=None,  
+    savepath = None,
+    pwd=None,  
+): 
     """ Extract  ZIP archive objects. 
     
     Can extract all or a sample objects when the number of object is passed 
@@ -4694,7 +4694,11 @@ def zip_extractor(
     savepath: str, optional 
        Path to store the decompressed archived files.
     ftype: str, 
+<<<<<<< HEAD
        Is the extension of a specific file to decompress. Indeed, if the 
+=======
+       Is the extension of a the specific file to decompress. Indeed, if the 
+>>>>>>> 10707dcecd7d0da55b83bcf73ae48c1e6659f2f8
        archived files contains many different data formats, specifying the 
        data type would retrieve this specific files from the whole 
        files archieved. 
@@ -4935,7 +4939,6 @@ def _remove_outliers(data, n_std=3):
     df = pd.concat ( [df_cat, df ], axis = 1 )
     
     return df
-
 
 def normalizer ( arr, /, method ='naive'): 
     """ Normalize values to be between 0 and 1. 

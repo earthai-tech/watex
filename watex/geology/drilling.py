@@ -12,7 +12,6 @@ import pandas as pd
 
 from .core import GeoBase 
 from .geology import Geology
-from .stratigraphic import GeoStrataModel 
 from .._typing import Any, NDArray, DataFrame
 from ..decorators import export_data 
 from ..exceptions import NotFittedError, DrillError
@@ -1115,7 +1114,7 @@ class DSBorehole:
         """
         self.inspect 
         # use default columns [electrical, _description] properties 
-        e_props, strata = GeoStrataModel._getProperties() 
+        e_props, strata = GeoBase.getProperties() 
         # compute the mean with electrical properties 
         if add_electrical_properties: 
             e_props = list (map ( lambda x : np.mean ( x ) if hasattr (
@@ -1806,8 +1805,8 @@ class DSDrill (GeoBase) :
         if ( data is None and not hasattr (self, 'collar_')): 
             raise DrillError( "Collar data is missing.")
             
-        if self.property_names is not None: 
-            if not isinstance (self.property_names, dict): 
+        if self.properties is not None: 
+            if not isinstance (self.properties, dict): 
                 msg =(
                     "Drilling property names expect a dictionnary. Got"
                     f"{type (self.property_names).__name__!r}. Property"
@@ -1819,7 +1818,7 @@ class DSDrill (GeoBase) :
                       )
                 warn(msg )
             else: 
-                self.collar_.rename (columns = self.property_names, 
+                self.collar_.rename (columns = self.properties, 
                                      inplace =True )
 
         self._create_sub_drill_object (self.collar_, 'collar')

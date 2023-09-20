@@ -32,7 +32,8 @@ class TestExPlot(unittest.TestCase):
         - select_best_point
         - select_best_value
     """
-    data = naive_imputer ( load_bagoue().frame , mode ='bi-impute') 
+    data = naive_imputer ( load_bagoue().frame , 
+                          mode ='bi-impute') 
     p = ExPlot(tname ='flow').fit(data)
     p.fig_size = (12, 4)
     

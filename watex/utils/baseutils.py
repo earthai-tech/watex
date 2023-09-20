@@ -178,7 +178,7 @@ def save_or_load(
         The character used to separate the values. For backwards compatibility, 
         byte strings will be decoded as 'latin1'. The default is whitespace.
         
-    **kws: np.save ,np.savetext,  np.load , np.loadtxt 
+    kws: np.save ,np.savetext,  np.load , np.loadtxt 
        Additional keywords arguments for saving and loading data. 
        
     Return 
@@ -350,10 +350,13 @@ def get_remote_data(
     else: 
         import tqdm  
         data =os.path.splitext( os.path.basename(rfile))[0]
-        pbar = tqdm.tqdm (range(3), ascii=True, desc =f'get-{data}', ncols =107)
+        pbar = tqdm.tqdm (total=3, ascii=True, 
+                          desc =f'get-{os.path.basename(rfile)}', 
+                          ncols =97
+                          )
     status=False
     root, rfile  = os.path.dirname(rfile), os.path.basename(rfile)
-    for k in pbar:
+    for k in range(3):
         try :
             urllib.request.urlretrieve(root,  rfile )
         except: 
@@ -370,13 +373,15 @@ def get_remote_data(
         else : 
             status=True
             break
-        try: pbar.update (k)
+        try: pbar.update (k+1)
         except: pass 
     
     if status: 
-        try: pbar.update (3)
+        try: 
+            pbar.update (3)
+            pbar.close ()
         except:pass
-        print(f"\n---> Downloading {rfile!r} was successfully done.")
+        # print(f"\n---> Downloading {rfile!r} was successfully done.")
     else: 
         print(f"\n---> Failed to download {rfile!r}.")
     # now move the file to the right place and create path if dir not exists
@@ -392,12 +397,7 @@ def get_remote_data(
         else: print(connect_reason )
     
     return status
-      
-    
-    
-    
-    
-    
+
     
     
     
