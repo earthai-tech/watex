@@ -5662,10 +5662,10 @@ def rename_files (
         basename= str(basename)
         if prefix: 
             dst_files =[ f"{str(basename)}{trailer}" + (
-                f"{i:02}" if how=='py' else f"{i+1:02}") + f"{ex}"
+                f"{i:03}" if how=='py' else f"{i+1:03}") + f"{ex}"
                         for i in range (len(src_files))]
         elif not prefix: 
-            dst_files =[ (f"{i:02}" if how=='py' else f"{i+1:02}"
+            dst_files =[ (f"{i:03}" if how=='py' else f"{i+1:03}"
                         ) +f"{trailer}{str(basename)}" +f"{ex}"
                         for i in range (len(src_files))]
         

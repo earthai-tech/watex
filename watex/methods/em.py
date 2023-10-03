@@ -3047,7 +3047,7 @@ class ZC(EM):
         Factors can be determined by using the :meth:`get_ss_correction_factors`
         If ``None``, factors are found using the spatial median filter. 
         Assume the original observed tensor Z is built by a static shift 
-        :math:`S` and an unperturbated "correct" :math:`Z_{0} :
+        :math:`S` and an unperturbated "correct" :math:`Z_{0}` :
         
         .. math::
   
