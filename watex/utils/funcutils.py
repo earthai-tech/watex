@@ -2901,14 +2901,15 @@ def fit_by_ll(ediObjs):
         >>> from watex.methods.em import EM
         >>> from watex.utils.funcutils import fit_by_ll
         >>> edipath ='data/edi_ss' 
-        >>> cediObjs = EM (edipath) 
+        >>> cediObjs = EM().fit (edipath) 
         >>> ediObjs = np.random.permutation(cediObjs.ediObjs) # shuffle the  
         ... # the collection of ediObjs 
         >>> ediObjs, ediObjbname = fit_by_ll(ediObjs) 
         ...
-    
+
     """
     #get the ediObjs+ names in ndarray(len(ediObjs), 2) 
+    
     objnames = np.c_[ediObjs, np.array(
         list(map(lambda obj: os.path.basename(obj.edifile), ediObjs)))]
     lataddlon = np.array (list(map(lambda obj: obj.lat + obj.lon , ediObjs)))

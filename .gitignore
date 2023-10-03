@@ -161,6 +161,7 @@ SVC__LinearSVC__LogisticRegression.pkl
 untitled0.py
 untitled1.py
 untitled2.py
+untitled3.py
 
 # ignore beka datafiles 
 data/beka/
@@ -203,3 +204,5 @@ tests/temp/
 h2.py
 h2.joblib
 true_data.joblib
+#No need 
+EDI/

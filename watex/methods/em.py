@@ -48,11 +48,13 @@ from ..utils.exmath import (
     interpolate1d,
     interpolate2d, 
     get_full_frequency, 
+    adaptive_moving_average, 
     find_closest, 
     rhophi2z, 
     z2rhoa, 
     mu0,
-    smoothing, 
+    smoothing,
+    butterworth_filter, 
     )
 from ..utils.coreutils import ( 
     makeCoords, 
@@ -1067,7 +1069,7 @@ class _zupdate(EM):
             object from ':class:`pycsamt.core.z.Z` """
             
             (ediObjs , freq,  z_dict), kwargs = func (*args, **kws)
-    
+            
             # pop the option argument if user provides it 
             option = kwargs.pop('option', None)
             rotate = kwargs.pop ('rotate', 0. ) 
@@ -1176,14 +1178,16 @@ class _zupdate(EM):
         zyx_err = z_dict.get('zyx_err') 
         zyy_err = z_dict.get('zyy_err') 
         
+        # Not discard the error imaginary part. 
+        # take the absolute instead.
         if zxx_err is not None: 
-            Z._z_err[:, 0,  0] = reshape (zxx_err[:, kk], 1) 
+            Z._z_err[:, 0,  0] = reshape (np.abs (zxx_err[:, kk]), 1) 
         if zxy_err is not None: 
-            Z._z_err[:, 0,  1] = reshape (zxy_err[:, kk], 1)
+            Z._z_err[:, 0,  1] = reshape (np.abs(zxy_err[:, kk]), 1)
         if zyx_err is not None: 
-            Z._z_err[:, 1,  0] = reshape (zyx_err[:, kk], 1) 
+            Z._z_err[:, 1,  0] = reshape (np.abs(zyx_err[:, kk]), 1) 
         if zyy_err is not None: 
-            Z._z_err[:, 1,  1] = reshape (zyy_err[:, kk], 1)
+            Z._z_err[:, 1,  1] = reshape (np.abs(zyy_err[:, kk]), 1)
             
         Z.rotate(rotate ) # rotate angle if given 
         Z.compute_resistivity_phase(
@@ -1502,6 +1506,8 @@ class Processing (EM) :
         return (self.res2d_ , self.phs2d_ , self.freqs_, self.c,
                 self.window_size, self.component, self.out) 
 
+
+            
     def ama (
         self, 
         smooth:bool =True, 
@@ -2761,7 +2767,7 @@ class Processing (EM) :
         >>> # let check whether this frequencies still available in the data 
         >>> Zcol [5].freq[:7] 
         array([81920., 70000., 58800., 41600., 35000., 24700., 20800.])
-        >>> # frequencies do not need to match exactly the value in frequeny 
+        >>> # frequencies do not need to match exactly the value in frequency 
         >>> # range. Here is an example 
         >>> Zcol = p.drop_frequencies (freqs = [49800 , 29700] )
         Frequencies:     1- 49500.0    2- 29400.0  Hz have been dropped.
@@ -2899,8 +2905,8 @@ class ZC(EM):
             **kws
             ): 
         """
-        Filter Z to remove the static schift using the EMAP moving average 
-        filters. 
+        Filter Z to remove the static schift using the :term:`EMAP` moving 
+        average filters. 
         
         Three available filters: 
             
@@ -3100,8 +3106,8 @@ class ZC(EM):
         The factors are in resistivity scale, so the entries of  the matrix 
         "S" need to be given by their square-roots. Furhermore, `ss_fx` and 
         `ss_fy` must be supplied for a manual correction. If one argument of 
-        the aforementionned parameters are missing, the auto factor computation 
-        could be triggered and reset the given previous given factor. 
+        the aforementionned parameters is missing, the auto factor computation 
+        could be triggered and reset the previous given factor. 
         
         Examples 
         ----------
@@ -3397,10 +3403,245 @@ class ZC(EM):
 
         return ss_x, ss_y
     
-  
+    #XXX todo
+    @_zupdate (option ='none')
+    def removal_noises (
+        self, 
+        method='base', 
+        window_size_factor =.1, 
+        out =False, 
+        frange =None, 
+        signal_frequency=None, 
+        **kws 
+        ): 
+        """ Smooth data and remove  unwanted noise or artifacts 
+
+        method: str, default='base' 
+          kind of filtering technique to smooth data. Can be: 
+              
+              - 'base': for simple moving-average using convolution strategy 
+              - 'ama': For adaptatve moving average 
+              - 'butter': for Butterworth filter using bandpass strategy. (lowcut 
+                highcut) can be set using the `frange` parameters.
+        frange: tuple, Optional 
+           Lowcut and highcut frequency for Butterworth signal processing using 
+           bandpass filter. 
+        signal_frequency: float, 
+          Sampling frequency to apply the bandpass filter. 
+          
+        return_z: bool, default=True 
+          Output the corrected impedance tensor Z. If ``False``, the corrected 
+          resistivity and phase should be outpoutted. 
+
+        Returns 
+        ----------
+        d, new_z, new_z_err: NDArray ( 2 x2 , dtype =real )
+          - input distortion tensor
+          - impedance tensor with distorion removed
+          -  impedance tensor error after distortion is removed 
+          If ``export=True``, export to new EDI and return None. 
+          
+        Examples 
+        ---------
+        >>> import watex 
+        >>> from watex.methods import ZC 
+        >>> edi_sample = watex.fetch_data ('edis', samples =17 , return_data =True ) 
+        >>> zo = ZC ().fit(edi_sample)
+        >>> zo.ediObjs_[0].Z.z[:, 0, 1][:7]
+        array([10002.46 +9747.34j , 11679.44 +8714.329j, 15896.45 +3186.737j,
+               21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
+                8908.448+5251.157j])
+ 		>>> distortion = np.array([[1.2, .5],[.35, 2.1]])
+        >>> zc = zo.remove_distortion (distortion)
+        >>> zc[0].z[:, 0, 1] [:7]
+ 		array([ 9724.52643923+9439.96503198j, 11159.25927505+8431.1101919j ,
+                14785.52643923+3145.38324094j, 19864.708742  -4265.80166311j,
+                25632.53518124-8304.88093817j, 17889.15373134-2484.60144989j,
+                 8413.19671642+4925.46660981j])
+         
+        """
+        p = Processing(out ='z ') 
+        p.ediObjs_ = self.ediObjs_
+        p.freqs_ = self.freqs_
+        
+        # p = Processing(out ='z', 
+        #     window_size= window_size_factor
+        #     ).fit(ediObjs)
+        # p.out='z' 
+        
+        zd = dict () 
+        # correct all components if applicable 
+        for comp in ('xx', 'xy', 'yx', 'yy'): 
+            try: 
+                zc = component_noise_removal (
+                    p, 
+                    comp, 
+                    method=method, 
+                    window_size_factor= window_size_factor, 
+                    return_z =True, 
+                    signal_frequeny=signal_frequency, 
+                    frange=frange, 
+                    )
+                zc_err = self.make2d (f"z{comp}_err") 
+                
+            except : 
+                # In the case some components 
+                # are missing, set to null 
+                zc = np.zeros (
+                    (len(self.freqs_), len(self.ediObjs_)),
+                    dtype = np.complex128)
+                zc_err= zc.copy() 
+            
+            zd[f'z{comp}'] = zc 
+            zd[f'z{comp}_err']=zc_err
+            
+        # manage edi -export 
+        option =kws.pop('option', None )
+        option = 'write' if out else None 
+        # reset  option 
+        kws.__setitem__('option', option ) 
+        
+        return (self.ediObjs_, self.freqs_ , zd ), kws
+
+def component_noise_removal (
+    ediObjs: EDIO, / , 
+    component = 'xy', 
+    method ='base',
+    window_size_factor =.1, 
+    frange=None, 
+    signal_frequeny=None, 
+    return_z =True,  
+    ): 
+    """ Remove noise from single component. 
     
-  
+    Parameter 
+    ----------
+    pObj: :class:`watex.em.Processing` or EDI object.  
+      Object from Processing class or :attr:`EM.EdiObjs_` 
+      
+    component: str, default='xy' 
+      Tensor component to be corrected . Can be ['xx', 'xy', 'yx', 'yy'] 
+    method: str, default='base' 
+      kind of filtering technique to smooth data. Can be: 
+          
+          - 'base': for simple moving-average using convolution strategy 
+          - 'ama': For adaptatve moving average 
+          - 'butter': for Butterworth filter using bandpass strategy. (lowcut 
+            highcut) can be set using the `frange` parameters.
+    frange: tuple, Optional 
+       Lowcut and highcut frequency for Butterworth signal processing using 
+       bandpass filter. 
+    signal_frequency: float, 
+      Sampling frequency to apply the bandpass filter. 
+      
+    return_z: bool, default=True 
+      Output the corrected impedance tensor Z. If ``False``, the corrected 
+      resistivity and phase should be outpoutted. 
+      
+    Returns
+    --------
+    z/ (smoothed_res, smoothed_phase): Arraylike 2d 
+       Corrected impendance tensor if ``return_z=True`` and tuple of 
+       corrected resistivity and phase otherwise. 
+       
+    Examples
+    ---------
+    >>> >>> import matplotlib.pyplot as plt 
+    >>> import watex as wx 
+    >>> from watex.methods.em import component_noise_removal 
+    >>> edi_data = wx.fetch_data ('edis', samples =25 , return_data =True ) 
+    >>> p= wx.EMProcessing ( ).fit(edi_data)
+    >>> p.ediObjs_[0].Z.resistivity[:, 0, 1][:7] # resistivity
+    Out[55]: 
+    array([ 663.46885417,  814.71087154, 1137.53936423, 2412.61855152,
+           4779.04096799, 2406.8876066 ,  749.1662786 ])
+    >>> p.ediObjs_[0].Z.phase[:, 0, 1][:7] #  phase
+    Out[56]: 
+    array([ 44.25991725,  36.72756114,  11.33573911, -11.78202602,
+           -16.75885396,  -7.00518766,  30.51756882])
+    >>> p.ediObjs_[0].Z.z[:, 0, 1][:7] # impedance tensor 
+    Out[57]: 
+    array([10002.46 +9747.34j , 11679.44 +8714.329j, 15896.45 +3186.737j,
+           21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
+            8908.448+5251.157j])
+    >>> res_c, phase_c = component_noise_removal (p, component='xy', return_z= False)
+    >>> # plot station S00 ( first ) 
+    >>> #Plot the original and smoothed data
+    >>> fig, ax = plt.subplots(2,1, figsize =(10, 6))
+    >>> ax[0].plot(p.freqs_, p.ediObjs_[0].Z.resistivity[:, 0, 1], 'b-', label='Original Data')
+    >>> ax[0].plot(p.freqs_, res_c[:, 0], 'r-', label='Smoothed Resistivity Data (AMA)')
+    >>> ax[0].set_xlabel('Frequency')
+    >>> ax[0].set_ylabel('Resistivity( ohm.m)')
+    >>> ax[0].set_title('Adaptive Moving Average (AMA) Smoothing')
+    >>> ax[0].legend()
+    >>> ax[0].grid(True)
+    >>> ax[1].plot(p.freqs_, p.ediObjs_[0].Z.phase[:, 0, 1], 'b-', label='Original Phase Data')
+    >>> ax[1].plot(p.freqs_, phase_c[:, 0], 'r-', label='Smoothed Phase Data (AMA)')
+    >>> ax[1].set_xlabel('Frequency')
+    >>> ax[1].set_ylabel('phase( degrees)')
+    >>> ax[1].legend()
+    >>> ax[1].grid(True)
+    >>> plt.show()
+    """
+    method = str(method).lower() 
+    if method.find( 'butter')>=0  or method.find ('btd')>=0 : 
+        method = 'butterworth'
+    elif method.find ('ama')>=0 : 
+        method ='adaptative' 
+
+    if not hasattr ( ediObjs, 'window_size'): 
+        if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
+            raise EDIError("Only EDI or Processing object is acceptatble!")
+        pObj= Processing().fit(ediObjs)
+        
+    else : pObj = ediObjs
+
+    # assert filter arguments 
+    pObj.component = component  
+    pObj.res2d_ , pObj.phs2d_ , pObj.freqs_, pObj.c, pObj.window_size, \
+        pObj.component, pObj.out = pObj._make2dblobs ()
+        
+    smoothed_phase = np.zeros_like ( pObj.phs2d_) 
+    #smooth_z = np.zeros_like ( self.res2d_ , dtype = np.complex128 )
+    smoothed_res = np.zeros_like ( pObj.res2d_)
     
+    if method =='base': 
+        # block moving average `ma` trick to True 
+        # and force resistivity value to be positive 
+        smoothed_res = smoothing( pObj.res2d_ ,  
+                       )
+        if (smoothed_res < 0).any(): 
+            smoothed_res = np.abs (smoothed_res )
+        
+        smoothed_phase = smoothing ( pObj.phs2d_)
+    else: 
+        for ii in range (len(pObj.res2d_)): 
+            #res_data = pObj.res2d_ [ii, :] 
+            if method =='butterworth': 
+                smoothed_res [ii,: ] = butterworth_filter(
+                    pObj.res2d_ [ii, :] , 
+                    freqs= pObj.freqs_, 
+                    frange=frange, 
+                    fs = signal_frequeny, 
+                     )
+            else: 
+                smoothed_res [ii,: ] = adaptive_moving_average(
+                    pObj.res2d_ [ii, :], 
+                    window_size_factor=window_size_factor
+                     )
+                smoothed_phase [ii, :] = adaptive_moving_average(
+                    pObj.phs2d_[ii, :] ,
+                    window_size_factor=window_size_factor
+                    )
+    # recompute z with the corrected phase
+    if return_z : 
+        z_smoothed = rhophi2z(
+            smoothed_res, 
+            phi= smoothed_phase, 
+            freq= pObj.freqs_
+            )
+
+    return z_smoothed   if return_z else (smoothed_res, smoothed_phase)
   
     
   
