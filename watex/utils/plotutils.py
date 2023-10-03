@@ -3823,9 +3823,573 @@ def plot_roc_curves (
     return ax 
         
 
+def plot_grid ( ediobjs, /, station = 1, smooth_phase = False,
+               **kwargs): 
     
+
+    from matplotlib import gridspec as gridspec
+    from matplotlib.ticker import MultipleLocator
+    from .exmath import smooth1d 
+    # from ..edi import Edi
+    
+    # edi_obj = Edi().fit(edifile)
+    z_obj = ediobjs[station].Z
+    # z_obj = edi_obj.Z 
+    resp_object = []
+    #-------------------------------------------
+    
+    ms = kwargs.pop('ms', 1.5)
+    ms_r = kwargs.pop('ms_r', 3)
+    lw = kwargs.pop('lw', .5)
+    lw_r = kwargs.pop('lw_r', 1.0)
+    ls = kwargs.pop('ls',':')
+    e_capthick = kwargs.pop('e_capthick', .5)
+    e_capsize = kwargs.pop('e_capsize', 2)
+
+    color_mode = kwargs.pop('color_mode', 'color')
+    plot_style = kwargs.pop('plot_style', 1)
+    if plot_style not in [1, 2, 3]:
+        print(("self.plot_style = %s. It MUST be either 1 (default; 4 column figures) or 2 (2 column figures) or 3 (1 column figures)" % str(plot_style)))
+        plot_style = 1
+
+    # color mode
+    if color_mode == 'color':
+        # color for data
+        cted = kwargs.pop('cted', (0, 0, 1))
+        ctmd = kwargs.pop('ctmd', (1, 0, 0))
+        mted = kwargs.pop('mted', 's')
+        mtmd = kwargs.pop('mtmd', 'o')
+
+        # color for occam2d model
+        if plot_style == 3:
+            # if plot_style is 3, set default color for model response to same as data
+            ctem = kwargs.pop('ctem',cted)
+            ctmm = kwargs.pop('ctmm',ctmd)
+        else:
+            ctem = kwargs.pop('ctem', (0, .6, .3))
+            ctmm = kwargs.pop('ctmm', (.9, 0, .8))
+        mtem = kwargs.pop('mtem', '+')
+        mtmm = kwargs.pop('mtmm', '+')
+
+    # black and white mode
+    elif color_mode == 'bw':
+        # color for data
+        cted = kwargs.pop('cted', (0, 0, 0))
+        ctmd = kwargs.pop('ctmd', (0, 0, 0))
+        mted = kwargs.pop('mted', 's')
+        mtmd = kwargs.pop('mtmd', 'o')
+
+        # color for occam2d model
+        ctem = kwargs.pop('ctem', (0.6, 0.6, 0.6))
+        ctmm = kwargs.pop('ctmm', (0.6, 0.6, 0.6))
+        mtem = kwargs.pop('mtem', '+')
+        mtmm = kwargs.pop('mtmm', 'x')
+    
+    phase_limits = kwargs.pop('phase_limits', None)
+    res_limits = kwargs.pop('res_limits', None)
+    phase_limits_d = kwargs.pop('phase_limits_d', None)
+    res_limits_d = kwargs.pop('res_limits_d', None)
+    res_limits_od = kwargs.pop('res_limits_od', None)
+    tipper_limits = kwargs.pop('tipper_limits', None)
+    period_limits = kwargs.pop('period_limits', None)
+    
+    subplot_wspace = kwargs.pop('subplot_wspace', .3)
+    subplot_hspace = kwargs.pop('subplot_hspace', .0)
+    subplot_right = kwargs.pop('subplot_right', .98)
+    subplot_left = kwargs.pop('subplot_left', .08)
+    subplot_top = kwargs.pop('subplot_top', .85)
+    subplot_bottom = kwargs.pop('subplot_bottom', .1)
+        
+    fig_num = kwargs.pop('fig_num', 1)
+    fig_size = kwargs.pop('fig_size', [6, 6])
+    fig_dpi = kwargs.pop('dpi', 300)
+        
+    plot_component = kwargs.pop('plot_component', 4)
+    plot_yn = kwargs.pop('plot_yn', 'y')
+    save_plots = kwargs.pop('save_plots', False)
+    plot_z = kwargs.pop('plot_z', True)
+        
+    ylabel_pad = kwargs.pop('ylabel_pad', 1.25)
+    label_axes = kwargs.pop('label_axes',True)
+    shift_yx_phase = kwargs.pop('shift_yx_phase',False)
+    savepath = kwargs.pop('savepath','.')
+
+
+    # --> set default font size
+    font_size = kwargs.pop('font_size', 6)
+    plt.rcParams['font.size'] = font_size
+
+    fontdict = {'size': font_size + 2, 
+                'weight': 'bold'}
+        
+    legend_loc = 'upper center'
+    legend_pos = (.5, 1.18)
+    legend_pos_tipper = (.5, 1.18)
+    legend_marker_scale = 1
+    legend_border_axes_pad = .01
+    legend_label_spacing = 0.07
+    legend_handle_text_pad = .2
+    legend_border_pad = .15
+    
+    h_ratio = [1.5, 1, .5]
+    gs = gridspec.GridSpec(2, 4,
+        wspace=subplot_wspace,
+        left=subplot_left,
+        top=subplot_top,
+        bottom=subplot_bottom,
+        right=subplot_right,
+        hspace=subplot_hspace,
+        height_ratios=h_ratio[:2])
+    
+    fig = plt.figure(station, fig_size, dpi= fig_dpi)
+    plt.clf()
+    fig.suptitle(str(station), fontdict=fontdict)
+            
+    axrxx = fig.add_subplot(gs[0, 0], #yscale='log'
+                            )
+    axrxy = fig.add_subplot(gs[0, 1], sharex=axrxx, 
+                            #yscale='log'
+                            )
+    axryx = fig.add_subplot(gs[0, 2], sharex=axrxx, sharey=axrxy, 
+                           # yscale='log'
+                            )
+    axryy = fig.add_subplot(gs[0, 3], sharex=axrxx, sharey=axrxx, 
+                           # yscale='log'
+                            )
+
+    axpxx = fig.add_subplot(gs[1, 0])
+    axpxy = fig.add_subplot(gs[1, 1], sharex=axrxx)
+    axpyx = fig.add_subplot(gs[1, 2], sharex=axrxx)
+    axpyy = fig.add_subplot(gs[1, 3], sharex=axrxx)
+            
+    #=================
+    # for jj, station in enumerate(pstation_list):
+    #     z_obj = self.data_object.mt_dict[station].Z
+    #     t_obj = self.data_object.mt_dict[station].Tipper
+    #     period = self.data_object.period_list
+    #     print('Plotting: {0}'.format(station))
   
+    # convert to apparent resistivity and phase
+    z_obj.compute_resistivity_phase()
+    period = 1/z_obj._freq
     
+    # find locations where points have been masked
+    nzxx = np.nonzero(z_obj.z[:, 0, 0])[0]
+    nzxy = np.nonzero(z_obj.z[:, 0, 1])[0]
+    nzyx = np.nonzero(z_obj.z[:, 1, 0])[0]
+    nzyy = np.nonzero(z_obj.z[:, 1, 1])[0]
+    
+    # ntx = np.nonzero(t_obj.tipper[:, 0, 0])[0]
+    # nty = np.nonzero(t_obj.tipper[:, 0, 1])[0]
+
+    # convert to apparent resistivity and phase
+    if plot_z:
+        scaling = np.zeros_like(z_obj.z)
+        for ii in range(2):
+            for jj in range(2):
+                scaling[:, ii, jj] = 1. / np.sqrt(z_obj.freq)
+        plot_res = abs(z_obj.z.real * scaling)
+        plot_res_err = abs(z_obj.z_err * scaling)
+        plot_phase = abs(z_obj.z.imag * scaling)
+        plot_phase_err = abs(z_obj.z_err * scaling)
+        h_ratio = [1.5, 1, .5]
+
+    elif not plot_z:
+        plot_res = z_obj.resistivity
+        plot_res_err = z_obj.resistivity_err
+        plot_phase = z_obj.phase
+        plot_phase_err = z_obj.phase_err
+        h_ratio = [1.5, 1, .5]
+    
+        try:
+            res_limits_d = (10 ** (np.floor(np.log10(min([plot_res[nzxx, 0, 0].min(),
+                                                               plot_res[nzyy, 1, 1].min()])))),
+                                 10 ** (np.ceil(np.log10(max([plot_res[nzxx, 0, 0].max(),
+                                                              plot_res[nzyy, 1, 1].max()])))))
+        except ValueError:
+            res_limits_d = None
+        try:
+            res_limits_od = (10 ** (np.floor(np.log10(min([plot_res[nzxy, 0, 1].min(),
+                                                                plot_res[nzyx, 1, 0].min()])))),
+                                  10 ** (np.ceil(np.log10(max([plot_res[nzxy, 0, 1].max(),
+                                                               plot_res[nzyx, 1, 0].max()])))))
+        except ValueError:
+            res_limits_od = None
+
+    # --> make key word dictionaries for plotting
+    kw_xx = {'color': cted,
+             'marker': mted,
+             'ms': ms,
+             'ls': ':',
+             'lw': lw,
+             'e_capsize': e_capsize,
+             'e_capthick': e_capthick}
+
+    kw_yy = {'color': ctmd,
+             'marker': mtmd,
+             'ms': ms,
+             'ls': ':',
+             'lw': lw,
+             'e_capsize': e_capsize,
+             'e_capthick': e_capthick}
+
+    # ---------plot the apparent resistivity-----------------------------------
+            # plot each component in its own subplot
+            # plot data response
+        
+    erxx = plot_errorbar(axrxx,
+                        period[nzxx],
+                        plot_res[nzxx, 0, 0],
+                        plot_res_err[nzxx, 0, 0],
+                        **kw_xx)
+    erxy = plot_errorbar(axrxy,
+                        period[nzxy],
+                        plot_res[nzxy, 0, 1],
+                        plot_res_err[nzxy, 0, 1],
+                        **kw_xx)
+    eryx = plot_errorbar(axryx,
+                        period[nzyx],
+                        plot_res[nzyx, 1, 0],
+                        plot_res_err[nzyx, 1, 0],
+                        **kw_yy)
+    eryy = plot_errorbar(axryy,
+                        period[nzyy],
+                        plot_res[nzyy, 1, 1],
+                        plot_res_err[nzyy, 1, 1],
+                        **kw_yy)
+    # plot phase
+    ypxx=plot_phase[nzxx, 0, 0] 
+    ypxy=plot_phase[nzxy, 0, 1]
+    ypyx=plot_phase[nzyx, 1, 0]
+    ypyy=plot_phase[nzyy, 1, 1]
+    
+    if smooth_phase: 
+        ypxx = smooth1d (ypxx )
+        ypxy = smooth1d ( ypxy  )
+        ypyx = smooth1d (ypyx )
+        ypyy = smooth1d (ypyy )
+
+
+    epxx = plot_errorbar(axpxx,
+                        period[nzxx],
+                        ypxx, # plot_phase[nzxx, 0, 0],
+                        plot_phase_err[nzxx, 0, 0],
+                        **kw_xx)
+    epxy = plot_errorbar(axpxy,
+                        period[nzxy],
+                        ypxy, #plot_phase[nzxy, 0, 1],
+                        plot_phase_err[nzxy, 0, 1],
+                        **kw_xx)
+    epyx = plot_errorbar(axpyx,
+                        period[nzyx],
+                        ypyx, #plot_phase[nzyx, 1, 0],
+                        plot_phase_err[nzyx, 1, 0],
+                        **kw_yy)
+    epyy = plot_errorbar(axpyy,
+                        period[nzyy],
+                        ypyy, # plot_phase[nzyy, 1, 1],
+                        plot_phase_err[nzyy, 1, 1],
+                        **kw_yy)
+
+    # get error bar list for editing later
+    # if not plot_tipper:
+    try:
+        _err_list = [[erxx[1][0], erxx[1][1], erxx[2][0]],
+                          [erxy[1][0], erxy[1][1], erxy[2][0]],
+                          [eryx[1][0], eryx[1][1], eryx[2][0]],
+                          [eryy[1][0], eryy[1][1], eryy[2][0]]]
+        line_list = [[erxx[0]], [erxy[0]], [eryx[0]], [eryy[0]]]
+    except IndexError:
+        print('Found no Z components for {0}'.format(station))
+        line_list = [[None], [None],
+                     [None], [None]]
+
+        _err_list = [[None, None, None],
+                     [None, None, None],
+                     [None, None, None],
+                     [None, None, None]]
+
+    # else:
+    #     try:
+    #         line_list = [[erxx[0]], [erxy[0]],
+    #                      [eryx[0]], [eryy[0]],
+    #                      [ertx[0]], [erty[0]]]
+
+    #         _err_list = [[erxx[1][0], erxx[1][1], erxx[2][0]],
+    #                           [erxy[1][0], erxy[1][1], erxy[2][0]],
+    #                           [eryx[1][0], eryx[1][1], eryx[2][0]],
+    #                           [eryy[1][0], eryy[1][1], eryy[2][0]],
+    #                           [ertx[1][0], ertx[1][1], ertx[2][0]],
+    #                           [erty[1][0], erty[1][1], erty[2][0]]]
+    #     except IndexError:
+    #         print('Found no Z components for {0}'.format(station))
+    #         line_list = [[None], [None],
+    #                      [None], [None],
+    #                      [None], [None]]
+
+    #         _err_list = [[None, None, None],
+    #                           [None, None, None],
+    #                           [None, None, None],
+    #                           [None, None, None],
+    #                           [None, None, None],
+    #                           [None, None, None]]
+     # ------------------------------------------
+    # # make things look nice
+    # # set titles of the Z components
+    ax_list = [axrxx, axrxy, axryx, axryy,
+                    axpxx, axpxy, axpyx, axpyy]
+    label_list = [['$Z_{xx}$'], ['$Z_{xy}$'],
+                  ['$Z_{yx}$'], ['$Z_{yy}$']]
+    for ax, label in zip(ax_list[0:4], label_list):
+        ax.set_title(label[0], fontdict={'size': font_size + 2,
+                                          'weight': 'bold'})
+
+    #     # set axis properties
+    for aa, ax in enumerate(ax_list):
+        ax.tick_params(axis='y', pad=ylabel_pad)
+        # if self.plot_tipper==False:
+        if aa < 4:
+            if plot_z == True:
+                ax.set_yscale('log',
+                              #nonposy='clip'
+                              )
+        else:
+            ax.set_xlabel('Period (s)', 
+                          fontdict=fontdict
+                          )
+
+        if aa < 8:
+            if plot_z == True:
+                ax.set_yscale('log', 
+                              # nonposy='clip'
+                              )
+
+        else:
+            ax.set_xlabel('Period (s)', fontdict=fontdict)
+
+        if aa < 4 and plot_z is False:
+            ylabels = ax.get_yticklabels()
+            ylabels[0] = ''
+            ax.set_yticklabels(ylabels)
+            ax.set_yscale('log', 
+                          #nonposy='clip'
+                          )
+            if aa == 0 or aa == 3:
+                ax.set_ylim(res_limits_d)
+            elif aa == 1 or aa == 2:
+                ax.set_ylim(res_limits_od)
+
+        if aa > 3 and aa < 8 and plot_z is False:
+            #ax.yaxis.set_major_locator(MultipleLocator(10.0))
+            if phase_limits_d is not None:
+                ax.set_ylim(phase_limits_d)
+        # set axes labels
+        if aa == 0:
+            if plot_z == False:
+                ax.set_ylabel('App. Res. ($\mathbf{\Omega \cdot m}$)',
+                              fontdict=fontdict)
+            elif plot_z == True:
+                ax.set_ylabel('Re[Z (mV/km nT)]',
+                              fontdict=fontdict)
+        elif aa == 4:
+            if plot_z == False:
+                ax.set_ylabel('Phase (deg)',
+                              fontdict=fontdict)
+            elif plot_z == True:
+                ax.set_ylabel('Im[Z (mV/km nT)]',
+                              fontdict=fontdict)
+        elif aa == 8:
+            ax.set_ylabel('Tipper',
+                          fontdict=fontdict)
+
+        if aa > 7:
+            ax.yaxis.set_major_locator(MultipleLocator(.1))
+            if tipper_limits is not None:
+                ax.set_ylim(tipper_limits)
+            else:
+                pass
+
+        ax.set_xscale('log', 
+                     # nonposx='clip'
+                      )
+        # set period limits
+        if period_limits is None:
+            period_limits = (10 ** (np.floor(np.log10(period[0]))) * 1.01,
+                                  10 ** (np.ceil(np.log10(period[-1]))) * .99)
+        ax.set_xlim(xmin=period_limits[0],
+                    xmax=period_limits[1])
+        ax.grid(True, alpha=.25)
+
+        ylabels = ax.get_yticks().tolist()
+        if aa < 8:
+            ylabels[-1] = ''
+            ylabels[0] = ''
+            ax.set_yticklabels(ylabels)
+            plt.setp(ax.get_xticklabels(), visible=False)
+            
+            
+        # --> make key word dictionaries for plotting
+        kw_xx = {'color': ctem,
+                 'marker': mtem,
+                 'ms': ms_r,
+                 'ls': ':',
+                 'lw': lw_r,
+                 'e_capsize': e_capsize,
+                 'e_capthick': e_capthick}
+
+        kw_yy = {'color': ctmm,
+                 'marker': mtmm,
+                 'ms': ms_r,
+                 'ls': ':',
+                 'lw': lw_r,
+                 'e_capsize': e_capsize,
+                 'e_capthick':e_capthick}
+
+        if resp_object is not None:
+            for resp_obj in resp_object:
+                resp_z_obj = resp_obj.mt_dict[station].Z
+                resp_z_err = np.nan_to_num((z_obj.z - resp_z_obj.z) / z_obj.z_err)
+                resp_z_obj.compute_resistivity_phase()
+
+                # resp_t_obj = resp_obj.mt_dict[station].Tipper
+                # resp_t_err = np.nan_to_num((t_obj.tipper - resp_t_obj.tipper) / t_obj.tipper_err)
+
+                # convert to apparent resistivity and phase
+                if plot_z == True:
+                    scaling = np.zeros_like(resp_z_obj.z)
+                    for ii in range(2):
+                        for jj in range(2):
+                            scaling[:, ii, jj] = 1. / np.sqrt(resp_z_obj.freq)
+                    r_plot_res = abs(resp_z_obj.z.real * scaling)
+                    r_plot_phase = abs(resp_z_obj.z.imag * scaling)
+
+                elif plot_z == False:
+                    r_plot_res = resp_z_obj.resistivity
+                    r_plot_phase = resp_z_obj.phase
+
+                rms_xx = resp_z_err[:, 0, 0].std()
+                rms_xy = resp_z_err[:, 0, 1].std()
+                rms_yx = resp_z_err[:, 1, 0].std()
+                rms_yy = resp_z_err[:, 1, 1].std()
+                
+                # plot data response
+                rerxx = plot_errorbar(axrxx,
+                                    period[nzxx],
+                                    r_plot_res[nzxx, 0, 0],
+                                    None,
+                                    **kw_xx)
+                rerxy = plot_errorbar(axrxy,
+                                    period[nzxy],
+                                    r_plot_res[nzxy, 0, 1],
+                                    None,
+                                    **kw_xx)
+                reryx = plot_errorbar(axryx,
+                                    period[nzyx],
+                                    r_plot_res[nzyx, 1, 0],
+                                    None,
+                                    **kw_yy)
+                reryy = plot_errorbar(axryy,
+                                        period[nzyy],
+                                        r_plot_res[nzyy, 1, 1],
+                                        None,
+                                        **kw_yy)
+                # plot phase
+                repxx = plot_errorbar(axpxx,
+                                        period[nzxx],
+                                        r_plot_phase[nzxx, 0, 0],
+                                        None,
+                                        **kw_xx)
+                repxy = plot_errorbar(axpxy,
+                                    period[nzxy],
+                                    r_plot_phase[nzxy, 0, 1],
+                                    None,
+                                    **kw_xx)
+                repyx = plot_errorbar(axpyx,
+                                    period[nzyx],
+                                    r_plot_phase[nzyx, 1, 0],
+                                    None,
+                                    **kw_yy)
+                repyy = plot_errorbar(axpyy,
+                                    period[nzyy],
+                                    r_plot_phase[nzyy, 1, 1],
+                                    None,
+                                    **kw_yy)
+        
+                # # plot tipper
+                # if plot_tipper == True:
+                #     rertx = mtplottools.plot_errorbar(axtxr,
+                #                                       period[ntx],
+                #                                       resp_t_obj.tipper[ntx, 0, 0].real,
+                #                                       None,
+                #                                       **kw_xx)
+                #     rerty = mtplottools.plot_errorbar(axtyr,
+                #                                       period[nty],
+                #                                       resp_t_obj.tipper[nty, 0, 1].real,
+                #                                       None,
+                #                                       **kw_yy)
+        
+                #     reptx = mtplottools.plot_errorbar(axtxi,
+                #                                       period[ntx],
+                #                                       resp_t_obj.tipper[ntx, 0, 0].imag,
+                #                                       None,
+                #                                       **kw_xx)
+                #     repty = mtplottools.plot_errorbar(axtyi,
+                #                                       period[nty],
+                #                                       resp_t_obj.tipper[nty, 0, 1].imag,
+                #                                       None,
+                #                                       **kw_yy)
+        
+                # if plot_tipper == False:
+                line_list[0] += [rerxx[0]]
+                line_list[1] += [rerxy[0]]
+                line_list[2] += [reryx[0]]
+                line_list[3] += [reryy[0]]
+                label_list[0] += ['$Z^m_{xx}$ ' +
+                                  'rms={0:.2f}'.format(rms_xx)]
+                label_list[1] += ['$Z^m_{xy}$ ' +
+                                  'rms={0:.2f}'.format(rms_xy)]
+                label_list[2] += ['$Z^m_{yx}$ ' +
+                                  'rms={0:.2f}'.format(rms_yx)]
+                label_list[3] += ['$Z^m_{yy}$ ' +
+                                  'rms={0:.2f}'.format(rms_yy)]
+                # else:
+                #     line_list[0] += [rerxx[0]]
+                #     line_list[1] += [rerxy[0]]
+                #     line_list[2] += [reryx[0]]
+                #     line_list[3] += [reryy[0]]
+                #     line_list[4] += [rertx[0]]
+                #     line_list[5] += [rerty[0]]
+                #     label_list[0] += ['$Z^m_{xx}$ ' +
+                #                       'rms={0:.2f}'.format(rms_xx)]
+                #     label_list[1] += ['$Z^m_{xy}$ ' +
+                #                       'rms={0:.2f}'.format(rms_xy)]
+                #     label_list[2] += ['$Z^m_{yx}$ ' +
+                #                       'rms={0:.2f}'.format(rms_yx)]
+                #     label_list[3] += ['$Z^m_{yy}$ ' +
+                #                       'rms={0:.2f}'.format(rms_yy)]
+                #     label_list[4] += ['$T^m_{x}$ ' +
+                #                       'rms={0:.2f}'.format(resp_t_err[:, 0, 0].std())]
+                #     label_list[5] += ['$T^m_{y}$' +
+                #                       'rms={0:.2f}'.format(resp_t_err[:, 0, 1].std())]
+        
+            legend_ax_list = ax_list[0:4]
+        #                if self.plot_tipper == True:
+        #                    legend_ax_list += [self.ax_list[-4], self.ax_list[-2]]
+
+        for aa, ax in enumerate(legend_ax_list):
+            ax.legend(line_list[aa],
+                      label_list[aa],
+                      loc=legend_loc,
+                      bbox_to_anchor=legend_pos,
+                      markerscale=legend_marker_scale,
+                      borderaxespad=legend_border_axes_pad,
+                      labelspacing=legend_label_spacing,
+                      handletextpad=legend_handle_text_pad,
+                      borderpad=legend_border_pad,
+                      framealpha=1,
+                      prop={'size': max([font_size, 5])})
+  
+    plt.show()
   
     
   

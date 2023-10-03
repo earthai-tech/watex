@@ -26,7 +26,6 @@ short-periods electromagnetic (EM), geology and hydrogeology methods. From metho
 it allows to: 
 - auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings 
   and unsustainable boreholes;
-- reduce the cost of permeability coefficient (k) data collection during the hydro-geophysical engineering projects,
 - predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
 - recover the EM loss signals in area with huge interferences noises ...
 - etc.
@@ -122,67 +121,8 @@ Note that before the drilling operations commence, make sure to carry out the DC
 another parameter called `ohmic-area` `` (ohmS)`` to detect the effectiveness of the existing fracture zone at that point. See more in 
 the software [documentation](https://watex.readthedocs.io/en/latest/).
   
-### 2. Predict permeability coefficient ``k`` from logging dataset using MXS approach
- 
-MXS stands for mixture learning strategy. It uses upstream unsupervised learning for 
-``k`` -aquifer similarity label prediction and the supervising learning for 
-final ``k``-value prediction. For our toy example, we use two boreholes data 
-stored in the software and merge them to compose a unique dataset. In addition, we dropped the 
-``remark`` observation which is subjective data not useful for ``k`` prediction as:
 
-```python
-import watex as wx
-h= wx.fetch_data("hlogs", key='h502 h2601', drop_observations =True ) # returns log data object.
-h.feature_names
-Out[3]: Index(['hole_id', 'depth_top', 'depth_bottom', 'strata_name', 'rock_name',
-           'layer_thickness', 'resistivity', 'gamma_gamma', 'natural_gamma', 'sp',
-           'short_distance_gamma', 'well_diameter'],
-          dtype='object')
-hdata = h.frame 
-```
-``k`` is collected as continue values (m/darcies) and should be categorized for the 
-naive group of aquifer prediction (NGA). The latter is used to predict 
-upstream the  MXS target ``ymxs``.  Here, we used the default categorization 
-provided by the software and we assume that in the area, there are at least ``2`` 
-groups of the aquifer. The code is given as: 
-```python 
-mxs = wx.MXS (kname ='k', n_groups =2).fit(hdata) 
-ymxs=mxs.predictNGA().makeyMXS(categorize_k=True, default_func=True)
-mxs.yNGA_ [62:74]
-Out[4]: array([1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2])
-ymxs[62:74]
-Out[5]: array([ 0,  0,  0,  0, 12, 12, 12, 12, 12, 12, 12, 12])
-```
-To understand the transformation from NGA to MXS target (``ymxs``), please, have a look 
-of the following [paper](http://dx.doi.org/10.2139/ssrn.4326365).
-Once the MXS target is predicted, we call the ``make_naive_pipe`` function to 
-impute, scale, and transform the predictor ``X`` at once into a compressed sparse 
-matrix ready for final prediction using the [support vector machines](https://ieeexplore.ieee.org/document/708428) and 
-[random forest](https://www.ibm.com/topics/random-forest) as examples. Here we go: 
-```python 
-X= hdata [h.feature_names]
-Xtransf = wx.make_naive_pipe (X, transform=True) 
-Xtransf 
-Out[6]: 
-<218x46 sparse matrix of type '<class 'numpy.float64'>'
-	with 2616 stored elements in Compressed Sparse Row format> 
-Xtrain, Xtest, ytrain, ytest = wx.sklearn.train_test_split (Xtransf, ymxs ) 
-ypred_k_svc= wx.sklearn.SVC().fit(Xtrain, ytrain).predict(Xtest)
-ypred_k_rf = wx.sklearn.RandomForestClassifier ().fit(Xtrain, ytrain).predict(Xtest)
-```
-We can now check the ``k`` prediction scores using ``accuracy_score`` function as: 
-```python 
-wx.sklearn.accuracy_score (ytest, ypred_k_svc)
-Out[7]: 0.9272727272727272
-wx.sklearn.accuracy_score (ytest, ypred_k_rf)
-Out[8]: 0.9636363636363636
-```
-As we can see, the results of ``k`` prediction are quite satisfactory for our 
-toy example using only two boreholes data. Note that things can become more 
-interesting when using many boreholes data. For more in 
-depth, visit our [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html). 
-
-### 3. EM tensors recovering and analyses
+### 2. EM tensors recovering and analyses
 
 For a basic illustration, we fetch 20 audio-frequency magnetotelluric (AMT) data 
 stored as EDI objects collected in a `huayuan` area (Hunan province, China) with 

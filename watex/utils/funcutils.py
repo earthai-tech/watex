@@ -2901,14 +2901,15 @@ def fit_by_ll(ediObjs):
         >>> from watex.methods.em import EM
         >>> from watex.utils.funcutils import fit_by_ll
         >>> edipath ='data/edi_ss' 
-        >>> cediObjs = EM (edipath) 
+        >>> cediObjs = EM().fit (edipath) 
         >>> ediObjs = np.random.permutation(cediObjs.ediObjs) # shuffle the  
         ... # the collection of ediObjs 
         >>> ediObjs, ediObjbname = fit_by_ll(ediObjs) 
         ...
-    
+
     """
     #get the ediObjs+ names in ndarray(len(ediObjs), 2) 
+    
     objnames = np.c_[ediObjs, np.array(
         list(map(lambda obj: os.path.basename(obj.edifile), ediObjs)))]
     lataddlon = np.array (list(map(lambda obj: obj.lat + obj.lon , ediObjs)))
@@ -4473,7 +4474,7 @@ def smart_label_classifier (
         set to ``strict``. 
         
     order: str, ['soft'|'strict'], default='soft', 
-        If order is ``True``, the argument passed to `values` must be self 
+        If order is ``strict``, the argument passed to `values` must be self 
         contain as item in the `arr`, and raise warning otherwise. 
         
     func: callable, optional 
@@ -4694,9 +4695,13 @@ def zip_extractor(
     savepath: str, optional 
        Path to store the decompressed archived files.
     ftype: str, 
+<<<<<<< HEAD
+       Is the extension of a specific file to decompress. Indeed, if the 
+=======
        Is the extension of a the specific file to decompress. Indeed, if the 
+>>>>>>> 10707dcecd7d0da55b83bcf73ae48c1e6659f2f8
        archived files contains many different data formats, specifying the 
-       data type would retrieved this specific files from the whole 
+       data type would retrieve this specific files from the whole 
        files archieved. 
     pwd: int, optional
       Password to pass if the zip file is encrypted.
@@ -5066,6 +5071,7 @@ def get_confidence_ratio (
         ar, /,
         axis = 0, 
         invalid = 'NaN',
+        mean=False, 
         ):
     
     """ Get ratio of confidence in array by counting the number of 
@@ -5082,6 +5088,12 @@ def get_confidence_ratio (
     invalid: int, foat, default='NaN'
       The value to consider as invalid in the data might be listed if 
       applicable. The default is ``NaN``. 
+      
+    mean: bool, default=False, 
+      Get the mean ratio. Average the percentage of each axis. 
+      
+      .. versionadded:: 0.2.8 
+         Average the ratio of confidence of each axis. 
       
     Returns 
     ---------
@@ -5136,7 +5148,8 @@ def get_confidence_ratio (
         ratio[i] = gfc ( (ar [:, i] if axis ==0 else ar [i, :])
                         if ar.ndim !=1 else ar , inv= invalid 
                         )
-    
+    if mean: 
+        ratio = np.array (ratio).mean() 
     return ratio 
     
 def assert_ratio(
@@ -5394,7 +5407,7 @@ def random_selector (
         select among the length of `arr`. If array (``value``) is passed, it
         should be self contain in the given ``arr`. However if ``string`` is 
         given and contain the ``%``, it calculates the ratio of 
-        number to randomly selected. 
+        number to randomly select. 
     seed: int, Optional 
        Allow retrieving the identical value randomly selected in the given 
        array. 

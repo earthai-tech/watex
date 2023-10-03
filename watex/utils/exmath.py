@@ -13,7 +13,8 @@ from math import factorial, radians
 
 import numpy as np
 import pandas as pd 
-from scipy.signal import argrelextrema 
+from scipy.signal import ( 
+    argrelextrema, butter, lfilter )
 import scipy.integrate as integrate
 from scipy.optimize import curve_fit
 from scipy.integrate import quad 
@@ -6133,8 +6134,154 @@ def _kind_of_model(degree, x, y) :
     w= init_weights(x=x, y=y)
     return x, w  # Return the matrix x and the weights vector w 
     
+def adaptive_moving_average(data, /, window_size_factor=0.1):
+    """ Adaptative moving average as  smoothing technique. 
+ 
+    Parameters 
+    -----------
+    data: Arraylike 
+       Noise data for smoothing 
+       
+    window_size_factor: float, default=0.1 
+      Parameter to control the adaptiveness of the moving average.
+       
+      
+    Return 
+    --------
+    result: Arraylike 
+       Smoothed data 
+    
+    Example 
+    ---------
+    >>> from watex.utils.exmath import adaptive_moving_average 
+    >>> # Sample magnetotelluric data (replace this with your own data)
+    >>> # Example data: a sine wave with noise
+    >>> time = np.linspace(0, 10, 1000)  # Replace with your actual time values
+    >>> mt_data = np.sin(2 * np.pi * 1 * time) + 0.2 * np.random.randn(1000)  # Example data
+    >>> # Function to calculate the adaptive moving average
+    >>> # Define the window size factor (adjust as needed)
+    >>>> window_size_factor = 0.1  # Adjust this value based on your data characteristics
+    >>> # Apply adaptive moving average to the magnetotelluric data
+    >>> smoothed_data = adaptive_moving_average(mt_data, window_size_factor)
+    >>> # Plot the original and smoothed data
+    >>> plt.figure(figsize=(10, 6))
+    >>> plt.plot(time, mt_data, 'b-', label='Original Data')
+    >>> plt.plot(time, smoothed_data, 'r-', label='Smoothed Data (AMA)')
+    >>> plt.xlabel('Time')
+    >>> plt.ylabel('Amplitude')
+    >>> plt.title('Adaptive Moving Average (AMA) Smoothing')
+    >>> plt.legend()
+    >>> plt.grid(True)
+    >>> plt.show()
 
+    """
+    result = np.zeros_like(data)
+    window_size = int(window_size_factor * len(data))
+    
+    for i in range(len(data)):
+        start = max(0, i - window_size)
+        end = min(len(data), i + window_size + 1)
+        result[i] = np.mean(data[start:end])
+    
+    return result
 
+def butterworth_filter(
+    data, /,  
+    freqs,  
+    fs=None, 
+    frange =None, 
+    order=5, 
+    plot=False, 
+    ):
+    """ 
+    Defines a bandpass filter using a Butterworth filter and then applies 
+    it to your AFMT data to remove frequencies outside the specified range.
+    
+    Adjust the lowcut and highcut parameters according to the desired 
+    frequency range for your data. 
+    Removing bad frequencies from data typically involves filtering the 
+    data to eliminate unwanted noise or artifacts. 
+    
+    Parameters
+    ------------
+    data: arraylike 1D 
+      Noise data to filter. 
+    freqs: Arraylike 1d 
+      Array of frequencies onto apply the bandpass filter. 
+     
+    fs: int, 
+     Sample of frequencies. If None, use the number of original frequency 
+    
+    frange: list , Optional 
+      frequency range ( min/200., max/5)  for the bandpass filter (in Hz). 
+      By default, use the minimum and maximum of original frquency array.
+      Note that digital filter critical frequencies must be 0 < Wn < 1 i.e.  
+      
+    order: int, default=5 
+      Order for butter bandpass. 
+      
+    plot: bool, default=False 
+       Visualize the filtered data. 
+       
+    Return 
+    -------
+    y: filtered data 
+    Example
+    -------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import butterworth_filter
+    >>> time = np.linspace(0, 1, 1000)  # Replace with your actual time values
+    >>> freqs = np.linspace ( 1, 1000, 500)
+    >>> data = np.sin(2 * np.pi * 10 *freqs) + 0.5 * np.sin(2 * np.pi * 50 *freqs)  
+    >>> _=butterworth_filter (data , freqs , fs = 1000, frange=( 5, 20), plot=True )
+
+    """
+    data = is_iterable(data, exclude_string =True , transform =True) 
+    if not _is_arraylike_1d(data ): 
+        raise TypeError ("Expect one-dimentional array, Got 2.")
+        
+    freqs = np.array (freqs )
+    frange = frange or ( min( freqs)/200. , max ( freqs)/50.)
+    frange = is_iterable(frange, exclude_string=True, transform =True) 
+    
+    if len(frange) !=2: 
+        raise ValueError ("Expect two values (min, max) for frequency range."
+                          f" Got {frange}")
+    fs = fs or len(freqs)
+    
+    lowcut, highcut = sorted ( frange )
+    
+    def butter_bandpass(lowcut, highcut, fs, order=5):
+        nyquist = 0.5 * fs
+        low = lowcut / nyquist
+        high = highcut / nyquist
+        b, a = butter(order, [low, high], btype='band')
+        return b, a
+    
+    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
+    y = lfilter(b, a, data)
+    
+    if plot: 
+        # Plot the original and filtered data
+        plt.figure(figsize=(10, 6))
+        plt.subplot(2, 1, 1)
+        plt.plot(1/freqs, data, 'b-', label='Original Data')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amplitude')
+        plt.title('Original AFMT Data')
+        plt.grid(True)
+
+        plt.subplot(2, 1, 2)
+        plt.plot(1/freqs, y, 'g-', label='Filtered Data')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amplitude')
+        plt.title('Filtered AFMT Data (Bandpass Filter)')
+        plt.grid(True)
+
+        plt.tight_layout()
+        plt.show()
+        
+    return y
 
 
 
