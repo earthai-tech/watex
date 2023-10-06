@@ -5568,7 +5568,6 @@ def cleaner (
     
     return np.array ( data ) if objtype =='ar' else data 
  
-
 def rename_files (
     src_files:str | List[str], /, 
     dst_files:str | List[str], 
@@ -5596,7 +5595,7 @@ def rename_files (
        collect only files with this typical extensions. 
        
     basename: str, optional 
-       If `dst_files` is passed as Path-object, name should be need 
+       If `dst_files` is passed as Path-object, name should be needed 
        for a change, otherwise, the number is incremented using the Python 
        index counting defined by the parameter ``how=py` 
         
@@ -5684,7 +5683,6 @@ def rename_files (
         
         dst_files = [os.path.join(dest_dir , f) for f in dst_files ] 
         
-   
     for f, nf in zip (src_files , dst_files): 
         try: 
            if keep_copy : shutil.copy (f, nf , **kws )
@@ -5693,6 +5691,8 @@ def rename_files (
             os.remove(nf)
             if keep_copy : shutil.copy (f, nf , **kws )
             else : os.rename (f, nf , **kws )
+            
+            
 
 def get_xy_coordinates (d, / , as_frame = False, drop_xy = False, 
                         raise_exception = True, verbose=0 ): 
@@ -7016,7 +7016,7 @@ def ellipsis2false( *parameters , default_value: Any=False ):
                     for param in parameters) )  
    
 
-    
+
     
     
  
