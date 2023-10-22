@@ -4069,7 +4069,6 @@ def plot_grid ( ediobjs, /, station = 1, smooth_phase = False,
         ypyx = smooth1d (ypyx )
         ypyy = smooth1d (ypyy )
 
-
     epxx = plot_errorbar(axpxx,
                         period[nzxx],
                         ypxx, # plot_phase[nzxx, 0, 0],

@@ -3459,18 +3459,17 @@ class ZC(EM):
 
         return ss_x, ss_y
     
-    #XXX todo
     @_zupdate (option ='none')
-    def removal_noises (
+    def remove_noises (
         self, 
-        method='base', 
-        window_size_factor =.1, 
-        out =False, 
-        frange =None, 
-        signal_frequency=None, 
+        method:str='base', 
+        window_size_factor:float =.1, 
+        out:bool=False, 
+        frange: tuple =None, 
+        signal_frequency:float=None, 
         **kws 
         ): 
-        """ Smooth data and remove  unwanted noise or artifacts 
+        """ remove indesired and artifacts in the data and smooth it.
 
         method: str, default='base' 
           kind of filtering technique to smooth data. Can be: 
@@ -3479,6 +3478,7 @@ class ZC(EM):
               - 'ama': For adaptatve moving average 
               - 'butter': for Butterworth filter using bandpass strategy. (lowcut 
                 highcut) can be set using the `frange` parameters.
+              
         frange: tuple, Optional 
            Lowcut and highcut frequency for Butterworth signal processing using 
            bandpass filter. 
@@ -3494,8 +3494,8 @@ class ZC(EM):
         d, new_z, new_z_err: NDArray ( 2 x2 , dtype =real )
           - input distortion tensor
           - impedance tensor with distorion removed
-          -  impedance tensor error after distortion is removed 
-          If ``export=True``, export to new EDI and return None. 
+          - impedance tensor error after distortion is removed 
+          If ``out=True``, export to new EDI and return None. 
           
         Examples 
         ---------
@@ -3519,12 +3519,7 @@ class ZC(EM):
         p = Processing(out ='z ') 
         p.ediObjs_ = self.ediObjs_
         p.freqs_ = self.freqs_
-        
-        # p = Processing(out ='z', 
-        #     window_size= window_size_factor
-        #     ).fit(ediObjs)
-        # p.out='z' 
-        
+ 
         zd = dict () 
         # correct all components if applicable 
         for comp in ('xx', 'xy', 'yx', 'yy'): 
@@ -3559,7 +3554,6 @@ class ZC(EM):
         
         return (self.ediObjs_, self.freqs_ , zd ), kws
 
-    
 def component_noise_removal (
     ediObjs: EDIO, / , 
     component = 'xy', 
@@ -3648,7 +3642,7 @@ def component_noise_removal (
 
     if not hasattr ( ediObjs, 'window_size'): 
         if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
-            raise EDIError("Only EDI or Processing object is acceptatble!")
+            raise EDIError("Only EDI or Processing object is acceptable!")
         pObj= Processing().fit(ediObjs)
         
     else : pObj = ediObjs
@@ -3700,8 +3694,9 @@ def component_noise_removal (
 
     return z_smoothed   if return_z else (smoothed_res, smoothed_phase)
   
-def _check_ss_factor_entries ( ediObjs, /, ss_fx , ss_fy, stations =None , 
-   
+def _check_ss_factor_entries (
+        ediObjs: List[EDIO], /, ss_fx:float , ss_fy:float, 
+        stations:str =None , 
     ): 
     """ Check wether factor values passed matches the number of stations. 
     
@@ -3787,8 +3782,7 @@ def _check_ss_factor_entries ( ediObjs, /, ss_fx , ss_fy, stations =None ,
         ss_fx_fy.extend ( add_ss )
         
         return ss_fx_fy
-        
-    
+
     if stations is not None: 
         s= stations 
         stations = is_iterable(stations, exclude_string= True , 
@@ -3806,7 +3800,6 @@ def _check_ss_factor_entries ( ediObjs, /, ss_fx , ss_fy, stations =None ,
                 
                 ss_fx_fy_0 [x] = y 
         
-
     return ss_fx_fy_0
            
 

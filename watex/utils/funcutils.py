@@ -91,7 +91,7 @@ def to_numeric_dtypes (
     pop_cat_features: bool=..., 
     sanitize_columns: bool=..., 
     regex: re|str=None, 
-    fill_pattern: str=None, 
+    fill_pattern: str='_', 
     drop_nan_columns: bool=True, 
     how: str='all', 
     reset_index: bool=..., 
@@ -207,7 +207,7 @@ def to_numeric_dtypes (
         )
    
     if not is_iterable (arr, exclude_string=True): 
-        raise TypeError("Expect array. Got {type (arr).__name__!r}")
+        raise TypeError(f"Expect array. Got {type (arr).__name__!r}")
 
     if hasattr ( arr, '__array__') and hasattr ( arr, 'columns'): 
         df = arr.copy()
@@ -4773,6 +4773,8 @@ def remove_outliers (
     threshold = 3.,
     fill_value = None, 
     axis = 1, 
+    interpolate=False, 
+    kind='linear'
     ): 
     """ Efficient strategy to remove outliers in the data. 
     
@@ -4782,7 +4784,7 @@ def remove_outliers (
     outlier if it has more than 1.5 IQR below the first quartile or above 
     the third. 
     
-    Two approaches is used to remove the outliers. 
+    Two approaches are used to remove the outliers. 
 
     - Inter Quartile Range (``IQR``)
       IQR is the most commonly used and most trusted approach used in 
@@ -4856,6 +4858,18 @@ def remove_outliers (
       axis from which to remove values. This is useful when two dimensional 
       array is supplied. Default, delete outlier from the rows. 
       
+    interpolate: bool, default=False, 
+       If ``fill_value='NaN'``, interpolation can be triggered to get the 
+       closest value in array to replace missing values. Note that 
+       `fill_value` should be NaN for interpolation to be concise. 
+       
+    kind: str, default='linear'
+      kind of interpolation. It could be ['nearest'|'linear'|'cubic']. 
+      
+    .. versionadded:: 0.2.8 
+       Interpolate NaN value after outliers removal. 
+    
+      
     Returns
     --------
     arr: Array_like 
@@ -4881,7 +4895,10 @@ def remove_outliers (
     >>> # for one dimensional 
     >>> remove_outliers ( data[:, 0] , fill_value =np.nan )
     array([ 0.49671415,  1.52302986,  1.57921282,  0.54256004,  0.24196227,
-           -0.56228753,         nan]) 
+           -0.56228753,         nan])
+    >>> remove_outliers ( data[:, 0] , fill_value =np.nan, interpolate=True  )
+    >>> import matplotlib.pyplot as plt 
+    >>> plt.plot (np.arange (len(data ), data, ))
     """
     method = str(method).lower()
     if ( 
@@ -4917,10 +4934,13 @@ def remove_outliers (
         arr = arr[ ~np.isnan (arr ).any(axis =1)
                   ]  if np.ndim (arr) > 1 else arr [~np.isnan(arr)]
 
+    if interpolate: 
+        arr = interpolate_grid (arr, method = kind )
+        
     return arr 
 
 def _remove_outliers(data, n_std=3):
-    """Remouve outliers from a dataframe."""
+    """Remove outliers from a dataframe."""
     # separate cat feature and numeric features 
     # if exists 
     df, numf, catf = to_numeric_dtypes(
@@ -5322,6 +5342,10 @@ def interpolate_grid (
     view: bool, default=False, 
        Quick visualize the interpolated grid. 
        
+     
+    .. versionchanged:: 0.2.8 
+       One-dimensional array is henceforth possible. Error no longer raises. 
+       
     Returns 
     ---------
     arri: ArrayLike2d 
@@ -5342,17 +5366,22 @@ def interpolate_grid (
     >>> xy = np.vstack ((x, y)).T
     >>> xyi = interpolate_grid (xy, view=True ) 
     >>> xyi 
-    array([[  28.        ,   22.78880936,   50.        ,   60.        ],
-           [1000.        , 1000.        , 2000.        , 3000.        ]])
+    array([[  28.        ,   28.        ],
+           [  22.78880663, 1000.        ],
+           [  50.        , 2000.        ],
+           [  60.        , 3000.        ]])
 
     """
-
+    is2d = True 
     if not hasattr(arr, '__array__'): 
         arr = np.array (arr) 
     
     if arr.ndim==1: 
-        raise TypeError(
-            "Expect two dimensional array for grid interpolation.")
+        #convert to two dimension array
+        arr = np.vstack ((arr, arr ))
+        is2d =False 
+        # raise TypeError(
+        #     "Expect two dimensional array for grid interpolation.")
         
     # make x, y array for mapping 
     x = np.arange(0, arr.shape[1])
@@ -5389,6 +5418,9 @@ def interpolate_grid (
         ax[1].set_title ('Interpolate Grid') 
         
         plt.show () 
+        
+    if not is2d: 
+        arri = arri[0, :]
         
     return arri 
 

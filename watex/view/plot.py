@@ -1670,6 +1670,10 @@ class TPlot (BasePlot):
                              'e_capthick': e_capthick}
                 
                 if errorbar: 
+                    if site==70 and j ==0 : 
+                        
+                        y [ y < 50.]= np.nan 
+                        
                     plot_errorbar (ax1 , 
                                    x, 
                                    y,  
@@ -1717,7 +1721,7 @@ class TPlot (BasePlot):
                 #                 axpxx, axpxy, axpyx, axpyy]
                 
                 # --> set default font size
-                font_size =  6
+                font_size =  .5
                 plt.rcParams['font.size'] = font_size
 
                 fontdict = {'size': font_size + 2, 
@@ -1726,7 +1730,7 @@ class TPlot (BasePlot):
                 label_list = [['$Z_{xx}$'], ['$Z_{xy}$'],
                               ['$Z_{yx}$'], ['$Z_{yy}$']]
                 for ax, label in zip(ax_list[0:4], label_list):
-                    ax.set_title(label[0], fontdict={'size': font_size + 2,
+                    ax.set_title('', fontdict={'size': font_size + 2,
                                                       'weight': 'bold'})
 
                 #     # set axis properties
@@ -1753,7 +1757,7 @@ class TPlot (BasePlot):
                     # else:
                         ax.set_xlabel('Period (s)', fontdict=fontdict)
 
-                    if aa < 4 :
+                    if aa <7 :
                         ylabels = ax.get_yticklabels()
                         ylabels[0] = ''
                         ax.set_yticklabels(ylabels)
@@ -1770,16 +1774,16 @@ class TPlot (BasePlot):
                         if phase_limits_d is not None:
                             ax.set_ylim(phase_limits_d)
                     # set axes labels
-                    if aa == 0:
-                        ax.set_ylabel('App. Res. ($\mathbf{\Omega \cdot m}$)',
-                                          fontdict=fontdict)
-                        # elif plot_z == True:
-                        #     ax.set_ylabel('Re[Z (mV/km nT)]',
-                        #                   fontdict=fontdict)
-                    elif aa == 4:
-                        # if plot_z == False:
-                        ax.set_ylabel('Phase (deg)',
-                                          fontdict=fontdict)
+                    # if aa == 0:
+                    #     ax.set_ylabel('App. Res. ($\mathbf{\Omega \cdot m}$)',
+                    #                       fontdict=fontdict)
+                    #     # elif plot_z == True:
+                    #     #     ax.set_ylabel('Re[Z (mV/km nT)]',
+                    #     #                   fontdict=fontdict)
+                    # elif aa == 4:
+                    #     # if plot_z == False:
+                    #     ax.set_ylabel('Phase (deg)',
+                    #                      fontdict=fontdict)
                         # elif plot_z == True:
                         #     ax.set_ylabel('Im[Z (mV/km nT)]',
                         #                   fontdict=fontdict)
@@ -1806,11 +1810,15 @@ class TPlot (BasePlot):
                     ax.grid(True, alpha=.25)
 
                     ylabels = ax.get_yticks().tolist()
-                    if aa < 8:
+                    if aa ==1 or aa==0 :
                         ylabels[-1] = ''
                         ylabels[0] = ''
-                        ax.set_yticklabels(ylabels)
+                        ax.set_yticklabels('')
                         plt.setp(ax.get_xticklabels(), visible=False)
+                        plt.setp(ax.get_yticklabels(), visible=False)
+                        
+                    #if aa ==1: 
+                        
             # set ticks invisibale 
             else : 
                 if j > 0: 

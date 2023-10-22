@@ -4125,7 +4125,7 @@ def smoothing (
         ax[1].set_title ('Smooth Grid') 
         ax[1].set_xlabel (xlabel or '')
         ax[1].set_ylabel ( ylabel or '')
-        
+        plt.legend
         plt.show () 
         
     if 1 in ar.shape: 
