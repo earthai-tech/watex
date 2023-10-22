@@ -4137,7 +4137,7 @@ def plot_grid ( ediobjs, /, station = 1, smooth_phase = False,
     # # make things look nice
     # # set titles of the Z components
     ax_list = [axrxx, axrxy, axryx, axryy,
-                    axpxx, axpxy, axpyx, axpyy]
+               axpxx, axpxy, axpyx, axpyy]
     label_list = [['$Z_{xx}$'], ['$Z_{xy}$'],
                   ['$Z_{yx}$'], ['$Z_{yy}$']]
     for ax, label in zip(ax_list[0:4], label_list):

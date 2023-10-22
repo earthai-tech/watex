@@ -1299,6 +1299,7 @@ class TPlot (BasePlot):
         style=None, 
         errorbar=True, 
         suppress_outliers=False, 
+        kind='2', 
         n_sites= 1, 
         spad=.5, 
         **kws
@@ -1443,7 +1444,8 @@ class TPlot (BasePlot):
                 show_site =show_site, 
                 scale =scale, 
                 rlabels = rlabels, 
-                plabels = plabels, 
+                plabels = plabels,
+                kind= kind, 
                 **kws
                 )
         
@@ -1466,7 +1468,7 @@ class TPlot (BasePlot):
         scale =None, 
         xysites = None, 
         color_mode='color', 
-        mode='2', 
+        kind='2', 
         **kws
         ): 
         """ Plot multiple stations using the SpecGrid  
@@ -1524,112 +1526,80 @@ class TPlot (BasePlot):
           
         """
         
-        rlabels = kws.pop('rlabels', None )
-        plabels = kws.pop('plabels', None )
+        # rlabels = kws.pop('rlabels', None )
+        # plabels = kws.pop('plabels', None )
         
         ncols = len (sites) if sites is not None else  1 
         
         fig = plt.figure(figsize = self.fig_size, dpi=self.fig_dpi)
         
-        if mode=='2': 
-            # subplot_wspace = kwargs.pop('subplot_wspace', .3)
-            # subplot_hspace = kwargs.pop('subplot_hspace', .0)
-            # subplot_right = kwargs.pop('subplot_right', .98)
-            # subplot_left = kwargs.pop('subplot_left', .08)
-            # subplot_top = kwargs.pop('subplot_top', .85)
-            # subplot_bottom = kwargs.pop('subplot_bottom', .1)
-                
-            h_ratio = [1.5, 1, .5]
-            gs = GridSpec(2, ncols or 1,
-                wspace=.3,
-                left=.08,
-                top=.85,
-                bottom=.1,
-                right=.98,
-                hspace=.0,
-                height_ratios=h_ratio[:2])
+        h_ratio = [1.5, 1, .5]
+        
+        
+        gs = GridSpec(2, ncols or 1,
+            wspace=0. if kind =='2' else .3, # .3,if 
+            left=.08,
+            top=.85,
+            bottom=.1,
+            right=.98,
+            hspace=.0,
+            height_ratios=h_ratio[:2])
             
-            # fig = plt.figure(station, fig_size, dpi= fig_dpi)
-            # plt.clf()
-            # fig.suptitle(str(station), fontdict=fontdict)
-                    
-            # axrxx = fig.add_subplot(gs[0, 0], #yscale='log'
-            #                         )
-            # axrxy = fig.add_subplot(gs[0, 1], sharex=axrxx, 
-            #                         #yscale='log'
-            #                         )
-            # axryx = fig.add_subplot(gs[0, 2], sharex=axrxx, sharey=axrxy, 
-            #                        # yscale='log'
-            #                         )
-            # axryy = fig.add_subplot(gs[0, 3], sharex=axrxx, sharey=axrxx, 
-            #                        # yscale='log'
-            #                         )
-
-            # axpxx = fig.add_subplot(gs[1, 0])
-            # axpxy = fig.add_subplot(gs[1, 1], sharex=axrxx)
-            # axpyx = fig.add_subplot(gs[1, 2], sharex=axrxx)
-            # axpyy = fig.add_subplot(gs[1, 3], sharex=axrxx)
-            
-        else:   
-            gs = GridSpec(2, ncols or 1,
-                            wspace=0., #.3,
-                            left=.08,
-                            top=.85,
-                            bottom=.1,
-                            right=.98,
-                            hspace=.0,
-                            height_ratios=[ 1.5, 1.]
-                            ) #self.h_ratio[:2]
         sharey = None
         # make a list of axes 
         # to return axes 
         # for another plots 
         axr, axp =[], []
         #++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        if mode =='2': 
-            # color mode
-            x /= 1 # inverse , take a periods 
-            if str( color_mode) .lower() == 'color':
-                # color for data
-                cted =  (0, 0, 1)
-                ctmd = (1, 0, 0)
-                mted = 's'
-                mtmd =  'o'
-    
-                # color for occam2d model
-                # if plot_style == 3:
-                #     # if plot_style is 3, set default color for model response to same as data
-                #     ctem = kwargs.pop('ctem',cted)
-                #     ctmm = kwargs.pop('ctmm',ctmd)
-                # else:
-                # ctem = (0, .6, .3)
-                # ctmm = (.9, 0, .8)
-                # mtem =  '+'
-                # mtmm = '+'
-    
-            # black and white mode
-            elif color_mode == 'bw':
-                # color for data
-                cted = (0, 0, 0)
-                ctmd = (0, 0, 0)
-                mted = 's'
-                mtmd = 'o'
-    
-                # color for occam2d model
-                # ctem = (0.6, 0.6, 0.6)
-                # ctmm = (0.6, 0.6, 0.6)
-                # mtem =  '+'
-                # mtmm = 'x'
-                
-            # --> make key word dictionaries for plotting
-            ms =  1.5
-            # ms_r =  3
-            lw = .5
-            # lw_r =  1.0
-            # ls = ':'
-            e_capthick =  .5
-            e_capsize =  2
+        #if kind =='2': 
+        # color mode
+        x /= 1 # inverse , take a periods 
+        if str( color_mode) .lower() == 'color':
+            # color for data
+            cted =  (0, 0, 1)
+            ctmd = (1, 0, 0)
+            mted = 's'
+            mtmd =  'o'
+
+            # color for occam2d model
+            # if plot_style == 3:
+            #     # if plot_style is 3, set default color for model response to same as data
+            #     ctem = kwargs.pop('ctem',cted)
+            #     ctmm = kwargs.pop('ctmm',ctmd)
+            # else:
+            # ctem = (0, .6, .3)
+            # ctmm = (.9, 0, .8)
+            # mtem =  '+'
+            # mtmm = '+'
+
+        # black and white mode
+        elif color_mode == 'bw':
+            # color for data
+            cted = (0, 0, 0)
+            ctmd = (0, 0, 0)
+            mted = 's'
+            mtmd = 'o'
+
+            # color for occam2d model
+            # ctem = (0.6, 0.6, 0.6)
+            # ctmm = (0.6, 0.6, 0.6)
+            # mtem =  '+'
+            # mtmm = 'x'
+            
+        # --> make key word dictionaries for plotting
+        ms =  1.5
+        # ms_r =  3
+        lw = .5
+        # lw_r =  1.0
+        # ls = ':'
+        e_capthick =  .5
+        e_capsize =  2
         
+        # kw_xx=dict(); kw_yy=dict()
+
+        res_limits =[]; phase_limits=[]
+        sharey2 =None
+        #np.savetxt ( 'x.txt', x )
         #++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         for j, site in enumerate ( sites ): 
             ax1 = fig.add_subplot (gs [ 0, j] , 
@@ -1639,7 +1609,10 @@ class TPlot (BasePlot):
             if j==0: sharey = ax1 
             
             if errorbar: 
-                ax2 = fig.add_subplot (gs [1,  j] ) 
+                
+                ax2 = fig.add_subplot (gs [1,  j], sharey =sharey2 ) 
+                if j==0 and kind =='2': sharey2 = ax2 
+                
                 
             for i, sloop in enumerate (zip (* data )) : 
                 r, p, *sl = sloop 
@@ -1648,221 +1621,264 @@ class TPlot (BasePlot):
                     e, ep = sl  # mean errorbar is set to True 
                 
                 y =  reshape (r[:, site])
-                
-                
-                if mode=='2': 
-                    colors = [cted,ctmd ]
-                    markers = [mted, mtmd]
-                    kw_xx = {'color': colors[i],
-                             'marker': markers[i],
-                             'ms': ms,
-                             'ls': ':',
-                             'lw': lw,
-                             'e_capsize': e_capsize,
-                             'e_capthick': e_capthick}
-    
-                    kw_yy = {'color': colors[i],
-                             'marker': markers[i],
-                             'ms': ms,
-                             'ls': ':',
-                             'lw': lw,
-                             'e_capsize': e_capsize,
-                             'e_capthick': e_capthick}
-                
-                if errorbar: 
-                    plot_errorbar (ax1 , 
-                                   x, 
-                                   y,  
-                                   y_err = reshape (e[:, site]),
-                                   **kw_xx
-                                   )
-                    
-                    plot_errorbar (ax2 , 
-                                   x, 
-                                   reshape (p[:, site]),
-                                   y_err = reshape (ep[:, site]),
-                                   **kw_yy,
-                                   )
-                    
-                    
-                if mode !='2':
-                    ax1.scatter (x  , y, 
-                                  marker =self.marker if i==0 else 's', 
-                                  color =colors [i],
-                                  edgecolors='k', 
-                                  label = '' if rlabels is None else rlabels[i],
-                                  **kws 
-                                  ) 
-                    ax2.scatter( x, 
-                                reshape (p[:, site]),
-                                marker =self.marker if i==0 else 's', 
-                                color =colors [i] ,
-                                edgecolors='k', 
-                                label ='' if plabels is None else plabels[i],
-                                **kws
-                                ) 
-            if mode =='2': 
-                ax_list =[]
-                ax_list .append (ax1)
-                ax_list .append (ax2)
-                # phase_limits = None
-                # res_limits =  None
-                phase_limits_d =  None
-                res_limits_d = None
-                res_limits_od =  None
-                
-                # # make things look nice
-                # # set titles of the Z components
-                # ax_list = [axrxx, axrxy, axryx, axryy,
-                #                 axpxx, axpxy, axpyx, axpyy]
-                
-                # --> set default font size
-                font_size =  6
-                plt.rcParams['font.size'] = font_size
+                #np.savetxt ( f'Res_s{site}_{i}.txt', y )
+                colors = [cted,ctmd ]
+                markers = [mted, mtmd]
+                kw_xx = {'color': colors[i],
+                         'marker': markers[i],
+                         'ms': ms,
+                         'ls': ':',
+                         'lw': lw,
+                         'e_capsize': e_capsize,
+                         'e_capthick': e_capthick}
 
-                fontdict = {'size': font_size + 2, 
-                            'weight': 'bold'}
-                
-                label_list = [['$Z_{xx}$'], ['$Z_{xy}$'],
-                              ['$Z_{yx}$'], ['$Z_{yy}$']]
-                for ax, label in zip(ax_list[0:4], label_list):
-                    ax.set_title(label[0], fontdict={'size': font_size + 2,
-                                                      'weight': 'bold'})
-
-                #     # set axis properties
-                for aa, ax in enumerate(ax_list):
-                    # ylabel_pad =  1.25
-                    ax.tick_params(axis='y', pad=1.5)
-                    # if self.plot_tipper==False:
-                    if aa < 4:
-                    #     if plot_z == True:
-                    #         ax.set_yscale('log',
-                    #                       #nonposy='clip'
-                    #                       )
-                    # else:
-                        ax.set_xlabel('Period (s)', 
-                                      fontdict=fontdict
+                kw_yy = {'color': colors[i],
+                         'marker': markers[i],
+                         'ms': ms,
+                         'ls': ':',
+                         'lw': lw,
+                         'e_capsize': e_capsize,
+                         'e_capthick': e_capthick}
+                    
+                #if errorbar: 
+                plot_errorbar (ax1 , 
+                               x, 
+                               y, #if i ==0 else y ,  
+                               y_err = reshape (e[:, site]),
+                               **kw_xx
+                               )
+                #np.savetxt ( f'Res_Err_s{site}_{i}.txt', reshape (e[:, site]) )
+                plot_errorbar (ax2 , 
+                               x, 
+                               reshape (p[:, site]),
+                               y_err = reshape (ep[:, site]),
+                               **kw_yy,
+                               )
+                #np.savetxt ( f'Phase_s{site}_{i}.txt', reshape (p[:, site]) )
+                #np.savetxt ( f'phase_Err_s{site}_{i}.txt', reshape (ep[:, site]) )
+                # if kind !='2':
+                #     ax1.scatter (x  , y, 
+                #                   marker =self.marker if i==0 else 's', 
+                #                   color =colors [i],
+                #                   edgecolors='k', 
+                #                   label = '' if rlabels is None else rlabels[i],
+                #                   **kws 
+                #                   ) 
+                #     ax2.scatter( x, 
+                #                 reshape (p[:, site]),
+                #                 marker =self.marker if i==0 else 's', 
+                #                 color =colors [i] ,
+                #                 edgecolors='k', 
+                #                 label ='' if plabels is None else plabels[i],
+                #                 **kws
+                #                 ) 
+                res_limits.append ((min(y), max(y)))
+                phase_limits.append( (min(reshape (p[:, site])), 
+                                      max(reshape (p[:, site]))
                                       )
-
-                    if aa < 8:
-                    #     if plot_z == True:
-                    #         ax.set_yscale('log', 
-                    #                       # nonposy='clip'
-                    #                       )
-
-                    # else:
-                        ax.set_xlabel('Period (s)', fontdict=fontdict)
-
-                    if aa < 4 :
-                        ylabels = ax.get_yticklabels()
-                        ylabels[0] = ''
-                        ax.set_yticklabels(ylabels)
-                        ax.set_yscale('log', 
-                                      #nonposy='clip'
-                                      )
-                        if aa == 0 or aa == 3:
-                            ax.set_ylim(res_limits_d)
-                        elif aa == 1 or aa == 2:
-                            ax.set_ylim(res_limits_od)
-
-                    if aa > 3 and aa < 8 :
-                        #ax.yaxis.set_major_locator(MultipleLocator(10.0))
-                        if phase_limits_d is not None:
-                            ax.set_ylim(phase_limits_d)
-                    # set axes labels
-                    if aa == 0:
-                        ax.set_ylabel('App. Res. ($\mathbf{\Omega \cdot m}$)',
-                                          fontdict=fontdict)
-                        # elif plot_z == True:
-                        #     ax.set_ylabel('Re[Z (mV/km nT)]',
-                        #                   fontdict=fontdict)
-                    elif aa == 4:
-                        # if plot_z == False:
-                        ax.set_ylabel('Phase (deg)',
-                                          fontdict=fontdict)
-                        # elif plot_z == True:
-                        #     ax.set_ylabel('Im[Z (mV/km nT)]',
-                        #                   fontdict=fontdict)
-                    # elif aa == 8:
-                    #     ax.set_ylabel('Tipper',
-                    #                   fontdict=fontdict)
-
-                    if aa > 7:
-                        ax.yaxis.set_major_locator(mticker.MultipleLocator(.1))
-                        # if tipper_limits is not None:
-                        #     ax.set_ylim(tipper_limits)
-                        # else:
-                        #     pass
-
-                    ax.set_xscale('log', 
-                                 # nonposx='clip'
-                                  )
-                    # set period limits
-                    # if period_limits is None:
-                    period_limits = (10 ** (np.floor(np.log10(x[0]))) * 1.01,
-                                          10 ** (np.ceil(np.log10(x[-1]))) * .99)
-                    ax.set_xlim(xmin=period_limits[0],
-                                xmax=period_limits[1])
-                    ax.grid(True, alpha=.25)
-
-                    ylabels = ax.get_yticks().tolist()
-                    if aa < 8:
-                        ylabels[-1] = ''
-                        ylabels[0] = ''
-                        ax.set_yticklabels(ylabels)
-                        plt.setp(ax.get_xticklabels(), visible=False)
-            # set ticks invisibale 
-            else : 
-                if j > 0: 
-                    plt.setp(ax1.get_yticklabels(), visible=False)
-                    plt.setp(ax2.get_yticklabels(), visible=False)
+                                    )
+            if show_site:
+                ax1.set_title( f'site {site}', fontdict={'size': 8 + 2,
+                                                          'weight': 'bold'})
+            # if kind =='1':  
+            #     if j > 0: 
+            #         plt.setp(ax1.get_yticklabels(), visible=False)
+            #         plt.setp(ax2.get_yticklabels(), visible=False)
                     
-                # Put the legend in the last image
-                if j == len(sites)-1: 
-                    try: 
-                        ax1.legend(ncols = len(r)) 
-                        ax2.legend(ncols = len(p)) 
-                    except: 
-                        # For consistency in the case matplotlib  is < 3.3. 
-                        ax1.legend() 
-                        ax2.legend() 
+            #     # Put the legend in the last image
+            #     if j == len(sites)-1: 
+            #         try: 
+            #             ax1.legend(ncols = len(r)) 
+            #             ax2.legend(ncols = len(p)) 
+            #         except: 
+            #             # For consistency in the case matplotlib  is < 3.3. 
+            #             ax1.legend() 
+            #             ax2.legend() 
                      
-                ax1.set_xscale ('log') ;  ax1.set_yscale ('log') 
-                ax2.set_xscale ('log')
+            #     ax1.set_xscale ('log') ;  ax1.set_yscale ('log') 
+            #     ax2.set_xscale ('log')
                 
-                if show_site:
-                    ax1.text (xysites[0],
-                              xysites[1],
-                              f'site {site}', 
-                              horizontalalignment='center',
-                              verticalalignment='baseline',
-                              fontdict= dict (style ='italic',  bbox =dict(
-                                    boxstyle='round',facecolor ='#CED9EF'), 
-                                  alpha = 0.5 )
-                              )
+            #     if show_site:
+            #         ax1.set_title( f'site {site}', fontdict={'size': 8 + 2,
+            #                                                   'weight': 'bold'})
+            #         # ax1.text (xysites[0],
+            #         #           xysites[1],
+            #         #           f'site {site}', 
+            #         #           horizontalalignment='center',
+            #         #           verticalalignment='baseline',
+            #         #           fontdict= dict (style ='italic',  bbox =dict(
+            #         #                 boxstyle='round',facecolor ='#CED9EF'), 
+            #         #               alpha = 0.5 )
+            #         #            )
                 
-                ax2.set_ylim ([0, 90 ])
+            #     ax2.set_ylim ([0, 90 ])
                 
-                xlabel = self.xlabel or ( 'Period($s$)' if scale=='period' 
-                                         else 'Frequency ($H_z$)') 
+            #     xlabel = self.xlabel or ( 'Period($s$)' if scale=='period' 
+            #                              else 'Frequency ($H_z$)') 
                 
-                ax2.set_xlabel(xlabel ) 
+            #     ax2.set_xlabel(xlabel ) 
                 
-                if j ==0 : 
-                    # avoid reapeting this 
+                
+            #     if j ==0 : 
+            #         # avoid reapeting this 
                     
-                    ax1.set_ylabel(self.ylabel or r'$\rho_a$($\Omega$.m)') 
-                    ax2.set_ylabel('$\phi$($\degree$)')
-            
-            if self.show_grid :
-                for ax in (ax1, ax2 ): 
-                    ax.grid (visible =True , alpha =self.galpha,
-                             which =self.gwhich, color =self.gc)
-               
+            #         ax1.set_ylabel(self.ylabel or r'$\rho_a$($\Omega$.m)') 
+            #         ax2.set_ylabel('$\phi$($\degree$)')
+                
+            #     if self.show_grid :
+            #         for ax in (ax1, ax2 ): 
+            #             ax.grid (visible =True , alpha =self.galpha,
+            #                      which =self.gwhich, color =self.gc)
+                   
             axr.append( ax1);  axp.append (ax2)
+             
+        # --> set default font size
+        font_size =  6
+        plt.rcParams['font.size'] = font_size
+
+        fontdict = {'size': font_size + 2, 
+                    'weight': 'bold'}
+        
+        for ax0,  site in zip(axr, sites):
+            ax0.set_title(f'S{site}', fontdict={'size': font_size + 2,
+                                                  'weight': 'bold'})
+        #     # set axis properties
+        # set ylimit 
+        res_limit_max=np.array( list(
+            map ( lambda x: x[1], res_limits )) )
+        res_limit_min=np.array( list( 
+            map ( lambda x: x[0], res_limits )))
+        res_limits_d= [10 **np.floor (np.log10(res_limit_min.min())),
+                      10 **np.ceil (np.log10(res_limit_max.max())) ]
+        # phase limit 
+        phase_limit_max=np.array( list(
+            map ( lambda x: x[1], phase_limits )) )
+        phase_limit_min=np.array( list( 
+            map ( lambda x: x[0], phase_limits )))
+        phase_limits_d= [np.floor (phase_limit_min.min()),
+                      np.ceil (phase_limit_max.max()) ]
+        phase_limits_d=None
+        # ax1.set_ylim([np.floor (res_limit_min.min()),
+        #               np.ceil (res_limit_max.max()) ])
+        
+        ax_list = [*axr, *axp ]
+        
+        for aa, ax in enumerate(ax_list):
+            ax.tick_params(axis='y', pad=1.5)
+
+            ax.set_xlabel('Period (s)', 
+                          fontdict=fontdict
+                          )
+            if aa < len(ax_list)//2 : #4 :
+                ylabels = ax.get_yticklabels()
+                ylabels[0] = ''
+                ax.set_yticklabels(ylabels)
+                ax.set_yscale('log', 
+                              #nonposy='clip'
+                              )
+                try: 
+                    ax.set_ylim(res_limits_d)
+                except: 
+                    ax.set_ylim(None)
+                    res_limits_d=None 
+
+            if aa >= len(ax_list)//2 :
+                ax.yaxis.set_major_locator(mticker.MultipleLocator(10.0))
+                if phase_limits_d is not None:
+                    ax.set_ylim(phase_limits_d)
+                    
+            # set axes labels
+            if aa == 0:
+                ax.set_ylabel('App. Res. ($\mathbf{\Omega \cdot m}$)',
+                                  fontdict=fontdict)
+            elif aa == 0 or aa == len(ax_list)//2:
+                ax.set_ylabel('Phase (deg)',
+                                  fontdict=fontdict)
+            ax.set_xscale('log', 
+                          # nonposx='clip'
+                          )
+            # set period limits
+            period_limits = (10 ** (np.floor(np.log10(x[0]))) * 1.01,
+                                  10 ** (np.ceil(np.log10(x[-1]))) * .99)
+            ax.set_xlim(xmin=period_limits[0],
+                        xmax=period_limits[1])
+            ax.grid(True, alpha=.25)
+
+            
+            if kind=='2':
+                if aa !=0 or aa != len(ax_list)//2:
+                    ax.set_yticklabels('')
+            else: 
+                ylabels = ax.get_yticks().tolist()
+                ylabels[-1] = ''
+                ylabels[0] = ''
+                ax.set_yticklabels(ylabels)
+            
+            if aa < len(ax_list)//2: 
+                plt.setp(ax.get_xticklabels(), visible=False)
+ 
+        # if kind=='2': 
+        #     ylabels_r = axr[0].get_yticks().tolist()
+        #     print(ylabels_r)
+        #     ylabels_r[-1] = ''
+        #     ylabels_r[0] = ''
+        #     #x.yaxis.set_major_locator(mticker.FixedLocator(ylabels))
+        #     axr[0].set_yticklabels(ylabels_r)
             
         return axr, axp 
-
+           
+    def _axesproperties1 (self, j, ax1, ax2, r, p, sites , scale  ): 
+        """ Set properties of plot kind number 1. """
+        if j > 0: 
+            plt.setp(ax1.get_yticklabels(), visible=False)
+            plt.setp(ax2.get_yticklabels(), visible=False)
+            
+        # Put the legend in the last image
+        if j == len(sites)-1: 
+            try: 
+                ax1.legend(ncols = len(r)) 
+                ax2.legend(ncols = len(p)) 
+            except: 
+                # For consistency in the case matplotlib  is < 3.3. 
+                ax1.legend() 
+                ax2.legend() 
+             
+        ax1.set_xscale ('log') ;  ax1.set_yscale ('log') 
+        ax2.set_xscale ('log')
+        
+        
+            # ax1.text (xysites[0],
+            #           xysites[1],
+            #           f'site {site}', 
+            #           horizontalalignment='center',
+            #           verticalalignment='baseline',
+            #           fontdict= dict (style ='italic',  bbox =dict(
+            #                 boxstyle='round',facecolor ='#CED9EF'), 
+            #               alpha = 0.5 )
+            #            )
+        
+        ax2.set_ylim ([0, 90 ])
+        
+        xlabel = self.xlabel or ( 'Period($s$)' if scale=='period' 
+                                 else 'Frequency ($H_z$)') 
+        
+        ax2.set_xlabel(xlabel ) 
+        
+        
+        if j ==0 : 
+            # avoid reapeting this 
+            
+            ax1.set_ylabel(self.ylabel or r'$\rho_a$($\Omega$.m)') 
+            ax2.set_ylabel('$\phi$($\degree$)')
+        
+        if self.show_grid :
+            for ax in (ax1, ax2 ): 
+                ax.grid (visible =True , alpha =self.galpha,
+                         which =self.gwhich, color =self.gc)
+                
+        return ax1 , ax2 
+    
+    
     def _validate_correction (
         self, 
         components , 
