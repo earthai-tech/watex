@@ -468,8 +468,8 @@ def find_aquifer_groups (
                            "array of the group of aquifer 'arra_aq' is provided.")
         if default_arr is None: 
             raise TypeError ("Default array 'default_arr' must not be None."
-                             "An alternatively array is used for the"
-                             "subjectivity case. The default array is used"
+                             " An alternatively array is used for the"
+                             " subjectivity case. The default array is used"
                              " to substitute the aquifer groups.")
         arr_aq = default_arr 
         

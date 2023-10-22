@@ -23,6 +23,7 @@ from ..exceptions import (
     NotFittedError, 
     EMError,
     ZError, 
+    StationError, 
 ) 
 from ..externals.z import Z as EMz 
 from ..utils.funcutils import ( 
@@ -81,7 +82,8 @@ from ..utils._dependency import (
     )
 from ..utils.validator import ( 
     _validate_tensor, 
-    _assert_z_or_edi_objs
+    _assert_z_or_edi_objs, 
+    check_consistent_length,
     )
 
 _logger = watexlog.get_watex_logger(__name__)
@@ -3034,12 +3036,43 @@ class ZC(EM):
         
     
         return (self.ediObjs_, self.freqs_ , zd ), kws
-   
+
+    def _get_multiple_ss_factors (self,ss_fx=None, ss_fy= None, 
+            stations=None,**kws
+            ): 
+        """ 
+        Isolated part of :meth:`Zc.remove_static_shift` method. 
+        
+        Set factor corresponding to each stations. 
+        
+        If list of `ss_fx` and ``ss_fy`` is given as a list, it must be 
+        consistent with the number of stations. Otherwise an error 
+        occurs. 
+        """
+        if ( ss_fx is None 
+            and ss_fy is None
+            and stations is None
+            ) : 
+            stations = range (len(self.ediObjs_))
+            # I.e compute all stratic shift  and stores in a list 
+            ss_fx_fy = [ self.get_ss_correction_factors(station, **kws )
+                  for station in stations ]
+        else: 
+            ss_fx_fy = _check_ss_factor_entries (
+                self.ediObjs_, 
+                stations = stations , 
+                ss_fx = ss_fx , 
+                ss_fy = ss_fy 
+                )
+        return ss_fx_fy 
+    
+        
     @_zupdate (option ='none')
     def remove_static_shift (
         self, 
-        ss_fx:float =None, 
-        ss_fy:float= None, 
+        ss_fx:float | List[float] =None, 
+        ss_fy:float| List[float]= None, 
+        stations: List[str]=None, 
         out:bool =False , 
         rotate:float=0., 
         **kws
@@ -3128,10 +3161,13 @@ class ZC(EM):
         """
         self.inspect 
         
-        if (ss_fx is None or ss_fy is None ): 
-            ss_fx , ss_fy = self.get_ss_correction_factors(
-                **kws )
-            
+        # Compute multiple factors from stations 
+        ss_fx_fy = self._get_multiple_ss_factors (
+            stations = stations , 
+            ss_fx = ss_fx , 
+            ss_fy = ss_fy
+                )
+        
         ZObjs =[]
         new_ediObjs=[]
 
@@ -3141,12 +3177,12 @@ class ZC(EM):
                 freq = ediObj.Z._freq 
                 ) 
             # now rotate if possible 
-            # and correct data. 
+            # and remove the static shift.
             if rotate: 
                 z0.rotate (rotate ) 
-            ss_cor, zcor = z0.remove_ss(
-                reduce_res_factor_x=ss_fx,
-                reduce_res_factor_y=ss_fy, 
+            # use the static shift of each station. 
+            ss_cor, zcor = z0.remove_ss( 
+                *ss_fx_fy[ii]
                 )
             # reset the ediObjs to the new Z 
             z0._z = zcor  
@@ -3154,15 +3190,12 @@ class ZC(EM):
             
             ZObjs.append (z0 ) 
             new_ediObjs.append (ediObj )
-            
+
         # export data to 
         # new edis 
-        
         skws ={
                "option": 'write' if out  else  None, 
                } 
-        #print(new_ediObjs)
-       # print(new_ediObjs)
         return ( new_ediObjs, 
                 self.freqs_, 
                 ZObjs ), skws 
@@ -3263,7 +3296,7 @@ class ZC(EM):
     
     def get_ss_correction_factors(
         self, 
-        /, 
+        station, 
         r=1000., 
         nfreq=21,
         skipfreq=5, 
@@ -3280,6 +3313,11 @@ class ZC(EM):
         
         Parameters 
         -------------
+        station: str, int, 
+           The index of station to compute the static shift factors. If the 
+           station name is passed as string object, it should include the 
+           position number. 
+           
         r: float, default=1000. 
            radius to look for nearby stations, in meters.
  
@@ -3313,7 +3351,7 @@ class ZC(EM):
         >>> from watex.methods import ZC 
         >>> edi_sample = watex.fetch_data ('edis', samples =17 ,
                                            return_data =True ) 
-        >>> zo = ZC ().fit(edi_sample).get_ss_correction_factors () 
+        >>> zo = ZC ().fit(edi_sample).get_ss_correction_factors (station =0 ) 
         Out[16]: (1.5522030221266643, 0.742682340427651)
         
         """
@@ -3323,8 +3361,25 @@ class ZC(EM):
         # changes
         meter_to_deg_factor = 8.994423457456377e-06
         dm_deg = r * meter_to_deg_factor
+        
+        # Get the ediObj to remove the station shiit 
+        # make site as an iterable object 
+        try: 
+            station_ix = re.search ('\d+', str(station), flags=re.IGNORECASE).group()  
+        except AttributeError: 
+            raise StationError("Unable to find position of the station. Station"
+                               " must include the position number. E.g, S00")
+        except : 
+            raise TypeError ("Probbaly missing station position number. Please"
+                             " check your station index.")
+            
+        station_ix = int (station_ix ) 
 
-        edi_obj_init= self.ediObjs_[0] 
+        if station_ix >= len(self.ediObjs_): 
+            raise ValueError (" Expect the number of station less than"
+                             f" { len(self.ediObjs_)}. Got '{station_ix}'")
+
+        edi_obj_init= self.ediObjs_[station_ix] 
         edi_obj_init.Z.compute_resistivity_phase()
 
         interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
@@ -3352,6 +3407,7 @@ class ZC(EM):
         if self.verbose: 
             print('These stations are within the given'
                   ' {0} m radius:'.format(r))
+            
         for kk, emap_obj_kk in enumerate(emap_obj):
             if self.verbose: 
                 
@@ -3404,16 +3460,16 @@ class ZC(EM):
         return ss_x, ss_y
 
     @_zupdate (option ='none')
-    def removal_noises (
+    def remove_noises (
         self, 
-        method='base', 
-        window_size_factor =.1, 
-        out =False, 
-        frange =None, 
-        signal_frequency=None, 
+        method:str='base', 
+        window_size_factor:float =.1, 
+        out:bool=False, 
+        frange: tuple =None, 
+        signal_frequency:float=None, 
         **kws 
         ): 
-        """ Smooth data and remove  unwanted noise or artifacts 
+        """ remove indesired and artifacts in the data and smooth it.
 
         method: str, default='base' 
           kind of filtering technique to smooth data. Can be: 
@@ -3422,6 +3478,7 @@ class ZC(EM):
               - 'ama': For adaptatve moving average 
               - 'butter': for Butterworth filter using bandpass strategy. (lowcut 
                 highcut) can be set using the `frange` parameters.
+              
         frange: tuple, Optional 
            Lowcut and highcut frequency for Butterworth signal processing using 
            bandpass filter. 
@@ -3437,8 +3494,8 @@ class ZC(EM):
         d, new_z, new_z_err: NDArray ( 2 x2 , dtype =real )
           - input distortion tensor
           - impedance tensor with distorion removed
-          -  impedance tensor error after distortion is removed 
-          If ``export=True``, export to new EDI and return None. 
+          - impedance tensor error after distortion is removed 
+          If ``out=True``, export to new EDI and return None. 
           
         Examples 
         ---------
@@ -3467,12 +3524,7 @@ class ZC(EM):
         p = Processing(out ='z ') 
         p.ediObjs_ = self.ediObjs_
         p.freqs_ = self.freqs_
-        
-        # p = Processing(out ='z', 
-        #     window_size= window_size_factor
-        #     ).fit(ediObjs)
-        # p.out='z' 
-        
+ 
         zd = dict () 
         # correct all components if applicable 
         for comp in ('xx', 'xy', 'yx', 'yy'): 
@@ -3595,7 +3647,7 @@ def component_noise_removal (
 
     if not hasattr ( ediObjs, 'window_size'): 
         if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
-            raise EDIError("Only EDI or Processing object is acceptatble!")
+            raise EDIError("Only EDI or Processing object is acceptable!")
         pObj= Processing().fit(ediObjs)
         
     else : pObj = ediObjs
@@ -3647,9 +3699,115 @@ def component_noise_removal (
 
     return z_smoothed   if return_z else (smoothed_res, smoothed_phase)
   
+def _check_ss_factor_entries (
+        ediObjs: List[EDIO], /, ss_fx:float , ss_fy:float, 
+        stations:str =None , 
+    ): 
+    """ Check wether factor values passed matches the number of stations. 
     
-  
+    Parameters 
+    -----------
+
+    ss_fx: float, list, 
+       factor x for correcting the static shift effect. 
+       
+    ss_fy: float, list, 
+       Factor y  to correct the static shift effect at the given stations. 
+       
+    stations: int, list , 
+       List of stations to apply the static shift factor `ss_fx``
+        and `ss_fy`. Note that each station must include the position 
+        number. E.g station S00 being ``S00``. 
+        
+        
+    Return 
+    --------
+    ss_fx_fy: list of tuple 
+       list of tuple of correction factors that match the position of 
+       the stations. 
+       
+    Note 
+    -------
+    If `stations`` is not given, the factor `ss_fx` and `ss_fy` should be 
+    located from starting at Python index 0. 
     
+    Example  
+    ------- 
+    >>> import watex as wx 
+    >>> from watex.methods.em import _check_ss_factor_entries
+    >>> edi_sample = watex.fetch_data ('edis', samples =7 ,
+                                   return_data =True ) 
+    >>> _check_ss_factor_entries ( edi_sample , ss_fx = 0.15 , ss_fy = 0.89  ) 
+    Out[23]: 
+    [(0.15, 0.89),
+     (1.0, 1.0),
+     (1.0, 1.0),
+     (1.0, 1.0),
+     (1.0, 1.0),
+     (1.0, 1.0),
+     (1.0, 1.0)]
+    >>> _check_ss_factor_entries ( edi_sample ,stations = ['s02', 'S05'] , 
+                                  ss_fx = (0.15, 0.18)  , ss_fy = ( 0.89, 1.2)
+                                  )
+    Out[24]: 
+    [(1.0, 1.0),
+     (1.0, 1.0),
+     (0.15, 0.89),
+     (1.0, 1.0),
+     (1.0, 1.0),
+     (0.18, 1.2),
+     (1.0, 1.0)]
+    """
+    if ss_fx is None or ss_fy is None: 
+        raise TypeError ("Static correction factor x and y cannot be None.")
+        
+    ss_fx_fy_0 = [ (1., 1. ) for i in range ( len(ediObjs))]
+
+    ss_fx = is_iterable( ss_fx , 
+                        exclude_string=True,
+                        transform =True ) 
+    ss_fy = is_iterable( ss_fy , exclude_string=True,
+                        transform =True ) 
+    
+    check_consistent_length(ss_fx, ss_fy )
+    
+    ss_fx_fy = list (zip ( ss_fx, ss_fy ))
+    
+    add_ss =[]
+    
+    if (len(ss_fx) != len( ediObjs) 
+        and stations is None) : 
+        warnings.warn(
+            " Missing stations, correction factors x and y"
+            f" should be applied to the first {len(ss_fx)}"
+            " stations.")
+        add_ss= [ (1., 1.) for i in range 
+                 ( len(ediObjs)- len(ss_fx))]
+
+        ss_fx_fy.extend ( add_ss )
+        
+        return ss_fx_fy
+
+    if stations is not None: 
+        s= stations 
+        stations = is_iterable(stations, exclude_string= True , 
+                               transform =True )
+        try: 
+            stations = [ re.search ('\d+', str(site), flags=re.IGNORECASE).group()  
+                     for site in stations ] 
+        except: 
+            raise ValueError ("Missing position number. Station must prefix"
+                             f" with position, e.g. 'S7', got {s!r}") 
+        stations =[int (st) for st in stations ] 
+        
+        if len(ss_fx_fy) !=0: 
+            for x, y in zip ( stations, ss_fx_fy): 
+                
+                ss_fx_fy_0 [x] = y 
+        
+    return ss_fx_fy_0
+           
+
   
     
   
