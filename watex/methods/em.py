@@ -524,8 +524,8 @@ class EM(IsEdi):
         >>> edipath = r'data/edis'
         >>> savepath =  r'/Users/Daniel/Desktop/ediout'
         >>> emObjs = EM().fit(edipath)
-        >>> emObjs.rewrite_edis(by='id', edi_prefix ='b1',
-                                savepath =savepath)
+        >>> emObjs.rewrite(by='id', edi_prefix ='b1',
+                          savepath =savepath)
         >>> # 
         >>> # second example to write 7 samples of edi from 
         >>> # Edi objects inner datasets 
@@ -570,7 +570,14 @@ class EM(IsEdi):
         self.inspect 
         
         self.id = make_ids(self.ediObjs_, prefix='S', how= how )
-           
+        
+        # assert whether EDI and station are consistent. 
+        if len( self.ediObjs_) != len(self.id): 
+            if self.verbose: 
+                warnings.warn("Number of EDI-files and stations must be "
+                              f"consistent. Got EDI={len( self.ediObjs_)},"
+                              f" stations={len(self.id)}. Expect"
+                              f" {len( self.ediObjs_)}")
         if how !='py': 
             self.id = make_ids(self.ediObjs_, prefix='S',
                                     cmode =None)  
@@ -627,7 +634,7 @@ class EM(IsEdi):
 
         # collect new ediObjs 
         cobjs = np.zeros_like (self.ediObjs_, dtype=object ) 
-        
+   
         for k, (obj, did) in enumerate(zip(self.ediObjs_, dataid)): 
             obj.Head.edi_header = None  
             obj.Head.dataid = did 
