@@ -5555,6 +5555,11 @@ def qc(
    
     Parameters 
     ----------
+    
+    z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
+        :class:`watex.externals.z.Z` 
+        A collection of EDI- or Impedances tensors objects.
+        
     tol: float, default=.5 
         the tolerance parameter. The value indicates the rate from which the 
         data can be consider as meaningful. Preferably it should be less than
@@ -6147,7 +6152,6 @@ def adaptive_moving_average(data, /, window_size_factor=0.1):
     window_size_factor: float, default=0.1 
       Parameter to control the adaptiveness of the moving average.
        
-      
     Return 
     --------
     result: Arraylike 
@@ -6155,6 +6159,7 @@ def adaptive_moving_average(data, /, window_size_factor=0.1):
     
     Example 
     ---------
+    >>> import matplotlib.pyplot as plt
     >>> from watex.utils.exmath import adaptive_moving_average 
     >>> # Sample magnetotelluric data (replace this with your own data)
     >>> # Example data: a sine wave with noise
@@ -6162,7 +6167,7 @@ def adaptive_moving_average(data, /, window_size_factor=0.1):
     >>> mt_data = np.sin(2 * np.pi * 1 * time) + 0.2 * np.random.randn(1000)  # Example data
     >>> # Function to calculate the adaptive moving average
     >>> # Define the window size factor (adjust as needed)
-    >>>> window_size_factor = 0.1  # Adjust this value based on your data characteristics
+    >>> window_size_factor = 0.1  # Adjust this value based on your data characteristics
     >>> # Apply adaptive moving average to the magnetotelluric data
     >>> smoothed_data = adaptive_moving_average(mt_data, window_size_factor)
     >>> # Plot the original and smoothed data
@@ -6175,7 +6180,6 @@ def adaptive_moving_average(data, /, window_size_factor=0.1):
     >>> plt.legend()
     >>> plt.grid(True)
     >>> plt.show()
-
     """
     result = np.zeros_like(data)
     window_size = int(window_size_factor * len(data))
@@ -6186,6 +6190,109 @@ def adaptive_moving_average(data, /, window_size_factor=0.1):
         result[i] = np.mean(data[start:end])
     
     return result
+
+def torres_verdin_filter(
+    arr, /,  
+    weight_factor: float=.1, 
+    beta:bool=1., 
+    logify:bool=False, 
+    axis:int = ..., 
+    ):
+    """
+    Calculates the adaptive moving average of a given data array from 
+    Torres and Verdin algorithm [1]_. 
+    
+    Parameters 
+    -----------
+    arr: Arraylike 1d 
+      List or array-like of data points.  If two-dimensional array 
+      is passed, `axis` must be specified to apply the filter onto. 
+       
+    weight_factor: float, default=.1
+      Base smoothing factor for window size which gets adjusted by a factor 
+      dependent on the rate of change in the data. 
+        
+    beta: float, default =1. 
+       Scaling factor to adjust `weight_factor` during high volatility. 
+       It controls how much the `weight_factor` is adjusted during 
+       periods of high volatility.
+       
+    logify: bool, default=False, 
+      By default , Torres uses exponential moving average. So if the 
+      values can be logarithmized to ensure the weight be ranged between 
+      0 and 1. This is important when data are resistivity or phase. 
+      
+    axis: int, default=0 
+      Axis along which to apply the AMA filter.
+    Return 
+    -------
+    ama: Adaptive moving average
+    
+    References 
+    ------------
+    .. [1] Torres-Verdin and Bostick, 1992,  Principles of spatial surface 
+        electric field filtering in magnetotellurics: electromagnetic array profiling
+        (EMAP), Geophysics, v57, p603-622.https://doi.org/10.1190/1.2400625
+
+    Example
+    --------
+    >>> import matplotlib.pyplot as plt 
+    >>> from watex.utils.exmath import torres_verdin_filter 
+    >>> data = np.random.randn(100)  
+    >>> ama = torres_verdin_filter(data)
+    >>> plt.plot (range (len(data)), data, 'k', range(len(data)), ama, '-or')
+    >>> # apply on two dimensional array 
+    >>> data2d = np.random.randn(7, 10) 
+    >>> ama2d = torres_verdin_filter ( data2d, axis =0)
+    >>> fig, ax  = plt.subplots (nrows = 1, ncols = 2 , sharey= True,
+                             figsize = (7,7) )
+    >>> ax[0].imshow(data2d , label ='Raw data', cmap = 'binary' )
+    >>> ax[1].imshow (ama2d,  label = 'AMA data', cmap ='binary' )
+    >>> ax[0].set_title ('Raw data') 
+    >>> ax[1].set_title ('AMA data') 
+    >>> plt.legend
+    >>> plt.show () 
+    
+    """
+    arr = is_iterable( arr, exclude_string =True, transform =True ) 
+    axis, logify= ellipsis2false(axis, logify, default_value =( None , False))
+    
+    def _filtering_1d_array( ar, wf, b ): 
+        if len(ar) < 2:
+            return ar
+        ama = [ar[0]]  # Initialize the adaptive moving average array
+        for i in range(1, len(ar)):
+            change = abs(ar[i] - ar[i-1])
+            w = wf * (1 + beta * change)
+            w = min(w, 1)  # Ensure weight stays between 0 and 1
+            ama_value = w * ar[i] + (1 - w) * ama[-1]
+            ama.append(ama_value)
+            
+        return np.array(ama)
+    
+    arr =np.array (arr )
+    #+++++++++++++++++++
+    if logify:
+        arr = np.log10 ( arr )
+    if arr.ndim >=2: 
+        if axis is None:
+            warnings.warn (f"Array dimension is {arr.ndim}. Axis must be"
+                           " specified. Otherwise axis=0 is used .")
+            axis =0
+        if axis ==0: 
+            arr = arr.T 
+        for ii in range( len(arr )) : 
+            arr [ii] = _filtering_1d_array (
+                arr [ii ], wf = weight_factor, b = beta ) 
+        # then transpose again 
+        if axis ==0: 
+            arr = arr.T 
+    else: 
+        arr = _filtering_1d_array ( arr, wf = weight_factor, b=beta  )
+        
+    if logify: arr = np.power (10, arr )
+    
+    return arr 
 
 def butterworth_filter(
     data, /,  

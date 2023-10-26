@@ -1525,16 +1525,11 @@ class TPlot (BasePlot):
           A collection of Matplotlib axes of each stations 
           
         """
-        
-        # rlabels = kws.pop('rlabels', None )
-        # plabels = kws.pop('plabels', None )
-        
+
         ncols = len (sites) if sites is not None else  1 
         
         fig = plt.figure(figsize = self.fig_size, dpi=self.fig_dpi)
-        
         h_ratio = [1.5, 1, .5]
-        
         
         gs = GridSpec(2, ncols or 1,
             wspace=0. if kind =='2' else .3, # .3,if 
@@ -1560,18 +1555,6 @@ class TPlot (BasePlot):
             ctmd = (1, 0, 0)
             mted = 's'
             mtmd =  'o'
-
-            # color for occam2d model
-            # if plot_style == 3:
-            #     # if plot_style is 3, set default color for model response to same as data
-            #     ctem = kwargs.pop('ctem',cted)
-            #     ctmm = kwargs.pop('ctmm',ctmd)
-            # else:
-            # ctem = (0, .6, .3)
-            # ctmm = (.9, 0, .8)
-            # mtem =  '+'
-            # mtmm = '+'
-
         # black and white mode
         elif color_mode == 'bw':
             # color for data
@@ -1579,12 +1562,6 @@ class TPlot (BasePlot):
             ctmd = (0, 0, 0)
             mted = 's'
             mtmd = 'o'
-
-            # color for occam2d model
-            # ctem = (0.6, 0.6, 0.6)
-            # ctmm = (0.6, 0.6, 0.6)
-            # mtem =  '+'
-            # mtmm = 'x'
             
         # --> make key word dictionaries for plotting
         ms =  1.5
@@ -1603,9 +1580,7 @@ class TPlot (BasePlot):
         #++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         for j, site in enumerate ( sites ): 
             ax1 = fig.add_subplot (gs [ 0, j] , 
-                                   sharey = sharey
-                                   ) 
-            
+                                   sharey = sharey) 
             if j==0: sharey = ax1 
             
             if errorbar: 
@@ -1621,7 +1596,6 @@ class TPlot (BasePlot):
                     e, ep = sl  # mean errorbar is set to True 
                 
                 y =  reshape (r[:, site])
-                #np.savetxt ( f'Res_s{site}_{i}.txt', y )
                 colors = [cted,ctmd ]
                 markers = [mted, mtmd]
                 kw_xx = {'color': colors[i],
@@ -1647,89 +1621,21 @@ class TPlot (BasePlot):
                                y_err = reshape (e[:, site]),
                                **kw_xx
                                )
-                #np.savetxt ( f'Res_Err_s{site}_{i}.txt', reshape (e[:, site]) )
                 plot_errorbar (ax2 , 
                                x, 
                                reshape (p[:, site]),
                                y_err = reshape (ep[:, site]),
                                **kw_yy,
                                )
-                #np.savetxt ( f'Phase_s{site}_{i}.txt', reshape (p[:, site]) )
-                #np.savetxt ( f'phase_Err_s{site}_{i}.txt', reshape (ep[:, site]) )
-                # if kind !='2':
-                #     ax1.scatter (x  , y, 
-                #                   marker =self.marker if i==0 else 's', 
-                #                   color =colors [i],
-                #                   edgecolors='k', 
-                #                   label = '' if rlabels is None else rlabels[i],
-                #                   **kws 
-                #                   ) 
-                #     ax2.scatter( x, 
-                #                 reshape (p[:, site]),
-                #                 marker =self.marker if i==0 else 's', 
-                #                 color =colors [i] ,
-                #                 edgecolors='k', 
-                #                 label ='' if plabels is None else plabels[i],
-                #                 **kws
-                #                 ) 
                 res_limits.append ((min(y), max(y)))
                 phase_limits.append( (min(reshape (p[:, site])), 
                                       max(reshape (p[:, site]))
                                       )
                                     )
             if show_site:
-                ax1.set_title( f'site {site}', fontdict={'size': 8 + 2,
-                                                          'weight': 'bold'})
-            # if kind =='1':  
-            #     if j > 0: 
-            #         plt.setp(ax1.get_yticklabels(), visible=False)
-            #         plt.setp(ax2.get_yticklabels(), visible=False)
-                    
-            #     # Put the legend in the last image
-            #     if j == len(sites)-1: 
-            #         try: 
-            #             ax1.legend(ncols = len(r)) 
-            #             ax2.legend(ncols = len(p)) 
-            #         except: 
-            #             # For consistency in the case matplotlib  is < 3.3. 
-            #             ax1.legend() 
-            #             ax2.legend() 
-                     
-            #     ax1.set_xscale ('log') ;  ax1.set_yscale ('log') 
-            #     ax2.set_xscale ('log')
-                
-            #     if show_site:
-            #         ax1.set_title( f'site {site}', fontdict={'size': 8 + 2,
-            #                                                   'weight': 'bold'})
-            #         # ax1.text (xysites[0],
-            #         #           xysites[1],
-            #         #           f'site {site}', 
-            #         #           horizontalalignment='center',
-            #         #           verticalalignment='baseline',
-            #         #           fontdict= dict (style ='italic',  bbox =dict(
-            #         #                 boxstyle='round',facecolor ='#CED9EF'), 
-            #         #               alpha = 0.5 )
-            #         #            )
-                
-            #     ax2.set_ylim ([0, 90 ])
-                
-            #     xlabel = self.xlabel or ( 'Period($s$)' if scale=='period' 
-            #                              else 'Frequency ($H_z$)') 
-                
-            #     ax2.set_xlabel(xlabel ) 
-                
-                
-            #     if j ==0 : 
-            #         # avoid reapeting this 
-                    
-            #         ax1.set_ylabel(self.ylabel or r'$\rho_a$($\Omega$.m)') 
-            #         ax2.set_ylabel('$\phi$($\degree$)')
-                
-            #     if self.show_grid :
-            #         for ax in (ax1, ax2 ): 
-            #             ax.grid (visible =True , alpha =self.galpha,
-            #                      which =self.gwhich, color =self.gc)
-                   
+                ax1.set_title( f'site {site}', 
+                              fontdict={'size': 8 + 2,
+                                       'weight': 'bold'})
             axr.append( ax1);  axp.append (ax2)
              
         # --> set default font size
@@ -1758,11 +1664,8 @@ class TPlot (BasePlot):
         phase_limits_d= [np.floor (phase_limit_min.min()),
                       np.ceil (phase_limit_max.max()) ]
         phase_limits_d=None
-        # ax1.set_ylim([np.floor (res_limit_min.min()),
-        #               np.ceil (res_limit_max.max()) ])
-        
+  
         ax_list = [*axr, *axp ]
-        
         for aa, ax in enumerate(ax_list):
             ax.tick_params(axis='y', pad=1.5)
 
@@ -1773,8 +1676,7 @@ class TPlot (BasePlot):
                 ylabels = ax.get_yticklabels()
                 ylabels[0] = ''
                 ax.set_yticklabels(ylabels)
-                ax.set_yscale('log', 
-                              #nonposy='clip'
+                ax.set_yscale('log', #nonposy='clip'
                               )
                 try: 
                     ax.set_ylim(res_limits_d)
@@ -1794,8 +1696,7 @@ class TPlot (BasePlot):
             elif aa == 0 or aa == len(ax_list)//2:
                 ax.set_ylabel('Phase (deg)',
                                   fontdict=fontdict)
-            ax.set_xscale('log', 
-                          # nonposx='clip'
+            ax.set_xscale('log', # nonposx='clip'
                           )
             # set period limits
             period_limits = (10 ** (np.floor(np.log10(x[0]))) * 1.01,
@@ -1816,14 +1717,7 @@ class TPlot (BasePlot):
             
             if aa < len(ax_list)//2: 
                 plt.setp(ax.get_xticklabels(), visible=False)
- 
-        # if kind=='2': 
-        #     ylabels_r = axr[0].get_yticks().tolist()
-        #     print(ylabels_r)
-        #     ylabels_r[-1] = ''
-        #     ylabels_r[0] = ''
-        #     #x.yaxis.set_major_locator(mticker.FixedLocator(ylabels))
-        #     axr[0].set_yticklabels(ylabels_r)
+
             
         return axr, axp 
            
@@ -1832,7 +1726,6 @@ class TPlot (BasePlot):
         if j > 0: 
             plt.setp(ax1.get_yticklabels(), visible=False)
             plt.setp(ax2.get_yticklabels(), visible=False)
-            
         # Put the legend in the last image
         if j == len(sites)-1: 
             try: 
@@ -1845,17 +1738,6 @@ class TPlot (BasePlot):
              
         ax1.set_xscale ('log') ;  ax1.set_yscale ('log') 
         ax2.set_xscale ('log')
-        
-        
-            # ax1.text (xysites[0],
-            #           xysites[1],
-            #           f'site {site}', 
-            #           horizontalalignment='center',
-            #           verticalalignment='baseline',
-            #           fontdict= dict (style ='italic',  bbox =dict(
-            #                 boxstyle='round',facecolor ='#CED9EF'), 
-            #               alpha = 0.5 )
-            #            )
         
         ax2.set_ylim ([0, 90 ])
         
@@ -2313,14 +2195,7 @@ class TPlot (BasePlot):
         sharey = None
         
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        
-        
-        
-        
-        
-        
-        
-        #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
         for j , site in enumerate (sites ): 
             
             ax1 = fig.add_subplot (gs [ 0, j] , sharey = sharey) 

@@ -467,7 +467,7 @@ def shrunkformat (text: str | Iterable[Any] ,
                   chunksize: int =7 , insert_at: str = None, 
                   sep =None, 
                  ) : 
-    """ format class and add elipsis when classe are greater than maxview 
+    """ format class and add ellipsis when classes are greater than maxview 
     
     :param text: str - a text to shrunk and format. Can also be an iterable
         object. 
@@ -485,9 +485,9 @@ def shrunkformat (text: str | Iterable[Any] ,
         
     >>> import numpy as np 
     >>> from watex.utils.funcutils import shrunkformat
-    >>> text=" I'm a long text and I will be shrunked and replace by ellipsis."
+    >>> text=" I'm a long text and I will be shrunked and replaced by ellipsis."
     >>> shrunkformat (text)
-    ... 'Im a long ... and replace by ellipsis.'
+    ... 'Im a long ... and replaced by ellipsis.'
     >>> shrunkformat (text, insert_at ='end')
     ...'Im a long ... '
     >>> arr = np.arange(30)
@@ -2891,8 +2891,7 @@ def fit_by_ll(ediObjs):
     :param ediObjs: list of EDI object, composed of a collection of 
         watex.edi.Edi or pycsamt.core.edi.Edi or mtpy.core.edi objects 
     :type ediObjs: watex.edi.Edi_Collection 
-
-    
+  
     :returns: array splitted into ediObjs and Edifiles basenames 
     :rtyple: tuple 
     
@@ -2909,12 +2908,17 @@ def fit_by_ll(ediObjs):
 
     """
     #get the ediObjs+ names in ndarray(len(ediObjs), 2) 
-    
     objnames = np.c_[ediObjs, np.array(
         list(map(lambda obj: os.path.basename(obj.edifile), ediObjs)))]
     lataddlon = np.array (list(map(lambda obj: obj.lat + obj.lon , ediObjs)))
-    sort_ix = np.argsort(lataddlon) 
-    objnames = objnames[sort_ix ] 
+    if len(np.unique ( lataddlon)) < len(ediObjs)//2: 
+        # then ignore reorganization and used the 
+        # station names. 
+        pass 
+    else:
+        sort_ix = np.argsort(lataddlon) 
+        objnames = objnames[sort_ix ]
+        
     #ediObjs , objbnames = np.hsplit(objnames, 2) 
     return objnames[:, 0], objnames[:, -1]
    
@@ -2935,7 +2939,7 @@ def make_ids(arr, prefix =None, how ='py', skip=False):
         the counting starts by 0. Any other mode will start the counting by 1.
     :type cmode: str 
     
-    :param skip: skip the strong formatage. the formatage acccording to the 
+    :param skip: skip the long formatage. the formatage acccording to the 
         number of collected file. 
     :type skip: bool 
     :return: ID number formated 

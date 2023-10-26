@@ -157,7 +157,7 @@ def _assert_z_or_edi_objs ( z_or_edis_obj_list, /):
                 )
     if len(s_edi) !=1 or False in list(s_edi):
         raise EMError("Expect EDI[watex.edi.Edi] or Z[watex.externals.z.Z]"
-                      f" objects. Got {s_edi} objects.")
+                      f" objects. Got {s_edi}")
     else: 
         obj_type ='EDI' if isinstance ( 
             z_or_edis_obj_list[0], Edi) else 'Z'

@@ -35,10 +35,10 @@ from ..utils.funcutils import (
     fit_by_ll, 
     reshape, 
     smart_strobj_recognition, 
-    repr_callable_obj,
     remove_outliers, 
     normalizer, 
     random_selector, 
+    shrunkformat, 
     listing_items_format
     ) 
 from ..utils.exmath import ( 
@@ -48,7 +48,8 @@ from ..utils.exmath import (
     betaj, 
     interpolate1d,
     interpolate2d, 
-    get_full_frequency, 
+    get_full_frequency,
+    torres_verdin_filter, 
     adaptive_moving_average, 
     find_closest, 
     rhophi2z, 
@@ -1034,9 +1035,14 @@ class EM(IsEdi):
     
     def __repr__(self):
         """ Pretty format for programmer guidance following the API... """
-        return repr_callable_obj  (self, skip =('edifiles', 'freq_array', 'id'))
-       
-    
+        t= ("survey_name", 'verbose', 'edinames')
+        values = [getattr(self, k) if k!='edinames' else shrunkformat(
+            getattr(self, k) , chunksize =3 )for k in t ] 
+        outm = ( '<{!r}:' + ', '.join(
+            [f"{k}={v!r}" for k, v in zip (t, values)]) + '>' 
+            ) 
+        return  outm.format(self.__class__.__name__)
+
     def __getattr__(self, name):
         rv = smart_strobj_recognition(name, self.__dict__, deep =True)
         appender  = "" if rv is None else f'. Do you mean {rv!r}'
@@ -2081,7 +2087,6 @@ class Processing (EM) :
         >>> buffer = [1.45000e+04,1.11500e+01]
         >>> zobjs_b =  pObjs.zrestore(buffer = buffer
                                             ) # with buffer 
-        
         """
         self.inspect 
 
@@ -3344,11 +3349,7 @@ class ZC(EM):
         option = 'write' if out else None 
         # reset  option 
         kws.__setitem__('option', option ) 
-        # kws ={
-        #        "option": 'write' if out  else  None,  
-        #        # "ediObjs": new_ediObjs
-        #        } 
-
+   
         return (new_ediObjs, 
                 self.freqs_, 
                 ZObjs ), kws 
@@ -3547,7 +3548,7 @@ class ZC(EM):
         """ remove indesired and artifacts in the data and smooth it.
 
         method: str, default='base' 
-          kind of filtering technique to smooth data. Can be: 
+          Kind of filtering technique to smooth data. Can be: 
               
               - 'base': for simple moving-average using convolution strategy 
               - 'ama': For adaptatve moving average 
@@ -3604,7 +3605,7 @@ class ZC(EM):
         # correct all components if applicable 
         for comp in ('xx', 'xy', 'yx', 'yy'): 
             try: 
-                zc = component_noise_removal (
+                zc = filter_noises (
                     p, 
                     comp, 
                     method=method, 
@@ -3634,7 +3635,7 @@ class ZC(EM):
         
         return (self.ediObjs_, self.freqs_ , zd ), kws
 
-def component_noise_removal (
+def filter_noises (
     ediObjs: EDIO, / , 
     component = 'xy', 
     method ='base',
@@ -3656,9 +3657,10 @@ def component_noise_removal (
       kind of filtering technique to smooth data. Can be: 
           
           - 'base': for simple moving-average using convolution strategy 
-          - 'ama': For adaptatve moving average 
+          - 'ama': for naive adapttive moving average 
           - 'butter': for Butterworth filter using bandpass strategy. (lowcut 
             highcut) can be set using the `frange` parameters.
+          - 'tv': for Torres-Verdin filter [1]_
     frange: tuple, Optional 
        Lowcut and highcut frequency for Butterworth signal processing using 
        bandpass filter. 
@@ -3674,12 +3676,18 @@ def component_noise_removal (
     z/ (smoothed_res, smoothed_phase): Arraylike 2d 
        Corrected impendance tensor if ``return_z=True`` and tuple of 
        corrected resistivity and phase otherwise. 
-       
+
+    References 
+    ------------
+    .. [1] Torres-Verdin and Bostick, 1992,  Principles of spatial surface 
+        electric field filtering in magnetotellurics: electromagnetic array profiling
+        (EMAP), Geophysics, v57, p603-622.https://doi.org/10.1190/1.2400625
+
     Examples
     ---------
-    >>> >>> import matplotlib.pyplot as plt 
+    >>> import matplotlib.pyplot as plt 
     >>> import watex as wx 
-    >>> from watex.methods.em import component_noise_removal 
+    >>> from watex.methods.em import filter_noises 
     >>> edi_data = wx.fetch_data ('edis', samples =25 , return_data =True ) 
     >>> p= wx.EMProcessing ( ).fit(edi_data)
     >>> p.ediObjs_[0].Z.resistivity[:, 0, 1][:7] # resistivity
@@ -3695,30 +3703,53 @@ def component_noise_removal (
     array([10002.46 +9747.34j , 11679.44 +8714.329j, 15896.45 +3186.737j,
            21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
             8908.448+5251.157j])
-    >>> res_c, phase_c = component_noise_removal (p, component='xy', return_z= False)
+    >>> res_b, phase_b = filter_noises (
+        p, component='xy', return_z= False, )
+    res_t, phase_t = filter_noises (
+        p, component='xy', return_z= False, method ='torres')
+    res_a, phase_a = filter_noises (
+        p, component='xy', return_z= False, method ='ama')
     >>> # plot station S00 ( first ) 
     >>> #Plot the original and smoothed data
     >>> fig, ax = plt.subplots(2,1, figsize =(10, 6))
-    >>> ax[0].plot(p.freqs_, p.ediObjs_[0].Z.resistivity[:, 0, 1], 'b-', label='Original Data')
-    >>> ax[0].plot(p.freqs_, res_c[:, 0], 'r-', label='Smoothed Resistivity Data (AMA)')
+    >>> ax[0].plot(p.freqs_, p.ediObjs_[0].Z.resistivity[:, 0, 1],
+                   'b-', label='Original Data')
+    >>> ax[0].plot(p.freqs_, res_b[:, 0], '-ok', 
+                   label='Smoothed Resistivity')
+    >>> ax[0].plot(p.freqs_, res_t[:, 0], '-sg', 
+                   label='Torres-Verdin filtered Resistivity')
+    >>> ax[0].plot(p.freqs_, res_a[:, 0], '-vr', 
+                   label='Filtered AMA Resistivity ')
     >>> ax[0].set_xlabel('Frequency')
     >>> ax[0].set_ylabel('Resistivity( ohm.m)')
-    >>> ax[0].set_title('Adaptive Moving Average (AMA) Smoothing')
+    >>> ax[0].set_title('Filtered data')
+    >>> ax[0].set_yscale ('log') 
+    >>> ax[0].set_xscale ('log')
     >>> ax[0].legend()
     >>> ax[0].grid(True)
-    >>> ax[1].plot(p.freqs_, p.ediObjs_[0].Z.phase[:, 0, 1], 'b-', label='Original Phase Data')
-    >>> ax[1].plot(p.freqs_, phase_c[:, 0], 'r-', label='Smoothed Phase Data (AMA)')
+    >>> ax[1].plot(p.freqs_, p.ediObjs_[0].Z.phase[:, 0, 1], 
+                   'b-', label='Original Phase Data')
+    >>> ax[1].plot(p.freqs_, phase_b[:, 0], '-ok', 
+                   label='Smoothed Phase Data ')
+    >>> ax[1].plot(p.freqs_, phase_t[:, 0], '-sg', 
+                   label='Filtered Torres-Verdin phase')
+    >>> ax[1].plot(p.freqs_, phase_a[:, 0], '-vr', 
+                   label='Filtered AMA phase')
     >>> ax[1].set_xlabel('Frequency')
     >>> ax[1].set_ylabel('phase( degrees)')
+    >>> ax[1].set_xscale ('log')
     >>> ax[1].legend()
     >>> ax[1].grid(True)
     >>> plt.show()
+    
     """
     method = str(method).lower() 
     if method.find( 'butter')>=0  or method.find ('btd')>=0 : 
         method = 'butterworth'
-    elif method.find ('ama')>=0 : 
+    elif method.find ('ama')>=0: 
         method ='adaptative' 
+    elif method.find('torres')>=0 or method.find('tv')>=0 : 
+        method ='torres-verdin'
 
     if not hasattr ( ediObjs, 'window_size'): 
         if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
@@ -3731,39 +3762,56 @@ def component_noise_removal (
     pObj.component = component  
     pObj.res2d_ , pObj.phs2d_ , pObj.freqs_, pObj.c, pObj.window_size, \
         pObj.component, pObj.out = pObj._make2dblobs ()
-        
-    smoothed_phase = np.zeros_like ( pObj.phs2d_) 
+    
+    # modulo the phase to be include [0 and 90] degree then 
+    # eliminate negative phase. 
+    pObj.phs2d_  = pObj.phs2d_ %90 
+    smoothed_phase = np.zeros_like ( pObj.phs2d_).T  
     #smooth_z = np.zeros_like ( self.res2d_ , dtype = np.complex128 )
-    smoothed_res = np.zeros_like ( pObj.res2d_)
+    smoothed_res = np.zeros_like ( pObj.res2d_).T
     
     if method =='base': 
         # block moving average `ma` trick to True 
         # and force resistivity value to be positive 
-        smoothed_res = smoothing( pObj.res2d_ ,  
-                       )
+        smoothed_res = smoothing( pObj.res2d_ )
         if (smoothed_res < 0).any(): 
             smoothed_res = np.abs (smoothed_res )
         
         smoothed_phase = smoothing ( pObj.phs2d_)
     else: 
-        for ii in range (len(pObj.res2d_)): 
+        for ii in range (len(pObj.res2d_.T)): 
             #res_data = pObj.res2d_ [ii, :] 
             if method =='butterworth': 
                 smoothed_res [ii,: ] = butterworth_filter(
-                    pObj.res2d_ [ii, :] , 
+                    pObj.res2d_[:, ii ] , 
                     freqs= pObj.freqs_, 
                     frange=frange, 
-                    fs = signal_frequeny, 
+                    fs = signal_frequeny)
+            elif method =='torres-verdin': 
+                smoothed_res [ii,: ] = torres_verdin_filter(
+                    pObj.res2d_ [:, ii], 
+                    weight_factor=window_size_factor, 
+                    logify= True, 
                      )
+                smoothed_phase [ii, :] = torres_verdin_filter(
+                    pObj.phs2d_[:, ii],# except the negative phase 
+                    weight_factor=window_size_factor, 
+                    logify =True
+                    )
             else: 
                 smoothed_res [ii,: ] = adaptive_moving_average(
-                    pObj.res2d_ [ii, :], 
+                    pObj.res2d_ [:, ii], 
                     window_size_factor=window_size_factor
                      )
                 smoothed_phase [ii, :] = adaptive_moving_average(
-                    pObj.phs2d_[ii, :] ,
+                    pObj.phs2d_[:, ii] ,
                     window_size_factor=window_size_factor
                     )
+                
+        # transpose to get the resistivity and phase coordinates 
+        smoothed_phase = smoothed_phase.T
+        smoothed_res = smoothed_res.T 
+        
     # recompute z with the corrected phase
     if return_z : 
         z_smoothed = rhophi2z(
