@@ -3033,12 +3033,12 @@ class ZC(EM):
         option = 'write' if out else None 
         # reset  option 
         kws.__setitem__('option', option ) 
-        
-    
+  
         return (self.ediObjs_, self.freqs_ , zd ), kws
 
     def _get_multiple_ss_factors (self,ss_fx=None, ss_fy= None, 
-            stations=None,**kws
+            stations=None, r = 1000, nfreq =21, skipfreq =5, tol=.12, 
+            force =False
             ): 
         """ 
         Isolated part of :meth:`Zc.remove_static_shift` method. 
@@ -3055,7 +3055,12 @@ class ZC(EM):
             ) : 
             stations = range (len(self.ediObjs_))
             # I.e compute all stratic shift  and stores in a list 
-            ss_fx_fy = [ self.get_ss_correction_factors(station, **kws )
+            ss_fx_fy = [ self.get_ss_correction_factors(
+                            station, 
+                            nfreq = nfreq , 
+                            skipfreq=skipfreq,
+                            force =force, tol=tol
+                            )
                   for station in stations ]
         else: 
             ss_fx_fy = _check_ss_factor_entries (
@@ -3073,8 +3078,13 @@ class ZC(EM):
         ss_fx:float | List[float] =None, 
         ss_fy:float| List[float]= None, 
         stations: List[str]=None, 
-        out:bool =False , 
         rotate:float=0., 
+        r:float =1000., 
+        nfreq:int=21, 
+        skipfreq:int=5, 
+        tol=.12, 
+        force:bool=False, 
+        out:bool =False , 
         **kws
         ): 
         """
@@ -3118,13 +3128,41 @@ class ZC(EM):
             (Mathematically negative!).
             In non-rotated state, X refs to North and Y to East direction.
             
+        r: float, default=1000. 
+           radius to look for nearby stations, in meters.
+ 
+        nfreq: int, default=21 
+           number of frequencies calculate the median static shift.  
+           This is assuming the first frequency is the highest frequency.  
+           Cause usually highest frequencies are sampling a 1D earth.  
+    
+        skipfreq** : int, default=5 
+           number of frequencies to skip from the highest frequency.  
+           Sometimes the highest frequencies are not reliable due to noise 
+           or low signal in the :term:`AMT` deadband.  This allows you to 
+           skip those frequencies.
+                           
+    
+        tol: float, default=0.12
+           Tolerance on the median static shift correction.  If the data is 
+           noisy the correction factor can be biased away from 1.  Therefore 
+           the shift_tol is used to stop that bias.  If 
+           ``1-tol < correction < 1+tol`` then the correction factor is set 
+           to ``1``
+        force: bool, default=False, 
+           Ignore the frequency bounds and compute the static shift with the 
+           total station with all frequencies.
+           
         out: bool , default =False, 
            Output new filtered EDI. Otherwise return Z collections objects 
            of corrected Tensors. 
            
-        ss: dict, 
-           Additional kweyword arguments passed to 
-           :meth:`get_ss_correction_factors`
+        force: bool, default=False, 
+           Ignore the frequency bounds and compute the static shift with the 
+           total station with all frequencies. 
+           
+           .. versionadded:: 0.2.8
+            Ignore frequency bound errors with ``force=True``. 
            
         Returns
         --------
@@ -3165,9 +3203,13 @@ class ZC(EM):
         ss_fx_fy = self._get_multiple_ss_factors (
             stations = stations , 
             ss_fx = ss_fx , 
-            ss_fy = ss_fy
+            ss_fy = ss_fy, 
+            r= r, 
+            nfreq = nfreq, 
+            skipfreq =skipfreq, 
+            tol = tol, 
+            force =force, 
                 )
-        
         ZObjs =[]
         new_ediObjs=[]
 
@@ -3193,12 +3235,18 @@ class ZC(EM):
 
         # export data to 
         # new edis 
-        skws ={
-               "option": 'write' if out  else  None, 
-               } 
+        
+        # manage edi -export 
+        option =kws.pop('option', None )
+        option = 'write' if out else None 
+        # reset  option 
+        kws.__setitem__('option', option ) 
+        # kws ={
+        #        "option": 'write' if out  else  None, 
+        #        } 
         return ( new_ediObjs, 
                 self.freqs_, 
-                ZObjs ), skws 
+                ZObjs ), kws 
     
     
     @_zupdate (option ='none')
@@ -3284,15 +3332,19 @@ class ZC(EM):
             
         # export data to 
         # new edis 
-        
-        skws ={
-               "option": 'write' if out  else  None,  
-               # "ediObjs": new_ediObjs
-               } 
+        # manage edi -export 
+        option =kws.pop('option', None )
+        option = 'write' if out else None 
+        # reset  option 
+        kws.__setitem__('option', option ) 
+        # kws ={
+        #        "option": 'write' if out  else  None,  
+        #        # "ediObjs": new_ediObjs
+        #        } 
 
         return (new_ediObjs, 
                 self.freqs_, 
-                ZObjs ), skws 
+                ZObjs ), kws 
     
     def get_ss_correction_factors(
         self, 
@@ -3300,7 +3352,8 @@ class ZC(EM):
         r=1000., 
         nfreq=21,
         skipfreq=5, 
-        tol=.12
+        tol=.12, 
+        force=False, 
         ) -> Tuple[float, float]:
         """
         Compute the  static shift correction factor from a station 
@@ -3339,7 +3392,12 @@ class ZC(EM):
            the shift_tol is used to stop that bias.  If 
            ``1-tol < correction < 1+tol`` then the correction factor is set 
            to ``1``
-  
+        force: bool, default=False, 
+           Ignore the frequency bounds and compute the static shift with the 
+           total station with all frequencies. 
+           
+           .. versionadded:: 0.2.8 
+          
         Returns
         -------
         (sx_x,  ss_y): (float, float)
@@ -3381,9 +3439,18 @@ class ZC(EM):
 
         edi_obj_init= self.ediObjs_[station_ix] 
         edi_obj_init.Z.compute_resistivity_phase()
-
-        interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
-
+        # if nfreq 
+        if nfreq > len(edi_obj_init.Z.freq): 
+            if force: 
+                nfreq = len(edi_obj_init.Z.freq); skipfreq= 0
+                interp_freq= np.array(range (nfreq), dtype = int)
+            else : 
+                raise EMError("'nfreq' must be less than number of frequency"
+                            f" {len(edi_obj_init.Z.freq)}. Got {nfreq}."
+                            " Set ``force=True`` to ignore the bounds"
+                            " frequency errors.")
+        else : 
+            interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
         # Find stations near by and store them in a list
         emap_obj = []
         # for kk, edi in enumerate(edi_list):
@@ -3416,9 +3483,10 @@ class ZC(EM):
                 
             interp_idx = np.where((interp_freq >= emap_obj_kk.Z.freq.min()) &
                               (interp_freq <= emap_obj_kk.Z.freq.max()))
-
+            #print(interp_idx)
             interp_freq_kk = interp_freq[interp_idx]
-            Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk)
+            Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
+                           bounds_error= False if skipfreq ==0 else True )
             Z_interp.compute_resistivity_phase()
             res_array[
                 kk,
