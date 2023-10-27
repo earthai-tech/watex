@@ -370,7 +370,8 @@ class Edi :
             new_edifilename=None, 
             datatype =None , 
             savepath =None, 
-            filtered_array =None 
+            filtered_array =None, 
+            prefix_edi='new_', 
             ): 
         """
         Method to write edifiles from data setting oin attribute of Edi 
@@ -438,7 +439,7 @@ class Edi :
             
         if new_edifilename is None : 
             if self.edifile is not None : new_edifilename = '{0}{1}'.format(
-                    'new_', os.path.basename(self.edifile)) 
+                    f'{prefix_edi}', os.path.basename(self.edifile)) 
             else : 
                 f = 1
                 new_edifilename = '{0}_{1}.{2}.edi'
