@@ -1092,7 +1092,7 @@ class _zupdate(EM):
             
             self.option = str(option).lower()  or self.option 
             # create an empty array to collect each new Z object 
-           
+            
             if isinstance (z_dict, dict ): 
                 # # rather than using ediObjs 
                 # which could be None if the idea 
@@ -3587,26 +3587,28 @@ class ZC(EM):
         >>> np.abs(zo.ediObjs_[0].Z.z[:, 0, 1][:7])
         array([13966.38260707, 14572.19436577, 16212.72387076, 22231.39226441,
                29460.64755851, 19685.63100474, 10340.94268466])
-        >>> zc = zo.removal_noises ()
+        >>> zc = zo.remove_noises ()
         >>> zc[0].z[:, 0, 1] [:7]
-        array([18384.27542324+1953.49674833j, 16938.40554549+4835.39567335j,
-               16023.38835079+6397.39867633j, 15592.04062499+7010.21590474j,
-               15507.15077853+6858.63905098j, 15602.11496159+6070.18599155j,
-               15704.97866285+4772.23138182j])
+        array([14588.73938176+11356.3381261j , 12023.27409262+12873.67522641j,
+               10462.96087917+13718.67827836j,  9607.98778456+14140.06466089j,
+                9229.1405574 +14224.47255512j,  9147.25685955+14021.44219373j,
+                9217.44417983+13581.57833074j])
         >>> np.abs( zc[0].z[:, 0, 1] [:7])
         array([18487.77251005, 17615.06837175, 17253.2803856 , 17095.46307891,
                16956.19812634, 16741.36043596, 16414.03506644])
         """
+        self.inspect 
+        
         p = Processing(out ='z ') 
         p.ediObjs_ = self.ediObjs_
         p.freqs_ = self.freqs_
- 
+        
         zd = dict () 
         # correct all components if applicable 
         for comp in ('xx', 'xy', 'yx', 'yy'): 
             try: 
                 zc = filter_noises (
-                    p, 
+                    p.ediObjs_, 
                     comp, 
                     method=method, 
                     window_size_factor= window_size_factor, 
@@ -3618,7 +3620,7 @@ class ZC(EM):
                 
             except : 
                 # In the case some components 
-                # are missing, set to null 
+                    # are missing, set to null 
                 zc = np.zeros (
                     (len(self.freqs_), len(self.ediObjs_)),
                     dtype = np.complex128)
@@ -3626,7 +3628,7 @@ class ZC(EM):
             
             zd[f'z{comp}'] = zc 
             zd[f'z{comp}_err']=zc_err
-            
+        
         # manage edi -export 
         option =kws.pop('option', None )
         option = 'write' if out else None 
@@ -3646,7 +3648,7 @@ def filter_noises (
     ): 
     """ Remove noise from single component. 
     
-    Parameter 
+    Parameters 
     ----------
     pObj: :class:`watex.em.Processing` or EDI object.  
       Object from Processing class or :attr:`EM.EdiObjs_` 
@@ -3727,7 +3729,7 @@ def filter_noises (
     >>> ax[0].set_xscale ('log')
     >>> ax[0].legend()
     >>> ax[0].grid(True)
-    >>> ax[1].plot(p.freqs_, p.ediObjs_[0].Z.phase[:, 0, 1], 
+    >>> ax[1].plot(p.freqs_, p.ediObjs_[0].Z.phase[:, 0, 1]%90, 
                    'b-', label='Original Phase Data')
     >>> ax[1].plot(p.freqs_, phase_b[:, 0], '-ok', 
                    label='Smoothed Phase Data ')
@@ -3760,64 +3762,62 @@ def filter_noises (
 
     # assert filter arguments 
     pObj.component = component  
-    pObj.res2d_ , pObj.phs2d_ , pObj.freqs_, pObj.c, pObj.window_size, \
-        pObj.component, pObj.out = pObj._make2dblobs ()
+    res2d_ , phs2d_ , freqs_, *_ = pObj._make2dblobs ()
     
     # modulo the phase to be include [0 and 90] degree then 
     # eliminate negative phase. 
-    pObj.phs2d_  = pObj.phs2d_ %90 
-    smoothed_phase = np.zeros_like ( pObj.phs2d_).T  
+    phs2d_  = phs2d_ %90 
+    smoothed_phase = np.zeros_like ( phs2d_).T  
     #smooth_z = np.zeros_like ( self.res2d_ , dtype = np.complex128 )
-    smoothed_res = np.zeros_like ( pObj.res2d_).T
+    smoothed_res = np.zeros_like ( res2d_).T
     
     if method =='base': 
         # block moving average `ma` trick to True 
         # and force resistivity value to be positive 
-        smoothed_res = smoothing( pObj.res2d_ )
+        smoothed_res = smoothing( res2d_ )
         if (smoothed_res < 0).any(): 
             smoothed_res = np.abs (smoothed_res )
-        
-        smoothed_phase = smoothing ( pObj.phs2d_)
+        smoothed_phase = smoothing ( phs2d_)
     else: 
-        for ii in range (len(pObj.res2d_.T)): 
-            #res_data = pObj.res2d_ [ii, :] 
+        for ii in range (len(res2d_.T)):  
             if method =='butterworth': 
                 smoothed_res [ii,: ] = butterworth_filter(
-                    pObj.res2d_[:, ii ] , 
-                    freqs= pObj.freqs_, 
+                    res2d_[:, ii ] , 
+                    freqs= freqs_, 
                     frange=frange, 
                     fs = signal_frequeny)
             elif method =='torres-verdin': 
                 smoothed_res [ii,: ] = torres_verdin_filter(
-                    pObj.res2d_ [:, ii], 
+                    res2d_ [:, ii], 
                     weight_factor=window_size_factor, 
                     logify= True, 
                      )
                 smoothed_phase [ii, :] = torres_verdin_filter(
-                    pObj.phs2d_[:, ii],# except the negative phase 
+                    phs2d_[:, ii],# except the negative phase 
                     weight_factor=window_size_factor, 
                     logify =True
                     )
             else: 
                 smoothed_res [ii,: ] = adaptive_moving_average(
-                    pObj.res2d_ [:, ii], 
+                    res2d_ [:, ii], 
                     window_size_factor=window_size_factor
                      )
                 smoothed_phase [ii, :] = adaptive_moving_average(
-                    pObj.phs2d_[:, ii] ,
+                    phs2d_[:, ii] ,
                     window_size_factor=window_size_factor
                     )
                 
         # transpose to get the resistivity and phase coordinates 
         smoothed_phase = smoothed_phase.T
         smoothed_res = smoothed_res.T 
-        
+
     # recompute z with the corrected phase
+    
     if return_z : 
         z_smoothed = rhophi2z(
             smoothed_res, 
             phi= smoothed_phase, 
-            freq= pObj.freqs_
+            freq= freqs_
             )
 
     return z_smoothed   if return_z else (smoothed_res, smoothed_phase)
