@@ -56,7 +56,8 @@ from ..utils.exmath import (
     z2rhoa, 
     mu0,
     smoothing,
-    butterworth_filter, 
+    butterworth_filter,
+    qc as QC
     )
 from ..utils.coreutils import ( 
     makeCoords, 
@@ -1012,6 +1013,29 @@ class EM(IsEdi):
         
         return  z [tuple (c.get(component))] if z is not None else c 
        
+    def _set_zc_updated_attr (self, new_edi, new_z , new_freqs =None, 
+                              update_z = True, freqslist =None ): 
+        """ Update Impedance tensor after applying some transformations
+        on the data. """
+        for name, value in zip ( 
+                ( 'new_ediObjs_', 'new_freqs_', 'new_Z_',),
+                ( new_edi, new_freqs, new_z )): 
+            
+            setattr ( self, name, value )  
+            
+        if update_z : 
+            ediObjs=[]
+            for ediObj, Zn in zip ( self.ediObjs_, self.new_Z_) :
+                ediObj.Z =  Zn 
+                ediObjs.append (ediObj)
+            self.ediObjs_ = np.array (ediObjs) 
+            # Sometimes, Z is updated using impedance at 
+            # each station.
+            if new_freqs is not None: 
+                self.freqs_ = new_freqs 
+            
+        setattr (self, '_freqlist_', freqslist ) 
+        
     @staticmethod 
     def get_z_from( edi_obj_list, /, ): 
         """ Get z object from Edi object. 
@@ -1051,7 +1075,7 @@ class EM(IsEdi):
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
             f'{appender}{"" if rv is None else "?"}'
             )
-        
+#XXXTODO    
 class _zupdate(EM): 
     """ A decorator for impedance tensor updating. 
     
@@ -1066,6 +1090,9 @@ class _zupdate(EM):
         When `option` is set to ``write``. The new EDI -files are exported.
         Any other values should return only the updated impedance tensors.
         
+    edi_prefix: str, default ='new_' 
+       name to use to prefix all the new edi-files for exporting. 
+       
     Returns 
     --------
     Z |None : A collection of  :class:`watex.externals.z.Z` impedance tensor 
@@ -1073,8 +1100,9 @@ class _zupdate(EM):
         
     """
     
-    def __init__(self, option: str = 'write'): 
-        self.option = option
+    def __init__(self, option: str = 'write', edi_prefix ='new_'): 
+        self.option = str(option).lower()
+        self.edi_prefix = edi_prefix 
     
     def __call__ (self, func:F):
         
@@ -1083,37 +1111,27 @@ class _zupdate(EM):
             """ Wrapper  to make new Z. The updated Z is a collection
             object from ':class:`pycsamt.core.z.Z` """
             
-            (ediObjs , freq,  z_dict), kwargs = func (*args, **kws)
+            O, kwargs = func (*args, **kws)
+            
+            ediObjs= O.new_ediObjs_# Get new EDIobjs
+            # freq=O.new_freqs_# get frequency 
+            z_dict= O.new_Z_ # Get znew 
             
             # pop the option argument if user provides it 
-            option = kwargs.pop('option', None)
+            # option = kwargs.pop('option', None)
             rotate = kwargs.pop ('rotate', 0. ) 
             ediO= kwargs.pop('ediObjs', None )
-            
-            self.option = str(option).lower()  or self.option 
+   
             # create an empty array to collect each new Z object 
-            
             if isinstance (z_dict, dict ): 
-                # # rather than using ediObjs 
-                # which could be None if the idea 
-                # is just to correct the tensor z
-                # therefor fetch the shape [1] of a random 
-                # components which correspond 
-                # to the number of stations of collected EDI 
-                nsites = list( z_dict.values()) [0].shape [1 ] 
-
-                Zc = np.empty((nsites, ), dtype = object )
-                for kk in range  (nsites):
-                    # create a new Z object for each Edi
-                    Z= self._make_zObj(kk,freq=freq, 
-                                       z_dict = z_dict , 
-                                       rotate= rotate, 
-                                       )
-                    Zc[kk] =Z
+                
+                Zc = self.update_z_dict ( 
+                    z_dict, new_ediobjs = ediObjs,  
+                    rotate =rotate )
             else : 
                 # write corrected EDis with no loops 
                 Zc = z_dict 
-            
+                
             if self.option in ('write', 'true') :
                 objtype = _assert_z_or_edi_objs(ediObjs)
                 if objtype =='Z'and ediO is None:
@@ -1135,18 +1153,77 @@ class _zupdate(EM):
                     "EDI-objects and Z collection must be consistent."
                     f" Got {len(ediO)} and {len(Zc)}.")
                 
+                kwargs.__setitem__ (
+                    'prefix_edi', '' if self.edi_prefix is None
+                    else self.edi_prefix)
+                
                 self.exportedis(
                     ediObjs=ediO, 
                     new_Z=Zc, 
                     **kwargs
                     ) 
-                
-            return Zc if self.option !='write' else None 
+            return O if self.option !='write' else None 
           
         return new_func 
     
+    @staticmethod
+    def update_z_dict (
+        z_dict, 
+        new_ediobjs =None,  
+        freqslist =None, 
+        rotate=0.,
+        ): 
+        """ Update Z  from dictionnary"""
+        if ( 
+                freqslist is None 
+                and new_ediobjs is None
+                ): 
+            raise FrequencyError("Frequency cannot be alonge for updating Z" 
+                                 " using dictionnary.")
+        # # rather than using ediObjs 
+        # which could be None if the idea 
+        # is just to correct the tensor z
+        # therefor fetch the shape [1] of a random 
+        # components which correspond 
+        # to the number of stations of collected EDI 
+        nsites = list( z_dict.values())[0].shape [1 ] 
+        Zc = np.empty((nsites, ), dtype = object )
+
+        # Get the fequency list from ediObjs 
+        if freqslist is None and new_ediobjs is None: 
+            raise FrequencyError(
+                "Frequency of each station need to be supplied."
+                                 )
+        #  repeat freq to a list 
+        if freqslist is not None: 
+            if hasattr (freqslist , '__array__'): 
+                freqslist = [ freqslist for _ in range ( nsites )]
+
+            elif isinstance ( freqslist, list ): 
+                # check whether number of frequency equal to the site 
+                assert len( freqslist) ==nsites, (
+                    "Frequencies list must be consistent with the number of" 
+                    f" of stations. Expect {nsites}, got {len( freqslist)}")
+        
+        elif new_ediobjs is not None: 
+            freqslist = list( map (lambda  o: o.Z._freq , new_ediobjs)) 
+
+        for kk in range  (nsites):
+            # create a new Z object for each Edi
+
+            Z= _zupdate._make_zObj(
+                kk, 
+                # get frequency for at each sites #freq,
+                freq= freqslist[kk],  
+                z_dict = z_dict , 
+                rotate= rotate, 
+                )
+            Zc[kk] =Z
+            
+        return Zc 
+             
+    @staticmethod
     def _make_zObj (
-        self, 
         kk: int ,
         *, 
         freq: ArrayLike[DType[float]], 
@@ -1166,6 +1243,7 @@ class _zupdate(EM):
           Angle to rotate the impedance tensor accordingly. 
 
         """
+
         Z = EMz(
             z_array=np.zeros((len(freq ), 2, 2),dtype='complex'),
             z_err_array=np.zeros((len(freq), 2, 2)),
@@ -1209,8 +1287,7 @@ class _zupdate(EM):
             z_array = Z._z , z_err_array = Z._z_err, freq = freq )
 
         return Z
- 
-        
+
 class Processing (EM) :
     """ Base processing of EM object 
     
@@ -2234,6 +2311,7 @@ class Processing (EM) :
                 new_Z.z_err[new_nz_index, ii, jj] = reshape(z_err, 1)
         # compute resistivity and phase for new Z object
         new_Z.compute_resistivity_phase()
+        
         return new_Z 
 
     @staticmethod 
@@ -2599,14 +2677,19 @@ class Processing (EM) :
             'zyx_err': zyx_err, 
             'zyy_err': zyy_err
             } 
+
+        zc = _zupdate.update_z_dict(z_dict= z_dict, freqslist= new_f)
         
-        return (self.ediObjs_, new_f , z_dict ), kws
-     
+        self._set_zc_updated_attr(
+            new_edi=self.ediObjs_ , new_freqs = new_f, new_z= zc, 
+            )
+        
+        return self 
+    
     @staticmethod
-    @_zupdate (option ='none')
     def interpolate_z (
         z_or_edis_obj_list,  / , 
-        **kws 
+        rotate:float=.0 
         ): 
         """ Interpolate z and return new interpolated z objects 
         
@@ -2684,18 +2767,78 @@ class Processing (EM) :
             zdict [f'z{comp}']=zx 
             zdict [f'z{comp}_err'] = zx_err 
             
+        Zupdated= _zupdate.update_z_dict(
+            z_dict= zdict, freqslist= f, rotate =rotate)
         
-        return (zobjs_init, f, zdict), kws 
+        return Zupdated #(zobjs_init, f, zdict), kws 
+
+  
+class ZC(EM): 
+    """Impedance tensor multiple EDI correction class. 
+    
+    Applied filters in a collections of :term:`EDI` objects. 
+    
+    .. versionadded:: v0.2.0 
+    
+    Parameters 
+    ------------
+    
+    data: Path-like object or list  of  :class:watex.edi.Edi` or \
+        `pycsamt.core.edi.Edi` objects 
+        Collections of EDI-objects 
+
+    window_size : int
+        the length of the window. Must be greater than 1 and preferably
+        an odd integer number. Default is ``5``
+        
+    c : int, default=2 
+        A window-width expansion factor that must be input to the filter 
+        adaptation process to control the roll-off characteristics
+        of the applied Hanning window. It is recommended to select `c` 
+        between ``1``  and ``4`` [1]_. 
+
+    References 
+    -----------
+    .. [1] Torres-Verdin and Bostick, 1992,  Principles of spatial surface 
+           electric field filtering in magnetotellurics: electromagnetic array 
+           profiling(EMAP), Geophysics, v57, p603-622.https://doi.org/10.1190/1.2400625
+           
+    Examples 
+    ---------
+    >>> import watex as ax
+    >>> from watex.methods import ZC 
+    >>> edi_sample = wx.fetch_data ('edis', samples =17, return_data =True) 
+    >>> zo = ZC ().fit(edi_sample) 
+    >>> zo.ediObjs_[0].Z.resistivity[:, 0, 1][:10] # for xy components 
+    array([ 427.43690401,  524.87391142,  732.85475419, 1554.3189371 ,
+           3078.87621649, 1550.62680093,  482.64709443,  605.3153687 ,
+            499.49191936,  468.88692879])
+    >>> zo.remove_static_shift(ss_fx =0.7 , ss_fy =0.85 )
+    >>> zo.new_Z_[0].resistivity[:, 0, 1][:10] # corrected xy components
+    array([ 278.96395263,  319.11187959,  366.43170231,  672.24446295,
+           1344.20120487,  691.49270688,  260.25625996,  360.02452498,
+            305.97381587,  273.46251961])
+    """
+    def __init__(
+        self, 
+        window_size:int =5, 
+        c: int =2, 
+        **kws
+        ): 
+        super().__init__(**kws)
+        
+        self.window_size=window_size 
+        self.c=c 
 
     def drop_frequencies (
-            self, 
-            freqs= None, 
-            tol =None, 
-            interpolate: bool =False, 
-            rotate= 0. , 
-            export =False , 
-            **kws 
-            ): 
+        self, 
+        tol =None, 
+        freqs= None, 
+        interpolate: bool =False, 
+        rotate= 0. , 
+        update_z: bool=True, 
+ 
+        ): 
         """ Drop useless frequencies in the EDI data.
         
         Due to the terrain constraints, topographic and interferences noises 
@@ -2736,15 +2879,12 @@ class Processing (EM) :
             Note that if `rotate` is given, it is only used in `interpolation`
             i.e interpolation is set to ``True``. 
 
-        export: bool , default =False, 
-           Output new sanitized EDIs. 
+        update_z: bool, default=True 
+           Update the Z tensors after dropping the useless frequencies. 
         
         Returns 
         ---------
-        Zcol:  or (float, array-like, shape (N, ))
-            return the quality control value and interpolated frequency if  
-            `return_freq`  is set to ``True`` otherwise return the index of useless 
-            data. 
+        self: :class:`watex.methods.ZC` for methods chaining. 
    
         Examples 
         ----------
@@ -2788,24 +2928,20 @@ class Processing (EM) :
         >>> # explicitly it drops the 49500 and 29400 Hz the closest. 
 
         """ 
-
         self.inspect 
-        
         if tol is None and freqs is None: 
-            raise EMError ("tolerance parameter or frequency values to delete"
+            raise EMError ("tolerance parameter or frequency values to discard"
                            " could not be None. Consider ``tol='auto'``to"
-                           "  automatically delect the bad frequencies.")
+                           "  automatically control 50% quality of the data.")
             
         if str(tol).lower() == 'auto': 
             tol =.5 
-   
         # make a copy of ediobjs  
         ediObjs = np.array( self.ediObjs_, dtype =object) 
-        
         if tol is not None: 
-            _ , index_freq = self.qc (tol = tol ) 
-            freqs = self.freqs_ [ index_freq ]
-
+            qco = QC (ediObjs, tol = tol , return_qco= True ) 
+            freqs = qco.invalid_freqs_
+  
         if freqs is not None: 
             if is_iterable(freqs, exclude_string=True): 
                 # find the closest frequency that match the 
@@ -2825,7 +2961,7 @@ class Processing (EM) :
                              inline =True , verbose =self.verbose 
                              )
         # use mask to set a new collection of Z 
-        Zobj = []
+        Zobj = []; freqslist=[]
         for kk , edio  in enumerate (ediObjs ): 
             mask  = np.isin ( edio.Z._freq,  freqs)
             # mask = np.ones ( len( edio.Z._freq), dtype = bool ) 
@@ -2839,85 +2975,28 @@ class Processing (EM) :
                 z_array= z_new , z_err_array= z_err_new , freq = new_freq
                 ) 
             Zobj.append(Z )
-            
+            freqslist.append (new_freq)
         if interpolate:
-            Zobj = self.interpolate_z (Zobj, 
-                                       rotate = rotate
-                                       )
+            Zobj = self.interpolate_z (Zobj,rotate = rotate)
+            
+        # Got a single frequency 
+        self._set_zc_updated_attr(
+            new_edi=self.ediObjs_, new_z= Zobj, 
+            update_z =update_z, 
+            new_freqs= freqslist
+            )
         
-        if export: 
-            self.exportedis(ediObjs= ediObjs, new_Z=Zobj, 
-                            **kws)
-
-        return Zobj
-    
-class ZC(EM): 
-    """Impedance tensor multiple EDI correction class. 
-    
-    Applied filters in a collections of :term:`EDI` objects. 
-    
-    .. versionadded:: v0.2.0 
-    
-    Parameters 
-    ------------
-    
-    data: Path-like object or list  of  :class:watex.edi.Edi` or \
-        `pycsamt.core.edi.Edi` objects 
-        Collections of EDI-objects 
-
-    window_size : int
-        the length of the window. Must be greater than 1 and preferably
-        an odd integer number. Default is ``5``
-        
-    c : int, default=2 
-        A window-width expansion factor that must be input to the filter 
-        adaptation process to control the roll-off characteristics
-        of the applied Hanning window. It is recommended to select `c` 
-        between ``1``  and ``4`` [1]_. 
-
-    References 
-    -----------
-    .. [1] Torres-Verdin and Bostick, 1992,  Principles of spatial surface 
-           electric field filtering in magnetotellurics: electromagnetic array 
-           profiling(EMAP), Geophysics, v57, p603-622.https://doi.org/10.1190/1.2400625
-           
-    Examples 
-    ----------
-    >>> import watex
-    >>> from watex.methods import ZC 
-    >>> edi_sample = watex.fetch_data ('edis', samples =17, return_data =True) 
-    >>> zo = ZC ().fit(edi_sample) 
-    >>> zo.ediObjs_[0].Z.resistivity[:, 0, 1][:10] # for xy components 
-    array([ 427.43690401,  524.87391142,  732.85475419, 1554.3189371 ,
-           3078.87621649, 1550.62680093,  482.64709443,  605.3153687 ,
-            499.49191936,  468.88692879])
-    >>> zss = zo.remove_static_shift(ss_fx =0.7 , ss_fy =0.85 )
-    >>> zss[0].resistivity[:, 0, 1][:10] # corrected xy components 
-    array([ 278.96395263,  319.11187959,  366.43170231,  672.24446295,
-           1344.20120487,  691.49270688,  260.25625996,  360.02452498,
-            305.97381587,  273.46251961])
-    """
-    def __init__(
-        self, 
-        window_size:int =5, 
-        c: int =2, 
-        **kws
-        ): 
-        super().__init__(**kws)
-        
-        self.window_size=window_size 
-        self.c=c 
-
-    
-    @_zupdate (option ='none')
+        return self 
+ 
     def remove_ss_emap (
-            self, 
-            fltr:str ='ama', 
-            out:bool= False, 
-            smooth:bool= True, 
-            drop_outliers:bool=True, 
-            **kws
-            ): 
+        self, 
+        fltr:str ='ama', 
+        out:bool= False, 
+        smooth:bool= True, 
+        drop_outliers:bool=True, 
+        rotate:float=0., 
+        update_z:bool = True, 
+        ): 
         """
         Filter Z to remove the static schift using the :term:`EMAP` moving 
         average filters. 
@@ -2963,8 +3042,7 @@ class ZC(EM):
            
         Returns 
         ---------
-        Z: list of :class:`watex.externals.z` objects or None 
-           Return ``None`` by default (when export is set to ``False``) 
+        self: :class:`watex.methods.ZC` for methods chaining. 
          
             
         References 
@@ -3040,13 +3118,23 @@ class ZC(EM):
             zd[f'z{comp}'] = zc 
             zd[f'z{comp}_err']=zc_err
             
-        # manage edi -export 
-        option =kws.pop('option', None )
-        option = 'write' if out else None 
-        # reset  option 
-        kws.__setitem__('option', option ) 
-  
-        return (self.ediObjs_, self.freqs_ , zd ), kws
+        # # manage edi -export 
+        # option =kws.pop('option', None )
+        # option = 'write' if out else None 
+        # # reset  option 
+        # kws.__setitem__('option', option ) 
+        zd = _zupdate.update_z_dict(
+            new_ediobjs= self.ediObjs_, 
+            z_dict= zd , rotate= rotate )
+        
+        self._set_zc_updated_attr(
+            new_edi=self.ediObjs_ , 
+            new_freqs=self.freqs_, 
+            new_z= zd, 
+            update_z = update_z 
+            )
+         
+        return self
 
     def _get_multiple_ss_factors (self,ss_fx=None, ss_fy= None, 
             stations=None, r = 1000, nfreq =21, skipfreq =5, tol=.12, 
@@ -3083,8 +3171,6 @@ class ZC(EM):
                 )
         return ss_fx_fy 
     
-        
-    @_zupdate (option ='none')
     def remove_static_shift (
         self, 
         ss_fx:float | List[float] =None, 
@@ -3096,8 +3182,7 @@ class ZC(EM):
         skipfreq:int=5, 
         tol=.12, 
         force:bool=False, 
-        out:bool =False , 
-        **kws
+        update_z:bool=True, 
         ): 
         """
         Remove the static shift from correction factor from x and y. 
@@ -3176,14 +3261,15 @@ class ZC(EM):
            .. versionadded:: 0.2.8
             Ignore frequency bound errors with ``force=True``. 
            
+        update_z: bool, default=True 
+           Update Impendance tensor `Z` after correcting the static shift 
+           effect. 
+           
         Returns
         --------
+        self: :class:`watex.methods.ZC` for methods chaining. 
         
-        ( static shift matrix,coorected_z) : np.ndarray ((2, 2)) or \
-            watex.externals.z.Z
-            If ``export`` is ``True`` export to new edis and returns 
-            nothing. 
-        
+
         Note 
         -----
         The factors are in resistivity scale, so the entries of  the matrix 
@@ -3245,30 +3331,20 @@ class ZC(EM):
             ZObjs.append (z0 ) 
             new_ediObjs.append (ediObj )
 
-        # export data to 
-        # new edis 
-        
-        # manage edi -export 
-        option =kws.pop('option', None )
-        option = 'write' if out else None 
-        # reset  option 
-        kws.__setitem__('option', option ) 
-        # kws ={
-        #        "option": 'write' if out  else  None, 
-        #        } 
-        return ( new_ediObjs, 
-                self.freqs_, 
-                ZObjs ), kws 
-    
-    
-    @_zupdate (option ='none')
+        self._set_zc_updated_attr(
+            new_edi=new_ediObjs , 
+            new_freq=self.freqs_, 
+            new_z= ZObjs, 
+            update_z=update_z
+            )
+        return self 
+ 
     def remove_distortion (
         self,
         distortion: NDArray, 
         /, 
-        error:NDArray=None, 
-        out =False, 
-        **kws, 
+        error:NDArray=None,
+        update_z:bool=True
         ):
         """
         Remove distortion D form an observed impedance tensor Z. 
@@ -3288,18 +3364,14 @@ class ZC(EM):
         error: np.ndarray(2, 2, dtype=real), Optional 
           Propagation of errors/uncertainties included 
           
-        out: bool , default =False, 
-           Output new filtered EDI. Otherwise return Z collections objects 
-           of corrected Tensors. 
+        update_z: bool , default =True, 
+           Update Impendance tensors after removing the distorsion in the 
+           data. 
 
         Returns 
         ----------
-        d, new_z, new_z_err: NDArray ( 2 x2 , dtype =real )
-          - input distortion tensor
-          - impedance tensor with distorion removed
-          -  impedance tensor error after distortion is removed 
-          If ``export=True``, export to new EDI and return None. 
-          
+        self: :class:`watex.methods.ZC` for methods chaining. 
+
         Examples 
         ---------
         >>> import watex 
@@ -3337,22 +3409,19 @@ class ZC(EM):
             z0._z = new_z
             z0._z_err = new_z_err
             ediObj.Z._z= new_z 
-            #z0.compute_resistivity_phase(new_z, new_z_err ) 
+            # z0.compute_resistivity_phase(new_z, new_z_err ) 
             # for consistency 
             ZObjs.append (z0 ) 
             new_ediObjs.append (ediObj )
-            
         # export data to 
-        # new edis 
-        # manage edi -export 
-        option =kws.pop('option', None )
-        option = 'write' if out else None 
-        # reset  option 
-        kws.__setitem__('option', option ) 
-   
-        return (new_ediObjs, 
-                self.freqs_, 
-                ZObjs ), kws 
+        self._set_zc_updated_attr(
+            new_edi=new_ediObjs , 
+            new_freqs=self.freqs_,
+            new_z= ZObjs, 
+            update_z = update_z 
+            )
+        
+        return self 
     
     def get_ss_correction_factors(
         self, 
@@ -3535,7 +3604,6 @@ class ZC(EM):
 
         return ss_x, ss_y
 
-    @_zupdate (option ='none')
     def remove_noises (
         self, 
         method:str='base', 
@@ -3543,7 +3611,8 @@ class ZC(EM):
         out:bool=False, 
         frange: tuple =None, 
         signal_frequency:float=None, 
-        **kws 
+        rotate: float=0.,
+        update_z:bool=True, 
         ): 
         """ remove indesired and artifacts in the data and smooth it.
 
@@ -3565,13 +3634,13 @@ class ZC(EM):
           Output the corrected impedance tensor Z. If ``False``, the corrected 
           resistivity and phase should be outpoutted. 
 
+        update_z: bool , default =True, 
+           Update Impedance tensor after removing artifacts, outliers 
+           and interferences. 
+           
         Returns 
         ----------
-        d, new_z, new_z_err: NDArray ( 2 x2 , dtype =real )
-          - input distortion tensor
-          - impedance tensor with distorion removed
-          - impedance tensor error after distortion is removed 
-          If ``out=True``, export to new EDI and return None. 
+        self: :class:`watex.methods.ZC` for method chaining.
           
         Examples 
         ---------
@@ -3598,17 +3667,13 @@ class ZC(EM):
                16956.19812634, 16741.36043596, 16414.03506644])
         """
         self.inspect 
-        
-        p = Processing(out ='z ') 
-        p.ediObjs_ = self.ediObjs_
-        p.freqs_ = self.freqs_
-        
+ 
         zd = dict () 
         # correct all components if applicable 
         for comp in ('xx', 'xy', 'yx', 'yy'): 
             try: 
                 zc = filter_noises (
-                    p.ediObjs_, 
+                    self.ediObjs_, 
                     comp, 
                     method=method, 
                     window_size_factor= window_size_factor, 
@@ -3628,14 +3693,27 @@ class ZC(EM):
             
             zd[f'z{comp}'] = zc 
             zd[f'z{comp}_err']=zc_err
-        
+            
         # manage edi -export 
-        option =kws.pop('option', None )
-        option = 'write' if out else None 
-        # reset  option 
-        kws.__setitem__('option', option ) 
+        # option =kws.pop('option', None )
+        # option = 'write' if out else None 
+        # # reset  option 
+        # kws.__setitem__('option', option ) 
+        zc = _zupdate.update_z_dict(
+            zd, new_ediobjs = self.ediObjs_, 
+            rotate= rotate )
+        self._set_zc_updated_attr(
+            new_edi=self.ediObjs_ , new_freqs=self.freqs_, 
+            new_z= zc, update_z= update_z)
         
-        return (self.ediObjs_, self.freqs_ , zd ), kws
+        return self 
+
+#XXX TODO
+    @_zupdate (option ='write', edi_prefix= None )
+    def out ( self, **kws): 
+        """ Export EDI files. """
+        # manage edi -export 
+        return self, kws 
 
 def filter_noises (
     ediObjs: EDIO, / , 
@@ -3707,9 +3785,9 @@ def filter_noises (
             8908.448+5251.157j])
     >>> res_b, phase_b = filter_noises (
         p, component='xy', return_z= False, )
-    res_t, phase_t = filter_noises (
+    >>> res_t, phase_t = filter_noises (
         p, component='xy', return_z= False, method ='torres')
-    res_a, phase_a = filter_noises (
+    >>> res_a, phase_a = filter_noises (
         p, component='xy', return_z= False, method ='ama')
     >>> # plot station S00 ( first ) 
     >>> #Plot the original and smoothed data
@@ -3778,6 +3856,7 @@ def filter_noises (
         if (smoothed_res < 0).any(): 
             smoothed_res = np.abs (smoothed_res )
         smoothed_phase = smoothing ( phs2d_)
+ 
     else: 
         for ii in range (len(res2d_.T)):  
             if method =='butterworth': 
