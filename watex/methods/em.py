@@ -3812,7 +3812,6 @@ def filter_noises (
         smoothed_res = smoothed_res.T 
 
     # recompute z with the corrected phase
-    
     if return_z : 
         z_smoothed = rhophi2z(
             smoothed_res, 
