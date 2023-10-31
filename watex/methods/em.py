@@ -2214,7 +2214,7 @@ class Processing (EM) :
                 )
             
         return new_zObjs 
-    
+ 
     def _z_transform (
         self, 
         z , 
@@ -4009,7 +4009,64 @@ def _check_ss_factor_entries (
         
     return ss_fx_fy_0
            
+def updateZ (z_or_edis, /, ufunc , args =(), **kws  ): 
+    """ Update 3D tensors with universal functions applied to all 
+    components """
+    objtype = _assert_z_or_edi_objs(z_or_edis ) 
+    if objtype =='EDI': 
+        zobjs =np.array (list(map(lambda o: o.Z, z_or_edis)) ,
+                          dtype =object)
+    else: zobjs = z_or_edis
+    # --> make a new Z objects 
+    # make a new object 
+    new_zObjs =np.zeros_like (zobjs, dtype =object )
+    
+    for kk , Z in enumerate ( zobjs ): 
+        new_Z = EMz(z_array=np.zeros((len(Z._freq), 2, 2),
+                                       dtype='complex'),
+                    z_err_array=np.zeros((len(Z._freq), 2, 2)),
+                    freq=Z._freq)
+        
+        for ii in range(2):
+            for jj in range(2):
+                # need to look out for zeros in the impedance
+                # get the indicies of non-zero components
+                nz_index = np.nonzero(Z.z[:, ii, jj])
+                if len(nz_index[0]) == 0:
+                    continue
+                # get the non_zeros components and interpolate 
+                # frequency to recover the component in dead-band frequencies 
+                # Use the whole edi
+                with np.errstate(all='ignore'):
+                    zfreq = Z._freq
+                    #Since z is an imaginary part . Get the absolue a
+                    # and convert back latter to imaginary part. 
+                    # --resistivity 
+                    zv_res=  reshape(Z.resistivity[nz_index, ii, jj])  
+                    # then apply function 
+                    zv_res = ufunc  ( zv_res, *args, **kws ) 
+                    
+                    #---phase 
+                    zv_phase = reshape(Z.phase[nz_index, ii, jj])  
+                    zv_phase = ufunc  (zv_phase,  *args, **kws ) 
+                    #---error 
+                    #zerr_v = reshape(Z.z_err[nz_index, ii, jj]) 
 
+                # # Use the new dimension of the z and slice z according 
+                # # the buffer range. make the new index start at 0. 
+                new_Z.resistivity[nz_index, ii, jj] = reshape (zv_res , 1) 
+                new_Z.phase[nz_index, ii, jj] = reshape (zv_phase, 1) 
+                new_Z.z_err[nz_index, ii, jj] = Z.z_err[nz_index, ii, jj]
+                
+                # compute z as imag and real 
+                
+                new_Z.z [nz_index, ii, jj] = reshape ( rhophi2z(
+                    rho = zv_res, phi = zv_phase, freq= zfreq), 1) 
+        # compute resistivity and phase for new Z object
+        new_Z.compute_resistivity_phase()
+        new_zObjs[kk] = new_Z 
+        
+    return new_zObjs
   
     
   
