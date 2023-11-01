@@ -614,7 +614,9 @@ def rhophi2z(rho, phi, freq):
     """
     def _rhophi2z (r, p, f ): 
         """ An isolated part of `rhophi2z """
-        abs_z  = np.sqrt(5 * f * r)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', category=RuntimeWarning)
+            abs_z  = np.sqrt(5 * f * r)
         return cmath.rect(abs_z , radians(p))
     
     is_array2x2 =False 

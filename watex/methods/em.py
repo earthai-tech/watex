@@ -1075,6 +1075,7 @@ class EM(IsEdi):
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
             f'{appender}{"" if rv is None else "?"}'
             )
+        
 #XXXTODO    
 class _zupdate(EM): 
     """ A decorator for impedance tensor updating. 
@@ -1287,7 +1288,78 @@ class _zupdate(EM):
             z_array = Z._z , z_err_array = Z._z_err, freq = freq )
 
         return Z
+    
+    @staticmethod 
+    def update (z_or_edis, /,  ufunc , args =(), rotate =None , **kws  ): 
+        """ Update 3D tensors with universal functions applied to all 
+        components """
+        objtype = _assert_z_or_edi_objs(z_or_edis ) 
+        if objtype =='EDI': 
+            zobjs =np.array (list(map(lambda o: o.Z, z_or_edis)) ,
+                              dtype =object)
+        else: zobjs = z_or_edis
+        # --> make a new Z objects 
+        # make a new object 
+        new_zObjs =np.zeros_like (zobjs, dtype =object )
+        for kk , Z in enumerate ( zobjs ): 
+            new_Z = EMz(z_array=np.zeros((len(Z._freq), 2, 2),dtype='complex'),
+                        z_err_array=np.zeros((len(Z._freq), 2, 2)),
+                    freq=Z._freq)
+            for ii in range(2):
+                for jj in range(2):
+                    # need to look out for zeros in the impedance
+                    # get the indicies of non-zero components
+                    nz_index = np.nonzero(Z.z[:, ii, jj])
+                    if len(nz_index[0]) == 0:
+                        continue
+                    
+                    # get the frequencies of non-zero components
+                    # f = Z.freq[nz_index]
 
+                    # # get frequencies to interpolate on to, making sure the
+                    # # bounds are with in non-zero components
+                    # new_nz_index = np.where((new_freq_array >= f.min()) & 
+                    #                         (new_freq_array <= f.max()))[0]
+                    # new_f = new_freq_array[new_nz_index]
+                    
+                    # get the non_zeros components and interpolate 
+                    # frequency to recover the component in dead-band frequencies 
+                    # Use the whole edi
+                    with np.errstate(all='ignore'):
+                        zfreq = Z._freq
+                        #Since z is an imaginary part . Get the absolue a
+                        # and convert back latter to imaginary part. 
+                        # --resistivity 
+                        zv_res=  reshape(Z.resistivity[nz_index, ii, jj])  
+                        # then apply function 
+                        zv_res = ufunc  ( zv_res, *args, **kws ) 
+                        
+                        #---phase 
+                        zv_phase = reshape(Z.phase[nz_index, ii, jj])  
+                        zv_phase = ufunc  (zv_phase,  *args, **kws ) 
+                        #---error 
+                        #zerr_v = reshape(Z.z_err[nz_index, ii, jj]) 
+
+                    # # Use the new dimension of the z and slice z according 
+                    # # the buffer range. make the new index start at 0. 
+                    new_Z.resistivity[nz_index, ii, jj] = reshape (zv_res , 1) 
+                    new_Z.phase[nz_index, ii, jj] = reshape (zv_phase, 1) 
+                    new_Z.z_err[nz_index, ii, jj] = Z.z_err[nz_index, ii, jj]
+                    
+                    # compute z as imag and real 
+                    
+                    new_Z.z [nz_index, ii, jj] = reshape ( rhophi2z(
+                        rho = zv_res, phi = zv_phase, freq= zfreq), 1) 
+            # compute resistivity and phase for new Z object
+            if rotate: 
+                new_Z.rotate ( rotate )
+            else : 
+                new_Z.compute_resistivity_phase()
+                
+            new_zObjs[kk] = new_Z 
+            
+        return new_zObjs
+ 
 class Processing (EM) :
     """ Base processing of EM object 
     
@@ -3333,7 +3405,7 @@ class ZC(EM):
 
         self._set_zc_updated_attr(
             new_edi=new_ediObjs , 
-            new_freq=self.freqs_, 
+            # new_freq=self.freqs_, 
             new_z= ZObjs, 
             update_z=update_z
             )
@@ -3606,13 +3678,12 @@ class ZC(EM):
 
     def remove_noises (
         self, 
-        method:str='base', 
+        method:F|str='base', 
         window_size_factor:float =.1, 
-        out:bool=False, 
-        frange: tuple =None, 
-        signal_frequency:float=None, 
+        beta:bool =1.,  
         rotate: float=0.,
-        update_z:bool=True, 
+        args:tuple =(), 
+        **funckws 
         ): 
         """ remove indesired and artifacts in the data and smooth it.
 
@@ -3626,7 +3697,8 @@ class ZC(EM):
               
         frange: tuple, Optional 
            Lowcut and highcut frequency for Butterworth signal processing using 
-           bandpass filter. 
+           bandpass filter.
+           
         signal_frequency: float, 
           Sampling frequency to apply the bandpass filter. 
           
@@ -3667,48 +3739,65 @@ class ZC(EM):
                16956.19812634, 16741.36043596, 16414.03506644])
         """
         self.inspect 
- 
-        zd = dict () 
+        
+        # zd = dict () 
         # correct all components if applicable 
-        for comp in ('xx', 'xy', 'yx', 'yy'): 
-            try: 
-                zc = filter_noises (
-                    self.ediObjs_, 
-                    comp, 
-                    method=method, 
-                    window_size_factor= window_size_factor, 
-                    return_z =True, 
-                    signal_frequeny=signal_frequency, 
-                    frange=frange, 
-                    )
-                zc_err = self.make2d (f"z{comp}_err") 
+        # for comp in ('xx', 'xy', 'yx', 'yy'): 
+        #     try: 
+        #         zc = filter_noises (
+        #             self.ediObjs_, 
+        #             comp, 
+        #             method=method, 
+        #             window_size_factor= window_size_factor, 
+        #             return_z =True, 
+        #             signal_frequeny=signal_frequency, 
+        #             frange=frange, 
+        #             )
+        #         zc_err = self.make2d (f"z{comp}_err") 
                 
-            except : 
-                # In the case some components 
-                    # are missing, set to null 
-                zc = np.zeros (
-                    (len(self.freqs_), len(self.ediObjs_)),
-                    dtype = np.complex128)
-                zc_err= zc.copy() 
+        #     except : 
+        #         # In the case some components 
+        #             # are missing, set to null 
+        #         zc = np.zeros (
+        #             (len(self.freqs_), len(self.ediObjs_)),
+        #             dtype = np.complex128)
+        #         zc_err= zc.copy() 
             
-            zd[f'z{comp}'] = zc 
-            zd[f'z{comp}_err']=zc_err
+        #     zd[f'z{comp}'] = zc 
+        #     zd[f'z{comp}_err']=zc_err
             
-        # manage edi -export 
-        # option =kws.pop('option', None )
-        # option = 'write' if out else None 
-        # # reset  option 
-        # kws.__setitem__('option', option ) 
-        zc = _zupdate.update_z_dict(
-            zd, new_ediobjs = self.ediObjs_, 
-            rotate= rotate )
+        # Apply function for updating tensor.
+        if callable (method): 
+            ufunc = method ; kws = {}
+        else: 
+            ufunc = smoothing if method.find('base')>=0 else (
+                torres_verdin_filter if method.find('torres')>=0 
+                else adaptive_moving_average )
+            # set keyword argument 
+            kws= {"base": dict (), 
+                  "torres": dict(weight_factor = window_size_factor,
+                                 logify = True, beta = beta  ), 
+                  "ama": dict (window_size_factor  = window_size_factor )
+                  }
+            kws = kws.get(method, {})
+            
+        # Then Update Z
+        zc = _zupdate.update(
+            self.ediObjs_, ufunc = ufunc, args = args,
+            rotate = rotate, **kws, **funckws  )
+            
+        # zc = _zupdate.update_z_dict(
+        #     zd, new_ediobjs = self.ediObjs_, 
+        #     rotate= rotate )
         self._set_zc_updated_attr(
-            new_edi=self.ediObjs_ , new_freqs=self.freqs_, 
-            new_z= zc, update_z= update_z)
+            new_edi=self.ediObjs_ , 
+            # new_freqs=self.freqs_, 
+            new_z= zc, update_z= True
+            )
         
         return self 
 
-#XXX TODO
+
     @_zupdate (option ='write', edi_prefix= None )
     def out ( self, **kws): 
         """ Export EDI files. """
@@ -3721,7 +3810,7 @@ def filter_noises (
     method ='base',
     window_size_factor =.1, 
     frange=None, 
-    signal_frequeny=None, 
+    signal_frequency=None, 
     return_z =True,  
     ): 
     """ Remove noise from single component. 
@@ -3864,7 +3953,7 @@ def filter_noises (
                     res2d_[:, ii ] , 
                     freqs= freqs_, 
                     frange=frange, 
-                    fs = signal_frequeny)
+                    fs = signal_frequency)
             elif method =='torres-verdin': 
                 smoothed_res [ii,: ] = torres_verdin_filter(
                     res2d_ [:, ii], 
@@ -3891,7 +3980,6 @@ def filter_noises (
         smoothed_res = smoothed_res.T 
 
     # recompute z with the corrected phase
-    
     if return_z : 
         z_smoothed = rhophi2z(
             smoothed_res, 
@@ -4009,7 +4097,7 @@ def _check_ss_factor_entries (
         
     return ss_fx_fy_0
            
-def updateZ (z_or_edis, /, ufunc , args =(), **kws  ): 
+def _update_z (z_or_edis, /, ufunc , args =(), **kws  ): 
     """ Update 3D tensors with universal functions applied to all 
     components """
     objtype = _assert_z_or_edi_objs(z_or_edis ) 
