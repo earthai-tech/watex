@@ -2842,7 +2842,7 @@ class Processing (EM) :
         Zupdated= _zupdate.update_z_dict(
             z_dict= zdict, freqslist= f, rotate =rotate)
         
-        return Zupdated #(zobjs_init, f, zdict), kws 
+        return Zupdated 
 
   
 class ZC(EM): 
@@ -2904,10 +2904,10 @@ class ZC(EM):
 
     def drop_frequencies (
         self, 
-        tol =None, 
-        freqs= None, 
+        tol:float =None, 
+        freqs: List | ArrayLike= None, 
         interpolate: bool =False, 
-        rotate= 0. , 
+        rotate:float= 0. , 
         update_z: bool=True, 
  
         ): 
@@ -3027,7 +3027,6 @@ class ZC(EM):
         # for consistency 
         freqs = np.sort (freqs )[::-1 ] 
        
-        #if self.verbose: 
         listing_items_format(freqs ,begintext= "Frequencies" , 
                              endtext="Hz have been dropped.", 
                              inline =True , verbose =self.verbose 
@@ -3210,7 +3209,7 @@ class ZC(EM):
 
     def _get_multiple_ss_factors (self,ss_fx=None, ss_fy= None, 
             stations=None, r = 1000, nfreq =21, skipfreq =5, tol=.12, 
-            force =False
+            force =False, bounds_error = True, 
             ): 
         """ 
         Isolated part of :meth:`Zc.remove_static_shift` method. 
@@ -3231,7 +3230,10 @@ class ZC(EM):
                             station, 
                             nfreq = nfreq , 
                             skipfreq=skipfreq,
-                            force =force, tol=tol
+                            force =force, 
+                            tol=tol, 
+                            r=r , 
+                            bounds_error= bounds_error, 
                             )
                   for station in stations ]
         else: 
@@ -3254,7 +3256,8 @@ class ZC(EM):
         skipfreq:int=5, 
         tol=.12, 
         force:bool=False, 
-        update_z:bool=True, 
+        update_z:bool=True,
+        bounds_error: bool =True, 
         ): 
         """
         Remove the static shift from correction factor from x and y. 
@@ -3311,7 +3314,13 @@ class ZC(EM):
            or low signal in the :term:`AMT` deadband.  This allows you to 
            skip those frequencies.
                            
-    
+        bounds_error: bool, default=True 
+           Check whether the frequency for interpolation is within the 
+           frequency range. Otherwise, raises an error. 
+           
+           .. versonadded:: 0.2.8
+              Control the frequency range for interpolation. 
+           
         tol: float, default=0.12
            Tolerance on the median static shift correction.  If the data is 
            noisy the correction factor can be biased away from 1.  Therefore 
@@ -3379,6 +3388,7 @@ class ZC(EM):
             skipfreq =skipfreq, 
             tol = tol, 
             force =force, 
+            bounds_error = bounds_error
                 )
         ZObjs =[]
         new_ediObjs=[]
@@ -3485,6 +3495,7 @@ class ZC(EM):
             # for consistency 
             ZObjs.append (z0 ) 
             new_ediObjs.append (ediObj )
+            
         # export data to 
         self._set_zc_updated_attr(
             new_edi=new_ediObjs , 
@@ -3503,6 +3514,7 @@ class ZC(EM):
         skipfreq=5, 
         tol=.12, 
         force=False, 
+        bounds_error=True, 
         ) -> Tuple[float, float]:
         """
         Compute the  static shift correction factor from a station 
@@ -3528,13 +3540,16 @@ class ZC(EM):
            This is assuming the first frequency is the highest frequency.  
            Cause usually highest frequencies are sampling a 1D earth.  
     
-        skipfreq** : int, default=5 
+        skipfreq : int, default=5 
            number of frequencies to skip from the highest frequency.  
            Sometimes the highest frequencies are not reliable due to noise 
            or low signal in the :term:`AMT` deadband.  This allows you to 
            skip those frequencies.
                            
-    
+        bounds_error: bool, default=True 
+           Check whether the frequency for interpolation is within the 
+           frequency range. Otherwise, raises an error. 
+           
         tol: float, default=0.12
            Tolerance on the median static shift correction.  If the data is 
            noisy the correction factor can be biased away from 1.  Therefore 
@@ -3588,15 +3603,16 @@ class ZC(EM):
 
         edi_obj_init= self.ediObjs_[station_ix] 
         edi_obj_init.Z.compute_resistivity_phase()
-        # if nfreq 
+    
         if nfreq > len(edi_obj_init.Z.freq): 
             if force: 
                 nfreq = len(edi_obj_init.Z.freq); skipfreq= 0
                 interp_freq= np.array(range (nfreq), dtype = int)
+                bounds_error =False 
             else : 
                 raise EMError("'nfreq' must be less than number of frequency"
                             f" {len(edi_obj_init.Z.freq)}. Got {nfreq}."
-                            " Set ``force=True`` to ignore the bounds"
+                            " Set ``force=True`` to ignore the bound"
                             " frequency errors.")
         else : 
             interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
@@ -3626,16 +3642,21 @@ class ZC(EM):
             
         for kk, emap_obj_kk in enumerate(emap_obj):
             if self.verbose: 
-                
                 print('\t{0} --> {1:.1f} m'.format(
                     emap_obj_kk.station, emap_obj_kk.delta_d))
                 
             interp_idx = np.where((interp_freq >= emap_obj_kk.Z.freq.min()) &
                               (interp_freq <= emap_obj_kk.Z.freq.max()))
-            #print(interp_idx)
-            interp_freq_kk = interp_freq[interp_idx]
+            
+            try: 
+                interp_freq_kk = interp_freq[interp_idx]
+            except BaseException as e: 
+                raise TypeError (str (e) + f". It seems the given radium {r} m" 
+                                 f" is too short for processing {len(emap_obj)}"
+                                 " stations.")
+                
             Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
-                           bounds_error= False if skipfreq ==0 else True )
+                           bounds_error= bounds_error )
             Z_interp.compute_resistivity_phase()
             res_array[
                 kk,
@@ -3659,7 +3680,6 @@ class ZC(EM):
                 and ss_x < 1 + tol
                 ):
             ss_x = 1.0
-
         # compute the static shift of y-components
         ss_y = edi_obj_init.Z.resistivity[
             skipfreq:nfreq + skipfreq, 1, 0] / np.median(
@@ -3692,9 +3712,8 @@ class ZC(EM):
               
               - 'base': for simple moving-average using convolution strategy 
               - 'ama': For adaptatve moving average 
-              - 'butter': for Butterworth filter using bandpass strategy. (lowcut 
-                highcut) can be set using the `frange` parameters.
-              
+              - 'torres': Torres -Verdin frequencies 
+       
         frange: tuple, Optional 
            Lowcut and highcut frequency for Butterworth signal processing using 
            bandpass filter.
@@ -3740,32 +3759,6 @@ class ZC(EM):
         """
         self.inspect 
         
-        # zd = dict () 
-        # correct all components if applicable 
-        # for comp in ('xx', 'xy', 'yx', 'yy'): 
-        #     try: 
-        #         zc = filter_noises (
-        #             self.ediObjs_, 
-        #             comp, 
-        #             method=method, 
-        #             window_size_factor= window_size_factor, 
-        #             return_z =True, 
-        #             signal_frequeny=signal_frequency, 
-        #             frange=frange, 
-        #             )
-        #         zc_err = self.make2d (f"z{comp}_err") 
-                
-        #     except : 
-        #         # In the case some components 
-        #             # are missing, set to null 
-        #         zc = np.zeros (
-        #             (len(self.freqs_), len(self.ediObjs_)),
-        #             dtype = np.complex128)
-        #         zc_err= zc.copy() 
-            
-        #     zd[f'z{comp}'] = zc 
-        #     zd[f'z{comp}_err']=zc_err
-            
         # Apply function for updating tensor.
         if callable (method): 
             ufunc = method ; kws = {}
@@ -3786,9 +3779,6 @@ class ZC(EM):
             self.ediObjs_, ufunc = ufunc, args = args,
             rotate = rotate, **kws, **funckws  )
             
-        # zc = _zupdate.update_z_dict(
-        #     zd, new_ediobjs = self.ediObjs_, 
-        #     rotate= rotate )
         self._set_zc_updated_attr(
             new_edi=self.ediObjs_ , 
             # new_freqs=self.freqs_, 
