@@ -96,6 +96,7 @@ __all__ =['EM',
           "MTProcess", 
           "filter_noises", 
           "drop_frequencies", 
+          "exportEDIs"
           ]
 
 class EM(IsEdi): 
@@ -4242,7 +4243,7 @@ def drop_frequencies (
     which is common in real world, the tolerance parameter `tol` can be 
     set to automatically detect with 50% smoothness in data selection. 
     
-    .. versionadded:: v0.2.8 
+    .. versionadded:: 0.2.8 
     
     
     Parameters 
