@@ -906,7 +906,7 @@ class Edi :
             for jj in range(2):
                 # need to look out for zeros in the impedance
                 # get the indicies of non-zero components
-                nz_index = np.nonzero(self.Z.z[:, ii, jj])
+                nz_index = np.nonzero(self.Z.z[:, ii, jj]) 
 
                 if len(nz_index[0]) == 0:
                     continue

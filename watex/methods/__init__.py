@@ -14,6 +14,7 @@ from .em import (
     EM, 
     Processing,
     ZC, 
+    filter_noises, 
     )
 from .erp import ( 
     ERPCollection ,
@@ -43,5 +44,6 @@ __all__=[
     "AqSection", 
     "MXS", 
     "Logging", 
-    "DCMagic"
+    "DCMagic", 
+    "filter_noises"
     ]

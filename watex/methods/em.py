@@ -1013,10 +1013,11 @@ class EM(IsEdi):
         
         return  z [tuple (c.get(component))] if z is not None else c 
        
-    def _set_zc_updated_attr (self, new_edi, new_z , new_freqs =None, 
+    def _set_zc_updated_attr (self, new_edi=None, new_z=None, new_freqs =None, 
                               update_z = True, freqslist =None ): 
         """ Update Impedance tensor after applying some transformations
         on the data. """
+        isset_new_f =False
         for name, value in zip ( 
                 ( 'new_ediObjs_', 'new_freqs_', 'new_Z_',),
                 ( new_edi, new_freqs, new_z )): 
@@ -1033,8 +1034,14 @@ class EM(IsEdi):
             # each station.
             if new_freqs is not None: 
                 self.freqs_ = new_freqs 
-            
-        setattr (self, '_freqlist_', freqslist ) 
+                isset_new_f=True 
+           
+        if freqslist is not None: 
+            setattr (self, '_freqslist_', freqslist ) 
+            if not isset_new_f:
+                # take the frequency at the maximum index
+                self.freqs_= freqslist [ 
+                    np.argmax ([ len(f) for f in freqslist])]
         
     @staticmethod 
     def get_z_from( edi_obj_list, /, ): 
@@ -1127,7 +1134,9 @@ class _zupdate(EM):
                 
                 Zc = self.update_z_dict ( 
                     z_dict, new_ediobjs = ediObjs,  
-                    rotate =rotate )
+                    rotate =rotate , 
+                    zobj=O, 
+                    )
             else : 
                 # write corrected EDis with no loops 
                 Zc = z_dict 
@@ -1172,6 +1181,7 @@ class _zupdate(EM):
         new_ediobjs =None,  
         freqslist =None, 
         rotate=0.,
+        zobj=None,
         ): 
         """ Update Z  from dictionnary"""
         if ( 
@@ -1194,8 +1204,14 @@ class _zupdate(EM):
             raise FrequencyError(
                 "Frequency of each station need to be supplied."
                                  )
-        #  repeat freq to a list 
-        if freqslist is not None: 
+        # use the freslist attributes 
+        if (
+                zobj is not None 
+                and hasattr ( zobj, "_freqslist_")
+                ): 
+            freqslist = getattr (zobj,'_freqslist_')
+        #  repeat freq to a list     
+        elif freqslist is not None: 
             if hasattr (freqslist , '__array__'): 
                 freqslist = [ freqslist for _ in range ( nsites )]
 
@@ -1210,7 +1226,6 @@ class _zupdate(EM):
 
         for kk in range  (nsites):
             # create a new Z object for each Edi
-
             Z= _zupdate._make_zObj(
                 kk, 
                 # get frequency for at each sites #freq,
@@ -1218,6 +1233,7 @@ class _zupdate(EM):
                 z_dict = z_dict , 
                 rotate= rotate, 
                 )
+            
             Zc[kk] =Z
             
         return Zc 
@@ -1243,12 +1259,13 @@ class _zupdate(EM):
           Angle to rotate the impedance tensor accordingly. 
 
         """
-
+   
         Z = EMz(
             z_array=np.zeros((len(freq ), 2, 2),dtype='complex'),
             z_err_array=np.zeros((len(freq), 2, 2)),
             freq=freq 
             )
+        
         zxx = z_dict.get('zxx') 
         zxy = z_dict.get('zxy') 
         zyx = z_dict.get('zyx') 
@@ -2678,7 +2695,8 @@ class Processing (EM) :
             'zyy_err': zyy_err
             } 
 
-        zc = _zupdate.update_z_dict(z_dict= z_dict, freqslist= new_f)
+        zc = _zupdate.update_z_dict(
+            z_dict= z_dict, freqslist= new_f )
         
         self._set_zc_updated_attr(
             new_edi=self.ediObjs_ , new_freqs = new_f, new_z= zc, 
@@ -2826,7 +2844,6 @@ class ZC(EM):
         **kws
         ): 
         super().__init__(**kws)
-        
         self.window_size=window_size 
         self.c=c 
 
@@ -2956,7 +2973,10 @@ class ZC(EM):
         freqs = np.sort (freqs )[::-1 ] 
        
         #if self.verbose: 
-        listing_items_format(freqs ,begintext= "Frequencies" , 
+        if len(freqs)==0 and self.verbose: 
+            print(f"Noise frequencies for {tol*100}% tolerance"
+                  " have not been detected.")
+        else: listing_items_format(freqs ,begintext= "Frequencies" , 
                              endtext="Hz have been dropped.", 
                              inline =True , verbose =self.verbose 
                              )
@@ -2976,14 +2996,16 @@ class ZC(EM):
                 ) 
             Zobj.append(Z )
             freqslist.append (new_freq)
+            
         if interpolate:
             Zobj = self.interpolate_z (Zobj,rotate = rotate)
             
         # Got a single frequency 
         self._set_zc_updated_attr(
-            new_edi=self.ediObjs_, new_z= Zobj, 
+            new_edi=self.ediObjs_, 
+            new_z= Zobj, 
             update_z =update_z, 
-            new_freqs= freqslist
+            freqslist= freqslist
             )
         
         return self 
@@ -3125,7 +3147,8 @@ class ZC(EM):
         # kws.__setitem__('option', option ) 
         zd = _zupdate.update_z_dict(
             new_ediobjs= self.ediObjs_, 
-            z_dict= zd , rotate= rotate )
+            z_dict= zd , rotate= rotate , 
+            zobj = self)
         
         self._set_zc_updated_attr(
             new_edi=self.ediObjs_ , 
@@ -3682,8 +3705,8 @@ class ZC(EM):
                     frange=frange, 
                     )
                 zc_err = self.make2d (f"z{comp}_err") 
-                
-            except : 
+
+            except: 
                 # In the case some components 
                     # are missing, set to null 
                 zc = np.zeros (
@@ -3699,16 +3722,18 @@ class ZC(EM):
         # option = 'write' if out else None 
         # # reset  option 
         # kws.__setitem__('option', option ) 
+
         zc = _zupdate.update_z_dict(
             zd, new_ediobjs = self.ediObjs_, 
-            rotate= rotate )
+            rotate= rotate, 
+            zobj=self )
+        
         self._set_zc_updated_attr(
             new_edi=self.ediObjs_ , new_freqs=self.freqs_, 
             new_z= zc, update_z= update_z)
         
         return self 
 
-#XXX TODO
     @_zupdate (option ='write', edi_prefix= None )
     def out ( self, **kws): 
         """ Export EDI files. """

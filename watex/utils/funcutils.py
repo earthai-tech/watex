@@ -5526,7 +5526,7 @@ def cleaner (
     mode:str ='clean', 
     **kws
     )->DataFrame | NDArray | None : 
-    """ Sanitize data in the data or columns by dropping specified labels 
+    """ Sanitize data or columns by dropping specified labels 
     from rows or columns. 
     
     If data is not a pandas dataframe, should be converted to 
@@ -6257,7 +6257,9 @@ def random_sampling (
        If int, array-like, or BitGenerator, seed for random number generator. 
        If np.random.RandomState or np.random.Generator, use as given.
        
-    split_Xy: 
+    shuffle:bool, default=True 
+       Shuffle the data before sampling 
+      
     Returns 
     ----------
     d: {array-like, sparse matrix} of shape (n_samples, n_features)

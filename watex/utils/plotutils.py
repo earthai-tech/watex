@@ -3828,7 +3828,7 @@ def plot_tensors (
     station:int|str= 'S00', 
     zplot:bool=False, 
     **kwargs
-    )-> object:
+)-> object:
     #---------------------------------------
     # Get station index.
     get_station_group = re.search ('\d+', str(station), flags=re.IGNORECASE)
@@ -4297,10 +4297,32 @@ Examples
 >>> import watex as wx  
 >>> edi_data = wx.fetch_data ('edis', samples= 17 , return_data =True ) 
 >>> wx.utils.plotutils.plot_tensors ( edi_data, station =4 )
-
 """ 
     
-  
+
+def plot_rsquared (X , y,  y_pred,  ): 
+    
+    from sklearn.metrics import r2_score
+    # Calculate R-squared
+    r_squared = r2_score(y, y_pred)
+
+    # Plotting the scatter plot
+    plt.scatter(X, y, color='blue', label='Actual data')
+
+    # Plotting the regression line
+    plt.plot(X, y_pred, color='red', linewidth=2, label='Fitted line')
+
+    # Annotate the R-squared value on the plot
+    plt.text(0.5, 0.5, 'R-squared = {:.2f}'.format(r_squared), fontsize=12, ha='center')
+
+    # Adding labels and title
+    plt.xlabel('Predictor')
+    plt.ylabel('Target')
+    plt.title('R-squared Diagram')
+    plt.legend()
+
+    # Show the plot
+    plt.show()
     
   
     
