@@ -32,14 +32,15 @@ from ..utils.funcutils import (
     assert_ratio,
     make_ids,
     show_stats, 
-    fit_by_ll, 
+    fit_ll, 
     reshape, 
     smart_strobj_recognition, 
     remove_outliers, 
     normalizer, 
     random_selector, 
     shrunkformat, 
-    listing_items_format
+    listing_items_format, 
+    ellipsis2false,
     ) 
 from ..utils.exmath import ( 
     scalePosition, 
@@ -91,8 +92,10 @@ from ..utils.validator import (
 _logger = watexlog.get_watex_logger(__name__)
 
 __all__ =['EM',
-          'Processing',
-          'ZC',
+          "EMAPProcess", 
+          "MTProcess", 
+          "filter_noises", 
+          "drop_frequencies", 
           ]
 
 class EM(IsEdi): 
@@ -365,7 +368,8 @@ class EM(IsEdi):
         return t, tdict
     
     def fit(self, 
-             data: str|List[EDIO]
+             data: str|List[EDIO], 
+             **fit_params
              )->"EM":
         """
         Assert and make EM object from a collection EDIs. 
@@ -387,14 +391,17 @@ class EM(IsEdi):
         ... 
 
         """
+        by = fit_params.pop ('by', 'dataid')
+        prefixid= fit_params ('prefixid', 'S')
+
         def _fetch_headinfos (cobj,  attr): 
             """ Set attribute `attr` from collection object `cobj`."""
             return list(map (lambda o: getattr(o, attr), cobj))
    
         self._read_emo(data ) 
         # sorted ediObjs from latlong  
-        self.ediObjs_ , self.edinames = fit_by_ll(
-            self.ediObjs_)
+        self.ediObjs_ , self.edinames = fit_ll(
+            self.ediObjs_, by =by)
         # reorganize  edis according 
         # to lon lat order. 
         self.edifiles = list(map(
@@ -414,7 +421,7 @@ class EM(IsEdi):
             lat) if len(self.ediObjs_)> 1 else lat
         
         # Create the station ids 
-        self.id = make_ids(self.ediObjs_, prefix='S')
+        self.id = make_ids(self.ediObjs_, prefix=prefixid)
     
         self.longitude= lon 
         self.latitude= lat  
@@ -1360,11 +1367,11 @@ class _zupdate(EM):
             
         return new_zObjs
  
-class Processing (EM) :
-    """ Base processing of EM object 
+class EMAPProcess(EM) :
+    """ Base processing of :term:`EMAP` data. 
     
-    Fast process EMAP and AMT data. Tools are used for data sanitizing, 
-    removing noises and filtering. 
+    Fast process of EMAP ( for short periods). Tools are used for data 
+    sanitizing, removing noises and filtering. 
     
     Parameters 
     ----------
@@ -2287,6 +2294,68 @@ class Processing (EM) :
             
         return new_zObjs 
  
+    def drop_frequencies (
+        self, 
+        tol:float="auto", 
+        freqs:List[float]=None, 
+        rotate:float =0., 
+        interpolate:bool=..., 
+        out:bool = ..., 
+        savepath:str =None, 
+        **kws
+        ): 
+        """Drop bad frequencies.
+        
+        Parameters 
+        -----------
+        tol: float, default="auto"
+           Tolerance parameters. Find the bad frequencies in the data and 
+           delete them based on the threshold values. `tol` value must 
+           be among the ranged  between 0 and 1. 
+           
+        freqs: list of float, 
+           List of frequencies to delete explicitely. If given, the tolerance 
+           parameter `tol` is ignored. 
+           
+        rotate: float, default=.0 
+           Value to rotate the impendance tensors. Note that this is 
+           applicable during frequencies interpolation. 
+           
+        interpolate: bool, default=False 
+           Interpolate frquencies 
+        out: bool, default=True 
+           Export new EDI files. 
+           
+        savepath: str, 
+           Full path to export the new EDI files. 
+           
+        Return 
+        --------
+        new_Zobj: List of :class:`watex.externals.z`  
+           List of new impendance tensors if `out` is set to ``False``. 
+           
+        """
+        self.inspect 
+        out, interpolate = ellipsis2false(out, interpolate )
+        new_Zobj , freqslist = drop_frequencies(
+            self.ediObjs_, 
+            tol =tol, 
+            freqs = freqs, 
+            verbose = self.verbose, 
+            return_freqs =True 
+            )
+
+        if interpolate:
+            new_Zobj = self.interpolate_z (new_Zobj,rotate = rotate)
+            
+        if out: 
+            self.exportedis(ediObjs= self.ediObjs_,
+                            new_Z= new_Zobj, 
+                            savepath = savepath, 
+                            **kws
+                            )
+        return new_Zobj if not out else None 
+
     def _z_transform (
         self, 
         z , 
@@ -2431,7 +2500,7 @@ class Processing (EM) :
             kind ='periods'
         y = 1./ np.array (y) if kind =='periods' else  np.array (y)
         
-        buffer = Processing.controlFrequencyBuffer(y, buffer ) 
+        buffer = EMAPProcess.controlFrequencyBuffer(y, buffer ) 
         ix_s, ix_end  =  np.argwhere (np.isin(y, buffer)) 
     
         y = y[slice ( int(ix_s), int(ix_end) +1)]
@@ -2685,7 +2754,7 @@ class Processing (EM) :
     
         ff = np.delete (f[:, None], no_ix, 0)
         # interpolate frequency 
-        new_f  = Processing.freqInterpolation (reshape (ff)) 
+        new_f  = EMAPProcess.freqInterpolation (reshape (ff)) 
         
         # gather the 2D z objects
         # -XX--
@@ -2845,8 +2914,12 @@ class Processing (EM) :
         return Zupdated 
 
   
-class ZC(EM): 
-    """Impedance tensor multiple EDI correction class. 
+class MTProcess(EM): 
+    """
+    Data processing class. 
+    
+    :class:`watex.methods.ZC` is most related to :term:`MT` data processing 
+    compared to : :term:`EMAP` Impedance tensor multiple EDI correction class. 
     
     Applied filters in a collections of :term:`EDI` objects. 
     
@@ -2895,9 +2968,15 @@ class ZC(EM):
         self, 
         window_size:int =5, 
         c: int =2, 
+        verbose:bool=False, 
+        survey_name:str=None, 
         **kws
         ): 
-        super().__init__(**kws)
+        super().__init__(
+            verbose = verbose, 
+            survey_name = survey_name, 
+            **kws
+            )
         
         self.window_size=window_size 
         self.c=c 
@@ -3001,52 +3080,62 @@ class ZC(EM):
 
         """ 
         self.inspect 
-        if tol is None and freqs is None: 
-            raise EMError ("tolerance parameter or frequency values to discard"
-                           " could not be None. Consider ``tol='auto'``to"
-                           "  automatically control 50% quality of the data.")
+        
+        Zobj , freqslist = drop_frequencies(
+            self.ediObjs_, 
+            tol =tol, 
+            freqs = freqs, 
+            verbose = self.verbose, 
+            return_freqs =True 
+            )
+        # if tol is None and freqs is None: 
+        #     raise EMError ("tolerance parameter or frequency values to discard"
+        #                    " could not be None. Consider ``tol='auto'``to"
+        #                    "  automatically control 50% quality of the data.")
             
-        if str(tol).lower() == 'auto': 
-            tol =.5 
-        # make a copy of ediobjs  
-        ediObjs = np.array( self.ediObjs_, dtype =object) 
-        if tol is not None: 
-            qco = QC (ediObjs, tol = tol , return_qco= True ) 
-            freqs = qco.invalid_freqs_
+        # if str(tol).lower() == 'auto': 
+        #     tol =.5 
+        # # make a copy of ediobjs  
+        # ediObjs = np.array( self.ediObjs_, dtype =object) 
+        # if tol is not None: 
+        #     qco = QC (ediObjs, tol = tol , return_qco= True ) 
+        #     freqs = qco.invalid_freqs_
   
-        if freqs is not None: 
-            if is_iterable(freqs, exclude_string=True): 
-                # find the closest frequency that match the 
-                # frequency in the complete freq 
-                freqs = find_closest (self.freqs_, freqs )
+        # if freqs is not None: 
+        #     if is_iterable(freqs, exclude_string=True): 
+        #         # find the closest frequency that match the 
+        #         # frequency in the complete freq 
+        #         freqs = find_closest (self.freqs_, freqs )
             
-        # randomly select frequency 
-        freqs = random_selector (self.freqs_ , value = freqs) 
+        # # randomly select frequency 
+        # freqs = random_selector (self.freqs_ , value = freqs) 
             
-        # put back frequency from highest to lowest 
-        # for consistency 
-        freqs = np.sort (freqs )[::-1 ] 
+        # # put back frequency from highest to lowest 
+        # # for consistency 
+        # freqs = np.sort (freqs )[::-1 ] 
        
-        listing_items_format(freqs ,begintext= "Frequencies" , 
-                             endtext="Hz have been dropped.", 
-                             inline =True , verbose =self.verbose 
-                             )
-        # use mask to set a new collection of Z 
-        Zobj = []; freqslist=[]
-        for kk , edio  in enumerate (ediObjs ): 
-            mask  = np.isin ( edio.Z._freq,  freqs)
-            # mask = np.ones ( len( edio.Z._freq), dtype = bool ) 
-            # mask [ u_freqs] = False 
-            z_new  = edio.Z._z [~mask , :, :]  
-            # similar to np.delete (edio.Z._z , u_freqs, axis =0 )
-            z_err_new  = edio.Z._z_err [~mask , :, :] 
-            new_freq = edio.Z._freq[ ~mask ] 
+        # listing_items_format(freqs ,begintext= "Frequencies" , 
+        #                      endtext="Hz have been dropped.", 
+        #                      inline =True , verbose =self.verbose 
+        #                      )
+        # # use mask to set a new collection of Z 
+        # Zobj = []; freqslist=[]
+        # for kk , edio  in enumerate (ediObjs ): 
+        #     mask  = np.isin ( edio.Z._freq,  freqs)
+        #     # mask = np.ones ( len( edio.Z._freq), dtype = bool ) 
+        #     # mask [ u_freqs] = False 
+        #     z_new  = edio.Z._z [~mask , :, :]  
+        #     # similar to np.delete (edio.Z._z , u_freqs, axis =0 )
+        #     z_err_new  = edio.Z._z_err [~mask , :, :] 
+        #     new_freq = edio.Z._freq[ ~mask ] 
             
-            Z =EMz (
-                z_array= z_new , z_err_array= z_err_new , freq = new_freq
-                ) 
-            Zobj.append(Z )
-            freqslist.append (new_freq)
+        #     Z =EMz (
+        #         z_array= z_new , z_err_array= z_err_new , freq = new_freq
+        #         ) 
+        #     Zobj.append(Z )
+            # freqslist.append (new_freq)
+            
+        
         if interpolate:
             Zobj = self.interpolate_z (Zobj,rotate = rotate)
             
@@ -3147,7 +3236,7 @@ class ZC(EM):
         """
         self.inspect 
         
-        p = Processing(out ='z ') 
+        p = EMAPProcess(out ='z ') 
         p.ediObjs_ = self.ediObjs_
         p.freqs_ = self.freqs_
 
@@ -3251,8 +3340,8 @@ class ZC(EM):
         ss_fy:float| List[float]= None, 
         stations: List[str]=None, 
         rotate:float=0., 
-        r:float =1000., 
-        nfreq:int=21, 
+        r:float =100, 
+        nfreq:int=7, 
         skipfreq:int=5, 
         tol=.12, 
         force:bool=False, 
@@ -3509,8 +3598,8 @@ class ZC(EM):
     def get_ss_correction_factors(
         self, 
         station, 
-        r=1000., 
-        nfreq=21,
+        r=100., 
+        nfreq=10,
         skipfreq=5, 
         tol=.12, 
         force=False, 
@@ -3577,6 +3666,8 @@ class ZC(EM):
         Out[16]: (1.5522030221266643, 0.742682340427651)
         
         """
+        addmsg = (" Or set ``force=True`` to ignore the bound frequency errors.")
+        
         self.inspect 
         # convert meters to decimal degrees so 
         # we don't have to deal with zone
@@ -3587,7 +3678,8 @@ class ZC(EM):
         # Get the ediObj to remove the station shiit 
         # make site as an iterable object 
         try: 
-            station_ix = re.search ('\d+', str(station), flags=re.IGNORECASE).group()  
+            station_ix = re.search (
+                '\d+', str(station), flags=re.IGNORECASE).group()  
         except AttributeError: 
             raise StationError("Unable to find position of the station. Station"
                                " must include the position number. E.g, S00")
@@ -3604,18 +3696,19 @@ class ZC(EM):
         edi_obj_init= self.ediObjs_[station_ix] 
         edi_obj_init.Z.compute_resistivity_phase()
     
-        if nfreq > len(edi_obj_init.Z.freq): 
-            if force: 
-                nfreq = len(edi_obj_init.Z.freq); skipfreq= 0
-                interp_freq= np.array(range (nfreq), dtype = int)
-                bounds_error =False 
-            else : 
-                raise EMError("'nfreq' must be less than number of frequency"
-                            f" {len(edi_obj_init.Z.freq)}. Got {nfreq}."
-                            " Set ``force=True`` to ignore the bound"
-                            " frequency errors.")
-        else : 
-            interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
+        # if nfreq > len(edi_obj_init.Z.freq): 
+        #     if force: 
+        #         nfreq = len(edi_obj_init.Z.freq); skipfreq= 0
+        #         interp_freq= np.array(range (nfreq), dtype = int)
+        #         bounds_error =False 
+        #     else : 
+        #         raise EMError("'nfreq' must be less than number of frequency"
+        #                     f" {len(edi_obj_init.Z.freq)}. Got {nfreq}." 
+        #                     + addmsg)
+        # else : 
+        print(skipfreq, nfreq, nfreq + skipfreq)
+        interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
+
         # Find stations near by and store them in a list
         emap_obj = []
         # for kk, edi in enumerate(edi_list):
@@ -3648,16 +3741,25 @@ class ZC(EM):
             interp_idx = np.where((interp_freq >= emap_obj_kk.Z.freq.min()) &
                               (interp_freq <= emap_obj_kk.Z.freq.max()))
             
-            try: 
-                interp_freq_kk = interp_freq[interp_idx]
-            except BaseException as e: 
-                raise TypeError (str (e) + f". It seems the given radium {r} m" 
-                                 f" is too short for processing {len(emap_obj)}"
-                                 " stations.")
-                
+           
+            interp_freq_kk = interp_freq[interp_idx]
             Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
-                           bounds_error= bounds_error )
+                       bounds_error= bounds_error )
+            
+            # try: 
+            #     interp_freq_kk = interp_freq[interp_idx]
+            #     Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
+            #                bounds_error= bounds_error )
+            # except BaseException as e: 
+            #     if force: 
+            #         Z_interp = emap_obj_kk.Z
+            #         interp_freq_kk = emap_obj_kk.Z._freq
+            #     else: 
+            #         raise TypeError (str (e) + f". It seems the given radium {r} m" 
+            #                          f" is too short for processing {len(emap_obj)}"
+            #                          " stations." +addmsg)
             Z_interp.compute_resistivity_phase()
+            
             res_array[
                 kk,
                 interp_idx,
@@ -3913,7 +4015,7 @@ def filter_noises (
     if not hasattr ( ediObjs, 'window_size'): 
         if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
             raise EDIError("Only EDI or Processing object is acceptable!")
-        pObj= Processing().fit(ediObjs)
+        pObj= EMAPProcess().fit(ediObjs)
         
     else : pObj = ediObjs
 
@@ -4147,7 +4249,229 @@ def _update_z (z_or_edis, /, ufunc , args =(), **kws  ):
     return new_zObjs
   
     
-  
+def drop_frequencies (
+    ediObjs: List[EDIO] | os.PathLike, /, 
+    tol:float ="auto", 
+    freqs: List | ArrayLike=None,  
+    savepath: str=None, 
+    out : bool =...,
+    get_max_freqs:bool =..., 
+    return_freqs: bool =..., 
+    verbose:bool=..., 
+    **kwd
+    ): 
+
+    """ 
+    Drop useless frequencies in the EDI data.
+    
+    Due to the terrain constraints, topographic and interferences noises 
+    some frequencies are not meaningful to be kept in the data. The 
+    function allows to explicitely remove the bad frequencies after 
+    analyses and interpolated the remains. If bad frequencies are not known
+    which is common in real world, the tolerance parameter `tol` can be 
+    set to automatically detect with 50% smoothness in data selection. 
+    
+    .. versionadded:: v0.2.8 
+    
+    
+    Parameters 
+    -----------
+    ediObjs: list, PathLike
+       List of EDI object from :class:`watex.methods.EM` or full path 
+       to EDI files. 
+        
+    tol: float,  default=.5
+        the tolerance parameter. The value indicates the rate from which the 
+        data can be consider as meaningful. Preferably it should be less than
+        1 and greater than 0. At this value. If ``None``, the list of 
+        frequencies to drop must be provided. If the `tol` parameter is 
+        set to ``auto``, the selection of useless frequencies is tolerate 
+        to 50%. 
+
+    freqs: list , Optional 
+       The list of frequencies to remove in the: term:`EDI`objects. If 
+       ``None``, the `tol` parameter must be provided, otherwise an error
+       will raise. 
+     
+    savepath: str, 
+       Full path to save new EDI-files. 
+    
+    out: bool, default=False, 
+       Export new EDI files 
+       
+    get_max_freqs: bool, default=False, 
+       Return the full frequency in the investigated site. If ``True``
+       `return_freqs` is set to ``True`` by default.
+       
+    retun_freqs: bool, default=False, 
+       Returns new frequencies apres droping the useless ones. 
+       
+    verbose: bool, False 
+       Out messages 
+       
+    update_z: bool, default=True 
+       Update the Z tensors after dropping the useless frequencies. 
+    
+    Returns 
+    --------
+    
+    Zobjs: List of :class:`watex.externals.Z`  
+        New objects after dropping the useless frequencies 
+    new_freqs: List of ArrayLike or ArrayLike 
+        New valid frequencies at all stations.  It should be ArrayLike if 
+        `get_max_freqs` is set to ``True``.
+    None: if ``out=True``. 
+    
+ 
+    """
+    fullfreqs =... 
+    verbose, out, return_freqs, get_max_freqs = ellipsis2false(
+        verbose, out, return_freqs, get_max_freqs )
+    
+    if ( os.path.isfile ( ediObjs) 
+        or os.path.isdir (ediObjs)
+        ): 
+        emo= EM(verbose = verbose ).fit(ediObjs)
+        ediObjs= emo.ediObjs_
+        fullfreqs = emo.freqs_
+        
+    if (tol is None 
+        and freqs is None
+        ): 
+        raise EMError (
+            "tolerance parameter or frequency values to discard"
+            " could not be None. Consider ``tol='auto'``to"
+            "  automatically control 50% quality of the data."
+            )
+        
+    if str(tol).lower() == 'auto': 
+        tol =.5
+ 
+    # make a copy of ediobjs  
+    ediObjs = np.array( ediObjs, dtype =object) 
+    
+    # get full frequency
+    if fullfreqs is ...: 
+        fullfreqs = get_full_frequency (ediObjs) 
+        
+    if freqs is not None: 
+        if is_iterable(freqs, exclude_string=True): 
+            # find the closest frequency that match the 
+            # frequency in the complete freq 
+            freqs = find_closest (fullfreqs, freqs )
+            
+    if tol is not None: 
+        qco = QC (ediObjs, tol = tol , return_qco= True ) 
+        freqs = qco.invalid_freqs_
+
+    # randomly select frequency 
+    freqs = random_selector (fullfreqs , value = freqs) 
+        
+    # put back frequency from highest to lowest 
+    # for consistency 
+    freqs = np.sort (freqs )[::-1 ] 
+     
+    if verbose:
+        listing_items_format(freqs ,begintext= "Frequencies" , 
+                             endtext="Hz have been dropped.", 
+                             inline =True , verbose =verbose 
+                             )
+    # use mask to set a new collection of Z 
+    Zobj = []; freqslist=[]
+    for kk , edio  in enumerate (ediObjs ): 
+        mask  = np.isin ( edio.Z._freq,  freqs)
+        # mask = np.ones ( len( edio.Z._freq), dtype = bool ) 
+        # mask [ u_freqs] = False 
+        z_new  = edio.Z._z [~mask , :, :]  
+        # similar to np.delete (edio.Z._z , u_freqs, axis =0 )
+        z_err_new  = edio.Z._z_err [~mask , :, :] 
+        new_freq = edio.Z._freq[ ~mask ] 
+    
+        Z =EMz (
+            z_array= z_new , z_err_array= z_err_new , freq = new_freq
+            ) 
+        Zobj.append(Z )
+        freqslist.append (new_freq) 
+        
+    if get_max_freqs: 
+        freqslist = freqslist [ 
+            np.argmax ( 
+                np.array ([ len(f) for f in freqslist])
+                )
+            ]
+        return_freqs =True #block to True 
+        
+    rdata = (Zobj , freqslist) if return_freqs else Zobj 
+    
+    if out: 
+        exportEDIs (ediObjs, new_Z =Zobj, savepath = savepath ,**kwd  )
+        
+    return None if out else rdata 
+
+
+def exportEDIs (
+    ediObjs: List [EDIO], 
+    new_Z: List [ZO], 
+    savepath:str = None, 
+    **kws 
+    ): 
+    """Export EDI files from multiples EDI or z objects
+    
+    Export new EDI files from the former object with  a given new  
+    impedance tensors. The export is assumed a new output EDI 
+    resulting from multiples corrections applications.
+    
+    Parameters 
+    -----------
+    ediObjs: list of string  :class:`watex.edi.Edi` 
+        Full path to Edi file/object or object from class:`EM` objects. 
+
+    new_Z: list of ndarray (nfreq, 2, 2) 
+        A collection of Ndarray of impedance tensors Z. 
+        The tensor Z is 3D array composed of number of frequency 
+        `nfreq`and four components (``xx``, ``xy``, ``yx``,
+        and ``yy``) in 2X2 matrices. The  tensor Z is a complex number. 
+        
+    savepath:str, Optional 
+       Path to save a new EDI file. If ``None``, outputs to the current 
+       directory.
+       
+    Returns 
+    --------
+     ediObj from watex.edi.Edi 
+     
+    See Also
+    ---------
+    exportedi: 
+        Export single EDI from
+        
+    """
+    if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
+        
+        raise EDIError("Obj {ediObjs!r} is not an EDI-object.")
+        
+    ediObjs = is_iterable(
+        ediObjs , 
+        exclude_string =True , 
+        transform =True 
+        )
+    new_Z = is_iterable(
+        new_Z , 
+        exclude_string =True , 
+        transform =True 
+        )
+
+    for e, z  in zip (ediObjs, new_Z ): 
+        e.write_new_edifile( 
+            new_Z=z,
+            savepath = savepath , 
+            **kws
+            )       
+    
+    
+    
+
+
     
   
     

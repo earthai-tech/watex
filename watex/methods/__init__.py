@@ -12,8 +12,9 @@ from .electrical import (
 
 from .em import ( 
     EM, 
-    Processing,
-    ZC, 
+    EMAPProcess,
+    MTProcess,
+    filter_noises, 
     )
 from .erp import ( 
     ERPCollection ,
@@ -34,8 +35,9 @@ __all__=[
     "VerticalSounding", 
     "DCProfiling", 
     "DCSounding",
-    "Processing", 
-    "ZC", 
+    "EMAPProcess", 
+    "MTProcess", 
+    "filter_noises", 
     "ERPCollection", 
     "ERP", 
     "Hydrogeology", 

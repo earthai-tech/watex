@@ -48,7 +48,8 @@ from .exmath import (
     smoothing, 
     rhophi2z, 
     qc, 
-    get_azimuth, 
+    get_azimuth,
+    butterworth_filter, 
     
     )
 from .funcutils import ( 
@@ -242,6 +243,7 @@ __all__=[
         'plot_stratalog', 
         "resampling", 
         "bin_counting", 
+        "butterworth_filter", 
         ]
 
 
