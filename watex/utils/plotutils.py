@@ -4119,10 +4119,13 @@ def plot_tensors (
             ax.set_yscale('log', 
                           #nonposy='clip'
                           )
-            if aa == 0 or aa == 3:
-                ax.set_ylim(res_limits_d)
-            elif aa == 1 or aa == 2:
-                ax.set_ylim(res_limits_od)
+            try: 
+                # skip setting the axis limits
+                if aa == 0 or aa == 3:
+                    ax.set_ylim(res_limits_d)
+                elif aa == 1 or aa == 2:
+                    ax.set_ylim(res_limits_od)
+            except: pass 
 
         if aa > 3 and aa < 8 and zplot is False:
             #ax.yaxis.set_major_locator(MultipleLocator(10.0))
@@ -4323,6 +4326,38 @@ def plot_rsquared (X , y,  y_pred,  ):
 
     # Show the plot
     plt.show()
+
+# import watex as wx 
+# lspath =r'C:\Users\Daniel\Desktop\projects\nanshaLS0.csv'
+# ls_data = wx.read_data (lspath , sanitize =True, sep =';', verbose =True ) 
+# ls_data2 = las_data.copy() ; sd = ls_data2.replace(',', '.')
+# ls_data2 = ls_data.copy() ; sd = ls_data2.replace(',', '.')
+# ls_data2 [ls_data2.columns].repalce (',', '.', inplace =True ) 
+# ls_data2 [ls_data2.columns].replace (',', '.', inplace =True )
+# ls_data = wx.read_data (lspath, sanitize =True, sep =';', decimal =',') 
+# ls_data = wx.to_numeric_dtypes (ls_data ) 
+# test = ls_data ['latitude'] + ls_data['longitude'] 
+# ls_data.to_csv ( r'C:\Users\Daniel\Desktop\projects\nsh.lsdata.csv', index =False ) 
+
+# ## ---(Mon Nov  6 12:24:49 2023)---
+# import watex as wx
+# lspath = r'C:\Users\Daniel\Desktop\projects\nsh.lsdata.csv'
+# ls_data = wx.read_data (lspath , sanitize =True ) 
+# ls_data.shape 
+# data = wx.utils.random_sampling ( ls_data , samples ='30%') 
+# data.shape 
+# test_data = data.copy() 
+# test_xgb = data [['longitude', 'latitude', '2022']] 
+# import numpy as np ; value_r = np.linspace (0.89 , 0.96 , test-data.shape [0]) 
+# import numpy as np ; value_r = np.linspace (0.89 , 0.96 , test_data.shape [0])
+# value_xgb = np.random.shuffle ( value_r ) * test_xgb[['2022']] 
+# value_xgb = value_r .copy() 
+# vlue_xgb = test_xgb[['2022']]* value_xgb 
+# value_xgb.shape 
+# vlue_xgb = test_xgb[['2022']]* wx.reshape (value_xgb, 1) 
+# vlue_xgb = test_xgb[['2022']].values * value_xgb 
+# test_data = wx.fetch_data('edis', samples = 15 ).frame  
+
     
   
     

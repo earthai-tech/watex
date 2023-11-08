@@ -51,7 +51,7 @@ from .exmath import (
     get_azimuth,
     adaptive_moving_average, 
     torres_verdin_filter, 
-    
+    butterworth_filter, 
     )
 from .funcutils import ( 
     reshape, 
@@ -247,6 +247,8 @@ __all__=[
         "bin_counting",
         "adaptive_moving_average", 
         "torres_verdin_filter",
+        "plot_tensors",
+        "butterworth_filter",
         "plot_tensors"
         ]
 

@@ -2879,7 +2879,7 @@ def get_params (obj: object
     return PARAMS_VALUES
 
 
-def fit_by_ll(ediObjs): 
+def fit_ll(ediObjs, by ='index', method ='strict', distance='cartesian' ): 
     """ Fit EDI by location and reorganize EDI according to the site  
     longitude and latitude coordinates. 
     
@@ -2892,13 +2892,26 @@ def fit_by_ll(ediObjs):
         watex.edi.Edi or pycsamt.core.edi.Edi or mtpy.core.edi objects 
     :type ediObjs: watex.edi.Edi_Collection 
   
+    :param by: ['name'|'ll'|'distance'|'index'|'name'|'dataid'] 
+       The kind to sorting EDI files. Default uses the position number 
+       included in the EDI-files name.
+    :type by: str 
+    
+    :param method:  ['strict|'naive']. Kind of method to sort the 
+        EDI file from longitude, latitude. Default is ``strict``. 
+    :type method: str 
+    
+    :param distance: ['cartesian'|'harvesine']. Use the distance between 
+       coordinates points to sort EDI files. Default is ``cartesian`` distance.
+    :type distance: str 
+    
     :returns: array splitted into ediObjs and Edifiles basenames 
     :rtyple: tuple 
     
     :Example: 
         >>> import numpy as np 
         >>> from watex.methods.em import EM
-        >>> from watex.utils.funcutils import fit_by_ll
+        >>> from watex.utils.funcutils import fit_ll
         >>> edipath ='data/edi_ss' 
         >>> cediObjs = EM().fit (edipath) 
         >>> ediObjs = np.random.permutation(cediObjs.ediObjs) # shuffle the  
@@ -2907,6 +2920,10 @@ def fit_by_ll(ediObjs):
         ...
 
     """
+    method= 'strict' if str(method).lower() =='strict' else "naive"
+    if method=='strict': 
+        return _fit_ll(ediObjs, by = by, distance = distance )
+    
     #get the ediObjs+ names in ndarray(len(ediObjs), 2) 
     objnames = np.c_[ediObjs, np.array(
         list(map(lambda obj: os.path.basename(obj.edifile), ediObjs)))]
@@ -2922,7 +2939,91 @@ def fit_by_ll(ediObjs):
     #ediObjs , objbnames = np.hsplit(objnames, 2) 
     return objnames[:, 0], objnames[:, -1]
    
+def _fit_ll(ediObjs, distance='cartes', by = 'index'): 
+    """ Fit ediObjs using the `strict method`. 
     
+    An isolated part of :func:`watex.utils.funcutils.fit_by_ll`. 
+    """
+    # get one obj randomnly and compute distance 
+    obj_init = ediObjs[0]
+    ref_lat = 34.0522  # Latitude of Los Angeles
+    ref_lon = -118.2437 # Longitude of Los Angeles
+    
+    if str(distance).find ('harves')>=0: 
+        distance='harves'
+    else: distance='cartes'
+    
+    # create stations list.
+    stations = [ 
+        {"name": os.path.basename(obj.edifile), 
+         "longitude": obj.lon, 
+         "latitude": obj.lat, 
+         "obj": obj, 
+         "dataid": obj.dataid,  
+         # compute distance using cartesian or harversine 
+         "distance": _compute_haversine_d (
+            ref_lat, ref_lon, obj.lat, obj.lon
+            ) if distance =='harves' else np.sqrt (
+                ( obj_init.lon -obj.lon)**2 + (obj_init.lat -obj.lat)**2), 
+         # check wether there is a position number in the data.
+         "index": re.search ('\d+', str(os.path.basename(obj.edifile)),
+                            flags=re.IGNORECASE).group() if bool(
+                                re.search(r'\d', os.path.basename(obj.edifile)))
+                                else float(ii) ,
+        } 
+        for ii, obj in enumerate (ediObjs) 
+        ]
+                  
+    ll=( 'longitude', 'latitude') 
+    
+    by = 'index' or str(by ).lower() 
+    if ( by.find ('ll')>=0 or by.find ('lonlat')>=0): 
+        by ='ll'
+    elif  by.find ('latlon')>=0: 
+        ll =ll[::-1] # reverse 
+    
+    # sorted from key
+    sorted_stations = sorted (
+        stations , key = lambda o: (o[ll[0]], [ll[-1]])  
+        if (by =='ll' or by=='latlon')
+        else o[by]
+             )
+
+    objnames = np.array( list(
+        map ( lambda o : o['name'], sorted_stations))) 
+    ediObjs = np.array ( list(
+        map ( lambda o: o['obj'], sorted_stations)), 
+                        dtype =object ) 
+    
+    return ediObjs, objnames 
+
+def _compute_haversine_d(lat1, lon1, lat2, lon2): 
+    """ Sort coordinates using Haversine distance calculus. 
+    An isolated part of :func:`watex.utils.funcutils._fit_by_ll"""
+    # get reference_lat and reference lon 
+    # get one obj randomnly and compute distance 
+    # obj_init = np.random.choice (ediObjs) 
+    import math 
+    # Define a function to calculate the distance 
+    # between two points in kilometers
+    # def distance(lat1, lon1, lat2, lon2):
+        # Convert degrees to radians
+    lat1 = math.radians(lat1)
+    lon1 = math.radians(lon1)
+    lat2 = math.radians(lat2)
+    lon2 = math.radians(lon2)
+
+    # Apply the haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(
+        lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    r = 6371 # Earth's radius in kilometers
+    
+    return c * r
+    
+
 def make_ids(arr, prefix =None, how ='py', skip=False): 
     """ Generate auto Id according to the number of given sites. 
     
