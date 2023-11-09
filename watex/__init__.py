@@ -35,7 +35,7 @@ try:
     from . import _version
     __version__ = _version.version.split('.dev')[0]
 except ImportError:
-    __version__ = '0.2.7' 
+    __version__ = '0.2.8' 
 
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)

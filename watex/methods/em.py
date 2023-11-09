@@ -393,7 +393,7 @@ class EM(IsEdi):
 
         """
         by = fit_params.pop ('by', 'dataid')
-        prefixid= fit_params ('prefixid', 'S')
+        self.prefixid_= fit_params.pop ('prefixid', 'S')
 
         def _fetch_headinfos (cobj,  attr): 
             """ Set attribute `attr` from collection object `cobj`."""
@@ -401,8 +401,7 @@ class EM(IsEdi):
    
         self._read_emo(data ) 
         # sorted ediObjs from latlong  
-        self.ediObjs_ , self.edinames = fit_ll(
-            self.ediObjs_, by =by)
+        self.ediObjs_ , self.edinames = fit_ll(self.ediObjs_, by =by)
         # reorganize  edis according 
         # to lon lat order. 
         self.edifiles = list(map(
@@ -422,7 +421,7 @@ class EM(IsEdi):
             lat) if len(self.ediObjs_)> 1 else lat
         
         # Create the station ids 
-        self.id = make_ids(self.ediObjs_, prefix=prefixid)
+        self.id = make_ids(self.ediObjs_, prefix=self.prefixid_)
     
         self.longitude= lon 
         self.latitude= lat  
@@ -453,7 +452,7 @@ class EM(IsEdi):
         reflong: Optional[str | float] =None, 
         reflat: Optional[str | float]=None, 
         step: str  ='1km',
-        edi_prefix: Optional[str] =None, 
+        edi_prefix: Optional[str] ='', 
         export: bool =True, 
         **kws
         )-> "EM": 
@@ -516,7 +515,7 @@ class EM(IsEdi):
             i.e. the counting starts by 0. Any other value will start counting 
             the site from 1.
             
-        export: bool, 
+        export: bool, default=True
             Export new edi-files 
             
         kws: dict 
@@ -579,7 +578,7 @@ class EM(IsEdi):
 
         self.inspect 
         
-        self.id = make_ids(self.ediObjs_, prefix='S', how= how )
+        #self.id = make_ids(self.ediObjs_, prefix='S', how= how )
         
         # assert whether EDI and station are consistent. 
         if len( self.ediObjs_) != len(self.id): 
@@ -589,11 +588,12 @@ class EM(IsEdi):
                               f" stations={len(self.id)}. Expect"
                               f" {len( self.ediObjs_)}")
         if how !='py': 
-            self.id = make_ids(self.ediObjs_, prefix='S',
+            self.id = make_ids(self.ediObjs_, prefix=self.prefixid_,
                                     cmode =None)  
         if dataid is None: 
             if prefix !='None' : 
-                dataid = list(map(lambda s: s.replace('S', prefix), self.id))
+                dataid = list(map(
+                    lambda s: s.replace(self.prefixid_, prefix), self.id))
                 
             elif by =='name': 
                 # get the first name of dataId of the EDI ediObjs  and filled
@@ -612,6 +612,7 @@ class EM(IsEdi):
                 dataid = self.id 
                 
             elif by =='ix': 
+                
                 dataid = list(map(
                     lambda x: str(int(x)), regex.findall(''.join(self.id))))  
             else :
@@ -666,8 +667,10 @@ class EM(IsEdi):
             
             if export: 
                 obj.write_edifile(
-                    savepath = savepath ,new_edifilename = edi_prefix, 
-                    **kws)
+                    savepath = savepath , 
+                    prefix_edi=edi_prefix, 
+                    **kws
+                    )
             cobjs[k] = obj 
         
         self.ediObjs_ = cobjs 
@@ -1021,8 +1024,14 @@ class EM(IsEdi):
         
         return  z [tuple (c.get(component))] if z is not None else c 
        
-    def _set_zc_updated_attr (self, new_edi=None, new_z=None, new_freqs =None, 
-                              update_z = True, freqslist =None ): 
+    def _set_zc_updated_attr (
+        self, 
+        new_edi=None, 
+        new_z=None, 
+        new_freqs =None, 
+        update_z = True, 
+        freqslist =None 
+        ): 
         """ Update Impedance tensor after applying some transformations
         on the data. """
         isset_new_f =False
@@ -1129,6 +1138,7 @@ class _zupdate(EM):
             
             O, kwargs = func (*args, **kws)
             
+            
             ediObjs= O.new_ediObjs_# Get new EDIobjs
             # freq=O.new_freqs_# get frequency 
             z_dict= O.new_Z_ # Get znew 
@@ -1180,6 +1190,7 @@ class _zupdate(EM):
                     new_Z=Zc, 
                     **kwargs
                     ) 
+                
             return O if self.option !='write' else None 
           
         return new_func 
@@ -2841,11 +2852,13 @@ class EMAPProcess(EM) :
             z_dict= z_dict, freqslist= new_f )
         
         self._set_zc_updated_attr(
-            new_edi=self.ediObjs_ , new_freqs = new_f, new_z= zc, 
+            new_edi=self.ediObjs_, new_freqs = new_f, 
+            new_z= zc, 
             )
-        
-        return self 
-    
+
+        return self, kws 
+
+
     @staticmethod
     def interpolate_z (
         z_or_edis_obj_list,  / , 
@@ -3250,11 +3263,7 @@ class MTProcess(EM):
             zd[f'z{comp}'] = zc 
             zd[f'z{comp}_err']=zc_err
             
-        # # manage edi -export 
-        # option =kws.pop('option', None )
-        # option = 'write' if out else None 
-        # # reset  option 
-        # kws.__setitem__('option', option ) 
+        # updateZ
         zd = _zupdate.update_z_dict(
             new_ediobjs= self.ediObjs_, 
             z_dict= zd , rotate= rotate , 
@@ -3271,7 +3280,7 @@ class MTProcess(EM):
 
     def _get_multiple_ss_factors (self,ss_fx=None, ss_fy= None, 
             stations=None, r = 1000, nfreq =21, skipfreq =5, tol=.12, 
-            force =False, bounds_error = True, 
+            bounds_error = True, 
             ): 
         """ 
         Isolated part of :meth:`Zc.remove_static_shift` method. 
@@ -3292,7 +3301,6 @@ class MTProcess(EM):
                             station, 
                             nfreq = nfreq , 
                             skipfreq=skipfreq,
-                            force =force, 
                             tol=tol, 
                             r=r , 
                             bounds_error= bounds_error, 
@@ -3317,7 +3325,6 @@ class MTProcess(EM):
         nfreq:int=7, 
         skipfreq:int=5, 
         tol=.12, 
-        force:bool=False, 
         update_z:bool=True,
         bounds_error: bool =True, 
         ): 
@@ -3449,7 +3456,6 @@ class MTProcess(EM):
             nfreq = nfreq, 
             skipfreq =skipfreq, 
             tol = tol, 
-            force =force, 
             bounds_error = bounds_error
                 )
         ZObjs =[]
@@ -3567,7 +3573,7 @@ class MTProcess(EM):
             )
         
         return self 
-    
+
     def get_ss_correction_factors(
         self, 
         station, 
@@ -3575,7 +3581,6 @@ class MTProcess(EM):
         nfreq=10,
         skipfreq=5, 
         tol=.12, 
-        force=False, 
         bounds_error=True, 
         ) -> Tuple[float, float]:
         """
@@ -3612,18 +3617,14 @@ class MTProcess(EM):
            Check whether the frequency for interpolation is within the 
            frequency range. Otherwise, raises an error. 
            
+           .. versionadded:: 0.2.8 
         tol: float, default=0.12
            Tolerance on the median static shift correction.  If the data is 
            noisy the correction factor can be biased away from 1.  Therefore 
            the shift_tol is used to stop that bias.  If 
            ``1-tol < correction < 1+tol`` then the correction factor is set 
            to ``1``
-        force: bool, default=False, 
-           Ignore the frequency bounds and compute the static shift with the 
-           total station with all frequencies. 
-           
-           .. versionadded:: 0.2.8 
-          
+
         Returns
         -------
         (sx_x,  ss_y): (float, float)
@@ -3639,8 +3640,6 @@ class MTProcess(EM):
         Out[16]: (1.5522030221266643, 0.742682340427651)
         
         """
-        addmsg = (" Or set ``force=True`` to ignore the bound frequency errors.")
-        
         self.inspect 
         # convert meters to decimal degrees so 
         # we don't have to deal with zone
@@ -3668,18 +3667,6 @@ class MTProcess(EM):
 
         edi_obj_init= self.ediObjs_[station_ix] 
         edi_obj_init.Z.compute_resistivity_phase()
-    
-        # if nfreq > len(edi_obj_init.Z.freq): 
-        #     if force: 
-        #         nfreq = len(edi_obj_init.Z.freq); skipfreq= 0
-        #         interp_freq= np.array(range (nfreq), dtype = int)
-        #         bounds_error =False 
-        #     else : 
-        #         raise EMError("'nfreq' must be less than number of frequency"
-        #                     f" {len(edi_obj_init.Z.freq)}. Got {nfreq}." 
-        #                     + addmsg)
-        # else : 
-        print(skipfreq, nfreq, nfreq + skipfreq)
         interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
 
         # Find stations near by and store them in a list
@@ -3706,68 +3693,65 @@ class MTProcess(EM):
             print('These stations are within the given'
                   ' {0} m radius:'.format(r))
             
-        for kk, emap_obj_kk in enumerate(emap_obj):
-            if self.verbose: 
-                print('\t{0} --> {1:.1f} m'.format(
-                    emap_obj_kk.station, emap_obj_kk.delta_d))
+        # Ignore bound-frequency 
+        try: 
+            for kk, emap_obj_kk in enumerate(emap_obj):
+                if self.verbose: 
+                    print('\t{0} --> {1:.1f} m'.format(
+                        emap_obj_kk.station, emap_obj_kk.delta_d))
+                    
+                interp_idx = np.where((interp_freq >= emap_obj_kk.Z.freq.min()) &
+                                  (interp_freq <= emap_obj_kk.Z.freq.max()))
                 
-            interp_idx = np.where((interp_freq >= emap_obj_kk.Z.freq.min()) &
-                              (interp_freq <= emap_obj_kk.Z.freq.max()))
+               
+                interp_freq_kk = interp_freq[interp_idx]
+                Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
+                           bounds_error= bounds_error )
+                
+                Z_interp.compute_resistivity_phase()
+                
+                res_array[
+                    kk,
+                    interp_idx,
+                    :,
+                    :] = Z_interp.resistivity[
+                    0:len(interp_freq_kk),
+                    :,
+                    :]
+            # compute the static shift of x-components
+            ss_x = edi_obj_init.Z.resistivity[
+                skipfreq:nfreq + skipfreq, 0, 1] / np.median(
+                    res_array[:, :, 0, 1], axis=0)
+            ss_x = np.median(ss_x)
+    
+            # check to see if the estimated static
+            # shift is within given tolerance
+            if  ( 
+                    1 - tol < ss_x 
+                    and ss_x < 1 + tol
+                    ):
+                ss_x = 1.0
+            # compute the static shift of y-components
+            ss_y = edi_obj_init.Z.resistivity[
+                skipfreq:nfreq + skipfreq, 1, 0] / np.median(
+                    res_array[:, :, 1, 0], axis=0)
+            ss_y = np.median(ss_y)
+    
+            # check to see if the estimated static 
+            # shift is within given tolerance
+            if ( 
+                    1 - tol < ss_y 
+                    and ss_y < 1 + tol
+                    ):
+                ss_y = 1.0
+                
+        except BaseException as e : 
+            warnings.warn (str (e) + f". It seems the given radium {r} m" 
+                            f" is too short for processing {len(emap_obj)}"
+                            " stations. Set ``bounds_error=False`` to explicitly"
+                            " ignore the bound frequency errors.")
             
-           
-            interp_freq_kk = interp_freq[interp_idx]
-            Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
-                       bounds_error= bounds_error )
-            
-            # try: 
-            #     interp_freq_kk = interp_freq[interp_idx]
-            #     Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
-            #                bounds_error= bounds_error )
-            # except BaseException as e: 
-            #     if force: 
-            #         Z_interp = emap_obj_kk.Z
-            #         interp_freq_kk = emap_obj_kk.Z._freq
-            #     else: 
-            #         raise TypeError (str (e) + f". It seems the given radium {r} m" 
-            #                          f" is too short for processing {len(emap_obj)}"
-            #                          " stations." +addmsg)
-            Z_interp.compute_resistivity_phase()
-            
-            res_array[
-                kk,
-                interp_idx,
-                :,
-                :] = Z_interp.resistivity[
-                0:len(interp_freq_kk),
-                :,
-                :]
-
-        # compute the static shift of x-components
-        ss_x = edi_obj_init.Z.resistivity[
-            skipfreq:nfreq + skipfreq, 0, 1] / np.median(
-                res_array[:, :, 0, 1], axis=0)
-        ss_x = np.median(ss_x)
-
-        # check to see if the estimated static
-        # shift is within given tolerance
-        if  ( 
-                1 - tol < ss_x 
-                and ss_x < 1 + tol
-                ):
-            ss_x = 1.0
-        # compute the static shift of y-components
-        ss_y = edi_obj_init.Z.resistivity[
-            skipfreq:nfreq + skipfreq, 1, 0] / np.median(
-                res_array[:, :, 1, 0], axis=0)
-        ss_y = np.median(ss_y)
-
-        # check to see if the estimated static 
-        # shift is within given tolerance
-        if ( 
-                1 - tol < ss_y 
-                and ss_y < 1 + tol
-                ):
-            ss_y = 1.0
+            ss_x, ss_y= 1., 1. 
 
         return ss_x, ss_y
 

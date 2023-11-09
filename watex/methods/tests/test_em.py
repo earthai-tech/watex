@@ -144,18 +144,18 @@ def test_EMAPProcess():
     f= pObj.freqs_
     len(f) 
     # ... 55
-    zObjs_hard = pObj.getValidTensors (tol= 0.3 ) # None doesn't export EDI-file
-    len(zObjs_hard[0]._freq) # suppress 3 tensor data 
+    pObj.getValidTensors (tol= 0.3 ) # None doesn't export EDI-file
+    len(pObj.new_Z_[0]._freq) # suppress 3 tensor data 
     # ... 52 
-    zObjs_soft= pObj.getValidTensors(tol = 0.6 , 
+    pObj.getValidTensors(tol = 0.6 , 
                                      # option ='write'
                                      )
-    len(zObjs_soft[0]._freq)  # suppress only two 
+    len(pObj.new_Z_[0]._freq)  # suppress only two 
     
     
     # xxxxx Test z interpolation  xxxxxxxxxxxxxxxxxxxxxxxx
     sedis = wx.fetch_data ('huayuan', samples = 12 , return_data =True , key='raw')
-    p = wx.EMProcessing ().fit(sedis) 
+    p = wx.EMAPProcess ().fit(sedis) 
     ff = [ len(ediobj.Z._freq)  for ediobj in p.ediObjs_] 
     # [53, 52, 53, 55, 54, 55, 56, 51, 51, 53, 55, 53]
     Zcol = p.interpolate_z (sedis)
@@ -173,7 +173,7 @@ def test_EMAPProcess():
     
     sedis = wx.fetch_data ('huayuan', samples = 12 , 
     						   return_data =True , key='raw')
-    p = wx.EMProcessing ().fit(sedis) 
+    p = wx.EMAPProcess ().fit(sedis) 
     ff = [ len(ediobj.Z._freq)  for ediobj in p.ediObjs_] 
     print(ff) 
     # [53, 52, 53, 55, 54, 55, 56, 51, 51, 53, 55, 53]
@@ -257,9 +257,9 @@ def test_MTProcess():
 
 if __name__=='__main__': 
     
-    # test_MTProcess() 
+    test_MTProcess() 
     test_EMAPProcess() 
-#     test_EM()
+    test_EM()
 
 
 
