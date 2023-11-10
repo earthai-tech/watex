@@ -3477,6 +3477,9 @@ class MTProcess(EM):
             # reset the ediObjs to the new Z 
             z0._z = zcor  
             ediObj.Z._z= zcor 
+            # interpolate z if there are 
+            # missing frequencies 
+            z0= ediObj.interpolateZ(ediObj.Z._freq)
             
             ZObjs.append (z0 ) 
             new_ediObjs.append (ediObj )

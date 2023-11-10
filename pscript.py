@@ -37,7 +37,6 @@ def set_ll_and_export_edis (
     emo.rewrite (by ='id', dataid = dataid, savepath =savepath, edi_prefix=''  ) 
     
     return emo 
-
 #%%
 EDIPATH = r'D:\project-Tayuan\data\2'
 edipath =os.path.join( EDIPATH, '2HX')
@@ -51,7 +50,6 @@ savepath =os.path.join( EDIPATH, '2EDI')
 #     savepath =savepath, 
 #     dataid =['S{:02}'.format(ix) for ix in range ( len(emo.ediObjs_))][::-1]
 #     )
-
 #%% 
 # Process data and out data 
 new_edipath =savepath 
@@ -85,5 +83,4 @@ plot_strike(edi_fn_lst )
 # rename EDI 
 src_path =outpath 
 dst_path =os.path.join( EDIPATH, 'renamedEDIs')
-
 rename_files(src_path , dst_files= dst_path , basename ='T3.', trailer='')
