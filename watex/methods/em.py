@@ -3471,7 +3471,7 @@ class MTProcess(EM):
             if rotate: 
                 z0.rotate (rotate ) 
             # use the static shift of each station. 
-            ss_cor, zcor = z0.remove_ss( 
+            _, zcor = z0.remove_ss( 
                 *ss_fx_fy[ii]
                 )
             # reset the ediObjs to the new Z 

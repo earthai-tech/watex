@@ -34,14 +34,15 @@ def set_ll_and_export_edis (
     emo.longitude = lon 
     emo.latitude =lat 
     emo.elevation = elev 
-    emo.rewrite (by ='id', dataid = dataid, savepath =savepath, edi_prefix=''  ) 
+    emo.rewrite (by ='id', dataid = da
+                 taid, savepath =savepath, edi_prefix=''  ) 
     
     return emo 
 #%%
-EDIPATH = r'D:\project-Tayuan\data\2'
-edipath =os.path.join( EDIPATH, '2HX')
-coord_file=os.path.join( EDIPATH, '2.csv' )
-savepath =os.path.join( EDIPATH, '2EDI') 
+EDIPATH = r'D:\project-Tayuan\data\4'
+edipath =os.path.join( EDIPATH, '4HX')
+coord_file=os.path.join( EDIPATH, '4.csv' )
+savepath =os.path.join( EDIPATH, '4EDI') 
 # set EMobj so use it to set rewrite the dataID 
 # emo = EM().fit(edipath )
 # set_ll_and_export_edis ( 
@@ -53,14 +54,14 @@ savepath =os.path.join( EDIPATH, '2EDI')
 #%% 
 # Process data and out data 
 new_edipath =savepath 
-outpath =os.path.join( EDIPATH, '2EDIP') # path to save new process EDI
+outpath =os.path.join( EDIPATH, '4EDIP0') # path to save new process EDI
 em0 = EM().fit(new_edipath )
 
 emc = copy.deepcopy(em0) # make a copy to be safe.
 
-zc = MTProcess(verbose =True ).fit( emc.ediObjs_ )
-zc.remove_static_shift (nfreq=21 , r = 1000).remove_noises (
-     method='base').drop_frequencies (tol = .5 ).out(savepath =outpath) 
+# zc = MTProcess(verbose =True ).fit( emc.ediObjs_ )
+# zc.remove_static_shift (nfreq=21 , r = 1000).remove_noises (
+#      method='base').drop_frequencies (tol = .5 ).out(savepath =outpath) 
      #method='base').out(savepath =outpath) 
 
 #%% 
