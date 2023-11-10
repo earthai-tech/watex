@@ -195,6 +195,7 @@ data0.joblib
 
 #scripts remove 
 scripts/
+pscript.py
 # git certificate 
 git-mycompany-com.pem
 

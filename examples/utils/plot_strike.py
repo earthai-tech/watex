@@ -32,7 +32,8 @@ from watex.datasets.io import get_data # get edidata stored in cache
 # Before we'll make a collection of :term:`EDI` data and call 
 # :func:`watex.utils.plot_strike` for plotting as: 
 #fetch_data ( 'huayuan', samples = 25 ) # store 25 edis in cache 
-edipath = r'D:\project-Tayuan\data\2\2EDIP'#
+
+edipath = r'D:\project-Tayuan\data\1\1one'
 # edi_fn_lst = [os.path.join(get_data(),f) for f in os.listdir(get_data()) 
 #         if f.endswith('.edi')] 
 edi_fn_lst = [os.path.join(edipath,f) for f in os.listdir(edipath) 
