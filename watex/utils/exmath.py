@@ -3886,7 +3886,8 @@ def smooth1d(
     ar, /, 
     drop_outliers:bool=True, 
     ma:bool=True, 
-    absolute:bool=False, 
+    absolute:bool=False,
+    interpolate:bool=False, 
     view:bool=False , 
     x: ArrayLike=None, 
     xlabel:str =None, 
@@ -3906,6 +3907,11 @@ def smooth1d(
     ma: bool, default=True, 
        Use the moving average for smoothing array value. This seems more 
        realistic.
+       
+    interpolate: bool, default=False 
+       Interpolate value to fit the original data size after NaN filling. 
+       
+       .. versionadded:: 0.2.8 
        
     absolute: bool, default=False, 
        keep postive the extrapolated scaled values. Indeed, when scaling data, 
@@ -3962,10 +3968,13 @@ def smooth1d(
         
     arr = ar.copy() 
     if drop_outliers: 
-        arr = remove_outliers( arr, fill_value = np.nan  )
+        arr = remove_outliers( 
+            arr, fill_value = np.nan , interpolate = interpolate )
     # Nan is not allow so fill NaN if exists in array 
     # is arraylike 1d 
-    arr = reshape ( fillNaN( arr , method ='both') ) 
+    if not interpolate:
+        # fill NaN 
+        arr = reshape ( fillNaN( arr , method ='both') ) 
     if ma: 
         arr = moving_average(arr, method ='sma')
     # if extrapolation give negative  values
@@ -4008,6 +4017,7 @@ def smoothing (
     drop_outliers = True ,
     ma=True,
     absolute =False,
+    interpolate=False, 
     axis = 0, 
     view = False, 
     fig_size =(7, 7), 
@@ -4030,7 +4040,7 @@ def smoothing (
        more realistic rather than using only the scaling method. 
        
     absolute: bool, default=False, 
-       keep postive the extrapolated scaled values. Indeed, when scaling data, 
+       keep positive the extrapolated scaled values. Indeed, when scaling data, 
        negative value can be appear due to the polyfit function. to absolute 
        this value, set ``absolute=True``. Note that converting to values to 
        positive must be considered as the last option when values in the 
@@ -4100,14 +4110,14 @@ def smoothing (
     if _is_arraylike_1d(ar): 
         ar = reshape ( ar, axis = 0 ) 
     # make a copy
-    # print(ar.shape )
     arr = ar.copy() 
     along_axis = arr.shape [1] if axis == 0 else len(ar) 
     arr0 = np.zeros_like (arr)
     for ix in range (along_axis): 
         value = arr [:, ix ] if axis ==0 else arr[ix , :]
         yc = smooth1d(value, drop_outliers = drop_outliers , 
-                      ma= ma, view =False , absolute =absolute 
+                      ma= ma, view =False , absolute =absolute , 
+                      interpolate= interpolate, 
                       ) 
         if axis ==0: 
             arr0[:, ix ] = yc 

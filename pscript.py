@@ -38,30 +38,33 @@ def set_ll_and_export_edis (
     
     return emo 
 #%%
-EDIPATH = r'D:\project-Tayuan\data\2'
-edipath =os.path.join( EDIPATH, '2HX')
-coord_file=os.path.join( EDIPATH, '2.csv' )
-savepath =os.path.join( EDIPATH, '2EDI') 
-# set EMobj so use it to set rewrite the dataID 
-# emo = EM().fit(edipath )
-# set_ll_and_export_edis ( 
-#     emo.ediObjs_, 
-#     coord_file=coord_file, 
-#     savepath =savepath, 
-#     dataid =['S{:02}'.format(ix) for ix in range ( len(emo.ediObjs_))][::-1]
-#     )
+EDIPATH = r'D:\project-Tayuan\data\4'
+edipath =os.path.join( EDIPATH, '4HX_TRUE')
+coord_file=os.path.join( EDIPATH, '4.csv' )
+savepath =os.path.join( EDIPATH, '4EDI') 
+#set EMobj so use it to set rewrite the dataID 
+emo = EM().fit(edipath )
+set_ll_and_export_edis ( 
+    emo.ediObjs_, 
+    coord_file=coord_file, 
+    savepath =savepath, 
+    dataid =['S{:02}'.format(ix) for ix in range ( len(emo.ediObjs_))]#[::-1]
+    )
 #%% 
 # Process data and out data 
 new_edipath =savepath 
-outpath =os.path.join( EDIPATH, '2EDIP') # path to save new process EDI
+outpath =os.path.join( EDIPATH, '4EDIP0') # path to save new process EDI
 em0 = EM().fit(new_edipath )
 
 emc = copy.deepcopy(em0) # make a copy to be safe.
 
 zc = MTProcess(verbose =True ).fit( emc.ediObjs_ )
-zc.remove_static_shift (nfreq=21 , r = 1000).remove_noises (
-     method='base').drop_frequencies (tol = .5 ).out(savepath =outpath) 
-     #method='base').out(savepath =outpath) 
+zc.remove_static_shift (nfreq="auto" , r = 1000,
+    #                     ).remove_noises (
+    # method='base', 
+    ).drop_frequencies (tol = .1).out(savepath =outpath) 
+     #  method='ama'
+     # ) .out(savepath =outpath) 
 
 #%% 
 # Plot EDI 
@@ -69,7 +72,7 @@ zc.remove_static_shift (nfreq=21 , r = 1000).remove_noises (
 plot_tensors ( em0.ediObjs_, station =0 ) 
 #%% 
 # plot new .
-plot_tensors (emc.ediObjs_, station = 0 )
+plot_tensors (emc.ediObjs_, station = 10 )
 #%% 
 # plot_strike raw 
 edipath =  outpath #new_edipath #
@@ -83,4 +86,4 @@ plot_strike(edi_fn_lst )
 # rename EDI 
 src_path =outpath 
 dst_path =os.path.join( EDIPATH, 'renamedEDIs')
-rename_files(src_path , dst_files= dst_path , basename ='T3.', trailer='')
+rename_files(src_path , dst_files= dst_path , basename ='T4.', trailer='')

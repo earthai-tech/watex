@@ -1154,15 +1154,12 @@ class Location (object):
                 utm_zone = self.utm_zone ,
                 epsg= self.epsg 
                 ) 
-   
         except :
-
             self.utm_zone, self.east, self.north= ll_to_utm(
                 reference_ellipsoid=self.reference_ellipsoid,
                 lat = self.lat, 
                 lon= self.lon)
-        
-            
+
         return float(self.east), float(self.north)
     
         

@@ -918,7 +918,6 @@ class Edi :
 
                 # get the frequencies of non-zero components
                 f = self.Z.freq[nz_index]
-
                 # get frequencies to interpolate on to, making sure the
                 # bounds are with in non-zero components
                 new_nz_index = np.where((new_freq_array >= f.min()) & 
@@ -943,7 +942,6 @@ class Edi :
                 z_func_real = spi.interp1d(f, z_real, kind=interp_type)
                 z_func_imag = spi.interp1d(f, z_imag, kind=interp_type)
                 z_func_err = spi.interp1d(f, z_err, kind=interp_type)
-
                 # interpolate onto new frequency range
                 new_Z.z[new_nz_index, ii, jj] = z_func_real(
                     new_f) + 1j * z_func_imag(new_f)
