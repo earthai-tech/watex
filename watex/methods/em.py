@@ -41,6 +41,7 @@ from ..utils.funcutils import (
     shrunkformat, 
     listing_items_format, 
     ellipsis2false,
+    spi as SPI
     ) 
 from ..utils.exmath import ( 
     scalePosition, 
@@ -58,7 +59,8 @@ from ..utils.exmath import (
     mu0,
     smoothing,
     butterworth_filter,
-    qc as QC
+    qc as QC, 
+    get_distance
     )
 from ..utils.coreutils import ( 
     makeCoords, 
@@ -98,6 +100,9 @@ __all__ =['EM',
           "drop_frequencies", 
           "exportEDIs"
           ]
+#++++++++++++++++++++++++++++++++++++++++++++++++
+METER2DEGREESFACTOR = 8.994423457456377e-06
+#++++++++++++++++++++++++++++++++++++++++++++++++
 
 class EM(IsEdi): 
     """
@@ -1045,6 +1050,7 @@ class EM(IsEdi):
             ediObjs=[]
             for ediObj, Zn in zip ( self.ediObjs_, self.new_Z_) :
                 ediObj.Z =  Zn 
+                ediObj.Z.freq = Zn._freq 
                 ediObjs.append (ediObj)
             self.ediObjs_ = np.array (ediObjs) 
             # Sometimes, Z is updated using impedance at 
@@ -1325,8 +1331,10 @@ class _zupdate(EM):
 
         return Z
     
+#XXX TODO
     @staticmethod 
-    def update (z_or_edis, /,  ufunc , args =(), rotate =None , **kws  ): 
+    def update (z_or_edis, /,  ufunc , args =(), rotate =None ,
+                interp_type='slinear',  period_buffer=None, **kws  ): 
         """ Update 3D tensors with universal functions applied to all 
         components """
         objtype = _assert_z_or_edi_objs(z_or_edis ) 
@@ -1338,60 +1346,157 @@ class _zupdate(EM):
         # make a new object 
         new_zObjs =np.zeros_like (zobjs, dtype =object )
         for kk , Z in enumerate ( zobjs ): 
-            new_Z = EMz(z_array=np.zeros((len(Z._freq), 2, 2),dtype='complex'),
-                        z_err_array=np.zeros((len(Z._freq), 2, 2)),
-                    freq=Z._freq)
+
+            # index = np.where((~np.isnan( zxx)).nonzero()) & 
+            #                 (~np.isnan( Z.z[:, ii, jj])).nonzero())
+            # #                         (new_freq_array <= f.max()))[0]
+            # zxx_err = Z.z_err[:, 0, 1 ]
+            
+            # new_Z = EMz(z_array=np.zeros((len(Z._freq), 2, 2),dtype='complex'),
+            #             z_err_array=np.zeros((len(Z._freq), 2, 2)),
+            #         freq=Z._freq)
+            # print ( "origin f=", len(Z._freq))
+            
+            #temp_freqs =[]  
+            temp_index =[] ; #temp_freqs= []
             for ii in range(2):
                 for jj in range(2):
                     # need to look out for zeros in the impedance
                     # get the indicies of non-zero components
-                    nz_index = np.nonzero(Z.z[:, ii, jj])
+                    #nz_index = np.nonzero(Z.z[:, ii, jj])
+                    nz_index = ( ~np.isnan( Z.z[:, ii, jj])).nonzero() 
                     if len(nz_index[0]) == 0:
                         continue
                     
+                    
+                    
+                    # get the non-zero components
+                    # z_real = Z.z[nz_index, ii, jj].real
+                    # z_imag = Z.z[nz_index, ii, jj].imag
+                    # z_err = Z.z_err[nz_index, ii, jj]
+                    
                     # get the frequencies of non-zero components
-                    # f = Z.freq[nz_index]
-
-                    # # get frequencies to interpolate on to, making sure the
-                    # # bounds are with in non-zero components
+                    #f = Z.freq[nz_index]
+                    # print("f for xx, xy, yx, yy=", len(f))
+                    # print(f)
+                    # temp_freqs.append( f) 
+                    temp_index.append( nz_index )
+                    
+            # get the min index and frequency for Z 
+            min_index = np.argmin ([ len(ii) for ii in temp_index] ) 
+            new_nz_index = temp_index [min_index ]
+            new_freq = Z._freq [new_nz_index]
+            #print("new_freq_len=", len(new_freq ), "old freq len=", len(Z._freq))
+            new_Z = EMz(z_array=np.zeros((len(new_freq), 2, 2),dtype='complex'),
+                        z_err_array=np.zeros((len(new_freq), 2, 2)),
+                    freq=new_freq)
+            
+            for ii in range (2): 
+                for jj in range(2) :
+                    
+                    # collect Index frequencies to build new Z 
+                    # get frequencies to interpolate on to, making sure the
+                    # bounds are with in non-zero components
                     # new_nz_index = np.where((new_freq_array >= f.min()) & 
                     #                         (new_freq_array <= f.max()))[0]
-                    # new_f = new_freq_array[new_nz_index]
+                    # new_f = f[new_nz_index]
                     
                     # get the non_zeros components and interpolate 
                     # frequency to recover the component in dead-band frequencies 
                     # Use the whole edi
+                    #==========================================================
+                    # with np.errstate(all='ignore'):
+                    #     zfreq = Z._freq[nz_index]
+                    #     #Since z is an imaginary part . Get the absolue a
+                    #     # and convert back latter to imaginary part. 
+                    #     # --resistivity 
+                    #     zv_res=  reshape(Z.resistivity[nz_index, ii, jj])  
+                    #     # then apply function 
+                    #     zv_res = ufunc  ( zv_res, *args, **kws ) 
+                        
+                    #     #---phase 
+                    #     zv_phase = reshape(Z.phase[nz_index, ii, jj])  
+                    #     zv_phase = ufunc  (zv_phase,  *args, **kws ) 
+                    #     #---error 
+                    #     #zerr_v = reshape(Z.z_err[nz_index, ii, jj]) 
+
+                    # # # Use the new dimension of the z and slice z according 
+                    # # # the buffer range. make the new index start at 0. 
+                    # new_Z.resistivity[nz_index, ii, jj] = reshape (zv_res , 1) 
+                    # new_Z.phase[nz_index, ii, jj] = reshape (zv_phase, 1) 
+                    # new_Z.z_err[nz_index, ii, jj] = Z.z_err[nz_index, ii, jj]
+                    
+                    # # compute z as imag and real 
+                    
+                    # new_Z.z [nz_index, ii, jj] = reshape ( rhophi2z(
+                    #     rho = zv_res, phi = zv_phase, freq= zfreq), 1) 
+                    
+                    #========================================================
+                    
+                    # need to look out for zeros in the impedance
+     
+                    # # create a function that does 1d interpolation
+                    # z_func_real = SPI.interp1d(f, z_real, kind=interp_type)
+                    # z_func_imag = SPI.interp1d(f, z_imag, kind=interp_type)
+                    # z_func_err = SPI.interp1d(f, z_err, kind=interp_type)
+
+                    # # interpolate onto new frequency range
+                    # new_Z.z[new_nz_index, ii, jj] = z_func_real(
+                    #     new_f) + 1j * z_func_imag(new_f)
+                    # new_Z.z_err[new_nz_index, ii, jj] = z_func_err(new_f)
+                    
                     with np.errstate(all='ignore'):
-                        zfreq = Z._freq
-                        #Since z is an imaginary part . Get the absolue a
+                        #zfreq = Z._freq[nz_index]
+                        # Since z is an imaginary part . Get the absolue a
                         # and convert back latter to imaginary part. 
                         # --resistivity 
-                        zv_res=  reshape(Z.resistivity[nz_index, ii, jj])  
-                        # then apply function 
+                        zv_res=  reshape(Z.resistivity[new_nz_index, ii, jj])  
+                        # then apply function
                         zv_res = ufunc  ( zv_res, *args, **kws ) 
+
+                        # now find the nonzero and NaN 
+                        #new_nz_index = ( ~np.isnan( zv_res)).nonzero() 
                         
+                        # get the new frequency index 
+                        #new_f = f[new_nz_index]
+                        #zv_res = zv_res[new_nz_index ] # skrunk resistivity 
                         #---phase 
-                        zv_phase = reshape(Z.phase[nz_index, ii, jj])  
+                        zv_phase = reshape(Z.phase[new_nz_index, ii, jj])  
                         zv_phase = ufunc  (zv_phase,  *args, **kws ) 
                         #---error 
                         #zerr_v = reshape(Z.z_err[nz_index, ii, jj]) 
-
                     # # Use the new dimension of the z and slice z according 
                     # # the buffer range. make the new index start at 0. 
-                    new_Z.resistivity[nz_index, ii, jj] = reshape (zv_res , 1) 
-                    new_Z.phase[nz_index, ii, jj] = reshape (zv_phase, 1) 
-                    new_Z.z_err[nz_index, ii, jj] = Z.z_err[nz_index, ii, jj]
+                    new_Z.resistivity[:, ii, jj] = reshape (zv_res , 1) 
+                    new_Z.phase[:, ii, jj] = reshape (zv_phase, 1) 
+                    new_Z.z_err[:, ii, jj] = Z.z_err[new_nz_index, ii, jj]
                     
                     # compute z as imag and real 
+                    new_Z.z [:, ii, jj] = reshape ( rhophi2z(
+                        rho = zv_res, phi = zv_phase, freq= new_freq), 1) 
                     
-                    new_Z.z [nz_index, ii, jj] = reshape ( rhophi2z(
-                        rho = zv_res, phi = zv_phase, freq= zfreq), 1) 
-            # compute resistivity and phase for new Z object
-            if rotate: 
-                new_Z.rotate ( rotate )
-            else : 
-                new_Z.compute_resistivity_phase()
-                
+                    # # INTERPOLATION 
+                    # get the non-zero components
+                    z_real = new_Z.z[:, ii, jj].real
+                    z_imag = new_Z.z[:, ii, jj].imag
+                    z_err = new_Z.z_err[:, ii, jj]
+                    
+                    # create a function that does 1d interpolation
+                    z_func_real = SPI.interp1d(new_freq, z_real, kind=interp_type)
+                    z_func_imag = SPI.interp1d(new_freq, z_imag, kind=interp_type)
+                    z_func_err = SPI.interp1d(new_freq, z_err, kind=interp_type)
+
+                    # interpolate onto new frequency range
+                    new_Z.z[:, ii, jj] = z_func_real(
+                        new_freq) + 1j * z_func_imag(new_freq)
+                    new_Z.z_err[:, ii, jj] = z_func_err(new_freq)
+
+            # print(new_Z.resistivity [:, 0, 0])
+            # # compute resistivity and phase for new Z object
+            # if rotate: 
+            #     new_Z.rotate ( rotate )
+            # else : 
+            #     new_Z.compute_resistivity_phase()
             new_zObjs[kk] = new_Z 
             
         return new_zObjs
@@ -3314,7 +3419,7 @@ class MTProcess(EM):
                 ss_fy = ss_fy 
                 )
         return ss_fx_fy 
-    
+#XXX TODO  
     def remove_static_shift (
         self, 
         ss_fx:float | List[float] =None, 
@@ -3477,9 +3582,9 @@ class MTProcess(EM):
             # reset the ediObjs to the new Z 
             z0._z = zcor  
             ediObj.Z._z= zcor 
-            # interpolate z if there are 
-            # missing frequencies 
-            z0= ediObj.interpolateZ(ediObj.Z._freq)
+            # interpolate z for consistancy 
+            z0= ediObj.interpolateZ( ediObj.Z.freq )
+            ediObj.Z._z= z0 
             
             ZObjs.append (z0 ) 
             new_ediObjs.append (ediObj )
@@ -3576,13 +3681,14 @@ class MTProcess(EM):
             )
         
         return self 
-
+    
+#XXX TODO
     def get_ss_correction_factors(
         self, 
         station, 
         r=100., 
-        nfreq=10,
-        skipfreq=5, 
+        nfreq=21,
+        skipfreq=7, 
         tol=.12, 
         bounds_error=True, 
         ) -> Tuple[float, float]:
@@ -3644,43 +3750,21 @@ class MTProcess(EM):
         
         """
         self.inspect 
-        # convert meters to decimal degrees so 
-        # we don't have to deal with zone
-        # changes
-        meter_to_deg_factor = 8.994423457456377e-06
-        dm_deg = r * meter_to_deg_factor
-        
-        # Get the ediObj to remove the station shiit 
-        # make site as an iterable object 
-        try: 
-            station_ix = re.search (
-                '\d+', str(station), flags=re.IGNORECASE).group()  
-        except AttributeError: 
-            raise StationError("Unable to find position of the station. Station"
-                               " must include the position number. E.g, S00")
-        except : 
-            raise TypeError ("Probbaly missing station position number. Please"
-                             " check your station index.")
-            
-        station_ix = int (station_ix ) 
-
-        if station_ix >= len(self.ediObjs_): 
-            raise ValueError (" Expect the number of station less than"
-                             f" { len(self.ediObjs_)}. Got '{station_ix}'")
-
-        edi_obj_init= self.ediObjs_[station_ix] 
-        edi_obj_init.Z.compute_resistivity_phase()
-        interp_freq = self.freqs_[skipfreq:nfreq + skipfreq]
-
+        # get frequency bounds 
+        edi_obj_init, dm_deg, r,  nfreq, skipfreq  = _ss_auto_regulator (
+            self.ediObjs_, station = station, r =r , nfreq = nfreq , 
+            skipfreq = skipfreq , bounds_error = bounds_error 
+            )
+        interp_freq = edi_obj_init.Z.freq[skipfreq:nfreq + skipfreq]
         # Find stations near by and store them in a list
         emap_obj = []
-        # for kk, edi in enumerate(edi_list):
+
         for kk, edi in enumerate (self.ediObjs_): 
             edi_obj = edi
             delta_d = np.sqrt((edi_obj_init.lat - edi_obj.lat) ** 2 +
                           (edi_obj_init.lon - edi_obj.lon) ** 2)
             if delta_d <= dm_deg:
-                edi_obj.delta_d = float(delta_d) / meter_to_deg_factor
+                edi_obj.delta_d = float(delta_d) / METER2DEGREESFACTOR
                 emap_obj.append(edi_obj)
 
         if len(emap_obj) == 0:
@@ -3695,69 +3779,60 @@ class MTProcess(EM):
         if self.verbose: 
             print('These stations are within the given'
                   ' {0} m radius:'.format(r))
+   
+        for kk, emap_obj_kk in enumerate(emap_obj):
+            if self.verbose: 
+                print('\t{0} --> {1:.1f} m'.format(
+                    emap_obj_kk.station, emap_obj_kk.delta_d))
+                
+            interp_idx = np.where((interp_freq >= emap_obj_kk.Z.freq.min()) &
+                              (interp_freq <= emap_obj_kk.Z.freq.max()))
+      
+            interp_freq_kk = interp_freq[interp_idx]
+            Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
+                       bounds_error= bounds_error )
             
-        # Ignore bound-frequency 
-        try: 
-            for kk, emap_obj_kk in enumerate(emap_obj):
-                if self.verbose: 
-                    print('\t{0} --> {1:.1f} m'.format(
-                        emap_obj_kk.station, emap_obj_kk.delta_d))
-                    
-                interp_idx = np.where((interp_freq >= emap_obj_kk.Z.freq.min()) &
-                                  (interp_freq <= emap_obj_kk.Z.freq.max()))
-                
-               
-                interp_freq_kk = interp_freq[interp_idx]
-                Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
-                           bounds_error= bounds_error )
-                
-                Z_interp.compute_resistivity_phase()
-                
-                res_array[
-                    kk,
-                    interp_idx,
-                    :,
-                    :] = Z_interp.resistivity[
-                    0:len(interp_freq_kk),
-                    :,
-                    :]
-            # compute the static shift of x-components
-            ss_x = edi_obj_init.Z.resistivity[
-                skipfreq:nfreq + skipfreq, 0, 1] / np.median(
-                    res_array[:, :, 0, 1], axis=0)
-            ss_x = np.median(ss_x)
-    
-            # check to see if the estimated static
-            # shift is within given tolerance
-            if  ( 
-                    1 - tol < ss_x 
-                    and ss_x < 1 + tol
-                    ):
-                ss_x = 1.0
-            # compute the static shift of y-components
-            ss_y = edi_obj_init.Z.resistivity[
-                skipfreq:nfreq + skipfreq, 1, 0] / np.median(
-                    res_array[:, :, 1, 0], axis=0)
-            ss_y = np.median(ss_y)
-    
-            # check to see if the estimated static 
-            # shift is within given tolerance
-            if ( 
-                    1 - tol < ss_y 
-                    and ss_y < 1 + tol
-                    ):
-                ss_y = 1.0
-                
-        except BaseException as e : 
-            warnings.warn (str (e) + f". It seems the given radium {r} m" 
-                            f" is too short for processing {len(emap_obj)}"
-                            " stations. Set ``bounds_error=False`` to explicitly"
-                            " ignore the bound frequency errors.")
+            Z_interp.compute_resistivity_phase()
             
-            ss_x, ss_y= 1., 1. 
+            res_array[
+                kk,
+                interp_idx,
+                :,
+                :] = Z_interp.resistivity[
+                0:len(interp_freq_kk),
+                :,
+                :]
+        # compute the static shift of x-components
+        ss_x = edi_obj_init.Z.resistivity[
+            skipfreq:nfreq + skipfreq, 0, 1] / np.median(
+                res_array[:, :, 0, 1], axis=0)
+        ss_x = np.median(ss_x)
+
+        # check to see if the estimated static
+        # shift is within given tolerance
+        if  ( 
+                1 - tol < ss_x 
+                and ss_x < 1 + tol
+                ):
+            ss_x = 1.0
+        # compute the static shift of y-components
+        ss_y = edi_obj_init.Z.resistivity[
+            skipfreq:nfreq + skipfreq, 1, 0] / np.median(
+                res_array[:, :, 1, 0], axis=0)
+        ss_y = np.median(ss_y)
+
+        # check to see if the estimated static 
+        # shift is within given tolerance
+        if ( 
+                1 - tol < ss_y 
+                and ss_y < 1 + tol
+                ):
+            ss_y = 1.0
+            
 
         return ss_x, ss_y
 
+#XXXTODO 
     def remove_noises (
         self, 
         method:F|str='base', 
@@ -4428,8 +4503,98 @@ def exportEDIs (
             savepath = savepath , 
             **kws
             )       
+
+def _ss_auto_regulator (
+        ediObjs, /, 
+        station,
+        r=100., 
+        nfreq=10., 
+        skipfreq=5. , 
+        bounds_error =True,  
+        ): 
+    """ Find the  number of frequency (`nfreq`), the frequency to skip and 
+    compute the radius distance when 'nfreq' is triggered. 
     
+    This seems useful when the user is confused about setting the `nfreq` and 
+    the number of frequency `skipfreq` to skip. 
     
+    An isolated part of 
+    :meth:`watex.methods.em.MTProcess.get_ss_correction_factors`
+
+    """
+    # Get the ediObj to remove the station shiit 
+    # make site as an iterable object 
+    if len(ediObjs) <2: 
+        raise TypeError ("Singleton EDI could not be used to compute the"
+                         " spatial filter for remove static shift. Expect"
+                         " at least two stations.")
+    try: 
+        station_ix = re.search (
+            '\d+', str(station), flags=re.IGNORECASE).group()  
+    except AttributeError: 
+        raise StationError("Unable to find position of the station. Station"
+                           " must include the position number. E.g, S00")
+    except : 
+        raise TypeError ("Probbaly missing station position number. Please"
+                         " check your station index.")
+        
+    station_ix = int (station_ix ) 
+    if station_ix >= len(ediObjs): 
+        raise ValueError (" Expect the number of station less than"
+                         f" { len(ediObjs)}. Got '{station_ix}'")
+
+    edi_obj_init= ediObjs[station_ix] 
+    edi_obj_init.Z.compute_resistivity_phase()
+    
+    if str(nfreq).lower()=="auto": 
+        # get next object to compute the Edi distance. 
+        # get next object from station index 
+        if station_ix < len(ediObjs)-1: 
+            obj2 = ediObjs [station_ix +1]
+        else: obj2 = ediObjs[station_ix -1]
+        # compute cartesian distance 
+        # of nested two Ediobjects.
+        r = get_distance(
+            y= [obj2.lon, edi_obj_init.lon],
+            x= [obj2.lat, edi_obj_init.lat], 
+            return_mean_dist=True,
+            # x and y are long/lat 
+            # coordinates.
+            is_latlon= True,
+            # take Beijing projection by default
+            # It does not a matter since we only need 
+            # the distance between two points.
+            utm_zone='49N', epsg =15921 , datum ='WGS84',
+            reference_ellipsoid =23 
+            )
+        r *=5 # increase circle five times.
+        if r==0.: 
+            # take 100m by default as reference
+            # step for AMT survey. 
+            r =100. 
+    
+        init_freq = len(edi_obj_init.Z.freq) 
+        half_two = (init_freq -2) //2
+        nfreq =  half_two + (half_two//2 )
+        skipfreq = half_two * 2  -nfreq 
+        
+    else: 
+        # Ignore bound-frequency 
+        if abs (len(edi_obj_init.Z.freq) - skipfreq) <= nfreq: 
+            if bounds_error : 
+                warnings.warn (
+                    f". It seems the given radium {r} m" 
+                    f" is too short for processing {len(ediObjs)}"
+                    " stations. Set ``bounds_error=False`` to explicitly"
+                    " ignore the bound frequency errors."
+                     )
+            nfreq = abs (len(edi_obj_init.Z.freq) - skipfreq)-1
+
+    dm_deg = r * METER2DEGREESFACTOR
+    
+    return edi_obj_init, dm_deg , r,  nfreq, skipfreq 
+
+
     
 
 
