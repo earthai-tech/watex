@@ -2579,8 +2579,7 @@ class ExPlot (BasePlot):
         self.save (fig)
         
         return self 
-    
-        
+
     def plotpairwisecomparison (
             self ,  
             corr:str = 'pearson', 

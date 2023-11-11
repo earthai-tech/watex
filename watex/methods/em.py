@@ -60,7 +60,8 @@ from ..utils.exmath import (
     smoothing,
     butterworth_filter,
     qc as QC, 
-    get_distance
+    get_distance, 
+    exportEDIs, 
     )
 from ..utils.coreutils import ( 
     makeCoords, 
@@ -1105,8 +1106,7 @@ class EM(IsEdi):
             f'{self.__class__.__name__!r} object has no attribute {name!r}'
             f'{appender}{"" if rv is None else "?"}'
             )
-        
-#XXXTODO    
+          
 class _zupdate(EM): 
     """ A decorator for impedance tensor updating. 
     
@@ -1249,7 +1249,7 @@ class _zupdate(EM):
         
         elif new_ediobjs is not None: 
             freqslist = list( map (lambda  o: o.Z._freq , new_ediobjs)) 
-
+        
         for kk in range  (nsites):
             # create a new Z object for each Edi
             Z= _zupdate._make_zObj(
@@ -1331,175 +1331,131 @@ class _zupdate(EM):
 
         return Z
     
-#XXX TODO
     @staticmethod 
     def update (z_or_edis, /,  ufunc , args =(), rotate =None ,
-                interp_type='slinear',  period_buffer=None, **kws  ): 
+                interp_type='slinear',  interp_strategy='pd',  **kws  ): 
         """ Update 3D tensors with universal functions applied to all 
-        components """
+        components 
+        
+        Parameters 
+        -----------
+        z_or_edis: List of :watex:`
+        
+        
+        
+        """
         objtype = _assert_z_or_edi_objs(z_or_edis ) 
         if objtype =='EDI': 
             zobjs =np.array (list(map(lambda o: o.Z, z_or_edis)) ,
                               dtype =object)
         else: zobjs = z_or_edis
+        
+        # +++++++++++++++++ transform Z with unfunc +++++++++++++++++++
         # --> make a new Z objects 
         # make a new object 
         new_zObjs =np.zeros_like (zobjs, dtype =object )
         for kk , Z in enumerate ( zobjs ): 
-
-            # index = np.where((~np.isnan( zxx)).nonzero()) & 
-            #                 (~np.isnan( Z.z[:, ii, jj])).nonzero())
-            # #                         (new_freq_array <= f.max()))[0]
-            # zxx_err = Z.z_err[:, 0, 1 ]
-            
-            # new_Z = EMz(z_array=np.zeros((len(Z._freq), 2, 2),dtype='complex'),
-            #             z_err_array=np.zeros((len(Z._freq), 2, 2)),
-            #         freq=Z._freq)
-            # print ( "origin f=", len(Z._freq))
-            
-            #temp_freqs =[]  
-            temp_index =[] ; #temp_freqs= []
-            for ii in range(2):
-                for jj in range(2):
-                    # need to look out for zeros in the impedance
-                    # get the indicies of non-zero components
-                    #nz_index = np.nonzero(Z.z[:, ii, jj])
-                    nz_index = ( ~np.isnan( Z.z[:, ii, jj])).nonzero() 
-                    if len(nz_index[0]) == 0:
-                        continue
-                    
-                    
-                    
-                    # get the non-zero components
-                    # z_real = Z.z[nz_index, ii, jj].real
-                    # z_imag = Z.z[nz_index, ii, jj].imag
-                    # z_err = Z.z_err[nz_index, ii, jj]
-                    
-                    # get the frequencies of non-zero components
-                    #f = Z.freq[nz_index]
-                    # print("f for xx, xy, yx, yy=", len(f))
-                    # print(f)
-                    # temp_freqs.append( f) 
-                    temp_index.append( nz_index )
-                    
-            # get the min index and frequency for Z 
-            min_index = np.argmin ([ len(ii) for ii in temp_index] ) 
-            new_nz_index = temp_index [min_index ]
-            new_freq = Z._freq [new_nz_index]
-            #print("new_freq_len=", len(new_freq ), "old freq len=", len(Z._freq))
-            new_Z = EMz(z_array=np.zeros((len(new_freq), 2, 2),dtype='complex'),
-                        z_err_array=np.zeros((len(new_freq), 2, 2)),
-                    freq=new_freq)
-            
+            new_Z = EMz(z_array=np.zeros((len(Z._freq), 2, 2),dtype='complex'),
+                        z_err_array=np.zeros((len(Z._freq), 2, 2)),
+                    freq=Z._freq)
             for ii in range (2): 
                 for jj in range(2) :
-                    
-                    # collect Index frequencies to build new Z 
-                    # get frequencies to interpolate on to, making sure the
-                    # bounds are with in non-zero components
-                    # new_nz_index = np.where((new_freq_array >= f.min()) & 
-                    #                         (new_freq_array <= f.max()))[0]
-                    # new_f = f[new_nz_index]
-                    
-                    # get the non_zeros components and interpolate 
-                    # frequency to recover the component in dead-band frequencies 
-                    # Use the whole edi
-                    #==========================================================
-                    # with np.errstate(all='ignore'):
-                    #     zfreq = Z._freq[nz_index]
-                    #     #Since z is an imaginary part . Get the absolue a
-                    #     # and convert back latter to imaginary part. 
-                    #     # --resistivity 
-                    #     zv_res=  reshape(Z.resistivity[nz_index, ii, jj])  
-                    #     # then apply function 
-                    #     zv_res = ufunc  ( zv_res, *args, **kws ) 
-                        
-                    #     #---phase 
-                    #     zv_phase = reshape(Z.phase[nz_index, ii, jj])  
-                    #     zv_phase = ufunc  (zv_phase,  *args, **kws ) 
-                    #     #---error 
-                    #     #zerr_v = reshape(Z.z_err[nz_index, ii, jj]) 
-
-                    # # # Use the new dimension of the z and slice z according 
-                    # # # the buffer range. make the new index start at 0. 
-                    # new_Z.resistivity[nz_index, ii, jj] = reshape (zv_res , 1) 
-                    # new_Z.phase[nz_index, ii, jj] = reshape (zv_phase, 1) 
-                    # new_Z.z_err[nz_index, ii, jj] = Z.z_err[nz_index, ii, jj]
-                    
-                    # # compute z as imag and real 
-                    
-                    # new_Z.z [nz_index, ii, jj] = reshape ( rhophi2z(
-                    #     rho = zv_res, phi = zv_phase, freq= zfreq), 1) 
-                    
-                    #========================================================
-                    
-                    # need to look out for zeros in the impedance
-     
-                    # # create a function that does 1d interpolation
-                    # z_func_real = SPI.interp1d(f, z_real, kind=interp_type)
-                    # z_func_imag = SPI.interp1d(f, z_imag, kind=interp_type)
-                    # z_func_err = SPI.interp1d(f, z_err, kind=interp_type)
-
-                    # # interpolate onto new frequency range
-                    # new_Z.z[new_nz_index, ii, jj] = z_func_real(
-                    #     new_f) + 1j * z_func_imag(new_f)
-                    # new_Z.z_err[new_nz_index, ii, jj] = z_func_err(new_f)
-                    
+                    nz_index = np.nonzero( Z.z[:, ii, jj]) 
+                    if len(nz_index[0]) == 0:
+                        continue 
                     with np.errstate(all='ignore'):
-                        #zfreq = Z._freq[nz_index]
                         # Since z is an imaginary part . Get the absolue a
                         # and convert back latter to imaginary part. 
                         # --resistivity 
-                        zv_res=  reshape(Z.resistivity[new_nz_index, ii, jj])  
+                        zv_res=  reshape(Z.resistivity[nz_index, ii, jj])  
                         # then apply function
                         zv_res = ufunc  ( zv_res, *args, **kws ) 
-
-                        # now find the nonzero and NaN 
-                        #new_nz_index = ( ~np.isnan( zv_res)).nonzero() 
-                        
-                        # get the new frequency index 
-                        #new_f = f[new_nz_index]
-                        #zv_res = zv_res[new_nz_index ] # skrunk resistivity 
                         #---phase 
-                        zv_phase = reshape(Z.phase[new_nz_index, ii, jj])  
+                        zv_phase = reshape(Z.phase[nz_index, ii, jj])  
                         zv_phase = ufunc  (zv_phase,  *args, **kws ) 
                         #---error 
                         #zerr_v = reshape(Z.z_err[nz_index, ii, jj]) 
                     # # Use the new dimension of the z and slice z according 
                     # # the buffer range. make the new index start at 0. 
-                    new_Z.resistivity[:, ii, jj] = reshape (zv_res , 1) 
-                    new_Z.phase[:, ii, jj] = reshape (zv_phase, 1) 
-                    new_Z.z_err[:, ii, jj] = Z.z_err[new_nz_index, ii, jj]
-                    
+                    new_Z.resistivity[nz_index, ii, jj] = reshape (zv_res , 1) 
+                    new_Z.phase[nz_index, ii, jj] = reshape (zv_phase, 1) 
+                    new_Z.z_err[nz_index, ii, jj] = Z.z_err[nz_index, ii, jj]
                     # compute z as imag and real 
-                    new_Z.z [:, ii, jj] = reshape ( rhophi2z(
-                        rho = zv_res, phi = zv_phase, freq= new_freq), 1) 
+                    new_Z.z [nz_index, ii, jj] = reshape ( rhophi2z(
+                        rho = zv_res, phi = zv_phase, freq= Z._freq[nz_index]
+                        ), 1) 
                     
-                    # # INTERPOLATION 
-                    # get the non-zero components
-                    z_real = new_Z.z[:, ii, jj].real
-                    z_imag = new_Z.z[:, ii, jj].imag
-                    z_err = new_Z.z_err[:, ii, jj]
-                    
-                    # create a function that does 1d interpolation
-                    z_func_real = SPI.interp1d(new_freq, z_real, kind=interp_type)
-                    z_func_imag = SPI.interp1d(new_freq, z_imag, kind=interp_type)
-                    z_func_err = SPI.interp1d(new_freq, z_err, kind=interp_type)
-
-                    # interpolate onto new frequency range
-                    new_Z.z[:, ii, jj] = z_func_real(
-                        new_freq) + 1j * z_func_imag(new_freq)
-                    new_Z.z_err[:, ii, jj] = z_func_err(new_freq)
-
-            # print(new_Z.resistivity [:, 0, 0])
-            # # compute resistivity and phase for new Z object
-            # if rotate: 
-            #     new_Z.rotate ( rotate )
-            # else : 
-            #     new_Z.compute_resistivity_phase()
             new_zObjs[kk] = new_Z 
+        # ++++++++++++++ Find new frequencies index ++++++++++++++++++++++++++
+        # loop to check the valid frequency and 
+        # drop NaN and non zero frequencies. 
+        # new_ediObjs =new_zObjs.copy() 
+        Zfreqs =[]
+        new_freq_ranges =[]; 
+        for kk , Z in enumerate ( new_zObjs ): 
+            temp_index =[] 
+            for ii in range(2):
+                for jj in range(2):
+                    # need to look out for zeros in the impedance
+                    # get the indicies of non-zero components
+                    #nz_index = np.nonzero (Z._z[:, ii, jj])#  
+                    nz_index= ( ~np.isnan( Z._z[:, ii, jj])).nonzero() 
+                    if len(nz_index[0]) == 0:
+                        continue
+                    temp_index.extend( list(nz_index[0]) )
+            # get the min index and frequency for Z
+            # with nonzero and no NaN 
+            # check the minimum index for non zero and non NaN
+            # frequencies among the  four component XX, XY, YX and YY.
+            new_nz_index = np.array(sorted( set (temp_index))) 
+            #min_index = np.argmin ([ len(ii) for ii in temp_index]) 
+            # new_nz_index = temp_index [min_index ]
+            new_freq = Z._freq [new_nz_index]
+            new_freq_ranges.append((new_nz_index, new_freq) )
             
-        return new_zObjs
+            Zfreqs.append ( (new_freq, Z._z[new_nz_index, :, :], 
+                              Z._z_err[new_nz_index, :, :] ))
+            
+         #++++++++++++++ Update Z with new frequencies ++++++++++++++++++++++++
+        new_zObjs_2 = np.zeros_like( new_zObjs)
+        for kk , ( new_freq , Z , Z_err) in enumerate ( Zfreqs) : 
+            # new_nz_index, new_freq =  freq_and_indexes 
+            new_Z = EMz(z_array=np.zeros((len(new_freq), 2, 2),dtype='complex'),
+                        z_err_array=np.zeros((len(new_freq), 2, 2)),  
+                        freq=new_freq
+                        )
+            new_Z._freq = new_freq ; new_Z._z =Z 
+            new_Z._z_err = Z_err
+    
+            for ii in range(2) : 
+                for jj in range(2) :
+                    
+                    z_real = interpolate1d(new_Z._z[:, ii, jj].real, 
+                                           method =interp_strategy)
+                    z_imag = interpolate1d(new_Z._z[:, ii, jj].imag,  
+                                           method =interp_strategy)
+                    z_err =  interpolate1d(new_Z._z_err[:, ii, jj],  
+                                           method =interp_strategy)
+                    # create a function that does 1d interpolation
+                    z_func_real = SPI.interp1d(new_freq, z_real,
+                                               kind=interp_type, )
+                    z_func_imag = SPI.interp1d(new_freq, z_imag, 
+                                               kind=interp_type)
+                    z_func_err = SPI.interp1d(new_freq, z_err,
+                                              kind=interp_type)
+                    # interpolate onto new frequency range
+                    new_Z._z[:, ii, jj] = z_func_real(
+                        new_freq) + 1j * z_func_imag(new_freq)
+                    new_Z._z_err[:, ii, jj] = z_func_err(new_freq)
+                    
+            if rotate: 
+                new_Z.rotate ( rotate )
+            else : 
+                new_Z.compute_resistivity_phase()
+                
+            new_zObjs_2[kk]=new_Z
+
+        return new_zObjs_2
  
 class EMAPProcess(EM) :
     """ Base processing of :term:`EMAP` data. 
@@ -3419,7 +3375,7 @@ class MTProcess(EM):
                 ss_fy = ss_fy 
                 )
         return ss_fx_fy 
-#XXX TODO  
+    
     def remove_static_shift (
         self, 
         ss_fx:float | List[float] =None, 
@@ -3681,8 +3637,7 @@ class MTProcess(EM):
             )
         
         return self 
-    
-#XXX TODO
+
     def get_ss_correction_factors(
         self, 
         station, 
@@ -3832,7 +3787,6 @@ class MTProcess(EM):
 
         return ss_x, ss_y
 
-#XXXTODO 
     def remove_noises (
         self, 
         method:F|str='base', 
@@ -3911,16 +3865,24 @@ class MTProcess(EM):
             kws = kws.get(method, {})
 
         # Then Update Z
-        zc = _zupdate.update(
+        zObjs = _zupdate.update(
             self.ediObjs_, ufunc = ufunc, args = args,
             rotate = rotate, **kws, **funckws  )
             
+        # make new objs from new z
+        new_ediObjs=np.empty_like (self.ediObjs_, dtype =object )
+        for kk , (z, ediobj)  in enumerate ( zip (zObjs, self.ediObjs_ )): 
+            ediobj.Z = z 
+            ediobj.Z._freq = z._freq 
+            new_ediObjs[kk] = ediobj
+            
         self._set_zc_updated_attr(
-            new_edi=self.ediObjs_ , 
-            # new_freqs=self.freqs_, 
-            new_z= zc, update_z= True
+            new_edi=new_ediObjs , 
+            new_z= zObjs,
+            update_z= True, 
+            # update freq_list
+            freqslist= [ z._freq  for z in zObjs ]  
             )
-        
         return self 
 
 
@@ -4443,67 +4405,7 @@ def drop_frequencies (
         exportEDIs (ediObjs, new_Z =Zobj, savepath = savepath ,**kwd  )
         
     return None if out else rdata 
-
-
-def exportEDIs (
-    ediObjs: List [EDIO], 
-    new_Z: List [ZO], 
-    savepath:str = None, 
-    **kws 
-    ): 
-    """Export EDI files from multiples EDI or z objects
-    
-    Export new EDI files from the former object with  a given new  
-    impedance tensors. The export is assumed a new output EDI 
-    resulting from multiples corrections applications.
-    
-    Parameters 
-    -----------
-    ediObjs: list of string  :class:`watex.edi.Edi` 
-        Full path to Edi file/object or object from class:`EM` objects. 
-
-    new_Z: list of ndarray (nfreq, 2, 2) 
-        A collection of Ndarray of impedance tensors Z. 
-        The tensor Z is 3D array composed of number of frequency 
-        `nfreq`and four components (``xx``, ``xy``, ``yx``,
-        and ``yy``) in 2X2 matrices. The  tensor Z is a complex number. 
-        
-    savepath:str, Optional 
-       Path to save a new EDI file. If ``None``, outputs to the current 
-       directory.
-       
-    Returns 
-    --------
-     ediObj from watex.edi.Edi 
-     
-    See Also
-    ---------
-    exportedi: 
-        Export single EDI from
-        
-    """
-    if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
-        
-        raise EDIError("Obj {ediObjs!r} is not an EDI-object.")
-        
-    ediObjs = is_iterable(
-        ediObjs , 
-        exclude_string =True , 
-        transform =True 
-        )
-    new_Z = is_iterable(
-        new_Z , 
-        exclude_string =True , 
-        transform =True 
-        )
-
-    for e, z  in zip (ediObjs, new_Z ): 
-        e.write_new_edifile( 
-            new_Z=z,
-            savepath = savepath , 
-            **kws
-            )       
-
+      
 def _ss_auto_regulator (
         ediObjs, /, 
         station,

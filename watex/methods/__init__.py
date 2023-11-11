@@ -14,7 +14,7 @@ from .em import (
     EM, 
     EMAPProcess,
     MTProcess,
-    filter_noises, 
+    filter_noises,
     )
 from .erp import ( 
     ERPCollection ,
@@ -46,5 +46,5 @@ __all__=[
     "MXS", 
     "Logging", 
     "DCMagic", 
-    "filter_noises"
+    "filter_noises", 
     ]

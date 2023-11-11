@@ -42,6 +42,7 @@ from ..exceptions import (
     ERPError,
     ExtractionError,
     EMError, 
+    EDIError, 
     )
 from ..property import P
 from .._typing import (
@@ -6405,6 +6406,63 @@ def butterworth_filter(
     return y
 
 
+def exportEDIs (
+    ediObjs: List [EDIO], 
+    new_Z: List [ZO], 
+    savepath:str = None, 
+    **kws 
+    ): 
+    """Export EDI files from multiples EDI or z objects
+    
+    Export new EDI files from the former object with  a given new  
+    impedance tensors. The export is assumed a new output EDI 
+    resulting from multiples corrections applications.
+    
+    Parameters 
+    -----------
+    ediObjs: list of string  :class:`watex.edi.Edi` 
+        Full path to Edi file/object or object from class:`EM` objects. 
+
+    new_Z: list of ndarray (nfreq, 2, 2) 
+        A collection of Ndarray of impedance tensors Z. 
+        The tensor Z is 3D array composed of number of frequency 
+        `nfreq`and four components (``xx``, ``xy``, ``yx``,
+        and ``yy``) in 2X2 matrices. The  tensor Z is a complex number. 
+        
+    savepath:str, Optional 
+       Path to save a new EDI file. If ``None``, outputs to the current 
+       directory.
+       
+    Returns 
+    --------
+     ediObj from watex.edi.Edi 
+     
+    See Also
+    ---------
+    exportedi: 
+        Export single EDI from
+        
+    """
+    if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
+        raise EDIError("Obj {ediObjs!r} is not an EDI-object.")
+        
+    ediObjs = is_iterable(
+        ediObjs , 
+        exclude_string =True , 
+        transform =True 
+        )
+    new_Z = is_iterable(
+        new_Z , 
+        exclude_string =True , 
+        transform =True 
+        )
+
+    for e, z  in zip (ediObjs, new_Z ): 
+        e.write_new_edifile( 
+            new_Z=z,
+            savepath = savepath , 
+            **kws
+            ) 
 
 
 

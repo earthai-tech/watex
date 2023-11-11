@@ -165,9 +165,9 @@ from .utils import (
     reshape, 
     to_numeric_dtypes, 
     smart_label_classifier,
+    plot_confidence_in, 
     qc,
     )
-
 try : 
     from .utils import ( 
         selectfeatures, 
