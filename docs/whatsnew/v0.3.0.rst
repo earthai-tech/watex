@@ -1,32 +1,36 @@
 v0.3.0 (November 21, 2023)
 --------------------------
 
-These are minor changes  in ``v0.2.7`` that shows fugs fixed. 
+These are substantial changes in ``v0.2.7`` API that lead to new features and fugs fixed. 
  
 - |API change| ``watex.methods.em.Processing`` and ``watex.methods.em.ZC`` do no longer exist. 
-  They have been changed to :class:`watex.methods.em.EMAPProcess` and 
-  :class:`watex.methods.em.MTProcess` respectively.
+  They have been changed to :class:`watex.methods.em.EMAP` and 
+  :class:`watex.methods.em.MT` respectively.
 
-- |Fix| Bug in removing the static shift in :term:`AMT` data. Henceforth the correction factor method :meth:`watex.methods.em.ZC.get_ss_correction_factor`
-  is applied for each station differently rather than using the factor to correct all stations. There are also a  choice for user to input the correction factors
-   ``ss_fx`` and ``ss_fy`` manually into a list. 
+- |API change| ``watex.utils.funcutils.fit_by_ll`` is deprecated and replaced by :func:`watex.utils.funcutils.fit_ll`. 
+
+- |Fix| Bug in removing the static shift in :term:`AMT` data. Henceforth the correction factor method deprecated method ``watex.methods.em.ZC.get_ss_correction_factors``
+  replaced by :meth:`watex.methods.em.MT.get_ss_correction_factors` is applied for each station differently rather than using 
+  the factor to correct all stations. There are also a  choice for user to input the correction factors ``ss_fx`` and ``ss_fy`` manually into a list. 
 
 - |Feature| :func:`watex.utils.plotutils.plot_tensors` plots resistivity and phase tensors or the real and imaginary impedance.
 
 - |Feature| :func:`watex.utils.torres_verdin_filter` calculates the adaptive moving average of a given data array from 
   Torres and Verdin codes 
 
-- |Feature| :func:`watex.methods.em.filtered_noises` remove noise from single component ``xx``, ``yy``, ``xy`` or ``yx``. 
+- |Feature| :func:`watex.methods.em.filter_noises` remove noise from component ``xx``, ``yy``, ``xy`` or ``yx``. 
 
-- |Feature| :meth:`watex.methods.em.ZC.remove_noises` removes indesired and artifacts in the data and smooth it. 
+- |Feature| :meth:`watex.methods.em.MT.remove_noises` removes artifacts in the data and smooth it. 
+
+- |Feature| :func:`watex.methods.em.drop_frequencies` drop bad frequencies or frequencies with no consistent data in the EDI files. 
 
 - |Feature| :func:`watex.utils.plotutils.plot_sounding` plot the vertical electrical resistivity data. 
 
-- |Enhancement| :func:`watex.utils.read_data` is now able to read data in `txt` and numpy  formats (`.npy` and `.npz`). 
+- |Enhancement| :func:`watex.utils.plot_profiling` accepts `ax` as a paramater. 
 
 - |Enhancement| :func:`watex.view.TPlot.plot_rhophi` changes the style of plot in preceeding versions. It accepts parameter `kind` for plotting multiple stations differently.  
 
-- |Enhancement| Fix overlapping xlabels in the :func:`watex.utils.exmath.plotOhmicArea` . 
+- |Enhancement| Fix overlapping xlabels in the :func:`watex.utils.exmath.plotOhmicArea`. 
 
 
 

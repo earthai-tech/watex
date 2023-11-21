@@ -1,10 +1,10 @@
 """
-===================================================
-Example of Fast EDI Process
-===================================================
+====================================================
+Fast AMT data collected with Stratagem hardware
+====================================================
 
-Short explanation about the process of EDI 
-data collected in specific area with Stratagem 
+Short explanation about the process of AMT
+data collected in a specific area with a Stratagem 
 hardware.
 """
 
@@ -12,7 +12,6 @@ hardware.
 # Author: Kouadio Laurent 
 
 #%% 
-
 # * Context 
 # This is a scheme for fast processing EDI data collected from 
 # Stratagem hardware where data are not included the coordinates 
@@ -59,25 +58,25 @@ def set_ll_and_export_edis (
     emo.elevation = elev 
     emo.rewrite (by ='id', dataid = dataid, savepath =savepath, edi_prefix=''  ) 
     return emo 
-
-#%% 
-# Add the transformed coordinates lon, lat into new 
-# csv sheet and save it. 
  
+# * Update coordinates 
+#
+# Old coordinates wre reprocessed then transformed  to lon, lat which can be
+# be saved to a new csv sheet. 
+#
 # lon, lat , _, data  = get_ll(r'D:\project-Tayuan\data\all_coordinates.csv')
 # data ['longitude'] = lon 
 # data ['latitude'] =lat 
 # data.to_csv (r'D:\project-Tayuan\data\coordinates_end.csv', index =False )
-
-#%%
-
+#
+#
 # EDIPATH = r'D:\project-Tayuan\data\1'
 # edipath =os.path.join( EDIPATH, '6HX')
 # coord_file=os.path.join( EDIPATH, '1.csv' )
 # savepath =os.path.join( EDIPATH, '1EDI') 
 #set EMobj so use it to set rewrite the dataID 
 # emo = EM().fit(edipath )
-
+#
 # export new EDI files .
 # set_ll_and_export_edis ( 
 #     emo.ediObjs_, 
@@ -87,8 +86,8 @@ def set_ll_and_export_edis (
 #     # the hardware numbering are opposite. 
 #     dataid =['S{:02}'.format(ix) for ix in range ( len(emo.ediObjs_))][::-1]
 #     )
-#%% 
-# Process and export the data 
+# * Process AMT data and export the results into new EDI files. 
+#
 # new_edipath =savepath 
 # outpath =os.path.join( EDIPATH, '1EDIP') # path to save new process EDI
 # em0 = EM().fit(new_edipath )
@@ -97,24 +96,26 @@ def set_ll_and_export_edis (
 # zc.remove_static_shift (nfreq="auto" , r = 1000,
 #                          ).remove_noises (method='base', # smooothed method .
 #     ).drop_frequencies (tol = .1).out(savepath =outpath) 
-
-#%% 
-# Plot EDI 
-# plot row 
+#
+# * Visualization 
+# Plot the raw resistivity and phases tensors at the first station.  
 # plot_tensors ( em0.ediObjs_, station =0 ) 
-#%% 
-# plot new processed EDI
+#
+# * plot adjusted resistivity and phases at station 10.
+#
 # plot_tensors (emc.ediObjs_, station = 10 )
-#%% 
-# plot_strike 
+#
+# * Visualize the strike
+#
 # edipath =  outpath # new_edipath #
 # edi_fn_lst = [os.path.join(edipath,f) for f in os.listdir(edipath) 
 #         if f.endswith('.edi')] 
 # plot_strike(edi_fn_lst ) 
 # plot_strike(edi_fn_lst , kind = 1 ) # plot second type of plot.
-
-#%% 
-# rename EDI  and save it. 
+#
+#
+# * Optionally, rename EDI  and save it.
+# 
 # src_path =outpath 
 # dst_path =os.path.join( EDIPATH, 'renamedEDIs')
 # rename_files(src_path , dst_files= dst_path , basename ='T7.', trailer='')

@@ -835,7 +835,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.funcutils.concat_array_from_list
 	utils.funcutils.show_stats
 	utils.funcutils.make_ids
-	utils.funcutils.fit_by_ll
+	utils.funcutils.fit_ll
 	utils.funcutils.fillNaN
 	utils.funcutils.find_close_position
 	utils.funcutils.make_arr_consistent

@@ -99,7 +99,8 @@ __all__ =['EM',
           "MT", 
           "filter_noises", 
           "drop_frequencies", 
-          "exportEDIs"
+          "exportEDIs", 
+          "drop_frequencies"
           ]
 #++++++++++++++++++++++++++++++++++++++++++++++++
 METER2DEGREESFACTOR = 8.994423457456377e-06

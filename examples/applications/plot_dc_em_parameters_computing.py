@@ -32,7 +32,7 @@ from watex.methods import(
     DCProfiling, 
     DCSounding, 
     ResistivityProfiling,
-    VerticalSounding,Processing , 
+    VerticalSounding,EMAP , 
     Logging,
     MXS 
     )
@@ -41,7 +41,7 @@ from watex.methods import(
 # EM :mod:`~watex.methods.em`
 # ============================
 # The EM module is related to a few meter exploration in the case of groundwater 
-# exploration. The module provides some basic processing steps for EMAP data filtering
+# exploration. The module provides some basic EMAP steps for EMAP data filtering
 # and removing noises. Commonly the method mostly used in groundwater 
 # exploration is the audio-magnetotelluric because of the shortest frequency 
 # and rapid executions. Furthermore, we can also list some other advantages 
@@ -56,7 +56,7 @@ from watex.methods import(
 #   and has no environmental impact 
 #
 # :note: For deep implementation or exploring a large scale of EM/AMT data  
-#     processing, it is recommended to use the package `pycsamt <https://github.com/WEgeophysics/watex/>`_. 
+#     EMAP, it is recommended to use the package `pycsamt <https://github.com/WEgeophysics/watex/>`_. 
 #     Create EM object as a collection of EDI-file. 
 #     Collect edi-files and create an EM object. It sets he properties from 
 #     audio-magnetotelluric. The two(2) components XY and YX will be set and 
@@ -78,7 +78,7 @@ rfreq
 # Fast process EMAP and AMT data. Tools are used for data sanitizing, 
 # removing noises and filtering. 
 
-p = Processing().fit(edi_data) 
+p = EMAP().fit(edi_data) 
 p.window_size =2 
 p.component ='yx'
 rc= p.tma()
@@ -95,12 +95,12 @@ plt.semilogy (np.arange (p.res2d_.shape[1] ), p.res2d_[3, :], '--',
 
 # Compute the skew: The conventional asymmetry parameter based on the Z magnitude.
 
-# p = Processing().fit(edi_data) 
+# p = EMAP().fit(edi_data) 
 # sk,_ = p.skew()
 # sk[0:, ]
 
 # restore tensor 
-pObjs= Processing().fit(edi_data)
+pObjs= EMAP().fit(edi_data)
 # One can specify the frequency buffer like the example below, however 
 # it is not necessary at least there is a specific reason to fix the frequencies 
 # buffer = [1.45000e+04,1.11500e+01]
@@ -110,7 +110,7 @@ zobjs_b =  pObjs.zrestore(
 zobjs_b 
 
 # control the quality of the EM data 
-#     pobj = Processing().fit(edi_data)
+#     pobj = EMAP().fit(edi_data)
 #     f = pobj.getfullfrequency ()
 #     # len(f)
 #     # ... 55 # 55 frequencies 

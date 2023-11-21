@@ -68,7 +68,7 @@ tplot.plotSkew(threshold_line=True, suppress_outliers=False )
 # In addition, setting the `return_skewness` parameter to ``skew``
 # returns only the skew value. The default behavior returns both the skew and 
 # the rotation all of invariant :math:`\eta`. 
-skv = watex.EMProcessing ().fit(test_data).skew(return_skewness='skew') # to return only skew value,
+skv = watex.EMAP ().fit(test_data).skew(return_skewness='skew') # to return only skew value,
 watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
                    distance =50., # distance between stations
                    top_label='Stations',
@@ -88,7 +88,7 @@ watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
 # the electricity model of the research area can be approximated to a 2D 
 # structure for inversion.  
 # In the next example, we will suppress the outliers in the data.  
-skv = watex.EMProcessing ().fit(test_data).skew(
+skv = watex.EMAP ().fit(test_data).skew(
     return_skewness='skew', suppress_outliers = True) 
 watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
                    distance =50., 

@@ -1,10 +1,10 @@
 """
-========================
-Plot  tensors 
-========================
+===============================
+Plot Res, Z and phase tensors 
+===============================
 
 Plot impedances/resistivity and phase tensors 
-from EM data after applying basic corrections.   
+from AMT data after applying essential corrections.   
 
 """
 # Author: L.Kouadio 
@@ -14,10 +14,10 @@ from EM data after applying basic corrections.
 # :func:`~watex.utils.plot_tensors` plots the impendances/resistivity  
 # and phase tensors. In the following example, we called 
 # a sample of  :term:`EDI` collected in Huayuan locality, Hunan province, China,
-# stored as inner datasets then we apply the three basic corrections such 
-# as: 
+# stored as inner datasets then we apply the three basic corrections such as: 
+#
 # - `removing noises`: Drop a possible existences of factories noises, power 
-#    lines effects , ...
+#   lines effects , ...
 # - `static shift`: Shift the TE and TM tensors at each station. 
 # - `drop frequencies`: Drop frequencies is usefull to control the safety of the 
 #   EM data collected in an area with severe interferences. 
@@ -35,8 +35,9 @@ plt.style.use ("seaborn")
 #%% 
 # Before we'll make a collection of :term:`EDI` data and call 
 # :func:`watex.utils.plot_strike` for plotting as: 
+#
 fetch_data ( 'huayuan', samples = 20) # store 20 edis in cache 
-
+#
 # edipath = r'D:\project-Tayuan\data\1\1one'
 edi_fn_lst = [os.path.join(get_data(),f) for f in os.listdir(get_data()) 
          if f.endswith('.edi')] 

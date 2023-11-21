@@ -3033,7 +3033,7 @@ def plot_skew (
         threshold_line = str(method).lower() 
             
     import watex as wx 
-    po =  wx.EMProcessing().fit(edi_obj)
+    po =  wx.EMAP().fit(edi_obj)
     
     # remove the outliers in the data
     # and filled with NaN 

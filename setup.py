@@ -18,7 +18,7 @@ builtins.__WATEX_SETUP__ = True
 try: 
     import watex  # noqa
     VERSION = watex.__version__
-except: VERSION ='0.2.7'
+except: VERSION ='0.3.0'
 # set global variables 
 DISTNAME = "watex"
 DESCRIPTION= "Machine learning research in water exploration"
