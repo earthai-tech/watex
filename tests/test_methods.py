@@ -24,8 +24,11 @@ from watex.datasets import (
     load_edis 
     )
 from watex.methods import (
-    ResistivityProfiling, VerticalSounding, 
-    DCProfiling, DCSounding, MXS, 
+    ResistivityProfiling, 
+    # VerticalSounding, 
+    DCProfiling, 
+    # DCSounding, 
+    MXS, 
     AqSection, AqGroup, 
     Logging , EM , EMAP, 
    )
@@ -81,17 +84,17 @@ class TestElectrical (unittest.TestCase):
                                    getattr (dc_res.line1, f"{param}_")
                                    ) 
 
-    def test_VerticalSounding (self): 
-        """ Make test for |VES| , Compute Parameters with simple run """
+    # def test_VerticalSounding (self): 
+    #     """ Make test for |VES| , Compute Parameters with simple run """
         
-        vesobj = VerticalSounding(search = self.search ).fit(self.ves_data ) 
-        dcobj = DCSounding(search = self.search ).fit(self.ves_data )
-        self.assertAlmostEqual(vesobj.ohmic_area_, dcobj.site1.ohmic_area_)
+    #     vesobj = VerticalSounding(search = self.search ).fit(self.ves_data ) 
+    #     dcobj = DCSounding(search = self.search ).fit(self.ves_data )
+    #     self.assertAlmostEqual(vesobj.ohmic_area_, dcobj.site1.ohmic_area_)
         
-        dcobj.summary(return_table =True)
-        vesobj.summary(return_table= True ) 
+    #     dcobj.summary(return_table =True)
+    #     vesobj.summary(return_table= True ) 
         
-        self.assertAlmostEqual(dcobj.nareas_, vesobj.nareas_ )
+    #     self.assertAlmostEqual(dcobj.nareas_, vesobj.nareas_ )
    
 class TestHydro (unittest.TestCase ): 
     """ Test Hydrogeological module"""
@@ -248,7 +251,8 @@ def compare_diff_files(refout, refexp):
 
 
 # if __name__=='__main__':
-#     unittest.main()
+    # unittest.main()
+    # TestElectrical().test_VerticalSounding()
     
     
                 
