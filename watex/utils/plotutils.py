@@ -2762,7 +2762,9 @@ def plot_profiling (
     fig_size = (10, 4), 
     cz_plot_kws= None,
     marker_kws= None, 
-    savefig =None, 
+    savefig =None,
+    ax =None,
+    fig=None, 
     **plot_kws
     ): 
     """ 
@@ -2809,6 +2811,16 @@ def plot_profiling (
     savefig: str, optional 
         Save figure name. The default resolution dot-per-inch is ``300``. 
         
+    ax: Matplotlib.pyplot.Axes, optional 
+       Axe to collect the figure.
+       
+       .. versionadded:: 0.2.8 
+          
+       
+    fig: Matplotlib.pyplot.figure, optional 
+        Supply fig to save automatically the plot, otherwise, keep it 
+        to ``None``.
+          
     plot_kws: dict, 
         Additional keyword arguments passed to :func:`matplotlib.pyplot.plot` 
         function 
@@ -2847,7 +2859,9 @@ def plot_profiling (
         cz, *_  = defineConductiveZone(
             erp , station = station , auto= auto )
     
-    fig, ax = plt.subplots(1,1, figsize =fig_size)
+    if ax is None: 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+        
     leg =[]
     
     zl, = ax.plot(np.arange(len(erp)), erp, 
@@ -2878,7 +2892,6 @@ def plot_profiling (
     if len(erp ) >= 14 : 
         ax.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
     else : 
-        
         ax.set_xticklabels(
             ['S{:02}'.format(int(i)+1) for i in range(len(erp))]) 
          
@@ -2887,7 +2900,8 @@ def plot_profiling (
     ax.legend( handles = leg, loc ='best')
     ax.set_xlim ([-1, len(erp)])
 
-    if savefig is not  None: savefigure (fig, savefig, dpi = 300)
+    if savefig is not  None: 
+        savefigure (fig, savefig, dpi = 300)
         
     plt.close () if savefig is not None else plt.show() 
     
@@ -3728,14 +3742,11 @@ def plot_roc_curves (
        Number of plot to be placed inline before skipping to the next column. 
        This is feasible if `many` is set to ``True``. 
        
-    score: bool,default=True
+    score: bool,default=False
       Append the Area Under the curve score to the legend. 
       
       .. versionadded:: 0.2.4 
       
-    all: str, default=False 
-       if ``True``, plot each ROC model separately 
-
     kws: dict,
         keyword argument of :func:`sklearn.metrics.roc_curve 
         
@@ -4302,7 +4313,7 @@ Examples
 >>> wx.utils.plotutils.plot_tensors ( edi_data, station =4 )
 """ 
     
-
+#XXX TODO
 def plot_rsquared (X , y,  y_pred,  ): 
     
     from sklearn.metrics import r2_score
@@ -4327,6 +4338,121 @@ def plot_rsquared (X , y,  y_pred,  ):
     # Show the plot
     plt.show()
 
+def plot_sounding (
+    ves, /, 
+    style = 'bmh', 
+    fig_size = (10, 4), 
+    cz_plot_kws= None,
+    marker_kws= None, 
+    savefig =None, 
+    ax=None, 
+    fig=None,
+    **plot_kws ): 
+    """ Visualize the vertical electrical sounding. 
+    
+    Function plots the sounding curve from AB/2 sounding points. 
+    
+    Parameters 
+    -----------
+    ves: array_like 1d
+        The vertical electrical resistivity sounding array. 
+        If dataframe is passed,`resistivity` column must be included. 
+        
+    style: str, default='bmh'
+        Matplotlib plottings style.
+        
+    fig_size: tuple, default= (10, 4) 
+        Matplotlib figure size. 
+        
+    marker_kws: dict, default = {'marker':'o', 'c':'#9EB3DD' }
+        The dictionnary to customize marker in the plot 
+        
+    cz_plot_kws: dict, default = {'ls':'-','c':'#0A4CEE', 'lw'L2 }
+        The dictionnary to customize the conductize zone in the plot.
+        
+    savefig: str, optional 
+        Save figure name. The default resolution dot-per-inch is ``300``. 
+      
+    ax: Matplotlib.pyplot.Axes, optional 
+       Axe to collect the figure. 
+       
+    fig: Matplotlib.pyplot.figure, optional 
+        Supply fig to save automatically the plot, otherwise, keep it 
+        to ``None``.
+        
+    plot_kws: dict, 
+        Additional keyword arguments passed to :func:`matplotlib.pyplot.plot` 
+        function 
+        
+    Return
+    --------
+    ax: Matplotlib.pyplot.Axis 
+        Return axis  
+        
+    See also
+    ---------
+    watex.utils.exmath.plotOhmicArea: 
+        plot the Ohmic Area including the computed fracture zone. 
+        
+    Examples 
+    ----------
+    >>> from watex.datasets import make_ves
+    >>> from watex.utils.plotutils import plot_sounding
+    >>> import matplotlib.pyplot as plt 
+    >>> fig, ax = plt.subplots ( 2, 1, figsize = (10, 10))
+    >>> d= make_ves (samples =56, seed = 42)
+    >>> plot_sounding  (d.resistivity, ax =ax [0], color ='k', marker ='D', )
+    >>> ax[0].set_title ("VES: samples=56, seed =42")
+    >>> # read the frame and get the resistivity values 
+    >>> ax[1] = plot_sounding(make_ves (order ='+', max_rho =1e4, seed =65 , 
+                                        as_frame=True,iorder =5), 
+                              ax= ax[1], ls=':', marker ='o', color ='blue')
+    >>> ax[1].set_title ("VES:samples=41, order='+', iorder=5,"
+                         " max_rho=10000.$\Omega.m$, seed=65")
+    """
+    plt.style.use (style )
+    
+    if hasattr ( ves , 'columns') and hasattr ( ves , '__array__'): 
+        if 'resistivity' not in  ves.columns : 
+            raise TypeError ("Missing resistivity column in the data.")
+        
+        ves = ves.resistivity 
+    
+    ves = check_y (ves , input_name ="sample of VES data")
+    
+    if ax is None: 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+        
+    leg =[]
+    
+    zl, = ax.semilogy(np.arange(len(ves)), ves, 
+                  label ='Vertical Electrical Resistivity', 
+                  **plot_kws 
+                  )
+    marker_kws = marker_kws or dict (marker ='o', c='#9EB3DD' )
+    ax.scatter (np.arange(len(ves)), ves, **marker_kws )
+    
+    leg.append(zl)    
+        
+    ax.set_xticks(range(len(ves)))
+    
+    _get_xticks_formatage (ax, ax.get_xticks() , auto =True, 
+                           rotation=0)
+        # for label in ax.xaxis.get_ticklabels()[::7]:
+        #     label.set_visible(False)
+         
+    ax.set_xlabel('AB/2(m)')
+    ax.set_ylabel('App.resistivity ($\Omega.m$)')
+    ax.legend( handles = leg, loc ='best')
+    ax.set_xlim ([-1, len(ves)])
+
+    if savefig is not  None: savefigure (fig, savefig, dpi = 300)
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+    return ax 
+
+    
 # import watex as wx 
 # lspath =r'C:\Users\Daniel\Desktop\projects\nanshaLS0.csv'
 # ls_data = wx.read_data (lspath , sanitize =True, sep =';', verbose =True ) 

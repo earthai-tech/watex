@@ -255,11 +255,11 @@ def test_MTProcess():
     #          8413.19671642+4925.46660981j])
 
 
-if __name__=='__main__': 
+# if __name__=='__main__': 
     
-    test_MTProcess() 
-    test_EMAPProcess() 
-    test_EM()
+#     test_MTProcess() 
+#     test_EMAPProcess() 
+#     test_EM()
 
 
 

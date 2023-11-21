@@ -1,4 +1,4 @@
-v0.2.8 (December 12, 2023)
+v0.2.8 (November 21, 2023)
 --------------------------
 
 These are minor changes  in ``v0.2.7`` that shows fugs fixed.  
@@ -17,11 +17,13 @@ These are minor changes  in ``v0.2.7`` that shows fugs fixed.
 
 - |Feature| :meth:`watex.methods.em.ZC.remove_noises` removes indesired and artifacts in the data and smooth it. 
 
+- |Feature| :func:`watex.utils.plotutils.plot_sounding` plot the vertical electrical resistivity data. 
+
 - |Enhancement| :func:`watex.utils.read_data` is now able to read data in `txt` and numpy  formats (`.npy` and `.npz`). 
 
 - |Enhancement| :func:`watex.view.TPlot.plot_rhophi` changes the style of plot in preceeding versions. It accepts parameter `kind` for plotting multiple stations differently.  
 
-  
+- |Enhancement| Fix overlapping xlabels in the :func:`watex.utils.exmath.plotOhmicArea` . 
 
 
 
