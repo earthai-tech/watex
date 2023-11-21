@@ -1,8 +1,11 @@
-v0.2.8 (November 21, 2023)
+v0.3.0 (November 21, 2023)
 --------------------------
 
-These are minor changes  in ``v0.2.7`` that shows fugs fixed.  
-
+These are minor changes  in ``v0.2.7`` that shows fugs fixed. 
+ 
+- |API change| ``watex.methods.em.Processing`` and ``watex.methods.em.ZC`` do no longer exist. 
+  They have been changed to :class:`watex.methods.em.EMAPProcess` and 
+  :class:`watex.methods.em.MTProcess` respectively.
 
 - |Fix| Bug in removing the static shift in :term:`AMT` data. Henceforth the correction factor method :meth:`watex.methods.em.ZC.get_ss_correction_factor`
   is applied for each station differently rather than using the factor to correct all stations. There are also a  choice for user to input the correction factors

@@ -122,8 +122,8 @@ from .methods import (
     DCProfiling, 
     DCSounding, 
     EM, 
-    EMAPProcess, 
-    MTProcess, 
+    EMAP, 
+    MT, 
     MXS, 
     )
 from . models import ( 
@@ -245,8 +245,8 @@ __all__ = [
     "DCProfiling", 
     "DCSounding", 
     "EM", 
-    "EMAPProcess", 
-    "MTProcess", 
+    "EMAP", 
+    "MT", 
     "MXS", 
     "get2dtensor", 
     "GridSearch", 

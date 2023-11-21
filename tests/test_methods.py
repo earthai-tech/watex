@@ -27,7 +27,7 @@ from watex.methods import (
     ResistivityProfiling, VerticalSounding, 
     DCProfiling, DCSounding, MXS, 
     AqSection, AqGroup, 
-    Logging , EM , Processing, 
+    Logging , EM , EMAP, 
    )
 from tests import  ( 
     TEST_TEMP_DIR,  
@@ -191,12 +191,12 @@ class TestEM (unittest.TestCase):
                                self.emobj.freq_array.max ()) 
         
 
-class TestProcessing (unittest.TestCase): 
+class TestEMAP (unittest.TestCase): 
     # output the edis data as array_like 1d 
     edi_data = load_edis (key='edi' , return_data =True, samples = 30 )
-    pobj = Processing().fit(edi_data)
+    pobj = EMAP().fit(edi_data)
     
-    def test_processing (self ): 
+    def test_EMAP (self ): 
         
         self.pobj.ama () ; self.pobj.flma () ; self.pobj.ama () 
         

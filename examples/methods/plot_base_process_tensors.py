@@ -16,14 +16,14 @@ plot the resistivity/phase and Impendance
 # We start by importing the required modules as: 
 from watex.datasets import fetch_data 
 from watex.utils.plotutils import plot_tensors 
-from watex.methods import MTProcess 
+from watex.methods import MT 
 
 #%%
 # Before we'll fetch 17 samples of EDI objets 
 edi_data = fetch_data ("edis", samples =17, return_data =True )
 # then we will do remove the noises using the 
 # adaptative -moving-average spatial filter as 
-amt = MTProcess (verbose =True).fit( edi_data).remove_noises (method ='ama')
+amt = MT (verbose =True).fit( edi_data).remove_noises (method ='ama')
 
 #%% 
 # * Plot the resistivity/phase 

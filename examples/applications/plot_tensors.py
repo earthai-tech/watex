@@ -28,7 +28,7 @@ import os
 from watex.datasets import fetch_data 
 from watex.utils.plotutils import plot_strike 
 from watex.datasets.io import get_data # get edidata stored in cache
-from watex.methods import EM, MTProcess 
+from watex.methods import EM, MT 
 from watex.utils.plotutils import plot_tensors 
 import matplotlib.pyplot as plt 
 plt.style.use ("seaborn")
@@ -59,7 +59,7 @@ plot_strike(edi_fn_lst )
 # * Plot corrected tensors 
 #
 # We applied three essential corrections to EDI objets via a chaining 
-# method supplied by the :class:`watex.methods.MTProcess` class. 
+# method supplied by the :class:`watex.methods.MT` class. 
 # We first drop the bad frequencies with a severity set to `10%`
 # tolerance. Then removing the static shift effect. After TM and ME mode data  
 # are automatically (``nfreq=auto``) shifted by asserting all stations, 
@@ -67,7 +67,7 @@ plot_strike(edi_fn_lst )
 # the all processing step can be applied differently, it does not need to 
 # follow a certain order.  
 
-mo = MTProcess().fit(edi_fn_lst).drop_frequencies (
+mo = MT().fit(edi_fn_lst).drop_frequencies (
     tol =0.1).remove_static_shift (nfreq='auto' ).remove_noises (method ='base')
 
 # we then visualized the new corrected tensors at the station 0 

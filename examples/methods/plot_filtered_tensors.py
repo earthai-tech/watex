@@ -11,22 +11,22 @@ after signal recovery.
 # Licence: BSD-3-clause
 
 #%% 
-# After recovering the NSAMT signal using :meth:`~watex.methods.Processing.zrestore`, 
-# the latter could  exhibits a field strength amplitude for the next processing 
+# After recovering the NSAMT signal using :meth:`~watex.methods.EMAP.zrestore`, 
+# the latter could  exhibits a field strength amplitude for the next EMAP 
 # step like filtering. :code:`watex` implements three filtering linked to 
-# the :class:`~watex.methods.em.Processing`. 
+# the :class:`~watex.methods.em.EMAP`. 
 # Here is an example of filtered data using the three filters
 
 import numpy as np 
 import matplotlib.pyplot as plt 
-from watex.methods import Processing 
+from watex.methods import EMAP 
 from watex.datasets import fetch_data  # load_edis 
 e= fetch_data ('edis', samples =15, key='*' )  #"*" to fetch all columns of edi data 
 # the above code is the same as 
 # e= load_edis (samples =21 , key='*') 
 edi_data = e.frame.edi.values 
 # 'srho' for static resistivity correction'
-pobj= Processing(window_size =5, component='yx', c= 2, out='srho').fit( edi_data ) 
+pobj= EMAP(window_size =5, component='yx', c= 2, out='srho').fit( edi_data ) 
 resyx = pobj.make2d ('resyx') 
 res_ama = pobj.ama() 
 res_flma = pobj.flma () 

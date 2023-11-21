@@ -320,7 +320,7 @@ such as:
 .. _razorback: https://github.com/BRGM/razorback
 .. _MTnet: https://www.mtnet.info/main/
 
-Note that the :class:`~watex.methods.em.Processing` inherits from :class:`~watex.methods.em.EM` class. When EDI data is passed 
+Note that the :class:`~watex.methods.em.EMAP` inherits from :class:`~watex.methods.em.EM` class. When EDI data is passed 
 to EM :meth:`~watex.methods.em.EM.fit` method, each Edi-file is considered as an `EM` object, and attributes 
 are wrapped and recomputed such the `coordinates`, `ids` sites, `frequency` and `reference frequency`.  EDI files can also rewrite accordingly 
 using the EM :meth:`~watex.methods.em.EM.rewrite` method. The latter gives many options for EDI outputs. Refer to 
@@ -356,7 +356,7 @@ For the whole examples, let's fetch 21 examples of EDI files stored in :func:`~w
 	>>> e.refreq_ # reference frequency 
 	58800.0
 	
-Note that the tensor components `z` (impedances), `resistivity`, and `phases` are stored in a three-dimensional array of (n_frequency, 2, 2 ) for `xx`, `xy` , `yx` and `yy`. It is possible to get the corresponding tensor component in the two-dimensional array from the method :meth:`~watex.methods.em.Processing.make2d`. By default :meth:`~watex.methods.em.Processing.make2d` outputs `resistivity` components `xy`. Rather than deleting the missing tensors, they are kept in the tensor as  NaN signal and should be used for corrections. As mentioned above, most short-period EM specially NSAMT suffers from the lower and missing signal. Deleting many tensors will yield poor data processing. As a result, a misinterpretation should be done for the location of the drilling operations. Refer to the method (:meth:`~watex.methods.em.Processing.make2d`) documentation for more details. 
+Note that the tensor components `z` (impedances), `resistivity`, and `phases` are stored in a three-dimensional array of (n_frequency, 2, 2 ) for `xx`, `xy` , `yx` and `yy`. It is possible to get the corresponding tensor component in the two-dimensional array from the method :meth:`~watex.methods.em.EMAP.make2d`. By default :meth:`~watex.methods.em.EMAP.make2d` outputs `resistivity` components `xy`. Rather than deleting the missing tensors, they are kept in the tensor as  NaN signal and should be used for corrections. As mentioned above, most short-period EM specially NSAMT suffers from the lower and missing signal. Deleting many tensors will yield poor data processing. As a result, a misinterpretation should be done for the location of the drilling operations. Refer to the method (:meth:`~watex.methods.em.EMAP.make2d`) documentation for more details. 
 
 .. code-block:: python 
 
@@ -399,17 +399,17 @@ The code snippets below show a concrete example of data composed of weak signal 
 	((55, 3), (55, 3), (55, 3))
 
 
-Restoring tensors: :meth:`~watex.methods.em.Processing.zrestore`  
+Restoring tensors: :meth:`~watex.methods.em.EMAP.zrestore`  
 ----------------------------------------------------------------
 
-In the following, we will show some examples for restoring signal and processing EDI data using the EM :class:`~watex.methods.em.Processing` 
-class. The signal recovery is ensured by the :meth:`~watex.methods.em.Processing.zrestore`. Before, the EDI quality data 
-can be analyzed using the :meth:`~watex.methods.em.Processing.qc` method. For instance: 
+In the following, we will show some examples for restoring signal and processing EDI data using the EM :class:`~watex.methods.em.EMAP` 
+class. The signal recovery is ensured by the :meth:`~watex.methods.em.EMAP.zrestore`. Before, the EDI quality data 
+can be analyzed using the :meth:`~watex.methods.em.EMAP.qc` method. For instance: 
 
 .. code-block:: python 
 
-	>>> from watex.methods.em import Processing
-	>>> pobj = Processing().fit('data/edis')
+	>>> from watex.methods.em import EMAPProcess
+	>>> pobj = EMAPProcess().fit('data/edis')
 	>>> f = pobj.getfullfrequency ()
 	>>> # len(f)
 	>>> # 55 frequencies 
@@ -420,14 +420,14 @@ can be analyzed using the :meth:`~watex.methods.em.Processing.qc` method. For in
 	>>> c, freq_new  = pobj.qc ( tol=.6 , return_freq =True) # returns the interpolated frequency 
 
 If the quality is so poor, there is a possibility to remove the bad data using 
-the :meth:`~watex.methods.em.Processing.getValidTensors` method. Indeed the :meth:`~watex.methods.em.Processing.getValidTensors` method 
+the :meth:`~watex.methods.em.EMAP.getValidTensors` method. Indeed the :meth:`~watex.methods.em.EMAP.getValidTensors` method 
 analyzes the data and keeps the good ones. The goodness of the data depends on the  `threshold` rate.  For instance ``50%`` means to c
 onsider an impedance tensor 'z'  valid if the quality control shows at least that score at each frequency of all stations. For example: 
  
 .. code-block:: python 
 
-	>>> from watex.methods import Processing 
-	>>> pObj = Processing ().fit('data/edis')
+	>>> from watex.methods import EMAP 
+	>>> pObj = EMAP().fit('data/edis')
 	>>> f= pObj.freqs_
 	>>> len(f) 
 	55
@@ -448,9 +448,9 @@ The tensors recovering can be operated as :
 
 .. code-block:: python 
 
-	>>> from watex.methods.em import Processing
+	>>> from watex.methods.em import EMAP
 	>>> path2edi = 'data/edis'
-	>>> pObjs= Processing().fit(path2edi)
+	>>> pObjs= EMAP().fit(path2edi)
 	>>> # One can specify the frequency buffer like the example below, however 
 	>>> # it is not necessary at least there is a specific reason to fix the frequencies beforehand.
 	>>> buffer = [1.45000e+04,1.11500e+01]
@@ -466,22 +466,22 @@ The tensors recovering can be operated as :
    :scale: 50%
 	
 	
-Filtering tensors: :meth:`~watex.methods.em.Processing.ama`, :meth:`~watex.methods.em.Processing.flma`  & :meth:`~watex.methods.em.Processing.tma` 
+Filtering tensors: :meth:`~watex.methods.em.EMAP.ama`, :meth:`~watex.methods.em.EMAP.flma`  & :meth:`~watex.methods.em.EMAP.tma` 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
 
-After recovering the signal, the latter exhibits a field strength amplitude for the next processing step like filtering. :code:`watex` implements three filterings linked to the :class:`~watex.methods.em.Processing` class such as the adaptative moving average (AMA), the fixed-dipole length moving average (FLMA), and the trimming-moving average (TMA). Note that when using the AMA filter,  the `c` parameter is a window-width expansion factor that must be input to the filter adaptation process to control the roll-off characteristics of the applied Hanning window [13]_. Here is an illustration: 
+After recovering the signal, the latter exhibits a field strength amplitude for the next processing step like filtering. :code:`watex` implements three filterings linked to the :class:`~watex.methods.em.EMAP` class such as the adaptative moving average (AMA), the fixed-dipole length moving average (FLMA), and the trimming-moving average (TMA). Note that when using the AMA filter,  the `c` parameter is a window-width expansion factor that must be input to the filter adaptation process to control the roll-off characteristics of the applied Hanning window [13]_. Here is an illustration: 
 
 .. code-block:: python 
 
 	>>> import numpy as np 
 	>>> import matplotlib.pyplot as plt 
-	>>> from watex.methods import Processing 
+	>>> from watex.methods import EMAP 
 	>>> from watex.datasets import fetch_data  # load_edis 
 	>>> e= fetch_data ('edis', samples =21, key='*' )  #"*" to fetch all columns of edi data 
 	>>> # the above code is the same as 
 	>>> # e= load_edis (samples =21 , key='*') 
 	>>> edi_data = e.frame.edi.values 
-	>>> pobj= Processing(window_size =5, component='yx', c= 2, out='srho').fit( edi_data ) # 'srho' for static resistivity correction'
+	>>> pobj= EMAP(window_size =5, component='yx', c= 2, out='srho').fit( edi_data ) # 'srho' for static resistivity correction'
 	>>> resyx = pobj.make2d ('resyx') 
 	>>> res_ama = pobj.ama() 
 	>>> res_flma = pobj.flma () 
@@ -554,7 +554,7 @@ The code snippets are given below:
 	
 	
 Note, there are many other functions in :mod:`~watex.em` that can be implemented. One of them is 
-the method :meth:`~watex.methods.em.Processing.exportedis` that exports the new tensor (new_Z) for modeling 
+the method :meth:`~watex.methods.em.EMAP.exportedis` that exports the new tensor (new_Z) for modeling 
 after updating tensor using the decorator :class:`~watex.methods.em._zupdate` by triggering 
 the `option` parameter to ``write``. 
 

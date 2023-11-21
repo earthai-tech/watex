@@ -96,8 +96,8 @@ except: pass
 
 try : 
     from ..methods.em import ( 
-        Processing, 
-        ZC  
+        EMAP, 
+        MT  
         )
 except: pass 
 
@@ -235,7 +235,7 @@ class TPlot (BasePlot):
         
         """
 
-        p = Processing(
+        p = EMAP(
             window_size = self.window_size ,  
             component= self.component, 
             mode= self.mode, 
@@ -944,7 +944,7 @@ class TPlot (BasePlot):
           
         See Also
         ---------
-        watex.methods.Processing.skew: 
+        watex.methods.EMAP.skew: 
             
             For mathematical skew `Bahr` and `Swift` concept formulations. 
         watex.utils.plot_skew: 
@@ -2120,9 +2120,9 @@ class TPlot (BasePlot):
             raise TypeError("Distorsion cannot be None!")
         
         # -> compute the corrected values 
-        zo = ZC().fit(self.p_.ediObjs_)
+        zo = MT().fit(self.p_.ediObjs_)
         if mc =='ss': 
-            zc = zo.remove_static_shift (
+            zo.remove_static_shift (
                 ss_fx = ss_fx , 
                 ss_fy = ss_fx, 
                 nfreq = nfreq ,         
@@ -2131,17 +2131,21 @@ class TPlot (BasePlot):
                 tol=tol, 
                 rotate = rotate, 
                 )
+            
         elif mc =='dist': 
-            zc = zo.remove_distortion (
+            zo.remove_distortion (
                 distortion , 
                 error = distortion_err 
                 )
         
         else: 
-            zc = zo.remove_ss_emap (fltr =mc )
+            zo.remove_ss_emap (fltr =mc )
             
+        # set zcorrected 
+        zc = zo.new_Z_ 
+        
         zc_res = [ z.resistivity[tuple (self._c_.get(components[0])) ] 
-                  for z in zc ] 
+                  for z in zc  ] 
         # zc_res = [ np.log10(r) for r in zc_res ] # convert to log10 res 
         # --> phase 
         zc_phase = [ z.phase[tuple (self._c_.get(components[0])) ] 
@@ -2163,7 +2167,7 @@ class TPlot (BasePlot):
         
         markers = [] if markers is None else markers 
         m = is_iterable( markers , exclude_string =True , transform =True ) 
-        markers = list(m) + [ '+', 'x']
+        markers = list(m) + [ 'o', 'D']
         
         #==plotlog10 --------
         # to use frequency for individual site rather than 
@@ -4882,7 +4886,7 @@ Examples
 )
     
 TPlot.__doc__="""\
-Tensor plot from EM processing data.
+Tensor plot from EMAP or AMT processing data.
 
 `TPlot` is a :term:`Tensor` (Impedances , resistivity and phases ) plot class. 
 Explore SEG ( Society of Exploration Geophysicist ) class data.  Plot recovery 

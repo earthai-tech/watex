@@ -28,7 +28,7 @@ import os
 from watex.utils import read_data 
 from watex.methods import EM   
 from watex.site import Profile, Location 
-from watex.methods import MTProcess   
+from watex.methods import MT   
 from watex.utils import plot_tensors    
 from watex.utils.plotutils import plot_strike  
 from watex.utils.funcutils import rename_files 
@@ -93,7 +93,7 @@ def set_ll_and_export_edis (
 # outpath =os.path.join( EDIPATH, '1EDIP') # path to save new process EDI
 # em0 = EM().fit(new_edipath )
 # emc = copy.deepcopy(em0) # make a copy for safety
-# zc = MTProcess(verbose =True ).fit( emc.ediObjs_ )
+# zc = MT(verbose =True ).fit( emc.ediObjs_ )
 # zc.remove_static_shift (nfreq="auto" , r = 1000,
 #                          ).remove_noises (method='base', # smooothed method .
 #     ).drop_frequencies (tol = .1).out(savepath =outpath) 
