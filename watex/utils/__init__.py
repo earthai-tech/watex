@@ -48,8 +48,10 @@ from .exmath import (
     smoothing, 
     rhophi2z, 
     qc, 
-    get_azimuth, 
-    
+    get_azimuth,
+    adaptive_moving_average, 
+    torres_verdin_filter, 
+    butterworth_filter, 
     )
 from .funcutils import ( 
     reshape, 
@@ -106,10 +108,12 @@ from .plotutils import (
     plot_logging, 
     plot_silhouette, 
     plot_profiling, 
+    plot_sounding, 
     plot_skew, 
     plot_strike,
     plot_voronoi, 
-    plot_roc_curves
+    plot_roc_curves, 
+    plot_tensors, 
     )
 try : 
     from .mlutils import ( 
@@ -214,6 +218,7 @@ __all__=[
         'classify_k',
         'label_importance', 
         'plot_profiling', 
+        'plot_sounding', 
         'plot_sfi',
         'plot_skew',
         'remove_outliers', 
@@ -241,7 +246,12 @@ __all__=[
         'build_random_thickness',
         'plot_stratalog', 
         "resampling", 
-        "bin_counting", 
+        "bin_counting",
+        "adaptive_moving_average", 
+        "torres_verdin_filter",
+        "plot_tensors",
+        "butterworth_filter",
+        "plot_tensors"
         ]
 
 

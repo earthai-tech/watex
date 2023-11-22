@@ -18,6 +18,7 @@ import time
 import numpy as np 
 
 from . import __version__ 
+from ._typing import NDArray 
 from ._watexlog import watexlog
 from .exceptions import ( 
     EDIError, NotFittedError
@@ -365,13 +366,14 @@ class Edi :
         
 
     def write_edifile (
-            self, 
-            edifile=None,  
-            new_edifilename=None, 
-            datatype =None , 
-            savepath =None, 
-            filtered_array =None 
-            ): 
+        self, 
+        edifile:str=None,  
+        new_edifilename:str=None, 
+        datatype:str=None , 
+        savepath:str=None, 
+        filtered_array:NDArray =None, 
+        prefix_edi:str='new_', 
+        ): 
         """
         Method to write edifiles from data setting oin attribute of Edi 
         or from existing file. Can write also EMAP data are filled attribute 
@@ -383,7 +385,7 @@ class Edi :
             Full path to the edi-file. Should be the old EDI expected to be 
             rewritten. 
             
-        new_edifilename: str,  
+        new_edifilename: str, Optional 
             new edifile name .If None , will write edi using 
             station_name plus type of survey (MT of EMAP) plus 
             year of writing as< S00_emap.2021.edi> or 
@@ -428,7 +430,7 @@ class Edi :
         if not hasattr(self, 'savepath'):
             self.savepath =None 
     
-        if new_edifilename is not None : 
+        if new_edifilename is not None: 
             try: 
                 new_edifilename += '.{0}.edi'
                 f=2 
@@ -437,13 +439,13 @@ class Edi :
                 f=0
             
         if new_edifilename is None : 
-            if self.edifile is not None : new_edifilename = '{0}{1}'.format(
-                    'new_', os.path.basename(self.edifile)) 
+            if self.edifile is not None :
+                new_edifilename = '{0}{1}'.format(
+                    f'{prefix_edi}', os.path.basename(self.edifile)) 
             else : 
                 f = 1
                 new_edifilename = '{0}_{1}.{2}.edi'
-            
-        
+
         if self.Head.dataid is None : 
             self.read_edi()
 
@@ -905,7 +907,7 @@ class Edi :
             for jj in range(2):
                 # need to look out for zeros in the impedance
                 # get the indicies of non-zero components
-                nz_index = np.nonzero(self.Z.z[:, ii, jj])
+                nz_index = np.nonzero(self.Z.z[:, ii, jj]) 
 
                 if len(nz_index[0]) == 0:
                     continue
@@ -916,7 +918,6 @@ class Edi :
 
                 # get the frequencies of non-zero components
                 f = self.Z.freq[nz_index]
-
                 # get frequencies to interpolate on to, making sure the
                 # bounds are with in non-zero components
                 new_nz_index = np.where((new_freq_array >= f.min()) & 
@@ -941,7 +942,6 @@ class Edi :
                 z_func_real = spi.interp1d(f, z_real, kind=interp_type)
                 z_func_imag = spi.interp1d(f, z_imag, kind=interp_type)
                 z_func_err = spi.interp1d(f, z_err, kind=interp_type)
-
                 # interpolate onto new frequency range
                 new_Z.z[new_nz_index, ii, jj] = z_func_real(
                     new_f) + 1j * z_func_imag(new_f)
@@ -2685,6 +2685,5 @@ def gather_measurement_key_value_with_str_parser (
 
     return new_list
                         
-
     
   

@@ -88,6 +88,7 @@ from .validator import (
     _is_numeric_dtype, 
     _is_arraylike_1d, 
     check_consistent_length,
+    assert_xy_in, 
     )
 from ._dependency import import_optional_dependency
 
@@ -458,6 +459,7 @@ def bin_counting(
 
     return d
 
+
 def _single_counts ( 
         d,/,  bin_column, tname, odds = "N+",
         tolog= False, return_counts = False ): 
@@ -550,7 +552,99 @@ def _bin_counting (counts, tname, odds="N+" ):
     bin_counts = counts.filter(items= items2filter)
 
     return counts, bin_counts  
-     
+ 
+#XXX TODO
+def laplace_smoothing (x, y, data =None ): 
+    """ Laplace smooting to conditional probabilities calculations to ensure 
+    that none of the probabilities is 0.
+    
+    Laplace smoothing (also known as add-one smoothing) is a method used i
+    n the domain of probability and statistics to smooth categorical data. 
+    It's especially useful in text classification problems when a word from 
+    the test data has never been seen in the training data.
+    
+    
+    The formula for Laplace smoothing in this context is: 
+        
+    .. math:: 
+        
+        P ( w|c) = \frac{count( w, c)+1}{count(c)+\abs{V}}
+        
+    where :math:`w` and :math:`c` are the word and class respectively. Thus  
+    the :math:`count(w|c)` represents the number of times the word appears in 
+    documents of the given class. :math:`count(c)` is the total number of 
+    words in the class. :math:`|V|` is the size is the size of the 
+    vocabulary (i.e., total number of unique words in the training data).
+    
+    Parameters 
+    -----------
+    
+    x, y : Arraylike 1d or str, str  
+       One dimensional arrays. In principle if data is supplied, they must 
+       constitute series.  If `x` and `y` are given as string values, the 
+       `data` must be supplied. x and y names must be included in the  
+       dataframe otherwise an error raises.
+       
+       :math:`x` and :math:`y` are word :math:`w` and the given class :math:`c` 
+       respectively. 
+       
+    data: pd.DataFrame, 
+       Data containing x and y names. Need to be supplied when x and y 
+       are given as string names. 
+       
+    corpus: Tuple 
+        a list of (word, class) tuple
+    
+    word: 
+        the word for which the probability is to be estimated
+    given_class: 
+        the class under consideration
+    Returns 
+    ---------
+        P(word|class) with Laplace smoothing
+        
+    Examples 
+    -----------
+    >>> from watex.utils.mlutils import laplace_smoothing
+    >>> corpus = [('apple', 'fruit'), ('orange', 'fruit'), 
+                  ('apple', 'fruit'), ('car', 'object'), 
+                  ('bike', 'object')]
+    >>> laplace_smoothing
+    >>> # This will be higher than 0, even if "apple" is not in the corpus.
+    >>> laplace_smoothing(corpus, word='apple', given_class = 'fruit'))  
+    >>> # This will be greater than 0 due to the smoothing.
+    >>> laplace_smoothing(corpus, word ='banana', given_class = 'fruit'))  
+    """
+    
+    x, y = assert_xy_in(x=x , y = y , data = data ) 
+    
+    corpus = list ( zip ( x, y )) 
+    
+    def _laplace_smoothing ( corpus, word, given_class): 
+        # Create a set to store unique words (vocabulary)
+        vocabulary = set([word for word, _ in corpus])
+        # Total number of unique words
+        V = len(vocabulary)
+        
+        # Count the number of times the word appears 
+        # in documents of the given class
+        word_class_count = sum(1 for w, c in corpus 
+                               if w == word and c == given_class)
+        # Count the total number of words in the class
+        class_count = sum(1 for _, c in corpus if c == given_class)
+    
+        # Apply the Laplace smoothing formula
+        prob = (word_class_count + 1) / (class_count + V)
+        
+        return prob 
+    
+    # get the list of categorical values in the x 
+    # cvalues = np.unique ( x, dtype = x.dtype ) 
+    
+    # dict_c_prob = {c: _laplace_smoothing  ( corpus, c, )}
+    
+    # return P  
+    
 def evalModel(
     model: F, 
     X:NDArray |DataFrame, 

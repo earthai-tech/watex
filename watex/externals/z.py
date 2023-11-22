@@ -31,7 +31,7 @@ class ResPhase(object):
     """
 
     def __init__(self, z_array=None, z_err_array=None, freq=None, **kwargs):
-        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
+        self._logger = watexlog.get_watex_logger(self.__class__.__name__)
         self._z = z_array
         self._z_err = z_err_array
 
@@ -131,7 +131,7 @@ class ResPhase(object):
         :type res_array: np.ndarray(num_freq, 2, 2)
 
         :param phase_array: phase array in degrees
-        :type phase_array: np.ndarray(num_freq, 2, 2)
+        :type phase_array: n_loggeingp.ndarray(num_freq, 2, 2)
 
         :param freq: frequency array in Hz
         :type freq: np.ndarray(num_freq)
@@ -143,7 +143,7 @@ class ResPhase(object):
         :type phase_err_array: np.ndarray(num_freq, 2, 2)
         """
 
-        self._logger.info ('Resetting z and z_err')
+        self._loggeing.info ('Resetting z and z_err')
 
         self._resistivity = res_array
         self._phase = phase_array
@@ -1119,7 +1119,7 @@ class Tipper(object):
         """
         initialize
         """
-        self._logging = watexlog.get_watex_logger(self.__class__.__name__)
+        self._logger = watexlog.get_watex_logger(self.__class__.__name__)
         self._tipper = tipper_array
         self._tipper_err = tipper_err_array
         self._freq = freq

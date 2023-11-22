@@ -13,7 +13,8 @@ from math import factorial, radians
 
 import numpy as np
 import pandas as pd 
-from scipy.signal import argrelextrema 
+from scipy.signal import ( 
+    argrelextrema, butter, lfilter )
 import scipy.integrate as integrate
 from scipy.optimize import curve_fit
 from scipy.integrate import quad 
@@ -41,6 +42,7 @@ from ..exceptions import (
     ERPError,
     ExtractionError,
     EMError, 
+    EDIError, 
     )
 from ..property import P
 from .._typing import (
@@ -613,7 +615,9 @@ def rhophi2z(rho, phi, freq):
     """
     def _rhophi2z (r, p, f ): 
         """ An isolated part of `rhophi2z """
-        abs_z  = np.sqrt(5 * f * r)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', category=RuntimeWarning)
+            abs_z  = np.sqrt(5 * f * r)
         return cmath.rect(abs_z , radians(p))
     
     is_array2x2 =False 
@@ -2317,6 +2321,7 @@ def plot_ (
     fig_title_kws: dict=None, 
     fbtw:bool=False, 
     fig=None, 
+    ax=None, 
     **kws
     ) -> None : 
     """ Quick visualization for fitting model, |ERP| and |VES| curves.
@@ -2368,6 +2373,7 @@ def plot_ (
                   figsize = (7, 7) ,**KWS )
     
     """
+
     plt.style.use(style)
     # retrieve all the aggregated data from keywords arguments
     if (rlabel := kws.get('rlabel')) is not None : 
@@ -2386,31 +2392,34 @@ def plot_ (
         del kws ['title']
     x , y, *args = args 
     
-    if fig is None: 
-        fig = plt.figure(1, figsize =fig_size)
+    if ( fig is None 
+        or ax is None
+        ): 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+        # fig = plt.figure(1, figsize =fig_size)
     
-    plt.plot (x, y,*args, 
+    ax.plot (x, y,*args, 
               **kws)
     if raw: 
         kind = kind.lower(
             ) if isinstance(kind, str) else kind 
         if kind =='semilogx': 
-            plt.semilogx (x, y, 
+            ax.semilogx (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
         elif kind =='semilogy': 
-            plt.semilogy (x, y, 
+            ax.semilogy (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
         elif kind =='loglog': 
-            plt.loglog (x, y, 
+            ax.loglog (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
         else: 
-            plt.plot (x, y, 
+            ax.plot (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
@@ -2425,7 +2434,7 @@ def plot_ (
             xf, yf , xo, yo,*_ = args  
             # find the index position in xf 
             ixp = list ( find_close_position (xf, xo ) ) 
-            plt.fill_between(xo, yf[ixp], y2=yo  )
+            ax.fill_between(xo, yf[ixp], y2=yo  )
             
     dtype = dtype.lower() if isinstance(dtype, str) else dtype
     
@@ -2434,19 +2443,20 @@ def plot_ (
     if dtype not in ('erp', 'ves'): kind ='erp' 
     
     if dtype =='erp':
-        plt.xticks (x,
+        ax.set_xticks (x,
                     labels = ['S{:02}'.format(int(i)) for i in x ],
                     rotation = 0. if rotate is None else rotate 
                     )
     elif dtype =='ves': 
-        plt.xticks (x,
+        ax.set_xticks (x,
                     rotation = 0. if rotate is None else rotate 
                     )
         
-    plt.xlabel ('AB/2 (m)' if dtype=='ves' else "Stations"
+    ax.set_xlabel ('AB/2 (m)' if dtype=='ves' else "Stations"
                 ) if xlabel is  None  else plt.xlabel (xlabel)
-    plt.ylabel ('Resistivity (Ω.m)'
+    ax.set_ylabel ('Resistivity (Ω.m)'
                 ) if ylabel is None else plt.ylabel (ylabel)
+    
     
     t0= {'erp': 'Plot Electrical Resistivity Profiling', 
          'sfi': 'Pseudo-fracturing index', 
@@ -2458,9 +2468,16 @@ def plot_ (
             style ='italic', 
             bbox =dict(boxstyle='round',facecolor ='lightgrey'))
         
+    if len(x) >= 20: 
+        for kk, label in enumerate ( ax.xaxis.get_ticklabels()) :
+            if kk% 10 ==0: 
+               label.set_visible(True) 
+            else: label.set_visible(False) 
+            
+ 
     if show_grid is not None: 
         # plt.minorticks_on()
-        plt.grid (visible =True, which='both')
+        ax.grid (visible =True, which='both')
     plt.tight_layout()
     fig.suptitle(**fig_title_kws)
     plt.legend (leg, loc ='best') if leg  else plt.legend ()
@@ -3883,7 +3900,8 @@ def smooth1d(
     ar, /, 
     drop_outliers:bool=True, 
     ma:bool=True, 
-    absolute:bool=False, 
+    absolute:bool=False,
+    interpolate:bool=False, 
     view:bool=False , 
     x: ArrayLike=None, 
     xlabel:str =None, 
@@ -3903,6 +3921,11 @@ def smooth1d(
     ma: bool, default=True, 
        Use the moving average for smoothing array value. This seems more 
        realistic.
+       
+    interpolate: bool, default=False 
+       Interpolate value to fit the original data size after NaN filling. 
+       
+       .. versionadded:: 0.2.8 
        
     absolute: bool, default=False, 
        keep postive the extrapolated scaled values. Indeed, when scaling data, 
@@ -3959,10 +3982,13 @@ def smooth1d(
         
     arr = ar.copy() 
     if drop_outliers: 
-        arr = remove_outliers( arr, fill_value = np.nan  )
+        arr = remove_outliers( 
+            arr, fill_value = np.nan , interpolate = interpolate )
     # Nan is not allow so fill NaN if exists in array 
     # is arraylike 1d 
-    arr = reshape ( fillNaN( arr , method ='both') ) 
+    if not interpolate:
+        # fill NaN 
+        arr = reshape ( fillNaN( arr , method ='both') ) 
     if ma: 
         arr = moving_average(arr, method ='sma')
     # if extrapolation give negative  values
@@ -4005,6 +4031,7 @@ def smoothing (
     drop_outliers = True ,
     ma=True,
     absolute =False,
+    interpolate=False, 
     axis = 0, 
     view = False, 
     fig_size =(7, 7), 
@@ -4027,7 +4054,7 @@ def smoothing (
        more realistic rather than using only the scaling method. 
        
     absolute: bool, default=False, 
-       keep postive the extrapolated scaled values. Indeed, when scaling data, 
+       keep positive the extrapolated scaled values. Indeed, when scaling data, 
        negative value can be appear due to the polyfit function. to absolute 
        this value, set ``absolute=True``. Note that converting to values to 
        positive must be considered as the last option when values in the 
@@ -4097,14 +4124,14 @@ def smoothing (
     if _is_arraylike_1d(ar): 
         ar = reshape ( ar, axis = 0 ) 
     # make a copy
-    # print(ar.shape )
     arr = ar.copy() 
     along_axis = arr.shape [1] if axis == 0 else len(ar) 
     arr0 = np.zeros_like (arr)
     for ix in range (along_axis): 
         value = arr [:, ix ] if axis ==0 else arr[ix , :]
         yc = smooth1d(value, drop_outliers = drop_outliers , 
-                      ma= ma, view =False , absolute =absolute 
+                      ma= ma, view =False , absolute =absolute , 
+                      interpolate= interpolate, 
                       ) 
         if axis ==0: 
             arr0[:, ix ] = yc 
@@ -4124,7 +4151,7 @@ def smoothing (
         ax[1].set_title ('Smooth Grid') 
         ax[1].set_xlabel (xlabel or '')
         ax[1].set_ylabel ( ylabel or '')
-        
+        plt.legend
         plt.show () 
         
     if 1 in ar.shape: 
@@ -5554,6 +5581,11 @@ def qc(
    
     Parameters 
     ----------
+    
+    z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
+        :class:`watex.externals.z.Z` 
+        A collection of EDI- or Impedances tensors objects.
+        
     tol: float, default=.5 
         the tolerance parameter. The value indicates the rate from which the 
         data can be consider as meaningful. Preferably it should be less than
@@ -5631,17 +5663,19 @@ def qc(
     nan_sum  =np.nansum(np.isnan(ar), axis =1) 
 
     rr= np.around ( nan_sum / ar.shape[1] , 2) 
- 
+    # print(rr); print(nan_sum) 
+    # print(rr[0])
+    # print(nan_sum[rr[0]].sum())
     # compute the ratio ck
     # ck = 1. -    rr[np.nonzero(rr)[0]].sum() / (
     #     1 if len(np.nonzero(rr)[0])== 0 else len(np.nonzero(rr)[0])) 
     # ck =  (1. * len(rr) - len(rr[np.nonzero(rr)[0]]) )  / len(rr)
     
     # using np.nonzero(rr) seems deprecated 
-    # ck = 1 - nan_sum[np.nonzero(rr)[0]].sum() / (
-    #     ar.shape [0] * ar.shape [1]) 
-    ck = 1 - nan_sum[rr[0]].sum() / (
+    ck = 1 - nan_sum[np.nonzero(rr)[0]].sum() / (
         ar.shape [0] * ar.shape [1]) 
+    # ck = 1 - nan_sum[rr[0]].sum() / (
+    #     ar.shape [0] * ar.shape [1]) 
     # now consider dirty data where the value is higher 
     # than the tol parameter and safe otherwise. 
     index = reshape (np.argwhere (rr > tol))
@@ -6133,10 +6167,315 @@ def _kind_of_model(degree, x, y) :
     w= init_weights(x=x, y=y)
     return x, w  # Return the matrix x and the weights vector w 
     
+def adaptive_moving_average(data, /, window_size_factor=0.1):
+    """ Adaptative moving average as  smoothing technique. 
+ 
+    Parameters 
+    -----------
+    data: Arraylike 
+       Noise data for smoothing 
+       
+    window_size_factor: float, default=0.1 
+      Parameter to control the adaptiveness of the moving average.
+       
+    Return 
+    --------
+    result: Arraylike 
+       Smoothed data 
+    
+    Example 
+    ---------
+    >>> import matplotlib.pyplot as plt
+    >>> from watex.utils.exmath import adaptive_moving_average 
+    >>> # Sample magnetotelluric data (replace this with your own data)
+    >>> # Example data: a sine wave with noise
+    >>> time = np.linspace(0, 10, 1000)  # Replace with your actual time values
+    >>> mt_data = np.sin(2 * np.pi * 1 * time) + 0.2 * np.random.randn(1000)  # Example data
+    >>> # Function to calculate the adaptive moving average
+    >>> # Define the window size factor (adjust as needed)
+    >>> window_size_factor = 0.1  # Adjust this value based on your data characteristics
+    >>> # Apply adaptive moving average to the magnetotelluric data
+    >>> smoothed_data = adaptive_moving_average(mt_data, window_size_factor)
+    >>> # Plot the original and smoothed data
+    >>> plt.figure(figsize=(10, 6))
+    >>> plt.plot(time, mt_data, 'b-', label='Original Data')
+    >>> plt.plot(time, smoothed_data, 'r-', label='Smoothed Data (AMA)')
+    >>> plt.xlabel('Time')
+    >>> plt.ylabel('Amplitude')
+    >>> plt.title('Adaptive Moving Average (AMA) Smoothing')
+    >>> plt.legend()
+    >>> plt.grid(True)
+    >>> plt.show()
+    """
+    result = np.zeros_like(data)
+    window_size = int(window_size_factor * len(data))
+    
+    for i in range(len(data)):
+        start = max(0, i - window_size)
+        end = min(len(data), i + window_size + 1)
+        result[i] = np.mean(data[start:end])
+    
+    return result
+
+def torres_verdin_filter(
+    arr, /,  
+    weight_factor: float=.1, 
+    beta:bool=1., 
+    logify:bool=False, 
+    axis:int = ..., 
+    ):
+    """
+    Calculates the adaptive moving average of a given data array from 
+    Torres and Verdin algorithm [1]_. 
+    
+    Parameters 
+    -----------
+    arr: Arraylike 1d 
+      List or array-like of data points.  If two-dimensional array 
+      is passed, `axis` must be specified to apply the filter onto. 
+       
+    weight_factor: float, default=.1
+      Base smoothing factor for window size which gets adjusted by a factor 
+      dependent on the rate of change in the data. 
+        
+    beta: float, default =1. 
+       Scaling factor to adjust `weight_factor` during high volatility. 
+       It controls how much the `weight_factor` is adjusted during 
+       periods of high volatility.
+       
+    logify: bool, default=False, 
+      By default , Torres uses exponential moving average. So if the 
+      values can be logarithmized to ensure the weight be ranged between 
+      0 and 1. This is important when data are resistivity or phase. 
+      
+    axis: int, default=0 
+      Axis along which to apply the AMA filter.
+    Return 
+    -------
+    ama: Adaptive moving average
+    
+    References 
+    ------------
+    .. [1] Torres-Verdin and Bostick, 1992,  Principles of spatial surface 
+        electric field filtering in magnetotellurics: electromagnetic array profiling
+        (EMAP), Geophysics, v57, p603-622.https://doi.org/10.1190/1.2400625
+
+    Example
+    --------
+    >>> import matplotlib.pyplot as plt 
+    >>> from watex.utils.exmath import torres_verdin_filter 
+    >>> data = np.random.randn(100)  
+    >>> ama = torres_verdin_filter(data)
+    >>> plt.plot (range (len(data)), data, 'k', range(len(data)), ama, '-or')
+    >>> # apply on two dimensional array 
+    >>> data2d = np.random.randn(7, 10) 
+    >>> ama2d = torres_verdin_filter ( data2d, axis =0)
+    >>> fig, ax  = plt.subplots (nrows = 1, ncols = 2 , sharey= True,
+                             figsize = (7,7) )
+    >>> ax[0].imshow(data2d , label ='Raw data', cmap = 'binary' )
+    >>> ax[1].imshow (ama2d,  label = 'AMA data', cmap ='binary' )
+    >>> ax[0].set_title ('Raw data') 
+    >>> ax[1].set_title ('AMA data') 
+    >>> plt.legend
+    >>> plt.show () 
+    
+    """
+    arr = is_iterable( arr, exclude_string =True, transform =True ) 
+    axis, logify= ellipsis2false(axis, logify, default_value =( None , False))
+    
+    def _filtering_1d_array( ar, wf, b ): 
+        if len(ar) < 2:
+            return ar
+        ama = [ar[0]]  # Initialize the adaptive moving average array
+        for i in range(1, len(ar)):
+            change = abs(ar[i] - ar[i-1])
+            w = wf * (1 + beta * change)
+            w = min(w, 1)  # Ensure weight stays between 0 and 1
+            ama_value = w * ar[i] + (1 - w) * ama[-1]
+            ama.append(ama_value)
+            
+        return np.array(ama)
+    
+    arr =np.array (arr )
+    #+++++++++++++++++++
+    if logify:
+        arr = np.log10 ( arr )
+    if arr.ndim >=2: 
+        if axis is None:
+            warnings.warn (f"Array dimension is {arr.ndim}. Axis must be"
+                           " specified. Otherwise axis=0 is used .")
+            axis =0
+        if axis ==0: 
+            arr = arr.T 
+        for ii in range( len(arr )) : 
+            arr [ii] = _filtering_1d_array (
+                arr [ii ], wf = weight_factor, b = beta ) 
+        # then transpose again 
+        if axis ==0: 
+            arr = arr.T 
+    else: 
+        arr = _filtering_1d_array ( arr, wf = weight_factor, b=beta  )
+        
+    if logify: arr = np.power (10, arr )
+    
+    return arr 
+
+def butterworth_filter(
+    data, /,  
+    freqs,  
+    fs=None, 
+    frange =None, 
+    order=5, 
+    plot=False, 
+    ):
+    """ 
+    Defines a bandpass filter using a Butterworth filter and then applies 
+    it to your AFMT data to remove frequencies outside the specified range.
+    
+    Adjust the lowcut and highcut parameters according to the desired 
+    frequency range for your data. 
+    Removing bad frequencies from data typically involves filtering the 
+    data to eliminate unwanted noise or artifacts. 
+    
+    Parameters
+    ------------
+    data: arraylike 1D 
+      Noise data to filter. 
+    freqs: Arraylike 1d 
+      Array of frequencies onto apply the bandpass filter. 
+     
+    fs: int, 
+     Sample of frequencies. If None, use the number of original frequency 
+    
+    frange: list , Optional 
+      frequency range ( min/200., max/5)  for the bandpass filter (in Hz). 
+      By default, use the minimum and maximum of original frquency array.
+      Note that digital filter critical frequencies must be 0 < Wn < 1 i.e.  
+      
+    order: int, default=5 
+      Order for butter bandpass. 
+      
+    plot: bool, default=False 
+       Visualize the filtered data. 
+       
+    Return 
+    -------
+    y: filtered data 
+    Example
+    -------
+    >>> import numpy as np 
+    >>> from watex.utils.exmath import butterworth_filter
+    >>> time = np.linspace(0, 1, 1000)  # Replace with your actual time values
+    >>> freqs = np.linspace ( 1, 1000, 500)
+    >>> data = np.sin(2 * np.pi * 10 *freqs) + 0.5 * np.sin(2 * np.pi * 50 *freqs)  
+    >>> _=butterworth_filter (data , freqs , fs = 1000, frange=( 5, 20), plot=True )
+
+    """
+    data = is_iterable(data, exclude_string =True , transform =True) 
+    if not _is_arraylike_1d(data ): 
+        raise TypeError ("Expect one-dimentional array, Got 2.")
+        
+    freqs = np.array (freqs )
+    frange = frange or ( min( freqs)/200. , max ( freqs)/50.)
+    frange = is_iterable(frange, exclude_string=True, transform =True) 
+    
+    if len(frange) !=2: 
+        raise ValueError ("Expect two values (min, max) for frequency range."
+                          f" Got {frange}")
+    fs = fs or len(freqs)
+    
+    lowcut, highcut = sorted ( frange )
+    
+    def butter_bandpass(lowcut, highcut, fs, order=5):
+        nyquist = 0.5 * fs
+        low = lowcut / nyquist
+        high = highcut / nyquist
+        b, a = butter(order, [low, high], btype='band')
+        return b, a
+    
+    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
+    y = lfilter(b, a, data)
+    
+    if plot: 
+        # Plot the original and filtered data
+        plt.figure(figsize=(10, 6))
+        plt.subplot(2, 1, 1)
+        plt.plot(1/freqs, data, 'b-', label='Original Data')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amplitude')
+        plt.title('Original AFMT Data')
+        plt.grid(True)
+
+        plt.subplot(2, 1, 2)
+        plt.plot(1/freqs, y, 'g-', label='Filtered Data')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amplitude')
+        plt.title('Filtered AFMT Data (Bandpass Filter)')
+        plt.grid(True)
+
+        plt.tight_layout()
+        plt.show()
+        
+    return y
 
 
+def exportEDIs (
+    ediObjs: List [EDIO], 
+    new_Z: List [ZO], 
+    savepath:str = None, 
+    **kws 
+    ): 
+    """Export EDI files from multiples EDI or z objects
+    
+    Export new EDI files from the former object with  a given new  
+    impedance tensors. The export is assumed a new output EDI 
+    resulting from multiples corrections applications.
+    
+    Parameters 
+    -----------
+    ediObjs: list of string  :class:`watex.edi.Edi` 
+        Full path to Edi file/object or object from class:`EM` objects. 
 
+    new_Z: list of ndarray (nfreq, 2, 2) 
+        A collection of Ndarray of impedance tensors Z. 
+        The tensor Z is 3D array composed of number of frequency 
+        `nfreq`and four components (``xx``, ``xy``, ``yx``,
+        and ``yy``) in 2X2 matrices. The  tensor Z is a complex number. 
+        
+    savepath:str, Optional 
+       Path to save a new EDI file. If ``None``, outputs to the current 
+       directory.
+       
+    Returns 
+    --------
+     ediObj from watex.edi.Edi 
+     
+    See Also
+    ---------
+    exportedi: 
+        Export single EDI from
+        
+    """
+    if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
+        raise EDIError("Obj {ediObjs!r} is not an EDI-object.")
+        
+    ediObjs = is_iterable(
+        ediObjs , 
+        exclude_string =True , 
+        transform =True 
+        )
+    new_Z = is_iterable(
+        new_Z , 
+        exclude_string =True , 
+        transform =True 
+        )
 
+    for e, z  in zip (ediObjs, new_Z ): 
+        e.write_new_edifile( 
+            new_Z=z,
+            savepath = savepath , 
+            **kws
+            ) 
 
 
 

@@ -223,13 +223,13 @@ class AquiferGroupError (Exception):
     """ Raises exception with everything that does not relate to the aquifer 
     like a multidimensional array. Commonly Aquifer is a one-dimensional array 
     composed of categorical values expected  to be the layer/rock name where 
-    the pumping is performed. Note aquifer is composed of categorical data 
-    at last labels are encoded into a numerical values. If that is the 
-    case, values should an integer not any other types.  Furthermore, it is 
-    better to not confused the permeanility coefficient 'k' with aquifer 
+    the pumping is performed. Note that aquifer is composed of categorical data. 
+    At least, labels are encoded into a numerical values. If that is the 
+    case, values should be an integer not any other types. Furthermore, it is 
+    better to not confuse the permeability coefficient 'k' with aquifer 
     even the latter is tied to the former. In the hydrogeology modules, 
-    aquifer works apart as condirering a single column preferably located in 
-    the in a target dafarame. However, it does not a matter whether it 
+    aquifer works apart by condering a single column preferably located in 
+    the target dataframe k. However, it does not a matter whether it 
     is considered as a feature provided that the purpose fits exactly the 
     objective of the users."""
     pass 

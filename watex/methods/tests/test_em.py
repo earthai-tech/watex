@@ -8,8 +8,8 @@ import numpy as np
 import watex as wx 
 from watex.methods.em import EM
 import matplotlib.pyplot as plt 
-from watex.methods.em import Processing 
-from watex.methods import ZC 
+from watex.methods.em import EMAP 
+from watex.methods.em import MT 
 
 EDIPATH ='data/edis'
 savepath = '/Users/Daniel/Desktop/ediout'
@@ -64,11 +64,11 @@ def test_EM() :
 
 @pytest.mark.skipif(os.path.isdir ('data/edis') is False ,
                     reason = 'EDI path does not exist')
-def test_Processing (): 
+def test_EMAP(): 
 
     # xxxxx Test filter xxxxxxxxxxxxxxxxxxxxxxxx
     edi_sample12 = wx.fetch_data ('edis', return_data=True, samples = 24 )
-    p = Processing().fit(edi_sample12) 
+    p = EMAP().fit(edi_sample12) 
     
     p.window_size =2 
     p.component ='yx'
@@ -95,18 +95,18 @@ def test_Processing ():
                   )
     
     # xxxxx Test interpolation  xxxxxxxxxxxxxxxxxxxxxxxx
-    p = Processing().fit(EDIPATH) 
+    p = EMAP().fit(EDIPATH) 
     sk,_ = p.skew()
     print( sk[:7, ]) 
      # ... array([0.45475527, 0.7876896 , 0.44986397])
 
-    pObjs= Processing().fit(EDIPATH)
+    pObjs= EMAP().fit(EDIPATH)
     # One can specify the frequency buffer like the example below, However 
     # it is not necessaray at least there is a a specific reason to fix the frequencies 
     buffer = [1.45000e+04, 1.11500e+02]
     zobjs_b =  pObjs.zrestore(buffer = buffer) # with buffer 
     print(zobjs_b [0].resistivity[:, 1, 0 ][:3])
-    pobj = Processing().fit(EDIPATH)
+    pobj = EMAP().fit(EDIPATH)
     f = pobj.getfullfrequency ()
     buffer = [5.86000e+04, 1.6300e+02]
     print(f)  
@@ -115,7 +115,7 @@ def test_Processing ():
     
     
     freq_ = np.linspace(7e7, 1e0, 20) # 20 frequencies as reference
-    buffer = Processing.controlFrequencyBuffer(freq_, buffer =[5.70e7, 2e1])
+    buffer = EMAP.controlFrequencyBuffer(freq_, buffer =[5.70e7, 2e1])
     freq_ 
     # ... array([7.00000000e+07, 6.63157895e+07, 6.26315791e+07, 5.89473686e+07,
     #        5.52631581e+07, 5.15789476e+07, 4.78947372e+07, 4.42105267e+07,
@@ -126,7 +126,7 @@ def test_Processing ():
     # ... array([5.52631581e+07, 1.00000000e+00])
     
     # xxxxx Test QC  xxxxxxxxxxxxxxxxxxxxxxxx
-    pobj = Processing().fit(EDIPATH)
+    pobj = EMAP().fit(EDIPATH)
     f = pobj.getfullfrequency ()
     # len(f)
     # ... 55 # 55 frequencies 
@@ -140,22 +140,22 @@ def test_Processing ():
     
     # xxxxx Test tensor validity  xxxxxxxxxxxxxxxxxxxxxxxx
     
-    pObj = Processing ().fit(EDIPATH)
+    pObj = EMAP ().fit(EDIPATH)
     f= pObj.freqs_
     len(f) 
     # ... 55
-    zObjs_hard = pObj.getValidTensors (tol= 0.3 ) # None doesn't export EDI-file
-    len(zObjs_hard[0]._freq) # suppress 3 tensor data 
+    pObj.getValidTensors (tol= 0.3 ) # None doesn't export EDI-file
+    len(pObj.new_Z_[0]._freq) # suppress 3 tensor data 
     # ... 52 
-    zObjs_soft= pObj.getValidTensors(tol = 0.6 , 
+    pObj.getValidTensors(tol = 0.6 , 
                                      # option ='write'
                                      )
-    len(zObjs_soft[0]._freq)  # suppress only two 
+    len(pObj.new_Z_[0]._freq)  # suppress only two 
     
     
     # xxxxx Test z interpolation  xxxxxxxxxxxxxxxxxxxxxxxx
     sedis = wx.fetch_data ('huayuan', samples = 12 , return_data =True , key='raw')
-    p = wx.EMProcessing ().fit(sedis) 
+    p = wx.EMAP ().fit(sedis) 
     ff = [ len(ediobj.Z._freq)  for ediobj in p.ediObjs_] 
     # [53, 52, 53, 55, 54, 55, 56, 51, 51, 53, 55, 53]
     Zcol = p.interpolate_z (sedis)
@@ -173,7 +173,7 @@ def test_Processing ():
     
     sedis = wx.fetch_data ('huayuan', samples = 12 , 
     						   return_data =True , key='raw')
-    p = wx.EMProcessing ().fit(sedis) 
+    p = wx.EMAP ().fit(sedis) 
     ff = [ len(ediobj.Z._freq)  for ediobj in p.ediObjs_] 
     print(ff) 
     # [53, 52, 53, 55, 54, 55, 56, 51, 51, 53, 55, 53]
@@ -211,46 +211,44 @@ def test_Processing ():
     # Frequencies:     1- 49500.0    2- 29400.0  Hz have been dropped.
     # explicitly it drops the 49500 and 29400 Hz the closest. 
 
-def test_ZC(): 
+def test_MT(): 
     
     # xxxxx Test ZC  xxxxxxxxxxxxxxxxxxxxxxxx 
     edi_sample = wx.fetch_data ('edis', samples =17, return_data =True) 
-    zo = ZC ().fit(edi_sample) 
+    zo = MT ().fit(edi_sample) 
     print( zo.ediObjs_[0].Z.resistivity[:, 0, 1][:10]) # for xy components 
     # array([ 427.43690401,  524.87391142,  732.85475419, 1554.3189371 ,
     # 	   3078.87621649, 1550.62680093,  482.64709443,  605.3153687 ,
     # 		499.49191936,  468.88692879])
-    zss = zo.remove_static_shift(ss_fx =0.7 , ss_fy =0.85 )
+    zo.remove_static_shift(ss_fx =0.7 , ss_fy =0.85 )
     
-    print( zss[0].resistivity[:, 0, 1][:10])  # corrected xy components 
+    print( zo.ediObjs_[0].Z.resistivity[:, 0, 1][:10])  # corrected xy components 
     # array([ 278.96395263,  319.11187959,  366.43170231,  672.24446295,
     # 	   1344.20120487,  691.49270688,  260.25625996,  360.02452498,
     # 		305.97381587,  273.46251961])
     
     # xxxxx Test SSEMAP filter removal  xxxxxxxxxxxxxxxxxxxxxxxx
-    zo = ZC ().fit(edi_sample)
+    zo = MT ().fit(edi_sample)
     print( zo.ediObjs_[0].Z.z[:, 0, 1][:7]) 
     # array([10002.46 +9747.34j , 11679.44 +8714.329j, 15896.45 +3186.737j,
     #        21763.01 -4539.405j, 28209.36 -8494.808j, 19538.68 -2400.844j,
     #         8908.448+5251.157j])
-    zc = zo.remove_ss_emap() 
-    print( zc[0].z[:, 0, 1] [:7]) 
+    zo.remove_ss_emap() 
+    print( zo.ediObjs_[0].Z.z[:, 0, 1] [:7]) 
     
     # xxxxx Test static schift correction  xxxxxxxxxxxxxxxxxxxxxxxx
-    zo = ZC ().fit(edi_sample)
-    
-    zc = zo.remove_static_shift () 
-    print( zc[0].z[:, 0, 1] [:7]) 
+    zo = MT ().fit(edi_sample).remove_static_shift () 
+    print( zo.ediObjs_[0].Z.z[:, 0, 1] [:7]) 
     # array([ 8028.46578676+7823.69394148j,  9374.49231974+6994.54856416j,
     #        12759.27171475+2557.831671j  , 17468.06097719-3643.54946031j,
     #        22642.21817697-6818.35022516j, 15682.70444455-1927.03534064j,
     #         7150.35801004+4214.83658174j])
     
-    zo = ZC ().fit(edi_sample)
+    zo = MT ().fit(edi_sample)
     
     distortion = np.array([[1.2, .5],[.35, 2.1]])
-    zc = zo.remove_distortion (distortion)
-    print( zc[0].z[:, 0, 1] [:7]) 
+    zo.remove_distortion (distortion)
+    print( zo.ediObjs_[0].Z.z[:, 0, 1] [:7]) 
     # ([ 9724.52643923+9439.96503198j, 11159.25927505+8431.1101919j ,
     #         14785.52643923+3145.38324094j, 19864.708742  -4265.80166311j,
     #         25632.53518124-8304.88093817j, 17889.15373134-2484.60144989j,
@@ -259,8 +257,8 @@ def test_ZC():
 
 # if __name__=='__main__': 
     
-#     test_ZC () 
-#     test_Processing() 
+#     test_MT() 
+#     test_EMAP() 
 #     test_EM()
 
 

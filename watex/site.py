@@ -124,7 +124,7 @@ class Profile:
         to keep the non-numerical values  in the data. 
         
         """
-        
+        #15921 epsg io
         emsg =("'DD:MM:SS.ms' coordinate system is detected.")
         data = fit_params.pop('data', None) 
   
@@ -974,7 +974,8 @@ datum: string, default = 'WGS84'
 epsg: Optional, int
    epsg number defining projection (
         see http://spatialreference.org/ref/ for moreinfo)
-   Overrides utm_zone if both are provided. 
+   Overrides utm_zone if both are provided. or 
+   https://epsg.io/?q=China%20kind%3APROJCRS
 
 reference_ellipsoid: int, default=23 
    reference ellipsoids is derived from Peter H. Dana's website-
@@ -1153,15 +1154,12 @@ class Location (object):
                 utm_zone = self.utm_zone ,
                 epsg= self.epsg 
                 ) 
-   
         except :
-
             self.utm_zone, self.east, self.north= ll_to_utm(
                 reference_ellipsoid=self.reference_ellipsoid,
                 lat = self.lat, 
                 lon= self.lon)
-        
-            
+
         return float(self.east), float(self.north)
     
         
@@ -1451,12 +1449,9 @@ reference_ellipsoid: Optional, int
     WGS84. 
 """     
         
-        
-        
-        
-        
-        
-        
+       
+
+     
         
         
         

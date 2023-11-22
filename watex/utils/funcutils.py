@@ -91,7 +91,7 @@ def to_numeric_dtypes (
     pop_cat_features: bool=..., 
     sanitize_columns: bool=..., 
     regex: re|str=None, 
-    fill_pattern: str=None, 
+    fill_pattern: str='_', 
     drop_nan_columns: bool=True, 
     how: str='all', 
     reset_index: bool=..., 
@@ -207,7 +207,7 @@ def to_numeric_dtypes (
         )
    
     if not is_iterable (arr, exclude_string=True): 
-        raise TypeError("Expect array. Got {type (arr).__name__!r}")
+        raise TypeError(f"Expect array. Got {type (arr).__name__!r}")
 
     if hasattr ( arr, '__array__') and hasattr ( arr, 'columns'): 
         df = arr.copy()
@@ -467,7 +467,7 @@ def shrunkformat (text: str | Iterable[Any] ,
                   chunksize: int =7 , insert_at: str = None, 
                   sep =None, 
                  ) : 
-    """ format class and add elipsis when classe are greater than maxview 
+    """ format class and add ellipsis when classes are greater than maxview 
     
     :param text: str - a text to shrunk and format. Can also be an iterable
         object. 
@@ -485,9 +485,9 @@ def shrunkformat (text: str | Iterable[Any] ,
         
     >>> import numpy as np 
     >>> from watex.utils.funcutils import shrunkformat
-    >>> text=" I'm a long text and I will be shrunked and replace by ellipsis."
+    >>> text=" I'm a long text and I will be shrunked and replaced by ellipsis."
     >>> shrunkformat (text)
-    ... 'Im a long ... and replace by ellipsis.'
+    ... 'Im a long ... and replaced by ellipsis.'
     >>> shrunkformat (text, insert_at ='end')
     ...'Im a long ... '
     >>> arr = np.arange(30)
@@ -2879,7 +2879,7 @@ def get_params (obj: object
     return PARAMS_VALUES
 
 
-def fit_by_ll(ediObjs): 
+def fit_ll(ediObjs, by ='index', method ='strict', distance='cartesian' ): 
     """ Fit EDI by location and reorganize EDI according to the site  
     longitude and latitude coordinates. 
     
@@ -2891,7 +2891,19 @@ def fit_by_ll(ediObjs):
     :param ediObjs: list of EDI object, composed of a collection of 
         watex.edi.Edi or pycsamt.core.edi.Edi or mtpy.core.edi objects 
     :type ediObjs: watex.edi.Edi_Collection 
-
+  
+    :param by: ['name'|'ll'|'distance'|'index'|'name'|'dataid'] 
+       The kind to sorting EDI files. Default uses the position number 
+       included in the EDI-files name.
+    :type by: str 
+    
+    :param method:  ['strict|'naive']. Kind of method to sort the 
+        EDI file from longitude, latitude. Default is ``strict``. 
+    :type method: str 
+    
+    :param distance: ['cartesian'|'harvesine']. Use the distance between 
+       coordinates points to sort EDI files. Default is ``cartesian`` distance.
+    :type distance: str 
     
     :returns: array splitted into ediObjs and Edifiles basenames 
     :rtyple: tuple 
@@ -2899,25 +2911,119 @@ def fit_by_ll(ediObjs):
     :Example: 
         >>> import numpy as np 
         >>> from watex.methods.em import EM
-        >>> from watex.utils.funcutils import fit_by_ll
+        >>> from watex.utils.funcutils import fit_ll
         >>> edipath ='data/edi_ss' 
-        >>> cediObjs = EM (edipath) 
+        >>> cediObjs = EM().fit (edipath) 
         >>> ediObjs = np.random.permutation(cediObjs.ediObjs) # shuffle the  
         ... # the collection of ediObjs 
         >>> ediObjs, ediObjbname = fit_by_ll(ediObjs) 
         ...
-    
+
     """
+    method= 'strict' if str(method).lower() =='strict' else "naive"
+    if method=='strict': 
+        return _fit_ll(ediObjs, by = by, distance = distance )
+    
     #get the ediObjs+ names in ndarray(len(ediObjs), 2) 
     objnames = np.c_[ediObjs, np.array(
         list(map(lambda obj: os.path.basename(obj.edifile), ediObjs)))]
     lataddlon = np.array (list(map(lambda obj: obj.lat + obj.lon , ediObjs)))
-    sort_ix = np.argsort(lataddlon) 
-    objnames = objnames[sort_ix ] 
+    if len(np.unique ( lataddlon)) < len(ediObjs)//2: 
+        # then ignore reorganization and used the 
+        # station names. 
+        pass 
+    else:
+        sort_ix = np.argsort(lataddlon) 
+        objnames = objnames[sort_ix ]
+        
     #ediObjs , objbnames = np.hsplit(objnames, 2) 
     return objnames[:, 0], objnames[:, -1]
    
+def _fit_ll(ediObjs, distance='cartes', by = 'index'): 
+    """ Fit ediObjs using the `strict method`. 
     
+    An isolated part of :func:`watex.utils.funcutils.fit_by_ll`. 
+    """
+    # get one obj randomnly and compute distance 
+    obj_init = ediObjs[0]
+    ref_lat = 34.0522  # Latitude of Los Angeles
+    ref_lon = -118.2437 # Longitude of Los Angeles
+    
+    if str(distance).find ('harves')>=0: 
+        distance='harves'
+    else: distance='cartes'
+    
+    # create stations list.
+    stations = [ 
+        {"name": os.path.basename(obj.edifile), 
+         "longitude": obj.lon, 
+         "latitude": obj.lat, 
+         "obj": obj, 
+         "dataid": obj.dataid,  
+         # compute distance using cartesian or harversine 
+         "distance": _compute_haversine_d (
+            ref_lat, ref_lon, obj.lat, obj.lon
+            ) if distance =='harves' else np.sqrt (
+                ( obj_init.lon -obj.lon)**2 + (obj_init.lat -obj.lat)**2), 
+         # check wether there is a position number in the data.
+         "index": re.search ('\d+', str(os.path.basename(obj.edifile)),
+                            flags=re.IGNORECASE).group() if bool(
+                                re.search(r'\d', os.path.basename(obj.edifile)))
+                                else float(ii) ,
+        } 
+        for ii, obj in enumerate (ediObjs) 
+        ]
+                  
+    ll=( 'longitude', 'latitude') 
+    
+    by = 'index' or str(by ).lower() 
+    if ( by.find ('ll')>=0 or by.find ('lonlat')>=0): 
+        by ='ll'
+    elif  by.find ('latlon')>=0: 
+        ll =ll[::-1] # reverse 
+    
+    # sorted from key
+    sorted_stations = sorted (
+        stations , key = lambda o: (o[ll[0]], [ll[-1]])  
+        if (by =='ll' or by=='latlon')
+        else o[by]
+             )
+
+    objnames = np.array( list(
+        map ( lambda o : o['name'], sorted_stations))) 
+    ediObjs = np.array ( list(
+        map ( lambda o: o['obj'], sorted_stations)), 
+                        dtype =object ) 
+    
+    return ediObjs, objnames 
+
+def _compute_haversine_d(lat1, lon1, lat2, lon2): 
+    """ Sort coordinates using Haversine distance calculus. 
+    An isolated part of :func:`watex.utils.funcutils._fit_by_ll"""
+    # get reference_lat and reference lon 
+    # get one obj randomnly and compute distance 
+    # obj_init = np.random.choice (ediObjs) 
+    import math 
+    # Define a function to calculate the distance 
+    # between two points in kilometers
+    # def distance(lat1, lon1, lat2, lon2):
+        # Convert degrees to radians
+    lat1 = math.radians(lat1)
+    lon1 = math.radians(lon1)
+    lat2 = math.radians(lat2)
+    lon2 = math.radians(lon2)
+
+    # Apply the haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(
+        lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    r = 6371 # Earth's radius in kilometers
+    
+    return c * r
+    
+
 def make_ids(arr, prefix =None, how ='py', skip=False): 
     """ Generate auto Id according to the number of given sites. 
     
@@ -2934,7 +3040,7 @@ def make_ids(arr, prefix =None, how ='py', skip=False):
         the counting starts by 0. Any other mode will start the counting by 1.
     :type cmode: str 
     
-    :param skip: skip the strong formatage. the formatage acccording to the 
+    :param skip: skip the long formatage. the formatage acccording to the 
         number of collected file. 
     :type skip: bool 
     :return: ID number formated 
@@ -4772,6 +4878,8 @@ def remove_outliers (
     threshold = 3.,
     fill_value = None, 
     axis = 1, 
+    interpolate=False, 
+    kind='linear'
     ): 
     """ Efficient strategy to remove outliers in the data. 
     
@@ -4781,7 +4889,7 @@ def remove_outliers (
     outlier if it has more than 1.5 IQR below the first quartile or above 
     the third. 
     
-    Two approaches is used to remove the outliers. 
+    Two approaches are used to remove the outliers. 
 
     - Inter Quartile Range (``IQR``)
       IQR is the most commonly used and most trusted approach used in 
@@ -4855,6 +4963,18 @@ def remove_outliers (
       axis from which to remove values. This is useful when two dimensional 
       array is supplied. Default, delete outlier from the rows. 
       
+    interpolate: bool, default=False, 
+       If ``fill_value='NaN'``, interpolation can be triggered to get the 
+       closest value in array to replace missing values. Note that 
+       `fill_value` should be NaN for interpolation to be concise. 
+       
+    kind: str, default='linear'
+      kind of interpolation. It could be ['nearest'|'linear'|'cubic']. 
+      
+    .. versionadded:: 0.2.8 
+       Interpolate NaN value after outliers removal. 
+    
+      
     Returns
     --------
     arr: Array_like 
@@ -4880,7 +5000,10 @@ def remove_outliers (
     >>> # for one dimensional 
     >>> remove_outliers ( data[:, 0] , fill_value =np.nan )
     array([ 0.49671415,  1.52302986,  1.57921282,  0.54256004,  0.24196227,
-           -0.56228753,         nan]) 
+           -0.56228753,         nan])
+    >>> remove_outliers ( data[:, 0] , fill_value =np.nan, interpolate=True  )
+    >>> import matplotlib.pyplot as plt 
+    >>> plt.plot (np.arange (len(data ), data, ))
     """
     method = str(method).lower()
     if ( 
@@ -4916,10 +5039,13 @@ def remove_outliers (
         arr = arr[ ~np.isnan (arr ).any(axis =1)
                   ]  if np.ndim (arr) > 1 else arr [~np.isnan(arr)]
 
+    if interpolate: 
+        arr = interpolate_grid (arr, method = kind )
+        
     return arr 
 
 def _remove_outliers(data, n_std=3):
-    """Remouve outliers from a dataframe."""
+    """Remove outliers from a dataframe."""
     # separate cat feature and numeric features 
     # if exists 
     df, numf, catf = to_numeric_dtypes(
@@ -5321,6 +5447,10 @@ def interpolate_grid (
     view: bool, default=False, 
        Quick visualize the interpolated grid. 
        
+     
+    .. versionchanged:: 0.2.8 
+       One-dimensional array is henceforth possible. Error no longer raises. 
+       
     Returns 
     ---------
     arri: ArrayLike2d 
@@ -5341,17 +5471,22 @@ def interpolate_grid (
     >>> xy = np.vstack ((x, y)).T
     >>> xyi = interpolate_grid (xy, view=True ) 
     >>> xyi 
-    array([[  28.        ,   22.78880936,   50.        ,   60.        ],
-           [1000.        , 1000.        , 2000.        , 3000.        ]])
+    array([[  28.        ,   28.        ],
+           [  22.78880663, 1000.        ],
+           [  50.        , 2000.        ],
+           [  60.        , 3000.        ]])
 
     """
-
+    is2d = True 
     if not hasattr(arr, '__array__'): 
         arr = np.array (arr) 
     
     if arr.ndim==1: 
-        raise TypeError(
-            "Expect two dimensional array for grid interpolation.")
+        #convert to two dimension array
+        arr = np.vstack ((arr, arr ))
+        is2d =False 
+        # raise TypeError(
+        #     "Expect two dimensional array for grid interpolation.")
         
     # make x, y array for mapping 
     x = np.arange(0, arr.shape[1])
@@ -5388,6 +5523,9 @@ def interpolate_grid (
         ax[1].set_title ('Interpolate Grid') 
         
         plt.show () 
+        
+    if not is2d: 
+        arri = arri[0, :]
         
     return arri 
 
@@ -5489,7 +5627,7 @@ def cleaner (
     mode:str ='clean', 
     **kws
     )->DataFrame | NDArray | None : 
-    """ Sanitize data in the data or columns by dropping specified labels 
+    """ Sanitize data or columns by dropping specified labels 
     from rows or columns. 
     
     If data is not a pandas dataframe, should be converted to 
@@ -5567,7 +5705,6 @@ def cleaner (
     
     return np.array ( data ) if objtype =='ar' else data 
  
-
 def rename_files (
     src_files:str | List[str], /, 
     dst_files:str | List[str], 
@@ -5595,7 +5732,7 @@ def rename_files (
        collect only files with this typical extensions. 
        
     basename: str, optional 
-       If `dst_files` is passed as Path-object, name should be need 
+       If `dst_files` is passed as Path-object, name should be needed 
        for a change, otherwise, the number is incremented using the Python 
        index counting defined by the parameter ``how=py` 
         
@@ -5674,16 +5811,15 @@ def rename_files (
         basename= str(basename)
         if prefix: 
             dst_files =[ f"{str(basename)}{trailer}" + (
-                f"{i:02}" if how=='py' else f"{i+1:02}") + f"{ex}"
+                f"{i:03}" if how=='py' else f"{i+1:03}") + f"{ex}"
                         for i in range (len(src_files))]
         elif not prefix: 
-            dst_files =[ (f"{i:02}" if how=='py' else f"{i+1:02}"
+            dst_files =[ (f"{i:03}" if how=='py' else f"{i+1:03}"
                         ) +f"{trailer}{str(basename)}" +f"{ex}"
                         for i in range (len(src_files))]
         
         dst_files = [os.path.join(dest_dir , f) for f in dst_files ] 
         
-   
     for f, nf in zip (src_files , dst_files): 
         try: 
            if keep_copy : shutil.copy (f, nf , **kws )
@@ -5692,6 +5828,8 @@ def rename_files (
             os.remove(nf)
             if keep_copy : shutil.copy (f, nf , **kws )
             else : os.rename (f, nf , **kws )
+            
+            
 
 def get_xy_coordinates (d, / , as_frame = False, drop_xy = False, 
                         raise_exception = True, verbose=0 ): 
@@ -6220,7 +6358,9 @@ def random_sampling (
        If int, array-like, or BitGenerator, seed for random number generator. 
        If np.random.RandomState or np.random.Generator, use as given.
        
-    split_Xy: 
+    shuffle:bool, default=True 
+       Shuffle the data before sampling 
+      
     Returns 
     ----------
     d: {array-like, sparse matrix} of shape (n_samples, n_features)
@@ -7015,7 +7155,7 @@ def ellipsis2false( *parameters , default_value: Any=False ):
                     for param in parameters) )  
    
 
-    
+
     
     
  

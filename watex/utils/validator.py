@@ -13,6 +13,7 @@ import operator
 import joblib
 import re
 import numpy as np
+import pandas as pd
 # mypy error: Module 'numpy.core.numeric' has no attribute 'ComplexWarning'
 from numpy.core.numeric import ComplexWarning  # type: ignore
 from contextlib import suppress
@@ -157,7 +158,7 @@ def _assert_z_or_edi_objs ( z_or_edis_obj_list, /):
                 )
     if len(s_edi) !=1 or False in list(s_edi):
         raise EMError("Expect EDI[watex.edi.Edi] or Z[watex.externals.z.Z]"
-                      f" objects. Got {s_edi} objects.")
+                      f" objects. Got {s_edi}")
     else: 
         obj_type ='EDI' if isinstance ( 
             z_or_edis_obj_list[0], Edi) else 'Z'

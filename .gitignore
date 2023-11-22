@@ -147,9 +147,15 @@ watex/utils/watson_api
 data/Bag.main&rawds/
 data/BagoueCIV__dataset__main/
 #data/geo_fdata/main.bagciv.data.csv
+# Ignore h.h5 data and n.npz
+watex/watex/datasets/data/h.h5 
+watex/watex/datasets/data/n.npz
 
 # ignore the projects 
 watex/utils/project_bagoue.py
+
+# Skip pyproject.toml and use setup.py tool 
+pyproject.toml
 
 #ignore dumping files
 SVC__LinearSVC__LogisticRegression
@@ -161,6 +167,8 @@ SVC__LinearSVC__LogisticRegression.pkl
 untitled0.py
 untitled1.py
 untitled2.py
+untitled3.py
+untitled4.py
 
 # ignore beka datafiles 
 data/beka/
@@ -193,6 +201,7 @@ data0.joblib
 
 #scripts remove 
 scripts/
+pscript.py
 # git certificate 
 git-mycompany-com.pem
 
@@ -203,3 +212,5 @@ tests/temp/
 h2.py
 h2.joblib
 true_data.joblib
+#No need 
+EDI/

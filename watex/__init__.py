@@ -35,7 +35,7 @@ try:
     from . import _version
     __version__ = _version.version.split('.dev')[0]
 except ImportError:
-    __version__ = '0.2.7' 
+    __version__ = '0.3.0' 
 
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)
@@ -52,6 +52,8 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "True")
 os.environ.setdefault("KMP_INIT_AT_FORK", "FALSE")
 
 # https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/
+# Suppress FutureWarnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 try:
     # This variable is injected in the __builtins__ by the build process. 
     __WATEX_SETUP__  # type: ignore
@@ -64,7 +66,6 @@ else:
     from . import _distributor_init  # noqa: F401
     from . import _build  # noqa: F401
     from .utils._show_versions import show_versions
-    
 #https://github.com/pandas-dev/pandas
 # Let users know if they're missing any of our hard dependencies
 _main_dependencies = ("numpy", "scipy", "sklearn", "matplotlib", 
@@ -88,10 +89,11 @@ del _main_dependencies, _dependency, _missing_dependencies
 # and reduce verbosity.
 # Setup WATex public API  
 with warnings.catch_warnings():
+    warnings.simplefilter(action='ignore', category=FutureWarning)
     warnings.filterwarnings(action='ignore', category=UserWarning)
     import watex.exlib as sklearn 
     from .exlib.gbm import XGBClassifier
-
+    
 from .analysis import ( 
     nPCA, 
     kPCA, 
@@ -116,17 +118,14 @@ from .datasets import (
     make_erp, 
     make_ves 
     ) 
-from .geology import ( 
-    Structural, 
-    Structures 
-    )
 from .methods import (
     ResistivityProfiling ,
     VerticalSounding, 
     DCProfiling, 
     DCSounding, 
     EM, 
-    Processing as EMProcessing, 
+    EMAP, 
+    MT, 
     MXS, 
     )
 from . models import ( 
@@ -168,27 +167,9 @@ from .utils import (
     reshape, 
     to_numeric_dtypes, 
     smart_label_classifier,
-    select_base_stratum , 
-    reduce_samples , 
-    make_MXS_labels, 
-    predict_NGA_labels, 
-    classify_k,  
-    plot_elbow, 
-    plot_clusters, 
-    plot_pca_components, 
-    plot_naive_dendrogram, 
-    plot_learning_curves, 
-    plot_confusion_matrices, 
-    plot_sbs_feature_selection, 
-    plot_regularization_path, 
-    plot_rf_feature_importances, 
-    plot_logging, 
-    plot_silhouette, 
-    plot_profiling,
-    plot_confidence_in,
+    plot_confidence_in, 
     qc,
     )
-
 try : 
     from .utils import ( 
         selectfeatures, 
@@ -214,6 +195,9 @@ def setup_module(module):
     np.random.seed(_random_seed)
     random.seed(_random_seed)
    
+# Reset warnings to default to see warnings after this point
+warnings.simplefilter(action='default', category=FutureWarning)
+
 __doc__= """\
 A machine learning research in water exploration 
 ==================================================
@@ -266,7 +250,8 @@ __all__ = [
     "DCProfiling", 
     "DCSounding", 
     "EM", 
-    "EMProcessing" , 
+    "EMAP", 
+    "MT", 
     "MXS", 
     "get2dtensor", 
     "GridSearch", 
@@ -300,23 +285,6 @@ __all__ = [
     "reshape", 
     "to_numeric_dtypes", 
     "smart_label_classifier",
-    "select_base_stratum" , 
-    "reduce_samples" , 
-    "make_MXS_labels", 
-    "predict_NGA_labels", 
-    "classify_k",  
-    "plot_elbow", 
-    "plot_clusters", 
-    "plot_pca_components", 
-    "plot_naive_dendrogram", 
-    "plot_learning_curves", 
-    "plot_confusion_matrices",  
-    "plot_sbs_feature_selection", 
-    "plot_regularization_path", 
-    "plot_rf_feature_importances", 
-    "plot_logging", 
-    "plot_silhouette", 
-    "plot_profiling", 
     "selectfeatures", 
     "naive_imputer", 
     "naive_scaler",  

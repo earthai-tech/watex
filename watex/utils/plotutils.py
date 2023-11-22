@@ -17,6 +17,7 @@ import matplotlib as mpl
 from matplotlib.patches import Ellipse
 import matplotlib.colors as mcolors
 import matplotlib.transforms as transforms 
+from matplotlib import gridspec 
 import seaborn as sns 
 from scipy.cluster.hierarchy import ( 
     dendrogram, ward 
@@ -47,7 +48,8 @@ from .validator import  (
     check_X_y,
     check_y,
     check_consistent_length, 
-    check_is_fitted 
+    check_is_fitted , 
+    _assert_z_or_edi_objs, 
     )
 from ._dependency import import_optional_dependency 
 from ..decorators import nullify_output
@@ -2760,7 +2762,9 @@ def plot_profiling (
     fig_size = (10, 4), 
     cz_plot_kws= None,
     marker_kws= None, 
-    savefig =None, 
+    savefig =None,
+    ax =None,
+    fig=None, 
     **plot_kws
     ): 
     """ 
@@ -2807,6 +2811,16 @@ def plot_profiling (
     savefig: str, optional 
         Save figure name. The default resolution dot-per-inch is ``300``. 
         
+    ax: Matplotlib.pyplot.Axes, optional 
+       Axe to collect the figure.
+       
+       .. versionadded:: 0.2.8 
+          
+       
+    fig: Matplotlib.pyplot.figure, optional 
+        Supply fig to save automatically the plot, otherwise, keep it 
+        to ``None``.
+          
     plot_kws: dict, 
         Additional keyword arguments passed to :func:`matplotlib.pyplot.plot` 
         function 
@@ -2845,7 +2859,9 @@ def plot_profiling (
         cz, *_  = defineConductiveZone(
             erp , station = station , auto= auto )
     
-    fig, ax = plt.subplots(1,1, figsize =fig_size)
+    if ax is None: 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+        
     leg =[]
     
     zl, = ax.plot(np.arange(len(erp)), erp, 
@@ -2876,7 +2892,6 @@ def plot_profiling (
     if len(erp ) >= 14 : 
         ax.xaxis.set_major_formatter (plt.FuncFormatter(_format_ticks))
     else : 
-        
         ax.set_xticklabels(
             ['S{:02}'.format(int(i)+1) for i in range(len(erp))]) 
          
@@ -2885,7 +2900,8 @@ def plot_profiling (
     ax.legend( handles = leg, loc ='best')
     ax.set_xlim ([-1, len(erp)])
 
-    if savefig is not  None: savefigure (fig, savefig, dpi = 300)
+    if savefig is not  None: 
+        savefigure (fig, savefig, dpi = 300)
         
     plt.close () if savefig is not None else plt.show() 
     
@@ -3017,7 +3033,7 @@ def plot_skew (
         threshold_line = str(method).lower() 
             
     import watex as wx 
-    po =  wx.EMProcessing().fit(edi_obj)
+    po =  wx.EMAP().fit(edi_obj)
     
     # remove the outliers in the data
     # and filled with NaN 
@@ -3726,14 +3742,11 @@ def plot_roc_curves (
        Number of plot to be placed inline before skipping to the next column. 
        This is feasible if `many` is set to ``True``. 
        
-    score: bool,default=True
+    score: bool,default=False
       Append the Area Under the curve score to the legend. 
       
       .. versionadded:: 0.2.4 
       
-    all: str, default=False 
-       if ``True``, plot each ROC model separately 
-
     kws: dict,
         keyword argument of :func:`sklearn.metrics.roc_curve 
         
@@ -3786,7 +3799,6 @@ def plot_roc_curves (
         fig, ax = _make_axe_multiple ( 
             clfs, ncols = ncols , ax = ax, fig_size = fig_size 
                                   ) 
-        
     else: 
         if ax is None: 
             fig, ax = plt.subplots (1, 1, figsize = fig_size )  
@@ -3822,15 +3834,656 @@ def plot_roc_curves (
         
     return ax 
         
+def plot_tensors (
+    z_or_edis_obj_list, /, 
+    station:int|str= 'S00', 
+    zplot:bool=False, 
+    **kwargs
+)-> object:
+    #---------------------------------------
+    # Get station index.
+    get_station_group = re.search ('\d+', str(station), flags=re.IGNORECASE)
+    if get_station_group is None: 
+        raise TypeError ("Station should be or include a position number.")
+    else : station = int(get_station_group.group()) 
+    
+    obj_type  = _assert_z_or_edi_objs (z_or_edis_obj_list)
+    
+    # Assert station index to be in the range of EDIlist 
+    if station >=len( z_or_edis_obj_list): 
+        raise ValueError (f"Expect {len(z_or_edis_obj_list)} stations."
+                          f" Got {station}.")
+    # Get z objets. 
+    if obj_type =='EDI': 
+        z_obj = z_or_edis_obj_list[station].Z
+    else: 
+        z_obj= z_or_edis_obj_list[station]
+        
+    #-------------------------------------------
+    # Attributes 
+    ms = kwargs.pop('ms', 1.5)
+    ms_r = kwargs.pop('ms_r', 3)
+    lw = kwargs.pop('lw', .5)
+    lw_r = kwargs.pop('lw_r', 1.0)
+    e_capthick = kwargs.pop('e_capthick', .5)
+    e_capsize = kwargs.pop('e_capsize', 2)
+    color_mode = kwargs.pop('color_mode', 'color')
+    plot_style = kwargs.pop('plot_style', 1)
+ 
+    # color mode
+    if color_mode == 'color':
+        # color for data
+        cted = kwargs.pop('cted', (0, 0, 1))
+        ctmd = kwargs.pop('ctmd', (1, 0, 0))
+        mted = kwargs.pop('mted', 's')
+        mtmd = kwargs.pop('mtmd', 'o')
+        # color for occam2d model
+        if plot_style == 3:
+            # if plot_style is 3, set default color 
+            #for model response to same as data
+            ctem = kwargs.pop('ctem',cted)
+            ctmm = kwargs.pop('ctmm',ctmd)
+        else:
+            ctem = kwargs.pop('ctem', (0, .6, .3))
+            ctmm = kwargs.pop('ctmm', (.9, 0, .8))
+        mtem = kwargs.pop('mtem', '+')
+        mtmm = kwargs.pop('mtmm', '+')
+
+    # black and white mode
+    elif color_mode == 'bw':
+        # color for data
+        cted = kwargs.pop('cted', (0, 0, 0))
+        ctmd = kwargs.pop('ctmd', (0, 0, 0))
+        mted = kwargs.pop('mted', 's')
+        mtmd = kwargs.pop('mtmd', 'o')
+        # color for occam2d model
+        ctem = kwargs.pop('ctem', (0.6, 0.6, 0.6))
+        ctmm = kwargs.pop('ctmm', (0.6, 0.6, 0.6))
+        mtem = kwargs.pop('mtem', '+')
+        mtmm = kwargs.pop('mtmm', 'x')
+    
+    phase_limits_d = kwargs.pop('phase_limits_d', None)
+    res_limits_d = kwargs.pop('res_limits_d', None)
+    res_limits_od = kwargs.pop('res_limits_od', None)
+    period_limits = kwargs.pop('period_limits', None)
+    subplot_wspace = kwargs.pop('subplot_wspace', .3)
+    subplot_hspace = kwargs.pop('subplot_hspace', .0)
+    subplot_right = kwargs.pop('subplot_right', .98)
+    subplot_left = kwargs.pop('subplot_left', .08)
+    subplot_top = kwargs.pop('subplot_top', .85)
+    subplot_bottom = kwargs.pop('subplot_bottom', .1)
+        
+    fig_size = kwargs.pop('fig_size', [6, 6])
+    fig_dpi = kwargs.pop('dpi', 300)
+    ylabel_pad = kwargs.pop('ylabel_pad', 1.25)
+    # --> set default font size
+    font_size = kwargs.pop('font_size', 6)
+    plt.rcParams['font.size'] = font_size
+
+    fontdict = {'size': font_size + 2, 
+                'weight': 'bold'}
+        
+    legend_loc = 'upper center'
+    legend_pos = (.5, 1.18)
+    legend_marker_scale = 1
+    legend_border_axes_pad = .01
+    legend_label_spacing = 0.07
+    legend_handle_text_pad = .2
+    legend_border_pad = .15
+    
+    h_ratio = [1.5, 1, .5]
+    
+    gs = gridspec.GridSpec(2, 4,
+        wspace=subplot_wspace,
+        left=subplot_left,
+        top=subplot_top,
+        bottom=subplot_bottom,
+        right=subplot_right,
+        hspace=subplot_hspace,
+        height_ratios=h_ratio[:2])
+    
+    #------------------------------------------
+    # Plot data 
+    fig = plt.figure(station, fig_size, dpi= fig_dpi)
+    plt.clf()
+    fig.suptitle("Station {}".format(str(station)), fontdict=fontdict)
+            
+    axrxx = fig.add_subplot(gs[0, 0], #yscale='log'
+                            )
+    axrxy = fig.add_subplot(gs[0, 1], sharex=axrxx, 
+                            #yscale='log'
+                            )
+    axryx = fig.add_subplot(gs[0, 2], sharex=axrxx, sharey=axrxy, 
+                           # yscale='log'
+                            )
+    axryy = fig.add_subplot(gs[0, 3], sharex=axrxx, sharey=axrxx, 
+                           # yscale='log'
+                            )
+
+    axpxx = fig.add_subplot(gs[1, 0])
+    axpxy = fig.add_subplot(gs[1, 1], sharex=axrxx)
+    axpyx = fig.add_subplot(gs[1, 2], sharex=axrxx)
+    axpyy = fig.add_subplot(gs[1, 3], sharex=axrxx)
+            
+    # convert to apparent resistivity and phase
+    z_obj.compute_resistivity_phase()
+    period = 1/z_obj._freq
+    
+    # find locations where points have been masked
+    nzxx = np.nonzero(z_obj.z[:, 0, 0])[0]
+    nzxy = np.nonzero(z_obj.z[:, 0, 1])[0]
+    nzyx = np.nonzero(z_obj.z[:, 1, 0])[0]
+    nzyy = np.nonzero(z_obj.z[:, 1, 1])[0]
+
+    # convert to apparent resistivity and phase
+    if zplot:
+        scaling = np.zeros_like(z_obj.z)
+        for ii in range(2):
+            for jj in range(2):
+                scaling[:, ii, jj] = 1. / np.sqrt(z_obj.freq)
+        plot_res = abs(z_obj.z.real * scaling)
+        plot_res_err = abs(z_obj.z_err * scaling)
+        plot_phase = abs(z_obj.z.imag * scaling)
+        plot_phase_err = abs(z_obj.z_err * scaling)
+        h_ratio = [1.5, 1, .5]
+
+    elif not zplot:
+        plot_res = z_obj.resistivity
+        plot_res_err = z_obj.resistivity_err
+        plot_phase = z_obj.phase
+        plot_phase_err = z_obj.phase_err
+        h_ratio = [1.5, 1, .5]
+    
+        try:
+            res_limits_d = (10 ** (np.floor(np.log10(
+                min([plot_res[nzxx, 0, 0].min(),
+                plot_res[nzyy, 1, 1].min()])))),
+                                 10 ** (np.ceil(np.log10(
+                                     max([plot_res[nzxx, 0, 0].max(),
+                                    plot_res[nzyy, 1, 1].max()])))))
+        except ValueError:
+            res_limits_d = None
+        try:
+            res_limits_od = (10 ** (np.floor(np.log10(
+                min([plot_res[nzxy, 0, 1].min(),
+                  plot_res[nzyx, 1, 0].min()])))),
+                                  10 ** (np.ceil(np.log10(
+                                      max([plot_res[nzxy, 0, 1].max(),
+                                      plot_res[nzyx, 1, 0].max()])))))
+        except ValueError:
+            res_limits_od = None
+
+    # --> make key word dictionaries for plotting
+    kw_xx = {'color': cted,
+             'marker': mted,
+             'ms': ms,
+             'ls': ':',
+             'lw': lw,
+             'e_capsize': e_capsize,
+             'e_capthick': e_capthick}
+
+    kw_yy = {'color': ctmd,
+             'marker': mtmd,
+             'ms': ms,
+             'ls': ':',
+             'lw': lw,
+             'e_capsize': e_capsize,
+             'e_capthick': e_capthick}
+
+    # ---------plot the apparent resistivity-----------------------------------
+            # plot each component in its own subplot
+            # plot data response
+    erxx = plot_errorbar(axrxx,
+                        period[nzxx],
+                        plot_res[nzxx, 0, 0],
+                        plot_res_err[nzxx, 0, 0],
+                        **kw_xx)
+    erxy = plot_errorbar(axrxy,
+                        period[nzxy],
+                        plot_res[nzxy, 0, 1],
+                        plot_res_err[nzxy, 0, 1],
+                        **kw_xx)
+    eryx = plot_errorbar(axryx,
+                        period[nzyx],
+                        plot_res[nzyx, 1, 0],
+                        plot_res_err[nzyx, 1, 0],
+                        **kw_yy)
+    eryy = plot_errorbar(axryy,
+                        period[nzyy],
+                        plot_res[nzyy, 1, 1],
+                        plot_res_err[nzyy, 1, 1],
+                        **kw_yy)
+    # plot phase
+
+    plot_errorbar(axpxx,
+                        period[nzxx],
+                        plot_phase[nzxx, 0, 0],
+                        plot_phase_err[nzxx, 0, 0],
+                        **kw_xx)
+    plot_errorbar(axpxy,
+                        period[nzxy],
+                        plot_phase[nzxy, 0, 1],
+                        plot_phase_err[nzxy, 0, 1],
+                        **kw_xx)
+    plot_errorbar(axpyx,
+                        period[nzyx],
+                        plot_phase[nzyx, 1, 0],
+                        plot_phase_err[nzyx, 1, 0],
+                        **kw_yy)
+    plot_errorbar(axpyy,
+                        period[nzyy],
+                        plot_phase[nzyy, 1, 1],
+                        plot_phase_err[nzyy, 1, 1],
+                        **kw_yy)
+
+    # get error bar list for editing later
+    #_err_list = 
+    try:
+        [[erxx[1][0], erxx[1][1], erxx[2][0]],
+        [erxy[1][0], erxy[1][1], erxy[2][0]],
+        [eryx[1][0], eryx[1][1], eryx[2][0]],
+        [eryy[1][0], eryy[1][1], eryy[2][0]]]
+        line_list = [[erxx[0]], [erxy[0]], [eryx[0]], [eryy[0]]]
+    except IndexError:
+        print('Found no Z components for {0}'.format(station))
+        line_list = [[None], [None],
+                     [None], [None]]
+
+     # ------------------------------------------
+    # # make things look nice
+    # # set titles of the Z components
+    ax_list = [axrxx, axrxy, axryx, axryy,
+               axpxx, axpxy, axpyx, axpyy]
+    label_list = [['$Z_{xx}$'], ['$Z_{xy}$'],
+                  ['$Z_{yx}$'], ['$Z_{yy}$']]
+    # for ax, label in zip(ax_list[0:4], label_list):
+    #     ax.set_title(label[0], fontdict={'size': font_size + 2,
+    #                                       'weight': 'bold'})
+
+    #     # set axis properties
+    for aa, ax in enumerate(ax_list):
+        ax.tick_params(axis='y', pad=ylabel_pad)
+        # if self.plot_tipper==False:
+        if aa < 4:
+            if zplot == True:
+                ax.set_yscale('log',
+                              #nonposy='clip'
+                              )
+        else:
+            ax.set_xlabel('Period (s)', 
+                          fontdict=fontdict
+                          )
+
+        if aa < 8:
+            if zplot == True:
+                ax.set_yscale('log', 
+                              # nonposy='clip'
+                              )
+        else:
+            ax.set_xlabel('Period (s)', fontdict=fontdict)
+
+        if aa < 4 and zplot is False:
+            ylabels = ax.get_yticks().tolist()
+            ylabels[0] = ''
+            ax.yaxis.set_major_locator(mpl.ticker.FixedLocator(ylabels))
+            ax.set_yticklabels([ str(f) for f in ylabels])
+            ax.set_yscale('log', 
+                          #nonposy='clip'
+                          )
+            try: 
+                # skip setting the axis limits
+                if aa == 0 or aa == 3:
+                    ax.set_ylim(res_limits_d)
+                elif aa == 1 or aa == 2:
+                    ax.set_ylim(res_limits_od)
+            except: pass 
+
+        if aa > 3 and aa < 8 and zplot is False:
+            #ax.yaxis.set_major_locator(MultipleLocator(10.0))
+            if phase_limits_d is not None:
+                ax.set_ylim(phase_limits_d)
+        # set axes labels
+        if aa == 0:
+            if zplot == False:
+                ax.set_ylabel('App. Res. ($\mathbf{\Omega \cdot m}$)',
+                              fontdict=fontdict)
+            elif zplot == True:
+                ax.set_ylabel('Re[Z (mV/km nT)]',
+                              fontdict=fontdict)
+        elif aa == 4:
+            if zplot == False:
+                ax.set_ylabel('Phase (deg)',
+                              fontdict=fontdict)
+            elif zplot == True:
+                ax.set_ylabel('Im[Z (mV/km nT)]',
+                              fontdict=fontdict)
+        elif aa == 8:
+            ax.set_ylabel('Tipper',
+                          fontdict=fontdict)
+        if aa > 7:
+            ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(.1))
+  
+        ax.set_xscale('log', 
+                     # nonposx='clip'
+                      )
+        # set period limits
+        if period_limits is None:
+            period_limits = (10 ** (np.floor(np.log10(period[0]))) * 1.01,
+                                  10 ** (np.ceil(np.log10(period[-1]))) * .99)
+        ax.set_xlim(xmin=period_limits[0],
+                    xmax=period_limits[1])
+        ax.grid(True, alpha=.25)
+
+        ylabels = ax.get_yticks().tolist()
+        if aa < 8:
+            ylabels[-1] = ''
+            ylabels[0] = ''
+
+        if aa < len(ax_list)//2: 
+            plt.setp(ax.get_xticklabels(), visible=False)
+   
+        # --> make key word dictionaries for plotting
+        kw_xx = {'color': ctem,
+                 'marker': mtem,
+                 'ms': ms_r,
+                 'ls': ':',
+                 'lw': lw_r,
+                 'e_capsize': e_capsize,
+                 'e_capthick': e_capthick}
+
+        kw_yy = {'color': ctmm,
+                 'marker': mtmm,
+                 'ms': ms_r,
+                 'ls': ':',
+                 'lw': lw_r,
+                 'e_capsize': e_capsize,
+                 'e_capthick':e_capthick}
+
+        
+        legend_ax_list = ax_list[0:4]
+        for aa, ax in enumerate(legend_ax_list):
+            ax.legend(line_list[aa],
+                      label_list[aa],
+                      loc=legend_loc,
+                      bbox_to_anchor=legend_pos,
+                      markerscale=legend_marker_scale,
+                      borderaxespad=legend_border_axes_pad,
+                      labelspacing=legend_label_spacing,
+                      handletextpad=legend_handle_text_pad,
+                      borderpad=legend_border_pad,
+                      framealpha=1,
+                      prop={'size': max([font_size, 5])})
+  
+    plt.show()
+    
+    return z_obj 
+  
+    
+plot_tensors.__doc__="""\
+
+Plot resistivity and phase tensors or the real and imaginary impedance.
+
+Plots the real and imaginary impedance and induction vector if present.
+
+Parameters 
+------------
+z_or_edis_obj_list: list of :class:`watex.edi.Edi` or \
+        :class:`watex.externals.z.Z` 
+        A collection of EDI- or Impedances tensors objects.
+        
+station: int, default='S00'
+   Station to visualize the resistivity, phases or impendances tensors. 
+   Default is the first station. Note that station counting start from index 
+   equal to ``0``.
+    
+zplot: bool, default=False, 
+   Visualize the impedance tensors values `Z`. 
+   
+
+kwargs: Additional keywords arguments 
+
+
+To get further details about the way to control the plot, refer to the 
+following attributes. 
+
+======================== ==================================================
+Attributes               Description
+======================== ==================================================
+color_mode               [ 'color' | 'bw' ] color or black and white plots
+cted                     color for data Z_XX and Z_XY mode
+ctem                     color for model Z_XX and Z_XY mode
+ctmd                     color for data Z_YX and Z_YY mode
+ctmm                     color for model Z_YX and Z_YY mode
+data_fn                  full path to data file
+data_object              WSResponse instance
+e_capsize                cap size of error bars in points (*default* is .5)
+e_capthick               cap thickness of error bars in points (*default*
+                         is 1)
+fig_dpi                  resolution of figure in dots-per-inch (300)
+fig_list                 list of matplotlib.figure instances for plots
+fig_size                 size of figure in inches (*default* is [6, 6])
+font_size                size of font for tick labels, axes labels are
+                         font_size+2 (*default* is 7)
+legend_border_axes_pad   padding between legend box and axes
+legend_border_pad        padding between border of legend and symbols
+legend_handle_text_pad   padding between text labels and symbols of legend
+legend_label_spacing     padding between labels
+legend_loc               location of legend
+legend_marker_scale      scale of symbols in legend
+lw                       line width data curves (*default* is .5)
+ms                       size of markers (*default* is 1.5)
+lw_r                     line width response curves (*default* is .5)
+ms_r                     size of markers response curves (*default* is 1.5)
+mted                     marker for data Z_XX and Z_XY mode
+mtem                     marker for model Z_XX and Z_XY mode
+mtmd                     marker for data Z_YX and Z_YY mode
+mtmm                     marker for model Z_YX and Z_YY mode
+phase_limits             limits of phase
+plot_component           [ 2 | 4 ] 2 for TE and TM or 4 for all components
+plot_style               [ 1 | 2 ] 1 to plot each mode in a seperate
+                         subplot and 2 to plot xx, xy and yx, yy in same
+                         plots
+plot_type                [ '1' | list of station name ] '1' to plot all
+                         stations in data file or input a list of station
+                         names to plot if station_fn is input, otherwise
+                         input a list of integers associated with the
+                         index with in the data file, ie 2 for 2nd station
+plot_z                   [ True | False ] *default* is True to plot
+                         impedance, False for plotting resistivity and
+                         phase
+plot_yn                  [ 'n' | 'y' ] to plot on instantiation
+res_limits               limits of resistivity in linear scale
+resp_fn                  full path to response file
+resp_object              WSResponse object for resp_fn, or list of
+                         WSResponse objects if resp_fn is a list of
+                         response files
+station_fn               full path to station file written by WSStation
+subplot_bottom           space between axes and bottom of figure
+subplot_hspace           space between subplots in vertical direction
+subplot_left             space between axes and left of figure
+subplot_right            space between axes and right of figure
+subplot_top              space between axes and top of figure
+subplot_wspace           space between subplots in horizontal direction
+======================== ==================================================   
+    
+Examples 
+---------
+>>> import watex as wx  
+>>> edi_data = wx.fetch_data ('edis', samples= 17 , return_data =True ) 
+>>> wx.utils.plotutils.plot_tensors ( edi_data, station =4 )
+""" 
+    
+#XXX TODO
+def plot_rsquared (X , y,  y_pred,  ): 
+    
+    from sklearn.metrics import r2_score
+    # Calculate R-squared
+    r_squared = r2_score(y, y_pred)
+
+    # Plotting the scatter plot
+    plt.scatter(X, y, color='blue', label='Actual data')
+
+    # Plotting the regression line
+    plt.plot(X, y_pred, color='red', linewidth=2, label='Fitted line')
+
+    # Annotate the R-squared value on the plot
+    plt.text(0.5, 0.5, 'R-squared = {:.2f}'.format(r_squared), fontsize=12, ha='center')
+
+    # Adding labels and title
+    plt.xlabel('Predictor')
+    plt.ylabel('Target')
+    plt.title('R-squared Diagram')
+    plt.legend()
+
+    # Show the plot
+    plt.show()
+
+def plot_sounding (
+    ves, /, 
+    style = 'bmh', 
+    fig_size = (10, 4), 
+    cz_plot_kws= None,
+    marker_kws= None, 
+    savefig =None, 
+    ax=None, 
+    fig=None,
+    **plot_kws ): 
+    """ Visualize the vertical electrical sounding. 
+    
+    Function plots the sounding curve from AB/2 sounding points. 
+    
+    Parameters 
+    -----------
+    ves: array_like 1d
+        The vertical electrical resistivity sounding array. 
+        If dataframe is passed,`resistivity` column must be included. 
+        
+    style: str, default='bmh'
+        Matplotlib plottings style.
+        
+    fig_size: tuple, default= (10, 4) 
+        Matplotlib figure size. 
+        
+    marker_kws: dict, default = {'marker':'o', 'c':'#9EB3DD' }
+        The dictionnary to customize marker in the plot 
+        
+    cz_plot_kws: dict, default = {'ls':'-','c':'#0A4CEE', 'lw'L2 }
+        The dictionnary to customize the conductize zone in the plot.
+        
+    savefig: str, optional 
+        Save figure name. The default resolution dot-per-inch is ``300``. 
+      
+    ax: Matplotlib.pyplot.Axes, optional 
+       Axe to collect the figure. 
+       
+    fig: Matplotlib.pyplot.figure, optional 
+        Supply fig to save automatically the plot, otherwise, keep it 
+        to ``None``.
+        
+    plot_kws: dict, 
+        Additional keyword arguments passed to :func:`matplotlib.pyplot.plot` 
+        function 
+        
+    Return
+    --------
+    ax: Matplotlib.pyplot.Axis 
+        Return axis  
+        
+    See also
+    ---------
+    watex.utils.exmath.plotOhmicArea: 
+        plot the Ohmic Area including the computed fracture zone. 
+        
+    Examples 
+    ----------
+    >>> from watex.datasets import make_ves
+    >>> from watex.utils.plotutils import plot_sounding
+    >>> import matplotlib.pyplot as plt 
+    >>> fig, ax = plt.subplots ( 2, 1, figsize = (10, 10))
+    >>> d= make_ves (samples =56, seed = 42)
+    >>> plot_sounding  (d.resistivity, ax =ax [0], color ='k', marker ='D', )
+    >>> ax[0].set_title ("VES: samples=56, seed =42")
+    >>> # read the frame and get the resistivity values 
+    >>> ax[1] = plot_sounding(make_ves (order ='+', max_rho =1e4, seed =65 , 
+                                        as_frame=True,iorder =5), 
+                              ax= ax[1], ls=':', marker ='o', color ='blue')
+    >>> ax[1].set_title ("VES:samples=41, order='+', iorder=5,"
+                         " max_rho=10000.$\Omega.m$, seed=65")
+    """
+    plt.style.use (style )
+    
+    if hasattr ( ves , 'columns') and hasattr ( ves , '__array__'): 
+        if 'resistivity' not in  ves.columns : 
+            raise TypeError ("Missing resistivity column in the data.")
+        
+        ves = ves.resistivity 
+    
+    ves = check_y (ves , input_name ="sample of VES data")
+    
+    if ax is None: 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+        
+    leg =[]
+    
+    zl, = ax.semilogy(np.arange(len(ves)), ves, 
+                  label ='Vertical Electrical Resistivity', 
+                  **plot_kws 
+                  )
+    marker_kws = marker_kws or dict (marker ='o', c='#9EB3DD' )
+    ax.scatter (np.arange(len(ves)), ves, **marker_kws )
+    
+    leg.append(zl)    
+        
+    ax.set_xticks(range(len(ves)))
+    
+    _get_xticks_formatage (ax, ax.get_xticks() , auto =True, 
+                           rotation=0)
+        # for label in ax.xaxis.get_ticklabels()[::7]:
+        #     label.set_visible(False)
+         
+    ax.set_xlabel('AB/2(m)')
+    ax.set_ylabel('App.resistivity ($\Omega.m$)')
+    ax.legend( handles = leg, loc ='best')
+    ax.set_xlim ([-1, len(ves)])
+
+    if savefig is not  None: savefigure (fig, savefig, dpi = 300)
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+    return ax 
 
     
-  
-    
-  
-    
-  
-    
-  
+# import watex as wx 
+# lspath =r'C:\Users\Daniel\Desktop\projects\nanshaLS0.csv'
+# ls_data = wx.read_data (lspath , sanitize =True, sep =';', verbose =True ) 
+# ls_data2 = las_data.copy() ; sd = ls_data2.replace(',', '.')
+# ls_data2 = ls_data.copy() ; sd = ls_data2.replace(',', '.')
+# ls_data2 [ls_data2.columns].repalce (',', '.', inplace =True ) 
+# ls_data2 [ls_data2.columns].replace (',', '.', inplace =True )
+# ls_data = wx.read_data (lspath, sanitize =True, sep =';', decimal =',') 
+# ls_data = wx.to_numeric_dtypes (ls_data ) 
+# test = ls_data ['latitude'] + ls_data['longitude'] 
+# ls_data.to_csv ( r'C:\Users\Daniel\Desktop\projects\nsh.lsdata.csv', index =False ) 
+
+# ## ---(Mon Nov  6 12:24:49 2023)---
+# import watex as wx
+# lspath = r'C:\Users\Daniel\Desktop\projects\nsh.lsdata.csv'
+# ls_data = wx.read_data (lspath , sanitize =True ) 
+# ls_data.shape 
+# data = wx.utils.random_sampling ( ls_data , samples ='30%') 
+# data.shape 
+# test_data = data.copy() 
+# test_xgb = data [['longitude', 'latitude', '2022']] 
+# import numpy as np ; value_r = np.linspace (0.89 , 0.96 , test-data.shape [0]) 
+# import numpy as np ; value_r = np.linspace (0.89 , 0.96 , test_data.shape [0])
+# value_xgb = np.random.shuffle ( value_r ) * test_xgb[['2022']] 
+# value_xgb = value_r .copy() 
+# vlue_xgb = test_xgb[['2022']]* value_xgb 
+# value_xgb.shape 
+# vlue_xgb = test_xgb[['2022']]* wx.reshape (value_xgb, 1) 
+# vlue_xgb = test_xgb[['2022']].values * value_xgb 
+# test_data = wx.fetch_data('edis', samples = 15 ).frame  
+
     
   
     
