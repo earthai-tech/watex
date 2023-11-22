@@ -1,6 +1,6 @@
 """
 ====================================================
-Fast AMT data collected with Stratagem hardware
+Fast AMT data processing from Stratagem hardware
 ====================================================
 
 Short explanation about the process of AMT
