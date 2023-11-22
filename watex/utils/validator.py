@@ -13,6 +13,7 @@ import operator
 import joblib
 import re
 import numpy as np
+import pandas as pd
 # mypy error: Module 'numpy.core.numeric' has no attribute 'ComplexWarning'
 from numpy.core.numeric import ComplexWarning  # type: ignore
 from contextlib import suppress

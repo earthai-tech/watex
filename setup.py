@@ -91,23 +91,33 @@ setup_kwargs['install_requires'] = [
     "seaborn >=0.12.0", 
     "pandas >=1.4.0",
     "cython >=0.29.33",
-    "numpy >=1.23.0",
-    "scipy >=1.9.0",
     "pyyaml >=5.0.0", 
     "openpyxl >=3.0.3",
-    "xgboost >=1.7.3", 
+    "xgboost >=1.7.0",
     "pyproj >=3.3.0",
     "pycsamt >=1.1.2",
-    "h5py >=3.2.0",
-    "tables >=3.6.1",
     "tqdm >=4.64.1",
-    "scikit-learn >=1.2.1", 
+    "tables >=3.6.0",
+    "scikit-learn >=1.2.1",
     "joblib >=1.2.0",
     "threadpoolctl >=3.1.0",
     "matplotlib ==3.5.3",
+    "statsmodels >=0.13.1", 
+    "numpy >=1.23.0", 
+    "scipy >=1.9.0",
+    "h5py >=3.2.0",
     "pytest"
  ]
-                               
+      
+setup_kwargs['extras_require']={
+     "dev" : ["click", 
+              "missingno>=0.4.2", 
+              "yellowbrick>=1.5.0", 
+              "pyjanitor>=0.1.7", 
+              "mlxtend>=0.21"
+             ]  
+     } 
+                     
 setup_kwargs['python_requires'] ='>=3.9'
 
 setup(

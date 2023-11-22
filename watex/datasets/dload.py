@@ -11,16 +11,20 @@ Inspired from the machine learning popular dataset loading
 Created on Thu Oct 13 16:26:47 2022
 @author: Daniel
 """
+import os
 import scipy 
 import numpy as np
 from warnings import warn 
 from importlib import resources 
+from importlib.resources import files
 import pandas as pd 
 from .._docstring import erp_doc, ves_doc 
 from .io import (csv_data_loader, _to_dataframe, DMODULE, 
-    get_data, remove_data, description_loader, DESCR) 
+    get_data, remove_data, description_loader, DESCR, 
+    RemoteDataURL ) 
 from ..utils.coreutils import ( 
-    vesSelector, erpSelector, read_data)   
+    vesSelector, erpSelector, read_data)
+from ..utils.baseutils import download_file2 , check_file_exists   
 from ..utils.mlutils import split_train_test_by_id, existfeatures
 from ..utils.funcutils import ( 
     to_numeric_dtypes , 
@@ -253,8 +257,19 @@ def load_hlogs (
     key = key_checker(key, is_keys)
     
     data_file ='h.h5'
+    
+    #-----------------------------------------------------------
+    if not check_file_exists(DMODULE, data_file): 
+        # If file does not exist download it from the remote and 
+        # save it to the path 
+        package_path = str(files(DMODULE).joinpath(data_file))
+        URL= os.path.join( RemoteDataURL, data_file) 
+        download_file2 (URL,data_file, dstpath = os.path.dirname (package_path)
+                       )
+    #-------------------------------------------------------------- 
     with resources.path (DMODULE , data_file) as p : 
-        data_file = p 
+        data_file = str(p)
+        
     if key =='*': 
         key = available_sets
         
@@ -483,9 +498,19 @@ def load_nlogs (
     if key in ("b0", "ns"):  
         data_file =f"nlogs{'+' if key=='ns' else ''}.csv" 
     else: data_file = "n.npz"
-    with resources.path (DMODULE , data_file) as p : 
+    
+    #-----------------------------------------------------------
+    if not check_file_exists(DMODULE, data_file): 
+        # If file does not exist download it from the remote and 
+        # save it to the path 
+        package_path = str(files(DMODULE).joinpath(data_file))
+        URL= os.path.join( RemoteDataURL, data_file) 
+        download_file2 (URL,data_file, dstpath = os.path.dirname (package_path)
+                       )
+    #-------------------------------------------------------------- 
+    with resources.path (DMODULE, data_file) as p : 
         data_file = str(p)
-  
+     
     if key=='ls': 
         # use tnames and years 
         # interchangeability 

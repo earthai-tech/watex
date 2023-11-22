@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #   License: BSD-3-Clause
 #   Author: LKouadio <etanoyau@gmail.com>
-
 from __future__ import ( 
     annotations , 
     print_function 
@@ -398,7 +397,155 @@ def get_remote_data(
     
     return status
 
+
+def download_file(url, local_filename , dstpath =None ):
+    """download a remote file. 
     
+    Parameters 
+    -----------
+    url: str, 
+      Url to where the file is stored. 
+    loadl_filename: str,
+      Name of the local file 
+      
+    dstpath: Optional 
+      The destination path to save the downloaded file. 
+      
+    Return 
+    --------
+    None, local_filename
+       None if the `dstpath` is supplied and `local_filename` otherwise. 
+       
+    Example 
+    ---------
+    >>> from watex.utils.baseutils import download_file
+    >>> url = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/watex/datasets/data/h.h5'
+    >>> local_filename = 'h.h5'
+    >>> download_file(url, local_filename, test_directory)    
+    
+    """
+    import_optional_dependency("requests") 
+    import requests 
+    print("{:-^70}".format(f" Please, Wait while {os.path.basename(local_filename)}"
+                          " is downloading. ")) 
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(local_filename, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+    local_filename = os.path.join( os.getcwd(), local_filename) 
+    
+    if dstpath: 
+         move_file_to_directory ( local_filename,  dstpath)
+         
+    print("{:-^70}".format(" ok! "))
+    
+    return None if dstpath else local_filename
+
+def download_file2(url, local_filename, dstpath =None ):
+    """ Download remote file with a bar progression. 
+    
+    Parameters 
+    -----------
+    url: str, 
+      Url to where the file is stored. 
+    loadl_filename: str,
+      Name of the local file 
+      
+    dstpath: Optional 
+      The destination path to save the downloaded file. 
+      
+    Return 
+    --------
+    None, local_filename
+       None if the `dstpath` is supplied and `local_filename` otherwise. 
+    Example
+    --------
+    >>> from watex.utils.baseutils import download_file2
+    >>> url = 'https://raw.githubusercontent.com/WEgeophysics/watex/master/watex/datasets/data/h.h5'
+    >>> local_filename = 'h.h5'
+    >>> download_file(url, local_filename)
+
+    """
+    import_optional_dependency("requests") 
+    import requests 
+    try : 
+        import_optional_dependency("tqdm")
+        from tqdm import tqdm
+    except: 
+        # if tqm is not install 
+        return download_file (url, local_filename, dstpath  )
+        
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        # Get the total file size from header
+        total_size_in_bytes = int(r.headers.get('content-length', 0))
+        block_size = 1024 # 1 Kibibyte
+        progress_bar = tqdm(total=total_size_in_bytes, unit='iB', 
+                            unit_scale=True, ncols=77, ascii=True)
+        with open(local_filename, 'wb') as f:
+            for data in r.iter_content(block_size):
+                progress_bar.update(len(data))
+                f.write(data)
+        progress_bar.close()
+        
+    local_filename = os.path.join( os.getcwd(), local_filename) 
+    
+    if dstpath: 
+         move_file_to_directory ( local_filename,  dstpath)
+         
+    return local_filename
+
+
+def move_file_to_directory(file_path, directory):
+    """ Move file to a directory. 
+    
+    Create a directory if not exists. 
+    
+    Parameters 
+    -----------
+    file_path: str, 
+       Path to the local file 
+    directory: str, 
+       Path to locate the directory.
+    
+    Example 
+    ---------
+    >>> from watex.utils.baseutils import move_file_to_directory
+    >>> file_path = 'path/to/your/file.txt'  # Replace with your file's path
+    >>> directory = 'path/to/your/directory'  # Replace with your directory's path
+    >>> move_file_to_directory(file_path, directory)
+    """
+    # Create the directory if it doesn't exist
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Move the file to the directory
+    shutil.move(file_path, os.path.join(directory, os.path.basename(file_path)))
+
+def check_file_exists(package, resource):
+    """
+    Check if a file exists in a package's directory with 
+    importlib.resources.
+
+    :param package: The package containing the resource.
+    :param resource: The resource (file) to check.
+    :return: Boolean indicating if the resource exists.
+    
+    :example: 
+        >>> from watex.utils.baseutils import check_file_exists
+        >>> package_name = 'watex.datasets.data'  # Replace with your package name
+        >>> file_name = 'h.h5'    # Replace with your file name
+
+        >>> file_exists = check_file_exists(package_name, file_name)
+        >>> print(f"File exists: {file_exists}")
+    """
+    import_optional_dependency("importlib")
+    import importlib.resources as pkg_resources
+    return pkg_resources.is_resource(package, resource)
+
+
+
     
     
     

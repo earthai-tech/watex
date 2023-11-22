@@ -1,8 +1,12 @@
-v0.3.0 (November 21, 2023)
+v0.3.0 (November 22, 2023)
 --------------------------
 
 These are substantial changes in ``v0.2.7`` API that lead to new features and fugs fixed. 
  
+- |API change| Datasets ``h.h5`` and ``n.npz`` for Hongliu hydrogeological logging and Nansha land subsidence data are removed from  
+  the software installation. User can fetch the data as usual and should be downloaded remotely. This will considerably reduce the 
+  size of the :mod:`watex.datasets` package. 
+
 - |API change| ``watex.methods.em.Processing`` and ``watex.methods.em.ZC`` do no longer exist. 
   They have been changed to :class:`watex.methods.em.EMAP` and 
   :class:`watex.methods.em.MT` respectively.
@@ -16,7 +20,7 @@ These are substantial changes in ``v0.2.7`` API that lead to new features and fu
 - |Feature| :func:`watex.utils.plotutils.plot_tensors` plots resistivity and phase tensors or the real and imaginary impedance.
 
 - |Feature| :func:`watex.utils.torres_verdin_filter` calculates the adaptive moving average of a given data array from 
-  Torres and Verdin codes 
+  Torres and Verdin codes.
 
 - |Feature| :func:`watex.methods.em.filter_noises` remove noise from component ``xx``, ``yy``, ``xy`` or ``yx``. 
 
@@ -25,6 +29,9 @@ These are substantial changes in ``v0.2.7`` API that lead to new features and fu
 - |Feature| :func:`watex.methods.em.drop_frequencies` drop bad frequencies or frequencies with no consistent data in the EDI files. 
 
 - |Feature| :func:`watex.utils.plotutils.plot_sounding` plot the vertical electrical resistivity data. 
+
+- |Feature| :func:`watex.utils.baseutils.download_file2` is the new consistent function to download file remotely rather than using 
+  :func:`watex.utils.baseutils.get_remote_data`. Both expect ``requests`` library to be installed. 
 
 - |Enhancement| :func:`watex.utils.plot_profiling` accepts `ax` as a paramater. 
 
