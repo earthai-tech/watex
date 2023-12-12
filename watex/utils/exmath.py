@@ -2322,6 +2322,7 @@ def plot_ (
     fig_title_kws: dict=None, 
     fbtw:bool=False, 
     fig=None, 
+    ax=None, 
     **kws
     ) -> None : 
     """ Quick visualization for fitting model, |ERP| and |VES| curves.
@@ -2373,6 +2374,7 @@ def plot_ (
                   figsize = (7, 7) ,**KWS )
     
     """
+
     plt.style.use(style)
     # retrieve all the aggregated data from keywords arguments
     if (rlabel := kws.get('rlabel')) is not None : 
@@ -2391,31 +2393,34 @@ def plot_ (
         del kws ['title']
     x , y, *args = args 
     
-    if fig is None: 
-        fig = plt.figure(1, figsize =fig_size)
+    if ( fig is None 
+        or ax is None
+        ): 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+        # fig = plt.figure(1, figsize =fig_size)
     
-    plt.plot (x, y,*args, 
+    ax.plot (x, y,*args, 
               **kws)
     if raw: 
         kind = kind.lower(
             ) if isinstance(kind, str) else kind 
         if kind =='semilogx': 
-            plt.semilogx (x, y, 
+            ax.semilogx (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
         elif kind =='semilogy': 
-            plt.semilogy (x, y, 
+            ax.semilogy (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
         elif kind =='loglog': 
-            plt.loglog (x, y, 
+            ax.loglog (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
         else: 
-            plt.plot (x, y, 
+            ax.plot (x, y, 
                       color = '{}'.format(P().frcolortags.get("fr1")),
                       label =rlabel, 
                       )
@@ -2430,7 +2435,7 @@ def plot_ (
             xf, yf , xo, yo,*_ = args  
             # find the index position in xf 
             ixp = list ( find_close_position (xf, xo ) ) 
-            plt.fill_between(xo, yf[ixp], y2=yo  )
+            ax.fill_between(xo, yf[ixp], y2=yo  )
             
     dtype = dtype.lower() if isinstance(dtype, str) else dtype
     
@@ -2439,19 +2444,20 @@ def plot_ (
     if dtype not in ('erp', 'ves'): kind ='erp' 
     
     if dtype =='erp':
-        plt.xticks (x,
+        ax.set_xticks (x,
                     labels = ['S{:02}'.format(int(i)) for i in x ],
                     rotation = 0. if rotate is None else rotate 
                     )
     elif dtype =='ves': 
-        plt.xticks (x,
+        ax.set_xticks (x,
                     rotation = 0. if rotate is None else rotate 
                     )
         
-    plt.xlabel ('AB/2 (m)' if dtype=='ves' else "Stations"
+    ax.set_xlabel ('AB/2 (m)' if dtype=='ves' else "Stations"
                 ) if xlabel is  None  else plt.xlabel (xlabel)
-    plt.ylabel ('Resistivity (Ω.m)'
+    ax.set_ylabel ('Resistivity (Ω.m)'
                 ) if ylabel is None else plt.ylabel (ylabel)
+    
     
     t0= {'erp': 'Plot Electrical Resistivity Profiling', 
          'sfi': 'Pseudo-fracturing index', 
@@ -2463,9 +2469,16 @@ def plot_ (
             style ='italic', 
             bbox =dict(boxstyle='round',facecolor ='lightgrey'))
         
+    if len(x) >= 20: 
+        for kk, label in enumerate ( ax.xaxis.get_ticklabels()) :
+            if kk% 10 ==0: 
+               label.set_visible(True) 
+            else: label.set_visible(False) 
+            
+ 
     if show_grid is not None: 
         # plt.minorticks_on()
-        plt.grid (visible =True, which='both')
+        ax.grid (visible =True, which='both')
     plt.tight_layout()
     fig.suptitle(**fig_title_kws)
     plt.legend (leg, loc ='best') if leg  else plt.legend ()

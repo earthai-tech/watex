@@ -147,9 +147,15 @@ watex/utils/watson_api
 data/Bag.main&rawds/
 data/BagoueCIV__dataset__main/
 #data/geo_fdata/main.bagciv.data.csv
+# Ignore h.h5 data and n.npz
+watex/watex/datasets/data/h.h5 
+watex/watex/datasets/data/n.npz
 
 # ignore the projects 
 watex/utils/project_bagoue.py
+
+# Skip pyproject.toml and use setup.py tool 
+pyproject.toml
 
 #ignore dumping files
 SVC__LinearSVC__LogisticRegression

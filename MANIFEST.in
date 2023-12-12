@@ -32,7 +32,8 @@ exclude .readthedocs.yml
 exclude CODE_OF_CONDUCT.md
 exclude ISSUE_TEMPLATE.md
 exclude venv
-
+exclude watex/datasets/data/h.h5
+exclude watex/datasets/data/n.npz 
 
 
 global-exclude *.py[cod] __pycache__/* *.so *.dylib .coveragerc tests/*

@@ -12,9 +12,10 @@ from .electrical import (
 
 from .em import ( 
     EM, 
-    EMAPProcess,
-    MTProcess,
+    EMAP,
+    MT,
     filter_noises,
+    drop_frequencies, 
     )
 from .erp import ( 
     ERPCollection ,
@@ -35,8 +36,8 @@ __all__=[
     "VerticalSounding", 
     "DCProfiling", 
     "DCSounding",
-    "EMAPProcess", 
-    "MTProcess", 
+    "EMAP", 
+    "MT", 
     "filter_noises", 
     "ERPCollection", 
     "ERP", 
@@ -46,5 +47,6 @@ __all__=[
     "MXS", 
     "Logging", 
     "DCMagic", 
-    "filter_noises", 
+    "filter_noises",
+    "drop_frequencies"
     ]

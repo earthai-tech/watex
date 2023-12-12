@@ -34,7 +34,7 @@ and weak frequency signals.
 import watex  as wx 
 data = wx.fetch_data('huayuan', return_data =True, samples =47 ,
                      key ='raw', clear_cache=True) # clear watex cache data to save new EDIs
-tro = wx.EMProcessing().fit(data) 
+tro = wx.EMAP().fit(data) 
 # %%
 # * Output the impedance tensor in TM mode (`yx`)
 # 

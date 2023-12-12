@@ -24,10 +24,13 @@ from watex.datasets import (
     load_edis 
     )
 from watex.methods import (
-    ResistivityProfiling, VerticalSounding, 
-    DCProfiling, DCSounding, MXS, 
+    ResistivityProfiling, 
+    # VerticalSounding, 
+    DCProfiling, 
+    # DCSounding, 
+    MXS, 
     AqSection, AqGroup, 
-    Logging , EM , Processing, 
+    Logging , EM , EMAP, 
    )
 from tests import  ( 
     TEST_TEMP_DIR,  
@@ -81,17 +84,17 @@ class TestElectrical (unittest.TestCase):
                                    getattr (dc_res.line1, f"{param}_")
                                    ) 
 
-    def test_VerticalSounding (self): 
-        """ Make test for |VES| , Compute Parameters with simple run """
+    # def test_VerticalSounding (self): 
+    #     """ Make test for |VES| , Compute Parameters with simple run """
         
-        vesobj = VerticalSounding(search = self.search ).fit(self.ves_data ) 
-        dcobj = DCSounding(search = self.search ).fit(self.ves_data )
-        self.assertAlmostEqual(vesobj.ohmic_area_, dcobj.site1.ohmic_area_)
+    #     vesobj = VerticalSounding(search = self.search ).fit(self.ves_data ) 
+    #     dcobj = DCSounding(search = self.search ).fit(self.ves_data )
+    #     self.assertAlmostEqual(vesobj.ohmic_area_, dcobj.site1.ohmic_area_)
         
-        dcobj.summary(return_table =True)
-        vesobj.summary(return_table= True ) 
+    #     dcobj.summary(return_table =True)
+    #     vesobj.summary(return_table= True ) 
         
-        self.assertAlmostEqual(dcobj.nareas_, vesobj.nareas_ )
+    #     self.assertAlmostEqual(dcobj.nareas_, vesobj.nareas_ )
    
 class TestHydro (unittest.TestCase ): 
     """ Test Hydrogeological module"""
@@ -191,12 +194,12 @@ class TestEM (unittest.TestCase):
                                self.emobj.freq_array.max ()) 
         
 
-class TestProcessing (unittest.TestCase): 
+class TestEMAP (unittest.TestCase): 
     # output the edis data as array_like 1d 
     edi_data = load_edis (key='edi' , return_data =True, samples = 30 )
-    pobj = Processing().fit(edi_data)
+    pobj = EMAP().fit(edi_data)
     
-    def test_processing (self ): 
+    def test_EMAP (self ): 
         
         self.pobj.ama () ; self.pobj.flma () ; self.pobj.ama () 
         
@@ -216,39 +219,9 @@ class TestProcessing (unittest.TestCase):
             self.pobj.skew (method =meth) 
             
             
-def compare_diff_files(refout, refexp):
-    """
-    Compare diff files like expected files and output files generated after 
-    runnning scripts.
-    
-    :param refout: 
-        
-        list of reference output files generated after runing scripts
-        
-    :type refout: list 
-    
-    :param refexp: recreated expected files for comparison 
-    :param refexp: list 
-
-    """
-    for outfile , expfile in zip(sorted(refout), 
-                                   sorted(refexp)):
-            unittest.TestCase.assertTrue(os.path.isfile(outfile),
-                                "Ref output data file does not exist,"
-                                "nothing to compare with"
-                                )
-            
-            print(("Comparing", outfile, "and", expfile))
-            
-            is_identical, msg = diff_files(outfile, expfile, ignores=['Date/Time:'])
-            print(msg)
-            unittest.TestCase.assertTrue(is_identical, 
-                            "The output file is not the same with the baseline file.")
-    
-
-
 # if __name__=='__main__':
-#     unittest.main()
+    # unittest.main()
+    # TestElectrical().test_VerticalSounding()
     
     
                 

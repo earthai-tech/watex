@@ -22,7 +22,7 @@ in either a rose diagram of xy plot.
 #    pip install mtpy # or pip install pycsamt 
 
 #%% 
-# We starts by importing the required modules as: 
+# We start by importing the required modules as: 
 import os 
 from watex.datasets import fetch_data 
 from watex.utils.plotutils import plot_strike 
@@ -32,9 +32,16 @@ from watex.datasets.io import get_data # get edidata stored in cache
 # Before we'll make a collection of :term:`EDI` data and call 
 # :func:`watex.utils.plot_strike` for plotting as: 
 fetch_data ( 'huayuan', samples = 25 ) # store 25 edis in cache 
+<<<<<<< HEAD
 
 edi_fn_lst = [os.path.join(get_data(),f) for f in os.listdir(get_data()) 
          if f.endswith('.edi')] 
+=======
+
+edi_fn_lst = [os.path.join(get_data(),f) for f in os.listdir(get_data()) 
+         if f.endswith('.edi')] 
+
+>>>>>>> 8a7e3f7e4b5181bb34a62a051416d1813dd5fba6
 plot_strike(edi_fn_lst ) 
 
 #%%

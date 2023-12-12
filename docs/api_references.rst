@@ -332,14 +332,14 @@ Classes
    methods.DCSounding
    methods.DCMagic
    methods.EM
+   methods.EMAP 
    methods.ERPCollection
    methods.Hydrogeology
    methods.MXS
    methods.Logging
-   methods.Processing 
    methods.ResistivityProfiling
    methods.VerticalSounding
-   methods.ZC
+   methods.MT
 
 
 Functions
@@ -369,7 +369,7 @@ Functions
     methods.electrical.VerticalSounding.invert 
     methods.erp.DCMagic.summary
 
-:mod:`~watex.methods.em`: EM - EMAP: short-periods Processing 
+:mod:`~watex.methods.em`: EM/EMAP - MT: short-periods Processing 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  
 .. automodule:: watex.methods.em 
@@ -389,21 +389,22 @@ Functions
 	methods.em.EM.make2d 
 	methods.em.EM.getreferencefrequency 
 	methods.em.EM.exportedis
-	methods.em.Processing.tma 
-	methods.em.Processing.flma 
-	methods.em.Processing.ama 
-	methods.em.Processing.skew 
-	methods.em.Processing.zrestore 
-	methods.em.Processing.freqInterpolation 
-	methods.em.Processing.interpolate_z
-	methods.em.Processing.drop_frequencies
-	methods.em.Processing.controlFrequencyBuffer 
-	methods.em.Processing.getValidTensors
-	methods.em.Processing.qc 
-	methods.em.ZC.get_ss_correction_factors
-	methods.em.ZC.remove_distortion
-	methods.em.ZC.remove_ss_emap
-	methods.em.ZC.remove_static_shift
+	methods.em.EMAP.tma 
+	methods.em.EMAP.flma 
+	methods.em.EMAP.ama 
+	methods.em.EMAP.skew 
+	methods.em.EMAP.zrestore 
+	methods.em.EMAP.freqInterpolation 
+	methods.em.EMAP.interpolate_z
+	methods.em.EMAP.drop_frequencies
+	methods.em.EMAP.controlFrequencyBuffer 
+	methods.em.EMAP.getValidTensors
+	methods.em.EMAP.qc 
+	methods.em.MT.get_ss_correction_factors
+	methods.em.MT.remove_distortion
+	methods.em.MT.remove_ss_emap
+	methods.em.MT.remove_static_shift
+	methods.em.MT.remove_noises
 
 
 :mod:`~watex.methods.hydro`: Hydrogeology 
@@ -649,8 +650,10 @@ Functions
 	utils.plot_sbs_feature_selection
 	utils.plot_stratalog
 	utils.plot_silhouette
+	utils.plot_sounding
 	utils.plot_skew
 	utils.plot_strike
+	utils.plot_tensors
 	utils.plot_voronoi
 	utils.plot_yb_confusion_matrix
 	utils.power
@@ -832,7 +835,7 @@ utilities by consulting the whole :mod:`~watex.utils.funcutils` module.
 	utils.funcutils.concat_array_from_list
 	utils.funcutils.show_stats
 	utils.funcutils.make_ids
-	utils.funcutils.fit_by_ll
+	utils.funcutils.fit_ll
 	utils.funcutils.fillNaN
 	utils.funcutils.find_close_position
 	utils.funcutils.make_arr_consistent

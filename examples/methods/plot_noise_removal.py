@@ -21,7 +21,7 @@ from watex.methods.em import filter_noises
 # The demonstration will focus on the first station ``S00``
 
 edi_data = wx.fetch_data ('edis', samples =25 , return_data =True ) 
-p= wx.EMProcessing ( ).fit(edi_data)
+p= wx.EMAP ( ).fit(edi_data)
 #%% 
 # Print 
 # print seven values of resistivity and phase of the first station 

@@ -21,6 +21,7 @@ DMODULE = "watex.datasets.data" ; DESCR = "watex.datasets.descr"
 
 # create a namedtuple for remote data and url 
 RemoteMetadata = namedtuple("RemoteMetadata", ["file", "url", "checksum"])
+RemoteDataURL ='https://raw.githubusercontent.com/WEgeophysics/watex/master/watex/datasets/data/'
 
 def get_data(data =None) -> str: 
     if data is None:

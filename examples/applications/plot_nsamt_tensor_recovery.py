@@ -17,10 +17,10 @@ Recovers NSAMT tensors from sample of EDI files.
 # module from .view is used for the visualization. For a demonstration,
 # I collect twelve samples of EDI objects stored in the software as:
 from watex.datasets import load_edis 
-from watex.methods import Processing
+from watex.methods import EMAP
 from watex.view import TPlot
 edi_data = load_edis (return_data =True, samples =12 ) 
-new_Z =Processing().fit(edi_data ).zrestore ()
+new_Z =EMAP().fit(edi_data ).zrestore ()
 
 #%%
 # The method :meth:`~watex.methods.Processing.exportedis` can be used to export 
@@ -40,7 +40,7 @@ new_Z =Processing().fit(edi_data ).zrestore ()
 # After recovering the signal, the latter exhibits a field strength amplitude for 
 # the next processing step like filtering. A simple filtering like adaptative moving average 
 # (AMA) proposed by Torres-verdìn and Bostick, (1992) can be used by simply calling: 
-edi_corrected =Processing (window_size =5, c =2 ).fit(edi_data ).ama () 
+edi_corrected =EMAP (window_size =5, c =2 ).fit(edi_data ).ama () 
 # where 'c' is a window-width expansion factor inputted to the filter adaptation process to control 
 # the roll-off characteristics of the Hanning window (Torres-verdìn and Bostick, 1992).
 

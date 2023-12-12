@@ -1,0 +1,46 @@
+v0.3.0 (November 22, 2023)
+--------------------------
+
+These are substantial changes in ``v0.2.7`` API that lead to new features and fugs fixed. 
+ 
+- |API change| Datasets ``h.h5`` and ``n.npz`` for Hongliu hydrogeological logging and Nansha land subsidence data are removed from  
+  the software installation. User can fetch the data as usual and should be downloaded remotely. This will considerably reduce the 
+  size of the :mod:`watex.datasets` package. 
+
+- |API change| ``watex.methods.em.Processing`` and ``watex.methods.em.ZC`` do no longer exist. 
+  They have been changed to :class:`watex.methods.em.EMAP` and 
+  :class:`watex.methods.em.MT` respectively.
+
+- |API change| ``watex.utils.funcutils.fit_by_ll`` is deprecated and replaced by :func:`watex.utils.funcutils.fit_ll`. 
+
+- |Fix| Bug in removing the static shift in :term:`AMT` data. Henceforth the correction factor method deprecated method ``watex.methods.em.ZC.get_ss_correction_factors``
+  replaced by :meth:`watex.methods.em.MT.get_ss_correction_factors` is applied for each station differently rather than using 
+  the factor to correct all stations. There are also a  choice for user to input the correction factors ``ss_fx`` and ``ss_fy`` manually into a list. 
+
+- |Feature| :func:`watex.utils.plotutils.plot_tensors` plots resistivity and phase tensors or the real and imaginary impedance.
+
+- |Feature| :func:`watex.utils.torres_verdin_filter` calculates the adaptive moving average of a given data array from 
+  Torres and Verdin codes.
+
+- |Feature| :func:`watex.methods.em.filter_noises` remove noise from component ``xx``, ``yy``, ``xy`` or ``yx``. 
+
+- |Feature| :meth:`watex.methods.em.MT.remove_noises` removes artifacts in the data and smooth it. 
+
+- |Feature| :func:`watex.methods.em.drop_frequencies` drop bad frequencies or frequencies with no consistent data in the EDI files. 
+
+- |Feature| :func:`watex.utils.plotutils.plot_sounding` plot the vertical electrical resistivity data. 
+
+- |Feature| :func:`watex.utils.baseutils.download_file2` is the new consistent function to download file remotely rather than using 
+  :func:`watex.utils.baseutils.get_remote_data`. Both expect ``requests`` library to be installed. 
+
+- |Enhancement| :func:`watex.utils.plot_profiling` accepts `ax` as a paramater. 
+
+- |Enhancement| :func:`watex.view.TPlot.plot_rhophi` changes the style of plot in preceeding versions. It accepts parameter `kind` for plotting multiple stations differently.  
+
+- |Enhancement| Fix overlapping xlabels in the :func:`watex.utils.exmath.plotOhmicArea`. 
+
+
+
+
+
+

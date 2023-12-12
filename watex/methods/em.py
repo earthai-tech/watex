@@ -95,11 +95,12 @@ from ..utils.validator import (
 _logger = watexlog.get_watex_logger(__name__)
 
 __all__ =['EM',
-          "EMAPProcess", 
-          "MTProcess", 
+          "EMAP", 
+          "MT", 
           "filter_noises", 
           "drop_frequencies", 
-          "exportEDIs"
+          "exportEDIs", 
+          "drop_frequencies"
           ]
 #++++++++++++++++++++++++++++++++++++++++++++++++
 METER2DEGREESFACTOR = 8.994423457456377e-06
@@ -1457,7 +1458,7 @@ class _zupdate(EM):
 
         return new_zObjs_2
  
-class EMAPProcess(EM) :
+class EMAP(EM) :
     """ Base processing of :term:`EMAP` data. 
     
     Fast process of EMAP ( for short periods). Tools are used for data 
@@ -2590,7 +2591,7 @@ class EMAPProcess(EM) :
             kind ='periods'
         y = 1./ np.array (y) if kind =='periods' else  np.array (y)
         
-        buffer = EMAPProcess.controlFrequencyBuffer(y, buffer ) 
+        buffer = EMAP.controlFrequencyBuffer(y, buffer ) 
         ix_s, ix_end  =  np.argwhere (np.isin(y, buffer)) 
     
         y = y[slice ( int(ix_s), int(ix_end) +1)]
@@ -2844,7 +2845,7 @@ class EMAPProcess(EM) :
     
         ff = np.delete (f[:, None], no_ix, 0)
         # interpolate frequency 
-        new_f  = EMAPProcess.freqInterpolation (reshape (ff)) 
+        new_f  = EMAP.freqInterpolation (reshape (ff)) 
         
         # gather the 2D z objects
         # -XX--
@@ -3007,7 +3008,7 @@ class EMAPProcess(EM) :
         return Zupdated 
 
   
-class MTProcess(EM): 
+class MT(EM): 
     """
     Data processing class. 
     
@@ -3282,7 +3283,7 @@ class MTProcess(EM):
         """
         self.inspect 
         
-        p = EMAPProcess(out ='z ') 
+        p = EMAP(out ='z ') 
         p.ediObjs_ = self.ediObjs_
         p.freqs_ = self.freqs_
 
@@ -4011,7 +4012,7 @@ def filter_noises (
     if not hasattr ( ediObjs, 'window_size'): 
         if  _assert_z_or_edi_objs(ediObjs )!='EDI' :
             raise EDIError("Only EDI or Processing object is acceptable!")
-        pObj= EMAPProcess().fit(ediObjs)
+        pObj= EMAP().fit(ediObjs)
         
     else : pObj = ediObjs
 
@@ -4421,7 +4422,7 @@ def _ss_auto_regulator (
     the number of frequency `skipfreq` to skip. 
     
     An isolated part of 
-    :meth:`watex.methods.em.MTProcess.get_ss_correction_factors`
+    :meth:`watex.methods.em.MT.get_ss_correction_factors`
 
     """
     # Get the ediObj to remove the station shiit 
