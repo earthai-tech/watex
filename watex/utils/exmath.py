@@ -78,7 +78,8 @@ from .funcutils import (
     remove_outliers, 
     find_feature_positions,
     find_close_position,
-    ellipsis2false,    
+    ellipsis2false, 
+    convert_value_in, 
     smart_format,
     is_iterable, 
     reshape,
@@ -5417,7 +5418,7 @@ def plot_confidence_in(
                        )
     # re-compute distance 
     distance = distance or 1. 
-    d= np.arange ( rerr.shape[1])  * distance 
+    d= np.arange ( rerr.shape[1])  * convert_value_in(distance) 
     # format clabel for error 
     clab=r"resistivity ($\Omega$.m)" if 'res' in tensor else (
         r'phase ($\degree$)' if 'ph' in tensor else tensor )

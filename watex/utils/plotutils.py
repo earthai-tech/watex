@@ -4327,6 +4327,7 @@ def plot_rsquared (X , y,  y_pred,  ):
     # Show the plot
     plt.show()
 
+
 # import watex as wx 
 # lspath =r'C:\Users\Daniel\Desktop\projects\nanshaLS0.csv'
 # ls_data = wx.read_data (lspath , sanitize =True, sep =';', verbose =True ) 

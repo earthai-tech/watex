@@ -3218,7 +3218,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
 
 def assert_doi(doi): 
     """
-     assert the depath of investigation Depth of investigation converter 
+     assert the depth of investigation Depth of investigation converter 
 
     :param doi: depth of investigation in meters.  If value is given as string 
         following by yhe index suffix of kilometers 'km', value should be 
