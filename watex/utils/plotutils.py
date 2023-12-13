@@ -4099,7 +4099,6 @@ def plot_tensors (
     # for ax, label in zip(ax_list[0:4], label_list):
     #     ax.set_title(label[0], fontdict={'size': font_size + 2,
     #                                       'weight': 'bold'})
-
     #     # set axis properties
     for aa, ax in enumerate(ax_list):
         ax.tick_params(axis='y', pad=ylabel_pad)
@@ -4218,7 +4217,6 @@ def plot_tensors (
     
     return z_obj 
   
-    
 plot_tensors.__doc__="""\
 
 Plot resistivity and phase tensors or the real and imaginary impedance.
@@ -4334,7 +4332,6 @@ def plot_rsquared (X , y,  y_pred,  ):
     plt.ylabel('Target')
     plt.title('R-squared Diagram')
     plt.legend()
-
     # Show the plot
     plt.show()
 
