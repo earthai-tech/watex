@@ -3304,11 +3304,12 @@ def plot_strike (
     #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if isinstance ( list_of_edis, str): 
         if os.path.isdir ( list_of_edis ): 
-            list_of_edis = [os.path.join( f) for f in os.listdir (list_of_edis)
+            list_of_edis = [
+                os.path.join(list_of_edis,  f) for f in os.listdir (list_of_edis)
                             if str(f).lower().endswith ('.edi')]
-        if os.path.isfile (list_of_edis): 
+        elif os.path.isfile (list_of_edis): 
             list_of_edis =[list_of_edis ]
-        
+          
     # now check whether is valid EDI     
     # list comprehension faster than
     # tuple (map (lambda f:  IsEdi._assert_edi (f ), list_of_edis ) )
@@ -4449,6 +4450,211 @@ def plot_sounding (
     
     return ax 
 
+<<<<<<< HEAD
+def plot_l_curve(
+    rms, 
+    roughness, 
+    tau=None, 
+    highlight_point=None, 
+    style = 'classic', 
+    fig_size = (10, 4),
+    highlight_kws=dict(), 
+    ax=None, 
+    rms_target=None,
+    view_tline=False, 
+    **plot_kws
+     ):
+    """
+    Plot the Hansen L-curve.
+    
+    The L-curve criteria is used to determine the suitable model 
+    after runing multiple inversion with different :math:`\tau` values. 
+    The function plots RMS vs. Roughness with an option to highlight a 
+    specific point named Hansen point.
+    
+    
+    The :math:`\tau` represents the measure of compromise between data fit and 
+    model smoothness. To find out an appropriates-value, the inversion was 
+    carried out with differents-values. The RMS error obtained from each 
+    inversion is plotted against model roughnes
+    
+    Plots RMS vs. Roughness with an option to highlight a specific point.
+    
+    Parameters 
+    ------------
+    roughness: Arraylike, list, 
+       List or ArratLike of roughness values.
+    RMS: ArrayLike, list, 
+       Corresponding list pr Arraylike of RMS values.
+    tau: Arraylike or list, optional 
+       List of tau values to visualize as text mark in the plot. 
+       
+    highlight_point: A tuple (roughness_value, RMS_value) , optional 
+       The Hansen point to visualize in the plot. It can be determine 
+       automatically if ``highlight_point='auto'``.
+       
+    rms_target: float, optional 
+      The root-mean-squared target. If set, and `view_tline` is ``False``, 
+      the target value should be axis limit. 
+      
+   view_tline: bool, default=False 
+      Display the target line should be  displayed.
+      
+    ax: Matplotlib.pyplot 
+      Matplotlib pyplot axis. Could be use to support other axes. 
+      
+    Examples
+    ---------
+    >>> from watex.utils.plotutils import plot_l_curve
+    >>> # Test the function with the provided data points and 
+    >>> # highlighting point (50, 3.12)
+    >>> roughness_data = [0, 50, 100, 150, 200, 250, 300, 350]
+    >>> RMS_data = [3.16, 3.12, 3.1, 3.08, 3.06, 3.04, 3.02, 3]
+    >>> highlight_data = (50, 3.12)
+    >>> plot_l_curve(roughness_data, RMS_data, highlight_data)
+    """
+    
+    rms= np.array (
+        is_iterable(rms, exclude_string= True, transform =True ), 
+                   dtype =float) 
+    roughness = np.array( 
+        is_iterable(roughness , exclude_string= True, transform =True 
+                            ), dtype = float) 
+    
+    # Create the plot
+    plt.style.use (style )
+    if ax is None: 
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
+    
+    # manage the plot keyword argument and remove 
+    # the default is given.
+    plot_kws = _manage_plot_kws (plot_kws, dict(
+        marker='o',linestyle='-', color='black')
+                    )
+    ax.plot(roughness, rms, **plot_kws
+             )
+    
+    # Highlight the specific point if provided
+    if str(highlight_point).lower().strip() =="auto": 
+        highlight_point = _get_hansen_point(roughness, rms)
+        
+    if highlight_point is not None:
+        if len(highlight_point)!=2: 
+            raise ValueError("Hansen knee point needs a tuple of (x, y)."
+                             f" Got {highlight_point}")
+        highlight_kws = _manage_plot_kws(highlight_kws, 
+                                         dict(marker='o', color='red'))
+        ax.plot(highlight_point[0], highlight_point[1], **highlight_kws)
+        ax.annotate(str(highlight_point[0]), 
+                     highlight_point, textcoords="offset points",
+                     xytext=(0,10), ha='center'
+                     )
+    if tau is not None: 
+        tau = is_iterable(tau, exclude_string= True, transform =True )
+        rough_rms = np.hstack ((roughness, rms))
+        for tvalues, text in zip ( rough_rms, tau): 
+            if ( 
+                    tvalues[0]==highlight_point[0] 
+                    and tvalues[1]==highlight_point[1]
+                    ): 
+                # highlight point if found then skip
+                continue 
+            ax.annotate(str(text), tvalues, textcoords="offset points",
+                         xytext=(0,10), ha='center'
+                         )
+            
+    if rms_target: 
+        rms_target = float( _assert_all_types(
+            rms_target, float, int, objname='RMS target')) 
+        
+    if view_tline: 
+        if rms_target is None: 
+            warnings.warn("Missing RMS target value. Could not display"
+                          " the target line.")
+        else:
+            ax.axhline(y=float(rms_target), color='k', linestyle=':')
+
+    if rms_target: 
+        # get the extent value from the min 
+        extent_value = abs ( rms_target - min(rms )) 
+        ax.set_ylim ( [rms_target - extent_value  if view_tline else 0  ,
+                       max(rms)+ extent_value]) # .3 extension limit
+
+    # Setting the labels and title
+    ax.set_xlabel('Roughness')
+    ax.set_ylabel('RMS')
+    ax.set_title('RMS vs. Roughness')
+
+    # Show the plot
+    plt.show()
+    
+    return ax 
+
+
+def _get_hansen_point ( roughness, RMS): 
+    """ Get the Hansen point automatically.
+    
+    An isolated part of :func:`~plot_l_curves`. 
+    
+    The L-curve criteria proposed by Hansen and O'Leary (1993)[1]_ and 
+    Hansen (1998) [2]_, which suggests that the s value at the knee of 
+    the curve is most appropriate, have been adopted.
+
+    References
+    -----------
+    [1] Hansen, P. C., & O'Leary, D. P. (1993). The use of the L-Curve in
+        the regularization of discrete ill-posed problems. SIAM Journal
+        on Scientific Computing, 14(6), 1487–1503. https://doi.org/10.1137/0914086.
+        
+    [2] Hansen, P. C. (1998). Rank deficient and discrete Ill: Posed problems, 
+        numerical aspects of linear inversion (p. 247). Philadelphia: SIAM
+    """
+    # Calculate the curvature of the plot
+    # Using a simple method to estimate the 'corner' of the L-curve
+    curvature = []
+    for i in range(1, len(roughness) - 1):
+        # Triangle area method to calculate curvature
+        x1, y1 = roughness[i-1], RMS[i-1]
+        x2, y2 = roughness[i], RMS[i]
+        x3, y3 = roughness[i+1], RMS[i+1]
+
+        # Lengths of the sides of the triangle
+        a = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        b = np.sqrt((x3 - x2)**2 + (y3 - y2)**2)
+        c = np.sqrt((x3 - x1)**2 + (y3 - y1)**2)
+
+        # Semiperimeter of the triangle
+        s = (a + b + c) / 2
+
+        # Area of the triangle
+        area = np.sqrt(s * (s - a) * (s - b) * (s - c))
+        # Curvature is 4 * area divided by product of the sides
+        # (Heron's formula for the area of a triangle)
+        if a * b * c == 0:
+            k = 0
+        else:
+            k = 4 * area / (a * b * c)
+        curvature.append(k)
+
+    # Find the index of the point with the maximum curvature
+    # +1 due to curvature array being shorter
+    max_curvature_index = np.argmax(curvature) + 1  
+    return roughness[max_curvature_index], RMS[max_curvature_index]
+
+def _manage_plot_kws ( kws, dkws = dict () ): 
+    """ Check whether the default values are in plot_kws then pop it"""
+    
+    kws = dkws or kws 
+    for key in dkws.keys(): 
+        # if key not in then add it. 
+        if key not in kws.keys(): 
+            kws[key] = dkws.get(key)
+            
+    return kws 
+
+ 
+=======
+>>>>>>> 9adf70ffd30a046f3403808958ecccf1c28cef40
 # import watex as wx 
 # lspath =r'C:\Users\Daniel\Desktop\projects\nanshaLS0.csv'
 # ls_data = wx.read_data (lspath , sanitize =True, sep =';', verbose =True ) 

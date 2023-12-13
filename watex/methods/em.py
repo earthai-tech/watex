@@ -1340,10 +1340,31 @@ class _zupdate(EM):
         
         Parameters 
         -----------
-        z_or_edis: List of :watex:`
-        
-        
-        
+        z_or_edis: list of :attr:`watex.methods.EM.ediObjs_` or\
+            :class:`watex.externals.Z`
+            List of EDI objects or Z. 
+            
+        ufunc: callable 
+          Universal function to correct the impendance data from the
+          :term:`EDI`. 
+          
+        args: Tuple, optional 
+           Positional arguments of the `func` function.
+           
+        rotate: float, optional 
+           Value to rotate the impedance tensor.
+           
+        interp_type: str, default ='slinear' 
+          The kind of scipy interpolation. It can be ['cubic'|'nearest'] 
+          
+        interp_strategy: str,default='pd' 
+          The method to fill-forward data when bad frequencies are suppressed. 
+          It can ``base`` for `scipy.interpolate.interp1d`, ``mean`` or ``bff`` 
+          for scaling methods and ``pd``for pandas interpolation methods. 
+          
+        kws: dict, Optional
+          keywords arguments from universal function `func`. 
+     
         """
         objtype = _assert_z_or_edi_objs(z_or_edis ) 
         if objtype =='EDI': 
@@ -3375,6 +3396,7 @@ class MT(EM):
                 ss_fx = ss_fx , 
                 ss_fy = ss_fy 
                 )
+        
         return ss_fx_fy 
     
     def remove_static_shift (
@@ -3540,7 +3562,8 @@ class MT(EM):
             z0._z = zcor  
             ediObj.Z._z= zcor 
             # interpolate z for consistancy 
-            z0= ediObj.interpolateZ( ediObj.Z.freq )
+            z0= ediObj.interpolateZ( ediObj.Z.freq, 
+                                    bounds_error= bounds_error  )
             ediObj.Z._z= z0 
             
             ZObjs.append (z0 ) 
@@ -3745,8 +3768,13 @@ class MT(EM):
                               (interp_freq <= emap_obj_kk.Z.freq.max()))
       
             interp_freq_kk = interp_freq[interp_idx]
-            Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
-                       bounds_error= bounds_error )
+            try: 
+                Z_interp = emap_obj_kk.interpolateZ(interp_freq_kk,
+                           bounds_error= bounds_error )
+            except BaseException as e:
+                raise FrequencyError(str(e) +
+                                     ". Please check your EDI-object -->"
+                                     f" {emap_obj_kk.edifile}")
             
             Z_interp.compute_resistivity_phase()
             
