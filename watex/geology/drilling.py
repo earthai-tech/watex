@@ -498,7 +498,7 @@ class DSBoreholes:
         return 1  
     
 class DSBorehole: 
-    """ Class delas with Borehole datasets. 
+    """ Class deals with Borehole datasets. 
     
     :class:`watex.geology.drilling.DSBorehole` works with data collected in 
     a single borehole. For instance, it could follow the arrangement of 
@@ -563,7 +563,9 @@ class DSBorehole:
        Depth array if `dname` is specified. 
     data_: Pandas DataFrame
        Sanitized dataframe. 
-    
+    feature_names_in_: list
+      Name of features that composes the dataset. 
+      
     Note 
     ------
     Each columns of the dataframe is an attribute. Note that all the non-
@@ -1901,7 +1903,7 @@ class DSDrill (GeoBase) :
           Path-like object of dataframe containing the geochemistry  sample 
           data 
           
-        reset_geosamples: bool, default=False, 
+        reset_samples: bool, default=False, 
           If geochemistry samples is provided, resetting the samples data 
           will replace the  previous samples data in the original data. 
           
@@ -1939,7 +1941,7 @@ class DSDrill (GeoBase) :
         self.inspect 
         
         cmsg = ("Geosamples data already exists. To force resetting sample"
-                " from geology data,  set `reset_geosamples=True` instead."
+                " from geology data,  set `reset_samples=True` instead."
                 ) 
         if data is not None: 
             if hasattr(self, 'samples_'): 

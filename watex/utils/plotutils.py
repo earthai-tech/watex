@@ -4453,6 +4453,7 @@ def plot_sounding (
     
     return ax 
 
+<<<<<<< HEAD
 def plot_l_curve(
     rms, 
     roughness, 
@@ -4655,6 +4656,8 @@ def _manage_plot_kws ( kws, dkws = dict () ):
     return kws 
 
  
+=======
+>>>>>>> 9adf70ffd30a046f3403808958ecccf1c28cef40
 # import watex as wx 
 # lspath =r'C:\Users\Daniel\Desktop\projects\nanshaLS0.csv'
 # ls_data = wx.read_data (lspath , sanitize =True, sep =';', verbose =True ) 
