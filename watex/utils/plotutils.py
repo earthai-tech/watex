@@ -38,6 +38,7 @@ from .funcutils import  (
     is_in_if, 
     is_depth_in, 
     reshape, 
+    interpolate_grid, 
     )
 from .validator import  ( 
     _check_array_in  , 
@@ -2907,15 +2908,321 @@ def plot_profiling (
     
     return ax 
 
-def plot_skew (
-    edi_obj, 
+def plot_skew2d (
+    edis_list, /, 
+    method ='Bahr',
+    sensitivity='skew',
+    mode ="frequency", 
+    interpolate=True, 
+    show_skewness=...,
+    tolog10 =True, 
+    interp_method ='cubic', 
+    fill_value ='auto',
+    get_sites_by=None, 
+    top_label ='Stations', 
+    cb_label ="Sensitivity (S)",
+    spacing=80, 
+    fig=None , 
+    fig_size = (6, 3 ), 
+    dpi = 300 , 
+    font_size =5.,
+    cmap='jet_r',
+    plot_style =None,
+    rotate_xlabel=0.,
+    plot_contours=..., 
+    ax=None, 
+    savefig=..., 
+   ) : 
+    """
+    Plot phase sensitive skew visualization. 
+    
+    Phase Sensitivity Skew (:math:`\eta`) is a dimensionality tool that 
+    represents a measure of the skew of the  phases of the impedance 
+    tensor. The parameter is thus unaffected by the distortion 
+    effect, unlike the Swift-skew and ellipticity dimensionality 
+    tools [1]_. 
+    
+    Values of :math:`\eta` > 0.3 are considered to represent 3D data. 
+    Phase-sensitive skews less than 0.1 indicate 1D, 2D or distorted 
+    2D (3-D /2-D) cases. Values of :math:`\eta` between 0.1 and 0.3 indicates 
+    modified 3D/2D structures [2]_ according to `Bahr' methods. However,
+    values :math:`\eta >=0.2` using the `Swift` methods, the smaller the value 
+    :math:`\eta` ( close to :math:`0.`), the closer the structure to 2D 
+    structure and vice versa.However, it is generally considered that 
+    an electrical structure of :math:`\eta < 0.4` can be treated as a 2D 
+    medium. 
+
+    Parameters
+    -----------
+    edis_list: str, :class:`watex.edi.Edi` 
+        Full path to edifiles.
+        
+        .. versionchanged:: 0.3.1 
+           The parameter `edi_obj` is replaced by `edis_list` which  
+           indicate  a collection of :term:`EDI`files. 
+        
+    method: str, default='Bahr': 
+        Kind of correction. Can be ``swift`` for the remove distorsion proposed 
+        by Swift in 1967 [3]_. The value close to 0. assume the 1D and 2D 
+        structures, and 3D otherwise. Conversly to ``bahr`` for the remove 
+        distorsion proposed  by Bahr in 1991 [2]_. The latter threshold is set 
+        to 0.3. Above this value the structures is 3D. 
+      
+    sensitivity: str, default='skew'
+       phase sensistive visualization. Can be rotational invariant 
+       ``invariant``. Note that setting to ``mu`` or ``invariant`` does 
+       not change any interpretation since the distortion of Z are all 
+       rotational invariant whatever we're using the ``Bahr`` or ``swift``
+       method. 
+       
+       .. versionchanged:: 0.3.1 
+          The parameter `view` is deprecated and replaced with `sensitivity`. 
+          
+    mode:str, optional 
+       X-axis coordinates for visualisation. plot either ``'frequency'`` or
+       ``'periods'``.  The default is ``'frequency'`` 
+       
+    interpolate: bool, default=True
+       Interpolate the data if NaN is found. 
+     
+    show_skewness: bool,default=False 
+       Display the average skewness value. 
+       
+       .. versionadded:: 0.3.1 
+          `show_skewness` display the average value of the whole Z tensor 
+          at each frequency. 
+          
+    tolog10: bool, default=True 
+       Compute the the logarithm base 10 of the frequency array. If the 
+        frequency data is passed as log10 values, it should be turned to 
+        ``False``. 
+      
+    interp_method: bool,default='cubic' 
+       Data interpolation method. It could be ['nearest'|'linear'|'cubic']. 
+        
+    fill_value: float, str, default='auto' 
+       Fill the interpolated grid at the egdes or surrounding NaN with 
+       a filled value. The ``auto`` uses the forward and backward 
+       fill strategy. 
+       
+    get_sites_by: str, optional
+      Fetch the sites and place names on the map. It should be 
+      [``'dataid'``|``'name'``]. The former  uses the names collected in 
+      :term:`EDI` data id whereas the latter generates new names from the 
+      sites id and the survey name. In that case, it expects the survey name  
+      to be specified. By default, it merely use the sites id. 
+
+    top_label: str, default='Stations' 
+       Label  used to name the xticks in upper. 
+       
+    cb_label: str, default='Sensitivity (S)'
+       The colorbar label.
+       
+    spacing: float, default=80. 
+        The step in meters between two stations/sites. If given, 
+        it creates an array of positions. 
+    
+    fig_size: tuple, default= (6, 2) 
+        Matplotlib figure size. 
+      
+    dpi: int, default=300 
+       Image resolution in dot-per-inch 
+       
+    cmap: str, default='jet_r' 
+      Matplotlib colormap 
+    
+    plot_style: str, optional
+       The kind of plot. It could be ['pcolormesh'|'imshow']. The default is 
+       ``pcolormesh``. 
+       
+    rotate_xlabel: float, Optional 
+      The degree angle to rotate the station/site label accordingly. 
+      
+    prefix: str 
+        string value to add as prefix of given id. Prefix can be the site 
+        name. Default is ``S``. 
+        
+    how: str 
+        Mode to index the station. Default is 'Python indexing' i.e. 
+        the counting of stations would starts by 0. Any other mode will 
+        start the counting by 1.
+     
+    to_log10: bool, default=False 
+       Recompute the `ar`  in logarithm  base 10 values. Note when ``True``, 
+       the ``y`` should be also in log10. 
+       
+    plot_contours: bool, default=True 
+       Plot the contours map. Is available only if the plot_style is set to 
+       ``pcolormesh``. 
+
+    savefig: str, optional 
+         Save figure name. The default resolution dot-per-inch is ``300``. 
+         
+    Return
+    --------
+    ax: Matplotlib.pyplot.Axis 
+        Return axis  
+        
+    See Also 
+    ---------
+    watex.methods.em.Processing.skew: 
+        Skew equation formulations. 
+    watex.view.TPlot.plotSkew: 
+        Give a consistent plot where user can customize the plot using the 
+        plot parameter of :class:`watex.property.BasePlot` class.
+        
+    References 
+    -----------
+    .. [1] Bahr, K. (1988) Interpretation of the magnetotelluric impedance 
+           tensor: regional induction 395 and local telluric distortion. J. 
+           Geophys. Res., 62, 119–127.
+    .. [2] Bahr, K. (1991) Geological noise in magnetotelluric data: 
+           a classification of distortion types. 397 Phys. Earth Planet. 
+           Inter., 66, 24–38.
+    .. [3] Bahr, K., 1991. Geological noise in magnetotelluric data: a 
+           classification of distortion types. Physics of the Earth and 
+           Planetary Interiors 66 (1–2), 24–38.  
+           
+    Example
+    ---------
+    >>> import watex as wx 
+    >>> from watex.utils.plotutils import plot_skew2d 
+    >>> edi_sk = wx.fetch_data ("edis", return_data =True , samples = 20 ) 
+    >>> plot_skew2d (edi_sk, show_skewness=True, interpolate=True, 
+                     get_sites_by='name', mode='periods')  
+    
+    """
+    from ..view.mlplot import plot2d 
+    # validate and  the phase sensitivity skew 
+    skew, mu, freqs, ymat , mode, sites = _validate_sensitivity_s(
+        edis_list, 
+        mode =mode, 
+        sensitivity=sensitivity, 
+        method =method,
+        get_sites_by= get_sites_by, 
+        interpolate = interpolate,  
+        interp_method =interp_method, 
+        fill_value =fill_value,
+        )
+    # ------------------------------------------------------
+    # Create a pcolormesh plot with the mock data and the colormap
+    # Assuming frequency on y-axis is on a log scale
+    plot_style = ( 'imshow' if str(plot_style).lower() =='imshow' 
+                  else 'pcolormesh' 
+                  )
+    ax = plot2d (
+          ymat,
+          y = np.log10 ( freqs) if tolog10 else freqs , 
+          cmap =cmap, 
+          cb_label =cb_label, 
+          top_label =top_label , 
+          rotate_xlabel =rotate_xlabel, 
+          distance = spacing , 
+          fig_size  = fig_size ,
+          fig_dpi = dpi , 
+          font_size =font_size,
+          plt_style = plot_style,
+          stnlist= sites, 
+          plot_contours =False if plot_contours in (
+              False, ...) else True, 
+          
+          )
+    show_skewness = False if show_skewness in (False, ...) else True 
+    # view skewness 
+    if show_skewness: 
+        aver_skewn=np.around (np.average(ymat[ ~np.isnan(ymat)]), 3)
+        ax.text(x= 0. , y= np.nanmax(freqs)/2, 
+                 s="aver.-shewness:{}={}".format(str(method).capitalize(), 
+                aver_skewn),  
+                 fontdict= dict (style ='italic',  bbox =dict(
+                     boxstyle='round',
+                     facecolor ='#FFFFFF'#CED9EF'
+                     ))
+                 ) 
+    
+    ylabel = ('Log(f) [Hz]' if tolog10 else 'Frequency [Hz]'
+              ) if mode=='frequency'else ( 
+                  'Log10Period [s]' if tolog10 else 'Period [s]'
+                  )
+    ax.set_ylabel(ylabel)
+     
+    if savefig is not  None: 
+        savefigure (fig, savefig, dpi = 300)
+        
+    plt.close () if savefig is not None else plt.show() 
+    
+    return ax 
+
+def _validate_sensitivity_s (
+        edis_list, /, mode ="frequency", sensitivity='skew', method ='Bahr',
+        get_sites_by=None, interpolate =..., interp_method ='cubic', 
+        fill_value ='auto', ): 
+    """Compute the sensitivity S and return appropriate argument for 
+    plot. 
+    
+    An isolate part of  :func:`plot_skew1d` or :func:`plot_skew2d`. 
+    """
+    sensitivity = sensitivity or 'skew'
+    
+    if ('inv'  in str (sensitivity).lower()
+        or 'rot' in str (sensitivity).lower()
+        or 'mu' in str (sensitivity).lower()
+        ) : 
+        sensitivity ='mu'
+        
+    if 'period' in str(mode).lower(): 
+        mode ='period'
+        
+    # if str(threshold_line).lower()=='true': 
+    #     threshold_line = str(method).lower() 
+            
+    import watex as wx 
+    po =  wx.EMAP().fit(edis_list)
+    
+    # remove the outliers in the data
+    # and filled with NaN 
+    skew, mu =po.skew(method = method, suppress_outliers = True  )
+    freqs =  1/ po.freqs_ if mode =='period' else po.freqs_ 
+    ymat = skew if sensitivity =='skew' else mu 
+    
+    interpolate = False if interpolate in (False, ...) else True 
+    if interpolate: 
+        ymat = interpolate_grid(ymat, method = interp_method , 
+                                fill_value= fill_value, view=False, 
+                                )
+    #---- get the station names
+    sites = po.id
+    if get_sites_by: 
+        regex = re.compile('\d+', re.IGNORECASE)
+        if hasattr (po, 'edifiles'): 
+            if str(get_sites_by).lower()=='name':
+                # get the first name of dataId of the EDI ediObjs  and filled
+                # the rename dataId. remove the trail'_'  
+                name = po.survey_name or  regex.sub(
+                    '', po.ediObjs_[0].Head.dataid).replace('_', '') 
+                # remove prefix )'S' and keep only the digit 
+                dataid = list(map(lambda n: name + n, regex.findall(
+                    ''.join(po.id)) ))
+                
+                sites = dataid
+            else: 
+                sites = list(
+                    map(lambda obj: obj.Head.dataid, po.ediObjs_))
+
+    return skew, mu, freqs, ymat , mode,  sites 
+
+def plot_skew1d (
+    edis_list,
+    /, 
     method='Bahr', 
+    sensitivity=None,
     mode=None, 
     threshold_line =None, 
+    show_skewness: bool=..., 
     fig_size = (7, 5), 
     savefig = None, 
-    view=None,
     style=None, 
+    ax=None, 
     **kws 
     ):
     """ Plot phase sensitive skew visualization. 
@@ -2937,12 +3244,15 @@ def plot_skew (
     medium. Here as the ``threshold_line`` for :meth:`\eta` using the 
     Swift method should be set as `0.4`. 
     
-    .. versionadded:: 0.1.5 
     
     Parameters
     -----------
-    edi_obj: str, :class:`watex.edi.Edi` 
-        Full path to edifiles or  :class:`~watex.edi.Edi` object. 
+    edis_list: str, :class:`watex.edi.Edi` 
+        Full path to edifiles.
+        
+        .. versionchanged:: 0.3.1 
+           The parameter `edi_obj` is replaced by `edis_list` which  
+           indicate  a collection of :term:`EDI`files. 
         
     method: str, default='Bahr': 
         Kind of correction. Can be ``swift`` for the remove distorsion proposed 
@@ -2950,7 +3260,21 @@ def plot_skew (
         structures, and 3D otherwise. Conversly to ``bahr`` for the remove 
         distorsion proposed  by Bahr in 1991 [2]_. The latter threshold is set 
         to 0.3. Above this value the structures is 3D. 
-        
+      
+    sensitivity: str, default='skew'
+       phase sensistive visualization. Can be rotational invariant 
+       ``invariant``. Note that setting to ``mu`` or ``invariant`` does 
+       not change any interpretation since the distortion of Z are all 
+       rotational invariant whatever we're using the ``Bahr`` or ``swift``
+       method. 
+       
+       .. versionchanged:: 0.3.1 
+          The parameter `view` is deprecated and replaced with `sensitivity`. 
+          
+    mode:str, optional 
+       X-axis coordinates for visualisation. plot either ``'frequency'`` or
+       ``'periods'``.  The default is ``'frequency'`` 
+       
     threshold_line: float, optional
        Visualize th threshold line. Can be ['bahr', 'swift', 'both']:
            
@@ -2959,18 +3283,14 @@ def plot_skew (
        - when method is set to ``Bahr``, :math:`\mu > 0.3``  is 3D structures, 
          between :math:`[0.1 - 0.3]` assumes modified 3D/2D structures whereas 
          :math:`<0.1` 1D, 2D or distorted 2D. 
-         
-    mode:str, optional 
-       X-axis coordinates for visualisation. plot either ``'frequency'`` or
-       ``'periods'``.  The default is ``'frequency'`` 
+      
+    show_skewness: bool,default=False 
+       Display the average skewness value. 
        
-    view: str, default='skew'
-       phase sensistive visualization. Can be rotational invariant 
-       ``invariant``. Note that setting to ``mu`` or ``invariant`` does 
-       not change any interpretation since the distortion of Z are all 
-       rotational invariant whether using the ``Bahr`` or ``swift``
-       methods. 
-  
+       .. versionadded:: 0.3.1 
+          `show_skewness` display the average value of the whole Z tensor 
+          at each frequency. 
+ 
     fig_size: tuple, default= (10, 4) 
         Matplotlib figure size. 
         
@@ -2979,7 +3299,10 @@ def plot_skew (
          
     style: str, default='classic'
         Matplotlib plottings style.
-        
+       
+    ax: Matplotlib.pyplot.Axes, optional 
+       Axe to collect the figure. Could be used to support other axes. 
+       
     kws: dict, 
        Matplotlib Axes scatterplot additional keywords arguments. 
         
@@ -3010,38 +3333,27 @@ def plot_skew (
     Examples 
     ---------
     >>> import watex as wx 
-    >>> from watex.utils.plotutils import plot_skew 
+    >>> from watex.utils.plotutils import plot_skew1d 
     >>> edi_sk = wx.fetch_data ("edis", return_data =True , samples = 20 ) 
-    >>> plot_skew (edi_sk) 
-    >>> plot_skew (edi_sk, threshold_line= True) 
+    >>> plot_skew1d (edi_sk) 
+    >>> plot_skew1d (edi_sk, threshold_line= True) 
     """
     if style is not None:
         plt.style.use (style )
         
-    view = view or 'skew'
-    
-    if ('inv'  in str (view).lower()
-        or 'rot' in str (view).lower()
-        or 'mu' in str (view).lower()
-        ) : 
-        view ='mu'
-        
-    if 'period' in str(mode).lower(): 
-        mode ='period'
+    # validate and  the phase sensitivity skew 
+    skew, mu, freqs, ymat , mode, _ = _validate_sensitivity_s(
+        edis_list, 
+        mode =mode, 
+        sensitivity=sensitivity, 
+        method =method,
+        )
         
     if str(threshold_line).lower()=='true': 
         threshold_line = str(method).lower() 
             
-    import watex as wx 
-    po =  wx.EMAP().fit(edi_obj)
-    
-    # remove the outliers in the data
-    # and filled with NaN 
-    skew, mu =po.skew(method = method, suppress_outliers = True  )
-    freqs =  1/ po.freqs_ if mode =='period' else po.freqs_ 
-    ymat = skew if view =='skew' else mu 
-    
-    fig, ax = plt.subplots(1,1, figsize =fig_size)
+    if ax is None:
+        fig, ax = plt.subplots(1,1, figsize =fig_size)
 
     #---manage threshold line ------
     thr_code = {"bahr": [1] , "swift":[ 2] , 'both':[1, 2] }
@@ -3053,26 +3365,39 @@ def plot_skew (
     ct = thr_code.get(str(threshold_line).lower(), None ) 
     
     for i in range (skew.shape[1]): 
-        ax.scatter ( freqs, reshape (ymat[:, i]),**kws )
+        ax.scatter ( freqs, reshape (ymat[:, i])/1.8,**kws )
         
     if ct: 
         for m in ct: 
-            plt.axhline(y=0.4 if m==2 else 0.3 , color="k" if m==1 else "r",
+            plt.axhline(y=0.4 if m==2 else 0.3 , color="r" if m==1 else "r",
                         linestyle="-",
                         label=f'threshold: $\mu={0.4 if m==2 else 0.3}$'
                         )
+           
             ax.legend() 
-
+            
+    show_skewness = False if show_skewness  in (False, ...) else True 
+    # view skewness 
+    if show_skewness: 
+        ymat=reshape (ymat[:, i])
+        aver_skewn=np.around (np.average(ymat[ ~np.isnan(ymat)]), 3)
+        ax.text(x= np.nanmin(freqs) , y= np.nanmax(ymat), 
+                 s="aver.-shewness:{}={}".format(str(method).capitalize(), 
+                aver_skewn),  
+                 fontdict= dict (style ='italic',  bbox =dict(
+                     boxstyle='round',
+                     facecolor ='#FFFFFF'#CED9EF'
+                     ))
+                 ) 
     ax.set_xscale('log')
     
     ax.set_xlabel('Period ($s$)' if mode=='period' 
                   else 'Frequency ($H_z$)')
-    ax.set_ylabel(f"{'Skew' if view =='skew' else 'Rot.Invariant'}" + "($\mu$)")
+    ax.set_ylabel(f"{'Skew' if sensitivity =='skew' else 'Rot.Invariant'}" + "($\mu$)")
 
     plt.xlim ([ freqs.min() , freqs.max()])
     
     #plt.xlim() 
-
     if savefig is not  None: 
         savefigure (fig, savefig, dpi = 300)
         
@@ -3322,7 +3647,7 @@ def plot_strike (
             **kws
             )
         
-plot_strike.__doc__=""" 
+plot_strike.__doc__="""\ 
 Plot the strike estimated from the invariants and phase tensor. 
 in a rose diagram of xy plot. 
 
@@ -3604,7 +3929,6 @@ def plot_text (
         
     return ax 
 
-    
 def plot_voronoi(
     X, y, *, 
     cluster_centers,
@@ -4313,11 +4637,30 @@ Examples
 """ 
     
 #XXX TODO
-def plot_rsquared (X , y,  y_pred,  ): 
+def plot_rsquared (X , y,  y_pred, **r2_score_kws  ): 
+    """ Plot :math:`R^2` squared functions. 
     
+    Parameters 
+    -----------
+    X : array-like of shape (n_samples, n_features)
+        Training vector, where `n_samples` is the number of samples and
+        `n_features` is the number of features.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+    
+    y_pred: array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Predicted target relative to X for classification or regression;
+        None for unsupervised learning.
+        
+    r2_score_kws: dict, optional 
+       Additional keyword arguments of :func:`sklearn.metrics.r2_score`. 
+    
+    """
     from sklearn.metrics import r2_score
     # Calculate R-squared
-    r_squared = r2_score(y, y_pred)
+    r_squared = r2_score(y, y_pred, **r2_score_kws)
 
     # Plotting the scatter plot
     plt.scatter(X, y, color='blue', label='Actual data')
@@ -4450,46 +4793,49 @@ def plot_sounding (
     
     return ax 
 
-<<<<<<< HEAD
 def plot_l_curve(
     rms, 
     roughness, 
     tau=None, 
-    highlight_point=None, 
-    style = 'classic', 
-    fig_size = (10, 4),
-    highlight_kws=dict(), 
-    ax=None, 
+    hansen_point=None, 
     rms_target=None,
-    view_tline=False, 
+    view_tline=False,
+    hpoint_kws=dict(), 
+    fig_size = (10, 4),
+    ax=None,
+    fig=None, 
+    style = 'classic', 
+    savefig=None, 
     **plot_kws
-     ):
+    ):
     """
     Plot the Hansen L-curve.
     
     The L-curve criteria is used to determine the suitable model 
-    after runing multiple inversion with different :math:`\tau` values. 
+    after runing multiple inversions with different :math:`\tau` values. 
     The function plots RMS vs. Roughness with an option to highlight a 
-    specific point named Hansen point.
-    
+    specific point named Hansen point [1]_.
     
     The :math:`\tau` represents the measure of compromise between data fit and 
     model smoothness. To find out an appropriates-value, the inversion was 
     carried out with differents-values. The RMS error obtained from each 
     inversion is plotted against model roughnes
     
-    Plots RMS vs. Roughness with an option to highlight a specific point.
+    Plots RMS vs. Roughness with an option to highlight the Hansen point.
     
     Parameters 
     ------------
-    roughness: Arraylike, list, 
-       List or ArratLike of roughness values.
-    RMS: ArrayLike, list, 
+    
+    rms: ArrayLike, list, 
        Corresponding list pr Arraylike of RMS values.
+       
+    roughness: Arraylike, list, 
+       List or ArratLike of roughness values. 
+       
     tau: Arraylike or list, optional 
        List of tau values to visualize as text mark in the plot. 
-       
-    highlight_point: A tuple (roughness_value, RMS_value) , optional 
+
+    hansen_point: A tuple (roughness_value, RMS_value) , optional 
        The Hansen point to visualize in the plot. It can be determine 
        automatically if ``highlight_point='auto'``.
        
@@ -4497,12 +4843,33 @@ def plot_l_curve(
       The root-mean-squared target. If set, and `view_tline` is ``False``, 
       the target value should be axis limit. 
       
-   view_tline: bool, default=False 
-      Display the target line should be  displayed.
-      
-    ax: Matplotlib.pyplot 
-      Matplotlib pyplot axis. Could be use to support other axes. 
-      
+     view_tline: bool, default=False 
+       Display the target line should be  displayed.
+       
+    hpoint_kws: dict, optional 
+      Keyword argument to highlight the hansen point in the figure. 
+     
+    ax: Matplotlib.pyplot.Axes, optional 
+       Axe to collect the figure. Could be used to support other axes. 
+       
+    fig: Matplotlib.pyplot.figure, optional 
+        Supply fig to save automatically the plot, otherwise, keep it 
+        to ``None``.
+
+    savefig: str, optional 
+        Save figure name. The default resolution dot-per-inch is ``300``. 
+         
+    Return 
+    ------
+    ax: Matplotlib.pyplot.Axis 
+        Return axis  
+        
+    References
+    -----------
+    [1] Hansen, P. C., & O'Leary, D. P. (1993). The use of the L-Curve in
+        the regularization of discrete ill-posed problems. SIAM Journal
+        on Scientific Computing, 14(6), 1487–1503. https://doi.org/10.1137/0914086.
+         
     Examples
     ---------
     >>> from watex.utils.plotutils import plot_l_curve
@@ -4523,6 +4890,7 @@ def plot_l_curve(
     
     # Create the plot
     plt.style.use (style )
+    
     if ax is None: 
         fig, ax = plt.subplots(1,1, figsize =fig_size)
     
@@ -4533,20 +4901,20 @@ def plot_l_curve(
                     )
     ax.plot(roughness, rms, **plot_kws
              )
-    
-    # Highlight the specific point if provided
-    if str(highlight_point).lower().strip() =="auto": 
-        highlight_point = _get_hansen_point(roughness, rms)
+    # Highlight the specific hansen point if "auto" 
+    # option is provided.
+    if str(hansen_point).lower().strip() =="auto": 
+        hansen_point = _get_hansen_point(roughness, rms)
         
-    if highlight_point is not None:
-        if len(highlight_point)!=2: 
+    if hansen_point is not None:
+        if len(hansen_point)!=2: 
             raise ValueError("Hansen knee point needs a tuple of (x, y)."
-                             f" Got {highlight_point}")
-        highlight_kws = _manage_plot_kws(highlight_kws, 
+                             f" Got {hansen_point}")
+        hpoint_kws = _manage_plot_kws(hpoint_kws, 
                                          dict(marker='o', color='red'))
-        ax.plot(highlight_point[0], highlight_point[1], **highlight_kws)
-        ax.annotate(str(highlight_point[0]), 
-                     highlight_point, textcoords="offset points",
+        ax.plot(hansen_point[0], hansen_point[1], **hpoint_kws)
+        ax.annotate(str(hansen_point[0]), 
+                     hansen_point, textcoords="offset points",
                      xytext=(0,10), ha='center'
                      )
     if tau is not None: 
@@ -4554,15 +4922,14 @@ def plot_l_curve(
         rough_rms = np.hstack ((roughness, rms))
         for tvalues, text in zip ( rough_rms, tau): 
             if ( 
-                    tvalues[0]==highlight_point[0] 
-                    and tvalues[1]==highlight_point[1]
+                    tvalues[0]==hansen_point[0] 
+                    and tvalues[1]==hansen_point[1]
                     ): 
-                # highlight point if found then skip
+                # hansen point is found then skip it
                 continue 
             ax.annotate(str(text), tvalues, textcoords="offset points",
                          xytext=(0,10), ha='center'
                          )
-            
     if rms_target: 
         rms_target = float( _assert_all_types(
             rms_target, float, int, objname='RMS target')) 
@@ -4585,16 +4952,17 @@ def plot_l_curve(
     ax.set_ylabel('RMS')
     ax.set_title('RMS vs. Roughness')
 
-    # Show the plot
-    plt.show()
+    # savefig 
+    if savefig is not  None: savefigure (fig, savefig, dpi = 300)
+    # Show the plot    
+    plt.close () if savefig is not None else plt.show() 
     
     return ax 
-
 
 def _get_hansen_point ( roughness, RMS): 
     """ Get the Hansen point automatically.
     
-    An isolated part of :func:`~plot_l_curves`. 
+    An isolated part of :func:`~plot_l_curve`. 
     
     The L-curve criteria proposed by Hansen and O'Leary (1993)[1]_ and 
     Hansen (1998) [2]_, which suggests that the s value at the knee of 
@@ -4652,39 +5020,260 @@ def _manage_plot_kws ( kws, dkws = dict () ):
             
     return kws 
 
- 
-=======
->>>>>>> 9adf70ffd30a046f3403808958ecccf1c28cef40
-# import watex as wx 
-# lspath =r'C:\Users\Daniel\Desktop\projects\nanshaLS0.csv'
-# ls_data = wx.read_data (lspath , sanitize =True, sep =';', verbose =True ) 
-# ls_data2 = las_data.copy() ; sd = ls_data2.replace(',', '.')
-# ls_data2 = ls_data.copy() ; sd = ls_data2.replace(',', '.')
-# ls_data2 [ls_data2.columns].repalce (',', '.', inplace =True ) 
-# ls_data2 [ls_data2.columns].replace (',', '.', inplace =True )
-# ls_data = wx.read_data (lspath, sanitize =True, sep =';', decimal =',') 
-# ls_data = wx.to_numeric_dtypes (ls_data ) 
-# test = ls_data ['latitude'] + ls_data['longitude'] 
-# ls_data.to_csv ( r'C:\Users\Daniel\Desktop\projects\nsh.lsdata.csv', index =False ) 
+def plot_skew ( 
+     edis_list,
+     /, 
+     method ='Bahr',
+     sensitivity='skew',
+     mode ="frequency", 
+     show_skewness=...,
+     view='1D',
+     interpolate=True, 
+     threshold_line =None,  
+     tolog10 =True, 
+     interp_method ='cubic', 
+     fill_value ='auto',
+     get_sites_by=None, 
+     top_label ='Stations', 
+     cb_label ="Sensitivity (S)",
+     spacing=80, 
+     fig=None , 
+     fig_size = (7, 5 ), 
+     dpi = 300 , 
+     font_size =5.,
+     cmap='jet_r',
+     plot_style =None,
+     rotate_xlabel=0.,
+     plot_contours=..., 
+     style=None,
+     savefig=None, 
+     ax=None, 
+     **plot_kws 
+    ): 
+    
+    if str(view).lower()=='2d': 
+        return plot_skew2d ( 
+            edis_list, 
+            method =method, 
+            sensitivity = sensitivity, 
+            mode=mode, 
+            interpolate=interpolate, 
+            show_skewness=show_skewness,
+            tolog10=tolog10, 
+            fill_value=fill_value, 
+            interp_method =interp_method, 
+            get_sites_by=get_sites_by, 
+            top_label=top_label, 
+            cb_label =cb_label, spacing =spacing, 
+            fig=fig, 
+            fig_size =fig_size, 
+            dpi=dpi, 
+            font_size=font_size, 
+            cmap=cmap, plot_style=plot_style, 
+            rotate_xlabel=rotate_xlabel, 
+            plot_contours=plot_contours,
+            savefig=savefig, 
+            ax=ax 
+            )
+        
+    return plot_skew1d (
+        edis_list,
+        method =method, 
+        sensitivity=sensitivity, 
+        mode=mode, 
+        threshold_line =threshold_line, 
+        show_skewness=show_skewness, 
+        fig_size=fig_size, 
+        savefig=savefig, style =style, 
+        ax=ax , 
+        **plot_kws 
+        )
+    
+plot_skew.__doc__="""\
+    
+Visualize the phase sensitive skew  in one or two dimensional. 
 
-# ## ---(Mon Nov  6 12:24:49 2023)---
-# import watex as wx
-# lspath = r'C:\Users\Daniel\Desktop\projects\nsh.lsdata.csv'
-# ls_data = wx.read_data (lspath , sanitize =True ) 
-# ls_data.shape 
-# data = wx.utils.random_sampling ( ls_data , samples ='30%') 
-# data.shape 
-# test_data = data.copy() 
-# test_xgb = data [['longitude', 'latitude', '2022']] 
-# import numpy as np ; value_r = np.linspace (0.89 , 0.96 , test-data.shape [0]) 
-# import numpy as np ; value_r = np.linspace (0.89 , 0.96 , test_data.shape [0])
-# value_xgb = np.random.shuffle ( value_r ) * test_xgb[['2022']] 
-# value_xgb = value_r .copy() 
-# vlue_xgb = test_xgb[['2022']]* value_xgb 
-# value_xgb.shape 
-# vlue_xgb = test_xgb[['2022']]* wx.reshape (value_xgb, 1) 
-# vlue_xgb = test_xgb[['2022']].values * value_xgb 
-# test_data = wx.fetch_data('edis', samples = 15 ).frame  
+Phase Sensitivity Skew (:math:`\eta`) is a dimensionality tool that 
+represents a measure of the skew of the  phases of the impedance 
+tensor. The parameter is thus unaffected by the distortion 
+effect, unlike the Swift-skew and ellipticity dimensionality 
+tools [1]_. 
+
+Values of :math:`\eta` > 0.3 are considered to represent 3D data. 
+Phase-sensitive skews less than 0.1 indicate 1D, 2D or distorted 
+2D (3-D /2-D) cases. Values of :math:`\eta` between 0.1 and 0.3 indicates 
+modified 3D/2D structures [2]_ according to `Bahr' methods. However,
+values :math:`\eta >=0.2` using the `Swift` methods, the smaller the value 
+:math:`\eta` ( close to :math:`0.`), the closer the structure to 2D 
+structure and vice versa.However, it is generally considered that 
+an electrical structure of :math:`\eta < 0.4` can be treated as a 2D 
+medium. Here as the ``threshold_line`` for :meth:`\eta` using the 
+Swift method should be set as `0.4`. 
+
+
+Parameters
+-----------
+edis_list: str, :class:`watex.edi.Edi` 
+    Full path to edifiles.
+    
+    .. versionchanged:: 0.3.1 
+       The parameter `edi_obj` is replaced by `edis_list` which  
+       indicate  a collection of :term:`EDI`files. 
+    
+method: str, default='Bahr': 
+    Kind of correction. Can be ``swift`` for the remove distorsion proposed 
+    by Swift in 1967 [3]_. The value close to 0. assume the 1D and 2D 
+    structures, and 3D otherwise. Conversly to ``bahr`` for the remove 
+    distorsion proposed  by Bahr in 1991 [2]_. The latter threshold is set 
+    to 0.3. Above this value the structures is 3D. 
+  
+sensitivity: str, default='skew'
+   phase sensistive visualization. Can be rotational invariant 
+   ``invariant``. Note that setting to ``mu`` or ``invariant`` does 
+   not change any interpretation since the distortion of Z are all 
+   rotational invariant whatever we're using the ``Bahr`` or ``swift``
+   method. 
+   
+   .. versionchanged:: 0.3.1 
+      The parameter `view` is deprecated and replaced with `sensitivity`. 
+      
+mode:str, optional 
+   X-axis coordinates for visualisation. plot either ``'frequency'`` or
+   ``'periods'``.  The default is ``'frequency'`` 
+
+show_skewness: bool,default=False 
+   Display the average skewness value. 
+   
+   .. versionadded:: 0.3.1 
+      `show_skewness` display the average value of the whole Z tensor 
+      at each frequency. 
+     
+view: str, ['1D', '2D'], default ='1D'
+   Type of skewness visualisation. 
+   
+interpolate: bool, default=True
+   Interpolate the data if NaN is found. 
+
+tolog10: bool, default=True 
+   Compute the the logarithm base 10 of the frequency array. If the 
+    frequency data is passed as log10 values, it should be turned to 
+    ``False``. 
+  
+interp_method: bool,default='cubic' 
+   Data interpolation method. It could be ['nearest'|'linear'|'cubic']. 
+    
+fill_value: float, str, default='auto' 
+   Fill the interpolated grid at the egdes or surrounding NaN with 
+   a filled value. The ``auto`` uses the forward and backward 
+   fill strategy. 
+   
+get_sites_by: str, optional
+  Fetch the sites and place names on the map. It should be 
+  [``'dataid'``|``'name'``]. The former  uses the names collected in 
+  :term:`EDI` data id whereas the latter generates new names from the 
+  sites id and the survey name. In that case, it expects the survey name  
+  to be specified. By default, it merely use the sites id. 
+  
+threshold_line: float, optional
+   Visualize th threshold line. Can be ['bahr', 'swift', 'both']:
+       
+   - Note that when method is set to ``swift``, the value close to close 
+     to :math:`0.` assume the 1D and 2D structures,  and 3D otherwise. 
+   - when method is set to ``Bahr``, :math:`\mu > 0.3``  is 3D structures, 
+     between :math:`[0.1 - 0.3]` assumes modified 3D/2D structures whereas 
+     :math:`<0.1` 1D, 2D or distorted 2D. 
+ 
+top_label: str, default='Stations' 
+   Label  used to name the xticks in upper. 
+   
+cb_label: str, default='Sensitivity (S)'
+   The colorbar label.
+   
+spacing: float, default=80. 
+    The step in meters between two stations/sites. If given, 
+    it creates an array of positions. 
+
+fig_size: tuple, default= (6, 2) 
+    Matplotlib figure size. 
+  
+dpi: int, default=300 
+   Image resolution in dot-per-inch 
+   
+cmap: str, default='jet_r' 
+  Matplotlib colormap 
+
+plot_style: str, optional
+   The kind of plot. It could be ['pcolormesh'|'imshow']. The default is 
+   ``pcolormesh``. 
+   
+rotate_xlabel: float, Optional 
+  The degree angle to rotate the station/site label accordingly. 
+  
+prefix: str 
+    string value to add as prefix of given id. Prefix can be the site 
+    name. Default is ``S``. 
+    
+how: str 
+    Mode to index the station. Default is 'Python indexing' i.e. 
+    the counting of stations would starts by 0. Any other mode will 
+    start the counting by 1.
+ 
+to_log10: bool, default=False 
+   Recompute the `ar`  in logarithm  base 10 values. Note when ``True``, 
+   the ``y`` should be also in log10. 
+   
+plot_contours: bool, default=True 
+   Plot the contours map. Is available only if the plot_style is set to 
+   ``pcolormesh``. 
+
+savefig: str, optional 
+     Save figure name. The default resolution dot-per-inch is ``300``. 
+     
+plot_kws:  dict, 
+   Matplotlib Axes scatterplot additional keywords arguments.
+
+ax: Matplotlib.pyplot.Axes, optional 
+   Axe to collect the figure. Could be used to support other axes. 
+     
+Return
+--------
+ax: Matplotlib.pyplot.Axis 
+    Return axis  
+    
+See Also 
+---------
+watex.methods.em.Processing.skew: 
+    Skew equation formulations. 
+watex.view.TPlot.plotSkew: 
+    Give a consistent plot where user can customize the plot using the 
+    plot parameter of :class:`watex.property.BasePlot` class.
+    
+References 
+-----------
+.. [1] Bahr, K. (1988) Interpretation of the magnetotelluric impedance 
+       tensor: regional induction 395 and local telluric distortion. J. 
+       Geophys. Res., 62, 119–127.
+.. [2] Bahr, K. (1991) Geological noise in magnetotelluric data: 
+       a classification of distortion types. 397 Phys. Earth Planet. 
+       Inter., 66, 24–38.
+.. [3] Bahr, K., 1991. Geological noise in magnetotelluric data: a 
+       classification of distortion types. Physics of the Earth and 
+       Planetary Interiors 66 (1–2), 24–38.  
+       
+Example
+---------
+>>> import watex as wx 
+>>> from watex.utils.plotutils import plot_skew
+>>> edi_sk = wx.fetch_data ("edis", return_data =True , samples = 20 )
+>>> # Get 1d visualization with Swift skewness method
+>>> plot_skew (edi_sk, threshold_line= True, method ='Swift', 
+               fig_size =( 12, 4))  
+>>> # plot the 2D with Bahr method with period in y-axis 
+>>> plot_skew (edi_sk, view='2d', show_skewness=True, interpolate=True, 
+                 get_sites_by='name', mode='periods', fig_size =(6, 2))  
+ 
+"""
+
 
     
   

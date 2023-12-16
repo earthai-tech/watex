@@ -408,7 +408,11 @@ class EM(IsEdi):
    
         self._read_emo(data ) 
         # sorted ediObjs from latlong 
-        self.ediObjs_ , self.edinames = fit_ll(self.ediObjs_, by =by)
+        # If attribute Error occurs , need Edi-files 
+        try:
+            self.ediObjs_ , self.edinames = fit_ll(self.ediObjs_, by =by)
+        except AttributeError: 
+            raise EDIError("Need EDI-files. EDI-objects detected.")
         # reorganize  edis according 
         # to lon lat order. 
         self.edifiles = list(map(
@@ -2098,7 +2102,7 @@ class EMAP(EM) :
         
         .. math::
             
-            skew_{Bahr} & = & \sqrt{ \frac{|[D_1, S_2] -[S_1, D_2]|}{|D_2|}} \quad \text{where} 
+            skew_{Bahr} & = & \frac{\sqrt{|[D_1, S_2] -[S_1, D_2]|}{|D_2|}} \quad \text{where} 
             
             S_1 & = & Z_{xx} + Z_{yy} \quad ; \quad  S_2 = Z_{xy} + Z_{yx} 
             

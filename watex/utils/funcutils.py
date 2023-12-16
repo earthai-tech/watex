@@ -3840,7 +3840,8 @@ def random_state_validator(seed):
 def is_iterable (
         y, /, exclude_string= False, transform = False , parse_string =False, 
 )->bool | list: 
-    """ Asserts iterable object and returns 'True' or 'False'
+    """ Asserts iterable object and returns boolean or transform object into
+     an iterable.
     
     Function can also transform a non-iterable object to an iterable if 
     `transform` is set to ``True``.
@@ -5441,8 +5442,8 @@ def interpolate_grid (
      
     fill_value: float, str, default='auto' 
        Fill the interpolated grid at the egdes or surrounding NaN with 
-       a filled value. The ``auto`` fill use the forward and backward 
-       fill stragety. 
+       a filled value. The ``auto`` uses the forward and backward 
+       fill strategy. 
        
     view: bool, default=False, 
        Quick visualize the interpolated grid. 

@@ -3589,6 +3589,9 @@ def plot2d(
        Plot the contours map. Is available only if the plot_style is set to 
        ``pcolormesh``. 
        
+    top_label: str, 
+       Name of the top label. 
+       
     baseplot_kws: dict, 
        All all  the keywords arguments passed to the property  
        :class:`watex.property.BasePlot` class. 
