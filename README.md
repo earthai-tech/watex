@@ -17,190 +17,129 @@
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/watex.svg)](https://anaconda.org/conda-forge/watex)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/watex/badges/platforms.svg)](https://anaconda.org/conda-forge/watex)
 
-##  Overview
 
-*WATex* is a Python-based library mainly focused on the groundwater exploration (GWE). It brings novel approaches 
-for reducing numerous losses during the hydro-geophysical exploration projects. It encompasses 
-the Direct-current (DC) resistivity ( Electrical profiling (ERP) & vertical electrical sounding (VES)), 
-short-periods electromagnetic (EM), geology and hydrogeology methods. From methodologies based on Machine Learning,  
-it allows to: 
-- auto-detect the right position to locate the drilling operations to minimize the rate of unsuccessful drillings 
-  and unsustainable boreholes;
-- predict the water content in the well such as the groundwater flow rate, the level of water inrush, ...
-- recover the EM loss signals in area with huge interferences noises ...
-- etc.
+## Overview
 
-## Documentation 
+**WATex** is a Python-based library designed for Groundwater Exploration (GWE). It integrates cutting-edge methodologies, including Direct-Current (DC) resistivity (Electrical Profiling (ERP) & Vertical Electrical Sounding (VES)), short-period Electromagnetic (EM), geology, and hydrogeology. Leveraging Machine Learning techniques, WATex enables users to:
 
-Visit the [library website](https://watex.readthedocs.io/en/latest/) for more resources. You can also quick browse the software [API reference](https://watex.readthedocs.io/en/latest/api_references.html)
-and flip through the [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html) to see some of expected results. Furthermore, the 
-[step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/applications/index.html#applications-step-by-step-guide) is elaborated for real-world 
-engineering problems such as computing DC parameters and predicting the k-parameter... 
+- Automatically identify optimal drilling locations to reduce the incidence of unsuccessful drillings and unsustainable boreholes.
+- Predict well water content, encompassing groundwater flow rate and water inrush levels.
+- Restore EM loss signals in areas heavily affected by interferences and noise.
+- And more.
 
-## Licence 
+## Documentation
 
-*WATex* is under [BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) License. 
+For additional resources, visit the [WATex library website](https://watex.readthedocs.io/en/latest/). The software's [API reference](https://watex.readthedocs.io/en/latest/api_references.html) and [examples page](https://watex.readthedocs.io/en/latest/glr_examples/index.html) offer insights into the expected results. A comprehensive [step-by-step guide](https://watex.readthedocs.io/en/latest/glr_examples/applications/index.html#applications-step-by-step-guide) is available for tackling real-world engineering problems, such as calculating DC parameters and predicting the k-parameter.
 
-## Installation 
+## License
 
-The system requires preferably Python 3.9+. 
+WATex is distributed under the [BSD-3-Clause License](https://opensource.org/licenses/BSD-3-Clause).
 
-* from *pip*
+## Installation
 
-*WATex* can be [installed](https://pypi.org/project/) from [PyPI](https://pypi.org/) platform distribution as: 
-```bash 
+WATex requires Python 3.9 or newer.
+
+### Installing from PyPI
+
+Install WATex from PyPI with the command:
+
+```bash
 pip install watex
 ```
 
-* from *conda* 
+### Installing from Conda-Forge
 
-The [installation](https://anaconda.org/conda-forge/watex)  from [conda-forge](https://conda-forge.org/) distribution channel can be achieved with :
-
-```bash 
-conda install -c conda-forge watex
-``` 
-To get the latest development of the code, it is recommended to install it from source using: 
+To install from [Conda-Forge](https://conda-forge.org/):
 
 ```bash
-git clone https://github.com/WEgeophysics/watex.git 
+conda install -c conda-forge watex
 ```
-Furthermore, for step-by-step guide about the installation and how to manage the 
-dependencies, visit our [installation guide](https://watex.readthedocs.io/en/latest/installation.html) page.
 
-## Some demos 
+For the latest development version, clone the repository:
 
-### 1. Drilling location auto-detection
+```bash
+git clone https://github.com/WEgeophysics/watex.git
+```
 
-For this example, we randomly generate 50 stations of synthetic ERP resistivity data with ``minimum`` and ``maximum ``
-resistivity values equal to  ``1e1`` and ``1e4`` ohm.m  respectively as:
+Visit our [installation guide](https://watex.readthedocs.io/en/latest/installation.html) for detailed installation instructions and dependency management.
 
-```python 
-import watex as wx 
-data = wx.make_erp (n_stations=50, max_rho=1e4, min_rho=10., as_frame =True, seed =42 ) 
-``` 
+## Examples
 
-* Naive auto-detection (NAD)
+### 1. Auto-Detection of Drilling Locations
 
-The NAD automatically proposes a suitable location with NO restrictions (constraints) observed in the survey site
-during the GWE. We may understand by ``suitable``, a location expecting to give a flow rate greater 
-than 1m3/hr at least. 
+Generate synthetic ERP resistivity data for 50 stations:
 
 ```python
-robj=wx.ResistivityProfiling (auto=True ).fit(data ) 
-robj.sves_ 
-Out[1]: 'S025'
+import watex as wx
+data = wx.make_erp(n_stations=50, max_rho=1e4, min_rho=10., as_frame=True, seed=42)
 ```
-The suitable drilling location is proposed at station ``S25`` (stored in the attribute ``sves_``). 
 
-* Auto-detection with constraints (ADC)
+- Basic Detection (BD)
 
-The constraints refer to the restrictions observed in the survey area during the DWSC. This is common
-in real-world exploration. For instance, a station close to a heritage site should be discarded 
-since no drilling operations are authorized at that place. When many restrictions 
-are enumerated in the survey site, they must be listed in a dictionary with a reason and passed to the parameter 
-``constraints`` so these stations should be ignored during the automatic detection. Here is an example of constraints
-application to our example.
+Automatically proposes a suitable drilling location without considering site constraints, aiming for a minimum flow rate of 1m3/hr.
 
-```python 
+```python
+robj = wx.ResistivityProfiling(auto=True).fit(data)
+robj.sves_
+# Output: 'S025'
+```
+
+- Auto-Detection with Constraints (ADC)
+
+Considers site-specific restrictions, such as proximity to heritage sites or pollution risks. Example with applied constraints:
+
+```python
 restrictions = {
     'S10': 'Household waste site, avoid contamination',
-    'S27': 'Municipality site, no authorization to make a drill',
+    'S27': 'Municipality site, no authorization to drill',
     'S29': 'Heritage site, drilling prohibited',
-    'S42': 'Anthropic polluted place, avoid contamination within a few years',
-    'S46': 'Marsh zone, borehole will dry up during the dry season'
- }
-robj=wx.ResistivityProfiling (constraints= restrictions, auto=True ).fit(data ) 
+    'S42': 'Polluted area, contamination risk',
+    'S46': 'Marsh zone, seasonal dry-up risk'
+}
+robj = wx.ResistifyProfiling(constraints=restrictions, auto=True).fit(data)
 robj.sves_
-Out[2]: 'S033'
+# Output: 'S033'
 ```
-Notice, the station ``S25`` is no longer considered as the `suitable` location and henceforth, propose ``S33`` as the
-priority for drilling operations. However, if the station is close to a restricted area, a warning should raise to 
-inform the user to avoid taking a risk to perform a drilling location at that location.
 
-Note that before the drilling operations commence, make sure to carry out the DC-sounding (VES) at that point. **_WATex_** computes 
-another parameter called `ohmic-area` `` (ohmS)`` to detect the effectiveness of the existing fracture zone at that point. See more in 
-the software [documentation](https://watex.readthedocs.io/en/latest/).
-  
+Note: Conduct DC-sounding (VES) before drilling to assess fracture zones' effectiveness. More information is available in the [documentation](https://watex.readthedocs.io/en/latest/).
 
-### 2. EM tensors recovering and analyses
+### 2. EM Tensor Recovery and Analysis
 
-For a basic illustration, we fetch 20 audio-frequency magnetotelluric (AMT) data 
-stored as EDI objects collected in a `huayuan` area (Hunan province, China) with 
-multiple interferences noised as: 
+Fetching and analyzing AMT data:
 
-```python 
+```python
 import watex as wx
-e= wx.fetch_data ('huayuan', samples =20 , key='noised') # returns an EM -objets 
-edi_data = e.data # get the array  of EDI objects  
-``` 
-Before EM data restoration, we can analyse the quality control (QC) of the data and 
-show the confidence interval that makes us confident about the data at each station. 
-By default the confidence test uses the errors in the resistivity tensor. Let's getting 
-started: 
-```python 
-po= wx.EMProcessing ().fit(edi_data)   # make a EM processing object 
-r= po.qc (tol =0.2 , return_ratio = True ) # consider good data from 80% significance.  
-r
-Out[9]: 0.95
-``` 
-We can then visualizate the confidence interval at the 20 AMT stations as: 
-```python 
-wx.plot_confidence_in(edi_data) 
+e = wx.fetch_data('huayuan', samples=20, key='noised')
+edi_data = e.data
+```
 
-``` 
-Alternatively, we can use the ``qc`` function (more consistent) to get the valid data and 
-the interpolated frequencies. For instance, we want to known the number of frequencies dropped 
-during the control analysis. Just do it: 
-```python 
-QCo= wx.qc (edi_data , tol=.2,  return_qco =True )  # returns the quality control object
-len(e.emo.freqs_)   # number of frequency in noised data   
-Out[10]: 56
-len(QCo.freqs_)     # number of frequency in valid data after QC  
-Out[11]: 53
-QCo.invalid_freqs_  # get the useless frequencies based on tol param so we can drop them into the EM data 
-Out[12]: array([8.19200e+04, 4.85294e+01, 5.62500e+00]) #  81920.0, 48.53 and 5.625 Hz 
+Quality control and confidence interval visualization:
+
+```python
+po = wx.EMProcessing().fit(edi_data)
+r = po.qc(tol=0.2, return_ratio=True)
+# Output: 0.95
+
+wx.plot_confidence_in(edi_data)
 ```
-The ``plot_confidence_in`` function allows to assert whether tensor values can be recovered 
-for these three frequencies at each station. Note that the threshold for the EM data 
-to be restored is set to ``50%``. Below this value, data is unrecoverable. 
-Furthermore, if our QC rate ``r=95%`` is not to be yet satisfactory in our AMT data, we can 
-process to the impedance tensor ``Z`` restoration as:  
-```python 
-Z=po.zrestore() # returns 3D tensors (Nfrequency, 2, 2), 2x2 for XX, XY, YX and YY components. 
-```
-Now, let's evaluate the new QC ratio to verify the recovering efficaciousness such as: 
-```python 
-r, =wx.qc (Z)
-r
-Out[13]: 1.0
-``` 
-Great! As we can see, the tensor is restored at each station with ``100%`` ratio and we notice 
-that the confidence line is above 95% in alongside the 20 investigation sites and 
-compare to the previous plot ( ``rate =75%``). The snippet below can allow to visualize 
-this improvement with the confidence interval as: 
-```python 
-wx.plot_confidence_in(Z)  
-```
-Besides, user can flip through the following links for more examples about [EM tensor restoring](https://watex.readthedocs.io/en/latest/glr_examples/applications/plot_tensor_restoring.html#sphx-glr-glr-examples-applications-plot-tensor-restoring-py),  
-the [sknewness](https://watex.readthedocs.io/en/latest/glr_examples/methods/plot_phase_tensors.html#sphx-glr-glr-examples-methods-plot-phase-tensors-py) analysis plots, 
-the [strike](https://watex.readthedocs.io/en/latest/glr_examples/utils/plot_strike.html#sphx-glr-glr-examples-utils-plot-strike-py) plot, 
-the [filtering](https://watex.readthedocs.io/en/latest/methods.html#filtering-tensors-ama-flma-tma) data, and else...
+
+Further analyses and visualizations are available in the [software documentation](https://watex.readthedocs.io/en/latest/).
 
 ## Citations
 
-If the [software](https://doi.org/10.1016/j.softx.2023.101367) seemed useful to you in any published work, we will appreciate to cite the paper below:
+If WATex contributes to your research, please cite:
 
-> *Kouadio, K.L., Liu, J., Liu, R., 2023. watex: machine learning research in water exploration. SoftwareX . 101367(2023). https://doi.org/10.1016/j.softx.2023.101367*
+> _Kouadio, K.L., Liu, J., Liu, R., 2023. WATex: Machine Learning Research in Water Exploration.
+> SoftwareX. 101367(2023). [DOI](https://doi.org/10.1016/j.softx.2023.101367)_
 
-In most situations where *WATex* is cited, a citation to [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) would also be appropriate.
+Citing [scikit-learn](https://scikit-learn.org/stable/about.html#citing-scikit-learn) is also recommended when referencing WATex. Explore [case histories](https://watex.readthedocs.io/en/latest/citing.html) using WATex for more insights.
 
-See also some [case history](https://watex.readthedocs.io/en/latest/citing.html) papers using *WATex*. 
+## Contributions
 
-## Contributions 
+Key contributors include:
 
 1. Department of Geophysics, School of Geosciences & Info-physics, [Central South University](https://en.csu.edu.cn/), China.
-2. Hunan Key Laboratory of Nonferrous Resources and Geological Hazards Exploration Changsha, Hunan, China
-3. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny]( https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
+2. Hunan Key Laboratory of Nonferrous Resources and Geological Hazards Exploration, Changsha, Hunan, China.
+3. Laboratoire de Geologie Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny](https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Cote d'Ivoire.
 
-Developer: [_L. Kouadio_](https://wegeophysics.github.io/) <<etanoyau@gmail.com>>
-
+Developer: [_L. Kouadio_](https://wegeophysics.github.io/) (etanoyau@gmail.com)
