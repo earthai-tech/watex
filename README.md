@@ -41,13 +41,14 @@ For comprehensive information and additional resources, visit the [WATex library
 ### From *pip*
 
 Install *WATex* directly from the Python Package Index (PyPI) with the following command:
+
 ```bash
 pip install watex
 ```
-
 ### From *conda*
 
 For users who prefer the conda ecosystem, *WATex* can be installed from the conda-forge distribution channel:
+
 ```bash
 conda install -c conda-forge watex
 ```
@@ -106,6 +107,7 @@ the automatic detection process:
 ```python
 restrictions = {
     'S10': 'Household waste site, avoid contamination',
+
     'S27': 'Municipality site, no authorization for drilling',
     'S29': 'Heritage site, drilling prohibited',
     'S42': 'Anthropic polluted place, potential future contamination risk',
@@ -113,9 +115,8 @@ restrictions = {
 }
 robj = ResistivityProfiling(constraints=restrictions, auto=True).fit(data)
 robj.sves_
-Out[2]: 'S033'
+# Output: 'S033'
 ```
-
 This method revises the suitable drilling location to station `S33`, taking into account 
 the specified constraints. Should a station be near a restricted area, the system raises a warning 
 to advise against risking drilling operations at that location.
@@ -201,7 +202,6 @@ For further exploration on EM tensor restoration, phase tensor analysis, strike 
 - [Skewness Analysis Plots](https://watex.readthedocs.io/en/latest/glr_examples/methods/plot_phase_tensors.html#sphx-glr-glr-examples-methods-plot-phase-tensors-py)
 - [Strike Plot](https://watex.readthedocs.io/en/latest/glr_examples/utils/plot_strike.html#sphx-glr-glr-examples-utils-plot-strike-py)
 - [Filtering Data](https://watex.readthedocs.io/en/latest/methods.html#filtering-tensors-ama-flma-tma)
-
 
 
 ## Citations
