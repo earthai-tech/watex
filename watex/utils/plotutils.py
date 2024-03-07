@@ -3221,6 +3221,7 @@ def plot_skew1d (
     show_skewness: bool=..., 
     fig_size = (7, 5), 
     savefig = None, 
+    dpi=300, 
     style=None, 
     ax=None, 
     **kws 
@@ -3297,6 +3298,9 @@ def plot_skew1d (
     savefig: str, optional 
          Save figure name. The default resolution dot-per-inch is ``300``. 
          
+    dpi: float, default=300. 
+       Dot-per-inch for image resolution. 
+       
     style: str, default='classic'
         Matplotlib plottings style.
        
@@ -3399,7 +3403,7 @@ def plot_skew1d (
     
     #plt.xlim() 
     if savefig is not  None: 
-        savefigure (fig, savefig, dpi = 300)
+        savefigure (fig, savefig, dpi = dpi)
         
     plt.close () if savefig is not None else plt.show() 
     
@@ -5082,17 +5086,19 @@ def plot_skew (
         method =method, 
         sensitivity=sensitivity, 
         mode=mode, 
-        threshold_line =threshold_line, 
+        threshold_line=threshold_line, 
         show_skewness=show_skewness, 
         fig_size=fig_size, 
-        savefig=savefig, style =style, 
-        ax=ax , 
+        savefig=savefig, 
+        style =style, 
+        ax=ax ,
+        dpi=dpi, 
         **plot_kws 
         )
     
 plot_skew.__doc__="""\
     
-Visualize the phase sensitive skew  in one or two dimensional. 
+Visualize the phase sensitive skew in one or two dimensional. 
 
 Phase Sensitivity Skew (:math:`\eta`) is a dimensionality tool that 
 represents a measure of the skew of the  phases of the impedance 

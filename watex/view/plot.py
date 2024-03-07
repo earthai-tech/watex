@@ -494,6 +494,7 @@ class TPlot (BasePlot):
                             ) 
         >>> t= TPlot(**plot_kws ).fit(edi_data)
         >>> # plot recovery2d using the log10 resistivity 
+
         >>> t.plot_tensor2d (to_log10=True)
         <AxesSubplot:xlabel='$Distance(m)$', ylabel='$Log_{10}Frequency [Hz]$'>
  

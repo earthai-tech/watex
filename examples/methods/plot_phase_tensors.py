@@ -17,6 +17,7 @@ phase tensors in pseudo-section format.
 # 
 # Import required modules as: 
 import watex as wx 
+from watex.view import TPlot 
 # fetch the Huayuan data 
 edi_samples = wx.fetch_data ('huayuan', samples =27 , return_data = True ) 
 # can also be 
@@ -25,7 +26,7 @@ edi_samples = wx.fetch_data ('huayuan', samples =27 , return_data = True )
 
 # %%
 # *  Ellipse of ``'phimin'``  
-tplot= wx.TPlot (fig_size =( 5, 2 )).fit(edi_samples )
+tplot= TPlot (fig_size =( 5, 2 )).fit(edi_samples )
 # -------------------------------------------------------------------------------------
 # TO BUILD THE DOC WITH  MATPLOTLIB >3.5.3, COMMENT 
 # THE LINES STARTING WITH  "tplot." SEE RELEASE NOTES v0.1.6 FOR THE REASON 

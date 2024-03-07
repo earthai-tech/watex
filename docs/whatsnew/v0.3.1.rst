@@ -12,9 +12,13 @@ These are substantial changes in ``v0.2.7`` API that lead to new features and fu
 
     pip install watex[dev] 
 
-- |Fix| :class:`watex.em.EM` module raises :class:`watex.exceptions.EDIError` rather than ``AttributeError`` when EDI-file is expected while object is passed. 
+- |Fix| :class:`watex.em.EM` module raises :class:`watex.exceptions.EDIError` rather than ``AttributeError`` 
+  when EDI-file is expected while object is passed. 
+  
+- |Fix| 
 
-- |Feature| :func:`watex.utils.plotutils.plot_l_curve` plots the Hansen L-curve with an option to highlight the Hansen point. Indeed, the L-curve criteria is used to determine the suitable model 
+- |Feature| :func:`watex.utils.plotutils.plot_l_curve` plots the Hansen L-curve with an option to highlight 
+  the Hansen point. Indeed, the L-curve criteria is used to determine the suitable model 
   after runing multiple inversions with different :math:`\tau` values. 
 
 

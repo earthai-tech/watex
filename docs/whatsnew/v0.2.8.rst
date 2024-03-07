@@ -1,0 +1,43 @@
+v0.2.8 (September 12, 2023)
+--------------------------
+
+These are minor changes  in ``v0.2.7`` that shows fugs fixed.  
+
+
+- |API change| ``Processing`` and ``ZC`` class have been changed to :class:`watex.methods.em.EMAPProcess` and :class:`watex.methods.em.MTProcess` respectively. 
+   :term:`MT` - :term:`EDI` data can henceforth be processed using the method chaining as:: 
+
+  .. code-block:: python 
+    >>> import watex as wx 
+    >>> edi_data = wx.fetch_data ( 'edis', samples =25 , return_data=True) 
+    >>> zo= wx.methods.MTProcess().fit(edi_data)
+    >>> # process EDI data by suppressing bad frequencies, removing interferences and static shift effects. 
+    >>> zo.drop_frequencies (tol =.2 ).remove_noises ().remove_static_shift(r =10 , nfreq = 4 ) # 10m radius 
+
+- |Fix| Bug in removing the static shift in :term:`AMT` data. Henceforth the correction factor method :meth:`watex.methods.em.ZC.get_ss_correction_factor`
+  is applied for each station differently rather than using the factor to correct all stations. There are also a  choice for user to input the correction factors
+   ``ss_fx`` and ``ss_fy`` manually into a list. 
+
+- |Feature| :func:`watex.utils.plotutils.plot_tensors` plots resistivity and phase tensors or the real and imaginary impedance.
+
+- |Feature| :func:`watex.utils.torres_verdin_filter` calculates the adaptive moving average of a given data array from 
+  Torres and Verdin codes 
+
+- |Feature| :func:`watex.methods.em.filtered_noises` remove noise from single component ``xx``, ``yy``, ``xy`` or ``yx``. 
+
+- |Feature| :func:`watex.utils.exmath.butterworth_filter` defines a bandpass filter using a Butterworth filter and then applies it to your Audio-Frequency Magnetotelluric 
+  data to remove frequencies outside the specified range.
+
+- |Feature| :meth:`watex.methods.em.ZC.remove_noises` removes indesired and artifacts in the data and smooth it. 
+
+- |Enhancement| :func:`watex.utils.read_data` is now able to read data in `txt` and numpy  formats (`.npy` and `.npz`). 
+
+- |Enhancement| :func:`watex.view.TPlot.plot_rhophi` changes the style of plot in preceeding versions. It accepts parameter `kind` for plotting multiple stations differently.  
+
+  
+
+
+
+
+
+

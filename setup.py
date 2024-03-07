@@ -93,7 +93,6 @@ setup_kwargs['install_requires'] = [
     "cython >=0.29.33",
     "pyyaml >=5.0.0", 
     "openpyxl >=3.0.3",
-    "xgboost >=1.7.0",
     "pyproj >=3.3.0",
     "pycsamt >=1.1.2",
     "tqdm >=4.64.1",
@@ -108,13 +107,14 @@ setup_kwargs['install_requires'] = [
     "h5py >=3.2.0",
     "pytest"
  ]
-      
+
 setup_kwargs['extras_require']={
      "dev" : ["click", 
               "missingno>=0.4.2", 
               "yellowbrick>=1.5.0", 
               "pyjanitor>=0.1.7", 
-              "mlxtend>=0.21"
+              "mlxtend>=0.21", 
+              "xgboost >=1.7.0",
              ]  
      } 
                      

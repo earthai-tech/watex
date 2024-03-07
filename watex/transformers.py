@@ -13,33 +13,20 @@ import warnings
 import numpy as np 
 import pandas as pd 
 from scipy import sparse 
-# from pandas.api.types import is_integer_dtype
-from .exlib.sklearn  import ( 
-    StratifiedShuffleSplit, 
-    train_test_split,
-    BaseEstimator,
-    TransformerMixin,
-    StandardScaler,
-    MinMaxScaler,
-    OrdinalEncoder,
-    OneHotEncoder, 
-    KMeans 
-)
- 
+
+from sklearn.base import BaseEstimator, TransformerMixin 
+from sklearn.cluster import KMeans 
+from sklearn.model_selection import train_test_split, StratifiedShuffleSplit 
+from sklearn.decomposition import PCA 
+from sklearn.preprocessing import StandardScaler, MinMaxScaler 
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder 
+
 from ._watexlog import watexlog 
 from ._typing import F 
 from .exceptions import EstimatorError
-from .utils.funcutils import ( 
-    _assert_all_types, 
-    parse_attrs , 
-    to_numeric_dtypes,
-    assert_ratio 
-    )
-from .utils.mlutils import (  
-    discretizeCategoriesforStratification, 
-    stratifiedUsingDiscretedCategories, 
-    existfeatures 
-    )
+from .utils.funcutils import parse_attrs, to_numeric_dtypes, assert_ratio 
+from .utils.mlutils import ( discretizeCategoriesforStratification, 
+      stratifiedUsingDiscretedCategories, existfeatures )
 from .utils.hydroutils import categorize_flow 
 from .utils.validator import get_estimator_name 
 
@@ -57,8 +44,7 @@ __all__= ['KMeansFeaturizer',
           'featurize_X'
           ]
 
-
-class KMeansFeaturizer:
+class KMeansFeaturizer ( BaseEstimator, TransformerMixin) :
     """Transforms numeric data into k-means cluster memberships.
      
     This transformer runs k-means on the input data and converts each data point
@@ -142,10 +128,7 @@ class KMeansFeaturizer:
             Fitted estimator.
         """
         if self.n_components: 
-            self.n_components = int (_assert_all_types(
-                self.n_components, int, float,objname ="'n_components'"))
-            from watex.analysis import nPCA 
-            X =nPCA (X, n_components = self.n_components )
+            X = PCA(n_components = self.components ).fit_transform (X )
             
         if y is None:
             # No target variable, just do plain k-means
@@ -153,22 +136,18 @@ class KMeansFeaturizer:
             n_init=20,
             random_state=self.random_state)
             km_model.fit(X)
-            
             self.km_model_ = km_model
             self.cluster_centers_ = km_model.cluster_centers_
             return self
         
         # There is target information. Apply appropriate scaling and include
         # it in the input data to k-means. 
-        data_with_target = np.hstack((X, y[:,np.newaxis]*self.target_scale))
+        data_with_target = np.hstack((X,  y[:, np.newaxis] * self.target_scale) )
         
         # Build a pre-training k-means model on data and target
-        km_model_pretrain = KMeans(n_clusters=self.n_clusters,
-                            n_init=20,
-                            random_state=self.random_state
-                            )
+        km_model_pretrain = KMeans(n_clusters=self.n_clusters,n_init=20,
+                            random_state=self.random_state)
         km_model_pretrain.fit(data_with_target)
-
         # Run k-means a second time to get the clusters in the original space
         # without target info. Initialize using centroids found in pre-training.
         # Go through a single iteration of cluster assignment and centroid 

@@ -13,7 +13,7 @@ AMT data
 # Import required modules 
 import matplotlib.pyplot as plt 
 import watex as wx 
-from watex.methods.em import filter_noises 
+from watex.methods.em import EMAP, filter_noises 
 
 #%%
 # Fetch EDI data for the tests and load EM EDI objects 
@@ -21,7 +21,7 @@ from watex.methods.em import filter_noises
 # The demonstration will focus on the first station ``S00``
 
 edi_data = wx.fetch_data ('edis', samples =25 , return_data =True ) 
-p= wx.EMAP ( ).fit(edi_data)
+p= EMAP ( ).fit(edi_data)
 #%% 
 # Print 
 # print seven values of resistivity and phase of the first station 
