@@ -33,7 +33,7 @@ def test_EM() :
     
     
     edi_sample = wx.fetch_data ('edis', return_data=True, samples = 12 )
-    wx.EM().fit(edi_sample).getfullfrequency(to_log10 =True )
+    EM().fit(edi_sample).getfullfrequency(to_log10 =True )
     
     
     emObjs= EM().fit(edi_sample)
