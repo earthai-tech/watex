@@ -155,7 +155,7 @@ def test_EMAP():
     
     # xxxxx Test z interpolation  xxxxxxxxxxxxxxxxxxxxxxxx
     sedis = wx.fetch_data ('huayuan', samples = 12 , return_data =True , key='raw')
-    p = wx.EMAP ().fit(sedis) 
+    p = EMAP ().fit(sedis) 
     ff = [ len(ediobj.Z._freq)  for ediobj in p.ediObjs_] 
     # [53, 52, 53, 55, 54, 55, 56, 51, 51, 53, 55, 53]
     Zcol = p.interpolate_z (sedis)
