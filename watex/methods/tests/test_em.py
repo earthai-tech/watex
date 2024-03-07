@@ -26,7 +26,7 @@ def test_EM() :
     #
     edi_sample = wx.fetch_data ('edis', key ='edi', samples =7, 
                                 return_data =True ) 
-    emobj = wx.EM ().fit(edi_sample)
+    emobj = EM ().fit(edi_sample)
     print(emobj.ediObjs_ )
     # uncomment this to output EDI 
     # emobj.rewrite(by='station', prefix='PS')
@@ -173,7 +173,7 @@ def test_EMAP():
     
     sedis = wx.fetch_data ('huayuan', samples = 12 , 
     						   return_data =True , key='raw')
-    p = wx.EMAP ().fit(sedis) 
+    p = EMAP ().fit(sedis) 
     ff = [ len(ediobj.Z._freq)  for ediobj in p.ediObjs_] 
     print(ff) 
     # [53, 52, 53, 55, 54, 55, 56, 51, 51, 53, 55, 53]
