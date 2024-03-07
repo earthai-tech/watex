@@ -35,7 +35,6 @@ fetch_data ( 'huayuan', samples = 25 ) # store 25 edis in cache
 
 edi_fn_lst = [os.path.join(get_data(),f) for f in os.listdir(get_data()) 
          if f.endswith('.edi')] 
-
 plot_strike(edi_fn_lst ) 
 
 #%%

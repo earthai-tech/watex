@@ -38,6 +38,7 @@ from ..exceptions import (
     FeatureError, 
     NotFittedError, 
     EMError, 
+    SiteError, 
     )
 from ..property import BasePlot
 from .._typing import (
@@ -493,6 +494,7 @@ class TPlot (BasePlot):
                             ) 
         >>> t= TPlot(**plot_kws ).fit(edi_data)
         >>> # plot recovery2d using the log10 resistivity 
+
         >>> t.plot_tensor2d (to_log10=True)
         <AxesSubplot:xlabel='$Distance(m)$', ylabel='$Log_{10}Frequency [Hz]$'>
  
@@ -874,7 +876,7 @@ class TPlot (BasePlot):
     def plotSkew (
         self , 
         method ='Bahr', 
-        view ='skew', 
+        sensitivity ='skew', 
         mode=None,
         threshold_line=None, 
         show_average_sensistivity=True, 
@@ -910,13 +912,16 @@ class TPlot (BasePlot):
               The latter threshold is set to 0.3. Above this value the 
               structures is 3D.
               
-        view: str, default='skew'
+        sensitivity: str, default='skew'
            phase sensistive visualization. Can be rotational invariant 
            ``invariant``. In fact, setting to ``mu`` or ``invariant`` does 
            not change any interpretation when since the  distortion of Z 
            are all rotational invariant whether using the ``Bahr`` or ``swift``
            methods. 
            
+           .. versionchanged:: 
+               Param `view` is deprecated and replaced with `sensistivity`. 
+               
         mode:str, optional 
            X-axis coordinates for visualisation. plot either ``'frequency'`` or
            ``'periods'``.  The default is ``'frequency'`` 
@@ -945,7 +950,6 @@ class TPlot (BasePlot):
         See Also
         ---------
         watex.methods.EMAP.skew: 
-            
             For mathematical skew `Bahr` and `Swift` concept formulations. 
         watex.utils.plot_skew: 
             For phase sensistive skew visualization - naive plot.
@@ -968,15 +972,15 @@ class TPlot (BasePlot):
         """
         self.inspect 
         
-        view = str(view).lower() 
+        sensitivity = str(sensitivity).lower() 
         for ix in ('inv', 'rot', 'mu'): 
-            if view.find(ix)>=0: 
-                view ='mu' 
+            if sensitivity.find(ix)>=0: 
+                sensitivity ='mu' 
                 break 
             
-        view='skew' if view=='none' else view 
-        assert view in {"skew", 'mu'}, ("expect 'skew' or 'rotational invariant'"
-                                        f" plot, got {view!r}")
+        sensitivity='skew' if sensitivity=='none' else sensitivity 
+        assert sensitivity in {"skew", 'mu'}, ("expect 'skew' or 'rotational'"
+                                        f" invariant plot, got {sensitivity!r}")
         
         if 'period' in str(mode).lower(): 
             mode ='period'
@@ -985,7 +989,7 @@ class TPlot (BasePlot):
             method = method, suppress_outliers = suppress_outliers
             )
         freqs =  1/ self.p_.freqs_ if mode =='period' else self.p_.freqs_ 
-        ymat = skew if view =='skew' else mu 
+        ymat = skew if sensitivity =='skew' else mu 
         
         fig, ax = plt.subplots(figsize = self.fig_size )
 
@@ -1020,7 +1024,7 @@ class TPlot (BasePlot):
         # see phase sensitive trend 
         if show_average_sensistivity: 
             plt.text(x= np.nanmin(freqs) , y= np.nanmax(ymat), 
-                     s="aver.-{}:{}={}".format(view, str(method).capitalize(), 
+                     s="aver.-{}:{}={}".format(sensitivity, str(method).capitalize(), 
                     np.around (np.average(ymat[ ~np.isnan(ymat)]), 3)),  
                     fontdict= dict (style ='italic',  bbox =dict(
                          boxstyle='round',facecolor ='#CED9EF'))
@@ -1029,7 +1033,7 @@ class TPlot (BasePlot):
         ax.set_xscale('log')
         ax.set_xlabel('Period ($s$)' if mode=='period' 
                       else 'Frequency ($H_z$)' or self.xlabel )
-        ax.set_ylabel(f"{'Skew' if view =='skew' else 'Rot.Invariant'}" + "($\mu$)"
+        ax.set_ylabel(f"{'Skew' if sensitivity =='skew' else 'Rot.Invariant'}" + "($\mu$)"
                       or self.ylabel )
 
         plt.xlim ([ freqs.min() , freqs.max()] or self.xlim )
@@ -1415,11 +1419,24 @@ class TPlot (BasePlot):
                     res_err, fill_value=np.nan) 
                 phs_err = remove_outliers(
                     phs_err, fill_value=np.nan) 
-         
+        
         # make sites coordinates to place sites 
-        sy=  np.average ( [
-            ( np.nanmax(res[0][:, ii]) - np.nanmin(res[0][:, ii])) /2  
-            for ii in sites ] )
+        # assert whether the number of sites fit the row values 
+        sy =[]
+        for ii in sites: 
+            exp_sites = (len(res[0][0, :]) -1) if how=='py' else len(res[0][0, :])
+            if ii > exp_sites: 
+                raise SiteError (
+                    f"Expects {exp_sites} sites. Got {ii}. Note that" 
+                    f" for how={how!r}, the site numbering starts" 
+                    f" at {0 if how=='py' else 1}."
+                    )
+            sy.append ( (np.nanmax(res[0][:, ii]) - np.nanmin(res[0][:, ii])) /2) 
+            
+        sy = np.average ( sy )
+        # sy=  np.average ( [
+        #     ( np.nanmax(res[0][:, ii]) - np.nanmin(res[0][:, ii])) /2  
+        #     for ii in sites ] )
         sy += spad 
         sx = np.average (fp)
                                 
@@ -1639,14 +1656,14 @@ class TPlot (BasePlot):
             axr.append( ax1);  axp.append (ax2)
              
         # --> set default font size
-        font_size =  6
-        plt.rcParams['font.size'] = font_size
+        self.font_size =  6
+        plt.rcParams['font.size'] = self.font_size
 
-        fontdict = {'size': font_size + 2, 
+        fontdict = {'size': self.font_size + 2, 
                     'weight': 'bold'}
         
         for ax0,  site in zip(axr, sites):
-            ax0.set_title(f'S{site}', fontdict={'size': font_size + 2,
+            ax0.set_title(f'S{site}', fontdict={'size': self.font_size + 2,
                                                   'weight': 'bold'})
         #     # set axis properties
         # set ylimit 
@@ -1718,7 +1735,6 @@ class TPlot (BasePlot):
             if aa < len(ax_list)//2: 
                 plt.setp(ax.get_xticklabels(), visible=False)
 
-            
         return axr, axp 
            
     def _axesproperties1 (self, j, ax1, ax2, r, p, sites , scale  ): 
@@ -1744,12 +1760,10 @@ class TPlot (BasePlot):
         xlabel = self.xlabel or ( 'Period($s$)' if scale=='period' 
                                  else 'Frequency ($H_z$)') 
         
-        ax2.set_xlabel(xlabel ) 
-        
+        ax2.set_xlabel(xlabel) 
         
         if j ==0 : 
             # avoid reapeting this 
-            
             ax1.set_ylabel(self.ylabel or r'$\rho_a$($\Omega$.m)') 
             ax2.set_ylabel('$\phi$($\degree$)')
         

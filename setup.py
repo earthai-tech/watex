@@ -18,7 +18,7 @@ builtins.__WATEX_SETUP__ = True
 try: 
     import watex  # noqa
     VERSION = watex.__version__
-except: VERSION ='0.3.0'
+except: VERSION ='0.3.1'
 # set global variables 
 DISTNAME = "watex"
 DESCRIPTION= "Machine learning research in water exploration"
@@ -93,12 +93,11 @@ setup_kwargs['install_requires'] = [
     "cython >=0.29.33",
     "pyyaml >=5.0.0", 
     "openpyxl >=3.0.3",
-    "xgboost >=1.7.0",
     "pyproj >=3.3.0",
     "pycsamt >=1.1.2",
     "tqdm >=4.64.1",
     "tables >=3.6.0",
-    "scikit-learn >=1.2.1",
+    "scikit-learn ==1.2.1",
     "joblib >=1.2.0",
     "threadpoolctl >=3.1.0",
     "matplotlib ==3.5.3",
@@ -108,13 +107,14 @@ setup_kwargs['install_requires'] = [
     "h5py >=3.2.0",
     "pytest"
  ]
-      
+
 setup_kwargs['extras_require']={
      "dev" : ["click", 
               "missingno>=0.4.2", 
               "yellowbrick>=1.5.0", 
               "pyjanitor>=0.1.7", 
-              "mlxtend>=0.21"
+              "mlxtend>=0.21", 
+              "xgboost >=1.7.0",
              ]  
      } 
                      

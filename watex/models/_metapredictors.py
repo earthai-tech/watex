@@ -14,7 +14,9 @@ from ..exlib.sklearn import (
     SVC, 
     VotingClassifier, 
     )
-from ..exlib.gbm import XGBClassifier 
+from ..exlib.gbm import IS_GBM
+if IS_GBM: 
+    from ..exlib.gbm import XGBClassifier  
 from ..utils.funcutils import get_params 
 
 __all__=['_pMODELS']
@@ -129,10 +131,7 @@ _svm_ = {'poly': {'best_estimator_': _poly_ ,
                     'best_params_': get_params(_linear_)
                     }, 
         }
-
-
 #svmBinaryModels= (svm_lin, svm_poly, svm_sig, svm_rbf )
-
 _svmBinaryModels = { 
         'lin': _linear, 
         'poly': _poly, 
@@ -210,26 +209,27 @@ _pastm = BaggingClassifier (
     **{
        'n_estimators': 150,
        'bootstrap': False, 
-       'base_estimator': SVC(C=2.0, coef0=0, degree=1, gamma=0.125)
+       'estimator': SVC(C=2.0, coef0=0, degree=1, gamma=0.125)
        }
     ) # 0.8517441860465117
 _adam = AdaBoostClassifier (
     **{
        'n_estimators': 50, 
        'learning_rate': 0.06, 
-       'base_estimator': DecisionTreeClassifier(
+       'estimator': DecisionTreeClassifier(
             criterion='entropy', max_depth=7)
        }
     ) # 0.8546 
-_xgboostm = XGBClassifier (
-    **{
-       'n_estimators': 300,
-       'max_depth': 2,
-       'learning_rate': 0.07, 
-       'gamma': 1.5,
-       'booster': 'gbtree'
-       }
-    ) # 0.8633
+if IS_GBM: 
+    _xgboostm = XGBClassifier (
+        **{
+            'n_estimators': 300,
+            'max_depth': 2,
+            'learning_rate': 0.07, 
+            'gamma': 1.5,
+            'booster': 'gbtree'
+            }
+        ) # 0.8633
 _stcm = StackingClassifier (
     **{
        'estimators': _vmodels , 
@@ -237,7 +237,7 @@ _stcm = StackingClassifier (
        }
     ) # 0.86662
 
-_ensembleModels = (
+_ensembleModels = [
     _lr, 
     _knn, 
     _dt, 
@@ -248,10 +248,12 @@ _ensembleModels = (
     _extreeoobm,
     _pastm, 
     _adam,
-    _xgboostm,
     _stcm
-    )
+    ]
 
+if IS_GBM: 
+    _ensembleModels.insert (10, _xgboostm )
+    
 def _set2dict ( *objs , s= False, names = None ): 
     """ Create an object dict. Each subset of dict element constitues a 
     subclass. Each dict key must compose an attribute objects of metaclass. """

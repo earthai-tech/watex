@@ -17,9 +17,7 @@ visualizes the ROC classifier(s) performance.
 # (1) Plot ROC for single classifier 
 # note that plot can be customize 
 
-from watex.exlib.sklearn import ( SGDClassifier, 
-                                     RandomForestClassifier
-                                     )
+from watex.exlib.sklearn import SGDClassifier, RandomForestClassifier
 from watex.datasets.dload import load_bagoue 
 from watex.utils import cattarget 
 from watex.view.mlplot import EvalPlot 

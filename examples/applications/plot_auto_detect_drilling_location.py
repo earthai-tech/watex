@@ -15,6 +15,7 @@ naive auto-detection and the auto-detection with the constraints application.
 # to 1e1 and 1e4 ohm.m respectively as:
 
 import watex as wx 
+from watex.methods import ResistivityProfiling 
 data = wx.make_erp (n_stations=50, max_rho=1e4, min_rho=10., as_frame =True, seed =42 ) 
 #%%
 # * Naive auto-detection (NAD)
@@ -24,7 +25,7 @@ data = wx.make_erp (n_stations=50, max_rho=1e4, min_rho=10., as_frame =True, see
 # by suitable, a location expecting to give a flow rate greater than 1m3/hr at 
 # least.
 
-robj=wx.ResistivityProfiling (auto=True ).fit(data ) 
+robj=ResistivityProfiling (auto=True ).fit(data ) 
 robj.sves_ 
 
 #%%
@@ -49,7 +50,7 @@ restrictions = {
     'S42': 'Anthropic polluted place, avoid contamination within a few years',
     'S46': 'Marsh zone, borehole will dry up during the dry season'
  }
-robjc=wx.ResistivityProfiling (constraints= restrictions, auto=True ).fit(data ) 
+robjc=ResistivityProfiling (constraints= restrictions, auto=True ).fit(data ) 
 robjc.sves_
 
 #%% 

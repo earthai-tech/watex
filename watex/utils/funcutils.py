@@ -3218,7 +3218,7 @@ def station_id (id_, is_index= 'index', how=None, **kws):
 
 def assert_doi(doi): 
     """
-     assert the depath of investigation Depth of investigation converter 
+     assert the depth of investigation Depth of investigation converter 
 
     :param doi: depth of investigation in meters.  If value is given as string 
         following by yhe index suffix of kilometers 'km', value should be 
@@ -3840,7 +3840,8 @@ def random_state_validator(seed):
 def is_iterable (
         y, /, exclude_string= False, transform = False , parse_string =False, 
 )->bool | list: 
-    """ Asserts iterable object and returns 'True' or 'False'
+    """ Asserts iterable object and returns boolean or transform object into
+     an iterable.
     
     Function can also transform a non-iterable object to an iterable if 
     `transform` is set to ``True``.
@@ -5441,8 +5442,8 @@ def interpolate_grid (
      
     fill_value: float, str, default='auto' 
        Fill the interpolated grid at the egdes or surrounding NaN with 
-       a filled value. The ``auto`` fill use the forward and backward 
-       fill stragety. 
+       a filled value. The ``auto`` uses the forward and backward 
+       fill strategy. 
        
     view: bool, default=False, 
        Quick visualize the interpolated grid. 
@@ -5782,7 +5783,6 @@ def rename_files (
             if sortby in ( int, float, 'num', 'number', 'digit'): 
                 src_files = sorted(ldir, key=lambda s:int( re.search(
                     '\d+', s).group()) if re.search('\d+', s) else 0 )
-                
             else: 
                 src_files = sorted(ldir, key=sortby)
 
@@ -5790,18 +5790,21 @@ def rename_files (
         # get only the files 
         src_files = [ f for f in src_files if os.path.isfile (f ) ]
 
-    else : 
-        raise FileNotFoundError(f"{src_files!r} not found.") 
+    else : raise FileNotFoundError(f"{src_files!r} not found.") 
     
+    # Create the directory if it doesn't exist
+    if ( dst_files is not None 
+        and not os.path.exists (dst_files)
+        ): 
+        os.makedirs(dst_files)
+        
     if os.path.isdir(dst_files): 
         dest_dir = dst_files 
-        
+
     dst_files = is_iterable(dst_files , exclude_string= True, transform =True ) 
-    
     # get_extension of the source_files 
     _, ex = os.path.splitext (src_files[0]) 
     
-
     if dest_dir: 
         if basename is None: 
             warnings.warn(
@@ -5819,7 +5822,7 @@ def rename_files (
                         for i in range (len(src_files))]
         
         dst_files = [os.path.join(dest_dir , f) for f in dst_files ] 
-        
+    
     for f, nf in zip (src_files , dst_files): 
         try: 
            if keep_copy : shutil.copy (f, nf , **kws )
@@ -5830,7 +5833,6 @@ def rename_files (
             else : os.rename (f, nf , **kws )
             
             
-
 def get_xy_coordinates (d, / , as_frame = False, drop_xy = False, 
                         raise_exception = True, verbose=0 ): 
     """Check whether the coordinate values exist in the data
@@ -7156,7 +7158,7 @@ def ellipsis2false( *parameters , default_value: Any=False ):
    
 
 
-    
+
     
  
     

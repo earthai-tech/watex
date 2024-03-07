@@ -35,7 +35,7 @@ try:
     from . import _version
     __version__ = _version.version.split('.dev')[0]
 except ImportError:
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
 # # set loging Level
 logging.getLogger(__name__)#.setLevel(logging.WARNING)
@@ -92,61 +92,13 @@ with warnings.catch_warnings():
     warnings.simplefilter(action='ignore', category=FutureWarning)
     warnings.filterwarnings(action='ignore', category=UserWarning)
     import watex.exlib as sklearn 
-    from .exlib.gbm import XGBClassifier
-    
-from .analysis import ( 
-    nPCA, 
-    kPCA, 
-    LLE, 
-    iPCA, 
-    )
-from .base import ( 
-    Data, 
-    Missing, 
-    AdalineGradientDescent, 
-    AdalineStochasticGradientDescent, 
-    SequentialBackwardSelection, 
-    ) 
-from .cases import ( 
-    BaseSteps, 
-    Preprocessing , 
-    BaseModel,
-    FeatureInspection, 
-    ) 
+
+
 from .datasets import ( 
     fetch_data, 
     make_erp, 
     make_ves 
     ) 
-from .methods import (
-    ResistivityProfiling ,
-    VerticalSounding, 
-    DCProfiling, 
-    DCSounding, 
-    EM, 
-    EMAP, 
-    MT, 
-    MXS, 
-    )
-from . models import ( 
-    GridSearch, 
-    GridSearchMultiple,
-    get_scorers, 
-    naive_evaluation, 
-    pModels
-    )
-
-from .view import ( 
-    EvalPlot, 
-    plotLearningInspections, 
-    plotSilhouette,
-    plotDendrogram, 
-    plotProjection, 
-    QuickPlot , 
-    ExPlot,
-    TPlot, 
-    )
-
 from .utils import ( 
     plotAnomaly, 
     vesSelector, 
@@ -164,7 +116,6 @@ from .utils import (
     get2dtensor,
     plotOhmicArea, 
     plot_sfi,
-    reshape, 
     to_numeric_dtypes, 
     smart_label_classifier,
     plot_confidence_in, 
@@ -183,7 +134,6 @@ except ImportError :
 
 def setup_module(module):
     """Fixture for the tests to assure globally controllable seeding of RNGs"""
-
     import numpy as np
 
     # Check if a random seed exists in the environment, if not create one.
@@ -226,72 +176,35 @@ parameter collections.
     
 __all__ = [ 
     "sklearn", 
-    "XGBClassifier", 
-    "nPCA", 
-    "kPCA", 
-    "LLE", 
-    "iPCA",  
-    "Data", 
-    "Missing", 
-    "AdalineGradientDescent", 
-    "AdalineStochasticGradientDescent", 
-    "SequentialBackwardSelection", 
-    "BaseSteps", 
-    "Preprocessing" , 
-    "BaseModel",
-    "FeatureInspection", 
-    "fetch_data",
+    "show_versions", 
+    "fetch_data", 
     "make_erp", 
-    "make_ves" , 
-    "Structural", 
-    "Structures", 
-    "ResistivityProfiling" ,
-    "VerticalSounding", 
-    "DCProfiling", 
-    "DCSounding", 
-    "EM", 
-    "EMAP", 
-    "MT", 
-    "MXS", 
-    "get2dtensor", 
-    "GridSearch", 
-    "GridSearchMultiple",
-    "get_scorers", 
-    "pModels", 
-    "EvalPlot", 
-    "plotLearningInspections", 
-    "plotSilhouette",
-    "plotDendrogram", 
-    "plotProjection", 
-    "QuickPlot" , 
-    "ExPlot",
-    "TPlot", 
+    "make_ves", 
     "plotAnomaly", 
     "vesSelector", 
     "erpSelector", 
     "read_data",
-    "erpSmartDetector", 
+    "cleaner", 
+    "erpSmartDetector",
     "type_",
     "shape", 
     "power", 
     "magnitude", 
     "sfi", 
-    "qc", 
-    "plot_confidence_in", 
     "ohmicArea", 
     "fittensor",
+    "get2dtensor",
     "plotOhmicArea", 
     "plot_sfi",
-    "reshape", 
     "to_numeric_dtypes", 
     "smart_label_classifier",
+    "plot_confidence_in", 
+    "qc",
     "selectfeatures", 
     "naive_imputer", 
     "naive_scaler",  
     "make_naive_pipe", 
     "bi_selector", 
-    "show_versions",
-    "cleaner", 
-    "naive_evaluation"
+
     ]
 

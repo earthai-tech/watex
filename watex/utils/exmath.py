@@ -78,7 +78,8 @@ from .funcutils import (
     remove_outliers, 
     find_feature_positions,
     find_close_position,
-    ellipsis2false,    
+    ellipsis2false, 
+    convert_value_in, 
     smart_format,
     is_iterable, 
     reshape,
@@ -5026,7 +5027,6 @@ def savgol_filter(x, window_length, polyorder, deriv=0, delta=1.0,
 
     return y        
 
-
 def get2dtensor(
     z_or_edis_obj_list:List[EDIO |ZO], /, 
     tensor:str= 'z', 
@@ -5375,7 +5375,7 @@ def plot_confidence_in(
     rotate_xlabel: float, default=90.
        Angle to rotate the stations/sites labels 
        
-    top_labels: str,default='Stations' 
+    top_label: str,default='Stations' 
        Labels the sites either using the survey name. 
        
     view_ci: bool,default=True, 
@@ -5430,7 +5430,7 @@ def plot_confidence_in(
                        )
     # re-compute distance 
     distance = distance or 1. 
-    d= np.arange ( rerr.shape[1])  * distance 
+    d= np.arange ( rerr.shape[1])  * convert_value_in(distance) 
     # format clabel for error 
     clab=r"resistivity ($\Omega$.m)" if 'res' in tensor else (
         r'phase ($\degree$)' if 'ph' in tensor else tensor )
@@ -5532,7 +5532,11 @@ def plot_confidence_in(
                           color= c,
                           label = lab, 
                           )
-            ax.legend(loc ='lower right' if view=='2d' else 'best') 
+            ax.legend(loc ='lower right' if view=='2d' else 'best',  
+                      facecolor ='white', 
+                      prop = dict (size = fontsize *2,)
+                                   
+                                   ) 
 
     if savefig: 
         plt.savefig(savefig, dpi =600 )

@@ -1,0 +1,28 @@
+v0.3.1 (December 22, 2023)
+--------------------------
+
+These are substantial changes in ``v0.2.7`` API that lead to new features and fugs fixed. 
+ 
+- |API change| The parameter ``edi_obj`` in :func:`watex.utils.plot_skew` is deprecated. It is replaced by ``edis__list`` which indicate a collection 
+  of :term:`EDI` files or a full path to EDI-files. Two-dimensional skewness :math:`eta` can also be visualized by turning the parameter ``view='2D'``.  
+
+- |API change|  ``Xgboot`` library is no longer available as dependencies during the library installation. To install it as a dependency, use the ``dev`` option as : 
+
+  .. code-block:: bash 
+
+    pip install watex[dev] 
+
+- |Fix| :class:`watex.em.EM` module raises :class:`watex.exceptions.EDIError` rather than ``AttributeError`` 
+  when EDI-file is expected while object is passed. 
+  
+- |Fix| 
+
+- |Feature| :func:`watex.utils.plotutils.plot_l_curve` plots the Hansen L-curve with an option to highlight 
+  the Hansen point. Indeed, the L-curve criteria is used to determine the suitable model 
+  after runing multiple inversions with different :math:`\tau` values. 
+
+
+
+
+
+

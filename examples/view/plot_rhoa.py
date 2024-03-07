@@ -13,9 +13,10 @@ Plot station/site apparent resistivity curves
 # of EDI data collected in Huayaun province. ``seed`` is used to reproduce 
 # the data at the same station. 
 # * Simple Plot 
-import watex 
-test_data = watex.fetch_data ('huayuan', return_data =True , clear_cache=True )
-tplot = watex.TPlot(fig_size =(6,  4), marker ='o').fit(test_data)
+import watex as wx 
+from  watex.view import TPlot 
+test_data = wx.fetch_data ('huayuan', return_data =True , clear_cache=True )
+tplot = TPlot(fig_size =(6,  4), marker ='o').fit(test_data)
 tplot.plt_style='classic'
 tplot.plot_rhoa (seed =52, mode ='*', survey='AMT', show_site =True, )
 

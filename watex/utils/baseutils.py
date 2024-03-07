@@ -46,7 +46,7 @@ def array2hdf5 (
       Data to load or write 
     filename: str, 
       Hdf5 disk file name whether to write or to load 
-    task: str, {"store", "load", default='store'}
+    task: str, {"store", "load", "save", default='store'}
        Action to perform. user can use ['write'|'store'] interchnageably. Both 
        does the same task. 
     as_frame: bool, default=False 
@@ -77,7 +77,7 @@ def array2hdf5 (
     act = copy.deepcopy(task)
     task = str(task).lower().strip() 
     
-    if task in ("write", "store"): 
+    if task in ("write", "store", "save"): 
         task ='store'
     assert task in {"store", "load"}, ("Expects ['store'|'load'] as task."
                                          f" Got {act!r}")
