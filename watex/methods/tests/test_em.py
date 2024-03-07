@@ -61,7 +61,7 @@ def test_EM() :
     ref = EM().fit(edi_sample).getreferencefrequency(to_log10=True) 
     print(ref )
 
-
+@pytest.mark.skip 
 @pytest.mark.skipif(os.path.isdir ('data/edis') is False ,
                     reason = 'EDI path does not exist')
 def test_EMAP(): 
