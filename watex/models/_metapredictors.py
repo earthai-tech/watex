@@ -237,7 +237,7 @@ _stcm = StackingClassifier (
        }
     ) # 0.86662
 
-_ensembleModels = (
+_ensembleModels = [
     _lr, 
     _knn, 
     _dt, 
@@ -249,7 +249,7 @@ _ensembleModels = (
     _pastm, 
     _adam,
     _stcm
-    )
+    ]
 
 if IS_GBM: 
     _ensembleModels.insert (10, _xgboostm )
