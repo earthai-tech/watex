@@ -185,8 +185,8 @@ def test_DCMagic ():
     # test 
     erp_data = wx.make_erp ( seed =33 ).frame  
     ves_data = wx.make_ves (seed =42).frame 
-    v = wx.DCSounding ().fit(wx.make_ves (seed =10, as_frame =True, add_xy =True))
-    r = wx.DCProfiling().fit( wx.make_erp ( seed =77 , as_frame =True))
+    v = DCSounding ().fit(wx.make_ves (seed =10, as_frame =True, add_xy =True))
+    r = DCProfiling().fit( wx.make_erp ( seed =77 , as_frame =True))
     res= ResistivityProfiling(station='S4').fit(erp_data) 
     ves= VerticalSounding(search=60).fit(ves_data)
     # dc-ves  : 100%|################################| 1/1 [00:00<00:00, 111.13B/s]
@@ -203,7 +203,7 @@ def test_DCMagic ():
     # 2  109.332932  28.41193     U  ...  1.184614          1.000000  276.340744
 
     data = wx.make_erp (seed =42 , n_stations =12, as_frame =True ) 
-    ro= wx.DCProfiling ().fit(data) 
+    ro= DCProfiling ().fit(data) 
     print(ro.summary()) 
 
     data_no_xy = wx.make_ves ( seed=0 , as_frame =True) 
