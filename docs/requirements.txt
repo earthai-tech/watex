@@ -1,4 +1,4 @@
-sphinx ==4.5
+sphinx >=4.5
 sphinx-gallery
 sphinxcontrib-jsmath 
 sphinx-mathjax-offline
