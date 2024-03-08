@@ -39,7 +39,8 @@ from ..utils.funcutils import (
 from ..utils.box import Boxspace
 
 __all__= [ "load_bagoue" , "load_gbalo", "load_iris", "load_semien",
-          "load_tankesse",  "load_boundiali", "load_hlogs","load_edis"]
+          "load_tankesse",  "load_boundiali", "load_hlogs","load_edis", 
+          "load_huayuan"]
 
 def load_tankesse (
         *, as_frame =True, tag=None,data_names=None, **kws 
@@ -1152,8 +1153,8 @@ def load_huayuan (
                   savepath = savepath or get_data())
     
     #******Read Edis****************************
-    import watex as wx 
-    emo = wx.EM().fit(savepath or get_data ()) 
+    from watex.methods import EM 
+    emo = EM().fit(savepath or get_data ()) 
     #*******************************************
     if as_frame: 
         frame = pd.DataFrame ({ 'edi': emo.ediObjs_, 

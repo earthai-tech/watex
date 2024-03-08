@@ -553,7 +553,7 @@ class EM(IsEdi):
         >>> import watex as wx 
         >>> edi_sample = wx.fetch_data ('edis', key ='edi', 
                                         samples =7, return_data =True ) 
-        >>> emobj = wx.EM ().fit(edi_sample)
+        >>> emobj = EM ().fit(edi_sample)
         >>> emobj.rewrite(by='station', prefix='PS')
         
         """
@@ -719,7 +719,7 @@ class EM(IsEdi):
         -------
         >>> import watex as wx 
         >>> edi_sample = wx.fetch_data ('edis', return_data=True, samples = 12 )
-        >>> wx.EM().fit(edi_sample).getfullfrequency(to_log10 =True )
+        >>> wx.methods.EM().fit(edi_sample).getfullfrequency(to_log10 =True )
         array([4.76937733, 4.71707639, 4.66477553, 4.61247466, 4.56017382,
                4.50787287, 4.45557204, 4.40327104, 4.35097021, 4.29866928,
                4.24636832, 4.19406761, 4.14176668, 4.08946565, 4.03716465,
@@ -1634,7 +1634,7 @@ class EMAP(EM) :
         >>> import watex as wx
         >>> import matplotlib.pyplot as plt 
         >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
-        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> p = wx.methods.EMAP (out='z').fit(edi_data.edi) 
         >>> z_corrected = p.tma () # output z in complex dtype 
         >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
             [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
@@ -1844,7 +1844,7 @@ class EMAP(EM) :
         >>> import watex as wx
         >>> import matplotlib.pyplot as plt 
         >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
-        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> p = wx.methods.EMAP (out='z').fit(edi_data.edi) 
         >>> z_corrected = p.ama () # output z in complex dtype 
         >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
             [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
@@ -1997,7 +1997,7 @@ class EMAP(EM) :
         >>> import watex as wx
         >>> import matplotlib.pyplot as plt 
         >>> edi_data = wx.fetch_data ('edis', as_frame =True, key ='edi')
-        >>> p = wx.EMProcessing (out='z').fit(edi_data.edi) 
+        >>> p = wx.methods.EMAP (out='z').fit(edi_data.edi) 
         >>> z_corrected = p.flma () # output z in complex dtype 
         >>> plt.plot (np.arange (len(p.ediObjs_)) , np.abs( 
             [ ediobj.Z.z[:, 0, 1][7]  for ediobj in p.ediObjs_]) , '-ok',
@@ -2981,7 +2981,7 @@ class EMAP(EM) :
         >>> import watex as wx 
         >>> sedis = wx.fetch_data ('huayuan', samples = 12 , 
                                          return_data =True , key='raw')
-        >>> p = wx.EMProcessing ().fit(sedis) 
+        >>> p = wx.methods.EMAP ().fit(sedis) 
         >>> ff = [ len(ediobj.Z._freq)  for ediobj in p.ediObjs_] 
         [53, 52, 53, 55, 54, 55, 56, 51, 51, 53, 55, 53]
         >>> Zcol = p.interpolate_z (sedis)
@@ -3161,7 +3161,7 @@ class MT(EM):
         >>> import watex as wx 
         >>> sedis = wx.fetch_data ('huayuan', samples = 12 , 
                                    return_data =True , key='raw')
-        >>> p = wx.EMProcessing ().fit(sedis) 
+        >>> p = wx.methods.EMAP ().fit(sedis) 
         >>> ff = [ len(ediobj.Z._freq)  for ediobj in p.ediObjs_] 
         >>> ff
         [53, 52, 53, 55, 54, 55, 56, 51, 51, 53, 55, 53]
@@ -3979,7 +3979,7 @@ def filter_noises (
     >>> import watex as wx 
     >>> from watex.methods.em import filter_noises 
     >>> edi_data = wx.fetch_data ('edis', samples =25 , return_data =True ) 
-    >>> p= wx.EMProcessing ( ).fit(edi_data)
+    >>> p= wx.methos.EMAP ( ).fit(edi_data)
     >>> p.ediObjs_[0].Z.resistivity[:, 0, 1][:7] # resistivity
     Out[55]: 
     array([ 663.46885417,  814.71087154, 1137.53936423, 2412.61855152,

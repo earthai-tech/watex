@@ -141,7 +141,7 @@ html_theme =  "pydata_sphinx_theme"
 
 
 html_static_path = ['_static', 'example_thumbs']
-html_css_files =  [f"css/custom.css?v={watex.__version__}"]
+html_css_files =  [f"css/custom.css"] # ?v={watex.__version__} query removed. 
 
 
 # todo_include_todos = True

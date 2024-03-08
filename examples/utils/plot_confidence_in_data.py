@@ -38,7 +38,7 @@ weak and useless signals for restoring or deleting.
 # * Plot confidence in two-dimensional view
 # Two-dimensional view is ensured by the parameter ``view`` set to ``2d``. 
 import watex as wx 
-from watex.utils.exmath import plot_confidence_in
+from watex.utils import plot_confidence_in
 edi_data= wx.fetch_data ( 'huayuan', samples = 25, key='raw', return_data =True, clear_cache =True)
 plot_confidence_in (edi_data , distance =20 ,  view ='2d', figsize =(6, 2)
                      )

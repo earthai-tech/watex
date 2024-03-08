@@ -3162,6 +3162,8 @@ def _validate_sensitivity_s (
     
     An isolate part of  :func:`plot_skew1d` or :func:`plot_skew2d`. 
     """
+    from watex.methods import EMAP 
+    
     sensitivity = sensitivity or 'skew'
     
     if ('inv'  in str (sensitivity).lower()
@@ -3175,9 +3177,7 @@ def _validate_sensitivity_s (
         
     # if str(threshold_line).lower()=='true': 
     #     threshold_line = str(method).lower() 
-            
-    import watex as wx 
-    po =  wx.EMAP().fit(edis_list)
+    po =  EMAP().fit(edis_list)
     
     # remove the outliers in the data
     # and filled with NaN 
