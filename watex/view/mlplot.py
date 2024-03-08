@@ -2887,12 +2887,18 @@ def plotLearningInspections (
     
     if not is_iterable( axes) :
         axes =[axes ] 
+    cscores =[]; vscores =[]
     for kk, model in enumerate ( models ) : 
         title = titles[kk] or  get_estimator_name (model )
-        plotLearningInspection(model, X=X , y=y, axes = axes [:, kk], 
+        _, csc, vsc = plotLearningInspection(model, X=X , y=y, axes = axes [:, kk], 
                                title =title, 
                                **kws)
-        
+        cscores.append(csc); vscores.append (vsc)
+    print("*"*77)
+    print("Convergence scores =", np.around(np.mean(cscores), 4))
+    print("validation scores =", np.around (np.nanmean(vscores), 4))
+    print("*"*77)
+    
     if savefig : 
         fig.savefig (savefig , dpi = 300 )
     plt.show () if savefig is None else plt.close () 
@@ -3098,7 +3104,7 @@ def plotLearningInspection(
     axes[2].set_ylabel("Score")
     axes[2].set_title(f"Performance of {title_name}")
 
-    return axes
+    return axes , np.mean([train_scores[-1], test_scores[-1]]),test_scores_mean 
 #XXX
 def plot_matshow(
     arr, / , labelx:List[str] =None, labely:List[str]=None, 
