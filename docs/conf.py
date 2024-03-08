@@ -17,7 +17,7 @@ import shutil
 import re 
 import time 
 
-import sphinx_gallery
+import sphinx_gallery # noqa 
 from sphinx_gallery.sorting import ExampleTitleSortKey
 
 
@@ -46,8 +46,10 @@ project = 'watex'
 copyright = f"2022-{time.strftime('%Y')}"
 author = 'K. Laurent Kouadio'
 # The full version, including alpha/beta/rc tags
-try : version = release = watex._version.version
-except : version = release = watex.__version__
+try :
+    version = release = watex._version.version
+except :
+    version = release = watex.__version__
 
 # -- General configuration ---------------------------------------------------
 

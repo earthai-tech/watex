@@ -46,7 +46,6 @@ from ..exceptions import (
 
 # import  watex.exceptions as Wex 
 # import  watex.decorators as deco
-
 _logger =watexlog().get_watex_logger(__name__)
 
 __all__=["BaseModel"] 

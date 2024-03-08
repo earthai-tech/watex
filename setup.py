@@ -16,7 +16,7 @@ builtins.__WATEX_SETUP__ = True
 # We can actually import watex version from 
 # in editable mode :$ python -m pip install -e .
 try: 
-    import watex  # noqa
+    import watex  
     VERSION = watex.__version__
 except: VERSION ='0.3.1'
 # set global variables 
