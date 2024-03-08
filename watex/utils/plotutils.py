@@ -3942,7 +3942,7 @@ def plot_voronoi(
     line_width=1. ,
     line_alpha=1.,   
     fig_size = (7, 7), 
-    cmap='set1', 
+    cmap='Set1', 
     show_grid=True, 
     alpha=0.2, 
     fig_title = ''
