@@ -2,99 +2,134 @@
 .. _story_ref:
 
 ================
-Project story 
+Project Story
 ================
 
 Here is a story that describes the :code:`watex` project design. 
 
-
-Introductory notes
+Introductory Notes
 --------------------
 
-:term:`Water` is a vital resource in the world, and the issues related to water of this present century remain crucial faced to 
-the climate change challenges. :term:`Water`, in addition to being used in industries, electronics, services, and companies, remains a rare 
-commodity, especially for developing countries. Indeed, :term:`water` treatment is very expensive and only developed countries have the 
-means to afford the final treatment chain. 
+Water is an indispensable resource globally, facing significant challenges in 
+this century due to climate change. Beyond its use in industries, electronics, 
+services, and companies, water remains a scarce commodity, particularly in 
+developing countries. Indeed, water treatment processes are costly, with only 
+developed nations typically able to afford comprehensive treatment solutions.
 
-The idea of the project was born in 2015 in the `geosciences and civil engineering operations company (IBS+) <https://www.facebook.com/ibsplus.ingenierie/?locale=fr_FR>`__. In  
-this venture, I was selected as a geophysicist engineer where one of my missions consisted to bring potable water to many regions 
-of :term:`Cote d'Ivoire` and beyond. An tangible example outside :term:`CIV` was  the :term:`CDWS` in some West African sub-regions such as  `Niger <https://fr.wikipedia.org/wiki/Niger>`__, `Guinea <https://en.wikipedia.org/wiki/Guinea>`__,
-`Mali <https://fr.wikipedia.org/wiki/Mali>`__ and `Burkina <https://fr.wikipedia.org/wiki/Burkina_Faso>`__. These different projects 
-were partly funded or bi-supported by international organizations (`World Bank <https://www.worldbank.org/en/home>`__, `UNICEF <https://www.unicef.org/>`__ ) and the host country governments (e.g., :term:`PNAEP` and 
-:term:`PPU` programs in the case of  :term:`CIV`) with several cooperation initiatives. 
+The genesis of the *WATex* project dates back to 2015, within the geosciences and 
+civil engineering operations company (`IBS+ <https://www.facebook.com/ibsplus.ingenierie/?locale=fr_FR>`__). 
+Selected as a geophysical engineer for this venture, my mission was to facilitate 
+access to potable water across various regions of Côte d'Ivoire and beyond. 
+Noteworthy examples of our work outside CIV include the Community Drinking Water Supply 
+(:term:`CDWS`) projects in West African sub-regions like Niger, Guinea, `Mali <https://fr.wikipedia.org/wiki/Mali>`__, 
+and `Burkina <https://fr.wikipedia.org/wiki/Burkina_Faso>`__. These projects received 
+partial funding and support from international organizations such as the 
+World Bank and UNICEF, alongside the governments of the host countries, under 
+initiatives like PNAEP and PPU in Côte d'Ivoire.
+
+The Development Journey
+------------------------
+
+Our experiences in these regions highlighted the acute need for efficient and 
+reliable methods to locate groundwater resources. Traditional approaches, while 
+effective to some extent, often resulted in high rates of unsuccessful drillings, 
+leading to wasted resources and diminished hope among the communities we aimed 
+to serve.
+
+Recognizing this, we embarked on the development of *WATex* as a tool to harness 
+the power of machine learning for water exploration. Our goal was to significantly 
+improve the accuracy of groundwater detection, thereby reducing the risk of 
+unsuccessful drillings and maximizing the impact of available resources.
+
+*WATex* was envisioned as a user-friendly, open-source platform that could 
+democratize access to advanced geophysical data analysis, making it accessible 
+not only to professionals in the field but also to local communities and 
+small-scale operations.
 
 
-Trigger effect
+Trigger Effect
 ---------------
 
-Althrough, the desire to enhance the living conditions of the population remains one of my main concerns, the trigger factor 
-that accelerates the design of :code:`watex` was the  Diacohou-Nord project in 2017 ( in the center part of :term:`Cote d’Ivoire`, see Figure 1).  
-The project was specific which purpose was to find the best location for the :term:`drilling` operations expecting to obtain a 
-:term:`flow` rate (:term:`FR`) of :math:`10m^3/hr` (= :term:`RFR`). However, this peculiar area strongly faced with a drinking water shortage 
-especially during the dry season. The condition such as the topographic/terrain and other constraints were not optimals to get such :term:`FR` thereby worsening the 
-conditions of the living populations. In addition, during our trip to that locality,  from 6 P.M. to 6 A.M. every day, women in the village rush away 
-into the forest for seeking potable water for the households, their husbands, and their children ( Figure 1.a). The water flowing from 
-the lowlands, mash areas and rocks located far in the forest entailed the second alternative source of water when all the wells/boreholes
-in the locality and surrondings had dried up notwithstanding the dangers with the wild animals. 
+Although enhancing the living conditions of the population remains one of my primary 
+concerns, the catalyst for :code:`watex`'s development was the Diacohou-Nord project in 2017, 
+located in the central part of Côte d'Ivoire (see Figure 1). This project was unique in 
+its aim to identify the optimal location for :term:`drilling` operations to achieve a :term:`flow` 
+rate (:term:`FR`) of :math:`10m^3/hr` (referred to as :term:`RFR`). The area faced significant challenges with 
+drinking water availability, especially during the dry season. The topographic and 
+terrain constraints, among others, were not conducive to achieving the desired FR, 
+exacerbating the living conditions of the local population. 
+
+During our visit, from 6 P.M. to 6 A.M. daily, women in the village ventured into 
+the forest to find potable water for their families (Figure 1.a). The water collected 
+from lowlands, marsh areas, and distant forest rocks served as an alternative 
+source when local wells and boreholes dried up, despite the risks posed by wild animals.
 
 .. figure:: ../example_thumbs/watex_summary.jpg
    :target: ../example_thumbs/watex_summary.html
    :align: center
    :scale: 40%
    
-   :term:`DC-resistivity` survey investigations. a) An illustration of the critical issue of water shortage in Diacohu-Nord. Women are 
-   waiting for water in the forest from night until the morning. b) DC survey investigations in the "Koro" locality, north area of the :term:`Cote d'Ivoire`
-   
-Unfortunately, the consequences of that :term:`water` quest at night in the forest were numerous and terrible such as the 
-snakebites that I witnessed on May 17, 2017. The lady was immediately transported to the nearest city for treatment. I was upset to hear that 
-this phenomenon seems common experienced and frequently happened in their daily life. 
+   DC-resistivity survey investigations. a) An illustration of the critical water 
+   shortage issue in Diacohou-Nord. Women wait for water in the forest from night 
+   until morning. b) DC survey investigations in the "Koro" locality, north area 
+   of Côte d'Ivoire.
 
-On my return from the mission, I, therefore, thought to solve this problem so that such a story does no longer happen again. Thus, two
-months later, I resigned from the company and looking for a scholarship opportunity to study in programming and 
-:term:`artificial intelligence`. The first idea that came to mind was to design a machine  to detect an 
-:term:`underground water` reservoir capable  to estimate the :term:`FR` according to the population needs even in dry seasons. 
+The quest for water at night in the forest led to numerous and severe consequences, 
+including snakebites. On May 17, 2017, I witnessed a woman bitten by a snake, who was 
+then urgently transported to the nearest city for treatment. This incident highlighted 
+the common and dangerous challenges faced by the community in their daily quest for water.
+
+Motivated by this experience, I decided to address this issue to prevent such 
+incidents from recurring. Two months later, I resigned from the company and sought 
+scholarship opportunities to study programming and :term:`artificial intelligence`. My goal 
+was to develop a machine capable of detecting underground water reservoirs and 
+estimating the FR based on the population's needs, even during dry seasons.
 
 .. figure:: ../example_thumbs/DN_seeking_water_2.jpg
    :target: ../example_thumbs/DN_seeking_water_2.html
    :align: center
    :scale: 70%
    
-   Women are seeking for :term:`drinking` water: left-panel) The place where the lady was bitten by the snake. Early in the morning, 
-   my team and I went to the site for inspection to propose an alternative solution ; right-panel) survey investigation in 
-   Diacohu-Nord locality. The color of grasses shows the drastic consequences of the dry season in this locality.   
-   
-Fortunately, three months later, I got a scholarship from the `China Scholarship Council (CSC) <https://www.chinesescholarshipcouncil.com/>`__ 
-of the Chinese government in collaboration with the government of :term:`Côte d'Ivoire` for a Ph.D candidate. Thus, I was registered 
-to `Zhejiang University <https://www.zju.edu.cn/english/>`__ (ZJU) in 2018 where I my research interest was computational geophysics. 
-My research work entailed to design new :term:`ML` approaches capable to detect the fracture zones and predict :term:`FR` efficiently
-from :term:`DC-resistivity` and electromagnetic (especially the :term:`CSAMT`) data. Thus,  the first trial version of :code:`watex` 
-was born. It was focused on a case study problem in the :term:`Bagoue region` ( see Figure 1.). The results were satisfactory with a 
-prediction score of 77% of correct :term:`FR` with a reasonnable amount of data.  
+   Women seeking drinking water: left-panel) The site where a lady was bitten by 
+   a snake. Early in the morning, my team and I inspected the site to propose 
+   alternative solutions; right-panel) Survey investigation in Diacohou-Nord 
+   locality. The grass's color shows the harsh effects of the dry season in this area.
 
-Efficiency test 
+Three months later, I was fortunate to receive a scholarship from the `China Scholarship Council (CSC) <https://www.chinesescholarshipcouncil.com/>`__  
+(CSC) in collaboration with the Côte d'Ivoire government 
+for a Ph.D. candidacy. I enrolled at `Zhejiang University <https://www.zju.edu.cn/english/>`__ (ZJU) in 2018, where 
+my research focused on computational geophysics. My projects aimed to develop 
+new ML approaches for detecting fracture zones and predicting :term:`FR` efficiently 
+using :term:`DC-resistivity`and electromagnetic data (notably :term:`CSAMT`). Thus, the initial 
+version of :code:`watex` was conceived, centering on a case study in the Bagoue 
+region (see Figure 1). The outcomes were promising, achieving a 77% accuracy 
+rate in FR predictions with a reasonable amount of data.
+
+
+Efficiency Test
 -----------------
 
-To test the efficiency of the software in other locality (out of :term:`Bagoue region`), we, therefore collected data from a local company 
-`GEOTRAP SARL <https://www.piaafrica.com/fr/cote-divoire/mines-exploitations/79486-geotrap-sarl-geophysique-et-travaux-publics>`__ 
-in the region of Indenié Djuablin, named Tankesse (East of the :term:`CIV`, see Figure 1.).
-The data were processed and fed to the software algorithms (:class:`watex.methods.electrical`) to auto-detect the favorable stations 
-(in blue) and select the best one by adding the environmental constraints as shown in the figure below. The goal was 
-to predict the :term:`RFR` estimated to :math:`5m^3/hr`. As a result, :code:`watex` proposed, as the final drilling point( the best),  
-the station ``S53``. 
+To evaluate the software's effectiveness in a new location outside of the :term:`Bagoue region`, 
+data were acquired from a local company, `GEOTRAP SARL <https://www.piaafrica.com/fr/cote-divoire/mines-exploitations/79486-geotrap-sarl-geophysique-et-travaux-publics>`__, in 
+the Tankesse area of the Indenié Djuablin region (east of :term:`CIV`, see Figure 1). The gathered data 
+were processed and analyzed using :code:`watex`'s :class:`watex.methods.electrical` algorithms to 
+automatically identify favorable drilling stations (highlighted in blue) and select the optimal one 
+by incorporating environmental constraints, aiming to achieve a :term:`RFR` of :math:`5m^3/hr`. The 
+software ultimately recommended station ``S53`` as the best drilling site.
 
 .. figure:: ../example_thumbs/tankesse_data_processing.jpg
    :target: ../example_thumbs/tankesse_data_processing.html
    :align: center
    :scale: 40%
    
-   Tankesse data processing. Data collected from GEOTRAP SARL. 
+   Data processing in Tankesse. Data were collected from GEOTRAP SARL.
    
-Fortunately, two months later, the drilling was successfully  carried out yielding a :term:`FR` of :math:`9.7 m^3/hr` whereas 
-:code:`watex` predicted :math:`7.3 m^3/hr` (see `video <https://youtube.com/shorts/NDci9g_v01Q>`__ ). Indeed, this seems 
-truthy because the "smart" algorithms implemented in :code:`watex` do the essential to not overestimate the 
-:term:`groundwater` :term:`FR` prediction. The aim is  to minimize unsucessful drillings and therefore reduce expenses. 
-Here is a `youtube video <https://youtube.com/shorts/NDci9g_v01Q>`__ that shows the efficiency of the use of software for future 
-:term:`CDWS`. 
+Remarkably, two months after drilling commenced, a :term:`flow rate` of :math:`9.7m^3/hr` was achieved, 
+surpassing :code:`watex`'s prediction of :math:`7.3m^3/hr` (see `video <https://youtube.com/shorts/NDci9g_v01Q>`__). 
+This outcome underlines the algorithms' conservative approach in estimating :term:`groundwater` flow rates 
+to minimize the risk of unsuccessful drillings and reduce financial expenditures. A `YouTube video <https://youtube.com/shorts/NDci9g_v01Q>`__ 
+demonstrates :code:`watex`'s application efficiency in future Community Drinking Water Supply (CDWS) 
+projects.
 
 .. raw:: html
 
@@ -102,30 +137,68 @@ Here is a `youtube video <https://youtube.com/shorts/NDci9g_v01Q>`__ that shows 
    <iframe width="320" height="560" src="https://www.youtube.com/embed/NDci9g_v01Q" title="Geosciences computing: watex efficient test performed in Tankesse area" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
    </div>
 
-It was a great chance for the popualtion living in this area since the Tankesse  area (get data from :func:`watex.datasets.load_tankesse`)
-has significant thick layers conposed of granitic arenas which often give a wrong rate of :term:`FR` during/after the :term:`drilling` operations 
-based on our traditional methods thereby causing the numerous unsucessful drillings and unsustainable boreholes. 
-:term:`Artificial intelligence` (:term:`AI`) via :code:`watex` could  just taken up its first challenge for the population 
-welfare in this region. 
+This success was particularly significant for the population of Tankesse, an area known for its thick 
+granitic layers that frequently lead to inaccurate flow rate predictions during drilling operations. 
+These challenges have historically resulted in numerous failed drills and unsustainable boreholes. The 
+application of :term:`artificial intelligence` (AI) through :code:`watex` has demonstrated its capability 
+to overcome these obstacles, marking a significant advancement for the community's well-being in the 
+region. Data for the Tankesse area can be accessed via :func:`watex.datasets.load_tankesse`.
 
+Impact and Future Vision
+-------------------------
+
+Since its inception, *WATex* has grown from a concept to a functional tool that 
+has been applied in several practical projects, demonstrating its potential to 
+revolutionize water exploration practices. By integrating machine learning algorithms 
+with traditional geophysical methods, *WATex* offers a novel approach that enhances 
+the prediction and analysis capabilities of researchers and practitioners alike.
+
+Looking forward, we are committed to continuous improvement and expansion of 
+*WATex*'s capabilities. Our aim is not only to refine its technical aspects but 
+also to foster a community of users and contributors who can share experiences, 
+data, and strategies for effective water exploration.
+
+As we navigate the challenges of climate change and water scarcity, *WATex* stands 
+as a beacon of innovation, offering hope and practical solutions for sustainable 
+water management across the globe.
+
+The journey of *WATex* is a testament to the power of collaborative innovation in 
+addressing some of the most pressing environmental challenges of our time. It 
+underscores the critical role of technology in enhancing our understanding and 
+management of natural resources, paving the way for a more sustainable and 
+water-secure future.
+
+.. _External Links:
+
+For more information about the projects and organizations mentioned, please visit 
+the following links:
+
+- `IBS+ Engineering <https://www.facebook.com/ibsplus.ingenierie/?locale=fr_FR>`__
+- `World Bank <https://www.worldbank.org/en/home>`__
+- `UNICEF <https://www.unicef.org/>`__
 
 Conclusions
 --------------
-:code:`watex` is less expensive tool because it uses cheap geophysical methods (:term:`ERP` and :term:`VES`) to predict the 
-expected the :term:`FR` which is related to the number of people living in a given locality for a long-term water exploitation. 
-For example, suppose that a population of a given locality of 2,000 inhabitants increases in 10 years to reach 50,000 inhabitants, 
-the :term:`RFR` of :math:`3m^3/hr` today (with 2,000 inhabitants) will no longer be valid within 10 years due to the population 
-growth and the effects of climate change. From now on, :code:`watex` seems an alternative solution to reduce the 
-rate of unsucessful and non-sustainable drillings.
+:code:`watex` emerges as a cost-effective tool by leveraging economical geophysical 
+methods (:term:`ERP` and :term:`VES`) to predict the expected :term:`flow rate` (FR), 
+which correlates with the population size of a locality for long-term water 
+exploitation. For instance, if the population of a given area increases from 
+2,000 to 50,000 inhabitants over ten years, the :term:`required flow rate` (RFR) of 
+:math:`3m^3/hr` suitable for 2,000 people will become insufficient in a decade 
+due to population growth and climate change impacts. Hence, :code:`watex` presents 
+itself as a viable solution to minimize the frequency of unsuccessful and 
+unsustainable drilling efforts.
 
-Beyond this aforementioned problem purely related to hydrogeological exploration, :code:`watex` offers other exploitable assets 
-and hopes in the next five years to become an important library in the :term:`GWE` field with with the participation of diverse of 
-constributors of to this project hopefully.  
+Beyond addressing issues directly tied to hydrogeological exploration, :code:`watex` 
+also presents additional valuable features. Looking ahead, it aspires to become a 
+key library in the :term:`groundwater exploration` (GWE) domain within the next five 
+years, enriched by the collective efforts and contributions from a diverse 
+group of project participants.
 
 .. seealso::
 
-   :doc:`five-minutes <five_min_understanding>` to understand the project genesis.  
-   
+   For a quick comprehension of the project's inception, refer to :doc:`five-minutes <five_min_understanding>`.
 
-*Credit to the author*. 
+*Credit to the author*.
+
 

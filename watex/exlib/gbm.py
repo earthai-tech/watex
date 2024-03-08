@@ -38,14 +38,12 @@ xgboostdoc = type ('xgboostdoc', (), dict (
     
 IS_GBM = False
 #XXX TODO replace the doi by the hydrology paper doi
-extra =("'xgboost' is one the pretrained models stored in the watex package"
-        " especially for flow rate (FR) prediction by implementing a new"
-        " paradigm for boosting the FR. It is needed to fetch the package"
-        " premodels. Refer to :doi:`https://doi.org/10.1029/2021wr031623`"
-        " for further details."
+extra =("'xgboost' is henceforth removed as a pretrained model in the watex package"
+        " for flow rate (FR) in premodels module.You explictely need to install it"
+        " during package installation like ``pip install watex[dev]``."
         )
-import_optional_dependency ("xgboost", extra=extra, min_version="1.2.0" ) 
 try : 
+    import_optional_dependency ("xgboost", extra=extra, min_version="1.2.0" ) 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category =FutureWarning)
         import xgboost 

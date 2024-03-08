@@ -16,6 +16,19 @@ include setup.cfg
 include watex/utils/epsg.npy
 include .coveragerc
 
+# Include specific files from the 'watex' package
+include watex/utils/_openmp_helpers.pxd
+include watex/utils/espg.npy
+recursive-include watex/etc *.*
+include watex/wlog.yml
+recursive-include watex/wlogfiles *.txt
+
+# Include .pxd files located in the watex root and subdirectories
+global-include watex/*.pxd
+
+# Include 'examples' directory Python scripts and text files
+recursive-include examples *.py *.txt
+
 # exclude from sdist
 recursive-exclude asv_benchmarks *
 recursive-exclude examples *.png 

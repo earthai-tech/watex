@@ -3840,7 +3840,8 @@ def random_state_validator(seed):
 def is_iterable (
         y, /, exclude_string= False, transform = False , parse_string =False, 
 )->bool | list: 
-    """ Asserts iterable object and returns 'True' or 'False'
+    """ Asserts iterable object and returns boolean or transform object into
+     an iterable.
     
     Function can also transform a non-iterable object to an iterable if 
     `transform` is set to ``True``.
@@ -5441,8 +5442,8 @@ def interpolate_grid (
      
     fill_value: float, str, default='auto' 
        Fill the interpolated grid at the egdes or surrounding NaN with 
-       a filled value. The ``auto`` fill use the forward and backward 
-       fill stragety. 
+       a filled value. The ``auto`` uses the forward and backward 
+       fill strategy. 
        
     view: bool, default=False, 
        Quick visualize the interpolated grid. 
@@ -6029,7 +6030,7 @@ def twinning(
     >>> import watex as wx 
     >>> from watex.utils.funcutils import twinning 
     >>> data = wx.make_erp (seed =42 , n_stations =12, as_frame =True ) 
-    >>> table1 = wx.DCProfiling ().fit(data).summary()
+    >>> table1 = wx.methods.DCProfiling ().fit(data).summary()
     >>> table1 
            dipole   longitude  latitude  ...  shape  type       sfi
     line1      10  110.486111  26.05174  ...      C    EC  1.141844

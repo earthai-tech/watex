@@ -31,7 +31,8 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 
 from watex.datasets import load_mxs
-from watex.exlib import train_test_split, XGBClassifier, roc_auc_score,roc_curve 
+from watex.exlib import train_test_split, roc_auc_score,roc_curve 
+from watex.exlib.gbm import XGBClassifier
 from watex.transformers import featurize_X,  KMeansFeaturizer
 from watex.utils import plot_voronoi, plot_roc_curves, replace_data
 

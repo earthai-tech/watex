@@ -32,9 +32,11 @@ and weak frequency signals.
 # and plot the raw data of impedance tensor z in TM mode to visualize the 
 # missing tensors. This is the code snippet: 
 import watex  as wx 
+from watex.methods import EMAP 
+from watex.view import plot2d 
 data = wx.fetch_data('huayuan', return_data =True, samples =47 ,
                      key ='raw', clear_cache=True) # clear watex cache data to save new EDIs
-tro = wx.EMAP().fit(data) 
+tro = EMAP().fit(data) 
 # %%
 # * Output the impedance tensor in TM mode (`yx`)
 # 
@@ -46,18 +48,18 @@ z_yx = tro.make2d(out= 'zyx', kind ='modulus' )
  
 # %%
 # * Visualize the plot using the template 2D from :func:`watex.view.plot2d`.  
-wx.view.plot2d(z_yx, 
-               y = tro.freqs_,
-               to_log10= True,
-               top_label='Stations', 
-               plt_style ='imshow', 
-               fig_size =(10, 4 ), 
-               font_size =7, 
-               ylabel ='Frequency[$H_z$]', 
-               cb_label ='TM mode: $Z_yx$', 
-               distance =50., # distance between stations
-               cmap = 'terrain'
-               ) 
+plot2d(z_yx, 
+    y = tro.freqs_,
+    to_log10= True,
+    top_label='Stations', 
+    plt_style ='imshow', 
+    fig_size =(10, 4 ), 
+    font_size =7, 
+    ylabel ='Frequency[$H_z$]', 
+    cb_label ='TM mode: $Z_yx$', 
+    distance =50., # distance between stations
+    cmap = 'terrain'
+    ) 
 
 # %% 
 # As a comment: one can visualize the blank line in the data which indicates 

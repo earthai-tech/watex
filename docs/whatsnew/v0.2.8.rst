@@ -1,0 +1,35 @@
+v0.2.8 (September 12, 2023)
+---------------------------
+
+This update presents a series of minor modifications and bug corrections following the ``v0.2.7`` release.
+
+- |API change| The ``Processing`` and ``ZC`` classes have been updated to :class:`watex.methods.em.EMAP` and :class:`watex.methods.em.MT`, respectively. This modification facilitates the processing of :term:`MT` - :term:`EDI` data using method chaining, illustrated as follows:
+
+  .. code-block:: python
+
+     >>> import watex as wx
+     >>> edi_data = wx.fetch_data('edis', samples=25, return_data=True)
+     >>> zo = wx.methods.MT().fit(edi_data)
+     >>> # EDI data processing to suppress bad frequencies, remove interferences, and eliminate static shift effects.
+     >>> zo.drop_frequencies(tol=.2).remove_noises().remove_static_shift(r=10, nfreq=4)  # with a 10m radius
+
+- |Fix| Addressed a bug related to static shift removal in :term:`AMT` data. The :meth:`watex.methods.em.ZC.get_ss_correction_factor` method now applies correction factors individually for each station, as opposed to a universal application across all stations. This update also introduces the option for users to manually specify correction factors ``ss_fx`` and ``ss_fy``.
+
+- |Feature| Introduced :func:`watex.utils.plotutils.plot_tensors`, enabling the visualization of resistivity and phase tensors, as well as real and imaginary impedance.
+
+- |Feature| Implemented :func:`watex.utils.torres_verdin_filter` for calculating the adaptive moving average of data arrays, leveraging Torres and Verdin methodologies.
+
+- |Feature| :func:`watex.methods.em.filtered_noises` now efficiently removes noise from individual ``xx``, ``yy``, ``xy``, or ``yx`` components.
+
+- |Feature| :func:`watex.utils.exmath.butterworth_filter` establishes a bandpass filter using a Butterworth filter technique, optimizing the processing of Audio-Frequency Magnetotelluric data by excluding frequencies outside a specified range.
+
+- |Feature| :meth:`watex.methods.em.ZC.remove_noises` enhances data quality by eliminating undesired artifacts and smoothing the dataset.
+
+- |Enhancement| :func:`watex.utils.read_data` has been upgraded to support reading data in both `txt` and numpy formats (`.npy` and `.npz`).
+
+- |Enhancement| The :func:`watex.view.TPlot.plot_rhophi` function has been refined to alter the plotting style from previous versions, now accommodating a `kind` parameter for diverse station plotting.
+
+
+
+
+

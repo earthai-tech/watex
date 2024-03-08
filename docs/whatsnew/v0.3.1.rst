@@ -1,0 +1,57 @@
+v0.3.1 (March 7, 2024)
+-----------------------
+
+Changes and enhancements have been made to the API since version ``v0.3.0``, leading to the introduction of new features and the resolution of various bugs.
+
+- |API change| From now on, only the selected utilities listed below are available as the public API, which has led to shorter loading times for the package. The available 
+  public API functions include: 
+
+    - :func:`watex.utils.bi_selector` available publicly as :func:`watex.bi_selector`
+    - :func:`watex.utils.cleaner` available publicly as :func:`watex.cleaner`
+    - :func:`watex.utils.erpSelector` available publicly as :func:`watex.erpSelector`
+    - :func:`watex.utils.erpSmartDetector` available publicly as :func:`watex.erpSmartDetector`
+    - :func:`watex.utils.fetch_data` available publicly as :func:`watex.fetch_data`
+    - :func:`watex.utils.fittensor` available publicly as :func:`watex.fittensor`
+    - :func:`watex.utils.get2dtensor` available publicly as :func:`watex.get2dtensor`
+    - :func:`watex.utils.make_erp` available publicly as :func:`watex.make_erp`
+    - :func:`watex.utils.make_naive_pipe` available publicly as :func:`watex.make_naive_pipe`
+    - :func:`watex.utils.make_ves` available publicly as :func:`watex.make_ves`
+    - :func:`watex.utils.magnitude` available publicly as :func:`watex.magnitude`
+    - :func:`watex.utils.naive_imputer` available publicly as :func:`watex.naive_imputer`
+    - :func:`watex.utils.naive_scaler` available publicly as :func:`watex.naive_scaler`
+    - :func:`watex.utils.ohmicArea` available publicly as :func:`watex.ohmicArea`
+    - :func:`watex.utils.plotAnomaly` available publicly as :func:`watex.plotAnomaly`
+    - :func:`watex.utils.plot_confidence_in` available publicly as :func:`watex.plot_confidence_in`
+    - :func:`watex.utils.plotOhmicArea` available publicly as :func:`watex.plotOhmicArea`
+    - :func:`watex.utils.plot_sfi` available publicly as :func:`watex.plot_sfi`
+    - :func:`watex.utils.power` available publicly as :func:`watex.power`
+    - :func:`watex.utils.qc` available publicly as :func:`watex.qc`
+    - :func:`watex.utils.read_data` available publicly as :func:`watex.read_data`
+    - :func:`watex.utils.selectfeatures` available publicly as :func:`watex.selectfeatures`
+    - :func:`watex.utils.sfi` available publicly as :func:`watex.sfi`
+    - :func:`watex.utils.shape` available publicly as :func:`watex.shape`
+    - :func:`watex.utils.smart_label_classifier` available publicly as :func:`watex.smart_label_classifier`
+    - :func:`watex.utils.to_numeric_dtypes` available publicly as :func:`watex.to_numeric_dtypes`
+    - :func:`watex.utils.type_` available publicly as :func:`watex.type_`
+    - :func:`watex.utils.vesSelector` available publicly as :func:`watex.vesSelector`
+
+- |API change| The parameter ``edi_obj`` in :func:`watex.utils.plot_skew` has been deprecated and replaced by ``edis_list``, which refers to either a collection of :term:`EDI` files or a full path to EDI files. Two-dimensional skewness, represented as :math:`eta`, can now be visualized by setting the parameter ``view='2D'``.
+
+- |API change| The ``xgboost`` library is no longer automatically installed as a dependency. Users must install it separately for complete model functionality or use the ``dev`` option as shown below:
+
+  .. code-block:: bash 
+
+    pip install watex[dev]
+
+- |Fix| The :class:`watex.em.EM` module now throws a :class:`watex.exceptions.EDIError` instead of an ``AttributeError`` when an EDI file is expected but an object is passed.
+
+- |Fix| The `base_estimator` parameter is no longer available in scikit-learn versions greater than 1.2; it has been renamed to `estimator`. Consequently, :mod:`watex.models` and :mod:`watex.models.premodels` have been updated to reflect this change.
+
+- |Feature| The :func:`watex.utils.plotutils.plot_l_curve` function has been introduced to plot the Hansen L-curve, with an option to highlight the Hansen point. This feature uses the L-curve criterion to determine the most suitable model after performing multiple inversions with different :math:`\tau` values.
+
+
+
+
+
+
+

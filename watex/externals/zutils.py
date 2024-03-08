@@ -572,12 +572,12 @@ def multiplymatrices_incl_errors(inmatrix1, inmatrix2, inmatrix1_err = None,inma
     if inmatrix1.shape != inmatrix2.shape:
         raise EMError('ERROR - two 2x2 arrays with same dimensions needed as input')
 
-
-    prod = np.array(np.dot( np.matrix(inmatrix1), np.matrix(inmatrix2)))
+    # np.matrix should be deprecated soon so consider replacing 
+    # by np.ndarray 
+    prod = np.array(np.dot( np.array(inmatrix1), np.array(inmatrix2)))
 
     if (inmatrix1_err is None) or ( inmatrix1_err is None ):
         return prod, None
-
 
     var = np.zeros((2,2))
     var[0,0] = (inmatrix1_err[0,0] * inmatrix2[0,0])**2 + (inmatrix1_err[0,1] * inmatrix2[1,0])**2+\
@@ -588,7 +588,6 @@ def multiplymatrices_incl_errors(inmatrix1, inmatrix2, inmatrix1_err = None,inma
                 (inmatrix2_err[0,0] * inmatrix1[1,0])**2 + (inmatrix2_err[1,0] * inmatrix1[1,1])**2
     var[1,1] = (inmatrix1_err[1,0] * inmatrix2[0,1])**2 + (inmatrix1_err[1,1] * inmatrix2[1,1])**2+\
                 (inmatrix2_err[0,1] * inmatrix1[1,0])**2 + (inmatrix2_err[1,1] * inmatrix1[1,1])**2
-
 
     return prod, np.sqrt(var)
 
@@ -642,10 +641,10 @@ def reorient_data2D(x_values, y_values, x_sensor_angle = 0 , y_sensor_angle = 90
         raise EMError('ERROR - both angles must be of type int or float')
        
 
-    T = np.matrix( [[ np.real(cmath.rect(1,x_angle)), np.imag(cmath.rect(1,x_angle))],[np.real(cmath.rect(1,y_angle)), np.imag(cmath.rect(1,y_angle))]])
+    T = np.array( [[ np.real(cmath.rect(1,x_angle)), np.imag(cmath.rect(1,x_angle))],[np.real(cmath.rect(1,y_angle)), np.imag(cmath.rect(1,y_angle))]])
 
     try:
-        new_array = np.dot(in_array, T.I)
+        new_array = np.dot(in_array, np.linalg.inv(T) ) # T.I 
     except:
         raise EMError('ERROR - angles must define independent axes to span 2D')
 

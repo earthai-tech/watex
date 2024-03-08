@@ -5027,7 +5027,6 @@ def savgol_filter(x, window_length, polyorder, deriv=0, delta=1.0,
 
     return y        
 
-
 def get2dtensor(
     z_or_edis_obj_list:List[EDIO |ZO], /, 
     tensor:str= 'z', 
@@ -5376,7 +5375,7 @@ def plot_confidence_in(
     rotate_xlabel: float, default=90.
        Angle to rotate the stations/sites labels 
        
-    top_labels: str,default='Stations' 
+    top_label: str,default='Stations' 
        Labels the sites either using the survey name. 
        
     view_ci: bool,default=True, 
@@ -5533,7 +5532,11 @@ def plot_confidence_in(
                           color= c,
                           label = lab, 
                           )
-            ax.legend(loc ='lower right' if view=='2d' else 'best') 
+            ax.legend(loc ='lower right' if view=='2d' else 'best',  
+                      facecolor ='white', 
+                      prop = dict (size = fontsize *2,)
+                                   
+                                   ) 
 
     if savefig: 
         plt.savefig(savefig, dpi =600 )

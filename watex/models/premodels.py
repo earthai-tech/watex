@@ -118,7 +118,7 @@ class pModels :
     >>> p= pModels (model ='ada') 
     >>> p.fit() 
     >>> p.AdaBoost.best_estimator_ 
-    ... AdaBoostClassifier(base_estimator=LogisticRegression(), learning_rate=0.09,
+    ... AdaBoostClassifier(estimator=LogisticRegression(), learning_rate=0.09,
                        n_estimators=500)
     >>> p.model = 'vot' 
     >>> p.fit() 
@@ -230,7 +230,7 @@ class pModels :
         >>> p= pModels (model ='ada') 
         >>> p.fit() 
         >>> p.AdaBoost.best_estimator_ 
-        ... AdaBoostClassifier(base_estimator=LogisticRegression(), learning_rate=0.09,
+        ... AdaBoostClassifier(estimator=LogisticRegression(), learning_rate=0.09,
                            n_estimators=500)
         """
         if self.model is None: 
