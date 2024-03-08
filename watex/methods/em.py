@@ -3943,7 +3943,7 @@ def filter_noises (
       kind of filtering technique to smooth data. Can be: 
           
           - 'base': for simple moving-average using convolution strategy 
-          - 'ama': for naive adapttive moving average 
+          - 'ama': for naive adaptative moving average 
           - 'butter': for Butterworth filter using bandpass strategy. (lowcut 
             highcut) can be set using the `frange` parameters.
           - 'tv': for Torres-Verdin filter [1]_
@@ -4506,7 +4506,7 @@ def _ss_auto_regulator (
     
         init_freq = len(edi_obj_init.Z.freq) 
         half_two = (init_freq -2) //2
-        nfreq =  half_two + (half_two//2 )
+        nfreq =  round (  + (half_two//2 )) 
         skipfreq = half_two * 2  -nfreq 
         
     else: 

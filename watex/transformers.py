@@ -160,7 +160,17 @@ class KMeansFeaturizer:
         
         # There is target information. Apply appropriate scaling and include
         # it in the input data to k-means. 
-        data_with_target = np.hstack((X, y[:,np.newaxis]*self.target_scale))
+        
+        if isinstance ( self.target_scale, str): 
+            scaler = StandardScaler() if ( self.target_scale.lower().find("norm") >0 or
+                                          self.target_scale.lower().find("standard")>0
+                       ) else MinMaxScaler() 
+            y= scaler.fit_transform ( ) 
+            print("yes")
+        else: 
+            y = y[:, np.newaxis] * self.target_scale
+            
+        data_with_target = np.hstack((X, y) )
         
         # Build a pre-training k-means model on data and target
         km_model_pretrain = KMeans(n_clusters=self.n_clusters,

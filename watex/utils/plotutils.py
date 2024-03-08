@@ -3614,6 +3614,9 @@ def plot_voronoi(
     line_width=1. ,
     line_alpha=1.,   
     fig_size = (7, 7), 
+    cmap='set1', 
+    show_grid=True, 
+    alpha=0.2, 
     fig_title = ''
     ):
     """Plots the Voronoi diagram of the k-means clusters overlaid with 
@@ -3663,11 +3666,11 @@ def plot_voronoi(
         
     from scipy.spatial import Voronoi, voronoi_plot_2d
     
-    ax.scatter(X[:, 0], X[:, 1], c=y, cmap='Set1', alpha=0.2, 
+    ax.scatter(X[:, 0], X[:, 1], c=y, cmap=cmap, alpha=0.2, 
                label = 'Voronoi plot')
     vor = Voronoi(cluster_centers)
     voronoi_plot_2d(vor, ax=ax, show_vertices=show_vertices, 
-                    alpha=0.5, 
+                    alpha=alpha, 
                     line_colors=line_colors,
                     line_width=line_width ,
                     line_alpha=line_alpha,  
@@ -3675,6 +3678,15 @@ def plot_voronoi(
     #ax.legend() 
     ax.set_title (fig_title , fontsize=20)
     #fig.suptitle(fig_title, fontsize=20) 
+    # Make the right and bottom spines thicker and black
+    ax.spines['left'].set_linewidth(2)
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(2)
+    ax.spines['bottom'].set_color('black')
+    
+    if show_grid: plt.grid() 
+    else: ax.grid(False)
+    
     return ax 
  
     
@@ -4453,7 +4465,6 @@ def plot_sounding (
     
     return ax 
 
-<<<<<<< HEAD
 def plot_l_curve(
     rms, 
     roughness, 
@@ -4655,9 +4666,6 @@ def _manage_plot_kws ( kws, dkws = dict () ):
             
     return kws 
 
- 
-=======
->>>>>>> 9adf70ffd30a046f3403808958ecccf1c28cef40
 # import watex as wx 
 # lspath =r'C:\Users\Daniel\Desktop\projects\nanshaLS0.csv'
 # ls_data = wx.read_data (lspath , sanitize =True, sep =';', verbose =True ) 
