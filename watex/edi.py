@@ -861,7 +861,6 @@ class Edi :
             >>> ...                   )
 
         """
-        
         # if the interpolation module has not been loaded return
         if interp_import is False:
             raise ImportError('could not interpolate, need to install scipy')
@@ -870,7 +869,7 @@ class Edi :
         if not isinstance(new_freq_array, np.ndarray):
             new_freq_array = np.array(new_freq_array)
             
-        new_freq_array = np.around (new_freq_array, 2)  
+        new_freq_array = np.around (new_freq_array, 5)
         
         if period_buffer is not None:
             if 0. < period_buffer < 1.:

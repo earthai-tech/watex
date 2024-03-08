@@ -39,12 +39,16 @@ two dimensional.
 # of module :mod:`watex.view`. 
 # we start by importing ``watex`` as: 
 import numpy as np
-import watex 
+
+import watex  as wx 
+from watex.methods import EMAP 
+from watex.view import TPlot, plot2d
+
 
 # %%
 # * `Swift method` 
-test_data = watex.fetch_data ('edis', samples =37, return_data =True )
-tplot = watex.TPlot(fig_size =(11,  5), marker ='x').fit(test_data)
+test_data = wx.fetch_data ('edis', samples =37, return_data =True )
+tplot = TPlot(fig_size =(11,  5), marker ='x').fit(test_data)
 tplot.plt_style='classic'
 tplot.plotSkew(method ='swift', threshold_line=True)
 
@@ -68,19 +72,19 @@ tplot.plotSkew(threshold_line=True, suppress_outliers=False )
 # In addition, setting the `return_skewness` parameter to ``skew``
 # returns only the skew value. The default behavior returns both the skew and 
 # the rotation all of invariant :math:`\eta`. 
-skv = watex.EMAP ().fit(test_data).skew(return_skewness='skew') # to return only skew value,
-watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
-                   distance =50., # distance between stations
-                   top_label='Stations',
-                   show_grid =True, 
-                   fig_size = ( 11, 5 ), 
-                   cmap = 'bwr', 
-                   font_size =7, 
-                   ylabel ='Log10Frequency[$H_z$]', 
-                   xlabel='Distance (m)', 
-                   cb_label ='Skew: swift', 
-                  
-                   )
+skv = EMAP ().fit(test_data).skew(return_skewness='skew') # to return only skew value,
+plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
+        distance =50., # distance between stations
+        top_label='Stations',
+        show_grid =True, 
+        fig_size = ( 11, 5 ), 
+        cmap = 'bwr', 
+        font_size =7, 
+        ylabel ='Log10Frequency[$H_z$]', 
+        xlabel='Distance (m)', 
+        cb_label ='Skew: swift', 
+       
+        )
 # %%
 # As shown in Figure above, the value of skew is smaller than 0.4 at most sites, 
 # indicating a 2D structure. Only a few sites near the fault have a 
@@ -88,18 +92,18 @@ watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
 # the electricity model of the research area can be approximated to a 2D 
 # structure for inversion.  
 # In the next example, we will suppress the outliers in the data.  
-skv = watex.EMAP ().fit(test_data).skew(
+skv = EMAP ().fit(test_data).skew(
     return_skewness='skew', suppress_outliers = True) 
-watex.view.plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
-                   distance =50., 
-                   show_grid =True, 
-                   fig_size = ( 11, 5 ), 
-                   cmap = 'bwr', 
-                   font_size =7, 
-                   ylabel ='Log10Frequency[$H_z$]', 
-                   xlabel='Distance (m)', 
-                   cb_label ='Skew: Swift', 
-                   )
+plot2d (skv, y = np.log10 (tplot.p_.freqs_ ),
+        distance =50., 
+        show_grid =True, 
+        fig_size = ( 11, 5 ), 
+        cmap = 'bwr', 
+        font_size =7, 
+        ylabel ='Log10Frequency[$H_z$]', 
+        xlabel='Distance (m)', 
+        cb_label ='Skew: Swift', 
+        )
 #%%
 # The figure above shows the 2D skewness when some outliers are suppressed. 
 # Here most of sites shown a skew less than 0.4  althrough the outliers are suppressed.
