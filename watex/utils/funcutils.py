@@ -6030,7 +6030,7 @@ def twinning(
     >>> import watex as wx 
     >>> from watex.utils.funcutils import twinning 
     >>> data = wx.make_erp (seed =42 , n_stations =12, as_frame =True ) 
-    >>> table1 = wx.DCProfiling ().fit(data).summary()
+    >>> table1 = wx.methods.DCProfiling ().fit(data).summary()
     >>> table1 
            dipole   longitude  latitude  ...  shape  type       sfi
     line1      10  110.486111  26.05174  ...      C    EC  1.141844

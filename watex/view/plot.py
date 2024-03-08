@@ -819,7 +819,7 @@ class TPlot (BasePlot):
         ---------
         >>> import watex as wx 
         >>> edi_data = wx.fetch_data ('edis', key='edi', return_data =True , samples =17 ) 
-        >>> tplot = wx.TPlot ().fit(edi_data ) 
+        >>> tplot = wx.methods.TPlot ().fit(edi_data ) 
         >>> tplot.plot_phase_tensors (tensor ='skew')
         
         """
@@ -1141,7 +1141,7 @@ class TPlot (BasePlot):
         ---------
         >>> import watex as wx 
         >>> edi_data = wx.fetch_data ('edis', return_data =True, samples =27)
-        >>> wx.TPlot(show_grid=True).fit(edi_data).plot_rhoa (
+        >>> wx.methods.TPlot(show_grid=True).fit(edi_data).plot_rhoa (
             seed =52, mode ='*')
         
         """
@@ -1366,7 +1366,7 @@ class TPlot (BasePlot):
         ---------
         >>> import watex as wx 
         >>> edi_data = wx.fetch_data ('edis', return_data =True, samples =27)
-        >>> wx.TPlot(show_grid=True).fit(edi_data).plot_rhophi (
+        >>> wx.methods.TPlot(show_grid=True).fit(edi_data).plot_rhophi (
             seed =52, mode ='*', n_sites =3 )
         """
         
@@ -2087,10 +2087,10 @@ class TPlot (BasePlot):
         >>> import numpy as np 
         >>> import watex as wx 
         >>> edi_data = wx.fetch_data ('edis', return_data =True, samples =27)
-        >>> wx.TPlot(show_grid=True).fit(edi_data).plot_corrections (
+        >>> wx.methods.TPlot(show_grid=True).fit(edi_data).plot_corrections (
             seed =52, )
         >>> distortion = np.array([[1.1 , 0.6 ],[0.23, 1.9 ]])
-        >>> wx.TPlot(show_grid=True).fit(edi_data).plot_corrections (
+        >>> wx.methods.TPlot(show_grid=True).fit(edi_data).plot_corrections (
              seed =52, mode ='tm', fltr ='dist', distortion =distortion 
              )
         """

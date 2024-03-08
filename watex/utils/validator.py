@@ -141,31 +141,157 @@ def _validate_tensor(
 
     return name, m2 
 
-def _assert_z_or_edi_objs ( z_or_edis_obj_list, /): 
-    """ Assert Z or EDI and return objet types """
-    # get the frequency 
-    from ..edi import Edi
-    from ..externals.z import Z 
-    from ..exceptions import EMError 
-    
-    if not hasattr (z_or_edis_obj_list, '__iter__'): 
-        raise TypeError("A collection of EDI or Z objects should be in"
-                        f" a list. Got {type(z_or_edis_obj_list).__name__!r}"
-                        )
-    obj_type = None 
-    s_edi = set( [ isinstance ( z_or_edis_obj_list[i], ( Edi, Z) ) 
-                  for i in range( len(z_or_edis_obj_list)) ]
-                )
-    if len(s_edi) !=1 or False in list(s_edi):
-        raise EMError("Expect EDI[watex.edi.Edi] or Z[watex.externals.z.Z]"
-                      f" objects. Got {s_edi}")
-    else: 
-        obj_type ='EDI' if isinstance ( 
-            z_or_edis_obj_list[0], Edi) else 'Z'
-        
-    return obj_type 
-       
+def is_instance_extended(instance, cls):
+    """
+    Performs an enhanced isinstance check that can gracefully handle a tuple 
+    of classes and module reloading issues, facilitating a more robust type 
+    checking, especially in environments where classes might be reloaded or 
+    imported differently, potentially leading to false negatives with the 
+    standard isinstance function.
 
+    Parameters
+    ----------
+    instance : object
+        The object to check.
+    cls : type or tuple of types
+        The target class, classes, or a tuple of classes to check against. 
+        If `cls` is not a tuple, it will be converted to one for uniform handling.
+
+    Returns
+    -------
+    bool
+        True if `instance` is an instance of any class in `cls`, considering class 
+        name and module path matches. False otherwise.
+
+    Examples
+    --------
+    >>> class MyClass:
+    ...     pass
+    ...
+    >>> obj = MyClass()
+    >>> is_instance_extended(obj, MyClass)
+    True
+
+    # Demonstrating with module reloading issue
+    >>> import importlib
+    >>> importlib.reload(MyClass)
+    <module 'MyClass' from '...'>
+    >>> is_instance_extended(obj, MyClass)
+    False  # This might vary based on how MyClass is defined and reloaded
+
+    # Using a tuple of classes
+    >>> class AnotherClass:
+    ...     pass
+    ...
+    >>> is_instance_extended(obj, (MyClass, AnotherClass))
+    True
+
+    Note
+    ----
+    This function is particularly useful in dynamic environments where classes may 
+    be reloaded or when dealing with complex import hierarchies that could lead to 
+    situations where the standard `isinstance` check might erroneously return False 
+    due to objects being instances of classes that have been reloaded or imported 
+    under different namespaces.
+    """
+    if not isinstance(cls, tuple):
+        cls = (cls,)  # Make cls a tuple if it isn't already, for uniform handling
+
+    direct_check = any(isinstance(instance, single_cls) for single_cls in cls)
+    if direct_check:
+        return True
+
+    for single_cls in cls:
+        if instance.__class__.__name__ == single_cls.__name__:
+            instance_module = instance.__class__.__module__.split('.')[-1]
+            cls_module = single_cls.__module__.split('.')[-1]
+            if instance_module == cls_module:
+                return True
+    return False
+
+def _assert_z_or_edi_objs(z_or_edis_obj_list, /):
+    """
+    Asserts that all objects in the provided list are either instances of the EDI 
+    class or the Z class, and returns a string indicating the object type found in the list.
+
+    This function is designed to ensure that a collection of objects consists exclusively
+    of either EDI or Z objects, not a mix of both. It leverages an enhanced `isinstance` 
+    check to handle potential issues with class reloading or different import paths.
+
+    Parameters
+    ----------
+    z_or_edis_obj_list : iterable
+        An iterable (typically a list) of objects to be checked. Each object in the 
+        iterable is expected to be an instance of either the `Edi` or `Z` class.
+
+    Returns
+    -------
+    str
+        A string indicating the type of objects in the list: 'EDI' if all objects are 
+        instances of the EDI class, and 'Z' if all objects are instances of the Z class.
+
+    Raises
+    ------
+    TypeError
+        If the input is not an iterable.
+    EMError
+        If the iterable contains objects that are not instances of either EDI or Z classes,
+        or if it contains a mix of both types.
+
+    Examples
+    --------
+    >>> from watex.utils.validator import _assert_z_or_edi_objs
+    >>> _assert_z_or_edi_objs([Edi(), Edi()])
+    'EDI'
+    >>> _assert_z_or_edi_objs([Z(), Z()])
+    'Z'
+    >>> _assert_z_or_edi_objs([Edi(), Z()])
+    EMError: All objects must be instances of either EDI or Z, not a mix.
+
+    Note
+    ----
+    The function is part of a validation process to ensure consistency in the types of 
+    objects being processed, which is crucial for functions that expect homogenous input.
+    """
+    from ..edi import Edi
+    from ..externals.z import Z
+    from ..exceptions import EMError
+    if not hasattr(z_or_edis_obj_list, '__iter__'):
+        raise TypeError("Input must be a list, tuple, or set of EDI or Z objects."
+                       f"Received an object of type '{type(z_or_edis_obj_list).__name__}' instead.")
+
+    # Ensure all objects are either instances of Edi or Z using the helper function
+    types_found = {is_instance_extended(obj, Edi) or is_instance_extended(
+        obj, Z) for obj in z_or_edis_obj_list}
+
+    if not types_found == {True}:
+        raise EMError("Input must contain only EDI[watex.edi.Edi] or "
+                      "Z[watex.externals.z.Z] objects, without mixing types.")
+
+    # Determine the type based on the first item
+    obj_type = 'EDI' if is_instance_extended(z_or_edis_obj_list[0], Edi) else 'Z'
+
+    return obj_type
+ 
+def _assert_z_or_edi_objs2(z_or_edis_obj_list, /):
+    """Assert Z or EDI and return object types."""
+    from ..edi import Edi
+    from ..externals.z import Z
+    from ..exceptions import EMError
+    if not hasattr(z_or_edis_obj_list, '__iter__'):
+        raise TypeError("Expected an iterable collection of EDI or Z objects. "
+                        f"Received an object of type '{type(z_or_edis_obj_list).__name__}' instead.")
+
+    s_edi = set([is_instance_extended(z_or_edis_obj_list[i], (Edi, Z))
+                  for i in range(len(z_or_edis_obj_list))])
+
+    if len(s_edi) != 1 or False in list(s_edi):
+        raise EMError("All objects must be instances of either EDI[watex.edi.Edi] "
+                      "or Z[watex.externals.z.Z], not a mix.")
+        
+    obj_type = 'EDI' if is_instance_extended(z_or_edis_obj_list[0], Edi) else 'Z'
+
+    return obj_type
 def assert_xy_in (
     x, 
     y, *, 
@@ -426,7 +552,7 @@ def _validate_ves_operator (
         to ``True``. Here AB and rhoa are the columns. 
         
     """
-    import pandas as pd 
+
     
     if data is not None: 
         data = check_array (

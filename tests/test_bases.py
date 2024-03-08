@@ -162,8 +162,9 @@ class MyTransformers(unittest.TestCase):
             # self.encode =frameObj.encode 
             # self.scale_mode = frameObj.scale_mode
         
-# if __name__=='__main__': 
-#     unittest.main()
+if __name__=='__main__': 
+    pytest.main([__file__])
+    # unittest.main()
    
     
     

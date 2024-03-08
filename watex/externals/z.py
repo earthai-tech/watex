@@ -524,7 +524,7 @@ class Z(ResPhase):
         inverse = copy.copy(self.z)
         for idx_f in range(len(inverse)):
             try:
-                inverse[idx_f, :, :] = np.array((np.matrix(self.z[idx_f, :, :])).I)
+                inverse[idx_f, :, :] = np.array((np.array(self.z[idx_f, :, :])).I) # np.matrix
             except:
                 raise ZError('The {0}ith impedance'.format(idx_f + 1) + \
                                        'tensor cannot be inverted')
@@ -790,14 +790,14 @@ class Z(ResPhase):
                     (distortion_err_tensor.shape == (2, 2)):
                 raise ValueError('Shape not the same')
 
-            distortion_tensor = np.matrix(np.real(distortion_tensor))
+            distortion_tensor = np.array(np.real(distortion_tensor)) # np.matrix
 
         except ValueError:
             raise ZError('The array provided is not a proper' + \
                                    'distortion tensor')
 
         try:
-            DI = distortion_tensor.I
+            DI = np.linalg.inv ( distortion_tensor ) # distortion_tensor.I
         except np.linalg.LinAlgError:
             raise ZError('The provided distortion tensor is' + \
                                    'singular - I cannot invert that!')
@@ -817,7 +817,7 @@ class Z(ResPhase):
         z_corrected_err = np.zeros_like(self.z_err)
 
         for idx_f in range(len(self.z)):
-            z_corrected[idx_f] = np.array(np.dot(DI, np.matrix(self.z[idx_f])))
+            z_corrected[idx_f] = np.array(np.dot(DI, np.array(self.z[idx_f]))) # np.matrix 
             for ii in range(2):
                 for jj in range(2):
                     z_corrected_err[idx_f, ii, jj] = np.sum(np.abs(
@@ -1600,7 +1600,7 @@ def correct4sensor_orientation(Z_prime, Bx=0, By=90, Ex=0, Ey=90,
         if Z_prime.dtype not in ['np.complex128', 'float', 'int']:
             raise
 
-        Z_prime = np.matrix(Z_prime)
+        Z_prime = np.array(Z_prime) # np.matrix 
 
     except:
         raise ValueError('ERROR - Z array not valid!' + \
@@ -1620,8 +1620,8 @@ def correct4sensor_orientation(Z_prime, Bx=0, By=90, Ex=0, Ey=90,
             raise ValueError('ERROR - Z-error array not' + \
                                                 'valid! Must be 2x2 real array')
 
-    T = np.matrix(np.zeros((2, 2)))
-    U = np.matrix(np.zeros((2, 2)))
+    T = np.array(np.zeros((2, 2))) # np.matrix
+    U = np.array(np.zeros((2, 2))) # np.matrix
 
     dummy1 = cmath.rect(1, math.radians(Ex))
 
