@@ -47,9 +47,9 @@ copyright = f"2022-{time.strftime('%Y')}"
 author = 'K. Laurent Kouadio'
 # The full version, including alpha/beta/rc tags
 try :
-    version = release = watex._version.version
-except :
     version = release = watex.__version__
+except :
+    version = release = watex._version.version
 
 # -- General configuration ---------------------------------------------------
 
@@ -141,9 +141,8 @@ html_theme =  "pydata_sphinx_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named 'default.css' will overwrite the builtin 'default.css'.
 
-
 html_static_path = ['_static', 'example_thumbs']
-html_css_files =  [f"css/custom.css"] # ?v={watex.__version__} query removed. 
+html_css_files =  ["css/custom.css"] #?v={watex.__version__} query removed. 
 
 
 
@@ -153,8 +152,9 @@ html_favicon = "_static/favicon.ico"
 
 # Define the json_url for our version switcher.
 json_url = "https://watex.readthedocs.io/en/latest/_static/switcher.json"
+
 # Define the version we use for matching in the version switcher.
-version_match = os.environ.get("READTHEDOCS_VERSION")
+version_match = os.environ.get("READTHEDOCS_VERSION", f"v{watex.__version__}")
 # If READTHEDOCS_VERSION doesn't exist, we're not on RTD
 # If it is an integer, we're in a PR build and the version isn't correct.
 
