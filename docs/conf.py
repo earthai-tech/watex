@@ -144,8 +144,6 @@ html_theme =  "pydata_sphinx_theme"
 html_static_path = ['_static', 'example_thumbs']
 html_css_files =  ["css/custom.css"] #?v={watex.__version__} query removed. 
 
-
-
 # todo_include_todos = True
 html_logo = "_static/logo.svg"
 html_favicon = "_static/favicon.ico"
@@ -153,8 +151,19 @@ html_favicon = "_static/favicon.ico"
 # Define the json_url for our version switcher.
 json_url = "https://watex.readthedocs.io/en/latest/_static/switcher.json"
 
+# Define the json_url for our version switcher.
+json_url = "https://watex.readthedocs.io/en/latest/_static/switcher.json"
+
 # Define the version we use for matching in the version switcher.
-version_match = os.environ.get("READTHEDOCS_VERSION", f"v{watex.__version__}")
+# Here we need to ensure that the version_match corresponds to our stable version
+version_match = f"v{watex.__version__}" #"v0.3.1"  # This should match the version key in your switcher.json for the stable version
+
+# Use this if you want to set the switcher version from the environment or 
+# default to the provided stable version
+# version_match = os.environ.get("READTHEDOCS_VERSION", "v0.3.1")
+
+# Define the version we use for matching in the version switcher.
+#version_match = os.environ.get("READTHEDOCS_VERSION", f"v{watex.__version__}")
 # If READTHEDOCS_VERSION doesn't exist, we're not on RTD
 # If it is an integer, we're in a PR build and the version isn't correct.
 
