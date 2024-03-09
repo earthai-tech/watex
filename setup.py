@@ -18,7 +18,7 @@ builtins.__WATEX_SETUP__ = True
 try: 
     import watex  
     VERSION = watex.__version__
-except: VERSION ='0.3.1'
+except: VERSION ='0.3.2'
 # set global variables 
 DISTNAME = "watex"
 DESCRIPTION= "Machine learning research in water exploration"
