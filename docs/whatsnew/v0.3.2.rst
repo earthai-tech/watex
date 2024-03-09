@@ -1,0 +1,18 @@
+v0.3.2 (March 9, 2024)
+-----------------------
+
+Minor changes have been made to the API since version ``v0.3.1``, leading
+to fixed bugs in frequencies handling.
+
+- |Fix| Fixed the bound error in :meth:`~watex.methods.MT.remove_static_shift` by
+  rounding the frequency checks to 5 decimal places.
+
+- |Fix| There is no longer a need to recompute frequencies when no extraneous
+  frequencies are detected for omission. :meth:`~watex.methods.MT.drop_frequencies`
+  now consistently returns the original :term:`MT` object.
+
+
+
+
+
+

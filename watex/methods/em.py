@@ -4277,7 +4277,6 @@ def _update_z (z_or_edis, /, ufunc , args =(), **kws  ):
         
     return new_zObjs
   
-    
 def drop_frequencies (
     ediObjs: List[EDIO] | os.PathLike, /, 
     tol:float ="auto", 
@@ -4370,7 +4369,7 @@ def drop_frequencies (
         raise EMError (
             "tolerance parameter or frequency values to discard"
             " could not be None. Consider ``tol='auto'``to"
-            "  automatically control 50% quality of the data."
+            " automatically control 50% quality of the data."
             )
         
     if str(tol).lower() == 'auto': 
@@ -4400,29 +4399,35 @@ def drop_frequencies (
     # for consistency 
     freqs = np.sort (freqs )[::-1 ] 
      
-    if len(freqs)==0 and verbose: 
-        print(f"Noise frequencies for {tol*100}% tolerance"
-              " have not been detected.")
-    else: listing_items_format(freqs ,begintext= "Frequencies" , 
+    if len(freqs)==0: 
+        if verbose: 
+            print(f"Noise frequencies for {tol*100}% tolerance"
+                  " have not been detected.")
+        # return object and frequency list 
+        freqslist = [ edio.Z._freq for  edio  in ediObjs ]
+        Zobj = [ edio.Z for  edio  in ediObjs ]
+        
+    else: 
+        listing_items_format(freqs ,begintext= "Frequencies" , 
                          endtext="Hz have been dropped.", 
                          inline =True , verbose =verbose 
                          )
-    # use mask to set a new collection of Z 
-    Zobj = []; freqslist=[]
-    for kk , edio  in enumerate (ediObjs ): 
-        mask  = np.isin ( edio.Z._freq,  freqs)
-        # mask = np.ones ( len( edio.Z._freq), dtype = bool ) 
-        # mask [ u_freqs] = False 
-        z_new  = edio.Z._z [~mask , :, :]  
-        # similar to np.delete (edio.Z._z , u_freqs, axis =0 )
-        z_err_new  = edio.Z._z_err [~mask , :, :] 
-        new_freq = edio.Z._freq[ ~mask ] 
-    
-        Z =EMz (
-            z_array= z_new , z_err_array= z_err_new , freq = new_freq
-            ) 
-        Zobj.append(Z )
-        freqslist.append (new_freq) 
+        # use mask to set a new collection of Z 
+        Zobj = []; freqslist=[]
+        for kk , edio  in enumerate (ediObjs ): 
+            mask  = np.isin ( edio.Z._freq,  freqs)
+            # mask = np.ones ( len( edio.Z._freq), dtype = bool ) 
+            # mask [ u_freqs] = False 
+            z_new  = edio.Z._z [~mask , :, :]  
+            # similar to np.delete (edio.Z._z , u_freqs, axis =0 )
+            z_err_new  = edio.Z._z_err [~mask , :, :] 
+            new_freq = edio.Z._freq[ ~mask ] 
+        
+            Z =EMz (
+                z_array= z_new , z_err_array= z_err_new , freq = new_freq
+                ) 
+            Zobj.append(Z )
+            freqslist.append (new_freq) 
         
     if get_max_freqs: 
         freqslist = freqslist [ 
