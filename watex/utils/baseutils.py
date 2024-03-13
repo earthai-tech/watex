@@ -30,6 +30,82 @@ from ._dependency import (
     )
 
 
+def adjust_phase_range(phase_array, value_range=None, mod_base=360):
+    """
+    Adjust phase values to a specified range, accommodating for negative phases 
+    and allowing for normalization based on a specified base (180 or 360 degrees).
+
+    Parameters
+    ----------
+    phase_array : np.ndarray
+        An array of phase values, which can be negative or positive, and can 
+        have any shape.
+    value_range : tuple, list, single value, or None, optional
+        The range of values to adjust the phase to. It can be:
+        - None: No adjustment is made, and the original phase array is returned.
+        - A single value (int or float): Considered as the maximum value with 
+          a minimum of 0.
+        - A tuple or list of two values: Specifies the minimum and maximum range.
+    mod_base : int, optional
+        The base used for normalizing phase values through modulo operation.
+        It allows adjusting phase values within a specific periodicity 
+        (commonly 180 or 360 degrees). Default is 360.
+
+    Returns
+    -------
+    np.ndarray
+        The adjusted phase values within the specified range.
+    
+    Examples
+    --------
+    >>> phase_array = np.array([-540, -180, 0, 180, 360, 540])
+    >>> adjust_phase_range(phase_array, value_range=(0, 180), mod_base=180)
+    array([0, 0, 0, 180, 0, 0])
+
+    >>> adjust_phase_range(phase_array, value_range=(-90, 90), mod_base=360)
+    array([-90, -90, 0, 90, 90, -90])
+
+    >>> adjust_phase_range(phase_array, mod_base=360)
+    array([-180, -180,    0,  180,  360,  180])
+    """
+    phase_array = is_iterable(phase_array, exclude_string= True, transform =True )
+    # Validate phase_array is a NumPy array 
+    if not isinstance(phase_array, np.ndarray):
+        # Convert input to numpy array if necessary
+        phase_array = np.asarray(phase_array)
+
+    # Validate mod_base
+    if mod_base not in (90, 180, 270, 360 ):
+        raise ValueError("mod_base must be either 90, 180, 270 or 360.")
+
+    # If value_range is None, normalize phase values and return without further adjustment
+    if value_range is None:
+        return np.mod(phase_array + mod_base, mod_base)
+    
+    # Validate and unpack value_range
+    if np.isscalar(value_range):
+        min_val, max_val = 0, value_range
+    elif isinstance(value_range, (tuple, list)) and len(value_range) == 2:
+        min_val, max_val = value_range
+    else:
+        raise ValueError("value_range must be None, a scalar, or a tuple/list of two values.")
+
+    # Ensure min_val is less than max_val
+    min_val, max_val = min(min_val, max_val), max(min_val, max_val)
+    # Validate value_range contents
+    if not (np.isscalar(min_val) and np.isscalar(max_val) and min_val < max_val):
+        raise ValueError("Invalid value_range: min_val must be less than max_val.")
+
+    # Normalize phase values using mod_base
+    normalized_phase = np.mod(phase_array, mod_base)
+    normalized_phase[normalized_phase < 0] += mod_base
+
+    # Scale and shift normalized phase values to the desired range
+    scale_factor = (max_val - min_val) / mod_base
+    adjusted_phase = normalized_phase * scale_factor + min_val
+
+    return adjusted_phase
+
 def array2hdf5 (
     filename: str, /, 
     arr: NDArray=None , 

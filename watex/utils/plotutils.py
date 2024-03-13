@@ -29,6 +29,7 @@ from ..exceptions import (
     TipError, 
     PlotError, 
     )
+from .baseutils import adjust_phase_range 
 from .funcutils import  ( 
     _assert_all_types,
     is_iterable, 
@@ -121,6 +122,444 @@ D_STYLES = [
 ]
 #----
 
+def plot_tensors2(
+    z_or_edis_obj_list, /, 
+    station='S00', 
+    plot_z=False, 
+    show_error_bars=True,  
+    **kwargs
+   ):
+    """
+    Plot resistivity and phase tensors or the real and imaginary impedance.
+    
+    This function plots the apparent resistivity and phase or the real and imaginary
+    parts of impedance tensors for a given station from a list of Z or EDI objects. 
+    It supports extensive customization for the plots including the option to show or 
+    hide error bars, control over color schemes, marker styles, and much more.
+    
+    Parameters
+    ----------
+    z_or_edis_obj_list : list of :class:`watex.edi.Edi` or :class:`watex.externals.z.Z`
+        A collection of EDI- or Impedance tensor objects. The list can contain objects
+        directly representing impedance tensors or EDI objects from which impedance
+        tensors can be extracted.
+    station : int or str, default 'S00'
+        The station to visualize. Can be specified as an index (int) or as a string
+        including the station name or number. For example, 'S00' or 0 for the first
+        station. The counting starts from 0.
+    plot_z : bool, default False
+        If True, visualize the real and imaginary parts of the impedance tensors (Z).
+        If False, visualize the apparent resistivity and phase tensors.
+    show_error_bars : bool, default True
+        Whether to show error bars in the plots. If False, error bars are omitted
+        for a cleaner visualization.
+    **kwargs : dict
+        Additional keyword arguments for plot customization. These can include
+        matplotlib parameters for markers, lines, colors, and other plot attributes.
+    
+    Returns
+    -------
+    object
+        The Z object for the specified station, containing the impedance tensor data
+        and any computed properties like resistivity and phase.
+    
+    Examples
+    --------
+    Plotting the apparent resistivity and phase for the fourth station from a list
+    of EDI objects:
+    
+    >>> import watex as wx
+    >>> edi_objects = wx.fetch_data('edis', samples=17, return_data=True)
+    >>> wx.utils.plotutils.plot_tensors(edi_objects, station=3)
+    
+    Plotting the real and imaginary parts of the impedance tensor for the first station,
+    without error bars:
+    
+    >>> wx.utils.plotutils.plot_tensors(edi_objects, station='S00', zplot=True,
+                                        show_error_bars=False)
+    
+    Notes
+    -----
+    This function is a part of the watex visualization utilities and requires a
+    matplotlib environment to display the plots. Ensure that your environment
+    supports graphical output or adjust your environment accordingly.
+    
+    See Also
+    --------
+    watex.methods.EM : Class for electromagnetic method processing.
+    watex.utils.plotutils.plot_errorbar : Helper function to plot error bars.
+    """
+    station_index = _get_station_index(station)
+    obj_type, z_obj = _get_obj_type_and_data(z_or_edis_obj_list, station_index)
+    fig, ax_list = _initialize_plot_layout(**kwargs)
+    plot_res, plot_res_err, plot_phase, plot_phase_err = _prepare_plot_data(
+        z_obj, plot_z)
+    
+    freq, plot_res, plot_res_err, plot_phase, plot_phase_err= _filter_and_adjust_data(
+        z_obj._freq, plot_res, plot_res_err, plot_phase, plot_phase_err, **kwargs)
+    
+    _plot_data(fig, ax_list, freq, plot_res, plot_res_err, 
+               plot_phase, plot_phase_err, show_error_bars,
+               plot_z=plot_z,  **kwargs)
+    
+    plt.show()
+    
+    return z_obj
+
+def _get_station_index(station):
+    """Extract and return the station index from the station identifier."""
+    match = re.search(r'\d+', str(station), flags=re.IGNORECASE)
+    if match is None:
+        raise TypeError("Station should be or include a position number.")
+    return int(match.group())
+
+def _get_obj_type_and_data(z_or_edis_obj_list, station_index):
+    """Determine the object type (EDI or Z) and retrieve the relevant data object."""
+    if station_index >= len(z_or_edis_obj_list):
+        raise ValueError(f"Station index out of range. Only {len(z_or_edis_obj_list)}"
+                         " stations available.")
+    
+    data_obj = z_or_edis_obj_list[station_index]
+    obj_type = 'EDI' if hasattr(data_obj, 'Z') else 'Z'
+    z_obj = data_obj.Z if obj_type == 'EDI' else data_obj
+    
+    return obj_type, z_obj
+
+def _initialize_plot_layout(**kwargs):
+    """Initialize and return the figure and axes list for plotting."""
+    fig_size = kwargs.pop('fig_size', [6, 6])
+    fig_dpi = kwargs.pop('dpi', 300)
+    fig = plt.figure(figsize=fig_size, dpi=fig_dpi)
+    plt.clf()
+    
+    gs = gridspec.GridSpec(2, 4, wspace=kwargs.get('subplot_wspace', .3))
+    ax_list = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(4)]
+    return fig, ax_list
+
+def _prepare_plot_data(z_obj, plot_z):
+    """Prepare plot data for resistivity, phase, and their errors."""
+    # Placeholder function for computing resistivity and phase
+    z_obj.compute_resistivity_phase()  # Assume this function exists within z_obj
+    
+    plot_res = z_obj.resistivity if not plot_z else abs(z_obj.z.real)
+    plot_res_err = z_obj.resistivity_err if not plot_z else abs(z_obj.z_err.real)
+    plot_phase = z_obj.phase if not plot_z else abs(z_obj.z.imag)
+    plot_phase_err = z_obj.phase_err if not plot_z else abs(z_obj.z_err.imag)
+    
+    return plot_res, plot_res_err, plot_phase, plot_phase_err
+
+def _filter_and_adjust_data(freq, plot_res, plot_res_err, plot_phase, plot_phase_err, **kwargs):
+    """ filters and adjusts the data according to specified limits."""
+    phase_limits = kwargs.pop('phase_limits', None)
+    period_limits = kwargs.pop('period_limits', None)
+    freq_limits = kwargs.pop('freq_limits', None)
+    mod_base = kwargs.pop("mod_base", 360)  
+
+    # Validate and prioritize frequency limits over period limits
+    if freq_limits is not None and period_limits is not None:
+        print("Both freq_limits and period_limits are provided. Using freq_limits for filtering.")
+        period_limits = None  # Ignore period_limits if freq_limits is provided
+    
+    if period_limits is not None:
+        if not isinstance(period_limits, (list, tuple)) or len(period_limits) != 2 or not all(
+                isinstance(x, (int, float)) for x in period_limits):
+            raise ValueError("period_limits must be a tuple or list of two numerical"
+                             " values (min_period, max_period).")
+        
+        min_period, max_period = sorted(period_limits)  # Ensure min < max
+        # Convert period limits to frequency limits
+        freq_limits = 1/max_period, 1/min_period
+
+    # Filter data by frequency limits
+    if freq_limits is not None:
+        if not isinstance(freq_limits, (list, tuple)) or len(freq_limits) != 2 or not all(
+                isinstance(x, (int, float)) for x in freq_limits):
+            raise ValueError(
+                "freq_limits must be a tuple or list of two numerical values (min_freq, max_freq).")
+        
+        min_freq, max_freq = sorted(freq_limits)  # Ensure min < max
+        freq_mask = (freq >= min_freq) & (freq <= max_freq)
+        
+        # Select frequencies within the limits
+        new_freq = freq[freq_mask]
+        # Use the mask to select corresponding data
+        indices = np.where(freq_mask)[0]
+    else:
+        new_freq = freq
+        indices = np.arange(len(freq))
+    
+    # Adjust phase data according to phase_limits and mod_base
+    if phase_limits is not None:
+        new_plot_phase = adjust_phase_range(
+            plot_phase[indices, :, :], value_range=phase_limits, mod_base=mod_base)
+    else:
+        new_plot_phase = plot_phase[indices, :, :]
+    
+    # Select corresponding data for resistivity and errors
+    new_plot_res = plot_res[indices, :, :]
+    new_plot_res_err = plot_res_err[indices, :, :]
+    new_plot_phase_err = plot_phase_err[indices, :, :]
+    
+    return new_freq, new_plot_res, new_plot_res_err, new_plot_phase, new_plot_phase_err
+
+def _plot_data(
+    fig, 
+    ax_list, 
+    freq,
+    plot_res, 
+    plot_res_err, 
+    plot_phase, 
+    plot_phase_err, 
+    show_error_bars, 
+    plot_z,  
+    **kwargs
+    ):
+    """
+    Plots the resistivity and phase data on the provided axes, with extensive 
+    customization options.
+
+    This function uses matplotlib to plot the provided electromagnetic tensor
+    data, including resistivity and phase, on the given axes. It offers 
+    customization for marker styles, line widths, error bars, and more.
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        The figure object where the plots will be drawn.
+    ax_list : list of matplotlib.axes.Axes
+        A list of axes objects on which the data will be plotted. The list 
+        should contain 8 axes, corresponding to xx, xy, yx, yy components 
+        for resistivity and phase plots.
+    freq : numpy.ndarray
+        1D array containing the frequencies at which measurements were taken.
+    plot_res : numpy.ndarray
+        3D array containing the resistivity values, shaped as (n_freq, 2, 2) 
+        for xx, xy, yx, yy components.
+    plot_res_err : numpy.ndarray
+        3D array containing the resistivity errors, shaped as (n_freq, 2, 2).
+    plot_phase : numpy.ndarray
+        3D array containing the phase values, shaped as (n_freq, 2, 2).
+    plot_phase_err : numpy.ndarray
+        3D array containing the phase errors, shaped as (n_freq, 2, 2).
+    show_error_bars : bool
+        If True, error bars will be displayed on the plots.
+    plot_z : bool
+        If True, plots the real and imaginary parts of the impedance tensor 
+        instead of resistivity and phase.
+    **kwargs : dict
+        Additional keyword arguments for further customization, including 
+        marker sizes, line widths, and color modes.
+
+    Returns
+    -------
+    None
+        This function does not return any value. It directly modifies the
+        provided figure and axes objects.
+
+    Examples
+    --------
+    Assuming `fig` and `ax_list` have been properly initialized, and `freq`,
+    `plot_res`, `plot_res_err`, `plot_phase`, `plot_phase_err` have been loaded:
+
+    >>> _plot_data(fig, ax_list, freq, plot_res, plot_res_err, plot_phase, 
+    ...            plot_phase_err, show_error_bars=True, plot_z=False, color_mode='color')
+
+    This will plot the resistivity and phase data on the given axes with color
+    markers and error bars.
+    """
+    # Attributes 
+    ms = kwargs.pop('ms', 1.5)
+    ms_r = kwargs.pop('ms_r', 3)
+    lw = kwargs.pop('lw', .5)
+    lw_r = kwargs.pop('lw_r', 1.0)
+    e_capthick = kwargs.pop('e_capthick', .5)
+    e_capsize = kwargs.pop('e_capsize', 2)
+    color_mode = kwargs.pop('color_mode', 'color')
+    leg_style=kwargs.pop ("leg_style", '2')
+    # --> set default font size
+    font_size = kwargs.pop('font_size', 6)
+    tick_label_size=kwargs.pop ("tick_label_size", 8 )
+    plt.rcParams['font.size'] = font_size
+
+    fontdict = {'size': font_size + 2, 
+                'weight': 'bold'} 
+    # arrange colors plot 
+    # color mode
+    if color_mode == 'color':
+        # color for data
+        cted = kwargs.pop('cted', (0, 0, 1))
+        ctmd = kwargs.pop('ctmd', (1, 0, 0))
+        mted = kwargs.pop('mted', 's')
+        mtmd = kwargs.pop('mtmd', 'o')
+        ctem = kwargs.pop('ctem', (0, .6, .3))
+        ctmm = kwargs.pop('ctmm', (.9, 0, .8))
+        mtem = kwargs.pop('mtem', '+')
+        mtmm = kwargs.pop('mtmm', '+')
+
+    # black and white mode
+    elif color_mode == 'bw':
+        # color for data
+        cted = kwargs.pop('cted', (0, 0, 0))
+        ctmd = kwargs.pop('ctmd', (0, 0, 0))
+        mted = kwargs.pop('mted', 's')
+        mtmd = kwargs.pop('mtmd', 'o')
+        ctem = kwargs.pop('ctem', (0.6, 0.6, 0.6))
+        ctmm = kwargs.pop('ctmm', (0.6, 0.6, 0.6))
+        mtem = kwargs.pop('mtem', '+')
+        mtmm = kwargs.pop('mtmm', 'x')
+        
+     # --> make key word dictionaries for plotting
+    kw_xx = {'color': cted,
+             'marker': mted,
+             'ms': ms,
+             'ls': ':',
+             'lw': lw,
+             'e_capsize': e_capsize,
+             'e_capthick': e_capthick}
+
+    kw_yy = {'color': ctmd,
+             'marker': mtmd,
+             'ms': ms,
+             'ls': ':',
+             'lw': lw,
+             'e_capsize': e_capsize,
+             'e_capthick': e_capthick}
+    
+    period = 1 / freq  # Convert frequency to period
+    
+    # Correctly mapping components to their indices in the
+    # 2x2 matrix and respective colors
+    components_info = {
+        'xx': {'index': (0, 0), 'kw': 'kw_xx'},
+         # xx and xy share the same color and marker style
+        'xy': {'index': (0, 1), 'kw': 'kw_xx'}, 
+        'yx': {'index': (1, 0), 'kw': 'kw_yy'},
+         # yx and yy share the same color and marker style
+        'yy': {'index': (1, 1), 'kw': 'kw_yy'}  
+    }
+    
+    res_labels = [] 
+    phase_labels =[] 
+    res_leg_objs =[]
+    phase_leg_objs=[]
+    for i, component in enumerate(components_info):
+        ax_res = ax_list[i]  # Axes for resistivity plots
+        ax_phase = ax_list[i + 4]  # Axes for phase plots
+        index = components_info[component]['index']
+        kw_arg = components_info[component]['kw']
+        # Accessing the 3D array for each component
+        res = plot_res[:, index[0], index[1]]
+        res_err = plot_res_err[:, index[0], index[1]]
+        phase = plot_phase[:, index[0], index[1]]
+        phase_err = plot_phase_err[:, index[0], index[1]]
+
+        # Keyword arguments for plotting, differentiating 
+        # between xx/xy and yx/yy components
+        # Dynamically access the appropriate kwargs based on the component
+        plot_kwargs = locals()[kw_arg]  
+
+        # Plot resistivity
+        er_res=plot_errorbar(
+            ax_res, period, res, res_err if show_error_bars else None,
+            **plot_kwargs
+        )
+        # Plot phase
+        er_phase=plot_errorbar(
+            ax_phase, period, phase, phase_err if show_error_bars else None,
+            **plot_kwargs
+        )
+
+        ax_res.set_xscale('log')
+        ax_res.set_yscale('log')
+        ax_phase.set_xscale('log')
+
+        # Customizations
+        ax_res.grid(True,  which="both",  ls="--", linewidth=0.5, 
+                    color='gray', alpha=0.5
+            )
+        ax_phase.grid( True,  which="both", ls="--", linewidth=0.5, 
+                      color='gray', alpha=0.5
+            )
+        # Axis limit customization 
+        ax_res.set_ylim([min(res) / 2, max(res) * 2])
+        ax_phase.set_ylim([min(phase) - 5, max(phase) + 5])
+
+        # Optional: Tick Labels Formatting
+        ax_res.tick_params(
+            axis='both', 
+            which='major', 
+            labelsize=kwargs.get('tick_label_size', tick_label_size)
+            )
+        ax_phase.tick_params(
+            axis='both', 
+            which='major', 
+            labelsize=kwargs.get('tick_label_size', tick_label_size)
+            )
+
+        if i == 0:
+            ax_res.set_ylabel(
+                "Re[Z (mV/km nT)]" if plot_z else 'App. Res.($\Omega \cdot m $)' , 
+                fontsize=kwargs.get('font_size', font_size)
+                )
+            ax_phase.set_ylabel(
+                'Phase (deg.)', 
+                fontsize=kwargs.get('font_size', font_size)
+                )
+        
+        # collect object and legend labels
+        res_label =  f"$z_{{{component}}}$"  if plot_z else f"$\\rho_{{{component}}}$" 
+        res_labels.append (res_label)
+        phase_label =  f"$\phi_{{{component}}}$" 
+        phase_labels.append ( phase_label)
+        
+        # collect legend object 
+        res_leg_objs.append (er_res )
+        phase_leg_objs.append ( er_phase)
+        
+    # Adjust tick labels and visibility for a cleaner look
+    for ax in ax_list[:4]:  # For resistivity plots
+        ax.set_xlabel('')
+        ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+
+    for ax in ax_list[4:]:  # For phase plots
+        ax.set_xlabel('Period (s)', fontsize=kwargs.get('font_size', font_size))
+
+    if str(leg_style).lower() =='2': 
+        legend_loc = 'upper center'
+        legend_pos = (.5, 1.18)
+        legend_marker_scale = 1
+        legend_border_axes_pad = .01
+        legend_label_spacing = 0.07
+        legend_handle_text_pad = .2
+        legend_border_pad = .15
+        for aa, ax in enumerate(ax_list[:4]):
+            ax.legend([res_leg_objs[aa]],
+                      [res_labels[aa]],
+                      loc=legend_loc,
+                      bbox_to_anchor=legend_pos,
+                      markerscale=legend_marker_scale,
+                      borderaxespad=legend_border_axes_pad,
+                      labelspacing=legend_label_spacing,
+                      handletextpad=legend_handle_text_pad,
+                      borderpad=legend_border_pad,
+                      framealpha=1,
+                      prop={'size': max([font_size, 5])})
+            
+    else: 
+        # Customize legend for each plot considering the plotting style
+        # and the mathematical symbols
+        for i, ax in enumerate(ax_list[:4]):
+           # Resistivity plots legend
+           ax.legend([res_labels[i]], loc='best', fontsize=kwargs.get('font_size', 8),
+                     frameon=True, edgecolor='black')
+
+        for i, ax in enumerate(ax_list[4:]):
+
+            ax.legend([phase_labels[i]], loc='best', fontsize=kwargs.get('font_size', 8),
+                      frameon=True, edgecolor='black')
+        
+        
+    fig.subplots_adjust(hspace=0.1, wspace=0.3)
 
 def plot_logging ( 
     X, 
@@ -2334,7 +2773,7 @@ def plotvec2(a,b):
     plt.ylim(-2, 2)
     plt.xlim(-2, 2)  
 
-def plot_errorbar(
+def plot_errorbar0(
         ax,
         x_ar,
         y_ar,
@@ -2424,6 +2863,81 @@ def plot_errorbar(
         **kws
          )
     
+    return eobj
+
+def plot_errorbar(
+    ax,
+    x_ar,
+    y_ar,
+    y_err=None,
+    x_err=None,
+    color='k',
+    marker='x',
+    ms=2, 
+    ls=':', 
+    lw=1, 
+    e_capsize=2,
+    e_capthick=.5,
+    picker=None,
+    show_error_bars=True,  
+    **kws
+ ):
+    """
+    Convenience function to make an error bar instance.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axes instance to put error bar plot on.
+    x_ar : np.ndarray
+        Array of x values to plot.
+    y_ar : np.ndarray
+        Array of y values to plot.
+    y_err : np.ndarray, optional
+        Array of errors in y-direction to plot.
+    x_err : np.ndarray, optional
+        Array of errors in x-direction to plot.
+    color : str or tuple
+        Color of marker, line, and error bar.
+    marker : str
+        Marker type to plot data as.
+    ms : float
+        Size of marker.
+    ls : str
+        Line style between markers.
+    lw : float
+        Width of line between markers.
+    e_capsize : float
+        Size of error bar cap.
+    e_capthick : float
+        Thickness of error bar cap.
+    picker : float, optional
+        Radius in points to be able to pick a point.
+    show_error_bars : bool, default True
+        If False, skip plotting the error bars.
+    **kws : dict
+        Additional keyword arguments passed to `ax.errorbar`.
+
+    Returns
+    -------
+    errorbar_object : matplotlib.container.ErrorbarContainer
+        Error bar object containing line data, error bars, etc.
+    """
+    if show_error_bars:
+        yerr = y_err
+        xerr = x_err
+    else:
+        # Skip error bars by setting them to None
+        yerr = None
+        xerr = None
+
+    eobj = ax.errorbar(
+        x_ar, y_ar, marker=marker, ms=ms, mfc='None', mew=lw, mec=color,
+        ls=ls, xerr=xerr, yerr=yerr, ecolor=color, color=color,
+        picker=picker, lw=lw, elinewidth=lw, capsize=e_capsize,
+        **kws
+    )
+
     return eobj
 
 def get_color_palette (RGB_color_palette): 
@@ -4174,11 +4688,12 @@ def plot_roc_curves (
         ax.legend() 
         
     return ax 
-        
+
 def plot_tensors (
     z_or_edis_obj_list, /, 
     station:int|str= 'S00', 
     zplot:bool=False, 
+    show_error_bars=False, 
     **kwargs
 )-> object:
     #---------------------------------------
@@ -4374,48 +4889,65 @@ def plot_tensors (
     # ---------plot the apparent resistivity-----------------------------------
             # plot each component in its own subplot
             # plot data response
-    erxx = plot_errorbar(axrxx,
-                        period[nzxx],
-                        plot_res[nzxx, 0, 0],
-                        plot_res_err[nzxx, 0, 0],
-                        **kw_xx)
-    erxy = plot_errorbar(axrxy,
-                        period[nzxy],
-                        plot_res[nzxy, 0, 1],
-                        plot_res_err[nzxy, 0, 1],
-                        **kw_xx)
-    eryx = plot_errorbar(axryx,
-                        period[nzyx],
-                        plot_res[nzyx, 1, 0],
-                        plot_res_err[nzyx, 1, 0],
-                        **kw_yy)
-    eryy = plot_errorbar(axryy,
-                        period[nzyy],
-                        plot_res[nzyy, 1, 1],
-                        plot_res_err[nzyy, 1, 1],
-                        **kw_yy)
+    erxx = plot_errorbar(
+        axrxx,
+        period[nzxx],
+        plot_res[nzxx, 0, 0],
+        plot_res_err[nzxx, 0, 0],
+        show_error_bars=show_error_bars, 
+        **kw_xx, 
+        )
+    erxy = plot_errorbar(
+        axrxy,
+        period[nzxy],
+        plot_res[nzxy, 0, 1],
+        plot_res_err[nzxy, 0, 1],
+        show_error_bars=show_error_bars, 
+        **kw_xx)
+    eryx = plot_errorbar(
+        axryx,
+        period[nzyx],
+        plot_res[nzyx, 1, 0],
+        plot_res_err[nzyx, 1, 0],
+        show_error_bars=show_error_bars, 
+        **kw_yy)
+    eryy = plot_errorbar(
+        axryy,
+        period[nzyy],
+        plot_res[nzyy, 1, 1],
+        plot_res_err[nzyy, 1, 1],
+        show_error_bars=show_error_bars, 
+        **kw_yy)
     # plot phase
 
-    plot_errorbar(axpxx,
-                        period[nzxx],
-                        plot_phase[nzxx, 0, 0],
-                        plot_phase_err[nzxx, 0, 0],
-                        **kw_xx)
-    plot_errorbar(axpxy,
-                        period[nzxy],
-                        plot_phase[nzxy, 0, 1],
-                        plot_phase_err[nzxy, 0, 1],
-                        **kw_xx)
-    plot_errorbar(axpyx,
-                        period[nzyx],
-                        plot_phase[nzyx, 1, 0],
-                        plot_phase_err[nzyx, 1, 0],
-                        **kw_yy)
-    plot_errorbar(axpyy,
-                        period[nzyy],
-                        plot_phase[nzyy, 1, 1],
-                        plot_phase_err[nzyy, 1, 1],
-                        **kw_yy)
+    plot_errorbar(
+        axpxx,
+        period[nzxx],
+        plot_phase[nzxx, 0, 0],
+        plot_phase_err[nzxx, 0, 0],
+        show_error_bars=show_error_bars, 
+        **kw_xx)
+    plot_errorbar(
+        axpxy,
+        period[nzxy],
+        plot_phase[nzxy, 0, 1],
+        plot_phase_err[nzxy, 0, 1],
+        show_error_bars=show_error_bars, 
+        **kw_xx)
+    plot_errorbar(
+        axpyx,
+        period[nzyx],
+        plot_phase[nzyx, 1, 0],
+        plot_phase_err[nzyx, 1, 0],
+        show_error_bars=show_error_bars, 
+        **kw_yy)
+    plot_errorbar(
+        axpyy,
+        period[nzyy],
+        plot_phase[nzyy, 1, 1],
+        plot_phase_err[nzyy, 1, 1],
+        show_error_bars=show_error_bars, 
+        **kw_yy)
 
     # get error bar list for editing later
     #_err_list = 
@@ -4524,20 +5056,20 @@ def plot_tensors (
    
         # --> make key word dictionaries for plotting
         kw_xx = {'color': ctem,
-                 'marker': mtem,
-                 'ms': ms_r,
-                 'ls': ':',
-                 'lw': lw_r,
-                 'e_capsize': e_capsize,
-                 'e_capthick': e_capthick}
+                  'marker': mtem,
+                  'ms': ms_r,
+                  'ls': ':',
+                  'lw': lw_r,
+                  'e_capsize': e_capsize,
+                  'e_capthick': e_capthick}
 
         kw_yy = {'color': ctmm,
-                 'marker': mtmm,
-                 'ms': ms_r,
-                 'ls': ':',
-                 'lw': lw_r,
-                 'e_capsize': e_capsize,
-                 'e_capthick':e_capthick}
+                  'marker': mtmm,
+                  'ms': ms_r,
+                  'ls': ':',
+                  'lw': lw_r,
+                  'e_capsize': e_capsize,
+                  'e_capthick':e_capthick}
 
         
         legend_ax_list = ax_list[0:4]
@@ -4652,49 +5184,6 @@ Examples
 >>> wx.utils.plotutils.plot_tensors ( edi_data, station =4 )
 """ 
     
-#XXX TODO
-def plot_rsquared (X , y,  y_pred, **r2_score_kws  ): 
-    """ Plot :math:`R^2` squared functions. 
-    
-    Parameters 
-    -----------
-    X : array-like of shape (n_samples, n_features)
-        Training vector, where `n_samples` is the number of samples and
-        `n_features` is the number of features.
-
-    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-        Target relative to X for classification or regression;
-        None for unsupervised learning.
-    
-    y_pred: array-like of shape (n_samples,) or (n_samples, n_outputs)
-        Predicted target relative to X for classification or regression;
-        None for unsupervised learning.
-        
-    r2_score_kws: dict, optional 
-       Additional keyword arguments of :func:`sklearn.metrics.r2_score`. 
-    
-    """
-    from sklearn.metrics import r2_score
-    # Calculate R-squared
-    r_squared = r2_score(y, y_pred, **r2_score_kws)
-
-    # Plotting the scatter plot
-    plt.scatter(X, y, color='blue', label='Actual data')
-
-    # Plotting the regression line
-    plt.plot(X, y_pred, color='red', linewidth=2, label='Fitted line')
-
-    # Annotate the R-squared value on the plot
-    plt.text(0.5, 0.5, 'R-squared = {:.2f}'.format(r_squared), fontsize=12, ha='center')
-
-    # Adding labels and title
-    plt.xlabel('Predictor')
-    plt.ylabel('Target')
-    plt.title('R-squared Diagram')
-    plt.legend()
-    # Show the plot
-    plt.show()
-
 def plot_sounding (
     ves, /, 
     style = 'bmh', 

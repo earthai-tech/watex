@@ -772,15 +772,15 @@ wx_rst_epilog ="""
 
 .. role:: raw-html(raw)
    :format: html
-   
-.. |ohmS| replace:: Pseudo-area of the fractured zone 
-.. |sfi| replace:: Pseudo-fracturing index 
-.. |VES| replace:: Vertical Electrical Sounding 
-.. |ERP| replace:: Electrical Resistivity Profiling 
-.. |MT| replace:: Magnetotelluric 
-.. |AMT| replace:: Audio-Magnetotellurics 
-.. |CSAMT| replace:: Controlled Source |AMT| 
-.. |NSAMT| replace:: Natural Source |AMT| 
+
+.. |ohmS| replace:: Pseudo-area of the fractured zone
+.. |sfi| replace:: Pseudo-fracturing index
+.. |VES| replace:: Vertical Electrical Sounding
+.. |ERP| replace:: Electrical Resistivity Profiling
+.. |MT| replace:: Magnetotelluric
+.. |AMT| replace:: Audio-Magnetotellurics
+.. |CSAMT| replace:: Controlled Source |AMT|
+.. |NSAMT| replace:: Natural Source |AMT|
 .. |EM| replace:: electromagnetic
 .. |EMAP| replace:: |EM| array profiling
 .. |Fix| replace:: :bdg-danger:`Fix`
@@ -790,6 +790,10 @@ wx_rst_epilog ="""
 .. |Major change| replace:: :bdg-primary:`Major change`
 .. |API change| replace:: :bdg-warning:`API change`
 .. |Deprecated| replace:: :bdg-warning:`Deprecated`
+.. |Improvement| replace:: :bdg-primary:`Improvement`
+.. |Performance| replace:: :bdg-success:`Performance`
+.. |Documentation| replace:: :bdg-info:`Documentation`
+.. |New Module| replace:: :bdg-primary:`New Module`
 
 .. |Open Source? Yes!| image:: https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github
    :target: https://github.com/WEgeophysics/watex

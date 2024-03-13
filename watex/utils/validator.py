@@ -553,7 +553,6 @@ def _validate_ves_operator (
         
     """
 
-    
     if data is not None: 
         data = check_array (
             data, to_frame = True, input_name = "VES data "
