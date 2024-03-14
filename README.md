@@ -142,7 +142,7 @@ focuses on errors within the resistivity tensor:
 
 ```python
 from watex.methods import EMAP
-po = wx.EMAP().fit(edi_data)  # Creates an EM Array Profiling processing object
+po = EMAP().fit(edi_data)  # Creates an EM Array Profiling processing object
 r = po.qc(tol=0.2, return_ratio=True)  # Good data deemed from 80% significance level
 r
 Out[9]: 0.95

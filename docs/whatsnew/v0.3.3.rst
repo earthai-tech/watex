@@ -33,7 +33,7 @@ unctionalities for geophysical data visualization and analysis.
   features. This effort aims to enhance understanding and utilization of watex's capabilities, supporting users in achieving 
   their analysis objectives with the tool.
 
-These updates reflect our commitment to continually enhancing watex based on user input and the evolving needs of the 
+These updates reflect our commitment to continually enhancing :code:`watex` based on user input and the evolving needs of the 
 geophysical analysis community. We value and appreciate the feedback and contributions from our users that drive the ongoing 
 development and improvement of watex.
 
