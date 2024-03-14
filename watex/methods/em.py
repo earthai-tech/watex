@@ -350,6 +350,10 @@ class EM(IsEdi):
             try:show_stats(rf, self.ediObjs_)
             except: pass 
         
+       # Ensure there are EDI files for EM object construction
+        if not hasattr(self.ediObjs_, '__iter__') or not self.ediObjs_:
+            raise EMError("No EDI data found. Unable to construct the EM"
+                          " instance. Please provide EDI-files/objects.")
 
     def _get_tensor_and_err_values (self, attr ): 
         """ Get tensor with error and put in dictionnary 
@@ -401,7 +405,7 @@ class EM(IsEdi):
         """
         by = fit_params.pop ('by', 'dataid')
         self.prefixid_= fit_params.pop ('prefixid', 'S')
-
+    
         def _fetch_headinfos (cobj,  attr): 
             """ Set attribute `attr` from collection object `cobj`."""
             return list(map (lambda o: getattr(o, attr), cobj))
@@ -4374,7 +4378,6 @@ def drop_frequencies (
         
     if str(tol).lower() == 'auto': 
         tol =.5
- 
     # make a copy of ediobjs  
     ediObjs = np.array( ediObjs, dtype =object) 
     

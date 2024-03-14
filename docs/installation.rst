@@ -1,355 +1,435 @@
 .. _installation:
 
-============================
-Installing  & Quickstart 
-============================
+======================================
+Installing  & Getting Started
+======================================
 
-Why Python ? 
-============
+Python's Edge in watex Development
+====================================
 
-:code:`watex` is designed using the `Python <https://www.python.org/>`_ programming language because of its easy accessibility, 
-clear syntax, and interactive shell environment. Secondly, Python is freely distributed and the powerful 
-numerical libraries (NumPy_ , SciPy_ , `Pandas <https://pandas.pydata.org>`_ , 
-`SQLite <https://sqlite.org/index.html>`_ ), to handle a large data sets and scikit-learn_ for prediction purposes.  
- 
-.. _scikit-learn: http://scikit-learn.org/stable/
+The choice of `Python <https://www.python.org/>`_ for developing :code:`watex` stems 
+from Python's widespread recognition for simplicity, readability, and versatility. These qualities 
+make Python especially suitable for both beginners and experienced programmers. Furthermore, Python is 
+freely available, ensuring that :code:`watex` can be used and distributed without any licensing 
+constraints.
+
+Python's rich ecosystem of libraries plays a pivotal role in :code:`watex`'s functionality. Libraries 
+such as `NumPy <https://numpy.org>`_, `SciPy <https://www.scipy.org>`_, `Pandas <https://pandas.pydata.org>`_, 
+and `SQLite <https://sqlite.org/index.html>`_ are integral for data manipulation, statistical analysis, 
+and database management. These tools collectively enable :code:`watex` to efficiently process large 
+datasets and perform complex predictive analytics.
+
+Moreover, :code:`watex` benefits from the integration with :ref:`scikit-learn <scikit-learn>`, a library 
+that provides a wide range of machine learning algorithms for data mining, data analysis, and modeling. 
+The combination of Python's accessible syntax and its powerful libraries ensures that :code:`watex` is a 
+robust tool for geophysical exploration and analysis.
+
 .. _NumPy: https://numpy.org
 .. _SciPy: https://www.scipy.org
+.. _scikit-learn: http://scikit-learn.org/stable/
 
 
-Installing
-===========
+Installation Guide for watex
+============================
 
-:code:`watex` has been tested on the virtual machine Pop_OS Linux env and runs successfully. Please follow the 
-different steps below to properly install the software. The system requires preferably  :code:`Python >=3.9` at the time of writing. 
-Python can be downloaded from `anaconda <https://www.anaconda.com/distribution/>`_ . Miniforge3_ also provides a conda-based distribution
-of Python and the most popular scientific libraries. 
+:code:`watex` is fully compatible with Pop_OS Linux environments and supports 
+Python 3.9 or later versions. This flexibility ensures that :code:`watex` can be utilized across 
+various systems and Python environments. To get started with :code:`watex`, Python needs to be installed 
+on your system. For a comprehensive Python setup that includes a wide array of scientific libraries 
+essential for data analysis, consider using `Anaconda <https://www.anaconda.com/products/distribution>`_ 
+or :ref:`Miniforge3 <Miniforge3>`.
+
+:ref:`Miniforge3` is particularly suitable for users looking for a lightweight conda 
+environment that still provides access to the packages available through conda-forge, making it 
+an excellent choice for :code:`watex` users.
+
+** Setting Up Python 3.9 **
+
+Ensure that Python 3.9 or a later version is installed on your system. This version of Python 
+brings several improvements and features that enhance the functionality of :code:`watex`. You can 
+verify your Python installation by running the following command in your terminal or command prompt:
 
 .. prompt:: bash $
-	
-	python 3.9 
 
-It is possible to install :code:`watex` from source, using anaconda prompt or GUI . 
+   python --version
 
-.. _Miniforge3: https://github.com/conda-forge/miniforge#miniforge3 
+If Python is not installed, or if you need to upgrade to Python 3.9 or later, visit the official `Python website <https://www.python.org/>`__ 
+or use Anaconda/Miniforge3 to install the required version.
 
-From PyPI 
--------------
+** Installing :code:`watex` **
 
-:code:`watex` can be obtained from `PyPI <https://pypi.org/>`__ platform distribution as: 
+Once Python 3.9 or later is set up, :code:`watex` can be installed directly from the source. 
+This method ensures that you have the latest version of :code:`watex`, including all recent updates 
+and features. To install from source, use the Anaconda Prompt or your system's terminal for command-line 
+operations, or navigate through the Anaconda GUI.
 
-.. prompt:: bash $ 
-   
+For detailed instructions on installing :code:`watex` from the source, including cloning the repository 
+and setting up a development environment, refer to the :ref:`From Source <from_source>` section.
+
+.. _Miniforge3: https://github.com/conda-forge/miniforge#miniforge3
+
+
+From PyPI
+----------
+
+Installing :code:`watex` from the Python Package Index (`PyPI <https://pypi.org/>`_) is straightforward 
+with pip. This method ensures you are installing the latest stable version:
+
+.. prompt:: bash $
+
    pip install watex
 
-Use ``pip install -U watex`` for window users instead. Furthermore, to get the latest development of the code, 
-it is recommended to install it :ref:`from source <from_source>`. 
+For Windows users, it's recommended to use the `-U` flag to upgrade :code:`watex` to the latest 
+version if it's already installed:
+
+.. prompt:: bash $
+
+   pip install -U watex
+
+To include optional dependencies that enhance :code:`watex` functionality, particularly useful for 
+development and testing purposes, append `[dev]` to the package name:
+
+.. prompt:: bash $
+
+   pip install watex[dev]
+
+This installs :code:`watex` along with additional packages specified as optional dependencies, enabling 
+a comprehensive environment for both usage and development.
+
+For those interested in the cutting-edge features or contributing to :code:`watex`, installing from the 
+source is recommended. This approach allows you to access the most recent changes that might not yet be 
+available in the PyPI release. Refer to :ref:`installing from source <from_source>` for detailed 
+instructions.
 
 
-From conda-forge 
------------------
+From conda-forge
+----------------
 
-Installing :code:`watex` from the `conda-forge <https://conda-forge.org/>`__ channel can be achieved by 
-adding ``conda-forge`` to your channels with:
+Installing :code:`watex` through `conda-forge <https://conda-forge.org/>`_ is a seamless process. 
+Begin by incorporating `conda-forge` into your list of channels, ensuring that packages from this 
+channel are prioritized. This setup ensures you get the latest compatible versions and dependencies 
+managed by the `conda-forge` community:
 
-.. prompt:: bash 
+.. prompt:: bash $
 
     conda config --add channels conda-forge
     conda config --set channel_priority strict
 
-Once the ``conda-forge`` channel has been enabled, :code:`watex` can be installed with:
+With `conda-forge` configured, proceed to install :code:`watex`:
 
-.. prompt:: bash 
+.. prompt:: bash $
 
-    conda install watex 
+    conda install watex
 
-It is possible to list all of the versions of :code:`watex` available on your platform with:
+To explore all the versions of :code:`watex` that are available for your specific platform via 
+`conda-forge`, you can use the following command:
 
-.. prompt:: bash 
+.. prompt:: bash $
 
    conda search watex --channel conda-forge
 
-From mamba 
-------------
+This command provides a comprehensive list, allowing you to choose a specific version if needed, 
+though typically installing the latest version is recommended for most users.
 
-The installation with `mamba <https://mamba.magna.com/downloads/software/>`__ derived from conda as: 
 
-.. prompt:: bash 
+From Mamba
+----------
 
-    mamba install watex 
+Installing :code:`watex` with `mamba <https://mamba.magna.com/downloads/software/>`_, a fast alternative 
+to conda that leverages the same package repositories, simplifies and accelerates the setup process:
 
-It is possible to list all of the versions of :code:`watex` available on your platform with mamba as:
+.. prompt:: bash $
 
-.. prompt:: bash 
+    mamba install watex
+
+Mamba also offers the capability to explore all available versions of :code:`watex` for your system, 
+providing a fast way to check for updates or specific versions:
+
+.. prompt:: bash $
 
     mamba search watex --channel conda-forge
 
-Alternatively, ``mamba`` repoquery may provide more information, for instance:
+Beyond basic installation, Mamba facilitates advanced package queries to understand :code:`watex` 
+dependencies and reverse dependencies within your environment:
 
-* Search all versions available on your platform:
-  
-  .. prompt:: bash 
-  
+- To search for all available versions of :code:`watex` on your platform:
+
+  .. prompt:: bash $
+
        mamba repoquery search watex --channel conda-forge
 
-* List packages depending on `watex`:
-  
-  .. prompt:: bash 
-  
+- To identify which packages depend on :code:`watex`:
+
+  .. prompt:: bash $
+
       mamba repoquery whoneeds watex --channel conda-forge
 
-* List dependencies of `watex`:
+- To list the dependencies of :code:`watex`:
 
-  .. prompt:: bash
-   
+  .. prompt:: bash $
+
       mamba repoquery depends watex --channel conda-forge
 
-
-.. _from_source: 
-
-From source 
--------------
-
-To install from the source, clone the project with ``git`` and download the latest version from the project 
-webpage: https://github.com/WEgeophysics/watex : 
-
-.. prompt:: bash $ 
-
-   git clone https://github.com/WEgeophysics/watex.git  # add --depth 1 
-  
-Moreover, if you plan on submitting a pull-request, you should clone from your fork instead.
+These Mamba commands provide comprehensive insights into the package ecosystem around :code:`watex`, 
+aiding in managing your development environment more effectively.
 
 
-Using Prompt
--------------
+From Source
+-----------
 
-* Option 1: Recommended
- 
-If you installed Python with conda, we recommend to create a dedicated `conda environment`_ with all the hard :ref:`dependencies <dependencies>` 
-of :code:`watex`. For instance, you can globally set up a `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_ <`venv`> 
-and install dependencies( see example below). Note the <`venv`>  can be any environment name. For instance <`py39`> for Python 3.9 as:
+Installing :code:`watex` directly from the source allows you to access the latest features and updates 
+that may not yet be available in the official releases. To get started, clone the project repository 
+from GitHub using ``git``. Navigate to the `WEgeophysics/watex` project page on 
+GitHub to find the repository URL: `WEgeophysics/watex on GitHub <https://github.com/WEgeophysics/watex>`_.
+
+Clone the repository with the following command:
 
 .. prompt:: bash $
 
-	conda create -n venv python=3.9
-	conda activate venv
-	pip install scikit-learn xgboost seaborn pyyaml pyproj joblib openpyxl
-	
-Some dependencies come with others and we dont need to install the full :ref:`hard-dependencies <dependencies>` to take 
-advantage of the basic implementation. However for consistency, you can install the full hard-dependencies like 
+   git clone https://github.com/WEgeophysics/watex.git
+   # Use the --depth 1 option to clone only the most recent commit history
 
-.. prompt:: bash $ 
-
-	pip install scikit-learn numpy scipy pandas matplotlib tables h5py xgboost seaborn openpyxl pyyaml h5py joblib
-	
-Check the list of optional :ref:`dependencies <dependencies>` to take advantage of additional functionalities. 
-
-.. note:: If you use ``conda install <package name>``, some dependencies are not available in conda-forge you may use :code:`pip` instead.
- 
- 
-* Option 2: creating virtualenv_ under the root of project (Optional) 
-
-If you want to create your virtual environment under the root folder named `watex`, the steps below can 
-guide you to check whether the installation is well done. The advantage of creating the virtualenv_ under the project 
-root is that you do not need to set up the jupyter notebook environment variable.  
-
-.. prompt:: bash $ 
-
-	python -m  venv venv`  #(on Window ) 
-	python -m venv ./venv` #(on Linux)
-			
-You can check your new environment and list the tree packages using: 
-
-.. prompt:: bash $ 
-
-	ls venv/   
-	tree venv/ 
-	
-then you can activate the environment using: 
-
-.. prompt:: bash $ 
-
-	venv\Scripts\activate 	# (on Window ) 
-	source ./venv/bin/activate 	# (on Linux ) 
-	
-You may update and upgrade :code:`pip`, :code:`setuptools` and :code:`wheel` as : 
-
-.. prompt:: bash $ 
-
-	python -m pip install --upgrade pip
-	pip install setuptools --upgrade 
-	pip install wheel --upgrade
-	
-Finally, you can install the software full dependencies `dependencies`_ using :code:`conda` or :code:`pip`. The command should be: 
-
-.. prompt:: bash $  
-
-	conda install scikit-learn=1.1.2  xgboost seaborn pyyaml pyproj joblib openpyxl h5py tables numpy scipy pandas matplotlib missingno pandas_profiling pyjanitor yellowbrick mlxtend
-	
-For a rapid execution of the script, you can also install `scikit-learn-intelex <https://intel.github.io/scikit-learn-intelex/>`_. 
+If you're considering contributing to the :code:`watex` project, it's recommended to fork the 
+repository on GitHub first. Cloning your forked version allows you to make changes in a separate 
+branch and submit pull requests for review:
 
 .. prompt:: bash $
 
-	conda install scikit-learn-intelex 
+   git clone https://github.com/WEgeophysics/watex.git
+   # Replace 'WEgeophysics' with your GitHub username
 
+This approach ensures you're working with a personal copy of the project, facilitating easier 
+contribution and collaboration with the :code:`watex` development community.
+
+
+Using the Command Line
+----------------------
+
+There are two recommended options for setting up your environment to work with :code:`watex`:
+
+Option 1: Using Conda (Recommended)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Creating a dedicated `conda environment <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_ is 
+advisable if you have installed Python via conda. This environment can house all the necessary 
+:ref:`hard dependencies <dependencies>` for :code:`watex`. A `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_ can 
+be set up as follows, where `<venv>` is your chosen name for the environment (e.g., `<py39>` for Python 3.9):
+
+.. prompt:: bash $
+
+    conda create -n venv python=3.9
+    conda activate venv
+    pip install scikit-learn seaborn pyyaml pyproj joblib openpyxl
+
+It is not always necessary to install all :ref:`hard dependencies <dependencies>` for basic 
+functionality, as some dependencies include others. However, for a complete setup, you can install 
+the entire suite:
+
+.. prompt:: bash $
+
+    pip install numpy scipy scikit-learn pandas matplotlib tables h5py seaborn pyyaml h5py joblib
+
+Refer to the list of optional :ref:`dependencies <dependencies>` for additional features.
+
+.. note:: Use :code:`pip` for installing any packages, since not all packages are available via conda-forge.
+
+Option 2: Using Virtualenv (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Creating a virtual environment within the project's root directory (for instance, within a project named `watex`) 
+has numerous advantages. This approach isolates the project's dependencies from global Python 
+installations, facilitating reproducibility and minimizing conflicts. Additionally, it simplifies 
+the setup for Jupyter notebooks by avoiding the need for extra configuration steps.
+
+**Step 1: Creating the Virtual Environment**
+
+Depending on your operating system, use one of the following commands to create a virtual environment 
+named `venv`. This name is conventional, but you can choose any name that suits your project:
+
+.. prompt:: bash $
+
+    # On Windows
+    python -m venv venv
+    # On Linux or macOS
+    python -m venv ./venv
+
+**Step 2: Verifying the Environment**
+
+After creation, ensure your environment is set up correctly by listing its contents. This step is 
+more about familiarization than verification:
+
+.. prompt:: bash $
+
+    ls venv/   # On Linux or macOS
+    tree venv/ # If 'tree' is installed, for a more structured overview
+
+**Step 3: Activating the Environment**
+
+Activating your environment is crucial before installing any packages to ensure they are placed in the 
+correct isolated space:
+
+.. prompt:: bash $
+
+    # On Windows
+    venv\Scripts\activate
+    # On Linux or macOS
+    source ./venv/bin/activate
+
+**Step 4: Updating Core Tools**
+
+Before installing project-specific dependencies, update `pip`, `setuptools`, and `wheel` to their 
+latest versions. These tools are essential for managing and installing Python packages:
+
+.. prompt:: bash $
+
+    python -m pip install --upgrade pip setuptools wheel
+
+**Step 5: Installing Project Dependencies**
+
+Install :code:`watex` and its dependencies within the activated virtual environment. While `conda` can be 
+used for some packages, `pip` ensures compatibility within virtual environments. Here's how to install 
+the required packages, including optional dependencies for extended functionalities:
+
+.. prompt:: bash $
+
+    pip install watex[dev]
+
+Additionally, for improved performance, particularly in machine learning tasks, installing `scikit-learn-intelex` 
+can accelerate certain computations:
+
+.. prompt:: bash $
+
+    pip install scikit-learn-intelex
+
+**Additional Tips:**
+
+- To deactivate the virtual environment and return to your global Python environment, simply run `deactivate` in your terminal.
+- Always activate your project's virtual environment before running scripts or starting a Jupyter notebook to ensure 
+  the correct packages and versions are used.
+
+This guide aims to provide a detailed walkthrough for setting up a virtual environment tailored for 
+:code:`watex` development, focusing on best practices and common conventions in Python project 
+management.
 
 .. _virtualenv: https://docs.python.org/3/tutorial/venv.html
 .. _conda environment: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
-	
-	
-Using GUI 
-----------
-This installation is also optional. After installing `Anaconda <https://anaconda.org/>`_, you can download the watex zip codes 
-`here <https://github.com/WEgeophysics/watex/archive/refs/heads/master.zip>`_ . Then, unzip the project, open `spyder`, `pycharm` or 
-any other IDEs  and set the root to your environment name. Follow the steps below for clarity. 
 
-* open the Anaconda Navigator app
-* In the left sidebar, select `Environments`, then at the bottom of the window select `Create`
-* Give your new environment a suitable name and select Python 3.9 as the package, then press the green `Create` button to confirm. 
-* Select the environment you have created from the list of available environments and in the package window to the right,
-* Select `Not installed` from the drop-down and enter `gdal` and ` libgdal `, then click the `Apply button` in the lower right corner and a window will display confirming dependencies to install,
-* Repeat the process for all dependencies. 
 
-.. _dependencies: 
+Using GUI
+---------
 
-Dependencies 
-=================
+This installation method is optional. After installing `Anaconda <https://anaconda.org/>`_, download 
+the `watex` zip file `here <https://github.com/WEgeophysics/watex/archive/refs/heads/master.zip>`_. Unzip 
+the project, and use an IDE like `Spyder`, `PyCharm`, or any other of your choice, then set the root to 
+your environment name. Follow the steps below for clarity:
 
-The following packages are the dependencies of the :code:`watex` divided into the `hard-dependencies` and the `optional dependencies`. 
-The hard-dependencies are all needed for the software to run properly. 
+* Open the Anaconda Navigator application.
+* In the left sidebar, select `Environments`, then at the bottom of the window, select `Create`.
+* Name your new environment appropriately and select Python 3.9 as the package, then click the green `Create` button to confirm.
+* Select the environment you have created from the list of available environments, and in the package window to the right,
+* Choose `Not installed` from the drop-down menu, type `gdal` and `libgdal` in the search bar, then click the `Apply` button in the lower right corner. A window will pop up confirming the dependencies to install.
+* Repeat the process for all necessary dependencies.
+
+Dependencies
+============
+
+The :code:`watex` package has several dependencies categorized into `hard-dependencies` and `optional 
+dependencies`. The hard-dependencies are essential for the software to function correctly.
 
 .. table::
    :widths: auto
    :class: longtable
-   
+
    ========================= ========================= ===========================
-   **Hard dependencies**     **Minimum version**        **Come with** 
+   **Hard dependencies**     **Minimum version**        **Comes with**
    ------------------------- ------------------------- ---------------------------
-   scikit-learn              >=1.1.2                      -
-   xgboost                   >=1.5.0                      -  
-   seaborn                   >=0.12.0                     -
-   pyyaml                    >=5.0.0                      -
-   pyproj                    >=3.3.0                      -
-   joblib                    >=1.2.0                      -
-   openpyxl                  >=3.0.3                      - 
-   h5py                      >=3.2.0                     pandas 
-   tables                    >=3.6.0                     pandas     
-   numpy                     >=1.23.0                    scikit-learn
-   scipy                     >=1.9.0                     scikit-learn
-   pandas                    >=1.4.0                     seaborn
-   matplotlib                >=3.3.0                     seaborn                                                 
+   scikit-learn              >=1.1.2                    -
+   seaborn                   >=0.12.0                   -
+   pyyaml                    >=5.0.0                    -
+   pyproj                    >=3.3.0                    -
+   joblib                    >=1.2.0                    -
+   h5py                      >=3.2.0                    pandas 
+   tables                    >=3.6.0                    pandas     
+   numpy                     >=1.23.0                   scikit-learn
+   scipy                     >=1.9.0                    scikit-learn
+   pandas                    >=1.4.0                    seaborn
+   matplotlib                >=3.3.0                    seaborn                                                 
    ========================= ========================= ===========================
 
-
-In principles the dependencies first six dependencies are the required. For instance , scikit-learn_ dependency comes with ``numpy`` and ``scipy``, 
-and don't need to install again.  The following table shows the optional dependencies 
+In principle, the first five dependencies are required. For example, the `scikit-learn` dependency 
+includes `numpy` and `scipy`, so there is no need to install these separately. The table below lists 
+the optional dependencies:
 
 .. table::
    :widths: auto
    :class: longtable
-   
+
    ========================= ======================
-   **Optional dependencies**   **Minimum version**    
+   **Optional dependencies**  **Minimum version**    
    ------------------------- ----------------------
    missingno                  >=0.4.2         
-   pandas_profiling           >=0.1.7          
-   pyjanitor                  >=0.1.7          
-   yellowbrick                >=1.5.0        
-   mlxtend                    >=0.21          
-   tqdm                       >=4.64.1         
+   pandas_profiling           >=2.10.0          
+   pyjanitor                  >=0.22.0          
+   yellowbrick                >=1.3            
+   mlxtend                    >=0.18.0          
+   tqdm                       >=4.59.0  
+   xgboost                    >=1.5.0       
    ========================= ======================
 
-:code:`conda` or :code:`pip` can both use to install the dependencies as: 
+Both :code:`conda` and :code:`pip` can be used to install these dependencies:
 
-.. prompt:: bash $ 
-   
-   conda install <package-name> 
-   
-If the dependencies does not exist in conda-forge (e.g. ``pyproj``), use :code:`pip` instead as: 
+.. prompt:: bash $
 
-.. prompt:: bash $ 
-   
-   pip install <package-name> 
+   conda install <package-name>
 
+If a dependency is not available in conda-forge (e.g., `pyproj`), use :code:`pip` instead:
 
-Getting started 
-================
+.. prompt:: bash $
 
-For quickstart with :code:`watex`, the following import strategy is suggested:: 
+   pip install <package-name>
 
-	>>> import watex as wx 
-	
-There are two ways to import modules, classes, or functions from :code:`~watex`, the shorthand, and the complete import strategies. For instance, 
-to get the list of seven geological structures and structural pieces of information, we can use: 
+Getting Started
+===============
 
-*  shorthand import strategy: ``wx``  
- 
-.. code-block:: python 
+To begin working with :code:`watex`, it's recommended to use the following import strategy:
 
-	>>> # for geological structures
-	>>> #
-	>>> import watex as wx 
-	>>> geo_structures= wx.Structures().fit()
-	>>> geo_structures.names_ [:7] 
-	('argillite',
-	 'alluvium',
-	 'amphibolite',
-	 'anorthosite',
-	 'andesite',
-	 'aplite',
-	 'arkose')
-	>>> #
-	>>> # for structural infos  
-	>>> # 
-	>>> structurals= wx.Structural().fit() 
-	>>> structurals.names_ [:7]
-	('boudin_axis',
-	 'fold_axial_plane',
-	 'banding_gneissosity',
-	 's_fabric',
-	 'fault_plane',
-	 'fracture___joint_set',
-	 'undifferentiated_plane')
-	>>> structurals.boudin_axis.code_ 
-	'lsb'
-	>>> structurals.boudin_axis.name_
-	'Boudin Axis'
+.. code-block:: python
 
-	
-* complete-import strategy: ``from watex.~``	
+    >>> import watex as wx
 
-.. code-block:: 
+:code:`watex` provides two approaches for importing modules, classes, or functions: the shorthand and 
+the complete import strategies. Depending on your needs, you may choose one for convenience or specificity.
 
-	>>> from watex.geology import Structures
-	>>> geo_structure = Structures().fit()
-	>>> geo_structure.names_[:7] 
-	('argillite',
-	 'alluvium',
-	 'amphibolite',
-	 'anorthosite',
-	 'andesite',
-	 'aplite',
-	 'arkose')	
-	>>> from watex.geology import Structural 
-	>>> structurals=Structural().fit() 
-	>>> structurals.names_ [:7]
-	('boudin_axis',
-	 'fold_axial_plane',
-	 'banding_gneissosity',
-	 's_fabric',
-	 'fault_plane',
-	 'fracture___joint_set',
-	 'undifferentiated_plane')
-	>>> structurals.boudin_axis.code_ 
-	'lsb'
-	>>> structurals.boudin_axis.name_
-	'Boudin Axis'
-	
+Shorthand Import Strategy
+-------------------------
 
-In the example above, both codes yield the same results, however the `shorthand` is limited to the public API which is determined
-based on the documentation. The class, functions, and modules presumed to be the most used for solving an immediate specific task, 
-are displayed as public API. To more-in depth implementation, used the `complete-import strategy` instead. 
-	
-For more about the core and the data structure, visit the  :ref:`structure <structure>` page. However, for any issue or contributing to the 
-software development, please check the :doc:`development guide <development>`.
+The shorthand strategy uses the `wx` prefix to access :code:`watex` functionalities. This method is 
+straightforward and recommended for accessing common features or datasets:
+
+.. code-block:: python
+
+    # Example for accessing geological structures
+    import watex as wx
+    edi_data = wx.fetch_data('edis', return_data=True)
+    # edi_data now contains an object with SEG EDI files
+
+Complete Import Strategy
+------------------------
+
+The complete import strategy involves specifying the full path from the :code:`watex` package. This 
+approach is more verbose but provides direct access to specific modules, classes, or functions:
+
+.. code-block:: python
+
+    from watex.datasets import load_edis
+    edi_data = load_edis(return_data=True)
+    # Returns the same EDI data as the shorthand method
+
+While both methods yield the same result, the shorthand is generally limited to the public API, which 
+encompasses the functions, classes, and modules most likely to be used for quick tasks or common workflows. The complete import strategy is preferable for more in-depth implementations or when accessing less common features.
+
+For comprehensive details on :code:`watex`'s core functionality and data structures, refer to the 
+:ref:`structure <structure>` documentation. If you encounter any issues or wish to contribute to the 
+development of :code:`watex`, please consult the :doc:`development guide <development>`.
+
 

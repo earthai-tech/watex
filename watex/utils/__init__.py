@@ -114,6 +114,7 @@ from .plotutils import (
     plot_voronoi, 
     plot_roc_curves, 
     plot_tensors, 
+    plot_tensors2, 
     plot_l_curve, 
     )
 try : 
@@ -251,6 +252,7 @@ __all__=[
         "adaptive_moving_average", 
         "torres_verdin_filter",
         "plot_tensors",
+        "plot_tensors2", 
         "butterworth_filter",
         "plot_tensors", 
         "plot_l_curve"

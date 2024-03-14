@@ -654,6 +654,7 @@ Functions
 	utils.plot_skew
 	utils.plot_strike
 	utils.plot_tensors
+	utils.plot_tensors2
 	utils.plot_voronoi
 	utils.plot_yb_confusion_matrix
 	utils.power
