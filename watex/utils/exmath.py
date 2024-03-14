@@ -1018,7 +1018,10 @@ def fitfunc(
     
     return f, xn, yp  
 
-def vesDataOperator(
+@deprecated("This function is deprecated as of watex v1.0.0 due to suboptimal"
+            " performance. Please use <vesDataOperator> instead. This will be"
+            " removed in watex v1.x.x.")
+def vesDataOperator2(
         AB : ArrayLike = None, 
         rhoa: ArrayLike= None ,
         data: DataFrame  =None,
@@ -1127,42 +1130,309 @@ def vesDataOperator(
     return (X, Y) if not outdf else pd.DataFrame (
         {'AB': X,'resistivity':Y}, index =range(len(X)))
 
+def vesDataOperator(
+    AB: Optional[ArrayLike] = None, 
+    rhoa: Optional[ArrayLike] = None,
+    data: Optional[DataFrame] = None,
+    typeofop: str = 'mean', 
+    outdf: bool = False
+) -> Union[Tuple[ArrayLike, ArrayLike], DataFrame]: 
+    """
+    Process VES data to handle duplicated spacing distances (AB) by applying
+    specified operations to the corresponding resistivity values (rhoa).
+
+    In VES measurements, it's common to encounter duplicated AB values with
+    different resistivity readings due to minor adjustments in the MN distance.
+    This function consolidates such duplicates by either averaging, taking the
+    median, or randomly selecting one of the resistivity readings.
+
+    Parameters
+    ----------
+    AB : Optional[ArrayLike], optional
+        1D array of AB spacings from current electrodes, representing the 
+        exploration depth measurements in meters. If `data` is provided, 
+        this parameter is ignored.
+    rhoa : Optional[ArrayLike], optional
+        1D array of apparent resistivity values corresponding to AB spacings, 
+        measured in ohm-meters (Ω·m). If `data` is provided, 
+        this parameter is ignored.
+    data : Optional[DataFrame], optional
+        DataFrame containing both AB spacings and corresponding rhoa values.
+        Overrides `AB` and `rhoa` parameters when provided.
+    typeofop : str, optional
+        Specifies the operation to apply to rhoa values for duplicated AB spacings:
+        - 'mean': Calculates the mean of rhoa values for each unique AB spacing.
+        - 'median': Determines the median of rhoa values for each unique AB spacing.
+        - 'leaveoneout': Randomly selects one rhoa value from the duplicates for each
+          unique AB spacing. This approach is useful for experiments with significant
+          measurement variance at the same AB spacing.
+        Default is 'mean'.
+    outdf : bool, optional
+        Determines the format of the output. If True, returns a DataFrame with
+        processed AB and rhoa values; otherwise, returns a tuple (AB, rhoa).
+        Default is False.
+
+    Returns
+    -------
+    Union[Tuple[ArrayLike, ArrayLike], DataFrame]
+        Processed AB and rhoa values. The format is dictated by the `outdf` parameter:
+        a DataFrame if True, or a tuple (AB, rhoa) if False.
+
+    Examples
+    --------
+    >>> from watex.utils.exmath import vesDataOperator
+    >>> AB = np.array([10, 10, 20, 30, 30])
+    >>> rhoa = np.array([100, 105, 150, 200, 195])
+    >>> # Processing with mean operation
+    >>> AB_proc, rhoa_proc = vesDataOperator(AB, rhoa, typeofop='mean')
+    >>> print(AB_proc)
+    [10 20 30]
+    >>> print(rhoa_proc)
+    [102.5 150 197.5]
+    
+    >>> # Using DataFrame input and median operation
+    >>> data = pd.DataFrame({'AB': AB, 'rhoa': rhoa})
+    >>> df_proc = vesDataOperator(data=data, typeofop='median', outdf=True)
+    >>> print(df_proc)
+         AB  rhoa
+    0  10  102.5
+    1  20  150.0
+    2  30  197.5
+    """
+
+    typeofop= str(typeofop).lower()
+    # Check and prepare input data
+    AB, rhoa = _validate_ves_operator(
+        AB, rhoa, data = data , exception= VESError )
+  
+    if len(AB) != len(rhoa):
+        raise ValueError("Lengths of AB and rhoa must be equal.")
+    
+    # Prepare output arrays
+    AB_unique, indices, counts = np.unique(AB, return_inverse=True, return_counts=True)
+    rhoa_processed = np.zeros_like(AB_unique, dtype=float)
+    
+    # Apply specified operation on duplicated AB values
+    for idx in range(len(AB_unique)):
+        mask = indices == idx
+        if typeofop == 'mean':
+            rhoa_processed[idx] = np.mean(rhoa[mask])
+        elif typeofop == 'median':
+            rhoa_processed[idx] = np.median(rhoa[mask])
+        elif typeofop == 'leaveoneout':
+            rhoa_processed[idx] = np.random.choice(rhoa[mask])
+        else:
+            raise ValueError(
+                f"Unrecognized operation '{typeofop}'."
+                " Choose 'mean', 'median', or 'leaveoneout'.")
+    # Output formatting
+    if outdf:
+        return pd.DataFrame({'AB': AB_unique, 'rhoa': rhoa_processed})
+    else:
+        return (AB_unique, rhoa_processed)
 
 # XXXTODO 
-def invertVES (data: DataFrame[DType[float|int]] = None, 
-               rho0: float = None , 
-               h0 : float = None, 
-               typeof : str = 'HMCMC', 
-               **kwd
-               )->Tuple [ArrayLike]: 
-    """ Invert the |VES| data collected in the exporation area.
-    
-    :param data: Dataframe pandas - contains the depth measurement AB from 
-        current electrodes, the potentials electrodes MN and the collected 
-        apparents resistivities. 
-    
-    :param rho0: float - Value of the starting resistivity model. If ``None``, 
-        `rho0` should be the half minumm value of the apparent resistivity  
-        collected. Units is in Ω.m not log10(Ω.m)
-        
-    :param h0: float -  Thickness  in meter of the first layers in meters.
-         If ``None``, it should be the minimum thickess as possible ``1.`` m. 
-    
-    :param typeof: str - Type of inversion scheme. The defaut is Hybrid Monte 
-        Carlo (HMC) known as ``HMCMC`` . Another scheme is Bayesian neural network
-        approach (``BNN``). 
-    
-    :param kws: dict - Additionnal keywords arguments from |VES| data operations. 
-        See 
-    
-    :seealso: :func:`watex.utils.exmath.vesDataOperator` for futher details. 
-    
+def invertVES(
+    data: DataFrame = None,
+    rho0: float = None,
+    h0: float = None,
+    typeof: str = 'HMCMC',
+    **kwargs
+) -> Tuple[ArrayLike]:
     """
-    
-    X, Y = vesDataOperator(data =data, **kwd)
-    
-    pass 
+    Invert the VES data collected in the exploration area.
 
+    Parameters
+    ----------
+    data : DataFrame
+        DataFrame containing the depth measurement AB from current electrodes, 
+        the potential electrodes MN, and the collected apparent resistivities.
+    rho0 : float, optional
+        Value of the starting resistivity model. If None, rho0 is set to half 
+        the minimum value of the collected apparent resistivity. Units are in Ω.m.
+    h0 : float, optional
+        Thickness in meters of the first layer. If None, it defaults to 1 meter.
+    typeof : str, default 'HMCMC'
+        Type of inversion scheme. Default is Hybrid Monte Carlo (HMCMC). Another 
+        option is Bayesian neural network approach (BNN).
+    **kwargs : dict
+        Additional keyword arguments for VES data operations. See 
+        watex.utils.exmath.vesDataOperator for further details.
+
+    Returns
+    -------
+    Tuple[ArrayLike]
+        Inversion results, specifics depend on the inversion scheme used.
+
+    Notes
+    -----
+    This function is a placeholder for the inversion process. The actual 
+    implementation would require detailed algorithms for HMCMC or BNN approaches.
+    """
+    # Prepare data using vesDataOperator
+    AB, rhoa = vesDataOperator(data=data, **kwargs)
+
+    # Initialize starting model if not provided
+    if rho0 is None:
+        rho0 = np.min(rhoa) / 2
+    if h0 is None:
+        h0 = 1.0  # Default thickness in meters
+
+    # Placeholder for inversion logic
+    # Depending on the type of inversion, call the respective inversion function
+    # This could involve setting up initial models, defining priors, configuring
+    # the MCMC or BNN parameters, running the inversion, and processing the results.
+
+    if typeof.upper() == 'HMCMC':
+        # Call HMCMC inversion function (not implemented in this example)
+        # results = hmcmc_inversion(AB, rhoa, rho0, h0, **kwargs)
+        pass
+    elif typeof.upper() == 'BNN':
+        # Call BNN inversion function (not implemented in this example)
+        # results = bnn_inversion(AB, rhoa, rho0, h0, **kwargs)
+        pass
+    else:
+        raise ValueError(f"Unsupported inversion type: {typeof}")
+
+    # Placeholder for inversion results
+    # The actual return would depend on the outputs of the chosen inversion method
+    inversion_results = np.array([])  # Example placeholder
+
+    return inversion_results
+
+def hmcmc_inversion(AB, rhoa, rho0, h0, **kwargs):
+    """
+    Perform VES data inversion using Hybrid Monte Carlo (HMCMC).
+    
+    Parameters
+    ----------
+    AB : np.ndarray
+        Array containing the spacing of current electrodes.
+    rhoa : np.ndarray
+        Array containing apparent resistivity values.
+    rho0 : float
+        Initial guess for resistivity.
+    h0 : float
+        Initial guess for thickness of the first layer.
+    
+    Returns
+    -------
+    np.ndarray
+        Inversion results including estimated resistivity and thickness.
+    """
+    import pymc3 as pm
+
+    # The model definition would go here. This is a simplified example.
+    with pm.Model() as model: # noqa
+        # Define priors for model parameters
+        # For example, resistivity and thickness of subsurface layers
+        resistivity = pm.Normal('resistivity', mu=rho0, sigma=10)
+        thickness = pm.Normal('thickness', mu=h0, sigma=5)
+        
+        # Define the likelihood function using the observed data
+        # This requires a forward model function that predicts rhoa
+        # based on the model parameters and electrode spacings (AB)
+        observed_rhoa = pm.Normal( # noqa
+            'observed_rhoa', mu=forward_model(AB, resistivity, thickness),
+            sigma=2, observed=rhoa)
+        
+        # Sample from the posterior using the No-U-Turn Sampler (NUTS)
+        trace = pm.sample(1000, tune=500, cores=1)
+    
+    # Extract the posterior estimates for resistivity and thickness
+    # Here we return the mean of the posterior distribution as a simple result
+    resistivity_estimates = np.mean(trace['resistivity'])
+    thickness_estimates = np.mean(trace['thickness'])
+    
+    return resistivity_estimates, thickness_estimates
+
+def forward_model(AB, resistivity, thickness):
+    """
+    Placeholder forward model function. This function should compute the
+    theoretical apparent resistivity values based on the resistivity and
+    thickness of subsurface layers and compare them with observed values.
+    
+    Parameters
+    ----------
+    AB : np.ndarray
+        Array containing the spacing of current electrodes.
+    resistivity : float or np.ndarray
+        Resistivity of subsurface layers.
+    thickness : float or np.ndarray
+        Thickness of subsurface layers.
+    
+    Returns
+    -------
+    np.ndarray
+        Predicted apparent resistivity values.
+    """
+    # Implement the forward model calculation here.
+    # This is a highly simplified placeholder and would need to be replaced
+    # with the actual geophysical forward model calculation.
+    predicted_rhoa = np.zeros_like(AB) + resistivity  # Placeholder operation
+    return predicted_rhoa
+
+def bnn_inversion(AB, rhoa, rho0, h0, **kwargs):
+    """
+    Perform VES data inversion using a Bayesian Neural Network (BNN).
+    
+    Parameters
+    ----------
+    AB : np.ndarray
+        Array containing the spacing of current electrodes.
+    rhoa : np.ndarray
+        Array containing apparent resistivity values.
+    rho0 : float
+        Initial guess for resistivity.
+    h0 : float
+        Initial guess for thickness of the first layer.
+    
+    Returns
+    -------
+    np.ndarray
+        Inversion results including estimated resistivity and thickness.
+    """
+    import pymc3 as pm
+    import theano.tensor as tt
+    import numpy as np
+
+    # Define the BNN architecture
+    n_hidden = kwargs.get('n_hidden', 10)  # Number of neurons in the hidden layer
+    
+    # Initialize the PyMC3 model
+    with pm.Model() as neural_network: # noqa
+        # Priors for input layer weights and biases
+        weights_in = pm.Normal('w_in', mu=0, sigma=1,
+                               shape=(1, n_hidden))
+        bias_in = pm.Normal('b_in', mu=0, sigma=1,
+                            shape=(n_hidden,))
+        
+        # Priors for output layer weights and biases
+        weights_out = pm.Normal('w_out', mu=0, sigma=1,
+                                shape=(n_hidden, 1))
+        bias_out = pm.Normal('b_out', mu=0, sigma=1,
+                             shape=(1,))
+        
+        # Neural network forward pass
+        act_in = tt.dot(AB[:, None], weights_in) + bias_in
+        act_out = tt.dot(tt.tanh(act_in), weights_out) + bias_out
+        
+        # Likelihood (sampling distribution) of observations
+        observed_rhoa = pm.Normal('observed_rhoa', mu=act_out[:, 0], # noqa
+                                  sigma=2, observed=rhoa)
+        
+        # Variational Inference: Fit model using ADVI
+        approx = pm.fit(n=30000, method=pm.ADVI())
+    
+    # Extract the variational posterior
+    trace = approx.sample(draws=5000) # noqa
+    
+    # Placeholder for inversion results
+    # The actual return would depend on the outputs of the chosen
+    # inversion method
+    inversion_results = np.array([])  # Example placeholder
+    
+    return inversion_results
 
 @refAppender(refglossary.__doc__)    
 def ohmicArea(

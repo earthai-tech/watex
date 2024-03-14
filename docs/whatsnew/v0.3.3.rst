@@ -1,0 +1,43 @@
+v0.3.3 (March 15, 2024)
+-----------------------
+
+This release of watex introduces a series of refinements and additions to the API compared to version ``v0.3.2``. The updates 
+focus on enhancing the user experience through better error handling, performance improvements, and the introduction of new f
+unctionalities for geophysical data visualization and analysis.
+
+- |Fix| Addressed an `IndexError` in :meth:`~watex.methods.EM` that was triggered by providing an incorrect path or when EDI 
+  files were missing. The system has been improved to handle such scenarios gracefully, ensuring enhanced error reporting and 
+  overall system robustness.
+
+- |Enhancement| Updated the :meth:`watex.utils.plotutils.plot_errorbar` function by introducing a `show_error_bars` parameter. 
+  This allows for optional suppression of error bars in plots, offering a cleaner visualization option when error bars are 
+  unnecessary or might clutter the display.
+
+- |Enhancement| The newly introduced :meth:`watex.utils.plotutils.plot_tensors2` function replaces the original `plot_tensors` 
+  method, leveraging the `show_error_bars` parameter from `plot_errorbar`. This update facilitates a more tailored approach to the 
+  visualization of electromagnetic tensor data, incorporating feedback from our user community for a more intuitive plotting 
+  experience.
+
+- |Improvement| Enhanced the error handling mechanisms and user feedback for various data loading and processing operations within 
+  watex. These improvements aim to streamline the debugging process, making it easier for both developers and users to diagnose and 
+  resolve issues.
+
+- |Performance| Implemented optimizations in key computational routines and data handling processes. These changes contribute to 
+  faster analysis throughput and more efficient memory usage when working with large geophysical datasets, ensuring that watex can 
+  handle complex analysis tasks with improved performance.
+
+- |Feature| Introduced a new analysis module :func:`watex.utils.plot_tensors2` designed for advanced geophysical interpretation tasks. While still in its early 
+  stages, this module lays the groundwork for sophisticated analytical capabilities that will be expanded in future releases.
+
+- |Documentation| Expanded the documentation to include comprehensive examples and detailed guides for the newly introduced 
+  features. This effort aims to enhance understanding and utilization of watex's capabilities, supporting users in achieving 
+  their analysis objectives with the tool.
+
+These updates reflect our commitment to continually enhancing :code:`watex` based on user input and the evolving needs of the 
+geophysical analysis community. We value and appreciate the feedback and contributions from our users that drive the ongoing 
+development and improvement of watex.
+
+
+
+
+

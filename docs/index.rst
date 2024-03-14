@@ -49,6 +49,7 @@
   Release notes <whatsnew/index>
   Citing <citing>
   About us <history/index>
+  Contributing <community/contributing>
   Glossary <glossary>
   
 

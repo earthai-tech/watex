@@ -1,33 +1,36 @@
 v0.2.7 (July 02, 2023)
---------------------------
+----------------------
 
-These are minor changes  in ``v0.2.6`` that shows fugs fixed.  
+This update introduces minor changes and improvements over ``v0.2.6``, including bug fixes and API adjustments.
 
-- |API change| ``fetch_data_from_repo`` previously  located in :mod:`watex.geology.core` is deprecated and replaced by 
-  :func:`watex.utils.baseutils.get_remote_data`. 
+- |API change| The function ``fetch_data_from_repo`` in :mod:`watex.geology.core` is now deprecated. It has been replaced 
+  by :func:`watex.utils.baseutils.get_remote_data` for enhanced functionality and better integration.
 
-- |Fix| Bug in geographical coordinates when values are given in string in :meth:`watex.geology.DSDrill_build_geology`.  Henceforth, all 
-  numerical arguments are casted to numeric values before the drillholes construction. 
+- |Fix| An issue with geographical coordinates being provided as strings in :meth:`watex.geology.DSDrill_build_geology` has been 
+  corrected. All numerical arguments are now automatically converted to numeric types to ensure accurate drillhole construction.
 
-- |Fix| :func:`watex.utils.funcutils.str2columns` henceforth converts `text` value to string before parsing. 
+- |Fix| The :func:`watex.utils.funcutils.str2columns` function now consistently converts text values to strings before parsing, 
+  eliminating parsing errors related to unexpected data types.
 
-- |Feature| :func:`watex.utils.baseutils.save_or_load` for saving or loading Numpy arrays. Idem for :func:`watex.utils.baseutils.array2hdf5` 
-  for loading or  writing array to hdf5. 
+- |Feature| New utility function :func:`watex.utils.baseutils.save_or_load` introduced for efficient saving and loading of Numpy 
+  arrays. Similarly, :func:`watex.utils.baseutils.array2hdf5` has been added for seamless handling of arrays with HDF5 format.
 
-- |Feature| :meth:`watex.geology.core.GeoBase.find_properties` to find rock/structural properties or constraint the geological info 
-  to fit the rock in AGSO database. 
+- |Feature| The :meth:`watex.geology.core.GeoBase.find_properties` method has been implemented to facilitate the discovery of 
+  rock and structural properties or to constrain geological information to match entries in the AGSO database.
 
-- |Feature| :meth:`watex.geology.build_drillholes` can be used to build a specific drillhole manually through the parameter `kind`. 
+- |Feature| Enhanced functionality of :meth:`watex.geology.build_drillholes` allows for manual construction of specific drillholes 
+  through the `kind` parameter.
 
-- |Enhancement| :func:`watex.utils.read_data` is now able to read data in `txt` and numpy  formats (`.npy` and `.npz`). 
+- |Enhancement| The :func:`watex.utils.read_data` function has been updated to support reading data in text (`txt`) and Numpy 
+  formats (`.npy` and `.npz`), broadening its usability.
 
-- |Enhancement| Add Nanshan land subsidence data. :func:`watex.datasets.nlogs` accepts henceforth ``ls`` for land subsidence as an argument 
-  for collection the subsidence data. The parameter `years` can be used accordingly to get the year of the subsidence. 
+- |Enhancement| Nanshan land subsidence data has been added to the dataset collection. The :func:`watex.datasets.nlogs` function 
+  now accepts `ls` (land subsidence) as an argument, enabling the retrieval of subsidence data by specifying the `years` parameter.
 
-- |Enhancement| :class:`watex.geology.DSDrill` implements :meth:`watex.watex.geology.DSDrill.set_drillholes` to construct the drilling with 
-  valid data passed to the ``fit`` method. The drillholes construction expects argument supplied to the ``properties``parameter. 
-  However, :meth:`watex.geology.DSDrill.get_properties` can be used  and to get the drillholes parameters before providing the 
-  property arguments.  
+- |Enhancement| The :class:`watex.geology.DSDrill` class now features the :meth:`watex.geology.DSDrill.set_drillholes` method, 
+  which supports drillhole construction with valid data provided to the `fit` method. For pre-construction analysis, 
+  :meth:`watex.geology.DSDrill.get_properties` can be utilized to obtain necessary drillhole parameters.
+
 
   
 
