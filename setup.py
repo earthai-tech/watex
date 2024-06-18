@@ -97,7 +97,7 @@ setup_kwargs['install_requires'] = [
     "pycsamt >=1.1.2",
     "tqdm >=4.64.1",
     "tables >=3.6.0",
-    "scikit-learn ==1.2.1",
+    "scikit-learn ==1.5.0",
     "joblib >=1.2.0",
     "threadpoolctl >=3.1.0",
     "matplotlib ==3.5.3",
