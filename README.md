@@ -225,6 +225,6 @@ institutions:
 3. Laboratoire de Geologie, Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny](https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Côte d'Ivoire.
 
 For inquiries, suggestions, or contributions, please reach out to the developers:
-* [_LKouadio_](https://wegeophysics.github.io/) at <etanoyau@gmail.com> &
-* [_Liu Rong_](https://faculty.csu.edu.cn/liurong1234/en/lwcg/196821/content/51412.htm) at <liurongkaoyan@csu.edu.cn>
+* [1,2,3] [_LKouadio_](https://wegeophysics.github.io/) at <etanoyau@gmail.com> &
+* [1,2] [_Liu Rong_](https://faculty.csu.edu.cn/liurong1234/en/lwcg/196821/content/51412.htm) at <liurongkaoyan@csu.edu.cn>
 
