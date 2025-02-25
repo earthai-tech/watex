@@ -224,5 +224,7 @@ institutions:
 2. Hunan Key Laboratory of Nonferrous Resources and Geological Hazards Exploration, Changsha, Hunan, China.
 3. Laboratoire de Geologie, Ressources Minerales et Energetiques, UFR des Sciences de la Terre et des Ressources Minières, [Université Félix Houphouët-Boigny](https://www.univ-fhb.edu.ci/index.php/ufr-strm/), Côte d'Ivoire.
 
-For inquiries, suggestions, or contributions, please reach out to the main developer, [_LKouadio_](https://wegeophysics.github.io/) at <etanoyau@gmail.com>.
+For inquiries, suggestions, or contributions, please reach out to the developers:
+* [_LKouadio_](https://wegeophysics.github.io/) at <etanoyau@gmail.com> &
+* [_Liu Rong_](https://faculty.csu.edu.cn/liurong1234/en/lwcg/196821/content/51412.htm) at <liurongkaoyan@csu.edu.cn>
 
